@@ -1,284 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933791Ab2HQIzB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:55:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40634 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933729Ab2HQIoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:44:23 -0400
-From: Huacai Chen <chenhc@lemote.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Subject: [PATCH V6 06/15] MIPS: Loongson 3: Add HT-linked PCI support
-Date: Fri, 17 Aug 2012 16:43:26 +0800
-Message-Id: <1345193015-3024-7-git-send-email-chenhc@lemote.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
-References: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
+	id S1756693Ab2HQI41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:56:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9420 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933805Ab2HQIzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:55:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
+   d="scan'208";a="181871499"
+Message-ID: <502E070A.9010604@intel.com>
+Date: Fri, 17 Aug 2012 16:55:38 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        jolsa@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] perf/x86: Add cpumask for uncore PMU.
+References: <1344238538-3420-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBTKwk1wqV0YWGRn1sHXBM0yix7jrGRFsW-JT4_=Y+F+wg@mail.gmail.com>
+In-Reply-To: <CABPqkBTKwk1wqV0YWGRn1sHXBM0yix7jrGRFsW-JT4_=Y+F+wg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Loongson family machines use Hyper-Transport bus for inter-core
-connection and device connection. The PCI bus is a subordinate
-linked at HT1.
+On 08/17/2012 04:00 PM, Stephane Eranian wrote:
+> On Mon, Aug 6, 2012 at 9:35 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>
+>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>
+>> This RFC patch adds a cpumask file to the uncore pmu sysfs directory.
+>> If user doesn't explicitly specify CPU list, perf-stat only collects
+>> uncore events on CPUs listed in the cpumask file.
+>>
+>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 28 ++++++++++++++++++++++---
+>>  arch/x86/kernel/cpu/perf_event_intel_uncore.h |  6 ++++--
+>>  tools/perf/builtin-stat.c                     | 30 ++++++++++++++++++---------
+>>  tools/perf/util/cpumap.c                      | 22 +++++++++++++-------
+>>  tools/perf/util/cpumap.h                      |  2 +-
+>>  tools/perf/util/evsel.h                       |  1 +
+>>  tools/perf/util/parse-events.c                | 14 +++++++------
+>>  tools/perf/util/pmu.c                         | 30 +++++++++++++++++++++++++++
+>>  tools/perf/util/pmu.h                         |  1 +
+>>  9 files changed, 105 insertions(+), 29 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> index 0a55710..62ec3e6 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+>> @@ -2341,6 +2341,27 @@ int uncore_pmu_event_init(struct perf_event *event)
+>>         return ret;
+>>  }
+>>
+>> +static ssize_t uncore_get_attr_cpumask(struct device *dev,
+>> +                               struct device_attribute *attr, char *buf)
+>> +{
+>> +       int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
+>> +
+>> +       buf[n++] = '\n';
+> 
+> Why the \n. I thought there were no \n in sysfs files.
+> 
+>> +       buf[n] = '\0';
+>> +       return n;
+>> +}
+>> +
+>> +static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
+>> +
+>> +static struct attribute *uncore_pmu_attrs[] = {
+>> +       &dev_attr_cpumask.attr,
+>> +       NULL,
+>> +};
+>> +
+>> +static struct attribute_group uncore_pmu_attr_group = {
+>> +       .attrs = uncore_pmu_attrs,
+>> +};
+>> +
+>>  static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+>>  {
+>>         int ret;
+>> @@ -2378,8 +2399,8 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
+>>                 free_percpu(type->pmus[i].box);
+>>         kfree(type->pmus);
+>>         type->pmus = NULL;
+>> -       kfree(type->attr_groups[1]);
+>> -       type->attr_groups[1] = NULL;
+>> +       kfree(type->events_group);
+>> +       type->events_group = NULL;
+>>  }
+>>
+>>  static void __init uncore_types_exit(struct intel_uncore_type **types)
+>> @@ -2431,9 +2452,10 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+>>                 for (j = 0; j < i; j++)
+>>                         attrs[j] = &type->event_descs[j].attr.attr;
+>>
+>> -               type->attr_groups[1] = events_group;
+>> +               type->events_group = events_group;
+>>         }
+>>
+>> +       type->pmu_group = &uncore_pmu_attr_group;
+>>         type->pmus = pmus;
+>>         return 0;
+>>  fail:
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+>> index 5b81c18..e68a455 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+>> @@ -369,10 +369,12 @@ struct intel_uncore_type {
+>>         struct intel_uncore_pmu *pmus;
+>>         struct intel_uncore_ops *ops;
+>>         struct uncore_event_desc *event_descs;
+>> -       const struct attribute_group *attr_groups[3];
+>> +       const struct attribute_group *attr_groups[4];
+>>  };
+>>
+>> -#define format_group attr_groups[0]
+>> +#define pmu_group attr_groups[0]
+>> +#define format_group attr_groups[1]
+>> +#define events_group attr_groups[2]
+>>
+>>  struct intel_uncore_ops {
+>>         void (*init_box)(struct intel_uncore_box *);
+>> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+>> index 861f0ae..8b4275c 100644
+>> --- a/tools/perf/builtin-stat.c
+>> +++ b/tools/perf/builtin-stat.c
+>> @@ -220,6 +220,16 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
+>>         evsel->priv = NULL;
+>>  }
+>>
+>> +static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
+>> +{
+>> +       return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
+>> +}
+>> +
+>> +static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
+>> +{
+>> +       return perf_evsel__cpus(evsel)->nr;
+>> +}
+>> +
+>>  static void update_stats(struct stats *stats, u64 val)
+>>  {
+>>         double delta;
+>> @@ -299,7 +309,7 @@ retry:
+>>                 evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
+>>
+>>         if (perf_target__has_cpu(&target)) {
+>> -               ret = perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+>> +               ret = perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel),
+>>                                                group, group_fd);
+>>                 if (ret)
+>>                         goto check_ret;
+>> @@ -382,7 +392,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
+>>         u64 *count = counter->counts->aggr.values;
+>>         int i;
+>>
+>> -       if (__perf_evsel__read(counter, evsel_list->cpus->nr,
+>> +       if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
+>>                                evsel_list->threads->nr, scale) < 0)
+>>                 return -1;
+>>
+>> @@ -411,7 +421,7 @@ static int read_counter(struct perf_evsel *counter)
+>>         u64 *count;
+>>         int cpu;
+>>
+>> -       for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
+>> +       for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+>>                 if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
+>>                         return -1;
+>>
+>> @@ -546,12 +556,12 @@ static int run_perf_stat(int argc __used, const char **argv)
+>>         if (no_aggr) {
+>>                 list_for_each_entry(counter, &evsel_list->entries, node) {
+>>                         read_counter(counter);
+>> -                       perf_evsel__close_fd(counter, evsel_list->cpus->nr, 1);
+>> +                       perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter), 1);
+>>                 }
+>>         } else {
+>>                 list_for_each_entry(counter, &evsel_list->entries, node) {
+>>                         read_counter_aggr(counter);
+>> -                       perf_evsel__close_fd(counter, evsel_list->cpus->nr,
+>> +                       perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter),
+>>                                              evsel_list->threads->nr);
+>>                 }
+>>         }
+>> @@ -592,7 +602,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
+>>         if (no_aggr)
+>>                 sprintf(cpustr, "CPU%*d%s",
+>>                         csv_output ? 0 : -4,
+>> -                       evsel_list->cpus->map[cpu], csv_sep);
+>> +                       perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+>>
+>>         fprintf(output, fmt, cpustr, msecs, csv_sep, perf_evsel__name(evsel));
+>>
+>> @@ -788,7 +798,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+>>         if (no_aggr)
+>>                 sprintf(cpustr, "CPU%*d%s",
+>>                         csv_output ? 0 : -4,
+>> -                       evsel_list->cpus->map[cpu], csv_sep);
+>> +                       perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+>>         else
+>>                 cpu = 0;
+>>
+>> @@ -949,14 +959,14 @@ static void print_counter(struct perf_evsel *counter)
+>>         u64 ena, run, val;
+>>         int cpu;
+>>
+>> -       for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
+>> +       for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+>>                 val = counter->counts->cpu[cpu].val;
+>>                 ena = counter->counts->cpu[cpu].ena;
+>>                 run = counter->counts->cpu[cpu].run;
+>>                 if (run == 0 || ena == 0) {
+>>                         fprintf(output, "CPU%*d%s%*s%s%*s",
+>>                                 csv_output ? 0 : -4,
+>> -                               evsel_list->cpus->map[cpu], csv_sep,
+>> +                               perf_evsel__cpus(counter)->map[cpu], csv_sep,
+>>                                 csv_output ? 0 : 18,
+>>                                 counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+>>                                 csv_sep,
+>> @@ -1255,7 +1265,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+>>
+>>         list_for_each_entry(pos, &evsel_list->entries, node) {
+>>                 if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+>> -                   perf_evsel__alloc_counts(pos, evsel_list->cpus->nr) < 0)
+>> +                   perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
+>>                         goto out_free_fd;
+>>         }
+>>
+>> diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+>> index adc72f0..2b32ffa 100644
+>> --- a/tools/perf/util/cpumap.c
+>> +++ b/tools/perf/util/cpumap.c
+>> @@ -38,24 +38,19 @@ static struct cpu_map *cpu_map__trim_new(int nr_cpus, int *tmp_cpus)
+>>         return cpus;
+>>  }
+>>
+>> -static struct cpu_map *cpu_map__read_all_cpu_map(void)
+>> +struct cpu_map *cpu_map__read(FILE *file)
+>>  {
+>>         struct cpu_map *cpus = NULL;
+>> -       FILE *onlnf;
+>>         int nr_cpus = 0;
+>>         int *tmp_cpus = NULL, *tmp;
+>>         int max_entries = 0;
+>>         int n, cpu, prev;
+>>         char sep;
+>>
+>> -       onlnf = fopen("/sys/devices/system/cpu/online", "r");
+>> -       if (!onlnf)
+>> -               return cpu_map__default_new();
+>> -
+>>         sep = 0;
+>>         prev = -1;
+>>         for (;;) {
+>> -               n = fscanf(onlnf, "%u%c", &cpu, &sep);
+>> +               n = fscanf(file, "%u%c", &cpu, &sep);
+>>                 if (n <= 0)
+>>                         break;
+>>                 if (prev >= 0) {
+>> @@ -95,6 +90,19 @@ static struct cpu_map *cpu_map__read_all_cpu_map(void)
+>>                 cpus = cpu_map__default_new();
+>>  out_free_tmp:
+>>         free(tmp_cpus);
+>> +       return cpus;
+>> +}
+>> +
+>> +static struct cpu_map *cpu_map__read_all_cpu_map(void)
+>> +{
+>> +       struct cpu_map *cpus = NULL;
+>> +       FILE *onlnf;
+>> +
+>> +       onlnf = fopen("/sys/devices/system/cpu/online", "r");
+>> +       if (!onlnf)
+>> +               return cpu_map__default_new();
+>> +
+>> +       cpus = cpu_map__read(onlnf);
+>>         fclose(onlnf);
+>>         return cpus;
+>>  }
+>> diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+>> index c415185..17b5264 100644
+>> --- a/tools/perf/util/cpumap.h
+>> +++ b/tools/perf/util/cpumap.h
+>> @@ -11,7 +11,7 @@ struct cpu_map {
+>>  struct cpu_map *cpu_map__new(const char *cpu_list);
+>>  struct cpu_map *cpu_map__dummy_new(void);
+>>  void cpu_map__delete(struct cpu_map *map);
+>> -
+>> +struct cpu_map *cpu_map__read(FILE *file);
+>>  size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
+>>
+>>  #endif /* __PERF_CPUMAP_H */
+>> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+>> index b559929..26c0095 100644
+>> --- a/tools/perf/util/evsel.h
+>> +++ b/tools/perf/util/evsel.h
+>> @@ -65,6 +65,7 @@ struct perf_evsel {
+>>                 void            *func;
+>>                 void            *data;
+>>         } handler;
+>> +       struct cpu_map          *cpus;
+>>         unsigned int            sample_size;
+>>         bool                    supported;
+>>  };
+>> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+>> index 74a5af4..af07c4f 100644
+>> --- a/tools/perf/util/parse-events.c
+>> +++ b/tools/perf/util/parse-events.c
+>> @@ -240,7 +240,8 @@ const char *event_type(int type)
+>>  }
+>>
+>>  static int add_event(struct list_head **_list, int *idx,
+>> -                    struct perf_event_attr *attr, char *name)
+>> +                    struct perf_event_attr *attr,
+>> +                    struct cpu_map *cpus, char *name)
+>>  {
+>>         struct perf_evsel *evsel;
+>>         struct list_head *list = *_list;
+>> @@ -260,6 +261,7 @@ static int add_event(struct list_head **_list, int *idx,
+>>                 return -ENOMEM;
+>>         }
+>>
+>> +       evsel->cpus = cpus;
+>>         if (name)
+>>                 evsel->name = strdup(name);
+>>         list_add_tail(&evsel->node, list);
+>> @@ -343,7 +345,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
+>>         memset(&attr, 0, sizeof(attr));
+>>         attr.config = cache_type | (cache_op << 8) | (cache_result << 16);
+>>         attr.type = PERF_TYPE_HW_CACHE;
+>> -       return add_event(list, idx, &attr, name);
+>> +       return add_event(list, idx, &attr, NULL, name);
+>>  }
+>>
+>>  static int add_tracepoint(struct list_head **list, int *idx,
+>> @@ -381,7 +383,7 @@ static int add_tracepoint(struct list_head **list, int *idx,
+>>         attr.sample_period = 1;
+>>
+>>         snprintf(name, MAX_NAME_LEN, "%s:%s", sys_name, evt_name);
+>> -       return add_event(list, idx, &attr, name);
+>> +       return add_event(list, idx, &attr, NULL, name);
+>>  }
+>>
+>>  static int add_tracepoint_multi(struct list_head **list, int *idx,
+>> @@ -492,7 +494,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
+>>         attr.type = PERF_TYPE_BREAKPOINT;
+>>         attr.sample_period = 1;
+>>
+>> -       return add_event(list, idx, &attr, NULL);
+>> +       return add_event(list, idx, &attr, NULL, NULL);
+>>  }
+>>
+>>  static int config_term(struct perf_event_attr *attr,
+>> @@ -564,7 +566,7 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
+>>             config_attr(&attr, head_config, 1))
+>>                 return -EINVAL;
+>>
+>> -       return add_event(list, idx, &attr, NULL);
+>> +       return add_event(list, idx, &attr, NULL, NULL);
+>>  }
+>>
+>>  static int parse_events__is_name_term(struct parse_events__term *term)
+>> @@ -607,7 +609,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+>>         if (perf_pmu__config(pmu, &attr, head_config))
+>>                 return -EINVAL;
+>>
+>> -       return add_event(list, idx, &attr,
+>> +       return add_event(list, idx, &attr, pmu->cpus,
+>>                          pmu_event_name(head_config));
+>>  }
+>>
+>> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+>> index 67715a4..0b9aca6 100644
+>> --- a/tools/perf/util/pmu.c
+>> +++ b/tools/perf/util/pmu.c
+>> @@ -9,6 +9,7 @@
+>>  #include "util.h"
+>>  #include "pmu.h"
+>>  #include "parse-events.h"
+>> +#include "cpumap.h"
+>>
+>>  int perf_pmu_parse(struct list_head *list, char *name);
+>>  extern FILE *perf_pmu_in;
+>> @@ -222,6 +223,33 @@ static int pmu_type(char *name, __u32 *type)
+>>         return ret;
+>>  }
+>>
+>> +static struct cpu_map *pmu_cpumask(char *name)
+>> +{
+>> +       struct stat st;
+>> +       char path[PATH_MAX];
+>> +       const char *sysfs;
+>> +       FILE *file;
+>> +       struct cpu_map *cpus;
+>> +
+>> +       sysfs = sysfs_find_mountpoint();
+>> +       if (!sysfs)
+>> +               return NULL;
+>> +
+>> +       snprintf(path, PATH_MAX,
+>> +                "%s/bus/event_source/devices/%s/cpumask", sysfs, name);
+>> +
+>> +       if (stat(path, &st) < 0)
+>> +               return NULL;
+>> +
+>> +       file = fopen(path, "r");
+>> +       if (!file)
+>> +               return NULL;
+>> +
+>> +       cpus = cpu_map__read(file);
+>> +       fclose(file);
+>> +       return cpus;
+>> +}
+>> +
+>>  static struct perf_pmu *pmu_lookup(char *name)
+>>  {
+>>         struct perf_pmu *pmu;
+>> @@ -244,6 +272,8 @@ static struct perf_pmu *pmu_lookup(char *name)
+>>         if (!pmu)
+>>                 return NULL;
+>>
+>> +       pmu->cpus = pmu_cpumask(name);
+>> +
+>>         pmu_aliases(name, &aliases);
+>>
+>>         INIT_LIST_HEAD(&pmu->format);
+>> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+>> index 535f2c5..277c874 100644
+>> --- a/tools/perf/util/pmu.h
+>> +++ b/tools/perf/util/pmu.h
+>> @@ -28,6 +28,7 @@ struct perf_pmu__alias {
+>>  struct perf_pmu {
+>>         char *name;
+>>         __u32 type;
+>> +       struct cpu_map *cpus;
+>>         struct list_head format;
+>>         struct list_head aliases;
+>>         struct list_head list;
+>> --
+>> 1.7.11.2
+>>
+> 
+> The key here is to ensure that perf stat -a picks one CPU on each socket
+> and that from that CPU we can measure events on ALL the uncore PMU
+> boxes on the socket. I think this is the case today. For instance, it is does
+> not really make sense to measure one C-Box at a time. For any C-box-level
+> metric, you need to cover all 8 of them.
+> 
+how about making perf-stat recognize wildcard character in the pmu name and
+aggregate counts across all PMUs? For example:
 
-With UEFI-like firmware interface, We don't need fixup for PCI irq
-routing.
+# perf stat -a uncore_cbox_*/event=0/ sleep 1
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Hongliang Tao <taohl@lemote.com>
-Signed-off-by: Hua Yan <yanh@lemote.com>
----
- arch/mips/include/asm/mach-loongson/loongson.h |    7 ++
- arch/mips/include/asm/mach-loongson/pci.h      |    5 +
- arch/mips/pci/Makefile                         |    1 +
- arch/mips/pci/fixup-loongson3.c                |   64 +++++++++++++++
- arch/mips/pci/ops-loongson3.c                  |  104 ++++++++++++++++++++++++
- 5 files changed, 181 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/pci/fixup-loongson3.c
- create mode 100644 arch/mips/pci/ops-loongson3.c
 
-diff --git a/arch/mips/include/asm/mach-loongson/loongson.h b/arch/mips/include/asm/mach-loongson/loongson.h
-index 6a1bcf3..960811a 100644
---- a/arch/mips/include/asm/mach-loongson/loongson.h
-+++ b/arch/mips/include/asm/mach-loongson/loongson.h
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/irq.h>
- #include <linux/kconfig.h>
-+#include <boot_param.h>
- 
- /* loongson internal northbridge initialization */
- extern void bonito_irq_init(void);
-@@ -101,7 +102,13 @@ static inline void do_perfcnt_IRQ(void)
- #define LOONGSON_PCICFG_BASE	0x1fe80000
- #define LOONGSON_PCICFG_SIZE	0x00000800	/* 2K */
- #define LOONGSON_PCICFG_TOP	(LOONGSON_PCICFG_BASE+LOONGSON_PCICFG_SIZE-1)
-+
-+#if defined(CONFIG_HT_PCI)
-+#define LOONGSON_PCIIO_BASE	loongson_pciio_base
-+#else
- #define LOONGSON_PCIIO_BASE	0x1fd00000
-+#endif
-+
- #define LOONGSON_PCIIO_SIZE	0x00100000	/* 1M */
- #define LOONGSON_PCIIO_TOP	(LOONGSON_PCIIO_BASE+LOONGSON_PCIIO_SIZE-1)
- 
-diff --git a/arch/mips/include/asm/mach-loongson/pci.h b/arch/mips/include/asm/mach-loongson/pci.h
-index bc99dab..1212774 100644
---- a/arch/mips/include/asm/mach-loongson/pci.h
-+++ b/arch/mips/include/asm/mach-loongson/pci.h
-@@ -40,8 +40,13 @@ extern struct pci_ops loongson_pci_ops;
- #else	/* loongson2f/32bit & loongson2e */
- 
- /* this pci memory space is mapped by pcimap in pci.c */
-+#ifdef CONFIG_CPU_LOONGSON3
-+#define LOONGSON_PCI_MEM_START	0x40000000UL
-+#define LOONGSON_PCI_MEM_END	0x7effffffUL
-+#else
- #define LOONGSON_PCI_MEM_START	LOONGSON_PCILO1_BASE
- #define LOONGSON_PCI_MEM_END	(LOONGSON_PCILO1_BASE + 0x04000000 * 2)
-+#endif
- /* this is an offset from mips_io_port_base */
- #define LOONGSON_PCI_IO_START	0x00004000UL
- 
-diff --git a/arch/mips/pci/Makefile b/arch/mips/pci/Makefile
-index e13a71c..0723723 100644
---- a/arch/mips/pci/Makefile
-+++ b/arch/mips/pci/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_MIPS_COBALT)	+= fixup-cobalt.o
- obj-$(CONFIG_SOC_PNX8550)	+= fixup-pnx8550.o ops-pnx8550.o
- obj-$(CONFIG_LEMOTE_FULOONG2E)	+= fixup-fuloong2e.o ops-loongson2.o
- obj-$(CONFIG_LEMOTE_MACH2F)	+= fixup-lemote2f.o ops-loongson2.o
-+obj-$(CONFIG_LEMOTE_MACH3A)	+= fixup-loongson3.o ops-loongson3.o
- obj-$(CONFIG_MIPS_MALTA)	+= fixup-malta.o
- obj-$(CONFIG_PMC_MSP7120_GW)	+= fixup-pmcmsp.o ops-pmcmsp.o
- obj-$(CONFIG_PMC_MSP7120_EVAL)	+= fixup-pmcmsp.o ops-pmcmsp.o
-diff --git a/arch/mips/pci/fixup-loongson3.c b/arch/mips/pci/fixup-loongson3.c
-new file mode 100644
-index 0000000..d716567
---- /dev/null
-+++ b/arch/mips/pci/fixup-loongson3.c
-@@ -0,0 +1,64 @@
-+/*
-+ * fixup-loongson3.c
-+ *
-+ * Copyright (C) 2012 Lemote, Inc.
-+ * Author: Xiang Yu, xiangy@lemote.com
-+ *         Chen Huacai, chenhc@lemote.com
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ * THIS  SOFTWARE  IS PROVIDED   ``AS  IS'' AND   ANY  EXPRESS OR IMPLIED
-+ * WARRANTIES,   INCLUDING, BUT NOT  LIMITED  TO, THE IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN
-+ * NO  EVENT  SHALL   THE AUTHOR  BE    LIABLE FOR ANY   DIRECT, INDIRECT,
-+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-+ * NOT LIMITED   TO, PROCUREMENT OF  SUBSTITUTE GOODS  OR SERVICES; LOSS OF
-+ * USE, DATA,  OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-+ * ANY THEORY OF LIABILITY, WHETHER IN  CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ *
-+ * You should have received a copy of the  GNU General Public License along
-+ * with this program; if not, write  to the Free Software Foundation, Inc.,
-+ * 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/pci.h>
-+#include <boot_param.h>
-+
-+static void print_fixup_info(const struct pci_dev * pdev)
-+{
-+	printk(KERN_INFO "Fixup: bus%d dev%xh fun%xh %x:%x irq %d\n",
-+			pdev->bus->number, PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn),
-+			pdev->vendor, pdev->device, pdev->irq);
-+
-+}
-+
-+int __init pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
-+{
-+	print_fixup_info(dev);
-+	return dev->irq;
-+}
-+
-+static void __init pci_fixup_radeon(struct pci_dev *pdev)
-+{
-+	if (pdev->resource[PCI_ROM_RESOURCE].start)
-+		return;
-+
-+	pdev->resource[PCI_ROM_RESOURCE].start  = vgabios_addr;
-+	pdev->resource[PCI_ROM_RESOURCE].end    = vgabios_addr + 256*1024 - 1;
-+	pdev->resource[PCI_ROM_RESOURCE].flags |= IORESOURCE_ROM_COPY;
-+}
-+
-+DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_VENDOR_ID_ATI, PCI_ANY_ID,
-+				PCI_CLASS_DISPLAY_VGA, 8, pci_fixup_radeon);
-+
-+/* Do platform specific device initialization at pci_enable_device() time */
-+int pcibios_plat_dev_init(struct pci_dev *dev)
-+{
-+	return 0;
-+}
-diff --git a/arch/mips/pci/ops-loongson3.c b/arch/mips/pci/ops-loongson3.c
-new file mode 100644
-index 0000000..b29d333
---- /dev/null
-+++ b/arch/mips/pci/ops-loongson3.c
-@@ -0,0 +1,104 @@
-+#include <linux/types.h>
-+#include <linux/pci.h>
-+#include <linux/kernel.h>
-+
-+#include <asm/mips-boards/bonito64.h>
-+
-+#include <loongson.h>
-+
-+#define PCI_ACCESS_READ  0
-+#define PCI_ACCESS_WRITE 1
-+
-+#define HT1LO_PCICFG_BASE      0x1a000000
-+#define HT1LO_PCICFG_BASE_TP1  0x1b000000
-+
-+static int loongson3_pci_config_access(unsigned char access_type,
-+		struct pci_bus *bus, unsigned int devfn,
-+		int where, u32 *data)
-+{
-+	unsigned char busnum = bus->number;
-+	u_int64_t addr, type;
-+	void *addrp;
-+	int device = PCI_SLOT(devfn);
-+	int function = PCI_FUNC(devfn);
-+	int reg = where & ~3;
-+
-+	if (busnum == 0) {
-+		if (device > 31)
-+			return PCIBIOS_DEVICE_NOT_FOUND;
-+		addr = (device << 11) | (function << 8) | reg;
-+	    addrp = (void *)(TO_UNCAC(HT1LO_PCICFG_BASE) | (addr & 0xffff));
-+		type = 0;
-+
-+	} else {
-+		addr = (busnum << 16) | (device << 11) | (function << 8) | reg;
-+	    addrp = (void *)(TO_UNCAC(HT1LO_PCICFG_BASE_TP1) | (addr));
-+		type = 0x10000;
-+	}
-+
-+	if (access_type == PCI_ACCESS_WRITE)
-+		*(volatile unsigned int *)addrp = cpu_to_le32(*data);
-+	else {
-+		*data = le32_to_cpu(*(volatile unsigned int *)addrp);
-+		if (*data == 0xffffffff) {
-+			*data = -1;
-+	        return PCIBIOS_DEVICE_NOT_FOUND;
-+		}
-+	}
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+static int loongson3_pci_pcibios_read(struct pci_bus *bus, unsigned int devfn,
-+				 int where, int size, u32 * val)
-+{
-+	u32 data = 0;
-+	int ret = loongson3_pci_config_access(PCI_ACCESS_READ,
-+			bus, devfn, where, &data);
-+
-+	if (ret != PCIBIOS_SUCCESSFUL)
-+		return ret;
-+
-+	if (size == 1)
-+		*val = (data >> ((where & 3) << 3)) & 0xff;
-+	else if (size == 2)
-+		*val = (data >> ((where & 3) << 3)) & 0xffff;
-+	else
-+		*val = data;
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+static int loongson3_pci_pcibios_write(struct pci_bus *bus, unsigned int devfn,
-+				  int where, int size, u32 val)
-+{
-+	u32 data = 0;
-+	int ret;
-+
-+	if (size == 4)
-+		data = val;
-+	else {
-+		ret = loongson3_pci_config_access(PCI_ACCESS_READ,
-+				bus, devfn, where, &data);
-+		if (ret != PCIBIOS_SUCCESSFUL)
-+			return ret;
-+
-+		if (size == 1)
-+			data = (data & ~(0xff << ((where & 3) << 3))) |
-+			    (val << ((where & 3) << 3));
-+		else if (size == 2)
-+			data = (data & ~(0xffff << ((where & 3) << 3))) |
-+			    (val << ((where & 3) << 3));
-+	}
-+
-+	ret = loongson3_pci_config_access(PCI_ACCESS_WRITE,
-+			bus, devfn, where, &data);
-+	if (ret != PCIBIOS_SUCCESSFUL)
-+		return ret;
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+struct pci_ops loongson_pci_ops = {
-+	.read = loongson3_pci_pcibios_read,
-+	.write = loongson3_pci_pcibios_write
-+};
--- 
-1.7.7.3
+> How does this play with the -C option of perf stat? I assume -C overrides.
+>
+yes
+
+Regards
+Yan, Zheng
+
+> In case perf stat picks up the CPUs from cpumask, then I'd like to keep
+> a trace of which CPUs were actually used. In other words, I think it would
+> be useful to have this printed somewhere in the output. Unless this shows
+> up only when you use the -A option.
+> 
 
