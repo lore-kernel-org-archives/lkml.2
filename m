@@ -1,122 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab2HQAUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 20:20:09 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43031 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab2HQAUG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 20:20:06 -0400
-MIME-Version: 1.0
-Message-ID: <a8bfd9e8-7286-42f5-b8ef-16af00fceb8b@default>
-Date: Thu, 16 Aug 2012 17:19:28 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org
-Subject: RE: [PATCH 0/3] staging: zcache+ramster: move to new code base and
- re-merge
-References: <1345156293-18852-1-git-send-email-dan.magenheimer@oracle.com>
- <20120816224814.GA18737@kroah.com>
- <9f2da295-4164-4e95-bbe8-bd234307b83c@default>
- <20120816230817.GA14757@kroah.com>
-In-Reply-To: <20120816230817.GA14757@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1755462Ab2HQA23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 20:28:29 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:34282
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753154Ab2HQA22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 20:28:28 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V3 00/14] drivers: hv: kvp 
+Date: Thu, 16 Aug 2012 17:45:00 -0700
+Message-Id: <1345164300-5146-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Subject: Re: [PATCH 0/3] staging: zcache+ramster: move to new code base and re-merge
-> 
-> On Thu, Aug 16, 2012 at 03:53:11PM -0700, Dan Magenheimer wrote:
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Subject: Re: [PATCH 0/3] staging: zcache+ramster: move to new code base and re-merge
-> > >
-> > > On Thu, Aug 16, 2012 at 03:31:30PM -0700, Dan Magenheimer wrote:
-> > > > Greg, please pull for staging-next.
-> > >
-> > > Pull what?
-> >
-> > Doh!  Sorry, I did that once before and used the same template for the
-> > message.  Silly me, I meant please apply.  Will try again when my
-> > head isn't fried. :-(
-> >
-> > > You sent patches, in a format that I can't even apply.
-> > > Consider this email thread deleted :(
-> >
-> > Huh?  Can you explain more?  I used git format-patch and git-email
-> > just as for previous patches and even checked the emails with
-> > a trial send to myself.  What is un-apply-able?
-> 
-> Your first patch, with no patch description, and no signed-off-by line.
-> 
-> Come on, you know better...
+This patch set expands the KVP (Key Value Pair) functionality to
+implement the mechanism to GET/SET IP addresses in the guest. This
+functionality is used in Windows Server 2012 to implement VM
+replication functionality. The way IP configuration information
+is managed is distro specific. Based on the feedback I have gotten
+from Olaf, Greg, Steve, Ben and Mairus, I have chosen to seperate
+distro specific code from this patch-set. Most of the GET operation
+can be implemented in a way that is completely distro independent and
+I have implemented that as such and is included in this patch-set.
+Some of the attributes that can only be fetched in a distro
+dependent way as well the mechanism for configuring an interface
+(the SET operation) that is clearly distro specific is to be
+implemented via external scripts that will be invoked via the KVP
+code. We define here the interface to these scripts.
 
-Doh! Script error, and I completely didn't look at the content
-of the delete patch, just the add patches.
+Adding support for IP injection resulted in some changes to the
+protocol between the user level daemon and the kernel driver.
+These changes have been implemented in way that would retain
+compatibility with older daemons. I would like to thank Olaf and
+Greg for pointing out the compatibility issue.
 
-I am _really_ sorry and suitably embarrassed.  Please forgive me!
- 
-> On a larger note, I _really_ don't want a set of 'delete and then add it
-> back' set of patches.  That destroys all of the work that people had
-> done up until now on the code base.
-> 
-> I understand your need, and want, to start fresh, but you still need to
-> abide with the "evolve over time" model here.  Surely there is some path
-> from the old to the new codebase that you can find?
+This version of the patch set addresses all of the comments that I
+have received to date from Olaf, Ben and others. Specifically, I have
+cleanedup all of the string manipulation code. Furthermore, I have also
+simplified the format of the interface configuration file that is
+generated by the KVP daemon and gotten rid of some constant strings that
+may not be relevant on all distros. I would like to thank Olaf and Ben
+for their detailed review.
 
-While I in absolutely no way want to minimize the contribution
-of others, it was very clear (even to you) that things were
-not progressing very fast toward an on-by-default end-user-usable
-non-hobbyist-distro-shippable zcache.  Major work needed to
-be done, and you rejected a first step in that direction, here:
-https://lkml.org/lkml/2012/3/16/472  It certainly seemed that
-the time for major changes for zcache in staging were at an end.
+Following are the changes from V2 of this patch set:
 
-In my investigation of what needed to be fixed (and we can always
-quibble about what is a feature or a design flaw or a bug fix),
-I found a lot of interdependency and "did it all at once"
-with the intent of (1) proving the fixes were possible and (2)
-completing a suitable replacement ready to propose directly into
-mm, since it appeared staging was now closed.  I got very close
-but ran out of time.
+1. Addressed the indentation issue Greg noted in the patch:
+0001-Drivers-hv-kvp-Support-the-new-IP-injection-messages.patch
 
-(My jaw dropped when I saw this response from you last week
-http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/02244.html )
+2. Cleaned up the Reviewed-byi line  based on input from Ben and Greg.
 
-Yes, it is always possible to retrofit a massive change into
-a bunch of smaller ones, but my use of the word Sisyphean
-was intentional.  It will certainly take weeks of debugging and,
-to be completely honest, I don't have the patience to re-do it
-and I don't think anyone else will invest the time either.
+3. Since Ben had an identical patch for properly closing the open
+streams, I have not included that patch in this series.
 
-So, unless someone else steps up to retrofit, we have a choice
-of the in-tree code (which I call "demo" code because that's
-what it is/was) and the massive rewrite.  I'm really not
-trying to present this as an ultimatum, just trying to be real.
+4. Greg applied the first 3 patches of the V2 patch set. This version
+has the remaining patches.
 
-> Also, I'd like to get some agreement from everyone else involved here,
-> that this is what they all agree is the correct way forward.  I don't
-> think we have that agreement yet, right?
 
-Correct, though I think we all have roughly the same destination
-in mind, and we are mostly disagreeing on tactics.  Seth says
-"ship sh##it NOW and pick up the pieces later", Minchan says
-"current code is very bad, Andrew will never take it, how do
-we fix it", and I have invested months of my time into a monolithic
-patch which I (as author of both) say is much better.  Bias noted ;-)
+K. Y. Srinivasan (14):
+  Drivers: hv: kvp: Support the new IP injection messages
+  Tools: hv: Prepare to expand  kvp_get_ip_address() functionality
+  Tools: hv: Further refactor kvp_get_ip_address()
+  Tools: hv: Gather address family information
+  Tools: hv: Gather subnet information
+  Tools: hv: Represent the ipv6 mask using CIDR notation
+  Tools: hv: Gather ipv[4,6] gateway information
+  Tools: hv: Gather DNS information
+  Tools: hv: Gather DHCP information
+  Tools: hv: Implement the KVP verb - KVP_OP_SET_IP_INFO
+  Tools: hv: Rename the function kvp_get_ip_address()
+  Tools: hv: Implement the KVP verb - KVP_OP_GET_IP_INFO
+  Tools: hv: Get rid of some unused variables
+  Tools: hv: Correctly type string variables
 
-In any case, Minchan asked me to post my code as a formal patch
-http://lkml.indiana.edu/hypermail/linux/kernel/1208.0/02466.html 
-so I have done so (however awkwardly, sorry).  Thanks for listening,
-Greg, and I hope you have the wisdom of Solomon on this one.
+ drivers/hv/hv_kvp.c      |  141 +++++++-
+ include/linux/hyperv.h   |    2 +
+ tools/hv/hv_kvp_daemon.c |  866 ++++++++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 942 insertions(+), 67 deletions(-)
 
-Dan
+-- 
+1.7.4.1
+
