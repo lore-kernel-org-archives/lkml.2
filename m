@@ -1,139 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab2HQISc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:18:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14490 "EHLO mga01.intel.com"
+	id S1755388Ab2HQISs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:18:48 -0400
+Received: from mail2.unitix.de ([176.9.2.175]:51278 "EHLO mail2.unitix.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab2HQIS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:18:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
-   d="asc'?scan'208";a="209720945"
-Message-ID: <1345191768.27859.26.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/2] UBI: replace MTD_UBI_BEB_LIMIT with module parameter
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: linux-mtd@lists.infradead.org, Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Date: Fri, 17 Aug 2012 11:22:48 +0300
-In-Reply-To: <1345128723-13582-2-git-send-email-richard.genoud@gmail.com>
-References: <1345042639.3393.150.camel@sauron.fi.intel.com>
-	 <1345128723-13582-2-git-send-email-richard.genoud@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-NrXK2V9Xd7MFmAm4i+Oq"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1755209Ab2HQISh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:18:37 -0400
+X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 04:18:37 EDT
+From: Arnd Hannemann <arnd@arndnet.de>
+To: jgarzik@pobox.com
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Hannemann <arnd@arndnet.de>
+Subject: [PATCH] pata_atiixp: override cable detection on MSI E350DM-E33
+Date: Fri, 17 Aug 2012 10:11:15 +0200
+Message-Id: <1345191075-30425-1-git-send-email-arnd@arndnet.de>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The mainboard MSI E350DM-E33 is advertised with 6 SATA ports.
+As it turns out, two of them seem to be driven by on-board
+SATA<->PATA converters. If a disk drive is connected to one
+of them kernel uses UDMA/33 mode due to cable detection:
 
---=-NrXK2V9Xd7MFmAm4i+Oq
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+[   34.550823] scsi4 : pata_atiixp
+[   34.555517] scsi5 : pata_atiixp
+[   34.555942] ata5: PATA max UDMA/100 cmd 0x1f0 ctl 0x3f6 bmdma 0xf100 irq 14
+[   34.555948] ata6: PATA max UDMA/100 cmd 0x170 ctl 0x376 bmdma 0xf108 irq 15
+...
+[   35.040799] ata5.00: ATA-8: WDC WD20EADS-00R6B0, 01.00A01, max UDMA/133
+[   35.040806] ata5.00: 3907029168 sectors, multi 16: LBA48 NCQ (depth 0/32)
+[   35.040817] ata5.00: limited to UDMA/33 due to 40-wire cable
+[   35.049166] ata5.00: configured for UDMA/33
+[   35.049402] scsi 4:0:0:0: Direct-Access     ATA      WDC WD20EADS-00R 01.0 PQ: 0 ANSI: 5
 
-Richard, would you please split this series differently:
+This patch forces "short cable" mode on this board, as it seems clear that
+the on-board SATA<->PATA "cable" is short.
+With this patch the disk is configured for UDMA/100:
 
-1. Separate out the calculations to the get_bad_peb_limit() func.
-2. Invent=20
-2. Add the module parameter
-3. Extends the ioctl
-4. Removes the Kconfig option
+[    5.976756] ata5.00: ATA-8: WDC WD20EADS-00R6B0, 01.00A01, max UDMA/133
+[    5.996434] ata5.00: 3907029168 sectors, multi 16: LBA48 NCQ (depth 0/32)
+[    6.024787] ata5.00: configured for UDMA/100
 
-This will be much easier to review.
+Testing revealed no transfer issues.
 
-See also some comments below.
+Signed-off-by: Arnd Hannemann <arnd@arndnet.de>
+---
+ drivers/ata/pata_atiixp.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-> --- a/drivers/mtd/ubi/build.c
-> +++ b/drivers/mtd/ubi/build.c
-> @@ -46,6 +46,8 @@
->  /* Maximum length of the 'mtd=3D' parameter */
->  #define MTD_PARAM_LEN_MAX 64
-> =20
-> +#define MTD_PARAM_NB_MAX 3
-
-Please, make it to be
-
-/* Maximum number of comma-separated items in ht 'mtd=3D' parameter */
-#define MTD_PARAM_MAX_COUNT 3
-
-instead.
-
-> @@ -57,10 +59,12 @@
->   * @name: MTD character device node path, MTD device name, or MTD device=
- number
->   *        string
->   * @vid_hdr_offs: VID header offset
-> + * @max_beb_per1024: maximum expected number of bad blocks per 1024 eras=
-e blocks
->   */
->  struct mtd_dev_param {
->  	char name[MTD_PARAM_LEN_MAX];
->  	int vid_hdr_offs;
-> +	unsigned int max_beb_per1024;
->  };
-
-Please, make it to be just 'int' here and everywhere, just for
-consistency with other parameters, which are 'int' (no other stronger
-reason).
-
->  MODULE_PARM_DESC(mtd, "MTD devices to attach. Parameter format: "
-> -		      "mtd=3D<name|num|path>[,<vid_hdr_offs>].\n"
-> +		      "mtd=3D<name|num|path>[,<vid_hdr_offs>[,max_beb_per1024]].\n"
->  		      "Multiple \"mtd\" parameters may be specified.\n"
->  		      "MTD devices may be specified by their number, name, or "
->  		      "path to the MTD character device node.\n"
->  		      "Optional \"vid_hdr_offs\" parameter specifies UBI VID "
->  		      "header position to be used by UBI.\n"
-
-This comment needs improvement. Consider a situation when I do not want
-to specify vid_hdr_offs (want to use the default), but want to specify
-max_beb_per1024. I think I can put 0 here which means "default". Would
-you please verify this and add a comment about this in this help output.
-Also, please, verify that the output looks OK using 'modinfo ubi'.
-
-> +		      "Optional \"max_beb_per1024\" parameter specifies the "
-> +		      "maximum expected bad eraseblock per 1024 eraseblocks."
-> +		      "(default " __stringify(MTD_UBI_DEFAULT_BEB_LIMIT)
-> +		      " if 0 or not set)\n"
-
-Yeah, something like "if 0 or not set" is needed for 'vid_hdr_offs' as
-well.
-
->  		      "Example 1: mtd=3D/dev/mtd0 - attach MTD device "
->  		      "/dev/mtd0.\n"
->  		      "Example 2: mtd=3Dcontent,1984 mtd=3D4 - attach MTD device "
-
-Could you also modify one of the examples and add "max_beb_per1024"
-there?
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-NrXK2V9Xd7MFmAm4i+Oq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQLf9YAAoJECmIfjd9wqK08fkP/iCxbieHAACO69N0p1Zfs69R
-ntKds8NTlQJSXl8WWy205/Noi10M+0cz7m1jaJMRVwciR+FY5RAsDaq4wFtYeB0H
-r6Nps3oiEgtHx7ShDNmvYJq854bghtU880uzsvDqKzp5A9EW05w70WjohTGMVCm7
-Gs0TuaeLXLD8sPo+UL9B79b1OR6iN2qYaQILeLOVkrxEhNWnazhbfgTIAzbLbmqv
-iU1jufWm+pJxaaqqr4mFbfrXmF46lgRO8+QKAAVtD1ijnN9oph9n230/w4z5jvWd
-RTvlWmdflaXgav9+xhFfSIvg4BnYE4Iw4AAQYTSmHx+QB/4Qp0JWnoWGlMTnVDa1
-KRuaU+DwYcObnXAYE77uFEONRzktjQ6etLIvMO6GI+ypCr+rEIRdKQcoe+JluzKV
-2zm2ts01pkb4ECQg+S/A9YwoAiFGdiWvMHtpj40wh+EBGyQAWp+PYJkA+7G7ecp1
-shmnYR7WHnJ4B9oIqzYmATy3HBnLVBtrAyIbK1ESXyadGYqJp/8THdna7jmxZwN2
-sgX2HGFX0YWtxAdfrJmCuEWspy6e+pvbNt93oXVHzX632eelAkc5SHeHhkejvTxa
-ql2+fasEovlaCxjCMnBl77ZlEbALyLMZjhNuM6kekhgBanPEnL0GOEweX5x/xOnk
-L3RUutqwRGumLAm/VacP
-=GaNz
------END PGP SIGNATURE-----
-
---=-NrXK2V9Xd7MFmAm4i+Oq--
+diff --git a/drivers/ata/pata_atiixp.c b/drivers/ata/pata_atiixp.c
+index 361c75c..24e5105 100644
+--- a/drivers/ata/pata_atiixp.c
++++ b/drivers/ata/pata_atiixp.c
+@@ -20,6 +20,7 @@
+ #include <linux/delay.h>
+ #include <scsi/scsi_host.h>
+ #include <linux/libata.h>
++#include <linux/dmi.h>
+ 
+ #define DRV_NAME "pata_atiixp"
+ #define DRV_VERSION "0.4.6"
+@@ -33,11 +34,26 @@ enum {
+ 	ATIIXP_IDE_UDMA_MODE 	= 0x56
+ };
+ 
++static const struct dmi_system_id attixp_cable_override_dmi_table[] = {
++	{
++		/* Board has onboard PATA<->SATA converters */
++		.ident = "MSI E350DM-E33",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "MSI"),
++			DMI_MATCH(DMI_BOARD_NAME, "E350DM-E33(MS-7720)"),
++		},
++	},
++	{ }
++};
++
+ static int atiixp_cable_detect(struct ata_port *ap)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
+ 	u8 udma;
+ 
++	if (dmi_check_system(attixp_cable_override_dmi_table))
++		return ATA_CBL_PATA40_SHORT;
++
+ 	/* Hack from drivers/ide/pci. Really we want to know how to do the
+ 	   raw detection not play follow the bios mode guess */
+ 	pci_read_config_byte(pdev, ATIIXP_IDE_UDMA_MODE + ap->port_no, &udma);
+-- 
+1.7.9.5
 
