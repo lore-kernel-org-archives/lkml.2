@@ -1,176 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910Ab2HQHQD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:16:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37917 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639Ab2HQHP4 (ORCPT
+	id S1030647Ab2HQHQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:16:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63439 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639Ab2HQHQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:15:56 -0400
-Date: Fri, 17 Aug 2012 09:08:55 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PULL] first drm-intel-next for 3.7
-Message-ID: <20120817070855.GA5410@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 Aug 2012 03:16:24 -0400
+From: Adam Lee <adam8157@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz> (odd fixer:KCONFIG 
+	,commit_signer:6/7=86%,commit_signer:2/4=50%),
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net> (commit_signer:2/7=29%),
+        Peter Foley <pefoley2@verizon.net> (commit_signer:1/7=14%),
+        Steven Rostedt <rostedt@goodmis.org> (commit_signer:1/7=14% 
+	,commit_signer:61/63=97%),
+        Paul Bolle <pebolle@tiscali.nl> (commit_signer:1/7=14%),
+        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/4=50%),
+        linux-kbuild@vger.kernel.org (open list:KCONFIG)
+Subject: [PATCH] kconfig: replace 'oldnoconfig' with 'olddefconfig', what it really does
+Date: Fri, 17 Aug 2012 15:16:13 +0800
+Message-Id: <1345187778-19678-1-git-send-email-adam8157@gmail.com>
+X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
+set new symbols to 'n', but instead sets it to their default values.
 
-First -next pull for 3.7. Highlights:
-- hsw hdmi improvements (Paulo)
-- ips/rps locking rework and cleanups
-- rc6 on ilk by default again
-- hw context&dp&dpff support for hsw (Ben)
-- GET_PARAM_HAS_SEMAPHORES (Chris)
-- gen6+ pipe_control improvements (Chris)
-- set_cacheing ioctl and assorted support code (Chris)
-- cleanups around the busy/idle/pm code (Chris&me)
-- flushing_list removal, hopefully for good (Chris)
-- read_reg ioctl (Ben)
-- support the ns2501 dvo (Thomas Richter)
-- avoid the costly gen6+ "missed IRQ" workaround where we don't need a
-  race-free seqno readback (Chris)
-- various bits&pieces, mostly early patches from the modeset rework branch
+So, this patch replace 'oldnoconfig' with 'olddefconfig', stop making
+people confused.
 
-As discussed on irc I'll send you a pull with 3.6-rc2 merged in, since
-there's a funny conflict with mainline.
+PS: the document in conf.c fixed in another mail, "[PATCH] [Signed-off]
+kconfig: document oldnoconfig to what it really does in conf.c"
 
-Wrt regressions nothing new popped up since my -fixes pull, and QA has
-been rather happy with testing this -next pull here.
+Signed-off-by: Adam Lee <adam8157@gmail.com>
+---
+ scripts/kconfig/Makefile     |  6 +++---
+ scripts/kconfig/conf.c       | 18 +++++++++---------
+ tools/testing/ktest/ktest.pl | 15 +++++++--------
+ 3 files changed, 19 insertions(+), 20 deletions(-)
 
-Yours, Daniel
-
-Aside: I've frobbed the shortlog to exclude everything in -rc2.
-
-The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
-
-  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~danvet/drm-intel for-airlied
-
-for you to fetch changes up to a22ddff8bedfe33eeb1330bbb7ef1fbe007a42c4:
-
-  Merge tag 'v3.6-rc2' into drm-intel-next (2012-08-17 09:01:08 +0200)
-
-----------------------------------------------------------------
-
-Ben Widawsky (4):
-      drm/i915: add register read IOCTL
-      drm/i915: Add contexts for HSW
-      drm/i915: Macro to determine DPF support
-      drm/i915: Expand DPF support to Haswell
-
-Chris Wilson (17):
-      drm/i915: Cleanup context switching through do_switch()
-      drm/i915: Return a mask of the active rings in the high word of busy_ioctl
-      drm/i915: Allow late allocation of request for i915_add_request()
-      drm/i915: Remove assertion over write domain after i915_gem_object_sync()
-      drm/i915: Replace the pending_gpu_write flag with an explicit seqno
-      drm/i915: Remove the defunct flushing list
-      drm/i915: Remove the per-ring write list
-      drm/i915: Remove explicit flush from i915_gem_object_flush_fence()
-      drm/i915: Remove the explicit flush of the GPU write domain
-      drm/i915: Clear the pending_gpu_fenced_access flag at the start of execbuffer
-      drm/i915: Split i915_gem_flush_ring() into seperate invalidate/flush funcs
-      drm/i915: Avoid concurrent access when marking the device as idle/busy
-      drm/i915: Segregate memory domains in the GTT using coloring
-      drm/i915: Export ability of changing cache levels to userspace
-      drm/i915: Only apply the SNB pipe control w/a to gen6
-      drm/i915: Add I915_GEM_PARAM_HAS_SEMAPHORES
-      drm/i915: Lazily apply the SNB+ seqno w/a
-
-Daniel Vetter (21):
-      drm/i915: group ADPA #defines together
-      drm/i915: simplify possible_clones computation
-      drm/i915: add port parameter to intel_hdmi_init
-      drm/i915: Reserve ioctl numbers for set/get_caching
-      drm/i915: create VLV_DSIPLAY_BASE #define
-      drm/i915: add inte_crt->adpa_reg
-      drm/i915: Replace the complex flushing logic with simple invalidate/flush all
-      drm/i915: Only set the down rps limit when at the loweset frequency
-      drm/i915: rip out sanitize_pm again
-      drm/i915: fixup desired rps frequency computation
-      drm/i915: dump the device info
-      drm/i915: properly guard ilk ips state
-      drm/i915: fixup up debugfs rps state handling
-      drm/i915: use mutex_lock_interruptible for debugfs files
-      drm/i915: move all rps state into dev_priv->rps
-      drm/i915: kill dev_priv->mchdev_lock
-      drm/i915: DE_PCU_EVENT irq is ilk-only
-      drm/i915: fix up ilk drps/ips locking
-      drm/i915: enable rc6 on ilk again
-      drm/i915: don't grab dev->struct_mutex for userspace forcewak
-      Merge tag 'v3.6-rc2' into drm-intel-next
-
-Eugeni Dodonov (1):
-      drm/i915: prevent possible pin leak on error path
-
-Paulo Zanoni (10):
-      drm/i915: move common code to intel_dp_set_link_train
-      drm/i915: add port field to struct intel_dp and use it
-      drm/i915: fix pipe DDI mode select
-      drm/i915: set the DDI sync polarity bits
-      drm/i915: correctly set the DDI_FUNC_CTL bpc field
-      drm/i915: completely reset the value of DDI_FUNC_CTL
-      drm/i915: reindent Haswell register definitions
-      drm/i915: add parentheses around PIXCLK_GATE definitions
-      drm/i915: use the correct encoder type when comparing
-      drm/i915: try harder to find WR PLL clock settings
-
-Shobhit Kumar (1):
-      drm/i915: Move DP structs to shared location
-
-Thomas Richter (1):
-      drm/i915: Support for ns2501-DVO
-
- drivers/gpu/drm/i915/Makefile              |    1 +
- drivers/gpu/drm/i915/dvo.h                 |    1 +
- drivers/gpu/drm/i915/dvo_ns2501.c          |  582 ++++++++++++++++++++++++++++
- drivers/gpu/drm/i915/i915_debugfs.c        |  143 ++++---
- drivers/gpu/drm/i915/i915_dma.c            |   26 +-
- drivers/gpu/drm/i915/i915_drv.c            |   48 ++-
- drivers/gpu/drm/i915/i915_drv.h            |  108 ++++--
- drivers/gpu/drm/i915/i915_gem.c            |  477 ++++++++++++-----------
- drivers/gpu/drm/i915/i915_gem_context.c    |   61 ++-
- drivers/gpu/drm/i915/i915_gem_evict.c      |   27 +-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |  252 ++----------
- drivers/gpu/drm/i915/i915_gem_gtt.c        |   19 +
- drivers/gpu/drm/i915/i915_irq.c            |   68 ++--
- drivers/gpu/drm/i915/i915_reg.h            |  243 ++++++------
- drivers/gpu/drm/i915/i915_sysfs.c          |    2 +-
- drivers/gpu/drm/i915/intel_crt.c           |   27 +-
- drivers/gpu/drm/i915/intel_ddi.c           |   79 ++--
- drivers/gpu/drm/i915/intel_display.c       |  216 +++--------
- drivers/gpu/drm/i915/intel_dp.c            |  175 ++++-----
- drivers/gpu/drm/i915/intel_drv.h           |   74 ++--
- drivers/gpu/drm/i915/intel_dvo.c           |   17 +-
- drivers/gpu/drm/i915/intel_hdmi.c          |   51 +--
- drivers/gpu/drm/i915/intel_lvds.c          |    2 +-
- drivers/gpu/drm/i915/intel_pm.c            |  245 ++++++------
- drivers/gpu/drm/i915/intel_ringbuffer.c    |   77 +++-
- drivers/gpu/drm/i915/intel_ringbuffer.h    |   20 +-
- drivers/gpu/drm/i915/intel_sdvo.c          |   14 +-
- drivers/gpu/drm/i915/intel_tv.c            |    2 +-
- include/drm/i915_drm.h                     |   34 +-
- 29 files changed, 1795 insertions(+), 1296 deletions(-)
- create mode 100644 drivers/gpu/drm/i915/dvo_ns2501.c
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 77d5399..15c69f2 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -76,9 +76,9 @@ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
+ allnoconfig allyesconfig allmodconfig alldefconfig randconfig: $(obj)/conf
+ 	$< --$@ $(Kconfig)
+ 
+-PHONY += listnewconfig oldnoconfig savedefconfig defconfig
++PHONY += listnewconfig olddefconfig savedefconfig defconfig
+ 
+-listnewconfig oldnoconfig: $(obj)/conf
++listnewconfig olddefconfig: $(obj)/conf
+ 	$< --$@ $(Kconfig)
+ 
+ savedefconfig: $(obj)/conf
+@@ -114,7 +114,7 @@ help:
+ 	@echo  '  alldefconfig    - New config with all symbols set to default'
+ 	@echo  '  randconfig	  - New config with random answer to all options'
+ 	@echo  '  listnewconfig   - List new options'
+-	@echo  '  oldnoconfig     - Same as silentoldconfig but sets new symbols to their default value'
++	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
+ 
+ # lxdialog stuff
+ check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
+diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+index 6875680..80d122f 100644
+--- a/scripts/kconfig/conf.c
++++ b/scripts/kconfig/conf.c
+@@ -32,7 +32,7 @@ enum input_mode {
+ 	defconfig,
+ 	savedefconfig,
+ 	listnewconfig,
+-	oldnoconfig,
++	olddefconfig,
+ } input_mode = oldaskconfig;
+ 
+ static int indent = 1;
+@@ -365,7 +365,7 @@ static void conf(struct menu *menu)
+ 		case P_MENU:
+ 			if ((input_mode == silentoldconfig ||
+ 			     input_mode == listnewconfig ||
+-			     input_mode == oldnoconfig) &&
++			     input_mode == olddefconfig) &&
+ 			    rootEntry != menu) {
+ 				check_conf(menu);
+ 				return;
+@@ -429,7 +429,7 @@ static void check_conf(struct menu *menu)
+ 				if (sym->name && !sym_is_choice_value(sym)) {
+ 					printf("%s%s\n", CONFIG_, sym->name);
+ 				}
+-			} else if (input_mode != oldnoconfig) {
++			} else if (input_mode != olddefconfig) {
+ 				if (!conf_cnt++)
+ 					printf(_("*\n* Restart config...\n*\n"));
+ 				rootEntry = menu_get_parent_menu(menu);
+@@ -454,7 +454,7 @@ static struct option long_opts[] = {
+ 	{"alldefconfig",    no_argument,       NULL, alldefconfig},
+ 	{"randconfig",      no_argument,       NULL, randconfig},
+ 	{"listnewconfig",   no_argument,       NULL, listnewconfig},
+-	{"oldnoconfig",     no_argument,       NULL, oldnoconfig},
++	{"olddefconfig",    no_argument,       NULL, olddefconfig},
+ 	{NULL, 0, NULL, 0}
+ };
+ 
+@@ -467,7 +467,7 @@ static void conf_usage(const char *progname)
+ 	printf("  --oldaskconfig          Start a new configuration using a line-oriented program\n");
+ 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
+ 	printf("  --silentoldconfig       Same as oldconfig, but quietly, additionally update deps\n");
+-	printf("  --oldnoconfig           Same as silentoldconfig but sets new symbols to their default value\n");
++	printf("  --olddefconfig          Same as silentoldconfig but sets new symbols to their default value\n");
+ 	printf("  --defconfig <file>      New config with default defined in <file>\n");
+ 	printf("  --savedefconfig <file>  Save the minimal current configuration to <file>\n");
+ 	printf("  --allnoconfig           New config where all options are answered with no\n");
+@@ -520,7 +520,7 @@ int main(int ac, char **av)
+ 		case allmodconfig:
+ 		case alldefconfig:
+ 		case listnewconfig:
+-		case oldnoconfig:
++		case olddefconfig:
+ 			break;
+ 		case '?':
+ 			conf_usage(progname);
+@@ -565,7 +565,7 @@ int main(int ac, char **av)
+ 	case oldaskconfig:
+ 	case oldconfig:
+ 	case listnewconfig:
+-	case oldnoconfig:
++	case olddefconfig:
+ 		conf_read(NULL);
+ 		break;
+ 	case allnoconfig:
+@@ -645,7 +645,7 @@ int main(int ac, char **av)
+ 		/* fall through */
+ 	case oldconfig:
+ 	case listnewconfig:
+-	case oldnoconfig:
++	case olddefconfig:
+ 	case silentoldconfig:
+ 		/* Update until a loop caused no more changes */
+ 		do {
+@@ -653,7 +653,7 @@ int main(int ac, char **av)
+ 			check_conf(&rootmenu);
+ 		} while (conf_cnt &&
+ 			 (input_mode != listnewconfig &&
+-			  input_mode != oldnoconfig));
++			  input_mode != olddefconfig));
+ 		break;
+ 	}
+ 
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 52b7959..0ed73b5 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -1871,10 +1871,10 @@ sub make_oldconfig {
+ 	apply_min_config;
+     }
+ 
+-    if (!run_command "$make oldnoconfig") {
+-	# Perhaps oldnoconfig doesn't exist in this version of the kernel
++    if (!run_command "$make olddefconfig") {
++	# Perhaps olddefconfig doesn't exist in this version of the kernel
+ 	# try a yes '' | oldconfig
+-	doprint "oldnoconfig failed, trying yes '' | make oldconfig\n";
++	doprint "olddefconfig failed, trying yes '' | make oldconfig\n";
+ 	run_command "yes '' | $make oldconfig" or
+ 	    dodie "failed make config oldconfig";
+     }
+@@ -1927,7 +1927,7 @@ sub build {
+ 
+     # old config can ask questions
+     if ($type eq "oldconfig") {
+-	$type = "oldnoconfig";
++	$type = "olddefconfig";
+ 
+ 	# allow for empty configs
+ 	run_command "touch $output_config";
+@@ -1957,7 +1957,7 @@ sub build {
+ 	load_force_config($minconfig);
+     }
+ 
+-    if ($type ne "oldnoconfig") {
++    if ($type ne "olddefconfig") {
+ 	run_command "$make $type" or
+ 	    dodie "failed make config";
+     }
+@@ -2456,8 +2456,7 @@ my %config_set;
+ 
+ # config_off holds the set of configs that the bad config had disabled.
+ # We need to record them and set them in the .config when running
+-# oldnoconfig, because oldnoconfig does not turn off new symbols, but
+-# instead just keeps the defaults.
++# olddefconfig, because olddefconfig keeps the defaults.
+ my %config_off;
+ 
+ # config_off_tmp holds a set of configs to turn off for now
+@@ -3248,7 +3247,7 @@ sub test_this_config {
+     }
+ 
+     # Remove this config from the list of configs
+-    # do a make oldnoconfig and then read the resulting
++    # do a make olddefconfig and then read the resulting
+     # .config to make sure it is missing the config that
+     # we had before
+     my %configs = %min_configs;
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.11.2
+
