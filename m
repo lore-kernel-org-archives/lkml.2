@@ -1,128 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab2HQTVD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 15:21:03 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4039 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab2HQTUp (ORCPT
+	id S1754919Ab2HQTWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 15:22:11 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:45384 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab2HQTWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 15:20:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 17 Aug 2012 12:20:45 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <khali@linux-fr.org>, <w.sang@pengutronix.de>, <swarren@nvidia.com>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <olof@lixom.net>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH REBASE 2/2] i2c: tegra: dynamically control fast clk
-Date: Sat, 18 Aug 2012 00:32:35 +0530
-Message-ID: <1345230155-4252-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1345230155-4252-1-git-send-email-ldewangan@nvidia.com>
-References: <1345230155-4252-1-git-send-email-ldewangan@nvidia.com>
+	Fri, 17 Aug 2012 15:22:05 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Simon Budig <simon.budig@kernelconcepts.de>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+References: <87k3wy1ii3.fsf@xmission.com> <502DFC1D.20903@kernelconcepts.de>
+Date: Fri, 17 Aug 2012 12:21:34 -0700
+In-Reply-To: <502DFC1D.20903@kernelconcepts.de> (Simon Budig's message of
+	"Fri, 17 Aug 2012 10:09:01 +0200")
+Message-ID: <87boi91g01.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/h2AFC4BnedgTMCH4vHMGkTdsbcgZKosc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1066]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Simon Budig <simon.budig@kernelconcepts.de>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] Input: Let the FT5x06 driver build without debugfs
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra I2C driver enables the fast clock during initialization
-and does not disable till driver removed.
-Enable this clock before transfer and disable after transfer done.
+Simon Budig <simon.budig@kernelconcepts.de> writes:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-This is rebased on linux-next-20120816.
+> On 08/17/2012 02:15 AM, Eric W. Biederman wrote:
+>> When testing to make certain my user namespace code works in
+>> various configurations I tripped over the tf5x06.c not building
+>> with debugfs disabled.
+>
+> Sorry for that.
+>
+> There already is a patch for this issue which I slightly prefer. You
+> can find it in the mail from Guenther Roeck:
+>    http://www.mail-archive.com/linux-input@vger.kernel.org/msg00646.html
 
- drivers/i2c/busses/i2c-tegra.c |   35 ++++++++++++++++++++++++++++-------
- 1 files changed, 28 insertions(+), 7 deletions(-)
+If you guys could get that merged into 3.6 I would appreciate it.
 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 554f713..24f7cee 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -362,12 +362,36 @@ static void tegra_dvc_init(struct tegra_i2c_dev *i2c_dev)
- 	dvc_writel(i2c_dev, val, DVC_CTRL_REG1);
- }
- 
-+static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
-+{
-+	int ret;
-+	ret = clk_prepare_enable(i2c_dev->fast_clk);
-+	if (ret < 0) {
-+		dev_err(i2c_dev->dev,
-+			"Enabling fast clk failed, err %d\n", ret);
-+		return ret;
-+	}
-+	ret = clk_prepare_enable(i2c_dev->div_clk);
-+	if (ret < 0) {
-+		dev_err(i2c_dev->dev,
-+			"Enabling div clk failed, err %d\n", ret);
-+		clk_disable_unprepare(i2c_dev->fast_clk);
-+	}
-+	return ret;
-+}
-+
-+static inline void tegra_i2c_clock_disable(struct tegra_i2c_dev *i2c_dev)
-+{
-+	clk_disable_unprepare(i2c_dev->div_clk);
-+	clk_disable_unprepare(i2c_dev->fast_clk);
-+}
-+
- static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
- {
- 	u32 val;
- 	int err = 0;
- 
--	clk_prepare_enable(i2c_dev->div_clk);
-+	tegra_i2c_clock_enable(i2c_dev);
- 
- 	tegra_periph_reset_assert(i2c_dev->div_clk);
- 	udelay(2);
-@@ -398,7 +422,7 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
- 	if (tegra_i2c_flush_fifos(i2c_dev))
- 		err = -ETIMEDOUT;
- 
--	clk_disable_unprepare(i2c_dev->div_clk);
-+	tegra_i2c_clock_disable(i2c_dev);
- 
- 	if (i2c_dev->irq_disabled) {
- 		i2c_dev->irq_disabled = 0;
-@@ -584,7 +608,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
- 		}
- 	}
- 
--	clk_prepare_enable(i2c_dev->clk);
-+	tegra_i2c_clock_enable(i2c_dev);
- 	for (i = 0; i < num; i++) {
- 		enum msg_end_type end_type = MSG_END_STOP;
- 		if (i < (num - 1)) {
-@@ -597,7 +621,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
- 		if (ret)
- 			break;
- 	}
--	clk_disable_unprepare(i2c_dev->div_clk);
-+	tegra_i2c_clock_disable(i2c_dev);
- 	return ret ?: i;
- }
- 
-@@ -734,8 +758,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	clk_prepare_enable(i2c_dev->fast_clk);
--
- 	i2c_set_adapdata(&i2c_dev->adapter, i2c_dev);
- 	i2c_dev->adapter.owner = THIS_MODULE;
- 	i2c_dev->adapter.class = I2C_CLASS_HWMON;
-@@ -749,7 +771,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to add I2C adapter\n");
--		clk_disable_unprepare(i2c_dev->fast_clk);
- 		return ret;
- 	}
- 
--- 
-1.7.1.1
-
+Thanks,
+Eric
