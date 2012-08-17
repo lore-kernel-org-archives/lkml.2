@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab2HQOIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:08:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37179 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab2HQOHp (ORCPT
+	id S1756598Ab2HQOJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:09:31 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:48463 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752117Ab2HQOJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:07:45 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v1 3/3] firmware loader: fix build failure if FW_LOADER is m
-Date: Fri, 17 Aug 2012 22:07:00 +0800
-Message-Id: <1345212420-1707-4-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345212420-1707-1-git-send-email-ming.lei@canonical.com>
-References: <1345212420-1707-1-git-send-email-ming.lei@canonical.com>
+	Fri, 17 Aug 2012 10:09:22 -0400
+Date: Fri, 17 Aug 2012 14:09:21 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Hanjun Guo <guohanjun@huawei.com>
+cc: Wu Jianguo <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tony Luck <tony.luck@intel.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
+        Yinghai Lu <yinghai@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>, qiuxishi <qiuxishi@huawei.com>
+Subject: Re: [PATCH V2] mm: introduce N_LRU_MEMORY to distinguish between
+ normal and movable memory
+In-Reply-To: <502DA342.7020005@huawei.com>
+Message-ID: <0000013934eaad61-2dad9ff0-e671-4155-98d3-501f243caaba-000000@email.amazonses.com>
+References: <502CA44C.80901@huawei.com> <502DA342.7020005@huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-device_cache_fw_images need to iterate devices in system,
-so this patch applies the introduced dpm_for_each_dev to
-avoid link failure if CONFIG_FW_LOADER is m.
+On Fri, 17 Aug 2012, Hanjun Guo wrote:
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/base/firmware_class.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+> N_NORMAL_MEMORY means non-LRU page allocs possible.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 4c8d8ef..ed0510a 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -27,7 +27,6 @@
- #include <linux/suspend.h>
- 
- #include "base.h"
--#include "power/power.h"
- 
- MODULE_AUTHOR("Manuel Estrada Sainz");
- MODULE_DESCRIPTION("Multi purpose firmware loading support");
-@@ -1093,7 +1092,7 @@ static int devm_name_match(struct device *dev, void *res,
- 	return (fwn->magic == (unsigned long)match_data);
- }
- 
--static void dev_cache_fw_image(struct device *dev)
-+static void dev_cache_fw_image(struct device *dev, void *data)
- {
- 	LIST_HEAD(todo);
- 	struct fw_cache_entry *fce;
-@@ -1148,7 +1147,6 @@ static void __device_uncache_fw_images(void)
- static void device_cache_fw_images(void)
- {
- 	struct firmware_cache *fwc = &fw_cache;
--	struct device *dev;
- 	int old_timeout;
- 	DEFINE_WAIT(wait);
- 
-@@ -1165,10 +1163,7 @@ static void device_cache_fw_images(void)
- 	old_timeout = loading_timeout;
- 	loading_timeout = 10;
- 
--	device_pm_lock();
--	list_for_each_entry(dev, &dpm_list, power.entry)
--		dev_cache_fw_image(dev);
--	device_pm_unlock();
-+	dpm_for_each_dev(NULL, dev_cache_fw_image);
- 
- 	/* wait for completion of caching firmware for all devices */
- 	spin_lock(&fwc->name_lock);
--- 
-1.7.9.5
+Hmmm... It may be better to say
+
+N_NORMAL_MEMORY 	Allocations are allowed for pages that will not be
+			managed via a LRU and that cannot be moved by the page migration logic.
+
+N_LRU_MEMORY		Allocations are possible for pages that are managed via LRUs
+
+N_HIGH_MEMORY		Allocations are allowed for pages that are only temporarliy mapped into kernel address space.
+
+Any node that has the ability to allocate memory at all has at least N_LRU_MEMORY set.
+
+>
+>  /*
+>   * Bitmasks that are kept for all the nodes.
+> + * N_NORMAL_MEMORY means non-LRU page allocs possible.
+> + * N_LRU_MEMORY means LRU page allocs possible,
+> + * node with ZONE_DMA/ZONE_DMA32/ZONE_NORMAL is marked with
+> + * N_LRU_MEMORY and N_NORMAL_MEMORY,
+> + * node with ZONE_MOVABLE is *only* marked with N_LRU_MEMORY,
+> + * node with ZONE_HIGHMEM is marked with N_LRU_MEMORY and N_HIGH_MEMORY.
+> + * N_LRU_MEMORY also means node has any regular memory.
+>   */
+>  enum node_states {
+>  	N_POSSIBLE,		/* The node could become online at some point */
+>  	N_ONLINE,		/* The node is online */
+> -	N_NORMAL_MEMORY,	/* The node has regular memory */
+> +	N_NORMAL_MEMORY,	/* The node has normal memory */
+> +	N_LRU_MEMORY,		/* The node has regular memory */
+
+These comments are utter garbage and just repeat what the constant
+alreadty expresses. . Please actually say something meaningful that
+another developer can use when he attempts to understand what these bits
+mean.
 
