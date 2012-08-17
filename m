@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933598Ab2HQCoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 22:44:12 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:44371 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab2HQCoH (ORCPT
+	id S933601Ab2HQCok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 22:44:40 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:32775 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933184Ab2HQCoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 22:44:07 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-16.tower-132.messagelabs.com!1345171445!13459021!1
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.2; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/35] staging: comedi: cb_pcidio: remove thisboard macro
-Date: Thu, 16 Aug 2012 19:43:55 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
+	Thu, 16 Aug 2012 22:44:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201208161943.55795.hartleys@visionengravers.com>
+In-Reply-To: <20120817022939.GA24650@localhost>
+References: <20120713083140.GA19738@localhost>
+	<20120713084616.GA20037@localhost>
+	<20120717013342.GD21914@kroah.com>
+	<20120718051552.GA9124@localhost>
+	<20120816172711.GB27415@kroah.com>
+	<20120817020608.GA24538@localhost>
+	<20120817022939.GA24650@localhost>
+Date: Fri, 17 Aug 2012 10:44:37 +0800
+Message-ID: <CACVXFVPL4HON7Ec7SxGLgBDJtJExTJihc1cfVQt05WukU54AEQ@mail.gmail.com>
+Subject: Re: show_uevent() and general protection fault
+From: Ming Lei <tom.leiming@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, devel@driverdev.osuosl.org,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This macro relies on a local variable having a specific name.
-Remove it and use the comedi_board() helper to get the pointer.
+On Fri, Aug 17, 2012 at 10:29 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_pcidio.c | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+>
+> Something obviously wrong here:
+>
+>         env->buflen == 12
+>         env->envp_idx == 1627389952
+>         env->env[0] == NULL
+>
+> I'm not sure where it comes from, but if it's possible for random
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidio.c b/drivers/staging/comedi/drivers/cb_pcidio.c
-index e370d0d..c377beb 100644
---- a/drivers/staging/comedi/drivers/cb_pcidio.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidio.c
-@@ -85,11 +85,6 @@ static const struct pcidio_board pcidio_boards[] = {
- 	 },
- };
- 
--/*
-- * Useful for shorthand access to the particular board structure
-- */
--#define thisboard ((const struct pcidio_board *)dev->board_ptr)
--
- static struct pci_dev *pcidio_find_pci_dev(struct comedi_device *dev,
- 					   struct comedi_devconfig *it)
- {
-@@ -122,6 +117,7 @@ static struct pci_dev *pcidio_find_pci_dev(struct comedi_device *dev,
- 
- static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
-+	const struct pcidio_board *thisboard;
- 	struct pci_dev *pcidev;
- 	int i;
- 	int ret;
-@@ -130,11 +126,7 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (!pcidev)
- 		return -EIO;
- 	comedi_set_hw_dev(dev, &pcidev->dev);
--
--/*
-- * Initialize dev->board_name.  Note that we can use the "thisboard"
-- * macro now, since we just initialized it in the last line.
-- */
-+	thisboard = comedi_board(dev);
- 	dev->board_name = thisboard->name;
- 
- 	if (comedi_pci_enable(pcidev, thisboard->name))
-@@ -158,6 +150,7 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static void pcidio_detach(struct comedi_device *dev)
- {
-+	const struct pcidio_board *thisboard = comedi_board(dev);
- 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
- 
- 	if (pcidev) {
+Maybe you can print out the device name by dev_err in show_uevent
+under the situation.
+
+
+Thanks,
 -- 
-1.7.11
-
+Ming Lei
