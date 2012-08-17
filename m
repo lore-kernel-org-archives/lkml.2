@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab2HQNWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:22:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4610 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294Ab2HQNWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:22:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
-   d="scan'208";a="203521252"
-Date: Fri, 17 Aug 2012 21:22:37 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-Message-ID: <20120817132237.GA311@localhost>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
- <20120816024654.GB3781@thunk.org>
- <20120816111051.GA16036@localhost>
- <20120816152513.GA31346@thunk.org>
- <20120817060110.GA28786@localhost>
- <20120817131558.GA11439@thunk.org>
+	id S1753835Ab2HQNYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:24:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59688 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab2HQNYP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 09:24:15 -0400
+Date: Fri, 17 Aug 2012 06:24:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: qiuxishi <qiuxishi@gmail.com>
+Cc: akpm@linux-foundation.org, mgorman@suse.de, tony.luck@intel.com,
+        yinghai@kernel.org, jiang.liu@huawei.com, qiuxishi@huawei.com,
+        bessel.wang@huawei.com, wujianguo@huawei.com,
+        paul.gortmaker@windriver.com, kamezawa.hiroyu@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, rientjes@google.com,
+        minchan@kernel.org, chenkeping@huawei.com, linux-mm@kvack.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org, liuj97@gmail.com
+Subject: Re: [PATCH] memory hotplug: avoid double registration on ia64
+ platform
+Message-ID: <20120817132410.GB28980@kroah.com>
+References: <502DF84F.8040708@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120817131558.GA11439@thunk.org>
+In-Reply-To: <502DF84F.8040708@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
+On Fri, Aug 17, 2012 at 03:52:47PM +0800, qiuxishi wrote:
+> From: Xishi Qiu <qiuxishi@huawei.com>
+> 
+> Hi all,
+> There may be have a bug when register section info. For example, on
+> an Itanium platform, the pfn range of node0 includes the other nodes.
+> So when hot remove memory, we can't free the memmap's page because
+> page_count() is 2 after put_page_bootmem().
+> 
+> sparse_remove_one_section()->free_section_usemap()->free_map_bootmem()
+> ->put_page_bootmem()
+> 
+> pgdat0: start_pfn=0x100,    spanned_pfn=0x20fb00, present_pfn=0x7f8a3, => 0x100-0x20fc00
+> pgdat1: start_pfn=0x80000,  spanned_pfn=0x80000,  present_pfn=0x80000, => 0x80000-0x100000
+> pgdat2: start_pfn=0x100000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x100000-0x180000
+> pgdat3: start_pfn=0x180000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x180000-0x200000
+> 
+> 
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  mm/memory_hotplug.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
 
-On Fri, Aug 17, 2012 at 09:15:58AM -0400, Theodore Ts'o wrote:
-> Thanks Fengguang:
-> 
-> For the record, I was able to find my own easy repro, last night using
-> only a 220 meg partition:
-> 
-> # mke2fs -t ext4 -b 1024 -J size=1 /dev/vdc
-> # mount -t ext2 /dev/vdc /vdc
-> # mkdir /vdc/a
-> # cd /vdc/a
-> # seq 1 210000  | xargs -n 1 fallocate -l 1m
-> # seq 1 2 210000  | xargs /bin/rm
-> # mkdir /vdc/b
-> # cd /vdc/b
-> # seq 1 103 | xargs -n 1 fallocate -l 1g
-> # cd /
-> # umount /vdc
-> # mount -t ext4 -o commit=10000 /dev/vdc /vdc
-> # rm -rf /vdc/b
+<formletter>
 
-It makes a nice and simple test script, I'd very like to add it to my
-0day test system :-)
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-> For future reference, there are a couple of things that are of
-> interest to ext4 developers when trying to create repro's:
-> 
-> 1)  The use of mounting with ext2 to speed up the setup.
-> 
-> 2)  The first two "seq ... | xargs ..." commands to create a very
-> fragmented file system.
-> 
-> 3) Using a 1k block size file system to stress the extent tree code
-> and htree directory (since its easier to make larger tree structure).
-> 
-> 4)  The use of the mount option commit=10000 to test what happens when
-> the journal is full (without using a nice, fast device such as RAID array
-> or without burning write cycles on an expensive flash device.)
-
-Thanks for the directions! I'll make that a big comment.
-
-Thanks,
-Fengguang
+</formletter>
