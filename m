@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab2HQOfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:35:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59951 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756066Ab2HQOfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:35:04 -0400
-Date: Fri, 17 Aug 2012 16:34:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Pekka Enberg <penberg@kernel.org>, ibm-acpi-devel@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-Subject: Re: [PROBLEM] thinkpad_acpi: unhandled HKEY event 0x6040
-Message-ID: <20120817143459.GB3462@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-	Pekka Enberg <penberg@kernel.org>,
-	ibm-acpi-devel@lists.sourceforge.net,
-	LKML <linux-kernel@vger.kernel.org>,
-	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org
-References: <CAOJsxLEb+J=p8Kd782VWPm0ft3D9ujOnV0x_Av+fjWp6QiTHQQ@mail.gmail.com>
- <20120817141748.GA12934@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120817141748.GA12934@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758031Ab2HQOfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:35:44 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:35362 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab2HQOfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:35:38 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH 0/8] UBI: add max_beb_per1024 parameter / ioctl
+Date: Fri, 17 Aug 2012 16:35:16 +0200
+Message-Id: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 11:17:48AM -0300, Henrique de Moraes Holschuh wrote:
-> On Fri, 17 Aug 2012, Pekka Enberg wrote:
-> > [ 3129.616297] thinkpad_acpi: unhandled HKEY event 0x6040
-> > [ 3129.616298] thinkpad_acpi: please report the conditions when this
-> > event happened to ibm-acpi-devel@lists.sourceforge.net
-> > [ 3129.616949] thinkpad_acpi: undocked from hotplug port replicator
-> > [ 3129.617065] ACPI: \_SB_.GDCK - undocking
-> > [ 3144.184916] ACPI: \_SB_.GDCK - docking
-> > [ 3144.185204] ACPI: Unable to dock!
-> > 
-> > and the monitor doesn't come up.
-> 
-> The monitor doesn't come up because of something else, check the GPU drivers
-> and userspace.  And also why the docking failed...
+Artem,
+This patch serie introduce, step by step the kernel module parameter
+max_beb_per1024, then the ioctl and finally drop the kernel config option
+CONFIG_MTD_UBI_BEB_LIMIT.
 
-Btw, I'm getting a similar thing when I unplug my x121e from AC:
+It's based on top of linux-ubi/master (and I added your patch on
+sam9_l9260_defconfig).
+BTW, I let the BEB value at 30 in sam9_l9260_defconfig, you can set it at 25 if
+you want (as it's the value from the datasheet).
 
-[  613.517178] thinkpad_acpi: unknown possible thermal alarm or keyboard event received
-[  613.533949] thinkpad_acpi: temperatures (Celsius): 60 0 60 0 0 0 32 0
-[  613.536880] thinkpad_acpi: unhandled HKEY event 0x6040
-[  613.539703] thinkpad_acpi: please report the conditions when this event happened to ibm-acpi-devel@lists.sourceforge.net
+Best Regards
 
-this is when I plug it back:
+Richard.
 
-[  623.308867] thinkpad_acpi: unknown possible thermal alarm or keyboard event received
-[  623.322868] thinkpad_acpi: temperatures (Celsius): 60 0 60 0 0 0 32 0
-[  623.322926] thinkpad_acpi: unhandled HKEY event 0x6040
-[  623.322938] thinkpad_acpi: please report the conditions when this event happened to ibm-acpi-devel@lists.sourceforge.net
+Artem Bityutskiy (1):
+  arm: sam9_l9260_defconfig: adjust UBI bad eraseblocks limit
 
-All with 3.6-rc2 + tip/master.
+Richard Genoud (7):
+  UBI: separate bad_peb_limit in a function
+  UBI: introduce MTD_PARAM_MAX_COUNT
+  UBI: prepare for max_beb_per1024 module parameter addition
+  UBI: check max_beb_per1024 value in ubi_attach_mtd_dev
+  UBI: replace MTD_UBI_BEB_LIMIT with module parameter
+  UBI: add ioctl for max_beb_per1024
+  UBI: drop CONFIG_MTD_UBI_BEB_LIMIT
 
-Thanks.
+ arch/arm/configs/sam9_l9260_defconfig |    1 -
+ drivers/mtd/ubi/Kconfig               |   26 -------
+ drivers/mtd/ubi/build.c               |  116 +++++++++++++++++++++-----------
+ drivers/mtd/ubi/cdev.c                |    3 +-
+ drivers/mtd/ubi/ubi.h                 |    6 ++-
+ include/mtd/ubi-user.h                |   19 +++++-
+ 6 files changed, 101 insertions(+), 70 deletions(-)
 
 -- 
-Regards/Gruss,
-Boris.
+1.7.2.5
+
