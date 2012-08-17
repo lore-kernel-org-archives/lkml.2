@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030993Ab2HQK42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 06:56:28 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:58766 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964874Ab2HQK4Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 06:56:25 -0400
-Date: Fri, 17 Aug 2012 13:52:33 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Roland Stigge <stigge@antcom.de>, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        arnd@arndb.de, aletes.xgr@gmail.com, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Subject: Re: [PATCH] usb: gadget: lpc32xx_udc: Port to new start/stop
- interface
-Message-ID: <20120817105232.GF4651@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1345131276-28982-1-git-send-email-stigge@antcom.de>
- <502D1A49.20603@linutronix.de>
- <502D1CC2.9020901@antcom.de>
- <502E0A7B.1040607@antcom.de>
- <502E11F7.4080300@linutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JcvBIhDvR6w3jUPA"
-Content-Disposition: inline
-In-Reply-To: <502E11F7.4080300@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757860Ab2HQK5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 06:57:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42738 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752794Ab2HQK5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 06:57:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
+   d="asc'?scan'208";a="203436511"
+Message-ID: <1345201311.27859.51.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] ARM: LPC32xx: Provide DMA filter callbacks via platform
+ data
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de, linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org
+Date: Fri, 17 Aug 2012 14:01:51 +0300
+In-Reply-To: <502E2279.1030604@antcom.de>
+References: <1345122935-22115-1-git-send-email-stigge@antcom.de>
+	 <1345198171.27859.39.camel@sauron.fi.intel.com>
+	 <502E2279.1030604@antcom.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-6hToxl1UKw/3xy16kG3z"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---JcvBIhDvR6w3jUPA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-6hToxl1UKw/3xy16kG3z
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Aug 17, 2012 at 11:42:15AM +0200, Sebastian Andrzej Siewior wrote:
-> On 08/17/2012 11:10 AM, Roland Stigge wrote:
-> >Also, since this device is a single controller in the LPC32xx SoC, I
-> >would keep it until some other silicon uses several of this IP core
-> >(which I doubt), at which point we would probably still keep the (global
-> >static) controller and memcpy it to a dynamically allocated struct.
-> >
-> >Sounds reasonable?
+On Fri, 2012-08-17 at 12:52 +0200, Roland Stigge wrote:
+> On 08/17/2012 12:09 PM, Artem Bityutskiy wrote:
+> > On Thu, 2012-08-16 at 15:15 +0200, Roland Stigge wrote:
+> >> The SLC and MLC NAND drivers now need their dma_filter callbacks
+> >> via platform data to make them independent of single DMA engine
+> >> drivers.
+> >>=20
+> >> (This also helps fixing build errors of the SLC and MLC drivers
+> >> when building as modules because direct access to AMBA dma filter
+> >> functions isn't available via export.)
+> >>=20
+> >> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> >=20
+> > Pushed the 3 patches to l2-mtd.git, thanks!
 >=20
-> Yes it does.
->=20
-> Some minor things:
-> - please use to_udc() in start then
-> - would it make sense to use platform_get_drvdata() in
->   lpc32xx_udc_shutdown() ?
-> - could you please remove struct usb_endpoint_descriptor from struct
->   lpc32xx_ep? It has been removed a while back from other drivers.
->=20
-> Your proc_udc_show() makes me sad. Felipe, didn't we want something
-> like this in udc-core?
+> To later avoid collisions on subsystem merge, can you please leave the
+> patch with arch/arm/mach-lpc32xx/phy3250.c for arm-soc.git? (I will
+> provide a pull request for Arnd and Olof, as usual.)
 
-Yes we do, though not a single file with a bunch of values. We want one
-value per file as it should be.
+Only if Arnd insists. Otherwise I'd prefer to resolve collisions (they
+cannot be hard with this patch) than pulling the soc tree to the mtd
+tree.
 
 --=20
-balbi
+Best Regards,
+Artem Bityutskiy
 
---JcvBIhDvR6w3jUPA
+--=-6hToxl1UKw/3xy16kG3z
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQLiJvAAoJEIaOsuA1yqREZ0wP/A4WEIBXF4dbr9sGFCxqIa3Z
-Q4PAF6tfqtmraJwkzg08kx83szyKTFKaFwTfNY59/ZTwxrBg0GgY2R1UO/DDvmuJ
-cutnUO3e3kbhaPtLOWJQRkXN6DvkK8gL91b/RxFCPTOW+NwWDKFJEXJt91ROz6Cz
-QEgzwxFE1JPEN1/v8GtgspaPwF8/cBHF9iG4YJW6tcJChtEVsxN8sIfXVsdAPZNK
-DcSQSQ2L8etjkPPPUyu7KNduZdin7CTB1N98aB7XAdfNXe/aFdAx7qpQdM0/NXWN
-Valpn1CFiQ5836Dmp8bniX2w5nZ7e0k48j7QmfkBo5Pv48Xx2m3NKVeaYelIzgGF
-bHiqXkeKCJ4ZsWMm0muVW5RiOJb8ctkeGuEgO0qbcx6hlUKbagMs6RxtN+A1TLhC
-crP+T1uQHco3xiYwsHQ9TATW3yI+9p7zBZxml+qIdQdarEBpHVRtn07wrHwJdXdP
-p2qYyTrOQtI6dmiX/gXYzhaoV/0C5LvTROdGTxlfCfK25wPFyQzcSOB1/IhYatNf
-2C1sA/2M2xc9HSPgaEzJao5wBfe5ywojB4QYytnLJ/nS9SwjRpfTeuScX7JUt5jM
-o9WD3XFmgEE/DAZkJsqdrKFURh6YfmDncgCc4f/8Crns2VxvUJqSuCclVCf3/Nq/
-eW3BHkB70xiiVNp8RGuY
-=DifK
+iQIcBAABAgAGBQJQLiSfAAoJECmIfjd9wqK0cPIQAJqP7fmYr0H8IOwRy28nrdIh
+7voBKr2G88ZpnncnDvWCBVLMB9NHGAbJWp4uGQe94WJEmpb55kzy/Xqos87lHBvP
+bYa/qz2yZLzsCOccaC8XrZ2UXkJ8Cembrvw3cbV7aovfcz/138Idk+nzCUGIQA91
+RG8TB8m0EFt811Tv9+RR1DJksb209RmFuGbJm3Slk6nNxl0FvI2VHNCtKk0wXinV
+mK4+o0RtnJ3pkzxC1bBFJhL/+/Q4sq80InqVyo9miQ/BFSVqMDuOOnBSsNLjoHpd
+lEd8NHv9yx9bjJLXXkKJQ1ACoN2XWVKvJP7syQ3AeyFdFeGfr1p6683zM3oCk3t5
+ISiM4wz6QC6tyOiaXBLvfP71QQvEsT+uUwi3sYu3mF2kx//I+F7FfdtieOVOftjU
+HRyZW1x3y9pkG7RwfMCw0eGSOUJz4KXGWFjlBXSz/K2SLTdiimVD+WVs/Tsq1Apl
+yOWQtDSO4WQuhkXduE458II8+gPB/F1MdWr20BvYRXyXXKzJmAxknkx4wx6dQk/s
+11IO5Sv/hbGTfe1x84GnEwR/VLRLFR5pzC3vSC0KQgmMzyiaID60TpX1+997pkAS
+qYb9nMMEgz0Fo8nln4TQHF63PWG5D4algyqytATfXF6P9NsREEcrWuDsww/j0GCl
+0Z5fePOwa7Jev1LO1iaZ
+=KdvF
 -----END PGP SIGNATURE-----
 
---JcvBIhDvR6w3jUPA--
+--=-6hToxl1UKw/3xy16kG3z--
+
