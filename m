@@ -1,63 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2HQFpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 01:45:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50538 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab2HQFo5 (ORCPT
+	id S1754483Ab2HQFpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 01:45:32 -0400
+Received: from mga05.intel.com ([192.55.52.89]:13625 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754270Ab2HQFpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 01:44:57 -0400
-From: Daniel J Blueman <daniel@quora.org>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Daniel J Blueman <daniel@quora.org>
-Subject: [PATCH v3] Add device ID for Bluetooth on Macbook Pro 2012
-Date: Fri, 17 Aug 2012 13:44:46 +0800
-Message-Id: <1345182286-21776-1-git-send-email-daniel@quora.org>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 17 Aug 2012 01:45:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALLzPKa_4BaaZPjzDcy_QG9t1Gsauk6myU-WzaBab8A-w+9LJA@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<68a6f647ca1d4429d6b781b6cfeed9c93a346c14.1345055639.git.dmitry.kasatkin@intel.com>
+	<20120815201635.GB10088@amd1>
+	<CALLzPKa_4BaaZPjzDcy_QG9t1Gsauk6myU-WzaBab8A-w+9LJA@mail.gmail.com>
+Date: Fri, 17 Aug 2012 08:45:10 +0300
+Message-ID: <CALLzPKaN+18oTDy83F5mLPSOOiR2HGqF49rVXfXCD-tNknXdZQ@mail.gmail.com>
+Subject: Re: [RFC v2 4/7] modsig: add integrity_module_check hook
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device ID for supporting the Macbook Pro 2012 'MacBookPro10,1'.
-The bluetooth device presents itself as:
+On Thu, Aug 16, 2012 at 12:13 AM, Kasatkin, Dmitry
+<dmitry.kasatkin@intel.com> wrote:
+> On Wed, Aug 15, 2012 at 11:16 PM, Serge Hallyn
+> <serge.hallyn@canonical.com> wrote:
+>> Quoting Dmitry Kasatkin (dmitry.kasatkin@intel.com):
+>>> IMA measures/appraises modules when modprobe or insmod opens and read them.
+>>> Unfortunately, there are no guarantees between what is read by userspace and
+>>> what is passed to the kernel via load_module system call. This patch adds a
+>>> hook called integrity_module_check() to verify the integrity of the module
+>>> being loaded.
+>>>
+>>> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+>>> ---
+>>>  include/linux/integrity.h |   10 ++++++++++
+>>>  kernel/module.c           |    9 +++++++++
+>>>  2 files changed, 19 insertions(+)
+>>>
+>>> diff --git a/include/linux/integrity.h b/include/linux/integrity.h
+>>> index 66c5fe9..a80ec06 100644
+>>> --- a/include/linux/integrity.h
+>>> +++ b/include/linux/integrity.h
+>>> @@ -37,4 +37,14 @@ static inline void integrity_inode_free(struct inode *inode)
+>>>       return;
+>>>  }
+>>>  #endif /* CONFIG_INTEGRITY_H */
+>>> +
+>>> +#ifdef CONFIG_INTEGRITY_MODULES
+>>> +int integrity_module_check(const void *hdr, const unsigned long len);
+>>
+>> sadly not bisect-safe, since integrity_module_check() is defined in
+>> the next patch.
+>>
+>
+> Ok.. Hooks come after implementation...
+> Will swap.
+>
 
-T:  Bus=02 Lev=04 Prnt=04 Port=02 Cnt=03 Dev#=  8 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=05ac ProdID=8286 Rev=00.86
-S:  Manufacturer=Apple Inc.
-S:  Product=Bluetooth USB Host Controller
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+Hi Serge.
 
-Patch originally written and tested by clipcarl (forums.opensuse.org).
+Actually Kconfig option is defined in following implementation patch,
+so CONFIG_INTEGRITY_MODULES is not defined and it will compile inline
+empty function.
 
-Signed-off-by: Daniel J Blueman <daniel@quora.org>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+Why is it not bisect-safe?
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index e272214..61f4eb7 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -76,6 +76,9 @@ static struct usb_device_id btusb_table[] = {
- 	/* Apple MacMini5,1 */
- 	{ USB_DEVICE(0x05ac, 0x8281) },
- 
-+	/* Apple MacBookPro10,1 */
-+	{ USB_DEVICE(0x05ac, 0x8286) },
-+
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
- 
--- 
-1.7.10.4
+- Dmitry
 
+> Thanks.
+>
+>>> +#else
+>>> +static inline int integrity_module_check(const void *buf, unsigned long len)
+>>> +{
+>>> +     return 0;
+>>> +}
+>>> +#endif
+>>> +
+>>>  #endif /* _LINUX_INTEGRITY_H */
+>>> diff --git a/kernel/module.c b/kernel/module.c
+>>> index 4edbd9c..791da47 100644
+>>> --- a/kernel/module.c
+>>> +++ b/kernel/module.c
+>>> @@ -58,6 +58,7 @@
+>>>  #include <linux/jump_label.h>
+>>>  #include <linux/pfn.h>
+>>>  #include <linux/bsearch.h>
+>>> +#include <linux/integrity.h>
+>>>
+>>>  #define CREATE_TRACE_POINTS
+>>>  #include <trace/events/module.h>
+>>> @@ -2437,6 +2438,14 @@ static int copy_and_check(struct load_info *info,
+>>>
+>>>       info->hdr = hdr;
+>>>       info->len = len;
+>>> +
+>>> +     err = integrity_module_check(hdr, len);
+>>> +     if (err < 0)
+>>> +             goto free_hdr;
+>>> +
+>>> +     /* cut signature tail */
+>>> +     info->len = err;
+>>> +
+>>>       return 0;
+>>>
+>>>  free_hdr:
+>>> --
+>>> 1.7.9.5
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
