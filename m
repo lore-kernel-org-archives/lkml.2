@@ -1,101 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab2HQUZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 16:25:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37274 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab2HQUZx convert rfc822-to-8bit (ORCPT
+	id S932386Ab2HQU1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 16:27:40 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60909 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758908Ab2HQU1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 16:25:53 -0400
+	Fri, 17 Aug 2012 16:27:14 -0400
+Date: Fri, 17 Aug 2012 13:26:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, pjt@google.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com
+Subject: Re: [PATCH RFC] sched: Make migration_call() safe for
+ stop_machine()-free hotplug
+Message-ID: <20120817202648.GA13304@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120725215126.GA7350@linux.vnet.ibm.com>
+ <1345110832.29668.12.camel@twins>
+ <20120816191710.GF2445@linux.vnet.ibm.com>
+ <20120816215511.GA30518@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120817190114.GA31011@kroah.com>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
-	<CAEB7QLBEdNArtKz9zP7R4Za54049jJqCEqhPvE6rS59j1tD0PQ@mail.gmail.com>
-	<20120817165446.GA12361@kroah.com>
-	<201208172044.14868.marek.vasut@gmail.com>
-	<20120817190114.GA31011@kroah.com>
-Date: Fri, 17 Aug 2012 22:25:52 +0200
-Message-ID: <CAEB7QLDuzAjGfajnogJz5B638jNoRo30xogDqUV+ODfcV1BydQ@mail.gmail.com>
-Subject: Re: [PATCHv3 1/1] [RFC] uartclk from serial_core exposed to sysfs
-From: Tomas Hlavacek <tmshlvck@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Marek Vasut <marek.vasut@gmail.com>, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816215511.GA30518@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081720-1780-0000-0000-000008762102
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000292; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00166181; UDB=6.00037635; UTC=2012-08-17
+ 20:27:12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Thu, Aug 16, 2012 at 02:55:11PM -0700, Paul E. McKenney wrote:
+> On Thu, Aug 16, 2012 at 12:17:10PM -0700, Paul E. McKenney wrote:
+> 
+> [ . . . ]
+> 
+> > Another attempted patch below.
+> 
+> But this time without the brain-dead "using smp_processor_id() in
+> preemptible" bug.
 
-On Fri, Aug 17, 2012 at 9:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Aug 17, 2012 at 08:44:14PM +0200, Marek Vasut wrote:
->> Dear Greg KH,
->>
->> > On Fri, Aug 17, 2012 at 06:30:36PM +0200, Tomas Hlavacek wrote:
->> > > Hello Greg!
->> > >
->> > > On Fri, Aug 17, 2012 at 5:06 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > > >> @@ -2355,6 +2373,14 @@ int uart_add_one_port(struct uart_driver *drv,
->> > > >> struct uart_port *uport)
->> > > >>
->> > > >>       }
->> > > >>
->> > > >>       /*
->> > > >>
->> > > >> +      * Expose uartclk in sysfs. Use driverdata of the tty device for
->> > > >> +      * referencing the UART port.
->> > > >> +      */
->> > > >> +     dev_set_drvdata(tty_dev, port);
->> > > >> +     if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
->> > > >> +             dev_err(tty_dev, "Failed to add uartclk attr\n");
->> > > >
->> > > > I think you just raced with userspace in creating the file after the
->> > > > device was announced to userspace.  Are you sure it's ok?
->> > > >
->> > > > If not (hint, I don't think so), please make it a default attribute of
->> > > > the device, which will then cause the file to be created before it is
->> > > > announced to userspace.  It will also be less code as you don't have to
->> > > > clean it up by hand :)
->> > >
->> > > Do you mean I should modify the tty_register_device() function not to
->> > > use device_create() but it should rather do the device initialization
->> > > on it's own.
->> >
->> > No, not at all.
->> >
->> > > And I should add add the attribute (via struct attribute_group) to
->> > > struct device in between device_initialize() and device_add() calls.
->> > > Did I get it right?
->> >
->> > No, make this a driver attribute, that way when the device is
->> > registered, it adds the attribute automagically to the device that is
->> > bound to it.
->>
->> (hint, DEVICE_ATTR), right ?
->
-> No, that's just a macro that creates the structure for the attribute.
-> You need to take that structure and tie it to the driver itself, using
-> the struct device_driver->groups; field.
+And the below version passes moderate rcutorture testing.
 
-Please forgive me my ignorance, but I am lost in this. I tried to read
-through the serial_core and tty_io.c over and over to figure out how
-the drivers are registered and where could I hook the driver
-initialization for all UART ports, but I do not get it.
+							Thanx, Paul
 
-And there is another thing I am confused of: Should I use macro
-DEVICE_ATTR or DRIVER_ATTR? There is a different signature of
-callbacks in case of DRIVER_ATTR and I do not know how to find out
-from struct device_driver which particular UART port it is associated
-to? (Is it indeed associated with one particular port?) Value uartclk
-could be, AFAIK, different on each port of the same chip and therefore
-I need to know which particular TTY device I want to operate on. More
-precisely, I have to get to proper struct uart_state associated with
-the particular port.
+> ------------------------------------------------------------------------
+> 
+> sched: Make migration_call() safe for stop_machine()-free hotplug
+> 
+> The CPU_DYING branch of migration_call() relies on the fact that
+> CPU-hotplug offline operations use stop_machine().  This commit therefore
+> attempts to remedy this situation by moving work to the CPU_DEAD
+> notifier when the outgoing CPU is quiescent.  This requires a small
+> change to migrate_nr_uninterruptible() to move counts to the current
+> running CPU instead of a randomly selected CPU.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index d325c4b..d09c4e0 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5303,12 +5303,12 @@ void idle_task_exit(void)
+>   * While a dead CPU has no uninterruptible tasks queued at this point,
+>   * it might still have a nonzero ->nr_uninterruptible counter, because
+>   * for performance reasons the counter is not stricly tracking tasks to
+> - * their home CPUs. So we just add the counter to another CPU's counter,
+> + * their home CPUs. So we just add the counter to the running CPU's counter,
+>   * to keep the global sum constant after CPU-down:
+>   */
+>  static void migrate_nr_uninterruptible(struct rq *rq_src)
+>  {
+> -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
+> +	struct rq *rq_dest = cpu_rq(smp_processor_id());
+>  
+>  	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
+>  	rq_src->nr_uninterruptible = 0;
+> @@ -5613,9 +5613,19 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+>  		migrate_tasks(cpu);
+>  		BUG_ON(rq->nr_running != 1); /* the migration thread */
+>  		raw_spin_unlock_irqrestore(&rq->lock, flags);
+> +		break;
+>  
+> -		migrate_nr_uninterruptible(rq);
+> -		calc_global_load_remove(rq);
+> +	case CPU_DEAD:
+> +		{
+> +			struct rq *dest_rq = cpu_rq(smp_processor_id());
+> +
+> +			local_irq_save(flags);
+> +			raw_spin_lock(&dest_rq->lock);
+> +			migrate_nr_uninterruptible(rq);
+> +			calc_global_load_remove(rq);
+> +			raw_spin_unlock(&dest_rq->lock);
+> +			local_irq_restore(flags);
+> +		}
+>  		break;
+>  #endif
+>  	}
 
-Thanks,
-Tomas
-
--- 
-Tomáš Hlaváček <tmshlvck@gmail.com>
