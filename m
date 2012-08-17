@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab2HPXeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 19:34:11 -0400
-Received: from ozlabs.org ([203.10.76.45]:38927 "EHLO ozlabs.org"
+	id S1754835Ab2HQAFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 20:05:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63627 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab2HPXeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 19:34:09 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: K Prasad <prasad@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
-In-reply-to: <1345117498.29668.23.camel@twins>
-References: <28857.1345091034@neuling.org> <1345102812.31459.114.camel@twins> <20344.1345115849@neuling.org> <1345117498.29668.23.camel@twins>
-Comments: In-reply-to Peter Zijlstra <a.p.zijlstra@chello.nl>
-   message dated "Thu, 16 Aug 2012 13:44:58 +0200."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Fri, 17 Aug 2012 09:34:07 +1000
-Message-ID: <8649.1345160047@neuling.org>
+	id S1754077Ab2HQAFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 20:05:42 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
+References: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.6-rc2
+Date: Fri, 17 Aug 2012 01:05:36 +0100
+Message-ID: <10034.1345161936@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
-> > > > despite there being no breakpoint on this CPU.  This is because the call
-> > > > the task_bp_pinned, checks all CPUs, rather than just the current CPU.
-> > > > POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
-> > > > return ENOSPC.
-> > > 
-> > > I think this comes from the ptrace legacy, we register a breakpoint on
-> > > all cpus because when we migrate a task it cannot fail to migrate the
-> > > breakpoint.
-> > > 
-> > > Its one of the things I hate most about the hwbp stuff as it relates to
-> > > perf.
-> > > 
-> > > Frederic knows more...
-> > 
-> > Maybe I should wait for Frederic to respond but I'm not sure I
-> > understand what you're saying.
-> > 
-> > I can see how using ptrace hw breakpoints and perf hw breakpoints at the
-> > same time could be a problem, but I'm not sure how this would stop it.
-> 
-> ptrace uses perf for hwbp support so we're stuck with all kinds of
-> stupid ptrace constraints.. or somesuch.
 
-OK
+Hi Linus,
 
-> > Are you saying that we need to keep at least 1 slot free at all times,
-> > so that we can use it for ptrace?
-> 
-> No, I'm saying perf-hwbp is weird because of ptrace, maybe the ptrace
-> weirdness shouldn't live in perf-hwpb but in the ptrace-perf glue
-> however..
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-OK.
+> So, due to travels, the -rc2 release was two weeks instead of the
+> usual one. But it's out there now.
 
-> > Is "perf record -e mem:0x10000000 true" ever going to be able to work on
-> > POWER7 with only one hw breakpoint resource per CPU?  
-> 
-> I think it should work... but I'm fairly sure it currently doesn't
-> because of how things are done. 'perf record -ie mem:0x100... true'
-> might just work.
+Are you still considering my UAPI header patches and Nicholas's tcm_vhost
+merge as you mentioned in the -rc1 announcement?  Or are these now in the
+category of things that need to wait till the next merge window?
 
-Adding -i doesn't help. 
 
-Mikey
+Anyway, I've regenerated my patches again as a new UAPI header appeared in the
+last couple of days and another got some additions.  Running:
+
+	git diff uapi-post-split-201208{14,17} -- arch/*/include include |
+	diffstat
+
+shows:
+
+ arch/sh/include/cpu-sh2a/cpu/sh7269.h |   36 ++-
+ include/linux/vfio.h                  |  357 --------------------------------
+ include/uapi/linux/Kbuild             |    1 
+ include/uapi/linux/fuse.h             |   19 +
+ include/uapi/linux/vfio.h             |  368 ++++++++++++++++++++++++++++++++++
+ 5 files changed, 412 insertions(+), 369 deletions(-)
+
+The latest regeneration is at tag uapi-post-split-20120817 in the GIT tree
+mentioned in my previous pull request.
+
+Thanks,
+David
