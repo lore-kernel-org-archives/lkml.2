@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab2HQKXc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 06:23:32 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45122 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757384Ab2HQKX2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 06:23:28 -0400
+	id S1757510Ab2HQKZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 06:25:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50906 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751299Ab2HQKZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 06:25:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
+   d="scan'208";a="203425838"
+Date: Fri, 17 Aug 2012 18:24:56 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>
+Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
+Message-ID: <20120817102456.GA31230@localhost>
+References: <20120805025938.GA8954@localhost>
+ <20120805165826.GB13913@kroah.com>
+ <20120817020046.GA24406@localhost>
+ <20120817034825.GC7770@kroah.com>
+ <20120817054441.GA28434@localhost>
+ <87wr0xnbnm.fsf@nemi.mork.no>
+ <87sjblnaye.fsf@nemi.mork.no>
+ <20120817092708.GA30371@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20120817095837.GM18957@n2100.arm.linux.org.uk>
-References: <1345196843-23059-1-git-send-email-richard.genoud@gmail.com> <20120817095837.GM18957@n2100.arm.linux.org.uk>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Fri, 17 Aug 2012 12:23:06 +0200
-Message-ID: <CACQ1gAh3YcMBXp7BFoR68+rdDM1PEe4fenNG77s=SP05RditEA@mail.gmail.com>
-Subject: Re: [PATCH] BUG: clk_find() misses some clocks
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120817092708.GA30371@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/17 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> Please read the comments on the function:
->
->  * Find the correct struct clk for the device and connection ID.
->  * We do slightly fuzzy matching here:
->  *  An entry with a NULL ID is assumed to be a wildcard.
->  *  If an entry has a device ID, it must match
->  *  If an entry has a connection ID, it must match
->  * Then we take the most specific entry - with the following
->  * order of precedence: dev+con > dev only > con only.
->
-> On Fri, Aug 17, 2012 at 11:47:23AM +0200, Richard Genoud wrote:
->> if a clock is declared like that:
->> CLKDEV_CON_DEV_ID("pioA", "fffff400.gpio", &pioAB_clk)
->
-> So you've declared it with a connection ID.  Therefore, as the comment
-> above says, "it must match" what the driver is asking for.
->
-> It's not a bug, this is done intentionally so that mismatches do not
-> occur.
-Ok, so I have to declare it like that :
-CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioAB_clk)
+On Fri, Aug 17, 2012 at 05:27:08PM +0800, Fengguang Wu wrote:
+> Hi Bjørn,
+> 
+> > -static const struct usb_device_id id_table[] __devinitconst = {
+> > +static const struct usb_device_id id_table[] = {
+> 
+> Good catch! It magically fixed the oops. So that id_table was
+> freed sometime with __devinitconst?
+> 
+> There are some more "usb_device_id .* __devinitconst" users in the system,
+> Shall they be fixed as well?
 
-Got it !
-Thanks.
+This should be a complete list:
 
-Richard.
+definitions:
+        static const struct usb_device_id smsusb_id_table[] __devinitconst = {
+        static const __devinitdata struct usb_device_id device_table[] = {
+        static const struct usb_device_id device_table[] __devinitconst = {
+        static struct usb_device_id p54u_table[] __devinitdata = {
+        static struct usb_device_id rtl8187_table[] __devinitdata = {
+        static struct usb_device_id vt6656_table[] __devinitdata = {
+        static const struct usb_device_id wb35_table[] __devinitconst = {
+        static const struct usb_device_id id_table[] __devinitconst = {
 
--- 
-for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
+files:
+        drivers/media/video/gspca/jl2005bcd.c
+        drivers/net/wireless/p54/p54usb.c
+        drivers/net/wireless/rtl818x/rtl8187/dev.c
+        drivers/usb/misc/emi62.c
+        drivers/media/dvb/siano/smsusb.c
+        drivers/media/video/gspca/spca506.c
+        drivers/staging/winbond/wbusb.c
+        drivers/staging/vt6656/main_usb.c
+
+Thanks,
+Fengguang
