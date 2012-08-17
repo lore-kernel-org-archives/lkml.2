@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030900Ab2HQICI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:02:08 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:55651 "EHLO smtp.ispras.ru"
+	id S1755291Ab2HQIEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:04:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43402 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030208Ab2HQICD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:02:03 -0400
-From: Ilya Shchepetkov <shchepetkov@ispras.ru>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ilya Shchepetkov <shchepetkov@ispras.ru>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: Re: [PATCH] net: Fix incorrect comment in netif_tx_stop_queue()
-Date: Fri, 17 Aug 2012 12:01:44 +0400
-Message-Id: <1345190504-12184-1-git-send-email-shchepetkov@ispras.ru>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <20120814.144623.1855051650444819552.davem@davemloft.net>
+	id S1755147Ab2HQIEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:04:09 -0400
+Date: Fri, 17 Aug 2012 10:04:04 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 08/11] memcg: disable kmem code when not in use.
+Message-ID: <20120817080404.GB18600@dhcp22.suse.cz>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+ <1344517279-30646-9-git-send-email-glommer@parallels.com>
+ <20120817070241.GA18600@dhcp22.suse.cz>
+ <502DEC32.6070807@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502DEC32.6070807@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > netif_stop_queue() can be called before register_netdev() because now
-> > TX queues are allocated inside alloc_netdev_mqs().
+On Fri 17-08-12 11:01:06, Glauber Costa wrote:
+> On 08/17/2012 11:02 AM, Michal Hocko wrote:
+> > On Thu 09-08-12 17:01:16, Glauber Costa wrote:
+> >> We can use jump labels to patch the code in or out when not used.
+> >>
+> >> Because the assignment: memcg->kmem_accounted = true is done after the
+> >> jump labels increment, we guarantee that the root memcg will always be
+> >> selected until all call sites are patched (see memcg_kmem_enabled).
 > > 
-> > (since ed9af2e839c06c18f721da2c768fbb444c4a10e5 commit)
+> > Not that it would be really important because kmem_accounted goes away
+
+And just found out it doesn't go away completely, it just transforms
+from bool to unsigned log (with flags). The rest still holds...
+
+> > in a subsequent patch but I think the wording is a bit misleading here.
+> > First of all there is no guanratee that kmem_accounted=true is seen
+> > before atomic_inc(&key->enabled) because there is no memory barrier and
+> > the lock serves just a leave barrier. But I do not think this is
+> > important at all because key->enabled is what matters here. Even if
+> > memcg_kmem_enabled is true we do not consider it if the key is disabled,
+> > right?
 > > 
-> > Found by Linux Driver Verification project (linuxtesting.org).
-> > 
-> > Signed-off-by: Ilya Shchepetkov <shchepetkov@ispras.ru>
 > 
-> You're not changing a "comment", you're changing a kernel log message.
-> 
-> Have you actually triggered this condition?
-> 
-> I doubt it, and I'm not applying this patch.
+> Right.
 
-My test driver calls netif_carrier_off before register_netdev and works
-well,
-without "netif_stop_queue() cannot be called before register_netdev()"
-message.
-
-Also, there are drivers that call netif_tx_stop_queue directly
-and possible error message (with a reference to netif_stop_queue) will
-be wrong.
-
-Look at these commits:
-e6484930d7c73d324bccda7d43d131088da697b9
-18543a643fae694982c7d89c22436885f3506497
-ed9af2e839c06c18f721da2c768fbb444c4a10e5
-
-After the third commit, the second one became unnecessary.
-
-Thus, I suggest either to remove the misleading message, or to replace
-it with this:
-
-pr_info("netif_tx_stop_queue(): dev_queue is null()\n");
+-- 
+Michal Hocko
+SUSE Labs
