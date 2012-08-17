@@ -1,44 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab2HQRGd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:06:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42070 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100Ab2HQRGZ convert rfc822-to-8bit (ORCPT
+	id S1757338Ab2HQRJV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:09:21 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:37181 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2HQRJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:06:25 -0400
-Message-ID: <1345223165.29668.64.camel@twins>
-Subject: Re: [RFC PATCH -v2 0/4] Persistent events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Borislav Petkov <bp@amd64.org>, Jonathan Corbet <corbet@lwn.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 17 Aug 2012 19:06:05 +0200
-In-Reply-To: <1345216829.3708.33.camel@gandalf.local.home>
-References: <1345139123-15212-1-git-send-email-bp@amd64.org>
-	 <20120816141253.0142ddd0@lwn.net>
-	 <20120816205539.GA16308@aftab.osrc.amd.com>
-	 <1345151613.3708.4.camel@gandalf.local.home>
-	 <20120816214103.GE16308@aftab.osrc.amd.com>
-	 <1345154418.3708.13.camel@gandalf.local.home>
-	 <20120817073815.GA21017@aftab.osrc.amd.com>
-	 <1345216829.3708.33.camel@gandalf.local.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 17 Aug 2012 13:09:10 -0400
+X-IronPort-AV: E=Sophos;i="4.77,785,1336348800"; 
+   d="scan'208";a="14064569"
+Date: Fri, 17 Aug 2012 18:08:51 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 1/5] xen/swiotlb: Simplify the logic.
+In-Reply-To: <1345132488-27323-2-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1208171808350.15568@kaball.uk.xensource.com>
+References: <1345132488-27323-1-git-send-email-konrad.wilk@oracle.com> <1345132488-27323-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-17 at 11:20 -0400, Steven Rostedt wrote:
-> If it wasn't for sparc, we could have done this with the ftrace buffers,
-> but sparc has some crazy requirement that physical pages can only be
-> mapped at certain locations, and you can't just take a bunch of random
-> pages and map them at the same location. 
+On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> Its pretty easy:
+>  1). We only check to see if we need Xen SWIOTLB for PV guests.
+>  2). If swiotlb=force or iommu=soft is set, then Xen SWIOTLB will
+>      be enabled.
+>  3). If it is an initial domain, then Xen SWIOTLB will be enabled.
+>  4). Native SWIOTLB must be disabled for PV guests.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-same problem for perf.. I've meant to make it either mmap or splice but
-not both, but I've never gotten around to actually implement any of
-that.
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+
+>  arch/x86/xen/pci-swiotlb-xen.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+> index 967633a..b6a5340 100644
+> --- a/arch/x86/xen/pci-swiotlb-xen.c
+> +++ b/arch/x86/xen/pci-swiotlb-xen.c
+> @@ -34,19 +34,20 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
+>  int __init pci_xen_swiotlb_detect(void)
+>  {
+>  
+> +	if (!xen_pv_domain())
+> +		return 0;
+> +
+>  	/* If running as PV guest, either iommu=soft, or swiotlb=force will
+>  	 * activate this IOMMU. If running as PV privileged, activate it
+>  	 * irregardless.
+>  	 */
+> -	if ((xen_initial_domain() || swiotlb || swiotlb_force) &&
+> -	    (xen_pv_domain()))
+> +	if ((xen_initial_domain() || swiotlb || swiotlb_force))
+>  		xen_swiotlb = 1;
+>  
+>  	/* If we are running under Xen, we MUST disable the native SWIOTLB.
+>  	 * Don't worry about swiotlb_force flag activating the native, as
+>  	 * the 'swiotlb' flag is the only one turning it on. */
+> -	if (xen_pv_domain())
+> -		swiotlb = 0;
+> +	swiotlb = 0;
+>  
+>  	return xen_swiotlb;
+>  }
+> -- 
+> 1.7.7.6
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
