@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab2HQRRX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:17:23 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:58946 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757598Ab2HQRRP (ORCPT
+	id S1758105Ab2HQRRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:17:46 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:64642 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757726Ab2HQRRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:17:15 -0400
-X-SENDER-IP: [85.230.170.20]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: As2WAHR7LlBV5qoUPGdsb2JhbABFijuvCwF1GQEBAQEeGQ0ngiABAQQBOhwTAQ8FCwgDRhQlChoTiAcKuk4UineCYYM6YAOVToVsjQk
-X-IronPort-AV: E=Sophos;i="4.77,786,1336341600"; 
-   d="scan'208";a="98910586"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 17 Aug 2012 19:21:30 +0200
-To: Daniel J Blueman <daniel@quora.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Add device ID for Bluetooth on Macbook Pro 2012
-Message-ID: <20120817172130.GA940@polaris.bitmath.org>
-References: <1345182286-21776-1-git-send-email-daniel@quora.org>
+	Fri, 17 Aug 2012 13:17:37 -0400
+Date: Fri, 17 Aug 2012 10:17:28 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>
+Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
+Message-ID: <20120817171728.GA14288@kroah.com>
+References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-8-git-send-email-kys@microsoft.com>
+ <20120817165109.GA11323@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9236C1E63@SN2PRD0310MB382.namprd03.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345182286-21776-1-git-send-email-daniel@quora.org>
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF9236C1E63@SN2PRD0310MB382.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-> Add the device ID for supporting the Macbook Pro 2012 'MacBookPro10,1'.
-> The bluetooth device presents itself as:
+On Fri, Aug 17, 2012 at 05:07:22PM +0000, KY Srinivasan wrote:
+> > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
+> > > Now, gather DNS information. Invoke an external script (that can be
+> > > distro dependent) to gather the DNS information.
+> > 
+> > Where is that script?  Why a script, this really isn't in a standard
+> > method for all Linux distros?  If not, why not work to do that like the
+> > freedesktop.org people have done for other system configuration items?
 > 
-> T:  Bus=02 Lev=04 Prnt=04 Port=02 Cnt=03 Dev#=  8 Spd=12  MxCh= 0
-> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-> P:  Vendor=05ac ProdID=8286 Rev=00.86
-> S:  Manufacturer=Apple Inc.
-> S:  Product=Bluetooth USB Host Controller
-> C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-> I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-> I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-> 
-> Patch originally written and tested by clipcarl (forums.opensuse.org).
-> 
-> Signed-off-by: Daniel J Blueman <daniel@quora.org>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
+> We debated this issue on this mailing list for a long time. The consensus was that
+> we would invoke  external "distro" specific scripts for both configuring the interface
+> as well as gathering information that could not be gathered in a distro independent
+> fashion. That is what I have implemented here. This code specifies the interface to this
+> external script. If these external scripts are not there, it is not fatal - on the SET side,
+> the interface will not be configured and on the get side some attributes that are to be 
+> gathered via these external scripts will not be collected.
 
-I did not sign off this patch. The author is different, the subject
-and wording is different, the credits are different. It looks like you
-sent a patch which I subsequently added my SOB to, but that is not the
-case. Please do not do that.
+I've applied the first 7 patches here, feel free to submit the rest when
+you answer the other questions I asked as well.
 
-If you meant to add your blessing somehow, or if you are the unknown
-original author, adding an originally-by or tested-by or reviewed-by
-would be more appropriate.
-
-Either way, the patch is moot; With Gustavo's commit d81a5d195, the
-plan is to support this machine via a more generic device entry.
-
-Thanks.
-Henrik
-
+greg k-h
