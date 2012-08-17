@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747Ab2HQSJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:09:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab2HQSJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:09:05 -0400
-Date: Fri, 17 Aug 2012 20:08:47 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@kernel.org, oleg@redhat.com,
-        pjt@google.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        Lee.Schermerhorn@hp.com, linux-kernel@vger.kernel.org,
-        Petr Holasek <pholasek@redhat.com>
-Subject: Re: [PATCH 00/19] sched-numa rewrite
-Message-ID: <20120817180847.GE10129@redhat.com>
-References: <20120731191204.540691987@chello.nl>
- <20120808171714.GM10459@redhat.com>
- <5022B356.9060902@redhat.com>
+	id S1756098Ab2HQSK1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:10:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48304 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab2HQSKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 14:10:20 -0400
+Date: Fri, 17 Aug 2012 11:10:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] Serial fixes for 3.6-rc3
+Message-ID: <20120817181011.GA20933@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5022B356.9060902@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-On Wed, Aug 08, 2012 at 02:43:34PM -0400, Rik van Riel wrote:
-> While the sched-numa code is relatively small and clean, the
-> current version does not seem to offer a significant
-> performance improvement over not having it, and in one of
-> the tests performance actually regresses vs. mainline.
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
-sched-numa is small true, but I argue about it being clean. It does
-lots of hacks, it has a worse numa hinting page fault implementation,
-it has no runtime disable tweak, it has no config option, and it's
-very intrusive in the scheduler and MM code and it'd be very hard to
-backout if a better solution would emerge in the future.
+are available in the git repository at:
 
-> On the other hand, the autonuma code is pretty large and
-> hard to understand, but it does provide a significant
-> speedup on each of the tests.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.6-rc3
 
-AutoNUMA code is certainly pretty large, but it is totally self
-contained. 90% of it is in isolated files that can be deleted and
-won't even get built if CONFIG_AUTONUMA=n. The other common code
-changes can be wiped out by following the build errors after dropping
-the include files with CONFIG_AUTONUMA=n, shall a better solution
-emerge in the future.
+for you to fetch changes up to 38f8eefccf3a23c4058a570fa2938a4f553cf8e0:
 
-I think it's important that whatever is merged, is self contained and
-easy to backout in the future. Especially if the not self contained
-code is full of hacks like big/small mode or random number generator
-generating part of the "input".
+  pmac_zilog,kdb: Fix console poll hook to return instead of loop (2012-08-16 12:20:20 -0700)
 
-I applied the fix for sched-numa rewrite/v2 posted on lkml but I still
-lockups when running the autonuma-benchmark on the 8 nodes system, I
-never could complete the first numa01 test. I provided stack traces
-off list to debug it.
+----------------------------------------------------------------
+TTY fixes for 3.6-rc3
 
-So for now I updated the pdf with only the autonuma23 results for the
-8 nodes system. I had to bump the autonuma version to 23 and repeat
-all benchmarks because of a one liner s/kalloc/kzalloc/ change needed
-to successfully boot autonuma on the 8 node system (that boots with
-ram not zeroed out).
+Here are 4 tiny patches, each fixing a serial driver problem that people
+have reported.
 
-http://www.kernel.org/pub/linux/kernel/people/andrea/autonuma/autonuma-vs-sched-numa-rewrite-20120817.pdf
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I didn't include the convergence charts for 3.6-rc1 on the 8 nodes
-because they're equal to the ones on the 2 nodes and they would only
-waste pdf real estate.
+----------------------------------------------------------------
+Alexander Shiyan (1):
+      serial: Change Kconfig entry for CLPS711X-target
 
->From the numa02_SMT charts I suspect something may not be perfect in
-the active load idle balancing of CFS. The imperfection is likely lost
-in the noise, and without the convergence charts showing the exact
-memory distribution across the nodes it would be hard to notice it.
+Fengguang Wu (1):
+      serial: ifx6x60: fix paging fault on spi_register_driver
 
-numa01 on the 8 nodes is quite a pathological case, and it shows the
-heavy NUMA false sharing/relation there is when 2 processes crosses 4
-nodes each and touches all memory in a loop. The smooth async memory
-migration of that pathological case still doesn't hurt despite some
-small migration keep going in the background forever (this is why
-async migrate providing smooth behavior is quite important). numa01 is
-a very different load on 2 nodes vs 8 nodes (on 2 nodes it can coverge
-100% and it will stop the memory migrations altogether).
+Huang Shijie (1):
+      serial: mxs-auart: fix the wrong RTS hardware flow control
 
-Sometime near the end of the tests (X axis is time) you'll notice some
-divergence, that happens because some threads completes sooner (the
-threads of the node that had all ram local at startup certainly will
-always complete faster than the others). The reason for that
-divergence is that it falls into the _SMT case to fill all idle cores.
+Jason Wessel (1):
+      pmac_zilog,kdb: Fix console poll hook to return instead of loop
 
-I also noticed on the 8 node system some repetition of the task
-migrations invoked by sched_autonuma_balance() that I intend to
-optimize away in future versions (it is only visible after enabling
-the debug mode). Fixing it, will save some small amount of CPU. What
-happens is that the idle load balancing invoked by the CPU that become
-idle after the task migration, sometime grabs the migrated task and
-puts it back in its original position, so the migration has to be
-repeated at the next invocation of sched_autonuma_balance().
+ drivers/tty/serial/Kconfig      | 10 +++++-----
+ drivers/tty/serial/ifx6x60.c    |  2 +-
+ drivers/tty/serial/mxs-auart.c  | 14 +++++++++-----
+ drivers/tty/serial/pmac_zilog.c | 12 +++++++++---
+ 4 files changed, 24 insertions(+), 14 deletions(-)
