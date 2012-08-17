@@ -1,162 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757963Ab2HQMho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 08:37:44 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:28320 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756446Ab2HQMhd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 08:37:33 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(z5c5oz9371I542M1432Izz1202hzz8275bh8275dhz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Jason Wang <jasowang@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] hv: fail the probing immediately when we are not in
- hyperv platform
-Thread-Topic: [PATCH] hv: fail the probing immediately when we are not in
- hyperv platform
-Thread-Index: AQHNfGd063H3Q8yA4EWBu5J+Upvq2Jdd8Gfg
-Date: Fri, 17 Aug 2012 12:36:56 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C1D06@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1345200763-48077-1-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1345200763-48077-1-git-send-email-jasowang@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+	id S1757943Ab2HQNHS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:07:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:60755 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756794Ab2HQNHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 09:07:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
+   d="asc'?scan'208";a="182211886"
+Message-ID: <1345209115.27859.84.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com
+Date: Fri, 17 Aug 2012 16:11:55 +0300
+In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-+RQFhelgzX44+h1ZQMRM"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-+RQFhelgzX44+h1ZQMRM
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Jason Wang [mailto:jasowang@redhat.com]
-> Sent: Friday, August 17, 2012 6:53 AM
-> To: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
-> Cc: Jason Wang; KY Srinivasan; Haiyang Zhang
-> Subject: [PATCH] hv: fail the probing immediately when we are not in hyperv
-> platform
-> 
-> We wait for about 5 seconds for the success of the hyperv registration even if
-> we were not in hyperv platform. This is suboptimal, so the patch check the cpuid
-> in the beginning of hv_acpi_init() instead of in vmbus_bus_init() to fail the
-> probing immediately.
-> 
-> Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/hv/hv.c        |   25 -------------------------
->  drivers/hv/vmbus_drv.c |   25 +++++++++++++++++++++++++
->  2 files changed, 25 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
-> index 86f8885..a18ee5d 100644
-> --- a/drivers/hv/hv.c
-> +++ b/drivers/hv/hv.c
-> @@ -38,28 +38,6 @@ struct hv_context hv_context = {
->  };
-> 
->  /*
-> - * query_hypervisor_presence
-> - * - Query the cpuid for presence of windows hypervisor
-> - */
-> -static int query_hypervisor_presence(void)
-> -{
-> -	unsigned int eax;
-> -	unsigned int ebx;
-> -	unsigned int ecx;
-> -	unsigned int edx;
-> -	unsigned int op;
-> -
-> -	eax = 0;
-> -	ebx = 0;
-> -	ecx = 0;
-> -	edx = 0;
-> -	op = HVCPUID_VERSION_FEATURES;
-> -	cpuid(op, &eax, &ebx, &ecx, &edx);
-> -
-> -	return ecx & HV_PRESENT_BIT;
-> -}
-> -
-> -/*
->   * query_hypervisor_info - Get version info of the windows hypervisor
->   */
->  static int query_hypervisor_info(void)
-> @@ -159,9 +137,6 @@ int hv_init(void)
->  	memset(hv_context.synic_message_page, 0,
->  	       sizeof(void *) * NR_CPUS);
-> 
-> -	if (!query_hypervisor_presence())
-> -		goto cleanup;
-> -
->  	max_leaf = query_hypervisor_info();
-> 
->  	/* Write our OS info */
-> diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-> index 4748086..a9192fd 100644
-> --- a/drivers/hv/vmbus_drv.c
-> +++ b/drivers/hv/vmbus_drv.c
-> @@ -753,10 +753,35 @@ static struct acpi_driver vmbus_acpi_driver = {
->  	},
->  };
-> 
-> +/*
-> + * query_hypervisor_presence
-> + * - Query the cpuid for presence of windows hypervisor
-> + */
-> +static int query_hypervisor_presence(void)
-> +{
-> +	unsigned int eax;
-> +	unsigned int ebx;
-> +	unsigned int ecx;
-> +	unsigned int edx;
-> +	unsigned int op;
-> +
-> +	eax = 0;
-> +	ebx = 0;
-> +	ecx = 0;
-> +	edx = 0;
-> +	op = HVCPUID_VERSION_FEATURES;
-> +	cpuid(op, &eax, &ebx, &ecx, &edx);
-> +
-> +	return ecx & HV_PRESENT_BIT;
-> +}
-> +
->  static int __init hv_acpi_init(void)
->  {
->  	int ret, t;
-> 
-> +	if (!query_hypervisor_presence())
-> +		return -ENODEV;
-> +
->  	init_completion(&probe_event);
-> 
->  	/*
-> --
-> 1.7.1
+On Mon, 2012-07-09 at 14:18 +0200, Richard Weinberger wrote:
+> This is the next round of UBI fastmap updates.
+> It fixes all issues pointed out by Shmulik. :-)
+>=20
+> If you want to test fastmap you can use my git repo:
+> git://git.kernel.org/pub/scm/linux/kernel/git/rw/ubi2.git ubi2/v17
 
-Thank you.
+One thing which just came to my mind why looking at other MTD e-mails. I
+do not know if it is relevant for fastmap or not, just want you to
+check.
 
-Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
+In UBIFS we have we have the "fixup" feature which is used to
+work-around dumb flashers which are present in many factories:
+http://www.linux-mtd.infradead.org/faq/ubifs.html#L_free_space_fixup
 
+This is because the "correct" UBI flasher should be able to skip empty
+space when flashing, see here:
+http://www.linux-mtd.infradead.org/doc/ubi.html#L_flasher_algo
 
+So with this fixup flag UBIFS will basically read all its eraseblocks
+which have empty spece which it will use, and write them back. Just to
+make the empty space writable again. This is done only once on the very
+first boot.
+
+We do not do anything like this in UBI because UBI does not need this,
+it does not have any complex data structures on the media.
+
+With fastmap - I am unsure. I think it is not a problem, because
+probably you never append more data, you just re-write everything,
+right?
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-+RQFhelgzX44+h1ZQMRM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQLkMbAAoJECmIfjd9wqK0ZYgP/RzVGvW82uGMQb2BnfBEcsb9
+uUBq3Ne14+I1ARZCHyiw7hOi0XTxNktOfu2jzKQlhRz4tbumAQY0Ex1ujXwO1lL9
+9zEQN8EWNbyuzK64R+Uoy420Q9bgI22hS+zZ+rDkYqlw2OhR9AAaIqtSvxJPq+lT
+xhO6Fji5o6RIErXewBkBhNUd9CvOskDZ+njPxufvjbJiJzT8CTaCf/wcyq86D0Tc
+LiujdEQM+M+VHJ6NUDNuTkwgkTTxSSs0iEu6TXNSVAuA8yuJAukqwuyN6capdIpR
+r9d4otRtcQH/x4RVq6mUYkZOoanPHR4WA3G8vjhl8QfZR/o5bvL0LO0saXgXyBkY
+XIbzgaLjwzvl+WvGe/CRZmGsiA/dB0qL+tGKfEfYe2l2AOOXe1EVy1Cp/WyeajFF
+nSKFJB7zOLHwTlE0Yfs0nZ0xPV6DaaCR0gzwUKTtJJFSvzSHNN81qN4h00R1dxEA
+Io2mdmzk2tN+GM/b3rzW4991cMWoAvMRENIScO7AO3L9bcNE6e8e3lNClD/5LGi3
+EPLZ5e6WyVyKsRvIIs/GZT/VM/Hxn3u0wSxdK+gqiX9aQbMggKDGmQKMXdSKGuwG
+TvFRie/3Y/0huIyHt+jPpaNjXkaEZt51VUYbix1a19JxQ33b4iPemWBKjkizdX30
+WNFiD9JpAVuEZsMHB9gj
+=03PU
+-----END PGP SIGNATURE-----
+
+--=-+RQFhelgzX44+h1ZQMRM--
 
