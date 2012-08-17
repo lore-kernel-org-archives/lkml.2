@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030987Ab2HQIrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:47:24 -0400
+	id S1030967Ab2HQIoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:44:39 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40634 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755975Ab2HQIox (ORCPT
+	with ESMTP id S1755837Ab2HQIoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:44:53 -0400
+	Fri, 17 Aug 2012 04:44:08 -0400
 From: Huacai Chen <chenhc@lemote.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Huacai Chen <chenhc@lemote.com>, Jie Chen <chenj@lemote.com>,
-        Hongliang Tao <taohl@lemote.com>, Hua Yan <yanh@lemote.com>,
-        alsa-devel@alsa-project.org
-Subject: [PATCH V6 12/15] ALSA: HDA: Make hda sound card usable for Loongson
-Date: Fri, 17 Aug 2012 16:43:32 +0800
-Message-Id: <1345193015-3024-13-git-send-email-chenhc@lemote.com>
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Subject: [PATCH V6 03/15] MIPS: Loongson: Introduce and use cpu_has_coherent_cache feature
+Date: Fri, 17 Aug 2012 16:43:23 +0800
+Message-Id: <1345193015-3024-4-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
 References: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
@@ -24,108 +23,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lemote A1004(Laptop) and A1205(All-In-One) use Conexant's hda codec,
-this patch modify patch_conexant.c to add Lemote specific code.
+Loongson-3 maintains cache coherency by hardware. So we introduce a cpu
+feature named cpu_has_coherent_cache and use it to modify MIPS's cache
+flushing functions.
 
-Both A1004 and A1205 use the same pin configurations, but A1004 need
-to increase the default boost of internal mic.
-
-Signed-off-by: Jie Chen <chenj@lemote.com>
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
-Cc: alsa-devel@alsa-project.org
 ---
- sound/pci/hda/patch_conexant.c |   44 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ arch/mips/include/asm/cacheflush.h   |    6 ++++++
+ arch/mips/include/asm/cpu-features.h |    6 ++++++
+ arch/mips/mm/c-r4k.c                 |   21 +++++++++++++++++++--
+ 3 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 5e22a8f..3cc265e 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4408,7 +4408,10 @@ static const struct hda_codec_ops cx_auto_patch_ops = {
- enum {
- 	CXT_PINCFG_LENOVO_X200,
- 	CXT_PINCFG_LENOVO_TP410,
-+	CXT_PINCFG_LEMOTE_A1004,
-+	CXT_PINCFG_LEMOTE_A1205,
- 	CXT_FIXUP_STEREO_DMIC,
-+	CXT_FIXUP_INC_MIC_BOOST,
- };
+diff --git a/arch/mips/include/asm/cacheflush.h b/arch/mips/include/asm/cacheflush.h
+index 69468de..8c4fa0d 100644
+--- a/arch/mips/include/asm/cacheflush.h
++++ b/arch/mips/include/asm/cacheflush.h
+@@ -70,6 +70,9 @@ extern void (*__flush_cache_vmap)(void);
  
- static void cxt_fixup_stereo_dmic(struct hda_codec *codec,
-@@ -4418,6 +4421,19 @@ static void cxt_fixup_stereo_dmic(struct hda_codec *codec,
- 	spec->fixup_stereo_dmic = 1;
- }
- 
-+static void cxt5066_increase_mic_boost(struct hda_codec *codec,
-+				   const struct hda_fixup *fix, int action)
-+{
-+	if (action != HDA_FIXUP_ACT_PRE_PROBE)
+ static inline void flush_cache_vmap(unsigned long start, unsigned long end)
+ {
++	if (cpu_has_coherent_cache)
 +		return;
 +
-+	snd_hda_override_amp_caps(codec, 0x17, HDA_OUTPUT,
-+				  (0x3 << AC_AMPCAP_OFFSET_SHIFT) |
-+				  (0x4 << AC_AMPCAP_NUM_STEPS_SHIFT) |
-+				  (0x27 << AC_AMPCAP_STEP_SIZE_SHIFT) |
-+				  (0 << AC_AMPCAP_MUTE_SHIFT));
-+}
-+
- /* ThinkPad X200 & co with cxt5051 */
- static const struct hda_pintbl cxt_pincfg_lenovo_x200[] = {
- 	{ 0x16, 0x042140ff }, /* HP (seq# overridden) */
-@@ -4435,6 +4451,18 @@ static const struct hda_pintbl cxt_pincfg_lenovo_tp410[] = {
- 	{}
- };
+ 	if (cpu_has_dc_aliases)
+ 		__flush_cache_vmap();
+ }
+@@ -78,6 +81,9 @@ extern void (*__flush_cache_vunmap)(void);
  
-+/* Lemote A1004/A1205 with cxt5066 */
-+static const struct hda_pintbl cxt_pincfg_lemote[] = {
-+	{ 0x1a, 0x90a10020 }, /* Internal mic */
-+	{ 0x1b, 0x03a11020 }, /* External mic */
-+	{ 0x1d, 0x400101f0 }, /* Not used */
-+	{ 0x1e, 0x40a701f0 }, /* Not used */
-+	{ 0x20, 0x404501f0 }, /* Not used */
-+	{ 0x22, 0x404401f0 }, /* Not used */
-+	{ 0x23, 0x40a701f0 }, /* Not used */
-+	{}
-+};
+ static inline void flush_cache_vunmap(unsigned long start, unsigned long end)
+ {
++	if (cpu_has_coherent_cache)
++		return;
 +
- static const struct hda_fixup cxt_fixups[] = {
- 	[CXT_PINCFG_LENOVO_X200] = {
- 		.type = HDA_FIXUP_PINS,
-@@ -4444,10 +4472,24 @@ static const struct hda_fixup cxt_fixups[] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = cxt_pincfg_lenovo_tp410,
- 	},
-+	[CXT_PINCFG_LEMOTE_A1004] = {
-+		.type = HDA_FIXUP_PINS,
-+		.chained = true,
-+		.chain_id = CXT_FIXUP_INC_MIC_BOOST,
-+		.v.pins = cxt_pincfg_lemote,
-+	},
-+	[CXT_PINCFG_LEMOTE_A1205] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = cxt_pincfg_lemote,
-+	},
- 	[CXT_FIXUP_STEREO_DMIC] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = cxt_fixup_stereo_dmic,
- 	},
-+	[CXT_FIXUP_INC_MIC_BOOST] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = cxt5066_increase_mic_boost,
-+	},
- };
+ 	if (cpu_has_dc_aliases)
+ 		__flush_cache_vunmap();
+ }
+diff --git a/arch/mips/include/asm/cpu-features.h b/arch/mips/include/asm/cpu-features.h
+index ca400f7..8523477 100644
+--- a/arch/mips/include/asm/cpu-features.h
++++ b/arch/mips/include/asm/cpu-features.h
+@@ -238,6 +238,12 @@
+ #define cpu_has_inclusive_pcaches	(cpu_data[0].options & MIPS_CPU_INCLUSIVE_CACHES)
+ #endif
  
- static const struct snd_pci_quirk cxt5051_fixups[] = {
-@@ -4463,6 +4505,8 @@ static const struct snd_pci_quirk cxt5066_fixups[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
-+	SND_PCI_QUIRK(0x1c06, 0x2011, "Lemote A1004", CXT_PINCFG_LEMOTE_A1004),
-+	SND_PCI_QUIRK(0x1c06, 0x2012, "Lemote A1205", CXT_PINCFG_LEMOTE_A1205),
- 	{}
- };
++#ifdef CONFIG_CPU_SUPPORTS_COHERENT_CACHE
++#define cpu_has_coherent_cache	1
++#else
++#define cpu_has_coherent_cache	0
++#endif
++
+ #ifndef cpu_dcache_line_size
+ #define cpu_dcache_line_size()	cpu_data[0].dcache.linesz
+ #endif
+diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+index 5352387..e8ae44f 100644
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -345,6 +345,10 @@ static inline void local_r4k___flush_cache_all(void * args)
+ 	r4k_blast_scache();
+ 	return;
+ #endif
++
++	if (cpu_has_coherent_cache)
++		return;
++
+ 	r4k_blast_dcache();
+ 	r4k_blast_icache();
+ 
+@@ -406,8 +410,12 @@ static inline void local_r4k_flush_cache_range(void * args)
+ static void r4k_flush_cache_range(struct vm_area_struct *vma,
+ 	unsigned long start, unsigned long end)
+ {
+-	int exec = vma->vm_flags & VM_EXEC;
++	int exec __maybe_unused;
++
++	if (cpu_has_coherent_cache)
++		return;
+ 
++	exec = vma->vm_flags & VM_EXEC;
+ 	if (cpu_has_dc_aliases || (exec && !cpu_has_ic_fills_f_dc))
+ 		r4k_on_each_cpu(local_r4k_flush_cache_range, vma);
+ }
+@@ -527,7 +535,10 @@ static inline void local_r4k_flush_cache_page(void *args)
+ static void r4k_flush_cache_page(struct vm_area_struct *vma,
+ 	unsigned long addr, unsigned long pfn)
+ {
+-	struct flush_cache_page_args args;
++	struct flush_cache_page_args args __maybe_unused;
++
++	if (cpu_has_coherent_cache)
++		return;
+ 
+ 	args.vma = vma;
+ 	args.addr = addr;
+@@ -543,6 +554,9 @@ static inline void local_r4k_flush_data_cache_page(void * addr)
+ 
+ static void r4k_flush_data_cache_page(unsigned long addr)
+ {
++	if (cpu_has_coherent_cache)
++		return;
++
+ 	if (in_atomic())
+ 		local_r4k_flush_data_cache_page((void *)addr);
+ 	else
+@@ -701,6 +715,9 @@ static void local_r4k_flush_cache_sigtramp(void * arg)
+ 
+ static void r4k_flush_cache_sigtramp(unsigned long addr)
+ {
++	if (cpu_has_coherent_cache)
++		return;
++
+ 	r4k_on_each_cpu(local_r4k_flush_cache_sigtramp, (void *) addr);
+ }
  
 -- 
 1.7.7.3
