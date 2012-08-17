@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab2HQNOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:14:19 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:22763 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2HQNOE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:14:04 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+CGKqyjny5XO5Px5if459d
-Date: Fri, 17 Aug 2012 06:13:59 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
-Message-ID: <20120817131358.GF11011@atomide.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
- <502E11B6.4020104@ti.com>
- <20120817100533.GE24389@arm.com>
- <CAMQu2gzz0j+SnxCY0u3H__H4U-Lor_xV-eyiMBSohCMngbkD2w@mail.gmail.com>
+	id S1753203Ab2HQNQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:16:16 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45231 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829Ab2HQNQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 09:16:04 -0400
+Date: Fri, 17 Aug 2012 09:15:58 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+Message-ID: <20120817131558.GA11439@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Fengguang Wu <fengguang.wu@intel.com>,
+	Marti Raudsepp <marti@juffo.org>,
+	Kernel hackers <linux-kernel@vger.kernel.org>,
+	ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+ <20120816024654.GB3781@thunk.org>
+ <20120816111051.GA16036@localhost>
+ <20120816152513.GA31346@thunk.org>
+ <20120817060110.GA28786@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMQu2gzz0j+SnxCY0u3H__H4U-Lor_xV-eyiMBSohCMngbkD2w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120817060110.GA28786@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Shilimkar, Santosh <santosh.shilimkar@ti.com> [120817 03:11]:
-> On Fri, Aug 17, 2012 at 3:35 PM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> >
-> > On Fri, Aug 17, 2012 at 10:41:10AM +0100, Santosh Shilimkar wrote:
-> > >
-> > > So you expect all the secondary CPUs to be in wakeup state and probably
-> > > looping in WFE for a signal from kernel to boot. There is one issue
-> > > with this requirement though. For large CPU system, you need to reset
-> > > all the CPUs and hit this waiting loop. This will lead to large inrush
-> > > current need at bootup which may be not be supported. To avoid this
-> > > issue, secondary CPUs are kept in OFF state and then they are woken
-> > > up from kernel one by one whenever they need to be brought into the
-> > > system. This requirement should be considered.
-> >
-> > I agree, this part will be extended. That's one method that we currently
-> > support and suitable to the model.
-> >
-> > The better method is the SMC standardisation that Charles Garcia-Tobin
-> > has written (to be made available soon) and was presented at the last
-> > Linaro Connect in HK. Given that the CPU power is usually controlled by
-> > the secure side, we'll ask for an SMC to be issued for waking up
-> > secondary CPUs, so it's up to the secure firmware to write the correct
-> > hardware registers.
-> >
-> Thanks for the information. SMC standardization would indeed help
-> to overcome some of these. Will wait for that information before
-> next set of questions.
+Thanks Fengguang:
 
-Yes please. If the SMC is not standardized for most calls at least,
-we'll end up with a horrible mess of SoC specific calls like we
-currently have. Related to that, the virtualization calls should be
-also standardized so we don't end up with multiple different hypervisors
-with different calls.
+For the record, I was able to find my own easy repro, last night using
+only a 220 meg partition:
 
-Regards,
+# mke2fs -t ext4 -b 1024 -J size=1 /dev/vdc
+# mount -t ext2 /dev/vdc /vdc
+# mkdir /vdc/a
+# cd /vdc/a
+# seq 1 210000  | xargs -n 1 fallocate -l 1m
+# seq 1 2 210000  | xargs /bin/rm
+# mkdir /vdc/b
+# cd /vdc/b
+# seq 1 103 | xargs -n 1 fallocate -l 1g
+# cd /
+# umount /vdc
+# mount -t ext4 -o commit=10000 /dev/vdc /vdc
+# rm -rf /vdc/b
 
-Tony
+For future reference, there are a couple of things that are of
+interest to ext4 developers when trying to create repro's:
+
+1)  The use of mounting with ext2 to speed up the setup.
+
+2)  The first two "seq ... | xargs ..." commands to create a very
+fragmented file system.
+
+3) Using a 1k block size file system to stress the extent tree code
+and htree directory (since its easier to make larger tree structure).
+
+4)  The use of the mount option commit=10000 to test what happens when
+the journal is full (without using a nice, fast device such as RAID array
+or without burning write cycles on an expensive flash device.)
+
+						- Ted
