@@ -1,135 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030929Ab2HQIKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:10:23 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53505 "EHLO mail.skyhub.de"
+	id S1030935Ab2HQIMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:12:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7173 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030893Ab2HQIKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:10:01 -0400
-Date: Fri, 17 Aug 2012 10:09:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tomas Racek <tracek@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, qemu-devel@nongnu.org,
+	id S1030903Ab2HQIM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:12:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
+   d="asc'?scan'208";a="203384822"
+Date: Fri, 17 Aug 2012 11:12:33 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, kvm-devel <kvm@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [Qemu-devel] x86, nops settings result in kernel crash
-Message-ID: <20120817080956.GC24241@liondog.tnic>
-Reply-To: Borislav Petkov <borislav.petkov@amd.com>
-Mail-Followup-To: Borislav Petkov <borislav.petkov@amd.com>,
-	Tomas Racek <tracek@redhat.com>,
-	Anthony Liguori <anthony@codemonkey.ws>, qemu-devel@nongnu.org,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-	kvm-devel <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-	Marcelo Tosatti <mtosatti@redhat.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <87393msdxp.fsf@codemonkey.ws>
- <579203853.1924367.1345189436257.JavaMail.root@redhat.com>
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH, RFC 7/9] thp: implement splitting pmd for huge zero page
+Message-ID: <20120817081233.GB9833@otc-wbsnb-06>
+References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1344503300-9507-8-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120816192738.GO11188@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
 Content-Disposition: inline
-In-Reply-To: <579203853.1924367.1345189436257.JavaMail.root@redhat.com>
+In-Reply-To: <20120816192738.GO11188@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 03:43:56AM -0400, Tomas Racek wrote:
-> Well, I've added some debug statements to the code:
-> 
-> void __init arch_init_ideal_nops(void)
-> {
->         switch (boot_cpu_data.x86_vendor) {
->         case X86_VENDOR_INTEL:
->                 /*
->                  * Due to a decoder implementation quirk, some
->                  * specific Intel CPUs actually perform better with
->                  * the "k8_nops" than with the SDM-recommended NOPs.
->                  */
->                 if (boot_cpu_data.x86 == 6 &&
->                     boot_cpu_data.x86_model >= 0x0f &&
->                     boot_cpu_data.x86_model != 0x1c &&
->                     boot_cpu_data.x86_model != 0x26 &&
->                     boot_cpu_data.x86_model != 0x27 &&
->                     boot_cpu_data.x86_model < 0x30) {
->                         printk("NOPS: Option 1\n");
->                         ideal_nops = k8_nops;
->                 } else if (boot_cpu_has(X86_FEATURE_NOPL)) {
->                         printk("NOPS: Option 2\n");
->                            ideal_nops = p6_nops;
->                 } else {
->                         printk("NOPS: Option 3\n");
-> #ifdef CONFIG_X86_64
->                         ideal_nops = k8_nops;
-> #else
->                         ideal_nops = intel_nops;
-> #endif
->                 }
->                 break;
->         default:
-> #ifdef CONFIG_X86_64
->                 ideal_nops = k8_nops;
-> #else
->                 if (boot_cpu_has(X86_FEATURE_K8))
->                         ideal_nops = k8_nops;
->                 else if (boot_cpu_has(X86_FEATURE_K7))
->                         ideal_nops = k7_nops;
->                 else
->                         ideal_nops = intel_nops;
-> #endif
->         }
-> }
-> 
-> This gives me Option 1 with "-cpu host" and Option 2 without.
 
-This looks like an emulation bug. The interesting thing is that your
-both traces from the bugzilla point to generic_make_request_checks but
-it could also be due to timing.
+--MfFXiAuoTsnnDAfZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Decoding the instruction stream in the second trace in the bugzilla gives:
+On Thu, Aug 16, 2012 at 09:27:38PM +0200, Andrea Arcangeli wrote:
+> On Thu, Aug 09, 2012 at 12:08:18PM +0300, Kirill A. Shutemov wrote:
+> > +static void __split_huge_zero_page_pmd(struct mm_struct *mm, pmd_t *pm=
+d,
+> > +		unsigned long address)
+> > +{
+> > +	pgtable_t pgtable;
+> > +	pmd_t _pmd;
+> > +	unsigned long haddr =3D address & HPAGE_PMD_MASK;
+> > +	struct vm_area_struct *vma;
+> > +	int i;
+> > +
+> > +	vma =3D find_vma(mm, address);
+> > +	VM_BUG_ON(vma =3D=3D NULL);
+>=20
+> I think you can use BUG_ON here just in case but see below how I would
+> change it.
+>=20
+> > +	pmdp_clear_flush_notify(vma, haddr, pmd);
+> > +	/* leave pmd empty until pte is filled */
+> > +
+> > +	pgtable =3D get_pmd_huge_pte(mm);
+> > +	pmd_populate(mm, &_pmd, pgtable);
+> > +
+> > +	for (i =3D 0; i < HPAGE_PMD_NR; i++, haddr +=3D PAGE_SIZE) {
+> > +		pte_t *pte, entry;
+> > +		entry =3D pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
+> > +		entry =3D pte_mkspecial(entry);
+> > +		pte =3D pte_offset_map(&_pmd, haddr);
+> > +		VM_BUG_ON(!pte_none(*pte));
+> > +		set_pte_at(mm, haddr, pte, entry);
+> > +		pte_unmap(pte);
+> > +	}
+> > +	smp_wmb(); /* make pte visible before pmd */
+> > +	pmd_populate(mm, pmd, pgtable);
+> > +}
+> > +
+>=20
+> The last pmd_populate will corrupt memory.
 
-[ 278.595106] Code: 03 48 89 03 48 8b 57 70 48 89 53 10 48 2b 01 8b 3f 48 89 45 98 48 8b 82 90 00 00 00 89 7d 94 48 8b 80 60 02 00 00 48 89 45 88 ac <17> 00 00 c8 45 85 e4 74 30 48 8b 43 10 48 8b 40 08 48 8b 40 48 
-All code
-========
-   0:   03 48 89                add    -0x77(%rax),%ecx
-   3:   03 48 8b                add    -0x75(%rax),%ecx
-   6:   57                      push   %rdi
-   7:   70 48                   jo     0x51
-   9:   89 53 10                mov    %edx,0x10(%rbx)
-   c:   48 2b 01                sub    (%rcx),%rax
-   f:   8b 3f                   mov    (%rdi),%edi
-  11:   48 89 45 98             mov    %rax,-0x68(%rbp)
-  15:   48 8b 82 90 00 00 00    mov    0x90(%rdx),%rax
-  1c:   89 7d 94                mov    %edi,-0x6c(%rbp)
-  1f:   48 8b 80 60 02 00 00    mov    0x260(%rax),%rax
-  26:   48 89 45 88             mov    %rax,-0x78(%rbp)
-  2a:   ac                      lods   %ds:(%rsi),%al
-  2b:*  17                      (bad)       <-- trapping instruction
-  2c:   00 00                   add    %al,(%rax)
-  2e:   c8 45 85 e4             enterq $0x8545,$0xe4
-  32:   74 30                   je     0x64
-  34:   48 8b 43 10             mov    0x10(%rbx),%rax
-  38:   48 8b 40 08             mov    0x8(%rax),%rax
-  3c:   48 8b 40 48             mov    0x48(%rax),%rax
-        ...
+Nice catch, thank you.
 
-Code starting with the faulting instruction
-===========================================
-   0:   17                      (bad)  
-   1:   00 00                   add    %al,(%rax)
-   3:   c8 45 85 e4             enterq $0x8545,$0xe4
-   7:   74 30                   je     0x39
-   9:   48 8b 43 10             mov    0x10(%rbx),%rax
-   d:   48 8b 40 08             mov    0x8(%rax),%rax
-  11:   48 8b 40 48             mov    0x48(%rax),%rax
+I've used do_huge_pmd_wp_page_fallback() as template for my code.
+What's difference between these two code paths?
+Why is do_huge_pmd_wp_page_fallback() safe?
 
+> > +	if (is_huge_zero_pmd(*pmd)) {
+> > +		__split_huge_zero_page_pmd(mm, pmd, address);
+>=20
+> This will work fine but it's a bit sad having to add "address" at
+> every call, just to run a find_vma(). The only place that doesn't have
+> a vma already on the caller stack is actually pagewalk, all other
+> places already have a vma on the stack without having to find it with
+> the rbtree.
+>=20
+> I think it may be better to change the param to
+> split_huge_page_pmd(vma, pmd).
+>=20
+> Then have standard split_huge_page_pmd obtain the mm with vma->vm_mm
+> (most callers already calles it with split_huge_page_pmd(vma->vm_mm)
+> so it won't alter the cost to do vma->vm_mm in caller or callee).
+>=20
+> split_huge_page_address also should take the vma (all callers are
+> invoking it as split_huge_page_address(vma->vm_mm) so it'll be zero
+> cost change).
+>=20
+> Then we can add a split_huge_page_pmd_mm(mm, address, pmd) or
+> split_huge_page_pmd_address(mm, address, pmd) (call it as you
+> prefer...) only for the pagewalk caller that will do the find_vma and
+> BUG_ON if it's not found.
+>=20
+> In that new split_huge_page_pmd_mm you can also add a BUG_ON checking
+> vma->vm_start to be <=3D haddr and vma->vm_end >=3D haddr+HPAGE_PMD_SIZE
+> in addition to BUG_ON(!vma) above, for more robustness. I'm not aware
+> of any place calling it without mmap_sem hold at least for reading
+> and the vma must be stable, but more debug checks won't hurt.
 
-and an instruction with opcode 0x17 in 64-bit mode is, AFAICT,
-invalid (on 32-bit it is "pop %ss" according to this thing:
-http://www.onlinedisassembler.com).
+Looks resonable. I'll update it in next revision.
 
--- 
-Regards/Gruss,
-    Boris.
+--=20
+ Kirill A. Shutemov
+
+--MfFXiAuoTsnnDAfZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQLfzxAAoJEAd+omnVudOMY58P/i466DRlrDYRpqaOYJvfbQ4p
+TXY4C7LS7HgxpcXWyylMWcLkjhJcttCPxIqK6sJuEFU9c5Ik4t+evJjHeZ2OP3If
+3DRWixflL0+rMHa1R24eJXZlptW4hjbDp94sQGMcnJnHt0c9v3qm6LRhUqKZDnDf
+XxLGr09MowJc7YINluOjZqC26I/+QnDs+DeYynuTa8HjAEjFRs6zJBhO2m8/l/7D
+pR9g5YgLapmErMnP+VAhEI4Eaz9C7THmq0/fSit7W4EHL0IzuqoIXqKdlzmAUNnq
+Nxp2ZQ5lZ2/F0Qwe6VMtklHAbR0Y4DmDX0fWne0qLQOmRTh+Qd/cEEkQli56YDB/
+G2ROZwWMYX8tT4yM30xpe3p0zZWvn3xSEUgTpY+p6WXv5ysFnmwT2V86KoP14S9U
+pUwS0Zb1MEe8jtjdtjNMzJx3AzvM5d6WXsqAxVMx8VQ7siA/xYoCWs/6lBWHUfdu
+30WEYSOREnSO6LKx5DTLWMl+C9NzjyOG/4yDdOGKk1eumog6KGPatVRkRv0quTIA
+Tx7bSSHMBZkV2Q83/kbW9xJmfmF1UVyA2/yOLFyEG38BC6DXFzQg1VfezF8+n+Wy
+/u0XFlDm89YPu1RkAoNWkiH9DOP1n2a9A+aiaoffDPPB29tdiMVrwWhyYt4zW/HB
+vLgkGpsqt0eFo61kuGCH
+=iflw
+-----END PGP SIGNATURE-----
+
+--MfFXiAuoTsnnDAfZ--
