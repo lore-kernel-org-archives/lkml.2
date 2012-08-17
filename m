@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686Ab2HQCyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 22:54:43 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:28791 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933607Ab2HQCyk (ORCPT
+	id S1030568Ab2HQCzQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 22:55:16 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:29132 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933607Ab2HQCzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 22:54:40 -0400
+	Thu, 16 Aug 2012 22:55:13 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-127.messagelabs.com!1345172078!7774065!1
-X-Originating-IP: [216.166.12.97]
+X-Msg-Ref: server-12.tower-160.messagelabs.com!1345172110!8664124!1
+X-Originating-IP: [216.166.12.32]
 X-StarScan-Received: 
 X-StarScan-Version: 6.6.1.2; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 32/35] staging: comedi: cb_pcimdda: cleanup the analog out read/write
-Date: Thu, 16 Aug 2012 19:54:32 -0700
+Subject: [PATCH 33/35] staging: comedi: cb_pcimdda: use attach_pci callback
+Date: Thu, 16 Aug 2012 19:55:01 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -24,120 +24,145 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201208161954.33194.hartleys@visionengravers.com>
+Message-ID: <201208161955.01945.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the register map define to work out the i/o address.
+Convert this PCI driver to use the comedi PCI auto config attach
+mechanism by adding an 'attach_pci' callback function.
 
-Cleanup the comments about the simultaneous transfer mode for
-the analog outputs.
+This driver does use an external configuration option to determine
+the analog output range which is controlled by a jumper on the board.
+In order to remove the legacy 'attach' callback, an assumption is made
+that the jumper is in the factory setting position for +/-5V outputs.
+This does not effect the operation of the board just the range info
+that is returned to the user.
 
-Change the return to 'insn->n', the comedi core expects the return
-to be the number of data elements used. Technically the 'i' value
-is correct but 'insn->n' just makes it clearer.
+A sysfs method will be investigated to allow the user to change the
+range.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/cb_pcimdda.c | 63 ++++++++++++-----------------
- 1 file changed, 26 insertions(+), 37 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcimdda.c | 65 +++++++----------------------
+ 1 file changed, 14 insertions(+), 51 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
-index a5e055f..350c807 100644
+index 350c807..ea96514 100644
 --- a/drivers/staging/comedi/drivers/cb_pcimdda.c
 +++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
-@@ -110,62 +110,51 @@ static int cb_pcimdda_ao_winsn(struct comedi_device *dev,
- 			       unsigned int *data)
- {
- 	struct cb_pcimdda_private *devpriv = dev->private;
-+	unsigned int chan = CR_CHAN(insn->chanspec);
-+	unsigned long offset = dev->iobase + PCIMDDA_DA_CHAN(chan);
-+	unsigned int val = 0;
- 	int i;
--	int chan = CR_CHAN(insn->chanspec);
--	unsigned long offset = dev->iobase + chan * 2;
+@@ -57,12 +57,7 @@ output modes on the board:
+     then issue one comedi_data_read() on any channel on the AO subdevice
+     to initiate the simultaneous XFER.
  
--	/* Writing a list of values to an AO channel is probably not
--	 * very useful, but that's how the interface is defined. */
- 	for (i = 0; i < insn->n; i++) {
--		/*  first, load the low byte */
--		outb((char)(data[i] & 0x00ff), offset);
--		/*  next, write the high byte -- only after this is written is
--		   the channel voltage updated in the DAC, unless
--		   we're in simultaneous xfer mode (jumper on card)
--		   then a rinsn is necessary to actually update the DAC --
--		   see cb_pcimdda_ao_rinsn() below... */
--		outb((char)(data[i] >> 8 & 0x00ff), offset + 1);
--
--		/* for testing only.. the actual rinsn SHOULD do an inw!
--		   (see the stuff about simultaneous XFER mode on this board) */
--		devpriv->ao_readback[chan] = data[i];
-+		val = data[i];
-+
-+		/*
-+		 * Write the LSB then MSB.
-+		 *
-+		 * If the simultaneous xfer mode is selected by the
-+		 * jumper on the card, a read instruction is needed
-+		 * in order to initiate the simultaneous transfer.
-+		 * Otherwise, the DAC will be updated when the MSB
-+		 * is written.
-+		 */
-+		outb(val & 0x00ff, offset);
-+		outb((val >> 8) & 0x00ff, offset + 1);
- 	}
+-Configuration Options:
+-  [0] PCI bus (optional)
+-  [1] PCI slot (optional)
+-  [2] analog output range jumper setting
+-      0 == +/- 5 V
+-      1 == +/- 10 V
++Configuration Options: not applicable, uses PCI auto config
+ */
  
--	/* return the number of samples read/written */
--	return i;
--}
-+	/* Cache the last value for readback */
-+	devpriv->ao_readback[chan] = val;
- 
--/* AO subdevices should have a read insn as well as a write insn.
-+	return insn->n;
-+}
- 
--   Usually this means copying a value stored in devpriv->ao_readback.
--   However, since this board has this jumper setting called "Simultaneous
--   Xfer mode" (off by default), we will support it.  Simultaneaous xfer
--   mode is accomplished by loading ALL the values you want for AO in all the
--   channels, then READing off one of the AO registers to initiate the
--   instantaneous simultaneous update of all DAC outputs, which makes
--   all AO channels update simultaneously.  This is useful for some control
--   applications, I would imagine.
--*/
- static int cb_pcimdda_ao_rinsn(struct comedi_device *dev,
- 			       struct comedi_subdevice *s,
- 			       struct comedi_insn *insn,
- 			       unsigned int *data)
- {
- 	struct cb_pcimdda_private *devpriv = dev->private;
--	int i;
- 	int chan = CR_CHAN(insn->chanspec);
-+	unsigned long offset = dev->iobase + PCIMDDA_DA_CHAN(chan);
-+	int i;
- 
- 	for (i = 0; i < insn->n; i++) {
--		inw(dev->iobase + chan * 2);
--		/*
--		 * should I set data[i] to the result of the actual read
--		 * on the register or the cached unsigned int in
--		 * devpriv->ao_readback[]?
--		 */
-+		/* Initiate the simultaneous transfer */
-+		inw(offset);
-+
- 		data[i] = devpriv->ao_readback[chan];
- 	}
- 
--	return i;
-+	return insn->n;
+ /*
+@@ -157,47 +152,21 @@ static int cb_pcimdda_ao_rinsn(struct comedi_device *dev,
+ 	return insn->n;
  }
  
- static struct pci_dev *cb_pcimdda_probe(struct comedi_device *dev,
+-static struct pci_dev *cb_pcimdda_probe(struct comedi_device *dev,
+-					struct comedi_devconfig *it)
+-{
+-	struct pci_dev *pcidev = NULL;
+-
+-	for_each_pci_dev(pcidev) {
+-		if (pcidev->vendor != PCI_VENDOR_ID_COMPUTERBOARDS)
+-			continue;
+-		if (pcidev->device != PCI_ID_PCIM_DDA06_16)
+-			continue;
+-		if (it->options[0] || it->options[1]) {
+-			if (pcidev->bus->number != it->options[0] ||
+-				PCI_SLOT(pcidev->devfn) != it->options[1]) {
+-				continue;
+-			}
+-		}
+-
+-		return pcidev;
+-	}
+-	return NULL;
+-}
+-
+-static int cb_pcimdda_attach(struct comedi_device *dev,
+-			     struct comedi_devconfig *it)
++static int cb_pcimdda_attach_pci(struct comedi_device *dev,
++				 struct pci_dev *pcidev)
+ {
+ 	struct cb_pcimdda_private *devpriv;
+-	struct pci_dev *pcidev;
+ 	struct comedi_subdevice *s;
+ 	int ret;
+ 
++	comedi_set_hw_dev(dev, &pcidev->dev);
++	dev->board_name = dev->driver->driver_name;
++
+ 	ret = alloc_private(dev, sizeof(*devpriv));
+ 	if (ret)
+ 		return ret;
+ 	devpriv = dev->private;
+ 
+-	pcidev = cb_pcimdda_probe(dev, it);
+-	if (!pcidev)
+-		return -EIO;
+-	comedi_set_hw_dev(dev, &pcidev->dev);
+-	dev->board_name = dev->driver->driver_name;
+-
+ 	ret = comedi_pci_enable(pcidev, dev->board_name);
+ 	if (ret)
+ 		return ret;
+@@ -208,19 +177,14 @@ static int cb_pcimdda_attach(struct comedi_device *dev,
+ 		return ret;
+ 
+ 	s = dev->subdevices + 0;
+-
+ 	/* analog output subdevice */
+-	s->type = COMEDI_SUBD_AO;
+-	s->subdev_flags = SDF_WRITABLE | SDF_READABLE;
+-	s->n_chan = 6;
+-	s->maxdata = 0xffff;
+-	/* this is hard-coded here */
+-	if (it->options[2])
+-		s->range_table = &range_bipolar10;
+-	else
+-		s->range_table = &range_bipolar5;
+-	s->insn_write = &cb_pcimdda_ao_winsn;
+-	s->insn_read = &cb_pcimdda_ao_rinsn;
++	s->type		= COMEDI_SUBD_AO;
++	s->subdev_flags	= SDF_WRITABLE | SDF_READABLE;
++	s->n_chan	= 6;
++	s->maxdata	= 0xffff;
++	s->range_table	= &range_bipolar5;
++	s->insn_write	= cb_pcimdda_ao_winsn;
++	s->insn_read	= cb_pcimdda_ao_rinsn;
+ 
+ 	s = dev->subdevices + 1;
+ 	/* digital i/o subdevice */
+@@ -243,14 +207,13 @@ static void cb_pcimdda_detach(struct comedi_device *dev)
+ 	if (pcidev) {
+ 		if (dev->iobase)
+ 			comedi_pci_disable(pcidev);
+-		pci_dev_put(pcidev);
+ 	}
+ }
+ 
+ static struct comedi_driver cb_pcimdda_driver = {
+ 	.driver_name	= "cb_pcimdda",
+ 	.module		= THIS_MODULE,
+-	.attach		= cb_pcimdda_attach,
++	.attach_pci	= cb_pcimdda_attach_pci,
+ 	.detach		= cb_pcimdda_detach,
+ };
+ 
 -- 
 1.7.11
 
