@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab2HQPXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 11:23:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44978 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886Ab2HQPWv (ORCPT
+	id S1758263Ab2HQP2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 11:28:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31381 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758236Ab2HQP23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 11:22:51 -0400
-Date: Fri, 17 Aug 2012 12:22:39 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Luciano Chavez <lnx1138@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [v2.6.34-stable 134/165] mm: avoid null pointer access in
- vm_struct via /proc/vmallocinfo
-Message-ID: <20120817152233.GB4039@herton-Z68MA-D2H-B3>
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
- <1345060109-9187-135-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345060109-9187-135-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 Aug 2012 11:28:29 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=PUxD9mNbTSIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=PkYMVV_Y2y8A:10 a=meVymXHHAAAA:8 a=9lC4D9FEF-Lmuyl_eyIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1345217308.3708.35.camel@gandalf.local.home>
+Subject: Re: [RFC PATCH v2] trace: Move trace event enable from fs_initcall
+ to early_initcall
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, tim.bird@am.sony.com,
+        lizefan@huawei.com
+Date: Fri, 17 Aug 2012 11:28:28 -0400
+In-Reply-To: <1345204994-5400-1-git-send-email-elezegarcia@gmail.com>
+References: <1345204994-5400-1-git-send-email-elezegarcia@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 03:47:58PM -0400, Paul Gortmaker wrote:
-> From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+On Fri, 2012-08-17 at 09:03 -0300, Ezequiel Garcia wrote:
+> This patch splits trace event initialization in two stages:
+>  * ftrace enable
+>  * sysfs event entry creation
 > 
->                    -------------------
->     This is a commit scheduled for the next v2.6.34 longterm release.
->     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->     If you see a problem with using this for longterm, please comment.
->                    -------------------
+> This allows to capture trace events from an earlier point
+> by using 'trace_event' kernel parameter and is important
+> to trace boot-up allocations.
 > 
-> commit f5252e009d5b87071a919221e4f6624184005368 upstream.
-> 
-> The /proc/vmallocinfo shows information about vmalloc allocations in
-> vmlist that is a linklist of vm_struct.  It, however, may access pages
-> field of vm_struct where a page was not allocated.  This results in a null
-> pointer access and leads to a kernel panic.
-> 
-> Why this happens: In __vmalloc_node_range() called from vmalloc(), newly
-> allocated vm_struct is added to vmlist at __get_vm_area_node() and then,
-> some fields of vm_struct such as nr_pages and pages are set at
-> __vmalloc_area_node().  In other words, it is added to vmlist before it is
-> fully initialized.  At the same time, when the /proc/vmallocinfo is read,
-> it accesses the pages field of vm_struct according to the nr_pages field
-> at show_numa_info().  Thus, a null pointer access happens.
-> 
-> The patch adds the newly allocated vm_struct to the vmlist *after* it is
-> fully initialized.  So, it can avoid accessing the pages field with
-> unallocated page when show_numa_info() is called.
-> 
-> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Namhyung Kim <namhyung@gmail.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> [PG: .34 has VMALLOC_START/END vs. start/end in f5252e009d5]
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-[...]
 
-commit 1368edf0647ac112d8cfa6ce47257dc950c50f5c ("mm: vmalloc: check for
-page allocation failure before vmlist insertion") addresses a regression
-on this change, something to consider for inclusion in this stable
-update as well.
+This is much better, I'll give it some tests and add it to my 3.7 queue.
 
--- 
-[]'s
-Herton
+Thanks,
+
+-- Steve
+
+
