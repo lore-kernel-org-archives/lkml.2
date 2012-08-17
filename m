@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab2HQGBQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 02:01:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62264 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754386Ab2HQGBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 02:01:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
-   d="scan'208";a="203329742"
-Date: Fri, 17 Aug 2012 14:01:10 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-Message-ID: <20120817060110.GA28786@localhost>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
- <20120816024654.GB3781@thunk.org>
- <20120816111051.GA16036@localhost>
- <20120816152513.GA31346@thunk.org>
+	id S932115Ab2HQGEm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 02:04:42 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6299 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab2HQGEj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 02:04:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 16 Aug 2012 23:04:24 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Antti Palosaari <crope@iki.fi>,
+        "htl10@users.sourceforge.net" <htl10@users.sourceforge.net>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Fri, 17 Aug 2012 08:04:16 +0200
+Subject: [PATCH 1/1] driver-core: Shut up dev_dbg_reatelimited() without
+ DEBUG
+Thread-Topic: [PATCH 1/1] driver-core: Shut up dev_dbg_reatelimited()
+ without DEBUG
+Thread-Index: Ac17fyQiMTGNaEIySQ+BMLfQ/o0HGA==
+Message-ID: <20120817.090416.563933713934615530.hdoyu@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816152513.GA31346@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 11:25:13AM -0400, Theodore Ts'o wrote:
-> On Thu, Aug 16, 2012 at 07:10:51PM +0800, Fengguang Wu wrote:
-> > 
-> > Here is the dmesg. BTW, it seems 3.5.0 don't have this issue.
-> 
-> Fengguang,
-> 
-> It sounds like you have a (at least fairly) reliable reproduction for
-> this problem?  Is it something you can share?  It would be good to get
+dev_dbg_reatelimited() without DEBUG printed "217078 callbacks
+suppressed". This shouldn't print anything without DEBUG.
 
-Right, it can be easily reproduced here. I'm running these writeback
-performance tests:
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+Reported-by: Antti Palosaari <crope@iki.fi>
+---
+ include/linux/device.h |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-        https://github.com/fengguang/writeback-tests
-
-Which is basically doing N parallel dd writes to JBOD/RAID arrays on
-various filesystems. It seems that the RAID test can reliably trigger
-the problem.
-
-> this into our test suites, since it was _not_ something that was
-> caught by xfstests, apparently.
-> 
-> Can you see if this patch addresses it?  (The first two patch hunks
-> are the same debugging additions I had posted before.)
-> 
-> It looks like the responsible commit is 968dee7722: "ext4: fix hole
-> punch failure when depth is greater than 0".  I had thought this patch
-> was low risk if you weren't using the new punch ioctl, but it turns
-> out it did make a critical change in the non-punch (i.e., truncate)
-> code path, which is what the addition of "i = 0;" in the patch below
-> addresses.
-
-Yes, I'm sure the patch fixed the bug. With the fix, the writeback
-tests have run flawlessly for a dozen hours without any problem.
-
-Thanks,
-Fengguang
+diff --git a/include/linux/device.h b/include/linux/device.h
+index eb945e1..d4dc26e 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -962,9 +962,13 @@ do {									\
+ 	dev_level_ratelimited(dev_notice, dev, fmt, ##__VA_ARGS__)
+ #define dev_info_ratelimited(dev, fmt, ...)				\
+ 	dev_level_ratelimited(dev_info, dev, fmt, ##__VA_ARGS__)
++#if defined(DEBUG)
+ #define dev_dbg_ratelimited(dev, fmt, ...)				\
+ 	dev_level_ratelimited(dev_dbg, dev, fmt, ##__VA_ARGS__)
+-
++#else
++#define dev_dbg_ratelimited(dev, fmt, ...)			\
++	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#endif
+ /*
+  * Stupid hackaround for existing uses of non-printk uses dev_info
+  *
+-- 
+1.7.5.4
