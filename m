@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396Ab2HQOGH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:06:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13901 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054Ab2HQOF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:05:59 -0400
-Subject: [GIT PULL] C6X atomic64 support
-From: Mark Salter <msalter@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 17 Aug 2012 10:05:56 -0400
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1345212358.2750.70.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1756146Ab2HQOHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:07:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59522 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755310Ab2HQOHS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:07:18 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH v1 0/3] firmware loader: fix build failure
+Date: Fri, 17 Aug 2012 22:06:57 +0800
+Message-Id: <1345212420-1707-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
+Hi Greg,
 
-  Linux 3.5 (2012-07-21 13:58:29 -0700)
+These 3 patches fix build failure reported by Fengguang aginst
+driver-core -next tree.
 
-are available in the git repository at:
+The 2nd patch introduces dpm_for_each_dev in drivers/base/power
+to fix link failure if firmware loader is complied as moudle.
 
-  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git tags/for-linus
+v1:
+        - add 'static inline' on dpm_for_each_dev if !PM_SLEEP(2/3)
+        - check 'fn' in dpm_for_each_dev(2/3)
 
-for you to fetch changes up to 01ddd9a809b9a95df097ff1b5565f806e681a606:
-
-  C6X: select GENERIC_ATOMIC64 (2012-08-15 12:27:00 -0400)
-
-----------------------------------------------------------------
-Enable atomic64 ops in C6X
-
-  - define L1_CACHE_SHIFT
-  - select GENERIC_ATOMIC64
-
-----------------------------------------------------------------
-Mark Salter (2):
-      C6X: add Lx_CACHE_SHIFT defines
-      C6X: select GENERIC_ATOMIC64
-
- arch/c6x/Kconfig             |    1 +
- arch/c6x/include/asm/cache.h |   16 +++++++++++-----
- 2 files changed, 12 insertions(+), 5 deletions(-)
+Thanks,
+--
+Ming Lei
 
 
