@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab2HQOad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:30:33 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41182 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756930Ab2HQOa0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:30:26 -0400
+	id S1757984Ab2HQOax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:30:53 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:57062 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756930Ab2HQOao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:30:44 -0400
+Date: Fri, 17 Aug 2012 16:30:35 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] x86, microcode, AMD: Per-family patches cache
+Message-ID: <20120817143035.GA25700@aftab.osrc.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <20120817131941.GA25079@kroah.com>
-References: <1345179867-8266-1-git-send-email-yamanetoshi@gmail.com>
-	<1345179920-8303-1-git-send-email-yamanetoshi@gmail.com>
-	<20120817074644.GL4559@mwanda>
-	<CAOTypNS_rbQK2rPDWenFahiz5Z+cufPTjRy-aABqW01c3DWmYQ@mail.gmail.com>
-	<20120817131941.GA25079@kroah.com>
-Date: Fri, 17 Aug 2012 23:30:24 +0900
-Message-ID: <CAOTypNS40FOJ=D=sRigQaYJumXpCfH9Lu1c2B3jXy6epQuumVA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] staging/vme: fix checkpatch warning
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Martyn Welch <martyn.welch@ge.com>,
-        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 10:19 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Aug 17, 2012 at 05:27:53PM +0900, Toshiaki Yamane wrote:
->> On Fri, Aug 17, 2012 at 4:46 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->> > You've got the same subject repeated 5 times.
->> >
->> > It would be better to merge all the vme_user.c printk fixes into
->> > one patch.
->> > [patch 1/3] Staging: vme: Fix a white space issue
->> > [patch 2/3] Staging: vme: Use pr_ printks in vme_user.c
->> > [patch 3/3] Staging: vme: Use pr_ printks in vme_pio2_core.c
->> >
->> > It's not a huge deal, it just seems like there was some confusion on
->> > how to break patches up.
->>
->>
->> Thanks for your reply!
->> I will try to fix it.
->
-> Please do, I can't take it as-is.
+Hi guys,
 
-I will stop, if you say so.
+please pull, thanks.
+
+The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
+
+  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode-updates-for-3.7
+
+for you to fetch changes up to cd692919bed1d59a440ffaed585ebc3c9d8c3406:
+
+  x86, microcode, AMD: Rewrite patch application procedure (2012-08-17 14:17:42 +0200)
+
+----------------------------------------------------------------
+Per-family patches cache
+
+This patch set adds code for caching all microcode patches which belong
+to the current family on which we're running. We look up the patch
+needed for each core from the cache at application time instead of
+holding a single patch per-system.
+
+Also, a bunch of fixes/cleanups precede the meat in the last 3.
+
+Patchset has been tested on all families which are supported by the
+microcode loader ( >= 0x10).
+
+----------------------------------------------------------------
+Andreas Herrmann (1):
+      x86, microcode, AMD: Fix broken ucode patch size check
+
+Borislav Petkov (11):
+      x86, microcode: Save an indentation level in reload_for_cpu
+      x86, microcode: Drop uci->mc check on resume path
+      x86, microcode: Cleanup cpu hotplug notifier callback
+      x86, microcode: Straighten out Kconfig text
+      x86, microcode, AMD: Remove useless get_ucode_data wrapper
+      x86, microcode, AMD: Check before applying a patch
+      x86, microcode, AMD: Read CPUID(1).EAX on the correct cpu
+      x86, microcode: Add a refresh firmware flag to ->request_microcode_fw
+      x86, microcode, AMD: Add reverse equiv table search
+      x86, microcode, AMD: Add a small, per-family patches cache
+      x86, microcode, AMD: Rewrite patch application procedure
+
+ arch/x86/Kconfig                  |  20 +--
+ arch/x86/include/asm/microcode.h  |  10 +-
+ arch/x86/kernel/microcode_amd.c   | 356 ++++++++++++++++++++++++--------------
+ arch/x86/kernel/microcode_core.c  |  67 +++----
+ arch/x86/kernel/microcode_intel.c |   3 +-
+ 5 files changed, 273 insertions(+), 183 deletions(-)
+
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
