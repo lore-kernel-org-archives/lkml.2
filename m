@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2HQRcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:32:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52881 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753163Ab2HQRcP (ORCPT
+	id S1753060Ab2HQRfD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:35:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52896 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab2HQRey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:32:15 -0400
-Date: Fri, 17 Aug 2012 18:32:09 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com
-Message-ID: <20120817173209.GA29217@decadent.org.uk>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com>
+	Fri, 17 Aug 2012 13:34:54 -0400
+Message-ID: <502E80BA.5020409@wwwdotorg.org>
+Date: Fri, 17 Aug 2012 11:34:50 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817165109.GA11323@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
+ driver
+References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org> <502DE6FE.8040200@nvidia.com> <502E60A3.1020405@wwwdotorg.org>
+In-Reply-To: <502E60A3.1020405@wwwdotorg.org>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
-> On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > Now, gather DNS information. Invoke an external script (that can be
-> > distro dependent) to gather the DNS information.
+On 08/17/2012 09:17 AM, Stephen Warren wrote:
+> On 08/17/2012 12:38 AM, Laxman Dewangan wrote:
+>> On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
+>>> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
+>>>> Enable config for dmaengine based Tegra APB DMA driver and
+>>>> disable the legacy APB DMA driver (SYSTEM_DMA).
+>>> Laxman, if I apply this series to next-20120816 (plus a few patches in
+>>> my local work branch plus the CPU hotplug patches from Joseph, although
+>>> I suspect none of that matters), then audio playback on Tegra20 is
+>>> broken; the pitch is far too high. Audio playback on Tegra30 works as
+>>> expected.
+>>
+>> I run the test again on ventana and did not see any issue.
+>> I play one song and saw similar behavior with/without this series.
 > 
-> Where is that script?  Why a script, this really isn't in a standard
-> method for all Linux distros?  If not, why not work to do that like the
-> freedesktop.org people have done for other system configuration items?
- 
-I suggested using the Network Manager D-Bus API.  That obviously
-isn't going to work everywhere, but it seems to cover the same simple
-cases that this hypervisor-guest interface allows for.
+> OK, I'll test some other boards. I tested Whistler, although all the
+> clocking logic is identical between all Tegra20 boards.
 
-Ben.
+I tested both 3.6-rc2 and next-20120816, and they both work fine on Ventana.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+I then applied this patch series to both (plus your "dma: tegra:
+enable/disable dma clock" for 3.6-rc2) and it causes (or at least
+exposes) the problem.
+
+All testing was with a full git clean, using tegra_defconfig, and with
+no other patches applied.
+
+If you're not seeing this problem, are you sure you're executing the
+kernel you think you are, and that it got correctly switched to the new
+dmaengine driver, and rebuilt after applying your patches?
