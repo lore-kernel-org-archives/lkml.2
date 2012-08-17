@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab2HQOJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:09:31 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:48463 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752117Ab2HQOJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:09:22 -0400
-Date: Fri, 17 Aug 2012 14:09:21 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Hanjun Guo <guohanjun@huawei.com>
-cc: Wu Jianguo <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>, qiuxishi <qiuxishi@huawei.com>
-Subject: Re: [PATCH V2] mm: introduce N_LRU_MEMORY to distinguish between
- normal and movable memory
-In-Reply-To: <502DA342.7020005@huawei.com>
-Message-ID: <0000013934eaad61-2dad9ff0-e671-4155-98d3-501f243caaba-000000@email.amazonses.com>
-References: <502CA44C.80901@huawei.com> <502DA342.7020005@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756967Ab2HQOOO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:14:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51710 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755608Ab2HQOOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:14:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,785,1336374000"; 
+   d="scan'208";a="203547551"
+Date: Fri, 17 Aug 2012 22:13:53 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
+        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: ext4 write performance regression in 3.6-rc1
+Message-ID: <20120817141353.GA795@localhost>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+ <20120816024654.GB3781@thunk.org>
+ <20120816111051.GA16036@localhost>
+ <20120816152513.GA31346@thunk.org>
+ <20120817060915.GB28786@localhost>
+ <20120817134039.GB11439@thunk.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120817134039.GB11439@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Aug 2012, Hanjun Guo wrote:
+On Fri, Aug 17, 2012 at 09:40:39AM -0400, Theodore Ts'o wrote:
+> On Fri, Aug 17, 2012 at 02:09:15PM +0800, Fengguang Wu wrote:
+> > Ted,
+> > 
+> > I find ext4 write performance dropped by 3.3% on average in the
+> > 3.6-rc1 merge window. xfs and btrfs are fine.
+> > 
+> > Two machines are tested. The performance regression happens in the
+> > lkp-nex04 machine, which is equipped with 12 SSD drives. lkp-st02 does
+> > not see regression, which is equipped with HDD drives. I'll continue
+> > to repeat the tests and report variations.
+> 
+> Hmm... I've checked out the commits in "git log v3.5..v3.6-rc1 --
+> fs/ext4 fs/jbd2" and I don't see anything that I would expect would
+> cause that.  The are the lock elimination changes for Direct I/O
+> overwrites, but that shouldn't matter for your tests which are
+> measuring buffered writes, correct?
+> 
+> Is there any chance you could do me a favor and do a git bisect
+> restricted to commits involving fs/ext4 and fs/jbd2?
 
-> N_NORMAL_MEMORY means non-LRU page allocs possible.
+No problem :)
 
-Hmmm... It may be better to say
-
-N_NORMAL_MEMORY 	Allocations are allowed for pages that will not be
-			managed via a LRU and that cannot be moved by the page migration logic.
-
-N_LRU_MEMORY		Allocations are possible for pages that are managed via LRUs
-
-N_HIGH_MEMORY		Allocations are allowed for pages that are only temporarliy mapped into kernel address space.
-
-Any node that has the ability to allocate memory at all has at least N_LRU_MEMORY set.
-
->
->  /*
->   * Bitmasks that are kept for all the nodes.
-> + * N_NORMAL_MEMORY means non-LRU page allocs possible.
-> + * N_LRU_MEMORY means LRU page allocs possible,
-> + * node with ZONE_DMA/ZONE_DMA32/ZONE_NORMAL is marked with
-> + * N_LRU_MEMORY and N_NORMAL_MEMORY,
-> + * node with ZONE_MOVABLE is *only* marked with N_LRU_MEMORY,
-> + * node with ZONE_HIGHMEM is marked with N_LRU_MEMORY and N_HIGH_MEMORY.
-> + * N_LRU_MEMORY also means node has any regular memory.
->   */
->  enum node_states {
->  	N_POSSIBLE,		/* The node could become online at some point */
->  	N_ONLINE,		/* The node is online */
-> -	N_NORMAL_MEMORY,	/* The node has regular memory */
-> +	N_NORMAL_MEMORY,	/* The node has normal memory */
-> +	N_LRU_MEMORY,		/* The node has regular memory */
-
-These comments are utter garbage and just repeat what the constant
-alreadty expresses. . Please actually say something meaningful that
-another developer can use when he attempts to understand what these bits
-mean.
-
+Thanks,
+Fengguang
