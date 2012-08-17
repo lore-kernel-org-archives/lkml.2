@@ -1,81 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab2HQFPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 01:15:34 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56677 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2HQFPc (ORCPT
+	id S1754055Ab2HQFVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 01:21:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34530 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2HQFVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 01:15:32 -0400
-Date: Fri, 17 Aug 2012 10:43:07 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120817051307.GA4782@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120726051902.GA29466@in.ibm.com> <20120726052029.GB29466@in.ibm.com> <20120815165931.GA10059@redhat.com> <1345066913.11751.4.camel@pasglop> <20120816050030.GA12060@in.ibm.com> <20120816152112.GA8874@redhat.com>
+	Fri, 17 Aug 2012 01:21:34 -0400
+Message-ID: <502DD4C9.2030105@ti.com>
+Date: Fri, 17 Aug 2012 10:51:13 +0530
+From: Prabhakar Lad <prabhakar.lad@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120816152112.GA8874@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081705-6148-0000-0000-000008B4B49F
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: <davinci-linux-open-source@linux.davincidsp.com>,
+        LMML <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Subject: Re: [PATCH] media: davinci: vpif: add check for NULL handler
+References: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com> <1435592.88fOxbvhY7@avalon>
+In-Reply-To: <1435592.88fOxbvhY7@avalon>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 05:21:12PM +0200, Oleg Nesterov wrote:
+Hi Laurent,
 
-...
+Thanks for the review.
 
-> > So, the arch agnostic code itself
-> > takes care of this case...
+On Thursday 16 August 2012 08:43 PM, Laurent Pinchart wrote:
+> Hi Prabhakar,
 > 
-> Yes. I forgot about install_breakpoint()->is_swbp_insn() check which
-> returns -ENOTSUPP, somehow I thought arch_uprobe_analyze_insn() does
-> this.
+> Thanks for the patch.
 > 
-> > or am I missing something?
+> On Thursday 16 August 2012 19:32:00 Prabhakar Lad wrote:
+>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+>> ---
+>>  drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
+>>  drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
+>>  2 files changed, 15 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/media/video/davinci/vpif_capture.c
+>> b/drivers/media/video/davinci/vpif_capture.c index 266025e..a87b7a5 100644
+>> --- a/drivers/media/video/davinci/vpif_capture.c
+>> +++ b/drivers/media/video/davinci/vpif_capture.c
+>> @@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
+>> unsigned int count) }
+>>
+>>  	/* configure 1 or 2 channel mode */
+>> -	ret = vpif_config_data->setup_input_channel_mode
+>> -					(vpif->std_info.ycmux_mode);
+>> +	if (vpif_config_data->setup_input_channel_mode) {
+>> +		ret = vpif_config_data->setup_input_channel_mode
+>> +						(vpif->std_info.ycmux_mode);
+>>
+>> -	if (ret < 0) {
+>> -		vpif_dbg(1, debug, "can't set vpif channel mode\n");
+>> -		return ret;
+>> +		if (ret < 0) {
+>> +			vpif_dbg(1, debug, "can't set vpif channel mode\n");
+>> +			return ret;
+>> +		}
 > 
-> No, it is me.
+> This change looks good to me. However, note that you will need to get rid of 
+> board code callbacks at some point to implement device tree support. It would 
+> be worth thinking about how to do so now.
 > 
-> > However, I see that we need a powerpc specific is_swbp_insn()
-> > implementation since we will have to take care of all the trap variants.
+Currently VPIF driver is only used by dm646x, and the handlers for this
+in the the board code are not null. This patch is intended for da850
+where this handlers will be null.
+
+>>  	}
+>>
+>>  	/* Call vpif_set_params function to set the parameters and addresses */
+>> diff --git a/drivers/media/video/davinci/vpif_display.c
+>> b/drivers/media/video/davinci/vpif_display.c index e129c98..1e35f92 100644
+>> --- a/drivers/media/video/davinci/vpif_display.c
+>> +++ b/drivers/media/video/davinci/vpif_display.c
+>> @@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
+>> unsigned int count) }
+>>
+>>  	/* clock settings */
+>> -	ret =
+>> -	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+>> -					ch->vpifparams.std_info.hd_sd);
+>> -	if (ret < 0) {
+>> -		vpif_err("can't set clock\n");
+>> -		return ret;
+>> +	if (vpif_config_data->set_clock) {
 > 
-> Hmm, I am not sure. is_swbp_insn(insn), as it is used in the arch agnostic
-> code, should only return true if insn == UPROBE_SWBP_INSN (just in case,
-> this logic needs more fixes but this is offtopic).
-
-I think it does...
-
-> If powerpc has another insn(s) which can trigger powerpc's do_int3()
-> counterpart, they should be rejected by arch_uprobe_analyze_insn().
-> I think.
-
-The insn that gets passed to arch_uprobe_analyze_insn() is copy_insn()'s
-version, which is the file copy of the instruction. We should also take
-care of the in-memory copy, in case gdb had inserted a breakpoint at the
-same location, right? Updating is_swbp_insn() per-arch where needed will
-take care of both the cases, 'cos it gets called before
-arch_analyze_uprobe_insn() too.
-
-> > I will need to update the patches based on changes being made by Oleg
-> > and Sebastien for the single-step issues.
+> Does the DaVinci platform use the common clock framework ? If so, a better fix 
+> for this would be to pass a clock name through platform data instead of using 
+> a callback function.
 > 
-> Perhaps you can do this in a separate change?
-> 
-> We need some (simple) changes in the arch agnostic code first, they
-> should not break poweppc. These changes are still under discussion.
-> Once we have "__weak  arch_uprobe_step*" you can reimplement these
-> hooks and fix the problems with single-stepping.
+Currently DaVinci is not using the common clock framework.
 
-OK. Agreed.
+Can you ACK this patch?
 
-Ananth
+Thanks and Regards,
+--Prabhakar
+
+>> +		ret =
+>> +		vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
+>> +						ch->vpifparams.std_info.hd_sd);
+>> +		if (ret < 0) {
+>> +			vpif_err("can't set clock\n");
+>> +			return ret;
+>> +		}
+>>  	}
+>>
+>>  	/* set the parameters and addresses */
 
