@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450Ab2HQBqO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:46:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61239 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932345Ab2HQBqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:46:10 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 1/3] firmware loader: fix compile failure if !PM
-Date: Fri, 17 Aug 2012 09:45:47 +0800
-Message-Id: <1345167949-7419-2-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345167949-7419-1-git-send-email-ming.lei@canonical.com>
-References: <1345167949-7419-1-git-send-email-ming.lei@canonical.com>
+	id S933605Ab2HQBqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:46:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932178Ab2HQBql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 21:46:41 -0400
+Message-ID: <502DA263.8010507@redhat.com>
+Date: Thu, 16 Aug 2012 22:46:11 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+References: <20120817111013.28c2f0b0ef72631968007d9a@canb.auug.org.au>
+In-Reply-To: <20120817111013.28c2f0b0ef72631968007d9a@canb.auug.org.au>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'return 0' should be added to fw_pm_notify if !PM because
-return value of the funcion is defined as 'int'.
+Hi Stephen,
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/base/firmware_class.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Em 16-08-2012 22:10, Stephen Rothwell escreveu:
+> Hi Mauro,
+> 
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> ERROR: "usb_cypress_load_firmware" [drivers/staging/media/go7007/s2250-loader.ko] undefined!
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 5bd2100..4c8d8ef 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1242,7 +1242,9 @@ static int fw_pm_notify(struct notifier_block *notify_block,
- #else
- static int fw_pm_notify(struct notifier_block *notify_block,
- 			unsigned long mode, void *unused)
--{}
-+{
-+	return 0;
-+}
- #endif
- 
- static void __init fw_cache_init(void)
--- 
-1.7.9.5
+This is due to the usage of "=" or ":=" instead of "+=" on some places. Just pushed a
+patch fixing it.
+
+> ERROR: "b2c2_flexcop_debug" [drivers/media/pci/b2c2/b2c2-flexcop-pci.ko] undefined!
+
+It may also be due to the same reason. I'll double-check this one.
+
+> Given the major reorganisation going on, I have just used the v4l-dvb
+> tree from next-20120816 for today.
+
+Ok.
+
+Almost all patches already went there, so I expect that it will be
+more stable tomorrow. Yet, it might have some conflicts with a few
+trees (like the "trivial" tree).
+
+Regards,
+Mauro
+
+
 
