@@ -1,137 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab2HQJcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 05:32:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38473 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab2HQJcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 05:32:12 -0400
-Message-ID: <502E0F8C.4070300@ti.com>
-Date: Fri, 17 Aug 2012 15:01:56 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1030336Ab2HQJcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 05:32:23 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:56056 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756596Ab2HQJcQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 05:32:16 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19rBLqOhoHNpqwpabd+AZb2
+Date: Fri, 17 Aug 2012 02:32:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 30/31] arm64: Build infrastructure
+Message-ID: <20120817093213.GT11011@atomide.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-31-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Prabhakar Lad <prabhakar.lad@ti.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        LMML <linux-media@vger.kernel.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>
-Subject: Re: [PATCH] media: davinci: vpif: add check for NULL handler
-References: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com> <502DD889.3040306@ti.com> <502E0193.9000003@ti.com> <2565324.ujMjh3qGVe@avalon>
-In-Reply-To: <2565324.ujMjh3qGVe@avalon>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344966752-16102-31-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/17/2012 2:45 PM, Laurent Pinchart wrote:
-> Hi Prabhakar,
-> 
-> On Friday 17 August 2012 14:02:19 Prabhakar Lad wrote:
->> On Friday 17 August 2012 11:07 AM, Sekhar Nori wrote:
->>> On 8/17/2012 10:51 AM, Prabhakar Lad wrote:
->>>> On Thursday 16 August 2012 08:43 PM, Laurent Pinchart wrote:
->>>>> On Thursday 16 August 2012 19:32:00 Prabhakar Lad wrote:
->>>>>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>>>>>
->>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->>>>>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->>>>>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
->>>>>> ---
->>>>>>
->>>>>>  drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
->>>>>>  drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
->>>>>>  2 files changed, 15 insertions(+), 11 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/media/video/davinci/vpif_capture.c
->>>>>> b/drivers/media/video/davinci/vpif_capture.c index 266025e..a87b7a5
->>>>>> 100644
->>>>>> --- a/drivers/media/video/davinci/vpif_capture.c
->>>>>> +++ b/drivers/media/video/davinci/vpif_capture.c
->>>>>> @@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue
->>>>>> *vq,
->>>>>> unsigned int count) }
->>>>>>
->>>>>>  	/* configure 1 or 2 channel mode */
->>>>>>
->>>>>> -	ret = vpif_config_data->setup_input_channel_mode
->>>>>> -					(vpif->std_info.ycmux_mode);
->>>>>> +	if (vpif_config_data->setup_input_channel_mode) {
->>>>>> +		ret = vpif_config_data->setup_input_channel_mode
->>>>>> +						(vpif->std_info.ycmux_mode);
->>>>>>
->>>>>> -	if (ret < 0) {
->>>>>> -		vpif_dbg(1, debug, "can't set vpif channel mode\n");
->>>>>> -		return ret;
->>>>>> +		if (ret < 0) {
->>>>>> +			vpif_dbg(1, debug, "can't set vpif channel mode\n");
->>>>>> +			return ret;
->>>>>> +		}
->>>>>
->>>>> This change looks good to me. However, note that you will need to get
->>>>> rid of board code callbacks at some point to implement device tree
->>>>> support. It would be worth thinking about how to do so now.
->>>>
->>>> Currently VPIF driver is only used by dm646x, and the handlers for this
->>>> in the the board code are not null. This patch is intended for da850
->>>> where this handlers will be null.
->>>>
->>>>>>  	}
->>>>>>  	
->>>>>>  	/* Call vpif_set_params function to set the parameters and addresses
->>>>>>  	*/
->>>>>>
->>>>>> diff --git a/drivers/media/video/davinci/vpif_display.c
->>>>>> b/drivers/media/video/davinci/vpif_display.c index e129c98..1e35f92
->>>>>> 100644
->>>>>> --- a/drivers/media/video/davinci/vpif_display.c
->>>>>> +++ b/drivers/media/video/davinci/vpif_display.c
->>>>>> @@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue
->>>>>> *vq,
->>>>>> unsigned int count) }
->>>>>>
->>>>>>  	/* clock settings */
->>>>>>
->>>>>> -	ret =
->>>>>> -	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
->>>>>> -					ch->vpifparams.std_info.hd_sd);
->>>>>> -	if (ret < 0) {
->>>>>> -		vpif_err("can't set clock\n");
->>>>>> -		return ret;
->>>>>> +	if (vpif_config_data->set_clock) {
->>>>>
->>>>> Does the DaVinci platform use the common clock framework ? If so, a
->>>>> better fix for this would be to pass a clock name through platform data
->>>>> instead of using a callback function.
->>>>
->>>> Currently DaVinci is not using the common clock framework.
->>>>
->>>> Can you ACK this patch?
->>>
->>> Yes, DaVinci has not migrated to common clock framework (yet). However,
->>> even without that it should be possible to use clock API in driver code.
->>> Using a callback to enable clocks or even passing the clock name from
->>> platform data would be bypassing an existing framework. Clock name
->>> should be IP specific, so it should be possible to use that in driver.
->>
->> The callback is not actually dealing with PSC clock's but with system
->> module registers.
-> 
-> Good to know. Then you'll have to create an API to expose the system module 
-> registers to drivers.
+* Catalin Marinas <catalin.marinas@arm.com> [120814 11:00]:
+> --- /dev/null
+> +++ b/arch/arm64/Kconfig
+> @@ -0,0 +1,261 @@
+> +config ARM64
+> +	def_bool y
+> +	select OF
+> +	select OF_EARLY_FLATTREE
+> +	select IRQ_DOMAIN
+> +	select HAVE_AOUT
+> +	select HAVE_DMA_ATTRS
+> +	select HAVE_DMA_API_DEBUG
+> +	select HAVE_IDE
+> +	select HAVE_MEMBLOCK
+> +	select RTC_LIB
+> +	select SYS_SUPPORTS_APM_EMULATION
+> +	select HAVE_GENERIC_DMA_COHERENT
+> +	select GENERIC_IOMAP
+> +	select HAVE_IRQ_WORK
+> +	select HAVE_PERF_EVENTS
+> +	select HAVE_ARCH_TRACEHOOK
+> +	select PERF_USE_VMALLOC
+> +	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+> +	select HAVE_GENERIC_HARDIRQS
+> +	select GENERIC_HARDIRQS_NO_DEPRECATED
+> +	select HAVE_SPARSE_IRQ
+> +	select SPARSE_IRQ
+> +	select GENERIC_IRQ_SHOW
+> +	select GENERIC_SMP_IDLE_THREAD
+> +	select NO_BOOTMEM
+> +	help
+> +	  ARM 64-bit (AArch64) Linux support.
 
-Yes something like that is needed. Konstantin Baydarov is working on a
-MFD driver for a similar module that exists in OMAP world called
-"control module".
+Anything we should select here for ARM generic timers and
+interrupts assuming we can always expect to boot using those?
 
-I guess this patch can go in though since it does not add any new
-accesses but merely lets the existing function be passed as NULL.
+Other than that:
 
-Thanks,
-Sekhar
-
-[1] https://patchwork.kernel.org/patch/1236491/
+Acked-by: Tony Lindgren <tony@atomide.com>
