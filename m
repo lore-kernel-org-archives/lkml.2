@@ -1,368 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab2HQOPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:15:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35423 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757062Ab2HQOOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:14:43 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Jim Schutt <jaschut@sandia.gov>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 7/7] mm: compaction: Capture a suitable high-order page immediately when it is made available
-Date: Fri, 17 Aug 2012 15:14:33 +0100
-Message-Id: <1345212873-22447-8-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1345212873-22447-1-git-send-email-mgorman@suse.de>
-References: <1345212873-22447-1-git-send-email-mgorman@suse.de>
+	id S1757228Ab2HQOSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:18:01 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:50040 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756427Ab2HQORv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:17:51 -0400
+X-Sasl-enc: gaBhPKLnsY6megRU35VZkmfHX508xZI+geCM9qV7MY/r 1345213070
+Date: Fri, 17 Aug 2012 11:17:48 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: ibm-acpi-devel@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+Subject: Re: [PROBLEM] thinkpad_acpi: unhandled HKEY event 0x6040
+Message-ID: <20120817141748.GA12934@khazad-dum.debian.net>
+References: <CAOJsxLEb+J=p8Kd782VWPm0ft3D9ujOnV0x_Av+fjWp6QiTHQQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLEb+J=p8Kd782VWPm0ft3D9ujOnV0x_Av+fjWp6QiTHQQ@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While compaction is migrating pages to free up large contiguous blocks for
-allocation it races with other allocation requests that may steal these
-blocks or break them up. This patch alters direct compaction to capture a
-suitable free page as soon as it becomes available to reduce this race. It
-uses similar logic to split_free_page() to ensure that watermarks are
-still obeyed.
+On Fri, 17 Aug 2012, Pekka Enberg wrote:
+> [ 3129.616297] thinkpad_acpi: unhandled HKEY event 0x6040
+> [ 3129.616298] thinkpad_acpi: please report the conditions when this
+> event happened to ibm-acpi-devel@lists.sourceforge.net
+> [ 3129.616949] thinkpad_acpi: undocked from hotplug port replicator
+> [ 3129.617065] ACPI: \_SB_.GDCK - undocking
+> [ 3144.184916] ACPI: \_SB_.GDCK - docking
+> [ 3144.185204] ACPI: Unable to dock!
+> 
+> and the monitor doesn't come up.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/compaction.h |    4 +-
- include/linux/mm.h         |    1 +
- mm/compaction.c            |   90 ++++++++++++++++++++++++++++++++++++++------
- mm/internal.h              |    1 +
- mm/page_alloc.c            |   63 +++++++++++++++++++++++--------
- 5 files changed, 130 insertions(+), 29 deletions(-)
+The monitor doesn't come up because of something else, check the GPU drivers
+and userspace.  And also why the docking failed...
 
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index ef65814..0e38a1d 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -22,7 +22,7 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
- extern int fragmentation_index(struct zone *zone, unsigned int order);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *mask,
--			bool sync, bool *contended);
-+			bool sync, bool *contended, struct page **page);
- extern int compact_pgdat(pg_data_t *pgdat, int order);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
- 
-@@ -64,7 +64,7 @@ static inline bool compaction_deferred(struct zone *zone, int order)
- #else
- static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
--			bool sync, bool *contended)
-+			bool sync, bool *contended, struct page **page)
- {
- 	return COMPACT_CONTINUE;
- }
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 0514fe9..5ddb11b 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -442,6 +442,7 @@ void put_pages_list(struct list_head *pages);
- 
- void split_page(struct page *page, unsigned int order);
- int split_free_page(struct page *page);
-+int capture_free_page(struct page *page, int alloc_order, int migratetype);
- 
- /*
-  * Compound pages have a destructor function.  Provide a
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 1c51395..56753f3 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -91,6 +91,60 @@ static inline bool compact_trylock_irqsave(spinlock_t *lock,
- 	return compact_checklock_irqsave(lock, flags, false, cc);
- }
- 
-+static void compact_capture_page(struct compact_control *cc)
-+{
-+	unsigned long flags;
-+	int mtype, mtype_low, mtype_high;
-+
-+	if (!cc->page || *cc->page)
-+		return;
-+
-+	/*
-+	 * For MIGRATE_MOVABLE allocations we capture a suitable page ASAP
-+	 * regardless of the migratetype of the freelist is is captured from.
-+	 * This is fine because the order for a high-order MIGRATE_MOVABLE
-+	 * allocation is typically at least a pageblock size and overall
-+	 * fragmentation is not impaired. Other allocation types must
-+	 * capture pages from their own migratelist because otherwise they
-+	 * could pollute other pageblocks like MIGRATE_MOVABLE with
-+	 * difficult to move pages and making fragmentation worse overall.
-+	 */
-+	if (cc->migratetype == MIGRATE_MOVABLE) {
-+		mtype_low = 0;
-+		mtype_high = MIGRATE_PCPTYPES;
-+	} else {
-+		mtype_low = cc->migratetype;
-+		mtype_high = cc->migratetype + 1;
-+	}
-+
-+	/* Speculatively examine the free lists without zone lock */
-+	for (mtype = mtype_low; mtype < mtype_high; mtype++) {
-+		int order;
-+		for (order = cc->order; order < MAX_ORDER; order++) {
-+			struct page *page;
-+			struct free_area *area;
-+			area = &(cc->zone->free_area[order]);
-+			if (list_empty(&area->free_list[mtype]))
-+				continue;
-+
-+			/* Take the lock and attempt capture of the page */
-+			if (!compact_trylock_irqsave(&cc->zone->lock, &flags, cc))
-+				return;
-+			if (!list_empty(&area->free_list[mtype])) {
-+				page = list_entry(area->free_list[mtype].next,
-+							struct page, lru);
-+				if (capture_free_page(page, cc->order, mtype)) {
-+					spin_unlock_irqrestore(&cc->zone->lock,
-+									flags);
-+					*cc->page = page;
-+					return;
-+				}
-+			}
-+			spin_unlock_irqrestore(&cc->zone->lock, flags);
-+		}
-+	}
-+}
-+
- /*
-  * Isolate free pages onto a private freelist. Caller must hold zone->lock.
-  * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-@@ -647,7 +701,6 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- static int compact_finished(struct zone *zone,
- 			    struct compact_control *cc)
- {
--	unsigned int order;
- 	unsigned long watermark;
- 
- 	if (fatal_signal_pending(current))
-@@ -690,14 +743,22 @@ static int compact_finished(struct zone *zone,
- 		return COMPACT_CONTINUE;
- 
- 	/* Direct compactor: Is a suitable page free? */
--	for (order = cc->order; order < MAX_ORDER; order++) {
--		/* Job done if page is free of the right migratetype */
--		if (!list_empty(&zone->free_area[order].free_list[cc->migratetype]))
--			return COMPACT_PARTIAL;
--
--		/* Job done if allocation would set block type */
--		if (order >= pageblock_order && zone->free_area[order].nr_free)
-+	if (cc->page) {
-+		/* Was a suitable page captured? */
-+		if (*cc->page)
- 			return COMPACT_PARTIAL;
-+	} else {
-+		unsigned int order;
-+		for (order = cc->order; order < MAX_ORDER; order++) {
-+			struct free_area *area = &zone->free_area[cc->order];
-+			/* Job done if page is free of the right migratetype */
-+			if (!list_empty(&area->free_list[cc->migratetype]))
-+				return COMPACT_PARTIAL;
-+
-+			/* Job done if allocation would set block type */
-+			if (cc->order >= pageblock_order && area->nr_free)
-+				return COMPACT_PARTIAL;
-+		}
- 	}
- 
- 	return COMPACT_CONTINUE;
-@@ -819,6 +880,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 				goto out;
- 			}
- 		}
-+
-+		/* Capture a page now if it is a suitable size */
-+		compact_capture_page(cc);
- 	}
- 
- out:
-@@ -831,7 +895,8 @@ out:
- 
- static unsigned long compact_zone_order(struct zone *zone,
- 				 int order, gfp_t gfp_mask,
--				 bool sync, bool *contended)
-+				 bool sync, bool *contended,
-+				 struct page **page)
- {
- 	struct compact_control cc = {
- 		.nr_freepages = 0,
-@@ -841,6 +906,7 @@ static unsigned long compact_zone_order(struct zone *zone,
- 		.zone = zone,
- 		.sync = sync,
- 		.contended = contended,
-+		.page = page,
- 	};
- 	INIT_LIST_HEAD(&cc.freepages);
- 	INIT_LIST_HEAD(&cc.migratepages);
-@@ -862,7 +928,7 @@ int sysctl_extfrag_threshold = 500;
-  */
- unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
--			bool sync, bool *contended)
-+			bool sync, bool *contended, struct page **page)
- {
- 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
- 	int may_enter_fs = gfp_mask & __GFP_FS;
-@@ -883,7 +949,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 		int status;
- 
- 		status = compact_zone_order(zone, order, gfp_mask, sync,
--						contended);
-+						contended, page);
- 		rc = max(status, rc);
- 
- 		/* If a normal allocation would succeed, stop compacting */
-@@ -938,6 +1004,7 @@ int compact_pgdat(pg_data_t *pgdat, int order)
- 	struct compact_control cc = {
- 		.order = order,
- 		.sync = false,
-+		.page = NULL,
- 	};
- 
- 	return __compact_pgdat(pgdat, &cc);
-@@ -948,6 +1015,7 @@ static int compact_node(int nid)
- 	struct compact_control cc = {
- 		.order = -1,
- 		.sync = true,
-+		.page = NULL,
- 	};
- 
- 	return __compact_pgdat(NODE_DATA(nid), &cc);
-diff --git a/mm/internal.h b/mm/internal.h
-index b8c91b3..e549a7f 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -131,6 +131,7 @@ struct compact_control {
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
- 	bool *contended;		/* True if a lock was contended */
-+	struct page **page;		/* Page captured of requested size */
- };
- 
- unsigned long
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index b83199b..f6e7c38 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1379,16 +1379,11 @@ void split_page(struct page *page, unsigned int order)
- }
- 
- /*
-- * Similar to split_page except the page is already free. As this is only
-- * being used for migration, the migratetype of the block also changes.
-- * As this is called with interrupts disabled, the caller is responsible
-- * for calling arch_alloc_page() and kernel_map_page() after interrupts
-- * are enabled.
-- *
-- * Note: this is probably too low level an operation for use in drivers.
-- * Please consult with lkml before using this in your driver.
-+ * Similar to the split_page family of functions except that the page
-+ * required at the given order and being isolated now to prevent races
-+ * with parallel allocators
-  */
--int split_free_page(struct page *page)
-+int capture_free_page(struct page *page, int alloc_order, int migratetype)
- {
- 	unsigned int order;
- 	unsigned long watermark;
-@@ -1410,10 +1405,11 @@ int split_free_page(struct page *page)
- 	rmv_page_order(page);
- 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
- 
--	/* Split into individual pages */
--	set_page_refcounted(page);
--	split_page(page, order);
-+	if (alloc_order != order)
-+		expand(zone, page, alloc_order, order,
-+			&zone->free_area[order], migratetype);
- 
-+	/* Set the pageblock if the captured page is at least a pageblock */
- 	if (order >= pageblock_order - 1) {
- 		struct page *endpage = page + (1 << order) - 1;
- 		for (; page < endpage; page += pageblock_nr_pages) {
-@@ -1424,7 +1420,35 @@ int split_free_page(struct page *page)
- 		}
- 	}
- 
--	return 1 << order;
-+	return 1UL << order;
-+}
-+
-+/*
-+ * Similar to split_page except the page is already free. As this is only
-+ * being used for migration, the migratetype of the block also changes.
-+ * As this is called with interrupts disabled, the caller is responsible
-+ * for calling arch_alloc_page() and kernel_map_page() after interrupts
-+ * are enabled.
-+ *
-+ * Note: this is probably too low level an operation for use in drivers.
-+ * Please consult with lkml before using this in your driver.
-+ */
-+int split_free_page(struct page *page)
-+{
-+	unsigned int order;
-+	int nr_pages;
-+
-+	BUG_ON(!PageBuddy(page));
-+	order = page_order(page);
-+
-+	nr_pages = capture_free_page(page, order, 0);
-+	if (!nr_pages)
-+		return 0;
-+
-+	/* Split into individual pages */
-+	set_page_refcounted(page);
-+	split_page(page, order);
-+	return nr_pages;
- }
- 
- /*
-@@ -2093,7 +2117,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	bool *contended_compaction, bool *deferred_compaction,
- 	unsigned long *did_some_progress)
- {
--	struct page *page;
-+	struct page *page = NULL;
- 
- 	if (!order)
- 		return NULL;
-@@ -2106,10 +2130,16 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	current->flags |= PF_MEMALLOC;
- 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
- 						nodemask, sync_migration,
--						contended_compaction);
-+						contended_compaction, &page);
- 	current->flags &= ~PF_MEMALLOC;
--	if (*did_some_progress != COMPACT_SKIPPED) {
- 
-+	/* If compaction captured a page, prep and use it */
-+	if (page) {
-+		prep_new_page(page, order, gfp_mask);
-+		goto got_page;
-+	}
-+
-+	if (*did_some_progress != COMPACT_SKIPPED) {
- 		/* Page migration frees to the PCP lists but we want merging */
- 		drain_pages(get_cpu());
- 		put_cpu();
-@@ -2119,6 +2149,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 				alloc_flags & ~ALLOC_NO_WATERMARKS,
- 				preferred_zone, migratetype);
- 		if (page) {
-+got_page:
- 			preferred_zone->compact_considered = 0;
- 			preferred_zone->compact_defer_shift = 0;
- 			if (order >= preferred_zone->compact_order_failed)
 -- 
-1.7.9.2
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
