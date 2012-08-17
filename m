@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030859Ab2HQHtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:49:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29209 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932119Ab2HQHtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:49:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
-   d="asc'?scan'208";a="135292527"
-Date: Fri, 17 Aug 2012 10:49:01 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH, RFC 6/9] thp: add address parameter to
- split_huge_page_pmd()
-Message-ID: <20120817074901.GA9833@otc-wbsnb-06>
-References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1344503300-9507-7-git-send-email-kirill.shutemov@linux.intel.com>
- <20120816194201.GQ11188@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
-Content-Disposition: inline
-In-Reply-To: <20120816194201.GQ11188@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933085Ab2HQHuL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:50:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42488 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932284Ab2HQHuI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 03:50:08 -0400
+From: Il Han <corone.il.han@gmail.com>
+To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Neil Brown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org, Il Han <corone.il.han@gmail.com>
+Subject: [PATCH] twl4030: It would be better not to use the 0b-prefix.
+Date: Fri, 17 Aug 2012 16:49:43 +0900
+Message-Id: <1345189783-19200-1-git-send-email-corone.il.han@gmail.com>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It would be better not to use the 0b-prefix for earlier versions of gcc-4.3.
+Please, Modify it.
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Il Han <corone.il.han@gmail.com>
+---
+ drivers/power/twl4030_charger.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-On Thu, Aug 16, 2012 at 09:42:01PM +0200, Andrea Arcangeli wrote:
-> On Thu, Aug 09, 2012 at 12:08:17PM +0300, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >=20
-> > It's required to implement huge zero pmd splitting.
-> >=20
->=20
-> This isn't bisectable with the next one, it'd fail on wfg 0-DAY kernel
-> build testing backend, however this is clearly to separate this patch
-> from the next, to keep the size small so I don't mind.
+diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
+index 15f4d5d..8d6bc68 100644
+--- a/drivers/power/twl4030_charger.c
++++ b/drivers/power/twl4030_charger.c
+@@ -41,16 +41,16 @@
+ #define TWL4030_STS_VBUS	BIT(7)
+ #define TWL4030_STS_USB_ID	BIT(2)
+ #define TWL4030_BBCHEN		BIT(4)
+-#define TWL4030_BBSEL_MASK	0b1100
+-#define TWL4030_BBSEL_2V5	0b0000
+-#define TWL4030_BBSEL_3V0	0b0100
+-#define TWL4030_BBSEL_3V1	0b1000
+-#define TWL4030_BBSEL_3V2	0b1100
+-#define TWL4030_BBISEL_MASK	0b11
+-#define TWL4030_BBISEL_25uA	0b00
+-#define TWL4030_BBISEL_150uA	0b01
+-#define TWL4030_BBISEL_500uA	0b10
+-#define TWL4030_BBISEL_1000uA	0b11
++#define TWL4030_BBSEL_MASK	0x0c
++#define TWL4030_BBSEL_2V5	0x00
++#define TWL4030_BBSEL_3V0	0x04
++#define TWL4030_BBSEL_3V1	0x08
++#define TWL4030_BBSEL_3V2	0x0c
++#define TWL4030_BBISEL_MASK	0x03
++#define TWL4030_BBISEL_25uA	0x00
++#define TWL4030_BBISEL_150uA	0x01
++#define TWL4030_BBISEL_500uA	0x02
++#define TWL4030_BBISEL_1000uA	0x03
+ 
+ /* BCI interrupts */
+ #define TWL4030_WOVF		BIT(0) /* Watchdog overflow */
+-- 
+1.7.11.1
 
-Hm. I don't see why it's not bisectable. It's only add a new parameter to
-the function. The parameter is unused until next patch.
-
-Actually, I've checked build bisectability with aiaiai[1].
-
-[1] http://git.infradead.org/users/dedekind/aiaiai.git
-
---=20
- Kirill A. Shutemov
-
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQLfdtAAoJEAd+omnVudOM3rMQAIcawtMYkfooQfvwZvr6w3JW
-oC0ege7lexwLyYvaEdPGMurV9cnUn8wsf66TlN8It43mdPGbCy3cQ0qMtFy2nBcn
-BlD6vbDto7Gn6PUZmQhjQjHpYwiQhbFESeMJ23e9JlCy9M1i842VpePj4aXNpO3t
-oF0basphC/R7+2dx3Ffi4JL3lP3B/cEapw+Mt3F1HJQc2aLN83AWnSiTvwMBkwzR
-YWBDZzMrb5R0+fvdxgVH/B5gi97tWjT2mXTcmRKekKeP/lbrENYAo4ZXhSwIbQlc
-FTil+YzgV3GG1lTb0wYbmTq4NYsJYt2DkSGWvDJVvRuZ6sEBwO3RC65IU+wmvTw9
-L3PVxDNVEnGFrRRk2ePq8mlWEuxV1vvQFV8w1uOmWiZP5ef8eYSZXrXRNiRADbA9
-+hk3IerQDdVG1Rk0gnjqlOLDVTxq4TYc3gfvKpYhrmoPd5qj/ELeE9fG/Vy/Lg3a
-U1hCce8jK6hCFiTkEYsKvG3XRd6AvYYh1AtrOmOYgn6Wi9yE1TB8rTsDBClM/GEW
-t0dsJPI8T4snylWGsWx+rMBZUYdHeyKyuNHHuVfMXRzg88UzkjCl/aeBFYeOiAtE
-d88viONyShLty6X2Nlri0B6VQvQ3sb77o/UyPt279hGNTP102TNegF99OP+n6Unl
-XLmVJXnf8pyqt2eGflzK
-=HQXK
------END PGP SIGNATURE-----
-
---W/nzBZO5zC0uMSeA--
