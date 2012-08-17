@@ -1,369 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030599Ab2HQHC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:02:26 -0400
-Received: from lunge.queued.net ([173.255.254.236]:55717 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab2HQHCY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:02:24 -0400
-Date: Fri, 17 Aug 2012 00:02:17 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Toshiaki Yamane <yamanetoshi@gmail.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/olpc_dcon: fix checkpatch warnings
-Message-ID: <20120817000217.4c78b301@debxo>
-In-Reply-To: <1345181841-8859-1-git-send-email-yamanetoshi@gmail.com>
-References: <1343346559-8416-1-git-send-email-yamanetoshi@gmail.com>
-	<1345181841-8859-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1030656Ab2HQHCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:02:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38744 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030609Ab2HQHCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 03:02:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
+   d="asc'?scan'208";a="187614531"
+Message-ID: <1345187208.27859.3.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
+ parameter
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Date: Fri, 17 Aug 2012 10:06:48 +0300
+In-Reply-To: <20120816165027.6520c4f4@pixies.home.jungo.com>
+References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
+	 <1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
+	 <20120816115713.726da8f2@pixies.home.jungo.com>
+	 <1345123718.3393.235.camel@sauron.fi.intel.com>
+	 <20120816165027.6520c4f4@pixies.home.jungo.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-dNPF8/SWYIreIrZPrKEy"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me, thanks.
 
-Acked-by: Andres Salomon <dilinger@queued.net>
+--=-dNPF8/SWYIreIrZPrKEy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, 17 Aug 2012 14:37:21 +0900
-Toshiaki Yamane <yamanetoshi@gmail.com> wrote:
+On Thu, 2012-08-16 at 16:50 +0300, Shmulik Ladkani wrote:
+> Yes, but the main drawback I was referring to is those platforms already
+> setting MTD_UBI_BEB_RESERVE other than the default, by means of kernel
+> configuration.
+> (there's one platform known to do so in its defconfig, that's
+> sam9_l9260_defconfig, which uses 3% instead of the "standard" 2%).
 
-> The below checkpatch warnings was fixed,
-> 
-> -  WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
-> -  WARNING: Prefer pr_warn(... to printk(KERN_WARNING, ...
-> -  WARNING: Prefer pr_info(... to printk(KERN_INFO, ...
-> -  WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
-> 
-> And added pr_fmt.
-> 
-> Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
-> ---
->  drivers/staging/olpc_dcon/olpc_dcon.c        |   53
-> ++++++++++++--------------
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |   15 ++++---
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |    6 ++- 3 files
-> changed, 37 insertions(+), 37 deletions(-)
-> 
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c
-> b/drivers/staging/olpc_dcon/olpc_dcon.c index 992275c..280751a 100644
-> --- a/drivers/staging/olpc_dcon/olpc_dcon.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-> @@ -11,6 +11,7 @@
->   * License as published by the Free Software Foundation.
->   */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->  
->  #include <linux/kernel.h>
->  #include <linux/fb.h>
-> @@ -71,18 +72,16 @@ static int dcon_hw_init(struct dcon_priv *dcon,
-> int is_init) 
->  	ver = dcon_read(dcon, DCON_REG_ID);
->  	if ((ver >> 8) != 0xDC) {
-> -		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx:
-> 0x%04x instead.\n",
-> -			ver);
-> +		pr_err("DCON ID not 0xDCxx: 0x%04x instead.\n", ver);
->  		rc = -ENXIO;
->  		goto err;
->  	}
->  
->  	if (is_init) {
-> -		printk(KERN_INFO "olpc-dcon:  Discovered DCON
-> version %x\n",
-> -				ver & 0xFF);
-> +		pr_info("Discovered DCON version %x\n", ver & 0xFF);
->  		rc = pdata->init(dcon);
->  		if (rc != 0) {
-> -			printk(KERN_ERR "olpc-dcon:  Unable to
-> init.\n");
-> +			pr_err("Unable to init.\n");
->  			goto err;
->  		}
->  	}
-> @@ -136,8 +135,7 @@ power_up:
->  		x = 1;
->  		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL,
-> 0); if (x) {
-> -			printk(KERN_WARNING "olpc-dcon:  unable to
-> force dcon to power up: %d!\n",
-> -				x);
-> +			pr_warn("unable to force dcon to power up:
-> %d!\n", x); return x;
->  		}
->  		msleep(10); /* we'll be conservative */
-> @@ -150,7 +148,7 @@ power_up:
->  		x = dcon_read(dcon, DCON_REG_ID);
->  	}
->  	if (x < 0) {
-> -		printk(KERN_ERR "olpc-dcon:  unable to stabilize
-> dcon's smbus, reasserting power and praying.\n");
-> +		pr_err("unable to stabilize dcon's smbus,
-> reasserting power and praying.\n");
-> BUG_ON(olpc_board_at_least(olpc_board(0xc2))); x = 0;
->  		olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL, 0);
-> @@ -221,8 +219,7 @@ static void dcon_sleep(struct dcon_priv *dcon,
-> bool sleep) x = 0;
->  		x = olpc_ec_cmd(0x26, (unsigned char *)&x, 1, NULL,
-> 0); if (x)
-> -			printk(KERN_WARNING "olpc-dcon:  unable to
-> force dcon to power down: %d!\n",
-> -				x);
-> +			pr_warn("unable to force dcon to power down:
-> %d!\n", x); else
->  			dcon->asleep = sleep;
->  	} else {
-> @@ -231,8 +228,7 @@ static void dcon_sleep(struct dcon_priv *dcon,
-> bool sleep) dcon->disp_mode |= MODE_BL_ENABLE;
->  		x = dcon_bus_stabilize(dcon, 1);
->  		if (x)
-> -			printk(KERN_WARNING "olpc-dcon:  unable to
-> reinit dcon hardware: %d!\n",
-> -				x);
-> +			pr_warn("unable to reinit dcon hardware:
-> %d!\n", x); else
->  			dcon->asleep = sleep;
->  
-> @@ -303,12 +299,11 @@ static void dcon_source_switch(struct
-> work_struct *work) 
->  	switch (source) {
->  	case DCON_SOURCE_CPU:
-> -		printk(KERN_INFO "dcon_source_switch to CPU\n");
-> +		pr_info("dcon_source_switch to CPU\n");
->  		/* Enable the scanline interrupt bit */
->  		if (dcon_write(dcon, DCON_REG_MODE,
->  				dcon->disp_mode | MODE_SCAN_INT))
-> -			printk(KERN_ERR
-> -			       "olpc-dcon:  couldn't enable scanline
-> interrupt!\n");
-> +			pr_err("couldn't enable scanline
-> interrupt!\n"); else {
->  			/* Wait up to one second for the scanline
-> interrupt */ wait_event_timeout(dcon_wait_queue,
-> @@ -316,11 +311,11 @@ static void dcon_source_switch(struct
-> work_struct *work) }
->  
->  		if (!dcon->switched)
-> -			printk(KERN_ERR "olpc-dcon:  Timeout
-> entering CPU mode; expect a screen glitch.\n");
-> +			pr_err("Timeout entering CPU mode; expect a
-> screen glitch.\n"); 
->  		/* Turn off the scanline interrupt */
->  		if (dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode))
-> -			printk(KERN_ERR "olpc-dcon:  couldn't
-> disable scanline interrupt!\n");
-> +			pr_err("couldn't disable scanline
-> interrupt!\n"); 
->  		/*
->  		 * Ideally we'd like to disable interrupts here so
-> that the @@ -331,7 +326,7 @@ static void dcon_source_switch(struct
-> work_struct *work)
->  		 * For now, we just hope..
->  		 */
->  		if (!dcon_blank_fb(dcon, false)) {
-> -			printk(KERN_ERR "olpc-dcon:  Failed to enter
-> CPU mode\n");
-> +			pr_err("Failed to enter CPU mode\n");
->  			dcon->pending_src = DCON_SOURCE_DCON;
->  			return;
->  		}
-> @@ -340,14 +335,14 @@ static void dcon_source_switch(struct
-> work_struct *work) pdata->set_dconload(1);
->  		getnstimeofday(&dcon->load_time);
->  
-> -		printk(KERN_INFO "olpc-dcon: The CPU has control\n");
-> +		pr_info("The CPU has control\n");
->  		break;
->  	case DCON_SOURCE_DCON:
->  	{
->  		int t;
->  		struct timespec delta_t;
->  
-> -		printk(KERN_INFO "dcon_source_switch to DCON\n");
-> +		pr_info("dcon_source_switch to DCON\n");
->  
->  		add_wait_queue(&dcon_wait_queue, &wait);
->  		set_current_state(TASK_UNINTERRUPTIBLE);
-> @@ -361,7 +356,7 @@ static void dcon_source_switch(struct work_struct
-> *work) set_current_state(TASK_RUNNING);
->  
->  		if (!dcon->switched) {
-> -			printk(KERN_ERR "olpc-dcon: Timeout entering
-> DCON mode; expect a screen glitch.\n");
-> +			pr_err("Timeout entering DCON mode; expect a
-> screen glitch.\n"); } else {
->  			/* sometimes the DCON doesn't follow its own
-> rules,
->  			 * and doesn't wait for two vsync pulses
-> before @@ -377,7 +372,7 @@ static void dcon_source_switch(struct
-> work_struct *work) delta_t = timespec_sub(dcon->irq_time,
-> dcon->load_time); if (dcon->switched && delta_t.tv_sec == 0 &&
->  					delta_t.tv_nsec <
-> NSEC_PER_MSEC * 20) {
-> -				printk(KERN_ERR "olpc-dcon: missed
-> loading, retrying\n");
-> +				pr_err("missed loading, retrying\n");
->  				pdata->set_dconload(1);
->  				mdelay(41);
->  				pdata->set_dconload(0);
-> @@ -387,7 +382,7 @@ static void dcon_source_switch(struct work_struct
-> *work) }
->  
->  		dcon_blank_fb(dcon, true);
-> -		printk(KERN_INFO "olpc-dcon: The DCON has
-> control\n");
-> +		pr_info("The DCON has control\n");
->  		break;
->  	}
->  	default:
-> @@ -475,7 +470,7 @@ static ssize_t dcon_freeze_store(struct device
-> *dev, if (ret)
->  		return ret;
->  
-> -	printk(KERN_INFO "dcon_freeze_store: %lu\n", output);
-> +	pr_info("dcon_freeze_store: %lu\n", output);
->  
->  	switch (output) {
->  	case 0:
-> @@ -649,7 +644,7 @@ static int dcon_probe(struct i2c_client *client,
-> const struct i2c_device_id *id) dcon_device =
-> platform_device_alloc("dcon", -1); 
->  	if (dcon_device == NULL) {
-> -		printk(KERN_ERR "dcon:  Unable to create the DCON
-> device\n");
-> +		pr_err("Unable to create the DCON device\n");
->  		rc = -ENOMEM;
->  		goto eirq;
->  	}
-> @@ -657,7 +652,7 @@ static int dcon_probe(struct i2c_client *client,
-> const struct i2c_device_id *id) platform_set_drvdata(dcon_device,
-> dcon); 
->  	if (rc) {
-> -		printk(KERN_ERR "dcon:  Unable to add the DCON
-> device\n");
-> +		pr_err("Unable to add the DCON device\n");
->  		goto edev;
->  	}
->  
-> @@ -761,7 +756,7 @@ irqreturn_t dcon_interrupt(int irq, void *id)
->  
->  	switch (status & 3) {
->  	case 3:
-> -		printk(KERN_DEBUG "olpc-dcon: DCONLOAD_MISSED
-> interrupt\n");
-> +		pr_debug("DCONLOAD_MISSED interrupt\n");
->  		break;
->  
->  	case 2:	/* switch to DCON mode */
-> @@ -783,9 +778,9 @@ irqreturn_t dcon_interrupt(int irq, void *id)
->  			dcon->switched = true;
->  			getnstimeofday(&dcon->irq_time);
->  			wake_up(&dcon_wait_queue);
-> -			printk(KERN_DEBUG "olpc-dcon: switching w/
-> status 0/0\n");
-> +			pr_debug("switching w/ status 0/0\n");
->  		} else {
-> -			printk(KERN_DEBUG "olpc-dcon: scanline
-> interrupt w/CPU\n");
-> +			pr_debug("scanline interrupt w/CPU\n");
->  		}
->  	}
->  
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-> b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c index c87fdfa..77e8eb5
-> 100644 --- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-> @@ -10,6 +10,9 @@
->   * modify it under the terms of version 2 of the GNU General Public
->   * License as published by the Free Software Foundation.
->   */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/cs5535.h>
->  #include <linux/gpio.h>
->  #include <linux/delay.h>
-> @@ -22,23 +25,23 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
->  	unsigned char lob;
->  
->  	if (gpio_request(OLPC_GPIO_DCON_STAT0, "OLPC-DCON")) {
-> -		printk(KERN_ERR "olpc-dcon: failed to request STAT0
-> GPIO\n");
-> +		pr_err("failed to request STAT0 GPIO\n");
->  		return -EIO;
->  	}
->  	if (gpio_request(OLPC_GPIO_DCON_STAT1, "OLPC-DCON")) {
-> -		printk(KERN_ERR "olpc-dcon: failed to request STAT1
-> GPIO\n");
-> +		pr_err("failed to request STAT1 GPIO\n");
->  		goto err_gp_stat1;
->  	}
->  	if (gpio_request(OLPC_GPIO_DCON_IRQ, "OLPC-DCON")) {
-> -		printk(KERN_ERR "olpc-dcon: failed to request IRQ
-> GPIO\n");
-> +		pr_err("failed to request IRQ GPIO\n");
->  		goto err_gp_irq;
->  	}
->  	if (gpio_request(OLPC_GPIO_DCON_LOAD, "OLPC-DCON")) {
-> -		printk(KERN_ERR "olpc-dcon: failed to request LOAD
-> GPIO\n");
-> +		pr_err("failed to request LOAD GPIO\n");
->  		goto err_gp_load;
->  	}
->  	if (gpio_request(OLPC_GPIO_DCON_BLANK, "OLPC-DCON")) {
-> -		printk(KERN_ERR "olpc-dcon: failed to request BLANK
-> GPIO\n");
-> +		pr_err("failed to request BLANK GPIO\n");
->  		goto err_gp_blank;
->  	}
->  
-> @@ -83,7 +86,7 @@ static int dcon_init_xo_1(struct dcon_priv *dcon)
->  
->  	/* Register the interrupt handler */
->  	if (request_irq(DCON_IRQ, &dcon_interrupt, 0, "DCON", dcon))
-> {
-> -		printk(KERN_ERR "olpc-dcon: failed to request DCON's
-> irq\n");
-> +		pr_err("failed to request DCON's irq\n");
->  		goto err_req_irq;
->  	}
->  
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-> b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c index 69415ee..352dd3d
-> 100644 --- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-> @@ -6,6 +6,8 @@
->   * License as published by the Free Software Foundation.
->   */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/acpi.h>
->  #include <linux/delay.h>
->  #include <linux/pci.h>
-> @@ -66,7 +68,7 @@ static int dcon_init_xo_1_5(struct dcon_priv *dcon)
->  	pdev = pci_get_device(PCI_VENDOR_ID_VIA,
->  			      PCI_DEVICE_ID_VIA_VX855, NULL);
->  	if (!pdev) {
-> -		printk(KERN_ERR "cannot find VX855 PCI ID\n");
-> +		pr_err("cannot find VX855 PCI ID\n");
->  		return 1;
->  	}
->  
-> @@ -104,7 +106,7 @@ static int dcon_init_xo_1_5(struct dcon_priv
-> *dcon) /* we're sharing the IRQ with ACPI */
->  	irq = acpi_gbl_FADT.sci_interrupt;
->  	if (request_irq(irq, &dcon_interrupt, IRQF_SHARED, "DCON",
-> dcon)) {
-> -		printk(KERN_ERR PREFIX "DCON (IRQ%d) allocation
-> failed\n", irq);
-> +		pr_err("DCON (IRQ%d) allocation failed\n", irq);
->  		return 1;
->  	}
->  
+Yes, I understand this. I think there are few such systems and many of
+them are fine to pass the parameter explicitly.
+
+> We force these systems to change their usermode because we changed ubi's
+> default BEB limit to be 20/1024 _hardcoded_ (instead of kernel
+> configurable as previously was).
+
+Not necessarily, they can come to us and ask to add the kernel option.
+
+> Is this ok?
+
+It is not ideal, but I am willing to take this risk.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-dNPF8/SWYIreIrZPrKEy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQLe2IAAoJECmIfjd9wqK0gsUP/24p+5MxWjf48RMU/90T8f+k
+H5movsNmYArcOduzG6ZQn+qYg/MQIy0juDJclEFT/HT8UJ8LlXfewNjz/aHVZ9nF
+0Qe0PS15vwT1Z+D9ykYnkpHRFbxVCBwvGmDtd7Udbm4S0EGhnsEHMiwNOYimAc1r
+tL+mrDZ81dS6UovafVtn3PdwpjVSxNkXMrwLnOL3kp4WQneKOPCjC/gSfhHvpau4
+T7j6SpvpGOjV+i97tIpaHZLsDZpKsLY/c0OOqZ2J2vue7Za2Vkz6g4Ma3RqaGcxW
+PjlyuRJDDev0FxrVP9jsziJESQGNJsj+y1zu4TE/Wbb/vV8zdYNSZt0X3y2RQcFx
+IQCNlnZ6FThYynS+0llfUu9C0VauVjxbv2s/Bl0HwOzh/Wrt/OHlERhw7aITyJvy
+kOWeb9dgOc5XVOaXW6Y8XVMF2URtXOiUO7AJL2s9E0cuE3YmXuqeyHy2QLRTYIn6
+zi+lbz3PocHQXka9nMhifLUq+L1hbvHyhxAteWxJFbkGjU0czdSPIS8ChVbcmj9k
+wSg1ekN82yuxgclI2e5VIUI0V1DRut0jnk6/1ZNapmSMKBCH61z/wbVCpJ7jp8Yn
+VIASnT+dANbyA/sP02aDw0MdCGbng7oNYdqi6Ds5BZ8OObrUu7DNEVzdTvxzQNnE
+hqUX0sWLZWF087eFVTWG
+=5h0C
+-----END PGP SIGNATURE-----
+
+--=-dNPF8/SWYIreIrZPrKEy--
 
