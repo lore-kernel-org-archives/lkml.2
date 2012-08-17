@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab2HQAFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 20:05:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754077Ab2HQAFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 20:05:42 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
-References: <CA+55aFzDpQmE1n__kaW4unfuzhPstKzp41GseL_AwuE-8_bAig@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.6-rc2
-Date: Fri, 17 Aug 2012 01:05:36 +0100
-Message-ID: <10034.1345161936@warthog.procyon.org.uk>
+	id S1753508Ab2HQAFD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 20:05:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42009 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab2HQAFB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 20:05:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120816204638.GA4463@kroah.com>
+References: <1344052890-31935-1-git-send-email-ming.lei@canonical.com>
+	<CACVXFVM_WY4v69jdQiG13B94rEPP1EzHXpetZRrTJwhmgT=S2w@mail.gmail.com>
+	<20120816204638.GA4463@kroah.com>
+Date: Fri, 17 Aug 2012 08:04:59 +0800
+Message-ID: <CACVXFVPt_xAS5+SdRB4XY55yP6=qCWfzG+ZUmSjeLse6AQ2t5A@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 00/15] firmware loader: introduce cache/uncache firmware
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 17, 2012 at 4:46 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+>
+> Ok, these look good to me, so I've applied the first 14 to the
+> driver-core-next tree to get some testing by others.
+>
+> I didn't feel I could add the 15th patch without some acks from those
+> developers, or at least someone who says "it works for me!".
 
-Hi Linus,
+OK, there is still one problem(double free in failure path) in the 15th patch,
+and I will send a new version later and ask for comments from ath9k guys.
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>
+> Also, what about those other patches you reference in your footnotes
+> above, what's the status of them?
 
-> So, due to travels, the -rc2 release was two weeks instead of the
-> usual one. But it's out there now.
+There is only one patch in the reference below which need to be
+merged, but it has nothing conflicted with these firmware loader 14
+patches.
 
-Are you still considering my UAPI header patches and Nicholas's tcm_vhost
-merge as you mentioned in the -rc1 announcement?  Or are these now in the
-category of things that need to wait till the next merge window?
+         http://marc.info/?l=linux-kernel&m=134323730805443&w=2
 
+I think Linus will deal with it, :-)
 
-Anyway, I've regenerated my patches again as a new UAPI header appeared in the
-last couple of days and another got some additions.  Running:
-
-	git diff uapi-post-split-201208{14,17} -- arch/*/include include |
-	diffstat
-
-shows:
-
- arch/sh/include/cpu-sh2a/cpu/sh7269.h |   36 ++-
- include/linux/vfio.h                  |  357 --------------------------------
- include/uapi/linux/Kbuild             |    1 
- include/uapi/linux/fuse.h             |   19 +
- include/uapi/linux/vfio.h             |  368 ++++++++++++++++++++++++++++++++++
- 5 files changed, 412 insertions(+), 369 deletions(-)
-
-The latest regeneration is at tag uapi-post-split-20120817 in the GIT tree
-mentioned in my previous pull request.
 
 Thanks,
-David
+--
+Ming Lei
