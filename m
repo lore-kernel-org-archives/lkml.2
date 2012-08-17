@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2HQNie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:38:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33254 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab2HQNiZ (ORCPT
+	id S1755370Ab2HQNix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:38:53 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:50592 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2HQNiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:38:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120816212249.GH24861@google.com>
-References: <1345040741-5508-1-git-send-email-js1304@gmail.com>
-	<20120816212249.GH24861@google.com>
-Date: Fri, 17 Aug 2012 22:38:24 +0900
-Message-ID: <CAAmzW4Pvn4m2mcEu0ezKYk815ntDzvTOFVYrhM3T9jhoTx-Dzg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/6] system_highpri_wq
-From: JoonSoo Kim <js1304@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 17 Aug 2012 09:38:46 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>,
+        Priyanka Jain <Priyanka.Jain@freescale.com>
+Subject: [PATCH] NET: xfrm, use correct rcu dereference helper
+Date: Fri, 17 Aug 2012 15:38:36 +0200
+Message-Id: <1345210716-24556-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.11.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/17 Tejun Heo <tj@kernel.org>:
-> On Wed, Aug 15, 2012 at 11:25:35PM +0900, Joonsoo Kim wrote:
->> Change from v2
->> [1/6] No change
->> [2/6] Change local variable name and use it directly for TP
->> [3/6] Add a comment.
->> [4/6] No change
->> [5/6] Add a comment. Fix ugly indentation.
->> [6/6] No change
->>
->> Change from v1
->> [ALL] Add cover-letter
->> [ALL] Rebase on git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7
->>
->> [1/6] No change
->> [2/6] First added into this series.
->> [3/6] Add change log to clarify what pacth do,
->>       Add logic to handle the case "@cpu is WORK_CPU_UNBOUND"
->> [4/6] Fix awsome mistake: Set WQ_HIGHPRI for system_highpri_wq
->> [5/6] Adopt Tejun's comment about selection system_wq
->> [6/6] No change
->>
->> This patchset introduce system_highpri_wq
->> in order to use proper cwq for highpri worker.
->>
->> First 3 patches are not related to that purpose.
->> Just fix arbitrary issues.
->> Last 3 patches are for our purpose.
->
-> Applied to wq/for-3.7 w/ minor updates.
->
-> Thanks.
->
-> --
-> tejun
+Use rcu_dereference_bh while holding bh rcu lock. Otherwise we get:
+===============================
+[ INFO: suspicious RCU usage. ]
+3.6.0-rc1-next-20120816+ #10 Not tainted
+-------------------------------
+net/xfrm/xfrm_policy.c:2504 suspicious rcu_dereference_check() usage!
 
-Hello.
-I checked your minor update and it looks better.
-Sorry for my poor explanation for patches.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Priyanka Jain <Priyanka.Jain@freescale.com>
+---
+ net/xfrm/xfrm_policy.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thank you very much.
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 5ad4d2c..6405764 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -2501,11 +2501,11 @@ static void __net_init xfrm_dst_ops_init(struct net *net)
+ 	struct xfrm_policy_afinfo *afinfo;
+ 
+ 	rcu_read_lock_bh();
+-	afinfo = rcu_dereference(xfrm_policy_afinfo[AF_INET]);
++	afinfo = rcu_dereference_bh(xfrm_policy_afinfo[AF_INET]);
+ 	if (afinfo)
+ 		net->xfrm.xfrm4_dst_ops = *afinfo->dst_ops;
+ #if IS_ENABLED(CONFIG_IPV6)
+-	afinfo = rcu_dereference(xfrm_policy_afinfo[AF_INET6]);
++	afinfo = rcu_dereference_bh(xfrm_policy_afinfo[AF_INET6]);
+ 	if (afinfo)
+ 		net->xfrm.xfrm6_dst_ops = *afinfo->dst_ops;
+ #endif
+-- 
+1.7.11.5
+
+
