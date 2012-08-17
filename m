@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778Ab2HQIqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:46:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49658 "EHLO
+	id S933795Ab2HQIqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:46:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35967 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017Ab2HQIo6 (ORCPT
+	with ESMTP id S1756077Ab2HQIpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:44:58 -0400
+	Fri, 17 Aug 2012 04:45:09 -0400
 From: Huacai Chen <chenhc@lemote.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
         Hua Yan <yanh@lemote.com>
-Subject: [PATCH V6 13/15] MIPS: Loongson 3: Add Loongson-3 SMP support
-Date: Fri, 17 Aug 2012 16:43:33 +0800
-Message-Id: <1345193015-3024-14-git-send-email-chenhc@lemote.com>
+Subject: [PATCH V6 15/15] MIPS: Loongson: Add a Loongson-3 default config file
+Date: Fri, 17 Aug 2012 16:43:35 +0800
+Message-Id: <1345193015-3024-16-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
 References: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
@@ -23,422 +23,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IPI registers of Loongson-3 include IPI_SET, IPI_CLEAR, IPI_STATUS,
-IPI_EN and IPI_MAILBOX_BUF. Each bit of IPI_STATUS indicate a type of
-IPI and IPI_EN indicate whether the IPI is enabled. The sender write 1
-to IPI_SET bits generate IPIs in IPI_STATUS, and receiver write 1 to
-bits of IPI_CLEAR to clear IPIs. IPI_MAILBOX_BUF are used to deliver
-more information about IPIs.
-
-Why we change code in arch/mips/loongson/common/setup.c?
-
-If without this change, when SMP configured, system cannot boot since
-it hang at printk() in cgroup_init_early(). The root cause is:
-
-console_trylock()
-  \-->down_trylock(&console_sem)
-    \-->raw_spin_unlock_irqrestore(&sem->lock, flags)
-      \-->_raw_spin_unlock_irqrestore()(SMP/UP have different versions)
-        \-->__raw_spin_unlock_irqrestore()  (following is the SMP case)
-          \-->do_raw_spin_unlock()
-            \-->arch_spin_unlock()
-              \-->nudge_writes()
-                \-->mb()
-                  \-->wbflush()
-                    \-->__wbflush()
-
-In previous code __wbflush() is initialized in plat_mem_setup(), but
-cgroup_init_early() is called before plat_mem_setup(). Therefore, In
-this patch we make changes to avoid boot failure.
-
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
 ---
- arch/mips/loongson/common/init.c       |    5 +
- arch/mips/loongson/common/setup.c      |    8 +-
- arch/mips/loongson/loongson-3/Makefile |    2 +
- arch/mips/loongson/loongson-3/smp.c    |  278 ++++++++++++++++++++++++++++++++
- arch/mips/loongson/loongson-3/smp.h    |   24 +++
- 5 files changed, 312 insertions(+), 5 deletions(-)
- create mode 100644 arch/mips/loongson/loongson-3/smp.c
- create mode 100644 arch/mips/loongson/loongson-3/smp.h
+ arch/mips/configs/loongson3_defconfig |  283 +++++++++++++++++++++++++++++++++
+ 1 files changed, 283 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/configs/loongson3_defconfig
 
-diff --git a/arch/mips/loongson/common/init.c b/arch/mips/loongson/common/init.c
-index 1c29b19..30d20ad 100644
---- a/arch/mips/loongson/common/init.c
-+++ b/arch/mips/loongson/common/init.c
-@@ -12,6 +12,8 @@
- 
- #include <loongson.h>
- 
-+extern struct plat_smp_ops loongson3_smp_ops;
-+
- /* Loongson CPU address windows config space base address */
- unsigned long __maybe_unused _loongson_addrwincfg_base;
- 
-@@ -33,6 +35,9 @@ void __init prom_init(void)
- 
- 	/*init the uart base address */
- 	prom_init_uart_base();
-+#if defined(CONFIG_SMP)
-+	register_smp_ops(&loongson3_smp_ops);
-+#endif
- }
- 
- void __init prom_free_prom_memory(void)
-diff --git a/arch/mips/loongson/common/setup.c b/arch/mips/loongson/common/setup.c
-index 27d826b..464cc5a 100644
---- a/arch/mips/loongson/common/setup.c
-+++ b/arch/mips/loongson/common/setup.c
-@@ -18,9 +18,6 @@
- #include <linux/screen_info.h>
- #endif
- 
--void (*__wbflush)(void);
--EXPORT_SYMBOL(__wbflush);
--
- static void wbflush_loongson(void)
- {
- 	asm(".set\tpush\n\t"
-@@ -32,10 +29,11 @@ static void wbflush_loongson(void)
- 	    ".set mips0\n\t");
- }
- 
-+void (*__wbflush)(void) = wbflush_loongson;
-+EXPORT_SYMBOL(__wbflush);
-+
- void __init plat_mem_setup(void)
- {
--	__wbflush = wbflush_loongson;
--
- #ifdef CONFIG_VT
- #if defined(CONFIG_VGA_CONSOLE)
- 	conswitchp = &vga_con;
-diff --git a/arch/mips/loongson/loongson-3/Makefile b/arch/mips/loongson/loongson-3/Makefile
-index b9968cd..70152b2 100644
---- a/arch/mips/loongson/loongson-3/Makefile
-+++ b/arch/mips/loongson/loongson-3/Makefile
-@@ -2,3 +2,5 @@
- # Makefile for Loongson-3 family machines
- #
- obj-y			+= irq.o
-+
-+obj-$(CONFIG_SMP)	+= smp.o
-diff --git a/arch/mips/loongson/loongson-3/smp.c b/arch/mips/loongson/loongson-3/smp.c
+diff --git a/arch/mips/configs/loongson3_defconfig b/arch/mips/configs/loongson3_defconfig
 new file mode 100644
-index 0000000..8923117
+index 0000000..4a0722f
 --- /dev/null
-+++ b/arch/mips/loongson/loongson-3/smp.c
-@@ -0,0 +1,278 @@
-+/*
-+ * Copyright (C) 2010, 2011, 2012, Lemote, Inc.
-+ * Author: Chen Huacai, chenhc@lemote.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/cpu.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/cpufreq.h>
-+#include <asm/processor.h>
-+#include <asm/time.h>
-+#include <asm/clock.h>
-+#include <asm/tlbflush.h>
-+#include <loongson.h>
-+
-+#include "smp.h"
-+
-+/* write a 64bit value to ipi register */
-+void loongson3_ipi_write64(uint64_t action, void * addr)
-+{
-+	*((uint64_t *)addr) = action;
-+};
-+
-+/* read a 64bit value from ipi register */
-+uint64_t loongson3_ipi_read64(void * addr)
-+{
-+	return *((uint64_t *)addr);
-+};
-+
-+/* write a 32bit value to ipi register */
-+void loongson3_ipi_write32(uint32_t action, void * addr)
-+{
-+	*((uint32_t *)addr) = action;
-+};
-+
-+/* read a 32bit value from ipi register */
-+uint32_t loongson3_ipi_read32(void * addr)
-+{
-+	return *((uint32_t *)addr);
-+};
-+
-+static void *ipi_set0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + SET0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + SET0),
-+};
-+
-+static void *ipi_clear0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + CLEAR0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + CLEAR0),
-+};
-+
-+static void *ipi_status_regs0[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + STATUS0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + STATUS0),
-+};
-+
-+static void *ipi_en0_regs[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group0_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group1_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group2_base + smp_core3_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core0_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core1_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core2_offset + EN0),
-+	(void *)(smp_core_group3_base + smp_core3_offset + EN0),
-+};
-+
-+static volatile void *ipi_mailbox_buf[] = {
-+	(void *)(smp_core_group0_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group0_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group1_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group2_base + smp_core3_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core0_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core1_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core2_offset + BUF),
-+	(void *)(smp_core_group3_base + smp_core3_offset + BUF),
-+};
-+
-+/*
-+ * Simple enough, just poke the appropriate ipi register
-+ */
-+static void loongson3_send_ipi_single(int cpu, unsigned int action)
-+{
-+	loongson3_ipi_write32((u32)action, ipi_set0_regs[cpu]);
-+}
-+
-+static void loongson3_send_ipi_mask(const struct cpumask *mask, unsigned int action)
-+{
-+	unsigned int i;
-+
-+	for_each_cpu(i, mask)
-+		loongson3_send_ipi_single(i, action);
-+}
-+
-+void loongson3_ipi_interrupt(struct pt_regs *regs)
-+{
-+	int cpu = smp_processor_id();
-+	unsigned int action;
-+
-+	/* Load the ipi register to figure out what we're supposed to do */
-+	action = loongson3_ipi_read32(ipi_status_regs0[cpu]);
-+
-+	/* Clear the ipi register to clear the interrupt */
-+	loongson3_ipi_write32((u32)action, ipi_clear0_regs[cpu]);
-+
-+	if (action & SMP_RESCHEDULE_YOURSELF) {
-+		scheduler_ipi();
-+	}
-+
-+	if (action & SMP_CALL_FUNCTION) {
-+		smp_call_function_interrupt();
-+	}
-+}
-+
-+/*
-+ * SMP init and finish on secondary CPUs
-+ */
-+void __cpuinit loongson3_init_secondary(void)
-+{
-+	int i;
-+	unsigned int imask = STATUSF_IP7 | STATUSF_IP6 | STATUSF_IP5 |
-+			     STATUSF_IP4 | STATUSF_IP3 | STATUSF_IP2;
-+
-+	/* Set interrupt mask, but don't enable */
-+	change_c0_status(ST0_IM, imask);
-+
-+	for (i = 0; i < NR_CPUS; i++) {
-+		loongson3_ipi_write32(0xffffffff, ipi_en0_regs[i]);
-+	}
-+}
-+
-+void __cpuinit loongson3_smp_finish(void)
-+{
-+	write_c0_compare(read_c0_count() + mips_hpt_frequency/HZ);
-+	local_irq_enable();
-+	loongson3_ipi_write64(0, (void *)(ipi_mailbox_buf[smp_processor_id()]+0x0));
-+	printk(KERN_INFO "CPU#%d finished, CP0_ST=%x\n",
-+			smp_processor_id(), read_c0_status());
-+}
-+
-+void __init loongson3_smp_setup(void)
-+{
-+	int i, num;
-+
-+	init_cpu_possible(cpu_none_mask);
-+	set_cpu_possible(0, true);
-+
-+	__cpu_number_map[0] = 0;
-+	__cpu_logical_map[0] = 0;
-+
-+	/* For unified kernel, NR_CPUS is the maximum possible value,
-+	 * nr_cpus_loongson is the really present value */
-+	for (i = 1, num = 0; i < nr_cpus_loongson; i++) {
-+		set_cpu_possible(i, true);
-+		__cpu_number_map[i] = ++num;
-+		__cpu_logical_map[num] = i;
-+	}
-+	printk(KERN_INFO "Detected %i available secondary CPU(s)\n", num);
-+}
-+
-+void __init loongson3_prepare_cpus(unsigned int max_cpus)
-+{
-+}
-+
-+/*
-+ * Setup the PC, SP, and GP of a secondary processor and start it runing!
-+ */
-+void __cpuinit loongson3_boot_secondary(int cpu, struct task_struct *idle)
-+{
-+	volatile unsigned long startargs[4];
-+
-+	printk(KERN_INFO "Booting CPU#%d...\n", cpu);
-+
-+	/* startargs[] are initial PC, SP and GP for secondary CPU */
-+	startargs[0] = (unsigned long)&smp_bootstrap;
-+	startargs[1] = (unsigned long)__KSTK_TOS(idle);
-+	startargs[2] = (unsigned long)task_thread_info(idle);
-+	startargs[3] = 0;
-+
-+	printk(KERN_DEBUG "CPU#%d, func_pc=%lx, sp=%lx, gp=%lx\n",
-+			cpu, startargs[0], startargs[1], startargs[2]);
-+
-+	loongson3_ipi_write64(startargs[3], (void *)(ipi_mailbox_buf[cpu]+0x18));
-+	loongson3_ipi_write64(startargs[2], (void *)(ipi_mailbox_buf[cpu]+0x10));
-+	loongson3_ipi_write64(startargs[1], (void *)(ipi_mailbox_buf[cpu]+0x8));
-+	loongson3_ipi_write64(startargs[0], (void *)(ipi_mailbox_buf[cpu]+0x0));
-+}
-+
-+/*
-+ * Final cleanup after all secondaries booted
-+ */
-+void __init loongson3_cpus_done(void)
-+{
-+}
-+
-+struct plat_smp_ops loongson3_smp_ops = {
-+	.send_ipi_single = loongson3_send_ipi_single,
-+	.send_ipi_mask = loongson3_send_ipi_mask,
-+	.init_secondary = loongson3_init_secondary,
-+	.smp_finish = loongson3_smp_finish,
-+	.cpus_done = loongson3_cpus_done,
-+	.boot_secondary = loongson3_boot_secondary,
-+	.smp_setup = loongson3_smp_setup,
-+	.prepare_cpus = loongson3_prepare_cpus,
-+};
-diff --git a/arch/mips/loongson/loongson-3/smp.h b/arch/mips/loongson/loongson-3/smp.h
-new file mode 100644
-index 0000000..dc9ce69
---- /dev/null
-+++ b/arch/mips/loongson/loongson-3/smp.h
-@@ -0,0 +1,24 @@
-+/* for Loongson-3A smp support */
-+
-+/* 4 groups(nodes) in maximum in numa case */
-+#define  smp_core_group0_base    0x900000003ff01000
-+#define  smp_core_group1_base    0x900010003ff01000
-+#define  smp_core_group2_base    0x900020003ff01000
-+#define  smp_core_group3_base    0x900030003ff01000
-+
-+/* 4 cores in each group(node) */
-+#define  smp_core0_offset  0x000
-+#define  smp_core1_offset  0x100
-+#define  smp_core2_offset  0x200
-+#define  smp_core3_offset  0x300
-+
-+/* ipi registers offsets */
-+#define  STATUS0  0x00
-+#define  EN0      0x04
-+#define  SET0     0x08
-+#define  CLEAR0   0x0c
-+#define  STATUS1  0x10
-+#define  MASK1    0x14
-+#define  SET1     0x18
-+#define  CLEAR1   0x1c
-+#define  BUF      0x20
++++ b/arch/mips/configs/loongson3_defconfig
+@@ -0,0 +1,283 @@
++CONFIG_MACH_LOONGSON=y
++CONFIG_LEMOTE_MACH3A=y
++CONFIG_LOONGSON_BIGMEM=y
++CONFIG_CPU_LOONGSON3=y
++CONFIG_64BIT=y
++CONFIG_PAGE_SIZE_16KB=y
++CONFIG_SPARSEMEM_MANUAL=y
++CONFIG_KSM=y
++CONFIG_SMP=y
++CONFIG_NR_CPUS=4
++CONFIG_HZ_256=y
++CONFIG_PREEMPT=y
++CONFIG_KEXEC=y
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_AUDIT=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_LOG_BUF_SHIFT=14
++CONFIG_CPUSETS=y
++CONFIG_RESOURCE_COUNTERS=y
++CONFIG_CGROUP_MEM_RES_CTLR=y
++CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
++CONFIG_BLK_CGROUP=y
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_SYSFS_DEPRECATED=y
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_CC_OPTIMIZE_FOR_SIZE=y
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_EMBEDDED=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODULE_FORCE_UNLOAD=y
++CONFIG_PARTITION_ADVANCED=y
++CONFIG_CFQ_GROUP_IOSCHED=y
++CONFIG_PCI=y
++CONFIG_HT_PCI=y
++CONFIG_HOTPLUG_PCI=y
++CONFIG_HOTPLUG_PCI_SHPC=m
++CONFIG_MIPS32_COMPAT=y
++CONFIG_MIPS32_O32=y
++CONFIG_MIPS32_N32=y
++CONFIG_PM_RUNTIME=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_ADVANCED_ROUTER=y
++CONFIG_IP_MULTIPLE_TABLES=y
++CONFIG_IP_ROUTE_MULTIPATH=y
++CONFIG_IP_ROUTE_VERBOSE=y
++CONFIG_NETFILTER=y
++CONFIG_NETFILTER_NETLINK_LOG=m
++CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
++CONFIG_NETFILTER_XT_TARGET_MARK=m
++CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
++CONFIG_NETFILTER_XT_MATCH_COMMENT=m
++CONFIG_NETFILTER_XT_MATCH_DCCP=m
++CONFIG_NETFILTER_XT_MATCH_ESP=m
++CONFIG_NETFILTER_XT_MATCH_LENGTH=m
++CONFIG_NETFILTER_XT_MATCH_LIMIT=m
++CONFIG_NETFILTER_XT_MATCH_MAC=m
++CONFIG_NETFILTER_XT_MATCH_MARK=m
++CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
++CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
++CONFIG_NETFILTER_XT_MATCH_QUOTA=m
++CONFIG_NETFILTER_XT_MATCH_REALM=m
++CONFIG_NETFILTER_XT_MATCH_SCTP=m
++CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
++CONFIG_NETFILTER_XT_MATCH_STRING=m
++CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
++CONFIG_IP_NF_QUEUE=m
++CONFIG_IP_NF_IPTABLES=m
++CONFIG_IP_NF_MATCH_AH=m
++CONFIG_IP_NF_MATCH_ECN=m
++CONFIG_IP_NF_MATCH_TTL=m
++CONFIG_IP_NF_FILTER=m
++CONFIG_IP_NF_TARGET_REJECT=m
++CONFIG_IP_NF_TARGET_ULOG=m
++CONFIG_IP_NF_MANGLE=m
++CONFIG_IP_NF_TARGET_ECN=m
++CONFIG_IP_NF_TARGET_TTL=m
++CONFIG_IP_NF_RAW=m
++CONFIG_IP_NF_ARPTABLES=m
++CONFIG_IP_NF_ARPFILTER=m
++CONFIG_IP_NF_ARP_MANGLE=m
++CONFIG_CFG80211=y
++CONFIG_LIB80211=y
++CONFIG_MAC80211=y
++CONFIG_RFKILL=y
++CONFIG_RFKILL_INPUT=y
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_MTD=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_CRYPTOLOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_SIZE=8192
++CONFIG_RAID_ATTRS=m
++CONFIG_SCSI_TGT=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_SG=y
++CONFIG_CHR_DEV_SCH=m
++CONFIG_SCSI_MULTI_LUN=y
++CONFIG_SCSI_CONSTANTS=y
++CONFIG_SCSI_LOGGING=y
++CONFIG_SCSI_SPI_ATTRS=m
++CONFIG_SCSI_FC_ATTRS=m
++CONFIG_SCSI_ISCSI_ATTRS=m
++CONFIG_ATA=y
++CONFIG_SATA_AHCI=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_DM=y
++CONFIG_DM_CRYPT=y
++CONFIG_DM_SNAPSHOT=y
++CONFIG_DM_MIRROR=y
++CONFIG_DM_ZERO=y
++CONFIG_NETDEVICES=y
++CONFIG_R8169=y
++CONFIG_ATH_COMMON=y
++CONFIG_ATH9K=y
++CONFIG_INPUT_POLLDEV=m
++CONFIG_INPUT_SPARSEKMAP=y
++CONFIG_INPUT_EVDEV=y
++CONFIG_KEYBOARD_XTKBD=m
++CONFIG_MOUSE_PS2_SENTELIC=y
++CONFIG_MOUSE_SERIAL=m
++CONFIG_INPUT_MISC=y
++CONFIG_INPUT_UINPUT=m
++CONFIG_SERIO_SERPORT=m
++CONFIG_SERIO_RAW=m
++CONFIG_LEGACY_PTY_COUNT=16
++CONFIG_SERIAL_NONSTANDARD=y
++CONFIG_N_HDLC=m
++CONFIG_STALDRV=y
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_8250_NR_UARTS=16
++CONFIG_SERIAL_8250_EXTENDED=y
++CONFIG_SERIAL_8250_MANY_PORTS=y
++CONFIG_SERIAL_8250_SHARE_IRQ=y
++CONFIG_SERIAL_8250_RSA=y
++CONFIG_IPMI_HANDLER=m
++CONFIG_IPMI_DEVICE_INTERFACE=m
++CONFIG_IPMI_SI=m
++CONFIG_IPMI_WATCHDOG=m
++CONFIG_IPMI_POWEROFF=m
++CONFIG_HW_RANDOM=y
++CONFIG_R3964=m
++CONFIG_RAW_DRIVER=m
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_PIIX4=y
++CONFIG_SPI=y
++CONFIG_SPI_BITBANG=m
++CONFIG_SENSORS_ADM1021=m
++CONFIG_SENSORS_ADM1025=m
++CONFIG_SENSORS_ADM1026=m
++CONFIG_SENSORS_ADM1031=m
++CONFIG_SENSORS_ADM9240=m
++CONFIG_SENSORS_ATXP1=m
++CONFIG_SENSORS_DS1621=m
++CONFIG_SENSORS_GL518SM=m
++CONFIG_SENSORS_GL520SM=m
++CONFIG_SENSORS_IT87=m
++CONFIG_SENSORS_LM63=m
++CONFIG_SENSORS_LM70=m
++CONFIG_SENSORS_LM75=m
++CONFIG_SENSORS_LM77=m
++CONFIG_SENSORS_LM78=m
++CONFIG_SENSORS_LM80=m
++CONFIG_SENSORS_LM83=m
++CONFIG_SENSORS_LM85=m
++CONFIG_SENSORS_LM87=m
++CONFIG_SENSORS_LM90=m
++CONFIG_SENSORS_LM92=m
++CONFIG_SENSORS_MAX1619=m
++CONFIG_SENSORS_PC87360=m
++CONFIG_SENSORS_SMSC47M1=m
++CONFIG_SENSORS_SMSC47M192=m
++CONFIG_SENSORS_SMSC47B397=m
++CONFIG_SENSORS_W83781D=m
++CONFIG_SENSORS_W83791D=m
++CONFIG_SENSORS_W83792D=m
++CONFIG_SENSORS_W83793=m
++CONFIG_SENSORS_W83L785TS=m
++CONFIG_SENSORS_W83627HF=m
++CONFIG_SENSORS_W83627EHF=m
++CONFIG_DRM=y
++CONFIG_DRM_RADEON=y
++CONFIG_DRM_RADEON_KMS=y
++CONFIG_VIDEO_OUTPUT_CONTROL=y
++CONFIG_FB_RADEON=y
++CONFIG_FB_ATY128=y
++CONFIG_FB_ATY=y
++CONFIG_FB_ATY_CT=y
++CONFIG_FB_ATY_GENERIC_LCD=y
++CONFIG_FB_ATY_GX=y
++CONFIG_LCD_CLASS_DEVICE=y
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
++CONFIG_LOGO=y
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_SEQUENCER=m
++CONFIG_SND_SEQ_DUMMY=m
++CONFIG_SND_DUMMY=y
++CONFIG_SND_ALOOP=y
++CONFIG_SND_HDA_INTEL=y
++CONFIG_SND_HDA_PATCH_LOADER=y
++CONFIG_HID_A4TECH=m
++CONFIG_USB=y
++CONFIG_USB_MON=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_ROOT_HUB_TT=y
++CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_UHCI_HCD=m
++CONFIG_USB_STORAGE=m
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_CMOS=y
++CONFIG_DMADEVICES=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++CONFIG_EXT4_FS=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_EXT4_FS_SECURITY=y
++CONFIG_QUOTA=y
++CONFIG_AUTOFS4_FS=y
++CONFIG_FUSE_FS=m
++CONFIG_ISO9660_FS=m
++CONFIG_JOLIET=y
++CONFIG_MSDOS_FS=m
++CONFIG_VFAT_FS=m
++CONFIG_FAT_DEFAULT_CODEPAGE=936
++CONFIG_FAT_DEFAULT_IOCHARSET="gb2312"
++CONFIG_PROC_KCORE=y
++CONFIG_TMPFS=y
++CONFIG_NFS_FS=m
++CONFIG_NFS_V3_ACL=y
++CONFIG_NFS_V4=y
++CONFIG_NFSD=m
++CONFIG_NFSD_V3_ACL=y
++CONFIG_NFSD_V4=y
++CONFIG_CIFS=m
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_CODEPAGE_936=y
++CONFIG_NLS_UTF8=y
++CONFIG_PRINTK_TIME=y
++CONFIG_FRAME_WARN=1024
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_STRIP_ASM_SYMS=y
++CONFIG_DEBUG_SECTION_MISMATCH=y
++CONFIG_CRYPTO_AUTHENC=m
++CONFIG_CRYPTO_HMAC=y
++CONFIG_CRYPTO_MD5=y
++CONFIG_CRYPTO_MICHAEL_MIC=m
++CONFIG_CRYPTO_SHA1=m
++CONFIG_CRYPTO_SHA256=m
++CONFIG_CRYPTO_SHA512=m
++CONFIG_CRYPTO_TGR192=m
++CONFIG_CRYPTO_WP512=m
++CONFIG_CRYPTO_ANUBIS=m
++CONFIG_CRYPTO_BLOWFISH=m
++CONFIG_CRYPTO_CAST5=m
++CONFIG_CRYPTO_CAST6=m
++CONFIG_CRYPTO_KHAZAD=m
++CONFIG_CRYPTO_SERPENT=m
++CONFIG_CRYPTO_TEA=m
++CONFIG_CRYPTO_TWOFISH=m
++CONFIG_CRYPTO_DEFLATE=m
++CONFIG_CRC_T10DIF=m
++CONFIG_LIBCRC32C=m
 -- 
 1.7.7.3
 
