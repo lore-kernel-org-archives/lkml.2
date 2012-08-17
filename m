@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030874Ab2HQDfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:35:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46731 "EHLO
+	id S1030858Ab2HQDfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:35:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46745 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030624Ab2HQD0y (ORCPT
+	by vger.kernel.org with ESMTP id S1030630Ab2HQD04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:26:54 -0400
-Message-Id: <20120817030245.336458529@decadent.org.uk>
+	Thu, 16 Aug 2012 23:26:56 -0400
+Message-Id: <20120817030245.473966800@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:02:53 +0100
+Date: Fri, 17 Aug 2012 04:02:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Benc <jbenc@redhat.com>,
-        Max Matveev <makc@redhat.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/37] net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI  handling
+        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 11/37] tcp: perform DMA to userspace only if there is a task  waiting for it
 In-Reply-To: <20120817030243.807605523@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,58 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Benc <jbenc@redhat.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-[ Upstream commit b1beb681cba5358f62e6187340660ade226a5fcc ]
+[ Upstream commit 59ea33a68a9083ac98515e4861c00e71efdc49a1 ]
 
-When device flags are set using rtnetlink, IFF_PROMISC and IFF_ALLMULTI
-flags are handled specially. Function dev_change_flags sets IFF_PROMISC and
-IFF_ALLMULTI bits in dev->gflags according to the passed value but
-do_setlink passes a result of rtnl_dev_combine_flags which takes those bits
-from dev->flags.
+Back in 2006, commit 1a2449a87b ("[I/OAT]: TCP recv offload to I/OAT")
+added support for receive offloading to IOAT dma engine if available.
 
-This can be easily trigerred by doing:
+The code in tcp_rcv_established() tries to perform early DMA copy if
+applicable. It however does so without checking whether the userspace
+task is actually expecting the data in the buffer.
 
-tcpdump -i eth0 &
-ip l s up eth0
+This is not a problem under normal circumstances, but there is a corner
+case where this doesn't work -- and that's when MSG_TRUNC flag to
+recvmsg() is used.
 
-ip sets IFF_UP flag in ifi_flags and ifi_change, which is combined with
-IFF_PROMISC by rtnl_dev_combine_flags, causing __dev_change_flags to set
-IFF_PROMISC in gflags.
+If the IOAT dma engine is not used, the code properly checks whether
+there is a valid ucopy.task and the socket is owned by userspace, but
+misses the check in the dmaengine case.
 
-Reported-by: Max Matveev <makc@redhat.com>
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
+This problem can be observed in real trivially -- for example 'tbench' is a
+good reproducer, as it makes a heavy use of MSG_TRUNC. On systems utilizing
+IOAT, you will soon find tbench waiting indefinitely in sk_wait_data(), as they
+have been already early-copied in tcp_rcv_established() using dma engine.
+
+This patch introduces the same check we are performing in the simple
+iovec copy case to the IOAT case as well. It fixes the indefinite
+recvmsg(MSG_TRUNC) hangs.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/rtnetlink.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_input.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 2ef859a..88bcf76 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -670,6 +670,12 @@ static void set_operstate(struct net_device *dev, unsigned char transition)
- 	}
- }
- 
-+static unsigned int rtnl_dev_get_flags(const struct net_device *dev)
-+{
-+	return (dev->flags & ~(IFF_PROMISC | IFF_ALLMULTI)) |
-+	       (dev->gflags & (IFF_PROMISC | IFF_ALLMULTI));
-+}
-+
- static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
- 					   const struct ifinfomsg *ifm)
- {
-@@ -678,7 +684,7 @@ static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
- 	/* bugwards compatibility: ifi_change == 0 is treated as ~0 */
- 	if (ifm->ifi_change)
- 		flags = (flags & ifm->ifi_change) |
--			(dev->flags & ~ifm->ifi_change);
-+			(rtnl_dev_get_flags(dev) & ~ifm->ifi_change);
- 
- 	return flags;
- }
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 32e6ca2..a08a621 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -5415,7 +5415,9 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
+ 			if (tp->copied_seq == tp->rcv_nxt &&
+ 			    len - tcp_header_len <= tp->ucopy.len) {
+ #ifdef CONFIG_NET_DMA
+-				if (tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
++				if (tp->ucopy.task == current &&
++				    sock_owned_by_user(sk) &&
++				    tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
+ 					copied_early = 1;
+ 					eaten = 1;
+ 				}
 
 
