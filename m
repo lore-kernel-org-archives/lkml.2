@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030683Ab2HQD1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:27:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46738 "EHLO
+	id S1030734Ab2HQD3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:29:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46840 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030628Ab2HQD0z (ORCPT
+	by vger.kernel.org with ESMTP id S1030680Ab2HQD1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:26:55 -0400
-Message-Id: <20120817030246.563512336@decadent.org.uk>
+	Thu, 16 Aug 2012 23:27:08 -0400
+Message-Id: <20120817030247.839326945@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:03:01 +0100
+Date: Fri, 17 Aug 2012 04:03:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>
-Subject: [ 18/37] mac80211: cancel mesh path timer
+        alan@lxorguk.ukuu.org.uk, Tushar Dave <tushar.n.dave@intel.com>,
+        Fabio Futigami <ffutigam@redhat.com>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: [ 26/37] e1000e: NIC goes up and immediately goes down
 In-Reply-To: <20120817030243.807605523@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,31 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Tushar Dave <tushar.n.dave@intel.com>
 
-commit dd4c9260e7f23f2e951cbfb2726e468c6d30306c upstream.
+commit b7ec70be01a87f2c85df3ae11046e74f9b67e323 upstream.
 
-The mesh path timer needs to be canceled when
-leaving the mesh as otherwise it could fire
-after the interface has been removed already.
+Found that commit d478eb44 was a bad commit.
+If the link partner is transmitting codeword (even if NULL codeword),
+then the RXCW.C bit will be set so check for RXCW.CW is unnecessary.
+Ref: RH BZ 840642
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Fabio Futigami <ffutigam@redhat.com>
+Signed-off-by: Tushar Dave <tushar.n.dave@intel.com>
+CC: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/mesh.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/intel/e1000e/82571.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/net/mac80211/mesh.c b/net/mac80211/mesh.c
-index d60b3d3..8557235 100644
---- a/net/mac80211/mesh.c
-+++ b/net/mac80211/mesh.c
-@@ -622,6 +622,7 @@ void ieee80211_stop_mesh(struct ieee80211_sub_if_data *sdata)
- 
- 	del_timer_sync(&sdata->u.mesh.housekeeping_timer);
- 	del_timer_sync(&sdata->u.mesh.mesh_path_root_timer);
-+	del_timer_sync(&sdata->u.mesh.mesh_path_timer);
- 	/*
- 	 * If the timer fired while we waited for it, it will have
- 	 * requeued the work. Now the work will be running again
+diff --git a/drivers/net/ethernet/intel/e1000e/82571.c b/drivers/net/ethernet/intel/e1000e/82571.c
+index 0b3bade..2a4ded2 100644
+--- a/drivers/net/ethernet/intel/e1000e/82571.c
++++ b/drivers/net/ethernet/intel/e1000e/82571.c
+@@ -1601,10 +1601,8 @@ static s32 e1000_check_for_serdes_link_82571(struct e1000_hw *hw)
+ 			 * auto-negotiation in the TXCW register and disable
+ 			 * forced link in the Device Control register in an
+ 			 * attempt to auto-negotiate with our link partner.
+-			 * If the partner code word is null, stop forcing
+-			 * and restart auto negotiation.
+ 			 */
+-			if ((rxcw & E1000_RXCW_C) || !(rxcw & E1000_RXCW_CW))  {
++			if (rxcw & E1000_RXCW_C) {
+ 				/* Enable autoneg, and unforce link up */
+ 				ew32(TXCW, mac->txcw);
+ 				ew32(CTRL, (ctrl & ~E1000_CTRL_SLU));
 
 
