@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab2HQGpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 02:45:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43159 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab2HQGpb (ORCPT
+	id S1754954Ab2HQGtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 02:49:49 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43424 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab2HQGtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 02:45:31 -0400
-From: Adam Lee <adam8157@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz> (odd fixer:KCONFIG 
-	,commit_signer:2/3=67%),
-        "Eric W. Biederman" <ebiederm@xmission.com> (commit_signer:2/3=67%),
-        linux-kbuild@vger.kernel.org (open list:KCONFIG)
-Subject: [PATCH] kconfig: document oldnoconfig to what it really does in conf.c
-Date: Fri, 17 Aug 2012 14:45:23 +0800
-Message-Id: <1345185924-16005-1-git-send-email-adam8157@gmail.com>
-X-Mailer: git-send-email 1.7.11.2
+	Fri, 17 Aug 2012 02:49:47 -0400
+Subject: Re: [ANNOUNCE] target-pending tree updated to v3.6-rc2
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Alex Elsayed <eternaleye+usenet@gmail.com>
+In-Reply-To: <1345171412.25161.134.camel@haakon2.linux-iscsi.org>
+References: <1345171412.25161.134.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Aug 2012 23:49:44 -0700
+Message-ID: <1345186184.25161.141.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, the make target
-'oldnoconfig' is a misnomer. It doesn't set new symbols to 'n', but
-instead sets it to their default values.
+On Thu, 2012-08-16 at 19:43 -0700, Nicholas A. Bellinger wrote:
+> Hi all,
+> 
+> With the release of v3.6-rc2 this afternoon, the target-pending.git tree
+> now has been updated using the freshly cut -rc2 as it's new HEAD.
+> Patches destined into for-3.7 code are now being added into for-next for
+> linux-next build testing.
+> 
+> Also, thanks go out to MST, Stefan, and Paolo who managed to get
+> tcm_vhost fabric code merged in mainline for -rc2  under the special
+> post merge window exception rule for new kernel code, which in my
+> experience tends to happens about as often as Haley's comet comes
+> around..
+> 
+> Here is the current breakdown of pending patches by branch:
+> 
+> master: (patches headed for 3.6-rc-fixes)
+> 
+> 5b7517f8 tcm_vhost: Change vhost_scsi_target->vhost_wwpn to char *
+> d0e27c88 target: fix NULL pointer dereference bug alloc_page() fails to get memory
+> 1fa8f450 tcm_fc: Avoid debug overhead when not debugging
+> 101998f6 tcm_vhost: Post-merge review changes requested by MST
+> f0e0e9bb tcm_vhost: Fix incorrect IS_ERR() usage in vhost_scsi_map_iov_to_sgl
+> 
 
-This patch fixes the document in conf.c, and will submit another patch
-to replace 'oldnoconfig' to 'olddefconfig'
----
- scripts/kconfig/conf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Whoops..  Missed one extra target/pscsi regression bug-fix reported
+recently by Alex Elsayed (CC'ed) that has just been pushed into master
+here:
 
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index 0dc4a2c..6875680 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -467,7 +467,7 @@ static void conf_usage(const char *progname)
- 	printf("  --oldaskconfig          Start a new configuration using a line-oriented program\n");
- 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
- 	printf("  --silentoldconfig       Same as oldconfig, but quietly, additionally update deps\n");
--	printf("  --oldnoconfig           Same as silentoldconfig but set new symbols to no\n");
-+	printf("  --oldnoconfig           Same as silentoldconfig but sets new symbols to their default value\n");
- 	printf("  --defconfig <file>      New config with default defined in <file>\n");
- 	printf("  --savedefconfig <file>  Save the minimal current configuration to <file>\n");
- 	printf("  --allnoconfig           New config where all options are answered with no\n");
--- 
-1.7.11.2
+target/pscsi: Fix bug with REPORT_LUNs handling for SCSI passthrough
+http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=commitdiff;h=1d2a2cd95ee0137a2353d1b5635739c281f27cd4
+
+Alex-E, you where able to get TYPE_ROM passthrough w/ pSCSI export
+working on your setup with this patch, yes..?
+
+Thanks!
+
+--nab
 
