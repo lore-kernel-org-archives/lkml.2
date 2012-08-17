@@ -1,125 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2HQC3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 22:29:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25577 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752282Ab2HQC3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 22:29:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,782,1336374000"; 
-   d="scan'208";a="203213089"
-Date: Fri, 17 Aug 2012 10:29:39 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>, devel@driverdev.osuosl.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: show_uevent() and general protection fault
-Message-ID: <20120817022939.GA24650@localhost>
-References: <20120713083140.GA19738@localhost>
- <20120713084616.GA20037@localhost>
- <20120717013342.GD21914@kroah.com>
- <20120718051552.GA9124@localhost>
- <20120816172711.GB27415@kroah.com>
- <20120817020608.GA24538@localhost>
+	id S1756835Ab2HQChG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 22:37:06 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42359 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab2HQChD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 22:37:03 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <502DAE2A.1000404@jp.fujitsu.com>
+Date: Fri, 17 Aug 2012 11:36:26 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817020608.GA24538@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-7-git-send-email-glommer@parallels.com> <50254475.4000201@jp.fujitsu.com> <5028BA9E.7000302@parallels.com>
+In-Reply-To: <5028BA9E.7000302@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > --- tip.orig/drivers/base/core.c        2012-08-17 08:48:07.101972082 +0800
-> > +++ tip/drivers/base/core.c     2012-08-17 09:49:43.665912992 +0800
-> > @@ -343,8 +343,11 @@ static ssize_t show_uevent(struct device
-> >                 goto out;
-> >  
-> >         /* copy keys to file */
-> > -       for (i = 0; i < env->envp_idx; i++)
-> > +       printk(KERN_ERR "uevent %d env[%d]: %s/.../%s\n", env->buflen, env->envp_idx, top_kobj->name, dev->kobj.name);
-> > +       for (i = 0; i < env->envp_idx; i++) {
-> > +               printk(KERN_ERR "uevent %d env[%d]: %s\n", (int)count, i, env->envp[i]);
-> >                 count += sprintf(&buf[count], "%s\n", env->envp[i]);
-> > +       }
-> >  out:
-> >         kfree(env);
-> >         return count;
+(2012/08/13 17:28), Glauber Costa wrote:
+>>>> + * Needs to be called after memcg_kmem_new_page, regardless of success or
+>>>> + * failure of the allocation. if @page is NULL, this function will revert the
+>>>> + * charges. Otherwise, it will commit the memcg given by @handle to the
+>>>> + * corresponding page_cgroup.
+>>>> + */
+>>>> +static __always_inline void
+>>>> +memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle, int order)
+>>>> +{
+>>>> +	if (memcg_kmem_on)
+>>>> +		__memcg_kmem_commit_page(page, handle, order);
+>>>> +}
+>> Doesn't this 2 functions has no short-cuts ?
 > 
-> It's printing 32 strings of "(null)\n" (7 characters each) to the buffer,
-> which eventually overflows it.
+> Sorry kame, what exactly do you mean?
 > 
-> [   65.968387] uevent 12 env[1627389952]: LNXCPU:01/.../LNXCPU:01
-> [   65.969586] uevent 0 env[0]: (null)
+I meant avoinding function call. But please ignore, I missed following patches.
 
-Something obviously wrong here:
 
-        env->buflen == 12
-        env->envp_idx == 1627389952
-        env->env[0] == NULL
+>> if (memcg_kmem_on && handle) ?
+> I guess this can be done to avoid a function call.
+> 
+>> Maybe free() needs to access page_cgroup...
+>>
+> Can you also be a bit more specific here?
+> 
 
-I'm not sure where it comes from, but if it's possible for random
-drivers to create that bad env, we could add some sanity check here to
-at least prevent the panic.
+Please ignore, I misunderstood the usage of free_accounted_pages().
+
+>>>> +bool __memcg_kmem_new_page(gfp_t gfp, void *_handle, int order)
+>>>> +{
+>>>> +	struct mem_cgroup *memcg;
+>>>> +	struct mem_cgroup **handle = (struct mem_cgroup **)_handle;
+>>>> +	bool ret = true;
+>>>> +	size_t size;
+>>>> +	struct task_struct *p;
+>>>> +
+>>>> +	*handle = NULL;
+>>>> +	rcu_read_lock();
+>>>> +	p = rcu_dereference(current->mm->owner);
+>>>> +	memcg = mem_cgroup_from_task(p);
+>>>> +	if (!memcg_kmem_enabled(memcg))
+>>>> +		goto out;
+>>>> +
+>>>> +	mem_cgroup_get(memcg);
+>>>> +
+>> This mem_cgroup_get() will be a potentioal performance problem.
+>> Don't you have good idea to avoid accessing atomic counter here ?
+>> I think some kind of percpu counter or a feature to disable "move task"
+>> will be a help.
+> 
+> 
+> 
+> 
+>>>> +	pc = lookup_page_cgroup(page);
+>>>> +	lock_page_cgroup(pc);
+>>>> +	pc->mem_cgroup = memcg;
+>>>> +	SetPageCgroupUsed(pc);
+>>>> +	unlock_page_cgroup(pc);
+>>>> +}
+>>>> +
+>>>> +void __memcg_kmem_free_page(struct page *page, int order)
+>>>> +{
+>>>> +	struct mem_cgroup *memcg;
+>>>> +	size_t size;
+>>>> +	struct page_cgroup *pc;
+>>>> +
+>>>> +	if (mem_cgroup_disabled())
+>>>> +		return;
+>>>> +
+>>>> +	pc = lookup_page_cgroup(page);
+>>>> +	lock_page_cgroup(pc);
+>>>> +	memcg = pc->mem_cgroup;
+>>>> +	pc->mem_cgroup = NULL;
+> 
+>> shouldn't this happen after checking "Used" bit ?
+>> Ah, BTW, why do you need to clear pc->memcg ?
+> 
+> As for clearing pc->memcg, I think I'm just being overzealous. I can't
+> foresee any problems due to removing it.
+> 
+> As for the Used bit, what difference does it make when we clear it?
+>
+I just want to see the same logic used in mem_cgroup_uncharge_common().
+Hmm, at setting pc->mem_cgroup, the things happens in
+   set pc->mem_cgroup
+   set Used bit
+order. If you clear pc->mem_cgroup
+   unset Used bit
+   clear pc->mem_cgroup
+seems reasonable.
+
+
+ 
+>>>> +	if (!PageCgroupUsed(pc)) {
+>>>> +		unlock_page_cgroup(pc);
+>>>> +		return;
+>>>> +	}
+>>>> +	ClearPageCgroupUsed(pc);
+>>>> +	unlock_page_cgroup(pc);
+>>>> +
+>>>> +	/*
+>>>> +	 * Checking if kmem accounted is enabled won't work for uncharge, since
+>>>> +	 * it is possible that the user enabled kmem tracking, allocated, and
+>>>> +	 * then disabled it again.
+>>>> +	 *
+>>>> +	 * We trust if there is a memcg associated with the page, it is a valid
+>>>> +	 * allocation
+>>>> +	 */
+>>>> +	if (!memcg)
+>>>> +		return;
+>>>> +
+>>>> +	WARN_ON(mem_cgroup_is_root(memcg));
+>>>> +	size = (1 << order) << PAGE_SHIFT;
+>>>> +	memcg_uncharge_kmem(memcg, size);
+>>>> +	mem_cgroup_put(memcg);
+>> Why do we need ref-counting here ? kmem res_counter cannot work as
+>> reference ?
+> This is of course the pair of the mem_cgroup_get() you commented on
+> earlier. If we need one, we need the other. If we don't need one, we
+> don't need the other =)
+> 
+> The guarantee we're trying to give here is that the memcg structure will
+> stay around while there are dangling charges to kmem, that we decided
+> not to move (remember: moving it for the stack is simple, for the slab
+> is very complicated and ill-defined, and I believe it is better to treat
+> all kmem equally here)
+> 
+> So maybe we can be clever here, and avoid reference counting at all
+> times. We call mem_cgroup_get() when the first charge occurs, and then
+> go for mem_cgroup_put() when our count reaches 0.
+> 
+> What do you think about that?
+> 
+
+I think that should work. I don't want to add not-optimized atomic counter ops
+in this very hot path.
+
+
+> 
+>>>> +#ifdef CONFIG_MEMCG_KMEM
+>>>> +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
+>>>> +{
+>> What does 'delta' means ?
+>>
+> I can change it to something like nr_bytes, more informative.
+> 
+>>>> +	struct res_counter *fail_res;
+>>>> +	struct mem_cgroup *_memcg;
+>>>> +	int ret;
+>>>> +	bool may_oom;
+>>>> +	bool nofail = false;
+>>>> +
+>>>> +	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
+>>>> +	    !(gfp & __GFP_NORETRY);
+>>>> +
+>>>> +	ret = 0;
+>>>> +
+>>>> +	if (!memcg)
+>>>> +		return ret;
+>>>> +
+>>>> +	_memcg = memcg;
+>>>> +	ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
+>>>> +	    &_memcg, may_oom);
+>>>> +
+>>>> +	if (ret == -EINTR)  {
+>>>> +		nofail = true;
+>>>> +		/*
+>>>> +		 * __mem_cgroup_try_charge() chosed to bypass to root due to
+>>>> +		 * OOM kill or fatal signal.  Since our only options are to
+>>>> +		 * either fail the allocation or charge it to this cgroup, do
+>>>> +		 * it as a temporary condition. But we can't fail. From a
+>>>> +		 * kmem/slab perspective, the cache has already been selected,
+>>>> +		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
+>>>> +		 * our minds
+>>>> +		 */
+>>>> +		res_counter_charge_nofail(&memcg->res, delta, &fail_res);
+>>>> +		if (do_swap_account)
+>>>> +			res_counter_charge_nofail(&memcg->memsw, delta,
+>>>> +						  &fail_res);
+>>>> +		ret = 0;
+>> Hm, you returns 0 and this charge may never be uncharged....right ?
+>>
+> 
+> Can't see why. By returning 0 we inform our caller that the allocation
+> succeeded. It is up to him to undo it later through a call to uncharge.
+> 
+Hmm, okay. You trust callers.
 
 Thanks,
-Fengguang
+-Kame
 
-> [   65.970463] uevent 7 env[1]: (null)
-> [   65.971338] uevent 14 env[2]: (null)
-> [   65.972225] uevent 21 env[3]: (null)
-> [   65.973111] uevent 28 env[4]: (null)
-> [   65.973952] uevent 35 env[5]: (null)
-> [   65.974852] uevent 42 env[6]: (null)
-> [   65.975735] uevent 49 env[7]: (null)
-> [   65.976627] uevent 56 env[8]: (null)
-> [   65.977545] uevent 63 env[9]: (null)
-> [   65.978469] uevent 70 env[10]: (null)
-> [   65.979410] uevent 77 env[11]: (null)
-> [   65.980321] uevent 84 env[12]: (null)
-> [   65.981243] uevent 91 env[13]: (null)
-> [   65.982159] uevent 98 env[14]: (null)
-> [   65.983080] uevent 105 env[15]: (null)
-> [   65.983972] uevent 112 env[16]: (null)
-> [   65.984908] uevent 119 env[17]: (null)
-> [   65.985850] uevent 126 env[18]: (null)
-> [   65.986797] uevent 133 env[19]: (null)
-> [   65.987768] uevent 140 env[20]: (null)
-> [   65.988723] uevent 147 env[21]: (null)
-> [   65.989661] uevent 154 env[22]: (null)
-> [   65.990591] uevent 161 env[23]: (null)
-> [   65.991527] uevent 168 env[24]: (null)
-> [   65.992452] uevent 175 env[25]: (null)
-> [   65.993383] uevent 182 env[26]: (null)
-> [   65.994386] uevent 189 env[27]: (null)
-> [   65.995342] uevent 196 env[28]: (null)
-> [   65.996289] uevent 203 env[29]: (null)
-> [   65.997243] uevent 210 env[30]: (null)
-> [   65.998197] uevent 217 env[31]: (null)
-> [   65.999124] general protection fault: 0000 [#1] PREEMPT 
-> [   66.000106] CPU 0 
-> [   66.000106] Pid: 128, comm: trinity-child0 Not tainted 3.6.0-rc1-bisect2-00037-gdfdf036-dirty #8 Bochs Bochs
-> [   66.000106] RIP: 0010:[<ffffffff811cb0bc>]  [<ffffffff811cb0bc>] strnlen+0x2e/0x37
-> ...
-> [   66.000106] Call Trace:
-> [   66.000106]  [<ffffffff811cc700>] string.isra.3+0x49/0xe6
-> [   66.000106]  [<ffffffff811cd511>] vsnprintf+0x267/0x6dd
-> [   66.000106]  [<ffffffff810a0001>] ? compat_sys_clock_gettime+0x12/0x91
-> [   66.000106]  [<ffffffff8181dd30>] ? retint_restore_args+0x13/0x13
-> [   66.000106]  [<ffffffff811cdda0>] vscnprintf+0x16/0x3a
-> [   66.000106]  [<ffffffff8104bc95>] vprintk_emit+0x313/0x66f
-> [   66.000106]  [<ffffffff811cd34b>] ? vsnprintf+0xa1/0x6dd
-> [   66.000106]  [<ffffffff81804bc9>] printk+0x4f/0x58
-> [   66.000106]  [<ffffffff812c6b4b>] show_uevent+0x164/0x1db
-> [   66.000106]  [<ffffffff812c67c3>] dev_attr_show+0x29/0x77
-> [   66.000106]  [<ffffffff81153a1d>] ? sysfs_read_file+0xc5/0x221
-> [   66.000106]  [<ffffffff810cfab4>] ? __get_free_pages+0x2f/0x6a
-> [   66.000106]  [<ffffffff81153a55>] sysfs_read_file+0xfd/0x221
-> [   66.000106]  [<ffffffff8110264d>] vfs_read+0xdb/0x1c1
-> [   66.000106]  [<ffffffff81102a47>] sys_read+0x56/0x9e
-> 
-> Thanks,
-> Fengguang
+
+
+
+
+
+
