@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab2HQOSB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:18:01 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:50040 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756427Ab2HQORv (ORCPT
+	id S1757303Ab2HQOVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:21:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47102 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756473Ab2HQOVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:17:51 -0400
-X-Sasl-enc: gaBhPKLnsY6megRU35VZkmfHX508xZI+geCM9qV7MY/r 1345213070
-Date: Fri, 17 Aug 2012 11:17:48 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: ibm-acpi-devel@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-Subject: Re: [PROBLEM] thinkpad_acpi: unhandled HKEY event 0x6040
-Message-ID: <20120817141748.GA12934@khazad-dum.debian.net>
-References: <CAOJsxLEb+J=p8Kd782VWPm0ft3D9ujOnV0x_Av+fjWp6QiTHQQ@mail.gmail.com>
+	Fri, 17 Aug 2012 10:21:23 -0400
+Date: Fri, 17 Aug 2012 10:11:20 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Subject: Re: dma mapping error check analysis
+Message-ID: <20120817141120.GD8093@phenom.dumpdata.com>
+References: <1344638802.8018.18.camel@lorien2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOJsxLEb+J=p8Kd782VWPm0ft3D9ujOnV0x_Av+fjWp6QiTHQQ@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1344638802.8018.18.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Aug 2012, Pekka Enberg wrote:
-> [ 3129.616297] thinkpad_acpi: unhandled HKEY event 0x6040
-> [ 3129.616298] thinkpad_acpi: please report the conditions when this
-> event happened to ibm-acpi-devel@lists.sourceforge.net
-> [ 3129.616949] thinkpad_acpi: undocked from hotplug port replicator
-> [ 3129.617065] ACPI: \_SB_.GDCK - undocking
-> [ 3144.184916] ACPI: \_SB_.GDCK - docking
-> [ 3144.185204] ACPI: Unable to dock!
+On Fri, Aug 10, 2012 at 04:46:42PM -0600, Shuah Khan wrote:
+> I analyzed current calls to dma_map_single() and dma_map_page() in the kernel
+> to see if dma mapping errors are checked after mapping routines return.
 > 
-> and the monitor doesn't come up.
+> Reference linux-next August 6 2012.
+> 
+> This analysis stemmed from the discussion on my patch that disables swiotlb
+> overflow as a first step towards removing the support all together. Please
+> refer to thread below:
+> 
+> https://lkml.org/lkml/2012/7/24/391
+> 
+> The goal of this analysis is to find drivers that don't currently check dma
+> mapping errors and fix them. I did a grep for dma_map_single() and
+> dma_map_page() and looked at the code that calls these routines. I classified
+> the results of dma mapping error check status as follows:
+> 
+> Broken:
+> 1. No error checks
+> 2. Partial checks - In that source file, not all calls are followed by checks.
+> 3. Checks dma mapping errors, doesn't unmap already mapped pages when mapping
+>    error occurs in the middle of a multiple mapping attempt.
+> 
+> The first two categories are classified as broken and need fixing.
+> 
+> The third one needs fixing, since it leaves dangling mapped pages, and holds
+> on to them which is equivalent to memory leak. Some drivers release all mapped
+> pages when the device closes, but others don't. Not doing unmap might be
+> harmless on some architectures going by the comments I found in some source
+> files.
+> 
+> Good:
+> 1. Checks dma mapping errors and unmaps already mapped pages when mapping
+>    error occurs in the middle of a multiple mapping attempt.
+> 2. Checks dma mapping errors without unlikely()
+> 3. Checks dma mapping errors with unlikely()
+> 
+> I lumped the above three cases as good cases. Using unlikely() is icing on the
+> cake, and something we need to be concerned about compared to other problems in
+> this area.
+> 
+> - dmap_map_single() - results
+> No error checks - 195 (46%)
+> Partial checks - 46 (11%)
+> Doesn't unmap: 26 (6%)
+> Good: 147 (35%)
+> 
+> - dma_map_page() - results
+> No error checks: 61 (59%)
+> Partial checks: 7 (.06%)
+> Doesn't unmap: 15 (14.5%)
+> Good: 20 (19%)
+> 
+> In summary a large % of the cases (> 50%) go unchecked. That raises the
+> following questions:
+> 
+> When do mapping errors get detected?
+> How often do these errors occur?
+> Why don't we see failures related to missing dma mapping error checks?
+> Are they silent failures?
+> 
+> Based on what I found, I am not too eager to remove swiotlb overflow support
+> which would increase the probability of returning dma mapping errors.
+> 
+> However I propose the following to gather more information:
+> 
+> - Change swiotlb to log (pr_info or pr_debug) cases where overflow buffer is
+>   triggered. (This is a delta on the disable swiotlb patch I sent a few weeks
+>   ago - References in this posting).
 
-The monitor doesn't come up because of something else, check the GPU drivers
-and userspace.  And also why the docking failed...
+As opposed to printk(KERN_ERR ? Why?
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> - Change dma_map_single() and dma_map_page() to track how many times they
+>   return before attempting to fix all the places that don't do dma mapping
+>   error checks. (Maybe a counter that keeps track, pr_* is not an option).
+
+Perhaps this should be done in the DMA debug API instead?
+
+> 
+> Comments, thoughts on the analysis and proposal are welcome.
+> 
+> -- Shuah
