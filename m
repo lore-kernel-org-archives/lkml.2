@@ -1,119 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab2HQGyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 02:54:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65056 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932212Ab2HQGya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 02:54:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
-   d="scan'208";a="181839679"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: rename struct pci_dev *mei_device to mei_pdev
-Date: Fri, 17 Aug 2012 09:54:23 +0300
-Message-Id: <1345186463-30927-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S964885Ab2HQG4n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 02:56:43 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9406 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964831Ab2HQG4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 02:56:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 16 Aug 2012 23:56:39 -0700
+Message-ID: <502DE6FE.8040200@nvidia.com>
+Date: Fri, 17 Aug 2012 12:08:54 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
+ driver
+References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org>
+In-Reply-To: <502D33B6.7070103@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. rename mei_device variable to mei_pdev to remove
-confusion with type 'struct mei_device'
-2. mei_pdev no longer need to be gloabal so make it static
- and remove the declaration from the header file
+On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
+> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
+>> Enable config for dmaengine based Tegra APB DMA driver and
+>> disable the legacy APB DMA driver (SYSTEM_DMA).
+> Laxman, if I apply this series to next-20120816 (plus a few patches in
+> my local work branch plus the CPU hotplug patches from Joseph, although
+> I suspect none of that matters), then audio playback on Tegra20 is
+> broken; the pitch is far too high. Audio playback on Tegra30 works as
+> expected.
+I run the test again on ventana and did not see any issue.
+I play one song and saw similar behavior with/without this series.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/main.c    |   17 ++++++++---------
- drivers/misc/mei/mei_dev.h |    5 -----
- 2 files changed, 8 insertions(+), 14 deletions(-)
+With this series:
+--------------------
 
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index d792f3c..e477e6f 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -41,9 +41,8 @@
- #include <linux/mei.h>
- #include "interface.h"
- 
--/* The device pointer */
--/* Currently this driver works as long as there is only a single AMT device. */
--struct pci_dev *mei_device;
-+/* AMT device is a singleton on the platform */
-+static struct pci_dev *mei_pdev;
- 
- /* mei_pci_tbl - PCI Device ID Table */
- static DEFINE_PCI_DEVICE_TABLE(mei_pci_tbl) = {
-@@ -218,10 +217,10 @@ static int mei_open(struct inode *inode, struct file *file)
- 	int err;
- 
- 	err = -ENODEV;
--	if (!mei_device)
-+	if (!mei_pdev)
- 		goto out;
- 
--	dev = pci_get_drvdata(mei_device);
-+	dev = pci_get_drvdata(mei_pdev);
- 	if (!dev)
- 		goto out;
- 
-@@ -946,7 +945,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
- 		goto end;
- 	}
- 
--	if (mei_device) {
-+	if (mei_pdev) {
- 		err = -EEXIST;
- 		goto end;
- 	}
-@@ -1007,7 +1006,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
- 	if (err)
- 		goto release_irq;
- 
--	mei_device = pdev;
-+	mei_pdev = pdev;
- 	pci_set_drvdata(pdev, dev);
- 
- 
-@@ -1052,7 +1051,7 @@ static void __devexit mei_remove(struct pci_dev *pdev)
- {
- 	struct mei_device *dev;
- 
--	if (mei_device != pdev)
-+	if (mei_pdev != pdev)
- 		return;
- 
- 	dev = pci_get_drvdata(pdev);
-@@ -1065,7 +1064,7 @@ static void __devexit mei_remove(struct pci_dev *pdev)
- 
- 	mei_wd_stop(dev);
- 
--	mei_device = NULL;
-+	mei_pdev = NULL;
- 
- 	if (dev->iamthif_cl.state == MEI_FILE_CONNECTED) {
- 		dev->iamthif_cl.state = MEI_FILE_DISCONNECTING;
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index c8660c0..ad6c9d5 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -39,11 +39,6 @@
- 
- #define MEI_RD_MSG_BUF_SIZE           (128 * sizeof(u32))
- 
--/*
-- * MEI PCI Device object
-- */
--extern struct pci_dev *mei_device;
--
- 
- /*
-  * AMTHI Client UUID
--- 
-1.7.4.4
+ubuntu@tegra-ubuntu:/home$ aplay "1-04 Hungry Like The Wolf.wav"
+Playing WAVE '1-04 Hungry Like The Wolf.wav' : Signed 16 bit Little 
+Endian, Rate
+  44100 Hz, Stereo
+underrun!!! (at least 5039.388 ms long)
+underrun!!! (at least 60.601 ms long)
+underrun!!! (at least 3027.668 ms long)
+underrun!!! (at least 2063.667 ms long)
+underrun!!! (at least 1062.503 ms long)
+underrun!!! (at least 5073.551 ms long)
+underrun!!! (at least 6.461 ms long)
+underrun!!! (at least 4075.519 ms long)
+underrun!!! (at least 78.731 ms long)
+underrun!!! (at least 4042.804 ms long)
+underrun!!! (at least 28.395 ms long)
+underrun!!! (at least 5076.706 ms long)
+underrun!!! (at least 6043.105 ms long)
+underrun!!! (at least 24.857 ms long)
+underrun!!! (at least 5023.783 ms long)
+ubuntu@tegra-ubuntu:/home$
 
+And on tot:
+--------------
+ubuntu@tegra-ubuntu:/home$ aplay "1-04 Hungry Like The Wolf.wav"
+Playing WAVE '1-04 Hungry Like The Wolf.wav' : Signed 16 bit Little 
+Endian, Rate
+  44100 Hz, Stereo
+underrun!!! (at least 17098.259 ms long)
+underrun!!! (at least 5042.101 ms long)
+underrun!!! (at least 87.446 ms long)
+underrun!!! (at least 4084.481 ms long)
+underrun!!! (at least 4035.531 ms long)
+underrun!!! (at least 1026.132 ms long)
+underrun!!! (at least 3096.078 ms long)
+underrun!!! (at least 1007.028 ms long)
+underrun!!! (at least 1034.265 ms long)
+underrun!!! (at least 2092.453 ms long)
+underrun!!! (at least 1029.957 ms long)
+underrun!!! (at least 3076.209 ms long)
+underrun!!! (at least 52.042 ms long)
+underrun!!! (at least 1001.812 ms long)
+underrun!!! (at least 3083.294 ms long)
+ubuntu@tegra-ubuntu:/home$
