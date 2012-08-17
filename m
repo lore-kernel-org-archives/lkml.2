@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab2HQSrG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:47:06 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46895 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379Ab2HQSq5 (ORCPT
+	id S932444Ab2HQSrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:47:21 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42968 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932379Ab2HQSrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:46:57 -0400
-Message-ID: <502E9196.3040805@windriver.com>
-Date: Fri, 17 Aug 2012 14:46:46 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 17 Aug 2012 14:47:14 -0400
+Date: Fri, 17 Aug 2012 19:47:05 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: preeti <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+Message-ID: <20120817184705.GB13369@srcf.ucam.org>
+References: <5028F12C.7080405@intel.com>
+ <1345028738.31459.82.camel@twins>
+ <502C98E8.20800@linux.vnet.ibm.com>
+ <502CFD35.5000801@linux.intel.com>
+ <20120817184100.GA13369@srcf.ucam.org>
+ <502E90F3.2000702@linux.intel.com>
 MIME-Version: 1.0
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Carlos Maiolino <cmaiolino@redhat.com>, Alex Elder <aelder@sgi.com>,
-        Jan Kara <jack@suse.cz>, Ben Myers <bpm@sgi.com>,
-        Dave Chinner <dchinner@redhat.com>
-Subject: Re: [v2.6.34-stable 013/165] xfs: Fix possible memory corruption
- in xfs_readlink
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com> <1345060109-9187-14-git-send-email-paul.gortmaker@windriver.com> <20120817153855.GC4039@herton-Z68MA-D2H-B3>
-In-Reply-To: <20120817153855.GC4039@herton-Z68MA-D2H-B3>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502E90F3.2000702@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-08-17 11:38 AM, Herton Ronaldo Krzesinski wrote:
-> On Wed, Aug 15, 2012 at 03:45:57PM -0400, Paul Gortmaker wrote:
->> From: Carlos Maiolino <cmaiolino@redhat.com>
->>
->>                    -------------------
->>     This is a commit scheduled for the next v2.6.34 longterm release.
->>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->>     If you see a problem with using this for longterm, please comment.
->>                    -------------------
->>
->> commit b52a360b2aa1c59ba9970fb0f52bbb093fcc7a24 upstream.
->>
->> Fixes a possible memory corruption when the link is larger than
->> MAXPATHLEN and XFS_DEBUG is not enabled. This also remove the
->> S_ISLNK assert, since the inode mode is checked previously in
->> xfs_readlink_by_handle() and via VFS.
->>
->> Updated to address concerns raised by Ben Hutchings about the loose
->> attention paid to 32- vs 64-bit values, and the lack of handling a
->> potentially negative pathlen value:
->>  - Changed type of "pathlen" to be xfs_fsize_t, to match that of
->>    ip->i_d.di_size
->>  - Added checking for a negative pathlen to the too-long pathlen
->>    test, and generalized the message that gets reported in that case
->>    to reflect the change
->> As a result, if a negative pathlen were encountered, this function
->> would return EFSCORRUPTED (and would fail an assertion for a debug
->> build)--just as would a too-long pathlen.
->>
->> Signed-off-by: Alex Elder <aelder@sgi.com>
->> Signed-off-by: Carlos Maiolino <cmaiolino@redhat.com>
->> Reviewed-by: Christoph Hellwig <hch@lst.de>
->> [PG: no xfs_alert in 2.6.34; use xfs_fs_cmn_err(CE_ALERT, ...) instead]
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> [...]
+On Fri, Aug 17, 2012 at 11:44:03AM -0700, Arjan van de Ven wrote:
+> On 8/17/2012 11:41 AM, Matthew Garrett wrote:
+> > On Thu, Aug 16, 2012 at 07:01:25AM -0700, Arjan van de Ven wrote:
+> >> this is ... a dubiously general statement.
+> >>
+> >> for good power, at least on Intel cpus, you want to spread. Parallelism is efficient.
+> > 
+> > Is this really true? In a two-socket system I'd have thought the benefit 
+> > of keeping socket 1 in package C3 outweighed the cost of keeping socket 
+> > 0 awake for slightly longer.
 > 
-> commit 9b025eb3a89e041bab6698e3858706be2385d692 ("xfs: Fix missing
-> xfs_iunlock() on error recovery path in xfs_readlink()") addresses a
-> regression with this change, something to consider for inclusion too.
-
-Thanks again Herton.  You've convinced me that I need to write
-a script that looks for the cherry picked commit ID prefix being
-mentioned anywhere in the changelog of any and all new commits
-beyond it.  It would be a good sanity check...
-
-P.
-
+> not on Intel
 > 
+> you can't enter package c3 either until every one is down.
+> (e.g. memory controller must stay on etc etc)
+
+I thought that was only PC6 - is there any reason why the package cache 
+can't be entirely powered down?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
