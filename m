@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab2HQBXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:23:10 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47766 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756901Ab2HQBXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:23:08 -0400
+	id S1755970Ab2HQBaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:30:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43598 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752688Ab2HQBaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 21:30:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,782,1336374000"; 
+   d="scan'208";a="203168962"
+Message-ID: <502D9E78.5010403@intel.com>
+Date: Fri, 17 Aug 2012 09:29:28 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <20120816221758.GM11413@one.firstfloor.org>
-References: <50299142.2030504@oberhumer.com>
-	<20120814123937.GA14756@sig21.net>
-	<502B8FE3.7080501@oberhumer.com>
-	<20120815144539.GA8300@sig21.net>
-	<502C92C3.7090701@oberhumer.com>
-	<20120816150647.GA22010@sig21.net>
-	<20120816232549.4d14a6aa@natsu>
-	<20120816175234.GL11413@one.firstfloor.org>
-	<CAMuHMdWK_Y=QwkgQD6K8tFBLaO04Fy0yVAzEpb2OYW6Ec0hGoA@mail.gmail.com>
-	<CAPkEcwgv6f5B+Mrw7kzrHcZ5JZ+Yr0o=bLdoFqCB-e4CLiVx5A@mail.gmail.com>
-	<20120816221758.GM11413@one.firstfloor.org>
-Date: Thu, 16 Aug 2012 20:23:06 -0500
-Message-ID: <CAKcLGm97zq7kx43cMyDwythin+R01E4zrtzrjAKkJjQL0iy+mg@mail.gmail.com>
-Subject: Re: [GIT PULL] Update LZO compression
-From: Mitch Harder <mitch.harder@sabayonlinux.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: james northrup <northrup.james@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Roman Mamedov <rm@romanrm.ru>, Johannes Stezenbach <js@sig21.net>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        linux-kernel@vger.kernel.org, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: preeti <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins> <502C98E8.20800@linux.vnet.ibm.com> <502CFD35.5000801@linux.intel.com>
+In-Reply-To: <502CFD35.5000801@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 5:17 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Thu, Aug 16, 2012 at 11:55:06AM -0700, james northrup wrote:
->> looks like ARM results are inconclusive from a lot of folks without
->> bandwidth to do a write-up, what about just plain STAGING status for ARM so
->> the android tweakers can beat on it for a while?
->
-> Staging only really works for new drivers, not for updating existing
-> library functions like this.
->
-> I suppose you could keep both and have the architecture select with a
-> CONFIG.
->
+On 08/16/2012 10:01 PM, Arjan van de Ven wrote:
 
-I've been doing some rough benchmarking with the updated LZO in btrfs.
+>> *Power policy*:
+>>
+>> So how is power policy different? As Peter says,'pack more than spread
+>> more'.
+> 
+> this is ... a dubiously general statement.
+> 
+> for good power, at least on Intel cpus, you want to spread. Parallelism is efficient.
+> 
+> the only thing you do not want to do, is wake cpus up for
+> tasks that only run extremely briefly (think "100 usec" or less).
 
-My tests primarily consist of timing some typical copying, git
-manipulating, and running rsync using a set of kernel git sources.
-Git sources are typically about 50% pack files which won't compress
-very well, with the remainder being mostly highly compressible source
-files.
 
-Of course, any underlying speed improvement attributable only to LZO
-is not shown by test like this. But I thought it would be interesting
-to see the impact in some typical real-world btrfs operations.
+It's a very important and valuable info!
+Just want to know how you get this? From CS cost or cache/TLB refill cost?
 
-I was seeing between 3-9% improvement in speed with the new LZO.
+> 
+> so maybe the balance interval is slightly different, or more, you don't balance tasks that
+> historically ran only for brief periods
+> 
+> 
 
-Copying several directories of git sources showed the most
-improvement, ~9%.  Typical git operations, such as a git checkout or
-git status where only showing 3-5% improvement, which is close to the
-noise level of my tests.  Running multiple rsync processes showed a 5%
-improvement.
 
-With only 10 trials (5 with each LZO), I can't say I would
-statistically hang my hat on these numbers.
-
-Given all the other stuff that is going on in my rough benchmarks, a
-3-9% improvement from a single change is probably pretty good.
