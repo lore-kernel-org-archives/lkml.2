@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab2HQRwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:52:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53077 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755014Ab2HQRvz (ORCPT
+	id S1758709Ab2HQRwd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:52:33 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34412 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758664Ab2HQRwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:51:55 -0400
-Date: Fri, 17 Aug 2012 18:51:50 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com
-Message-ID: <20120817175150.GB29217@decadent.org.uk>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com>
- <20120817173209.GA29217@decadent.org.uk>
- <20120817173837.GA3080@kroah.com>
+	Fri, 17 Aug 2012 13:52:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817173837.GA3080@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
+	<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
+	<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
+	<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
+	<CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
+	<1345164802.2433.21.camel@falcor.watson.ibm.com>
+	<CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
+	<1345223322.2257.75.camel@falcor>
+	<CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
+Date: Fri, 17 Aug 2012 13:52:23 -0400
+Message-ID: <CA+5PVA7peKJQJ4tdk_8iNqnAHC6YrekiNpm3wmtOoM45m_hHNQ@mail.gmail.com>
+Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
+ sign modules
+From: Josh Boyer <jwboyer@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, jmorris@namei.org,
+        rusty@rustcorp.com.au, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 10:38:37AM -0700, Greg KH wrote:
-> On Fri, Aug 17, 2012 at 06:32:09PM +0100, Ben Hutchings wrote:
-> > On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
-> > > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > > > Now, gather DNS information. Invoke an external script (that can be
-> > > > distro dependent) to gather the DNS information.
-> > > 
-> > > Where is that script?  Why a script, this really isn't in a standard
-> > > method for all Linux distros?  If not, why not work to do that like the
-> > > freedesktop.org people have done for other system configuration items?
-> >  
-> > I suggested using the Network Manager D-Bus API.  That obviously
-> > isn't going to work everywhere, but it seems to cover the same simple
-> > cases that this hypervisor-guest interface allows for.
-> 
-> That's a great start, as I think all of the distros have now pretty much
-> standardized on this format, right?
- 
-I expect it to be available on most current distributions, but not
-necessarily enabled by default.  Debian only installs NM if you choose
-the 'desktop' task at install time, so text-mode virtal servers
-wouldn't have it.  KY may also be concerned about older distributions
-that never had NM.
+On Fri, Aug 17, 2012 at 1:44 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>> I still think the signed_modules_install script, renamed to something
+>> like ephemeral_signed_modules_install, is worthwhile and becomes a
+>> convience tool for the developer, wanting to use ephemeral keys.  The
+>> private key, in Dmitry's updated patches soon to be posted, will be
+>> password protected with a random number, that is only accessible to the
+>> current shell.
+>
+> I think the existence of an additional make target for signed modules
+> is really confusing.  Particularly when you consider the target still
+> exists even if the kernel isn't setup to work with signed modules.  If
+> the config options are set, just have 'make modules_install' do it and
+> create a key if one doesn't exist (or better yet, have 'make' do it).
+>
+> Also... password protecting the key that only responds to the current
+> shell really sounds like a show-stopper for this being used by distros.
+> There is no way a distro is going to be able to type a password in
+> during a kernel build.  It completely removes the usability of distros
+> that want to use a per-kernel build ephemeral key.  If you're going to
+> do this, please wrap it in a kconfig option so the second distro case
+> I mentio above is still possible.
 
-Ben.
+Here's a suggestion that might help the discussion.  In the next
+revision of the patch set, include a document in Documentation/ that
+covers the module signing design, the purposes it's intended to fit,
+and a high level description of the various module loading scenarios
+(signed, unsigned, signed with a key not in the keyring, etc).  That
+way we can at least see at a higher level what the thinking behind the
+implemenation is.  I think some of our back and forth (while good!) is
+because we see signed modules being used for different purposes.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+josh
