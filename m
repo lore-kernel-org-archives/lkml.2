@@ -1,109 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab2HQBy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:54:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42203 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144Ab2HQBy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:54:58 -0400
+	id S933492Ab2HQB5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:57:03 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:52466 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756144Ab2HQB47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 21:56:59 -0400
+Message-ID: <502DA4E8.9050800@msgid.tls.msk.ru>
+Date: Fri, 17 Aug 2012 05:56:56 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <1345167949-7419-3-git-send-email-ming.lei@canonical.com>
-References: <1345167949-7419-1-git-send-email-ming.lei@canonical.com>
-	<1345167949-7419-3-git-send-email-ming.lei@canonical.com>
-Date: Fri, 17 Aug 2012 09:54:56 +0800
-Message-ID: <CACVXFVNGHtXqiZtA0V6FuCEvebSs1F=jQG=nAYqwQjD6jdG2+Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] PM / Sleep: introduce dpm_for_each_dev
-From: Ming Lei <ming.lei@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Content-Type: multipart/mixed; boundary=047d7b6dc2d266fa9804c76c724c
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: 3.0+ NFS issues (bisected)
+References: <4FBF2C57.3070203@msgid.tls.msk.ru> <20120529152416.GC3441@fieldses.org> <4FC5C82E.4020806@msgid.tls.msk.ru> <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru> <1338469169.2420.7.camel@lade.trondhjem.org> <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru> <4FFC2573.8040804@msgid.tls.msk.ru> <20120712125303.GC16822@fieldses.org>
+In-Reply-To: <20120712125303.GC16822@fieldses.org>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b6dc2d266fa9804c76c724c
-Content-Type: text/plain; charset=ISO-8859-1
+On 12.07.2012 16:53, J. Bruce Fields wrote:
+> On Tue, Jul 10, 2012 at 04:52:03PM +0400, Michael Tokarev wrote:
+>> I tried to debug this again, maybe to reproduce in a virtual machine,
+>> and found out that it is only 32bit server code shows this issue:
+>> after updating the kernel on the server to 64bit (the same version)
+>> I can't reproduce this issue anymore.  Rebooting back to 32bit,
+>> and voila, it is here again.
+>>
+>> Something apparenlty isn't right on 32bits... ;)
+>>
+>> (And yes, the prob is still present and is very annoying :)
+> 
+> OK, that's very useful, thanks.  So probably a bug got introduced in the
+> 32-bit case between 2.6.32 and 3.0.
+> 
+> My personal upstream testing is normally all x86_64 only.  I'll kick off
+> a 32-bit install and see if I can reproduce this quickly.
 
-On Fri, Aug 17, 2012 at 9:45 AM, Ming Lei <ming.lei@canonical.com> wrote:
-> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> index 44d1f23..bf86f89 100644
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -640,6 +640,7 @@ extern void __suspend_report_result(const char *function, void *fn, int ret);
->         } while (0)
->
->  extern int device_pm_wait_for_dev(struct device *sub, struct device *dev);
-> +extern void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *));
->
->  extern int pm_generic_prepare(struct device *dev);
->  extern int pm_generic_suspend_late(struct device *dev);
-> @@ -679,6 +680,10 @@ static inline int device_pm_wait_for_dev(struct device *a, struct device *b)
->         return 0;
->  }
->
-> +void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
+Actually it has nothing to do with 32 vs 64 bits as I
+initially thought.  It happens on 64bits too, but takes
+more time (or data to transfer) to trigger.
 
-Sorry, the above line is wrong, and should be defined as 'static inline'.
-Please drop this one and take the attachment patch.
 
+> Let me know if you're able to narrow this down any more.
+
+I bisected this issue to the following commit:
+
+commit f03d78db65085609938fdb686238867e65003181
+Author: Eric Dumazet <eric.dumazet@gmail.com>
+Date:   Thu Jul 7 00:27:05 2011 -0700
+
+    net: refine {udp|tcp|sctp}_mem limits
+
+    Current tcp/udp/sctp global memory limits are not taking into account
+    hugepages allocations, and allow 50% of ram to be used by buffers of a
+    single protocol [ not counting space used by sockets / inodes ...]
+
+    Lets use nr_free_buffer_pages() and allow a default of 1/8 of kernel ram
+    per protocol, and a minimum of 128 pages.
+    Heavy duty machines sysadmins probably need to tweak limits anyway.
+
+
+Reverting this commit on top of 3.0 (or any later 3.x kernel) fixes
+the behavour here.
+
+This machine has 4Gb of memory.  On 3.0, with this patch applied
+(as it is part of 3.0), tcp_mem is like this:
+
+  21228     28306   42456
+
+with this patch reverted, tcp_mem shows:
+
+  81216     108288  162432
+
+and with these values, it works fine.
+
+So it looks like something else goes wrong there,
+which lead to all nfsds fighting with each other
+for something and eating 100% of available CPU
+instead of servicing clients.
+
+For added fun, when setting tcp_mem to the "good" value
+from "bad" value (after booting into kernel with that
+patch applied), the problem is _not_ fixed.
+
+Any further hints?
 
 Thanks,
---
-Ming Lei
 
---047d7b6dc2d266fa9804c76c724c
-Content-Type: application/octet-stream; 
-	name="0002-PM-Sleep-introduce-dpm_for_each_dev.patch"
-Content-Disposition: attachment; 
-	filename="0002-PM-Sleep-introduce-dpm_for_each_dev.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h5ymkryz0
+/mjt
 
-RnJvbSAwNjhiNWZmNGViNGE3NTQxOTNiYjQxNWQ4NDViMzUyMTg5NDg3OTNjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBNaW5nIExlaSA8dG9tLmxlaW1pbmdAZ21haWwuY29tPgpEYXRl
-OiBGcmksIDE3IEF1ZyAyMDEyIDA5OjAzOjU2ICswODAwClN1YmplY3Q6IFtSRkMgUEFUQ0ggMi8z
-XSBQTSAvIFNsZWVwOiBpbnRyb2R1Y2UgZHBtX2Zvcl9lYWNoX2RldgoKZHBtX2xpc3QgYW5kIGl0
-cyBwbSBsb2NrIHByb3ZpZGUgYSBnb29kIHdheSB0byBpdGVyYXRlIGFsbApkZXZpY2VzIGluIHN5
-c3RlbS4gRXhjZXB0IHRoaXMgd2F5LCB0aGVyZSBpcyBubyBvdGhlciBlYXN5CndheSB0byBpdGVy
-YXRlIGRldmljZXMgaW4gc3lzdGVtLgoKZmlybXdhcmUgbG9hZGVyIG5lZWQgdG8gY2FjaGUgZmly
-bXdhcmUgaW1hZ2VzIGZvciBkZXZpY2VzCmJlZm9yZSBzeXN0ZW0gc2xlZXAsIHNvIGludHJvZHVj
-ZSB0aGUgZnVuY3Rpb24gdG8gbWVldCBpdHMKZGVtYW5kLgoKUmVwb3J0ZWQtYnk6IEZlbmdndWFu
-ZyBXdSA8ZmVuZ2d1YW5nLnd1QGludGVsLmNvbT4KU2lnbmVkLW9mZi1ieTogTWluZyBMZWkgPHRv
-bS5sZWltaW5nQGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL2Jhc2UvcG93ZXIvbWFpbi5jIHwgICAx
-OSArKysrKysrKysrKysrKysrKysrCiBpbmNsdWRlL2xpbnV4L3BtLmggICAgICAgIHwgICAgNSAr
-KysrKwogMiBmaWxlcyBjaGFuZ2VkLCAyNCBpbnNlcnRpb25zKCspCgpkaWZmIC0tZ2l0IGEvZHJp
-dmVycy9iYXNlL3Bvd2VyL21haW4uYyBiL2RyaXZlcnMvYmFzZS9wb3dlci9tYWluLmMKaW5kZXgg
-NTdmNTgxNC4uMTg0YmNiNSAxMDA2NDQKLS0tIGEvZHJpdmVycy9iYXNlL3Bvd2VyL21haW4uYwor
-KysgYi9kcml2ZXJzL2Jhc2UvcG93ZXIvbWFpbi5jCkBAIC0xMzQ5LDMgKzEzNDksMjIgQEAgaW50
-IGRldmljZV9wbV93YWl0X2Zvcl9kZXYoc3RydWN0IGRldmljZSAqc3Vib3JkaW5hdGUsIHN0cnVj
-dCBkZXZpY2UgKmRldikKIAlyZXR1cm4gYXN5bmNfZXJyb3I7CiB9CiBFWFBPUlRfU1lNQk9MX0dQ
-TChkZXZpY2VfcG1fd2FpdF9mb3JfZGV2KTsKKworLyoqCisgKiBkcG1fZm9yX2VhY2hfZGV2IC0g
-ZGV2aWNlIGl0ZXJhdG9yLgorICogQGRhdGE6IGRhdGEgZm9yIHRoZSBjYWxsYmFjay4KKyAqIEBm
-bjogZnVuY3Rpb24gdG8gYmUgY2FsbGVkIGZvciBlYWNoIGRldmljZS4KKyAqCisgKiBJdGVyYXRl
-IG92ZXIgZGV2aWNlcyBpbiBkcG1fbGlzdCwgYW5kIGNhbGwgQGZuIGZvciBlYWNoIGRldmljZSwK
-KyAqIHBhc3NpbmcgaXQgQGRhdGEuCisgKi8KK3ZvaWQgZHBtX2Zvcl9lYWNoX2Rldih2b2lkICpk
-YXRhLCB2b2lkICgqZm4pKHN0cnVjdCBkZXZpY2UgKiwgdm9pZCAqKSkKK3sKKwlzdHJ1Y3QgZGV2
-aWNlICpkZXY7CisKKwlkZXZpY2VfcG1fbG9jaygpOworCWxpc3RfZm9yX2VhY2hfZW50cnkoZGV2
-LCAmZHBtX2xpc3QsIHBvd2VyLmVudHJ5KQorCQlmbihkZXYsIGRhdGEpOworCWRldmljZV9wbV91
-bmxvY2soKTsKK30KK0VYUE9SVF9TWU1CT0xfR1BMKGRwbV9mb3JfZWFjaF9kZXYpOwpkaWZmIC0t
-Z2l0IGEvaW5jbHVkZS9saW51eC9wbS5oIGIvaW5jbHVkZS9saW51eC9wbS5oCmluZGV4IDQ0ZDFm
-MjMuLjAwN2U2ODcgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvcG0uaAorKysgYi9pbmNsdWRl
-L2xpbnV4L3BtLmgKQEAgLTY0MCw2ICs2NDAsNyBAQCBleHRlcm4gdm9pZCBfX3N1c3BlbmRfcmVw
-b3J0X3Jlc3VsdChjb25zdCBjaGFyICpmdW5jdGlvbiwgdm9pZCAqZm4sIGludCByZXQpOwogCX0g
-d2hpbGUgKDApCiAKIGV4dGVybiBpbnQgZGV2aWNlX3BtX3dhaXRfZm9yX2RldihzdHJ1Y3QgZGV2
-aWNlICpzdWIsIHN0cnVjdCBkZXZpY2UgKmRldik7CitleHRlcm4gdm9pZCBkcG1fZm9yX2VhY2hf
-ZGV2KHZvaWQgKmRhdGEsIHZvaWQgKCpmbikoc3RydWN0IGRldmljZSAqLCB2b2lkICopKTsKIAog
-ZXh0ZXJuIGludCBwbV9nZW5lcmljX3ByZXBhcmUoc3RydWN0IGRldmljZSAqZGV2KTsKIGV4dGVy
-biBpbnQgcG1fZ2VuZXJpY19zdXNwZW5kX2xhdGUoc3RydWN0IGRldmljZSAqZGV2KTsKQEAgLTY3
-OSw2ICs2ODAsMTAgQEAgc3RhdGljIGlubGluZSBpbnQgZGV2aWNlX3BtX3dhaXRfZm9yX2Rldihz
-dHJ1Y3QgZGV2aWNlICphLCBzdHJ1Y3QgZGV2aWNlICpiKQogCXJldHVybiAwOwogfQogCitzdGF0
-aWMgaW5saW5lIHZvaWQgZHBtX2Zvcl9lYWNoX2Rldih2b2lkICpkYXRhLCB2b2lkICgqZm4pKHN0
-cnVjdCBkZXZpY2UgKiwgdm9pZCAqKSkKK3sKK30KKwogI2RlZmluZSBwbV9nZW5lcmljX3ByZXBh
-cmUJTlVMTAogI2RlZmluZSBwbV9nZW5lcmljX3N1c3BlbmQJTlVMTAogI2RlZmluZSBwbV9nZW5l
-cmljX3Jlc3VtZQlOVUxMCi0tIAoxLjcuOS41Cgo=
---047d7b6dc2d266fa9804c76c724c--
+>> On 31.05.2012 17:51, Michael Tokarev wrote:
+>>> On 31.05.2012 17:46, Myklebust, Trond wrote:
+>>>> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
+>>> []
+>>>>> I started tcpdump:
+>>>>>
+>>>>>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
+>>>>>
+>>>>> on the client (192.168.88.2).  Next I mounted a directory on the client,
+>>>>> and started reading (tar'ing) a directory into /dev/null.  It captured a
+>>>>> few stalls.  Tcpdump shows number of packets it got, the stalls are at
+>>>>> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
+>>>>>
+>>>>> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
+>>>>> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
+>>>>> 10 files of 1Gb each, all made by using `truncate' utility, so does not
+>>>>> take place on disk at all.  This also makes it obvious that the issue
+>>>>> does not depend on the speed of disk on the server (since in this case,
+>>>>> the server disk isn't even in use).
+>>>>
+>>>> OK. So from the above file it looks as if the traffic is mainly READ
+>>>> requests.
+>>>
+>>> The issue here happens only with reads.
+>>>
+>>>> In 2 places the server stops responding. In both cases, the client seems
+>>>> to be sending a single TCP frame containing several COMPOUNDS containing
+>>>> READ requests (which should be legal) just prior to the hang. When the
+>>>> server doesn't respond, the client pings it with a RENEW, before it ends
+>>>> up severing the TCP connection and then retransmitting.
+>>>
+>>> And sometimes -- speaking only from the behavour I've seen, not from the
+>>> actual frames sent -- server does not respond to the RENEW too, in which
+>>> case the client reports "nfs server no responding", and on the next
+>>> renew it may actually respond.  This happens too, but much more rare.
+>>>
+>>> During these stalls, ie, when there's no network activity at all,
+>>> the server NFSD threads are busy eating all available CPU.
+>>>
+>>> What does it all tell us? :)
+>>>
+>>> Thank you!
+>>>
+>>> /mjt
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
