@@ -1,94 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab2HQRzv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:55:51 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:9789
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753430Ab2HQRzn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:55:43 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bh8275dhz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>, Ben Hutchings <ben@decadent.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>
-Subject: RE: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Thread-Topic: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Thread-Index: AQHNfBXfRZ51oH5JRU6o6Q09JaeVqJdeONSAgAALdYCAAAHOgIAAAn/w
-Date: Fri, 17 Aug 2012 17:55:04 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C1F42@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com> <20120817173209.GA29217@decadent.org.uk>
- <20120817173837.GA3080@kroah.com>
-In-Reply-To: <20120817173837.GA3080@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758716Ab2HQR4C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:56:02 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:39232 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758673Ab2HQRzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 13:55:46 -0400
+Date: Fri, 17 Aug 2012 13:45:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 06/11] xen/mmu: For 64-bit do not call
+ xen_map_identity_early
+Message-ID: <20120817174549.GA14257@phenom.dumpdata.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, August 17, 2012 1:39 PM
-> To: Ben Hutchings
-> Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> olaf@aepfle.de; apw@canonical.com
-> Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
+On Fri, Aug 17, 2012 at 06:41:23PM +0100, Stefano Stabellini wrote:
+> On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> > B/c we do not need it. During the startup the Xen provides
+> > us with all the memory mapped that we need to function.
 > 
-> On Fri, Aug 17, 2012 at 06:32:09PM +0100, Ben Hutchings wrote:
-> > On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
-> > > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > > > Now, gather DNS information. Invoke an external script (that can be
-> > > > distro dependent) to gather the DNS information.
-> > >
-> > > Where is that script?  Why a script, this really isn't in a standard
-> > > method for all Linux distros?  If not, why not work to do that like the
-> > > freedesktop.org people have done for other system configuration items?
-> >
-> > I suggested using the Network Manager D-Bus API.  That obviously
-> > isn't going to work everywhere, but it seems to cover the same simple
-> > cases that this hypervisor-guest interface allows for.
+> Shouldn't we check to make sure that is actually true (I am thinking at
+> nr_pt_frames)?
+
+I was looking at the source code (hypervisor) to figure it out and
+that is certainly true.
+
+
+> Or is it actually stated somewhere in the Xen headers?
+
+Couldn't find it, but after looking so long at the source code
+I didn't even bother looking for it.
+
+Thought to be honest - I only looked at how the 64-bit pagetables
+were set up, so I didn't dare to touch the 32-bit. Hence the #ifdef
+
 > 
-> That's a great start, as I think all of the distros have now pretty much
-> standardized on this format, right?
-
-Based on Ben's suggestion I was looking at using NM D-Bus API. Subsequently,
-talking to Olaf and Mairus, I chose to go with the external script approach since 
-each Distro could pretty much decide how the functionality would be implemented
-on a specific Distro including for instance by using the NM D-Bus API in the script.
-I think the approach of having an external script while not precluding anything 
-makes the KVP code more generic and  more widely applicable without sacrificing
-anything.
-
-Regards,
-
-K. Y 
-
-
-
+> 
+> 
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/xen/mmu.c |   11 +++++------
+> >  1 files changed, 5 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> > index 7247e5a..a59070b 100644
+> > --- a/arch/x86/xen/mmu.c
+> > +++ b/arch/x86/xen/mmu.c
+> > @@ -84,6 +84,7 @@
+> >   */
+> >  DEFINE_SPINLOCK(xen_reservation_lock);
+> >  
+> > +#ifdef CONFIG_X86_32
+> >  /*
+> >   * Identity map, in addition to plain kernel map.  This needs to be
+> >   * large enough to allocate page table pages to allocate the rest.
+> > @@ -91,7 +92,7 @@ DEFINE_SPINLOCK(xen_reservation_lock);
+> >   */
+> >  #define LEVEL1_IDENT_ENTRIES	(PTRS_PER_PTE * 4)
+> >  static RESERVE_BRK_ARRAY(pte_t, level1_ident_pgt, LEVEL1_IDENT_ENTRIES);
+> > -
+> > +#endif
+> >  #ifdef CONFIG_X86_64
+> >  /* l3 pud for userspace vsyscall mapping */
+> >  static pud_t level3_user_vsyscall[PTRS_PER_PUD] __page_aligned_bss;
+> > @@ -1628,7 +1629,7 @@ static void set_page_prot(void *addr, pgprot_t prot)
+> >  	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
+> >  		BUG();
+> >  }
+> > -
+> > +#ifdef CONFIG_X86_32
+> >  static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+> >  {
+> >  	unsigned pmdidx, pteidx;
+> > @@ -1679,7 +1680,7 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+> >  
+> >  	set_page_prot(pmd, PAGE_KERNEL_RO);
+> >  }
+> > -
+> > +#endif
+> >  void __init xen_setup_machphys_mapping(void)
+> >  {
+> >  	struct xen_machphys_mapping mapping;
+> > @@ -1765,14 +1766,12 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+> >  	/* Note that we don't do anything with level1_fixmap_pgt which
+> >  	 * we don't need. */
+> >  
+> > -	/* Set up identity map */
+> > -	xen_map_identity_early(level2_ident_pgt, max_pfn);
+> > -
+> >  	/* Make pagetable pieces RO */
+> >  	set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
+> >  	set_page_prot(level3_ident_pgt, PAGE_KERNEL_RO);
+> >  	set_page_prot(level3_kernel_pgt, PAGE_KERNEL_RO);
+> >  	set_page_prot(level3_user_vsyscall, PAGE_KERNEL_RO);
+> > +	set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
+> >  	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
+> >  	set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
+> >  
+> > -- 
+> > 1.7.7.6
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
