@@ -1,125 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2HQFGX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 01:06:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51584 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab2HQFGU (ORCPT
+	id S1753532Ab2HQFPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 01:15:34 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56677 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2HQFPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 01:06:20 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Martyn Welch <martyn.welch@ge.com>,
-        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH 5/5] staging/vme: fix checkpatch warning
-Date: Fri, 17 Aug 2012 14:06:13 +0900
-Message-Id: <1345179973-8410-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345179867-8266-1-git-send-email-yamanetoshi@gmail.com>
-References: <1345179867-8266-1-git-send-email-yamanetoshi@gmail.com>
+	Fri, 17 Aug 2012 01:15:32 -0400
+Date: Fri, 17 Aug 2012 10:43:07 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
+        peterz@infradead.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
+Message-ID: <20120817051307.GA4782@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120726051902.GA29466@in.ibm.com> <20120726052029.GB29466@in.ibm.com> <20120815165931.GA10059@redhat.com> <1345066913.11751.4.camel@pasglop> <20120816050030.GA12060@in.ibm.com> <20120816152112.GA8874@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816152112.GA8874@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081705-6148-0000-0000-000008B4B49F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below checkpatch warnings was fixed,
+On Thu, Aug 16, 2012 at 05:21:12PM +0200, Oleg Nesterov wrote:
 
--WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
+...
 
-and added pr_fmt.
+> > So, the arch agnostic code itself
+> > takes care of this case...
+> 
+> Yes. I forgot about install_breakpoint()->is_swbp_insn() check which
+> returns -ENOTSUPP, somehow I thought arch_uprobe_analyze_insn() does
+> this.
+> 
+> > or am I missing something?
+> 
+> No, it is me.
+> 
+> > However, I see that we need a powerpc specific is_swbp_insn()
+> > implementation since we will have to take care of all the trap variants.
+> 
+> Hmm, I am not sure. is_swbp_insn(insn), as it is used in the arch agnostic
+> code, should only return true if insn == UPROBE_SWBP_INSN (just in case,
+> this logic needs more fixes but this is offtopic).
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/vme/devices/vme_pio2_core.c |   10 +++++-----
- drivers/staging/vme/devices/vme_user.c      |   14 ++++++--------
- 2 files changed, 11 insertions(+), 13 deletions(-)
+I think it does...
 
-diff --git a/drivers/staging/vme/devices/vme_pio2_core.c b/drivers/staging/vme/devices/vme_pio2_core.c
-index 4bf8e05..dad8281 100644
---- a/drivers/staging/vme/devices/vme_pio2_core.c
-+++ b/drivers/staging/vme/devices/vme_pio2_core.c
-@@ -10,6 +10,8 @@
-  * option) any later version.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/types.h>
-@@ -163,15 +165,13 @@ static int __init pio2_init(void)
- 	int retval = 0;
- 
- 	if (bus_num == 0) {
--		printk(KERN_ERR "%s: No cards, skipping registration\n",
--			driver_name);
-+		pr_err("No cards, skipping registration\n");
- 		goto err_nocard;
- 	}
- 
- 	if (bus_num > PIO2_CARDS_MAX) {
--		printk(KERN_ERR
--			"%s: Driver only able to handle %d PIO2 Cards\n",
--			driver_name, PIO2_CARDS_MAX);
-+		pr_err("Driver only able to handle %d PIO2 Cards\n",
-+		       PIO2_CARDS_MAX);
- 		bus_num = PIO2_CARDS_MAX;
- 	}
- 
-diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index e47fc41..7d28086 100644
---- a/drivers/staging/vme/devices/vme_user.c
-+++ b/drivers/staging/vme/devices/vme_user.c
-@@ -172,7 +172,7 @@ static int vme_user_open(struct inode *inode, struct file *file)
- 	mutex_lock(&image[minor].mutex);
- 	/* Allow device to be opened if a resource is needed and allocated. */
- 	if (minor < CONTROL_MINOR && image[minor].resource == NULL) {
--		printk(KERN_ERR "No resources allocated for device\n");
-+		pr_err("No resources allocated for device\n");
- 		err = -EINVAL;
- 		goto err_res;
- 	}
-@@ -630,8 +630,7 @@ static int __init vme_user_init(void)
- 	pr_info("VME User Space Access Driver\n");
- 
- 	if (bus_num == 0) {
--		printk(KERN_ERR "%s: No cards, skipping registration\n",
--			driver_name);
-+		pr_err("No cards, skipping registration\n");
- 		retval = -ENODEV;
- 		goto err_nocard;
- 	}
-@@ -640,8 +639,8 @@ static int __init vme_user_init(void)
- 	 * in future revisions if that ever becomes necessary.
- 	 */
- 	if (bus_num > VME_USER_BUS_MAX) {
--		printk(KERN_ERR "%s: Driver only able to handle %d buses\n",
--			driver_name, VME_USER_BUS_MAX);
-+		pr_err("Driver only able to handle %d buses\n",
-+		       VME_USER_BUS_MAX);
- 		bus_num = VME_USER_BUS_MAX;
- 	}
- 
-@@ -681,8 +680,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 
- 	/* Save pointer to the bridge device */
- 	if (vme_user_bridge != NULL) {
--		printk(KERN_ERR "%s: Driver can only be loaded for 1 device\n",
--			driver_name);
-+		pr_err("Driver can only be loaded for 1 device\n");
- 		err = -EINVAL;
- 		goto err_dev;
- 	}
-@@ -769,7 +767,7 @@ static int __devinit vme_user_probe(struct vme_dev *vdev)
- 	/* Create sysfs entries - on udev systems this creates the dev files */
- 	vme_user_sysfs_class = class_create(THIS_MODULE, driver_name);
- 	if (IS_ERR(vme_user_sysfs_class)) {
--		printk(KERN_ERR "Error creating vme_user class.\n");
-+		pr_err("Error creating vme_user class.\n");
- 		err = PTR_ERR(vme_user_sysfs_class);
- 		goto err_class;
- 	}
--- 
-1.7.9.5
+> If powerpc has another insn(s) which can trigger powerpc's do_int3()
+> counterpart, they should be rejected by arch_uprobe_analyze_insn().
+> I think.
+
+The insn that gets passed to arch_uprobe_analyze_insn() is copy_insn()'s
+version, which is the file copy of the instruction. We should also take
+care of the in-memory copy, in case gdb had inserted a breakpoint at the
+same location, right? Updating is_swbp_insn() per-arch where needed will
+take care of both the cases, 'cos it gets called before
+arch_analyze_uprobe_insn() too.
+
+> > I will need to update the patches based on changes being made by Oleg
+> > and Sebastien for the single-step issues.
+> 
+> Perhaps you can do this in a separate change?
+> 
+> We need some (simple) changes in the arch agnostic code first, they
+> should not break poweppc. These changes are still under discussion.
+> Once we have "__weak  arch_uprobe_step*" you can reimplement these
+> hooks and fix the problems with single-stepping.
+
+OK. Agreed.
+
+Ananth
 
