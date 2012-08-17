@@ -1,120 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab2HQRjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:39:16 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58706 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752865Ab2HQRjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:39:07 -0400
-Message-ID: <1345225144.10014.2.camel@joe2Laptop>
-Subject: Re: [PATCH] ratelimit: check the condition in WARN_RATELIMIT first
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: davem@davemloft.net, jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Date: Fri, 17 Aug 2012 10:39:04 -0700
-In-Reply-To: <1345210942-26906-1-git-send-email-jslaby@suse.cz>
-References: <1345210942-26906-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757418Ab2HQRlu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:41:50 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:45050 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab2HQRlm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 13:41:42 -0400
+X-IronPort-AV: E=Sophos;i="4.77,785,1336348800"; 
+   d="scan'208";a="14064852"
+Date: Fri, 17 Aug 2012 18:41:23 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 06/11] xen/mmu: For 64-bit do not call
+ xen_map_identity_early
+In-Reply-To: <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-17 at 15:42 +0200, Jiri Slaby wrote:
-> Before calling __ratelimit in __WARN_RATELIMIT, check the condition
-> first. When this check was not there, we got constant income of:
-> tty_init_dev: 60 callbacks suppressed
-> tty_init_dev: 59 callbacks suppressed
-[]
-> diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
-[]
-> @@ -49,8 +49,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
->  #define __WARN_RATELIMIT(condition, state, format...)		\
->  ({								\
->  	int rtn = 0;						\
-> -	if (unlikely(__ratelimit(state)))			\
-> -		rtn = WARN(condition, format);			\
-> +	int __rtcond = !!condition;				\
-> +	if (unlikely(__rtcond && __ratelimit(state)))		\
-> +		rtn = WARN(__rtcond, format);			\
->  	rtn;							\
->  })
+On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> B/c we do not need it. During the startup the Xen provides
+> us with all the memory mapped that we need to function.
+
+Shouldn't we check to make sure that is actually true (I am thinking at
+nr_pt_frames)?
+Or is it actually stated somewhere in the Xen headers?
+
+
+
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/mmu.c |   11 +++++------
+>  1 files changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 7247e5a..a59070b 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -84,6 +84,7 @@
+>   */
+>  DEFINE_SPINLOCK(xen_reservation_lock);
 >  
-
-Hi Jiri.
-
-This seems fine to me but are there any conditions that
-are computationally expensive?  ratelimit(state) isn't
-and this will now always do condition.
-
-(looks instead of speculates)
-
-There's 1 current use of WARN_RATELIMIT and there's
-a condition of 1 so there's no problem here.
-
-__WARN_RATELIMIT is pretty stupid.
-It's only called from WARN_RATELIMIT.
-I think it shouldn't exist at all.
-
-Maybe something like this?
-
-(has some neatening as well)
-
- include/linux/ratelimit.h |   27 +++++++++------------------
- 1 files changed, 9 insertions(+), 18 deletions(-)
-
-diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
-index e11ccb4..f4acd61 100644
---- a/include/linux/ratelimit.h
-+++ b/include/linux/ratelimit.h
-@@ -46,20 +46,17 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
- #define WARN_ON_RATELIMIT(condition, state)			\
- 		WARN_ON((condition) && __ratelimit(state))
- 
--#define __WARN_RATELIMIT(condition, state, format...)		\
--({								\
--	int rtn = 0;						\
--	if (unlikely(__ratelimit(state)))			\
--		rtn = WARN(condition, format);			\
--	rtn;							\
--})
--
--#define WARN_RATELIMIT(condition, format...)			\
-+#define WARN_RATELIMIT(condition, fmt, ...)			\
- ({								\
- 	static DEFINE_RATELIMIT_STATE(_rs,			\
- 				      DEFAULT_RATELIMIT_INTERVAL,	\
- 				      DEFAULT_RATELIMIT_BURST);	\
--	__WARN_RATELIMIT(condition, &_rs, format);		\
-+	int rtn = !!(condition);				\
-+								\
-+	if (unlikely(rtn && __ratelimit(state)))		\
-+		WARN(rtn, fmt, ##__VA_ARGS__);			\
-+								\
-+	rtn;							\
- })
- 
- #else
-@@ -67,15 +64,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
- #define WARN_ON_RATELIMIT(condition, state)			\
- 	WARN_ON(condition)
- 
--#define __WARN_RATELIMIT(condition, state, format...)		\
--({								\
--	int rtn = WARN(condition, format);			\
--	rtn;							\
--})
--
--#define WARN_RATELIMIT(condition, format...)			\
-+#define WARN_RATELIMIT(condition, fmt, ...)			\
- ({								\
--	int rtn = WARN(condition, format);			\
-+	int rtn = WARN(condition, fmt, ##__VA_ARGS__);		\
- 	rtn;							\
- })
- 
-
-
-
+> +#ifdef CONFIG_X86_32
+>  /*
+>   * Identity map, in addition to plain kernel map.  This needs to be
+>   * large enough to allocate page table pages to allocate the rest.
+> @@ -91,7 +92,7 @@ DEFINE_SPINLOCK(xen_reservation_lock);
+>   */
+>  #define LEVEL1_IDENT_ENTRIES	(PTRS_PER_PTE * 4)
+>  static RESERVE_BRK_ARRAY(pte_t, level1_ident_pgt, LEVEL1_IDENT_ENTRIES);
+> -
+> +#endif
+>  #ifdef CONFIG_X86_64
+>  /* l3 pud for userspace vsyscall mapping */
+>  static pud_t level3_user_vsyscall[PTRS_PER_PUD] __page_aligned_bss;
+> @@ -1628,7 +1629,7 @@ static void set_page_prot(void *addr, pgprot_t prot)
+>  	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
+>  		BUG();
+>  }
+> -
+> +#ifdef CONFIG_X86_32
+>  static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+>  {
+>  	unsigned pmdidx, pteidx;
+> @@ -1679,7 +1680,7 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+>  
+>  	set_page_prot(pmd, PAGE_KERNEL_RO);
+>  }
+> -
+> +#endif
+>  void __init xen_setup_machphys_mapping(void)
+>  {
+>  	struct xen_machphys_mapping mapping;
+> @@ -1765,14 +1766,12 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  	/* Note that we don't do anything with level1_fixmap_pgt which
+>  	 * we don't need. */
+>  
+> -	/* Set up identity map */
+> -	xen_map_identity_early(level2_ident_pgt, max_pfn);
+> -
+>  	/* Make pagetable pieces RO */
+>  	set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
+>  	set_page_prot(level3_ident_pgt, PAGE_KERNEL_RO);
+>  	set_page_prot(level3_kernel_pgt, PAGE_KERNEL_RO);
+>  	set_page_prot(level3_user_vsyscall, PAGE_KERNEL_RO);
+> +	set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
+>  	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
+>  	set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
+>  
+> -- 
+> 1.7.7.6
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
