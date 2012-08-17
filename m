@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758764Ab2HQWpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 18:45:52 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17714 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758016Ab2HQWpn convert rfc822-to-8bit (ORCPT
+	id S1756062Ab2HQWyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 18:54:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34785 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab2HQWyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 18:45:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 17 Aug 2012 15:45:37 -0700
-From: Bill Huang <bilhuang@nvidia.com>
-To: "'Thierry Reding'" <thierry.reding@avionic-design.de>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Xin Xie <xxie@nvidia.com>, "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "jhovold@gmail.com" <jhovold@gmail.com>,
-        "kyle.manna@fuel7.com" <kyle.manna@fuel7.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 18 Aug 2012 06:45:32 +0800
-Subject: RE: [PATCH 1/2] mfd: dt: tps6586x: Add power off control
-Thread-Topic: [PATCH 1/2] mfd: dt: tps6586x: Add power off control
-Thread-Index: Ac18ZP2I6zQFAWiCRZqwbltvuvCJIwAZKsiA
-Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BA98283F@HKMAIL02.nvidia.com>
-References: <1345194989-11614-1-git-send-email-bilhuang@nvidia.com>
- <1345194989-11614-2-git-send-email-bilhuang@nvidia.com>
- <20120817104150.GA27633@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120817104150.GA27633@avionic-0098.mockup.avionic-design.de>
-Accept-Language: zh-TW, en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-TW, en-US
+	Fri, 17 Aug 2012 18:54:06 -0400
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <502EC5A6.7040502@xenotime.net>
+References: <1345242330.3841.8.camel@fedora64.linuxtx.org>
+	<502EC5A6.7040502@xenotime.net>
+Date: Sat, 18 Aug 2012 08:54:05 +1000
+Message-ID: <CAPM=9tzcmU-uBSaH0jASmp0iCu43fPROefip9mr_Q9qCAMzZEw@mail.gmail.com>
+Subject: Re: 3.5.x boot hang after conflicting fb hw usage <driver> vs VESA
+ VGA - removing generic driver
+From: Dave Airlie <airlied@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: "Justin M. Forbes" <jforbes@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nvpublic
-> On Fri, Aug 17, 2012 at 02:16:28AM -0700, Bill Huang wrote:
-> [...]
-> > diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> [...]
-> > @@ -505,6 +519,11 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
-> >  		goto err_add_devs;
-> >  	}
-> >
-> > +	tps6586x_dev = &client->dev;
-> > +
-> > +	if (pdata->pm_off && !pm_power_off)
-> > +		pm_power_off = tps6586x_power_off;
-> > +
-> 
-> I think the assignment of tps6586x_dev needs to go inside the if block as well. Otherwise it might be
-> overwritten by another instance for systems that actually have more than one tps6586x. Since currently
-> the driver can't be built as a module it probably makes little sense to clean this up in .remove(),
-> but it might still be worth adding so it isn't forgotten if and when somebody tries to convert the
-> driver to a module.
-> 
-Thanks, good point.
+On Sat, Aug 18, 2012 at 8:28 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 08/17/2012 03:25 PM, Justin M. Forbes wrote:
+>
+>> for <driver>, we have verified cases on inteldrmfb, radeondrmfb, and
+>> cirrusdrmfb.
+>>
+>> This is the last message displayed before the system hangs.  This seems
+>> to be hitting a large number of users in Fedora, though certainly not
+>> everyone.  This started happening with the 3.5 updates, and is still an
+>> issue.  It appears to be a race condition, because various things have
+>> allowed boot to continue for some users, though there is no clear work
+>> around. Has anyone else run across this?  Any ideas.  For more
+>> background we have the following bugs:
+>>
+>> inteldrmfb:
+>> https://bugzilla.redhat.com/show_bug.cgi?id=843826
+>>
+>> radeondrmfb:
+>> https://bugzilla.redhat.com/show_bug.cgi?id=845745
+>>
+>> cirrusdrmfb <kvm>:
+>> https://bugzilla.redhat.com/show_bug.cgi?id=843860
+>>
+>> It should be noted that the conflicting fb hw usage message is not new,
+>> it has been around for a while, but this is the last message seen before
+>> the hang.
+>
+>
+> Hi,  (adding dri-devel mailing list)
+>
+>
+> I started seeing this problem on 3.5-rc6.
+>
+> AFAICT, the system is not actually hung, it's just that no output
+> is showing up on the real (physical) output device (display) -- it's
+> going somewhere else (or to the bit bucket).
+>
 
-> I should note that I don't like very much how the pm_power_off works.
-> Maybe this should really be changed to allow passing a context for the function to work from.
-> Something like:
-> 
-> 	pm_power_off = tps6586x_power_off;
-> 	pm_power_off_data = &client->dev;
-> 
-> Where pm_power_off() would receive pm_power_off_data as an argument.
-> 
-> Even that's not very pretty. On the other hand this doesn't really buy us much because only the
-> storage location of the variable would change and nothing else. But it would still make the
-> association of the data clearer.
-> 
-> Thierry
-> 
-> * Unknown Key
-> * 0x7F3EB3A1
+Can we bisect this at all?
+
+I worry the intel one will bisect to where we moved the conflict
+resolution earlier, but I'd like to see if applying that patch earlier
+causes the issue, since radeon has it.
+
+I haven't reproduced this on any hw I own, I also can't get it under qemu.
+
+Dave.
