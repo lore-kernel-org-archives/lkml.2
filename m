@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030914Ab2HQIHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:07:07 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14116 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030893Ab2HQIG4 (ORCPT
+	id S1030923Ab2HQIJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:09:26 -0400
+Received: from mail.kernelconcepts.de ([212.60.202.196]:43201 "EHLO
+	mail.kernelconcepts.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030897Ab2HQIJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:06:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 17 Aug 2012 01:00:41 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
-        <swarren@nvidia.com>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] i2c: tegra: dynamically control fast clk
-Date: Fri, 17 Aug 2012 13:18:31 +0530
-Message-ID: <1345189711-24104-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Fri, 17 Aug 2012 04:09:11 -0400
+Message-ID: <502DFC1D.20903@kernelconcepts.de>
+Date: Fri, 17 Aug 2012 10:09:01 +0200
+From: Simon Budig <simon.budig@kernelconcepts.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: Let the FT5x06 driver build without debugfs
+References: <87k3wy1ii3.fsf@xmission.com>
+In-Reply-To: <87k3wy1ii3.fsf@xmission.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra I2C driver enables the fast clock during initialization
-and does not disable till driver removed.
-Enable this clock before transfer and disable after transfer done.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-This patch is on top of the clock chnages which is in Tegra sub system and
-based on 
- i2c: tegra: I2_M_NOSTART functionality not supported in Tegra20
-So recommend to go on tegra sub-system.
+On 08/17/2012 02:15 AM, Eric W. Biederman wrote:
+> When testing to make certain my user namespace code works in
+> various configurations I tripped over the tf5x06.c not building
+> with debugfs disabled.
 
- drivers/i2c/busses/i2c-tegra.c |   35 ++++++++++++++++++++++++++++-------
- 1 files changed, 28 insertions(+), 7 deletions(-)
+Sorry for that.
 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 554f713..24f7cee 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -362,12 +362,36 @@ static void tegra_dvc_init(struct tegra_i2c_dev *i2c_dev)
- 	dvc_writel(i2c_dev, val, DVC_CTRL_REG1);
- }
- 
-+static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
-+{
-+	int ret;
-+	ret = clk_prepare_enable(i2c_dev->fast_clk);
-+	if (ret < 0) {
-+		dev_err(i2c_dev->dev,
-+			"Enabling fast clk failed, err %d\n", ret);
-+		return ret;
-+	}
-+	ret = clk_prepare_enable(i2c_dev->div_clk);
-+	if (ret < 0) {
-+		dev_err(i2c_dev->dev,
-+			"Enabling div clk failed, err %d\n", ret);
-+		clk_disable_unprepare(i2c_dev->fast_clk);
-+	}
-+	return ret;
-+}
-+
-+static inline void tegra_i2c_clock_disable(struct tegra_i2c_dev *i2c_dev)
-+{
-+	clk_disable_unprepare(i2c_dev->div_clk);
-+	clk_disable_unprepare(i2c_dev->fast_clk);
-+}
-+
- static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
- {
- 	u32 val;
- 	int err = 0;
- 
--	clk_prepare_enable(i2c_dev->div_clk);
-+	tegra_i2c_clock_enable(i2c_dev);
- 
- 	tegra_periph_reset_assert(i2c_dev->div_clk);
- 	udelay(2);
-@@ -398,7 +422,7 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
- 	if (tegra_i2c_flush_fifos(i2c_dev))
- 		err = -ETIMEDOUT;
- 
--	clk_disable_unprepare(i2c_dev->div_clk);
-+	tegra_i2c_clock_disable(i2c_dev);
- 
- 	if (i2c_dev->irq_disabled) {
- 		i2c_dev->irq_disabled = 0;
-@@ -584,7 +608,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
- 		}
- 	}
- 
--	clk_prepare_enable(i2c_dev->clk);
-+	tegra_i2c_clock_enable(i2c_dev);
- 	for (i = 0; i < num; i++) {
- 		enum msg_end_type end_type = MSG_END_STOP;
- 		if (i < (num - 1)) {
-@@ -597,7 +621,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
- 		if (ret)
- 			break;
- 	}
--	clk_disable_unprepare(i2c_dev->div_clk);
-+	tegra_i2c_clock_disable(i2c_dev);
- 	return ret ?: i;
- }
- 
-@@ -734,8 +758,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	clk_prepare_enable(i2c_dev->fast_clk);
--
- 	i2c_set_adapdata(&i2c_dev->adapter, i2c_dev);
- 	i2c_dev->adapter.owner = THIS_MODULE;
- 	i2c_dev->adapter.class = I2C_CLASS_HWMON;
-@@ -749,7 +771,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to add I2C adapter\n");
--		clk_disable_unprepare(i2c_dev->fast_clk);
- 		return ret;
- 	}
- 
--- 
-1.7.1.1
+There already is a patch for this issue which I slightly prefer. You
+can find it in the mail from Guenther Roeck:
+   http://www.mail-archive.com/linux-input@vger.kernel.org/msg00646.html
 
+Thanks,
+        Simon
+
+
+- -- 
+       Simon Budig                        kernel concepts GmbH
+       simon.budig@kernelconcepts.de      Sieghuetter Hauptweg 48
+       +49-271-771091-17                  D-57072 Siegen
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAlAt/B0ACgkQO2O/RXesiHCszgCeID9FyWmWea9eyktU38ikzPQP
+V2gAoLfff/V9CtE9xpVmS2wIyyrC2d0J
+=SSUc
+-----END PGP SIGNATURE-----
