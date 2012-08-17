@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab2HQEdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 00:33:39 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47699 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2HQEdf (ORCPT
+	id S1752339Ab2HQEzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 00:55:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42640 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2HQEzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 00:33:35 -0400
-Message-ID: <502DC992.4040304@linux.vnet.ibm.com>
-Date: Fri, 17 Aug 2012 12:33:22 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org,
-        linux-mm@kvack.org, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org
-CC: neilb@suse.de, catalin.marinas@arm.com, David Miller <davem@davemloft.net>,
-        kaber@trash.net, pablo@netfilter.org,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 0/3] raid, kmemleak, netfilter: replace list_for_each_continue_rcu
- with new interface
-References: <502CB91E.4050304@linux.vnet.ibm.com>
-In-Reply-To: <502CB91E.4050304@linux.vnet.ibm.com>
-X-Forwarded-Message-Id: <502CB91E.4050304@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12081704-1396-0000-0000-000001B98899
+	Fri, 17 Aug 2012 00:55:45 -0400
+Date: Fri, 17 Aug 2012 14:55:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shuah Khan <shuah.khan@hp.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: linux-next: manual merge of the akpm tree with the slab tree
+Message-Id: <20120817145535.57f37be87deabdcf9b3788e7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+--Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch set will replace the list_for_each_continue_rcu with the new
-interface list_for_each_entry_continue_rcu, so we could remove the old
-one later.
+Hi Andrew,
 
-Changed:
-	raid:		in "next_active_rdev"
-	kmemleak:	in "kmemleak_seq_next"
-	netfilter:	in "nf_iterate"	
+Today's linux-next merge of the akpm tree got a conflict in
+mm/slab_common.c between commit 77be4b1366c9 ("mm/slab: restructure
+kmem_cache_create() debug checks") from the slab tree and commit
+"mm/slab_common.c: cleanup" from the akpm tree.
 
-Tested:
-	raid:
-		mdadm command with an internal bitmap.
-	kmemleak:
-		enable kmemleak and check the info it captured.
-	netfilter:
-		add rule to iptables and check result by ping.
-		nfqnl_test which is a test utility of libnetfilter_queue.
+Given that this akpm tree patch was applied to and then reverted from the
+slab tree, I have just dropped it from the akpm tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	All testing are using printk to make sure the code we want test
-	was invoked.
+--Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ
+Content-Type: application/pgp-signature
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- drivers/md/bitmap.c  |    9 +++------
- mm/kmemleak.c        |    6 ++----
- net/netfilter/core.c |   11 +++++++----
- 3 files changed, 12 insertions(+), 14 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQLc7HAAoJEECxmPOUX5FEZdsP/RsHorI67/ebXw7bNTChwCaJ
+tEeF2TttwFo+QvJFYfGJ8IVdJXU+RZd22tbOy9oMuSfUZ8O8l4LbUyyJJFbzCKe7
+OaP4dFahJ6h0Gd01KtxOFgEESc7bkd3bnajreKUQqC96/z3mIzFxyf8LnwG4edmP
+cGzXLaYigRzmMWYcCdThSsV3E1PIwz2nLESRb7TVDL/JlM4Zx2uWIX37vEXByDxV
+SFlWUX1z84V/xeYwN2TKy5lHftBwWk0wz3LJP69VIl2U1fsNJq2/gG90Bkmqs/by
+BZT9CeM9b+UHMiFCZjcQ8ynxQtmVeB0vJXOouwK1Pg/S8iFDwXIcF2GNbh/AmkQq
+Bew68GbFbr+FuySOHm+8wnuMNuRQCOarLpg4bhQhaTkyul74/0j0ICpV56KUzqk9
+37tEFjIrsSgddN7UevaZTsZipEhBg5AGUcEbS9vz6ODo1B+09+xy1b3GRjOGA8wN
+sQp5oIz0oQJLjz3WRwqh/fcAE3nypsQ+BnzA+msglTYrdc/9cwyipIl/gcNS/RUE
+5j7hu3i9MwD8kFxiFwHEdfDdmbZzewx6tlbrkMqLRwKTu9Ee4hFO8w9LegVR+bhQ
+xDitXAlrlt87tTbR4WoAeepZz9cf1p1rTclTVyJAaCVmqPQSgIr9AkIpKoHdysiR
+akSKZIoQsS0J9no5XAk3
+=vnfq
+-----END PGP SIGNATURE-----
 
+--Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ--
