@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802Ab2HQS1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:27:52 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:25139 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab2HQS1Y (ORCPT
+	id S1758816Ab2HQS2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:28:06 -0400
+Received: from mail.windriver.com ([147.11.1.11]:43886 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758804Ab2HQS15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:27:24 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lr3c7pEgsE
-X-RZG-CLASS-ID: mo00
-Date: Fri, 17 Aug 2012 20:27:21 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com
-Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Message-ID: <20120817182721.GA7747@aepfle.de>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com>
- <20120817173209.GA29217@decadent.org.uk>
+	Fri, 17 Aug 2012 14:27:57 -0400
+Message-ID: <502E8D11.1010008@windriver.com>
+Date: Fri, 17 Aug 2012 14:27:29 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120817173209.GA29217@decadent.org.uk>
-User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Peter Huewe <huewe.external.infineon@googlemail.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        <tpmdd-devel@lists.sourceforge.net>
+Subject: Re: [v2.6.34-stable 050/165] TPM: Zero buffer after copying to userspace
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com> <1345060109-9187-51-git-send-email-paul.gortmaker@windriver.com> <20120817154857.GD4039@herton-Z68MA-D2H-B3>
+In-Reply-To: <20120817154857.GD4039@herton-Z68MA-D2H-B3>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, Ben Hutchings wrote:
+On 12-08-17 11:48 AM, Herton Ronaldo Krzesinski wrote:
+> On Wed, Aug 15, 2012 at 03:46:34PM -0400, Paul Gortmaker wrote:
+>> From: Peter Huewe <huewe.external.infineon@googlemail.com>
+>>
+>>                    -------------------
+>>     This is a commit scheduled for the next v2.6.34 longterm release.
+>>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>>     If you see a problem with using this for longterm, please comment.
+>>                    -------------------
+>>
+>> commit 3321c07ae5068568cd61ac9f4ba749006a7185c9 upstream.
+>>
+>> Since the buffer might contain security related data it might be a good idea to
+>> zero the buffer after we have copied it to userspace.
+>>
+>> This got assigned CVE-2011-1162.
+>>
+>> Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+>> Signed-off-by: James Morris <jmorris@namei.org>
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> [...]
+> 
+> commit 3ab1aff89477dafb1aaeafe8c8669114a02b7226 ("TPM: Zero buffer whole
+> after copying to userspace") is something to consider to be applied
+> after this, either with this update or later 2.6.34 update. It
+> complements this change, just fyi.
 
-> On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
-> > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > > Now, gather DNS information. Invoke an external script (that can be
-> > > distro dependent) to gather the DNS information.
-> > 
-> > Where is that script?  Why a script, this really isn't in a standard
-> > method for all Linux distros?  If not, why not work to do that like the
-> > freedesktop.org people have done for other system configuration items?
->  
-> I suggested using the Network Manager D-Bus API.  That obviously
-> isn't going to work everywhere, but it seems to cover the same simple
-> cases that this hypervisor-guest interface allows for.
+Agreed.  I see no reason to not queue this.
 
-If its not going to work everywhere how can it be the solution?
+Thanks,
+Paul.
+--
 
-The script in turn can do whatever it takes, which includes NM. However
-NM (in its current state) shouldnt be thrown at everyone and everything.
-
-Olaf
+> 
