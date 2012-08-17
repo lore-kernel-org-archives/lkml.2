@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab2HQVQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 17:16:15 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:39465 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216Ab2HQVQL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 17:16:11 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Mike Waychison <mikew@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH 2/2] efi_pstore: Introducing workqueue updating
- sysfs entries
-Thread-Topic: [RFC][PATCH 2/2] efi_pstore: Introducing workqueue updating
- sysfs entries
-Thread-Index: Ac18sHkwmdnRbMTcT9KbT5zgh21KoAAKK1YAAAgJvvA=
-Date: Fri, 17 Aug 2012 21:15:56 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413800155@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D413800090@USINDEM103.corp.hds.com>
- <CAGTjWtA-zE-UCsqC5H4VvLfz94J_5bjYzMwF5RaHLdr9O_MoRA@mail.gmail.com>
-In-Reply-To: <CAGTjWtA-zE-UCsqC5H4VvLfz94J_5bjYzMwF5RaHLdr9O_MoRA@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-08-17_05:2012-08-17,2012-08-17,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1208170234
+	id S1757896Ab2HQVRb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 17:17:31 -0400
+Received: from 1wt.eu ([62.212.114.60]:5788 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755216Ab2HQVRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 17:17:25 -0400
+Date: Fri, 17 Aug 2012 23:13:22 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [v2.6.34-stable 109/165] ntp: Fix leap-second hrtimer livelock
+Message-ID: <20120817211322.GB495@1wt.eu>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com> <1345060109-9187-110-git-send-email-paul.gortmaker@windriver.com> <20120817161711.GE4039@herton-Z68MA-D2H-B3> <502E74B9.8010300@linaro.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502E74B9.8010300@linaro.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 17, 2012 at 09:43:37AM -0700, John Stultz wrote:
+> I also have another change pending in -tip that I've marked for 
+> stable. Once that lands I'm planning on reviewing the current stable 
+> trees to check that they have all the needed changes.
 
-> I'm not a fan of creating a periodic timer that wakes up here to check for an event that should be considered very rare.
-> 
-> Can this just become scheduled work?  Scheduling work itself is a very lightweight process and should be relatively safe to do from a
-> pstore write.
+John, for the record, I have already queued your whole 2.6.32 patchset
+as well as the aforementionned fix (ntp-Fix-STA_INS-DEL-clearing-bug).
 
-I agree that the periodic timer is heavy a bit.
-But I would like to keep a write callback simple as much as possible in panic situation.
-For example, I'm concerned that efi_pstore hangs up due to some spin_locks related workqueue like gcwq->lock.
+Thanks,
+Willy
 
-Also,  a situation which this workqueue is needed is just oops case because, system will be down and users can't access to sysfs files
- in other cases, panic, reboot and emergency_restart.
-
-So, Can I call schedule_work in oops case only as follows?
-
-efi_pstore_write()
-{
-   <write log to NVRAM>
-
- if (reason != KMSG_DUMP_OOPS)
-	return;
-
-schedule_work()
-
-}
