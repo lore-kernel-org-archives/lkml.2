@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab2HQQQU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 12:16:20 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49034 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758343Ab2HQQQD (ORCPT
+	id S1758381Ab2HQQR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 12:17:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45288 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756858Ab2HQQRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 12:16:03 -0400
-Date: Fri, 17 Aug 2012 18:15:57 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: K Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: powerpc/perf: hw breakpoints return ENOSPC
-Message-ID: <20120817161554.GA3772@somewhere>
-References: <28857.1345091034@neuling.org>
+	Fri, 17 Aug 2012 12:17:20 -0400
+Date: Fri, 17 Aug 2012 13:17:12 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [v2.6.34-stable 109/165] ntp: Fix leap-second hrtimer livelock
+Message-ID: <20120817161711.GE4039@herton-Z68MA-D2H-B3>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+ <1345060109-9187-110-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <28857.1345091034@neuling.org>
+In-Reply-To: <1345060109-9187-110-git-send-email-paul.gortmaker@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 02:23:54PM +1000, Michael Neuling wrote:
-> Hi,
+On Wed, Aug 15, 2012 at 03:47:33PM -0400, Paul Gortmaker wrote:
+> From: John Stultz <john.stultz@linaro.org>
 > 
-> I've been trying to get hardware breakpoints with perf to work on POWER7
-> but I'm getting the following:
+>                    -------------------
+>     This is a commit scheduled for the next v2.6.34 longterm release.
+>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>     If you see a problem with using this for longterm, please comment.
+>                    -------------------
 > 
->   % perf record -e mem:0x10000000 true
+> commit 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d upstream.
 > 
->     Error: sys_perf_event_open() syscall returned with 28 (No space left on device).  /bin/dmesg may provide additional information.
+> This should have been backported when it was commited, but I
+> mistook the problem as requiring the ntp_lock changes
+> that landed in 3.4 in order for it to occur.
 > 
->     Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+> Unfortunately the same issue can happen (with only one cpu)
+> as follows:
+> do_adjtimex()
+>  write_seqlock_irq(&xtime_lock);
+>   process_adjtimex_modes()
+>    process_adj_status()
+>     ntp_start_leap_timer()
+>      hrtimer_start()
+>       hrtimer_reprogram()
+>        tick_program_event()
+>         clockevents_program_event()
+>          ktime_get()
+>           seq = req_seqbegin(xtime_lock); [DEADLOCK]
 > 
->   true: Terminated
-> 
-> (FWIW adding -a and it works fine)
-> 
-> Debugging it seems that __reserve_bp_slot() is returning ENOSPC because
-> it thinks there are no free breakpoint slots on this CPU.
-> 
-> I have a 2 CPUs, so perf userspace is doing two perf_event_open syscalls
-> to add a counter to each CPU [1].  The first syscall succeeds but the
-> second is failing.
-> 
-> On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
-> despite there being no breakpoint on this CPU.  This is because the call
-> the task_bp_pinned, checks all CPUs, rather than just the current CPU.
-> POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
-> return ENOSPC.
-> 
-> The following patch fixes this by checking the associated CPU for each
-> breakpoint in task_bp_pinned.  I'm not familiar with this code, so it's
-> provided as a reference to the above issue.
-> 
-> Mikey
-> 
-> 1. not sure why it doesn't just do one syscall and specify all CPUs, but
-> that's another issue.  Using two syscalls should work.
+> This deadlock will no always occur, as it requires the
+> leap_timer to force a hrtimer_reprogram which only happens
+> if its set and there's no sooner timer to expire.
+[...]
 
-This patch seems to make sense. I'll try it and run some tests.
-Can I have your Signed-off-by ?
+I remember this came through the leapsecond deadlock & hrtimer/futex
+issue fixes. But I noted now commit 6b1859dba01c7d512b72d77e3fd7da8354235189
+("ntp: Fix STA_INS/DEL clearing bug") was not included, and its changelog
+says it fixes a problem introduced with this. Wouldn't it be worth/right to
+also include it in 2.6.34? I didn't test etc., just detected through the
+changelog/description but would expect it would be affected too. I also
+noted it is missing from 3.2.y and 2.6.32.y stables, and perhaps should be
+scheduled for inclusion in their cases too.
 
-Thanks.
-
-> 
-> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> index bb38c4d..e092daa 100644
-> --- a/kernel/events/hw_breakpoint.c
-> +++ b/kernel/events/hw_breakpoint.c
-> @@ -111,14 +111,16 @@ static unsigned int max_task_bp_pinned(int cpu, enum bp_type_idx type)
->   * Count the number of breakpoints of the same type and same task.
->   * The given event must be not on the list.
->   */
-> -static int task_bp_pinned(struct perf_event *bp, enum bp_type_idx type)
-> +static int task_bp_pinned(int cpu, struct perf_event *bp, enum bp_type_idx type)
->  {
->  	struct task_struct *tsk = bp->hw.bp_target;
->  	struct perf_event *iter;
->  	int count = 0;
->  
->  	list_for_each_entry(iter, &bp_task_head, hw.bp_list) {
-> -		if (iter->hw.bp_target == tsk && find_slot_idx(iter) == type)
-> +		if (iter->hw.bp_target == tsk &&
-> +		    find_slot_idx(iter) == type &&
-> +		    cpu == iter->cpu)
->  			count += hw_breakpoint_weight(iter);
->  	}
->  
-> @@ -141,7 +143,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
->  		if (!tsk)
->  			slots->pinned += max_task_bp_pinned(cpu, type);
->  		else
-> -			slots->pinned += task_bp_pinned(bp, type);
-> +			slots->pinned += task_bp_pinned(cpu, bp, type);
->  		slots->flexible = per_cpu(nr_bp_flexible[type], cpu);
->  
->  		return;
-> @@ -154,7 +156,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
->  		if (!tsk)
->  			nr += max_task_bp_pinned(cpu, type);
->  		else
-> -			nr += task_bp_pinned(bp, type);
-> +			nr += task_bp_pinned(cpu, bp, type);
->  
->  		if (nr > slots->pinned)
->  			slots->pinned = nr;
-> @@ -188,7 +190,7 @@ static void toggle_bp_task_slot(struct perf_event *bp, int cpu, bool enable,
->  	int old_idx = 0;
->  	int idx = 0;
->  
-> -	old_count = task_bp_pinned(bp, type);
-> +	old_count = task_bp_pinned(cpu, bp, type);
->  	old_idx = old_count - 1;
->  	idx = old_idx + weight;
->  
+-- 
+[]'s
+Herton
