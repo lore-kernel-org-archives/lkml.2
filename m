@@ -1,84 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545Ab2HQQo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 12:44:26 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39883 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758493Ab2HQQoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 12:44:18 -0400
-Message-ID: <502E74B9.8010300@linaro.org>
-Date: Fri, 17 Aug 2012 09:43:37 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1758556Ab2HQQoi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 12:44:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758521Ab2HQQoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 12:44:20 -0400
+Date: Fri, 17 Aug 2012 18:40:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: task_work_add() should not succeed unconditionally (Was: lockdep
+	trace from posix timers)
+Message-ID: <20120817164041.GA12017@redhat.com>
+References: <20120724203613.GA9637@redhat.com> <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com> <20120817151747.GA8248@redhat.com>
 MIME-Version: 1.0
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [v2.6.34-stable 109/165] ntp: Fix leap-second hrtimer livelock
-References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com> <1345060109-9187-110-git-send-email-paul.gortmaker@windriver.com> <20120817161711.GE4039@herton-Z68MA-D2H-B3>
-In-Reply-To: <20120817161711.GE4039@herton-Z68MA-D2H-B3>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081716-6148-0000-0000-000008B8CF16
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120817151747.GA8248@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 09:17 AM, Herton Ronaldo Krzesinski wrote:
-> On Wed, Aug 15, 2012 at 03:47:33PM -0400, Paul Gortmaker wrote:
->> From: John Stultz <john.stultz@linaro.org>
->>
->>                     -------------------
->>      This is a commit scheduled for the next v2.6.34 longterm release.
->>      http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->>      If you see a problem with using this for longterm, please comment.
->>                     -------------------
->>
->> commit 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d upstream.
->>
->> This should have been backported when it was commited, but I
->> mistook the problem as requiring the ntp_lock changes
->> that landed in 3.4 in order for it to occur.
->>
->> Unfortunately the same issue can happen (with only one cpu)
->> as follows:
->> do_adjtimex()
->>   write_seqlock_irq(&xtime_lock);
->>    process_adjtimex_modes()
->>     process_adj_status()
->>      ntp_start_leap_timer()
->>       hrtimer_start()
->>        hrtimer_reprogram()
->>         tick_program_event()
->>          clockevents_program_event()
->>           ktime_get()
->>            seq = req_seqbegin(xtime_lock); [DEADLOCK]
->>
->> This deadlock will no always occur, as it requires the
->> leap_timer to force a hrtimer_reprogram which only happens
->> if its set and there's no sooner timer to expire.
-> [...]
+On 08/17, Oleg Nesterov wrote:
 >
-> I remember this came through the leapsecond deadlock & hrtimer/futex
-> issue fixes. But I noted now commit 6b1859dba01c7d512b72d77e3fd7da8354235189
-> ("ntp: Fix STA_INS/DEL clearing bug") was not included, and its changelog
-> says it fixes a problem introduced with this. Wouldn't it be worth/right to
-> also include it in 2.6.34? I didn't test etc., just detected through the
-> changelog/description but would expect it would be affected too. I also
-> noted it is missing from 3.2.y and 2.6.32.y stables, and perhaps should be
-> scheduled for inclusion in their cases too.
+> On 08/17, Oleg Nesterov wrote:
+> >
+> > On 08/16, Peter Zijlstra wrote:
+> > >
+> > >      write_lock_irq(&tasklist_lock)
+> > >      task_lock(parent)		parent->alloc_lock
+> >
+> > And this is already wrong. See the comment above task_lock().
+> >
+> > > And since it_lock is IRQ-safe and alloc_lock isn't, you've got the IRQ
+> > > inversion deadlock reported.
+> >
+> > Yes. Or, IOW, write_lock(tasklist) is IRQ-safe and thus it can't nest
+> > with alloc_lock.
+> >
+> > > David, Al, anybody want to have a go at fixing this?
+> >
+> > I still think that task_work_add() should synhronize with exit_task_work()
+> > itself and fail if necessary. But I wasn't able to convince Al ;)
+>
+> And this is my old patch: http://marc.info/?l=linux-kernel&m=134082268721700
+> It should be re-diffed of course.
 
-Yes. I also have another change pending in -tip that I've marked for 
-stable. Once that lands I'm planning on reviewing the current stable 
-trees to check that they have all the needed changes.
+Something like below. Uncompiled/untested, I need to re-check and test.
+Now we can remove that task_lock() and rely on task_work_add().
 
-thanks
--john
+Al, what do you think?
+
+Oleg.
+
+--- x/include/linux/task_work.h
++++ x/include/linux/task_work.h
+@@ -18,8 +18,7 @@ void task_work_run(void);
+ 
+ static inline void exit_task_work(struct task_struct *task)
+ {
+-	if (unlikely(task->task_works))
+-		task_work_run();
++	task_work_run();
+ }
+ 
+ #endif	/* _LINUX_TASK_WORK_H */
+--- x/kernel/task_work.c
++++ x/kernel/task_work.c
+@@ -2,29 +2,35 @@
+ #include <linux/task_work.h>
+ #include <linux/tracehook.h>
+ 
++#define TWORK_EXITED	((struct callback_head *)1)
++
+ int
+ task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
+ {
+ 	struct callback_head *last, *first;
+ 	unsigned long flags;
++	int err = -ESRCH;
+ 
+ 	/*
+-	 * Not inserting the new work if the task has already passed
+-	 * exit_task_work() is the responisbility of callers.
++	 * We must not insert the new work if the exiting task has already
++	 * passed task_work_run().
+ 	 */
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	last = task->task_works;
+-	first = last ? last->next : twork;
+-	twork->next = first;
+-	if (last)
+-		last->next = twork;
+-	task->task_works = twork;
++	if (likely(task->task_works != TWORK_EXITED) {
++		last = task->task_works;
++		first = last ? last->next : twork;
++		twork->next = first;
++		if (last)
++			last->next = twork;
++		task->task_works = twork;
++		err = 0;
++	}
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 
+ 	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
+-	if (notify)
++	if (!err && notify)
+ 		set_notify_resume(task);
+-	return 0;
++	return err;
+ }
+ 
+ struct callback_head *
+@@ -35,7 +41,7 @@ task_work_cancel(struct task_struct *tas
+ 
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 	last = task->task_works;
+-	if (last) {
++	if (last && last != TWORK_EXITED) {
+ 		struct callback_head *q = last, *p = q->next;
+ 		while (1) {
+ 			if (p->func == func) {
+@@ -63,7 +69,12 @@ void task_work_run(void)
+ 	while (1) {
+ 		raw_spin_lock_irq(&task->pi_lock);
+ 		p = task->task_works;
+-		task->task_works = NULL;
++		/*
++		 * twork->func() can do task_work_add(), do not
++		 * set TWORK_EXITED until the list becomes empty.
++		 */
++		task->task_works = (!p && (task->flags & PF_EXITING))
++					? TWORK_EXITED : NULL;
+ 		raw_spin_unlock_irq(&task->pi_lock);
+ 
+ 		if (unlikely(!p))
 
