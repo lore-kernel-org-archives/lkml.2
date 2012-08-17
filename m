@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758846Ab2HQUIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 16:08:19 -0400
-Received: from fieldses.org ([174.143.236.118]:52224 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754263Ab2HQUIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 16:08:10 -0400
-Date: Fri, 17 Aug 2012 16:08:07 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: 3.0+ NFS issues (bisected)
-Message-ID: <20120817200807.GB14620@fieldses.org>
-References: <4FFC2573.8040804@msgid.tls.msk.ru>
- <20120712125303.GC16822@fieldses.org>
- <502DA4E8.9050800@msgid.tls.msk.ru>
- <20120817145616.GC11172@fieldses.org>
- <20120817160057.GE11172@fieldses.org>
- <502E7B86.3060702@msgid.tls.msk.ru>
- <20120817171854.GA14015@fieldses.org>
- <502E7EC3.5030006@msgid.tls.msk.ru>
- <502E7F84.3060003@msgid.tls.msk.ru>
- <20120817191800.GA14620@fieldses.org>
+	id S1758866Ab2HQURp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 16:17:45 -0400
+Received: from exprod7og102.obsmtp.com ([64.18.2.157]:35562 "EHLO
+	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758838Ab2HQURh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 16:17:37 -0400
+Message-ID: <502EA680.4080608@genband.com>
+Date: Fri, 17 Aug 2012 14:16:00 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817191800.GA14620@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Arjan van de Ven <arjan@linux.intel.com>,
+        preeti <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins> <502C98E8.20800@linux.vnet.ibm.com> <502CFD35.5000801@linux.intel.com> <20120817184100.GA13369@srcf.ucam.org> <502E90F3.2000702@linux.intel.com> <20120817184705.GB13369@srcf.ucam.org> <502E9F45.6030606@genband.com> <20120817195033.GA15589@srcf.ucam.org>
+In-Reply-To: <20120817195033.GA15589@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Aug 2012 20:16:01.0790 (UTC) FILETIME=[1F31E1E0:01CD7CB5]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19122.001
+X-TM-AS-Result: No--12.192100-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 03:18:00PM -0400, J. Bruce Fields wrote:
-> On Fri, Aug 17, 2012 at 09:29:40PM +0400, Michael Tokarev wrote:
-> > On 17.08.2012 21:26, Michael Tokarev wrote:
-> > > On 17.08.2012 21:18, J. Bruce Fields wrote:
-> > >> On Fri, Aug 17, 2012 at 09:12:38PM +0400, Michael Tokarev wrote:
-> > > []
-> > >>> So we're calling svc_recv in a tight loop, eating
-> > >>> all available CPU.  (The above is with just 2 nfsd
-> > >>> threads).
-> > >>>
-> > >>> Something is definitely wrong here.  And it happens mure more
-> > >>> often after the mentioned commit (f03d78db65085).
-> > >>
-> > >> Oh, neat.  Hm.  That commit doesn't really sound like the cause, then.
-> > >> Is that busy-looping reproduceable on kernels before that commit?
-> > > 
-> > > Note I bisected this issue to this commit.  I haven't seen it
-> > > happening before this commit, and reverting it from 3.0 or 3.2
-> > > kernel makes the problem to go away.
-> > > 
-> > > I guess it is looping there:
-> > > 
-> > > 
-> > > net/sunrpc/svc_xprt.c:svc_recv()
-> > > ...
-> > >         len = 0;
-> > > ...
-> > >         if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
-> > > ...
-> > >         } else if (xprt->xpt_ops->xpo_has_wspace(xprt)) {  <=== here -- has no wspace due to memory...
-> > > ...  len = <something>
-> > >         }
-> > > 
-> > >         /* No data, incomplete (TCP) read, or accept() */
-> > >         if (len == 0 || len == -EAGAIN)
-> > >                 goto out;
-> > > ...
-> > > out:
-> > >         rqstp->rq_res.len = 0;
-> > >         svc_xprt_release(rqstp);
-> > >         return -EAGAIN;
-> > > }
-> > > 
-> > > I'm trying to verify this theory...
-> > 
-> > Yes.  I inserted a printk there, and all these million times while
-> > we're waiting in this EAGAIN loop, this printk is triggering:
-> > 
-> > ....
-> > [21052.533053]  svc_recv: !has_wspace
-> > [21052.533070]  svc_recv: !has_wspace
-> > [21052.533087]  svc_recv: !has_wspace
-> > [21052.533105]  svc_recv: !has_wspace
-> > [21052.533122]  svc_recv: !has_wspace
-> > [21052.533139]  svc_recv: !has_wspace
-> > [21052.533156]  svc_recv: !has_wspace
-> > [21052.533174]  svc_recv: !has_wspace
-> > [21052.533191]  svc_recv: !has_wspace
-> > [21052.533208]  svc_recv: !has_wspace
-> > [21052.533226]  svc_recv: !has_wspace
-> > [21052.533244]  svc_recv: !has_wspace
-> > [21052.533265] calling svc_recv: 1228163 times (err=-4)
-> > [21052.533403] calling svc_recv: 1226616 times (err=-4)
-> > [21052.534520] nfsd: last server has exited, flushing export cache
-> > 
-> > (I stopped nfsd since it was flooding the log).
-> > 
-> > I can only guess that before that commit, we always had space,
-> > now we don't anymore, and are looping like crazy.
-> 
-> Thanks!  But, arrgh--that should be enough to go on at this point, but
-> I'm not seeing it.  If has_wspace is returning false then it's likely
-> also returning false to the call at the start of svc_xprt_enqueue()
+On 08/17/2012 01:50 PM, Matthew Garrett wrote:
+> On Fri, Aug 17, 2012 at 01:45:09PM -0600, Chris Friesen wrote:
+>> On 08/17/2012 12:47 PM, Matthew Garrett wrote:
+>
+>> The datasheet for the Xeon E5 (my variant at least) says it doesn't
+>> do C7 so never powers down the LLC.  However, as you said earlier
+>> once you can put the socket into C6 which saves about 30W compared
+>> to C1E.
+>>
+>> So as far as I can see with this CPU at least you would benefit from
+>> shutting down a whole socket when possible.
+>
+> Having any active cores on the system prevents all packages from going
+> into PC6 or deeper. What I'm not clear on is whether less deep package C
+> states are also blocked.
+>
 
-Wait a minute, that assumption's a problem because that calculation
-depends in part on xpt_reserved, which is changed here....
+Right, we need the memory controller.
 
-In particular, svc_xprt_release() calls svc_reserve(rqstp, 0), which
-subtracts rqstp->rq_reserved and then calls svc_xprt_enqueue, now with a
-lower xpt_reserved value.  That could well explain this.
+The E5 datasheet is a bit ambiguous, it reads:
 
---b.
 
-> (see
-> svc_xprt_has_something_to_do), which means the xprt shouldn't be getting
-> requeued and the next svc_recv call should find no socket ready (so
-> svc_xprt_dequeue() returns NULL), and goes to sleep.
-> 
-> But clearly it's not working that way....
-> 
-> --b.
+A processor enters the package C3 low power state when:
+  -At least one core is in the C3 state.
+  -The other cores are in a C3 or lower power state, and the processor 
+has been granted permission by the platform.
+
+
+Unfortunately it doesn't specify whether that is the other cores in the 
+package, or the other cores on the whole system.
+
+Chris
