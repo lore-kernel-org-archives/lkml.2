@@ -1,212 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab2HQCCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 22:02:46 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:58909 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab2HQCCo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 22:02:44 -0400
-Message-ID: <502DA666.3020703@windriver.com>
-Date: Fri, 17 Aug 2012 10:03:18 +0800
-From: Fan Du <fan.du@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: David Miller <davem@davemloft.net>, Fengguang Wu <fengguang.wu@intel.com>,
-        Priyanka Jain <Priyanka.Jain@freescale.com>, <netdev@vger.kernel.org>,
+	id S933595Ab2HQCGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 22:06:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59977 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756677Ab2HQCG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 22:06:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,782,1336374000"; 
+   d="scan'208";a="203197794"
+Date: Fri, 17 Aug 2012 10:06:08 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>, devel@driverdev.osuosl.org,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: suspicious RCU usage in xfrm_net_init()
-References: <20120816073724.GA10660@localhost> <502CBF23.4070805@windriver.com> <20120816151949.GA18681@localhost> <502D9938.2010908@windriver.com> <CAP=VYLqHW+NOS-gPgUkUpZh-Vim2jkmMT7NK+7uRbg730d=xHw@mail.gmail.com>
-In-Reply-To: <CAP=VYLqHW+NOS-gPgUkUpZh-Vim2jkmMT7NK+7uRbg730d=xHw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [147.11.103.221]
+Subject: Re: show_uevent() and general protection fault
+Message-ID: <20120817020608.GA24538@localhost>
+References: <20120713083140.GA19738@localhost>
+ <20120713084616.GA20037@localhost>
+ <20120717013342.GD21914@kroah.com>
+ <20120718051552.GA9124@localhost>
+ <20120816172711.GB27415@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816172711.GB27415@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 16, 2012 at 10:27:11AM -0700, Greg KH wrote:
+> On Wed, Jul 18, 2012 at 01:15:52PM +0800, Fengguang Wu wrote:
+> > On Mon, Jul 16, 2012 at 06:33:42PM -0700, Greg Kroah-Hartman wrote:
+> > > On Fri, Jul 13, 2012 at 04:46:16PM +0800, Fengguang Wu wrote:
+> > > > This is another kconfig, produced a bit different call trace, however
+> > > > also related to sysfs_read_file().
+> > > 
+> > > Any hint as to which file is being read?
+> > 
+> > Good idea! I added this debugging aid:
+> > 
+> > --- a/fs/sysfs/file.c
+> > +++ b/fs/sysfs/file.c
+> > @@ -129,6 +129,11 @@ sysfs_read_file(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+> >  {
+> >         struct sysfs_buffer * buffer = file->private_data;
+> >         ssize_t retval = 0;
+> > +       char pathname[300], *path;
+> > +
+> > +       path = d_path(&(file->f_path), pathname, sizeof(pathname));
+> > +       if (!IS_ERR(path))
+> > +               printk("%s\n", path);
+> >  
+> >         mutex_lock(&buffer->mutex);
+> >         if (buffer->needs_read_fill || *ppos == 0) {
+> > 
+> > And find some sysfs files that triggered the errors:
+> > 
+> > wfg@waimea ~/kvm% grep -hB1 'kernel paging request' /tmp/dmesg-kvm_bisect-waimea-*|grep /sys/               
+> > [   28.995741] /sys/module/tpm_tis/parameters/hid
+> > [   60.885798] /sys/module/tpm_tis/parameters/hid
+> > 
+> > wfg@waimea ~/kvm% grep -hB1 'general protection fault' /tmp/dmesg-kvm_bisect-waimea-*|grep -o /sys/.* | sort -u
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0103:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0303:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0400:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0501:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0700:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0B00:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:21/PNP0F13:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:00/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:01/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:02/uevent
+> > /sys/devices/LNXSYSTM:00/device:00/PNP0C0F:03/uevent
+> > /sys/devices/LNXSYSTM:00/LNXCPU:00/uevent
+> > /sys/devices/LNXSYSTM:00/LNXCPU:01/uevent
+> > /sys/devices/LNXSYSTM:00/LNXPWRBN:00/input/input0/uevent
+> > /sys/devices/LNXSYSTM:00/LNXPWRBN:00/uevent
+> > /sys/devices/LNXSYSTM:00/uevent
+> > /sys/devices/platform/i8042/serio0/input/input1/uevent
+> 
+> This is odd, I can't duplicate it at all, is it still showing up for
+> you?
 
+Yes, and I got to know why with this debug patch.
 
-On 2012年08月17日 09:34, Paul Gortmaker wrote:
-> On Thu, Aug 16, 2012 at 9:07 PM, Fan Du<fan.du@windriver.com>  wrote:
->>
->>
->> On 2012年08月16日 23:19, Fengguang Wu wrote:
->>>
->>> Hi Fan,
->>>
->>> On Thu, Aug 16, 2012 at 05:36:35PM +0800, Fan Du wrote:
->>>>
->>>>
->>>> Hi, Fengguang
->>>>
->>>> Could you please try the below patch, see if spewing still there?
->>>> thanks
->>>
->>>
->>> Yes, it worked, thank you very much!
->>>
->>
->> Hi, Dave
->>
->> Could you please pick up this patch?
->
-> Please do not make extra work for maintainers by sending attachments,
-> or requests for status/merge etc.  Your 1st patch had to be manually
-> set to an RFC, and now you add another patch less than 24h later.
->
-> Please see:
->
->    http://patchwork.ozlabs.org/patch/177934/
->    http://patchwork.ozlabs.org/patch/178132/
->
-> Also, a patch should describe the problem it solves (i.e. the symptom
-> the end user sees), and how the problem originated, and why the fix
-> in the patch is the _right_ fix.  The worst description a commit log
-> can have is one that just describes the C change in words, since
-> most people can read C on their own.
->
-> Here you add "_bh" in the code and then repeat exactly that in
-> the commit log.  Your commit log does not tell me when it broke,
-> or why it broke, or who had their use case broken.  Can you see
-> why this is not acceptable?
->
-> Please take the time to look at the traffic in netdev, and read
-> the feedback given by maintainers on other patches, so that the
-> common errors are understood by you, and not repeated.  It
-> will be time well spent!
->
+> --- tip.orig/drivers/base/core.c        2012-08-17 08:48:07.101972082 +0800
+> +++ tip/drivers/base/core.c     2012-08-17 09:49:43.665912992 +0800
+> @@ -343,8 +343,11 @@ static ssize_t show_uevent(struct device
+>                 goto out;
+>  
+>         /* copy keys to file */
+> -       for (i = 0; i < env->envp_idx; i++)
+> +       printk(KERN_ERR "uevent %d env[%d]: %s/.../%s\n", env->buflen, env->envp_idx, top_kobj->name, dev->kobj.name);
+> +       for (i = 0; i < env->envp_idx; i++) {
+> +               printk(KERN_ERR "uevent %d env[%d]: %s\n", (int)count, i, env->envp[i]);
+>                 count += sprintf(&buf[count], "%s\n", env->envp[i]);
+> +       }
+>  out:
+>         kfree(env);
+>         return count;
 
-Rick Jones has already well informed me the etiquettes off the list,
-which I just broken.
+It's printing 32 strings of "(null)\n" (7 characters each) to the buffer,
+which eventually overflows it.
 
-Anyway, thanks for your time writing those suggestions.
+[   65.968387] uevent 12 env[1627389952]: LNXCPU:01/.../LNXCPU:01
+[   65.969586] uevent 0 env[0]: (null)
+[   65.970463] uevent 7 env[1]: (null)
+[   65.971338] uevent 14 env[2]: (null)
+[   65.972225] uevent 21 env[3]: (null)
+[   65.973111] uevent 28 env[4]: (null)
+[   65.973952] uevent 35 env[5]: (null)
+[   65.974852] uevent 42 env[6]: (null)
+[   65.975735] uevent 49 env[7]: (null)
+[   65.976627] uevent 56 env[8]: (null)
+[   65.977545] uevent 63 env[9]: (null)
+[   65.978469] uevent 70 env[10]: (null)
+[   65.979410] uevent 77 env[11]: (null)
+[   65.980321] uevent 84 env[12]: (null)
+[   65.981243] uevent 91 env[13]: (null)
+[   65.982159] uevent 98 env[14]: (null)
+[   65.983080] uevent 105 env[15]: (null)
+[   65.983972] uevent 112 env[16]: (null)
+[   65.984908] uevent 119 env[17]: (null)
+[   65.985850] uevent 126 env[18]: (null)
+[   65.986797] uevent 133 env[19]: (null)
+[   65.987768] uevent 140 env[20]: (null)
+[   65.988723] uevent 147 env[21]: (null)
+[   65.989661] uevent 154 env[22]: (null)
+[   65.990591] uevent 161 env[23]: (null)
+[   65.991527] uevent 168 env[24]: (null)
+[   65.992452] uevent 175 env[25]: (null)
+[   65.993383] uevent 182 env[26]: (null)
+[   65.994386] uevent 189 env[27]: (null)
+[   65.995342] uevent 196 env[28]: (null)
+[   65.996289] uevent 203 env[29]: (null)
+[   65.997243] uevent 210 env[30]: (null)
+[   65.998197] uevent 217 env[31]: (null)
+[   65.999124] general protection fault: 0000 [#1] PREEMPT 
+[   66.000106] CPU 0 
+[   66.000106] Pid: 128, comm: trinity-child0 Not tainted 3.6.0-rc1-bisect2-00037-gdfdf036-dirty #8 Bochs Bochs
+[   66.000106] RIP: 0010:[<ffffffff811cb0bc>]  [<ffffffff811cb0bc>] strnlen+0x2e/0x37
+...
+[   66.000106] Call Trace:
+[   66.000106]  [<ffffffff811cc700>] string.isra.3+0x49/0xe6
+[   66.000106]  [<ffffffff811cd511>] vsnprintf+0x267/0x6dd
+[   66.000106]  [<ffffffff810a0001>] ? compat_sys_clock_gettime+0x12/0x91
+[   66.000106]  [<ffffffff8181dd30>] ? retint_restore_args+0x13/0x13
+[   66.000106]  [<ffffffff811cdda0>] vscnprintf+0x16/0x3a
+[   66.000106]  [<ffffffff8104bc95>] vprintk_emit+0x313/0x66f
+[   66.000106]  [<ffffffff811cd34b>] ? vsnprintf+0xa1/0x6dd
+[   66.000106]  [<ffffffff81804bc9>] printk+0x4f/0x58
+[   66.000106]  [<ffffffff812c6b4b>] show_uevent+0x164/0x1db
+[   66.000106]  [<ffffffff812c67c3>] dev_attr_show+0x29/0x77
+[   66.000106]  [<ffffffff81153a1d>] ? sysfs_read_file+0xc5/0x221
+[   66.000106]  [<ffffffff810cfab4>] ? __get_free_pages+0x2f/0x6a
+[   66.000106]  [<ffffffff81153a55>] sysfs_read_file+0xfd/0x221
+[   66.000106]  [<ffffffff8110264d>] vfs_read+0xdb/0x1c1
+[   66.000106]  [<ffffffff81102a47>] sys_read+0x56/0x9e
 
-> Thanks,
-> Paul.
-> ---
->
->> thanks
->>
->>
->>
->>
->>> btw, your email client wraps long lines..
->>>
->> Oh, I will definitely fix this.
->> thanks feng guang for the testing :)
->>
->>
->>
->>> Thanks,
->>> Fengguang
->>>
->>>>    From a3f86ecc3ee16ff81d49416bbf791780422988b3 Mon Sep 17 00:00:00 2001
->>>> From: Fan Du<fan.du@windriver.com>
->>>> Date: Thu, 16 Aug 2012 17:31:25 +0800
->>>> Subject: [PATCH] Use rcu_dereference_bh to deference pointer
->>>> protected by rcu_read_lock_bh
->>>>
->>>> Signed-off-by: Fan Du<fan.du@windriver.com>
->>>> ---
->>>>    net/xfrm/xfrm_policy.c |    2 +-
->>>>    1 files changed, 1 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
->>>> index 5ad4d2c..75a9d6a 100644
->>>> --- a/net/xfrm/xfrm_policy.c
->>>> +++ b/net/xfrm/xfrm_policy.c
->>>> @@ -2501,7 +2501,7 @@ static void __net_init
->>>> xfrm_dst_ops_init(struct net *net)
->>>>          struct xfrm_policy_afinfo *afinfo;
->>>>
->>>>          rcu_read_lock_bh();
->>>> -       afinfo = rcu_dereference(xfrm_policy_afinfo[AF_INET]);
->>>> +       afinfo = rcu_dereference_bh(xfrm_policy_afinfo[AF_INET]);
->>>>          if (afinfo)
->>>>                  net->xfrm.xfrm4_dst_ops = *afinfo->dst_ops;
->>>>    #if IS_ENABLED(CONFIG_IPV6)
->>>> --
->>>> 1.7.1
->>>>
->>>>
->>>>
->>>>
->>>> On 2012年08月16日 15:37, Fengguang Wu wrote:
->>>>>
->>>>> Hi Priyanka,
->>>>>
->>>>> The below warning shows up, probably related to this commit:
->>>>>
->>>>> 418a99ac6ad487dc9c42e6b0e85f941af56330f2 Replace rwlock on
->>>>> xfrm_policy_afinfo with rcu
->>>>>
->>>>> [    0.921216]
->>>>> [    0.921645] ===============================
->>>>> [    0.922766] [ INFO: suspicious RCU usage. ]
->>>>> [    0.923887] 3.5.0-01540-g1669891 #64 Not tainted
->>>>> [    0.925123] -------------------------------
->>>>> [    0.932860] /c/kernel-tests/src/tip/net/xfrm/xfrm_policy.c:2504
->>>>> suspicious rcu_dereference_check() usage!
->>>>> [    0.935361]
->>>>> [    0.935361] other info that might help us debug this:
->>>>> [    0.935361]
->>>>> [    0.937472]
->>>>> [    0.937472] rcu_scheduler_active = 1, debug_locks = 0
->>>>> [    0.939182] 2 locks held by swapper/1:
->>>>> [    0.940171]  #0:  (net_mutex){+.+.+.}, at: [<ffffffff814e1ad0>]
->>>>> register_pernet_subsys+0x21/0x57
->>>>> [    0.942705]  #1:  (rcu_read_lock_bh){......}, at:
->>>>> [<ffffffff822c7329>] xfrm_net_init+0x1e4/0x437
->>>>> [    0.951507]
->>>>> [    0.951507] stack backtrace:
->>>>> [    0.952660] Pid: 1, comm: swapper Not tainted 3.5.0-01540-g1669891
->>>>> #64
->>>>> [    0.954364] Call Trace:
->>>>> [    0.955074]  [<ffffffff8108b375>] lockdep_rcu_suspicious+0x174/0x187
->>>>> [    0.956736]  [<ffffffff822c7453>] xfrm_net_init+0x30e/0x437
->>>>> [    0.958205]  [<ffffffff822c7329>] ? xfrm_net_init+0x1e4/0x437
->>>>> [    0.959712]  [<ffffffff814e134a>] ops_init+0x1bb/0x1ff
->>>>> [    0.961067]  [<ffffffff810861f9>] ? trace_hardirqs_on+0x1b/0x24
->>>>> [    0.962644]  [<ffffffff814e17cd>]
->>>>> register_pernet_operations.isra.5+0x9d/0xfe
->>>>> [    0.971376]  [<ffffffff814e1adf>] register_pernet_subsys+0x30/0x57
->>>>> [    0.972992]  [<ffffffff822c7130>] xfrm_init+0x17/0x2c
->>>>> [    0.974316]  [<ffffffff822c2f8c>] ip_rt_init+0x82/0xe7
->>>>> [    0.975668]  [<ffffffff822c31dc>] ip_init+0x10/0x25
->>>>> [    0.976952]  [<ffffffff822c3f77>] inet_init+0x235/0x360
->>>>> [    0.978352]  [<ffffffff822c3d42>] ? devinet_init+0xf2/0xf2
->>>>> [    0.979808]  [<ffffffff82283252>] do_one_initcall+0xb4/0x203
->>>>> [    0.981313]  [<ffffffff8228354a>] kernel_init+0x1a9/0x29a
->>>>> [    0.982732]  [<ffffffff822826d9>] ? loglevel+0x46/0x46
->>>>> [    0.990889]  [<ffffffff816d3d84>] kernel_thread_helper+0x4/0x10
->>>>> [    0.992472]  [<ffffffff816d262c>] ? retint_restore_args+0x13/0x13
->>>>> [    0.994076]  [<ffffffff822833a1>] ? do_one_initcall+0x203/0x203
->>>>> [    0.995636]  [<ffffffff816d3d80>] ? gs_change+0x13/0x13
->>>>> [    0.997197] TCP established hash table entries: 8192 (order: 5,
->>>>> 131072 bytes)
->>>>> [    1.000074] TCP bind hash table entries: 8192 (order: 7, 655360
->>>>> bytes)
->>>>>
->>>>> Thanks,
->>>>> Fengguang
->>>>
->>>>
->>>> --
->>>>
->>>> Love each day!
->>>> --fan
->>>
->>>
->>
->> --
->>
->> Love each day!
->> --fan
->
-
--- 
-
-Love each day!
---fan
+Thanks,
+Fengguang
