@@ -1,183 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab2HQLOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 07:14:32 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:35465 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab2HQLOa (ORCPT
+	id S1757887Ab2HQLQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 07:16:45 -0400
+Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:2716 "EHLO
+	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716Ab2HQLQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 07:14:30 -0400
-X-IronPort-AV: E=Sophos;i="4.77,784,1336363200"; 
-   d="scan'208";a="205473943"
-Message-ID: <502E2784.8060806@citrix.com>
-Date: Fri, 17 Aug 2012 12:14:12 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	Fri, 17 Aug 2012 07:16:44 -0400
+Message-ID: <502E2817.8040306@xs4all.net>
+Date: Fri, 17 Aug 2012 13:16:39 +0200
+From: Miquel van Smoorenburg <mikevs@xs4all.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/p2m: Fix for 32-bit builds the "Reserve
- 8MB of _brk space for P2M"
-References: <1345132214-15298-1-git-send-email-konrad.wilk@oracle.com>	<1345132214-15298-2-git-send-email-konrad.wilk@oracle.com>	<20120816173215.GB9790@phenom.dumpdata.com> <20120816210206.GA17966@phenom.dumpdata.com>
-In-Reply-To: <20120816210206.GA17966@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: stan@hardwarefreak.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: O_DIRECT to md raid 6 is slow
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com> <502D6B0A.6090508@xs4all.net> <502DF357.8090205@hardwarefreak.com>
+In-Reply-To: <502DF357.8090205@hardwarefreak.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/08/12 22:02, Konrad Rzeszutek Wilk wrote:
-> 
-> So I thought about this some more and came up with this patch. Its
-> RFC and going to run it through some overnight tests to see how they fare.
-> 
-> 
-> commit da858a92dbeb52fb3246e3d0f1dd57989b5b1734
-> Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date:   Fri Jul 27 16:05:47 2012 -0400
-> 
->     xen/p2m: Reuse existing P2M leafs if they are filled with 1:1 PFNs or INVALID.
->     
->     If P2M leaf is completly packed with INVALID_P2M_ENTRY or with
->     1:1 PFNs (so IDENTITY_FRAME type PFNs), we can swap the P2M leaf
->     with either a p2m_missing or p2m_identity respectively. The old
->     page (which was created via extend_brk or was grafted on from the
->     mfn_list) can be re-used for setting new PFNs.
+On 08/17/2012 09:31 AM, Stan Hoeppner wrote:
+> On 8/16/2012 4:50 PM, Miquel van Smoorenburg wrote:
+>> I did a simple test:
+>>
+>> * created a 1G partition on 3 seperate disks
+>> * created a md raid5 array with 512K chunksize:
+>>    mdadm -C /dev/md0 -l 5 -c $((1024*512)) -n 3 /dev/sdb1 /dev/sdc1
+>> /dev/sdd1
+>> * ran disk monitoring using 'iostat -k 5 /dev/sdb1 /dev/sdc1 /dev/sdd1'
+>> * wrote a single 4K block:
+>>    dd if=/dev/zero bs=4K count=1 oflag=direct seek=30 of=/dev/md0
+>>
+>> Output from iostat over the period in which the 4K write was done. Look
+>> at kB read and kB written:
+>>
+>> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+>> sdb1              0.60         0.00         1.60          0          8
+>> sdc1              0.60         0.80         0.80          4          4
+>> sdd1              0.60         0.00         1.60          0          8
+>>
+>> As you can see, a single 4K read, and a few writes. You see a few blocks
+>> more written that you'd expect because the superblock is updated too.
+>
+> I'm no dd expert, but this looks like you're simply writing a 4KB block
+> to a new stripe, using an offset, but not to an existing stripe, as the
+> array is in a virgin state.  So it doesn't appear this test is going to
+> trigger RMW.  Don't you need now need to do another write in the same
+> stripe to to trigger RMW?  Maybe I'm just reading this wrong.
 
-Does this actually find any p2m pages to reclaim?
+That shouldn't matter, but that is easily checked ofcourse, by writing 
+some random random data first, then doing the dd 4K write also with 
+random data somewhere in the same area:
 
-xen_set_identity_and_release() is careful to set the largest possible
-range as 1:1 and the comments at the top of p2m.c suggest the mid
-entries will be made to point to p2m_identity already.
+# dd if=/dev/urandom bs=1M count=3 of=/dev/md0
+3+0 records in
+3+0 records out
+3145728 bytes (3.1 MB) copied, 0.794494 s, 4.0 MB/s
 
-David
+Now the first 6 chunks are filled with random data, let write 4K 
+somewhere in there:
 
->     This also means we can remove git commit:
->     5bc6f9888db5739abfa0cae279b4b442e4db8049
->     xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back
->     which tried to fix this.
->     
->     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 29244d0..b6b7c10 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -194,11 +194,6 @@ RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID
->   * boundary violation will require three middle nodes. */
->  RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
->  
-> -/* When we populate back during bootup, the amount of pages can vary. The
-> - * max we have is seen is 395979, but that does not mean it can't be more.
-> - * Some machines can have 3GB I/O holes so lets reserve for that. */
-> -RESERVE_BRK(p2m_populated, 786432 * sizeof(unsigned long));
-> -
->  static inline unsigned p2m_top_index(unsigned long pfn)
->  {
->  	BUG_ON(pfn >= MAX_P2M_PFN);
-> @@ -575,12 +570,99 @@ static bool __init early_alloc_p2m(unsigned long pfn)
->  	}
->  	return true;
->  }
-> +
-> +/*
-> + * Skim over the P2M tree looking at pages that are either filled with
-> + * INVALID_P2M_ENTRY or with 1:1 PFNs. If found, re-use that page and
-> + * replace the P2M leaf with a p2m_missing or p2m_identity.
-> + * Stick the old page in the new P2M tree location.
-> + */
-> +bool __init early_can_reuse_p2m_middle(unsigned long set_pfn, unsigned long set_mfn)
-> +{
-> +	unsigned topidx;
-> +	unsigned mididx;
-> +	unsigned ident_pfns;
-> +	unsigned inv_pfns;
-> +	unsigned long *p2m;
-> +	unsigned long *mid_mfn_p;
-> +	unsigned idx;
-> +	unsigned long pfn;
-> +
-> +	/* We only look when this entails a P2M middle layer */
-> +	if (p2m_index(set_pfn))
-> +		return false;
-> +
-> +	for (pfn = 0; pfn <= MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
-> +		topidx = p2m_top_index(pfn);
-> +
-> +		if (!p2m_top[topidx])
-> +			continue;
-> +
-> +		if (p2m_top[topidx] == p2m_mid_missing)
-> +			continue;
-> +
-> +		mididx = p2m_mid_index(pfn);
-> +		p2m = p2m_top[topidx][mididx];
-> +		if (!p2m)
-> +			continue;
-> +
-> +		if ((p2m == p2m_missing) || (p2m == p2m_identity))
-> +			continue;
-> +
-> +		if ((unsigned long)p2m == INVALID_P2M_ENTRY)
-> +			continue;
-> +
-> +		ident_pfns = 0;
-> +		inv_pfns = 0;
-> +		for (idx = 0; idx < P2M_PER_PAGE; idx++) {
-> +			/* IDENTITY_PFNs are 1:1 */
-> +			if (p2m[idx] == IDENTITY_FRAME(pfn + idx))
-> +				ident_pfns++;
-> +			else if (p2m[idx] == INVALID_P2M_ENTRY)
-> +				inv_pfns++;
-> +			else
-> +				break;
-> +		}
-> +		if ((ident_pfns == P2M_PER_PAGE) || (inv_pfns == P2M_PER_PAGE))
-> +			goto found;
-> +	}
-> +	return false;
-> +found:
-> +	/* Found one, replace old with p2m_identity or p2m_missing */
-> +	p2m_top[topidx][mididx] = (ident_pfns ? p2m_identity : p2m_missing);
-> +	/* And the other for save/restore.. */
-> +	mid_mfn_p = p2m_top_mfn_p[topidx];
-> +	/* NOTE: Even if it is a p2m_identity it should still be point to
-> +	 * a page filled with INVALID_P2M_ENTRY entries. */
-> +	mid_mfn_p[mididx] = virt_to_mfn(p2m_missing);
-> +
-> +	/* Reset where we want to stick the old page in. */
-> +	topidx = p2m_top_index(set_pfn);
-> +	mididx = p2m_mid_index(set_pfn);
-> +
-> +	/* This shouldn't happen */
-> +	if (WARN_ON(p2m_top[topidx] == p2m_mid_missing))
-> +		early_alloc_p2m(set_pfn);
-> +
-> +	if (WARN_ON(p2m_top[topidx][mididx] != p2m_missing))
-> +		return false;
-> +
-> +	p2m_init(p2m);
-> +	p2m_top[topidx][mididx] = p2m;
-> +	mid_mfn_p = p2m_top_mfn_p[topidx];
-> +	mid_mfn_p[mididx] = virt_to_mfn(p2m);
-> +
-> +	return true;
-> +}
->  bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  {
->  	if (unlikely(!__set_phys_to_machine(pfn, mfn)))  {
->  		if (!early_alloc_p2m(pfn))
->  			return false;
->  
-> +		if (early_can_reuse_p2m_middle(pfn, mfn))
-> +			return __set_phys_to_machine(pfn, mfn);
-> +
->  		if (!early_alloc_p2m_middle(pfn, false /* boundary crossover OK!*/))
->  			return false;
->  
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+# dd if=/dev/urandom bs=4k count=1 seek=25 of=/dev/md0
+1+0 records in
+1+0 records out
+4096 bytes (4.1 kB) copied, 0.10149 s, 40.4 kB/s
 
+Output from iostat over the period in which the 4K write was done:
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sdb1              0.60         0.00         1.60          0          8
+sdc1              0.60         0.80         0.80          4          4
+sdd1              0.60         0.00         1.60          0          8
+
+Mike.
