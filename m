@@ -1,83 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561Ab2HQQuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 12:50:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38321 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758432Ab2HQQu1 (ORCPT
+	id S1758567Ab2HQQv2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 12:51:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54638 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758432Ab2HQQvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 12:50:27 -0400
-From: emilgoode@gmail.com
-To: gregkh@linuxfoundation.org, rob@ti.com, andy.gross@ti.com,
-        daniel.vetter@ffwll.ch
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] staging: drm/omap: Add error handling
-Date: Fri, 17 Aug 2012 18:53:26 +0200
-Message-Id: <502e7651.241a700a.4d05.7e27@mx.google.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 17 Aug 2012 12:51:20 -0400
+Date: Fri, 17 Aug 2012 09:51:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, olaf@aepfle.de, apw@canonical.com,
+        ben@decadent.org.uk
+Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
+Message-ID: <20120817165109.GA11323@kroah.com>
+References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-8-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345167145-5513-8-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emil Goode <emilgoode@gmail.com>
+On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
+> Now, gather DNS information. Invoke an external script (that can be
+> distro dependent) to gather the DNS information.
 
-This patch adds fail checks for kmalloc and kzalloc calls
-and also adds a error path that frees allocated pages by
-introducing a call to _drm_gem_put_pages.
+Where is that script?  Why a script, this really isn't in a standard
+method for all Linux distros?  If not, why not work to do that like the
+freedesktop.org people have done for other system configuration items?
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/staging/omapdrm/omap_gem.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/omapdrm/omap_gem.c b/drivers/staging/omapdrm/omap_gem.c
-index 74082aa..c828743 100644
---- a/drivers/staging/omapdrm/omap_gem.c
-+++ b/drivers/staging/omapdrm/omap_gem.c
-@@ -226,7 +226,8 @@ static int omap_gem_attach_pages(struct drm_gem_object *obj)
- 	struct drm_device *dev = obj->dev;
- 	struct omap_gem_object *omap_obj = to_omap_bo(obj);
- 	struct page **pages;
--	int i, npages = obj->size >> PAGE_SHIFT;
-+	int npages = obj->size >> PAGE_SHIFT;
-+	int i, ret;
- 	dma_addr_t *addrs;
- 
- 	WARN_ON(omap_obj->pages);
-@@ -246,18 +247,32 @@ static int omap_gem_attach_pages(struct drm_gem_object *obj)
- 	 */
- 	if (omap_obj->flags & (OMAP_BO_WC|OMAP_BO_UNCACHED)) {
- 		addrs = kmalloc(npages * sizeof(addrs), GFP_KERNEL);
-+		if (!addrs) {
-+			ret = -ENOMEM;
-+			goto free_pages;
-+		}
-+
- 		for (i = 0; i < npages; i++) {
- 			addrs[i] = dma_map_page(dev->dev, pages[i],
- 					0, PAGE_SIZE, DMA_BIDIRECTIONAL);
- 		}
- 	} else {
- 		addrs = kzalloc(npages * sizeof(addrs), GFP_KERNEL);
-+		if (!addrs) {
-+			ret = -ENOMEM;
-+			goto free_pages;
-+		}
- 	}
- 
- 	omap_obj->addrs = addrs;
- 	omap_obj->pages = pages;
- 
- 	return 0;
-+
-+free_pages:
-+	_drm_gem_put_pages(obj, pages, true, false);
-+
-+	return ret;
- }
- 
- /** release backing pages */
--- 
-1.7.10.4
-
+greg k-h
