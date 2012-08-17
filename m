@@ -1,315 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab2HQBvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:51:33 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:33128 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab2HQBv3 (ORCPT
+	id S1756869Ab2HQBy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:54:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42203 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab2HQBy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:51:29 -0400
-Message-ID: <502DA342.7020005@huawei.com>
-Date: Fri, 17 Aug 2012 09:49:54 +0800
-From: Hanjun Guo <guohanjun@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 16 Aug 2012 21:54:58 -0400
 MIME-Version: 1.0
-To: "Christoph Lameter (Open Source)" <cl@linux.com>
-CC: Wu Jianguo <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tony Luck <tony.luck@intel.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>, qiuxishi <qiuxishi@huawei.com>
-Subject: [PATCH V2] mm: introduce N_LRU_MEMORY to distinguish between normal
- and movable memory
-References: <502CA44C.80901@huawei.com>
-In-Reply-To: <502CA44C.80901@huawei.com>
-X-Forwarded-Message-Id: <502CA44C.80901@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.25]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1345167949-7419-3-git-send-email-ming.lei@canonical.com>
+References: <1345167949-7419-1-git-send-email-ming.lei@canonical.com>
+	<1345167949-7419-3-git-send-email-ming.lei@canonical.com>
+Date: Fri, 17 Aug 2012 09:54:56 +0800
+Message-ID: <CACVXFVNGHtXqiZtA0V6FuCEvebSs1F=jQG=nAYqwQjD6jdG2+Q@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3] PM / Sleep: introduce dpm_for_each_dev
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>
+Content-Type: multipart/mixed; boundary=047d7b6dc2d266fa9804c76c724c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wu Jianguo <wujianguo@huawei.com>
+--047d7b6dc2d266fa9804c76c724c
+Content-Type: text/plain; charset=ISO-8859-1
 
-Hi Christoph,
-	Now, We have node masks for both N_NORMAL_MEMORY and N_HIGH_MEMORY to
-distinguish between normal and highmem on platforms such as x86. But we still
-don't have such a mechanism to distinguish between "normal" and "movable" memory.
-So this patch introduce N_LRU_MEMORY, and change the N_NORMAL_MEMORY definition.
+On Fri, Aug 17, 2012 at 9:45 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> diff --git a/include/linux/pm.h b/include/linux/pm.h
+> index 44d1f23..bf86f89 100644
+> --- a/include/linux/pm.h
+> +++ b/include/linux/pm.h
+> @@ -640,6 +640,7 @@ extern void __suspend_report_result(const char *function, void *fn, int ret);
+>         } while (0)
+>
+>  extern int device_pm_wait_for_dev(struct device *sub, struct device *dev);
+> +extern void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *));
+>
+>  extern int pm_generic_prepare(struct device *dev);
+>  extern int pm_generic_suspend_late(struct device *dev);
+> @@ -679,6 +680,10 @@ static inline int device_pm_wait_for_dev(struct device *a, struct device *b)
+>         return 0;
+>  }
+>
+> +void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
 
-N_NORMAL_MEMORY means non-LRU page allocs possible.
-N_LRU_MEMORY means LRU page allocs possible,
-node with ZONE_DMA(DMA32)/ZONE_NORMAL is marked with N_LRU_MEMORY and N_NORMAL_MEMORY,
-node with ZONE_MOVABLE is *only* marked with N_LRU_MEMORY,
-node with ZONE_HIGHMEM is marked with N_LRU_MEMORY and N_HIGH_MEMORY.
-N_LRU_MEMORY also means node has any regular memory.
-
-Thus, in SLUB allocator, we use for_each_node_state(node, N_NORMAL_MEMORY),
-if the node has only movable memory, then memory control structures will not need
-to be allocated for these nodes.
-this patch will fix the bug described as follow:
-
-When handling a memory node with only movable zone, function
-early_kmem_cache_node_alloc() will allocate a page from remote node but
-still increase object count on local node, which will trigger a BUG_ON()
-as below when hot-removing this memory node. Actually there's no need to
-create kmem_cache_node for memory node with only movable zone at all.
-
-------------[ cut here ]------------
-kernel BUG at mm/slub.c:3590!
-invalid opcode: 0000 [#1] SMP
-CPU 61
-Modules linked in: autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table
-mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables
-ipv6 vfat fat dm_mirror dm_region_hash dm_log uinput iTCO_wdt
-iTCO_vendor_support coretemp hwmon kvm_intel kvm crc32c_intel
-ghash_clmulni_intel serio_raw pcspkr cdc_ether usbnet mii i2c_i801 i2c_core sg
-lpc_ich mfd_core shpchp ioatdma i7core_edac edac_core igb dca bnx2 ext4
-mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif aesni_intel cryptd aes_x86_64
-aes_generic bfa scsi_transport_fc scsi_tgt pata_acpi ata_generic ata_piix
-megaraid_sas dm_mod [last unloaded: microcode]
-
-Pid: 46287, comm: sh Not tainted 3.5.0-rc4-00215-g35f0828-dirty #85
-IBM System x3850 X5 -[7143O3G]-/Node 1, Processor Card
-RIP: 0010:[<ffffffff81160b2a>]  [<ffffffff81160b2a>]
-slab_memory_callback+0x1ba/0x1c0
-RSP: 0018:ffff880efdcb7c68  EFLAGS: 00010202
-RAX: 0000000000000001 RBX: ffff880f7ec06100 RCX: 0000000100400001
-RDX: 0000000100400002 RSI: ffff880f7ec02000 RDI: ffff880f7ec06100
-RBP: ffff880efdcb7c78 R08: ffff88107b6fb098 R09: ffffffff81160a00
-R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000019
-R13: 00000000fffffffb R14: 0000000000000000 R15: ffffffff81abe930
-FS:  00007f709f342700(0000) GS:ffff880f7f3a0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000003b5a874570 CR3: 0000000f0da20000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process sh (pid: 46287, threadinfo ffff880efdcb6000, task ffff880f0fa50000)
-Stack:
- 0000000000000004 ffff880efdcb7da8 ffff880efdcb7cb8 ffffffff81524af5
- 0000000000000001 ffffffff81a8b620 ffffffff81a8b640 0000000000000004
- ffff880efdcb7da8 00000000ffffffff ffff880efdcb7d08 ffffffff8107a89a
-Call Trace:
- [<ffffffff81524af5>] notifier_call_chain+0x55/0x80
- [<ffffffff8107a89a>] __blocking_notifier_call_chain+0x5a/0x80
- [<ffffffff8107a8d6>] blocking_notifier_call_chain+0x16/0x20
- [<ffffffff81352f0b>] memory_notify+0x1b/0x20
- [<ffffffff81507104>] offline_pages+0x624/0x700
- [<ffffffff811619de>] remove_memory+0x1e/0x20
- [<ffffffff813530cc>] memory_block_change_state+0x13c/0x2e0
- [<ffffffff81153e96>] ? alloc_pages_current+0xb6/0x120
- [<ffffffff81353332>] store_mem_state+0xc2/0xd0
- [<ffffffff8133e190>] dev_attr_store+0x20/0x30
- [<ffffffff811e2d4f>] sysfs_write_file+0xef/0x170
- [<ffffffff81173e28>] vfs_write+0xc8/0x190
- [<ffffffff81173ff1>] sys_write+0x51/0x90
- [<ffffffff81528d29>] system_call_fastpath+0x16/0x1b
-Code: 8b 3d cb fd c4 00 be d0 00 00 00 e8 71 de ff ff 48 85 c0 75 9c 48 c7 c7
-c0 7f a5 81 e8 c0 89 f1 ff b8 0d 80 00 00 e9 69 fe ff ff <0f> 0b eb fe 66 90
-55 48 89 e5 41 57 41 56 41 55 41 54 53 48 83
-RIP  [<ffffffff81160b2a>] slab_memory_callback+0x1ba/0x1c0
- RSP <ffff880efdcb7c68>
----[ end trace 749e9e9a67c78c12 ]---
-
-Signed-off-by: Wu Jianguo <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- arch/alpha/mm/numa.c     |    2 +-
- arch/m32r/mm/discontig.c |    2 +-
- arch/m68k/mm/motorola.c  |    2 +-
- arch/parisc/mm/init.c    |    2 +-
- arch/tile/kernel/setup.c |    2 +-
- arch/x86/mm/init_64.c    |    2 +-
- drivers/base/node.c      |    4 +++-
- include/linux/nodemask.h |   12 ++++++++++--
- mm/page_alloc.c          |   14 ++++++++++++--
- 9 files changed, 31 insertions(+), 11 deletions(-)
-
-diff --git a/arch/alpha/mm/numa.c b/arch/alpha/mm/numa.c
-index 3973ae3..8402b29 100644
---- a/arch/alpha/mm/numa.c
-+++ b/arch/alpha/mm/numa.c
-@@ -313,7 +313,7 @@ void __init paging_init(void)
- 			zones_size[ZONE_DMA] = dma_local_pfn;
- 			zones_size[ZONE_NORMAL] = (end_pfn - start_pfn) - dma_local_pfn;
- 		}
--		node_set_state(nid, N_NORMAL_MEMORY);
-+		node_set_state(nid, N_LRU_MEMORY);
- 		free_area_init_node(nid, zones_size, start_pfn, NULL);
- 	}
-
-diff --git a/arch/m32r/mm/discontig.c b/arch/m32r/mm/discontig.c
-index 2c468e8..4d76e19 100644
---- a/arch/m32r/mm/discontig.c
-+++ b/arch/m32r/mm/discontig.c
-@@ -149,7 +149,7 @@ unsigned long __init zone_sizes_init(void)
- 		zholes_size[ZONE_DMA] = mp->holes;
- 		holes += zholes_size[ZONE_DMA];
-
--		node_set_state(nid, N_NORMAL_MEMORY);
-+		node_set_state(nid, N_LRU_MEMORY);
- 		free_area_init_node(nid, zones_size, start_pfn, zholes_size);
- 	}
-
-diff --git a/arch/m68k/mm/motorola.c b/arch/m68k/mm/motorola.c
-index 0dafa69..31a0b00 100644
---- a/arch/m68k/mm/motorola.c
-+++ b/arch/m68k/mm/motorola.c
-@@ -300,7 +300,7 @@ void __init paging_init(void)
- 		free_area_init_node(i, zones_size,
- 				    m68k_memory[i].addr >> PAGE_SHIFT, NULL);
- 		if (node_present_pages(i))
--			node_set_state(i, N_NORMAL_MEMORY);
-+			node_set_state(i, N_LRU_MEMORY);
- 	}
- }
-
-diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
-index 3ac462d..ad286fd 100644
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -277,7 +277,7 @@ static void __init setup_bootmem(void)
- 	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
-
- 	for (i = 0; i < npmem_ranges; i++) {
--		node_set_state(i, N_NORMAL_MEMORY);
-+		node_set_state(i, N_LRU_MEMORY);
- 		node_set_online(i);
- 	}
- #endif
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 6a649a4..464672d 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -748,7 +748,7 @@ static void __init zone_sizes_init(void)
-
- 		/* Track the type of memory on each node */
- 		if (zones_size[ZONE_NORMAL] || zones_size[ZONE_DMA])
--			node_set_state(i, N_NORMAL_MEMORY);
-+			node_set_state(i, N_LRU_MEMORY);
- #ifdef CONFIG_HIGHMEM
- 		if (end != start)
- 			node_set_state(i, N_HIGH_MEMORY);
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 2b6b4a3..43bf392 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -625,7 +625,7 @@ void __init paging_init(void)
- 	 *	 numa support is not compiled in, and later node_set_state
- 	 *	 will not set it back.
- 	 */
--	node_clear_state(0, N_NORMAL_MEMORY);
-+	node_clear_state(0, N_LRU_MEMORY);
-
- 	zone_sizes_init();
- }
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index af1a177..4a631f9 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -617,6 +617,7 @@ static struct node_attr node_state_attr[] = {
- 	_NODE_ATTR(possible, N_POSSIBLE),
- 	_NODE_ATTR(online, N_ONLINE),
- 	_NODE_ATTR(has_normal_memory, N_NORMAL_MEMORY),
-+	_NODE_ATTR(has_lru_memory, N_LRU_MEMORY),
- 	_NODE_ATTR(has_cpu, N_CPU),
- #ifdef CONFIG_HIGHMEM
- 	_NODE_ATTR(has_high_memory, N_HIGH_MEMORY),
-@@ -628,8 +629,9 @@ static struct attribute *node_state_attrs[] = {
- 	&node_state_attr[1].attr.attr,
- 	&node_state_attr[2].attr.attr,
- 	&node_state_attr[3].attr.attr,
--#ifdef CONFIG_HIGHMEM
- 	&node_state_attr[4].attr.attr,
-+#ifdef CONFIG_HIGHMEM
-+	&node_state_attr[5].attr.attr,
- #endif
- 	NULL
- };
-diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
-index 7afc363..92cee40 100644
---- a/include/linux/nodemask.h
-+++ b/include/linux/nodemask.h
-@@ -370,15 +370,23 @@ static inline void __nodes_fold(nodemask_t *dstp, const nodemask_t *origp,
-
- /*
-  * Bitmasks that are kept for all the nodes.
-+ * N_NORMAL_MEMORY means non-LRU page allocs possible.
-+ * N_LRU_MEMORY means LRU page allocs possible,
-+ * node with ZONE_DMA/ZONE_DMA32/ZONE_NORMAL is marked with
-+ * N_LRU_MEMORY and N_NORMAL_MEMORY,
-+ * node with ZONE_MOVABLE is *only* marked with N_LRU_MEMORY,
-+ * node with ZONE_HIGHMEM is marked with N_LRU_MEMORY and N_HIGH_MEMORY.
-+ * N_LRU_MEMORY also means node has any regular memory.
-  */
- enum node_states {
- 	N_POSSIBLE,		/* The node could become online at some point */
- 	N_ONLINE,		/* The node is online */
--	N_NORMAL_MEMORY,	/* The node has regular memory */
-+	N_NORMAL_MEMORY,	/* The node has normal memory */
-+	N_LRU_MEMORY,		/* The node has regular memory */
- #ifdef CONFIG_HIGHMEM
- 	N_HIGH_MEMORY,		/* The node has regular or high memory */
- #else
--	N_HIGH_MEMORY = N_NORMAL_MEMORY,
-+	N_HIGH_MEMORY = N_LRU_MEMORY,
- #endif
- 	N_CPU,		/* The node has one or more cpus */
- 	NR_NODE_STATES
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 009ac28..43261fc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -87,6 +87,7 @@ nodemask_t node_states[NR_NODE_STATES] __read_mostly = {
- 	[N_ONLINE] = { { [0] = 1UL } },
- #ifndef CONFIG_NUMA
- 	[N_NORMAL_MEMORY] = { { [0] = 1UL } },
-+	[N_LRU_MEMORY] = { { [0] = 1UL } },
- #ifdef CONFIG_HIGHMEM
- 	[N_HIGH_MEMORY] = { { [0] = 1UL } },
- #endif
-@@ -4796,16 +4797,25 @@ out:
- /* Any regular memory on that node ? */
- static void __init check_for_regular_memory(pg_data_t *pgdat)
- {
--#ifdef CONFIG_HIGHMEM
-+	struct zone *zone;
- 	enum zone_type zone_type;
-
-+	/*
-+	 * node with ZONE_DMA/ZONE_DMA32/ZONE_NORMAL
-+	 * is mark with N_NORMAL_MEMORY, means non-LUR page allocs possible.
-+	 */
- 	for (zone_type = 0; zone_type <= ZONE_NORMAL; zone_type++) {
--		struct zone *zone = &pgdat->node_zones[zone_type];
-+		zone = &pgdat->node_zones[zone_type];
- 		if (zone->present_pages) {
- 			node_set_state(zone_to_nid(zone), N_NORMAL_MEMORY);
- 			break;
- 		}
- 	}
-+
-+#ifdef CONFIG_HIGHMEM
-+	zone = &pgdat->node_zones[ZONE_MOVABLE];
-+	if (zone->present_pages)
-+		node_set_state(zone_to_nid(zone), N_LRU_MEMORY);
- #endif
- }
-
--- 
-1.7.6.1
+Sorry, the above line is wrong, and should be defined as 'static inline'.
+Please drop this one and take the attachment patch.
 
 
+Thanks,
+--
+Ming Lei
 
+--047d7b6dc2d266fa9804c76c724c
+Content-Type: application/octet-stream; 
+	name="0002-PM-Sleep-introduce-dpm_for_each_dev.patch"
+Content-Disposition: attachment; 
+	filename="0002-PM-Sleep-introduce-dpm_for_each_dev.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h5ymkryz0
 
-.
-
-
-
-
+RnJvbSAwNjhiNWZmNGViNGE3NTQxOTNiYjQxNWQ4NDViMzUyMTg5NDg3OTNjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBNaW5nIExlaSA8dG9tLmxlaW1pbmdAZ21haWwuY29tPgpEYXRl
+OiBGcmksIDE3IEF1ZyAyMDEyIDA5OjAzOjU2ICswODAwClN1YmplY3Q6IFtSRkMgUEFUQ0ggMi8z
+XSBQTSAvIFNsZWVwOiBpbnRyb2R1Y2UgZHBtX2Zvcl9lYWNoX2RldgoKZHBtX2xpc3QgYW5kIGl0
+cyBwbSBsb2NrIHByb3ZpZGUgYSBnb29kIHdheSB0byBpdGVyYXRlIGFsbApkZXZpY2VzIGluIHN5
+c3RlbS4gRXhjZXB0IHRoaXMgd2F5LCB0aGVyZSBpcyBubyBvdGhlciBlYXN5CndheSB0byBpdGVy
+YXRlIGRldmljZXMgaW4gc3lzdGVtLgoKZmlybXdhcmUgbG9hZGVyIG5lZWQgdG8gY2FjaGUgZmly
+bXdhcmUgaW1hZ2VzIGZvciBkZXZpY2VzCmJlZm9yZSBzeXN0ZW0gc2xlZXAsIHNvIGludHJvZHVj
+ZSB0aGUgZnVuY3Rpb24gdG8gbWVldCBpdHMKZGVtYW5kLgoKUmVwb3J0ZWQtYnk6IEZlbmdndWFu
+ZyBXdSA8ZmVuZ2d1YW5nLnd1QGludGVsLmNvbT4KU2lnbmVkLW9mZi1ieTogTWluZyBMZWkgPHRv
+bS5sZWltaW5nQGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL2Jhc2UvcG93ZXIvbWFpbi5jIHwgICAx
+OSArKysrKysrKysrKysrKysrKysrCiBpbmNsdWRlL2xpbnV4L3BtLmggICAgICAgIHwgICAgNSAr
+KysrKwogMiBmaWxlcyBjaGFuZ2VkLCAyNCBpbnNlcnRpb25zKCspCgpkaWZmIC0tZ2l0IGEvZHJp
+dmVycy9iYXNlL3Bvd2VyL21haW4uYyBiL2RyaXZlcnMvYmFzZS9wb3dlci9tYWluLmMKaW5kZXgg
+NTdmNTgxNC4uMTg0YmNiNSAxMDA2NDQKLS0tIGEvZHJpdmVycy9iYXNlL3Bvd2VyL21haW4uYwor
+KysgYi9kcml2ZXJzL2Jhc2UvcG93ZXIvbWFpbi5jCkBAIC0xMzQ5LDMgKzEzNDksMjIgQEAgaW50
+IGRldmljZV9wbV93YWl0X2Zvcl9kZXYoc3RydWN0IGRldmljZSAqc3Vib3JkaW5hdGUsIHN0cnVj
+dCBkZXZpY2UgKmRldikKIAlyZXR1cm4gYXN5bmNfZXJyb3I7CiB9CiBFWFBPUlRfU1lNQk9MX0dQ
+TChkZXZpY2VfcG1fd2FpdF9mb3JfZGV2KTsKKworLyoqCisgKiBkcG1fZm9yX2VhY2hfZGV2IC0g
+ZGV2aWNlIGl0ZXJhdG9yLgorICogQGRhdGE6IGRhdGEgZm9yIHRoZSBjYWxsYmFjay4KKyAqIEBm
+bjogZnVuY3Rpb24gdG8gYmUgY2FsbGVkIGZvciBlYWNoIGRldmljZS4KKyAqCisgKiBJdGVyYXRl
+IG92ZXIgZGV2aWNlcyBpbiBkcG1fbGlzdCwgYW5kIGNhbGwgQGZuIGZvciBlYWNoIGRldmljZSwK
+KyAqIHBhc3NpbmcgaXQgQGRhdGEuCisgKi8KK3ZvaWQgZHBtX2Zvcl9lYWNoX2Rldih2b2lkICpk
+YXRhLCB2b2lkICgqZm4pKHN0cnVjdCBkZXZpY2UgKiwgdm9pZCAqKSkKK3sKKwlzdHJ1Y3QgZGV2
+aWNlICpkZXY7CisKKwlkZXZpY2VfcG1fbG9jaygpOworCWxpc3RfZm9yX2VhY2hfZW50cnkoZGV2
+LCAmZHBtX2xpc3QsIHBvd2VyLmVudHJ5KQorCQlmbihkZXYsIGRhdGEpOworCWRldmljZV9wbV91
+bmxvY2soKTsKK30KK0VYUE9SVF9TWU1CT0xfR1BMKGRwbV9mb3JfZWFjaF9kZXYpOwpkaWZmIC0t
+Z2l0IGEvaW5jbHVkZS9saW51eC9wbS5oIGIvaW5jbHVkZS9saW51eC9wbS5oCmluZGV4IDQ0ZDFm
+MjMuLjAwN2U2ODcgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvcG0uaAorKysgYi9pbmNsdWRl
+L2xpbnV4L3BtLmgKQEAgLTY0MCw2ICs2NDAsNyBAQCBleHRlcm4gdm9pZCBfX3N1c3BlbmRfcmVw
+b3J0X3Jlc3VsdChjb25zdCBjaGFyICpmdW5jdGlvbiwgdm9pZCAqZm4sIGludCByZXQpOwogCX0g
+d2hpbGUgKDApCiAKIGV4dGVybiBpbnQgZGV2aWNlX3BtX3dhaXRfZm9yX2RldihzdHJ1Y3QgZGV2
+aWNlICpzdWIsIHN0cnVjdCBkZXZpY2UgKmRldik7CitleHRlcm4gdm9pZCBkcG1fZm9yX2VhY2hf
+ZGV2KHZvaWQgKmRhdGEsIHZvaWQgKCpmbikoc3RydWN0IGRldmljZSAqLCB2b2lkICopKTsKIAog
+ZXh0ZXJuIGludCBwbV9nZW5lcmljX3ByZXBhcmUoc3RydWN0IGRldmljZSAqZGV2KTsKIGV4dGVy
+biBpbnQgcG1fZ2VuZXJpY19zdXNwZW5kX2xhdGUoc3RydWN0IGRldmljZSAqZGV2KTsKQEAgLTY3
+OSw2ICs2ODAsMTAgQEAgc3RhdGljIGlubGluZSBpbnQgZGV2aWNlX3BtX3dhaXRfZm9yX2Rldihz
+dHJ1Y3QgZGV2aWNlICphLCBzdHJ1Y3QgZGV2aWNlICpiKQogCXJldHVybiAwOwogfQogCitzdGF0
+aWMgaW5saW5lIHZvaWQgZHBtX2Zvcl9lYWNoX2Rldih2b2lkICpkYXRhLCB2b2lkICgqZm4pKHN0
+cnVjdCBkZXZpY2UgKiwgdm9pZCAqKSkKK3sKK30KKwogI2RlZmluZSBwbV9nZW5lcmljX3ByZXBh
+cmUJTlVMTAogI2RlZmluZSBwbV9nZW5lcmljX3N1c3BlbmQJTlVMTAogI2RlZmluZSBwbV9nZW5l
+cmljX3Jlc3VtZQlOVUxMCi0tIAoxLjcuOS41Cgo=
+--047d7b6dc2d266fa9804c76c724c--
