@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab2HQBrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:47:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35443 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab2HQBq6 (ORCPT
+	id S1030382Ab2HQBtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:49:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19278 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932472Ab2HQBtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:46:58 -0400
-Date: Thu, 16 Aug 2012 18:46:31 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-Subject: Re: [RFC 0/2] USB gadget - configfs
-Message-ID: <20120817014609.GB2949@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-	Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-	'Kyungmin Park' <kyungmin.park@samsung.com>,
-	'Felipe Balbi' <balbi@ti.com>,
-	'Greg Kroah-Hartman' <gregkh@linuxfoundation.org>,
-	Marek Szyprowski <m.szyprowski@samsung.com>,
-	'Alan Stern' <stern@rowland.harvard.edu>
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
- <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
- <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
- <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
- <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
- <502CF9E3.2010608@linutronix.de>
+	Thu, 16 Aug 2012 21:49:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6806"; a="226254974"
+X-IronPort-AV: E=Sophos;i="4.77,782,1336374000"; 
+   d="scan'208";a="370139420"
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+To: Joe Perches <joe@perches.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+Subject: RE: [PATCH] net: add new QCA alx ethernet driver
+Thread-Topic: [PATCH] net: add new QCA alx ethernet driver
+Thread-Index: AQHNe7FV6PRqpmernk28qOEelr0rNJddPQ+Q
+Date: Fri, 17 Aug 2012 01:49:05 +0000
+Message-ID: <6349D7A510622448B1BA0967850A84380137365C@NASANEXD02D.na.qualcomm.com>
+References: <1345053189-10326-1-git-send-email-cjren@qca.qualcomm.com>
+ <1345122983.26882.9.camel@joe2Laptop>
+In-Reply-To: <1345122983.26882.9.camel@joe2Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.235.13.225]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502CF9E3.2010608@linutronix.de>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7H1nGL2031490
 
-On Thu, Aug 16, 2012 at 03:47:15PM +0200, Sebastian Andrzej Siewior wrote:
-> On 08/16/2012 03:17 PM, Andrzej Pietrasiewicz wrote:
-> >A lun is "opened" on storing the "file" attribute of the lun, it is in
-> >fsg_lun_store_file, storage_common.c. So, again, this is a configfs
-> >callback.
-> >
-> >On storing the connect attribute, the following happens: a composite driver
-> >is probed, then all the configurations are iterated over, their functions
-> >being bound in turn. After the gadget is set up this way, the host notices
-> >connecting a new mass storage device.
-> 
-> The configuration has to remain unchanged until the "connect" attribute
-> is changed (i.e. unconnected). That means the gadget can only be
-> reconfigured once it is not active.
+From: Joe Perches [mailto:joe@perches.com]
+Sent: Thursday, August 16, 2012 9:16 PM
+>Hi Cloud.  Please convert this to
+>
+>		netdev_printk(level, hw->adpt->netdev, "%pV", &vaf);
+>
+>I will submit a patch soon to make the __netdev_printk variant static.
 
-	Yes, that's my understanding of the driver code.  What I'm
-trying to understand is the trigger for setting connect=1.  See, all of
-the other configfs steps you outlined make sense to me as "part of the
-gadget's internal state".  While I don't know what C1 and F1 are (I
-assume G1 is Gadget1), I don't know that it matters.
-	What changes the state to "active"?  That is, what triggers
-setting connect=1?  Is it just part of the flow of power-up, or is there
-some separation between "setting myself up" and "seeing that a host
-wants to talk to me"?
+Ok, thanks.
 
-Joel
-
--- 
-
-"The trouble with being punctual is that nobody's there to
- appreciate it."
-	- Franklin P. Jones
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
