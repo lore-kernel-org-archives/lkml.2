@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab2HQEzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 00:55:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42640 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2HQEzp (ORCPT
+	id S1753113Ab2HQFEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 01:04:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47504 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab2HQFEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 00:55:45 -0400
-Date: Fri, 17 Aug 2012 14:55:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuah Khan <shuah.khan@hp.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: linux-next: manual merge of the akpm tree with the slab tree
-Message-Id: <20120817145535.57f37be87deabdcf9b3788e7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ"
+	Fri, 17 Aug 2012 01:04:36 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Martyn Welch <martyn.welch@ge.com>,
+        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH 1/5] staging/vme: fix checkpatch error
+Date: Fri, 17 Aug 2012 14:04:27 +0900
+Message-Id: <1345179867-8266-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342875651-16961-1-git-send-email-yamanetoshi@gmail.com>
+References: <1342875651-16961-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The below checkpatch error was fixed.
 
-Hi Andrew,
+-ERROR: trailing whitespace
 
-Today's linux-next merge of the akpm tree got a conflict in
-mm/slab_common.c between commit 77be4b1366c9 ("mm/slab: restructure
-kmem_cache_create() debug checks") from the slab tree and commit
-"mm/slab_common.c: cleanup" from the akpm tree.
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/vme/devices/vme_user.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Given that this akpm tree patch was applied to and then reverted from the
-slab tree, I have just dropped it from the akpm tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index e25645e..e39d273 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -396,7 +396,7 @@ static ssize_t vme_user_write(struct file *file, const char __user *buf,
+ 	default:
+ 		retval = -EINVAL;
+ 	}
+-	
++
+ 	mutex_unlock(&image[minor].mutex);
+ 
+ 	if (retval > 0)
+-- 
+1.7.9.5
 
---Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQLc7HAAoJEECxmPOUX5FEZdsP/RsHorI67/ebXw7bNTChwCaJ
-tEeF2TttwFo+QvJFYfGJ8IVdJXU+RZd22tbOy9oMuSfUZ8O8l4LbUyyJJFbzCKe7
-OaP4dFahJ6h0Gd01KtxOFgEESc7bkd3bnajreKUQqC96/z3mIzFxyf8LnwG4edmP
-cGzXLaYigRzmMWYcCdThSsV3E1PIwz2nLESRb7TVDL/JlM4Zx2uWIX37vEXByDxV
-SFlWUX1z84V/xeYwN2TKy5lHftBwWk0wz3LJP69VIl2U1fsNJq2/gG90Bkmqs/by
-BZT9CeM9b+UHMiFCZjcQ8ynxQtmVeB0vJXOouwK1Pg/S8iFDwXIcF2GNbh/AmkQq
-Bew68GbFbr+FuySOHm+8wnuMNuRQCOarLpg4bhQhaTkyul74/0j0ICpV56KUzqk9
-37tEFjIrsSgddN7UevaZTsZipEhBg5AGUcEbS9vz6ODo1B+09+xy1b3GRjOGA8wN
-sQp5oIz0oQJLjz3WRwqh/fcAE3nypsQ+BnzA+msglTYrdc/9cwyipIl/gcNS/RUE
-5j7hu3i9MwD8kFxiFwHEdfDdmbZzewx6tlbrkMqLRwKTu9Ee4hFO8w9LegVR+bhQ
-xDitXAlrlt87tTbR4WoAeepZz9cf1p1rTclTVyJAaCVmqPQSgIr9AkIpKoHdysiR
-akSKZIoQsS0J9no5XAk3
-=vnfq
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Aug_2012_14_55_35_+1000_3IHLVAeYiZdmKUnJ--
