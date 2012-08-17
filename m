@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab2HQR3v (ORCPT <rfc822;w@1wt.eu>);
+	id S1758601Ab2HQRaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:30:06 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:27577 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758608Ab2HQR3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Aug 2012 13:29:51 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:53279 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758134Ab2HQR3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:29:42 -0400
-Message-ID: <502E7F84.3060003@msgid.tls.msk.ru>
-Date: Fri, 17 Aug 2012 21:29:40 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+X-IronPort-AV: E=Sophos;i="4.77,785,1336348800"; 
+   d="scan'208";a="14064774"
+Date: Fri, 17 Aug 2012 18:29:32 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 01/11] xen/p2m: Fix the comment describing
+ the P2M tree.
+In-Reply-To: <1345133009-21941-2-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1208171829230.15568@kaball.uk.xensource.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: 3.0+ NFS issues (bisected)
-References: <1338469169.2420.7.camel@lade.trondhjem.org> <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru> <4FFC2573.8040804@msgid.tls.msk.ru> <20120712125303.GC16822@fieldses.org> <502DA4E8.9050800@msgid.tls.msk.ru> <20120817145616.GC11172@fieldses.org> <20120817160057.GE11172@fieldses.org> <502E7B86.3060702@msgid.tls.msk.ru> <20120817171854.GA14015@fieldses.org> <502E7EC3.5030006@msgid.tls.msk.ru>
-In-Reply-To: <502E7EC3.5030006@msgid.tls.msk.ru>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.08.2012 21:26, Michael Tokarev wrote:
-> On 17.08.2012 21:18, J. Bruce Fields wrote:
->> On Fri, Aug 17, 2012 at 09:12:38PM +0400, Michael Tokarev wrote:
-> []
->>> So we're calling svc_recv in a tight loop, eating
->>> all available CPU.  (The above is with just 2 nfsd
->>> threads).
->>>
->>> Something is definitely wrong here.  And it happens mure more
->>> often after the mentioned commit (f03d78db65085).
->>
->> Oh, neat.  Hm.  That commit doesn't really sound like the cause, then.
->> Is that busy-looping reproduceable on kernels before that commit?
+On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> It mixed up the p2m_mid_missing with p2m_missing. Also
+> remove some extra spaces.
 > 
-> Note I bisected this issue to this commit.  I haven't seen it
-> happening before this commit, and reverting it from 3.0 or 3.2
-> kernel makes the problem to go away.
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+>  arch/x86/xen/p2m.c |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
 > 
-> I guess it is looping there:
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 64effdc..e4adbfb 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -22,7 +22,7 @@
+>   *
+>   * P2M_PER_PAGE depends on the architecture, as a mfn is always
+>   * unsigned long (8 bytes on 64-bit, 4 bytes on 32), leading to
+> - * 512 and 1024 entries respectively. 
+> + * 512 and 1024 entries respectively.
+>   *
+>   * In short, these structures contain the Machine Frame Number (MFN) of the PFN.
+>   *
+> @@ -139,11 +139,11 @@
+>   *      /    | ~0, ~0, ....  |
+>   *     |     \---------------/
+>   *     |
+> - *     p2m_missing             p2m_missing
+> - * /------------------\     /------------\
+> - * | [p2m_mid_missing]+---->| ~0, ~0, ~0 |
+> - * | [p2m_mid_missing]+---->| ..., ~0    |
+> - * \------------------/     \------------/
+> + *   p2m_mid_missing           p2m_missing
+> + * /-----------------\     /------------\
+> + * | [p2m_missing]   +---->| ~0, ~0, ~0 |
+> + * | [p2m_missing]   +---->| ..., ~0    |
+> + * \-----------------/     \------------/
+>   *
+>   * where ~0 is INVALID_P2M_ENTRY. IDENTITY is (PFN | IDENTITY_BIT)
+>   */
+> @@ -423,7 +423,7 @@ static void free_p2m_page(void *p)
+>  	free_page((unsigned long)p);
+>  }
+>  
+> -/* 
+> +/*
+>   * Fully allocate the p2m structure for a given pfn.  We need to check
+>   * that both the top and mid levels are allocated, and make sure the
+>   * parallel mfn tree is kept in sync.  We may race with other cpus, so
+> -- 
+> 1.7.7.6
 > 
 > 
-> net/sunrpc/svc_xprt.c:svc_recv()
-> ...
->         len = 0;
-> ...
->         if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
-> ...
->         } else if (xprt->xpt_ops->xpo_has_wspace(xprt)) {  <=== here -- has no wspace due to memory...
-> ...  len = <something>
->         }
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 > 
->         /* No data, incomplete (TCP) read, or accept() */
->         if (len == 0 || len == -EAGAIN)
->                 goto out;
-> ...
-> out:
->         rqstp->rq_res.len = 0;
->         svc_xprt_release(rqstp);
->         return -EAGAIN;
-> }
-> 
-> I'm trying to verify this theory...
-
-Yes.  I inserted a printk there, and all these million times while
-we're waiting in this EAGAIN loop, this printk is triggering:
-
-....
-[21052.533053]  svc_recv: !has_wspace
-[21052.533070]  svc_recv: !has_wspace
-[21052.533087]  svc_recv: !has_wspace
-[21052.533105]  svc_recv: !has_wspace
-[21052.533122]  svc_recv: !has_wspace
-[21052.533139]  svc_recv: !has_wspace
-[21052.533156]  svc_recv: !has_wspace
-[21052.533174]  svc_recv: !has_wspace
-[21052.533191]  svc_recv: !has_wspace
-[21052.533208]  svc_recv: !has_wspace
-[21052.533226]  svc_recv: !has_wspace
-[21052.533244]  svc_recv: !has_wspace
-[21052.533265] calling svc_recv: 1228163 times (err=-4)
-[21052.533403] calling svc_recv: 1226616 times (err=-4)
-[21052.534520] nfsd: last server has exited, flushing export cache
-
-(I stopped nfsd since it was flooding the log).
-
-I can only guess that before that commit, we always had space,
-now we don't anymore, and are looping like crazy.
-
-Thanks,
-
-/mjt
