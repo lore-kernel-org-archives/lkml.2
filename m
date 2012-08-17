@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab2HQLFw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 07:05:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21364 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753098Ab2HQLFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 07:05:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
-   d="asc'?scan'208";a="187684125"
-Message-ID: <1345201835.27859.52.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] ARM: LPC32xx: Provide DMA filter callbacks via platform
- data
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org
-Date: Fri, 17 Aug 2012 14:10:35 +0300
-In-Reply-To: <1345201311.27859.51.camel@sauron.fi.intel.com>
-References: <1345122935-22115-1-git-send-email-stigge@antcom.de>
-	 <1345198171.27859.39.camel@sauron.fi.intel.com>
-	 <502E2279.1030604@antcom.de>
-	 <1345201311.27859.51.camel@sauron.fi.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-QI+4qYqAJ+EA4syHG23T"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1756629Ab2HQLGv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 07:06:51 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:38943 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755269Ab2HQLGt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 07:06:49 -0400
+Date: Fri, 17 Aug 2012 14:02:57 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: balbi@ti.com, Roland Stigge <stigge@antcom.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        arnd@arndb.de, aletes.xgr@gmail.com, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com
+Subject: Re: [PATCH] usb: gadget: lpc32xx_udc: Port to new start/stop
+ interface
+Message-ID: <20120817110256.GG4651@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1345131276-28982-1-git-send-email-stigge@antcom.de>
+ <502D1A49.20603@linutronix.de>
+ <502D1CC2.9020901@antcom.de>
+ <502E0A7B.1040607@antcom.de>
+ <20120817105103.GE4651@arwen.pp.htv.fi>
+ <502E2498.4090106@linutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pE2VAHO2njSJCslu"
+Content-Disposition: inline
+In-Reply-To: <502E2498.4090106@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-QI+4qYqAJ+EA4syHG23T
-Content-Type: text/plain; charset="UTF-8"
+--pE2VAHO2njSJCslu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2012-08-17 at 14:01 +0300, Artem Bityutskiy wrote:
-> > To later avoid collisions on subsystem merge, can you please leave the
-> > patch with arch/arm/mach-lpc32xx/phy3250.c for arm-soc.git? (I will
-> > provide a pull request for Arnd and Olof, as usual.)
+On Fri, Aug 17, 2012 at 01:01:44PM +0200, Sebastian Andrzej Siewior wrote:
+> On 08/17/2012 12:51 PM, Felipe Balbi wrote:
+> >>Sounds reasonable?
+> >
+> >no it doesn't. Please remove that static global. Sorry but one of the
+> >goals with udc_start/udc_stop was really to get rid of all those
+> >nonsensical static globals.
 >=20
-> Only if Arnd insists. Otherwise I'd prefer to resolve collisions (they
-> cannot be hard with this patch) than pulling the soc tree to the mtd
-> tree.
+> I wouldn't insist on it. If you look at pxa25x, " static struct
+> pxa25x_udc memory =3D {" they do the same thing. It is only a simple way
+> to onetime initialize variables.
 
-Actually the mtd patches do not compile-depend on it, sorry, I am
-dropping it from the MTD tree. Thanks!
+fair enough. Though that's wrong too and should be changed. The whole
+idea of allowing multiple UDCs on the same kernel image is mostly to aid
+development. Specially on pre-silicon phase. We could have a bunch of
+PCIe FPGA boards and instantiate a different controller on each one and
+have the same kernel work with them all.
 
 --=20
-Best Regards,
-Artem Bityutskiy
+balbi
 
---=-QI+4qYqAJ+EA4syHG23T
+--pE2VAHO2njSJCslu
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQLiarAAoJECmIfjd9wqK0KTwQAIBuZnv8JZz8t5wucrbYo4WJ
-VXhOH9XxxejjlmW4h+w5bPA15ALs1x1Z5aLm5vVbYf622DN6VrAP6mXO35OtJgtm
-KjQFBNPz6Yq+x+CkuPu/VrucEGBvLDYnAoGL5p/sT8ZpWZay51Rh7X0l2T/oGdSY
-4vz/QWsxGZtZxBb+EUL5YGLhoOcJQRD09Jy/Icccbjs99YERxCe0kkmktVg1AIcd
-feQWlVUvRSsR9ey4bPm3xZUsM5J2V/y3fDkiIaqFhKhsz9944300mfXLGv6HeeLg
-TQYPTNzpPUs4mosRrHg2KMoFN4Ubvd86jySxM/wPe9cGobF8F2lBeuvaKPsQEcUd
-rPli13dRkuXb03OKoBolp97BDp0l0rxwbSIPCuGcgsbeITGlYHUGiEDX6bRfrqT6
-kaY3zDD9e64BRBSLNC/J6KWOJpT2pogtHVlkGUgjsQo25xW6PuJpOCDZHjoaxP91
-ghEcxrB0wyqLoi+za9DnYJdGlVJzo/9ErkPaRBno60yrgNMhTTAp7HL+u5kMMlFA
-6JzCq8VsJ4infJGuzTgoEAXg5pvOlcRdeHuv9xChblhcM5lM8zCBMCLSMjXtARiK
-WafICAgfzBLDGS9DzWfWuJcWtS1MyLZtpiZF4K+eS+Uk9A4azjKpvKvkmr354kqp
-xtGTqzkx+KPtIXNjUv2S
-=XHLj
+iQIcBAEBAgAGBQJQLiTgAAoJEIaOsuA1yqRE3koQAJwPnJ2mV2vjVKLi/hNUFFoR
+zqKyCaoMNP17d5WVEspv807uuT0c75l5wSxpw7eUisQQOHyXooxi6doWfjXb7qkY
+r28JH7Q0QZk5+rcUQ/nLhM5teSJ0d83ZRl35SKkesl+fE77lh4yr0eazOHac31K/
+GuaiD7PsxWvOYYvRGKkCY6ryjO1IlVbAQXAsRMKvknRM0c9/newlE1Z3u/Gkm+3f
+DGAxJuPtJGZh06vmSkEC4u9V+D9gyWfRo8MqYDpyDRo4dA05R36OwozImYybOkVH
+dWpVOmUIDP1AZsi2PXufsPjHKm1Eq/1vcV2G465zIZZNNgjWVDC3VgqHAudBFFoA
+uVTDZb2VbO109ZIvdTSL3LRNYxA6vLauXI5HWwZaSIAlSw2JORuQ7zgpyUl8PkvX
+vOyDPW0IbFL+xEoInQFVEbILLVnWwIAJhGx/wHtuODDkeoDYii3lF2J76pzxUNRv
+cdi0m9N9kaVDHwdff/YEbk0UhJeuvWwTSj11Ebm9ibQ6Uyl88hsyv0r/SUGNyY3V
+eN20vv1ITwRsfLilTmziWa5opuSRi2HflN0E1bnq49sQctA0GAqcTokJiZJ0aZLs
+w51Qfr3Xe81H3bkLNTxtyyqd45zUCP0t5V3x67bblS721uueG5rMpuAFJs39ArbP
+MmK1ljgaHoV+izEp2YWU
+=kB1R
 -----END PGP SIGNATURE-----
 
---=-QI+4qYqAJ+EA4syHG23T--
-
+--pE2VAHO2njSJCslu--
