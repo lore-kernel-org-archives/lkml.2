@@ -1,41 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab2HQR2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:28:41 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:64237 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab2HQR2V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:28:21 -0400
-Message-ID: <502E7F31.8010806@pobox.com>
-Date: Fri, 17 Aug 2012 13:28:17 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1758609Ab2HQR3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:29:51 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:53279 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758134Ab2HQR3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 13:29:42 -0400
+Message-ID: <502E7F84.3060003@msgid.tls.msk.ru>
+Date: Fri, 17 Aug 2012 21:29:40 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-To: james.d.ralston@intel.com
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>
-Subject: Re: [PATCH 2/5] ata_piix: Add Device IDs for Intel Lynx Point-LP
- PCH
-References: <1344530060-2435-1-git-send-email-james.d.ralston@intel.com>
-In-Reply-To: <1344530060-2435-1-git-send-email-james.d.ralston@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: 3.0+ NFS issues (bisected)
+References: <1338469169.2420.7.camel@lade.trondhjem.org> <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru> <4FFC2573.8040804@msgid.tls.msk.ru> <20120712125303.GC16822@fieldses.org> <502DA4E8.9050800@msgid.tls.msk.ru> <20120817145616.GC11172@fieldses.org> <20120817160057.GE11172@fieldses.org> <502E7B86.3060702@msgid.tls.msk.ru> <20120817171854.GA14015@fieldses.org> <502E7EC3.5030006@msgid.tls.msk.ru>
+In-Reply-To: <502E7EC3.5030006@msgid.tls.msk.ru>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2012 12:34 PM, james.d.ralston@intel.com wrote:
-> From: James Ralston <james.d.ralston@intel.com>
->
-> This patch adds the IDE-mode SATA Device IDs for the Intel Lynx Point-LP PCH
->
-> Signed-off-by: James Ralston <james.d.ralston@intel.com>
-> ---
->   drivers/ata/ata_piix.c |    8 ++++++++
->   1 files changed, 8 insertions(+), 0 deletions(-)
+On 17.08.2012 21:26, Michael Tokarev wrote:
+> On 17.08.2012 21:18, J. Bruce Fields wrote:
+>> On Fri, Aug 17, 2012 at 09:12:38PM +0400, Michael Tokarev wrote:
+> []
+>>> So we're calling svc_recv in a tight loop, eating
+>>> all available CPU.  (The above is with just 2 nfsd
+>>> threads).
+>>>
+>>> Something is definitely wrong here.  And it happens mure more
+>>> often after the mentioned commit (f03d78db65085).
+>>
+>> Oh, neat.  Hm.  That commit doesn't really sound like the cause, then.
+>> Is that busy-looping reproduceable on kernels before that commit?
+> 
+> Note I bisected this issue to this commit.  I haven't seen it
+> happening before this commit, and reverting it from 3.0 or 3.2
+> kernel makes the problem to go away.
+> 
+> I guess it is looping there:
+> 
+> 
+> net/sunrpc/svc_xprt.c:svc_recv()
+> ...
+>         len = 0;
+> ...
+>         if (test_bit(XPT_LISTENER, &xprt->xpt_flags)) {
+> ...
+>         } else if (xprt->xpt_ops->xpo_has_wspace(xprt)) {  <=== here -- has no wspace due to memory...
+> ...  len = <something>
+>         }
+> 
+>         /* No data, incomplete (TCP) read, or accept() */
+>         if (len == 0 || len == -EAGAIN)
+>                 goto out;
+> ...
+> out:
+>         rqstp->rq_res.len = 0;
+>         svc_xprt_release(rqstp);
+>         return -EAGAIN;
+> }
+> 
+> I'm trying to verify this theory...
 
-applied
+Yes.  I inserted a printk there, and all these million times while
+we're waiting in this EAGAIN loop, this printk is triggering:
 
+....
+[21052.533053]  svc_recv: !has_wspace
+[21052.533070]  svc_recv: !has_wspace
+[21052.533087]  svc_recv: !has_wspace
+[21052.533105]  svc_recv: !has_wspace
+[21052.533122]  svc_recv: !has_wspace
+[21052.533139]  svc_recv: !has_wspace
+[21052.533156]  svc_recv: !has_wspace
+[21052.533174]  svc_recv: !has_wspace
+[21052.533191]  svc_recv: !has_wspace
+[21052.533208]  svc_recv: !has_wspace
+[21052.533226]  svc_recv: !has_wspace
+[21052.533244]  svc_recv: !has_wspace
+[21052.533265] calling svc_recv: 1228163 times (err=-4)
+[21052.533403] calling svc_recv: 1226616 times (err=-4)
+[21052.534520] nfsd: last server has exited, flushing export cache
 
+(I stopped nfsd since it was flooding the log).
 
+I can only guess that before that commit, we always had space,
+now we don't anymore, and are looping like crazy.
+
+Thanks,
+
+/mjt
