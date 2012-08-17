@@ -1,117 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2HQRK4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:10:56 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:34095 "EHLO e8.ny.us.ibm.com"
+	id S1757466Ab2HQRMr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:12:47 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:46357 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab2HQRKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:10:46 -0400
-Message-ID: <1345223322.2257.75.camel@falcor>
-Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys
- and sign modules
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, jmorris@namei.org,
-        rusty@rustcorp.com.au, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 17 Aug 2012 13:08:42 -0400
-In-Reply-To: <CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	 <2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
-	 <CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-	 <CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
-	 <CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
-	 <CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
-	 <1345164802.2433.21.camel@falcor.watson.ibm.com>
-	 <CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1753668Ab2HQRMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 13:12:41 -0400
+Message-ID: <502E7B86.3060702@msgid.tls.msk.ru>
+Date: Fri, 17 Aug 2012 21:12:38 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: 3.0+ NFS issues (bisected)
+References: <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru> <1338469169.2420.7.camel@lade.trondhjem.org> <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru> <4FFC2573.8040804@msgid.tls.msk.ru> <20120712125303.GC16822@fieldses.org> <502DA4E8.9050800@msgid.tls.msk.ru> <20120817145616.GC11172@fieldses.org> <20120817160057.GE11172@fieldses.org>
+In-Reply-To: <20120817160057.GE11172@fieldses.org>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081717-9360-0000-0000-000009924208
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-17 at 07:40 -0400, Josh Boyer wrote:
-> On Thu, Aug 16, 2012 at 8:53 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >> >> The reason for "signed_modules_install" is to limit existence of private key.
-> >> >> Private key is generate just before install, modules installed and
-> >> >> signed, then key is destroyed.
-> >> >> So existence of private key is limited to "time make
-> >> >> signed_modules_install" execution time.
-> >> >>
-> >> >> We had a debate about it, and strong message was that we might want to
-> >> >> do it like that...
-> >> >
-> >> > I guess I personally don't see the need to destroy they key so quickly.
-> >> > Is the concern that an intruder might grab the key and use it to sign a
-> >> > module that the developer would then later on somehow load?  Or
-> >> > similarly someone would grab a temporary key from a distro build
-> >> > machine?  That limits the attack surface, sure, but I'm not sure it's
-> >> > really reasonable.
-> >> >
-> >> > For a developer that isn't distributing kernels to others, it's just
-> >> > adding more time to the compile (which I know can be disabled, but
-> >> > still).  For a distribution, most of them are either using a private
-> >> > key already or they have a buildsystem that destroys a buildroot after
-> >> > a build completes.  The key is already going to be destroyed in that
-> >> > scenario.
-> >> >
-> >> > josh
-> >>
-> >> Well... Will not argue here. I had similar opinion as well.
-> >>
-> >> Mimi strongly wanted really to "reduce" the existence time of the key...
-> >
-> > The options are creating the key during 'make' or 'make
-> > modules_install'.  If you create the key during 'make', then you have no
-> > way of knowing whether or not it is a persistent or ephemeral key, and
-> > whether it should be deleted after signing the modules.
-> 
-> The buildsystem doesn't really _need_ to know that though.
-> 
-> > You could create a persistent key using 'make genkey', before 'make',
-> > and never delete the private key.  Then there wouldn't be any
-> > overhead. :)  If 'CONFIG_INTEGRITY_MODULE' is configured, 'make
-> > modules_install' would use the existing key.
-> >
-> > 'make signed_modules_install' would be for creating and using ephemeral
-> > keys.
-> >
-> > What do you think?
-> 
-> I don't see a need for the kernel make system to ever delete a key.
-> If one doesn't exist, it should create one if the config options are
-> set and leave it alone entirely after that.  If one exists already,
-> then it should leave it alone as it already does.
+On 17.08.2012 20:00, J. Bruce Fields wrote:
+[]> Uh, if I grepped my way through this right: it looks like it's the
+> "memory" column of the "TCP" row of /proc/net/protocols; might be
+> interesting to see how that's changing over time.
 
-Ok.  Other than generating a key the first time, the normal development
-build process now uses the same key, never requiring the developer to do
-anything additional.  The developer controls the frequency the keys are
-created/deleted.  I wonder how often that will be ...
+This file does not look interesting.  Memory usage does not jump,
+there's no high increase either.
 
-> If you really want to enforce ephemeral keys in the make system, then
-> doing it via 'make clean' or 'make distclean' would make more sense to
-> me.  But I personally think key management is something the developers
-> or distros should be handling on their own.  Creating a key for them is
-> a convenience so it's worthwhile, but removing it should be done by
-> them.
+But there's something else which is interesting here.
 
-Sorry, I disagree.  Without the signed_modules_install target, the
-developer would need to do each step manually - create new key, sign
-modules, remove private key, and embed the new public key in the
-bzImage.
+I noticed that in perf top, the top consumer of CPU is svc_recv()
+(I mentioned this in the start of this thread).  So I looked how
+this routine is called from nfsd.  And here we go.
 
-I still think the signed_modules_install script, renamed to something
-like ephemeral_signed_modules_install, is worthwhile and becomes a
-convience tool for the developer, wanting to use ephemeral keys.  The
-private key, in Dmitry's updated patches soon to be posted, will be
-password protected with a random number, that is only accessible to the
-current shell.
+fs/nfsd/nfssvc.c:
 
-thanks,
+/*
+ * This is the NFS server kernel thread
+ */
+static int
+nfsd(void *vrqstp)
+{
+...
+        /*
+         * The main request loop
+         */
+        for (;;) {
+                /*
+                 * Find a socket with data available and call its
+                 * recvfrom routine.
+                 */
+int i = 0;
+                while ((err = svc_recv(rqstp, 60*60*HZ)) == -EAGAIN)
+                        ++i;
+printk(KERN_ERR "calling svc_recv: %d times (err=%d)\n", i, err);
+                if (err == -EINTR)
+                        break;
+...
 
-Mimi
+(I added the "i" counter and the printk).  And here's the output:
 
+[19626.401136] calling svc_recv: 0 times (err=212)
+[19626.405059] calling svc_recv: 1478 times (err=212)
+[19626.409512] calling svc_recv: 1106 times (err=212)
+[19626.543020] calling svc_recv: 0 times (err=212)
+[19626.543059] calling svc_recv: 0 times (err=212)
+[19626.548074] calling svc_recv: 0 times (err=212)
+[19626.549515] calling svc_recv: 0 times (err=212)
+[19626.552320] calling svc_recv: 0 times (err=212)
+[19626.553503] calling svc_recv: 0 times (err=212)
+[19626.556007] calling svc_recv: 0 times (err=212)
+[19626.557152] calling svc_recv: 0 times (err=212)
+[19626.560109] calling svc_recv: 0 times (err=212)
+[19626.560943] calling svc_recv: 0 times (err=212)
+[19626.565315] calling svc_recv: 1067 times (err=212)
+[19626.569735] calling svc_recv: 2571 times (err=212)
+[19626.574150] calling svc_recv: 3842 times (err=212)
+[19626.581914] calling svc_recv: 2891 times (err=212)
+[19626.583072] calling svc_recv: 1247 times (err=212)
+[19626.616885] calling svc_recv: 0 times (err=212)
+[19626.616952] calling svc_recv: 0 times (err=212)
+[19626.622889] calling svc_recv: 0 times (err=212)
+[19626.624518] calling svc_recv: 0 times (err=212)
+[19626.627118] calling svc_recv: 0 times (err=212)
+[19626.629735] calling svc_recv: 0 times (err=212)
+[19626.631777] calling svc_recv: 0 times (err=212)
+[19626.633986] calling svc_recv: 0 times (err=212)
+[19626.636746] calling svc_recv: 0 times (err=212)
+[19626.637692] calling svc_recv: 0 times (err=212)
+[19626.640769] calling svc_recv: 0 times (err=212)
+[19626.657852] calling svc_recv: 0 times (err=212)
+[19626.661602] calling svc_recv: 0 times (err=212)
+[19626.670160] calling svc_recv: 0 times (err=212)
+[19626.671917] calling svc_recv: 0 times (err=212)
+[19626.684643] calling svc_recv: 0 times (err=212)
+[19626.684680] calling svc_recv: 0 times (err=212)
+[19626.812820] calling svc_recv: 0 times (err=212)
+[19626.814697] calling svc_recv: 0 times (err=212)
+[19626.817195] calling svc_recv: 0 times (err=212)
+[19626.820324] calling svc_recv: 0 times (err=212)
+[19626.822855] calling svc_recv: 0 times (err=212)
+[19626.824823] calling svc_recv: 0 times (err=212)
+[19626.828016] calling svc_recv: 0 times (err=212)
+[19626.829021] calling svc_recv: 0 times (err=212)
+[19626.831970] calling svc_recv: 0 times (err=212)
+
+> the stall begin:
+[19686.823135] calling svc_recv: 3670352 times (err=212)
+[19686.823524] calling svc_recv: 3659205 times (err=212)
+
+> transfer continues
+[19686.854734] calling svc_recv: 0 times (err=212)
+[19686.860023] calling svc_recv: 0 times (err=212)
+[19686.887124] calling svc_recv: 0 times (err=212)
+[19686.895532] calling svc_recv: 0 times (err=212)
+[19686.903667] calling svc_recv: 0 times (err=212)
+[19686.922780] calling svc_recv: 0 times (err=212)
+
+So we're calling svc_recv in a tight loop, eating
+all available CPU.  (The above is with just 2 nfsd
+threads).
+
+Something is definitely wrong here.  And it happens mure more
+often after the mentioned commit (f03d78db65085).
+
+Thanks,
+
+/mjt
