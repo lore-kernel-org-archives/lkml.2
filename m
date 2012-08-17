@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab2HQKZE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 06:25:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50906 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab2HQKZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 06:25:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
-   d="scan'208";a="203425838"
-Date: Fri, 17 Aug 2012 18:24:56 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>
-Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
-Message-ID: <20120817102456.GA31230@localhost>
-References: <20120805025938.GA8954@localhost>
- <20120805165826.GB13913@kroah.com>
- <20120817020046.GA24406@localhost>
- <20120817034825.GC7770@kroah.com>
- <20120817054441.GA28434@localhost>
- <87wr0xnbnm.fsf@nemi.mork.no>
- <87sjblnaye.fsf@nemi.mork.no>
- <20120817092708.GA30371@localhost>
+	id S1757590Ab2HQKZu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 06:25:50 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:42696 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751299Ab2HQKZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 06:25:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120817092708.GA30371@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120817101500.GG24389@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-6-git-send-email-catalin.marinas@arm.com>
+ <502E1793.9080605@ti.com> <20120817101500.GG24389@arm.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Fri, 17 Aug 2012 15:55:25 +0530
+Message-ID: <CAMQu2gxpmCZqAqZ1KCXoxg3vXQLqdFRv+nQ2vt0FeDzpGvNc7A@mail.gmail.com>
+Subject: Re: [PATCH v2 05/31] arm64: MMU initialisation
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 05:27:08PM +0800, Fengguang Wu wrote:
-> Hi Bjørn,
-> 
-> > -static const struct usb_device_id id_table[] __devinitconst = {
-> > +static const struct usb_device_id id_table[] = {
-> 
-> Good catch! It magically fixed the oops. So that id_table was
-> freed sometime with __devinitconst?
-> 
-> There are some more "usb_device_id .* __devinitconst" users in the system,
-> Shall they be fixed as well?
+On Fri, Aug 17, 2012 at 3:45 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Fri, Aug 17, 2012 at 11:06:11AM +0100, Santosh Shilimkar wrote:
+>> On Tuesday 14 August 2012 11:22 PM, Catalin Marinas wrote:
+>> > This patch contains the initialisation of the memory blocks, MMU
+>> > attributes and the memory map. Only five memory types are defined:
+>> > Device nGnRnE (equivalent to Strongly Ordered), Device nGnRE (classic
+>> > Device memory), Device GRE, Normal Non-cacheable and Normal Cacheable.
+>> > Cache policies are supported via the memory attributes register
+>> > (MAIR_EL1) and only affect the Normal Cacheable mappings.
+>> >
+>> > This patch also adds the SPARSEMEM_VMEMMAP initialisation.
+>> >
+>> > Signed-off-by: Will Deacon<will.deacon@arm.com>
+>> > Signed-off-by: Catalin Marinas<catalin.marinas@arm.com>
+>> > ---
+>>
+>> Whats the difference between Device nGnRE and Device GRE ?
+>> Sorry, I haven't gone through the specs yet and hence the
+>> question.
+>
+> G - gathering (multiple reads/writes into one)
+> R - reordering (reads/writes)
+> E - early acknowledgement (the write may have not hit the device before
+>     the instruction returns).
+>
+> The 'n' in front just negates the meaning.
+>
+> So the Device memory as we know it on ARMv7 is equivalent to nGnRE. The
+> Strongly Ordered is nGnRnE. GRE is pretty much like Normal Non-cacheable
+> memory but with Device mapping, so there are restrictions on unaligned
+> accesses.
+>
+Thanks for explaining it so clearly.
 
-This should be a complete list:
+>> > +#ifdef CONFIG_ZONE_DMA32
+>> > +   /* 4GB maximum for 32-bit only capable devices */
+>> > +   max_dma32 = min(max, MAX_DMA32_PFN);
+>> > +   zone_size[ZONE_DMA32] = max_dma32 - min;
+>> > +#endif
+>>
+>> Do you see need of supporting DMA32 on arm64 SOCs ?
+>
+> I've got some questions from partners but those devices may just be
+> hidden behind an iommu. For now I left it in.
+>
+ok.
 
-definitions:
-        static const struct usb_device_id smsusb_id_table[] __devinitconst = {
-        static const __devinitdata struct usb_device_id device_table[] = {
-        static const struct usb_device_id device_table[] __devinitconst = {
-        static struct usb_device_id p54u_table[] __devinitdata = {
-        static struct usb_device_id rtl8187_table[] __devinitdata = {
-        static struct usb_device_id vt6656_table[] __devinitdata = {
-        static const struct usb_device_id wb35_table[] __devinitconst = {
-        static const struct usb_device_id id_table[] __devinitconst = {
+>> > +static struct cachepolicy cache_policies[] __initdata = {
+>> > +   {
+>> > +           .policy         = "uncached",
+>> > +           .mair           = 0x44,                 /* inner, outer non-cacheable */
+>> > +           .tcr            = TCR_IRGN_NC | TCR_ORGN_NC,
+>> > +   }, {
+>> > +           .policy         = "writethrough",
+>> > +           .mair           = 0xaa,                 /* inner, outer write-through, read-allocate */
+>> > +           .tcr            = TCR_IRGN_WT | TCR_ORGN_WT,
+>>
+>> Is WT supported on arm64?
+>> On the recent ARMv7 processors, I think WT wasn't supported.
+>
+> All of WB, WA, WT are just architectural hints. A CPU implementation may
+> or may not ignore them but with Linux we try to follow the architecture
+> rather than specific implementations.
+>
+Agree.
 
-files:
-        drivers/media/video/gspca/jl2005bcd.c
-        drivers/net/wireless/p54/p54usb.c
-        drivers/net/wireless/rtl818x/rtl8187/dev.c
-        drivers/usb/misc/emi62.c
-        drivers/media/dvb/siano/smsusb.c
-        drivers/media/video/gspca/spca506.c
-        drivers/staging/winbond/wbusb.c
-        drivers/staging/vt6656/main_usb.c
-
-Thanks,
-Fengguang
+Regards
+Santosh
