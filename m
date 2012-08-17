@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab2HQTmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 15:42:44 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:36488 "EHLO
+	id S1755938Ab2HQTnZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 15:43:25 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:36846 "EHLO
 	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab2HQTmf convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752184Ab2HQTnQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 15:42:35 -0400
+	Fri, 17 Aug 2012 15:43:16 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
@@ -16,13 +16,13 @@ To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
 CC: "dle-develop@lists.sourceforge.net" 
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>
-Subject: [RFC][PATCH 1/2] efivars: Disable external interrupt while holding
- efivars->lock 
-Thread-Topic: [RFC][PATCH 1/2] efivars: Disable external interrupt while
- holding efivars->lock 
-Thread-Index: Ac18sFlJoz2zbuxGTki/L0FDmmhr2w==
-Date: Fri, 17 Aug 2012 19:42:21 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41380007C@USINDEM103.corp.hds.com>
+Subject: [RFC][PATCH 2/2] efi_pstore: Introducing workqueue updating sysfs
+ entries
+Thread-Topic: [RFC][PATCH 2/2] efi_pstore: Introducing workqueue updating
+ sysfs entries
+Thread-Index: Ac18sHkwmdnRbMTcT9KbT5zgh21KoA==
+Date: Fri, 17 Aug 2012 19:43:04 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413800090@USINDEM103.corp.hds.com>
 Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -34,7 +34,7 @@ MIME-Version: 1.0
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
  definitions=2012-08-17_03:2012-08-17,2012-08-17,1970-01-01 signatures=0
 X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
  classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
  definitions=main-1208170207
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,269 +42,217 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 [Problem]
- Currently, efivars doesn't disable interrupt while taking efivars->lock.
- So, there is a risk to be deadlocking in a write callback of efi_pstore
- if kernel panics in interrupt context while taking efivars->lock.
+ efi_pstore creates sysfs entries ,which enable users to access to NVRAM,
+ in a write callback. If a kernel panic happens in interrupt contexts, pstore may
+ fail because it could sleep due to dynamic memory allocations during creating sysfs entries.
 
 [Patch Description]
- This patch disables an external interruption while holding efivars->lock by
- replacing spin_lock/spin_unlock with spin_lock_irqsave/spin_unlock_irqrestore.
+ This patch removes sysfs operations from write callback by introducing a workqueue
+ updating sysfs entries which is kicked after a write callback of efi_pstore is called.
+ efi_pstore will be robust against a kernel panic in an interrupt context with it.
+ The workqueue works as follows.
 
- As for spin_locks in open/close callbacks of efi_pstore, they moved to a read callback
- to pass a flags argument to spin_lock_irqsave/spin_unlock_irqrestore.
+ - A timer is registered during an initialization of efivars module.
+ - A flag, update_sysfs_entries, is checked periodically with the timer.
+ - The flag is set in a write callback, efi_pstore_write().
+ - Operation updating sysfs entries is kicked if the flag is set. 
+ 
+ Any operations ,like registering a timer, should not be added in a write callback because it may run 
+ in panic case and fail due to operations related to workqueue.
 
- Even if spin_locks in open/close callbacks are erased, a whole process of open/read/close 
- is still serialized by psinfo->read_mutex which is taken in a pstore layer.
-
- Also, initialization of efivars->walk_entry moved to a read callback to protect list_first_entry() 
- with efivars->lock. And some comments about efivars->walk_entry are added to avoid using it 
- without taking psinfo->read_mutex.
+ To make efi_pstore work in panic case, a write callback should just log to NVRAM.
 
 Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 ---
- drivers/firmware/efivars.c |   66 ++++++++++++++++++++++++++-----------------
- include/linux/efi.h        |    3 ++
- 2 files changed, 43 insertions(+), 26 deletions(-)
+ drivers/firmware/efivars.c |  127 ++++++++++++++++++++++++++++++++++++++++----
+ include/linux/efi.h        |    3 +-
+ 2 files changed, 118 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 47408e8..b6a813e 100644
+index b6a813e..9f27ef6 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -393,10 +393,11 @@ static efi_status_t
- get_var_data(struct efivars *efivars, struct efi_variable *var)
- {
- 	efi_status_t status;
-+	unsigned long flags;
+@@ -146,6 +146,17 @@ efivar_create_sysfs_entry(struct efivars *efivars,
+ 			  efi_char16_t *variable_name,
+ 			  efi_guid_t *vendor_guid);
  
--	spin_lock(&efivars->lock);
-+	spin_lock_irqsave(&efivars->lock, flags);
- 	status = get_var_data_locked(efivars, var);
--	spin_unlock(&efivars->lock);
-+	spin_unlock_irqrestore(&efivars->lock, flags);
- 
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
-@@ -488,6 +489,7 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
- 	struct efi_variable *new_var, *var = &entry->var;
- 	struct efivars *efivars = entry->efivars;
- 	efi_status_t status = EFI_NOT_FOUND;
-+	unsigned long flags;
- 
- 	if (count != sizeof(struct efi_variable))
- 		return -EINVAL;
-@@ -514,14 +516,14 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
- 		return -EINVAL;
++/*
++ * Prototype for workqueue functions updating sysfs entry
++ */
++
++static void efivar_update_sysfs_entry(struct work_struct *);
++#define EFIVAR_INTERVAL (60 * HZ)
++static void efivar_timefunc(unsigned long);
++static DEFINE_TIMER(efivar_timer, efivar_timefunc, 0, 0);
++static DECLARE_WORK(efivar_work, efivar_update_sysfs_entry);
++static int update_sysfs_entries;
++
+ /* Return the number of unicode characters in data */
+ static unsigned long
+ utf16_strnlen(efi_char16_t *s, size_t maxlength)
+@@ -739,9 +750,6 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 					   0, NULL);
  	}
  
--	spin_lock(&efivars->lock);
-+	spin_lock_irqsave(&efivars->lock, flags);
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
- 					    new_var->Attributes,
- 					    new_var->DataSize,
- 					    new_var->Data);
- 
--	spin_unlock(&efivars->lock);
-+	spin_unlock_irqrestore(&efivars->lock, flags);
- 
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
-@@ -630,19 +632,11 @@ efivar_unregister(struct efivar_entry *var)
- 
- static int efi_pstore_open(struct pstore_info *psi)
- {
--	struct efivars *efivars = psi->data;
+-	if (found)
+-		list_del(&found->list);
 -
--	spin_lock(&efivars->lock);
--	efivars->walk_entry = list_first_entry(&efivars->list,
--					       struct efivar_entry, list);
- 	return 0;
- }
- 
- static int efi_pstore_close(struct pstore_info *psi)
- {
--	struct efivars *efivars = psi->data;
--
--	spin_unlock(&efivars->lock);
- 	return 0;
- }
- 
-@@ -656,6 +650,17 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 	int i;
- 	unsigned int part, size;
- 	unsigned long time;
-+	static unsigned long flags;
-+
-+	/*
-+	 * efivars->walk_entry is protected by pstore_info.read_mutex
-+	 */
-+	if (!efivars->walk_entry) {
-+		spin_lock_irqsave(&efivars->lock, flags);
-+		efivars->walk_entry = list_first_entry(&efivars->list,
-+						       struct efivar_entry,
-+						       list);
-+	}
- 
- 	while (&efivars->walk_entry->list != &efivars->list) {
- 		if (!efi_guidcmp(efivars->walk_entry->var.VendorGuid,
-@@ -682,6 +687,10 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 		efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
- 						 struct efivar_entry, list);
- 	}
-+
-+	efivars->walk_entry = NULL;
-+	spin_unlock_irqrestore(&efivars->lock, flags);
-+
- 	return 0;
- }
- 
-@@ -696,11 +705,12 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	struct efivars *efivars = psi->data;
- 	struct efivar_entry *entry, *found = NULL;
- 	int i, ret = 0;
-+	unsigned long flags;
- 
- 	sprintf(stub_name, "dump-type%u-%u-", type, part);
- 	sprintf(name, "%s%lu", stub_name, get_seconds());
- 
--	spin_lock(&efivars->lock);
-+	spin_lock_irqsave(&efivars->lock, flags);
- 
  	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = stub_name[i];
-@@ -738,7 +748,7 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
- 				   size, psi->buf);
+ 		efi_name[i] = name[i];
  
--	spin_unlock(&efivars->lock);
-+	spin_unlock_irqrestore(&efivars->lock, flags);
+@@ -750,14 +758,7 @@ static int efi_pstore_write(enum pstore_type_id type,
  
- 	if (found)
- 		efivar_unregister(found);
-@@ -812,6 +822,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 	unsigned long strsize1, strsize2;
- 	efi_status_t status = EFI_NOT_FOUND;
- 	int found = 0;
+ 	spin_unlock_irqrestore(&efivars->lock, flags);
+ 
+-	if (found)
+-		efivar_unregister(found);
+-
+-	if (size)
+-		ret = efivar_create_sysfs_entry(efivars,
+-					  utf16_strsize(efi_name,
+-							DUMP_NAME_LEN * 2),
+-					  efi_name, &vendor);
++	update_sysfs_entries = 1;
+ 
+ 	*id = part;
+ 	return ret;
+@@ -1201,6 +1202,8 @@ int register_efivars(struct efivars *efivars,
+ 		pstore_register(&efivars->efi_pstore_info);
+ 	}
+ 
++	add_timer(&efivar_timer);
++
+ out:
+ 	kfree(variable_name);
+ 
+@@ -1211,6 +1214,107 @@ EXPORT_SYMBOL_GPL(register_efivars);
+ static struct efivars __efivars;
+ static struct efivar_operations ops;
+ 
++static void delete_sysfs_entry(void)
++{
++	struct efivars *efivars = &__efivars;
++	struct efivar_entry *entry, *n;
++	efi_status_t status;
 +	unsigned long flags;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
-@@ -822,7 +833,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 		return -EINVAL;
- 	}
- 
--	spin_lock(&efivars->lock);
-+	spin_lock_irqsave(&efivars->lock, flags);
- 
- 	/*
- 	 * Does this variable already exist?
-@@ -840,7 +851,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 		}
- 	}
- 	if (found) {
--		spin_unlock(&efivars->lock);
-+		spin_unlock_irqrestore(&efivars->lock, flags);
- 		return -EINVAL;
- 	}
- 
-@@ -854,10 +865,10 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
- 			status);
--		spin_unlock(&efivars->lock);
-+		spin_unlock_irqrestore(&efivars->lock, flags);
- 		return -EIO;
- 	}
--	spin_unlock(&efivars->lock);
-+	spin_unlock_irqrestore(&efivars->lock, flags);
- 
- 	/* Create the entry in sysfs.  Locking is not required here */
- 	status = efivar_create_sysfs_entry(efivars,
-@@ -881,11 +892,12 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 	unsigned long strsize1, strsize2;
- 	efi_status_t status = EFI_NOT_FOUND;
- 	int found = 0;
-+	unsigned long flags;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
--	spin_lock(&efivars->lock);
-+	spin_lock_irqsave(&efivars->lock, flags);
- 
- 	/*
- 	 * Does this variable already exist?
-@@ -903,7 +915,7 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 		}
- 	}
- 	if (!found) {
--		spin_unlock(&efivars->lock);
-+		spin_unlock_irqrestore(&efivars->lock, flags);
- 		return -EINVAL;
- 	}
- 	/* force the Attributes/DataSize to 0 to ensure deletion */
-@@ -919,12 +931,12 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 	if (status != EFI_SUCCESS) {
- 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
- 			status);
--		spin_unlock(&efivars->lock);
-+		spin_unlock_irqrestore(&efivars->lock, flags);
- 		return -EIO;
- 	}
- 	list_del(&search_efivar->list);
- 	/* We need to release this lock before unregistering. */
--	spin_unlock(&efivars->lock);
-+	spin_unlock_irqrestore(&efivars->lock, flags);
- 	efivar_unregister(search_efivar);
- 
- 	/* It's dead Jim.... */
-@@ -993,6 +1005,7 @@ efivar_create_sysfs_entry(struct efivars *efivars,
- 	int i, short_name_size = variable_name_size / sizeof(efi_char16_t) + 38;
- 	char *short_name;
- 	struct efivar_entry *new_efivar;
-+	unsigned long flags;
- 
- 	short_name = kzalloc(short_name_size + 1, GFP_KERNEL);
- 	new_efivar = kzalloc(sizeof(struct efivar_entry), GFP_KERNEL);
-@@ -1032,9 +1045,9 @@ efivar_create_sysfs_entry(struct efivars *efivars,
- 	kfree(short_name);
- 	short_name = NULL;
- 
--	spin_lock(&efivars->lock);
-+	spin_lock_irqsave(&efivars->lock, flags);
- 	list_add(&new_efivar->list, &efivars->list);
--	spin_unlock(&efivars->lock);
-+	spin_unlock_irqrestore(&efivars->lock, flags);
- 
- 	return 0;
- }
-@@ -1101,11 +1114,12 @@ out_free:
- void unregister_efivars(struct efivars *efivars)
- {
- 	struct efivar_entry *entry, *n;
-+	unsigned long flags;
- 
- 	list_for_each_entry_safe(entry, n, &efivars->list, list) {
--		spin_lock(&efivars->lock);
++
++	list_for_each_entry_safe(entry, n, &efivars->list, list) {
 +		spin_lock_irqsave(&efivars->lock, flags);
- 		list_del(&entry->list);
--		spin_unlock(&efivars->lock);
++		status = get_var_data_locked(efivars, &entry->var);
++		if (status != EFI_SUCCESS) {
++			list_del(&entry->list);
++			spin_unlock_irqrestore(&efivars->lock, flags);
++			efivar_unregister(entry);
++		} else
++			spin_unlock_irqrestore(&efivars->lock, flags);
++	}
++}
++
++static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
++{
++	struct efivar_entry *entry, *n;
++	struct efivars *efivars = &__efivars;
++	unsigned long strsize1, strsize2;
++	bool found = false;
++
++	strsize1 = utf16_strsize(variable_name, 1024);
++	list_for_each_entry_safe(entry, n, &efivars->list, list) {
++		strsize2 = utf16_strsize(entry->var.VariableName, 1024);
++		if (strsize1 == strsize2 &&
++			!memcmp(variable_name, &(entry->var.VariableName),
++				strsize2) &&
++			!efi_guidcmp(entry->var.VendorGuid,
++				*vendor)) {
++			found = true;
++			break;
++		}
++	}
++	return found;
++}
++
++static void efivar_update_sysfs_entry(struct work_struct *work)
++{
++	struct efivars *efivars = &__efivars;
++	efi_guid_t vendor;
++	efi_char16_t *variable_name;
++	unsigned long variable_name_size = 1024, flags;
++	efi_status_t status = EFI_NOT_FOUND;
++	bool found;
++
++	/* Delete unavailable sysfs entries */
++	delete_sysfs_entry();
++
++	/* Add new sysfs entries */
++	while (1) {
++		variable_name = kzalloc(variable_name_size, GFP_KERNEL);
++		if (!variable_name) {
++			pr_err("efivars: Memory allocation failed.\n");
++			return;
++		}
++
++		spin_lock_irqsave(&efivars->lock, flags);
++		found = false;
++		while (1) {
++			variable_name_size = 1024;
++			status = efivars->ops->get_next_variable(
++							&variable_name_size,
++							variable_name,
++							&vendor);
++			if (status != EFI_SUCCESS) {
++				break;
++			} else {
++				if (!variable_is_present(variable_name,
++				    &vendor)) {
++					found = true;
++					break;
++				}
++			}
++		}
 +		spin_unlock_irqrestore(&efivars->lock, flags);
- 		efivar_unregister(entry);
++
++		if (!found) {
++			kfree(variable_name);
++			break;
++		} else
++			efivar_create_sysfs_entry(efivars,
++						  variable_name_size,
++						  variable_name, &vendor);
++	}
++}
++
++static void efivar_timefunc(unsigned long dummy)
++{
++	if (update_sysfs_entries) {
++		update_sysfs_entries = 0;
++		schedule_work(&efivar_work);
++	}
++
++	mod_timer(&efivar_timer, jiffies + EFIVAR_INTERVAL);
++}
++
+ /*
+  * For now we register the efi subsystem with the firmware subsystem
+  * and the vars subsystem with the efi subsystem.  In the future, it
+@@ -1266,6 +1370,7 @@ static void __exit
+ efivars_exit(void)
+ {
+ 	if (efi_enabled) {
++		del_timer_sync(&efivar_timer);
+ 		unregister_efivars(&__efivars);
+ 		kobject_put(efi_kobj);
  	}
- 	if (efivars->new_var)
 diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 103adc6..f1f5703 100644
+index f1f5703..3e0c37a 100644
 --- a/include/linux/efi.h
 +++ b/include/linux/efi.h
-@@ -649,6 +649,9 @@ struct efivars {
- 	struct kset *kset;
- 	struct bin_attribute *new_var, *del_var;
- 	const struct efivar_operations *ops;
-+	/*
-+	 * walk_entry is protected by pstore_info.read_mutex
-+	 */
- 	struct efivar_entry *walk_entry;
- 	struct pstore_info efi_pstore_info;
- };
+@@ -641,7 +641,8 @@ struct efivars {
+ 	 * 1) ->list - adds, removals, reads, writes
+ 	 * 2) ops.[gs]et_variable() calls.
+ 	 * It must not be held when creating sysfs entries or calling kmalloc.
+-	 * ops.get_next_variable() is only called from register_efivars(),
++	 * ops.get_next_variable() is only called from register_efivars()
++	 * or efivar_update_sysfs_entry(),
+ 	 * which is protected by the BKL, so that path is safe.
+ 	 */
+ 	spinlock_t lock;
 -- 1.7.1
