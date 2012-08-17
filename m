@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab2HQROU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:14:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63837 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab2HQROI (ORCPT
+	id S1757905Ab2HQRPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:15:01 -0400
+Received: from mga06.intel.com ([134.134.136.21]:20036 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753668Ab2HQROx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:14:08 -0400
-Date: Fri, 17 Aug 2012 10:13:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Subject: [GIT PATCH] Driver core fixes for 3.6-rc3
-Message-ID: <20120817171354.GA14046@kroah.com>
+	Fri, 17 Aug 2012 13:14:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1344918891-6283-8-git-send-email-keithp@keithp.com>
+References: <1344918891-6283-1-git-send-email-keithp@keithp.com>
+	<1344918891-6283-8-git-send-email-keithp@keithp.com>
+Date: Fri, 17 Aug 2012 18:14:50 +0100
+Message-ID: <CAPX-8+-kfzGCZSyGFuWJESEqNoTyzytbxX75=3=-hLP2uAwApw@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH 7/7] drm/i915: Merge FDI RX reg writes during training
+From: "Lespiau, Damien" <damien.lespiau@intel.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
+On Tue, Aug 14, 2012 at 5:34 AM, Keith Packard <keithp@keithp.com> wrote:
+> @@ -2324,6 +2324,8 @@ static void intel_fdi_normal_train(struct drm_crtc *crtc)
+>                 temp |= FDI_LINK_TRAIN_NONE | FDI_TX_ENHANCE_FRAME_ENABLE;
+>         }
+>         I915_WRITE(reg, temp);
+> +       POSTING_READ(reg);
+> +       udelay(100);
 
-  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
+The docs don't mention a delay between writing the TX and RX training
+patterns, the POSTING_READ() seems like a good idea.
 
-are available in the git repository at:
+>         reg = FDI_RX_CTL(pipe);
+>         temp = I915_READ(reg);
+> @@ -2334,16 +2336,15 @@ static void intel_fdi_normal_train(struct drm_crtc *crtc)
+>                 temp &= ~FDI_LINK_TRAIN_NONE;
+>                 temp |= FDI_LINK_TRAIN_NONE;
+>         }
+> +       /* IVB wants error correction enabled */
+> +       if (IS_IVYBRIDGE(dev))
+> +               temp |= FDI_FS_ERRC_ENABLE | FDI_FE_ERRC_ENABLE;
+> +
+>         I915_WRITE(reg, temp | FDI_RX_ENHANCE_FRAME_ENABLE);
+>
+>         /* wait one idle pattern time */
+>         POSTING_READ(reg);
+>         udelay(1000);
+> -
+> -       /* IVB wants error correction enabled */
+> -       if (IS_IVYBRIDGE(dev))
+> -               I915_WRITE(reg, I915_READ(reg) | FDI_FS_ERRC_ENABLE |
+> -                          FDI_FE_ERRC_ENABLE);
+>  }
+>
+>  static void cpt_phase_pointer_enable(struct drm_device *dev, int pipe)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.6-rc3
+Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
 
-for you to fetch changes up to 7b7e995d69199b555181ac057c47b017c510a129:
-
-  extcon: extcon_gpio: Replace gpio_request_one by devm_gpio_request_one (2012-08-16 10:29:08 -0700)
-
-----------------------------------------------------------------
-Driver core fixes for 3.6-rc3
-
-Here are two tiny patches, one fixing a dynamic debug problem that the printk
-rework turned up, and the other one fixing an extcon problem that people
-reported.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Axel Lin (1):
-      extcon: extcon_gpio: Replace gpio_request_one by devm_gpio_request_one
-
-Jim Cromie (1):
-      drivers-core: make structured logging play nice with dynamic-debug
-
- drivers/base/core.c          | 9 +++++++--
- drivers/extcon/extcon_gpio.c | 3 ++-
- 2 files changed, 9 insertions(+), 3 deletions(-)
+-- 
+Damien
