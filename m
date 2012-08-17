@@ -1,138 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab2HQRMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:12:47 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:46357 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753668Ab2HQRMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:12:41 -0400
-Message-ID: <502E7B86.3060702@msgid.tls.msk.ru>
-Date: Fri, 17 Aug 2012 21:12:38 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1757780Ab2HQRNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:13:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42666 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2HQRM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 13:12:56 -0400
+Date: Fri, 17 Aug 2012 10:12:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.6-rc3
+Message-ID: <20120817171245.GA13930@kroah.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: 3.0+ NFS issues (bisected)
-References: <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru> <1338469169.2420.7.camel@lade.trondhjem.org> <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru> <4FFC2573.8040804@msgid.tls.msk.ru> <20120712125303.GC16822@fieldses.org> <502DA4E8.9050800@msgid.tls.msk.ru> <20120817145616.GC11172@fieldses.org> <20120817160057.GE11172@fieldses.org>
-In-Reply-To: <20120817160057.GE11172@fieldses.org>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.08.2012 20:00, J. Bruce Fields wrote:
-[]> Uh, if I grepped my way through this right: it looks like it's the
-> "memory" column of the "TCP" row of /proc/net/protocols; might be
-> interesting to see how that's changing over time.
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-This file does not look interesting.  Memory usage does not jump,
-there's no high increase either.
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
-But there's something else which is interesting here.
+are available in the git repository at:
 
-I noticed that in perf top, the top consumer of CPU is svc_recv()
-(I mentioned this in the start of this thread).  So I looked how
-this routine is called from nfsd.  And here we go.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.6-rc3
 
-fs/nfsd/nfssvc.c:
+for you to fetch changes up to 731879f8e3d4c61220462160311fa650a8b96abf:
 
-/*
- * This is the NFS server kernel thread
- */
-static int
-nfsd(void *vrqstp)
-{
-...
-        /*
-         * The main request loop
-         */
-        for (;;) {
-                /*
-                 * Find a socket with data available and call its
-                 * recvfrom routine.
-                 */
-int i = 0;
-                while ((err = svc_recv(rqstp, 60*60*HZ)) == -EAGAIN)
-                        ++i;
-printk(KERN_ERR "calling svc_recv: %d times (err=%d)\n", i, err);
-                if (err == -EINTR)
-                        break;
-...
+  USB: qcserial: fix port handling on Gobi 1K and 2K+ (2012-08-16 09:48:03 -0700)
 
-(I added the "i" counter and the printk).  And here's the output:
+----------------------------------------------------------------
+USB patches for 3.6-rc3
 
-[19626.401136] calling svc_recv: 0 times (err=212)
-[19626.405059] calling svc_recv: 1478 times (err=212)
-[19626.409512] calling svc_recv: 1106 times (err=212)
-[19626.543020] calling svc_recv: 0 times (err=212)
-[19626.543059] calling svc_recv: 0 times (err=212)
-[19626.548074] calling svc_recv: 0 times (err=212)
-[19626.549515] calling svc_recv: 0 times (err=212)
-[19626.552320] calling svc_recv: 0 times (err=212)
-[19626.553503] calling svc_recv: 0 times (err=212)
-[19626.556007] calling svc_recv: 0 times (err=212)
-[19626.557152] calling svc_recv: 0 times (err=212)
-[19626.560109] calling svc_recv: 0 times (err=212)
-[19626.560943] calling svc_recv: 0 times (err=212)
-[19626.565315] calling svc_recv: 1067 times (err=212)
-[19626.569735] calling svc_recv: 2571 times (err=212)
-[19626.574150] calling svc_recv: 3842 times (err=212)
-[19626.581914] calling svc_recv: 2891 times (err=212)
-[19626.583072] calling svc_recv: 1247 times (err=212)
-[19626.616885] calling svc_recv: 0 times (err=212)
-[19626.616952] calling svc_recv: 0 times (err=212)
-[19626.622889] calling svc_recv: 0 times (err=212)
-[19626.624518] calling svc_recv: 0 times (err=212)
-[19626.627118] calling svc_recv: 0 times (err=212)
-[19626.629735] calling svc_recv: 0 times (err=212)
-[19626.631777] calling svc_recv: 0 times (err=212)
-[19626.633986] calling svc_recv: 0 times (err=212)
-[19626.636746] calling svc_recv: 0 times (err=212)
-[19626.637692] calling svc_recv: 0 times (err=212)
-[19626.640769] calling svc_recv: 0 times (err=212)
-[19626.657852] calling svc_recv: 0 times (err=212)
-[19626.661602] calling svc_recv: 0 times (err=212)
-[19626.670160] calling svc_recv: 0 times (err=212)
-[19626.671917] calling svc_recv: 0 times (err=212)
-[19626.684643] calling svc_recv: 0 times (err=212)
-[19626.684680] calling svc_recv: 0 times (err=212)
-[19626.812820] calling svc_recv: 0 times (err=212)
-[19626.814697] calling svc_recv: 0 times (err=212)
-[19626.817195] calling svc_recv: 0 times (err=212)
-[19626.820324] calling svc_recv: 0 times (err=212)
-[19626.822855] calling svc_recv: 0 times (err=212)
-[19626.824823] calling svc_recv: 0 times (err=212)
-[19626.828016] calling svc_recv: 0 times (err=212)
-[19626.829021] calling svc_recv: 0 times (err=212)
-[19626.831970] calling svc_recv: 0 times (err=212)
+Here are a number of small USB patches for 3.6-rc3.  The "large" one is just a
+number of device id updates to the option driver, done by the manufacturer,
+properly fixing up the device ids based on shipping devices.  Other than that,
+some gadget driver fixes, the obligitary XHCI patches, and some other device
+ids and bugs fixed.
 
-> the stall begin:
-[19686.823135] calling svc_recv: 3670352 times (err=212)
-[19686.823524] calling svc_recv: 3659205 times (err=212)
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-> transfer continues
-[19686.854734] calling svc_recv: 0 times (err=212)
-[19686.860023] calling svc_recv: 0 times (err=212)
-[19686.887124] calling svc_recv: 0 times (err=212)
-[19686.895532] calling svc_recv: 0 times (err=212)
-[19686.903667] calling svc_recv: 0 times (err=212)
-[19686.922780] calling svc_recv: 0 times (err=212)
+----------------------------------------------------------------
+Ajay Kumar Gupta (3):
+      usb: musb: Fix wrong config for am33xx and ti81xx
+      usb: musb: am335x: fix pdev resource bug
+      usb: musb: reorder runtime pm call
 
-So we're calling svc_recv in a tight loop, eating
-all available CPU.  (The above is with just 2 nfsd
-threads).
+Bjørn Mork (4):
+      usb: usb_wwan: replace release and disconnect with a port_remove hook
+      usb: serial: prevent suspend/resume from racing against probe/remove
+      usb: usb_wwan: resume/suspend can be called after port is gone
+      USB: option: add ZTE K5006-Z
 
-Something is definitely wrong here.  And it happens mure more
-often after the mentioned commit (f03d78db65085).
+Bruno Morelli (1):
+      USB: isp1362-hcd.c: usb message always saved in case of underrun
 
-Thanks,
+Dan Williams (1):
+      USB: qcserial: fix port handling on Gobi 1K and 2K+
 
-/mjt
+Greg Kroah-Hartman (3):
+      Merge tag 'fixes-for-v3.6-rc1' of git://git.kernel.org/.../balbi/usb into usb-linus
+      Merge tag 'for-usb-linus-2012-08-08' of git://git.kernel.org/.../sarah/xhci into usb-linus
+      Merge tag 'for-usb-linus-2012-08-09' of git://git.kernel.org/.../sarah/xhci into usb-linus
+
+Keshava Munegowda (1):
+      OMAP: USB : Fix the EHCI enumeration and core retention issue
+
+Kuninori Morimoto (2):
+      usb: renesas_usbhs: mod_host: add missing .bus_suspend/resume
+      usb: renesas_usbhs: fixup resume method for autonomy mode
+
+Marc Kleine-Budde (1):
+      usb: chipidea: fix and improve dependencies if usb host or gadget support is built as module
+
+Mark Ferrell (2):
+      usb: serial: mos7840: Fixup mos7840_chars_in_buffer()
+      USB: serial: Fix mos7840 timeout
+
+Michael Grzeschik (1):
+      usb: gadget: u_ether: fix kworker 100% CPU issue with still used interfaces in eth_stop
+
+Oliver Neukum (1):
+      update MAINTAINERS for Oliver Neukum
+
+Ozan Çağlayan (1):
+      USB: ftdi_sio: Add VID/PID for Kondo Serial USB
+
+Sarah Sharp (5):
+      xhci: Increase reset timeout for Renesas 720201 host.
+      xhci: Add Etron XHCI_TRUST_TX_LENGTH quirk.
+      xhci: Rate-limit XHCI_TRUST_TX_LENGTH quirk warning.
+      xhci: Fix bug after deq ptr set to link TRB.
+      xhci: Switch PPT ports to EHCI on shutdown.
+
+Steven J. Hill (1):
+      usb: host: mips: sead3: Update for EHCI register structure.
+
+Venu Byravarasu (1):
+      usb: host: tegra: fix warning messages in ehci_remove
+
+fangxiaozhi (1):
+      USB: support the new interfaces of Huawei Data Card devices in option driver
+
+ MAINTAINERS                          |  10 +-
+ drivers/usb/chipidea/Kconfig         |   9 +-
+ drivers/usb/gadget/u_ether.c         |   6 +
+ drivers/usb/host/ehci-omap.c         | 167 +-------------------
+ drivers/usb/host/ehci-sead3.c        |   2 +-
+ drivers/usb/host/ehci-tegra.c        |   3 +-
+ drivers/usb/host/isp1362-hcd.c       |   8 +-
+ drivers/usb/host/pci-quirks.c        |   7 +
+ drivers/usb/host/pci-quirks.h        |   1 +
+ drivers/usb/host/xhci-pci.c          |  10 ++
+ drivers/usb/host/xhci-ring.c         |  40 +++--
+ drivers/usb/host/xhci.c              |   8 +-
+ drivers/usb/host/xhci.h              |   3 +
+ drivers/usb/musb/Kconfig             |   4 +-
+ drivers/usb/musb/musb_dsps.c         |  19 +--
+ drivers/usb/renesas_usbhs/common.c   |   6 +-
+ drivers/usb/renesas_usbhs/mod_host.c |   8 +
+ drivers/usb/serial/bus.c             |  15 +-
+ drivers/usb/serial/ftdi_sio.c        |   1 +
+ drivers/usb/serial/ftdi_sio_ids.h    |   7 +
+ drivers/usb/serial/ipw.c             |   3 +-
+ drivers/usb/serial/mos7840.c         |  16 +-
+ drivers/usb/serial/option.c          | 285 ++++++++++++++---------------------
+ drivers/usb/serial/qcserial.c        |  47 +++---
+ drivers/usb/serial/usb-wwan.h        |   3 +-
+ drivers/usb/serial/usb_wwan.c        |  68 ++++-----
+ 26 files changed, 299 insertions(+), 457 deletions(-)
