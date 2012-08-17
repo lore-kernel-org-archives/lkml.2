@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab2HQKeR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 06:34:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49179 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757478Ab2HQKeO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 06:34:14 -0400
-Message-ID: <502E1E23.60201@linutronix.de>
-Date: Fri, 17 Aug 2012 12:34:11 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1757775Ab2HQKf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 06:35:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50199 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300Ab2HQKfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 06:35:55 -0400
+Date: Fri, 17 Aug 2012 12:35:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
+ children
+Message-ID: <20120817103550.GF18600@dhcp22.suse.cz>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+ <1344517279-30646-10-git-send-email-glommer@parallels.com>
+ <20120817090005.GC18600@dhcp22.suse.cz>
+ <502E0BC3.8090204@parallels.com>
+ <20120817093504.GE18600@dhcp22.suse.cz>
+ <502E17C4.7060204@parallels.com>
 MIME-Version: 1.0
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-CC: "'Joel Becker'" <jlbec@evilplan.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-Subject: Re: [RFC 0/2] USB gadget - configfs
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com> <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com> <000501cd5e79$a770be50$f6523af0$%p@samsung.com> <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com> <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com> <502CF9E3.2010608@linutronix.de> <20120817014609.GB2949@dhcp-172-17-9-228.mtv.corp.google.com> <502E0D3B.10006@linutronix.de> <000201cd7c63$60186370$20492a50$%p@samsung.com>
-In-Reply-To: <000201cd7c63$60186370$20492a50$%p@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502E17C4.7060204@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 12:30 PM, Andrzej Pietrasiewicz wrote:
->> There is a separation between "setting myself up" and "seeing that a host
->> wants to talk to me". You are a woman. And if you not done yet done you
-> ignore
->> the host until you are ready. Can also be ready before the host wants to
-> talk
->> to you. It depends on your mood / use case (give the use the choice
-> between
->> storage&  network and offer always both because we are self powered).
->>
->
-> You never know when she is ready... ;)
->
-> Please note, that in the example implementation it is userspace
-> who needs to explicitly store "1" into the "connect" attribute;
-> if it is not set, connecting the cable will have no effect and,
-> conversely, if the cable is connected but the "1" is not stored,
-> the gadget will not be seen by the host.
+On Fri 17-08-12 14:07:00, Glauber Costa wrote:
+> On 08/17/2012 01:35 PM, Michal Hocko wrote:
+> >>> Above you said "Once enabled, can't be disabled." and now you can
+> >>> > > disable it? Say you are a leaf group with non accounted parents. This
+> >>> > > will clear the flag and so no further accounting is done. Shouldn't
+> >>> > > unlimited mean that we will never reach the limit? Or am I missing
+> >>> > > something?
+> >>> > >
+> >> > 
+> >> > You are missing something, and maybe I should be more clear about that.
+> >> > The static branches can't be disabled (it is only safe to disable them
+> >> > from disarm_static_branches(), when all references are gone). Note that
+> >> > when unlimited, we flip bits, do a transversal, but there is no mention
+> >> > to the static branch.
+> > My little brain still doesn't get this. I wasn't concerned about static
+> > branches. I was worried about memcg_can_account_kmem which will return
+> > false now, doesn't it.
+> > 
+> 
+> Yes, it will. If I got you right, you are concerned because I said that
+> can't happen. But it will.
+> 
+> But I never said that can't happen. I said (ok, I meant) the static
+> branches can't be disabled.
 
-maybe we should rename "connect" here to "ready" or "available". It
-seems to cause confusion.
+Ok, then I misunderstood that because the comment was there even before
+static branches were introduced and it made sense to me. This is
+inconsistent with what we do for user accounting because even if we set
+limit to unlimitted we still account. Why should we differ here?
 
->
-> Andrzej
-
-Sebastian
+-- 
+Michal Hocko
+SUSE Labs
