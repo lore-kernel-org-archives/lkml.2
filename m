@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab2HQTFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 15:05:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48367 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2HQTFm (ORCPT
+	id S1751930Ab2HQTGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 15:06:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45596 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab2HQTFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 15:05:42 -0400
-Date: Fri, 17 Aug 2012 21:05:37 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-i2c@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 1/1 v4] i2c: Add default configuration into the Nomadik
- I2C driver.
-Message-ID: <20120817190537.GA32339@pengutronix.de>
-References: <1344266253-14050-1-git-send-email-lee.jones@linaro.org>
- <20120808131158.GD8227@gmail.com>
- <CACRpkdb+6S5yYvVjrr2f+wubE43dzD3i=OVfWtM_U+HW_XZX1A@mail.gmail.com>
+	Fri, 17 Aug 2012 15:05:45 -0400
+Message-ID: <502E9604.4010701@wwwdotorg.org>
+Date: Fri, 17 Aug 2012 13:05:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb+6S5yYvVjrr2f+wubE43dzD3i=OVfWtM_U+HW_XZX1A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        lrg@slimlogic.co.uk
+CC: Bill Huang <bilhuang@nvidia.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, ldewangan@nvidia.com,
+        thierry.reding@avionic-design.de, xxie@nvidia.com, jhovold@gmail.com,
+        kyle.manna@fuel7.com, rklein@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: dt: tps6586x: Add power off control
+References: <1345194989-11614-1-git-send-email-bilhuang@nvidia.com> <1345194989-11614-2-git-send-email-bilhuang@nvidia.com>
+In-Reply-To: <1345194989-11614-2-git-send-email-bilhuang@nvidia.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/17/2012 03:16 AM, Bill Huang wrote:
+> Add DT property "ti,system-power-controller" telling whether or not this
+> pmic is in charge of controlling the system power, so the power off
+> routine can be hooked up to system call "pm_power_off".
+> 
+> Based on the work by:
+> Dan Willemsen <dwillemsen@nvidia.com>
+> 
+> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
 
---cWoXeonUoKmBZSoM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Tested-by: Stephen Warren <swarren@wwwdotorg.org>
 
-On Fri, Aug 17, 2012 at 05:02:32PM +0200, Linus Walleij wrote:
-> On Wed, Aug 8, 2012 at 3:11 PM, Lee Jones <lee.jones@linaro.org> wrote:
->=20
-> > From: Lee Jones <lee.jones@linaro.org>
-> > Date: Tue, 7 Aug 2012 12:27:24 +0100
-> > Subject: [PATCH 1/1 v4] i2c/nomadik: Add default configuration into the=
- Nomadik I2C driver
->=20
-> Wolfram are you taking this v4 patch into the i2c tree for the -rc:s?
->=20
-> Right now this is causing boot regressions so we need it badly...
-
-I am collecting patches for rc3 this weekend.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---cWoXeonUoKmBZSoM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlAulgEACgkQD27XaX1/VRtdiwCgwykB6OrBopfQzUGsTodqv31e
-KpUAn0LbyJOeXP/KXVBKsqdk2f5hNRbR
-=vztA
------END PGP SIGNATURE-----
-
---cWoXeonUoKmBZSoM--
+Note that this conflicts (only context in tps6586x.txt I think) with
+commit b93fffb "regulator: tps6586x: add support for SYS rail" in the
+regulator tree. Also note that the patch is based on linux-next, which
+contains a mis-merge of tps6586x.txt from the regulator tree. In other
+words, expect some slight conflicts when you apply this. Taking it
+through the regulator tree would eliminate them.
