@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab2HQNIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:08:51 -0400
-Received: from fieldses.org ([174.143.236.118]:60443 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755711Ab2HQNIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:08:43 -0400
-Date: Fri, 17 Aug 2012 09:08:42 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: v3.5 nfsd4 regression; utime sometimes takes 40+ seconds to
- return
-Message-ID: <20120817130842.GA11172@fieldses.org>
-References: <20120815061115.GC32347@cucamonga.audible.transient.net>
- <20120815135854.GI32347@cucamonga.audible.transient.net>
- <20120815150251.GB16057@fieldses.org>
- <20120816201838.GA4282@cucamonga.audible.transient.net>
- <20120816204208.GE4385@fieldses.org>
- <20120816210916.GA6108@fieldses.org>
- <20120816213423.GB4282@cucamonga.audible.transient.net>
+	id S1753465Ab2HQNOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:14:19 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:22763 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab2HQNOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 09:14:04 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+CGKqyjny5XO5Px5if459d
+Date: Fri, 17 Aug 2012 06:13:59 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
+Message-ID: <20120817131358.GF11011@atomide.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
+ <502E11B6.4020104@ti.com>
+ <20120817100533.GE24389@arm.com>
+ <CAMQu2gzz0j+SnxCY0u3H__H4U-Lor_xV-eyiMBSohCMngbkD2w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120816213423.GB4282@cucamonga.audible.transient.net>
+In-Reply-To: <CAMQu2gzz0j+SnxCY0u3H__H4U-Lor_xV-eyiMBSohCMngbkD2w@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 09:34:24PM +0000, Jamie Heilman wrote:
-> J. Bruce Fields wrote:
-> > On Thu, Aug 16, 2012 at 04:42:08PM -0400, J. Bruce Fields wrote:
-> > > Hm, weird.  In the good case the cb_recall's done with auth_unix, in the
-> > > bad case with auth_null.  OK, that should be enough to go on....
-> > > 
-> > > Thanks for digging into this!
-> > 
-> > This should fix it--could you confirm?
-> 
-> Yep, looks like that fixes it.
+* Shilimkar, Santosh <santosh.shilimkar@ti.com> [120817 03:11]:
+> On Fri, Aug 17, 2012 at 3:35 PM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> >
+> > On Fri, Aug 17, 2012 at 10:41:10AM +0100, Santosh Shilimkar wrote:
+> > >
+> > > So you expect all the secondary CPUs to be in wakeup state and probably
+> > > looping in WFE for a signal from kernel to boot. There is one issue
+> > > with this requirement though. For large CPU system, you need to reset
+> > > all the CPUs and hit this waiting loop. This will lead to large inrush
+> > > current need at bootup which may be not be supported. To avoid this
+> > > issue, secondary CPUs are kept in OFF state and then they are woken
+> > > up from kernel one by one whenever they need to be brought into the
+> > > system. This requirement should be considered.
+> >
+> > I agree, this part will be extended. That's one method that we currently
+> > support and suitable to the model.
+> >
+> > The better method is the SMC standardisation that Charles Garcia-Tobin
+> > has written (to be made available soon) and was presented at the last
+> > Linaro Connect in HK. Given that the CPU power is usually controlled by
+> > the secure side, we'll ask for an SMC to be issued for waking up
+> > secondary CPUs, so it's up to the secure firmware to write the correct
+> > hardware registers.
+> >
+> Thanks for the information. SMC standardization would indeed help
+> to overcome some of these. Will wait for that information before
+> next set of questions.
 
-Thanks!
+Yes please. If the SMC is not standardized for most calls at least,
+we'll end up with a horrible mess of SoC specific calls like we
+currently have. Related to that, the virtualization calls should be
+also standardized so we don't end up with multiple different hypervisors
+with different calls.
 
-I'll queue this up for 3.6 and stable.
+Regards,
 
---b.
-
-> 
-> > commit e950bebdac1f17121f972728489cdba43734d56d
-> > Author: J. Bruce Fields <bfields@redhat.com>
-> > Date:   Thu Aug 16 17:01:21 2012 -0400
-> > 
-> >     nfsd4: fix security flavor of NFSv4.0 callback
-> >     
-> >     Commit d5497fc693a446ce9100fcf4117c3f795ddfd0d2 "nfsd4: move rq_flavor
-> >     into svc_cred" forgot to remove cl_flavor from the client, leaving two
-> >     places (cl_flavor and cl_cred.cr_flavor) for the flavor to be stored.
-> >     After that patch, the latter was the one that was updated, but the
-> >     former was the one that the callback used.
-> >     
-> >     Symptoms were a long delay on utime().  This is because the utime()
-> >     generated a setattr which recalled a delegation, but the cb_recall was
-> >     ignored by the client because it had the wrong security flavor.
-> >     
-> >     Cc: stable@vger.kernel.org
-> >     Reported-by: Jamie Heilman <jamie@audible.transient.net>
-> >     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> > 
-> > diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-> > index cbaf4f8..4c7bd35 100644
-> > --- a/fs/nfsd/nfs4callback.c
-> > +++ b/fs/nfsd/nfs4callback.c
-> > @@ -651,12 +651,12 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
-> >  
-> >  	if (clp->cl_minorversion == 0) {
-> >  		if (!clp->cl_cred.cr_principal &&
-> > -				(clp->cl_flavor >= RPC_AUTH_GSS_KRB5))
-> > +				(clp->cl_cred.cr_flavor >= RPC_AUTH_GSS_KRB5))
-> >  			return -EINVAL;
-> >  		args.client_name = clp->cl_cred.cr_principal;
-> >  		args.prognumber	= conn->cb_prog,
-> >  		args.protocol = XPRT_TRANSPORT_TCP;
-> > -		args.authflavor = clp->cl_flavor;
-> > +		args.authflavor = clp->cl_cred.cr_flavor;
-> >  		clp->cl_cb_ident = conn->cb_ident;
-> >  	} else {
-> >  		if (!conn->cb_xprt)
-> > diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-> > index 167d7d8..9db0bb5 100644
-> > --- a/fs/nfsd/state.h
-> > +++ b/fs/nfsd/state.h
-> > @@ -231,7 +231,6 @@ struct nfs4_client {
-> >  	nfs4_verifier		cl_verifier; 	/* generated by client */
-> >  	time_t                  cl_time;        /* time of last lease renewal */
-> >  	struct sockaddr_storage	cl_addr; 	/* client ipaddress */
-> > -	u32			cl_flavor;	/* setclientid pseudoflavor */
-> >  	struct svc_cred		cl_cred; 	/* setclientid principal */
-> >  	clientid_t		cl_clientid;	/* generated by server */
-> >  	nfs4_verifier		cl_confirm;	/* generated by server */
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Jamie Heilman                     http://audible.transient.net/~jamie/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Tony
