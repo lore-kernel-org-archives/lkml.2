@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933812Ab2HQJRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 05:17:19 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18834 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933749Ab2HQJRF (ORCPT
+	id S933782Ab2HQJRp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 05:17:45 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7416 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933672Ab2HQJQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 05:17:05 -0400
+	Fri, 17 Aug 2012 05:16:57 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 17 Aug 2012 02:17:02 -0700
+	by hqnvupgp06.nvidia.com on Fri, 17 Aug 2012 02:16:56 -0700
 From: Bill Huang <bilhuang@nvidia.com>
 To: <sameo@linux.intel.com>, <grant.likely@secretlab.ca>,
         <rob.herring@calxeda.com>, <rob@landley.net>
@@ -18,9 +18,9 @@ CC: <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
         <kyle.manna@fuel7.com>, <rklein@nvidia.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Bill Huang <bilhuang@nvidia.com>
-Subject: [PATCH 2/2] mfd: dt: tps65910: add power off control
-Date: Fri, 17 Aug 2012 02:16:29 -0700
-Message-ID: <1345194989-11614-3-git-send-email-bilhuang@nvidia.com>
+Subject: [PATCH 1/2] mfd: dt: tps6586x: Add power off control
+Date: Fri, 17 Aug 2012 02:16:28 -0700
+Message-ID: <1345194989-11614-2-git-send-email-bilhuang@nvidia.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1345194989-11614-1-git-send-email-bilhuang@nvidia.com>
 References: <1345194989-11614-1-git-send-email-bilhuang@nvidia.com>
@@ -40,101 +40,98 @@ Dan Willemsen <dwillemsen@nvidia.com>
 
 Signed-off-by: Bill Huang <bilhuang@nvidia.com>
 ---
- Documentation/devicetree/bindings/mfd/tps65910.txt |    4 +++
- drivers/mfd/tps65910.c                             |   22 ++++++++++++++++++++
- include/linux/mfd/tps65910.h                       |    3 ++
- 3 files changed, 29 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/regulator/tps6586x.txt     |    6 ++++++
+ drivers/mfd/tps6586x.c                             |   19 +++++++++++++++++++
+ include/linux/mfd/tps6586x.h                       |    1 +
+ 3 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/tps65910.txt b/Documentation/devicetree/bindings/mfd/tps65910.txt
-index db03599..2e33048 100644
---- a/Documentation/devicetree/bindings/mfd/tps65910.txt
-+++ b/Documentation/devicetree/bindings/mfd/tps65910.txt
-@@ -59,6 +59,8 @@ Optional properties:
-   in TPS6591X datasheet)
- - ti,en-gpio-sleep: enable sleep control for gpios
-   There should be 9 entries here, one for each gpio.
+diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+index d156e1b..03dfa4e 100644
+--- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
++++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+@@ -18,6 +18,10 @@ Required properties:
+ - vinldo678-supply: The input supply for the LDO6, LDO7 and LDO8
+ - vinldo9-supply: The input supply for the LDO9
+ 
++Optional properties:
 +- ti,system-power-controller: Telling whether or not this pmic is controlling
 +  the system power.
++
+ Each regulator is defined using the standard binding for regulators.
  
- Regulator Optional properties:
- - ti,regulator-ext-sleep-control: enable external sleep
-@@ -79,6 +81,8 @@ Example:
- 		#interrupt-cells = <2>;
- 		interrupt-controller;
+ Example:
+@@ -30,6 +34,8 @@ Example:
+ 		#gpio-cells = <2>;
+ 		gpio-controller;
  
 +		ti,system-power-controller;
 +
- 		ti,vmbch-threshold = 0;
- 		ti,vmbch2-threshold = 0;
- 		ti,en-ck32k-xtal;
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 1c56379..a7925a9 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -198,6 +198,8 @@ static struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
+ 		sm0-supply = <&some_reg>;
+ 		sm1-supply = <&some_reg>;
+ 		sm2-supply = <&some_reg>;
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index 353c348..93d57df 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -29,6 +29,10 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/tps6586x.h>
  
- 	board_info->irq = client->irq;
- 	board_info->irq_base = -1;
-+	board_info->pm_off = of_property_read_bool(np,
-+			"ti,system-power-controller");
++#define TPS6586X_SUPPLYENE	0x14
++#define EXITSLREQ_BIT		BIT(1)
++#define SLEEP_MODE_BIT		BIT(3)
++
+ /* interrupt control registers */
+ #define TPS6586X_INT_ACK1	0xb5
+ #define TPS6586X_INT_ACK2	0xb6
+@@ -409,6 +413,7 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
+ 	pdata->subdevs = devs;
+ 	pdata->gpio_base = -1;
+ 	pdata->irq_base = -1;
++	pdata->pm_off = of_property_read_bool(np, "ti,system-power-controller");
  
- 	return board_info;
+ 	return pdata;
  }
-@@ -210,6 +212,21 @@ struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
- }
- #endif
+@@ -441,6 +446,15 @@ static const struct regmap_config tps6586x_regmap_config = {
+ 	.cache_type = REGCACHE_RBTREE,
+ };
  
-+static struct i2c_client *tps65910_i2c_client;
-+static void tps65910_power_off(void)
++static struct device *tps6586x_dev;
++static void tps6586x_power_off(void)
 +{
-+	struct tps65910 *tps65910;
-+
-+	tps65910 = dev_get_drvdata(&tps65910_i2c_client->dev);
-+
-+	if (tps65910_reg_set_bits(tps65910, TPS65910_DEVCTRL,
-+			DEVCTRL_PWR_OFF_MASK) < 0)
++	if (tps6586x_clr_bits(tps6586x_dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT))
 +		return;
 +
-+	tps65910_reg_clear_bits(tps65910, TPS65910_DEVCTRL,
-+			DEVCTRL_DEV_ON_MASK);
++	tps6586x_set_bits(tps6586x_dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
 +}
 +
- static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
+ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
  					const struct i2c_device_id *id)
  {
-@@ -267,6 +284,11 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
- 	tps65910_ck32k_init(tps65910, pmic_plat_data);
- 	tps65910_sleepinit(tps65910, pmic_plat_data);
+@@ -505,6 +519,11 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
+ 		goto err_add_devs;
+ 	}
  
-+	tps65910_i2c_client = i2c;
++	tps6586x_dev = &client->dev;
 +
-+	if (pmic_plat_data->pm_off && !pm_power_off)
-+		pm_power_off = tps65910_power_off;
++	if (pdata->pm_off && !pm_power_off)
++		pm_power_off = tps6586x_power_off;
 +
- 	return ret;
- }
+ 	return 0;
  
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 9bf8767..ac772b3 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -366,6 +366,8 @@
+ err_add_devs:
+diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
+index f350fd0..08f109f 100644
+--- a/include/linux/mfd/tps6586x.h
++++ b/include/linux/mfd/tps6586x.h
+@@ -77,6 +77,7 @@ struct tps6586x_platform_data {
  
- 
- /*Register DEVCTRL  (0x80) register.RegisterDescription */
-+#define DEVCTRL_PWR_OFF_MASK				0x80
-+#define DEVCTRL_PWR_OFF_SHIFT				7
- #define DEVCTRL_RTC_PWDN_MASK				0x40
- #define DEVCTRL_RTC_PWDN_SHIFT				6
- #define DEVCTRL_CK32K_CTRL_MASK				0x20
-@@ -809,6 +811,7 @@ struct tps65910_board {
- 	int vmbch2_threshold;
- 	bool en_ck32k_xtal;
- 	bool en_dev_slp;
+ 	int gpio_base;
+ 	int irq_base;
 +	bool pm_off;
- 	struct tps65910_sleep_keepon_data *slp_keepon;
- 	bool en_gpio_sleep[TPS6591X_MAX_NUM_GPIO];
- 	unsigned long regulator_ext_sleep_control[TPS65910_NUM_REGS];
+ };
+ 
+ /*
 -- 
 1.7.4.1
 
