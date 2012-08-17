@@ -1,99 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab2HQKZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 06:25:50 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:42696 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751299Ab2HQKZr (ORCPT
+	id S1751299Ab2HQK2T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 06:28:19 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46338 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757526Ab2HQK2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 06:25:47 -0400
+	Fri, 17 Aug 2012 06:28:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120817101500.GG24389@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-6-git-send-email-catalin.marinas@arm.com>
- <502E1793.9080605@ti.com> <20120817101500.GG24389@arm.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Fri, 17 Aug 2012 15:55:25 +0530
-Message-ID: <CAMQu2gxpmCZqAqZ1KCXoxg3vXQLqdFRv+nQ2vt0FeDzpGvNc7A@mail.gmail.com>
-Subject: Re: [PATCH v2 05/31] arm64: MMU initialisation
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1345191768.27859.26.camel@sauron.fi.intel.com>
+References: <1345042639.3393.150.camel@sauron.fi.intel.com>
+ <1345128723-13582-2-git-send-email-richard.genoud@gmail.com> <1345191768.27859.26.camel@sauron.fi.intel.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Fri, 17 Aug 2012 12:27:53 +0200
+Message-ID: <CACQ1gAj-+-NL4EnF1AAFy7BBrY97c_UFW3+5iyTVdxN9XETS=w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] UBI: replace MTD_UBI_BEB_LIMIT with module parameter
+To: dedekind1@gmail.com
+Cc: linux-mtd@lists.infradead.org, Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 3:45 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Fri, Aug 17, 2012 at 11:06:11AM +0100, Santosh Shilimkar wrote:
->> On Tuesday 14 August 2012 11:22 PM, Catalin Marinas wrote:
->> > This patch contains the initialisation of the memory blocks, MMU
->> > attributes and the memory map. Only five memory types are defined:
->> > Device nGnRnE (equivalent to Strongly Ordered), Device nGnRE (classic
->> > Device memory), Device GRE, Normal Non-cacheable and Normal Cacheable.
->> > Cache policies are supported via the memory attributes register
->> > (MAIR_EL1) and only affect the Normal Cacheable mappings.
->> >
->> > This patch also adds the SPARSEMEM_VMEMMAP initialisation.
->> >
->> > Signed-off-by: Will Deacon<will.deacon@arm.com>
->> > Signed-off-by: Catalin Marinas<catalin.marinas@arm.com>
->> > ---
->>
->> Whats the difference between Device nGnRE and Device GRE ?
->> Sorry, I haven't gone through the specs yet and hence the
->> question.
+2012/8/17 Artem Bityutskiy <dedekind1@gmail.com>:
+> Richard, would you please split this series differently:
 >
-> G - gathering (multiple reads/writes into one)
-> R - reordering (reads/writes)
-> E - early acknowledgement (the write may have not hit the device before
->     the instruction returns).
+> 1. Separate out the calculations to the get_bad_peb_limit() func.
+> 2. Invent
+> 2. Add the module parameter
+> 3. Extends the ioctl
+> 4. Removes the Kconfig option
 >
-> The 'n' in front just negates the meaning.
->
-> So the Device memory as we know it on ARMv7 is equivalent to nGnRE. The
-> Strongly Ordered is nGnRnE. GRE is pretty much like Normal Non-cacheable
-> memory but with Device mapping, so there are restrictions on unaligned
-> accesses.
->
-Thanks for explaining it so clearly.
+> This will be much easier to review.
+ok, will do that.
 
->> > +#ifdef CONFIG_ZONE_DMA32
->> > +   /* 4GB maximum for 32-bit only capable devices */
->> > +   max_dma32 = min(max, MAX_DMA32_PFN);
->> > +   zone_size[ZONE_DMA32] = max_dma32 - min;
->> > +#endif
+>
+> See also some comments below.
+>
+>> --- a/drivers/mtd/ubi/build.c
+>> +++ b/drivers/mtd/ubi/build.c
+>> @@ -46,6 +46,8 @@
+>>  /* Maximum length of the 'mtd=' parameter */
+>>  #define MTD_PARAM_LEN_MAX 64
 >>
->> Do you see need of supporting DMA32 on arm64 SOCs ?
+>> +#define MTD_PARAM_NB_MAX 3
 >
-> I've got some questions from partners but those devices may just be
-> hidden behind an iommu. For now I left it in.
+> Please, make it to be
 >
+> /* Maximum number of comma-separated items in ht 'mtd=' parameter */
+> #define MTD_PARAM_MAX_COUNT 3
+>
+> instead.
+done.
+>
+>> @@ -57,10 +59,12 @@
+>>   * @name: MTD character device node path, MTD device name, or MTD device number
+>>   *        string
+>>   * @vid_hdr_offs: VID header offset
+>> + * @max_beb_per1024: maximum expected number of bad blocks per 1024 erase blocks
+>>   */
+>>  struct mtd_dev_param {
+>>       char name[MTD_PARAM_LEN_MAX];
+>>       int vid_hdr_offs;
+>> +     unsigned int max_beb_per1024;
+>>  };
+>
+> Please, make it to be just 'int' here and everywhere, just for
+> consistency with other parameters, which are 'int' (no other stronger
+> reason).
+ok, I put it back to an int.
+
+>>  MODULE_PARM_DESC(mtd, "MTD devices to attach. Parameter format: "
+>> -                   "mtd=<name|num|path>[,<vid_hdr_offs>].\n"
+>> +                   "mtd=<name|num|path>[,<vid_hdr_offs>[,max_beb_per1024]].\n"
+>>                     "Multiple \"mtd\" parameters may be specified.\n"
+>>                     "MTD devices may be specified by their number, name, or "
+>>                     "path to the MTD character device node.\n"
+>>                     "Optional \"vid_hdr_offs\" parameter specifies UBI VID "
+>>                     "header position to be used by UBI.\n"
+>
+> This comment needs improvement. Consider a situation when I do not want
+> to specify vid_hdr_offs (want to use the default), but want to specify
+> max_beb_per1024. I think I can put 0 here which means "default". Would
+> you please verify this and add a comment about this in this help output.
+you're right, if vid_hdr_offs is 0, the default value is taken.
+I'll improve the comments accordingly.
+> Also, please, verify that the output looks OK using 'modinfo ubi'.
 ok.
-
->> > +static struct cachepolicy cache_policies[] __initdata = {
->> > +   {
->> > +           .policy         = "uncached",
->> > +           .mair           = 0x44,                 /* inner, outer non-cacheable */
->> > +           .tcr            = TCR_IRGN_NC | TCR_ORGN_NC,
->> > +   }, {
->> > +           .policy         = "writethrough",
->> > +           .mair           = 0xaa,                 /* inner, outer write-through, read-allocate */
->> > +           .tcr            = TCR_IRGN_WT | TCR_ORGN_WT,
->>
->> Is WT supported on arm64?
->> On the recent ARMv7 processors, I think WT wasn't supported.
+>> +                   "Optional \"max_beb_per1024\" parameter specifies the "
+>> +                   "maximum expected bad eraseblock per 1024 eraseblocks."
+>> +                   "(default " __stringify(MTD_UBI_DEFAULT_BEB_LIMIT)
+>> +                   " if 0 or not set)\n"
 >
-> All of WB, WA, WT are just architectural hints. A CPU implementation may
-> or may not ignore them but with Linux we try to follow the architecture
-> rather than specific implementations.
+> Yeah, something like "if 0 or not set" is needed for 'vid_hdr_offs' as
+> well.
 >
-Agree.
+>>                     "Example 1: mtd=/dev/mtd0 - attach MTD device "
+>>                     "/dev/mtd0.\n"
+>>                     "Example 2: mtd=content,1984 mtd=4 - attach MTD device "
+>
+> Could you also modify one of the examples and add "max_beb_per1024"
+> there?
+yes, of course.
 
-Regards
-Santosh
+> --
+> Best Regards,
+> Artem Bityutskiy
+
+
+
+-- 
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
