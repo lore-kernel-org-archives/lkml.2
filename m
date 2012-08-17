@@ -1,141 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab2HQRPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:15:18 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:24791 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757047Ab2HQRPL (ORCPT
+	id S1757385Ab2HQRPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:15:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35434 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668Ab2HQRPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:15:11 -0400
-X-IronPort-AV: E=Sophos;i="4.77,785,1336348800"; 
-   d="scan'208";a="14064622"
-Date: Fri, 17 Aug 2012 18:14:52 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 5/5] xen/pcifront: Use Xen-SWIOTLB when
- initting if required.
-In-Reply-To: <1345132488-27323-6-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1208171814440.15568@kaball.uk.xensource.com>
-References: <1345132488-27323-1-git-send-email-konrad.wilk@oracle.com> <1345132488-27323-6-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 17 Aug 2012 13:15:43 -0400
+Date: Fri, 17 Aug 2012 10:15:34 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] staging fixes for 3.6-rc3
+Message-ID: <20120817171534.GA14238@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> We piggyback on "xen/swiotlb: Use the swiotlb_late_init_with_tbl to init
-> Xen-SWIOTLB late when PV PCI is used." functionality to start up
-> the Xen-SWIOTLB if we are hot-plugged. This allows us to bypass
-> the need to supply 'iommu=soft' on the Linux command line (mostly).
-> With this patch, if a user forgot 'iommu=soft' on the command line,
-> and hotplug a PCI device they will get:
-> 
-> pcifront pci-0: Installing PCI frontend
-> Warning: only able to allocate 4 MB for software IO TLB
-> software IO TLB [mem 0x2a000000-0x2a3fffff] (4MB) mapped at [ffff88002a000000-ffff88002a3fffff]
-> pcifront pci-0: Creating PCI Frontend Bus 0000:00
-> pcifront pci-0: PCI host bridge to bus 0000:00
-> pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
-> pci_bus 0000:00: root bus resource [mem 0x00000000-0xfffffffff]
-> pci 0000:00:00.0: [8086:10d3] type 00 class 0x020000
-> pci 0000:00:00.0: reg 10: [mem 0xfe5c0000-0xfe5dffff]
-> pci 0000:00:00.0: reg 14: [mem 0xfe500000-0xfe57ffff]
-> pci 0000:00:00.0: reg 18: [io  0xe000-0xe01f]
-> pci 0000:00:00.0: reg 1c: [mem 0xfe5e0000-0xfe5e3fff]
-> pcifront pci-0: claiming resource 0000:00:00.0/0
-> pcifront pci-0: claiming resource 0000:00:00.0/1
-> pcifront pci-0: claiming resource 0000:00:00.0/2
-> pcifront pci-0: claiming resource 0000:00:00.0/3
-> e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
-> e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
-> e1000e 0000:00:00.0: Disabling ASPM L0s L1
-> e1000e 0000:00:00.0: enabling device (0000 -> 0002)
-> e1000e 0000:00:00.0: Xen PCI mapped GSI16 to IRQ34
-> e1000e 0000:00:00.0: (unregistered net_device): Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
-> e1000e 0000:00:00.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:1b:21:ab:c6:13
-> e1000e 0000:00:00.0: eth0: Intel(R) PRO/1000 Network Connection
-> e1000e 0000:00:00.0: eth0: MAC: 3, PHY: 8, PBA No: E46981-005
-> 
-> The "Warning only" will go away if one supplies 'iommu=soft' instead
-> as we have a higher chance of being able to allocate large swaths of
-> memory.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+are available in the git repository at:
 
->  drivers/pci/xen-pcifront.c |   14 ++++++++++----
->  1 files changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-> index d6cc62c..ca92801 100644
-> --- a/drivers/pci/xen-pcifront.c
-> +++ b/drivers/pci/xen-pcifront.c
-> @@ -21,6 +21,7 @@
->  #include <linux/bitops.h>
->  #include <linux/time.h>
->  
-> +#include <asm/xen/swiotlb-xen.h>
->  #define INVALID_GRANT_REF (0)
->  #define INVALID_EVTCHN    (-1)
->  
-> @@ -668,7 +669,7 @@ static irqreturn_t pcifront_handler_aer(int irq, void *dev)
->  	schedule_pcifront_aer_op(pdev);
->  	return IRQ_HANDLED;
->  }
-> -static int pcifront_connect(struct pcifront_device *pdev)
-> +static int pcifront_connect_and_init_dma(struct pcifront_device *pdev)
->  {
->  	int err = 0;
->  
-> @@ -681,9 +682,13 @@ static int pcifront_connect(struct pcifront_device *pdev)
->  		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
->  		err = -EEXIST;
->  	}
-> -
->  	spin_unlock(&pcifront_dev_lock);
->  
-> +	if (!err && !swiotlb_nr_tbl()) {
-> +		err = pci_xen_swiotlb_init_late();
-> +		if (err)
-> +			dev_err(&pdev->xdev->dev, "Could not setup SWIOTLB!\n");
-> +	}
->  	return err;
->  }
->  
-> @@ -699,6 +704,7 @@ static void pcifront_disconnect(struct pcifront_device *pdev)
->  
->  	spin_unlock(&pcifront_dev_lock);
->  }
-> +
->  static struct pcifront_device *alloc_pdev(struct xenbus_device *xdev)
->  {
->  	struct pcifront_device *pdev;
-> @@ -842,10 +848,10 @@ static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
->  	    XenbusStateInitialised)
->  		goto out;
->  
-> -	err = pcifront_connect(pdev);
-> +	err = pcifront_connect_and_init_dma(pdev);
->  	if (err) {
->  		xenbus_dev_fatal(pdev->xdev, err,
-> -				 "Error connecting PCI Frontend");
-> +				 "Error setting up PCI Frontend");
->  		goto out;
->  	}
->  
-> -- 
-> 1.7.7.6
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.6-rc3
+
+for you to fetch changes up to 3a491aeae86577e0f23cd094f3e16351b6061209:
+
+  Merge tag 'v3.6-rc1-iio-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2012-08-16 14:17:08 -0700)
+
+----------------------------------------------------------------
+
+Staging fixes for 3.6-rc3
+
+Here are some staging driver fixes (and iio driver fixes, they get lumped in
+with the staging stuff due to dependancies) for your 3.6-rc3 tree.
+
+Nothing major, just a bunch of fixes that people have reported.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alexey Khoroshilov (1):
+      iio/adjd_s311: Fix potential memory leak in adjd_s311_update_scan_mode()
+
+Axel Lin (1):
+      iio: lm3533-als: Fix build warnings
+
+Greg Kroah-Hartman (2):
+      staging: csr: add INET dependancy
+      Merge tag 'v3.6-rc1-iio-fixes' of git://git.kernel.org/.../jic23/iio into staging-linus
+
+H Hartley Sweeten (5):
+      staging: comedi: remove pci_is_enabled() tests
+      staging: comedi: daqboard2000: add back subsystem_device check
+      staging: comedi: daqboard2000: ioremap'ed addresses are resource_size_t
+      staging: comedi: dt3000: ioremap'ed addresses are resource_size_t
+      staging: comedi: rtd520: ioremap'ed addresses are resource_size_t
+
+Ian Abbott (1):
+      staging: comedi: Fix reversed test in comedi_device_attach()
+
+Lars-Peter Clausen (12):
+      staging:iio:ad7793: Add missing break in switch statement
+      staging:iio:ad7793: Mark channels as unsigned
+      staging:iio:ad7793: Report channel offset
+      staging:iio:ad7793: Fix temperature scale and offset
+      staging:iio:ad7793: Follow new IIO naming spec
+      staging:iio:ad7793: Fix internal reference value
+      staging:iio:ad7192: Add missing break in switch statement
+      staging:iio:ad7192: Fix setting ACX
+      staging:iio:ad7192: Mark channels as unsigned
+      staging:iio:ad7192: Report channel offset
+      staging:iio:ad7192: Report offset and scale for temperature channel
+      staging:iio:ad7780: Mark channels as unsigned
+
+Michael Hennerich (2):
+      iio: staging: ad7298_ring: Fix maybe-uninitialized warning
+      iio: frequency: ADF4350: Fix potential reference div factor overflow.
+
+Tim Gardner (3):
+      staging: comedi: usbduxsigma: Declare MODULE_FIRMWARE usage
+      staging: comedi: usbdux: Declare MODULE_FIRMWARE usage
+      staging: comedi: usbduxfast: Declare MODULE_FIRMWARE usage
+
+ drivers/iio/frequency/adf4350.c               | 24 ++++---
+ drivers/iio/light/adjd_s311.c                 |  7 +-
+ drivers/iio/light/lm3533-als.c                |  4 +-
+ drivers/staging/comedi/drivers.c              |  2 +-
+ drivers/staging/comedi/drivers/adv_pci1710.c  |  3 -
+ drivers/staging/comedi/drivers/adv_pci1723.c  |  2 -
+ drivers/staging/comedi/drivers/adv_pci_dio.c  |  2 -
+ drivers/staging/comedi/drivers/daqboard2000.c | 17 ++---
+ drivers/staging/comedi/drivers/dt3000.c       |  6 +-
+ drivers/staging/comedi/drivers/rtd520.c       | 26 +++----
+ drivers/staging/comedi/drivers/usbdux.c       |  4 +-
+ drivers/staging/comedi/drivers/usbduxfast.c   |  4 +-
+ drivers/staging/comedi/drivers/usbduxsigma.c  |  4 +-
+ drivers/staging/csr/Kconfig                   |  2 +-
+ drivers/staging/iio/adc/ad7192.c              | 48 +++++++------
+ drivers/staging/iio/adc/ad7298_ring.c         |  2 +-
+ drivers/staging/iio/adc/ad7780.c              | 10 +--
+ drivers/staging/iio/adc/ad7793.c              | 99 ++++++++++++++++-----------
+ include/linux/iio/frequency/adf4350.h         |  2 +
+ 19 files changed, 150 insertions(+), 118 deletions(-)
