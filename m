@@ -1,87 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab2HQXHT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 19:07:19 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:55907 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756022Ab2HQXHJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 19:07:09 -0400
-Message-ID: <502ECE3F.8020204@xenotime.net>
-Date: Fri, 17 Aug 2012 16:05:35 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1756981Ab2HQXIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 19:08:52 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45371 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756022Ab2HQXIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 19:08:40 -0400
+Date: Fri, 17 Aug 2012 19:08:20 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        adilger.kernel@dilger.ca, dushistov@mail.ru, bharrosh@panasas.com,
+        bhalevy@tonian.com, hirofumi@mail.parknet.co.jp,
+        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
+        hch@infradead.org, osd-dev@open-osd.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] ext3: remove lock/unlock super
+Message-ID: <20120817230820.GB573@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Marco Stornelli <marco.stornelli@gmail.com>,
+	Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+	adilger.kernel@dilger.ca, dushistov@mail.ru, bharrosh@panasas.com,
+	bhalevy@tonian.com, hirofumi@mail.parknet.co.jp,
+	mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
+	hch@infradead.org, osd-dev@open-osd.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org,
+	Linux FS Devel <linux-fsdevel@vger.kernel.org>
+References: <502CC4BA.3040702@gmail.com>
+ <20120816163904.GA17526@quack.suse.cz>
+ <20120816191909.GC31346@thunk.org>
+ <502DE8E8.5080000@gmail.com>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: "Justin M. Forbes" <jforbes@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org, dri-devel@lists.freedesktop.org
-Subject: Re: 3.5.x boot hang after conflicting fb hw usage <driver> vs VESA
- VGA - removing generic driver
-References: <1345242330.3841.8.camel@fedora64.linuxtx.org>	<502EC5A6.7040502@xenotime.net>	<CAPM=9tzcmU-uBSaH0jASmp0iCu43fPROefip9mr_Q9qCAMzZEw@mail.gmail.com> <CAPM=9ty9UUZKcgp4MijM9CDGyDaD0dWi2z2htPvjMRHbCHRhUw@mail.gmail.com>
-In-Reply-To: <CAPM=9ty9UUZKcgp4MijM9CDGyDaD0dWi2z2htPvjMRHbCHRhUw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502DE8E8.5080000@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 03:55 PM, Dave Airlie wrote:
+On Fri, Aug 17, 2012 at 08:47:04AM +0200, Marco Stornelli wrote:
+> Great. I'll remove the calls for ext3/ext4 when I'll submit the
+> second version of the patch.
 
-> On Sat, Aug 18, 2012 at 8:54 AM, Dave Airlie <airlied@gmail.com> wrote:
->> On Sat, Aug 18, 2012 at 8:28 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->>> On 08/17/2012 03:25 PM, Justin M. Forbes wrote:
->>>
->>>> for <driver>, we have verified cases on inteldrmfb, radeondrmfb, and
->>>> cirrusdrmfb.
->>>>
->>>> This is the last message displayed before the system hangs.  This seems
->>>> to be hitting a large number of users in Fedora, though certainly not
->>>> everyone.  This started happening with the 3.5 updates, and is still an
->>>> issue.  It appears to be a race condition, because various things have
->>>> allowed boot to continue for some users, though there is no clear work
->>>> around. Has anyone else run across this?  Any ideas.  For more
->>>> background we have the following bugs:
->>>>
->>>> inteldrmfb:
->>>> https://bugzilla.redhat.com/show_bug.cgi?id=843826
->>>>
->>>> radeondrmfb:
->>>> https://bugzilla.redhat.com/show_bug.cgi?id=845745
->>>>
->>>> cirrusdrmfb <kvm>:
->>>> https://bugzilla.redhat.com/show_bug.cgi?id=843860
->>>>
->>>> It should be noted that the conflicting fb hw usage message is not new,
->>>> it has been around for a while, but this is the last message seen before
->>>> the hang.
->>>
->>>
->>> Hi,  (adding dri-devel mailing list)
->>>
->>>
->>> I started seeing this problem on 3.5-rc6.
->>>
->>> AFAICT, the system is not actually hung, it's just that no output
->>> is showing up on the real (physical) output device (display) -- it's
->>> going somewhere else (or to the bit bucket).
->>>
->>
->> Can we bisect this at all?
+FYI, I have the following patch my ext4 tree, so I could do more
+intensive testing.  I'll let folks know if anything goes horribly
+wrong, but I'm pretty sure this should be safe.
 
-I'll try.
+       	   	     	      	   	    - Ted
 
->> I worry the intel one will bisect to where we moved the conflict
->> resolution earlier, but I'd like to see if applying that patch earlier
->> causes the issue, since radeon has it.
->>
->> I haven't reproduced this on any hw I own, I also can't get it under qemu.
-> 
-> I'm also wondering whether this grub2 related in some way, grub2 is
-> starting to mess with the graphics adapter pointlessly.
+>From 81f74e743344217487792e4190f9478963d1bb21 Mon Sep 17 00:00:00 2001
+From: Theodore Ts'o <tytso@mit.edu>
+Date: Fri, 17 Aug 2012 19:00:34 -0400
+Subject: [PATCH] ext4: drop lock_super()/unlock_super()
 
+We don't need lock_super()/unlock_super() any more, since the places
+where it is used, we are protected by the s_umount r/w semaphore.
 
-I'm using lilo, not grub.
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Marco Stornelli <marco.stornelli@gmail.com>
+---
+ fs/ext4/super.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 3ab798d..bae4124 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -861,7 +861,6 @@ static void ext4_put_super(struct super_block *sb)
+ 	flush_workqueue(sbi->dio_unwritten_wq);
+ 	destroy_workqueue(sbi->dio_unwritten_wq);
+ 
+-	lock_super(sb);
+ 	if (sbi->s_journal) {
+ 		err = jbd2_journal_destroy(sbi->s_journal);
+ 		sbi->s_journal = NULL;
+@@ -928,7 +927,6 @@ static void ext4_put_super(struct super_block *sb)
+ 	 * Now that we are completely done shutting down the
+ 	 * superblock, we need to actually destroy the kobject.
+ 	 */
+-	unlock_super(sb);
+ 	kobject_put(&sbi->s_kobj);
+ 	wait_for_completion(&sbi->s_kobj_unregister);
+ 	if (sbi->s_chksum_driver)
+@@ -4535,11 +4533,9 @@ static int ext4_unfreeze(struct super_block *sb)
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return 0;
+ 
+-	lock_super(sb);
+ 	/* Reset the needs_recovery flag before the fs is unlocked. */
+ 	EXT4_SET_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+ 	ext4_commit_super(sb, 1);
+-	unlock_super(sb);
+ 	return 0;
+ }
+ 
+@@ -4575,7 +4571,6 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 	char *orig_data = kstrdup(data, GFP_KERNEL);
+ 
+ 	/* Store the original options */
+-	lock_super(sb);
+ 	old_sb_flags = sb->s_flags;
+ 	old_opts.s_mount_opt = sbi->s_mount_opt;
+ 	old_opts.s_mount_opt2 = sbi->s_mount_opt2;
+@@ -4717,7 +4712,6 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 	if (sbi->s_journal == NULL)
+ 		ext4_commit_super(sb, 1);
+ 
+-	unlock_super(sb);
+ #ifdef CONFIG_QUOTA
+ 	/* Release old quota file names */
+ 	for (i = 0; i < MAXQUOTAS; i++)
+@@ -4730,10 +4724,8 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 		else if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+ 					EXT4_FEATURE_RO_COMPAT_QUOTA)) {
+ 			err = ext4_enable_quotas(sb);
+-			if (err) {
+-				lock_super(sb);
++			if (err)
+ 				goto restore_opts;
+-			}
+ 		}
+ 	}
+ #endif
+@@ -4760,7 +4752,6 @@ restore_opts:
+ 		sbi->s_qf_names[i] = old_opts.s_qf_names[i];
+ 	}
+ #endif
+-	unlock_super(sb);
+ 	kfree(orig_data);
+ 	return err;
+ }
 -- 
-~Randy
+1.7.12.rc0.22.gcdd159b
+
