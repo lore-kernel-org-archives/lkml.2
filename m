@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030858Ab2HQDfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:35:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46745 "EHLO
+	id S1030854Ab2HQDfP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:35:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46749 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030630Ab2HQD04 (ORCPT
+	by vger.kernel.org with ESMTP id S1030633Ab2HQD04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 23:26:56 -0400
-Message-Id: <20120817030245.473966800@decadent.org.uk>
+Message-Id: <20120817030246.408699559@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:02:54 +0100
+Date: Fri, 17 Aug 2012 04:03:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/37] tcp: perform DMA to userspace only if there is a task  waiting for it
+        alan@lxorguk.ukuu.org.uk, Stefan Bader <stefan.bader@canonical.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: [ 17/37] KVM: VMX: Advertise CPU_BASED_RDPMC_EXITING for nested guests
 In-Reply-To: <20120817030243.807605523@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,55 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Stefan Bader <stefan.bader@canonical.com>
 
-[ Upstream commit 59ea33a68a9083ac98515e4861c00e71efdc49a1 ]
+Based on commit fee84b079d5ddee2247b5c1f53162c330c622902 upstream.
 
-Back in 2006, commit 1a2449a87b ("[I/OAT]: TCP recv offload to I/OAT")
-added support for receive offloading to IOAT dma engine if available.
+  Intercept RDPMC and forward it to the PMU emulation code.
 
-The code in tcp_rcv_established() tries to perform early DMA copy if
-applicable. It however does so without checking whether the userspace
-task is actually expecting the data in the buffer.
+Newer vmx support will only allow to load the kvm_intel module
+if RDPMC_EXITING is supported. Even without the actual support
+this part of the change is required on 3.2 hosts.
 
-This is not a problem under normal circumstances, but there is a corner
-case where this doesn't work -- and that's when MSG_TRUNC flag to
-recvmsg() is used.
-
-If the IOAT dma engine is not used, the code properly checks whether
-there is a valid ucopy.task and the socket is owned by userspace, but
-misses the check in the dmaengine case.
-
-This problem can be observed in real trivially -- for example 'tbench' is a
-good reproducer, as it makes a heavy use of MSG_TRUNC. On systems utilizing
-IOAT, you will soon find tbench waiting indefinitely in sk_wait_data(), as they
-have been already early-copied in tcp_rcv_established() using dma engine.
-
-This patch introduces the same check we are performing in the simple
-iovec copy case to the IOAT case as well. It fixes the indefinite
-recvmsg(MSG_TRUNC) hangs.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+BugLink: http://bugs.launchpad.net/bugs/1031090
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_input.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/kvm/vmx.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 32e6ca2..a08a621 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5415,7 +5415,9 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
- 			if (tp->copied_seq == tp->rcv_nxt &&
- 			    len - tcp_header_len <= tp->ucopy.len) {
- #ifdef CONFIG_NET_DMA
--				if (tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
-+				if (tp->ucopy.task == current &&
-+				    sock_owned_by_user(sk) &&
-+				    tcp_dma_try_early_copy(sk, skb, tcp_header_len)) {
- 					copied_early = 1;
- 					eaten = 1;
- 				}
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1956,6 +1956,7 @@ static __init void nested_vmx_setup_ctls
+ #endif
+ 		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
+ 		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
++		CPU_BASED_RDPMC_EXITING |
+ 		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+ 	/*
+ 	 * We can allow some features even when not supported by the
 
 
