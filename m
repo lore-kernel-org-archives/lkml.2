@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab2HQXWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 19:22:21 -0400
+	id S1759188Ab2HQXWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 19:22:31 -0400
 Received: from [12.239.217.82] ([12.239.217.82]:28612 "EHLO
 	venom.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758907Ab2HQXVA (ORCPT
+	with ESMTP id S1758919Ab2HQXVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 19:21:00 -0400
+	Fri, 17 Aug 2012 19:21:03 -0400
 X-Greylist: delayed 3724 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 19:20:45 EDT
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -22,9 +22,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 15/17] input: RMI4 F34 device reflash
-Date: Fri, 17 Aug 2012 15:17:55 -0700
-Message-Id: <1345241877-16200-16-git-send-email-cheiny@synaptics.com>
+Subject: [RFC PATCH 14/17] input: RMI4 F30 GPIO/LED control
+Date: Fri, 17 Aug 2012 15:17:54 -0700
+Message-Id: <1345241877-16200-15-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
 References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
@@ -43,18 +43,17 @@ Acked-by: Jean Delvare <khali@linux-fr.org>
 
 ---
 
- drivers/input/rmi4/rmi_f34.c |  917 ++++++++++++++++++++++++++++++++++++++++++
- drivers/input/rmi4/rmi_f34.h |   74 ++++
- 2 files changed, 991 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_f30.c | 1247 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 1247 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_f34.c b/drivers/input/rmi4/rmi_f34.c
+diff --git a/drivers/input/rmi4/rmi_f30.c b/drivers/input/rmi4/rmi_f30.c
 new file mode 100644
-index 0000000..a07f7f9
+index 0000000..4bc2932
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_f34.c
-@@ -0,0 +1,917 @@
++++ b/drivers/input/rmi4/rmi_f30.c
+@@ -0,0 +1,1247 @@
 +/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
++ * Copyright (c) 2012 Synaptics Incorporated
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -70,983 +69,1233 @@ index 0000000..a07f7f9
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
++#define FUNCTION_DATA rmi_fn_30_data
++#define FNUM 30
++
 +#include <linux/kernel.h>
-+#include <linux/mutex.h>
 +#include <linux/rmi.h>
++#include <linux/input.h>
 +#include <linux/slab.h>
-+#include <linux/version.h>
 +#include "rmi_driver.h"
-+#include "rmi_f34.h"
 +
-+#define BLK_SZ_OFF	3
-+#define IMG_BLK_CNT_OFF	5
-+#define CFG_BLK_CNT_OFF	7
 +
-+#define BLK_NUM_OFF 2
++#define MAX_LEN 256
 +
-+/* data specific to fn $34 that needs to be kept around */
-+struct rmi_fn_34_data {
-+	unsigned char status;
-+	unsigned char cmd;
-+	unsigned short bootloaderid;
-+	unsigned short blocksize;
-+	unsigned short imageblockcount;
-+	unsigned short configblockcount;
-+	unsigned short blocknum;
-+	bool inflashprogmode;
-+	struct mutex attn_mutex;
-+};
-+
-+static ssize_t rmi_fn_34_status_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf);
-+
-+
-+static ssize_t rmi_fn_34_status_store(struct device *dev,
-+				  struct device_attribute *attr,
-+				  const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_34_cmd_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_fn_34_cmd_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_34_data_read(struct file *data_file, struct kobject *kobj,
-+				   struct bin_attribute *attributes,
-+				   char *buf, loff_t pos, size_t count);
-+
-+static ssize_t rmi_fn_34_data_write(struct file *data_file,
-+				    struct kobject *kobj,
-+				    struct bin_attribute *attributes, char *buf,
-+				    loff_t pos, size_t count);
-+
-+static ssize_t rmi_fn_34_bootloaderid_show(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf);
-+
-+static ssize_t rmi_fn_34_bootloaderid_store(struct device *dev,
-+					    struct device_attribute *attr,
-+					    const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_34_blocksize_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf);
-+
-+static ssize_t rmi_fn_34_imageblockcount_show(struct device *dev,
-+					      struct device_attribute *attr,
-+					      char *buf);
-+
-+static ssize_t rmi_fn_34_configblockcount_show(struct device *dev,
-+					       struct device_attribute *attr,
-+					       char *buf);
-+
-+static ssize_t rmi_fn_34_blocknum_show(struct device *dev,
-+				       struct device_attribute *attr,
-+				       char *buf);
-+
-+static ssize_t rmi_fn_34_blocknum_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_34_rescanPDT_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count);
-+
-+
-+static int rmi_f34_alloc_memory(struct rmi_function_container *fc);
-+
-+static void rmi_f34_free_memory(struct rmi_function_container *fc);
-+
-+static int rmi_f34_initialize(struct rmi_function_container *fc);
-+
-+static int rmi_f34_config(struct rmi_function_container *fc);
-+
-+static int rmi_f34_reset(struct rmi_function_container *fc);
-+
-+static int rmi_f34_create_sysfs(struct rmi_function_container *fc);
-+
-+
-+
-+static struct device_attribute attrs[] = {
-+	__ATTR(status, RMI_RW_ATTR,
-+	       rmi_fn_34_status_show, rmi_fn_34_status_store),
-+
-+	/* Also, sysfs will need to have a file set up to distinguish
-+	 * between commands - like Config write/read, Image write/verify. */
-+	__ATTR(cmd, RMI_RW_ATTR,
-+	       rmi_fn_34_cmd_show, rmi_fn_34_cmd_store),
-+	__ATTR(bootloaderid, RMI_RW_ATTR,
-+	       rmi_fn_34_bootloaderid_show, rmi_fn_34_bootloaderid_store),
-+	__ATTR(blocksize, RMI_RO_ATTR,
-+	       rmi_fn_34_blocksize_show, rmi_store_error),
-+	__ATTR(imageblockcount, RMI_RO_ATTR,
-+	       rmi_fn_34_imageblockcount_show, rmi_store_error),
-+	__ATTR(configblockcount, RMI_RO_ATTR,
-+	       rmi_fn_34_configblockcount_show, rmi_store_error),
-+	__ATTR(blocknum, RMI_RW_ATTR,
-+	       rmi_fn_34_blocknum_show, rmi_fn_34_blocknum_store),
-+	__ATTR(rescanPDT, RMI_WO_ATTR,
-+	       rmi_show_error, rmi_fn_34_rescanPDT_store)
-+};
-+
-+struct bin_attribute dev_attr_data = {
-+	.attr = {
-+		 .name = "data",
-+		 .mode = 0666},
-+	.size = 0,
-+	.read = rmi_fn_34_data_read,
-+	.write = rmi_fn_34_data_write,
-+};
-+
-+
-+static int rmi_f34_init(struct rmi_function_container *fc)
-+{
-+	int retval;
-+
-+	dev_info(&fc->dev, "Intializing f34 values.");
-+
-+	/* init instance data, fill in values and create any sysfs files */
-+	retval = rmi_f34_alloc_memory(fc);
-+	if (retval < 0)
-+		goto exit_free_data;
-+
-+	retval = rmi_f34_initialize(fc);
-+	if (retval < 0)
-+		goto exit_free_data;
-+
-+	retval = rmi_f34_create_sysfs(fc);
-+	if (retval < 0)
-+		goto exit_free_data;
-+
-+	return 0;
-+
-+exit_free_data:
-+	rmi_f34_free_memory(fc);
-+
-+	return retval;
-+}
-+
-+static int rmi_f34_alloc_memory(struct rmi_function_container *fc)
-+{
-+	struct rmi_fn_34_data *f34;
-+
-+	f34 = kzalloc(sizeof(struct rmi_fn_34_data), GFP_KERNEL);
-+	if (!f34) {
-+		dev_err(&fc->dev, "Failed to allocate rmi_fn_34_data.\n");
-+		return -ENOMEM;
-+	}
-+	fc->data = f34;
-+
-+	return 0;
-+}
-+
-+static void rmi_f34_free_memory(struct rmi_function_container *fc)
-+{
-+	kfree(fc->data);
-+	fc->data = NULL;
-+}
-+
-+static int rmi_f34_initialize(struct rmi_function_container *fc)
-+{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct rmi_device_platform_data *pdata;
-+	int retval = 0;
-+	struct rmi_fn_34_data *f34 = fc->data;
-+	u16 query_base_addr;
-+	u16 control_base_addr;
-+	unsigned char buf[2];
-+
-+	pdata = to_rmi_platform_data(rmi_dev);
-+	dev_dbg(&fc->dev, "Initializing F34 values for %s.\n",
-+		pdata->sensor_name);
-+
-+	mutex_init(&f34->attn_mutex);
-+
-+	/* get the Bootloader ID and Block Size. */
-+	query_base_addr = fc->fd.query_base_addr;
-+	control_base_addr = fc->fd.control_base_addr;
-+
-+	retval = rmi_read_block(fc->rmi_dev, query_base_addr, buf,
-+			ARRAY_SIZE(buf));
-+
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Could not read bootloaderid from 0x%04x.\n",
-+			query_base_addr);
-+		return retval;
-+	}
-+
-+	batohs(&f34->bootloaderid, buf);
-+
-+	retval = rmi_read_block(fc->rmi_dev, query_base_addr + BLK_SZ_OFF, buf,
-+			ARRAY_SIZE(buf));
-+
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Could not read block size from 0x%04x, "
-+			"error=%d.\n", query_base_addr + BLK_SZ_OFF, retval);
-+		return retval;
-+	}
-+	batohs(&f34->blocksize, buf);
-+
-+	/* Get firmware image block count and store it in the instance data */
-+	retval = rmi_read_block(fc->rmi_dev, query_base_addr + IMG_BLK_CNT_OFF,
-+			buf, ARRAY_SIZE(buf));
-+
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Couldn't read image block count from 0x%x, "
-+			"error=%d.\n", query_base_addr + IMG_BLK_CNT_OFF,
-+			retval);
-+		return retval;
-+	}
-+	batohs(&f34->imageblockcount, buf);
-+
-+	/* Get config block count and store it in the instance data */
-+	retval = rmi_read_block(fc->rmi_dev, query_base_addr + 7, buf,
-+			ARRAY_SIZE(buf));
-+
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Couldn't read config block count from 0x%x, "
-+			"error=%d.\n", query_base_addr + CFG_BLK_CNT_OFF,
-+			retval);
-+		return retval;
-+	}
-+	batohs(&f34->configblockcount, buf);
-+
-+	return 0;
-+}
-+
-+static int rmi_f34_create_sysfs(struct rmi_function_container *fc)
-+{
-+	int attr_count = 0;
-+	int rc;
-+
-+	dev_dbg(&fc->dev, "Creating sysfs files.");
-+
-+	/* We need a sysfs file for the image/config block to write or read.
-+	 * Set up sysfs bin file for binary data block. Since the image is
-+	 * already in our format there is no need to convert the data for
-+	 * endianess. */
-+	rc = sysfs_create_bin_file(&fc->dev.kobj,
-+				&dev_attr_data);
-+	if (rc < 0) {
-+		dev_err(&fc->dev, "Failed to create sysfs file for F34 data "
-+		     "(error = %d).\n", rc);
-+		return -ENODEV;
-+	}
-+
-+	/* Set up sysfs device attributes. */
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
-+		if (sysfs_create_file
-+		    (&fc->dev.kobj, &attrs[attr_count].attr) < 0) {
-+			dev_err(&fc->dev, "Failed to create sysfs file for %s.",
-+			     attrs[attr_count].attr.name);
-+			rc = -ENODEV;
-+			goto err_remove_sysfs;
-+		}
-+	}
-+
-+	return 0;
-+
-+err_remove_sysfs:
-+	sysfs_remove_bin_file(&fc->dev.kobj, &dev_attr_data);
-+
-+	for (attr_count--; attr_count >= 0; attr_count--)
-+		sysfs_remove_file(&fc->dev.kobj,
-+				  &attrs[attr_count].attr);
-+	return rc;
-+}
-+
-+static int rmi_f34_config(struct rmi_function_container *fc)
-+{
-+	/* for this function we should do nothing here */
-+	return 0;
-+}
-+
-+
-+static int rmi_f34_reset(struct rmi_function_container *fc)
-+{
-+	struct  rmi_fn_34_data  *instance_data = fc->data;
-+
-+	instance_data->status = ECONNRESET;
-+
-+	return 0;
-+}
-+
-+static void rmi_f34_remove(struct rmi_function_container *fc)
-+{
-+	int attr_count;
-+
-+	sysfs_remove_bin_file(&fc->dev.kobj,
-+						  &dev_attr_data);
-+
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++)
-+		sysfs_remove_file(&fc->dev.kobj,
-+				  &attrs[attr_count].attr);
-+
-+	rmi_f34_free_memory(fc);
-+}
-+
-+static int f34_read_status(struct rmi_function_container *fc)
-+{
-+	struct rmi_fn_34_data *instance_data = fc->data;
-+	u16 data_base_addr = fc->fd.data_base_addr;
-+	u8 status;
-+	int retval;
-+
-+	if (instance_data->status == ECONNRESET)
-+		return instance_data->status;
-+
-+	/* Read the Fn $34 status from F34_Flash_Data3 to see the previous
-+	 * commands status. F34_Flash_Data3 will be the address after the
-+	 * 2 block number registers plus blocksize Data registers.
-+	 *  inform user space - through a sysfs param. */
-+	retval = rmi_read(fc->rmi_dev,
-+			  data_base_addr + instance_data->blocksize +
-+			  BLK_NUM_OFF, &status);
-+
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Could not read status from 0x%x\n",
-+		       data_base_addr + instance_data->blocksize + BLK_NUM_OFF);
-+		status = 0xff;	/* failure */
-+	}
-+
-+	/* set a sysfs value that the user mode can read - only
-+	 * upper 4 bits are the status. successful is $80, anything
-+	 * else is failure */
-+	instance_data->status = status & 0xf0;
-+
-+	/* put mode into Flash Prog Mode when we successfully do
-+	 * an Enable Flash Prog cmd. */
-+	if ((instance_data->status == F34_STATUS_IDLE) &&
-+		(instance_data->cmd == F34_ENABLE_FLASH_PROG))
-+		instance_data->inflashprogmode = true;
-+
-+	return retval;
-+}
-+
-+int rmi_f34_attention(struct rmi_function_container *fc, u8 *irq_bits)
-+{
-+	int retval;
-+	struct rmi_fn_34_data *data = fc->data;
-+
-+	mutex_lock(&data->attn_mutex);
-+	retval = f34_read_status(fc);
-+	mutex_unlock(&data->attn_mutex);
-+	return retval;
-+}
-+
-+static struct rmi_function_handler function_handler = {
-+	.func = 0x34,
-+	.init = rmi_f34_init,
-+	.config = rmi_f34_config,
-+	.reset = rmi_f34_reset,
-+	.attention = rmi_f34_attention,
-+	.remove = rmi_f34_remove
-+};
-+
-+static ssize_t rmi_fn_34_bootloaderid_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->bootloaderid);
-+}
-+
-+static ssize_t rmi_fn_34_bootloaderid_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf,
-+					size_t count)
-+{
-+	int error;
-+	unsigned long val;
-+	unsigned char data[2];
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+	u16 data_base_addr;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+
-+	if (error)
-+		return error;
-+
-+	instance_data->bootloaderid = val;
-+
-+	/* Write the Bootloader ID key data back to the first two Block
-+	 * Data registers (F34_Flash_Data2.0 and F34_Flash_Data2.1). */
-+	hstoba(data, (unsigned short)val);
-+	data_base_addr = fc->fd.data_base_addr;
-+
-+	error = rmi_write_block(fc->rmi_dev,
-+				data_base_addr + BLK_NUM_OFF,
-+				data,
-+				ARRAY_SIZE(data));
-+
-+	if (error < 0) {
-+		dev_err(dev, "%s : Could not write bootloader id to 0x%x\n",
-+		       __func__, data_base_addr + BLK_NUM_OFF);
-+		return error;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_fn_34_blocksize_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->blocksize);
-+}
-+
-+static ssize_t rmi_fn_34_imageblockcount_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			instance_data->imageblockcount);
-+}
-+
-+static ssize_t rmi_fn_34_configblockcount_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			instance_data->configblockcount);
-+}
-+
-+static ssize_t rmi_fn_34_status_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+	int retval;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	mutex_lock(&instance_data->attn_mutex);
-+	retval = f34_read_status(fc);
-+	mutex_unlock(&instance_data->attn_mutex);
-+
-+	if (retval < 0)
-+		return retval;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->status);
-+}
-+
-+
-+static ssize_t rmi_fn_34_status_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	instance_data->status = 0;
-+
-+	return 0;
-+}
-+
-+
-+static ssize_t rmi_fn_34_cmd_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->cmd);
-+}
-+
-+static ssize_t rmi_fn_34_cmd_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf,
-+				size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+	unsigned long val;
-+	u16 data_base_addr;
-+	int error;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+	data_base_addr = fc->fd.data_base_addr;
-+
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+	if (error)
-+		return error;
-+
-+	/* make sure we are in Flash Prog mode for all cmds except the
-+	 * Enable Flash Programming cmd - otherwise we are in error */
-+	if ((val != F34_ENABLE_FLASH_PROG) && !instance_data->inflashprogmode) {
-+		dev_err(dev, "%s: CANNOT SEND CMD %d TO SENSOR - "
-+			"NOT IN FLASH PROG MODE\n"
-+			, __func__, data_base_addr);
-+		return -EINVAL;
-+	}
-+
-+	instance_data->cmd = val;
-+
-+	/* Validate command value and (if necessary) write it to the command
-+	 * register.
-+	 */
-+	switch (instance_data->cmd) {
-+	case F34_ENABLE_FLASH_PROG:
-+	case F34_ERASE_ALL:
-+	case F34_ERASE_CONFIG:
-+	case F34_WRITE_FW_BLOCK:
-+	case F34_READ_CONFIG_BLOCK:
-+	case F34_WRITE_CONFIG_BLOCK:
-+		/* Reset the status to indicate we are in progress on a cmd. */
-+		/* The status will change when the ATTN interrupt happens
-+		   and the status of the cmd that was issued is read from
-+		   the F34_Flash_Data3 register - result should be 0x80 for
-+		   success - any other value indicates an error */
-+
-+		/* Issue the command to the device. */
-+		error = rmi_write(fc->rmi_dev,
-+				data_base_addr + instance_data->blocksize +
-+				BLK_NUM_OFF, instance_data->cmd);
-+
-+		if (error < 0) {
-+			dev_err(dev, "%s: Could not write command 0x%02x "
-+				"to 0x%04x\n", __func__, instance_data->cmd,
-+				data_base_addr + instance_data->blocksize +
-+				BLK_NUM_OFF);
-+			return error;
-+		}
-+
-+		if (instance_data->cmd == F34_ENABLE_FLASH_PROG)
-+			instance_data->inflashprogmode = true;
-+
-+		/* set status to indicate we are in progress */
-+		instance_data->status = F34_STATUS_IN_PROGRESS;
-+		break;
-+	default:
-+		dev_dbg(dev, "%s: RMI4 function $34 - "
-+				"unknown command 0x%02lx.\n", __func__, val);
-+		count = -EINVAL;
-+		break;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_fn_34_blocknum_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->blocknum);
-+}
-+
-+static ssize_t rmi_fn_34_blocknum_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf,
-+					size_t count)
-+{
-+	int error;
-+	unsigned long val;
-+	unsigned char data[2];
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+	u16 data_base_addr;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+	data_base_addr = fc->fd.data_base_addr;
-+
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+
-+	if (error)
-+		return error;
-+
-+	instance_data->blocknum = val;
-+
-+	/* Write the Block Number data back to the first two Block
-+	 * Data registers (F34_Flash_Data_0 and F34_Flash_Data_1). */
-+	hstoba(data, (unsigned short)val);
-+
-+	error = rmi_write_block(fc->rmi_dev, data_base_addr,
-+				data, ARRAY_SIZE(data));
-+
-+	if (error < 0) {
-+		dev_err(dev, "%s : Could not write block number %u to 0x%x\n",
-+		       __func__, instance_data->blocknum, data_base_addr);
-+		return error;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_fn_34_rescanPDT_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+	struct rmi_device *rmi_dev;
-+	struct rmi_driver_data *driver_data;
-+	struct pdt_entry pdt_entry;
-+	bool fn01found = false;
-+	bool fn34found = false;
-+	unsigned int rescan;
-+	int irq_count = 0;
-+	int retval = 0;
-+	int i;
-+
-+	/* Rescan of the PDT is needed since issuing the Flash Enable cmd
-+	 * the device registers for Fn$01 and Fn$34 moving around because
-+	 * of the change from Bootloader mode to Flash Programming mode
-+	 * may change to a different PDT with only Fn$01 and Fn$34 that
-+	 * could have addresses for query, control, data, command registers
-+	 * that differ from the PDT scan done at device initialization. */
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+	rmi_dev = fc->rmi_dev;
-+	driver_data = rmi_get_driverdata(rmi_dev);
-+
-+	/* Make sure we are only in Flash Programming mode  - DON'T
-+	 * ALLOW THIS IN UI MODE. */
-+	if (instance_data->cmd != F34_ENABLE_FLASH_PROG) {
-+		dev_err(dev, "%s: NOT IN FLASH PROG MODE - CAN'T RESCAN PDT.\n"
-+				, __func__);
-+		return -EINVAL;
-+	}
-+
-+	/* The only good value to write to this is 1, we allow 0, but with
-+	 * no effect (this is consistent with the way the command bit works. */
-+	if (sscanf(buf, "%u", &rescan) != 1)
-+		return -EINVAL;
-+	if (rescan < 0 || rescan > 1)
-+		return -EINVAL;
-+
-+	/* 0 has no effect, so we skip it entirely. */
-+	if (rescan) {
-+		/* rescan the PDT - filling in Fn01 and Fn34 addresses -
-+		 * this is only temporary - the device will need to be reset
-+		 * to return the PDT to the normal values. */
-+
-+		/* mini-parse the PDT - we only have to get Fn$01 and Fn$34 and
-+		   since we are Flash Programming mode we only have page 0. */
-+		for (i = PDT_START_SCAN_LOCATION; i >= PDT_END_SCAN_LOCATION;
-+			i -= sizeof(pdt_entry)) {
-+			retval = rmi_read_block(rmi_dev, i, (u8 *)&pdt_entry,
-+					       sizeof(pdt_entry));
-+			if (retval != sizeof(pdt_entry)) {
-+				dev_err(dev, "%s: err frm rmi_read_block pdt "
-+					"entry data from PDT, "
-+					"error = %d.", __func__, retval);
-+				return retval;
-+			}
-+
-+			if ((pdt_entry.function_number == 0x00) ||
-+				(pdt_entry.function_number == 0xff))
-+				break;
-+
-+			dev_dbg(dev, "%s: Found F%.2X\n",
-+				__func__, pdt_entry.function_number);
-+
-+			/* f01 found - just fill in the new addresses in
-+			 * the existing fc. */
-+			if (pdt_entry.function_number == 0x01) {
-+				struct rmi_function_container *f01_fc =
-+					driver_data->f01_container;
-+				fn01found = true;
-+				f01_fc->fd.query_base_addr =
-+					pdt_entry.query_base_addr;
-+				f01_fc->fd.command_base_addr =
-+				  pdt_entry.command_base_addr;
-+				f01_fc->fd.control_base_addr =
-+				  pdt_entry.control_base_addr;
-+				f01_fc->fd.data_base_addr =
-+				  pdt_entry.data_base_addr;
-+				f01_fc->fd.function_number =
-+				  pdt_entry.function_number;
-+				f01_fc->fd.interrupt_source_count =
-+				  pdt_entry.interrupt_source_count;
-+				f01_fc->num_of_irqs =
-+				  pdt_entry.interrupt_source_count;
-+				f01_fc->irq_pos = irq_count;
-+
-+				irq_count += f01_fc->num_of_irqs;
-+
-+				if (fn34found)
-+					break;
-+			}
-+
-+			/* f34 found - just fill in the new addresses in
-+			 * the existing fc. */
-+			if (pdt_entry.function_number == 0x34) {
-+				fn34found = true;
-+				fc->fd.query_base_addr =
-+				  pdt_entry.query_base_addr;
-+				fc->fd.command_base_addr =
-+				  pdt_entry.command_base_addr;
-+				fc->fd.control_base_addr =
-+				  pdt_entry.control_base_addr;
-+				fc->fd.data_base_addr =
-+				  pdt_entry.data_base_addr;
-+				fc->fd.function_number =
-+				  pdt_entry.function_number;
-+				fc->fd.interrupt_source_count =
-+				  pdt_entry.interrupt_source_count;
-+				fc->num_of_irqs =
-+				  pdt_entry.interrupt_source_count;
-+				fc->irq_pos = irq_count;
-+
-+				irq_count += fc->num_of_irqs;
-+
-+				if (fn01found)
-+					break;
-+			}
-+
-+		}
-+
-+		if (!fn01found || !fn34found) {
-+			dev_err(dev, "%s: failed to find fn$01 or fn$34 trying "
-+				"to do rescan PDT.\n"
-+				, __func__);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_fn_34_data_read(struct file *data_file,
-+				struct kobject *kobj,
-+				struct bin_attribute *attributes,
-+				char *buf,
-+				loff_t pos,
-+				size_t count)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+	u16 data_base_addr;
-+	int error;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	data_base_addr = fc->fd.data_base_addr;
-+
-+	if (count != instance_data->blocksize) {
-+		dev_err(dev,
-+			"%s : Incorrect F34 block size %d. "
-+			"Expected size %d.\n",
-+			__func__, count, instance_data->blocksize);
-+		return -EINVAL;
-+	}
-+
-+	/* Read the data from flash into buf.  The app layer will be blocked
-+	 * at reading from the sysfs file.  When we return the count (or
-+	 * error if we fail) the app will resume. */
-+	error = rmi_read_block(fc->rmi_dev, data_base_addr + BLK_NUM_OFF,
-+			(unsigned char *)buf, count);
-+
-+	if (error < 0) {
-+		dev_err(dev, "%s : Could not read data from 0x%04x\n",
-+		       __func__, data_base_addr + BLK_NUM_OFF);
-+		return error;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_fn_34_data_write(struct file *data_file,
-+				struct kobject *kobj,
-+				struct bin_attribute *attributes,
-+				char *buf,
-+				loff_t pos,
-+				size_t count)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_34_data *instance_data;
-+	u16 data_base_addr;
-+	int error;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	data_base_addr = fc->fd.data_base_addr;
-+
-+	/* Write the data from buf to flash. The app layer will be
-+	 * blocked at writing to the sysfs file.  When we return the
-+	 * count (or error if we fail) the app will resume. */
-+
-+	if (count != instance_data->blocksize) {
-+		dev_err(dev,
-+			"%s : Incorrect F34 block size %d. "
-+			"Expected size %d.\n",
-+			__func__, count, instance_data->blocksize);
-+		return -EINVAL;
-+	}
-+
-+	/* Write the data block - only if the count is non-zero  */
-+	if (count) {
-+		error = rmi_write_block(fc->rmi_dev,
-+				data_base_addr + BLK_NUM_OFF,
-+				(unsigned char *)buf,
-+				count);
-+
-+		if (error < 0) {
-+			dev_err(dev, "%s : Could not write block data "
-+				"to 0x%x\n", __func__,
-+				data_base_addr + BLK_NUM_OFF);
-+			return error;
-+		}
-+	}
-+
-+	return count;
-+}
-+
-+static int __init rmi_f34_module_init(void)
-+{
-+	int error;
-+
-+	error = rmi_register_function_driver(&function_handler);
-+	if (error < 0) {
-+		pr_err("%s : register failed !\n", __func__);
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+
-+static void rmi_f34_module_exit(void)
-+{
-+	rmi_unregister_function_driver(&function_handler);
-+}
-+
-+module_init(rmi_f34_module_init);
-+module_exit(rmi_f34_module_exit);
-+
-+MODULE_AUTHOR("William Manson <wmanson@synaptics.com");
-+MODULE_DESCRIPTION("RMI F34 module");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(RMI_DRIVER_VERSION);
-diff --git a/drivers/input/rmi4/rmi_f34.h b/drivers/input/rmi4/rmi_f34.h
-new file mode 100644
-index 0000000..85f3343
---- /dev/null
-+++ b/drivers/input/rmi4/rmi_f34.h
-@@ -0,0 +1,74 @@
-+/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+
-+#ifndef _RMI_F34_H
-+#define _RMI_F34_H
-+
-+/* F34 image file offsets. */
-+#define F34_FW_IMAGE_OFFSET 0x100
-+
-+/* F34 register offsets. */
-+#define F34_BLOCK_DATA_OFFSET	2
-+
-+/* F34 commands */
-+#define F34_WRITE_FW_BLOCK        0x2
-+#define F34_ERASE_ALL             0x3
-+#define F34_READ_CONFIG_BLOCK     0x5
-+#define F34_WRITE_CONFIG_BLOCK    0x6
-+#define F34_ERASE_CONFIG          0x7
-+#define F34_ENABLE_FLASH_PROG     0xf
-+
-+#define F34_STATUS_IN_PROGRESS    0xff
-+#define F34_STATUS_IDLE		  0x80
-+
-+#define F34_IDLE_WAIT_MS 500
-+#define F34_ENABLE_WAIT_MS 300
-+#define F34_ERASE_WAIT_MS (5 * 1000)
-+
-+union f34_query_regs {
++/* data specific to fn $30 that needs to be kept around */
++union f30_query {
 +	struct {
-+		u16 reg_map:1;
-+		u16 unlocked:1;
-+		u16 has_config_id:1;
-+		u16 reserved:5;
-+		u16 block_size:16;
-+		u16 fw_block_count:16;
-+		u16 config_block_count:16;
-+	} __attribute__ ((__packed__));
++		u8 extended_patterns:1;
++		u8 has_mappable_buttons:1;
++		u8 has_led:1;
++		u8 has_gpio:1;
++		u8 has_haptic:1;
++		u8 has_gpio_driver_control:1;
++		u8 gpio_led_count:5;
++	};
 +	struct {
-+		u8 regs[7];
++		u8 regs[2];
 +		u16 address;
 +	};
 +};
 +
-+union f34_control_status {
++struct f30_gpio_ctrl_0n {
++	u8 led_sel;
++};
++
++struct f30_gpio_ctrl_0 {
++	struct f30_gpio_ctrl_0n *regs;
++	u16 address;
++	u8 length;
++};
++
++union f30_gpio_ctrl_1 {
 +	struct {
-+		u8 command:4;
-+		u8 status:3;
-+		u8 program_enabled:1;
-+	} __attribute__ ((__packed__));
++		u8 gpio_debounce:1;
++		u8 reserved:3;
++		u8 halt:1;
++		u8 halted:1;
++		u8 reserved2:2;
++	};
 +	struct {
 +		u8 regs[1];
 +		u16 address;
 +	};
 +};
 +
-+#define IS_IDLE(ctl_ptr) ((!ctl_ptr->status) && (!ctl_ptr->command))
++struct f30_gpio_ctrl_2n {
++	u8 dir;
++};
 +
-+#endif
++struct f30_gpio_ctrl_2 {
++	struct f30_gpio_ctrl_2n *regs;
++	u16 address;
++	u8 length;
++};
++
++struct f30_gpio_ctrl_3n {
++	u8 gpiodata;
++};
++
++struct f30_gpio_ctrl_3 {
++	struct f30_gpio_ctrl_3n *regs;
++	u16 address;
++	u8 length;
++};
++
++struct f30_gpio_ctrl_4n {
++	u8 led_act;
++};
++
++struct f30_gpio_ctrl_4 {
++	struct f30_gpio_ctrl_4n *regs;
++	u16 address;
++	u8 length;
++};
++
++struct f30_gpio_ctrl_5n {
++	u8 ramp_period_a;
++	u8 ramp_period_b;
++};
++
++struct f30_gpio_ctrl_5 {
++	struct f30_gpio_ctrl_5n *regs;
++	u16 address;
++	u8 length;
++};
++
++union f30_gpio_ctrl_6n {
++	struct {
++		u8 reserved:1;
++		u8 SPCTRL:3;
++		u8 STRPD:1;
++		u8 reserved2:1;
++		u8 STRPU:1;
++		u8 reserved3:1;
++	};
++	struct {
++		u8 brightness:4;
++		u8 pattern:4;
++	};
++};
++
++struct f30_gpio_ctrl_6 {
++	union f30_gpio_ctrl_6n *regs;
++	u16 address;
++	u8 length;
++};
++
++struct f30_gpio_ctrl_7n {
++	u8 capacity_btn_nbr:5;
++	u8 valid:1;
++	u8 invert:1;
++	u8 open_drain:1;
++};
++
++struct f30_gpio_ctrl_7 {
++	struct f30_gpio_ctrl_7n *regs;
++	u16 address;
++	u8 length;
++};
++
++struct f30_gpio_ctrl_8n {
++	u8 gpio_ctrl8_0;
++	u8 gpio_ctrl8_1;
++};
++
++struct f30_gpio_ctrl_8 {
++	struct f30_gpio_ctrl_8n *regs;
++	u16 address;
++	u8 length;
++};
++
++union f30_gpio_ctrl_9 {
++	struct {
++		u8 haptic_duration;
++	};
++	struct {
++		u8 regs[1];
++		u16 address;
++	};
++};
++
++struct f30_control {
++	struct f30_gpio_ctrl_0 *reg_0;
++	union f30_gpio_ctrl_1 *reg_1;
++	struct f30_gpio_ctrl_2 *reg_2;
++	struct f30_gpio_ctrl_3 *reg_3;
++	struct f30_gpio_ctrl_4 *reg_4;
++	struct f30_gpio_ctrl_5 *reg_5;
++	struct f30_gpio_ctrl_6 *reg_6;
++	struct f30_gpio_ctrl_7 *reg_7;
++	struct f30_gpio_ctrl_8 *reg_8;
++	union f30_gpio_ctrl_9 *reg_9;
++};
++
++struct f30_data_0n {
++	u8 gpi_led_data:1;
++};
++
++struct f30_data_0 {
++	struct f30_data_0n *regs;
++	u16 address;
++	u8 length;
++};
++
++struct f30_data {
++	struct f30_data_0 *datareg_0;
++	u16 address;
++	u8 length;
++};
++
++struct rmi_fn_30_data {
++	union f30_query query;
++	struct f30_data data;
++	struct f30_control control;
++	unsigned char gpioled_count;
++	unsigned char gpioled_bitmask_size;
++	unsigned char gpioled_byte_size;
++	unsigned char *button_data_buffer;
++	unsigned char button_bitmask_size;
++	unsigned short *gpioled_map;
++	char input_name[MAX_LEN];
++	char input_phys[MAX_LEN];
++	struct input_dev *input;
++	struct mutex control_mutex;
++	struct mutex data_mutex;
++};
++
++static int rmi_f30_alloc_memory(struct rmi_function_container *fc);
++
++static void rmi_f30_free_memory(struct rmi_function_container *fc);
++
++static int rmi_f30_initialize(struct rmi_function_container *fc);
++
++static int rmi_f30_register_device(struct rmi_function_container *fc);
++
++static int rmi_f30_config(struct rmi_function_container *fc);
++
++static int rmi_f30_create_sysfs(struct rmi_function_container *fc);
++
++
++/* Query sysfs files */
++
++show_union_struct_prototype(extended_patterns)
++show_union_struct_prototype(has_mappable_buttons)
++show_union_struct_prototype(has_led)
++show_union_struct_prototype(has_gpio)
++show_union_struct_prototype(has_haptic)
++show_union_struct_prototype(has_gpio_driver_control)
++show_union_struct_prototype(gpio_led_count)
++
++static struct attribute *attrs1[] = {
++	attrify(extended_patterns),
++	attrify(has_mappable_buttons),
++	attrify(has_led),
++	attrify(has_gpio),
++	attrify(has_haptic),
++	attrify(has_gpio_driver_control),
++	attrify(gpio_led_count),
++	NULL
++};
++
++static struct attribute_group attrs_query = GROUP(attrs1);
++
++/* Control sysfs files */
++
++show_store_union_struct_prototype(led_sel)
++show_store_union_struct_prototype(gpio_debounce)
++show_store_union_struct_prototype(halt)
++show_store_union_struct_prototype(halted)
++show_store_union_struct_prototype(dir)
++show_store_union_struct_prototype(gpiodata)
++show_store_union_struct_prototype(led_act)
++show_store_union_struct_prototype(ramp_period_a)
++show_store_union_struct_prototype(ramp_period_b)
++show_store_union_struct_prototype(SPCTRL)
++show_store_union_struct_prototype(STRPD)
++show_store_union_struct_prototype(STRPU)
++show_store_union_struct_prototype(brightness)
++show_store_union_struct_prototype(pattern)
++
++show_store_union_struct_prototype(capacity_btn_nbr)
++show_store_union_struct_prototype(valid)
++show_store_union_struct_prototype(invert)
++show_store_union_struct_prototype(open_drain)
++show_store_union_struct_prototype(gpio_ctrl8_0)
++show_store_union_struct_prototype(gpio_ctrl8_1)
++show_store_union_struct_prototype(haptic_duration)
++
++/* Data sysfs files */
++show_store_union_struct_prototype(gpi_led_data)
++
++static struct attribute *attrs_ctrl_reg_0[] = {
++	attrify(led_sel),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_1[] = {
++	attrify(gpio_debounce),
++	attrify(halt),
++	attrify(halted),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_2[] = {
++	attrify(dir),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_3[] = {
++	attrify(gpiodata),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_4[] = {
++	attrify(led_act),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_5[] = {
++	attrify(ramp_period_a),
++	attrify(ramp_period_b),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_6_gpio[] = {
++	attrify(SPCTRL),
++	attrify(STRPD),
++	attrify(STRPU),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_6_led[] = {
++	attrify(brightness),
++	attrify(pattern),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_7[] = {
++	attrify(capacity_btn_nbr),
++	attrify(valid),
++	attrify(invert),
++	attrify(open_drain),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_8[] = {
++	attrify(gpio_ctrl8_0),
++	attrify(gpio_ctrl8_1),
++	NULL
++};
++
++static struct attribute *attrs_ctrl_reg_9[] = {
++	attrify(haptic_duration),
++	NULL
++};
++
++static struct attribute_group attrs_ctrl_regs[] = {
++	GROUP(attrs_ctrl_reg_0),
++	GROUP(attrs_ctrl_reg_1),
++	GROUP(attrs_ctrl_reg_2),
++	GROUP(attrs_ctrl_reg_3),
++	GROUP(attrs_ctrl_reg_4),
++	GROUP(attrs_ctrl_reg_5),
++	GROUP(attrs_ctrl_reg_6_gpio),
++	GROUP(attrs_ctrl_reg_6_led),
++	GROUP(attrs_ctrl_reg_7),
++	GROUP(attrs_ctrl_reg_8),
++	GROUP(attrs_ctrl_reg_9),
++};
++
++bool f30_attrs_regs_exist[ARRAY_SIZE(attrs_ctrl_regs)];
++
++static struct attribute *attrs_gpileddata[] = {
++	attrify(gpi_led_data),
++	NULL
++};
++
++static struct attribute_group attrs_data = GROUP(attrs_gpileddata);
++
++int rmi_f30_read_control_parameters(struct rmi_device *rmi_dev,
++	struct rmi_fn_30_data *f30)
++{
++	int retval = 0;
++	struct f30_control *control = &f30->control;
++
++	retval = rmi_read_block(rmi_dev, control->reg_0->address,
++			(u8 *)control->reg_0->regs,
++			control->reg_0->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg0 to 0x%x\n",
++			__func__, control->reg_0->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_1->address,
++			(u8 *)control->reg_1->regs,
++			sizeof(control->reg_1->regs));
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg1 to 0x%x\n",
++			 __func__, control->reg_1->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_2->address,
++			(u8 *)control->reg_2->regs, control->reg_2->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg_2 to 0x%x\n",
++			 __func__, control->reg_2->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_3->address,
++			(u8 *)control->reg_3->regs, control->reg_3->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg_3 to 0x%x\n",
++			 __func__, control->reg_3->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_4->address,
++			(u8 *)control->reg_4->regs, control->reg_4->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg4 to 0x%x\n",
++			 __func__, control->reg_4->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_5->address,
++			(u8 *)control->reg_5->regs,
++			control->reg_5->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg5 to 0x%x\n", __func__,
++			control->reg_5->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_6->address,
++			(u8 *)control->reg_6->regs,
++			control->reg_6->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg6 to 0x%x\n", __func__,
++		control->reg_6->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_7->address,
++		(u8 *)control->reg_7->regs,
++		control->reg_7->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg7 to 0x%x\n", __func__,
++		control->reg_7->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_8->address,
++		(u8 *)control->reg_8->regs,
++		control->reg_8->length);
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg8 to 0x%x\n", __func__,
++		control->reg_8->address);
++		return retval;
++	}
++
++	retval = rmi_read_block(rmi_dev, control->reg_9->address,
++		(u8 *)control->reg_9->regs,
++		sizeof(control->reg_9->regs));
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"%s : Could not read control reg9 to 0x%x\n", __func__,
++		control->reg_9->address);
++		return retval;
++	}
++	return 0;
++}
++
++static int rmi_f30_init(struct rmi_function_container *fc)
++{
++	int rc;
++	struct rmi_fn_30_data *f30 = fc->data;
++
++	rc = rmi_f30_alloc_memory(fc);
++	if (rc < 0)
++		goto error_exit;
++
++	rc = rmi_f30_initialize(fc);
++	if (rc < 0)
++		goto error_exit;
++
++	rc = rmi_f30_register_device(fc);
++	if (rc < 0)
++		goto error_exit;
++
++	rc = rmi_f30_create_sysfs(fc);
++	if (rc < 0)
++		goto error_uregister_exit;
++	return 0;
++
++error_uregister_exit:
++	input_unregister_device(f30->input);
++
++error_exit:
++	rmi_f30_free_memory(fc);
++
++	return rc;
++
++}
++
++static inline int rmi_f30_alloc_memory(struct rmi_function_container *fc)
++{
++	struct rmi_fn_30_data *f30;
++	int retval;
++
++	f30 = kzalloc(sizeof(struct rmi_fn_30_data), GFP_KERNEL);
++	if (!f30) {
++		dev_err(&fc->dev, "Failed to allocate rmi_fn_30_data.\n");
++		return -ENOMEM;
++	}
++	fc->data = f30;
++
++	retval = rmi_read_block(fc->rmi_dev,
++						fc->fd.query_base_addr,
++						f30->query.regs,
++					ARRAY_SIZE(f30->query.regs));
++
++	if (retval < 0) {
++		dev_err(&fc->dev, "Failed to read query register.\n");
++		return retval;
++	}
++
++	f30->gpioled_count = f30->query.gpio_led_count;
++	f30->button_bitmask_size = sizeof(u8)*(f30->gpioled_count + 7) / 8;
++	f30->button_data_buffer =
++	    kcalloc(f30->button_bitmask_size,
++		    sizeof(unsigned char), GFP_KERNEL);
++	if (!f30->button_data_buffer) {
++		dev_err(&fc->dev, "Failed to allocate button data buffer.\n");
++		return -ENOMEM;
++	}
++
++	f30->gpioled_map = kcalloc(f30->gpioled_count,
++				sizeof(unsigned short), GFP_KERNEL);
++	if (!f30->gpioled_map) {
++		dev_err(&fc->dev, "Failed to allocate button map.\n");
++		return -ENOMEM;
++	}
++	return 0;
++}
++
++static inline void rmi_f30_free_memory(struct rmi_function_container *fc)
++{
++	struct rmi_fn_30_data *f30 = fc->data;
++	u8 reg_num = 0;
++	sysfs_remove_group(&fc->dev.kobj, &attrs_query);
++	sysfs_remove_group(&fc->dev.kobj, &attrs_data);
++	for (reg_num = 0; reg_num < ARRAY_SIZE(attrs_ctrl_regs); reg_num++)
++		sysfs_remove_group(&fc->dev.kobj, &attrs_ctrl_regs[reg_num]);
++	if (f30) {
++		if (f30->control.reg_0)
++			kfree(f30->control.reg_0->regs);
++		kfree(f30->control.reg_0);
++
++		if (f30->control.reg_1)
++			kfree(f30->control.reg_1->regs);
++		kfree(f30->control.reg_1);
++
++		if (f30->control.reg_2)
++			kfree(f30->control.reg_2->regs);
++		kfree(f30->control.reg_2);
++
++		if (f30->control.reg_3)
++			kfree(f30->control.reg_3->regs);
++		kfree(f30->control.reg_3);
++
++		if (f30->control.reg_4)
++			kfree(f30->control.reg_4->regs);
++		kfree(f30->control.reg_4);
++
++		if (f30->control.reg_5)
++			kfree(f30->control.reg_5->regs);
++		kfree(f30->control.reg_5);
++
++		if (f30->control.reg_6)
++			kfree(f30->control.reg_6->regs);
++		kfree(f30->control.reg_6);
++
++		if (f30->control.reg_7)
++			kfree(f30->control.reg_7->regs);
++		kfree(f30->control.reg_7);
++
++		if (f30->control.reg_8)
++			kfree(f30->control.reg_8->regs);
++		kfree(f30->control.reg_8);
++
++		if (f30->control.reg_9)
++			kfree(f30->control.reg_9->regs);
++		kfree(f30->control.reg_9);
++
++		if (!f30->data.datareg_0)
++			kfree(f30->data.datareg_0->regs);
++		kfree(f30->data.datareg_0);
++
++		kfree(f30->button_data_buffer);
++		kfree(f30->gpioled_map);
++		kfree(f30);
++		fc->data = NULL;
++	}
++}
++
++int rmi_f30_attention(struct rmi_function_container *fc, u8 *irq_bits)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	int data_base_addr = fc->fd.data_base_addr;
++	struct rmi_fn_30_data *f30 = fc->data;
++	int error;
++	int gpiled;
++	bool gpiled_status = false;
++	int status = 0;
++
++	/* Read the button data. */
++
++	error = rmi_read_block(rmi_dev, data_base_addr,
++			f30->button_data_buffer,
++			f30->button_bitmask_size);
++	if (error < 0) {
++		dev_err(&fc->dev,
++			"%s: Failed to read button data registers.\n",
++			__func__);
++		return error;
++	}
++
++	/* Read the gpi led data. */
++	f30->data.address = fc->fd.data_base_addr;
++	error = rmi_read_block(fc->rmi_dev, f30->data.address,
++		(u8 *)&f30->data, f30->gpioled_count);
++
++	if (error < 0) {
++		dev_err(&fc->dev, "%s: Failed to read f30 data registers.\n",
++			__func__);
++		return error;
++	}
++	/* Generate events for buttons that change state. */
++	for (gpiled = 0; gpiled < f30->gpioled_count; gpiled++) {
++		status = f30->data.datareg_0->regs[gpiled].gpi_led_data;
++		dev_warn(&fc->dev,
++			"rmi_f30 attention gpiled=%d data status=%d\n",
++			gpiled,
++			f30->data.datareg_0->regs[gpiled].gpi_led_data);
++		/* check if gpio */
++		if (!(f30->control.reg_0->regs[gpiled].led_sel)) {
++			if (f30->control.reg_2->regs[gpiled].dir == 0) {
++				gpiled_status = status != 0;
++
++		/* if the gpiled data state changed from the
++		* last time report it and store the new state */
++		/* Generate an event here. */
++			dev_warn(&fc->dev,
++			"rmi_f30 attention call input_report_key\n");
++			input_report_key(f30->input,
++				f30->data.datareg_0->regs[gpiled].gpi_led_data,
++				gpiled_status);
++			}
++		}
++	}
++	input_sync(f30->input); /* sync after groups of events */
++	return 0;
++}
++
++static int rmi_f30_register_device(struct rmi_function_container *fc)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct input_dev *input_dev;
++	struct rmi_fn_30_data *f30 = fc->data;
++	int i;
++	int rc;
++
++	input_dev = input_allocate_device();
++	if (!input_dev) {
++		dev_err(&fc->dev, "Failed to allocate input device.\n");
++		return -ENOMEM;
++	}
++
++	f30->input = input_dev;
++	snprintf(f30->input_name, MAX_LEN, "%sfn%02x", dev_name(&rmi_dev->dev),
++		fc->fd.function_number);
++	input_dev->name = f30->input_name;
++	snprintf(f30->input_phys, MAX_LEN, "%s/input0", input_dev->name);
++	input_dev->phys = f30->input_phys;
++	input_dev->dev.parent = &rmi_dev->dev;
++	input_set_drvdata(input_dev, f30);
++
++	/* Set up any input events. */
++	set_bit(EV_SYN, input_dev->evbit);
++	set_bit(EV_KEY, input_dev->evbit);
++	input_dev->keycode = f30->gpioled_map;
++	input_dev->keycodesize = 1;
++	input_dev->keycodemax = f30->gpioled_count;
++	/* set bits for each qpio led pin... */
++	for (i = 0; i < f30->gpioled_count; i++) {
++		set_bit(f30->gpioled_map[i], input_dev->keybit);
++		input_set_capability(input_dev, EV_KEY, f30->gpioled_map[i]);
++	}
++
++	rc = input_register_device(input_dev);
++	if (rc < 0) {
++		dev_err(&fc->dev, "Failed to register input device.\n");
++		goto error_free_device;
++	}
++	return 0;
++
++error_free_device:
++	input_free_device(input_dev);
++
++	return rc;
++}
++
++
++static int rmi_f30_config(struct rmi_function_container *fc)
++{
++	struct rmi_fn_30_data *data = fc->data;
++	int gpio_led_cnt = data->query.gpio_led_count;
++	int bytecnt = gpio_led_cnt / 7 + 1;
++	int regs_size = 0;
++	int rc;
++	/* repeated register functions */
++
++	/* Write Control Register values back to device */
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_0->address,
++				(u8 *)data->control.reg_0,
++				bytecnt * sizeof(struct f30_gpio_ctrl_0n));
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 0 to 0x%x\n",
++				__func__, rc, data->control.reg_0->address);
++		return rc;
++	}
++
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_1->address,
++			(u8 *) data->control.reg_1->regs,
++			sizeof(union f30_gpio_ctrl_1));
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 1 to 0x%x\n",
++				__func__, rc, data->control.reg_1->address);
++		return rc;
++	}
++
++	regs_size = data->control.reg_2->length;
++
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_2->address,
++			(u8 *) data->control.reg_2->regs,
++			regs_size);
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 2 to 0x%x\n",
++				__func__, rc, data->control.reg_2->address);
++		return rc;
++	}
++
++	regs_size = data->control.reg_3->length;
++
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_3->address,
++			(u8 *) data->control.reg_3->regs,
++			regs_size);
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 3 to 0x%x\n",
++				__func__, rc, data->control.reg_3->address);
++		return rc;
++	}
++
++	regs_size = data->control.reg_4->length;
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_4->address,
++			(u8 *) data->control.reg_4->regs,
++			regs_size);
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 4 to 0x%x\n",
++				__func__, rc, data->control.reg_4->address);
++		return rc;
++	}
++
++	regs_size = data->control.reg_5->length;
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_5->address,
++			(u8 *) data->control.reg_5->regs,
++			regs_size);
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 5 to 0x%x\n",
++				__func__, rc, data->control.reg_5->address);
++		return rc;
++	}
++
++	regs_size = data->control.reg_6->length;
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_6->address,
++			(u8 *) data->control.reg_6->regs,
++			regs_size);
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 6 to 0x%x\n",
++				__func__, rc, data->control.reg_6->address);
++		return rc;
++	}
++
++	regs_size = data->control.reg_7->length;
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_7->address,
++			(u8 *) data->control.reg_7->regs,
++			regs_size);
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 7 to 0x%x\n",
++			__func__, rc, data->control.reg_7->address);
++		return rc;
++	}
++
++	regs_size = data->control.reg_8->length;
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_8->address,
++			(u8 *) data->control.reg_8->regs, regs_size);
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 9 to 0x%x\n",
++			__func__, rc, data->control.reg_8->address);
++		return rc;
++	}
++
++	rc = rmi_write_block(fc->rmi_dev, data->control.reg_9->address,
++			(u8 *) data->control.reg_9->regs,
++			sizeof(union f30_gpio_ctrl_9));
++	if (rc < 0) {
++		dev_err(&fc->dev, "%s error %d: Could not write control 9 to 0x%x\n",
++				__func__, rc, data->control.reg_9->address);
++		return rc;
++	}
++
++	return 0;
++}
++
++static inline int rmi_f30_initialize(struct rmi_function_container *fc)
++{
++	struct rmi_device *rmi_dev = fc->rmi_dev;
++	struct rmi_device_platform_data *pdata;
++	struct rmi_fn_30_data *instance_data = fc->data;
++
++	int retval = 0;
++	u16 next_loc;
++	int  gpio_led_cnt = 0;
++	int regs_size = 0;
++	u8 reg_num = 0;
++	int reg_flg;
++	int hasgpio, hasled, hasmbtn, hashaptic;
++	struct f30_control *control = &instance_data->control;
++
++	/* Read F30 Query Data */
++	instance_data->query.address = fc->fd.query_base_addr;
++	retval = rmi_read_block(fc->rmi_dev, instance_data->query.address,
++		(u8 *)&instance_data->query, sizeof(instance_data->query));
++	if (retval < 0) {
++		dev_err(&fc->dev,
++		"Could not read query registers from 0x%04x\n",
++		instance_data->query.address);
++		return retval;
++	}
++
++	/* initialize gpioled_map data */
++	hasgpio = instance_data->query.has_gpio;
++	hasled = instance_data->query.has_led;
++	hasmbtn = instance_data->query.has_mappable_buttons;
++	hashaptic = instance_data->query.has_haptic ;
++	gpio_led_cnt = instance_data->query.gpio_led_count;
++
++	pdata = to_rmi_platform_data(rmi_dev);
++	if (pdata) {
++		if (!pdata->gpioled_map) {
++			dev_warn(&fc->dev,
++			"%s - gpioled_map is NULL", __func__);
++		} else if (pdata->gpioled_map->ngpioleds != gpio_led_cnt) {
++			dev_warn(&fc->dev,
++				"Platformdata gpioled map size (%d) != number "
++				"of buttons on device (%d) - ignored.\n",
++				pdata->gpioled_map->ngpioleds,
++				gpio_led_cnt);
++		} else if (!pdata->gpioled_map->map) {
++			dev_warn(&fc->dev,
++				 "Platformdata button map is missing!\n");
++		} else {
++			int i;
++			for (i = 0; i < pdata->gpioled_map->ngpioleds; i++)
++				instance_data->gpioled_map[i] =
++					pdata->gpioled_map->map[i];
++		}
++	}
++
++	/* Initialize Control Data */
++
++	next_loc = fc->fd.control_base_addr;
++
++	/* calculate reg size */
++
++	instance_data->gpioled_bitmask_size = sizeof(u8)*(gpio_led_cnt + 7) / 8;
++	instance_data->gpioled_byte_size = sizeof(u8)*gpio_led_cnt;
++
++	/* reg_0 */
++	control->reg_0 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_0), GFP_KERNEL);
++	if (!control->reg_0) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++
++	if (hasgpio && hasled)
++		reg_flg = 1;
++
++	f30_attrs_regs_exist[reg_num] = true;
++	regs_size = max(sizeof(struct f30_gpio_ctrl_0n) * reg_flg *
++					instance_data->gpioled_bitmask_size, 1);
++	control->reg_0->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++
++	if (!control->reg_0->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_0->address = next_loc;
++	control->reg_0->length = regs_size;
++	next_loc += regs_size;
++	reg_num++;
++
++	/* reg_1 */
++	control->reg_1 =
++			kzalloc(sizeof(union f30_gpio_ctrl_1), GFP_KERNEL);
++	if (!control->reg_1) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f30_attrs_regs_exist[reg_num] = true;
++	reg_num++;
++	instance_data->control.reg_1->address = next_loc;
++	next_loc += regs_size;
++
++	/* reg_2 */
++	instance_data->control.reg_2 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_2), GFP_KERNEL);
++	if (!control->reg_2) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++
++	reg_flg = hasgpio;
++	f30_attrs_regs_exist[reg_num] = true;
++	regs_size = max(sizeof(struct f30_gpio_ctrl_2n)*reg_flg*
++					instance_data->gpioled_bitmask_size, 1);
++	control->reg_2->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++
++	if (!control->reg_2->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_2->address = next_loc;
++	control->reg_2->length = regs_size;
++	next_loc += regs_size;
++	reg_num++;
++
++	/* reg_3 */
++	instance_data->control.reg_3 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_3), GFP_KERNEL);
++	if (!control->reg_3) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++
++	reg_flg = hasgpio;
++	f30_attrs_regs_exist[reg_num] = true;
++	regs_size = max(sizeof(struct f30_gpio_ctrl_3n) * reg_flg *
++					instance_data->gpioled_bitmask_size, 1);
++	control->reg_3->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++
++	if (!control->reg_3->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_3->address = next_loc;
++	control->reg_3->length = regs_size;
++	next_loc += regs_size;
++	reg_num++;
++
++	/* reg_4 */
++	control->reg_4 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_4), GFP_KERNEL);
++	if (!control->reg_4) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++
++	reg_flg = hasled;
++	f30_attrs_regs_exist[reg_num] = true;
++	regs_size = max(sizeof(struct f30_gpio_ctrl_4n)*reg_flg*
++					instance_data->gpioled_bitmask_size,
++					sizeof(struct f30_gpio_ctrl_4n));
++	control->reg_4->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++	if (!control->reg_4->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_4->address = next_loc;
++	control->reg_4->length = regs_size;
++	next_loc += regs_size;
++	reg_num++;
++
++	/* reg_5 */
++	control->reg_5 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_5), GFP_KERNEL);
++	if (!control->reg_5) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++
++	reg_flg = hasled;
++	f30_attrs_regs_exist[reg_num] = true;
++	regs_size = max(6 * reg_flg, 2);
++	control->reg_5->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++	if (!control->reg_5->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_5->address = next_loc;
++	control->reg_5->length = regs_size;
++	next_loc += regs_size;
++	reg_num++;
++
++	/* reg_6 */
++	control->reg_6 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_6), GFP_KERNEL);
++	if (!control->reg_6) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	reg_flg = hasled || (!hasled
++		&& instance_data->query.has_gpio_driver_control);
++
++	regs_size = max(sizeof(union f30_gpio_ctrl_6n)*reg_flg*gpio_led_cnt,
++					sizeof(union f30_gpio_ctrl_6n));
++	if (!hasled
++		&& instance_data->query.has_gpio_driver_control)
++		f30_attrs_regs_exist[reg_num] = true;
++
++	reg_num++;
++	if (hasled)
++		f30_attrs_regs_exist[reg_num] = true;
++
++	reg_num++;
++
++	control->reg_6->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++	if (!control->reg_6->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_6->address = next_loc;
++	control->reg_6->length = regs_size;
++	next_loc += regs_size;
++
++	/* reg_7 */
++	reg_flg = hasmbtn;
++	control->reg_7 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_7), GFP_KERNEL);
++	if (!control->reg_7) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	if (hasmbtn)
++		regs_size = sizeof(struct f30_gpio_ctrl_7n)*gpio_led_cnt;
++	else
++		regs_size = sizeof(struct f30_gpio_ctrl_7n);
++
++	regs_size = max(sizeof(struct f30_gpio_ctrl_7n)*reg_flg*
++					gpio_led_cnt,
++					sizeof(struct f30_gpio_ctrl_7n));
++	f30_attrs_regs_exist[reg_num] = true;
++	control->reg_7->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++	if (!control->reg_7->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_7->address = next_loc;
++	control->reg_7->length = regs_size;
++	next_loc += regs_size;
++	reg_num++;
++
++	/* reg_8 */
++	control->reg_8 =
++			kzalloc(sizeof(struct f30_gpio_ctrl_8), GFP_KERNEL);
++	if (!control->reg_8) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++
++	regs_size = max(sizeof(struct f30_gpio_ctrl_8n)*hashaptic*
++					gpio_led_cnt,
++					sizeof(struct f30_gpio_ctrl_8n));
++	f30_attrs_regs_exist[reg_num] = true;
++	control->reg_8->regs =
++			kzalloc(regs_size, GFP_KERNEL);
++	if (!control->reg_8->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	control->reg_8->address = next_loc;
++	control->reg_8->length = regs_size;
++	next_loc += regs_size;
++	reg_num++;
++
++	/* reg_9 */
++	control->reg_9 =
++			kzalloc(sizeof(union f30_gpio_ctrl_9), GFP_KERNEL);
++	if (!control->reg_9) {
++		dev_err(&fc->dev, "Failed to allocate control register.");
++		return -ENOMEM;
++	}
++	if (instance_data->query.has_haptic)
++		f30_attrs_regs_exist[reg_num] = true;
++	control->reg_9->address = next_loc;
++	next_loc += sizeof(control->reg_9->regs);
++
++	/* data reg_0 */
++	instance_data->data.datareg_0 =
++			kzalloc(sizeof(struct f30_data_0), GFP_KERNEL);
++	if (!instance_data->data.datareg_0) {
++		dev_err(&fc->dev, "Failed to allocate control register.");
++		return -ENOMEM;
++	}
++
++	regs_size = sizeof(struct f30_data_0n)*
++				instance_data->gpioled_byte_size;
++	instance_data->data.datareg_0->address = fc->fd.data_base_addr;
++	next_loc += sizeof(instance_data->data.datareg_0->regs);
++
++	retval = rmi_f30_read_control_parameters(rmi_dev, instance_data);
++	if (retval < 0) {
++		dev_err(&fc->dev,
++			"Failed to initialize F19 control params.\n");
++		return retval;
++	}
++
++	mutex_init(&instance_data->control_mutex);
++	mutex_init(&instance_data->data_mutex);
++	return 0;
++}
++
++static int rmi_f30_create_sysfs(struct rmi_function_container *fc)
++{
++	u8 reg_num;
++
++	dev_dbg(&fc->dev, "Creating sysfs files.");
++
++	/* Set up sysfs device attributes. */
++	if (sysfs_create_group(&fc->dev.kobj, &attrs_query) < 0) {
++		dev_err(&fc->dev, "Failed to create query sysfs files.");
++		return -ENODEV;
++	}
++	if (sysfs_create_group(&fc->dev.kobj, &attrs_data) < 0) {
++		dev_err(&fc->dev, "Failed to create data sysfs files.");
++		return -ENODEV;
++	}
++
++	for (reg_num = 0; reg_num < ARRAY_SIZE(attrs_ctrl_regs);
++		reg_num++) {
++		if (f30_attrs_regs_exist[reg_num]) {
++			if (sysfs_create_group(&fc->dev.kobj,
++					&attrs_ctrl_regs[reg_num]) < 0) {
++				dev_err(&fc->dev,
++					"Failed to create "
++					"sysfs file group for reg"
++					"group %d.",
++					reg_num);
++				return -ENODEV;
++			}
++
++		}
++	}
++
++	return 0;
++}
++
++static void rmi_f30_remove(struct rmi_function_container *fc)
++{
++	dev_info(&fc->dev, "Removing F30.");
++	rmi_f30_free_memory(fc);
++}
++
++static struct rmi_function_handler function_handler = {
++	.func = 0x30,
++	.init = rmi_f30_init,
++	.config = rmi_f30_config,
++	.attention = rmi_f30_attention,
++	.remove = rmi_f30_remove
++};
++
++static int __init rmi_f30_module_init(void)
++{
++	int error;
++
++	error = rmi_register_function_driver(&function_handler);
++	if (error < 0) {
++		pr_err("%s: register failed!\n", __func__);
++		return error;
++	}
++	return 0;
++}
++
++static void rmi_f30_module_exit(void)
++{
++	rmi_unregister_function_driver(&function_handler);
++}
++
++/* sysfs functions */
++/* Query */
++simple_show_union_struct_unsigned(query, extended_patterns)
++simple_show_union_struct_unsigned(query, has_mappable_buttons)
++simple_show_union_struct_unsigned(query, has_led)
++simple_show_union_struct_unsigned(query, has_gpio)
++simple_show_union_struct_unsigned(query, has_haptic)
++simple_show_union_struct_unsigned(query, has_gpio_driver_control)
++simple_show_union_struct_unsigned(query, gpio_led_count)
++
++/* Control */
++show_store_union_struct_unsigned(control, reg_1, gpio_debounce)
++show_store_union_struct_unsigned(control, reg_1, halt)
++show_store_union_struct_unsigned(control, reg_1, halted)
++show_store_union_struct_unsigned(control, reg_9, haptic_duration)
++
++/* repeated register functions */
++show_store_repeated_union_struct_unsigned(control, reg_0, led_sel)
++show_store_repeated_union_struct_unsigned(control, reg_2, dir)
++show_store_repeated_union_struct_unsigned(control, reg_3, gpiodata)
++show_store_repeated_union_struct_unsigned(control, reg_4, led_act)
++show_store_repeated_union_struct_unsigned(control, reg_5, ramp_period_a)
++show_store_repeated_union_struct_unsigned(control, reg_5, ramp_period_b)
++show_store_repeated_union_struct_unsigned(control, reg_6, SPCTRL)
++show_store_repeated_union_struct_unsigned(control, reg_6, STRPD)
++show_store_repeated_union_struct_unsigned(control, reg_6, STRPU)
++show_store_repeated_union_struct_unsigned(control, reg_6, brightness)
++show_store_repeated_union_struct_unsigned(control, reg_6, pattern)
++show_store_repeated_union_struct_unsigned(control, reg_7, capacity_btn_nbr)
++show_store_repeated_union_struct_unsigned(control, reg_7, valid)
++show_store_repeated_union_struct_unsigned(control, reg_7, invert)
++show_store_repeated_union_struct_unsigned(control, reg_7, open_drain)
++show_store_repeated_union_struct_unsigned(control, reg_8, gpio_ctrl8_0)
++show_store_repeated_union_struct_unsigned(control, reg_8, gpio_ctrl8_1)
++
++/* Data */
++show_store_repeated_union_struct_unsigned(data, datareg_0, gpi_led_data)
++
++module_init(rmi_f30_module_init);
++module_exit(rmi_f30_module_exit);
++
++MODULE_AUTHOR("Allie Xiong <axiong@Synaptics.com>");
++MODULE_DESCRIPTION("RMI f30 module");
++MODULE_LICENSE("GPL");
