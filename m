@@ -1,62 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2HQIEU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:04:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43402 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755147Ab2HQIEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:04:09 -0400
-Date: Fri, 17 Aug 2012 10:04:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 08/11] memcg: disable kmem code when not in use.
-Message-ID: <20120817080404.GB18600@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-9-git-send-email-glommer@parallels.com>
- <20120817070241.GA18600@dhcp22.suse.cz>
- <502DEC32.6070807@parallels.com>
+	id S1030914Ab2HQIHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:07:07 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14116 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030893Ab2HQIG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:06:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 17 Aug 2012 01:00:41 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
+        <swarren@nvidia.com>
+CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] i2c: tegra: dynamically control fast clk
+Date: Fri, 17 Aug 2012 13:18:31 +0530
+Message-ID: <1345189711-24104-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502DEC32.6070807@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 17-08-12 11:01:06, Glauber Costa wrote:
-> On 08/17/2012 11:02 AM, Michal Hocko wrote:
-> > On Thu 09-08-12 17:01:16, Glauber Costa wrote:
-> >> We can use jump labels to patch the code in or out when not used.
-> >>
-> >> Because the assignment: memcg->kmem_accounted = true is done after the
-> >> jump labels increment, we guarantee that the root memcg will always be
-> >> selected until all call sites are patched (see memcg_kmem_enabled).
-> > 
-> > Not that it would be really important because kmem_accounted goes away
+Tegra I2C driver enables the fast clock during initialization
+and does not disable till driver removed.
+Enable this clock before transfer and disable after transfer done.
 
-And just found out it doesn't go away completely, it just transforms
-from bool to unsigned log (with flags). The rest still holds...
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+This patch is on top of the clock chnages which is in Tegra sub system and
+based on 
+ i2c: tegra: I2_M_NOSTART functionality not supported in Tegra20
+So recommend to go on tegra sub-system.
 
-> > in a subsequent patch but I think the wording is a bit misleading here.
-> > First of all there is no guanratee that kmem_accounted=true is seen
-> > before atomic_inc(&key->enabled) because there is no memory barrier and
-> > the lock serves just a leave barrier. But I do not think this is
-> > important at all because key->enabled is what matters here. Even if
-> > memcg_kmem_enabled is true we do not consider it if the key is disabled,
-> > right?
-> > 
-> 
-> Right.
+ drivers/i2c/busses/i2c-tegra.c |   35 ++++++++++++++++++++++++++++-------
+ 1 files changed, 28 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 554f713..24f7cee 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -362,12 +362,36 @@ static void tegra_dvc_init(struct tegra_i2c_dev *i2c_dev)
+ 	dvc_writel(i2c_dev, val, DVC_CTRL_REG1);
+ }
+ 
++static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
++{
++	int ret;
++	ret = clk_prepare_enable(i2c_dev->fast_clk);
++	if (ret < 0) {
++		dev_err(i2c_dev->dev,
++			"Enabling fast clk failed, err %d\n", ret);
++		return ret;
++	}
++	ret = clk_prepare_enable(i2c_dev->div_clk);
++	if (ret < 0) {
++		dev_err(i2c_dev->dev,
++			"Enabling div clk failed, err %d\n", ret);
++		clk_disable_unprepare(i2c_dev->fast_clk);
++	}
++	return ret;
++}
++
++static inline void tegra_i2c_clock_disable(struct tegra_i2c_dev *i2c_dev)
++{
++	clk_disable_unprepare(i2c_dev->div_clk);
++	clk_disable_unprepare(i2c_dev->fast_clk);
++}
++
+ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ {
+ 	u32 val;
+ 	int err = 0;
+ 
+-	clk_prepare_enable(i2c_dev->div_clk);
++	tegra_i2c_clock_enable(i2c_dev);
+ 
+ 	tegra_periph_reset_assert(i2c_dev->div_clk);
+ 	udelay(2);
+@@ -398,7 +422,7 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ 	if (tegra_i2c_flush_fifos(i2c_dev))
+ 		err = -ETIMEDOUT;
+ 
+-	clk_disable_unprepare(i2c_dev->div_clk);
++	tegra_i2c_clock_disable(i2c_dev);
+ 
+ 	if (i2c_dev->irq_disabled) {
+ 		i2c_dev->irq_disabled = 0;
+@@ -584,7 +608,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+ 		}
+ 	}
+ 
+-	clk_prepare_enable(i2c_dev->clk);
++	tegra_i2c_clock_enable(i2c_dev);
+ 	for (i = 0; i < num; i++) {
+ 		enum msg_end_type end_type = MSG_END_STOP;
+ 		if (i < (num - 1)) {
+@@ -597,7 +621,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+ 		if (ret)
+ 			break;
+ 	}
+-	clk_disable_unprepare(i2c_dev->div_clk);
++	tegra_i2c_clock_disable(i2c_dev);
+ 	return ret ?: i;
+ }
+ 
+@@ -734,8 +758,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	clk_prepare_enable(i2c_dev->fast_clk);
+-
+ 	i2c_set_adapdata(&i2c_dev->adapter, i2c_dev);
+ 	i2c_dev->adapter.owner = THIS_MODULE;
+ 	i2c_dev->adapter.class = I2C_CLASS_HWMON;
+@@ -749,7 +771,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
+ 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to add I2C adapter\n");
+-		clk_disable_unprepare(i2c_dev->fast_clk);
+ 		return ret;
+ 	}
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.7.1.1
+
