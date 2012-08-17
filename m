@@ -1,106 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2HQOZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:25:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42397 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756930Ab2HQOZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:25:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,785,1336374000"; 
-   d="scan'208";a="203555675"
-Date: Fri, 17 Aug 2012 22:25:26 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
-        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org
-Cc: linux RAID <linux-raid@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Li Shaohua <shli@fusionio.com>
-Subject: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
-Message-ID: <20120817142526.GA1059@localhost>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
- <20120816024654.GB3781@thunk.org>
- <20120816111051.GA16036@localhost>
- <20120816152513.GA31346@thunk.org>
- <20120817060915.GB28786@localhost>
- <20120817134039.GB11439@thunk.org>
+	id S1757738Ab2HQO13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:27:29 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:52788 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757022Ab2HQO1V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:27:21 -0400
+Date: Fri, 17 Aug 2012 10:27:20 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Hans de Goede <hdegoede@redhat.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Miklos Szeredi <miklos@szeredi.hu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, David Miller <davem@davemloft.net>
+Subject: Re: [REGRESION] Suspend hangs with 3.6-rc1 on Lenovo T60 notebook
+In-Reply-To: <Pine.LNX.4.44L0.1208171011560.25520-100000@netrider.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1208171025330.25520-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817134039.GB11439@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC md list]
+On Fri, 17 Aug 2012, Alan Stern wrote:
 
-On Fri, Aug 17, 2012 at 09:40:39AM -0400, Theodore Ts'o wrote:
-> On Fri, Aug 17, 2012 at 02:09:15PM +0800, Fengguang Wu wrote:
-> > Ted,
-> > 
-> > I find ext4 write performance dropped by 3.3% on average in the
-> > 3.6-rc1 merge window. xfs and btrfs are fine.
-> > 
-> > Two machines are tested. The performance regression happens in the
-> > lkp-nex04 machine, which is equipped with 12 SSD drives. lkp-st02 does
-> > not see regression, which is equipped with HDD drives. I'll continue
-> > to repeat the tests and report variations.
+> On Fri, 17 Aug 2012, Hans de Goede wrote:
 > 
-> Hmm... I've checked out the commits in "git log v3.5..v3.6-rc1 --
-> fs/ext4 fs/jbd2" and I don't see anything that I would expect would
-> cause that.  The are the lock elimination changes for Direct I/O
-> overwrites, but that shouldn't matter for your tests which are
-> measuring buffered writes, correct?
+> > No my patch was a hack to undo the results of the commit causing
+> > the regression in the IDE case. But Alan's approach clearly is
+> > much better! Once we are sure drvdata is not used anywhere the
+> > dev_set_drvdata call could be removed in the place where my
+> > hack added a second call to it. Note that there are likely
+> > actual ide drivers using it, without setting it themselves since
+> > the ide core was setting it. So removing it will require even more
+> > auditing / checking.
 > 
-> Is there any chance you could do me a favor and do a git bisect
-> restricted to commits involving fs/ext4 and fs/jbd2?
+> I did search for dev_get_drvdata() calls in drivers/ide; there were no 
+> other calls that retrieved an ide_drive_t value.  But I didn't check 
+> anywhere else in the kernel.  In fact, I'm not sure where else to look.
 
-I noticed that the regressions all happen in the RAID0/RAID5 cases.
-So it may be some interactions between the RAID/ext4 code?
+After a little more checking: Among all the .c files in the kernel
+which match the pattern '[^a-z]ide_', the only occurrences of
+dev_get_drvdata() which retrieve an ide_drive_t value are the two in
+ide-pm.c.
 
-I'll try to get some ext2/3 numbers, which should have less changes on the fs side.
+Alan Stern
 
-wfg@bee /export/writeback% ./compare -g ext4 lkp-nex04/*/*-{3.5.0,3.6.0-rc1+}     
-                   3.5.0                3.6.0-rc1+
-------------------------  ------------------------
-                  720.62        -1.5%       710.16  lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-100dd-1-3.5.0
-                  706.04        -0.0%       705.86  lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-10dd-1-3.5.0
-                  702.86        -0.2%       701.74  lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-1dd-1-3.5.0
-                  702.41        -0.0%       702.06  lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-1dd-2-3.5.0
-                  779.52        +6.5%       830.11  lkp-nex04/JBOD-12HDD-thresh=100M/ext4-100dd-1-3.5.0
-                  646.70        +4.9%       678.59  lkp-nex04/JBOD-12HDD-thresh=100M/ext4-10dd-1-3.5.0
-                  704.49        +2.6%       723.00  lkp-nex04/JBOD-12HDD-thresh=100M/ext4-1dd-1-3.5.0
-                  704.21        +1.2%       712.47  lkp-nex04/JBOD-12HDD-thresh=100M/ext4-1dd-2-3.5.0
-                  705.26        -1.2%       696.61  lkp-nex04/JBOD-12HDD-thresh=8G/ext4-100dd-1-3.5.0
-                  703.37        +0.1%       703.76  lkp-nex04/JBOD-12HDD-thresh=8G/ext4-10dd-1-3.5.0
-                  701.66        -0.1%       700.83  lkp-nex04/JBOD-12HDD-thresh=8G/ext4-1dd-1-3.5.0
-                  701.17        +0.0%       701.36  lkp-nex04/JBOD-12HDD-thresh=8G/ext4-1dd-2-3.5.0
-                  675.08       -10.5%       604.29  lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-100dd-1-3.5.0
-                  676.52        -2.7%       658.38  lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-10dd-1-3.5.0
-                  512.70        +4.0%       533.22  lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-1dd-1-3.5.0
-                  524.61        -0.3%       522.90  lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-1dd-2-3.5.0
-                  709.76       -15.7%       598.44  lkp-nex04/RAID0-12HDD-thresh=100M/ext4-100dd-1-3.5.0
-                  681.39        -2.1%       667.25  lkp-nex04/RAID0-12HDD-thresh=100M/ext4-10dd-1-3.5.0
-                  524.16        +0.8%       528.25  lkp-nex04/RAID0-12HDD-thresh=100M/ext4-1dd-2-3.5.0
-                  699.77       -19.2%       565.54  lkp-nex04/RAID0-12HDD-thresh=8G/ext4-100dd-1-3.5.0
-                  675.79        -1.9%       663.17  lkp-nex04/RAID0-12HDD-thresh=8G/ext4-10dd-1-3.5.0
-                  484.84        -7.4%       448.83  lkp-nex04/RAID0-12HDD-thresh=8G/ext4-1dd-1-3.5.0
-                  470.40        -3.2%       455.31  lkp-nex04/RAID0-12HDD-thresh=8G/ext4-1dd-2-3.5.0
-                  167.97       -38.7%       103.03  lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-100dd-1-3.5.0
-                  243.67        -9.1%       221.41  lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-10dd-1-3.5.0
-                  248.98       +12.2%       279.33  lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-1dd-1-3.5.0
-                  208.45       +14.1%       237.86  lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-1dd-2-3.5.0
-                   71.18       -34.2%        46.82  lkp-nex04/RAID5-12HDD-thresh=100M/ext4-100dd-1-3.5.0
-                  145.84        -7.3%       135.25  lkp-nex04/RAID5-12HDD-thresh=100M/ext4-10dd-1-3.5.0
-                  255.22        +6.7%       272.35  lkp-nex04/RAID5-12HDD-thresh=100M/ext4-1dd-1-3.5.0
-                  243.09       +20.7%       293.30  lkp-nex04/RAID5-12HDD-thresh=100M/ext4-1dd-2-3.5.0
-                  209.24       -23.6%       159.96  lkp-nex04/RAID5-12HDD-thresh=8G/ext4-100dd-1-3.5.0
-                  243.73       -10.9%       217.28  lkp-nex04/RAID5-12HDD-thresh=8G/ext4-10dd-1-3.5.0
-                  214.25        +5.6%       226.32  lkp-nex04/RAID5-12HDD-thresh=8G/ext4-1dd-1-3.5.0
-                  207.16       +13.4%       234.98  lkp-nex04/RAID5-12HDD-thresh=8G/ext4-1dd-2-3.5.0
-                17572.12        -1.9%     17240.05  TOTAL write_bw
-
-Thanks,
-Fengguang
