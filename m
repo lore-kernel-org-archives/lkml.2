@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2HQEdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 00:33:44 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47708 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab2HQEdm (ORCPT
+	id S1753709Ab2HQEeI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 00:34:08 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:41690 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab2HQEdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 00:33:42 -0400
-Message-ID: <502DC99E.4060408@linux.vnet.ibm.com>
-Date: Fri, 17 Aug 2012 12:33:34 +0800
+	Fri, 17 Aug 2012 00:33:49 -0400
+Message-ID: <502DC9A3.2070703@linux.vnet.ibm.com>
+Date: Fri, 17 Aug 2012 12:33:39 +0800
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-CC: catalin.marinas@arm.com,
+To: LKML <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netfilter-devel@vger.kernel.org
+CC: David Miller <davem@davemloft.net>, kaber@trash.net, pablo@netfilter.org,
         "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] kmemleak: replace list_for_each_continue_rcu with new
+Subject: [PATCH 3/3] netfilter: replace list_for_each_continue_rcu with new
  interface
-References: <502CB92F.2010700@linux.vnet.ibm.com>
-In-Reply-To: <502CB92F.2010700@linux.vnet.ibm.com>
-X-Forwarded-Message-Id: <502CB92F.2010700@linux.vnet.ibm.com>
+References: <502CB939.3050008@linux.vnet.ibm.com>
+In-Reply-To: <502CB939.3050008@linux.vnet.ibm.com>
+X-Forwarded-Message-Id: <502CB939.3050008@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12081704-1396-0000-0000-000001B9889D
+x-cbid: 12081704-9264-0000-0000-000002253723
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,34 +33,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
 This patch replaces list_for_each_continue_rcu() with
-list_for_each_entry_continue_rcu() to save a few lines
-of code and allow removing list_for_each_continue_rcu().
+list_for_each_entry_continue_rcu() to allow removing
+list_for_each_continue_rcu().
 
 Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
- mm/kmemleak.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ net/netfilter/core.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 45eb621..0de83b4 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -1483,13 +1483,11 @@ static void *kmemleak_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+diff --git a/net/netfilter/core.c b/net/netfilter/core.c
+index e19f365..50225bd 100644
+--- a/net/netfilter/core.c
++++ b/net/netfilter/core.c
+@@ -131,14 +131,14 @@ unsigned int nf_iterate(struct list_head *head,
+ 			int hook_thresh)
  {
- 	struct kmemleak_object *prev_obj = v;
- 	struct kmemleak_object *next_obj = NULL;
--	struct list_head *n = &prev_obj->object_list;
-+	struct kmemleak_object *obj = prev_obj;
+ 	unsigned int verdict;
++	struct nf_hook_ops *elem = list_entry_rcu(*i,
++						struct nf_hook_ops, list);
 
- 	++(*pos);
+ 	/*
+ 	 * The caller must not block between calls to this
+ 	 * function because of risk of continuing from deleted element.
+ 	 */
+-	list_for_each_continue_rcu(*i, head) {
+-		struct nf_hook_ops *elem = (struct nf_hook_ops *)*i;
+-
++	list_for_each_entry_continue_rcu(elem, head, list) {
+ 		if (hook_thresh > elem->priority)
+ 			continue;
 
--	list_for_each_continue_rcu(n, &object_list) {
--		struct kmemleak_object *obj =
--			list_entry(n, struct kmemleak_object, object_list);
-+	list_for_each_entry_continue_rcu(obj, &object_list, object_list) {
- 		if (get_object(obj)) {
- 			next_obj = obj;
- 			break;
+@@ -155,11 +155,14 @@ repeat:
+ 				continue;
+ 			}
+ #endif
+-			if (verdict != NF_REPEAT)
++			if (verdict != NF_REPEAT) {
++				*i = &elem->list;
+ 				return verdict;
++			}
+ 			goto repeat;
+ 		}
+ 	}
++	*i = &elem->list;
+ 	return NF_ACCEPT;
+ }
+
 -- 
 1.7.4.1
 
