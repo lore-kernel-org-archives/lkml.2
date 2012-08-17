@@ -1,132 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab2HQAyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 20:54:52 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:40072 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383Ab2HQAyt (ORCPT
+	id S1756529Ab2HQA4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 20:56:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54177 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab2HQA4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 20:54:49 -0400
-Message-ID: <1345164802.2433.21.camel@falcor.watson.ibm.com>
-Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys
- and sign modules
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Josh Boyer <jwboyer@gmail.com>, jmorris@namei.org, rusty@rustcorp.com.au,
-        dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 16 Aug 2012 20:53:22 -0400
-In-Reply-To: <CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	 <2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
-		<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-		<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
-		<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
-	 <CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Aug 2012 20:56:46 -0400
+Date: Fri, 17 Aug 2012 10:56:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-Id: <20120817105633.0aba80ddf7eb9523e04c264d@canb.auug.org.au>
+In-Reply-To: <20120816194651.GK2445@linux.vnet.ibm.com>
+References: <20120816131236.13013e1ec18b1f1074f6dc92@canb.auug.org.au>
+	<20120816194651.GK2445@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12081700-7408-0000-0000-000007AF5319
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__17_Aug_2012_10_56_33_+1000_koGK1pFl/2YDOtkW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-17 at 00:04 +0300, Kasatkin, Dmitry wrote:
-> On Thu, Aug 16, 2012 at 11:31 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> > On Thu, Aug 16, 2012 at 4:12 PM, Kasatkin, Dmitry
-> > <dmitry.kasatkin@intel.com> wrote:
-> >>>> 1. signed_modules_install
-> >>>> This target creates an ephemeral key pair, signs the kernel modules with
-> >>>> the private key, destroys the private key, and embeds the public key in
-> >>>> the kernel. (Thanks to Dave Hansen for the target name.)
-> >>>
-> >>> This requires CONFIG_INTEGRITY_MODULES to be enabled to actually do
-> >>> anything useful with the signed modules, correct?
-> >>>
-> >>
-> >> Correct. It does not make sense to sign module if module support is disabled.
-> >> But there scripts/genkey.sh and ksign.sh which works without Makefiles.
-> >> So possible to generate keys and sign a module...
-> >
-> > Right, but it won't actually do anything if the config option isn't set.
-> > Which means someone calling 'make signed_modules_install' won't actually
-> > get signed modules.  That's confusing.
-> >
-> 
-> Yes.. It had to be behind "ifeq CONFIG_INTEGRITY_MODULES"
-> 
-> >>>> 2. modules_install
-> >>>> When CONFIG_INTEGRITY_MODULES is enabled, this target uses an existing
-> >>>> private key to sign kernel modules.
-> >>>
-> >>> If the answer to the above question is yes, then why can't we stick
-> >>> with a single modules_install command for signing?  It would seem to me
-> >>> that calling signed_modules_install could use an existing key or
-> >>> generate an ephemeral key in the absence of one and install the signed
-> >>> modules, and modules_install would simply install unsigned modules.
-> >>>
-> >>> Or, alternatively, just make modules_install sign or not sign depending
-> >>> on whether CONFIG_INTEGRITY_MODULES is enabled.
-> >>
-> >> This is what "make modules_install" does. It uses existing private key
-> >> and does not remove it after install.
-> >
-> > Right.  I should have been more clear.  I was suggesting that "make
-> > modules_install" generate a key as well if one does not already exist.
-> > Essentially removing the necessity for sign_modules_install.
-> >
-> >>>  I don't see why you
-> >>> would overload a target or create two different ones when both depend
-> >>> on that option.
-> >>>
-> >>> Could you explain the reasoning behind that a bit more?
-> >>
-> >> The reason for "signed_modules_install" is to limit existence of private key.
-> >> Private key is generate just before install, modules installed and
-> >> signed, then key is destroyed.
-> >> So existence of private key is limited to "time make
-> >> signed_modules_install" execution time.
-> >>
-> >> We had a debate about it, and strong message was that we might want to
-> >> do it like that...
-> >
-> > I guess I personally don't see the need to destroy they key so quickly.
-> > Is the concern that an intruder might grab the key and use it to sign a
-> > module that the developer would then later on somehow load?  Or
-> > similarly someone would grab a temporary key from a distro build
-> > machine?  That limits the attack surface, sure, but I'm not sure it's
-> > really reasonable.
-> >
-> > For a developer that isn't distributing kernels to others, it's just
-> > adding more time to the compile (which I know can be disabled, but
-> > still).  For a distribution, most of them are either using a private
-> > key already or they have a buildsystem that destroys a buildroot after
-> > a build completes.  The key is already going to be destroyed in that
-> > scenario.
-> >
-> > josh
-> 
-> Well... Will not argue here. I had similar opinion as well.
-> 
-> Mimi strongly wanted really to "reduce" the existence time of the key...
+--Signature=_Fri__17_Aug_2012_10_56_33_+1000_koGK1pFl/2YDOtkW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The options are creating the key during 'make' or 'make
-modules_install'.  If you create the key during 'make', then you have no
-way of knowing whether or not it is a persistent or ephemeral key, and
-whether it should be deleted after signing the modules.
+Hi Paul,
 
-You could create a persistent key using 'make genkey', before 'make',
-and never delete the private key.  Then there wouldn't be any
-overhead. :)  If 'CONFIG_INTEGRITY_MODULE' is configured, 'make
-modules_install' would use the existing key.
+On Thu, 16 Aug 2012 12:46:51 -0700 "Paul E. McKenney" <paulmck@linux.vnet.i=
+bm.com> wrote:
+>
+> On Thu, Aug 16, 2012 at 01:12:36PM +1000, Stephen Rothwell wrote:
+> >=20
+> > After merging the tip tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> >=20
+> > drivers/infiniband/hw/ehca/ehca_irq.c: In function 'find_next_online_cp=
+u':
+> > drivers/infiniband/hw/ehca/ehca_irq.c:672:2: error: expected ';' before=
+ 'spin_unlock_irqrestore'
+> >=20
+> > Caused by commit 81942621bd6b ("infiniband: Ehca: Use hotplug thread
+> > infrastructure").
+> >=20
+> > I have used the tip tree from next-20120814 for today.
+>=20
+> My first reaction was "we tested that!!!", but I see the conversion
+> from while(1) to do-while.  Does the following cure it?
 
-'make signed_modules_install' would be for creating and using ephemeral
-keys.
+Yes, that fixes the build problem.
 
-What do you think?
+However, the same commit is also responsible for all these new warnings:
 
-Mimi
+drivers/infiniband/hw/ehca/ehca_irq.c: In function 'queue_comp_task':
+drivers/infiniband/hw/ehca/ehca_irq.c:710:9: warning: assignment from incom=
+patible pointer type
+drivers/infiniband/hw/ehca/ehca_irq.c:719:10: warning: assignment from inco=
+mpatible pointer type
+drivers/infiniband/hw/ehca/ehca_irq.c: In function 'comp_task_park':
+drivers/infiniband/hw/ehca/ehca_irq.c:764:9: warning: assignment from incom=
+patible pointer type
+drivers/infiniband/hw/ehca/ehca_irq.c: In function 'comp_task':
+drivers/infiniband/hw/ehca/ehca_irq.c:803:1: warning: no return statement i=
+n function returning non-void
+drivers/infiniband/hw/ehca/ehca_irq.c: At top level:
+drivers/infiniband/hw/ehca/ehca_irq.c:807:2: warning: initialization from i=
+ncompatible pointer type
 
+Please address these.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Fri__17_Aug_2012_10_56_33_+1000_koGK1pFl/2YDOtkW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQLZbBAAoJEECxmPOUX5FEnu4P/1t9ouJScG2zys2fwuk/woS1
+lxyoTyHj6mZ6kkvObYRhnhMs/CvilJlqvxZrYOyX9D9wUKRQiYLJNpKfqhUjF+7U
+MIRT4CyIzUY5y0xErVIvv7cTfP3+ijzAjy0JkNbKQYuvsdfD/n40hVQDfzvMDMQ/
+K1ntuE3eu7p4JnRaFRvbn13nemOY+2QNYHOdj1Y8VZIzjmS1LASnq4ItEpB1OKdh
+S0+5HXi90+/GsXAvQlX2xKJXtQywg3nzVDc3x/9B+sGGaMd9cBS5uSLNjzj5bGtd
+IhnFMlnxCDDjgh2nAo4tpHR6BYb49PeNay71z+23yhhWdeuXTz3iVYXMu4+rc7dz
+HEMnRone2P6OjFHshjdjlbr7cBaAkQmnSnduQXQXXjncxzYmNBicWVFLzqP0M8ow
+lTibOoeMoMEO30KFyJnXCab7dFxILC7f0uUH82uMAuWuYkZdV5T3xI2fcZI8CE2Q
+JIgRRqPn3bOWOgTfYt+RAuwVllN9RdohEc0bkTnQo467jSLlTg6APA4ltnxyThBJ
+Hi8ZrAYMk65U0nGf06kB2LBb2vBqTkBd47jN3vv8Rdu6kWyc5aCVZS+k/aXq/AcI
+08zJoxzuC8Hh8R8RPjPzbN6lPVAwuEq9TxJFfjOB7Zr+k84xZ0a3cBVsIRB9tDmg
+xqMTsAJGtW89Mb3/Jp6m
+=zNUV
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__17_Aug_2012_10_56_33_+1000_koGK1pFl/2YDOtkW--
