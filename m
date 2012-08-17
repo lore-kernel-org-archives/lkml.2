@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933605Ab2HQBqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:46:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932178Ab2HQBql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:46:41 -0400
-Message-ID: <502DA263.8010507@redhat.com>
-Date: Thu, 16 Aug 2012 22:46:11 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-References: <20120817111013.28c2f0b0ef72631968007d9a@canb.auug.org.au>
-In-Reply-To: <20120817111013.28c2f0b0ef72631968007d9a@canb.auug.org.au>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933588Ab2HQBq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:46:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61239 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932345Ab2HQBqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 21:46:25 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 3/3] firmware loader: fix compile failure if FW_LOADER is m
+Date: Fri, 17 Aug 2012 09:45:49 +0800
+Message-Id: <1345167949-7419-4-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345167949-7419-1-git-send-email-ming.lei@canonical.com>
+References: <1345167949-7419-1-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+device_cache_fw_images need to iterate devices in system,
+so this patch applies the introduced dpm_for_each_dev to
+avoid compile failure if CONFIG_FW_LOADER is m.
 
-Em 16-08-2012 22:10, Stephen Rothwell escreveu:
-> Hi Mauro,
-> 
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> ERROR: "usb_cypress_load_firmware" [drivers/staging/media/go7007/s2250-loader.ko] undefined!
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/base/firmware_class.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-This is due to the usage of "=" or ":=" instead of "+=" on some places. Just pushed a
-patch fixing it.
-
-> ERROR: "b2c2_flexcop_debug" [drivers/media/pci/b2c2/b2c2-flexcop-pci.ko] undefined!
-
-It may also be due to the same reason. I'll double-check this one.
-
-> Given the major reorganisation going on, I have just used the v4l-dvb
-> tree from next-20120816 for today.
-
-Ok.
-
-Almost all patches already went there, so I expect that it will be
-more stable tomorrow. Yet, it might have some conflicts with a few
-trees (like the "trivial" tree).
-
-Regards,
-Mauro
-
-
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 4c8d8ef..ed0510a 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -27,7 +27,6 @@
+ #include <linux/suspend.h>
+ 
+ #include "base.h"
+-#include "power/power.h"
+ 
+ MODULE_AUTHOR("Manuel Estrada Sainz");
+ MODULE_DESCRIPTION("Multi purpose firmware loading support");
+@@ -1093,7 +1092,7 @@ static int devm_name_match(struct device *dev, void *res,
+ 	return (fwn->magic == (unsigned long)match_data);
+ }
+ 
+-static void dev_cache_fw_image(struct device *dev)
++static void dev_cache_fw_image(struct device *dev, void *data)
+ {
+ 	LIST_HEAD(todo);
+ 	struct fw_cache_entry *fce;
+@@ -1148,7 +1147,6 @@ static void __device_uncache_fw_images(void)
+ static void device_cache_fw_images(void)
+ {
+ 	struct firmware_cache *fwc = &fw_cache;
+-	struct device *dev;
+ 	int old_timeout;
+ 	DEFINE_WAIT(wait);
+ 
+@@ -1165,10 +1163,7 @@ static void device_cache_fw_images(void)
+ 	old_timeout = loading_timeout;
+ 	loading_timeout = 10;
+ 
+-	device_pm_lock();
+-	list_for_each_entry(dev, &dpm_list, power.entry)
+-		dev_cache_fw_image(dev);
+-	device_pm_unlock();
++	dpm_for_each_dev(NULL, dev_cache_fw_image);
+ 
+ 	/* wait for completion of caching firmware for all devices */
+ 	spin_lock(&fwc->name_lock);
+-- 
+1.7.9.5
 
