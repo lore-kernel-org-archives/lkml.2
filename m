@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758962Ab2HQXVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 19:21:47 -0400
+	id S1759011Ab2HQXVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 19:21:53 -0400
 Received: from [12.239.217.82] ([12.239.217.82]:28612 "EHLO
 	venom.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758180Ab2HQXUx (ORCPT
+	with ESMTP id S1757196Ab2HQXUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 19:20:53 -0400
+	Fri, 17 Aug 2012 19:20:50 -0400
 X-Greylist: delayed 3724 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 19:20:45 EDT
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -22,15 +22,17 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 10/17] input: RM4 F17 Pointing sticks
-Date: Fri, 17 Aug 2012 15:17:50 -0700
-Message-Id: <1345241877-16200-11-git-send-email-cheiny@synaptics.com>
+Subject: [RFC PATCH 5/17] input: rmidev character driver for RMI4 sensors
+Date: Fri, 17 Aug 2012 15:17:45 -0700
+Message-Id: <1345241877-16200-6-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
 References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Driver for Synaptics touchscreens using RMI4 protocol.
 
 Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
 
@@ -43,17 +45,17 @@ Acked-by: Jean Delvare <khali@linux-fr.org>
 
 ---
 
- drivers/input/rmi4/rmi_f17.c |  713 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 713 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_dev.c |  448 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 448 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_f17.c b/drivers/input/rmi4/rmi_f17.c
+diff --git a/drivers/input/rmi4/rmi_dev.c b/drivers/input/rmi4/rmi_dev.c
 new file mode 100644
-index 0000000..006a716
+index 0000000..080db55
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_f17.c
-@@ -0,0 +1,713 @@
++++ b/drivers/input/rmi4/rmi_dev.c
+@@ -0,0 +1,448 @@
 +/*
-+ * Copyright (c) 2012 Synaptics Incorporated
++ * Copyright (c) 2011 Synaptics Incorporated
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -69,699 +71,434 @@ index 0000000..006a716
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
-+#include <linux/kernel.h>
-+#include <linux/rmi.h>
-+#include <linux/input.h>
++
++#include <linux/fs.h>
++#include <linux/delay.h>
++#include <linux/uaccess.h>
 +#include <linux/slab.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++#include <linux/syscalls.h>
++
++#include <linux/rmi.h>
 +#include "rmi_driver.h"
 +
-+#define QUERY_BASE_INDEX 1
-+#define MAX_NAME_LENGTH 256
++#define CHAR_DEVICE_NAME "rmi"
++#define DEVICE_CLASS_NAME "rmidev"
 +
-+union f17_device_query {
-+	struct {
-+		u8 number_of_sticks:3;
-+	};
-+	u8 regs[1];
++#define RMI_CHAR_DEV_TMPBUF_SZ 128
++#define RMI_REG_ADDR_PAGE_SELECT 0xFF
++#define REG_ADDR_LIMIT 0xFFFF
++
++struct rmidev_data {
++	/* mutex for file operation*/
++	struct mutex file_mutex;
++	/* main char dev structure */
++	struct cdev main_dev;
++
++	/* pointer to the corresponding RMI4 device.  We use this to do */
++	/* read, write, etc. */
++	struct rmi_device *rmi_dev;
++	/* reference count */
++	int ref_count;
++
++	struct class *device_class;
 +};
 +
-+#define F17_MANUFACTURER_SYNAPTICS 0
-+#define F17_MANUFACTURER_NMB 1
-+#define F17_MANUFACTURER_ALPS 2
-+
-+struct f17_stick_query {
-+	union {
-+		struct {
-+			u8 manufacturer:4;
-+			u8 resistive:1;
-+			u8 ballistics:1;
-+			u8 reserved1:2;
-+			u8 has_relative:1;
-+			u8 has_absolute:1;
-+			u8 has_gestures:1;
-+			u8 has_dribble:1;
-+			u8 reserved2:4;
-+		};
-+		u8 regs[2];
-+	} general;
-+
-+	union {
-+		struct {
-+			u8 has_single_tap:1;
-+			u8 has_tap_and_hold:1;
-+			u8 has_double_tap:1;
-+			u8 has_early_tap:1;
-+			u8 has_press:1;
-+		};
-+		u8 regs[1];
-+	} gestures;
-+};
-+
-+union f17_device_controls {
-+	struct {
-+		u8 reporting_mode:3;
-+		u8 dribble:1;
-+	};
-+	u8 regs[1];
-+};
-+
-+struct f17_stick_controls {
-+	union {
-+		struct {
-+			u8 z_force_threshold;
-+			u8 radial_force_threshold;
-+		};
-+		u8 regs[3];
-+	} general;
-+
-+	union {
-+		struct {
-+			u8 motion_sensitivity:4;
-+			u8 antijitter:1;
-+		};
-+		u8 regs[1];
-+	} relative;
-+
-+	union {
-+		struct {
-+			u8 single_tap:1;
-+			u8 tap_and_hold:1;
-+
-+			u8 double_tap:1;
-+			u8 early_tap:1;
-+			u8 press:1;
-+		};
-+		u8 regs[1];
-+	} enable;
-+
-+	u8 maximum_tap_time;
-+	u8 minimum_press_time;
-+	u8 maximum_radial_force;
-+};
++/*store dynamically allocated major number of char device*/
++static int rmidev_major_num;
 +
 +
-+union f17_device_commands {
-+	struct {
-+		u8 rezero:1;
-+	};
-+	u8 regs[1];
-+};
-+
-+struct f17_stick_data {
-+	union {
-+		struct {
-+			u8 x_force_high:8;
-+			u8 y_force_high:8;
-+			u8 y_force_low:4;
-+			u8 x_force_low:4;
-+			u8 z_force:8;
-+		} __attribute__((__packed__));
-+		struct {
-+			u8 regs[4];
-+			u16 address;
-+		};
-+	} abs;
-+	union {
-+		struct {
-+			s8 x_delta:8;
-+			s8 y_delta:8;
-+		} __attribute__((__packed__));
-+		struct {
-+			u8 regs[2];
-+			u16 address;
-+		};
-+	} rel;
-+	union {
-+		struct {
-+			u8 single_tap:1;
-+			u8 tap_and_hold:1;
-+			u8 double_tap:1;
-+			u8 early_tap:1;
-+			u8 press:1;
-+			u8 reserved:3;
-+		} __attribute__((__packed__));
-+		struct {
-+			u8 regs[1];
-+			u16 address;
-+		};
-+	} gestures;
-+};
++static struct class *rmidev_device_class;
 +
 +
-+/* data specific to f17 that needs to be kept around */
++/* file operations for RMI char device */
 +
-+struct rmi_f17_stick_data {
-+	struct f17_stick_query query;
-+	struct f17_stick_controls controls;
-+	struct f17_stick_data data;
-+
-+	u16 control_address;
-+
-+	int index;
-+
-+	char input_name[MAX_NAME_LENGTH];
-+	char input_phys[MAX_NAME_LENGTH];
-+	struct input_dev *input;
-+	char mouse_name[MAX_NAME_LENGTH];
-+	char mouse_phys[MAX_NAME_LENGTH];
-+	struct input_dev *mouse;
-+};
-+
-+struct rmi_f17_device_data {
-+	u16 control_address;
-+
-+	union f17_device_query query;
-+	union f17_device_commands commands;
-+	union f17_device_controls controls;
-+
-+	struct rmi_f17_stick_data *sticks;
-+
-+};
-+
-+static ssize_t f17_rezero_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf);
-+static ssize_t f17_rezero_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+
-+
-+
-+static int f17_alloc_memory(struct rmi_function_container *fc);
-+
-+static void f17_free_memory(struct rmi_function_container *fc);
-+
-+static int f17_initialize(struct rmi_function_container *fc);
-+
-+static int f17_register_devices(struct rmi_function_container *fc);
-+
-+static int f17_create_sysfs(struct rmi_function_container *fc);
-+
-+static int f17_config(struct rmi_function_container *fc);
-+
-+
-+static struct device_attribute attrs[] = {
-+	__ATTR(rezero, RMI_RW_ATTR,
-+		f17_rezero_show, f17_rezero_store),
-+};
-+
-+
-+int f17_read_control_parameters(struct rmi_device *rmi_dev,
-+	struct rmi_f17_device_data *f17)
++/*
++ * rmidev_llseek: - use to setup register address
++ *
++ * @filp: file structure for seek
++ * @off: offset
++ *       if whence == SEEK_SET,
++ *       high 16 bits: page address
++ *       low 16 bits: register address
++ *
++ *       if whence == SEEK_CUR,
++ *       offset from current position
++ *
++ *       if whence == SEEK_END,
++ *       offset from END(0xFFFF)
++ *
++ * @whence: SEEK_SET , SEEK_CUR or SEEK_END
++ */
++static loff_t rmidev_llseek(struct file *filp, loff_t off, int whence)
 +{
++	loff_t newpos;
++	struct rmidev_data *data = filp->private_data;
++
++	if (IS_ERR(data)) {
++		pr_err("%s: pointer of char device is invalid", __func__);
++		return -EBADF;
++	}
++
++	mutex_lock(&(data->file_mutex));
++
++	switch (whence) {
++	case SEEK_SET:
++		newpos = off;
++		break;
++
++	case SEEK_CUR:
++		newpos = filp->f_pos + off;
++		break;
++
++	case SEEK_END:
++		newpos = REG_ADDR_LIMIT + off;
++		break;
++
++	default:		/* can't happen */
++		newpos = -EINVAL;
++		goto clean_up;
++	}
++
++	if (newpos < 0 || newpos > REG_ADDR_LIMIT) {
++		dev_err(&data->rmi_dev->dev, "newpos 0x%04x is invalid.\n",
++			(unsigned int)newpos);
++		newpos = -EINVAL;
++		goto clean_up;
++	}
++
++	filp->f_pos = newpos;
++
++clean_up:
++	mutex_unlock(&(data->file_mutex));
++	return newpos;
++}
++
++/*
++ *  rmidev_read: - use to read data from RMI stream
++ *
++ *  @filp: file structure for read
++ *  @buf: user-level buffer pointer
++ *
++ *  @count: number of byte read
++ *  @f_pos: offset (starting register address)
++ *
++ *	@return number of bytes read into user buffer (buf) if succeeds
++ *          negative number if error occurs.
++ */
++static ssize_t rmidev_read(struct file *filp, char __user *buf,
++		size_t count, loff_t *f_pos)
++{
++	struct rmidev_data *data = filp->private_data;
++	ssize_t retval  = 0;
++	unsigned char tmpbuf[count+1];
++
++	/* limit offset to REG_ADDR_LIMIT-1 */
++	if (count > (REG_ADDR_LIMIT - *f_pos))
++		count = REG_ADDR_LIMIT - *f_pos;
++
++	if (count == 0)
++		return 0;
++
++	if (IS_ERR(data)) {
++		pr_err("%s: pointer of char device is invalid", __func__);
++		return -EBADF;
++	}
++
++	mutex_lock(&(data->file_mutex));
++
++	retval = rmi_read_block(data->rmi_dev, *f_pos, tmpbuf, count);
++
++	if (retval < 0)
++		goto clean_up;
++
++	if (copy_to_user(buf, tmpbuf, count))
++		retval = -EFAULT;
++	else
++		*f_pos += retval;
++
++clean_up:
++
++	mutex_unlock(&(data->file_mutex));
++
++	return retval;
++}
++
++/*
++ * rmidev_write: - use to write data into RMI stream
++ *
++ * @filep : file structure for write
++ * @buf: user-level buffer pointer contains data to be written
++ * @count: number of byte be be written
++ * @f_pos: offset (starting register address)
++ *
++ * @return number of bytes written from user buffer (buf) if succeeds
++ *         negative number if error occurs.
++ */
++static ssize_t rmidev_write(struct file *filp, const char __user *buf,
++		size_t count, loff_t *f_pos)
++{
++	struct rmidev_data *data = filp->private_data;
++	ssize_t retval  = 0;
++	unsigned char tmpbuf[count+1];
++
++	/* limit offset to REG_ADDR_LIMIT-1 */
++	if (count > (REG_ADDR_LIMIT - *f_pos))
++		count = REG_ADDR_LIMIT - *f_pos;
++
++	if (count == 0)
++		return 0;
++
++	if (IS_ERR(data)) {
++		pr_err("%s: pointer of char device is invalid", __func__);
++		return -EBADF;
++	}
++
++	if (copy_from_user(tmpbuf, buf, count))
++		return -EFAULT;
++
++	mutex_lock(&(data->file_mutex));
++
++	retval = rmi_write_block(data->rmi_dev, *f_pos, tmpbuf, count);
++
++	if (retval >= 0)
++		*f_pos += count;
++
++	mutex_unlock(&(data->file_mutex));
++
++	return retval;
++}
++
++/*
++ * rmidev_open: - get a new handle for from RMI stream
++ * @inp : inode struture
++ * @filp: file structure for read/write
++ *
++ * @return 0 if succeeds
++ */
++static int rmidev_open(struct inode *inp, struct file *filp)
++{
++	struct rmidev_data *data = container_of(inp->i_cdev,
++			struct rmidev_data, main_dev);
 +	int retval = 0;
 +
-+	/* TODO: read this or delete the function */
++	filp->private_data = data;
++
++	if (!data->rmi_dev)
++		return -EACCES;
++
++	mutex_lock(&(data->file_mutex));
++	if (data->ref_count < 1)
++		data->ref_count++;
++	else
++		retval = -EACCES;
++
++	mutex_unlock(&(data->file_mutex));
 +
 +	return retval;
 +}
 +
-+
-+static int f17_init(struct rmi_function_container *fc)
++/*
++ *  rmidev_release: - release an existing handle
++ *  @inp: inode structure
++ *  @filp: file structure for read/write
++ *
++ *  @return 0 if succeeds
++ */
++static int rmidev_release(struct inode *inp, struct file *filp)
 +{
-+	int retval;
++	struct rmidev_data *data = container_of(inp->i_cdev,
++			struct rmidev_data, main_dev);
 +
-+	retval = f17_alloc_memory(fc);
-+	if (retval < 0)
-+		goto err_free_data;
++	if (!data->rmi_dev)
++		return -EACCES;
 +
-+	retval = f17_initialize(fc);
-+	if (retval < 0)
-+		goto err_free_data;
++	mutex_lock(&(data->file_mutex));
 +
-+	retval = f17_register_devices(fc);
-+	if (retval < 0)
-+		goto err_free_data;
++	data->ref_count--;
++	if (data->ref_count < 0)
++		data->ref_count = 0;
 +
-+	retval = f17_create_sysfs(fc);
-+	if (retval < 0)
-+		goto err_free_data;
++	mutex_unlock(&(data->file_mutex));
 +
 +	return 0;
-+
-+err_free_data:
-+	f17_free_memory(fc);
-+
-+	return retval;
 +}
 +
-+static int f17_alloc_memory(struct rmi_function_container *fc)
-+{
-+	struct rmi_f17_device_data *f17;
-+	int retval;
++static const struct file_operations rmidev_fops = {
++	.owner =    THIS_MODULE,
++	.llseek =   rmidev_llseek,
++	.read =     rmidev_read,
++	.write =    rmidev_write,
++	.open =     rmidev_open,
++	.release =  rmidev_release,
++};
 +
-+	f17 = kzalloc(sizeof(struct rmi_f17_device_data), GFP_KERNEL);
-+	if (!f17) {
-+		dev_err(&fc->dev, "Failed to allocate function data.\n");
++/*
++ * rmidev_device_cleanup - release memory or unregister driver
++ * @rmidev_data: instance data for a particular device.
++ *
++ */
++static void rmidev_device_cleanup(struct rmidev_data *data)
++{
++	dev_t devno;
++
++	/* Get rid of our char dev entries */
++	if (data) {
++		devno = data->main_dev.dev;
++
++		if (data->device_class)
++			device_destroy(data->device_class, devno);
++
++		cdev_del(&data->main_dev);
++		kfree(data);
++
++		/* cleanup_module is never called if registering failed */
++		unregister_chrdev_region(devno, 1);
++		pr_debug("%s: rmidev device is removed\n", __func__);
++	}
++}
++
++/*
++ * rmi_char_devnode - return device permission
++ *
++ * @dev: char device structure
++ * @mode: file permission
++ *
++ */
++static char *rmi_char_devnode(struct device *dev, mode_t *mode)
++{
++	if (!mode)
++		return NULL;
++	/**mode = 0666*/
++	*mode = (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
++
++	return kasprintf(GFP_KERNEL, "rmi/%s", dev_name(dev));
++}
++
++static int rmidev_init_device(struct rmi_char_device *cd)
++{
++	struct rmi_device *rmi_dev = cd->rmi_dev;
++	struct rmidev_data *data;
++	dev_t dev_no;
++	int retval;
++	struct device *device_ptr;
++
++	if (rmidev_major_num) {
++		dev_no = MKDEV(rmidev_major_num, cd->rmi_dev->number);
++		retval = register_chrdev_region(dev_no, 1, CHAR_DEVICE_NAME);
++	} else {
++		retval = alloc_chrdev_region(&dev_no, 0, 1, CHAR_DEVICE_NAME);
++		/* let kernel allocate a major for us */
++		rmidev_major_num = MAJOR(dev_no);
++		dev_info(&rmi_dev->dev, "Major number of rmidev: %d\n",
++				 rmidev_major_num);
++	}
++	if (retval < 0) {
++		dev_err(&rmi_dev->dev,
++			"Failed to get minor dev number %d, code %d.\n",
++			cd->rmi_dev->number, retval);
++		return retval;
++	} else
++		dev_info(&rmi_dev->dev, "Allocated rmidev %d %d.\n",
++			 MAJOR(dev_no), MINOR(dev_no));
++
++	data = kzalloc(sizeof(struct rmidev_data), GFP_KERNEL);
++	if (!data) {
++		dev_err(&rmi_dev->dev, "Failed to allocate rmidev_data.\n");
++		/* unregister the char device region */
++		__unregister_chrdev(rmidev_major_num, MINOR(dev_no), 1,
++				CHAR_DEVICE_NAME);
 +		return -ENOMEM;
 +	}
-+	fc->data = f17;
 +
-+	retval = rmi_read_block(fc->rmi_dev, fc->fd.query_base_addr,
-+				f17->query.regs, sizeof(f17->query.regs));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Failed to read query register.\n");
-+		goto error_exit;
++	mutex_init(&data->file_mutex);
++
++	data->rmi_dev = cd->rmi_dev;
++	cd->data = data;
++
++	cdev_init(&data->main_dev, &rmidev_fops);
++
++	retval = cdev_add(&data->main_dev, dev_no, 1);
++	if (retval) {
++		dev_err(&cd->rmi_dev->dev, "Error %d adding rmi_char_dev.\n",
++			retval);
++		rmidev_device_cleanup(data);
++		return retval;
 +	}
 +
-+	f17->sticks = kcalloc(f17->query.number_of_sticks + 1,
-+			sizeof(struct rmi_f17_stick_data), GFP_KERNEL);
-+	if (!f17->sticks) {
-+		dev_err(&fc->dev, "Failed to allocate per stick data.\n");
-+		return -ENOMEM;
++	dev_set_name(&cd->dev, "rmidev%d", MINOR(dev_no));
++	data->device_class = rmidev_device_class;
++	device_ptr = device_create(
++			data->device_class,
++			NULL, dev_no, NULL,
++			CHAR_DEVICE_NAME"%d",
++			MINOR(dev_no));
++
++	if (IS_ERR(device_ptr)) {
++		dev_err(&cd->rmi_dev->dev, "Failed to create rmi device.\n");
++		rmidev_device_cleanup(data);
++		return -ENODEV;
 +	}
 +
 +	return 0;
-+
-+error_exit:
-+	kfree(f17);
-+	fc->data = NULL;
-+	return retval;
 +}
 +
-+static void f17_free_memory(struct rmi_function_container *fc)
++static void rmidev_remove_device(struct rmi_char_device *cd)
 +{
-+	struct rmi_f17_device_data *f17 = fc->data;
++	struct rmidev_data *data;
 +
-+	if (f17) {
-+		kfree(f17->sticks);
-+		f17->sticks = NULL;
-+	}
-+	kfree(f17);
-+	fc->data = NULL;
++	dev_dbg(&cd->dev, "%s: removing an rmidev device.\n", __func__);
++	if (!cd)
++		return;
++
++	data = cd->data;
++	if (data)
++		rmidev_device_cleanup(data);
 +}
 +
-+static int f17_init_stick(struct rmi_device *rmi_dev,
-+			  struct rmi_f17_stick_data *stick,
-+			  u16 *next_query_reg, u16 *next_data_reg,
-+			  u16 *next_control_reg) {
-+	int retval = 0;
++static struct rmi_char_driver rmidev_driver = {
++	.driver = {
++		.name = "rmidev",
++		.owner = THIS_MODULE,
++	},
 +
-+	retval = rmi_read_block(rmi_dev, *next_query_reg,
-+		stick->query.general.regs,
-+		sizeof(stick->query.general.regs));
-+	if (retval < 0) {
-+		dev_err(&rmi_dev->dev, "Failed to read stick general query.\n");
-+		return retval;
-+	}
-+	*next_query_reg += sizeof(stick->query.general.regs);
-+
-+	dev_dbg(&rmi_dev->dev, "Stick %d found\n", stick->index);
-+	dev_dbg(&rmi_dev->dev, "    Manufacturer: %d.\n",
-+				stick->query.general.manufacturer);
-+	dev_dbg(&rmi_dev->dev, "    Resistive:    %d.\n",
-+				stick->query.general.resistive);
-+	dev_dbg(&rmi_dev->dev, "    Ballistics:   %d.\n",
-+				stick->query.general.ballistics);
-+	dev_dbg(&rmi_dev->dev, "    Manufacturer: %d.\n",
-+				stick->query.general.ballistics);
-+	dev_dbg(&rmi_dev->dev, "    Has relative: %d.\n",
-+				stick->query.general.has_relative);
-+	dev_dbg(&rmi_dev->dev, "    Has absolute: %d.\n",
-+				stick->query.general.has_absolute);
-+	dev_dbg(&rmi_dev->dev, "    Had dribble:  %d.\n",
-+				stick->query.general.has_dribble);
-+	dev_dbg(&rmi_dev->dev, "    Has gestures: %d.\n",
-+				stick->query.general.has_gestures);
-+
-+	if (stick->query.general.has_gestures) {
-+		retval = rmi_read_block(rmi_dev, *next_query_reg,
-+			stick->query.gestures.regs,
-+			sizeof(stick->query.gestures.regs));
-+		if (retval < 0) {
-+			dev_err(&rmi_dev->dev,
-+				"Failed to read F17 gestures query, code %d.\n",
-+				retval);
-+			return retval;
-+		}
-+		*next_query_reg += sizeof(stick->query.gestures.regs);
-+		dev_dbg(&rmi_dev->dev, "        single tap: %d.\n",
-+					stick->query.gestures.has_single_tap);
-+		dev_dbg(&rmi_dev->dev, "        tap & hold: %d.\n",
-+					stick->query.gestures.has_tap_and_hold);
-+		dev_dbg(&rmi_dev->dev, "        double tap: %d.\n",
-+					stick->query.gestures.has_double_tap);
-+		dev_dbg(&rmi_dev->dev, "        early tap:  %d.\n",
-+					stick->query.gestures.has_early_tap);
-+		dev_dbg(&rmi_dev->dev, "        press:      %d.\n",
-+					stick->query.gestures.has_press);
-+	}
-+	if (stick->query.general.has_absolute) {
-+		stick->data.abs.address = *next_data_reg;
-+		*next_data_reg += sizeof(stick->data.abs.regs);
-+	}
-+	if (stick->query.general.has_relative) {
-+		stick->data.rel.address = *next_data_reg;
-+		*next_data_reg += sizeof(stick->data.rel.regs);
-+	}
-+	if (stick->query.general.has_gestures) {
-+		stick->data.gestures.address = *next_data_reg;
-+		*next_data_reg += sizeof(stick->data.gestures.regs);
-+	}
-+
-+	return retval;
-+}
-+
-+static int f17_initialize(struct rmi_function_container *fc)
-+{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct rmi_f17_device_data *f17 = fc->data;
-+	int i;
-+	int retval;
-+	u16 next_query_reg = fc->fd.query_base_addr;
-+	u16 next_data_reg = fc->fd.data_base_addr;
-+	u16 next_control_reg = fc->fd.control_base_addr;
-+
-+	retval = rmi_read_block(fc->rmi_dev, fc->fd.query_base_addr,
-+				f17->query.regs, sizeof(f17->query.regs));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Failed to read query register.\n");
-+		return retval;
-+	}
-+	dev_info(&fc->dev, "Found F17 with %d sticks.\n",
-+		 f17->query.number_of_sticks + 1);
-+	next_query_reg += sizeof(f17->query.regs);
-+
-+	retval = rmi_read_block(rmi_dev, fc->fd.command_base_addr,
-+		f17->commands.regs, sizeof(f17->commands.regs));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Failed to read command register.\n");
-+		return retval;
-+	}
-+
-+	f17->control_address = fc->fd.control_base_addr;
-+	retval = f17_read_control_parameters(rmi_dev, f17);
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Failed to initialize F17 control params.\n");
-+		return retval;
-+	}
-+
-+	for (i = 0; i < f17->query.number_of_sticks + 1; i++) {
-+		f17->sticks[i].index = i;
-+		retval = f17_init_stick(rmi_dev, &f17->sticks[i],
-+					&next_query_reg, &next_data_reg,
-+					&next_control_reg);
-+		if (!retval) {
-+			dev_err(&fc->dev, "Failed to init stick %d.\n", i);
-+			return retval;
-+		}
-+	}
-+
-+	return retval;
-+}
-+
-+static int f17_register_stick(struct rmi_function_container *fc,
-+			      struct rmi_f17_stick_data *stick) {
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	int retval = 0;
-+
-+	if (stick->query.general.has_absolute) {
-+		struct input_dev *input_dev;
-+		input_dev = input_allocate_device();
-+		if (!input_dev) {
-+			dev_err(&rmi_dev->dev, "Failed to allocate stick device %d.\n",
-+				stick->index);
-+			return -ENOMEM;
-+		}
-+
-+		snprintf(stick->input_name, sizeof(stick->input_name),
-+			"RMI F%02x Stick %d", 0x17, stick->index);
-+		snprintf(stick->input_phys, sizeof(stick->input_phys),
-+			 "sensor00fn%02x/stick%d", 0x17, stick->index);
-+		input_dev->name = stick->input_name;
-+		input_dev->phys = stick->input_phys;
-+		input_dev->dev.parent = &fc->dev;
-+		input_set_drvdata(input_dev, stick);
-+
-+		retval = input_register_device(input_dev);
-+		if (retval < 0) {
-+			dev_err(&rmi_dev->dev, "Failed to register stick device %d.\n",
-+				stick->index);
-+			goto error_free_device;
-+		}
-+		stick->input = input_dev;
-+	}
-+
-+	if (stick->query.general.has_relative) {
-+		struct input_dev *input_dev_mouse;
-+		/*create input device for mouse events  */
-+		input_dev_mouse = input_allocate_device();
-+		if (!input_dev_mouse) {
-+			retval = -ENOMEM;
-+			goto error_free_device;
-+		}
-+
-+		snprintf(stick->mouse_name, sizeof(stick->mouse_name),
-+			"RMI F%02x Mouse %d", 0x17, stick->index);
-+		snprintf(stick->mouse_phys, sizeof(stick->mouse_name),
-+			 "sensor00fn%02x/mouse%d", 0x17, stick->index);
-+		input_dev_mouse->name = stick->mouse_name;
-+		input_dev_mouse->phys = stick->mouse_phys;
-+		input_dev_mouse->dev.parent = &fc->dev;
-+
-+		input_dev_mouse->id.vendor  = 0x18d1;
-+		input_dev_mouse->id.product = 0x0210;
-+		input_dev_mouse->id.version = 0x0100;
-+
-+		set_bit(EV_REL, input_dev_mouse->evbit);
-+		set_bit(REL_X, input_dev_mouse->relbit);
-+		set_bit(REL_Y, input_dev_mouse->relbit);
-+
-+		set_bit(BTN_MOUSE, input_dev_mouse->evbit);
-+		/* Register device's buttons and keys */
-+		set_bit(EV_KEY, input_dev_mouse->evbit);
-+		set_bit(BTN_LEFT, input_dev_mouse->keybit);
-+		set_bit(BTN_MIDDLE, input_dev_mouse->keybit);
-+		set_bit(BTN_RIGHT, input_dev_mouse->keybit);
-+
-+		retval = input_register_device(input_dev_mouse);
-+		if (retval < 0)
-+			goto error_free_device;
-+		stick->mouse = input_dev_mouse;
-+	}
-+
-+	return 0;
-+
-+error_free_device:
-+	if (stick->input) {
-+		input_free_device(stick->input);
-+		stick->input = NULL;
-+	}
-+	if (stick->mouse) {
-+		input_free_device(stick->mouse);
-+		stick->mouse = NULL;
-+	}
-+	return retval;
-+}
-+
-+static int f17_register_devices(struct rmi_function_container *fc)
-+{
-+	struct rmi_f17_device_data *f17 = fc->data;
-+	int i;
-+	int retval = 0;
-+
-+	for (i = 0; i < f17->query.number_of_sticks + 1 && !retval; i++)
-+		retval = f17_register_stick(fc, &f17->sticks[i]);
-+
-+	return retval;
-+}
-+
-+static int f17_create_sysfs(struct rmi_function_container *fc)
-+{
-+	int attr_count = 0;
-+	int rc;
-+
-+	dev_dbg(&fc->dev, "Creating sysfs files.\n");
-+	/* Set up sysfs device attributes. */
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
-+		if (sysfs_create_file
-+		    (&fc->dev.kobj, &attrs[attr_count].attr) < 0) {
-+			dev_err(&fc->dev,
-+				"Failed to create sysfs file for %s.",
-+				attrs[attr_count].attr.name);
-+			rc = -ENODEV;
-+			goto err_remove_sysfs;
-+		}
-+	}
-+
-+	return 0;
-+
-+err_remove_sysfs:
-+	for (attr_count--; attr_count >= 0; attr_count--)
-+		sysfs_remove_file(&fc->dev.kobj, &attrs[attr_count].attr);
-+	return rc;
-+
-+}
-+
-+static int f17_config(struct rmi_function_container *fc)
-+{
-+	struct rmi_f17_device_data *f17 = fc->data;
-+	int retval;
-+
-+	retval = rmi_write_block(fc->rmi_dev, f17->control_address,
-+		f17->controls.regs, sizeof(f17->controls.regs));
-+	if (retval < 0) {
-+		dev_err(&fc->dev, "Could not write stick controls to 0x%04x\n",
-+				f17->control_address);
-+		return retval;
-+	}
-+
-+	return retval;
-+}
-+
-+static void f17_remove(struct rmi_function_container *fc)
-+{
-+	struct rmi_f17_device_data *f17 = fc->data;
-+	int i = 0;
-+
-+	for (i = 0; i < ARRAY_SIZE(attrs); i++)
-+		sysfs_remove_file(&fc->dev.kobj, &attrs[i].attr);
-+
-+	for (i = 0; i < f17->query.number_of_sticks + 1; i++)
-+		input_unregister_device(f17->sticks[i].input);
-+
-+	f17_free_memory(fc);
-+}
-+
-+static int f17_process_stick(struct rmi_device *rmi_dev,
-+			     struct rmi_f17_stick_data *stick) {
-+	int retval = 0;
-+
-+	if (stick->query.general.has_absolute) {
-+		retval = rmi_read_block(rmi_dev, stick->data.abs.address,
-+			stick->data.abs.regs, sizeof(stick->data.abs.regs));
-+		if (retval < 0) {
-+			dev_err(&rmi_dev->dev,
-+				"Failed to read abs data for stick %d, code %d.\n",
-+				stick->index, retval);
-+			goto error_exit;
-+		}
-+	}
-+	if (stick->query.general.has_relative) {
-+		retval = rmi_read_block(rmi_dev, stick->data.rel.address,
-+			stick->data.rel.regs, sizeof(stick->data.rel.regs));
-+		if (retval < 0) {
-+			dev_err(&rmi_dev->dev,
-+				"Failed to read rel data for stick %d, code %d.\n",
-+				stick->index, retval);
-+			goto error_exit;
-+		}
-+		dev_dbg(&rmi_dev->dev, "Reporting dX: %d, dy: %d\n",
-+			stick->data.rel.x_delta, stick->data.rel.y_delta);
-+		input_report_rel(stick->mouse, REL_X, stick->data.rel.x_delta);
-+		input_report_rel(stick->mouse, REL_Y, stick->data.rel.y_delta);
-+	}
-+	if (stick->query.general.has_gestures) {
-+		retval = rmi_read_block(rmi_dev, stick->data.gestures.address,
-+			stick->data.gestures.regs,
-+			sizeof(stick->data.gestures.regs));
-+		if (retval < 0) {
-+			dev_err(&rmi_dev->dev,
-+				"Failed to read gestures for stick %d, code %d.\n",
-+				stick->index, retval);
-+			goto error_exit;
-+		}
-+	}
-+	retval = 0;
-+
-+error_exit:
-+	if (stick->input)
-+		input_sync(stick->input);
-+	if (stick->mouse)
-+		input_sync(stick->mouse);
-+	return retval;
-+}
-+
-+static int f17_attention(struct rmi_function_container *fc, u8 *irq_bits)
-+{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct rmi_f17_device_data *f17 = fc->data;
-+	int i;
-+	int retval = 0;
-+
-+	for (i = 0; i < f17->query.number_of_sticks + 1 && !retval; i++)
-+		retval = f17_process_stick(rmi_dev, &f17->sticks[i]);
-+
-+	return retval;
-+}
-+
-+static struct rmi_function_handler function_handler = {
-+	.func = 0x17,
-+	.init = f17_init,
-+	.config = f17_config,
-+	.attention = f17_attention,
-+	.remove = f17_remove
++	.init = rmidev_init_device,
++	.remove = rmidev_remove_device,
 +};
 +
-+static int __init f17_module_init(void)
++static int __init rmidev_init(void)
 +{
-+	int error;
++	int error = 0;
++	pr_debug("%s: rmi_dev initialization.\n", __func__);
 +
-+	error = rmi_register_function_driver(&function_handler);
-+	if (error < 0) {
-+		pr_err("%s: register failed!\n", __func__);
-+		return error;
++	/* create device node */
++	rmidev_device_class = class_create(THIS_MODULE, DEVICE_CLASS_NAME);
++
++	if (IS_ERR(rmidev_device_class)) {
++		pr_err("%s: ERROR - Failed to create /dev/%s.\n", __func__,
++			CHAR_DEVICE_NAME);
++		return -ENODEV;
 +	}
++	/* setup permission */
++	rmidev_device_class->devnode = rmi_char_devnode;
 +
-+	return 0;
++	error = rmi_register_character_driver(&rmidev_driver);
++	if (error)
++		class_destroy(rmidev_device_class);
++	return error;
 +}
 +
-+static void f17_module_exit(void)
++static void __exit rmidev_exit(void)
 +{
-+	rmi_unregister_function_driver(&function_handler);
++	pr_debug("%s: exiting.\n", __func__);
++	rmi_unregister_character_driver(&rmidev_driver);
++	class_destroy(rmidev_device_class);
 +}
 +
-+
-+static ssize_t f17_rezero_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_f17_device_data *f17;
-+
-+	fc = to_rmi_function_container(dev);
-+	f17 = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			f17->commands.rezero);
-+
-+}
-+
-+static ssize_t f17_rezero_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf,
-+					 size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_f17_device_data *data;
-+	unsigned int new_value;
-+	int len;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	len = sscanf(buf, "%u", &new_value);
-+	if (new_value != 0 && new_value != 1) {
-+		dev_err(dev,
-+			"%s: Error - rezero is not a valid value 0x%x.\n",
-+			__func__, new_value);
-+		return -EINVAL;
-+	}
-+	data->commands.rezero = new_value;
-+	len = rmi_write(fc->rmi_dev, fc->fd.command_base_addr,
-+		data->commands.rezero);
-+
-+	if (len < 0) {
-+		dev_err(dev, "%s : Could not write rezero to 0x%x\n",
-+				__func__, fc->fd.command_base_addr);
-+		return -EINVAL;
-+	}
-+	return count;
-+}
-+
-+module_init(f17_module_init);
-+module_exit(f17_module_exit);
++module_init(rmidev_init);
++module_exit(rmidev_exit);
 +
 +MODULE_AUTHOR("Christopher Heiny <cheiny@synaptics.com>");
-+MODULE_DESCRIPTION("RMI F17 module");
++MODULE_DESCRIPTION("RMI4 Char Device");
 +MODULE_LICENSE("GPL");
-+MODULE_VERSION(RMI_DRIVER_VERSION);
