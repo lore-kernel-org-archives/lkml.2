@@ -1,131 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab2HQODJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:03:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47679 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756080Ab2HQOCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:02:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,785,1336374000"; 
-   d="scan'208";a="203536870"
-Date: Fri, 17 Aug 2012 22:02:40 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: lockdep warning on rt_mutex_lock()
-Message-ID: <20120817140240.GB539@localhost>
-References: <20120817100635.GA30765@localhost>
- <20120817134328.GB2872@linux.vnet.ibm.com>
+	id S1756351Ab2HQOET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:04:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:46489 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab2HQOEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:04:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817134328.GB2872@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1345211714.3708.24.camel@gandalf.local.home>
+References: <1345043907-18299-1-git-send-email-elezegarcia@gmail.com>
+	<1345151883.3708.7.camel@gandalf.local.home>
+	<CALF0-+WVoJ2NTPm7xZc0rr8-ZZ6an1BsN0SLtJvxzFd3CxA6bA@mail.gmail.com>
+	<1345211714.3708.24.camel@gandalf.local.home>
+Date: Fri, 17 Aug 2012 11:04:07 -0300
+Message-ID: <CALF0-+VbJmAr0j-84sZM3Di2Ar-qAOn_SFuwW1sbd_-1hoojNg@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/1] trace: Move trace event enable from fs_initcall
+ to early_initcall
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        tim.bird@am.sony.com, lizefan@huawei.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 06:43:28AM -0700, Paul E. McKenney wrote:
-> On Fri, Aug 17, 2012 at 06:06:35PM +0800, Fengguang Wu wrote:
-> > Greetings,
-> > 
-> > FYI, a lockdep warning:
-> 
-> Certainly looks problematic!
-> 
-> Any hint as to what version of the kernel produced this splat?
-> (Yes, lazy of me to ask, I know, but I am not seeing it in my testing.)
+On Fri, Aug 17, 2012 at 10:55 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2012-08-17 at 08:01 -0300, Ezequiel Garcia wrote:
+>
+>> Regarding the 'complete solution': to be able to capture events from
+>> the very beggining...
+>> Have you thought about this?
+>> Could you give me a hint on how could I implement it?
+>
+> How far in the "beginning"? Before memory is set up?
 
-It happens on both 3.5.0 and 3.6-rc1. Will bisect (try older kernels) help?
-Bisect is handy for me :)
+Yes.
 
-Sorry the back trace in the original email only happens in _one_ test box.
-That makes it hard to reproduce..
+> I wouldn't do that.
 
-The more common test boxes see these traces (with different config).
-I'll send full config/dmesg for the first one in another email.
+Yeah, perhaps it sounds crazy. It makes some sense for kmem events, though.
 
-[   24.647556] init: Temporary process spawn error: No such file or directory
-[   24.806072] ------------[ cut here ]------------
-[   24.807042] WARNING: at /c/kernel-tests/src/linux/kernel/lockdep.c:3493 check_flags+0x113/0x2a7()
-[   24.807042] Hardware name: Bochs
-[   24.807042] Pid: 8, comm: rcu_kthread Not tainted 3.6.0-rc1-00011-gf8cdda8 #2
-[   24.807042] Call Trace:
-[   24.807042]  [<ffffffff81089d10>] ? up+0x50/0x5c
-[   24.807042]  [<ffffffff8105cc87>] warn_slowpath_common+0xb3/0xe1
-[   24.807042]  [<ffffffff8105cdb7>] warn_slowpath_null+0x23/0x2c
-[   24.807042]  [<ffffffff810aabdb>] check_flags+0x113/0x2a7
-[   24.807042]  [<ffffffff810ac9f9>] lock_is_held+0x4b/0xe4
-[   24.807042]  [<ffffffff810918fd>] __might_sleep+0x4e/0x277
-[   24.807042]  [<ffffffff8199fa1d>] rt_mutex_lock+0x23/0x54
-[   24.807042]  [<ffffffff810d9c89>] rcu_boost+0xeb/0x140
-[   24.807042]  [<ffffffff819a06e7>] ? _raw_spin_unlock_irqrestore+0x78/0xeb
-[   24.807042]  [<ffffffff81082a0c>] ? spin_unlock_irqrestore+0x10/0x19
-[   24.807042]  [<ffffffff81082d75>] ? finish_wait+0x8f/0x9f
-[   24.807042]  [<ffffffff810da3fc>] rcu_kthread+0xf2/0x1f0
-[   24.807042]  [<ffffffff81082e3c>] ? abort_exclusive_wait+0xb7/0xb7
-[   24.807042]  [<ffffffff810da30a>] ? __rcu_process_callbacks+0x1b4/0x1b4
-[   24.807042]  [<ffffffff81082032>] kthread+0x95/0xa4
-[   24.807042]  [<ffffffff819a33c4>] kernel_thread_helper+0x4/0x10
-[   24.807042]  [<ffffffff819a1bb0>] ? retint_restore_args+0x13/0x13
-[   24.807042]  [<ffffffff81081f9d>] ? freezing+0x2c/0x2c
-[   24.807042]  [<ffffffff819a33c0>] ? gs_change+0x13/0x13
+> I have in the past (set up before memory was finished being
+> initialized), but things have changed since then.
+>
+> One thing that we could do for those that want really early tracing, is
+> to add a config option to add a static temporary ring buffer, that gets
 
-[   22.951027] [sched_delayed] sched: RT throttling activated
-[   34.752102] ------------[ cut here ]------------
-[   34.753023] WARNING: at /c/kernel-tests/src/tip/kernel/lockdep.c:3493 check_flags+0xc1/0x1d0()
-[   34.753023] Pid: 6, comm: rcu_kthread Not tainted 3.5.0-03701-g899852a #1
-[   34.753023] Call Trace:
-[   34.753023]  [<ffffffff8107a311>] ? check_flags+0xc1/0x1d0
-[   34.753023]  [<ffffffff8103a906>] warn_slowpath_common+0x66/0x90
-[   34.753023]  [<ffffffff8103aa05>] warn_slowpath_null+0x15/0x20
-[   34.753023]  [<ffffffff8107a311>] check_flags+0xc1/0x1d0
-[   34.753023]  [<ffffffff8107d983>] lock_acquire+0x63/0xe0
-[   34.753023]  [<ffffffff810688f6>] ? update_curr_rt+0xd6/0x190
-[   34.753023]  [<ffffffff8164963b>] _raw_spin_lock+0x3b/0x50
-[   34.753023]  [<ffffffff81648cf8>] ? rt_mutex_slowlock+0x38/0x150
-[   34.753023]  [<ffffffff81648cf8>] rt_mutex_slowlock+0x38/0x150
-[   34.753023]  [<ffffffff81266d58>] ? __raw_spin_lock_init+0x38/0x70
-[   34.753023]  [<ffffffff81648e38>] rt_mutex_lock+0x28/0x30
-[   34.753023]  [<ffffffff8109b1e6>] rcu_boost+0x76/0xf0
-[   34.753023]  [<ffffffff8109b405>] rcu_kthread+0xa5/0x140
-[   34.753023]  [<ffffffff8105a160>] ? abort_exclusive_wait+0xa0/0xa0
-[   34.753023]  [<ffffffff8109b360>] ? __rcu_process_callbacks+0x100/0x100
-[   34.753023]  [<ffffffff8105964d>] kthread+0x8d/0xa0
-[   34.753023]  [<ffffffff8164ba04>] kernel_thread_helper+0x4/0x10
-[   34.753023]  [<ffffffff8164a330>] ? retint_restore_args+0x13/0x13
-[   34.753023]  [<ffffffff810595c0>] ? kthread_flush_work_fn+0x10/0x10
-[   34.753023]  [<ffffffff8164ba00>] ? gs_change+0x13/0x13
+Yes, something like this would be ideal. How would this ring buffer be
+allocated?
+Perhaps as static and __initdata?
+This way it would be released afterwards, right?
 
-[   11.635806] HugeTLB registered 4 MB page size, pre-allocated 0 pages
-[   12.105729] ------------[ cut here ]------------
-[   12.105729] WARNING: at /c/kernel-tests/src/i386/kernel/lockdep.c:3493 check_flags+0xaa/0x190()
-[   12.105729] Hardware name: Bochs
-[   12.105729] Pid: 6, comm: rcu_kthread Not tainted 3.5.0-rc5+ #30
-[   12.105729] Call Trace:
-[   12.105729]  [<c102773a>] warn_slowpath_common+0x7a/0xa0
-[   12.105729]  [<c10646ca>] ? check_flags+0xaa/0x190
-[   12.105729]  [<c10646ca>] ? check_flags+0xaa/0x190
-[   12.105729]  [<c10277fd>] warn_slowpath_null+0x1d/0x20
-[   12.105729]  [<c10646ca>] check_flags+0xaa/0x190
-[   12.105729]  [<c1067b3c>] lock_acquire+0x3c/0xb0
-[   12.105729]  [<c1007668>] ? sched_clock+0x8/0x10
-[   12.105729]  [<c104ecf5>] ? sched_clock_local.constprop.2+0x15/0x150
-[   12.105729]  [<c14c9a20>] _raw_spin_lock+0x40/0x70
-[   12.105729]  [<c14c9296>] ? rt_mutex_slowlock+0x26/0x130
-[   12.105729]  [<c14c9296>] rt_mutex_slowlock+0x26/0x130
-[   12.105729]  [<c1068837>] ? debug_check_no_locks_freed+0x127/0x160
-[   12.105729]  [<c1062f9d>] ? put_lock_stats.isra.19+0xd/0x30
-[   12.105729]  [<c14c93b9>] rt_mutex_lock+0x19/0x20
-[   12.105729]  [<c107eeac>] rcu_kthread+0x10c/0x1c0
-[   12.105729]  [<c14c8cff>] ? preempt_schedule+0x2f/0x50
-[   12.105729]  [<c104d169>] ? complete+0x49/0x60
-[   12.105729]  [<c107eda0>] ? __rcu_process_callbacks+0x110/0x110
-[   12.105729]  [<c1042cc7>] kthread+0x67/0x70
-[   12.105729]  [<c1042c60>] ? kthread_flush_work_fn+0x10/0x10
-[   12.105729]  [<c14cb33a>] kernel_thread_helper+0x6/0xd
+> copied into the default ring buffer after memory is set up. That may be
+> the easiest way.
+>
+> Once memory is set up, the ring buffer can be allocated and events can
+> be traced, but the ring buffer needs to be set up first. All it would
+> take is some calls in init/main.c start_kernel() to the initialization.
+>
+
+Note that my main concern is on trace_events (kmem events to be precise).
+However this are registered through tracepoints and in turn this tracepoints
+depend on kmalloc and friends. So, right now is a chicken-egg problem.
 
 Thanks,
-Fengguang
+Ezequiel.
