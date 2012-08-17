@@ -1,117 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab2HQSDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:03:13 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:31472 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab2HQSDI (ORCPT
+	id S1758737Ab2HQSGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:06:53 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64802 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758697Ab2HQSGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:03:08 -0400
-Message-ID: <1345226555.3025.7.camel@lorien2>
-Subject: Re: dma mapping error check analysis
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Fri, 17 Aug 2012 12:02:35 -0600
-In-Reply-To: <20120817141120.GD8093@phenom.dumpdata.com>
-References: <1344638802.8018.18.camel@lorien2>
-	 <20120817141120.GD8093@phenom.dumpdata.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 17 Aug 2012 14:06:44 -0400
+Message-ID: <502E882F.6090500@pobox.com>
+Date: Fri, 17 Aug 2012 14:06:39 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+Subject: Enabling FUA for SATA drives (was Re: [RFC][PATCH] libata: enable
+ SATA disk fua detection on default)
+References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
+In-Reply-To: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-17 at 10:11 -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Aug 10, 2012 at 04:46:42PM -0600, Shuah Khan wrote:
-> > I analyzed current calls to dma_map_single() and dma_map_page() in the kernel
-> > to see if dma mapping errors are checked after mapping routines return.
-> > 
-> > Reference linux-next August 6 2012.
-> > 
-> > This analysis stemmed from the discussion on my patch that disables swiotlb
-> > overflow as a first step towards removing the support all together. Please
-> > refer to thread below:
-> > 
-> > https://lkml.org/lkml/2012/7/24/391
-> > 
-> > The goal of this analysis is to find drivers that don't currently check dma
-> > mapping errors and fix them. I did a grep for dma_map_single() and
-> > dma_map_page() and looked at the code that calls these routines. I classified
-> > the results of dma mapping error check status as follows:
-> > 
-> > Broken:
-> > 1. No error checks
-> > 2. Partial checks - In that source file, not all calls are followed by checks.
-> > 3. Checks dma mapping errors, doesn't unmap already mapped pages when mapping
-> >    error occurs in the middle of a multiple mapping attempt.
-> > 
-> > The first two categories are classified as broken and need fixing.
-> > 
-> > The third one needs fixing, since it leaves dangling mapped pages, and holds
-> > on to them which is equivalent to memory leak. Some drivers release all mapped
-> > pages when the device closes, but others don't. Not doing unmap might be
-> > harmless on some architectures going by the comments I found in some source
-> > files.
-> > 
-> > Good:
-> > 1. Checks dma mapping errors and unmaps already mapped pages when mapping
-> >    error occurs in the middle of a multiple mapping attempt.
-> > 2. Checks dma mapping errors without unlikely()
-> > 3. Checks dma mapping errors with unlikely()
-> > 
-> > I lumped the above three cases as good cases. Using unlikely() is icing on the
-> > cake, and something we need to be concerned about compared to other problems in
-> > this area.
-> > 
-> > - dmap_map_single() - results
-> > No error checks - 195 (46%)
-> > Partial checks - 46 (11%)
-> > Doesn't unmap: 26 (6%)
-> > Good: 147 (35%)
-> > 
-> > - dma_map_page() - results
-> > No error checks: 61 (59%)
-> > Partial checks: 7 (.06%)
-> > Doesn't unmap: 15 (14.5%)
-> > Good: 20 (19%)
-> > 
-> > In summary a large % of the cases (> 50%) go unchecked. That raises the
-> > following questions:
-> > 
-> > When do mapping errors get detected?
-> > How often do these errors occur?
-> > Why don't we see failures related to missing dma mapping error checks?
-> > Are they silent failures?
-> > 
-> > Based on what I found, I am not too eager to remove swiotlb overflow support
-> > which would increase the probability of returning dma mapping errors.
-> > 
-> > However I propose the following to gather more information:
-> > 
-> > - Change swiotlb to log (pr_info or pr_debug) cases where overflow buffer is
-> >   triggered. (This is a delta on the disable swiotlb patch I sent a few weeks
-> >   ago - References in this posting).
-> 
-> As opposed to printk(KERN_ERR ? Why?
+On 05/07/2012 11:24 PM, Zheng Liu wrote:
+> From: Zheng Liu <wenqing.lz@taobao.com>
+>
+> Currently, SATA disk fua detection is disabled on default because most of
+> devices don't support this feature at that time.  With the development of
+> technology, more and more SATA disks support this feature.  So now we can enable
+> this detection on default.
+>
+> Although fua detection is defined as a kernel module parameter, it is too hard
+> to set its value because it must be loaded and set before system starts up.
+> That needs to modify initrd file.  So it is inconvenient for administrator who
+> needs to manage a huge number of servers.
+>
+> CC: Jeff Garzik <jeff@garzik.org>
+> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+> ---
+>   drivers/ata/libata-core.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 23763a1..3627251 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -133,9 +133,9 @@ int atapi_passthru16 = 1;
+>   module_param(atapi_passthru16, int, 0444);
+>   MODULE_PARM_DESC(atapi_passthru16, "Enable ATA_16 passthru for ATAPI devices (0=off, 1=on [default])");
+>
+> -int libata_fua = 0;
+> +int libata_fua = 1;
+>   module_param_named(fua, libata_fua, int, 0444);
+> -MODULE_PARM_DESC(fua, "FUA support (0=off [default], 1=on)");
+> +MODULE_PARM_DESC(fua, "FUA support (0=off, 1=on [default])");
 
-printk(KERN_ERR) is just fine.
+Applied.  Let's see how far down the rabbit hole we go ;-)
 
-> 
-> > - Change dma_map_single() and dma_map_page() to track how many times they
-> >   return before attempting to fix all the places that don't do dma mapping
-> >   error checks. (Maybe a counter that keeps track, pr_* is not an option).
-> 
-> Perhaps this should be done in the DMA debug API instead?
+The FUA decision, as previously indicated, was based on early SATA 
+drives, and perhaps better ones are available now.  Only testing will 
+tell, at this point.
 
-Yes that is a good idea. Will explore that.
+The larger questions, raised by Christoph and others remain unaddressed 
+(though perhaps we can start addressing them now, with this patch):
 
--- Shuah
+* what is smart flushing policy for ATA devices with FUA?
+
+* ATA NCQ's flush is not queued
+
+* ATA NCQ always had the FUA bit...
+
+* ...but mixing ATA NCQ FUA and !FUA in a queue is not fully supported 
+by the existing code
+
+and probably a few other details I forgot :)
+
+	Jeff
+
+
+
+
+
 
 
