@@ -1,142 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab2HQXIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 19:08:52 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:45371 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756022Ab2HQXIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 19:08:40 -0400
-Date: Fri, 17 Aug 2012 19:08:20 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        adilger.kernel@dilger.ca, dushistov@mail.ru, bharrosh@panasas.com,
-        bhalevy@tonian.com, hirofumi@mail.parknet.co.jp,
-        mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-        hch@infradead.org, osd-dev@open-osd.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] ext3: remove lock/unlock super
-Message-ID: <20120817230820.GB573@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Marco Stornelli <marco.stornelli@gmail.com>,
-	Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-	adilger.kernel@dilger.ca, dushistov@mail.ru, bharrosh@panasas.com,
-	bhalevy@tonian.com, hirofumi@mail.parknet.co.jp,
-	mikulas@artax.karlin.mff.cuni.cz, Al Viro <viro@ZenIV.linux.org.uk>,
-	hch@infradead.org, osd-dev@open-osd.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org,
-	Linux FS Devel <linux-fsdevel@vger.kernel.org>
-References: <502CC4BA.3040702@gmail.com>
- <20120816163904.GA17526@quack.suse.cz>
- <20120816191909.GC31346@thunk.org>
- <502DE8E8.5080000@gmail.com>
+	id S1757069Ab2HQXKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 19:10:50 -0400
+Received: from home.keithp.com ([63.227.221.253]:52321 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756691Ab2HQXKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 19:10:42 -0400
+From: Keith Packard <keithp@keithp.com>
+To: "Lespiau\, Damien" <damien.lespiau@intel.com>
+Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 6/7] drm/i915: Disable FDI RX before FDI TX
+In-Reply-To: <CAPX-8+_bZNyXL0b8nBkN97sj-KnT_eZXZ-5Hp5R6P-L-D-QAKg@mail.gmail.com>
+References: <1344918891-6283-1-git-send-email-keithp@keithp.com> <1344918891-6283-7-git-send-email-keithp@keithp.com> <CAPX-8+_bZNyXL0b8nBkN97sj-KnT_eZXZ-5Hp5R6P-L-D-QAKg@mail.gmail.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.4.1 (i486-pc-linux-gnu)
+Date: Fri, 17 Aug 2012 16:10:57 -0700
+Message-ID: <86393lunb2.fsf@miki.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502DE8E8.5080000@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 08:47:04AM +0200, Marco Stornelli wrote:
-> Great. I'll remove the calls for ext3/ext4 when I'll submit the
-> second version of the patch.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-FYI, I have the following patch my ext4 tree, so I could do more
-intensive testing.  I'll let folks know if anything goes horribly
-wrong, but I'm pretty sure this should be safe.
+"Lespiau, Damien" <damien.lespiau@intel.com> writes:
 
-       	   	     	      	   	    - Ted
+> I can't see anything in the docs about an order requirement for those.
 
->From 81f74e743344217487792e4190f9478963d1bb21 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Fri, 17 Aug 2012 19:00:34 -0400
-Subject: [PATCH] ext4: drop lock_super()/unlock_super()
+Right, the docs don't say anything, which is a bit disconcerting.
 
-We don't need lock_super()/unlock_super() any more, since the places
-where it is used, we are protected by the s_umount r/w semaphore.
+> Not sure why the other way does not make sense. Somehow disabling TX
+> before RX makes some sense to me (TX enabled without a ready RX looks
+> weird?, no data should flow as the pipe is shutdown at that point
+> anyway). Maybe it just does not matter?
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Marco Stornelli <marco.stornelli@gmail.com>
----
- fs/ext4/super.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+And here I figured disabling RX before TX made more sense -- otherwise
+the receiver wouldn't be seeing anything. In other areas of the driver,
+we're careful to disable receivers before senders (disable CRTC before
+PLL, etc).
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 3ab798d..bae4124 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -861,7 +861,6 @@ static void ext4_put_super(struct super_block *sb)
- 	flush_workqueue(sbi->dio_unwritten_wq);
- 	destroy_workqueue(sbi->dio_unwritten_wq);
- 
--	lock_super(sb);
- 	if (sbi->s_journal) {
- 		err = jbd2_journal_destroy(sbi->s_journal);
- 		sbi->s_journal = NULL;
-@@ -928,7 +927,6 @@ static void ext4_put_super(struct super_block *sb)
- 	 * Now that we are completely done shutting down the
- 	 * superblock, we need to actually destroy the kobject.
- 	 */
--	unlock_super(sb);
- 	kobject_put(&sbi->s_kobj);
- 	wait_for_completion(&sbi->s_kobj_unregister);
- 	if (sbi->s_chksum_driver)
-@@ -4535,11 +4533,9 @@ static int ext4_unfreeze(struct super_block *sb)
- 	if (sb->s_flags & MS_RDONLY)
- 		return 0;
- 
--	lock_super(sb);
- 	/* Reset the needs_recovery flag before the fs is unlocked. */
- 	EXT4_SET_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
- 	ext4_commit_super(sb, 1);
--	unlock_super(sb);
- 	return 0;
- }
- 
-@@ -4575,7 +4571,6 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 	char *orig_data = kstrdup(data, GFP_KERNEL);
- 
- 	/* Store the original options */
--	lock_super(sb);
- 	old_sb_flags = sb->s_flags;
- 	old_opts.s_mount_opt = sbi->s_mount_opt;
- 	old_opts.s_mount_opt2 = sbi->s_mount_opt2;
-@@ -4717,7 +4712,6 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 	if (sbi->s_journal == NULL)
- 		ext4_commit_super(sb, 1);
- 
--	unlock_super(sb);
- #ifdef CONFIG_QUOTA
- 	/* Release old quota file names */
- 	for (i = 0; i < MAXQUOTAS; i++)
-@@ -4730,10 +4724,8 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 		else if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 					EXT4_FEATURE_RO_COMPAT_QUOTA)) {
- 			err = ext4_enable_quotas(sb);
--			if (err) {
--				lock_super(sb);
-+			if (err)
- 				goto restore_opts;
--			}
- 		}
- 	}
- #endif
-@@ -4760,7 +4752,6 @@ restore_opts:
- 		sbi->s_qf_names[i] = old_opts.s_qf_names[i];
- 	}
- #endif
--	unlock_super(sb);
- 	kfree(orig_data);
- 	return err;
- }
--- 
-1.7.12.rc0.22.gcdd159b
+> Another detail is that disabling the PLLs seem to have an order in the
+> disabling sequence, TX, then RX.
+>
+> I.  Disable CPU FDI Transmitter PLL
+> II. Disable PCH FDI Receiver PLL
 
+That ordering doesn't matter as the FDI receiver and transmitter are
+both disabled by that point, so they aren't talking at all.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUBUC7PgjYtFsjWk68qAQgAkg//ROGG75eVoPQR/7gw4Vo+m5IQEyriAXOi
+bkYY++p4UPv/3ky4Roww/yxEE7wORTi0/C8ORAeYy+UPmHvWc84he2xdO2hZmbu2
+9tF5bVkuem5SY7iJXR8df2Il/7jZ5ygAwykbOeA6wCBzyX7egNJvDMhszD9xdakI
+JprPoUS6QUPdwL+2irN9mi+ftLfJDmauK2IBSdwvi2UXQuZnHGR93Smrmzuv00QJ
+LMWYZR52+g34q9GcyiQQ1Jhl59NvVzBfNTsKMeViskhIDU0Q7Nxa6sPeAy2fgpad
+968g4x2RQd0J93IVfYsUKnJT3txBrbjjucJ1GvokvV24USlbL2O51ZnUkIjypawy
+k5E3yR2qQBey7PL4zRJAmbt4Rs63XJkH6yd44pQyCAgtUnKke/bw5aenSwqY8b+M
+8VQry5bKi4Vqmh89c2MtqdZwSUT5oAiDAzjQJ7F4k3D2Fo0NPMaaN+Cdecz6MADo
+AqWF+bmx8tU1SCT9syEIEotM+NTnU3xyzHXa0geqW0d+h0efmnDzwpNnFa4AhScB
+s6aoovzNWW0U1JE2iHTTKfeT2gMvzupCA+z++geoE1s90HWQNfIHLlIbJtppmQ3O
+SxqvfPx69NjK1xRSGrcfInUFLsoQ8nNXdJa55QKDvt9W7HboCq0n9NV/ld/HCjpz
+EqaraMKpze8=
+=26Nr
+-----END PGP SIGNATURE-----
+--=-=-=--
