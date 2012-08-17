@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030942Ab2HQJqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 05:46:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56971 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756417Ab2HQJqf (ORCPT
+	id S1030406Ab2HQJro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 05:47:44 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36049 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755653Ab2HQJrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 05:46:35 -0400
-Date: Fri, 17 Aug 2012 10:46:02 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 30/31] arm64: Build infrastructure
-Message-ID: <20120817094602.GC24389@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-31-git-send-email-catalin.marinas@arm.com>
- <20120817093213.GT11011@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817093213.GT11011@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 17 Aug 2012 05:47:43 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH] BUG: clk_find() misses some clocks
+Date: Fri, 17 Aug 2012 11:47:23 +0200
+Message-Id: <1345196843-23059-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 10:32:13AM +0100, Tony Lindgren wrote:
-> * Catalin Marinas <catalin.marinas@arm.com> [120814 11:00]:
-> > --- /dev/null
-> > +++ b/arch/arm64/Kconfig
-> > @@ -0,0 +1,261 @@
-> > +config ARM64
-> > +	def_bool y
-> > +	select OF
-> > +	select OF_EARLY_FLATTREE
-> > +	select IRQ_DOMAIN
-> > +	select HAVE_AOUT
-> > +	select HAVE_DMA_ATTRS
-> > +	select HAVE_DMA_API_DEBUG
-> > +	select HAVE_IDE
-> > +	select HAVE_MEMBLOCK
-> > +	select RTC_LIB
-> > +	select SYS_SUPPORTS_APM_EMULATION
-> > +	select HAVE_GENERIC_DMA_COHERENT
-> > +	select GENERIC_IOMAP
-> > +	select HAVE_IRQ_WORK
-> > +	select HAVE_PERF_EVENTS
-> > +	select HAVE_ARCH_TRACEHOOK
-> > +	select PERF_USE_VMALLOC
-> > +	select HAVE_HW_BREAKPOINT if PERF_EVENTS
-> > +	select HAVE_GENERIC_HARDIRQS
-> > +	select GENERIC_HARDIRQS_NO_DEPRECATED
-> > +	select HAVE_SPARSE_IRQ
-> > +	select SPARSE_IRQ
-> > +	select GENERIC_IRQ_SHOW
-> > +	select GENERIC_SMP_IDLE_THREAD
-> > +	select NO_BOOTMEM
-> > +	help
-> > +	  ARM 64-bit (AArch64) Linux support.
-> 
-> Anything we should select here for ARM generic timers and
-> interrupts assuming we can always expect to boot using those?
+if a clock is declared like that:
+CLKDEV_CON_DEV_ID("pioA", "fffff400.gpio", &pioAB_clk)
+(so, dev_id AND con_id are defined)
+and the driver looks for a dev_id (but no specific con_id) like that:
+clock = clk_get(&pdev->dev, NULL);
 
-There is an entry in drivers/clocksource/Kconfig:
+The clock won't be found:
 
-config CLKSRC_ARM_GENERIC
-	def_bool y if ARM64
+if (dev_id)
+	best_possible += 2; /* dev_id != NULL */
+if (con_id)
+	best_possible += 1; /* con_id == NULL */
+/* => so best possible == 2 */
 
-I will have something similar for the GIC but the model does not
-currently support GICv3 to be able to test. I'll publish a branch with
-example SoC code (for the model) and that adds GIC support into
-drivers/irqchip/ with the address information from FDT. The per-CPU GIC
-initialisation is done via a CPU notifier to decouple this from the SoC
-code (I think even on 32-bit ARM it could be done in the same way,
-gic_secondary_init() always takes 0 as argument.
+list_for_each_entry(p, &clocks, node) {
+	match = 0;
+/*
+ * checking p->dev_id = "fffff400.gpio" and p->con_id = "pioA"
+ * against dev_id = "fffff400.gpio" and con_id = NULL
+ */
+	if (p->dev_id) { /* ok, p->dev_id exists */
+	 /* and, we are lucky, there's a match ! \o/ */
+		if (!dev_id || strcmp(p->dev_id, dev_id))
+			continue;
+		match += 2;
+	}
+/* so we have match == 2 */
 
+	if (p->con_id) {
+		/* p->con_id is not null */
+		if (!con_id || strcmp(p->con_id, con_id))
+		/*
+		 * too bad !! con_id is null !
+		 * even if we have best_possible == match
+		 * our clock won't be selected
+		 */
+			continue;
+		match += 1;
+	}
+
+	if (match > best_found) {
+		cl = p;
+		if (match != best_possible)
+			best_found = match;
+		else
+			break;
+	}
+}
+
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ drivers/clk/clkdev.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index d423c9b..e28b120 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -114,13 +114,13 @@ static struct clk_lookup *clk_find(const char *dev_id, const char *con_id)
+ 
+ 	list_for_each_entry(p, &clocks, node) {
+ 		match = 0;
+-		if (p->dev_id) {
+-			if (!dev_id || strcmp(p->dev_id, dev_id))
++		if (p->dev_id && dev_id) {
++			if (strcmp(p->dev_id, dev_id))
+ 				continue;
+ 			match += 2;
+ 		}
+-		if (p->con_id) {
+-			if (!con_id || strcmp(p->con_id, con_id))
++		if (p->con_id && con_id) {
++			if (strcmp(p->con_id, con_id))
+ 				continue;
+ 			match += 1;
+ 		}
 -- 
-Catalin
+1.7.2.5
+
