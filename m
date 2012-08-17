@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933497Ab2HQA3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 20:29:19 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:41874
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	id S933484Ab2HQA3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 20:29:17 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:42581
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932632Ab2HQA2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932638Ab2HQA2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 20:28:52 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 08/14] Tools: hv: Gather DNS information
-Date: Thu, 16 Aug 2012 17:45:19 -0700
-Message-Id: <1345164325-5198-9-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/14] Tools: hv: Rename the function kvp_get_ip_address()
+Date: Thu, 16 Aug 2012 17:45:22 -0700
+Message-Id: <1345164325-5198-12-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1345164325-5198-1-git-send-email-kys@microsoft.com>
 References: <1345164300-5146-1-git-send-email-kys@microsoft.com>
@@ -24,43 +24,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- tools/hv/hv_kvp_daemon.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+ tools/hv/hv_kvp_daemon.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 65d54c8..2f8e0b9 100644
+index 59669a8..bb2a6c4 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -550,6 +550,29 @@ static void kvp_get_ipconfig_info(char *if_name,
- 	kvp_process_ipconfig_file(cmd, (char *)buffer->gate_way,
- 				(MAX_GATEWAY_SIZE * 2), INET6_ADDRSTRLEN, 1);
- 
-+
-+	/*
-+	 * Gather the DNS  state.
-+	 * Since there is no standard way to get this information
-+	 * across various distributions of interest; we just invoke
-+	 * an external script that needs to be ported across distros
-+	 * of interest.
-+	 *
-+	 * Following is the expected format of the information from the script:
-+	 *
-+	 * ipaddr1 (nameserver1)
-+	 * ipaddr2 (nameserver2)
-+	 * .
-+	 * .
-+	 */
-+
-+	sprintf(cmd, "%s",  "hv_get_dns_info");
-+
-+	/*
-+	 * Execute the command to gather DNS info.
-+	 */
-+	kvp_process_ipconfig_file(cmd, (char *)buffer->dns_addr,
-+				(MAX_IP_ADDR_SIZE * 2), INET_ADDRSTRLEN, 0);
+@@ -766,7 +766,7 @@ static int kvp_process_ip_address(void *addrp,
  }
  
- 
+ static int
+-kvp_get_ip_address(int family, char *if_name, int op,
++kvp_get_ip_info(int family, char *if_name, int op,
+ 		 void  *out_buffer, int length)
+ {
+ 	struct ifaddrs *ifap;
+@@ -1469,12 +1469,12 @@ int main(void)
+ 			strcpy(key_value, lic_version);
+ 			break;
+ 		case NetworkAddressIPv4:
+-			kvp_get_ip_address(AF_INET, NULL, KVP_OP_ENUMERATE,
++			kvp_get_ip_info(AF_INET, NULL, KVP_OP_ENUMERATE,
+ 				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
+ 			strcpy(key_name, "NetworkAddressIPv4");
+ 			break;
+ 		case NetworkAddressIPv6:
+-			kvp_get_ip_address(AF_INET6, NULL, KVP_OP_ENUMERATE,
++			kvp_get_ip_info(AF_INET6, NULL, KVP_OP_ENUMERATE,
+ 				key_value, HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
+ 			strcpy(key_name, "NetworkAddressIPv6");
+ 			break;
 -- 
 1.7.4.1
 
