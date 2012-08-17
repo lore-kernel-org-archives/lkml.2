@@ -1,159 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab2HQSQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:16:01 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:20747 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757336Ab2HQSPy (ORCPT
+	id S1758777Ab2HQSSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:18:34 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17836 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758728Ab2HQSS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:15:54 -0400
-Date: Fri, 17 Aug 2012 14:05:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 07/11] xen/mmu: Recycle the Xen provided L4,
- L3, and L2 pages
-Message-ID: <20120817180557.GA18579@phenom.dumpdata.com>
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
- <1345133009-21941-8-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1208171902320.15568@kaball.uk.xensource.com>
+	Fri, 17 Aug 2012 14:18:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 17 Aug 2012 11:18:26 -0700
+Message-ID: <502E86C1.4000800@nvidia.com>
+Date: Fri, 17 Aug 2012 23:30:33 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1208171902320.15568@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
+ driver
+References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org> <502DE6FE.8040200@nvidia.com> <502E60A3.1020405@wwwdotorg.org> <502E80BA.5020409@wwwdotorg.org>
+In-Reply-To: <502E80BA.5020409@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 07:07:28PM +0100, Stefano Stabellini wrote:
-> On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> > As we are not using them. We end up only using the L1 pagetables
-> > and grafting those to our page-tables.
-> > 
-> > [v1: Per Stefano's suggestion squashed two commits]
-> > [v2: Per Stefano's suggestion simplified loop]
-> > [v3: Fix smatch warnings]
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/mmu.c |   40 +++++++++++++++++++++++++++++++++-------
-> >  1 files changed, 33 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> > index a59070b..bd92c82 100644
-> > --- a/arch/x86/xen/mmu.c
-> > +++ b/arch/x86/xen/mmu.c
-> > @@ -1708,7 +1708,20 @@ static void convert_pfn_mfn(void *v)
-> >  	for (i = 0; i < PTRS_PER_PTE; i++)
-> >  		pte[i] = xen_make_pte(pte[i].pte);
-> >  }
-> > -
-> > +static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
-> > +				 unsigned long addr)
-> > +{
-> > +	if (*pt_base == PFN_DOWN(__pa(addr))) {
-> > +		set_page_prot((void *)addr, PAGE_KERNEL);
-> > +		clear_page((void *)addr);
-> > +		(*pt_base)++;
-> > +	}
-> > +	if (*pt_end == PFN_DOWN(__pa(addr))) {
-> > +		set_page_prot((void *)addr, PAGE_KERNEL);
-> > +		clear_page((void *)addr);
-> > +		(*pt_end)--;
-> > +	}
-> > +}
-> >  /*
-> >   * Set up the initial kernel pagetable.
-> >   *
-> > @@ -1724,6 +1737,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
-> >  {
-> >  	pud_t *l3;
-> >  	pmd_t *l2;
-> > +	unsigned long addr[3];
-> > +	unsigned long pt_base, pt_end;
-> > +	unsigned i;
-> >  
-> >  	/* max_pfn_mapped is the last pfn mapped in the initial memory
-> >  	 * mappings. Considering that on Xen after the kernel mappings we
-> > @@ -1731,6 +1747,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
-> >  	 * set max_pfn_mapped to the last real pfn mapped. */
-> >  	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
-> >  
-> > +	pt_base = PFN_DOWN(__pa(xen_start_info->pt_base));
-> > +	pt_end = PFN_DOWN(__pa(xen_start_info->pt_base + (xen_start_info->nr_pt_frames * PAGE_SIZE)));
-> 
+On Friday 17 August 2012 11:04 PM, Stephen Warren wrote:
+> On 08/17/2012 09:17 AM, Stephen Warren wrote:
+>> On 08/17/2012 12:38 AM, Laxman Dewangan wrote:
+>>> On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
+>>>> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
+>>>>> Enable config for dmaengine based Tegra APB DMA driver and
+>>>>> disable the legacy APB DMA driver (SYSTEM_DMA).
+>>>> Laxman, if I apply this series to next-20120816 (plus a few patches in
+>>>> my local work branch plus the CPU hotplug patches from Joseph, although
+>>>> I suspect none of that matters), then audio playback on Tegra20 is
+>>>> broken; the pitch is far too high. Audio playback on Tegra30 works as
+>>>> expected.
+>>> I run the test again on ventana and did not see any issue.
+>>> I play one song and saw similar behavior with/without this series.
+>> OK, I'll test some other boards. I tested Whistler, although all the
+>> clocking logic is identical between all Tegra20 boards.
+> I tested both 3.6-rc2 and next-20120816, and they both work fine on Ventana.
+>
+> I then applied this patch series to both (plus your "dma: tegra:
+> enable/disable dma clock" for 3.6-rc2) and it causes (or at least
+> exposes) the problem.
+>
+> All testing was with a full git clean, using tegra_defconfig, and with
+> no other patches applied.
+>
+> If you're not seeing this problem, are you sure you're executing the
+> kernel you think you are, and that it got correctly switched to the new
+> dmaengine driver, and rebuilt after applying your patches?
 
-or just do:
+I generally clean, remove .config and then generate .config , build and 
+test whenever any branch change or want to remove any change. I tested 
+in next-20120816.
+Let me take help from other team member for test it if I am missing 
+anything here.
 
-	pt_end = pt_base + xen_start_info->nr_pt_frames;
-
-> code style
-> 
-> >  	/* Zap identity mapping */
-> >  	init_level4_pgt[0] = __pgd(0);
-> >  
-> > @@ -1749,6 +1768,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
-> >  	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
-> >  	l2 = m2v(l3[pud_index(__START_KERNEL_map)].pud);
-> >  
-> > +	addr[0] = (unsigned long)pgd;
-> > +	addr[1] = (unsigned long)l3;
-> > +	addr[2] = (unsigned long)l2;
-> >  	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
-> >  	 * Both L4[272][0] and L4[511][511] have entries that point to the same
-> >  	 * L2 (PMD) tables. Meaning that if you modify it in __va space
-> > @@ -1782,20 +1804,24 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
-> >  	/* Unpin Xen-provided one */
-> >  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
-> >  
-> > -	/* Switch over */
-> > -	pgd = init_level4_pgt;
-> > -
-> >  	/*
-> >  	 * At this stage there can be no user pgd, and no page
-> >  	 * structure to attach it to, so make sure we just set kernel
-> >  	 * pgd.
-> >  	 */
-> >  	xen_mc_batch();
-> > -	__xen_write_cr3(true, __pa(pgd));
-> > +	__xen_write_cr3(true, __pa(init_level4_pgt));
-> >  	xen_mc_issue(PARAVIRT_LAZY_CPU);
-> >  
-> > -	memblock_reserve(__pa(xen_start_info->pt_base),
-> > -			 xen_start_info->nr_pt_frames * PAGE_SIZE);
-> > +	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
-> > +	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
-> > +	 * the initial domain. For guests using the toolstack, they are in:
-> > +	 * [L4], [L3], [L2], [L1], [L1], order .. */
-> > +	for (i = 0; i < ARRAY_SIZE(addr); i++)
-> > +		check_pt_base(&pt_base, &pt_end, addr[i]);
-> 
-> It is much clearer now, but if the comment is correct, doesn't it mean
-> that we are going to be able to free pgd, l3 and l2 only in the non-dom0
-> case?
-
-And in dom0 case only PGD.
-
-> If so it might be worth saying it explicitly.
-
-OK.
-> 
-> Other than that, it is fine by me.
-> 
-> 
-> > +	/* Our (by three pages) smaller Xen pagetable that we are using */
-> > +	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
-> >  }
-> >  #else	/* !CONFIG_X86_64 */
-> >  static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
-> > -- 
-> > 1.7.7.6
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
-> > 
