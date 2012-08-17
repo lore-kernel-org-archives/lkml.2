@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab2HQNqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:46:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55898 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598Ab2HQNqA (ORCPT
+	id S1755690Ab2HQNtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:49:43 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:32953 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752722Ab2HQNtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:46:00 -0400
-Date: Fri, 17 Aug 2012 06:45:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>
-Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
-Message-ID: <20120817134554.GC2124@kroah.com>
-References: <20120805025938.GA8954@localhost>
- <20120805165826.GB13913@kroah.com>
- <20120817020046.GA24406@localhost>
- <20120817034825.GC7770@kroah.com>
- <20120817054441.GA28434@localhost>
- <87wr0xnbnm.fsf@nemi.mork.no>
- <87sjblnaye.fsf@nemi.mork.no>
- <20120817092708.GA30371@localhost>
- <20120817102456.GA31230@localhost>
- <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
+	Fri, 17 Aug 2012 09:49:35 -0400
+Date: Fri, 17 Aug 2012 14:48:57 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
+Message-ID: <20120817134857.GI24389@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
+ <502E11B6.4020104@ti.com>
+ <20120817100533.GE24389@arm.com>
+ <CAMQu2gzz0j+SnxCY0u3H__H4U-Lor_xV-eyiMBSohCMngbkD2w@mail.gmail.com>
+ <20120817131358.GF11011@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120817131358.GF11011@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 08:16:15PM +0800, Ming Lei wrote:
-> On Fri, Aug 17, 2012 at 6:24 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > On Fri, Aug 17, 2012 at 05:27:08PM +0800, Fengguang Wu wrote:
-> >> Hi Bjørn,
-> >>
-> >> > -static const struct usb_device_id id_table[] __devinitconst = {
-> >> > +static const struct usb_device_id id_table[] = {
-> >>
-> >> Good catch! It magically fixed the oops. So that id_table was
-> >> freed sometime with __devinitconst?
-> >>
-> >> There are some more "usb_device_id .* __devinitconst" users in the system,
-> >> Shall they be fixed as well?
+On Fri, Aug 17, 2012 at 02:13:59PM +0100, Tony Lindgren wrote:
+> * Shilimkar, Santosh <santosh.shilimkar@ti.com> [120817 03:11]:
+> > On Fri, Aug 17, 2012 at 3:35 PM, Catalin Marinas
+> > <catalin.marinas@arm.com> wrote:
+> > >
+> > > On Fri, Aug 17, 2012 at 10:41:10AM +0100, Santosh Shilimkar wrote:
+> > > >
+> > > > So you expect all the secondary CPUs to be in wakeup state and probably
+> > > > looping in WFE for a signal from kernel to boot. There is one issue
+> > > > with this requirement though. For large CPU system, you need to reset
+> > > > all the CPUs and hit this waiting loop. This will lead to large inrush
+> > > > current need at bootup which may be not be supported. To avoid this
+> > > > issue, secondary CPUs are kept in OFF state and then they are woken
+> > > > up from kernel one by one whenever they need to be brought into the
+> > > > system. This requirement should be considered.
+> > >
+> > > I agree, this part will be extended. That's one method that we currently
+> > > support and suitable to the model.
+> > >
+> > > The better method is the SMC standardisation that Charles Garcia-Tobin
+> > > has written (to be made available soon) and was presented at the last
+> > > Linaro Connect in HK. Given that the CPU power is usually controlled by
+> > > the secure side, we'll ask for an SMC to be issued for waking up
+> > > secondary CPUs, so it's up to the secure firmware to write the correct
+> > > hardware registers.
+> > >
+> > Thanks for the information. SMC standardization would indeed help
+> > to overcome some of these. Will wait for that information before
+> > next set of questions.
 > 
-> The issue should be triggered only when HOTPLUG is not set.
-> 
-> But,  if HOTPLUG is not enabled, should device_add() trigger driver probe
-> further after kernel init is completed?  Or even devices should be allowed
-> to add into system?
+> Yes please. If the SMC is not standardized for most calls at least,
+> we'll end up with a horrible mess of SoC specific calls like we
+> currently have. Related to that, the virtualization calls should be
+> also standardized so we don't end up with multiple different hypervisors
+> with different calls.
 
-Yes, it can, and should, because you can add them through sysfs.
+For hypervisor, there are two kinds of API - one meant for power
+management that is pretty much the same as the SMC and another specific
+to the hypervisor solution (KVM, Xen etc.). The latter is specific to
+the host kernel that's running as we start it at EL2 but it's not
+standardised. It would be good indeed and there are other advantages
+like self-virtualisation but it needs the KVM and Xen guys to come to a
+common definition.
 
-I'll go fix these up, I really hate the __devinit* markings, they really
-are pointless these days, and only cause problems :(
-
-Thanks all for tracking this down.
-
-greg k-h
+-- 
+Catalin
