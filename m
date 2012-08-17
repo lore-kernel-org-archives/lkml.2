@@ -1,59 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab2HQOOO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:14:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:51710 "EHLO mga11.intel.com"
+	id S1757106Ab2HQOOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:14:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35375 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755608Ab2HQOOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:14:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,785,1336374000"; 
-   d="scan'208";a="203547551"
-Date: Fri, 17 Aug 2012 22:13:53 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
-        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: ext4 write performance regression in 3.6-rc1
-Message-ID: <20120817141353.GA795@localhost>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
- <20120816024654.GB3781@thunk.org>
- <20120816111051.GA16036@localhost>
- <20120816152513.GA31346@thunk.org>
- <20120817060915.GB28786@localhost>
- <20120817134039.GB11439@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817134039.GB11439@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756263Ab2HQOOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:14:38 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Jim Schutt <jaschut@sandia.gov>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 0/7] Improve hugepage allocation success rates under load V5
+Date: Fri, 17 Aug 2012 15:14:26 +0100
+Message-Id: <1345212873-22447-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 09:40:39AM -0400, Theodore Ts'o wrote:
-> On Fri, Aug 17, 2012 at 02:09:15PM +0800, Fengguang Wu wrote:
-> > Ted,
-> > 
-> > I find ext4 write performance dropped by 3.3% on average in the
-> > 3.6-rc1 merge window. xfs and btrfs are fine.
-> > 
-> > Two machines are tested. The performance regression happens in the
-> > lkp-nex04 machine, which is equipped with 12 SSD drives. lkp-st02 does
-> > not see regression, which is equipped with HDD drives. I'll continue
-> > to repeat the tests and report variations.
-> 
-> Hmm... I've checked out the commits in "git log v3.5..v3.6-rc1 --
-> fs/ext4 fs/jbd2" and I don't see anything that I would expect would
-> cause that.  The are the lock elimination changes for Direct I/O
-> overwrites, but that shouldn't matter for your tests which are
-> measuring buffered writes, correct?
-> 
-> Is there any chance you could do me a favor and do a git bisect
-> restricted to commits involving fs/ext4 and fs/jbd2?
+Andrew, the biggest change here is that I've reshuffled the patches to
+simplify merging. Please consider picking up patches 2 and 3 and merging
+them for 3.6 as they fix a broken commit merged in 3.6-rc1. The rest of
+the patches can be merged later.
 
-No problem :)
+Changelog since V4
+o Rebase to latest linux-next/akpm
+o Reshuffle patches for easier merging
 
-Thanks,
-Fengguang
+Changelog since V3
+o Add patch to backoff compaction in the event of lock contention
+o Rebase to mmotm, cope with the removal of __GFP_NO_KSWAPD
+o Removed RFC
+
+Changelog since V2
+o Capture !MIGRATE_MOVABLE pages where possible
+o Document the treatment of MIGRATE_MOVABLE pages while capturing
+o Expand changelogs
+
+Changelog since V1
+o Dropped kswapd related patch, basically a no-op and regresses if fixed (minchan)
+o Expanded changelogs a little
+
+Allocation success rates have been far lower since 3.4 due to commit
+[fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
+commit was introduced for good reasons and it was known in advance that
+the success rates would suffer but it was justified on the grounds that
+the high allocation success rates were achieved by aggressive reclaim.
+Success rates are expected to suffer even more in 3.6 due to commit
+[7db8889a: mm: have order > 0 compaction start off where it left] which
+testing has shown to severely reduce allocation success rates under load -
+to 0% in one case.
+
+This series aims to improve the allocation success rates without regressing
+the benefits of commit fe2c2a10. The series is based on latest mmotm and
+takes into account the __GFP_NO_KSWAPD flag is going away.
+
+Patch 1 reverts the __GFP_NO_KSWAPD patch and related fixes. This is so
+	patches 2 and 3 can be merged before 3.6 releases. It is reintroduced
+	later.
+
+Patch 2 fixes the upstream commit [7db8889a: mm: have order > 0 compaction
+	start off where it left] to enable compaction again
+
+Patch 3 identifies when compacion is taking too long due to contention
+	and aborts. This fixes a performance problem for Jim Schutt that
+	commit 7db8889a was meant to fix.
+
+Patch 4 is a comment fix.
+
+Patch 5 is a rebased version of the __GFP_NO_KSWAPD patch with one change
+	in how it handles deferred_compaction.
+
+Patch 6 updates reclaim/compaction to reclaim pages scaled on the number
+	of recent failures.
+
+Patch 7 captures suitable high-order pages freed by compaction to reduce
+	races with parallel allocation requests.
+
+I tested with a high order allocation stress test. The following kernels
+were tested.
+
+revert-v5 	linux-next/mmotm based on 3.6-rc2 with patch 1 applied
+contended-v5 	patches 1-3
+capture-v5  	patches 1-7
+
+STRESS-HIGHALLOC
+                   revert-v5      contended-v5        capture-v5  
+Pass 1           0.00 ( 0.00%)    38.00 (38.00%)    45.00 (45.00%)
+Pass 2           0.00 ( 0.00%)    46.00 (46.00%)    52.00 (52.00%)
+while Rested    85.00 ( 0.00%)    86.00 ( 1.00%)    86.00 ( 1.00%)
+
+From
+http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__stress-highalloc-performance-ext3/hydra/comparison.html
+I know that the allocation success rates in 3.3.6 was 78% in comparison to
+36% in in the current akpm tree. At present the success rate is completely
+shot but with patches and 3 applied it goes back up to 38% which is what
+I would like to see merged for 3.6. With the full series applied success
+rates go up to 45% with some variability in the results.  This is not
+as high a success rate as seen in older kernels but it does not reclaim
+excessively which is a key point.
+
+MMTests Statistics: vmstat
+Page Ins                                     2889316     2904472     3037020
+Page Outs                                    8042076     8030516     8026740
+Swap Ins                                           0           0           0
+Swap Outs                                          0           0           0
+
+Note that swap in/out rates remain at 0. In 3.3.6 with 78% success rates
+there were 71881 pages swapped out.
+
+Direct pages scanned                           16822      126135       39297
+Kswapd pages scanned                         1112284     1243865     1534553
+Kswapd pages reclaimed                       1106913     1203069     1499877
+Direct pages reclaimed                         16822      113769       26457
+Kswapd efficiency                                99%         96%         97%
+Kswapd velocity                              899.586     980.634    1218.131
+Direct efficiency                               100%         90%         67%
+Direct velocity                               13.605      99.442      31.194
+
+kswapd velocity increased slightly but that is expected as __GFP_NO_KSWAPD is
+removed by the full series. The velocity with the full series applied is 1218
+pages/sec where as in kernel 3.3.6 with the high allocation success rates
+it was 8140 pages/second. Direct velocity is slightly higher but this is
+expected as a result of patch 6. Pushing direct reclaim higher would improve
+the allocation success rates but with the obvious cost of increased paging
+and swap IO.
+
+ include/linux/compaction.h |    4 +-
+ include/linux/mm.h         |    1 +
+ mm/compaction.c            |  244 +++++++++++++++++++++++++++++++++-----------
+ mm/internal.h              |    2 +
+ mm/page_alloc.c            |   78 ++++++++++----
+ mm/vmscan.c                |   10 ++
+ 6 files changed, 256 insertions(+), 83 deletions(-)
+
+-- 
+1.7.9.2
+
