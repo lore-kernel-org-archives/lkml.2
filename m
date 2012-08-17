@@ -1,48 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758615Ab2HQRix (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:38:53 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57370 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756129Ab2HQRir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:38:47 -0400
-Date: Fri, 17 Aug 2012 10:38:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com
-Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Message-ID: <20120817173837.GA3080@kroah.com>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com>
- <20120817173209.GA29217@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817173209.GA29217@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758627Ab2HQRjQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:39:16 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58706 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752865Ab2HQRjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 13:39:07 -0400
+Message-ID: <1345225144.10014.2.camel@joe2Laptop>
+Subject: Re: [PATCH] ratelimit: check the condition in WARN_RATELIMIT first
+From: Joe Perches <joe@perches.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: davem@davemloft.net, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Date: Fri, 17 Aug 2012 10:39:04 -0700
+In-Reply-To: <1345210942-26906-1-git-send-email-jslaby@suse.cz>
+References: <1345210942-26906-1-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 06:32:09PM +0100, Ben Hutchings wrote:
-> On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
-> > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > > Now, gather DNS information. Invoke an external script (that can be
-> > > distro dependent) to gather the DNS information.
-> > 
-> > Where is that script?  Why a script, this really isn't in a standard
-> > method for all Linux distros?  If not, why not work to do that like the
-> > freedesktop.org people have done for other system configuration items?
+On Fri, 2012-08-17 at 15:42 +0200, Jiri Slaby wrote:
+> Before calling __ratelimit in __WARN_RATELIMIT, check the condition
+> first. When this check was not there, we got constant income of:
+> tty_init_dev: 60 callbacks suppressed
+> tty_init_dev: 59 callbacks suppressed
+[]
+> diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+[]
+> @@ -49,8 +49,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+>  #define __WARN_RATELIMIT(condition, state, format...)		\
+>  ({								\
+>  	int rtn = 0;						\
+> -	if (unlikely(__ratelimit(state)))			\
+> -		rtn = WARN(condition, format);			\
+> +	int __rtcond = !!condition;				\
+> +	if (unlikely(__rtcond && __ratelimit(state)))		\
+> +		rtn = WARN(__rtcond, format);			\
+>  	rtn;							\
+>  })
 >  
-> I suggested using the Network Manager D-Bus API.  That obviously
-> isn't going to work everywhere, but it seems to cover the same simple
-> cases that this hypervisor-guest interface allows for.
 
-That's a great start, as I think all of the distros have now pretty much
-standardized on this format, right?
+Hi Jiri.
 
-greg k-h
+This seems fine to me but are there any conditions that
+are computationally expensive?  ratelimit(state) isn't
+and this will now always do condition.
+
+(looks instead of speculates)
+
+There's 1 current use of WARN_RATELIMIT and there's
+a condition of 1 so there's no problem here.
+
+__WARN_RATELIMIT is pretty stupid.
+It's only called from WARN_RATELIMIT.
+I think it shouldn't exist at all.
+
+Maybe something like this?
+
+(has some neatening as well)
+
+ include/linux/ratelimit.h |   27 +++++++++------------------
+ 1 files changed, 9 insertions(+), 18 deletions(-)
+
+diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+index e11ccb4..f4acd61 100644
+--- a/include/linux/ratelimit.h
++++ b/include/linux/ratelimit.h
+@@ -46,20 +46,17 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+ #define WARN_ON_RATELIMIT(condition, state)			\
+ 		WARN_ON((condition) && __ratelimit(state))
+ 
+-#define __WARN_RATELIMIT(condition, state, format...)		\
+-({								\
+-	int rtn = 0;						\
+-	if (unlikely(__ratelimit(state)))			\
+-		rtn = WARN(condition, format);			\
+-	rtn;							\
+-})
+-
+-#define WARN_RATELIMIT(condition, format...)			\
++#define WARN_RATELIMIT(condition, fmt, ...)			\
+ ({								\
+ 	static DEFINE_RATELIMIT_STATE(_rs,			\
+ 				      DEFAULT_RATELIMIT_INTERVAL,	\
+ 				      DEFAULT_RATELIMIT_BURST);	\
+-	__WARN_RATELIMIT(condition, &_rs, format);		\
++	int rtn = !!(condition);				\
++								\
++	if (unlikely(rtn && __ratelimit(state)))		\
++		WARN(rtn, fmt, ##__VA_ARGS__);			\
++								\
++	rtn;							\
+ })
+ 
+ #else
+@@ -67,15 +64,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+ #define WARN_ON_RATELIMIT(condition, state)			\
+ 	WARN_ON(condition)
+ 
+-#define __WARN_RATELIMIT(condition, state, format...)		\
+-({								\
+-	int rtn = WARN(condition, format);			\
+-	rtn;							\
+-})
+-
+-#define WARN_RATELIMIT(condition, format...)			\
++#define WARN_RATELIMIT(condition, fmt, ...)			\
+ ({								\
+-	int rtn = WARN(condition, format);			\
++	int rtn = WARN(condition, fmt, ##__VA_ARGS__);		\
+ 	rtn;							\
+ })
+ 
+
+
+
