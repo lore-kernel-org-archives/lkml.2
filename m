@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030835Ab2HQHrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:47:07 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:43420 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab2HQHrE (ORCPT
+	id S1755251Ab2HQHrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:47:10 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:59030
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755056Ab2HQHrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:47:04 -0400
-Date: Fri, 17 Aug 2012 10:46:44 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Toshiaki Yamane <yamanetoshi@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Martyn Welch <martyn.welch@ge.com>,
-        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] staging/vme: fix checkpatch warning
-Message-ID: <20120817074644.GL4559@mwanda>
-References: <1345179867-8266-1-git-send-email-yamanetoshi@gmail.com>
- <1345179920-8303-1-git-send-email-yamanetoshi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345179920-8303-1-git-send-email-yamanetoshi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 17 Aug 2012 03:47:05 -0400
+X-IronPort-AV: E=Sophos;i="4.77,783,1336341600"; 
+   d="scan'208";a="153240436"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: netdev@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] fix error return code
+Date: Fri, 17 Aug 2012 09:46:55 +0200
+Message-Id: <1345189618-13758-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You've got the same subject repeated 5 times.
+These patches fix cases where the return code appears to be unintentially
+nonnegative.
 
-It would be better to merge all the vme_user.c printk fixes into
-one patch.
-[patch 1/3] Staging: vme: Fix a white space issue
-[patch 2/3] Staging: vme: Use pr_ printks in vme_user.c
-[patch 3/3] Staging: vme: Use pr_ printks in vme_pio2_core.c
+The complete semantic match that finds the problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-It's not a huge deal, it just seems like there was some confusion on
-how to break patches up.
+// <smpl>
+@@
+identifier ret,l;
+expression e1,e2,e3;
+statement S;
+@@
 
-regards,
-dan carpenter
+if (ret < 0)
+ { ... return ret; }
+... when != ret = e1
+    when forall
+(
+ goto l;
+|
+ return ...;
+|
+ if (<+... ret = e3 ...+>) S
+|
+*if(...)
+ {
+  ... when != ret = e2
+* return ret;
+}
+)
+// </smpl>
 
