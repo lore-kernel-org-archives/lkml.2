@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758842Ab2HQSof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:44:35 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50199 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758810Ab2HQSoT (ORCPT
+	id S1758855Ab2HQSos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:44:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53521 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758832Ab2HQSo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:44:19 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCHv3 1/1] [RFC] uartclk from serial_core exposed to sysfs
-Date: Fri, 17 Aug 2012 20:44:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Tomas Hlavacek <tmshlvck@gmail.com>, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com> <CAEB7QLBEdNArtKz9zP7R4Za54049jJqCEqhPvE6rS59j1tD0PQ@mail.gmail.com> <20120817165446.GA12361@kroah.com>
-In-Reply-To: <20120817165446.GA12361@kroah.com>
+	Fri, 17 Aug 2012 14:44:26 -0400
+Date: Fri, 17 Aug 2012 19:44:21 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com
+Message-ID: <20120817184421.GD29217@decadent.org.uk>
+References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-8-git-send-email-kys@microsoft.com>
+ <20120817165109.GA11323@kroah.com>
+ <20120817173209.GA29217@decadent.org.uk>
+ <20120817182721.GA7747@aepfle.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208172044.14868.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120817182721.GA7747@aepfle.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg KH,
-
-> On Fri, Aug 17, 2012 at 06:30:36PM +0200, Tomas Hlavacek wrote:
-> > Hello Greg!
-> > 
-> > On Fri, Aug 17, 2012 at 5:06 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > >> @@ -2355,6 +2373,14 @@ int uart_add_one_port(struct uart_driver *drv,
-> > >> struct uart_port *uport)
-> > >> 
-> > >>       }
-> > >>       
-> > >>       /*
-> > >> 
-> > >> +      * Expose uartclk in sysfs. Use driverdata of the tty device for
-> > >> +      * referencing the UART port.
-> > >> +      */
-> > >> +     dev_set_drvdata(tty_dev, port);
-> > >> +     if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
-> > >> +             dev_err(tty_dev, "Failed to add uartclk attr\n");
+On Fri, Aug 17, 2012 at 08:27:21PM +0200, Olaf Hering wrote:
+> On Fri, Aug 17, Ben Hutchings wrote:
+> 
+> > On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
+> > > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
+> > > > Now, gather DNS information. Invoke an external script (that can be
+> > > > distro dependent) to gather the DNS information.
 > > > 
-> > > I think you just raced with userspace in creating the file after the
-> > > device was announced to userspace.  Are you sure it's ok?
-> > > 
-> > > If not (hint, I don't think so), please make it a default attribute of
-> > > the device, which will then cause the file to be created before it is
-> > > announced to userspace.  It will also be less code as you don't have to
-> > > clean it up by hand :)
-> > 
-> > Do you mean I should modify the tty_register_device() function not to
-> > use device_create() but it should rather do the device initialization
-> > on it's own.
+> > > Where is that script?  Why a script, this really isn't in a standard
+> > > method for all Linux distros?  If not, why not work to do that like the
+> > > freedesktop.org people have done for other system configuration items?
+> >  
+> > I suggested using the Network Manager D-Bus API.  That obviously
+> > isn't going to work everywhere, but it seems to cover the same simple
+> > cases that this hypervisor-guest interface allows for.
 > 
-> No, not at all.
-> 
-> > And I should add add the attribute (via struct attribute_group) to
-> > struct device in between device_initialize() and device_add() calls.
-> > Did I get it right?
-> 
-> No, make this a driver attribute, that way when the device is
-> registered, it adds the attribute automagically to the device that is
-> bound to it.
+> If its not going to work everywhere how can it be the solution?
 
-(hint, DEVICE_ATTR), right ?
+You are never going to have a 'works everywhere' solution for
+Linux guests.
 
-> Does that make sense?
-> 
-> greg k-h
+How are these distribution-specific integration scripts going
+to get installed in the guesta, anyway?
 
-Best regards,
-Marek Vasut
+Ben.
+
+> The script in turn can do whatever it takes, which includes NM. However
+> NM (in its current state) shouldnt be thrown at everyone and everything.
+ 
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
