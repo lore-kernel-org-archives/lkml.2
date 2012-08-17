@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030738Ab2HQD2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:28:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46861 "EHLO
+	id S1030727Ab2HQD2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:28:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46870 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030685Ab2HQD1I (ORCPT
+	by vger.kernel.org with ESMTP id S1030628Ab2HQD1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:27:08 -0400
-Message-Id: <20120817030247.543764780@decadent.org.uk>
+	Thu, 16 Aug 2012 23:27:09 -0400
+Message-Id: <20120817030246.875440689@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:03:07 +0100
+Date: Fri, 17 Aug 2012 04:03:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 24/37] iwlwifi: disable greenfield transmissions as a workaround
+        alan@lxorguk.ukuu.org.uk, Marek Vasut <marex@denx.de>,
+        Russell King <linux@arm.linux.org.uk>, Wolfgang Denk <wd@denx.de>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 20/37] ARM: mxs: Remove MMAP_MIN_ADDR setting from mxs_defconfig
 In-Reply-To: <20120817030243.807605523@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,49 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Marek Vasut <marex@denx.de>
 
-commit 50e2a30cf6fcaeb2d27360ba614dd169a10041c5 upstream.
+commit 3bed491c8d28329e34f8a31e3fe64d03f3a350f1 upstream.
 
-There's a bug that causes the rate scaling to get stuck
-when it has to use single-stream rates with a peer that
-can do GF and SGI; the two are incompatible so we can't
-use them together, but that causes the algorithm to not
-work at all, it always rejects updates.
+The CONFIG_DEFAULT_MMAP_MIN_ADDR was set to 65536 in mxs_defconfig,
+this caused severe breakage of userland applications since the upper
+limit for ARM is 32768. By default CONFIG_DEFAULT_MMAP_MIN_ADDR is
+set to 4096 and can also be changed via /proc/sys/vm/mmap_min_addr
+if needed.
 
-Disable greenfield for now to prevent that problem.
+Quoting Russell King [1]:
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Tested-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust filename]
+"4096 is also fine for ARM too. There's not much point in having
+defconfigs change it - that would just be pure noise in the config
+files."
+
+the CONFIG_DEFAULT_MMAP_MIN_ADDR can be removed from the defconfig
+altogether.
+
+This problem was introduced by commit cde7c41 (ARM: configs: add
+defconfig for mach-mxs).
+
+[1] http://marc.info/?l=linux-arm-kernel&m=134401593807820&w=2
+
+Signed-off-by: Marek Vasut <marex@denx.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Wolfgang Denk <wd@denx.de>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ arch/arm/configs/mxs_defconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -708,11 +708,14 @@ static int rs_toggle_antenna(u32 valid_a
-  */
- static bool rs_use_green(struct ieee80211_sta *sta)
- {
--	struct iwl_station_priv *sta_priv = (void *)sta->drv_priv;
--	struct iwl_rxon_context *ctx = sta_priv->ctx;
--
--	return (sta->ht_cap.cap & IEEE80211_HT_CAP_GRN_FLD) &&
--		!(ctx->ht.non_gf_sta_present);
-+	/*
-+	 * There's a bug somewhere in this code that causes the
-+	 * scaling to get stuck because GF+SGI can't be combined
-+	 * in SISO rates. Until we find that bug, disable GF, it
-+	 * has only limited benefit and we still interoperate with
-+	 * GF APs since we can always receive GF transmissions.
-+	 */
-+	return false;
- }
- 
- /**
+diff --git a/arch/arm/configs/mxs_defconfig b/arch/arm/configs/mxs_defconfig
+index ccdb635..4edcfb4 100644
+--- a/arch/arm/configs/mxs_defconfig
++++ b/arch/arm/configs/mxs_defconfig
+@@ -34,7 +34,6 @@ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_PREEMPT_VOLUNTARY=y
+ CONFIG_AEABI=y
+-CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
+ CONFIG_AUTO_ZRELADDR=y
+ CONFIG_FPE_NWFPE=y
+ CONFIG_NET=y
 
 
