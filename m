@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030798Ab2HQDee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:34:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46759 "EHLO
+	id S1030823Ab2HQDev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:34:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46754 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030642Ab2HQD06 (ORCPT
+	by vger.kernel.org with ESMTP id S1030635Ab2HQD05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:26:58 -0400
-Message-Id: <20120817030249.750741167@decadent.org.uk>
+	Thu, 16 Aug 2012 23:26:57 -0400
+Message-Id: <20120817030246.259786839@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:03:20 +0100
+Date: Fri, 17 Aug 2012 04:02:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>
-Subject: [ 37/37] drm/radeon: do not reenable crtc after moving vram start address
+        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [ 16/37] drm/i915: fixup seqno allocation logic for lazy_request
 In-Reply-To: <20120817030243.807605523@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,176 +28,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 81ee8fb6b52ec69eeed37fe7943446af1dccecc5 upstream.
+commit 53d227f282eb9fa4c7cdbfd691fa372b7ca8c4c3 upstream.
 
-It seems we can not update the crtc scanout address. After disabling
-crtc, update to base address do not take effect after crtc being
-reenable leading to at least frame being scanout from the old crtc
-base address. Disabling crtc display request lead to same behavior.
+Currently we reserve seqnos only when we emit the request to the ring
+(by bumping dev_priv->next_seqno), but start using it much earlier for
+ring->oustanding_lazy_request. When 2 threads compete for the gpu and
+run on two different rings (e.g. ddx on blitter vs. compositor)
+hilarity ensued, especially when we get constantly interrupted while
+reserving buffers.
 
-So after changing the vram address if we don't keep crtc disabled
-we will have the GPU trying to read some random system memory address
-with some iommu this will broke the crtc engine and will lead to
-broken display and iommu error message.
+Breakage seems to have been introduced in
 
-So to avoid this, disable crtc. For flicker less boot we will need
-to avoid moving the vram start address.
+commit 6f392d548658a17600da7faaf8a5df25ee5f01f6
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Sat Aug 7 11:01:22 2010 +0100
 
-This patch should also fix :
+    drm/i915: Use a common seqno for all rings.
 
-https://bugs.freedesktop.org/show_bug.cgi?id=42373
+This patch fixes up the seqno reservation logic by moving it into
+i915_gem_next_request_seqno. The ring->add_request functions now
+superflously still return the new seqno through a pointer, that will
+be refactored in the next patch.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Note that with this change we now unconditionally allocate a seqno,
+even when ->add_request might fail because the rings are full and the
+gpu died. But this does not open up a new can of worms because we can
+already leave behind an outstanding_request_seqno if e.g. the caller
+gets interrupted with a signal while stalling for the gpu in the
+eviciton paths. And with the bugfix we only ever have one seqno
+allocated per ring (and only that ring), so there are no ordering
+issues with multiple outstanding seqnos on the same ring.
+
+v2: Keep i915_gem_get_seqno (but move it to i915_gem.c) to make it
+clear that we only have one seqno counter for all rings. Suggested by
+Chris Wilson.
+
+v3: As suggested by Chris Wilson use i915_gem_next_request_seqno
+instead of ring->oustanding_lazy_request to make the follow-up
+refactoring more clearly correct. Also improve the commit message
+with issues discussed on irc.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45181
+Tested-by: Nicolas Kalkhof nkalkhof()at()web.de
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/evergreen.c   |   57 ----------------------------------
- drivers/gpu/drm/radeon/radeon_asic.h |    8 ++---
- drivers/gpu/drm/radeon/rv515.c       |   13 --------
- 3 files changed, 2 insertions(+), 76 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h         |    7 +------
+ drivers/gpu/drm/i915/i915_gem.c         |   23 +++++++++++++++++++++++
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   24 ++++--------------------
+ 3 files changed, 28 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index f4ef24f..e93b80a 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1229,24 +1229,8 @@ void evergreen_agp_enable(struct radeon_device *rdev)
- 
- void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *save)
- {
--	save->vga_control[0] = RREG32(D1VGA_CONTROL);
--	save->vga_control[1] = RREG32(D2VGA_CONTROL);
- 	save->vga_render_control = RREG32(VGA_RENDER_CONTROL);
- 	save->vga_hdp_control = RREG32(VGA_HDP_CONTROL);
--	save->crtc_control[0] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET);
--	save->crtc_control[1] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
--	if (rdev->num_crtc >= 4) {
--		save->vga_control[2] = RREG32(EVERGREEN_D3VGA_CONTROL);
--		save->vga_control[3] = RREG32(EVERGREEN_D4VGA_CONTROL);
--		save->crtc_control[2] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET);
--		save->crtc_control[3] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET);
--	}
--	if (rdev->num_crtc >= 6) {
--		save->vga_control[4] = RREG32(EVERGREEN_D5VGA_CONTROL);
--		save->vga_control[5] = RREG32(EVERGREEN_D6VGA_CONTROL);
--		save->crtc_control[4] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET);
--		save->crtc_control[5] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
--	}
- 
- 	/* Stop all video */
- 	WREG32(VGA_RENDER_CONTROL, 0);
-@@ -1357,47 +1341,6 @@ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *s
- 	/* Unlock host access */
- 	WREG32(VGA_HDP_CONTROL, save->vga_hdp_control);
- 	mdelay(1);
--	/* Restore video state */
--	WREG32(D1VGA_CONTROL, save->vga_control[0]);
--	WREG32(D2VGA_CONTROL, save->vga_control[1]);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_D3VGA_CONTROL, save->vga_control[2]);
--		WREG32(EVERGREEN_D4VGA_CONTROL, save->vga_control[3]);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_D5VGA_CONTROL, save->vga_control[4]);
--		WREG32(EVERGREEN_D6VGA_CONTROL, save->vga_control[5]);
--	}
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 1);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 1);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 1);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 1);
--	}
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, save->crtc_control[0]);
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, save->crtc_control[1]);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, save->crtc_control[2]);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, save->crtc_control[3]);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, save->crtc_control[4]);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, save->crtc_control[5]);
--	}
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
--	}
- 	WREG32(VGA_RENDER_CONTROL, save->vga_render_control);
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 000a9ad..563d24e 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -1177,12 +1177,7 @@ i915_seqno_passed(uint32_t seq1, uint32_t seq2)
+ 	return (int32_t)(seq1 - seq2) >= 0;
  }
  
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
-index f4af243..0d445e7 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -255,13 +255,10 @@ extern int rs690_mc_wait_for_idle(struct radeon_device *rdev);
-  * rv515
-  */
- struct rv515_mc_save {
--	u32 d1vga_control;
--	u32 d2vga_control;
- 	u32 vga_render_control;
- 	u32 vga_hdp_control;
--	u32 d1crtc_control;
--	u32 d2crtc_control;
- };
-+
- int rv515_init(struct radeon_device *rdev);
- void rv515_fini(struct radeon_device *rdev);
- uint32_t rv515_mc_rreg(struct radeon_device *rdev, uint32_t reg);
-@@ -389,11 +386,10 @@ void r700_cp_fini(struct radeon_device *rdev);
-  * evergreen
-  */
- struct evergreen_mc_save {
--	u32 vga_control[6];
- 	u32 vga_render_control;
- 	u32 vga_hdp_control;
--	u32 crtc_control[6];
- };
-+
- void evergreen_pcie_gart_tlb_flush(struct radeon_device *rdev);
- int evergreen_init(struct radeon_device *rdev);
- void evergreen_fini(struct radeon_device *rdev);
-diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
-index a12fbcc..aa8ef49 100644
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -281,12 +281,8 @@ int rv515_debugfs_ga_info_init(struct radeon_device *rdev)
+-static inline u32
+-i915_gem_next_request_seqno(struct intel_ring_buffer *ring)
+-{
+-	drm_i915_private_t *dev_priv = ring->dev->dev_private;
+-	return ring->outstanding_lazy_request = dev_priv->next_seqno;
+-}
++u32 i915_gem_next_request_seqno(struct intel_ring_buffer *ring);
  
- void rv515_mc_stop(struct radeon_device *rdev, struct rv515_mc_save *save)
- {
--	save->d1vga_control = RREG32(R_000330_D1VGA_CONTROL);
--	save->d2vga_control = RREG32(R_000338_D2VGA_CONTROL);
- 	save->vga_render_control = RREG32(R_000300_VGA_RENDER_CONTROL);
- 	save->vga_hdp_control = RREG32(R_000328_VGA_HDP_CONTROL);
--	save->d1crtc_control = RREG32(R_006080_D1CRTC_CONTROL);
--	save->d2crtc_control = RREG32(R_006880_D2CRTC_CONTROL);
- 
- 	/* Stop all video */
- 	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
-@@ -311,15 +307,6 @@ void rv515_mc_resume(struct radeon_device *rdev, struct rv515_mc_save *save)
- 	/* Unlock host access */
- 	WREG32(R_000328_VGA_HDP_CONTROL, save->vga_hdp_control);
- 	mdelay(1);
--	/* Restore video state */
--	WREG32(R_000330_D1VGA_CONTROL, save->d1vga_control);
--	WREG32(R_000338_D2VGA_CONTROL, save->d2vga_control);
--	WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
--	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
--	WREG32(R_006080_D1CRTC_CONTROL, save->d1crtc_control);
--	WREG32(R_006880_D2CRTC_CONTROL, save->d2crtc_control);
--	WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
--	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
- 	WREG32(R_000300_VGA_RENDER_CONTROL, save->vga_render_control);
+ int __must_check i915_gem_object_get_fence(struct drm_i915_gem_object *obj,
+ 					   struct intel_ring_buffer *pipelined);
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 2b51e9c..2031cc7 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1576,6 +1576,28 @@ i915_gem_process_flushing_list(struct intel_ring_buffer *ring,
+ 	}
  }
  
++static u32
++i915_gem_get_seqno(struct drm_device *dev)
++{
++	drm_i915_private_t *dev_priv = dev->dev_private;
++	u32 seqno = dev_priv->next_seqno;
++
++	/* reserve 0 for non-seqno */
++	if (++dev_priv->next_seqno == 0)
++		dev_priv->next_seqno = 1;
++
++	return seqno;
++}
++
++u32
++i915_gem_next_request_seqno(struct intel_ring_buffer *ring)
++{
++	if (ring->outstanding_lazy_request == 0)
++		ring->outstanding_lazy_request = i915_gem_get_seqno(ring->dev);
++
++	return ring->outstanding_lazy_request;
++}
++
+ int
+ i915_add_request(struct intel_ring_buffer *ring,
+ 		 struct drm_file *file,
+@@ -1587,6 +1609,7 @@ i915_add_request(struct intel_ring_buffer *ring,
+ 	int ret;
+ 
+ 	BUG_ON(request == NULL);
++	seqno = i915_gem_next_request_seqno(ring);
+ 
+ 	ret = ring->add_request(ring, &seqno);
+ 	if (ret)
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 4956f1b..8a983b5 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -52,20 +52,6 @@ static inline int ring_space(struct intel_ring_buffer *ring)
+ 	return space;
+ }
+ 
+-static u32 i915_gem_get_seqno(struct drm_device *dev)
+-{
+-	drm_i915_private_t *dev_priv = dev->dev_private;
+-	u32 seqno;
+-
+-	seqno = dev_priv->next_seqno;
+-
+-	/* reserve 0 for non-seqno */
+-	if (++dev_priv->next_seqno == 0)
+-		dev_priv->next_seqno = 1;
+-
+-	return seqno;
+-}
+-
+ static int
+ render_ring_flush(struct intel_ring_buffer *ring,
+ 		  u32	invalidate_domains,
+@@ -465,7 +451,7 @@ gen6_add_request(struct intel_ring_buffer *ring,
+ 	mbox1_reg = ring->signal_mbox[0];
+ 	mbox2_reg = ring->signal_mbox[1];
+ 
+-	*seqno = i915_gem_get_seqno(ring->dev);
++	*seqno = i915_gem_next_request_seqno(ring);
+ 
+ 	update_mboxes(ring, *seqno, mbox1_reg);
+ 	update_mboxes(ring, *seqno, mbox2_reg);
+@@ -563,8 +549,7 @@ static int
+ pc_render_add_request(struct intel_ring_buffer *ring,
+ 		      u32 *result)
+ {
+-	struct drm_device *dev = ring->dev;
+-	u32 seqno = i915_gem_get_seqno(dev);
++	u32 seqno = i915_gem_next_request_seqno(ring);
+ 	struct pipe_control *pc = ring->private;
+ 	u32 scratch_addr = pc->gtt_offset + 128;
+ 	int ret;
+@@ -615,8 +600,7 @@ static int
+ render_ring_add_request(struct intel_ring_buffer *ring,
+ 			u32 *result)
+ {
+-	struct drm_device *dev = ring->dev;
+-	u32 seqno = i915_gem_get_seqno(dev);
++	u32 seqno = i915_gem_next_request_seqno(ring);
+ 	int ret;
+ 
+ 	ret = intel_ring_begin(ring, 4);
+@@ -790,7 +774,7 @@ ring_add_request(struct intel_ring_buffer *ring,
+ 	if (ret)
+ 		return ret;
+ 
+-	seqno = i915_gem_get_seqno(ring->dev);
++	seqno = i915_gem_next_request_seqno(ring);
+ 
+ 	intel_ring_emit(ring, MI_STORE_DWORD_INDEX);
+ 	intel_ring_emit(ring, I915_GEM_HWS_INDEX << MI_STORE_DWORD_INDEX_SHIFT);
 
 
