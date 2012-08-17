@@ -1,68 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab2HQRfD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:35:03 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52896 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2HQRey (ORCPT
+	id S1754069Ab2HQRfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:35:39 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:20890 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab2HQRfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:34:54 -0400
-Message-ID: <502E80BA.5020409@wwwdotorg.org>
-Date: Fri, 17 Aug 2012 11:34:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 17 Aug 2012 13:35:31 -0400
+X-IronPort-AV: E=Sophos;i="4.77,785,1336348800"; 
+   d="scan'208";a="14064812"
+Date: Fri, 17 Aug 2012 18:35:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 02/11] xen/x86: Use memblock_reserve for
+ sensitive areas.
+In-Reply-To: <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
- driver
-References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org> <502DE6FE.8040200@nvidia.com> <502E60A3.1020405@wwwdotorg.org>
-In-Reply-To: <502E60A3.1020405@wwwdotorg.org>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 09:17 AM, Stephen Warren wrote:
-> On 08/17/2012 12:38 AM, Laxman Dewangan wrote:
->> On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
->>> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
->>>> Enable config for dmaengine based Tegra APB DMA driver and
->>>> disable the legacy APB DMA driver (SYSTEM_DMA).
->>> Laxman, if I apply this series to next-20120816 (plus a few patches in
->>> my local work branch plus the CPU hotplug patches from Joseph, although
->>> I suspect none of that matters), then audio playback on Tegra20 is
->>> broken; the pitch is far too high. Audio playback on Tegra30 works as
->>> expected.
->>
->> I run the test again on ventana and did not see any issue.
->> I play one song and saw similar behavior with/without this series.
+On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> instead of a big memblock_reserve. This way we can be more
+> selective in freeing regions (and it also makes it easier
+> to understand where is what).
 > 
-> OK, I'll test some other boards. I tested Whistler, although all the
-> clocking logic is identical between all Tegra20 boards.
+> [v1: Move the auto_translate_physmap to proper line]
+> [v2: Per Stefano suggestion add more comments]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-I tested both 3.6-rc2 and next-20120816, and they both work fine on Ventana.
+much better now!
 
-I then applied this patch series to both (plus your "dma: tegra:
-enable/disable dma clock" for 3.6-rc2) and it causes (or at least
-exposes) the problem.
-
-All testing was with a full git clean, using tegra_defconfig, and with
-no other patches applied.
-
-If you're not seeing this problem, are you sure you're executing the
-kernel you think you are, and that it got correctly switched to the new
-dmaengine driver, and rebuilt after applying your patches?
+>  arch/x86/xen/enlighten.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/xen/p2m.c       |    5 ++++
+>  arch/x86/xen/setup.c     |    9 --------
+>  3 files changed, 53 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index ff962d4..e532eb5 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -998,7 +998,54 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+>  
+>  	return ret;
+>  }
+> +/*
+> + * If the MFN is not in the m2p (provided to us by the hypervisor) this
+> + * function won't do anything. In practice this means that the XenBus
+> + * MFN won't be available for the initial domain. */
+> +static void __init xen_reserve_mfn(unsigned long mfn)
+> +{
+> +	unsigned long pfn;
+> +
+> +	if (!mfn)
+> +		return;
+> +	pfn = mfn_to_pfn(mfn);
+> +	if (phys_to_machine_mapping_valid(pfn))
+> +		memblock_reserve(PFN_PHYS(pfn), PAGE_SIZE);
+> +}
+> +static void __init xen_reserve_internals(void)
+> +{
+> +	unsigned long size;
+> +
+> +	if (!xen_pv_domain())
+> +		return;
+> +
+> +	/* xen_start_info does not exist in the M2P, hence can't use
+> +	 * xen_reserve_mfn. */
+> +	memblock_reserve(__pa(xen_start_info), PAGE_SIZE);
+> +
+> +	xen_reserve_mfn(PFN_DOWN(xen_start_info->shared_info));
+> +	xen_reserve_mfn(xen_start_info->store_mfn);
+>  
+> +	if (!xen_initial_domain())
+> +		xen_reserve_mfn(xen_start_info->console.domU.mfn);
+> +
+> +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> +		return;
+> +
+> +	/*
+> +	 * ALIGN up to compensate for the p2m_page pointing to an array that
+> +	 * can partially filled (look in xen_build_dynamic_phys_to_machine).
+> +	 */
+> +
+> +	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
+> +
+> +	/* We could use xen_reserve_mfn here, but would end up looping quite
+> +	 * a lot (and call memblock_reserve for each PAGE), so lets just use
+> +	 * the easy way and reserve it wholesale. */
+> +	memblock_reserve(__pa(xen_start_info->mfn_list), size);
+> +
+> +	/* The pagetables are reserved in mmu.c */
+> +}
+>  void xen_setup_shared_info(void)
+>  {
+>  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> @@ -1362,6 +1409,7 @@ asmlinkage void __init xen_start_kernel(void)
+>  	xen_raw_console_write("mapping kernel into physical memory\n");
+>  	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
+>  
+> +	xen_reserve_internals();
+>  	/* Allocate and initialize top and mid mfn levels for p2m structure */
+>  	xen_build_mfn_list_list();
+>  
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index e4adbfb..6a2bfa4 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -388,6 +388,11 @@ void __init xen_build_dynamic_phys_to_machine(void)
+>  	}
+>  
+>  	m2p_override_init();
+> +
+> +	/* NOTE: We cannot call memblock_reserve here for the mfn_list as there
+> +	 * isn't enough pieces to make it work (for one - we are still using the
+> +	 * Xen provided pagetable). Do it later in xen_reserve_internals.
+> +	 */
+>  }
+>  
+>  unsigned long get_phys_to_machine(unsigned long pfn)
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index a4790bf..9efca75 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -424,15 +424,6 @@ char * __init xen_memory_setup(void)
+>  	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
+>  			E820_RESERVED);
+>  
+> -	/*
+> -	 * Reserve Xen bits:
+> -	 *  - mfn_list
+> -	 *  - xen_start_info
+> -	 * See comment above "struct start_info" in <xen/interface/xen.h>
+> -	 */
+> -	memblock_reserve(__pa(xen_start_info->mfn_list),
+> -			 xen_start_info->pt_base - xen_start_info->mfn_list);
+> -
+>  	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+>  
+>  	return "Xen";
+> -- 
+> 1.7.7.6
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
