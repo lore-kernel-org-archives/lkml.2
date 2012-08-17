@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585Ab2HQTB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 15:01:26 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60393 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488Ab2HQTBS (ORCPT
+	id S1751952Ab2HQTDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 15:03:32 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3011 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab2HQTDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 15:01:18 -0400
-Date: Fri, 17 Aug 2012 12:01:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: Tomas Hlavacek <tmshlvck@gmail.com>, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/1] [RFC] uartclk from serial_core exposed to sysfs
-Message-ID: <20120817190114.GA31011@kroah.com>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
- <CAEB7QLBEdNArtKz9zP7R4Za54049jJqCEqhPvE6rS59j1tD0PQ@mail.gmail.com>
- <20120817165446.GA12361@kroah.com>
- <201208172044.14868.marek.vasut@gmail.com>
+	Fri, 17 Aug 2012 15:03:22 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 17 Aug 2012 12:03:22 -0700
+Message-ID: <502E914A.1030906@nvidia.com>
+Date: Sat, 18 Aug 2012 00:15:30 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208172044.14868.marek.vasut@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] i2c: tegra: dynamically control fast clk
+References: <1345189711-24104-1-git-send-email-ldewangan@nvidia.com> <502E9051.4090507@wwwdotorg.org>
+In-Reply-To: <502E9051.4090507@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 08:44:14PM +0200, Marek Vasut wrote:
-> Dear Greg KH,
-> 
-> > On Fri, Aug 17, 2012 at 06:30:36PM +0200, Tomas Hlavacek wrote:
-> > > Hello Greg!
-> > > 
-> > > On Fri, Aug 17, 2012 at 5:06 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > >> @@ -2355,6 +2373,14 @@ int uart_add_one_port(struct uart_driver *drv,
-> > > >> struct uart_port *uport)
-> > > >> 
-> > > >>       }
-> > > >>       
-> > > >>       /*
-> > > >> 
-> > > >> +      * Expose uartclk in sysfs. Use driverdata of the tty device for
-> > > >> +      * referencing the UART port.
-> > > >> +      */
-> > > >> +     dev_set_drvdata(tty_dev, port);
-> > > >> +     if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
-> > > >> +             dev_err(tty_dev, "Failed to add uartclk attr\n");
-> > > > 
-> > > > I think you just raced with userspace in creating the file after the
-> > > > device was announced to userspace.  Are you sure it's ok?
-> > > > 
-> > > > If not (hint, I don't think so), please make it a default attribute of
-> > > > the device, which will then cause the file to be created before it is
-> > > > announced to userspace.  It will also be less code as you don't have to
-> > > > clean it up by hand :)
-> > > 
-> > > Do you mean I should modify the tty_register_device() function not to
-> > > use device_create() but it should rather do the device initialization
-> > > on it's own.
-> > 
-> > No, not at all.
-> > 
-> > > And I should add add the attribute (via struct attribute_group) to
-> > > struct device in between device_initialize() and device_add() calls.
-> > > Did I get it right?
-> > 
-> > No, make this a driver attribute, that way when the device is
-> > registered, it adds the attribute automagically to the device that is
-> > bound to it.
-> 
-> (hint, DEVICE_ATTR), right ?
+On Saturday 18 August 2012 12:11 AM, Stephen Warren wrote:
+> On 08/17/2012 01:48 AM, Laxman Dewangan wrote:
+>> Tegra I2C driver enables the fast clock during initialization
+>> and does not disable till driver removed.
+>> Enable this clock before transfer and disable after transfer done.
+>>
+>> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+>> ---
+>> This patch is on top of the clock chnages which is in Tegra sub system and
+>> based on
+>>   i2c: tegra: I2_M_NOSTART functionality not supported in Tegra20
+>> So recommend to go on tegra sub-system.
+> What exactly is this patch based on? I checked out Tegra's
+> for-3.7/drivers-i2c, cherry-picked the M_NOSTART patch you mentioned,
+> and attempted to apply this patch. It doesn't apply. Same if I don't
+> cherry-pick the M_NOSTART patch, and same for next-20120816 with/without
+> the M_NOSTART patch.
 
-No, that's just a macro that creates the structure for the attribute.
-You need to take that structure and tie it to the driver itself, using
-the struct device_driver->groups; field.
+Then It seems I need to create the patch again and send it.  The 
+M_NOSTART patch was on tot before clock related change and that is the 
+reason it is not applying.
+Should I re-send these two patches together as 1/2 and 2/2 to maintain 
+sequence?
+I can create based on your clock tree.
 
-greg k-h
+
