@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758855Ab2HQSos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:44:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53521 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758832Ab2HQSo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:44:26 -0400
-Date: Fri, 17 Aug 2012 19:44:21 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com
-Message-ID: <20120817184421.GD29217@decadent.org.uk>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com>
- <20120817173209.GA29217@decadent.org.uk>
- <20120817182721.GA7747@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817182721.GA7747@aepfle.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S932411Ab2HQSps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:45:48 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34926 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932163Ab2HQSpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 14:45:40 -0400
+Message-ID: <1345229139.10014.5.camel@joe2Laptop>
+Subject: Re: [PATCH] ratelimit: check the condition in WARN_RATELIMIT first
+From: Joe Perches <joe@perches.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: davem@davemloft.net, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Date: Fri, 17 Aug 2012 11:45:39 -0700
+In-Reply-To: <502E8A2C.3060606@suse.cz>
+References: <1345210942-26906-1-git-send-email-jslaby@suse.cz>
+	 <1345225144.10014.2.camel@joe2Laptop> <502E8A2C.3060606@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 08:27:21PM +0200, Olaf Hering wrote:
-> On Fri, Aug 17, Ben Hutchings wrote:
+On Fri, 2012-08-17 at 20:15 +0200, Jiri Slaby wrote:
+> On 08/17/2012 07:39 PM, Joe Perches wrote:
+> > On Fri, 2012-08-17 at 15:42 +0200, Jiri Slaby wrote:
+> >> Before calling __ratelimit in __WARN_RATELIMIT, check the condition
+> >> first. When this check was not there, we got constant income of:
+> >> tty_init_dev: 60 callbacks suppressed
+> >> tty_init_dev: 59 callbacks suppressed
+> > []
+> >> diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+> > []
+> >> @@ -49,8 +49,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+> >>  #define __WARN_RATELIMIT(condition, state, format...)		\
+> >>  ({								\
+> >>  	int rtn = 0;						\
+> >> -	if (unlikely(__ratelimit(state)))			\
+> >> -		rtn = WARN(condition, format);			\
+> >> +	int __rtcond = !!condition;				\
+> >> +	if (unlikely(__rtcond && __ratelimit(state)))		\
+> >> +		rtn = WARN(__rtcond, format);			\
+> >>  	rtn;							\
+> >>  })
+> >>  
+> > 
+> > Hi Jiri.
+> > 
+> > This seems fine to me but are there any conditions that
+> > are computationally expensive?
 > 
-> > On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
-> > > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > > > Now, gather DNS information. Invoke an external script (that can be
-> > > > distro dependent) to gather the DNS information.
-> > > 
-> > > Where is that script?  Why a script, this really isn't in a standard
-> > > method for all Linux distros?  If not, why not work to do that like the
-> > > freedesktop.org people have done for other system configuration items?
-> >  
-> > I suggested using the Network Manager D-Bus API.  That obviously
-> > isn't going to work everywhere, but it seems to cover the same simple
-> > cases that this hypervisor-guest interface allows for.
-> 
-> If its not going to work everywhere how can it be the solution?
+> It's not about expensiveness of the computation. The complexity remained
+> the same except I moved the computation one layer up.
 
-You are never going to have a 'works everywhere' solution for
-Linux guests.
+If ratelimit(state) is not true, condition wasn't tested
+or performed at all.  With this change, it's always done.
 
-How are these distribution-specific integration scripts going
-to get installed in the guesta, anyway?
+> > Maybe something like this?
+[]
+> Yup, something like that looks OK to me.
 
-Ben.
+OK, David, do you want an official patch?
 
-> The script in turn can do whatever it takes, which includes NM. However
-> NM (in its current state) shouldnt be thrown at everyone and everything.
- 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+
