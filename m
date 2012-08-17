@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758777Ab2HQSSe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:18:34 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17836 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758728Ab2HQSS1 (ORCPT
+	id S1758780Ab2HQSVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:21:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53323 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758728Ab2HQSVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:18:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 17 Aug 2012 11:18:26 -0700
-Message-ID: <502E86C1.4000800@nvidia.com>
-Date: Fri, 17 Aug 2012 23:30:33 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 17 Aug 2012 14:21:04 -0400
+Date: Fri, 17 Aug 2012 19:20:51 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
+        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
+        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
+        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com,
+        mszeredi@suse.cz
+Message-ID: <20120817182051.GC29217@decadent.org.uk>
+References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
+ <1345045700-9062-6-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
- driver
-References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org> <502DE6FE.8040200@nvidia.com> <502E60A3.1020405@wwwdotorg.org> <502E80BA.5020409@wwwdotorg.org>
-In-Reply-To: <502E80BA.5020409@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345045700-9062-6-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH 05/13] overlayfs: add statfs support
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 17 August 2012 11:04 PM, Stephen Warren wrote:
-> On 08/17/2012 09:17 AM, Stephen Warren wrote:
->> On 08/17/2012 12:38 AM, Laxman Dewangan wrote:
->>> On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
->>>> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
->>>>> Enable config for dmaengine based Tegra APB DMA driver and
->>>>> disable the legacy APB DMA driver (SYSTEM_DMA).
->>>> Laxman, if I apply this series to next-20120816 (plus a few patches in
->>>> my local work branch plus the CPU hotplug patches from Joseph, although
->>>> I suspect none of that matters), then audio playback on Tegra20 is
->>>> broken; the pitch is far too high. Audio playback on Tegra30 works as
->>>> expected.
->>> I run the test again on ventana and did not see any issue.
->>> I play one song and saw similar behavior with/without this series.
->> OK, I'll test some other boards. I tested Whistler, although all the
->> clocking logic is identical between all Tegra20 boards.
-> I tested both 3.6-rc2 and next-20120816, and they both work fine on Ventana.
->
-> I then applied this patch series to both (plus your "dma: tegra:
-> enable/disable dma clock" for 3.6-rc2) and it causes (or at least
-> exposes) the problem.
->
-> All testing was with a full git clean, using tegra_defconfig, and with
-> no other patches applied.
->
-> If you're not seeing this problem, are you sure you're executing the
-> kernel you think you are, and that it got correctly switched to the new
-> dmaengine driver, and rebuilt after applying your patches?
+On Wed, Aug 15, 2012 at 05:48:12PM +0200, Miklos Szeredi wrote:
+> From: Andy Whitcroft <apw@canonical.com>
+> 
+> Add support for statfs to the overlayfs filesystem.  As the upper layer
+> is the target of all write operations assume that the space in that
+> filesystem is the space in the overlayfs.  There will be some inaccuracy as
+> overwriting a file will copy it up and consume space we were not expecting,
+> but it is better than nothing.
+> 
+> Use the upper layer dentry and mount from the overlayfs root inode,
+> passing the statfs call to that filesystem.
+[...] 
+> +/**
+> + * ovl_statfs
+> + * @sb: The overlayfs super block
+> + * @buf: The struct kstatfs to fill in with stats
+> + *
+> + * Get the filesystem statistics.  As writes always target the upper layer
+> + * filesystem pass the statfs to the same filesystem.
+> + */
+> +static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
+> +{
+> +	struct dentry *root_dentry = dentry->d_sb->s_root;
+> +	struct path path;
+> +	ovl_path_upper(root_dentry, &path);
+> +
+> +	if (!path.dentry->d_sb->s_op->statfs)
+> +		return -ENOSYS;
+> +	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
+> +}
+[...]
 
-I generally clean, remove .config and then generate .config , build and 
-test whenever any branch change or want to remove any change. I tested 
-in next-20120816.
-Let me take help from other team member for test it if I am missing 
-anything here.
+In case f_namelen differs between the upper and lower filesystems, you
+need to return the greater of the two.
 
+Should f_type be overridden to indicate overlayfs?  I'm not sure what
+userland is likely to do with f_type.  (For presentation to the user,
+it should get the mount type name with getmntent() or libmount.  And
+that will just work.)
+
+Ben.
+
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
