@@ -1,144 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030935Ab2HQIMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:12:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7173 "EHLO mga11.intel.com"
+	id S1755200Ab2HQISc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:18:32 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14490 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030903Ab2HQIM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:12:27 -0400
+	id S1754197Ab2HQIS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:18:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
-   d="asc'?scan'208";a="203384822"
-Date: Fri, 17 Aug 2012 11:12:33 +0300
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH, RFC 7/9] thp: implement splitting pmd for huge zero page
-Message-ID: <20120817081233.GB9833@otc-wbsnb-06>
-References: <1344503300-9507-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1344503300-9507-8-git-send-email-kirill.shutemov@linux.intel.com>
- <20120816192738.GO11188@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
-Content-Disposition: inline
-In-Reply-To: <20120816192738.GO11188@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="asc'?scan'208";a="209720945"
+Message-ID: <1345191768.27859.26.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/2] UBI: replace MTD_UBI_BEB_LIMIT with module parameter
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: linux-mtd@lists.infradead.org, Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Date: Fri, 17 Aug 2012 11:22:48 +0300
+In-Reply-To: <1345128723-13582-2-git-send-email-richard.genoud@gmail.com>
+References: <1345042639.3393.150.camel@sauron.fi.intel.com>
+	 <1345128723-13582-2-git-send-email-richard.genoud@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-NrXK2V9Xd7MFmAm4i+Oq"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---MfFXiAuoTsnnDAfZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-NrXK2V9Xd7MFmAm4i+Oq
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Aug 16, 2012 at 09:27:38PM +0200, Andrea Arcangeli wrote:
-> On Thu, Aug 09, 2012 at 12:08:18PM +0300, Kirill A. Shutemov wrote:
-> > +static void __split_huge_zero_page_pmd(struct mm_struct *mm, pmd_t *pm=
-d,
-> > +		unsigned long address)
-> > +{
-> > +	pgtable_t pgtable;
-> > +	pmd_t _pmd;
-> > +	unsigned long haddr =3D address & HPAGE_PMD_MASK;
-> > +	struct vm_area_struct *vma;
-> > +	int i;
-> > +
-> > +	vma =3D find_vma(mm, address);
-> > +	VM_BUG_ON(vma =3D=3D NULL);
->=20
-> I think you can use BUG_ON here just in case but see below how I would
-> change it.
->=20
-> > +	pmdp_clear_flush_notify(vma, haddr, pmd);
-> > +	/* leave pmd empty until pte is filled */
-> > +
-> > +	pgtable =3D get_pmd_huge_pte(mm);
-> > +	pmd_populate(mm, &_pmd, pgtable);
-> > +
-> > +	for (i =3D 0; i < HPAGE_PMD_NR; i++, haddr +=3D PAGE_SIZE) {
-> > +		pte_t *pte, entry;
-> > +		entry =3D pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
-> > +		entry =3D pte_mkspecial(entry);
-> > +		pte =3D pte_offset_map(&_pmd, haddr);
-> > +		VM_BUG_ON(!pte_none(*pte));
-> > +		set_pte_at(mm, haddr, pte, entry);
-> > +		pte_unmap(pte);
-> > +	}
-> > +	smp_wmb(); /* make pte visible before pmd */
-> > +	pmd_populate(mm, pmd, pgtable);
-> > +}
-> > +
->=20
-> The last pmd_populate will corrupt memory.
+Richard, would you please split this series differently:
 
-Nice catch, thank you.
+1. Separate out the calculations to the get_bad_peb_limit() func.
+2. Invent=20
+2. Add the module parameter
+3. Extends the ioctl
+4. Removes the Kconfig option
 
-I've used do_huge_pmd_wp_page_fallback() as template for my code.
-What's difference between these two code paths?
-Why is do_huge_pmd_wp_page_fallback() safe?
+This will be much easier to review.
 
-> > +	if (is_huge_zero_pmd(*pmd)) {
-> > +		__split_huge_zero_page_pmd(mm, pmd, address);
->=20
-> This will work fine but it's a bit sad having to add "address" at
-> every call, just to run a find_vma(). The only place that doesn't have
-> a vma already on the caller stack is actually pagewalk, all other
-> places already have a vma on the stack without having to find it with
-> the rbtree.
->=20
-> I think it may be better to change the param to
-> split_huge_page_pmd(vma, pmd).
->=20
-> Then have standard split_huge_page_pmd obtain the mm with vma->vm_mm
-> (most callers already calles it with split_huge_page_pmd(vma->vm_mm)
-> so it won't alter the cost to do vma->vm_mm in caller or callee).
->=20
-> split_huge_page_address also should take the vma (all callers are
-> invoking it as split_huge_page_address(vma->vm_mm) so it'll be zero
-> cost change).
->=20
-> Then we can add a split_huge_page_pmd_mm(mm, address, pmd) or
-> split_huge_page_pmd_address(mm, address, pmd) (call it as you
-> prefer...) only for the pagewalk caller that will do the find_vma and
-> BUG_ON if it's not found.
->=20
-> In that new split_huge_page_pmd_mm you can also add a BUG_ON checking
-> vma->vm_start to be <=3D haddr and vma->vm_end >=3D haddr+HPAGE_PMD_SIZE
-> in addition to BUG_ON(!vma) above, for more robustness. I'm not aware
-> of any place calling it without mmap_sem hold at least for reading
-> and the vma must be stable, but more debug checks won't hurt.
+See also some comments below.
 
-Looks resonable. I'll update it in next revision.
+> --- a/drivers/mtd/ubi/build.c
+> +++ b/drivers/mtd/ubi/build.c
+> @@ -46,6 +46,8 @@
+>  /* Maximum length of the 'mtd=3D' parameter */
+>  #define MTD_PARAM_LEN_MAX 64
+> =20
+> +#define MTD_PARAM_NB_MAX 3
+
+Please, make it to be
+
+/* Maximum number of comma-separated items in ht 'mtd=3D' parameter */
+#define MTD_PARAM_MAX_COUNT 3
+
+instead.
+
+> @@ -57,10 +59,12 @@
+>   * @name: MTD character device node path, MTD device name, or MTD device=
+ number
+>   *        string
+>   * @vid_hdr_offs: VID header offset
+> + * @max_beb_per1024: maximum expected number of bad blocks per 1024 eras=
+e blocks
+>   */
+>  struct mtd_dev_param {
+>  	char name[MTD_PARAM_LEN_MAX];
+>  	int vid_hdr_offs;
+> +	unsigned int max_beb_per1024;
+>  };
+
+Please, make it to be just 'int' here and everywhere, just for
+consistency with other parameters, which are 'int' (no other stronger
+reason).
+
+>  MODULE_PARM_DESC(mtd, "MTD devices to attach. Parameter format: "
+> -		      "mtd=3D<name|num|path>[,<vid_hdr_offs>].\n"
+> +		      "mtd=3D<name|num|path>[,<vid_hdr_offs>[,max_beb_per1024]].\n"
+>  		      "Multiple \"mtd\" parameters may be specified.\n"
+>  		      "MTD devices may be specified by their number, name, or "
+>  		      "path to the MTD character device node.\n"
+>  		      "Optional \"vid_hdr_offs\" parameter specifies UBI VID "
+>  		      "header position to be used by UBI.\n"
+
+This comment needs improvement. Consider a situation when I do not want
+to specify vid_hdr_offs (want to use the default), but want to specify
+max_beb_per1024. I think I can put 0 here which means "default". Would
+you please verify this and add a comment about this in this help output.
+Also, please, verify that the output looks OK using 'modinfo ubi'.
+
+> +		      "Optional \"max_beb_per1024\" parameter specifies the "
+> +		      "maximum expected bad eraseblock per 1024 eraseblocks."
+> +		      "(default " __stringify(MTD_UBI_DEFAULT_BEB_LIMIT)
+> +		      " if 0 or not set)\n"
+
+Yeah, something like "if 0 or not set" is needed for 'vid_hdr_offs' as
+well.
+
+>  		      "Example 1: mtd=3D/dev/mtd0 - attach MTD device "
+>  		      "/dev/mtd0.\n"
+>  		      "Example 2: mtd=3Dcontent,1984 mtd=3D4 - attach MTD device "
+
+Could you also modify one of the examples and add "max_beb_per1024"
+there?
 
 --=20
- Kirill A. Shutemov
+Best Regards,
+Artem Bityutskiy
 
---MfFXiAuoTsnnDAfZ
+--=-NrXK2V9Xd7MFmAm4i+Oq
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQLfzxAAoJEAd+omnVudOMY58P/i466DRlrDYRpqaOYJvfbQ4p
-TXY4C7LS7HgxpcXWyylMWcLkjhJcttCPxIqK6sJuEFU9c5Ik4t+evJjHeZ2OP3If
-3DRWixflL0+rMHa1R24eJXZlptW4hjbDp94sQGMcnJnHt0c9v3qm6LRhUqKZDnDf
-XxLGr09MowJc7YINluOjZqC26I/+QnDs+DeYynuTa8HjAEjFRs6zJBhO2m8/l/7D
-pR9g5YgLapmErMnP+VAhEI4Eaz9C7THmq0/fSit7W4EHL0IzuqoIXqKdlzmAUNnq
-Nxp2ZQ5lZ2/F0Qwe6VMtklHAbR0Y4DmDX0fWne0qLQOmRTh+Qd/cEEkQli56YDB/
-G2ROZwWMYX8tT4yM30xpe3p0zZWvn3xSEUgTpY+p6WXv5ysFnmwT2V86KoP14S9U
-pUwS0Zb1MEe8jtjdtjNMzJx3AzvM5d6WXsqAxVMx8VQ7siA/xYoCWs/6lBWHUfdu
-30WEYSOREnSO6LKx5DTLWMl+C9NzjyOG/4yDdOGKk1eumog6KGPatVRkRv0quTIA
-Tx7bSSHMBZkV2Q83/kbW9xJmfmF1UVyA2/yOLFyEG38BC6DXFzQg1VfezF8+n+Wy
-/u0XFlDm89YPu1RkAoNWkiH9DOP1n2a9A+aiaoffDPPB29tdiMVrwWhyYt4zW/HB
-vLgkGpsqt0eFo61kuGCH
-=iflw
+iQIcBAABAgAGBQJQLf9YAAoJECmIfjd9wqK08fkP/iCxbieHAACO69N0p1Zfs69R
+ntKds8NTlQJSXl8WWy205/Noi10M+0cz7m1jaJMRVwciR+FY5RAsDaq4wFtYeB0H
+r6Nps3oiEgtHx7ShDNmvYJq854bghtU880uzsvDqKzp5A9EW05w70WjohTGMVCm7
+Gs0TuaeLXLD8sPo+UL9B79b1OR6iN2qYaQILeLOVkrxEhNWnazhbfgTIAzbLbmqv
+iU1jufWm+pJxaaqqr4mFbfrXmF46lgRO8+QKAAVtD1ijnN9oph9n230/w4z5jvWd
+RTvlWmdflaXgav9+xhFfSIvg4BnYE4Iw4AAQYTSmHx+QB/4Qp0JWnoWGlMTnVDa1
+KRuaU+DwYcObnXAYE77uFEONRzktjQ6etLIvMO6GI+ypCr+rEIRdKQcoe+JluzKV
+2zm2ts01pkb4ECQg+S/A9YwoAiFGdiWvMHtpj40wh+EBGyQAWp+PYJkA+7G7ecp1
+shmnYR7WHnJ4B9oIqzYmATy3HBnLVBtrAyIbK1ESXyadGYqJp/8THdna7jmxZwN2
+sgX2HGFX0YWtxAdfrJmCuEWspy6e+pvbNt93oXVHzX632eelAkc5SHeHhkejvTxa
+ql2+fasEovlaCxjCMnBl77ZlEbALyLMZjhNuM6kekhgBanPEnL0GOEweX5x/xOnk
+L3RUutqwRGumLAm/VacP
+=GaNz
 -----END PGP SIGNATURE-----
 
---MfFXiAuoTsnnDAfZ--
+--=-NrXK2V9Xd7MFmAm4i+Oq--
+
