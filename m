@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab2HQNHS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:07:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60755 "EHLO mga03.intel.com"
+	id S932360Ab2HQNIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:08:51 -0400
+Received: from fieldses.org ([174.143.236.118]:60443 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756794Ab2HQNHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:07:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
-   d="asc'?scan'208";a="182211886"
-Message-ID: <1345209115.27859.84.camel@sauron.fi.intel.com>
-Subject: Re: UBI fastmap updates
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
-        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
-        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
-        nyoushchenko@mvista.com
-Date: Fri, 17 Aug 2012 16:11:55 +0300
-In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
-References: <1341836323-43916-1-git-send-email-richard@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-+RQFhelgzX44+h1ZQMRM"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1755711Ab2HQNIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 09:08:43 -0400
+Date: Fri, 17 Aug 2012 09:08:42 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: v3.5 nfsd4 regression; utime sometimes takes 40+ seconds to
+ return
+Message-ID: <20120817130842.GA11172@fieldses.org>
+References: <20120815061115.GC32347@cucamonga.audible.transient.net>
+ <20120815135854.GI32347@cucamonga.audible.transient.net>
+ <20120815150251.GB16057@fieldses.org>
+ <20120816201838.GA4282@cucamonga.audible.transient.net>
+ <20120816204208.GE4385@fieldses.org>
+ <20120816210916.GA6108@fieldses.org>
+ <20120816213423.GB4282@cucamonga.audible.transient.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120816213423.GB4282@cucamonga.audible.transient.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 16, 2012 at 09:34:24PM +0000, Jamie Heilman wrote:
+> J. Bruce Fields wrote:
+> > On Thu, Aug 16, 2012 at 04:42:08PM -0400, J. Bruce Fields wrote:
+> > > Hm, weird.  In the good case the cb_recall's done with auth_unix, in the
+> > > bad case with auth_null.  OK, that should be enough to go on....
+> > > 
+> > > Thanks for digging into this!
+> > 
+> > This should fix it--could you confirm?
+> 
+> Yep, looks like that fixes it.
 
---=-+RQFhelgzX44+h1ZQMRM
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks!
 
-On Mon, 2012-07-09 at 14:18 +0200, Richard Weinberger wrote:
-> This is the next round of UBI fastmap updates.
-> It fixes all issues pointed out by Shmulik. :-)
->=20
-> If you want to test fastmap you can use my git repo:
-> git://git.kernel.org/pub/scm/linux/kernel/git/rw/ubi2.git ubi2/v17
+I'll queue this up for 3.6 and stable.
 
-One thing which just came to my mind why looking at other MTD e-mails. I
-do not know if it is relevant for fastmap or not, just want you to
-check.
+--b.
 
-In UBIFS we have we have the "fixup" feature which is used to
-work-around dumb flashers which are present in many factories:
-http://www.linux-mtd.infradead.org/faq/ubifs.html#L_free_space_fixup
-
-This is because the "correct" UBI flasher should be able to skip empty
-space when flashing, see here:
-http://www.linux-mtd.infradead.org/doc/ubi.html#L_flasher_algo
-
-So with this fixup flag UBIFS will basically read all its eraseblocks
-which have empty spece which it will use, and write them back. Just to
-make the empty space writable again. This is done only once on the very
-first boot.
-
-We do not do anything like this in UBI because UBI does not need this,
-it does not have any complex data structures on the media.
-
-With fastmap - I am unsure. I think it is not a problem, because
-probably you never append more data, you just re-write everything,
-right?
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-+RQFhelgzX44+h1ZQMRM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQLkMbAAoJECmIfjd9wqK0ZYgP/RzVGvW82uGMQb2BnfBEcsb9
-uUBq3Ne14+I1ARZCHyiw7hOi0XTxNktOfu2jzKQlhRz4tbumAQY0Ex1ujXwO1lL9
-9zEQN8EWNbyuzK64R+Uoy420Q9bgI22hS+zZ+rDkYqlw2OhR9AAaIqtSvxJPq+lT
-xhO6Fji5o6RIErXewBkBhNUd9CvOskDZ+njPxufvjbJiJzT8CTaCf/wcyq86D0Tc
-LiujdEQM+M+VHJ6NUDNuTkwgkTTxSSs0iEu6TXNSVAuA8yuJAukqwuyN6capdIpR
-r9d4otRtcQH/x4RVq6mUYkZOoanPHR4WA3G8vjhl8QfZR/o5bvL0LO0saXgXyBkY
-XIbzgaLjwzvl+WvGe/CRZmGsiA/dB0qL+tGKfEfYe2l2AOOXe1EVy1Cp/WyeajFF
-nSKFJB7zOLHwTlE0Yfs0nZ0xPV6DaaCR0gzwUKTtJJFSvzSHNN81qN4h00R1dxEA
-Io2mdmzk2tN+GM/b3rzW4991cMWoAvMRENIScO7AO3L9bcNE6e8e3lNClD/5LGi3
-EPLZ5e6WyVyKsRvIIs/GZT/VM/Hxn3u0wSxdK+gqiX9aQbMggKDGmQKMXdSKGuwG
-TvFRie/3Y/0huIyHt+jPpaNjXkaEZt51VUYbix1a19JxQ33b4iPemWBKjkizdX30
-WNFiD9JpAVuEZsMHB9gj
-=03PU
------END PGP SIGNATURE-----
-
---=-+RQFhelgzX44+h1ZQMRM--
-
+> 
+> > commit e950bebdac1f17121f972728489cdba43734d56d
+> > Author: J. Bruce Fields <bfields@redhat.com>
+> > Date:   Thu Aug 16 17:01:21 2012 -0400
+> > 
+> >     nfsd4: fix security flavor of NFSv4.0 callback
+> >     
+> >     Commit d5497fc693a446ce9100fcf4117c3f795ddfd0d2 "nfsd4: move rq_flavor
+> >     into svc_cred" forgot to remove cl_flavor from the client, leaving two
+> >     places (cl_flavor and cl_cred.cr_flavor) for the flavor to be stored.
+> >     After that patch, the latter was the one that was updated, but the
+> >     former was the one that the callback used.
+> >     
+> >     Symptoms were a long delay on utime().  This is because the utime()
+> >     generated a setattr which recalled a delegation, but the cb_recall was
+> >     ignored by the client because it had the wrong security flavor.
+> >     
+> >     Cc: stable@vger.kernel.org
+> >     Reported-by: Jamie Heilman <jamie@audible.transient.net>
+> >     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> > 
+> > diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+> > index cbaf4f8..4c7bd35 100644
+> > --- a/fs/nfsd/nfs4callback.c
+> > +++ b/fs/nfsd/nfs4callback.c
+> > @@ -651,12 +651,12 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
+> >  
+> >  	if (clp->cl_minorversion == 0) {
+> >  		if (!clp->cl_cred.cr_principal &&
+> > -				(clp->cl_flavor >= RPC_AUTH_GSS_KRB5))
+> > +				(clp->cl_cred.cr_flavor >= RPC_AUTH_GSS_KRB5))
+> >  			return -EINVAL;
+> >  		args.client_name = clp->cl_cred.cr_principal;
+> >  		args.prognumber	= conn->cb_prog,
+> >  		args.protocol = XPRT_TRANSPORT_TCP;
+> > -		args.authflavor = clp->cl_flavor;
+> > +		args.authflavor = clp->cl_cred.cr_flavor;
+> >  		clp->cl_cb_ident = conn->cb_ident;
+> >  	} else {
+> >  		if (!conn->cb_xprt)
+> > diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+> > index 167d7d8..9db0bb5 100644
+> > --- a/fs/nfsd/state.h
+> > +++ b/fs/nfsd/state.h
+> > @@ -231,7 +231,6 @@ struct nfs4_client {
+> >  	nfs4_verifier		cl_verifier; 	/* generated by client */
+> >  	time_t                  cl_time;        /* time of last lease renewal */
+> >  	struct sockaddr_storage	cl_addr; 	/* client ipaddress */
+> > -	u32			cl_flavor;	/* setclientid pseudoflavor */
+> >  	struct svc_cred		cl_cred; 	/* setclientid principal */
+> >  	clientid_t		cl_clientid;	/* generated by server */
+> >  	nfs4_verifier		cl_confirm;	/* generated by server */
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Jamie Heilman                     http://audible.transient.net/~jamie/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
