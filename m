@@ -1,256 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933800Ab2HQJTL (ORCPT <rfc822;w@1wt.eu>);
+	id S1030837Ab2HQJTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 05:19:22 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54902 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933797Ab2HQJTL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Aug 2012 05:19:11 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58429 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756077Ab2HQJTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 05:19:01 -0400
-Message-ID: <502E0BC3.8090204@parallels.com>
-Date: Fri, 17 Aug 2012 13:15:47 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/nQ6Xdk7Yt2o9NsqE3L/D+
+Date: Fri, 17 Aug 2012 02:19:08 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 13/31] arm64: Device specific operations
+Message-ID: <20120817091908.GQ11011@atomide.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-14-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
- children
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <20120817090005.GC18600@dhcp22.suse.cz>
-In-Reply-To: <20120817090005.GC18600@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344966752-16102-14-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 01:00 PM, Michal Hocko wrote:
-> On Thu 09-08-12 17:01:17, Glauber Costa wrote:
->> The current memcg slab cache management fails to present satisfatory
->> hierarchical behavior in the following scenario:
->>
->> -> /cgroups/memory/A/B/C
->>
->> * kmem limit set at A,
->> * A and B have no tasks,
->> * span a new task in in C.
->>
->> Because kmem_accounted is a boolean that was not set for C, no
->> accounting would be done. This is, however, not what we expect.
->>
->> The basic idea, is that when a cgroup is limited, we walk the tree
->> upwards 
-> 
-> Isn't it rather downwards? We start at A and then mark all children so
-> we go down the tree. Moreover the walk is not atomic wrt. parallel
-> charges nor to a new child creation. First one seems to be acceptable
-> as the charges go to the root. The second one requires cgroup_lock.
-> 
+* Catalin Marinas <catalin.marinas@arm.com> [120814 11:05]:
+> --- /dev/null
+> +++ b/arch/arm64/mm/ioremap.c
+> +
+> +void __iomem *__ioremap(phys_addr_t phys_addr, size_t size, pgprot_t prot)
+> +{
+> +	return __ioremap_caller(phys_addr, size, prot,
+> +				__builtin_return_address(0));
+> +}
+> +EXPORT_SYMBOL(__ioremap);
 
-Yes, it is downwards. I've already noticed that yesterday and updated
-in my tree.
+>From SoC point of view, we're probably going to need __ioremap_exec()
+here too for programming clocks during runtime in SRAM etc. But that
+can be added later as needed.
 
-As for the lock, can't we take set_limit lock in cgroup creation just
-around the place that updates that field in the child? It is a lot more
-fine grained - everything except the dead bkl is -  and what we're
-actually protecting is the limit.
-
-If you prefer, I can use cgroup lock just fine. But then I won't sleep
-at night and probably pee my pants, which is something I don't do for at
-least two decades now.
-
-> It also seems that you are missing memcg_kmem_account_parent in
-> mem_cgroup_create (use_hierarchy path) if memcg_kmem_is_accounted(parent).
-> 
-
-You mean when we create a cgroup ontop of an already limited parent?
-Humm, you are very right.
-
-> Some further "wording" comments below. Other than that the patch looks
-> correct.
-> 
->> (something Kame and I already thought about doing for other
->> purposes), and make sure that we store the information about the parent
->> being limited in kmem_accounted (that is turned into a bitmap: two
->> booleans would not be space efficient). 
-> 
-> Two booleans even don't serve the purpose because you want to test this
-> atomically, right?
-> 
-
-Well, yes, we have that extra problem as well.
->> The code for that is taken from sched/core.c. My reasons for not
->> putting it into a common place is to dodge the type issues that would
->> arise from a common implementation between memcg and the scheduler -
->> but I think that it should ultimately happen, so if you want me to do
->> it now, let me know.
-> 
-> Is this really relevant for the patch?
-> 
-
-Not at all. Besides not being relevant, it is also not true, since I now
-use the memcg iterator. I would prefer the tree walk instead of having
-to cope with the order imposed by the memcg iterator, but we add
-less code this way...
-
-Again, already modified that in my yesterday's update.
-
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 3216292..3d30b79 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -295,7 +295,8 @@ struct mem_cgroup {
->>  	 * Should the accounting and control be hierarchical, per subtree?
->>  	 */
->>  	bool use_hierarchy;
->> -	bool kmem_accounted;
->> +
->> +	unsigned long kmem_accounted; /* See KMEM_ACCOUNTED_*, below */
->>  
->>  	bool		oom_lock;
->>  	atomic_t	under_oom;
->> @@ -348,6 +349,38 @@ struct mem_cgroup {
->>  #endif
->>  };
->>  
->> +enum {
->> +	KMEM_ACCOUNTED_THIS, /* accounted by this cgroup itself */
->> +	KMEM_ACCOUNTED_PARENT, /* accounted by any of its parents. */
-> 
-> How it can be accounted by its parent, the charge doesn't go downwards.
-> Shouldn't it rather be /* a parent is accounted */
-> 
-indeed.
-
->> +};
->> +
->> +#ifdef CONFIG_MEMCG_KMEM
->> +static bool memcg_kmem_account(struct mem_cgroup *memcg)
-> 
-> memcg_kmem_set_account? It matches _clear_ counterpart and it makes
-> obvious that the value is changed actually.
-> 
-
-Ok.
-
-> [...]
->> +static bool memcg_kmem_is_accounted(struct mem_cgroup *memcg)
->> +{
->> +	return test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
->> +}
->> +
->> +static void memcg_kmem_account_parent(struct mem_cgroup *memcg)
-> 
-> same here _set_parent
-> 
-
-Ok, agreed.
-
-> [...]
->> @@ -614,7 +647,7 @@ EXPORT_SYMBOL(__memcg_kmem_free_page);
->>  
->>  static void disarm_kmem_keys(struct mem_cgroup *memcg)
->>  {
->> -	if (memcg->kmem_accounted)
->> +	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
-> 
-> memcg_kmem_is_accounted. I do not see any reason to open code this.
-> 
-
-ok.
-
->>  #ifdef CONFIG_MEMCG_KMEM
->> -	/*
->> -	 * Once enabled, can't be disabled. We could in theory disable it if we
->> -	 * haven't yet created any caches, or if we can shrink them all to
->> -	 * death. But it is not worth the trouble.
->> -	 */
->> +	struct mem_cgroup *iter;
->> +
->>  	mutex_lock(&set_limit_mutex);
->> -	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
->> +	if ((val != RESOURCE_MAX) && memcg_kmem_account(memcg)) {
->> +
->> +		/*
->> +		 * Once enabled, can't be disabled. We could in theory disable
->> +		 * it if we haven't yet created any caches, or if we can shrink
->> +		 * them all to death. But it is not worth the trouble
->> +		 */
->>  		static_key_slow_inc(&memcg_kmem_enabled_key);
->> -		memcg->kmem_accounted = true;
->> +
->> +		if (!memcg->use_hierarchy)
->> +			goto out;
->> +
->> +		for_each_mem_cgroup_tree(iter, memcg) {
-> 
-> for_each_mem_cgroup_tree does respect use_hierarchy so the above
-> shortcut is not necessary. Dunno but IMHO we should get rid of explicit
-> tests as much as possible. This doesn't look like a hot path anyway.
-> 
-
-I can't remember any reason for doing so other than gaining some time.
-I will remove it.
-
->> +			if (iter == memcg)
->> +				continue;
->> +			memcg_kmem_account_parent(iter);
->> +		}
->> +	} else if ((val == RESOURCE_MAX) && memcg_kmem_clear_account(memcg)) {
-> 
-> Above you said "Once enabled, can't be disabled." and now you can
-> disable it? Say you are a leaf group with non accounted parents. This
-> will clear the flag and so no further accounting is done. Shouldn't
-> unlimited mean that we will never reach the limit? Or am I missing
-> something?
->
-
-You are missing something, and maybe I should be more clear about that.
-The static branches can't be disabled (it is only safe to disable them
-from disarm_static_branches(), when all references are gone). Note that
-when unlimited, we flip bits, do a transversal, but there is no mention
-to the static branch.
-
-The limiting can come and go at will.
-
->> +
->> +		if (!memcg->use_hierarchy)
->> +			goto out;
->> +
->> +		for_each_mem_cgroup_tree(iter, memcg) {
->> +			struct mem_cgroup *parent;
->> +
->> +			if (iter == memcg)
->> +				continue;
->> +			/*
->> +			 * We should only have our parent bit cleared if none
->> +			 * of our parents are accounted. The transversal order
->> +			 * of our iter function forces us to always look at the
->> +			 * parents.
->> +			 */
->> +			parent = parent_mem_cgroup(iter);
->> +			for (; parent != memcg; parent = parent_mem_cgroup(iter))
->> +				if (memcg_kmem_is_accounted(parent))
->> +					goto noclear;
->> +			memcg_kmem_clear_account_parent(iter);
-> 
-> Brain hurts...
-> Yes we are iterating in the creation ordering so we cannot rely on the
-> first encountered accounted memcg
-> A(a) - B - D
->      - C (a) - E
-> 
-> 
-
-That's why I said I preferred the iterator the scheduler uses. The
-actual transverse code was much simpler, because it will stop at an
-unlimited parent. But this is the only drawback I see in the memcg
-iterator, so I decided that just documenting this "interesting" piece of
-code well would do...
+Acked-by: Tony Lindgren <tony@atomide.com>
