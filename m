@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732Ab2HQEFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 00:05:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60927 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab2HQEFx (ORCPT
+	id S1752830Ab2HQEdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 00:33:40 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47705 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab2HQEdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 00:05:53 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 2/3] PM / Sleep: introduce dpm_for_each_dev
-Date: Fri, 17 Aug 2012 12:05:41 +0800
-Message-Id: <1345176342-23513-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 17 Aug 2012 00:33:36 -0400
+Message-ID: <502DC999.1040407@linux.vnet.ibm.com>
+Date: Fri, 17 Aug 2012 12:33:29 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org
+CC: neilb@suse.de, "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 1/3] raid: replace	list_for_each_continue_rcu with new interface
+References: <502CB924.10200@linux.vnet.ibm.com>
+In-Reply-To: <502CB924.10200@linux.vnet.ibm.com>
+X-Forwarded-Message-Id: <502CB924.10200@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12081704-1396-0000-0000-000001B9889B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dpm_list and its pm lock provide a good way to iterate all
-devices in system. Except this way, there is no other easy
-way to iterate devices in system.
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-firmware loader need to cache firmware images for devices
-before system sleep, so introduce the function to meet its
-demand.
+This patch replaces list_for_each_continue_rcu() with
+list_for_each_entry_continue_rcu() to save a few lines
+of code and allow removing list_for_each_continue_rcu().
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
-v1:
-	- add 'static inline' if !PM_SLEEP
-	- check 'fn' in dpm_for_each_dev
+ drivers/md/bitmap.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
- drivers/base/power/main.c |   22 ++++++++++++++++++++++
- include/linux/pm.h        |    5 +++++
- 2 files changed, 27 insertions(+)
-
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 57f5814..23b417f 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -1349,3 +1349,25 @@ int device_pm_wait_for_dev(struct device *subordinate, struct device *dev)
- 	return async_error;
- }
- EXPORT_SYMBOL_GPL(device_pm_wait_for_dev);
-+
-+/**
-+ * dpm_for_each_dev - device iterator.
-+ * @data: data for the callback.
-+ * @fn: function to be called for each device.
-+ *
-+ * Iterate over devices in dpm_list, and call @fn for each device,
-+ * passing it @data.
-+ */
-+void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
-+{
-+	struct device *dev;
-+
-+	if (!fn)
-+		return;
-+
-+	device_pm_lock();
-+	list_for_each_entry(dev, &dpm_list, power.entry)
-+		fn(dev, data);
-+	device_pm_unlock();
-+}
-+EXPORT_SYMBOL_GPL(dpm_for_each_dev);
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index 44d1f23..007e687 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -640,6 +640,7 @@ extern void __suspend_report_result(const char *function, void *fn, int ret);
- 	} while (0)
- 
- extern int device_pm_wait_for_dev(struct device *sub, struct device *dev);
-+extern void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *));
- 
- extern int pm_generic_prepare(struct device *dev);
- extern int pm_generic_suspend_late(struct device *dev);
-@@ -679,6 +680,10 @@ static inline int device_pm_wait_for_dev(struct device *a, struct device *b)
- 	return 0;
- }
- 
-+static inline void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
-+{
-+}
-+
- #define pm_generic_prepare	NULL
- #define pm_generic_suspend	NULL
- #define pm_generic_resume	NULL
+diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
+index 15dbe03..b160828 100644
+--- a/drivers/md/bitmap.c
++++ b/drivers/md/bitmap.c
+@@ -163,20 +163,17 @@ static struct md_rdev *next_active_rdev(struct md_rdev *rdev, struct mddev *mdde
+ 	 * As devices are only added or removed when raid_disk is < 0 and
+ 	 * nr_pending is 0 and In_sync is clear, the entries we return will
+ 	 * still be in the same position on the list when we re-enter
+-	 * list_for_each_continue_rcu.
++	 * list_for_each_entry_continue_rcu.
+ 	 */
+-	struct list_head *pos;
+ 	rcu_read_lock();
+ 	if (rdev == NULL)
+ 		/* start at the beginning */
+-		pos = &mddev->disks;
++		rdev = list_entry_rcu(&mddev->disks, struct md_rdev, same_set);
+ 	else {
+ 		/* release the previous rdev and start from there. */
+ 		rdev_dec_pending(rdev, mddev);
+-		pos = &rdev->same_set;
+ 	}
+-	list_for_each_continue_rcu(pos, &mddev->disks) {
+-		rdev = list_entry(pos, struct md_rdev, same_set);
++	list_for_each_entry_continue_rcu(rdev, &mddev->disks, same_set) {
+ 		if (rdev->raid_disk >= 0 &&
+ 		    !test_bit(Faulty, &rdev->flags)) {
+ 			/* this is a usable devices */
 -- 
-1.7.9.5
+1.7.4.1
+
 
