@@ -1,192 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab2HQCnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 22:43:37 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:38602 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab2HQCne (ORCPT
+	id S1030401Ab2HQCnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 22:43:50 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:60228 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933184Ab2HQCnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 22:43:34 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-127.messagelabs.com!1345171400!3211174!9
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.2; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 05/35] staging: comedi: cb_pcidas: use attach_pci callback
-Date: Thu, 16 Aug 2012 19:43:29 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 16 Aug 2012 22:43:35 -0400
+Subject: [ANNOUNCE] target-pending tree updated to v3.6-rc2
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Arun Easi <arun.easi@qlogic.com>, Andy Grover <agrover@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Aug 2012 19:43:32 -0700
+Message-ID: <1345171412.25161.134.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201208161943.29881.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert this PCI driver to use the comedi PCI auto config attach
-mechanism by adding an 'attach_pci' callback function. Since the
-driver does not require any external configuration options, and
-the legacy 'attach' callback is now optional, remove it.
+Hi all,
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_pcidas.c | 84 ++++++++++--------------------
- 1 file changed, 28 insertions(+), 56 deletions(-)
+With the release of v3.6-rc2 this afternoon, the target-pending.git tree
+now has been updated using the freshly cut -rc2 as it's new HEAD.
+Patches destined into for-3.7 code are now being added into for-next for
+linux-next build testing.
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 2b6a637..4b6fb88 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -45,11 +45,7 @@ Status:
-   The boards may be autocalibrated using the comedi_calibrate
-   utility.
- 
--Configuration options:
--  [0] - PCI bus of device (optional)
--  [1] - PCI slot of device (optional)
--  If bus/slot is not specified, the first supported
--  PCI device found will be used.
-+Configuration options: not applicable, uses PCI auto config
- 
- For commands, the scanned channels must be consecutive
- (i.e. 4-5-6-7, 2-3-4,...), and must all have the same
-@@ -1501,69 +1497,45 @@ static irqreturn_t cb_pcidas_interrupt(int irq, void *d)
- 	return IRQ_HANDLED;
- }
- 
--static struct pci_dev *cb_pcidas_find_pci_device(struct comedi_device *dev,
--						 struct comedi_devconfig *it)
-+static const void *cb_pcidas_find_boardinfo(struct comedi_device *dev,
-+					    struct pci_dev *pcidev)
- {
- 	const struct cb_pcidas_board *thisboard;
--	struct pci_dev *pcidev = NULL;
--	int bus = it->options[0];
--	int slot = it->options[1];
- 	int i;
- 
--	for_each_pci_dev(pcidev) {
--		/*  is it not a computer boards card? */
--		if (pcidev->vendor != PCI_VENDOR_ID_CB)
--			continue;
--		/*  loop through cards supported by this driver */
--		for (i = 0; i < ARRAY_SIZE(cb_pcidas_boards); i++) {
--			thisboard = &cb_pcidas_boards[i];
--			if (thisboard->device_id != pcidev->device)
--				continue;
--			/*  was a particular bus/slot requested? */
--			if (bus || slot) {
--				/*  are we on the wrong bus/slot? */
--				if (pcidev->bus->number != bus ||
--				    PCI_SLOT(pcidev->devfn) != slot) {
--					continue;
--				}
--			}
--			dev_dbg(dev->class_dev,
--				"Found %s on bus %i, slot %i\n",
--				thisboard->name,
--				pcidev->bus->number, PCI_SLOT(pcidev->devfn));
--			dev->board_ptr = thisboard;
--			return pcidev;
--		}
-+	for (i = 0; i < ARRAY_SIZE(cb_pcidas_boards); i++) {
-+		thisboard = &cb_pcidas_boards[i];
-+		if (thisboard->device_id == pcidev->device)
-+			return thisboard;
- 	}
--	dev_err(dev->class_dev, "No supported card found\n");
- 	return NULL;
- }
- 
--static int cb_pcidas_attach(struct comedi_device *dev,
--			    struct comedi_devconfig *it)
-+static int cb_pcidas_attach_pci(struct comedi_device *dev,
-+				struct pci_dev *pcidev)
- {
- 	const struct cb_pcidas_board *thisboard;
- 	struct cb_pcidas_private *devpriv;
--	struct pci_dev *pcidev;
- 	struct comedi_subdevice *s;
- 	int i;
- 	int ret;
- 
--	if (alloc_private(dev, sizeof(struct cb_pcidas_private)) < 0)
--		return -ENOMEM;
--	devpriv = dev->private;
--
--	pcidev = cb_pcidas_find_pci_device(dev, it);
--	if (!pcidev)
--		return -EIO;
- 	comedi_set_hw_dev(dev, &pcidev->dev);
--	thisboard = comedi_board(dev);
- 
--	if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
--		dev_err(dev->class_dev,
--			"Failed to enable PCI device and request regions\n");
--		return -EIO;
--	}
-+	thisboard = cb_pcidas_find_boardinfo(dev, pcidev);
-+	if (!thisboard)
-+		return -ENODEV;
-+	dev->board_ptr  = thisboard;
-+	dev->board_name = thisboard->name;
-+
-+	ret = alloc_private(dev, sizeof(*devpriv));
-+	if (ret)
-+		return ret;
-+	devpriv = dev->private;
-+
-+	ret = comedi_pci_enable(pcidev, dev->board_name);
-+	if (ret)
-+		return ret;
- 
- 	devpriv->s5933_config = pci_resource_start(pcidev, 0);
- 	devpriv->control_status = pci_resource_start(pcidev, 1);
-@@ -1584,8 +1556,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 	}
- 	dev->irq = pcidev->irq;
- 
--	dev->board_name = thisboard->name;
--
- 	ret = comedi_alloc_subdevices(dev, 7);
- 	if (ret)
- 		return ret;
-@@ -1698,7 +1668,10 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 	outl(devpriv->s5933_intcsr_bits | INTCSR_INBOX_INTR_STATUS,
- 	     devpriv->s5933_config + AMCC_OP_REG_INTCSR);
- 
--	return 1;
-+	dev_info(dev->class_dev, "%s: %s attached\n",
-+		dev->driver->driver_name, dev->board_name);
-+
-+	return 0;
- }
- 
- static void cb_pcidas_detach(struct comedi_device *dev)
-@@ -1719,14 +1692,13 @@ static void cb_pcidas_detach(struct comedi_device *dev)
- 	if (pcidev) {
- 		if (devpriv->s5933_config)
- 			comedi_pci_disable(pcidev);
--		pci_dev_put(pcidev);
- 	}
- }
- 
- static struct comedi_driver cb_pcidas_driver = {
- 	.driver_name	= "cb_pcidas",
- 	.module		= THIS_MODULE,
--	.attach		= cb_pcidas_attach,
-+	.attach_pci	= cb_pcidas_attach_pci,
- 	.detach		= cb_pcidas_detach,
- };
- 
--- 
-1.7.11
+Also, thanks go out to MST, Stefan, and Paolo who managed to get
+tcm_vhost fabric code merged in mainline for -rc2  under the special
+post merge window exception rule for new kernel code, which in my
+experience tends to happens about as often as Haley's comet comes
+around..
+
+Here is the current breakdown of pending patches by branch:
+
+master: (patches headed for 3.6-rc-fixes)
+
+5b7517f8 tcm_vhost: Change vhost_scsi_target->vhost_wwpn to char *
+d0e27c88 target: fix NULL pointer dereference bug alloc_page() fails to get memory
+1fa8f450 tcm_fc: Avoid debug overhead when not debugging
+101998f6 tcm_vhost: Post-merge review changes requested by MST
+f0e0e9bb tcm_vhost: Fix incorrect IS_ERR() usage in vhost_scsi_map_iov_to_sgl
+
+for-next: (patches headed for-3.7 merge window)
+
+6a922a33 target: Fix minor spelling typos in drivers/target
+867c8e7d target: Simplify fabric sense data length handling
+3ab2a995 target: Remove unused target_core_fabric_ops.get_fabric_sense_len method
+7b43c0e6 target/sbp: Remove strict param from sbp_parse_wwn
+0fa5702d target: Cleanup transport_subsystem_check_init
+6fc3933f target: Remove request_module for target_core_stgt
+
+for-next-merge: (new fabric drivers headed for 3.7 merge window)
+
+None
+
+queue: (recent patches needing more review/testing before committing)
+
+9b840e4c target: Fix regression bug with handling of zero-length data CDBs
+e093f8a5 target: Fix ->data_length re-assignment bug with SCSI overflow
+0aa8cc14 target: Remove unused se_cmd.cmd_spdtl
+
+--
+
+Please let me know if anything is missing from the list, and I'll plan
+to send out a PULL request for outstanding master -> 3.6-rc-fixes
+sometime next week.
+
+Thanks!
+
+--nab
 
