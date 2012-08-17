@@ -1,199 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335Ab2HQQgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 12:36:05 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:45080 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932131Ab2HQQf5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 12:35:57 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: Daniel J Blueman <daniel@quora.org>
-CC: Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 17 Aug 2012 09:35:52 -0700
-Subject: Re: [PATCH] Add MSI support for SDHCI PCI hosts
-Thread-Topic: [PATCH] Add MSI support for SDHCI PCI hosts
-Thread-Index: Ac18ll4UOTvo9quOSneBrqKbcYeu5Q==
-Message-ID: <15456EE0-A358-4864-9F8D-B7F13014C47E@marvell.com>
-References: <1345194854-8330-1-git-send-email-daniel@quora.org>
-In-Reply-To: <1345194854-8330-1-git-send-email-daniel@quora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1758517Ab2HQQmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 12:42:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42700 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758493Ab2HQQl7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 12:41:59 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 5/5] perf ui/gtk: Add perf_gtk__show_helpline() for pr_*
+Date: Sat, 18 Aug 2012 01:40:49 +0900
+Message-Id: <1345221649-3412-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1345104894-14205-5-git-send-email-namhyung@kernel.org>
+References: <1345104894-14205-5-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use helpline for printing error/debug messages. The code resembles a
+TUI counter part and only print the first line of the message.
 
-The interrupt source could be from a non-pci device.  Say a gpio or whatever.
-Does it make sense to break this patch into two patches ?  
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ * protect the function from concurrent access using ui__lock
+ * use memchr instead of strchr since there's no guarantee that the
+   ui_helpline__current is NULL-terminated.
 
-On Aug 17, 2012, at 2:14 AM, Daniel J Blueman <daniel@quora.org> wrote:
+ tools/perf/ui/gtk/helpline.c |   28 ++++++++++++++++++++++++++++
+ tools/perf/ui/gtk/util.c     |    5 -----
+ tools/perf/ui/helpline.h     |   23 +++++++++++++++++++++++
+ tools/perf/ui/setup.c        |    4 ++++
+ tools/perf/ui/tui/setup.c    |    2 --
+ tools/perf/util/debug.c      |    4 +++-
+ tools/perf/util/debug.h      |    8 +-------
+ 7 files changed, 59 insertions(+), 15 deletions(-)
 
-> Allow module parameter 'enable_msi' to request an MSI interrupt for
-> hosts where available (presently PCI). Useful as a workaround on
-> platforms where the legacy interrupt is broken.
-> 
-> Signed-off-by: Daniel J Blueman <daniel@quora.org>
-> ---
-> drivers/mmc/host/sdhci-pci.c |   30 ++++++++++++++++++++++++++++++
-> drivers/mmc/host/sdhci.c     |   23 +++++++++++++++++++++++
-> drivers/mmc/host/sdhci.h     |    2 ++
-> 3 files changed, 55 insertions(+)
-> 
-> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-> index 504da71..fbde589 100644
-> --- a/drivers/mmc/host/sdhci-pci.c
-> +++ b/drivers/mmc/host/sdhci-pci.c
-> @@ -934,6 +934,34 @@ static int sdhci_pci_enable_dma(struct sdhci_host *host)
-> 	return 0;
-> }
-> 
-> +static int sdhci_pci_enable_msi(struct sdhci_host *host)
-> +{
-> +	struct sdhci_pci_slot *slot;
-> +	struct pci_dev *pdev;
-> +	int ret;
-> +
-> +	slot = sdhci_priv(host);
-> +	pdev = slot->chip->pdev;
-> +
-> +	ret = pci_enable_msi(pdev);
-> +	if (ret)
-> +		return ret;
-> +
-> +	host->irq = pdev->irq;
-> +	return 0;
-> +}
-> +
-> +static void sdhci_pci_disable_msi(struct sdhci_host *host)
-> +{
-> +	struct sdhci_pci_slot *slot;
-> +	struct pci_dev *pdev;
-> +
-> +	slot = sdhci_priv(host);
-> +	pdev = slot->chip->pdev;
-> +
-> +	pci_disable_msi(pdev);
-> +}
-> +
-> static int sdhci_pci_8bit_width(struct sdhci_host *host, int width)
-> {
-> 	u8 ctrl;
-> @@ -976,6 +1004,8 @@ static void sdhci_pci_hw_reset(struct sdhci_host *host)
-> 
-> static struct sdhci_ops sdhci_pci_ops = {
-> 	.enable_dma	= sdhci_pci_enable_dma,
-> +	.enable_msi	= sdhci_pci_enable_msi,
-> +	.disable_msi	= sdhci_pci_disable_msi,
-> 	.platform_8bit_width	= sdhci_pci_8bit_width,
-> 	.hw_reset		= sdhci_pci_hw_reset,
-> };
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 9a11dc3..9fa2180 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -45,6 +45,7 @@
-> 
-> static unsigned int debug_quirks = 0;
-> static unsigned int debug_quirks2;
-> +static bool enable_msi;
-> 
-> static void sdhci_finish_data(struct sdhci_host *);
-> 
-> @@ -2433,6 +2434,9 @@ int sdhci_suspend_host(struct sdhci_host *host)
-> 
-> 	free_irq(host->irq, host);
-> 
-> +	if (host->ops->disable_msi && enable_msi)
-> +		host->ops->disable_msi(host);
-> +
-> 	return ret;
-> }
-> 
-> @@ -2447,6 +2451,12 @@ int sdhci_resume_host(struct sdhci_host *host)
-> 			host->ops->enable_dma(host);
-> 	}
-> 
-> +	if (host->ops->enable_msi && enable_msi) {
-> +		ret = host->ops->enable_msi(host);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> 	ret = request_irq(host->irq, sdhci_irq, IRQF_SHARED,
-> 			  mmc_hostname(host->mmc), host);
-> 	if (ret)
-> @@ -3024,6 +3034,12 @@ int sdhci_add_host(struct sdhci_host *host)
-> 		host->tuning_timer.function = sdhci_tuning_timer;
-> 	}
-> 
-> +	if (host->ops->enable_msi && enable_msi) {
-> +		ret = host->ops->enable_msi(host);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> 	ret = request_irq(host->irq, sdhci_irq, IRQF_SHARED,
-> 		mmc_hostname(mmc), host);
-> 	if (ret) {
-> @@ -3071,6 +3087,8 @@ int sdhci_add_host(struct sdhci_host *host)
-> reset:
-> 	sdhci_reset(host, SDHCI_RESET_ALL);
-> 	free_irq(host->irq, host);
-> +	if (host->ops->disable_msi && enable_msi)
-> +		host->ops->disable_msi(host);
-> #endif
-> untasklet:
-> 	tasklet_kill(&host->card_tasklet);
-> @@ -3114,6 +3132,9 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
-> 
-> 	free_irq(host->irq, host);
-> 
-> +	if (host->ops->disable_msi && enable_msi)
-> +		host->ops->disable_msi(host);
-> +
-> 	del_timer_sync(&host->timer);
-> 
-> 	tasklet_kill(&host->card_tasklet);
-> @@ -3162,6 +3183,7 @@ module_exit(sdhci_drv_exit);
-> 
-> module_param(debug_quirks, uint, 0444);
-> module_param(debug_quirks2, uint, 0444);
-> +module_param(enable_msi, bool, 0444);
-> 
-> MODULE_AUTHOR("Pierre Ossman <pierre@ossman.eu>");
-> MODULE_DESCRIPTION("Secure Digital Host Controller Interface core driver");
-> @@ -3169,3 +3191,4 @@ MODULE_LICENSE("GPL");
-> 
-> MODULE_PARM_DESC(debug_quirks, "Force certain quirks.");
-> MODULE_PARM_DESC(debug_quirks2, "Force certain other quirks.");
-> +MODULE_PARM_DESC(debug_quirks2, "Enable MSI interrupt support where possible.");
-> diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-> index 97653ea..df4e003 100644
-> --- a/drivers/mmc/host/sdhci.h
-> +++ b/drivers/mmc/host/sdhci.h
-> @@ -264,6 +264,8 @@ struct sdhci_ops {
-> 	void	(*set_clock)(struct sdhci_host *host, unsigned int clock);
-> 
-> 	int		(*enable_dma)(struct sdhci_host *host);
-> +	int		(*enable_msi)(struct sdhci_host *host);
-> +	void		(*disable_msi)(struct sdhci_host *host);
-> 	unsigned int	(*get_max_clock)(struct sdhci_host *host);
-> 	unsigned int	(*get_min_clock)(struct sdhci_host *host);
-> 	unsigned int	(*get_timeout_clock)(struct sdhci_host *host);
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/tools/perf/ui/gtk/helpline.c b/tools/perf/ui/gtk/helpline.c
+index c02cb4a54939..efd36719e0a6 100644
+--- a/tools/perf/ui/gtk/helpline.c
++++ b/tools/perf/ui/gtk/helpline.c
+@@ -1,5 +1,10 @@
++#include <stdio.h>
++#include <string.h>
++
+ #include "gtk.h"
++#include "../ui.h"
+ #include "../helpline.h"
++#include "../../util/debug.h"
+ 
+ 
+ static void gtk_helpline_pop(void)
+@@ -29,3 +34,26 @@ void perf_gtk__init_helpline(void)
+ {
+ 	helpline_fns = &gtk_helpline_fns;
+ }
++
++int perf_gtk__show_helpline(const char *fmt, va_list ap)
++{
++	int ret;
++	char *ptr;
++	static int backlog;
++
++	pthread_mutex_lock(&ui__lock);
++	ret = vscnprintf(ui_helpline__current + backlog,
++			 sizeof(ui_helpline__current) - backlog, fmt, ap);
++	backlog += ret;
++
++	/* only first line can be displayed */
++	ptr = memchr(ui_helpline__current, '\n', sizeof(ui_helpline__current));
++	if (ptr && (ptr - ui_helpline__current) <= backlog) {
++		*ptr = '\0';
++		ui_helpline__puts(ui_helpline__current);
++		backlog = 0;
++	}
++	pthread_mutex_unlock(&ui__lock);
++
++	return ret;
++}
+diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
+index 0ead373c0dfb..b8efb966f94c 100644
+--- a/tools/perf/ui/gtk/util.c
++++ b/tools/perf/ui/gtk/util.c
+@@ -117,11 +117,6 @@ struct perf_error_ops perf_gtk_eops = {
+  *        For now, just add stubs for NO_NEWT=1 build.
+  */
+ #ifdef NO_NEWT_SUPPORT
+-int ui_helpline__show_help(const char *format __used, va_list ap __used)
+-{
+-	return 0;
+-}
+-
+ void ui_progress__update(u64 curr __used, u64 total __used,
+ 			 const char *title __used)
+ {
+diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
+index 7e2d4fb10ebd..8d5a8ba3a122 100644
+--- a/tools/perf/ui/helpline.h
++++ b/tools/perf/ui/helpline.h
+@@ -4,6 +4,8 @@
+ #include <stdio.h>
+ #include <stdarg.h>
+ 
++#include "../util/cache.h"
++
+ struct perf_helpline {
+ 	void (*pop)(void);
+ 	void (*push)(const char *msg);
+@@ -19,4 +21,25 @@ void ui_helpline__puts(const char *msg);
+ 
+ extern char ui_helpline__current[512];
+ 
++#ifdef NO_NEWT_SUPPORT
++static inline int ui_helpline__show_help(const char *format __used,
++					 va_list ap __used)
++{
++	return 0;
++}
++#else
++extern char ui_helpline__last_msg[];
++int ui_helpline__show_help(const char *format, va_list ap);
++#endif /* NO_NEWT_SUPPORT */
++
++#ifdef NO_GTK2_SUPPORT
++static inline int perf_gtk__show_helpline(const char *format __used,
++					  va_list ap __used)
++{
++	return 0;
++}
++#else
++int perf_gtk__show_helpline(const char *format, va_list ap);
++#endif /* NO_GTK2_SUPPORT */
++
+ #endif /* _PERF_UI_HELPLINE_H_ */
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index 791fb15ce350..c7820e569660 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -1,7 +1,11 @@
++#include <pthread.h>
++
+ #include "../cache.h"
+ #include "../debug.h"
+ 
+ 
++pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
++
+ void setup_browser(bool fallback_to_pager)
+ {
+ 	if (!isatty(1) || dump_trace)
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index e247bf51d247..009c962fae85 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -3,8 +3,6 @@
+ 
+ #include "tui.h"
+ 
+-pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
+-
+ static volatile int ui__need_resize;
+ 
+ void ui__refresh_dimensions(bool force)
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 4dfe0bb3c322..66eb3828ceb5 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -23,8 +23,10 @@ int eprintf(int level, const char *fmt, ...)
+ 
+ 	if (verbose >= level) {
+ 		va_start(args, fmt);
+-		if (use_browser > 0)
++		if (use_browser == 1)
+ 			ret = ui_helpline__show_help(fmt, args);
++		else if (use_browser == 2)
++			ret = perf_gtk__show_helpline(fmt, args);
+ 		else
+ 			ret = vfprintf(stderr, fmt, args);
+ 		va_end(args);
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 015c91dbc096..05e660cbf7e2 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -4,6 +4,7 @@
+ 
+ #include <stdbool.h>
+ #include "event.h"
++#include "../ui/helpline.h"
+ 
+ extern int verbose;
+ extern bool quiet, dump_trace;
+@@ -15,11 +16,6 @@ struct ui_progress;
+ struct perf_error_ops;
+ 
+ #if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+-static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
+-{
+-	return 0;
+-}
+-
+ static inline void ui_progress__update(u64 curr __used, u64 total __used,
+ 				       const char *title __used) {}
+ 
+@@ -39,8 +35,6 @@ perf_error__unregister(struct perf_error_ops *eops __used)
+ 
+ #else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
+ 
+-extern char ui_helpline__last_msg[];
+-int ui_helpline__show_help(const char *format, va_list ap);
+ #include "../ui/progress.h"
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ #include "../ui/util.h"
+-- 
+1.7.9.2
 
