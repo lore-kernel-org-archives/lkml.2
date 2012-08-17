@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933584Ab2HQA3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 20:29:39 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:41900
+	id S1030551Ab2HQA3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 20:29:38 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:41890
 	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932672Ab2HQA2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932657Ab2HQA2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 20:28:52 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 12/14] Tools: hv: Implement the KVP verb - KVP_OP_GET_IP_INFO
-Date: Thu, 16 Aug 2012 17:45:23 -0700
-Message-Id: <1345164325-5198-13-git-send-email-kys@microsoft.com>
+Subject: [PATCH 14/14] Tools: hv: Correctly type string variables
+Date: Thu, 16 Aug 2012 17:45:25 -0700
+Message-Id: <1345164325-5198-15-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1345164325-5198-1-git-send-email-kys@microsoft.com>
 References: <1345164300-5146-1-git-send-email-kys@microsoft.com>
@@ -24,136 +24,42 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- tools/hv/hv_kvp_daemon.c |   93 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 90 insertions(+), 3 deletions(-)
+ tools/hv/hv_kvp_daemon.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index bb2a6c4..e7db9ac 100644
+index 4a1428c..c8e1013 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -604,6 +604,69 @@ static char *kvp_if_name_to_mac(char *if_name)
- }
+@@ -101,8 +101,8 @@ static struct utsname uts_buf;
+ #define ENTRIES_PER_BLOCK 50
  
+ struct kvp_record {
+-	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
+-	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
++	char key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
++	char value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
+ };
  
-+/*
-+ * Retrieve the interface name given tha MAC address.
-+ */
-+
-+static char *kvp_mac_to_if_name(char *mac)
-+{
-+	DIR *dir;
-+	struct dirent *entry;
-+	FILE    *file;
-+	char    *p, *q, *x;
-+	char    *if_name = NULL;
-+	char    buf[256];
-+	char *kvp_net_dir = "/sys/class/net/";
-+	char dev_id[256];
-+	int i;
-+
-+	dir = opendir(kvp_net_dir);
-+	if (dir == NULL)
-+		return NULL;
-+
-+	snprintf(dev_id, sizeof(dev_id), kvp_net_dir);
-+	q = dev_id + strlen(kvp_net_dir);
-+
-+	while ((entry = readdir(dir)) != NULL) {
-+		/*
-+		 * Set the state for the next pass.
-+		 */
-+		*q = '\0';
-+
-+		strcat(dev_id, entry->d_name);
-+		strcat(dev_id, "/address");
-+
-+		file = fopen(dev_id, "r");
-+		if (file == NULL)
-+			continue;
-+
-+		p = fgets(buf, sizeof(buf), file);
-+		if (p) {
-+			x = strchr(p, '\n');
-+			if (x)
-+				*x = '\0';
-+
-+			for (i = 0; i < strlen(p); i++)
-+				p[i] = toupper(p[i]);
-+
-+			if (!strcmp(p, mac)) {
-+				/*
-+				 * Found the MAC match; return the interface
-+				 * name. The caller will free the memory.
-+				 */
-+				if_name = strdup(entry->d_name);
-+				fclose(file);
-+				break;
-+			}
-+		}
-+		fclose(file);
-+	}
-+
-+	closedir(dir);
-+	return if_name;
-+}
-+
-+
- static void kvp_process_ipconfig_file(char *cmd,
- 					char *config_buf, int len,
- 					int element_size, int offset)
-@@ -750,10 +813,10 @@ static int kvp_process_ip_address(void *addrp,
- 	}
+ struct kvp_file_state {
+@@ -110,7 +110,7 @@ struct kvp_file_state {
+ 	int num_blocks;
+ 	struct kvp_record *records;
+ 	int num_records;
+-	__u8 fname[MAX_FILE_NAME];
++	char fname[MAX_FILE_NAME];
+ };
  
- 	if ((length - *offset) < addr_length + 1)
--		return 1;
-+		return HV_E_FAIL;
- 	if (str == NULL) {
- 		strcpy(buffer, "inet_ntop failed\n");
--		return 1;
-+		return HV_E_FAIL;
- 	}
- 	if (*offset == 0)
- 		strcpy(buffer, tmp);
-@@ -797,7 +860,7 @@ kvp_get_ip_info(int family, char *if_name, int op,
- 
- 	if (getifaddrs(&ifap)) {
- 		strcpy(buffer, "getifaddrs failed\n");
--		return 1;
-+		return HV_E_FAIL;
- 	}
- 
- 	curp = ifap;
-@@ -1387,6 +1450,30 @@ int main(void)
- 		}
- 
- 		switch (op) {
-+		case KVP_OP_GET_IP_INFO:
-+			kvp_ip_val = &hv_msg->body.kvp_ip_val;
-+			if_name =
-+			kvp_mac_to_if_name((char *)kvp_ip_val->adapter_id);
-+
-+			if (if_name == NULL) {
-+				/*
-+				 * We could not map the mac address to an
-+				 * interface name; return error.
-+				 */
-+				hv_msg->error = HV_E_FAIL;
-+				break;
-+			}
-+			error = kvp_get_ip_info(
-+						0, if_name, KVP_OP_GET_IP_INFO,
-+						kvp_ip_val,
-+						(MAX_IP_ADDR_SIZE * 2));
-+
-+			if (error)
-+				hv_msg->error = error;
-+
-+			free(if_name);
-+			break;
-+
- 		case KVP_OP_SET_IP_INFO:
- 			kvp_ip_val = &hv_msg->body.kvp_ip_val;
- 			if_name = kvp_get_if_name(
+ static struct kvp_file_state kvp_file_info[KVP_POOL_COUNT];
+@@ -214,7 +214,7 @@ static int kvp_file_init(void)
+ 	int  fd;
+ 	FILE *filep;
+ 	size_t records_read;
+-	__u8 *fname;
++	char *fname;
+ 	struct kvp_record *record;
+ 	struct kvp_record *readp;
+ 	int num_blocks;
 -- 
 1.7.4.1
 
