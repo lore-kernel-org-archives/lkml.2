@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476Ab2HQEBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 00:01:36 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50901 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab2HQEBe (ORCPT
+	id S1751732Ab2HQEFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 00:05:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60927 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab2HQEFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 00:01:34 -0400
-Date: Fri, 17 Aug 2012 14:01:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Fri, 17 Aug 2012 00:05:53 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         Ming Lei <ming.lei@canonical.com>
-Subject: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20120817140123.56bf158c14abc8fc0147bd67@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Aug_2012_14_01_23_+1000_vXW.IgAnRkv9XmLq"
+Subject: [PATCH 2/3] PM / Sleep: introduce dpm_for_each_dev
+Date: Fri, 17 Aug 2012 12:05:41 +0800
+Message-Id: <1345176342-23513-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Aug_2012_14_01_23_+1000_vXW.IgAnRkv9XmLq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+dpm_list and its pm lock provide a good way to iterate all
+devices in system. Except this way, there is no other easy
+way to iterate devices in system.
 
-Hi Greg,
+firmware loader need to cache firmware images for devices
+before system sleep, so introduce the function to meet its
+demand.
 
-After merging the driver-core tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+v1:
+	- add 'static inline' if !PM_SLEEP
+	- check 'fn' in dpm_for_each_dev
 
-ERROR: "device_pm_lock" [drivers/base/firmware_class.ko] undefined!
-ERROR: "dpm_list" [drivers/base/firmware_class.ko] undefined!
-ERROR: "device_pm_unlock" [drivers/base/firmware_class.ko] undefined!
+ drivers/base/power/main.c |   22 ++++++++++++++++++++++
+ include/linux/pm.h        |    5 +++++
+ 2 files changed, 27 insertions(+)
 
-Caused by commit 37276a51f803 ("firmware: introduce
-device_cache/uncache_fw_images").
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 57f5814..23b417f 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -1349,3 +1349,25 @@ int device_pm_wait_for_dev(struct device *subordinate, struct device *dev)
+ 	return async_error;
+ }
+ EXPORT_SYMBOL_GPL(device_pm_wait_for_dev);
++
++/**
++ * dpm_for_each_dev - device iterator.
++ * @data: data for the callback.
++ * @fn: function to be called for each device.
++ *
++ * Iterate over devices in dpm_list, and call @fn for each device,
++ * passing it @data.
++ */
++void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
++{
++	struct device *dev;
++
++	if (!fn)
++		return;
++
++	device_pm_lock();
++	list_for_each_entry(dev, &dpm_list, power.entry)
++		fn(dev, data);
++	device_pm_unlock();
++}
++EXPORT_SYMBOL_GPL(dpm_for_each_dev);
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 44d1f23..007e687 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -640,6 +640,7 @@ extern void __suspend_report_result(const char *function, void *fn, int ret);
+ 	} while (0)
+ 
+ extern int device_pm_wait_for_dev(struct device *sub, struct device *dev);
++extern void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *));
+ 
+ extern int pm_generic_prepare(struct device *dev);
+ extern int pm_generic_suspend_late(struct device *dev);
+@@ -679,6 +680,10 @@ static inline int device_pm_wait_for_dev(struct device *a, struct device *b)
+ 	return 0;
+ }
+ 
++static inline void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
++{
++}
++
+ #define pm_generic_prepare	NULL
+ #define pm_generic_suspend	NULL
+ #define pm_generic_resume	NULL
+-- 
+1.7.9.5
 
-I have used the driver-core tree from next-20120816 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__17_Aug_2012_14_01_23_+1000_vXW.IgAnRkv9XmLq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQLcITAAoJEECxmPOUX5FE+2UP/2Ch1Avm4k74aB6dDZgKnF6S
-hebkFA5XjYkRHCSxxDTrtqtkMqtjxP9q8iLXbeg96S/anfDA2qFbf4Na47pDuR9a
-Fm52UbdpJ0m4qQXuZn7QuNbOvIsYRsZdaRPSlZqmJO8AlQbGtWJJk5K4dPBKo2Bg
-1dIB8c7QvH5GVeK2v5FFIFeiV0uMlr7cEXezr7IWJkc75W2B2/SzUZRF1Zk0OnGh
-loASSEi1Z1GTAfSfyvAole1M1myRbu5yAAJVGZHHUjTGYTMBSDV892b07gsw99rx
-EQBo8a9VqyRpt3dI+gm0BRNZwez12MnxATD33Su9SdixyTA6qfxUo0JezJlA2iHP
-xc0kVyjjF/hpmybOi8uFh9rRAUb8GdQ53HJpl4C34GboysJg/OBNx/wpvy02xW+C
-20T6Q+bgCwZNaQbf4QrrLJACspP8jXpgFwj8+RWvQnRiSKOt9V9wusV1Oc1wAk4d
-z7PBdbHtgTLHiwn8BWP5KkudnMNL0lwr86wCgUTzfYswJXqO0bNtRC58VhTmI3du
-yDiO5VhW8waABLSf/t5oRd8tcALzgxc+MBF9tAJa/CnWWkcuS5Wpc8kCCNVBFMkg
-89OzgJRsa1IYUkNj9RJ0UtzLrQotQzzT6C1HSp+70B9MTC5ODIzKQaGMzyyz6VUX
-v1xfNpSApETit++wM0Lb
-=h4Ce
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Aug_2012_14_01_23_+1000_vXW.IgAnRkv9XmLq--
