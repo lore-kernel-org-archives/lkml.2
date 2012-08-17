@@ -1,121 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2HQHNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:13:55 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:22110 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab2HQHNx (ORCPT
+	id S932910Ab2HQHQD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:16:03 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37917 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639Ab2HQHP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:13:53 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-1d-502def285125
-Message-id: <502DEE45.40405@samsung.com>
-Date: Fri, 17 Aug 2012 16:09:57 +0900
-From: IAN CHEN <ian.cy.chen@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-MIME-version: 1.0
-To: cjb@laptop.org, linkinjeon@gmail.com, adrian.hunter@intel.com,
-        subhashj@codeaurora.org, linus.walleij@linaro.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: d.j.shin@samsung.com, jongtae22.kim@samsung.com, kyungmin.park@samsung.com,
-        jh80.chung@samsung.com, ian.cy.chen@samsung.com
-Subject: [PATCH v5] mmc: card: Skip secure option for MoviNAND.
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQV2N97oBBltvSVtc3jWHzeLI/35G
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ+zJjFXjBVquLn9GusDYzrxLoYOTkkBEwkPl1bxwxh
-	i0lcuLeeDcQWEpjOKDFjoVcXIxeQ/ZpRYtuiA+wgCV4BDYmTh6+AFbEIqEpMunqPEcRmA4p/
-	P/gEzBYVCJNY9P4AK0S9oMSPyfdYQAaJCGxklDjdsRfMYRZoZJSY9246WJWwgL3E9P0PwWxm
-	AR2J/a3T2CBseYnNa94yT2Dkm4Vk2CwkZbOQlC1gZF7FKJpakFxQnJSea6RXnJhbXJqXrpec
-	n7uJERxez6R3MK5qsDjEKMDBqMTDe6BMN0CINbGsuDL3EKMEB7OSCO/yQKAQb0piZVVqUX58
-	UWlOavEhRmkOFiVxXhPvr/5CAumJJanZqakFqUUwWSYOTqkGxgktfy6UtDOpTzhR4W/4n1mH
-	vbK+ac++nYFeDROyyz+u1k5o+slvkGfU9+L4+iebkwMWm6m437ui7qCSIGFa0xaTkjt/zVFB
-	6X8/7r9bIPmQy19L1d+l/vR6kXlq0yxvMTGk5369U5nl+ufz8pkpiZciD3zL88rYxlQhWHDx
-	ygYbhq3/9DZeUmIpzkg01GIuKk4EAIdVqE8rAgAA
-X-TM-AS-MML: No
+	Fri, 17 Aug 2012 03:15:56 -0400
+Date: Fri, 17 Aug 2012 09:08:55 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PULL] first drm-intel-next for 3.7
+Message-ID: <20120817070855.GA5410@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For several MoviNAND, there are some known issue with secure option.
-For these specific MoviNAND device, we skip secure option.
+Hi Dave,
 
-You could refer this discussion in XDA developers.
-http://forum.xda-developers.com/showthread.php?t=1644364
-https://plus.google.com/111398485184813224730/posts/21pTYfTsCkB#111398485184813224730/posts/21pTYfTsCkB
+First -next pull for 3.7. Highlights:
+- hsw hdmi improvements (Paulo)
+- ips/rps locking rework and cleanups
+- rc6 on ilk by default again
+- hw context&dp&dpff support for hsw (Ben)
+- GET_PARAM_HAS_SEMAPHORES (Chris)
+- gen6+ pipe_control improvements (Chris)
+- set_cacheing ioctl and assorted support code (Chris)
+- cleanups around the busy/idle/pm code (Chris&me)
+- flushing_list removal, hopefully for good (Chris)
+- read_reg ioctl (Ben)
+- support the ns2501 dvo (Thomas Richter)
+- avoid the costly gen6+ "missed IRQ" workaround where we don't need a
+  race-free seqno readback (Chris)
+- various bits&pieces, mostly early patches from the modeset rework branch
 
-Signed-off-by: Ian Chen <ian.cy.chen@samsung.com>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
----
- drivers/mmc/card/block.c |   24 +++++++++++++++++++++++-
- include/linux/mmc/card.h |    1 +
- 2 files changed, 24 insertions(+), 1 deletions(-)
+As discussed on irc I'll send you a pull with 3.6-rc2 merged in, since
+there's a funny conflict with mainline.
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index f1c84de..0377885 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1411,7 +1411,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
-struct request *req)
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
--		if (req->cmd_flags & REQ_SECURE)
-+		if (req->cmd_flags & REQ_SECURE &&
-+			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
-@@ -1716,6 +1717,7 @@ force_ro_fail:
- #define CID_MANFID_SANDISK	0x2
- #define CID_MANFID_TOSHIBA	0x11
- #define CID_MANFID_MICRON	0x13
-+#define CID_MANFID_SAMSUNG	0x15
+Wrt regressions nothing new popped up since my -fixes pull, and QA has
+been rather happy with testing this -next pull here.
 
- static const struct mmc_fixup blk_fixups[] =
- {
-@@ -1752,6 +1754,26 @@ static const struct mmc_fixup blk_fixups[] =
- 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
- 		  MMC_QUIRK_LONG_READ_TIME),
+Yours, Daniel
 
-+	/*
-+	 * Some issue about secure erase/secure trim for Samsung MoviNAND
-+	 */
-+	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-+		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-+
- 	END_FIXUP
- };
+Aside: I've frobbed the shortlog to exclude everything in -rc2.
 
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 111aca5..4b27f9f 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -239,6 +239,7 @@ struct mmc_card {
- #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular
-multiblock */
- #define MMC_QUIRK_BROKEN_BYTE_MODE_512 (1<<8)	/* Avoid sending 512
-bytes in */
- #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
-+#define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for
-erase/trim */
- 						/* byte mode */
- 	unsigned int    poweroff_notify_state;	/* eMMC4.5 notify feature */
- #define MMC_NO_POWER_NOTIFICATION	0
+The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
+
+  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~danvet/drm-intel for-airlied
+
+for you to fetch changes up to a22ddff8bedfe33eeb1330bbb7ef1fbe007a42c4:
+
+  Merge tag 'v3.6-rc2' into drm-intel-next (2012-08-17 09:01:08 +0200)
+
+----------------------------------------------------------------
+
+Ben Widawsky (4):
+      drm/i915: add register read IOCTL
+      drm/i915: Add contexts for HSW
+      drm/i915: Macro to determine DPF support
+      drm/i915: Expand DPF support to Haswell
+
+Chris Wilson (17):
+      drm/i915: Cleanup context switching through do_switch()
+      drm/i915: Return a mask of the active rings in the high word of busy_ioctl
+      drm/i915: Allow late allocation of request for i915_add_request()
+      drm/i915: Remove assertion over write domain after i915_gem_object_sync()
+      drm/i915: Replace the pending_gpu_write flag with an explicit seqno
+      drm/i915: Remove the defunct flushing list
+      drm/i915: Remove the per-ring write list
+      drm/i915: Remove explicit flush from i915_gem_object_flush_fence()
+      drm/i915: Remove the explicit flush of the GPU write domain
+      drm/i915: Clear the pending_gpu_fenced_access flag at the start of execbuffer
+      drm/i915: Split i915_gem_flush_ring() into seperate invalidate/flush funcs
+      drm/i915: Avoid concurrent access when marking the device as idle/busy
+      drm/i915: Segregate memory domains in the GTT using coloring
+      drm/i915: Export ability of changing cache levels to userspace
+      drm/i915: Only apply the SNB pipe control w/a to gen6
+      drm/i915: Add I915_GEM_PARAM_HAS_SEMAPHORES
+      drm/i915: Lazily apply the SNB+ seqno w/a
+
+Daniel Vetter (21):
+      drm/i915: group ADPA #defines together
+      drm/i915: simplify possible_clones computation
+      drm/i915: add port parameter to intel_hdmi_init
+      drm/i915: Reserve ioctl numbers for set/get_caching
+      drm/i915: create VLV_DSIPLAY_BASE #define
+      drm/i915: add inte_crt->adpa_reg
+      drm/i915: Replace the complex flushing logic with simple invalidate/flush all
+      drm/i915: Only set the down rps limit when at the loweset frequency
+      drm/i915: rip out sanitize_pm again
+      drm/i915: fixup desired rps frequency computation
+      drm/i915: dump the device info
+      drm/i915: properly guard ilk ips state
+      drm/i915: fixup up debugfs rps state handling
+      drm/i915: use mutex_lock_interruptible for debugfs files
+      drm/i915: move all rps state into dev_priv->rps
+      drm/i915: kill dev_priv->mchdev_lock
+      drm/i915: DE_PCU_EVENT irq is ilk-only
+      drm/i915: fix up ilk drps/ips locking
+      drm/i915: enable rc6 on ilk again
+      drm/i915: don't grab dev->struct_mutex for userspace forcewak
+      Merge tag 'v3.6-rc2' into drm-intel-next
+
+Eugeni Dodonov (1):
+      drm/i915: prevent possible pin leak on error path
+
+Paulo Zanoni (10):
+      drm/i915: move common code to intel_dp_set_link_train
+      drm/i915: add port field to struct intel_dp and use it
+      drm/i915: fix pipe DDI mode select
+      drm/i915: set the DDI sync polarity bits
+      drm/i915: correctly set the DDI_FUNC_CTL bpc field
+      drm/i915: completely reset the value of DDI_FUNC_CTL
+      drm/i915: reindent Haswell register definitions
+      drm/i915: add parentheses around PIXCLK_GATE definitions
+      drm/i915: use the correct encoder type when comparing
+      drm/i915: try harder to find WR PLL clock settings
+
+Shobhit Kumar (1):
+      drm/i915: Move DP structs to shared location
+
+Thomas Richter (1):
+      drm/i915: Support for ns2501-DVO
+
+ drivers/gpu/drm/i915/Makefile              |    1 +
+ drivers/gpu/drm/i915/dvo.h                 |    1 +
+ drivers/gpu/drm/i915/dvo_ns2501.c          |  582 ++++++++++++++++++++++++++++
+ drivers/gpu/drm/i915/i915_debugfs.c        |  143 ++++---
+ drivers/gpu/drm/i915/i915_dma.c            |   26 +-
+ drivers/gpu/drm/i915/i915_drv.c            |   48 ++-
+ drivers/gpu/drm/i915/i915_drv.h            |  108 ++++--
+ drivers/gpu/drm/i915/i915_gem.c            |  477 ++++++++++++-----------
+ drivers/gpu/drm/i915/i915_gem_context.c    |   61 ++-
+ drivers/gpu/drm/i915/i915_gem_evict.c      |   27 +-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |  252 ++----------
+ drivers/gpu/drm/i915/i915_gem_gtt.c        |   19 +
+ drivers/gpu/drm/i915/i915_irq.c            |   68 ++--
+ drivers/gpu/drm/i915/i915_reg.h            |  243 ++++++------
+ drivers/gpu/drm/i915/i915_sysfs.c          |    2 +-
+ drivers/gpu/drm/i915/intel_crt.c           |   27 +-
+ drivers/gpu/drm/i915/intel_ddi.c           |   79 ++--
+ drivers/gpu/drm/i915/intel_display.c       |  216 +++--------
+ drivers/gpu/drm/i915/intel_dp.c            |  175 ++++-----
+ drivers/gpu/drm/i915/intel_drv.h           |   74 ++--
+ drivers/gpu/drm/i915/intel_dvo.c           |   17 +-
+ drivers/gpu/drm/i915/intel_hdmi.c          |   51 +--
+ drivers/gpu/drm/i915/intel_lvds.c          |    2 +-
+ drivers/gpu/drm/i915/intel_pm.c            |  245 ++++++------
+ drivers/gpu/drm/i915/intel_ringbuffer.c    |   77 +++-
+ drivers/gpu/drm/i915/intel_ringbuffer.h    |   20 +-
+ drivers/gpu/drm/i915/intel_sdvo.c          |   14 +-
+ drivers/gpu/drm/i915/intel_tv.c            |    2 +-
+ include/drm/i915_drm.h                     |   34 +-
+ 29 files changed, 1795 insertions(+), 1296 deletions(-)
+ create mode 100644 drivers/gpu/drm/i915/dvo_ns2501.c
 -- 
-1.7.0.4
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
