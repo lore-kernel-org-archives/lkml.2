@@ -1,108 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab2HQRlu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:41:50 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:45050 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab2HQRlm (ORCPT
+	id S1756694Ab2HQRog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:44:36 -0400
+Received: from hedgehog.storkhole.cz ([90.183.218.18]:14525 "EHLO
+	hedgehog.storkhole.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab2HQRoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:41:42 -0400
-X-IronPort-AV: E=Sophos;i="4.77,785,1336348800"; 
-   d="scan'208";a="14064852"
-Date: Fri, 17 Aug 2012 18:41:23 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 06/11] xen/mmu: For 64-bit do not call
- xen_map_identity_early
-In-Reply-To: <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com>
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Fri, 17 Aug 2012 13:44:30 -0400
+From: Martin Pelikan <pelikan@storkhole.cz>
+To: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Martin Pelikan <mpelikan@redhat.com>
+Cc: Martin Pelikan <pelikan@storkhole.cz>
+Subject: [PATCH] KDB: prettify and fix lsmod
+Date: Fri, 17 Aug 2012 19:43:49 +0200
+Message-Id: <1345225429-26459-1-git-send-email-pelikan@storkhole.cz>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> B/c we do not need it. During the startup the Xen provides
-> us with all the memory mapped that we need to function.
+Make the header describe all the columns and align the description properly.
+Display taint flags with shorter coming/going, and reuse the code for that.
+Module usage dependencies are displayed separately, because that information
+is a) not that important and likely to be the same across all systems,
+b) too long for 80x25 terminal and c) confusing when long lines are wrapped.
 
-Shouldn't we check to make sure that is actually true (I am thinking at
-nr_pt_frames)?
-Or is it actually stated somewhere in the Xen headers?
+Also, module_use->source is always myself, and I'm "used by" the _target_.
 
+Signed-off-by: Martin Pelikan <mpelikan@redhat.com>
+---
+ include/linux/module.h      |    1 +
+ kernel/debug/kdb/kdb_main.c |   46 ++++++++++++++++++++++++------------------
+ kernel/module.c             |    2 +-
+ 3 files changed, 28 insertions(+), 21 deletions(-)
 
+diff --git a/include/linux/module.h b/include/linux/module.h
+index fbcafe2..76e75f9 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -387,6 +387,7 @@ struct module *__module_address(unsigned long addr);
+ bool is_module_address(unsigned long addr);
+ bool is_module_percpu_address(unsigned long addr);
+ bool is_module_text_address(unsigned long addr);
++char *module_flags(struct module *mod, char *buf);
+ 
+ static inline int within_module_core(unsigned long addr, struct module *mod)
+ {
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 31df170..0427c49 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -1955,6 +1955,7 @@ static int kdb_ef(int argc, const char **argv)
+ }
+ 
+ #if defined(CONFIG_MODULES)
++#define PTR_STRING_SIZE (2 + BITS_PER_LONG /4)
+ /*
+  * kdb_lsmod - This function implements the 'lsmod' command.  Lists
+  *	currently loaded kernel modules.
+@@ -1963,36 +1964,41 @@ static int kdb_ef(int argc, const char **argv)
+ static int kdb_lsmod(int argc, const char **argv)
+ {
+ 	struct module *mod;
++	int show_users = 0;
++	char flags[8];
++	unsigned long refc;
+ 
+-	if (argc != 0)
++	switch (argc) {
++	case 1:
++		show_users = ! strcmp(argv[1], "-u");
++		/* FALLTHROUGH */
++	case 0:
++		break;
++	default:
+ 		return KDB_ARGCOUNT;
++	}
+ 
+-	kdb_printf("Module                  Size  modstruct     Used by\n");
++	kdb_printf("Name                    Size  %*s %*s   Flags %s\n",
++	    PTR_STRING_SIZE, "modstruct",
++	    PTR_STRING_SIZE, "Core",
++	    show_users ? "Refs" : "");
+ 	list_for_each_entry(mod, kdb_modules, list) {
++		module_flags(mod, flags);
++		kdb_printf("%-20s%8u  0x%p 0x%p %7s", mod->name, mod->core_size,
++		    mod, mod->module_core, flags);
+ 
+-		kdb_printf("%-20s%8u  0x%p ", mod->name,
+-			   mod->core_size, (void *)mod);
+ #ifdef CONFIG_MODULE_UNLOAD
+-		kdb_printf("%4ld ", module_refcount(mod));
+-#endif
+-		if (mod->state == MODULE_STATE_GOING)
+-			kdb_printf(" (Unloading)");
+-		else if (mod->state == MODULE_STATE_COMING)
+-			kdb_printf(" (Loading)");
+-		else
+-			kdb_printf(" (Live)");
+-		kdb_printf(" 0x%p", mod->module_core);
+-
+-#ifdef CONFIG_MODULE_UNLOAD
+-		{
++		refc = module_refcount(mod);
++		if (refc && show_users) {
+ 			struct module_use *use;
+-			kdb_printf(" [ ");
++			kdb_printf("%5lu\n  [ ", refc);
+ 			list_for_each_entry(use, &mod->source_list,
+ 					    source_list)
+-				kdb_printf("%s ", use->target->name);
+-			kdb_printf("]\n");
++				kdb_printf("%s ", use->source->name);
++			kdb_printf("]");
+ 		}
+ #endif
++		kdb_printf("\n");
+ 	}
+ 
+ 	return 0;
+@@ -2840,7 +2846,7 @@ static void __init kdb_inittab(void)
+ 	kdb_register_repeat("reboot", kdb_reboot, "",
+ 	  "Reboot the machine immediately", 0, KDB_REPEAT_NONE);
+ #if defined(CONFIG_MODULES)
+-	kdb_register_repeat("lsmod", kdb_lsmod, "",
++	kdb_register_repeat("lsmod", kdb_lsmod, "[-u]",
+ 	  "List loaded kernel modules", 0, KDB_REPEAT_NONE);
+ #endif
+ #if defined(CONFIG_MAGIC_SYSRQ)
+diff --git a/kernel/module.c b/kernel/module.c
+index 4edbd9c..69c5f9e 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3308,7 +3308,7 @@ int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
+ }
+ #endif /* CONFIG_KALLSYMS */
+ 
+-static char *module_flags(struct module *mod, char *buf)
++char *module_flags(struct module *mod, char *buf)
+ {
+ 	int bx = 0;
+ 
+-- 
+1.7.6
 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/mmu.c |   11 +++++------
->  1 files changed, 5 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 7247e5a..a59070b 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -84,6 +84,7 @@
->   */
->  DEFINE_SPINLOCK(xen_reservation_lock);
->  
-> +#ifdef CONFIG_X86_32
->  /*
->   * Identity map, in addition to plain kernel map.  This needs to be
->   * large enough to allocate page table pages to allocate the rest.
-> @@ -91,7 +92,7 @@ DEFINE_SPINLOCK(xen_reservation_lock);
->   */
->  #define LEVEL1_IDENT_ENTRIES	(PTRS_PER_PTE * 4)
->  static RESERVE_BRK_ARRAY(pte_t, level1_ident_pgt, LEVEL1_IDENT_ENTRIES);
-> -
-> +#endif
->  #ifdef CONFIG_X86_64
->  /* l3 pud for userspace vsyscall mapping */
->  static pud_t level3_user_vsyscall[PTRS_PER_PUD] __page_aligned_bss;
-> @@ -1628,7 +1629,7 @@ static void set_page_prot(void *addr, pgprot_t prot)
->  	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
->  		BUG();
->  }
-> -
-> +#ifdef CONFIG_X86_32
->  static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
->  {
->  	unsigned pmdidx, pteidx;
-> @@ -1679,7 +1680,7 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
->  
->  	set_page_prot(pmd, PAGE_KERNEL_RO);
->  }
-> -
-> +#endif
->  void __init xen_setup_machphys_mapping(void)
->  {
->  	struct xen_machphys_mapping mapping;
-> @@ -1765,14 +1766,12 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	/* Note that we don't do anything with level1_fixmap_pgt which
->  	 * we don't need. */
->  
-> -	/* Set up identity map */
-> -	xen_map_identity_early(level2_ident_pgt, max_pfn);
-> -
->  	/* Make pagetable pieces RO */
->  	set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
->  	set_page_prot(level3_ident_pgt, PAGE_KERNEL_RO);
->  	set_page_prot(level3_kernel_pgt, PAGE_KERNEL_RO);
->  	set_page_prot(level3_user_vsyscall, PAGE_KERNEL_RO);
-> +	set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
->  	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
->  	set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
->  
-> -- 
-> 1.7.7.6
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-> 
