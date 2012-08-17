@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030725Ab2HQD3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:29:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46848 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030600Ab2HQD1I (ORCPT
+	id S1030746Ab2HQD3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:29:37 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43484 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030688Ab2HQD3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:27:08 -0400
-Message-Id: <20120817030247.363649141@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:03:06 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 23/37] rt61pci: fix NULL pointer dereference in config_lna_gain
-In-Reply-To: <20120817030243.807605523@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 16 Aug 2012 23:29:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120816174019.GA10918@kroah.com>
+References: <1344583783-12593-1-git-send-email-anish198519851985@gmail.com>
+	<20120816174019.GA10918@kroah.com>
+Date: Fri, 17 Aug 2012 08:59:04 +0530
+Message-ID: <CAK7N6vpskT=nhBcvdBKopX_oySdH-j_7c62aB1Q5FxGxfjE3cg@mail.gmail.com>
+Subject: Re: [PATCH] [PATCH V6]Extcon: adc_jack: adc-jack driver to support
+ 3.5 pi or simliar devices
+From: anish singh <anish198519851985@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        anish kumar <anish.singh@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-
-commit deee0214def5d8a32b8112f11d9c2b1696e9c0cb upstream.
-
-We can not pass NULL libconf->conf->channel to rt61pci_config() as it
-is dereferenced unconditionally in rt61pci_config_lna_gain() subroutine.
-
-Resolves:
-https://bugzilla.kernel.org/show_bug.cgi?id=44361
-
-Reported-and-tested-by: <dolohow@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/wireless/rt2x00/rt61pci.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/rt2x00/rt61pci.c b/drivers/net/wireless/rt2x00/rt61pci.c
-index f322596..3f7bc5c 100644
---- a/drivers/net/wireless/rt2x00/rt61pci.c
-+++ b/drivers/net/wireless/rt2x00/rt61pci.c
-@@ -2243,8 +2243,7 @@ static void rt61pci_txdone(struct rt2x00_dev *rt2x00dev)
- 
- static void rt61pci_wakeup(struct rt2x00_dev *rt2x00dev)
- {
--	struct ieee80211_conf conf = { .flags = 0 };
--	struct rt2x00lib_conf libconf = { .conf = &conf };
-+	struct rt2x00lib_conf libconf = { .conf = &rt2x00dev->hw->conf };
- 
- 	rt61pci_config(rt2x00dev, &libconf, IEEE80211_CONF_CHANGE_PS);
- }
-
-
+On Thu, Aug 16, 2012 at 11:10 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Aug 10, 2012 at 12:29:43AM -0700, anish kumar wrote:
+>> From: anish kumar <anish198519851985@gmail.com>
+>>
+>> External connector devices that decides connection information based on
+>> ADC values may use adc-jack device driver. The user simply needs to
+>> provide a table of adc range and connection states. Then, extcon
+>> framework will automatically notify others.
+>
+> This patch breaks the build:
+>         ERROR: "extcon_cable_name" [drivers/extcon/extcon-adc-jack.ko] undefined!
+>
+> And, if you read the comment about extcon_cable_name, it says to not use
+> it like you are trying to use it.
+>
+> So, care to fix this up?
+Sorry Greg,I was on travel so couldn't fix it up.However soon I will be sending
+a patch for this.Looks like we can remove the extcon_cable_name altogether
+as it we are anyway getting it from platform data.
+>
+> thanks,
+>
+> greg k-h
