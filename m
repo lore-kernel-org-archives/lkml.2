@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055Ab2HQOj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:39:28 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58278 "EHLO
+	id S1758117Ab2HQOjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:39:41 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54251 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab2HQOiR (ORCPT
+	with ESMTP id S1758025Ab2HQOiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:38:17 -0400
+	Fri, 17 Aug 2012 10:38:14 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 3/4] cputime: Consolidate vtime handling on context switch
-Date: Fri, 17 Aug 2012 16:37:57 +0200
-Message-Id: <1345214278-6245-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/4] sched: Move cputime code to its own file
+Date: Fri, 17 Aug 2012 16:37:56 +0200
+Message-Id: <1345214278-6245-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345214278-6245-1-git-send-email-fweisbec@gmail.com>
 References: <1345214278-6245-1-git-send-email-fweisbec@gmail.com>
@@ -26,18 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The archs that implement virtual cputime accounting all
-flush the cputime of a task when it gets descheduled
-and sometimes set up some ground initialization for the
-next task to account its cputime.
-
-These archs all put their own hooks in their context
-switch callbacks and handle the off-case themselves.
-
-Consolidate this by creating a new account_switch_vtime()
-callback called in generic code right after a context switch
-and that these archs must implement to flush the prev task
-cputime and initialize the next task cputime related state.
+Extract cputime code from the giant sched/core.c and
+put it in its own file. This make it easier to deal with
+this particular area and de-bloat a bit more core.c
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
@@ -50,174 +41,1210 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/ia64/include/asm/switch_to.h |    8 --------
- arch/ia64/kernel/time.c           |    4 ++--
- arch/powerpc/include/asm/time.h   |    6 ------
- arch/powerpc/kernel/process.c     |    3 ---
- arch/powerpc/kernel/time.c        |    6 ++++++
- arch/s390/include/asm/switch_to.h |    2 --
- arch/s390/kernel/vtime.c          |    4 ++--
- include/linux/kernel_stat.h       |    6 ++++++
- kernel/sched/core.c               |    1 +
- 9 files changed, 17 insertions(+), 23 deletions(-)
+ kernel/sched/Makefile  |    2 +-
+ kernel/sched/core.c    |  557 +-----------------------------------------------
+ kernel/sched/cputime.c |  503 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h   |   63 ++++++
+ 4 files changed, 569 insertions(+), 556 deletions(-)
+ create mode 100644 kernel/sched/cputime.c
 
-diff --git a/arch/ia64/include/asm/switch_to.h b/arch/ia64/include/asm/switch_to.h
-index cb2412f..d38c7ea 100644
---- a/arch/ia64/include/asm/switch_to.h
-+++ b/arch/ia64/include/asm/switch_to.h
-@@ -30,13 +30,6 @@ extern struct task_struct *ia64_switch_to (void *next_task);
- extern void ia64_save_extra (struct task_struct *task);
- extern void ia64_load_extra (struct task_struct *task);
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index 173ea52..f06d249 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -11,7 +11,7 @@ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
+ endif
  
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
--extern void ia64_account_on_switch (struct task_struct *prev, struct task_struct *next);
--# define IA64_ACCOUNT_ON_SWITCH(p,n) ia64_account_on_switch(p,n)
--#else
--# define IA64_ACCOUNT_ON_SWITCH(p,n)
--#endif
--
- #ifdef CONFIG_PERFMON
-   DECLARE_PER_CPU(unsigned long, pfm_syst_info);
- # define PERFMON_IS_SYSWIDE() (__get_cpu_var(pfm_syst_info) & 0x1)
-@@ -49,7 +42,6 @@ extern void ia64_account_on_switch (struct task_struct *prev, struct task_struct
- 	 || PERFMON_IS_SYSWIDE())
- 
- #define __switch_to(prev,next,last) do {							 \
--	IA64_ACCOUNT_ON_SWITCH(prev, next);							 \
- 	if (IA64_HAS_EXTRA_STATE(prev))								 \
- 		ia64_save_extra(prev);								 \
- 	if (IA64_HAS_EXTRA_STATE(next))								 \
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index ecc904b..6247197 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -88,10 +88,10 @@ extern cputime_t cycle_to_cputime(u64 cyc);
-  * accumulated times to the current process, and to prepare accounting on
-  * the next process.
-  */
--void ia64_account_on_switch(struct task_struct *prev, struct task_struct *next)
-+void account_switch_vtime(struct task_struct *prev)
- {
- 	struct thread_info *pi = task_thread_info(prev);
--	struct thread_info *ni = task_thread_info(next);
-+	struct thread_info *ni = task_thread_info(current);
- 	cputime_t delta_stime, delta_utime;
- 	__u64 now;
- 
-diff --git a/arch/powerpc/include/asm/time.h b/arch/powerpc/include/asm/time.h
-index 3b4b4a8..c1f2676 100644
---- a/arch/powerpc/include/asm/time.h
-+++ b/arch/powerpc/include/asm/time.h
-@@ -197,12 +197,6 @@ struct cpu_usage {
- 
- DECLARE_PER_CPU(struct cpu_usage, cpu_usage_array);
- 
--#if defined(CONFIG_VIRT_CPU_ACCOUNTING)
--#define account_process_vtime(tsk)		account_process_tick(tsk, 0)
--#else
--#define account_process_vtime(tsk)		do { } while (0)
--#endif
--
- extern void secondary_cpu_time_init(void);
- 
- DECLARE_PER_CPU(u64, decrementers_next_tb);
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 710f400..d73fa99 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -514,9 +514,6 @@ struct task_struct *__switch_to(struct task_struct *prev,
- 
- 	local_irq_save(flags);
- 
--	account_system_vtime(current);
--	account_process_vtime(current);
--
- 	/*
- 	 * We can't take a PMU exception inside _switch() since there is a
- 	 * window where the kernel stack SLB and the kernel stack are out
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index be171ee..49da7f0 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -366,6 +366,12 @@ void account_process_tick(struct task_struct *tsk, int user_tick)
- 	account_user_time(tsk, utime, utimescaled);
- }
- 
-+void account_switch_vtime(struct task_struct *prev)
-+{
-+	account_system_vtime(prev);
-+	account_process_tick(prev, 0);
-+}
-+
- #else /* ! CONFIG_VIRT_CPU_ACCOUNTING */
- #define calc_cputime_factors()
- #endif
-diff --git a/arch/s390/include/asm/switch_to.h b/arch/s390/include/asm/switch_to.h
-index f223068..e7f9b3d 100644
---- a/arch/s390/include/asm/switch_to.h
-+++ b/arch/s390/include/asm/switch_to.h
-@@ -89,12 +89,10 @@ static inline void restore_access_regs(unsigned int *acrs)
- 	prev = __switch_to(prev,next);					\
- } while (0)
- 
--extern void account_vtime(struct task_struct *, struct task_struct *);
- extern void account_tick_vtime(struct task_struct *);
- 
- #define finish_arch_switch(prev) do {					     \
- 	set_fs(current->thread.mm_segment);				     \
--	account_vtime(prev, current);					     \
- } while (0)
- 
- #endif /* __ASM_SWITCH_TO_H */
-diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-index 4fc97b4..449ac22 100644
---- a/arch/s390/kernel/vtime.c
-+++ b/arch/s390/kernel/vtime.c
-@@ -99,7 +99,7 @@ static int do_account_vtime(struct task_struct *tsk, int hardirq_offset)
- 	return virt_timer_forward(user + system);
- }
- 
--void account_vtime(struct task_struct *prev, struct task_struct *next)
-+void account_switch_vtime(struct task_struct *prev)
- {
- 	struct thread_info *ti;
- 
-@@ -107,7 +107,7 @@ void account_vtime(struct task_struct *prev, struct task_struct *next)
- 	ti = task_thread_info(prev);
- 	ti->user_timer = S390_lowcore.user_timer;
- 	ti->system_timer = S390_lowcore.system_timer;
--	ti = task_thread_info(next);
-+	ti = task_thread_info(current);
- 	S390_lowcore.user_timer = ti->user_timer;
- 	S390_lowcore.system_timer = ti->system_timer;
- }
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index 2fbd905..bbe5d15 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -130,4 +130,10 @@ extern void account_process_tick(struct task_struct *, int user);
- extern void account_steal_ticks(unsigned long ticks);
- extern void account_idle_ticks(unsigned long ticks);
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+extern void account_switch_vtime(struct task_struct *prev);
-+#else
-+static inline void account_switch_vtime(struct task_struct *prev) { }
-+#endif
-+
- #endif /* _LINUX_KERNEL_STAT_H */
+-obj-y += core.o clock.o idle_task.o fair.o rt.o stop_task.o
++obj-y += core.o clock.o cputime.o idle_task.o fair.o rt.o stop_task.o
+ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ae3bcaa..78d9c96 100644
+index 4376c9f..ae3bcaa 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1796,6 +1796,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	 *		Manfred Spraul <manfred@colorfullife.com>
- 	 */
- 	prev_state = prev->state;
-+	account_switch_vtime(prev);
- 	finish_arch_switch(prev);
- #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
- 	local_irq_disable();
+@@ -740,126 +740,6 @@ void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
+ 	dequeue_task(rq, p, flags);
+ }
+ 
+-#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+-
+-/*
+- * There are no locks covering percpu hardirq/softirq time.
+- * They are only modified in account_system_vtime, on corresponding CPU
+- * with interrupts disabled. So, writes are safe.
+- * They are read and saved off onto struct rq in update_rq_clock().
+- * This may result in other CPU reading this CPU's irq time and can
+- * race with irq/account_system_vtime on this CPU. We would either get old
+- * or new value with a side effect of accounting a slice of irq time to wrong
+- * task when irq is in progress while we read rq->clock. That is a worthy
+- * compromise in place of having locks on each irq in account_system_time.
+- */
+-static DEFINE_PER_CPU(u64, cpu_hardirq_time);
+-static DEFINE_PER_CPU(u64, cpu_softirq_time);
+-
+-static DEFINE_PER_CPU(u64, irq_start_time);
+-static int sched_clock_irqtime;
+-
+-void enable_sched_clock_irqtime(void)
+-{
+-	sched_clock_irqtime = 1;
+-}
+-
+-void disable_sched_clock_irqtime(void)
+-{
+-	sched_clock_irqtime = 0;
+-}
+-
+-#ifndef CONFIG_64BIT
+-static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
+-
+-static inline void irq_time_write_begin(void)
+-{
+-	__this_cpu_inc(irq_time_seq.sequence);
+-	smp_wmb();
+-}
+-
+-static inline void irq_time_write_end(void)
+-{
+-	smp_wmb();
+-	__this_cpu_inc(irq_time_seq.sequence);
+-}
+-
+-static inline u64 irq_time_read(int cpu)
+-{
+-	u64 irq_time;
+-	unsigned seq;
+-
+-	do {
+-		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
+-		irq_time = per_cpu(cpu_softirq_time, cpu) +
+-			   per_cpu(cpu_hardirq_time, cpu);
+-	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
+-
+-	return irq_time;
+-}
+-#else /* CONFIG_64BIT */
+-static inline void irq_time_write_begin(void)
+-{
+-}
+-
+-static inline void irq_time_write_end(void)
+-{
+-}
+-
+-static inline u64 irq_time_read(int cpu)
+-{
+-	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
+-}
+-#endif /* CONFIG_64BIT */
+-
+-/*
+- * Called before incrementing preempt_count on {soft,}irq_enter
+- * and before decrementing preempt_count on {soft,}irq_exit.
+- */
+-void account_system_vtime(struct task_struct *curr)
+-{
+-	unsigned long flags;
+-	s64 delta;
+-	int cpu;
+-
+-	if (!sched_clock_irqtime)
+-		return;
+-
+-	local_irq_save(flags);
+-
+-	cpu = smp_processor_id();
+-	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
+-	__this_cpu_add(irq_start_time, delta);
+-
+-	irq_time_write_begin();
+-	/*
+-	 * We do not account for softirq time from ksoftirqd here.
+-	 * We want to continue accounting softirq time to ksoftirqd thread
+-	 * in that case, so as not to confuse scheduler with a special task
+-	 * that do not consume any time, but still wants to run.
+-	 */
+-	if (hardirq_count())
+-		__this_cpu_add(cpu_hardirq_time, delta);
+-	else if (in_serving_softirq() && curr != this_cpu_ksoftirqd())
+-		__this_cpu_add(cpu_softirq_time, delta);
+-
+-	irq_time_write_end();
+-	local_irq_restore(flags);
+-}
+-EXPORT_SYMBOL_GPL(account_system_vtime);
+-
+-#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+-
+-#ifdef CONFIG_PARAVIRT
+-static inline u64 steal_ticks(u64 steal)
+-{
+-	if (unlikely(steal > NSEC_PER_SEC))
+-		return div_u64(steal, TICK_NSEC);
+-
+-	return __iter_div_u64_rem(steal, TICK_NSEC, &steal);
+-}
+-#endif
+-
+ static void update_rq_clock_task(struct rq *rq, s64 delta)
+ {
+ /*
+@@ -920,43 +800,6 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
+ #endif
+ }
+ 
+-#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+-static int irqtime_account_hi_update(void)
+-{
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-	unsigned long flags;
+-	u64 latest_ns;
+-	int ret = 0;
+-
+-	local_irq_save(flags);
+-	latest_ns = this_cpu_read(cpu_hardirq_time);
+-	if (nsecs_to_cputime64(latest_ns) > cpustat[CPUTIME_IRQ])
+-		ret = 1;
+-	local_irq_restore(flags);
+-	return ret;
+-}
+-
+-static int irqtime_account_si_update(void)
+-{
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-	unsigned long flags;
+-	u64 latest_ns;
+-	int ret = 0;
+-
+-	local_irq_save(flags);
+-	latest_ns = this_cpu_read(cpu_softirq_time);
+-	if (nsecs_to_cputime64(latest_ns) > cpustat[CPUTIME_SOFTIRQ])
+-		ret = 1;
+-	local_irq_restore(flags);
+-	return ret;
+-}
+-
+-#else /* CONFIG_IRQ_TIME_ACCOUNTING */
+-
+-#define sched_clock_irqtime	(0)
+-
+-#endif
+-
+ void sched_set_stop_task(int cpu, struct task_struct *stop)
+ {
+ 	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+@@ -2809,404 +2652,6 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ 	return ns;
+ }
+ 
+-#ifdef CONFIG_CGROUP_CPUACCT
+-struct cgroup_subsys cpuacct_subsys;
+-struct cpuacct root_cpuacct;
+-#endif
+-
+-static inline void task_group_account_field(struct task_struct *p, int index,
+-					    u64 tmp)
+-{
+-#ifdef CONFIG_CGROUP_CPUACCT
+-	struct kernel_cpustat *kcpustat;
+-	struct cpuacct *ca;
+-#endif
+-	/*
+-	 * Since all updates are sure to touch the root cgroup, we
+-	 * get ourselves ahead and touch it first. If the root cgroup
+-	 * is the only cgroup, then nothing else should be necessary.
+-	 *
+-	 */
+-	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
+-
+-#ifdef CONFIG_CGROUP_CPUACCT
+-	if (unlikely(!cpuacct_subsys.active))
+-		return;
+-
+-	rcu_read_lock();
+-	ca = task_ca(p);
+-	while (ca && (ca != &root_cpuacct)) {
+-		kcpustat = this_cpu_ptr(ca->cpustat);
+-		kcpustat->cpustat[index] += tmp;
+-		ca = parent_ca(ca);
+-	}
+-	rcu_read_unlock();
+-#endif
+-}
+-
+-
+-/*
+- * Account user cpu time to a process.
+- * @p: the process that the cpu time gets accounted to
+- * @cputime: the cpu time spent in user space since the last update
+- * @cputime_scaled: cputime scaled by cpu frequency
+- */
+-void account_user_time(struct task_struct *p, cputime_t cputime,
+-		       cputime_t cputime_scaled)
+-{
+-	int index;
+-
+-	/* Add user time to process. */
+-	p->utime += cputime;
+-	p->utimescaled += cputime_scaled;
+-	account_group_user_time(p, cputime);
+-
+-	index = (TASK_NICE(p) > 0) ? CPUTIME_NICE : CPUTIME_USER;
+-
+-	/* Add user time to cpustat. */
+-	task_group_account_field(p, index, (__force u64) cputime);
+-
+-	/* Account for user time used */
+-	acct_update_integrals(p);
+-}
+-
+-/*
+- * Account guest cpu time to a process.
+- * @p: the process that the cpu time gets accounted to
+- * @cputime: the cpu time spent in virtual machine since the last update
+- * @cputime_scaled: cputime scaled by cpu frequency
+- */
+-static void account_guest_time(struct task_struct *p, cputime_t cputime,
+-			       cputime_t cputime_scaled)
+-{
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-
+-	/* Add guest time to process. */
+-	p->utime += cputime;
+-	p->utimescaled += cputime_scaled;
+-	account_group_user_time(p, cputime);
+-	p->gtime += cputime;
+-
+-	/* Add guest time to cpustat. */
+-	if (TASK_NICE(p) > 0) {
+-		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
+-	} else {
+-		cpustat[CPUTIME_USER] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
+-	}
+-}
+-
+-/*
+- * Account system cpu time to a process and desired cpustat field
+- * @p: the process that the cpu time gets accounted to
+- * @cputime: the cpu time spent in kernel space since the last update
+- * @cputime_scaled: cputime scaled by cpu frequency
+- * @target_cputime64: pointer to cpustat field that has to be updated
+- */
+-static inline
+-void __account_system_time(struct task_struct *p, cputime_t cputime,
+-			cputime_t cputime_scaled, int index)
+-{
+-	/* Add system time to process. */
+-	p->stime += cputime;
+-	p->stimescaled += cputime_scaled;
+-	account_group_system_time(p, cputime);
+-
+-	/* Add system time to cpustat. */
+-	task_group_account_field(p, index, (__force u64) cputime);
+-
+-	/* Account for system time used */
+-	acct_update_integrals(p);
+-}
+-
+-/*
+- * Account system cpu time to a process.
+- * @p: the process that the cpu time gets accounted to
+- * @hardirq_offset: the offset to subtract from hardirq_count()
+- * @cputime: the cpu time spent in kernel space since the last update
+- * @cputime_scaled: cputime scaled by cpu frequency
+- */
+-void account_system_time(struct task_struct *p, int hardirq_offset,
+-			 cputime_t cputime, cputime_t cputime_scaled)
+-{
+-	int index;
+-
+-	if ((p->flags & PF_VCPU) && (irq_count() - hardirq_offset == 0)) {
+-		account_guest_time(p, cputime, cputime_scaled);
+-		return;
+-	}
+-
+-	if (hardirq_count() - hardirq_offset)
+-		index = CPUTIME_IRQ;
+-	else if (in_serving_softirq())
+-		index = CPUTIME_SOFTIRQ;
+-	else
+-		index = CPUTIME_SYSTEM;
+-
+-	__account_system_time(p, cputime, cputime_scaled, index);
+-}
+-
+-/*
+- * Account for involuntary wait time.
+- * @cputime: the cpu time spent in involuntary wait
+- */
+-void account_steal_time(cputime_t cputime)
+-{
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-
+-	cpustat[CPUTIME_STEAL] += (__force u64) cputime;
+-}
+-
+-/*
+- * Account for idle time.
+- * @cputime: the cpu time spent in idle wait
+- */
+-void account_idle_time(cputime_t cputime)
+-{
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-	struct rq *rq = this_rq();
+-
+-	if (atomic_read(&rq->nr_iowait) > 0)
+-		cpustat[CPUTIME_IOWAIT] += (__force u64) cputime;
+-	else
+-		cpustat[CPUTIME_IDLE] += (__force u64) cputime;
+-}
+-
+-static __always_inline bool steal_account_process_tick(void)
+-{
+-#ifdef CONFIG_PARAVIRT
+-	if (static_key_false(&paravirt_steal_enabled)) {
+-		u64 steal, st = 0;
+-
+-		steal = paravirt_steal_clock(smp_processor_id());
+-		steal -= this_rq()->prev_steal_time;
+-
+-		st = steal_ticks(steal);
+-		this_rq()->prev_steal_time += st * TICK_NSEC;
+-
+-		account_steal_time(st);
+-		return st;
+-	}
+-#endif
+-	return false;
+-}
+-
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+-
+-#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+-/*
+- * Account a tick to a process and cpustat
+- * @p: the process that the cpu time gets accounted to
+- * @user_tick: is the tick from userspace
+- * @rq: the pointer to rq
+- *
+- * Tick demultiplexing follows the order
+- * - pending hardirq update
+- * - pending softirq update
+- * - user_time
+- * - idle_time
+- * - system time
+- *   - check for guest_time
+- *   - else account as system_time
+- *
+- * Check for hardirq is done both for system and user time as there is
+- * no timer going off while we are on hardirq and hence we may never get an
+- * opportunity to update it solely in system time.
+- * p->stime and friends are only updated on system time and not on irq
+- * softirq as those do not count in task exec_runtime any more.
+- */
+-static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq)
+-{
+-	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-
+-	if (steal_account_process_tick())
+-		return;
+-
+-	if (irqtime_account_hi_update()) {
+-		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
+-	} else if (irqtime_account_si_update()) {
+-		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
+-	} else if (this_cpu_ksoftirqd() == p) {
+-		/*
+-		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+-		 * So, we have to handle it separately here.
+-		 * Also, p->stime needs to be updated for ksoftirqd.
+-		 */
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SOFTIRQ);
+-	} else if (user_tick) {
+-		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+-	} else if (p == rq->idle) {
+-		account_idle_time(cputime_one_jiffy);
+-	} else if (p->flags & PF_VCPU) { /* System time or guest time */
+-		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
+-	} else {
+-		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+-					CPUTIME_SYSTEM);
+-	}
+-}
+-
+-static void irqtime_account_idle_ticks(int ticks)
+-{
+-	int i;
+-	struct rq *rq = this_rq();
+-
+-	for (i = 0; i < ticks; i++)
+-		irqtime_account_process_tick(current, 0, rq);
+-}
+-#else /* CONFIG_IRQ_TIME_ACCOUNTING */
+-static void irqtime_account_idle_ticks(int ticks) {}
+-static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						struct rq *rq) {}
+-#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+-
+-/*
+- * Account a single tick of cpu time.
+- * @p: the process that the cpu time gets accounted to
+- * @user_tick: indicates if the tick is a user or a system tick
+- */
+-void account_process_tick(struct task_struct *p, int user_tick)
+-{
+-	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+-	struct rq *rq = this_rq();
+-
+-	if (sched_clock_irqtime) {
+-		irqtime_account_process_tick(p, user_tick, rq);
+-		return;
+-	}
+-
+-	if (steal_account_process_tick())
+-		return;
+-
+-	if (user_tick)
+-		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+-	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
+-		account_system_time(p, HARDIRQ_OFFSET, cputime_one_jiffy,
+-				    one_jiffy_scaled);
+-	else
+-		account_idle_time(cputime_one_jiffy);
+-}
+-
+-/*
+- * Account multiple ticks of steal time.
+- * @p: the process from which the cpu time has been stolen
+- * @ticks: number of stolen ticks
+- */
+-void account_steal_ticks(unsigned long ticks)
+-{
+-	account_steal_time(jiffies_to_cputime(ticks));
+-}
+-
+-/*
+- * Account multiple ticks of idle time.
+- * @ticks: number of stolen ticks
+- */
+-void account_idle_ticks(unsigned long ticks)
+-{
+-
+-	if (sched_clock_irqtime) {
+-		irqtime_account_idle_ticks(ticks);
+-		return;
+-	}
+-
+-	account_idle_time(jiffies_to_cputime(ticks));
+-}
+-
+-#endif
+-
+-/*
+- * Use precise platform statistics if available:
+- */
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
+-void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	*ut = p->utime;
+-	*st = p->stime;
+-}
+-
+-void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	struct task_cputime cputime;
+-
+-	thread_group_cputime(p, &cputime);
+-
+-	*ut = cputime.utime;
+-	*st = cputime.stime;
+-}
+-#else
+-
+-#ifndef nsecs_to_cputime
+-# define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
+-#endif
+-
+-static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
+-{
+-	u64 temp = (__force u64) rtime;
+-
+-	temp *= (__force u64) utime;
+-
+-	if (sizeof(cputime_t) == 4)
+-		temp = div_u64(temp, (__force u32) total);
+-	else
+-		temp = div64_u64(temp, (__force u64) total);
+-
+-	return (__force cputime_t) temp;
+-}
+-
+-void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	cputime_t rtime, utime = p->utime, total = utime + p->stime;
+-
+-	/*
+-	 * Use CFS's precise accounting:
+-	 */
+-	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
+-
+-	if (total)
+-		utime = scale_utime(utime, rtime, total);
+-	else
+-		utime = rtime;
+-
+-	/*
+-	 * Compare with previous values, to keep monotonicity:
+-	 */
+-	p->prev_utime = max(p->prev_utime, utime);
+-	p->prev_stime = max(p->prev_stime, rtime - p->prev_utime);
+-
+-	*ut = p->prev_utime;
+-	*st = p->prev_stime;
+-}
+-
+-/*
+- * Must be called with siglock held.
+- */
+-void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	struct signal_struct *sig = p->signal;
+-	struct task_cputime cputime;
+-	cputime_t rtime, utime, total;
+-
+-	thread_group_cputime(p, &cputime);
+-
+-	total = cputime.utime + cputime.stime;
+-	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+-
+-	if (total)
+-		utime = scale_utime(cputime.utime, rtime, total);
+-	else
+-		utime = rtime;
+-
+-	sig->prev_utime = max(sig->prev_utime, utime);
+-	sig->prev_stime = max(sig->prev_stime, rtime - sig->prev_utime);
+-
+-	*ut = sig->prev_utime;
+-	*st = sig->prev_stime;
+-}
+-#endif
+-
+ /*
+  * This function gets called by the timer code, with HZ frequency.
+  * We call it with interrupts disabled.
+@@ -8419,6 +7864,8 @@ struct cgroup_subsys cpu_cgroup_subsys = {
+  * (balbir@in.ibm.com).
+  */
+ 
++struct cpuacct root_cpuacct;
++
+ /* create a new cpu accounting group */
+ static struct cgroup_subsys_state *cpuacct_create(struct cgroup *cgrp)
+ {
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+new file mode 100644
+index 0000000..ea9b4b6
+--- /dev/null
++++ b/kernel/sched/cputime.c
+@@ -0,0 +1,503 @@
++#include <linux/export.h>
++#include <linux/sched.h>
++#include <linux/tsacct_kern.h>
++#include <linux/kernel_stat.h>
++#include "sched.h"
++
++
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++
++/*
++ * There are no locks covering percpu hardirq/softirq time.
++ * They are only modified in account_system_vtime, on corresponding CPU
++ * with interrupts disabled. So, writes are safe.
++ * They are read and saved off onto struct rq in update_rq_clock().
++ * This may result in other CPU reading this CPU's irq time and can
++ * race with irq/account_system_vtime on this CPU. We would either get old
++ * or new value with a side effect of accounting a slice of irq time to wrong
++ * task when irq is in progress while we read rq->clock. That is a worthy
++ * compromise in place of having locks on each irq in account_system_time.
++ */
++DEFINE_PER_CPU(u64, cpu_hardirq_time);
++DEFINE_PER_CPU(u64, cpu_softirq_time);
++
++static DEFINE_PER_CPU(u64, irq_start_time);
++static int sched_clock_irqtime;
++
++void enable_sched_clock_irqtime(void)
++{
++	sched_clock_irqtime = 1;
++}
++
++void disable_sched_clock_irqtime(void)
++{
++	sched_clock_irqtime = 0;
++}
++
++#ifndef CONFIG_64BIT
++DEFINE_PER_CPU(seqcount_t, irq_time_seq);
++#endif /* CONFIG_64BIT */
++
++/*
++ * Called before incrementing preempt_count on {soft,}irq_enter
++ * and before decrementing preempt_count on {soft,}irq_exit.
++ */
++void account_system_vtime(struct task_struct *curr)
++{
++	unsigned long flags;
++	s64 delta;
++	int cpu;
++
++	if (!sched_clock_irqtime)
++		return;
++
++	local_irq_save(flags);
++
++	cpu = smp_processor_id();
++	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
++	__this_cpu_add(irq_start_time, delta);
++
++	irq_time_write_begin();
++	/*
++	 * We do not account for softirq time from ksoftirqd here.
++	 * We want to continue accounting softirq time to ksoftirqd thread
++	 * in that case, so as not to confuse scheduler with a special task
++	 * that do not consume any time, but still wants to run.
++	 */
++	if (hardirq_count())
++		__this_cpu_add(cpu_hardirq_time, delta);
++	else if (in_serving_softirq() && curr != this_cpu_ksoftirqd())
++		__this_cpu_add(cpu_softirq_time, delta);
++
++	irq_time_write_end();
++	local_irq_restore(flags);
++}
++EXPORT_SYMBOL_GPL(account_system_vtime);
++
++static int irqtime_account_hi_update(void)
++{
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++	unsigned long flags;
++	u64 latest_ns;
++	int ret = 0;
++
++	local_irq_save(flags);
++	latest_ns = this_cpu_read(cpu_hardirq_time);
++	if (nsecs_to_cputime64(latest_ns) > cpustat[CPUTIME_IRQ])
++		ret = 1;
++	local_irq_restore(flags);
++	return ret;
++}
++
++static int irqtime_account_si_update(void)
++{
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++	unsigned long flags;
++	u64 latest_ns;
++	int ret = 0;
++
++	local_irq_save(flags);
++	latest_ns = this_cpu_read(cpu_softirq_time);
++	if (nsecs_to_cputime64(latest_ns) > cpustat[CPUTIME_SOFTIRQ])
++		ret = 1;
++	local_irq_restore(flags);
++	return ret;
++}
++
++#else /* CONFIG_IRQ_TIME_ACCOUNTING */
++
++#define sched_clock_irqtime	(0)
++
++#endif /* !CONFIG_IRQ_TIME_ACCOUNTING */
++
++static inline void task_group_account_field(struct task_struct *p, int index,
++					    u64 tmp)
++{
++#ifdef CONFIG_CGROUP_CPUACCT
++	struct kernel_cpustat *kcpustat;
++	struct cpuacct *ca;
++#endif
++	/*
++	 * Since all updates are sure to touch the root cgroup, we
++	 * get ourselves ahead and touch it first. If the root cgroup
++	 * is the only cgroup, then nothing else should be necessary.
++	 *
++	 */
++	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
++
++#ifdef CONFIG_CGROUP_CPUACCT
++	if (unlikely(!cpuacct_subsys.active))
++		return;
++
++	rcu_read_lock();
++	ca = task_ca(p);
++	while (ca && (ca != &root_cpuacct)) {
++		kcpustat = this_cpu_ptr(ca->cpustat);
++		kcpustat->cpustat[index] += tmp;
++		ca = parent_ca(ca);
++	}
++	rcu_read_unlock();
++#endif
++}
++
++/*
++ * Account user cpu time to a process.
++ * @p: the process that the cpu time gets accounted to
++ * @cputime: the cpu time spent in user space since the last update
++ * @cputime_scaled: cputime scaled by cpu frequency
++ */
++void account_user_time(struct task_struct *p, cputime_t cputime,
++		       cputime_t cputime_scaled)
++{
++	int index;
++
++	/* Add user time to process. */
++	p->utime += cputime;
++	p->utimescaled += cputime_scaled;
++	account_group_user_time(p, cputime);
++
++	index = (TASK_NICE(p) > 0) ? CPUTIME_NICE : CPUTIME_USER;
++
++	/* Add user time to cpustat. */
++	task_group_account_field(p, index, (__force u64) cputime);
++
++	/* Account for user time used */
++	acct_update_integrals(p);
++}
++
++/*
++ * Account guest cpu time to a process.
++ * @p: the process that the cpu time gets accounted to
++ * @cputime: the cpu time spent in virtual machine since the last update
++ * @cputime_scaled: cputime scaled by cpu frequency
++ */
++static void account_guest_time(struct task_struct *p, cputime_t cputime,
++			       cputime_t cputime_scaled)
++{
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++
++	/* Add guest time to process. */
++	p->utime += cputime;
++	p->utimescaled += cputime_scaled;
++	account_group_user_time(p, cputime);
++	p->gtime += cputime;
++
++	/* Add guest time to cpustat. */
++	if (TASK_NICE(p) > 0) {
++		cpustat[CPUTIME_NICE] += (__force u64) cputime;
++		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
++	} else {
++		cpustat[CPUTIME_USER] += (__force u64) cputime;
++		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
++	}
++}
++
++/*
++ * Account system cpu time to a process and desired cpustat field
++ * @p: the process that the cpu time gets accounted to
++ * @cputime: the cpu time spent in kernel space since the last update
++ * @cputime_scaled: cputime scaled by cpu frequency
++ * @target_cputime64: pointer to cpustat field that has to be updated
++ */
++static inline
++void __account_system_time(struct task_struct *p, cputime_t cputime,
++			cputime_t cputime_scaled, int index)
++{
++	/* Add system time to process. */
++	p->stime += cputime;
++	p->stimescaled += cputime_scaled;
++	account_group_system_time(p, cputime);
++
++	/* Add system time to cpustat. */
++	task_group_account_field(p, index, (__force u64) cputime);
++
++	/* Account for system time used */
++	acct_update_integrals(p);
++}
++
++/*
++ * Account system cpu time to a process.
++ * @p: the process that the cpu time gets accounted to
++ * @hardirq_offset: the offset to subtract from hardirq_count()
++ * @cputime: the cpu time spent in kernel space since the last update
++ * @cputime_scaled: cputime scaled by cpu frequency
++ */
++void account_system_time(struct task_struct *p, int hardirq_offset,
++			 cputime_t cputime, cputime_t cputime_scaled)
++{
++	int index;
++
++	if ((p->flags & PF_VCPU) && (irq_count() - hardirq_offset == 0)) {
++		account_guest_time(p, cputime, cputime_scaled);
++		return;
++	}
++
++	if (hardirq_count() - hardirq_offset)
++		index = CPUTIME_IRQ;
++	else if (in_serving_softirq())
++		index = CPUTIME_SOFTIRQ;
++	else
++		index = CPUTIME_SYSTEM;
++
++	__account_system_time(p, cputime, cputime_scaled, index);
++}
++
++/*
++ * Account for involuntary wait time.
++ * @cputime: the cpu time spent in involuntary wait
++ */
++void account_steal_time(cputime_t cputime)
++{
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++
++	cpustat[CPUTIME_STEAL] += (__force u64) cputime;
++}
++
++/*
++ * Account for idle time.
++ * @cputime: the cpu time spent in idle wait
++ */
++void account_idle_time(cputime_t cputime)
++{
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++	struct rq *rq = this_rq();
++
++	if (atomic_read(&rq->nr_iowait) > 0)
++		cpustat[CPUTIME_IOWAIT] += (__force u64) cputime;
++	else
++		cpustat[CPUTIME_IDLE] += (__force u64) cputime;
++}
++
++static __always_inline bool steal_account_process_tick(void)
++{
++#ifdef CONFIG_PARAVIRT
++	if (static_key_false(&paravirt_steal_enabled)) {
++		u64 steal, st = 0;
++
++		steal = paravirt_steal_clock(smp_processor_id());
++		steal -= this_rq()->prev_steal_time;
++
++		st = steal_ticks(steal);
++		this_rq()->prev_steal_time += st * TICK_NSEC;
++
++		account_steal_time(st);
++		return st;
++	}
++#endif
++	return false;
++}
++
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++/*
++ * Account a tick to a process and cpustat
++ * @p: the process that the cpu time gets accounted to
++ * @user_tick: is the tick from userspace
++ * @rq: the pointer to rq
++ *
++ * Tick demultiplexing follows the order
++ * - pending hardirq update
++ * - pending softirq update
++ * - user_time
++ * - idle_time
++ * - system time
++ *   - check for guest_time
++ *   - else account as system_time
++ *
++ * Check for hardirq is done both for system and user time as there is
++ * no timer going off while we are on hardirq and hence we may never get an
++ * opportunity to update it solely in system time.
++ * p->stime and friends are only updated on system time and not on irq
++ * softirq as those do not count in task exec_runtime any more.
++ */
++static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
++						struct rq *rq)
++{
++	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
++
++	if (steal_account_process_tick())
++		return;
++
++	if (irqtime_account_hi_update()) {
++		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
++	} else if (irqtime_account_si_update()) {
++		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
++	} else if (this_cpu_ksoftirqd() == p) {
++		/*
++		 * ksoftirqd time do not get accounted in cpu_softirq_time.
++		 * So, we have to handle it separately here.
++		 * Also, p->stime needs to be updated for ksoftirqd.
++		 */
++		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
++					CPUTIME_SOFTIRQ);
++	} else if (user_tick) {
++		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++	} else if (p == rq->idle) {
++		account_idle_time(cputime_one_jiffy);
++	} else if (p->flags & PF_VCPU) { /* System time or guest time */
++		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
++	} else {
++		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
++					CPUTIME_SYSTEM);
++	}
++}
++
++static void irqtime_account_idle_ticks(int ticks)
++{
++	int i;
++	struct rq *rq = this_rq();
++
++	for (i = 0; i < ticks; i++)
++		irqtime_account_process_tick(current, 0, rq);
++}
++#else /* CONFIG_IRQ_TIME_ACCOUNTING */
++static void irqtime_account_idle_ticks(int ticks) {}
++static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
++						struct rq *rq) {}
++#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
++
++/*
++ * Account a single tick of cpu time.
++ * @p: the process that the cpu time gets accounted to
++ * @user_tick: indicates if the tick is a user or a system tick
++ */
++void account_process_tick(struct task_struct *p, int user_tick)
++{
++	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	struct rq *rq = this_rq();
++
++	if (sched_clock_irqtime) {
++		irqtime_account_process_tick(p, user_tick, rq);
++		return;
++	}
++
++	if (steal_account_process_tick())
++		return;
++
++	if (user_tick)
++		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
++		account_system_time(p, HARDIRQ_OFFSET, cputime_one_jiffy,
++				    one_jiffy_scaled);
++	else
++		account_idle_time(cputime_one_jiffy);
++}
++
++/*
++ * Account multiple ticks of steal time.
++ * @p: the process from which the cpu time has been stolen
++ * @ticks: number of stolen ticks
++ */
++void account_steal_ticks(unsigned long ticks)
++{
++	account_steal_time(jiffies_to_cputime(ticks));
++}
++
++/*
++ * Account multiple ticks of idle time.
++ * @ticks: number of stolen ticks
++ */
++void account_idle_ticks(unsigned long ticks)
++{
++
++	if (sched_clock_irqtime) {
++		irqtime_account_idle_ticks(ticks);
++		return;
++	}
++
++	account_idle_time(jiffies_to_cputime(ticks));
++}
++
++#endif
++
++/*
++ * Use precise platform statistics if available:
++ */
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	*ut = p->utime;
++	*st = p->stime;
++}
++
++void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	struct task_cputime cputime;
++
++	thread_group_cputime(p, &cputime);
++
++	*ut = cputime.utime;
++	*st = cputime.stime;
++}
++#else
++
++#ifndef nsecs_to_cputime
++# define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
++#endif
++
++static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
++{
++	u64 temp = (__force u64) rtime;
++
++	temp *= (__force u64) utime;
++
++	if (sizeof(cputime_t) == 4)
++		temp = div_u64(temp, (__force u32) total);
++	else
++		temp = div64_u64(temp, (__force u64) total);
++
++	return (__force cputime_t) temp;
++}
++
++void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	cputime_t rtime, utime = p->utime, total = utime + p->stime;
++
++	/*
++	 * Use CFS's precise accounting:
++	 */
++	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
++
++	if (total)
++		utime = scale_utime(utime, rtime, total);
++	else
++		utime = rtime;
++
++	/*
++	 * Compare with previous values, to keep monotonicity:
++	 */
++	p->prev_utime = max(p->prev_utime, utime);
++	p->prev_stime = max(p->prev_stime, rtime - p->prev_utime);
++
++	*ut = p->prev_utime;
++	*st = p->prev_stime;
++}
++
++/*
++ * Must be called with siglock held.
++ */
++void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	struct signal_struct *sig = p->signal;
++	struct task_cputime cputime;
++	cputime_t rtime, utime, total;
++
++	thread_group_cputime(p, &cputime);
++
++	total = cputime.utime + cputime.stime;
++	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
++
++	if (total)
++		utime = scale_utime(cputime.utime, rtime, total);
++	else
++		utime = rtime;
++
++	sig->prev_utime = max(sig->prev_utime, utime);
++	sig->prev_stime = max(sig->prev_stime, rtime - sig->prev_utime);
++
++	*ut = sig->prev_utime;
++	*st = sig->prev_stime;
++}
++#endif
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index f6714d0..62f9850 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -891,6 +891,9 @@ struct cpuacct {
+ 	struct kernel_cpustat __percpu *cpustat;
+ };
+ 
++extern struct cgroup_subsys cpuacct_subsys;
++extern struct cpuacct root_cpuacct;
++
+ /* return cpu accounting group corresponding to this container */
+ static inline struct cpuacct *cgroup_ca(struct cgroup *cgrp)
+ {
+@@ -917,6 +920,16 @@ extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
+ static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
+ #endif
+ 
++#ifdef CONFIG_PARAVIRT
++static inline u64 steal_ticks(u64 steal)
++{
++	if (unlikely(steal > NSEC_PER_SEC))
++		return div_u64(steal, TICK_NSEC);
++
++	return __iter_div_u64_rem(steal, TICK_NSEC, &steal);
++}
++#endif
++
+ static inline void inc_nr_running(struct rq *rq)
+ {
+ 	rq->nr_running++;
+@@ -1156,4 +1169,54 @@ enum rq_nohz_flag_bits {
+ };
+ 
+ #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
++
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++
++DECLARE_PER_CPU(u64, cpu_hardirq_time);
++DECLARE_PER_CPU(u64, cpu_softirq_time);
++
++#ifndef CONFIG_64BIT
++DECLARE_PER_CPU(seqcount_t, irq_time_seq);
++
++static inline void irq_time_write_begin(void)
++{
++	__this_cpu_inc(irq_time_seq.sequence);
++	smp_wmb();
++}
++
++static inline void irq_time_write_end(void)
++{
++	smp_wmb();
++	__this_cpu_inc(irq_time_seq.sequence);
++}
++
++static inline u64 irq_time_read(int cpu)
++{
++	u64 irq_time;
++	unsigned seq;
++
++	do {
++		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
++		irq_time = per_cpu(cpu_softirq_time, cpu) +
++			   per_cpu(cpu_hardirq_time, cpu);
++	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
++
++	return irq_time;
++}
++#else /* CONFIG_64BIT */
++static inline void irq_time_write_begin(void)
++{
++}
++
++static inline void irq_time_write_end(void)
++{
++}
++
++static inline u64 irq_time_read(int cpu)
++{
++	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
++}
++#endif /* CONFIG_64BIT */
++#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
++
+ #endif
 -- 
 1.7.5.4
 
