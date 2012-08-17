@@ -1,64 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab2HQRPB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:15:01 -0400
-Received: from mga06.intel.com ([134.134.136.21]:20036 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753668Ab2HQROx (ORCPT
+	id S1757986Ab2HQRPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:15:18 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:24791 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757047Ab2HQRPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:14:53 -0400
+	Fri, 17 Aug 2012 13:15:11 -0400
+X-IronPort-AV: E=Sophos;i="4.77,785,1336348800"; 
+   d="scan'208";a="14064622"
+Date: Fri, 17 Aug 2012 18:14:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 5/5] xen/pcifront: Use Xen-SWIOTLB when
+ initting if required.
+In-Reply-To: <1345132488-27323-6-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1208171814440.15568@kaball.uk.xensource.com>
+References: <1345132488-27323-1-git-send-email-konrad.wilk@oracle.com> <1345132488-27323-6-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1344918891-6283-8-git-send-email-keithp@keithp.com>
-References: <1344918891-6283-1-git-send-email-keithp@keithp.com>
-	<1344918891-6283-8-git-send-email-keithp@keithp.com>
-Date: Fri, 17 Aug 2012 18:14:50 +0100
-Message-ID: <CAPX-8+-kfzGCZSyGFuWJESEqNoTyzytbxX75=3=-hLP2uAwApw@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH 7/7] drm/i915: Merge FDI RX reg writes during training
-From: "Lespiau, Damien" <damien.lespiau@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 5:34 AM, Keith Packard <keithp@keithp.com> wrote:
-> @@ -2324,6 +2324,8 @@ static void intel_fdi_normal_train(struct drm_crtc *crtc)
->                 temp |= FDI_LINK_TRAIN_NONE | FDI_TX_ENHANCE_FRAME_ENABLE;
->         }
->         I915_WRITE(reg, temp);
-> +       POSTING_READ(reg);
-> +       udelay(100);
+On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> We piggyback on "xen/swiotlb: Use the swiotlb_late_init_with_tbl to init
+> Xen-SWIOTLB late when PV PCI is used." functionality to start up
+> the Xen-SWIOTLB if we are hot-plugged. This allows us to bypass
+> the need to supply 'iommu=soft' on the Linux command line (mostly).
+> With this patch, if a user forgot 'iommu=soft' on the command line,
+> and hotplug a PCI device they will get:
+> 
+> pcifront pci-0: Installing PCI frontend
+> Warning: only able to allocate 4 MB for software IO TLB
+> software IO TLB [mem 0x2a000000-0x2a3fffff] (4MB) mapped at [ffff88002a000000-ffff88002a3fffff]
+> pcifront pci-0: Creating PCI Frontend Bus 0000:00
+> pcifront pci-0: PCI host bridge to bus 0000:00
+> pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+> pci_bus 0000:00: root bus resource [mem 0x00000000-0xfffffffff]
+> pci 0000:00:00.0: [8086:10d3] type 00 class 0x020000
+> pci 0000:00:00.0: reg 10: [mem 0xfe5c0000-0xfe5dffff]
+> pci 0000:00:00.0: reg 14: [mem 0xfe500000-0xfe57ffff]
+> pci 0000:00:00.0: reg 18: [io  0xe000-0xe01f]
+> pci 0000:00:00.0: reg 1c: [mem 0xfe5e0000-0xfe5e3fff]
+> pcifront pci-0: claiming resource 0000:00:00.0/0
+> pcifront pci-0: claiming resource 0000:00:00.0/1
+> pcifront pci-0: claiming resource 0000:00:00.0/2
+> pcifront pci-0: claiming resource 0000:00:00.0/3
+> e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
+> e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
+> e1000e 0000:00:00.0: Disabling ASPM L0s L1
+> e1000e 0000:00:00.0: enabling device (0000 -> 0002)
+> e1000e 0000:00:00.0: Xen PCI mapped GSI16 to IRQ34
+> e1000e 0000:00:00.0: (unregistered net_device): Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+> e1000e 0000:00:00.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:1b:21:ab:c6:13
+> e1000e 0000:00:00.0: eth0: Intel(R) PRO/1000 Network Connection
+> e1000e 0000:00:00.0: eth0: MAC: 3, PHY: 8, PBA No: E46981-005
+> 
+> The "Warning only" will go away if one supplies 'iommu=soft' instead
+> as we have a higher chance of being able to allocate large swaths of
+> memory.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-The docs don't mention a delay between writing the TX and RX training
-patterns, the POSTING_READ() seems like a good idea.
 
->         reg = FDI_RX_CTL(pipe);
->         temp = I915_READ(reg);
-> @@ -2334,16 +2336,15 @@ static void intel_fdi_normal_train(struct drm_crtc *crtc)
->                 temp &= ~FDI_LINK_TRAIN_NONE;
->                 temp |= FDI_LINK_TRAIN_NONE;
->         }
-> +       /* IVB wants error correction enabled */
-> +       if (IS_IVYBRIDGE(dev))
-> +               temp |= FDI_FS_ERRC_ENABLE | FDI_FE_ERRC_ENABLE;
-> +
->         I915_WRITE(reg, temp | FDI_RX_ENHANCE_FRAME_ENABLE);
->
->         /* wait one idle pattern time */
->         POSTING_READ(reg);
->         udelay(1000);
-> -
-> -       /* IVB wants error correction enabled */
-> -       if (IS_IVYBRIDGE(dev))
-> -               I915_WRITE(reg, I915_READ(reg) | FDI_FS_ERRC_ENABLE |
-> -                          FDI_FE_ERRC_ENABLE);
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+>  drivers/pci/xen-pcifront.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+> index d6cc62c..ca92801 100644
+> --- a/drivers/pci/xen-pcifront.c
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/bitops.h>
+>  #include <linux/time.h>
+>  
+> +#include <asm/xen/swiotlb-xen.h>
+>  #define INVALID_GRANT_REF (0)
+>  #define INVALID_EVTCHN    (-1)
+>  
+> @@ -668,7 +669,7 @@ static irqreturn_t pcifront_handler_aer(int irq, void *dev)
+>  	schedule_pcifront_aer_op(pdev);
+>  	return IRQ_HANDLED;
 >  }
->
->  static void cpt_phase_pointer_enable(struct drm_device *dev, int pipe)
-
-Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
-
--- 
-Damien
+> -static int pcifront_connect(struct pcifront_device *pdev)
+> +static int pcifront_connect_and_init_dma(struct pcifront_device *pdev)
+>  {
+>  	int err = 0;
+>  
+> @@ -681,9 +682,13 @@ static int pcifront_connect(struct pcifront_device *pdev)
+>  		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
+>  		err = -EEXIST;
+>  	}
+> -
+>  	spin_unlock(&pcifront_dev_lock);
+>  
+> +	if (!err && !swiotlb_nr_tbl()) {
+> +		err = pci_xen_swiotlb_init_late();
+> +		if (err)
+> +			dev_err(&pdev->xdev->dev, "Could not setup SWIOTLB!\n");
+> +	}
+>  	return err;
+>  }
+>  
+> @@ -699,6 +704,7 @@ static void pcifront_disconnect(struct pcifront_device *pdev)
+>  
+>  	spin_unlock(&pcifront_dev_lock);
+>  }
+> +
+>  static struct pcifront_device *alloc_pdev(struct xenbus_device *xdev)
+>  {
+>  	struct pcifront_device *pdev;
+> @@ -842,10 +848,10 @@ static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
+>  	    XenbusStateInitialised)
+>  		goto out;
+>  
+> -	err = pcifront_connect(pdev);
+> +	err = pcifront_connect_and_init_dma(pdev);
+>  	if (err) {
+>  		xenbus_dev_fatal(pdev->xdev, err,
+> -				 "Error connecting PCI Frontend");
+> +				 "Error setting up PCI Frontend");
+>  		goto out;
+>  	}
+>  
+> -- 
+> 1.7.7.6
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
