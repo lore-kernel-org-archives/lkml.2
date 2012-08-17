@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030746Ab2HQD3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:29:37 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43484 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030688Ab2HQD3F (ORCPT
+	id S1030773Ab2HQD36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:29:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46822 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030673Ab2HQD1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:29:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120816174019.GA10918@kroah.com>
-References: <1344583783-12593-1-git-send-email-anish198519851985@gmail.com>
-	<20120816174019.GA10918@kroah.com>
-Date: Fri, 17 Aug 2012 08:59:04 +0530
-Message-ID: <CAK7N6vpskT=nhBcvdBKopX_oySdH-j_7c62aB1Q5FxGxfjE3cg@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH V6]Extcon: adc_jack: adc-jack driver to support
- 3.5 pi or simliar devices
-From: anish singh <anish198519851985@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        anish kumar <anish.singh@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 16 Aug 2012 23:27:07 -0400
+Message-Id: <20120817030248.367798409@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 17 Aug 2012 04:03:12 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Ribeiro <drwyrm@gmail.com>
+Subject: [ 29/37] ARM: pxa: remove irq_to_gpio from ezx-pcap driver
+In-Reply-To: <20120817030243.807605523@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 11:10 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Aug 10, 2012 at 12:29:43AM -0700, anish kumar wrote:
->> From: anish kumar <anish198519851985@gmail.com>
->>
->> External connector devices that decides connection information based on
->> ADC values may use adc-jack device driver. The user simply needs to
->> provide a table of adc range and connection states. Then, extcon
->> framework will automatically notify others.
->
-> This patch breaks the build:
->         ERROR: "extcon_cable_name" [drivers/extcon/extcon-adc-jack.ko] undefined!
->
-> And, if you read the comment about extcon_cable_name, it says to not use
-> it like you are trying to use it.
->
-> So, care to fix this up?
-Sorry Greg,I was on travel so couldn't fix it up.However soon I will be sending
-a patch for this.Looks like we can remove the extcon_cable_name altogether
-as it we are anyway getting it from platform data.
->
-> thanks,
->
-> greg k-h
+3.2-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Arnd Bergmann <arnd@arndb.de>
+
+commit 59ee93a528b94ef4e81a08db252b0326feff171f upstream.
+
+The irq_to_gpio function was removed from the pxa platform
+in linux-3.2, and this driver has been broken since.
+
+There is actually no in-tree user of this driver that adds
+this platform device, but the driver can and does get enabled
+on some platforms.
+
+Without this patch, building ezx_defconfig results in:
+
+drivers/mfd/ezx-pcap.c: In function 'pcap_isr_work':
+drivers/mfd/ezx-pcap.c:205:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Daniel Ribeiro <drwyrm@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/mfd/ezx-pcap.c       |    2 +-
+ include/linux/mfd/ezx-pcap.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
+index 43a76c4..db662e2 100644
+--- a/drivers/mfd/ezx-pcap.c
++++ b/drivers/mfd/ezx-pcap.c
+@@ -202,7 +202,7 @@ static void pcap_isr_work(struct work_struct *work)
+ 		}
+ 		local_irq_enable();
+ 		ezx_pcap_write(pcap, PCAP_REG_MSR, pcap->msr);
+-	} while (gpio_get_value(irq_to_gpio(pcap->spi->irq)));
++	} while (gpio_get_value(pdata->gpio));
+ }
+ 
+ static void pcap_irq_handler(unsigned int irq, struct irq_desc *desc)
+diff --git a/include/linux/mfd/ezx-pcap.h b/include/linux/mfd/ezx-pcap.h
+index 40c37216..32a1b5c 100644
+--- a/include/linux/mfd/ezx-pcap.h
++++ b/include/linux/mfd/ezx-pcap.h
+@@ -16,6 +16,7 @@ struct pcap_subdev {
+ struct pcap_platform_data {
+ 	unsigned int irq_base;
+ 	unsigned int config;
++	int gpio;
+ 	void (*init) (void *);	/* board specific init */
+ 	int num_subdevs;
+ 	struct pcap_subdev *subdevs;
+
+
