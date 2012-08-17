@@ -1,68 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab2HQBKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:10:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38004 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab2HQBKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:10:22 -0400
-Date: Fri, 17 Aug 2012 11:10:13 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-Id: <20120817111013.28c2f0b0ef72631968007d9a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Aug_2012_11_10_13_+1000_IqHcACf7uskDD6qf"
+	id S1757431Ab2HQBMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:12:40 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:51450 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755178Ab2HQBMj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 21:12:39 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz9371I542M1432Izz1202hzzz2fh2a8h683h839h944hd25hf0ah107ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>
+Subject: RE: [PATCH V3 00/14] drivers: hv: kvp 
+Thread-Topic: [PATCH V3 00/14] drivers: hv: kvp 
+Thread-Index: AQHNfA9tvtfIYdQjdUS0hGAMOzu5wZddMifQ
+Date: Fri, 17 Aug 2012 01:12:18 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C1A10@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1345164300-5146-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1345164300-5146-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Aug_2012_11_10_13_+1000_IqHcACf7uskDD6qf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Mauro,
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> -----Original Message-----
+> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> Sent: Thursday, August 16, 2012 8:45 PM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; olaf@aepfle.de;
+> apw@canonical.com; ben@decadent.org.uk
+> Cc: KY Srinivasan
+> Subject: [PATCH V3 00/14] drivers: hv: kvp
+> 
+> This patch set expands the KVP (Key Value Pair) functionality to
+> implement the mechanism to GET/SET IP addresses in the guest. This
+> functionality is used in Windows Server 2012 to implement VM
+> replication functionality. The way IP configuration information
+> is managed is distro specific. Based on the feedback I have gotten
+> from Olaf, Greg, Steve, Ben and Mairus, I have chosen to seperate
+> distro specific code from this patch-set. Most of the GET operation
+> can be implemented in a way that is completely distro independent and
+> I have implemented that as such and is included in this patch-set.
+> Some of the attributes that can only be fetched in a distro
+> dependent way as well the mechanism for configuring an interface
+> (the SET operation) that is clearly distro specific is to be
+> implemented via external scripts that will be invoked via the KVP
+> code. We define here the interface to these scripts.
+> 
+> Adding support for IP injection resulted in some changes to the
+> protocol between the user level daemon and the kernel driver.
+> These changes have been implemented in way that would retain
+> compatibility with older daemons. I would like to thank Olaf and
+> Greg for pointing out the compatibility issue.
+> 
+> This version of the patch set addresses all of the comments that I
+> have received to date from Olaf, Ben and others. Specifically, I have
+> cleanedup all of the string manipulation code. Furthermore, I have also
+> simplified the format of the interface configuration file that is
+> generated by the KVP daemon and gotten rid of some constant strings that
+> may not be relevant on all distros. I would like to thank Olaf and Ben
+> for their detailed review.
+> 
+> Following are the changes from V2 of this patch set:
+> 
+> 1. Addressed the indentation issue Greg noted in the patch:
+> 0001-Drivers-hv-kvp-Support-the-new-IP-injection-messages.patch
+> 
+> 2. Cleaned up the Reviewed-byi line  based on input from Ben and Greg.
+> 
+> 3. Since Ben had an identical patch for properly closing the open
+> streams, I have not included that patch in this series.
+> 
+> 4. Greg applied the first 3 patches of the V2 patch set. This version
+> has the remaining patches.
 
-ERROR: "usb_cypress_load_firmware" [drivers/staging/media/go7007/s2250-load=
-er.ko] undefined!
-ERROR: "b2c2_flexcop_debug" [drivers/media/pci/b2c2/b2c2-flexcop-pci.ko] un=
-defined!
+Greg,
 
-Given the major reorganisation going on, I have just used the v4l-dvb
-tree from next-20120816 for today.
+Please drop this set. In my haste to send out the patches, I have sent out the wrong patches. I am going to send out the correct set in a minute.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
 
---Signature=_Fri__17_Aug_2012_11_10_13_+1000_IqHcACf7uskDD6qf
-Content-Type: application/pgp-signature
+K. Y
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQLZn1AAoJEECxmPOUX5FEM5gP/2Sq4KO8w0+GGMMQ1PVcaILx
-PFb3I7oMGQfJ6fSqsnNfwa22orsmKrEqVwXJqpcQsvStf0oxRznI3hBrkLn/3gFh
-ane2zhd6La/M6gmls8dIUf0rdACmnUtH5kpiaSfMoEAjUs9drmWqrDUcuiI0ovIO
-CJXlK6pmoIpGH3zy0kH2jj4OXlYL44HICCj0CeEqMeM4/uDOHYabiMEehp/S2WtT
-QAPs1wtUtVBfiH81rKSgorBDVpMfBsE+NKNjztSci1231G9FC40nkVTodFjq0iDo
-NUKI4LSpMJxzQHVLn4zbkr4Ve4l/FVQZjDxk/lKirdeg2JCobSyO39/LqpR3dGEH
-WNW4sbn+6i4FlPyicfUr0wflSEiQiEV8YX8nzRBT5uTw+4oOA/JQxgbn/NxRkMM6
-ikdoB54Qel1otiKYpi3aCRYu0G+ERK0+hUTo8QYsbRCKgbtEcA+IkndLl/ES9eNZ
-rwfQpCjwev5Yq4bWgZr+DGy108mJIyJ+jZr9DZcV6yygODW334VFRoiUNSqlVrJ4
-vmBEAV+rJwdkINi65dk6TPgCbTzFskDbBSWb3TI6RNPUqB6sTamH2+3Jdsw6C0Lp
-GbKjW4pJWYSvHSl1JcmjsyE6dEF8dA/5tv5gyDL+348ds1BvlEFUFaJiwnc+4XEQ
-XRtiLEkceD5VQ7IX6a15
-=/v3c
------END PGP SIGNATURE-----
+> 
+> 
+> K. Y. Srinivasan (14):
+>   Drivers: hv: kvp: Support the new IP injection messages
+>   Tools: hv: Prepare to expand  kvp_get_ip_address() functionality
+>   Tools: hv: Further refactor kvp_get_ip_address()
+>   Tools: hv: Gather address family information
+>   Tools: hv: Gather subnet information
+>   Tools: hv: Represent the ipv6 mask using CIDR notation
+>   Tools: hv: Gather ipv[4,6] gateway information
+>   Tools: hv: Gather DNS information
+>   Tools: hv: Gather DHCP information
+>   Tools: hv: Implement the KVP verb - KVP_OP_SET_IP_INFO
+>   Tools: hv: Rename the function kvp_get_ip_address()
+>   Tools: hv: Implement the KVP verb - KVP_OP_GET_IP_INFO
+>   Tools: hv: Get rid of some unused variables
+>   Tools: hv: Correctly type string variables
+> 
+>  drivers/hv/hv_kvp.c      |  141 +++++++-
+>  include/linux/hyperv.h   |    2 +
+>  tools/hv/hv_kvp_daemon.c |  866
+> ++++++++++++++++++++++++++++++++++++++++++----
+>  3 files changed, 942 insertions(+), 67 deletions(-)
+> 
+> --
+> 1.7.4.1
+> 
+> 
+> 
 
---Signature=_Fri__17_Aug_2012_11_10_13_+1000_IqHcACf7uskDD6qf--
+
+
