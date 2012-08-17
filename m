@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223Ab2HQPE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 11:04:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164Ab2HQPEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 11:04:22 -0400
-Date: Fri, 17 Aug 2012 17:00:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120817150031.GA5029@redhat.com>
-References: <20120726051902.GA29466@in.ibm.com> <20120726052029.GB29466@in.ibm.com> <20120815165931.GA10059@redhat.com> <1345066913.11751.4.camel@pasglop> <20120816050030.GA12060@in.ibm.com> <20120816152112.GA8874@redhat.com> <20120817051307.GA4782@in.ibm.com>
+	id S1758204Ab2HQPGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 11:06:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35399 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755696Ab2HQPGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 11:06:11 -0400
+Date: Fri, 17 Aug 2012 08:06:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Hlavacek <tmshlvck@gmail.com>
+Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marek.vasut@gmail.com
+Subject: Re: [PATCHv3 1/1] [RFC] uartclk from serial_core exposed to sysfs
+Message-ID: <20120817150603.GA13684@kroah.com>
+References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+ <1345214637-4189-1-git-send-email-tmshlvck@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120817051307.GA4782@in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1345214637-4189-1-git-send-email-tmshlvck@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17, Ananth N Mavinakayanahalli wrote:
->
-> On Thu, Aug 16, 2012 at 05:21:12PM +0200, Oleg Nesterov wrote:
->
-> > Hmm, I am not sure. is_swbp_insn(insn), as it is used in the arch agnostic
-> > code, should only return true if insn == UPROBE_SWBP_INSN (just in case,
-> > this logic needs more fixes but this is offtopic).
->
-> I think it does...
->
-> > If powerpc has another insn(s) which can trigger powerpc's do_int3()
-> > counterpart, they should be rejected by arch_uprobe_analyze_insn().
-> > I think.
->
-> The insn that gets passed to arch_uprobe_analyze_insn() is copy_insn()'s
-> version, which is the file copy of the instruction.
+On Fri, Aug 17, 2012 at 04:43:57PM +0200, Tomas Hlavacek wrote:
+> Added file /sys/devices/.../tty/ttySX/uartclk to allow reading
+> uartclk value in struct uart_port in serial_core via sysfs.
 
-Yes, exactly. And we are going to single-step this saved uprobe->arch.insn,
-even if gdb/whatever replaces the original insn later or already replaced.
+Whenever you add/remove/modify a sysfs file, you also need to add an
+update to Documentation/ABI/ as well.
 
-So arch_uprobe_analyze_insn() should reject the "unsafe" instructions which
-we can't step over safely.
+Please add this to the patch and resend.
 
-> We should also take
-> care of the in-memory copy, in case gdb had inserted a breakpoint at the
-> same location, right?
+> It simplifies initialization verification of no-name cards that
+> have non-standard oscillator speed while having no distinguishing
+> PCI IDs to allow autodetection.
+> 
+> Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
+> ---
+>  drivers/tty/serial/serial_core.c |   32 ++++++++++++++++++++++++++++++++
+>  drivers/tty/tty_io.c             |   17 +++++++++++++++++
+>  include/linux/tty.h              |    2 ++
+>  3 files changed, 51 insertions(+)
+> 
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index a21dc8e..454e9d3 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -2293,6 +2293,24 @@ struct tty_driver *uart_console_device(struct console *co, int *index)
+>  	return p->tty_driver;
+>  }
+>  
+> +static ssize_t uart_get_attr_uartclk(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	int ret;
+> +
+> +	struct tty_port *port = dev_get_drvdata(dev);
+> +	struct uart_state *state = container_of(port, struct uart_state, port);
+> +
+> +	mutex_lock(&state->port.mutex);
+> +	ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
+> +	mutex_unlock(&state->port.mutex);
+> +
+> +	return ret;
+> +}
+> +
+> +static DEVICE_ATTR(uartclk, S_IRUSR | S_IRGRP, uart_get_attr_uartclk,
+> +		NULL);
+> +
+>  /**
+>   *	uart_add_one_port - attach a driver-defined port structure
+>   *	@drv: pointer to the uart low level driver structure for this port
+> @@ -2355,6 +2373,14 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+>  	}
+>  
+>  	/*
+> +	 * Expose uartclk in sysfs. Use driverdata of the tty device for
+> +	 * referencing the UART port.
+> +	 */
+> +	dev_set_drvdata(tty_dev, port);
+> +	if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
+> +		dev_err(tty_dev, "Failed to add uartclk attr\n");
 
-gdb (or even the application itself) and uprobes can obviously confuse
-each other, in many ways, and we can do nothing at least currently.
-Just we should ensure that the kernel can't crash/hang/etc.
+I think you just raced with userspace in creating the file after the
+device was announced to userspace.  Are you sure it's ok?
 
-> Updating is_swbp_insn() per-arch where needed will
-> take care of both the cases, 'cos it gets called before
-> arch_analyze_uprobe_insn() too.
+If not (hint, I don't think so), please make it a default attribute of
+the device, which will then cause the file to be created before it is
+announced to userspace.  It will also be less code as you don't have to
+clean it up by hand :)
 
-For example. set_swbp()->is_swbp_insn() == T means that (for example)
-uprobe_register() and uprobe_mmap() raced with each other and there is
-no need for set_swbp().
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -3049,6 +3049,23 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
+>  }
+>  EXPORT_SYMBOL(tty_unregister_device);
+>  
+> +/*
+> + *	tty_lookup_device - lookup a tty device
+> + *	@driver: the tty driver that describes the tty device
+> + *	@index: the index in the tty driver for this tty device
+> + *
+> + *	This function returns a struct device pointer when device has
+> + *	been found and NULL otherwise.
+> + *
+> + *	Locking: ??
+> + */
+> +struct device *tty_lookup_device(struct tty_driver *driver, unsigned index)
+> +{
+> +	dev_t devt = MKDEV(driver->major, driver->minor_start) + index;
+> +	return class_find_device(tty_class, NULL, &devt, dev_match_devt);
+> +}
+> +EXPORT_SYMBOL(tty_lookup_device);
 
-However, find_active_uprobe()->is_swbp_at_addr()->is_swbp_insn() is
-different, "true" confirms that this insn has triggered do_int3() and
-thus we need send_sig(SIGTRAP) (just in case, this is not strictly
-correct too but offtopic again).
+EXPORT_SYMBOL_GPL as you are just wrapping a class_find_device() call?
 
-We definitely need more changes/fixes/improvements in this area. And
-perhaps powerpc requires more changes in the arch-neutral code, I dunno.
-In particular, I think is_swbp_insn() should have a single caller,
-is_swbp_at_addr(), and this caller should always play with current->mm.
-And many, many other changes in the long term.
+thanks,
 
-So far I think that, if powerpc really needs to change is_swbp_insn(),
-it would be better to make another patch and discuss this change.
-But of course I can't judge.
-
-Oleg.
-
+greg k-h
