@@ -1,68 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab2HQGEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 02:04:42 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6299 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386Ab2HQGEj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 02:04:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 16 Aug 2012 23:04:24 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Antti Palosaari <crope@iki.fi>,
-        "htl10@users.sourceforge.net" <htl10@users.sourceforge.net>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 17 Aug 2012 08:04:16 +0200
-Subject: [PATCH 1/1] driver-core: Shut up dev_dbg_reatelimited() without
- DEBUG
-Thread-Topic: [PATCH 1/1] driver-core: Shut up dev_dbg_reatelimited()
- without DEBUG
-Thread-Index: Ac17fyQiMTGNaEIySQ+BMLfQ/o0HGA==
-Message-ID: <20120817.090416.563933713934615530.hdoyu@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S932617Ab2HQGGa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 02:06:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59153 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754681Ab2HQGG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 02:06:27 -0400
 MIME-Version: 1.0
+In-Reply-To: <1345145332.3402.13.camel@falcor.watson.ibm.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<66e0f332c823b82701a48aba320f589cec27e904.1345055639.git.dmitry.kasatkin@intel.com>
+	<CA+5PVA7usufUFqCGQEKsYn81eFinbAczcJmgqTTrNnUEx-nJxg@mail.gmail.com>
+	<1345145332.3402.13.camel@falcor.watson.ibm.com>
+Date: Fri, 17 Aug 2012 09:06:25 +0300
+Message-ID: <CALLzPKZbedaJPiZL+86CiJ11np4gV_f_B1dJ6zdZmMdeq9pO5g@mail.gmail.com>
+Subject: Re: [RFC v2 3/7] integrity: create and inititialize a keyring with
+ builtin public key
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, jmorris@namei.org, rusty@rustcorp.com.au,
+        dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_dbg_reatelimited() without DEBUG printed "217078 callbacks
-suppressed". This shouldn't print anything without DEBUG.
+On Thu, Aug 16, 2012 at 10:28 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Thu, 2012-08-16 at 14:37 -0400, Josh Boyer wrote:
+>> On Wed, Aug 15, 2012 at 2:43 PM, Dmitry Kasatkin
+>> <dmitry.kasatkin@intel.com> wrote:
+>> > From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+>> >
+>> > Create and initialize a keyring with the builtin public key. This could
+>> > be an ephemeral key, created and destroyed during module install for
+>> > custom built kernels, or a key used to label the entire filesystem for
+>> > EVM/IMA-appraisal. Uses .incbin based on David Howell's post.
+>> >
+>> > Load the builtin public key on the specified keyring, creating the
+>> > keyring if it doesn't already exist.
+>> >
+>> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+>> > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+>> > ---
+>> >  security/integrity/Kconfig         |   10 ++++
+>> >  security/integrity/Makefile        |   17 +++++++
+>> >  security/integrity/digsig_pubkey.c |   96 ++++++++++++++++++++++++++++++++++++
+>> >  security/integrity/integrity.h     |   10 ++++
+>> >  4 files changed, 133 insertions(+)
+>> >  create mode 100644 security/integrity/digsig_pubkey.c
+>> >
+>> > diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+>> > index 5bd1cc1..f789018 100644
+>> > --- a/security/integrity/Kconfig
+>> > +++ b/security/integrity/Kconfig
+>> > @@ -17,5 +17,15 @@ config INTEGRITY_SIGNATURE
+>> >           This is useful for evm and module keyrings, when keys are
+>> >           usually only added from initramfs.
+>> >
+>> > +config INTEGRITY_PUBKEY
+>> > +       boolean "Create a keyring and initialize with builtin public key"
+>> > +       depends on INTEGRITY_SIGNATURE
+>> > +       default n
+>> > +       help
+>> > +         Create and initialize a keyring with the builtin public key. This could
+>> > +         be an ephemeral key, created and destroyed during module install for
+>> > +         custom built kernels, or a key used to label the entire filesystem for
+>> > +         EVM/IMA-appraisal.
+>> > +
+>>
+>> It could also be a key that is reused explicitly for signing kernels
+>> and kernel modules but has nothing to do with EVM/IMA filesystem
+>> labels, right?  E.g. a distro key.  I think the commit log and help
+>> text is a bit too restrictive here.
+>
+> Definitely!  The cover letter included the distro scenario, but I missed
+> updating it here.
+>
+>> > +int integrity_init_keyring(const unsigned int id)
+>> > +{
+>> > +       const struct cred *cred = current_cred();
+>> > +       struct user_struct *user = cred->user;
+>> > +       struct key *new_keyring, *key;
+>> > +       u8 digest[SHA1_DIGEST_SIZE];
+>> > +       char keyid[20];
+>> > +       int ret, pubkey_size = pubkey_end - pubkey;
+>> > +
+>> > +       if (pubkey_size == 0) {
+>> > +               pr_info("pubkey is missing, skipping...\n");
+>> > +               return 0;
+>> > +       }
+>> > +
+>> > +       new_keyring = keyring_alloc(keyring_name[id], user->uid, (gid_t) -1,
+>> > +                                   cred, KEY_ALLOC_NOT_IN_QUOTA,
+>> > +                                   user->uid_keyring);
+>> > +       if (IS_ERR(new_keyring)) {
+>> > +               ret = PTR_ERR(new_keyring);
+>> > +               goto out;
+>> > +       }
+>> > +
+>> > +       ret = integrity_calc_digest("sha1", pubkey, pubkey_size, digest);
+>> > +       if (ret < 0)
+>> > +               goto out;
+>> > +
+>> > +       sprintf(keyid, "%llX", __be64_to_cpup((uint64_t *)(digest+12)));
+>>
+>> keyid is only 20 bytes.  Is there a guarantee somewhere that restricts
+>> the digest+12 value to be 20 bytes or less and NUL termintated?  If
+>> not, should you use snprintf?
+>
+> Correct, and SHA1 shouldn't be hardcoded either, but configurable.
+>
+>>
+>> > +
+>> > +       key = key_alloc(&key_type_user, keyid, 0, 0, current_cred(),
+>> > +                       (KEY_POS_ALL & ~KEY_POS_SETATTR) |
+>> > +                       KEY_USR_VIEW | KEY_USR_SEARCH | KEY_USR_READ,
+>> > +                       KEY_ALLOC_NOT_IN_QUOTA);
+>> > +       if (IS_ERR(key)) {
+>> > +               ret = PTR_ERR(key);
+>> > +               goto out;
+>>
+>> You leak new_keyring if here, right?
+>
+> thanks
+>
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-Reported-by: Antti Palosaari <crope@iki.fi>
----
- include/linux/device.h |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Actually we are not leaking.
+new_keyring is instantiated and linked to the uid keyring..
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index eb945e1..d4dc26e 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -962,9 +962,13 @@ do {									\
- 	dev_level_ratelimited(dev_notice, dev, fmt, ##__VA_ARGS__)
- #define dev_info_ratelimited(dev, fmt, ...)				\
- 	dev_level_ratelimited(dev_info, dev, fmt, ##__VA_ARGS__)
-+#if defined(DEBUG)
- #define dev_dbg_ratelimited(dev, fmt, ...)				\
- 	dev_level_ratelimited(dev_dbg, dev, fmt, ##__VA_ARGS__)
--
-+#else
-+#define dev_dbg_ratelimited(dev, fmt, ...)			\
-+	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#endif
- /*
-  * Stupid hackaround for existing uses of non-printk uses dev_info
-  *
--- 
-1.7.5.4
+Another question is, do we want to leave keyring there for "may be
+later" use, or just destroy...
+
+>> > +       }
+>> > +
+>> > +       ret = key_instantiate_and_link(key, pubkey, pubkey_end - pubkey,
+>> > +                                      new_keyring, NULL);
+>> > +out:
+>> > +       pr_info("integrity: loaded public key %s on %s %s\n", keyid,
+>> > +               keyring_name[id], !ret ? "succeeded" : "failed");
+>> > +       return ret;
+>> > +}
+>>
+>> josh
+>
+> Mimi
+>
