@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab2HQOA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:00:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23526 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871Ab2HQOAt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:00:49 -0400
-X-Authority-Analysis: v=2.0 cv=Hun06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Rjla4PN4-lQA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=gNM47n9Gg6Q-yvRNS78A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1345212047.3708.25.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.41-rt61
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Fri, 17 Aug 2012 10:00:47 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	id S1756203Ab2HQOCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:02:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54982 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755871Ab2HQOCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:02:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,785,1336374000"; 
+   d="asc'?scan'208";a="182227839"
+Message-ID: <1345212408.27859.92.camel@sauron.fi.intel.com>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: nyoushchenko@mvista.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
+        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
+        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
+        Marius.Mazarel@ugal.ro
+Date: Fri, 17 Aug 2012 17:06:48 +0300
+In-Reply-To: <20120817154332.3496d709@spider.haslach.nod.at>
+References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	 <1345209115.27859.84.camel@sauron.fi.intel.com>
+	 <20120817153348.7a0a50a0@spider.haslach.nod.at>
+	 <1345210884.27859.90.camel@sauron.fi.intel.com>
+	 <20120817154332.3496d709@spider.haslach.nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-tZO8qLVUDU/WegQF8DQM"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Dear RT Folks,
+--=-tZO8qLVUDU/WegQF8DQM
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I'm pleased to announce the 3.0.41-rt61 stable release.
+On Fri, 2012-08-17 at 15:43 +0200, Richard Weinberger wrote:
 
+> No, data is never added to a half-filled PEB.
 
-This release is just an update to the new stable 3.0.41 version
-and no RT specific changes have been made.
+OK.
 
+> Fastmap does not share PEBs with other sub-systems by design.
 
-You can get this release via the git tree at:
+It could in theory add own data to own PEBs.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+--=-tZO8qLVUDU/WegQF8DQM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-  Head SHA1: 64555bd53eb40a1737c838b48ae15fc737791767
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAABAgAGBQJQLk/4AAoJECmIfjd9wqK0f/gQAMnegYVH0h1VRexdsi1lWIpX
+/o9eZ4Hd1NddSToj5uUZewN0Gay3xx6tSbXHsgE98BTU/5GxG5RvRqQNcl9Aciso
++Mu+qgGXuS8VIG2RzNpCeV58vplQoCS55q5zByLWDAbYQWSEl07PeH1oIHzW7pFF
+47hYENfhgOnmhJCXzUnEt2WBeSkwUFxk30/2VRIchHEP6pGKhOJsAjrv6Hirqv0V
+yszS04PZRAvVMcIA224I/4WXeG2ePOSsAeflcTGE62nSGc9tQxCXJLxUSQlnw6fK
+wcUIwH0JiL9X8J+WREkjLzgzQf2an+kbn1ga25/b0vJ0zADjwrxTKIR8XDkHdkjm
+yXhV8Gu+8OGRE9pxWrOvY1rMfZrD0Kki0QTFo6oPG87m7h0Ci7Osy/DKht0fyYzI
+3O+Zr+dIZGvScCXFV3dwEpNow8gQBu/XrwI35xPNGutLd2ThGlc4r0YaH0rLcYfU
+WenkqyFDbdaPZXdftEJ/yOxBSrg2vPldVB9AvHfZyvCnwSa2ASjjQJEua7+Unou7
+YcK4SiahQ9mskAcQx94AHikz2WQIFFrPEmd+xopMjOZQyLCQutEjDSdK+A8HajVD
+m7T5SMScNdlJ5+P8afRbhQayWXTnhShcH7ScErYgAq9QN56SHmTNGelrCwzF82qd
+oOR90EHiVHeKR2jzHf+E
+=N3N+
+-----END PGP SIGNATURE-----
 
-Or to build 3.0.41-rt61 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.41.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.41-rt61.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
+--=-tZO8qLVUDU/WegQF8DQM--
 
