@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab2HQRsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:48:38 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:18112
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752507Ab2HQRsa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:48:30 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275bh8275dhz2fh2a8h683h839h944hd25hf0ah107ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Ben Hutchings <ben@decadent.org.uk>, Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>
-Subject: RE: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Thread-Topic: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Thread-Index: AQHNfBXfRZ51oH5JRU6o6Q09JaeVqJdeONSAgAALdYCAAAEfMA==
-Date: Fri, 17 Aug 2012 17:46:53 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C1F2C@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com> <20120817173209.GA29217@decadent.org.uk>
-In-Reply-To: <20120817173209.GA29217@decadent.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752507Ab2HQRtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 13:49:06 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55572
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756098Ab2HQRsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 13:48:55 -0400
+Date: Fri, 17 Aug 2012 13:48:41 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Fengguang Wu <fengguang.wu@intel.com>,
+        Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+Message-ID: <20120817174841.GA4519@infradead.org>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+ <20120816024654.GB3781@thunk.org>
+ <20120816111051.GA16036@localhost>
+ <20120816152513.GA31346@thunk.org>
+ <20120817060110.GA28786@localhost>
+ <20120817131558.GA11439@thunk.org>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120817131558.GA11439@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Ben Hutchings [mailto:ben@decadent.org.uk]
-> Sent: Friday, August 17, 2012 1:32 PM
-> To: Greg KH
-> Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> olaf@aepfle.de; apw@canonical.com
-> Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
+On Fri, Aug 17, 2012 at 09:15:58AM -0400, Theodore Ts'o wrote:
+> Thanks Fengguang:
 > 
-> On Fri, Aug 17, 2012 at 09:51:09AM -0700, Greg KH wrote:
-> > On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > > Now, gather DNS information. Invoke an external script (that can be
-> > > distro dependent) to gather the DNS information.
-> >
-> > Where is that script?  Why a script, this really isn't in a standard
-> > method for all Linux distros?  If not, why not work to do that like the
-> > freedesktop.org people have done for other system configuration items?
+> For the record, I was able to find my own easy repro, last night using
+> only a 220 meg partition:
 > 
-> I suggested using the Network Manager D-Bus API.  That obviously
-> isn't going to work everywhere, but it seems to cover the same simple
-> cases that this hypervisor-guest interface allows for.
+> # mke2fs -t ext4 -b 1024 -J size=1 /dev/vdc
+> # mount -t ext2 /dev/vdc /vdc
+> # mkdir /vdc/a
+> # cd /vdc/a
+> # seq 1 210000  | xargs -n 1 fallocate -l 1m
+> # seq 1 2 210000  | xargs /bin/rm
+> # mkdir /vdc/b
+> # cd /vdc/b
+> # seq 1 103 | xargs -n 1 fallocate -l 1g
+> # cd /
+> # umount /vdc
+> # mount -t ext4 -o commit=10000 /dev/vdc /vdc
+> # rm -rf /vdc/b
 
-The scheme Olaf proposed, which is what I have implemented here does not
-preclude using the D-BUS API in the external script.  
-
-Regards,
-
-K. Y 
-
+Can you submit this for xfstests?
 
