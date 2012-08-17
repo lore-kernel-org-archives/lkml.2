@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab2HQPSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 11:18:11 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60583 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab2HQPR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 11:17:59 -0400
-Message-ID: <502E60A3.1020405@wwwdotorg.org>
-Date: Fri, 17 Aug 2012 09:17:55 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1758247Ab2HQPSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 11:18:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752022Ab2HQPSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 11:18:18 -0400
+Date: Fri, 17 Aug 2012 17:14:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: lockdep trace from posix timers
+Message-ID: <20120817151447.GA7918@redhat.com>
+References: <20120724203613.GA9637@redhat.com> <1345140478.29668.54.camel@twins>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
- driver
-References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org> <502DE6FE.8040200@nvidia.com>
-In-Reply-To: <502DE6FE.8040200@nvidia.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345140478.29668.54.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 12:38 AM, Laxman Dewangan wrote:
-> On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
->> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
->>> Enable config for dmaengine based Tegra APB DMA driver and
->>> disable the legacy APB DMA driver (SYSTEM_DMA).
->> Laxman, if I apply this series to next-20120816 (plus a few patches in
->> my local work branch plus the CPU hotplug patches from Joseph, although
->> I suspect none of that matters), then audio playback on Tegra20 is
->> broken; the pitch is far too high. Audio playback on Tegra30 works as
->> expected.
+On 08/16, Peter Zijlstra wrote:
 >
-> I run the test again on ventana and did not see any issue.
-> I play one song and saw similar behavior with/without this series.
+>      write_lock_irq(&tasklist_lock)
+>      task_lock(parent)		parent->alloc_lock
 
-OK, I'll test some other boards. I tested Whistler, although all the
-clocking logic is identical between all Tegra20 boards.
+And this is already wrong. See the comment above task_lock().
 
-> With this series:
-> --------------------
-> 
-> ubuntu@tegra-ubuntu:/home$ aplay "1-04 Hungry Like The Wolf.wav"
-> Playing WAVE '1-04 Hungry Like The Wolf.wav' : Signed 16 bit Little
-> Endian, Rate
->  44100 Hz, Stereo
-> underrun!!! (at least 5039.388 ms long)
+> And since it_lock is IRQ-safe and alloc_lock isn't, you've got the IRQ
+> inversion deadlock reported.
 
-Why are you getting all these underruns? I almost never see this, except
-when something else is hammering the SD card containing the .wav file.
-If I saw those, I'd count it as a test failure.
+Yes. Or, IOW, write_lock(tasklist) is IRQ-safe and thus it can't nest
+with alloc_lock.
+
+> David, Al, anybody want to have a go at fixing this?
+
+I still think that task_work_add() should synhronize with exit_task_work()
+itself and fail if necessary. But I wasn't able to convince Al ;)
+
+Oleg.
+
