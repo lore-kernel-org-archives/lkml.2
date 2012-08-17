@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab2HQITh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:19:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25410 "EHLO mx1.redhat.com"
+	id S932314Ab2HQIX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:23:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19390 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000Ab2HQITY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:19:24 -0400
-Date: Fri, 17 Aug 2012 10:19:08 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
-        Matthew Wilcox <willy@linux.intel.com>, linux-doc@vger.kernel.org,
-        x86@kernel.org, linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 4/5] PCI, MSI: Enable multiple MSIs with
- pci_enable_msi_block_auto()
-Message-ID: <20120817081907.GI2246@dhcp-26-207.brq.redhat.com>
-References: <cover.1345124063.git.agordeev@redhat.com>
- <447517b3acece13b7e7ce86fdd4d73abe28d81f4.1345124063.git.agordeev@redhat.com>
- <CAErSpo7RVnHQNVok9YQ7PiAAOL=XFTq_PMQmFNgFQhH9tZzy8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7RVnHQNVok9YQ7PiAAOL=XFTq_PMQmFNgFQhH9tZzy8A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754965Ab2HQIXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:23:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
+   d="asc'?scan'208";a="181864282"
+Message-ID: <1345192119.27859.28.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 2/2] UBI: add ioctl for max_beb_per1024
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: linux-mtd@lists.infradead.org, Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Date: Fri, 17 Aug 2012 11:28:39 +0300
+In-Reply-To: <1345128723-13582-3-git-send-email-richard.genoud@gmail.com>
+References: <1345042639.3393.150.camel@sauron.fi.intel.com>
+	 <1345128723-13582-3-git-send-email-richard.genoud@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-M46YEja31aWRzSyx2JaH"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 10:00:39AM -0600, Bjorn Helgaas wrote:
-> On Thu, Aug 16, 2012 at 8:49 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> > -4.2.3 pci_disable_msi
-> > +4.2.3 pci_enable_msi_block_auto
-> > +
-> > +int pci_enable_msi_block_auto(struct pci_dev *dev, int *count)
-> > +
-> > +This variation on pci_enable_msi() call allows a device driver to request
-> > +the maximum possible number of MSIs.  The MSI specification only allows
-> > +interrupts to be allocated in powers of two, up to a maximum of 2^5 (32).
-> > +
-> > +If this function returns 0, it has succeeded in allocating as many
-> > +interrupts as the device supports.
-> > +
-> > +If this function returns a positive number, it indicates that it has
-> > +succeeded, but the number of allocated interrupts is less than the number
-> > +of interrupts the device supports. The returned value in this case is the
-> > +number of allocated interrupts.
-> 
-> Seems like it would be simpler to avoid the special case of returning
-> zero.  You could return a negative value for failure, otherwise return
-> the number of interrupts allocated.
 
-But this special case is important, because some drivers would not get
-satisfied with just any number of interrupts allocated (i.e. few Intel AHCI
-chips (seems) have hardware logic that compares qmask vs qsize and simply
-falls back to single interrupt if they are not equal).
+--=-M46YEja31aWRzSyx2JaH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-So I see the fact that maximum possible number of interrupts were allocated
-at least as important than the number itself.
+On Thu, 2012-08-16 at 16:52 +0200, Richard Genoud wrote:
+>  		mutex_lock(&ubi_devices_mutex);
+>  		err =3D ubi_attach_mtd_dev(mtd, req.ubi_num, req.vid_hdr_offset,
+> -					 MTD_UBI_DEFAULT_BEB_LIMIT);
+> +					 req.max_beb_per1024);
 
-> Then you could also dispense with the "int *count" argument, because
-> the caller could just look at the return value.
+Do not forget to explicitely validate 'req.max_beb_per1024' valuse in
+'ubi_attach_mtd_dev()', as we do for other parameters.
 
-What about returning the number of allocated interrtupts while storing the
-number of supported interrupts to "int *count" (or maxcount)?
+--=20
+Best Regards,
+Artem Bityutskiy
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+--=-M46YEja31aWRzSyx2JaH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQLgC3AAoJECmIfjd9wqK0BswP/R/bARX2W2RlABSMUx1ytXHI
+jyuFZSFOiSj7UjrCCFvXzaxgIdbgUHPCxJ9IpEoVY/ELW7hgLJNt5Jx2W2BAQ/yF
+dBMk2ZRIctbKRQo9YLlWRvi+elTLL0Qjt4A+iTsxqENbHtXbzWs5rHOYInjvGrUU
+vwBFI861JrmOrOVJrcI1mH5Z6mld1q7IQi0fPY48MOpHUEP99131yosH2srs3lGn
+c6nRCzcvJfsWRe+BdJ0Yc0O0pmsYr3YWDjwW7aXgOlwbmd+9PDW5sji0m3W7FXWZ
+BTX/4bsuRKLFuLWMEZRqjoXs0csk5ThRKdozNM8VF3iZhqxHYaJPclQuuusft1NU
+NsflO6QsBnbjhJZkg9lZQIc4pLYC9H99DhWs4dC4WYllrFa0gDqpOHjeb0ck1K07
+cxliW8bg+KHceYuZMCVgjfE1ISSFSSbF1z089jRedti22LnHizwibJMHsFcdYJzH
+bfw3SLu8dOTUwlBCCATocLMYH0822ewFjBYqjulWjcug4k62cD6/R13aYqJqEc9T
+cavfjXS3UrVezYIoYdGlJxPxfolJhq/RA+Hbf1gcI+R0a+Jcw058XysKS5P2oKYH
+QREFJ62ax1WOJh0L++wPHBofGxIYDDLztLFQdWMvejxVOtAp4cHEomjKInLco/GY
+TbV0lAtL8rPZCpWDXdav
+=LU7B
+-----END PGP SIGNATURE-----
+
+--=-M46YEja31aWRzSyx2JaH--
+
