@@ -1,86 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759Ab2HQSPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:15:18 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53441 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758645Ab2HQSPN (ORCPT
+	id S1758769Ab2HQSQB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:16:01 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20747 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757336Ab2HQSPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:15:13 -0400
-Message-ID: <502E8A2C.3060606@suse.cz>
-Date: Fri, 17 Aug 2012 20:15:08 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120731 Thunderbird/15.0
+	Fri, 17 Aug 2012 14:15:54 -0400
+Date: Fri, 17 Aug 2012 14:05:57 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 07/11] xen/mmu: Recycle the Xen provided L4,
+ L3, and L2 pages
+Message-ID: <20120817180557.GA18579@phenom.dumpdata.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-8-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171902320.15568@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: davem@davemloft.net, jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ratelimit: check the condition in WARN_RATELIMIT first
-References: <1345210942-26906-1-git-send-email-jslaby@suse.cz> <1345225144.10014.2.camel@joe2Laptop>
-In-Reply-To: <1345225144.10014.2.camel@joe2Laptop>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1208171902320.15568@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 07:39 PM, Joe Perches wrote:
-> On Fri, 2012-08-17 at 15:42 +0200, Jiri Slaby wrote:
->> Before calling __ratelimit in __WARN_RATELIMIT, check the condition
->> first. When this check was not there, we got constant income of:
->> tty_init_dev: 60 callbacks suppressed
->> tty_init_dev: 59 callbacks suppressed
-> []
->> diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
-> []
->> @@ -49,8 +49,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
->>  #define __WARN_RATELIMIT(condition, state, format...)		\
->>  ({								\
->>  	int rtn = 0;						\
->> -	if (unlikely(__ratelimit(state)))			\
->> -		rtn = WARN(condition, format);			\
->> +	int __rtcond = !!condition;				\
->> +	if (unlikely(__rtcond && __ratelimit(state)))		\
->> +		rtn = WARN(__rtcond, format);			\
->>  	rtn;							\
->>  })
->>  
+On Fri, Aug 17, 2012 at 07:07:28PM +0100, Stefano Stabellini wrote:
+> On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> > As we are not using them. We end up only using the L1 pagetables
+> > and grafting those to our page-tables.
+> > 
+> > [v1: Per Stefano's suggestion squashed two commits]
+> > [v2: Per Stefano's suggestion simplified loop]
+> > [v3: Fix smatch warnings]
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/xen/mmu.c |   40 +++++++++++++++++++++++++++++++++-------
+> >  1 files changed, 33 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> > index a59070b..bd92c82 100644
+> > --- a/arch/x86/xen/mmu.c
+> > +++ b/arch/x86/xen/mmu.c
+> > @@ -1708,7 +1708,20 @@ static void convert_pfn_mfn(void *v)
+> >  	for (i = 0; i < PTRS_PER_PTE; i++)
+> >  		pte[i] = xen_make_pte(pte[i].pte);
+> >  }
+> > -
+> > +static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
+> > +				 unsigned long addr)
+> > +{
+> > +	if (*pt_base == PFN_DOWN(__pa(addr))) {
+> > +		set_page_prot((void *)addr, PAGE_KERNEL);
+> > +		clear_page((void *)addr);
+> > +		(*pt_base)++;
+> > +	}
+> > +	if (*pt_end == PFN_DOWN(__pa(addr))) {
+> > +		set_page_prot((void *)addr, PAGE_KERNEL);
+> > +		clear_page((void *)addr);
+> > +		(*pt_end)--;
+> > +	}
+> > +}
+> >  /*
+> >   * Set up the initial kernel pagetable.
+> >   *
+> > @@ -1724,6 +1737,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+> >  {
+> >  	pud_t *l3;
+> >  	pmd_t *l2;
+> > +	unsigned long addr[3];
+> > +	unsigned long pt_base, pt_end;
+> > +	unsigned i;
+> >  
+> >  	/* max_pfn_mapped is the last pfn mapped in the initial memory
+> >  	 * mappings. Considering that on Xen after the kernel mappings we
+> > @@ -1731,6 +1747,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+> >  	 * set max_pfn_mapped to the last real pfn mapped. */
+> >  	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
+> >  
+> > +	pt_base = PFN_DOWN(__pa(xen_start_info->pt_base));
+> > +	pt_end = PFN_DOWN(__pa(xen_start_info->pt_base + (xen_start_info->nr_pt_frames * PAGE_SIZE)));
 > 
-> Hi Jiri.
+
+or just do:
+
+	pt_end = pt_base + xen_start_info->nr_pt_frames;
+
+> code style
 > 
-> This seems fine to me but are there any conditions that
-> are computationally expensive?
-
-It's not about expensiveness of the computation. The complexity remained
-the same except I moved the computation one layer up.
-
-> ratelimit(state) isn't
-> and this will now always do condition.
+> >  	/* Zap identity mapping */
+> >  	init_level4_pgt[0] = __pgd(0);
+> >  
+> > @@ -1749,6 +1768,9 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+> >  	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
+> >  	l2 = m2v(l3[pud_index(__START_KERNEL_map)].pud);
+> >  
+> > +	addr[0] = (unsigned long)pgd;
+> > +	addr[1] = (unsigned long)l3;
+> > +	addr[2] = (unsigned long)l2;
+> >  	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
+> >  	 * Both L4[272][0] and L4[511][511] have entries that point to the same
+> >  	 * L2 (PMD) tables. Meaning that if you modify it in __va space
+> > @@ -1782,20 +1804,24 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+> >  	/* Unpin Xen-provided one */
+> >  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+> >  
+> > -	/* Switch over */
+> > -	pgd = init_level4_pgt;
+> > -
+> >  	/*
+> >  	 * At this stage there can be no user pgd, and no page
+> >  	 * structure to attach it to, so make sure we just set kernel
+> >  	 * pgd.
+> >  	 */
+> >  	xen_mc_batch();
+> > -	__xen_write_cr3(true, __pa(pgd));
+> > +	__xen_write_cr3(true, __pa(init_level4_pgt));
+> >  	xen_mc_issue(PARAVIRT_LAZY_CPU);
+> >  
+> > -	memblock_reserve(__pa(xen_start_info->pt_base),
+> > -			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+> > +	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
+> > +	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
+> > +	 * the initial domain. For guests using the toolstack, they are in:
+> > +	 * [L4], [L3], [L2], [L1], [L1], order .. */
+> > +	for (i = 0; i < ARRAY_SIZE(addr); i++)
+> > +		check_pt_base(&pt_base, &pt_end, addr[i]);
 > 
-> (looks instead of speculates)
+> It is much clearer now, but if the comment is correct, doesn't it mean
+> that we are going to be able to free pgd, l3 and l2 only in the non-dom0
+> case?
+
+And in dom0 case only PGD.
+
+> If so it might be worth saying it explicitly.
+
+OK.
 > 
-> There's 1 current use of WARN_RATELIMIT and there's
-> a condition of 1 so there's no problem here.
-
-There is going to be one more in monday's -next. I've just added one to
-the TTY code. The thing is that when you call ratelimit(state) it will
-emit how many times you have called that function like I described in
-the changelog:
-tty_init_dev: 60 callbacks suppressed
-
-Even when the condition is always false. Hence I added the condition to
-the if and lazy evaluation will take care and ratelimit() won't be
-called at all...
-
-> __WARN_RATELIMIT is pretty stupid.
-> It's only called from WARN_RATELIMIT.
-> I think it shouldn't exist at all.
+> Other than that, it is fine by me.
 > 
-> Maybe something like this?
-
-Yup, something like that looks OK to me.
-
-thanks,
--- 
-js
-suse labs
+> 
+> > +	/* Our (by three pages) smaller Xen pagetable that we are using */
+> > +	memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
+> >  }
+> >  #else	/* !CONFIG_X86_64 */
+> >  static RESERVE_BRK_ARRAY(pmd_t, initial_kernel_pmd, PTRS_PER_PMD);
+> > -- 
+> > 1.7.7.6
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
+> > 
