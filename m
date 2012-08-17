@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab2HQSVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:21:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53323 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758728Ab2HQSVE (ORCPT
+	id S1758790Ab2HQSVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:21:33 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:60581 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758706Ab2HQSVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:21:04 -0400
-Date: Fri, 17 Aug 2012 19:20:51 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org, goran.cetusic@gmail.com, romain@orebokech.com,
-        mszeredi@suse.cz
-Message-ID: <20120817182051.GC29217@decadent.org.uk>
-References: <1345045700-9062-1-git-send-email-miklos@szeredi.hu>
- <1345045700-9062-6-git-send-email-miklos@szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345045700-9062-6-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 05/13] overlayfs: add statfs support
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Fri, 17 Aug 2012 14:21:25 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Fri, 17 Aug 2012 14:21:24 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
+In-reply-to: <201208171120.40740.arnd@arndb.de>
+Message-id: <alpine.LFD.2.02.1208171407540.1541@xanadu.home>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
+ <alpine.LFD.2.02.1208161438110.1541@xanadu.home>
+ <201208171120.40740.arnd@arndb.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 05:48:12PM +0200, Miklos Szeredi wrote:
-> From: Andy Whitcroft <apw@canonical.com>
+On Fri, 17 Aug 2012, Arnd Bergmann wrote:
+
+> On Thursday 16 August 2012, Nicolas Pitre wrote:
+> > Some people will want to use bzip2 or whatever other decompressor du 
+> > jour.  Maybe this shouldn't be gzip specific, or just presented as a 
+> > possible option?
 > 
-> Add support for statfs to the overlayfs filesystem.  As the upper layer
-> is the target of all write operations assume that the space in that
-> filesystem is the space in the overlayfs.  There will be some inaccuracy as
-> overwriting a file will copy it up and consume space we were not expecting,
-> but it is better than nothing.
+> Good point. Whether this should be part of this document depends on
+> what assumptions we make about the boot loader getting the image
+> in the first place.
 > 
-> Use the upper layer dentry and mount from the overlayfs root inode,
-> passing the statfs call to that filesystem.
-[...] 
-> +/**
-> + * ovl_statfs
-> + * @sb: The overlayfs super block
-> + * @buf: The struct kstatfs to fill in with stats
-> + *
-> + * Get the filesystem statistics.  As writes always target the upper layer
-> + * filesystem pass the statfs to the same filesystem.
-> + */
-> +static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
-> +{
-> +	struct dentry *root_dentry = dentry->d_sb->s_root;
-> +	struct path path;
-> +	ovl_path_upper(root_dentry, &path);
-> +
-> +	if (!path.dentry->d_sb->s_op->statfs)
-> +		return -ENOSYS;
-> +	return path.dentry->d_sb->s_op->statfs(path.dentry, buf);
-> +}
-[...]
+> In the strict sense, we are documenting the interface between the boot
+> loader and the kernel here, which already specifies that  the kernel
+> must be uncompressed by the time we enter it. If the boot loader wants
+> to add its own encryption or compression methods, or its own headers
+> in front of the binary, the boot protocol isn't really impacted.
 
-In case f_namelen differs between the upper and lower filesystems, you
-need to return the greater of the two.
+Right.  And someone else will insist on wrapping the kernel into a boot 
+loader specific image format e.g. u-Boot.  If all those variations could 
+be kept out of the kernel build that would be a good thing.
 
-Should f_type be overridden to indicate overlayfs?  I'm not sure what
-userland is likely to do with f_type.  (For presentation to the user,
-it should get the mount type name with getmntent() or libmount.  And
-that will just work.)
+That means the kernel should be wrapped/compressed/scrambled at 
+installation time, not at build time.  This way the kernel image remains 
+universal and flexibility in its installation is possible.
 
-Ben.
+> That said, I think it's a good idea to also specify what kind of 
+> format we want to be used, e.g. a stripped ELF Image compressed with 
+> one of gzip/bzip2/lzo/xz and with no other headers added, on a 
+> vfat/ext4/btrfs formatted file system. There are probably a lot of 
+> other things one might want to specify if we go down this route. Or we 
+> could refer to the UEFI spec and mandate that the same format that 
+> UEFI uses should be used here independent of what boot loader is used. 
+> I think we can still allow other ways to get to the image for deeply 
+> embedded systems, e.g. linking the kernel into the boot loader as a 
+> blob on tightly constrained systems. For that case, we'd only specify 
+> the interface between boot loader and kernel as described above.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+I don't think we'll have to concern ourselves with tightly constrained 
+systems that much on ARM64.
+
+
+Nicolas
