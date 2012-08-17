@@ -1,123 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab2HQPGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 11:06:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35399 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696Ab2HQPGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 11:06:11 -0400
-Date: Fri, 17 Aug 2012 08:06:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Hlavacek <tmshlvck@gmail.com>
-Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marek.vasut@gmail.com
-Subject: Re: [PATCHv3 1/1] [RFC] uartclk from serial_core exposed to sysfs
-Message-ID: <20120817150603.GA13684@kroah.com>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
- <1345214637-4189-1-git-send-email-tmshlvck@gmail.com>
+	id S932152Ab2HQPLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 11:11:30 -0400
+Received: from home.keithp.com ([63.227.221.253]:50909 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757532Ab2HQPLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 11:11:20 -0400
+X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 11:11:20 EDT
+From: Keith Packard <keithp@keithp.com>
+To: "Lespiau\, Damien" <damien.lespiau@intel.com>
+Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 2/7] drm/i915: FDI B/C share 4 lanes on Ivybridge
+In-Reply-To: <CAPX-8+8euppecLhZu3XR95uM5e9m_kYmbJ6vmgBU=d03cs=RWA@mail.gmail.com>
+References: <1344918891-6283-1-git-send-email-keithp@keithp.com> <1344918891-6283-3-git-send-email-keithp@keithp.com> <CAPX-8+8euppecLhZu3XR95uM5e9m_kYmbJ6vmgBU=d03cs=RWA@mail.gmail.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.4.1 (i486-pc-linux-gnu)
+Date: Fri, 17 Aug 2012 08:00:58 -0700
+Message-ID: <86lihdbm1h.fsf@miki.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345214637-4189-1-git-send-email-tmshlvck@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 04:43:57PM +0200, Tomas Hlavacek wrote:
-> Added file /sys/devices/.../tty/ttySX/uartclk to allow reading
-> uartclk value in struct uart_port in serial_core via sysfs.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Whenever you add/remove/modify a sysfs file, you also need to add an
-update to Documentation/ABI/ as well.
+"Lespiau, Damien" <damien.lespiau@intel.com> writes:
 
-Please add this to the patch and resend.
+> On Tue, Aug 14, 2012 at 5:34 AM, Keith Packard <keithp@keithp.com> wrote:
+>
+> @@ -3728,7 +3728,8 @@ static inline bool intel_panel_use_ssc(struct
+> drm_i915_private *dev_priv)
+>   */
+>  static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+>                                          unsigned int *pipe_bpp,
+> -                                        struct drm_display_mode *mode)
+> +                                        struct drm_display_mode *mode,
+> +                                        int max_fdi_bpp)
+>
+> There's some kernel-doc for this function, maybe add a @max_fdi_bpp
+> there?
 
-> It simplifies initialization verification of no-name cards that
-> have non-standard oscillator speed while having no distinguishing
-> PCI IDs to allow autodetection.
-> 
-> Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
-> ---
->  drivers/tty/serial/serial_core.c |   32 ++++++++++++++++++++++++++++++++
->  drivers/tty/tty_io.c             |   17 +++++++++++++++++
->  include/linux/tty.h              |    2 ++
->  3 files changed, 51 insertions(+)
-> 
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index a21dc8e..454e9d3 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -2293,6 +2293,24 @@ struct tty_driver *uart_console_device(struct console *co, int *index)
->  	return p->tty_driver;
->  }
->  
-> +static ssize_t uart_get_attr_uartclk(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	int ret;
-> +
-> +	struct tty_port *port = dev_get_drvdata(dev);
-> +	struct uart_state *state = container_of(port, struct uart_state, port);
-> +
-> +	mutex_lock(&state->port.mutex);
-> +	ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
-> +	mutex_unlock(&state->port.mutex);
-> +
-> +	return ret;
-> +}
-> +
-> +static DEVICE_ATTR(uartclk, S_IRUSR | S_IRGRP, uart_get_attr_uartclk,
-> +		NULL);
-> +
->  /**
->   *	uart_add_one_port - attach a driver-defined port structure
->   *	@drv: pointer to the uart low level driver structure for this port
-> @@ -2355,6 +2373,14 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
->  	}
->  
->  	/*
-> +	 * Expose uartclk in sysfs. Use driverdata of the tty device for
-> +	 * referencing the UART port.
-> +	 */
-> +	dev_set_drvdata(tty_dev, port);
-> +	if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
-> +		dev_err(tty_dev, "Failed to add uartclk attr\n");
+Will do
 
-I think you just raced with userspace in creating the file after the
-device was announced to userspace.  Are you sure it's ok?
+> This chunk is being moved around in a later patch in the series,
+> merging the two patches in one looks like a good idea?
 
-If not (hint, I don't think so), please make it a default attribute of
-the device, which will then cause the file to be created before it is
-announced to userspace.  It will also be less code as you don't have to
-clean it up by hand :)
+Or at least move this into its final position in this patch.
 
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -3049,6 +3049,23 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
->  }
->  EXPORT_SYMBOL(tty_unregister_device);
->  
-> +/*
-> + *	tty_lookup_device - lookup a tty device
-> + *	@driver: the tty driver that describes the tty device
-> + *	@index: the index in the tty driver for this tty device
-> + *
-> + *	This function returns a struct device pointer when device has
-> + *	been found and NULL otherwise.
-> + *
-> + *	Locking: ??
-> + */
-> +struct device *tty_lookup_device(struct tty_driver *driver, unsigned index)
-> +{
-> +	dev_t devt = MKDEV(driver->major, driver->minor_start) + index;
-> +	return class_find_device(tty_class, NULL, &devt, dev_match_devt);
-> +}
-> +EXPORT_SYMBOL(tty_lookup_device);
+> I guess this does not cover the case of pipe B using 3 lanes meaning
+> pipe C can use 1?
 
-EXPORT_SYMBOL_GPL as you are just wrapping a class_find_device() call?
+It didn't look like that was a supported mode from the docs.
 
-thanks,
+> This duplicates the code just that is just a few lines away, instead
+> how about moving the logic to set target_clock up in front of this
+> whole if()?
 
-greg k-h
+It's not the same, it's the inverse -- computing bpp from lanes+clock
+clock instead of computing lanes from bpp+clock. But, yeah, it would be
+nice to have these merged somehow. I couldn't figure out a good way though.
+
+> This chunk is also reworked in a later commit in this series.
+
+I'll see if I can't avoid that as it's confusing. Thanks for your review!
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUBUC5cqjYtFsjWk68qAQgVxw//aRrK0o6w4/U4gXZsZ2EXaWtNohE9TCmv
+8NJQSn6m5qsnvRKTC33tIFjdidlwI/PtUdgw6NFr1DvHT4oF6MoyKlBFaAItLf67
+rGS/7Hr0o5prh7mJdQcz3sPD5FUeLFn0RUKEGMqVmOJ6GJ03IFT7wvofSAP0mauW
+l+QbAHR+1+6ILt8oNBg+qNL24h6QAx5vxE2rWTY7yIcXDqM4c4/X0LdLV73mv1rG
+lsmvSnddGSBwCGvzLfY01Cl2s8SNHtiEInSIL55RMeVOr7E+ipI+80sEXOrms/vI
+Jcj7pgR9GXCnRlkFhgPPSSoHIs0yNAQxfZpSWZG2AbD6f4iojZ2hwy4u+1ivPUjS
+YxCkb0uHqzQIOgeqzrkQAwq1kQBkQQK5FUtsRki3WVmFrm0DNj1Mwub/pvpLAITq
+bUiE/h7evwGhDSMIvf60sSL1WKxVzpa3WzqIBvuakWyM78XT9kvpp08t+S6Fss2k
+pTGIwc0+4w2TgP80ZSdBUtKyXiNE1JU35//dQWlrAXGU08IdOyC1ZY35fEKFDzNm
+qS2z8r17IoNd4S0mgssoYD4lcAFoJzMfhqimnw+FKN8851qjOAkS6brgcWWWDxr5
+zbFa1O+p/cbOUzY2HUo6y5wojvgYUIkAoLokuqPgC1u8o9HeBfoYfX52lf1xIDJ7
+Ip2zA+eK2nE=
+=hFTu
+-----END PGP SIGNATURE-----
+--=-=-=--
