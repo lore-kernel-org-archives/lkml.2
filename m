@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab2HQNT5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:19:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39981 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab2HQNTu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:19:50 -0400
-Date: Fri, 17 Aug 2012 06:19:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Toshiaki Yamane <yamanetoshi@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Martyn Welch <martyn.welch@ge.com>,
-        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] staging/vme: fix checkpatch warning
-Message-ID: <20120817131941.GA25079@kroah.com>
-References: <1345179867-8266-1-git-send-email-yamanetoshi@gmail.com>
- <1345179920-8303-1-git-send-email-yamanetoshi@gmail.com>
- <20120817074644.GL4559@mwanda>
- <CAOTypNS_rbQK2rPDWenFahiz5Z+cufPTjRy-aABqW01c3DWmYQ@mail.gmail.com>
+	id S1753610Ab2HQNWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:22:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4610 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752294Ab2HQNWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 09:22:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,784,1336374000"; 
+   d="scan'208";a="203521252"
+Date: Fri, 17 Aug 2012 21:22:37 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
+Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
+Message-ID: <20120817132237.GA311@localhost>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+ <20120816024654.GB3781@thunk.org>
+ <20120816111051.GA16036@localhost>
+ <20120816152513.GA31346@thunk.org>
+ <20120817060110.GA28786@localhost>
+ <20120817131558.GA11439@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOTypNS_rbQK2rPDWenFahiz5Z+cufPTjRy-aABqW01c3DWmYQ@mail.gmail.com>
+In-Reply-To: <20120817131558.GA11439@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 05:27:53PM +0900, Toshiaki Yamane wrote:
-> On Fri, Aug 17, 2012 at 4:46 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > You've got the same subject repeated 5 times.
-> >
-> > It would be better to merge all the vme_user.c printk fixes into
-> > one patch.
-> > [patch 1/3] Staging: vme: Fix a white space issue
-> > [patch 2/3] Staging: vme: Use pr_ printks in vme_user.c
-> > [patch 3/3] Staging: vme: Use pr_ printks in vme_pio2_core.c
-> >
-> > It's not a huge deal, it just seems like there was some confusion on
-> > how to break patches up.
-> 
-> 
-> Thanks for your reply!
-> I will try to fix it.
+Hi Ted,
 
-Please do, I can't take it as-is.
+On Fri, Aug 17, 2012 at 09:15:58AM -0400, Theodore Ts'o wrote:
+> Thanks Fengguang:
+> 
+> For the record, I was able to find my own easy repro, last night using
+> only a 220 meg partition:
+> 
+> # mke2fs -t ext4 -b 1024 -J size=1 /dev/vdc
+> # mount -t ext2 /dev/vdc /vdc
+> # mkdir /vdc/a
+> # cd /vdc/a
+> # seq 1 210000  | xargs -n 1 fallocate -l 1m
+> # seq 1 2 210000  | xargs /bin/rm
+> # mkdir /vdc/b
+> # cd /vdc/b
+> # seq 1 103 | xargs -n 1 fallocate -l 1g
+> # cd /
+> # umount /vdc
+> # mount -t ext4 -o commit=10000 /dev/vdc /vdc
+> # rm -rf /vdc/b
 
-greg k-h
+It makes a nice and simple test script, I'd very like to add it to my
+0day test system :-)
+
+> For future reference, there are a couple of things that are of
+> interest to ext4 developers when trying to create repro's:
+> 
+> 1)  The use of mounting with ext2 to speed up the setup.
+> 
+> 2)  The first two "seq ... | xargs ..." commands to create a very
+> fragmented file system.
+> 
+> 3) Using a 1k block size file system to stress the extent tree code
+> and htree directory (since its easier to make larger tree structure).
+> 
+> 4)  The use of the mount option commit=10000 to test what happens when
+> the journal is full (without using a nice, fast device such as RAID array
+> or without burning write cycles on an expensive flash device.)
+
+Thanks for the directions! I'll make that a big comment.
+
+Thanks,
+Fengguang
