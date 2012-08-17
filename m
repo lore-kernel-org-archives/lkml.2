@@ -1,138 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab2HQOoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:44:15 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37311 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758133Ab2HQOoE (ORCPT
+	id S1758150Ab2HQOpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:45:12 -0400
+Received: from mga05.intel.com ([192.55.52.89]:26101 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758066Ab2HQOpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:44:04 -0400
-From: Tomas Hlavacek <tmshlvck@gmail.com>
-To: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: marek.vasut@gmail.com, Tomas Hlavacek <tmshlvck@gmail.com>
-Subject: [PATCHv3 1/1] [RFC] uartclk from serial_core exposed to sysfs
-Date: Fri, 17 Aug 2012 16:43:57 +0200
-Message-Id: <1345214637-4189-1-git-send-email-tmshlvck@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
-References: <1344929718-22736-1-git-send-email-tmshlvck@gmail.com>
+	Fri, 17 Aug 2012 10:45:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344918891-6283-3-git-send-email-keithp@keithp.com>
+References: <1344918891-6283-1-git-send-email-keithp@keithp.com>
+	<1344918891-6283-3-git-send-email-keithp@keithp.com>
+Date: Fri, 17 Aug 2012 15:45:02 +0100
+Message-ID: <CAPX-8+8euppecLhZu3XR95uM5e9m_kYmbJ6vmgBU=d03cs=RWA@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH 2/7] drm/i915: FDI B/C share 4 lanes on Ivybridge
+From: "Lespiau, Damien" <damien.lespiau@intel.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added file /sys/devices/.../tty/ttySX/uartclk to allow reading
-uartclk value in struct uart_port in serial_core via sysfs.
+On Tue, Aug 14, 2012 at 5:34 AM, Keith Packard <keithp@keithp.com> wrote:
 
-It simplifies initialization verification of no-name cards that
-have non-standard oscillator speed while having no distinguishing
-PCI IDs to allow autodetection.
+@@ -3728,7 +3728,8 @@ static inline bool intel_panel_use_ssc(struct
+drm_i915_private *dev_priv)
+  */
+ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+                                         unsigned int *pipe_bpp,
+-                                        struct drm_display_mode *mode)
++                                        struct drm_display_mode *mode,
++                                        int max_fdi_bpp)
 
-Signed-off-by: Tomas Hlavacek <tmshlvck@gmail.com>
----
- drivers/tty/serial/serial_core.c |   32 ++++++++++++++++++++++++++++++++
- drivers/tty/tty_io.c             |   17 +++++++++++++++++
- include/linux/tty.h              |    2 ++
- 3 files changed, 51 insertions(+)
+There's some kernel-doc for this function, maybe add a @max_fdi_bpp there?
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index a21dc8e..454e9d3 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2293,6 +2293,24 @@ struct tty_driver *uart_console_device(struct console *co, int *index)
- 	return p->tty_driver;
- }
- 
-+static ssize_t uart_get_attr_uartclk(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	int ret;
-+
-+	struct tty_port *port = dev_get_drvdata(dev);
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+
-+	mutex_lock(&state->port.mutex);
-+	ret = snprintf(buf, PAGE_SIZE, "%d\n", state->uart_port->uartclk);
-+	mutex_unlock(&state->port.mutex);
-+
-+	return ret;
-+}
-+
-+static DEVICE_ATTR(uartclk, S_IRUSR | S_IRGRP, uart_get_attr_uartclk,
-+		NULL);
-+
- /**
-  *	uart_add_one_port - attach a driver-defined port structure
-  *	@drv: pointer to the uart low level driver structure for this port
-@@ -2355,6 +2373,14 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	}
- 
- 	/*
-+	 * Expose uartclk in sysfs. Use driverdata of the tty device for
-+	 * referencing the UART port.
-+	 */
-+	dev_set_drvdata(tty_dev, port);
-+	if (device_create_file(tty_dev, &dev_attr_uartclk) < 0)
-+		dev_err(tty_dev, "Failed to add uartclk attr\n");
-+
-+	/*
- 	 * Ensure UPF_DEAD is not set.
- 	 */
- 	uport->flags &= ~UPF_DEAD;
-@@ -2397,6 +2423,12 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	mutex_unlock(&port->mutex);
- 
- 	/*
-+	 * Remove uartclk file from sysfs.
-+	 */
-+	device_remove_file(tty_lookup_device(drv->tty_driver, uport->line),
-+			&dev_attr_uartclk);
-+
-+	/*
- 	 * Remove the devices from the tty layer
- 	 */
- 	tty_unregister_device(drv->tty_driver, uport->line);
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index b425c79..8ea8622 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -3049,6 +3049,23 @@ void tty_unregister_device(struct tty_driver *driver, unsigned index)
- }
- EXPORT_SYMBOL(tty_unregister_device);
- 
-+/*
-+ *	tty_lookup_device - lookup a tty device
-+ *	@driver: the tty driver that describes the tty device
-+ *	@index: the index in the tty driver for this tty device
-+ *
-+ *	This function returns a struct device pointer when device has
-+ *	been found and NULL otherwise.
-+ *
-+ *	Locking: ??
-+ */
-+struct device *tty_lookup_device(struct tty_driver *driver, unsigned index)
-+{
-+	dev_t devt = MKDEV(driver->major, driver->minor_start) + index;
-+	return class_find_device(tty_class, NULL, &devt, dev_match_devt);
-+}
-+EXPORT_SYMBOL(tty_lookup_device);
-+
- struct tty_driver *__alloc_tty_driver(int lines, struct module *owner)
- {
- 	struct tty_driver *driver;
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 9f47ab5..5d408a1 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -410,6 +410,8 @@ extern int tty_register_driver(struct tty_driver *driver);
- extern int tty_unregister_driver(struct tty_driver *driver);
- extern struct device *tty_register_device(struct tty_driver *driver,
- 					  unsigned index, struct device *dev);
-+extern struct device *tty_lookup_device(struct tty_driver *driver,
-+					unsigned index);
- extern void tty_unregister_device(struct tty_driver *driver, unsigned index);
- extern int tty_read_raw_data(struct tty_struct *tty, unsigned char *bufp,
- 			     int buflen);
+
+> @@ -3800,6 +3801,15 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+>                 display_bpc = 6;
+>         }
+>
+> +       if (display_bpc * 3 > max_fdi_bpp) {
+> +               if (max_fdi_bpp < 24)
+> +                       display_bpc = 6;
+> +               else if (max_fdi_bpp < 30)
+> +                       display_bpc = 8;
+> +               else if (max_fdi_bpp < 36)
+> +                       display_bpc = 10;
+> +               DRM_DEBUG_KMS("Dithering FDI to %dbpc\n", display_bpc);
+> +       }
+
+This chunk is being moved around in a later patch in the series,
+merging the two patches in one looks like a good idea?
+
+
+> +       /* If the other FDI link is using too many lanes, we can't have
+> +        * any
+> +        */
+> +       if (other_intel_crtc->fdi_lanes > 2)
+> +               return 0;
+> +
+> +       /* When both are running, we only get 2 lanes at most
+> +        */
+> +       return 2;
+> +}
+
+I guess this does not cover the case of pipe B using 3 lanes meaning
+pipe C can use 1?
+
+> @@ -4672,7 +4731,18 @@ static int ironlake_crtc_mode_set(struct drm_crtc *crtc,
+>            according to current link config */
+>         if (is_cpu_edp) {
+>                 intel_edp_link_config(edp_encoder, &lane, &link_bw);
+> +               max_fdi_bpp = 0;
+> +               max_lane = lane;
+>         } else {
+> +               u32     fdi_bw;
+> +
+> +               /* [e]DP over FDI requires target mode clock
+> +                  instead of link clock */
+> +               if (is_dp)
+> +                       target_clock = mode->clock;
+> +               else
+> +                       target_clock = adjusted_mode->clock;
+> +
+
+This duplicates the code just that is just a few lines away, instead
+how about moving the logic to set target_clock up in front of this
+whole if()?
+
+>                 /* FDI is a binary signal running at ~2.7GHz, encoding
+>                  * each output octet as 10 bits. The actual frequency
+>                  * is stored as a divider into a 100MHz clock, and the
+> @@ -4681,6 +4751,18 @@ static int ironlake_crtc_mode_set(struct drm_crtc *crtc,
+>                  * is:
+>                  */
+>                 link_bw = intel_fdi_link_freq(dev) * MHz(100)/KHz(1)/10;
+> +
+> +               max_lane = 4;
+> +               if (IS_IVYBRIDGE(dev))
+> +                       max_lane = ivb_fdi_max_lanes(crtc);
+> +
+> +               /*
+> +                * Compute the available FDI bandwidth, use that
+> +                * to compute the maximum supported BPP
+> +                */
+> +               fdi_bw = link_bw * max_lane * 19 / 20;
+> +               max_fdi_bpp = fdi_bw / target_clock;
+> +               DRM_DEBUG_KMS("max lane %d yields max fdi bpp %d\n", max_lane, max_fdi_bpp);
+>         }
+
+This chunk is also reworked in a later commit in this series.
+
 -- 
-1.7.10.4
-
+Damien
