@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab2HQLUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 07:20:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54757 "EHLO
+	id S1757904Ab2HQLYn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 07:24:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:64486 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756369Ab2HQLUp (ORCPT
+	with ESMTP id S1754282Ab2HQLYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 07:20:45 -0400
+	Fri, 17 Aug 2012 07:24:42 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
-Date: Fri, 17 Aug 2012 11:20:40 +0000
+To: Chao Xie <xiechao.mail@gmail.com>
+Subject: Re: [PATCH V4 1/5] clk: mmp: add mmp specific clocks
+Date: Fri, 17 Aug 2012 11:24:39 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-3-git-send-email-catalin.marinas@arm.com> <alpine.LFD.2.02.1208161438110.1541@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1208161438110.1541@xanadu.home>
+Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
+        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, chao.xie@marvell.com
+References: <1345183330-20244-1-git-send-email-xiechao.mail@gmail.com> <1345183330-20244-2-git-send-email-xiechao.mail@gmail.com>
+In-Reply-To: <1345183330-20244-2-git-send-email-xiechao.mail@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208171120.40740.arnd@arndb.de>
-X-Provags-ID: V02:K0:VbR75+srgOHBqleDe1IpTeo5PfX5jDLHCM69MGIM3vT
- ZRr4UcAUf3GaJcLAV7MxX/WoxNJPQBCunk9+6uUMrONcQmEtKG
- MkRnkWFbmHzjqO3jSsdwGjmsMvaoG1xpVzqWRVbSVNjXfogRl0
- 6t4GJkEtrdhFzKLCOGesYMS+wWbQBLdARyCY8QOEpkbJgnB2yA
- Hnj5buQE+6wMq++gFZJbvRu1C+ittT4qw/yDGs8f5SzCaoGLNl
- YRGEKqKgmMKOf7hGKJ84Gw4j5ETEnjCD2q367pYOS/CkHjyJju
- Qk+BlcS/fRR4VZa+vhDV3+TSTAcQ2kp0K5kqloDW/Jfweoh/CR
- OFpcU0Mt3QrPDz7pS0Lg=
+Message-Id: <201208171124.39201.arnd@arndb.de>
+X-Provags-ID: V02:K0:E2vx1XtkA4FK3dsUamV5DRQkCWuTkj9dyWjggGNWiEe
+ NLUeuWFQd5KjCaZsbB08PKYAWiWN7sk1wQE4IHEdrEGnKDtS2I
+ SrR2PSVZ4QCZhfsXvF/KZ4brg30O5y5U2RPvpzG/A1GzIsCGDe
+ 0H5ZBPdeN42P0Ti67AtwU2Xank7z4nI4nzK23A5ybI2xPZ7cyp
+ 3tOILHqTtGDBWoLCuwx0LwCJJARom3wSa4tVFARVNrQO7bvPul
+ uk/2FCzCgZr2yGMHZUdomGJsznTKh2JH7e/oc9tTCjxySJzURH
+ vJllFWkXU43SHzklTVM2pXDBvCj2UPd/sP79vhP1fxBAShRdd9
+ Gm5kRinx+/Fs0sTx+ZQE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 August 2012, Nicolas Pitre wrote:
-> > +3. Decompress the kernel image
-> > +------------------------------
-> > +
-> > +Requirement: OPTIONAL
-> > +
-> > +The AArch64 kernel does not provide a decompressor and therefore
-> > +requires gzip decompression to be performed by the boot loader if the
-> > +default Image.gz target is used.  For bootloaders that do not implement
-> > +this requirement, the larger Image target is available instead.
+On Friday 17 August 2012, Chao Xie wrote:
 > 
-> Some people will want to use bzip2 or whatever other decompressor du 
-> jour.  Maybe this shouldn't be gzip specific, or just presented as a 
-> possible option?
+> From: Chao Xie <chao.xie@marvell.com>
+> 
+> add mmp specific clocks including apbc cloks, apmu clocks,
+> and pll2, fraction clocks
+> 
+> Signed-off-by: Chao Xie <xiechao.mail@gmail.com>
 
-Good point. Whether this should be part of this document depends on
-what assumptions we make about the boot loader getting the image
-in the first place.
-
-In the strict sense, we are documenting the interface between the boot
-loader and the kernel here, which already specifies that  the kernel
-must be uncompressed by the time we enter it. If the boot loader wants
-to add its own encryption or compression methods, or its own headers
-in front of the binary, the boot protocol isn't really impacted.
-
-That said, I think it's a good idea to also specify what kind of
-format we want to be used, e.g. a stripped ELF Image compressed
-with one of gzip/bzip2/lzo/xz and with no other headers added,
-on a vfat/ext4/btrfs formatted file system. There are probably a
-lot of other things one might want to specify if we go down this
-route. Or we could refer to the UEFI spec and mandate that the
-same format that UEFI uses should be used here independent of
-what boot loader is used. I think we can still allow other ways to
-get to the image for deeply embedded systems, e.g. linking the
-kernel into the boot loader as a blob on tightly constrained
-systems. For that case, we'd only specify the interface between
-boot loader and kernel as described above.
-
-	Arnd
+Acked-by: Arnd Bergmann <arnd@arndb.de>
