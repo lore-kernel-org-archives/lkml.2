@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030823Ab2HQDev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:34:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46754 "EHLO
+	id S1030874Ab2HQDfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:35:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46731 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030635Ab2HQD05 (ORCPT
+	by vger.kernel.org with ESMTP id S1030624Ab2HQD0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:26:57 -0400
-Message-Id: <20120817030246.259786839@decadent.org.uk>
+	Thu, 16 Aug 2012 23:26:54 -0400
+Message-Id: <20120817030245.336458529@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:02:59 +0100
+Date: Fri, 17 Aug 2012 04:02:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [ 16/37] drm/i915: fixup seqno allocation logic for lazy_request
+        alan@lxorguk.ukuu.org.uk, Jiri Benc <jbenc@redhat.com>,
+        Max Matveev <makc@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/37] net: fix rtnetlink IFF_PROMISC and IFF_ALLMULTI  handling
 In-Reply-To: <20120817030243.807605523@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,180 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Jiri Benc <jbenc@redhat.com>
 
-commit 53d227f282eb9fa4c7cdbfd691fa372b7ca8c4c3 upstream.
+[ Upstream commit b1beb681cba5358f62e6187340660ade226a5fcc ]
 
-Currently we reserve seqnos only when we emit the request to the ring
-(by bumping dev_priv->next_seqno), but start using it much earlier for
-ring->oustanding_lazy_request. When 2 threads compete for the gpu and
-run on two different rings (e.g. ddx on blitter vs. compositor)
-hilarity ensued, especially when we get constantly interrupted while
-reserving buffers.
+When device flags are set using rtnetlink, IFF_PROMISC and IFF_ALLMULTI
+flags are handled specially. Function dev_change_flags sets IFF_PROMISC and
+IFF_ALLMULTI bits in dev->gflags according to the passed value but
+do_setlink passes a result of rtnl_dev_combine_flags which takes those bits
+from dev->flags.
 
-Breakage seems to have been introduced in
+This can be easily trigerred by doing:
 
-commit 6f392d548658a17600da7faaf8a5df25ee5f01f6
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Sat Aug 7 11:01:22 2010 +0100
+tcpdump -i eth0 &
+ip l s up eth0
 
-    drm/i915: Use a common seqno for all rings.
+ip sets IFF_UP flag in ifi_flags and ifi_change, which is combined with
+IFF_PROMISC by rtnl_dev_combine_flags, causing __dev_change_flags to set
+IFF_PROMISC in gflags.
 
-This patch fixes up the seqno reservation logic by moving it into
-i915_gem_next_request_seqno. The ring->add_request functions now
-superflously still return the new seqno through a pointer, that will
-be refactored in the next patch.
-
-Note that with this change we now unconditionally allocate a seqno,
-even when ->add_request might fail because the rings are full and the
-gpu died. But this does not open up a new can of worms because we can
-already leave behind an outstanding_request_seqno if e.g. the caller
-gets interrupted with a signal while stalling for the gpu in the
-eviciton paths. And with the bugfix we only ever have one seqno
-allocated per ring (and only that ring), so there are no ordering
-issues with multiple outstanding seqnos on the same ring.
-
-v2: Keep i915_gem_get_seqno (but move it to i915_gem.c) to make it
-clear that we only have one seqno counter for all rings. Suggested by
-Chris Wilson.
-
-v3: As suggested by Chris Wilson use i915_gem_next_request_seqno
-instead of ring->oustanding_lazy_request to make the follow-up
-refactoring more clearly correct. Also improve the commit message
-with issues discussed on irc.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45181
-Tested-by: Nicolas Kalkhof nkalkhof()at()web.de
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Max Matveev <makc@redhat.com>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_drv.h         |    7 +------
- drivers/gpu/drm/i915/i915_gem.c         |   23 +++++++++++++++++++++++
- drivers/gpu/drm/i915/intel_ringbuffer.c |   24 ++++--------------------
- 3 files changed, 28 insertions(+), 26 deletions(-)
+ net/core/rtnetlink.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 000a9ad..563d24e 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1177,12 +1177,7 @@ i915_seqno_passed(uint32_t seq1, uint32_t seq2)
- 	return (int32_t)(seq1 - seq2) >= 0;
- }
- 
--static inline u32
--i915_gem_next_request_seqno(struct intel_ring_buffer *ring)
--{
--	drm_i915_private_t *dev_priv = ring->dev->dev_private;
--	return ring->outstanding_lazy_request = dev_priv->next_seqno;
--}
-+u32 i915_gem_next_request_seqno(struct intel_ring_buffer *ring);
- 
- int __must_check i915_gem_object_get_fence(struct drm_i915_gem_object *obj,
- 					   struct intel_ring_buffer *pipelined);
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 2b51e9c..2031cc7 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1576,6 +1576,28 @@ i915_gem_process_flushing_list(struct intel_ring_buffer *ring,
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 2ef859a..88bcf76 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -670,6 +670,12 @@ static void set_operstate(struct net_device *dev, unsigned char transition)
  	}
  }
  
-+static u32
-+i915_gem_get_seqno(struct drm_device *dev)
++static unsigned int rtnl_dev_get_flags(const struct net_device *dev)
 +{
-+	drm_i915_private_t *dev_priv = dev->dev_private;
-+	u32 seqno = dev_priv->next_seqno;
-+
-+	/* reserve 0 for non-seqno */
-+	if (++dev_priv->next_seqno == 0)
-+		dev_priv->next_seqno = 1;
-+
-+	return seqno;
++	return (dev->flags & ~(IFF_PROMISC | IFF_ALLMULTI)) |
++	       (dev->gflags & (IFF_PROMISC | IFF_ALLMULTI));
 +}
 +
-+u32
-+i915_gem_next_request_seqno(struct intel_ring_buffer *ring)
-+{
-+	if (ring->outstanding_lazy_request == 0)
-+		ring->outstanding_lazy_request = i915_gem_get_seqno(ring->dev);
-+
-+	return ring->outstanding_lazy_request;
-+}
-+
- int
- i915_add_request(struct intel_ring_buffer *ring,
- 		 struct drm_file *file,
-@@ -1587,6 +1609,7 @@ i915_add_request(struct intel_ring_buffer *ring,
- 	int ret;
+ static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
+ 					   const struct ifinfomsg *ifm)
+ {
+@@ -678,7 +684,7 @@ static unsigned int rtnl_dev_combine_flags(const struct net_device *dev,
+ 	/* bugwards compatibility: ifi_change == 0 is treated as ~0 */
+ 	if (ifm->ifi_change)
+ 		flags = (flags & ifm->ifi_change) |
+-			(dev->flags & ~ifm->ifi_change);
++			(rtnl_dev_get_flags(dev) & ~ifm->ifi_change);
  
- 	BUG_ON(request == NULL);
-+	seqno = i915_gem_next_request_seqno(ring);
- 
- 	ret = ring->add_request(ring, &seqno);
- 	if (ret)
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 4956f1b..8a983b5 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -52,20 +52,6 @@ static inline int ring_space(struct intel_ring_buffer *ring)
- 	return space;
+ 	return flags;
  }
- 
--static u32 i915_gem_get_seqno(struct drm_device *dev)
--{
--	drm_i915_private_t *dev_priv = dev->dev_private;
--	u32 seqno;
--
--	seqno = dev_priv->next_seqno;
--
--	/* reserve 0 for non-seqno */
--	if (++dev_priv->next_seqno == 0)
--		dev_priv->next_seqno = 1;
--
--	return seqno;
--}
--
- static int
- render_ring_flush(struct intel_ring_buffer *ring,
- 		  u32	invalidate_domains,
-@@ -465,7 +451,7 @@ gen6_add_request(struct intel_ring_buffer *ring,
- 	mbox1_reg = ring->signal_mbox[0];
- 	mbox2_reg = ring->signal_mbox[1];
- 
--	*seqno = i915_gem_get_seqno(ring->dev);
-+	*seqno = i915_gem_next_request_seqno(ring);
- 
- 	update_mboxes(ring, *seqno, mbox1_reg);
- 	update_mboxes(ring, *seqno, mbox2_reg);
-@@ -563,8 +549,7 @@ static int
- pc_render_add_request(struct intel_ring_buffer *ring,
- 		      u32 *result)
- {
--	struct drm_device *dev = ring->dev;
--	u32 seqno = i915_gem_get_seqno(dev);
-+	u32 seqno = i915_gem_next_request_seqno(ring);
- 	struct pipe_control *pc = ring->private;
- 	u32 scratch_addr = pc->gtt_offset + 128;
- 	int ret;
-@@ -615,8 +600,7 @@ static int
- render_ring_add_request(struct intel_ring_buffer *ring,
- 			u32 *result)
- {
--	struct drm_device *dev = ring->dev;
--	u32 seqno = i915_gem_get_seqno(dev);
-+	u32 seqno = i915_gem_next_request_seqno(ring);
- 	int ret;
- 
- 	ret = intel_ring_begin(ring, 4);
-@@ -790,7 +774,7 @@ ring_add_request(struct intel_ring_buffer *ring,
- 	if (ret)
- 		return ret;
- 
--	seqno = i915_gem_get_seqno(ring->dev);
-+	seqno = i915_gem_next_request_seqno(ring);
- 
- 	intel_ring_emit(ring, MI_STORE_DWORD_INDEX);
- 	intel_ring_emit(ring, I915_GEM_HWS_INDEX << MI_STORE_DWORD_INDEX_SHIFT);
 
 
