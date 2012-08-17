@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759045Ab2HQXWB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 19:22:01 -0400
+	id S1759109Ab2HQXWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 19:22:16 -0400
 Received: from [12.239.217.82] ([12.239.217.82]:28612 "EHLO
 	venom.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758900Ab2HQXU6 (ORCPT
+	with ESMTP id S1758903Ab2HQXU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Aug 2012 19:20:58 -0400
 X-Greylist: delayed 3724 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 19:20:45 EDT
@@ -22,9 +22,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 8/17] input: RMI4 F09 Built-In Self Test
-Date: Fri, 17 Aug 2012 15:17:48 -0700
-Message-Id: <1345241877-16200-9-git-send-email-cheiny@synaptics.com>
+Subject: [RFC PATCH 13/17] input: RMI4 F21 Force sensing
+Date: Fri, 17 Aug 2012 15:17:53 -0700
+Message-Id: <1345241877-16200-14-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
 References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
@@ -43,17 +43,17 @@ Acked-by: Jean Delvare <khali@linux-fr.org>
 
 ---
 
- drivers/input/rmi4/rmi_f09.c |  772 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 772 insertions(+), 0 deletions(-)
+ drivers/input/rmi4/rmi_f21.c |  832 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 832 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/rmi4/rmi_f09.c b/drivers/input/rmi4/rmi_f09.c
+diff --git a/drivers/input/rmi4/rmi_f21.c b/drivers/input/rmi4/rmi_f21.c
 new file mode 100644
-index 0000000..ee3058e
+index 0000000..2e37c75
 --- /dev/null
-+++ b/drivers/input/rmi4/rmi_f09.c
-@@ -0,0 +1,772 @@
++++ b/drivers/input/rmi4/rmi_f21.c
+@@ -0,0 +1,832 @@
 +/*
-+ * Copyright (c) 2011, 2012 Synaptics Incorporated
++ * Copyright (c) 2012-2012 Synaptics Incorporated
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -69,339 +69,798 @@ index 0000000..ee3058e
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
++
++#define FUNCTION_DATA rmi_fn_21_data
++#define FNUM 21
++
++
 +#include <linux/kernel.h>
 +#include <linux/rmi.h>
-+#include <linux/input.h>
 +#include <linux/slab.h>
 +#include "rmi_driver.h"
 +
-+#define QUERY_BASE_INDEX 1
-+
-+/* data specific to fn $09 that needs to be kept around */
-+struct f09_query {
-+	u8 limit_register_count;
-+	union {
-+		struct {
-+			u8 result_register_count:3;
-+			u8 reserved:3;
-+			u8 internal_limits:1;
-+			u8 host_test_enable:1;
-+		};
-+		u8 f09_bist_query1;
-+	};
++union f21_2df_query {
++	struct {
++		/* Query 0 */
++		u8 max_force_sensor_count:3;
++		u8 f21_2df_query0_b3__6:4;
++		u8 has_high_resolution:1;
++	} __attribute__((__packed__));
++	struct {
++		u8 regs[1];
++		u16 address;
++	} __attribute__((__packed__));
 +};
 +
-+struct f09_control {
-+	union {
-+		struct {
-+			u8 test1_limit_low:8;
-+			u8 test1_limit_high:8;
-+			u8 test1_limit_diff:8;
-+		};
-+		u8 f09_control_test1[3];
-+	};
-+	union {
-+		struct {
-+			u8 test2_limit_low:8;
-+			u8 test2_limit_high:8;
-+			u8 test2_limit_diff:8;
-+		};
-+		u8 f09_control_test2[3];
-+	};
++union f21_2df_control_0__3 {
++	struct {
++		/* Control 0 */
++		u8 reporting_mode:3;
++		u8 no_rezero:1;
++		u8 ctl0_reserved:4;
++
++		/* Control 1 */
++		u8 force_click_threshold:8;
++
++		/* Control 2 */
++		u8 int_en_force_0:1;
++		u8 int_en_force_1:1;
++		u8 int_en_force_2:1;
++		u8 int_en_force_3:1;
++		u8 int_en_force_4:1;
++		u8 int_en_force_5:1;
++		u8 int_en_force_6:1;
++		u8 int_en_click:1;
++
++		/* Control 3 */
++		u8 force_interrupt_threshold:8;
++	} __attribute__((__packed__));
++	struct {
++		u8 regs[4];
++		u16 address;
++	} __attribute__((__packed__));
 +};
 +
-+struct f09_data {
-+	u8 test_number_control;
-+	u8 overall_bist_result;
-+	u8 test_result1;
-+	u8 test_result2;
-+	u8 transmitter_number;
++struct f21_2df_control_4n {
++	/*Control 4.* */
++	u8 one_newton_linear_calibration:7;
++	u8 use_cfg_cal:1;
++} __attribute__((__packed__));
 +
-+	union {
-+		struct {
-+			u8 receiver_number:6;
-+			u8 limit_failure_code:2;
-+		};
-+		u8 f09_bist_data2;
-+	};
++struct f21_2df_control_4 {
++		struct f21_2df_control_4n *regs;
++		u16 address;
++		u8 length;
++} __attribute__((__packed__));
++
++struct f21_2df_control_5n {
++	/* Control 5 */
++	u8 one_newton_nonlinear_calibration;
 +};
 +
-+struct f09_cmd {
-+	union {
-+		struct {
-+			u8 run_bist:1;
-+		};
-+		u8 f09_bist_cmd0;
-+	};
++struct f21_2df_control_5 {
++		struct f21_2df_control_5n *regs;
++		u16 address;
++		u8 length;
 +};
 +
-+struct rmi_fn_09_data {
-+	struct f09_query query;
-+	struct f09_data data;
-+	struct f09_cmd cmd;
-+	struct f09_control control;
-+	signed char status;
++struct f21_2df_control_6n {
++	/*Control 6.* */
++	u8 x_location;
++};
++
++struct f21_2df_control_6 {
++		struct f21_2df_control_6n *regs;
++		u16 address;
++		u8 length;
++};
++
++struct f21_2df_control_7n {
++	/*Control 7.* */
++	u8 y_location;
++};
++
++struct f21_2df_control_7 {
++		struct f21_2df_control_7n *regs;
++		u16 address;
++		u8 length;
++};
++
++struct f21_2df_control_8n {
++	/*Control 8.* */
++	u8 transmitter_force_sensor;
++};
++
++struct f21_2df_control_8 {
++		struct f21_2df_control_8n *regs;
++		u16 address;
++		u8 length;
++};
++
++struct f21_2df_control_9n {
++	/*Control 9.* */
++	u8 receiver_force_sensor;
++};
++
++struct f21_2df_control_9 {
++		struct f21_2df_control_9n *regs;
++		u16 address;
++		u8 length;
 +};
 +
 +
-+static ssize_t rmi_f09_status_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf);
++#define RMI_F21_NUM_CTRL_REGS 8
++struct f21_2df_control {
++	/* Control 0-3 */
++	union f21_2df_control_0__3 *reg_0__3;
 +
-+static ssize_t rmi_f09_status_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count);
++	/* Control 4 */
++	struct f21_2df_control_4 *reg_4;
 +
-+static ssize_t rmi_f09_limit_register_count_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++	/* Control 5 */
++	struct f21_2df_control_5 *reg_5;
 +
-+static ssize_t rmi_f09_host_test_enable_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++	/* Control 6 */
++	struct f21_2df_control_6 *reg_6;
 +
-+static ssize_t rmi_f09_host_test_enable_store(struct device *dev,
-+					  struct device_attribute *attr,
-+					  const char *buf, size_t count);
++	/* Control 7 */
++	struct f21_2df_control_7 *reg_7;
 +
-+static ssize_t rmi_f09_internal_limits_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++	/* Control 8 */
++	struct f21_2df_control_8 *reg_8;
 +
-+static ssize_t rmi_f09_result_register_count_show(struct device *dev,
-+				struct device_attribute *attr, char *buf);
++	/* Control 9 */
++	struct f21_2df_control_9 *reg_9;
++};
 +
-+static ssize_t rmi_f09_overall_bist_result_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
++union f21_2df_data_2 {
++	struct {
++		/* Data 2 */
++		u8 force_click:1;
++		u8 f21_2df_control0_b2__7:7;
++	} __attribute__((__packed__));
++	struct {
++		u8 regs[1];
++		u16 address;
++	} __attribute__((__packed__));
++};
 +
-+static ssize_t rmi_f09_test_number_control_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
++struct f21_2df_data {
++	/* Data 0 */
++	struct {
++		u8 *force_hi_lo;
++		u16 address;
++	} reg_0__1;
 +
-+static ssize_t rmi_f09_test_number_control_store(struct device *dev,
-+				      struct device_attribute *attr,
++	/* Data 2 */
++	union f21_2df_data_2 *reg_2;
++};
++
++#define F21_REZERO_CMD 0x01
++
++/* data specific to fn $21 that needs to be kept around */
++struct rmi_fn_21_data {
++	union f21_2df_query query;
++	struct f21_2df_control control;
++	struct f21_2df_data data;
++
++	struct mutex control_mutex;
++	struct mutex data_mutex;
++};
++
++static int rmi_f21_alloc_memory(struct rmi_function_container *fc);
++
++static void rmi_f21_free_memory(struct rmi_function_container *fc);
++
++static int rmi_f21_initialize(struct rmi_function_container *fc);
++
++static int rmi_f21_config(struct rmi_function_container *fc);
++
++static int rmi_f21_create_sysfs(struct rmi_function_container *fc);
++
++/* Sysfs files */
++
++/* Query sysfs files */
++
++
++show_union_struct_prototype(max_force_sensor_count)
++show_union_struct_prototype(has_high_resolution)
++
++static struct attribute *attrs[] = {
++	attrify(max_force_sensor_count),
++	attrify(has_high_resolution),
++	NULL
++};
++static struct attribute_group attrs_query = GROUP(attrs);
++/* Control sysfs files */
++
++show_store_union_struct_prototype(reporting_mode)
++show_store_union_struct_prototype(no_rezero)
++show_store_union_struct_prototype(force_click_threshold)
++show_store_union_struct_prototype(int_en_force_0)
++show_store_union_struct_prototype(int_en_force_1)
++show_store_union_struct_prototype(int_en_force_2)
++show_store_union_struct_prototype(int_en_force_3)
++show_store_union_struct_prototype(int_en_force_4)
++show_store_union_struct_prototype(int_en_force_5)
++show_store_union_struct_prototype(int_en_force_6)
++show_store_union_struct_prototype(int_en_click)
++show_store_union_struct_prototype(force_interrupt_threshold)
++
++show_store_union_struct_prototype(use_cfg_cal)
++show_store_union_struct_prototype(one_newton_linear_calibration)
++show_store_union_struct_prototype(one_newton_nonlinear_calibration)
++show_store_union_struct_prototype(x_location)
++show_store_union_struct_prototype(y_location)
++show_store_union_struct_prototype(transmitter_force_sensor)
++show_store_union_struct_prototype(receiver_force_sensor)
++
++
++static struct attribute *attrs2[] = {
++	attrify(reporting_mode),
++	attrify(no_rezero),
++	attrify(force_click_threshold),
++	attrify(int_en_click),
++	attrify(force_interrupt_threshold),
++	attrify(use_cfg_cal),
++	attrify(one_newton_linear_calibration),
++	attrify(one_newton_nonlinear_calibration),
++	attrify(x_location),
++	attrify(y_location),
++	attrify(transmitter_force_sensor),
++	attrify(receiver_force_sensor),
++	NULL
++};
++static struct attribute_group attrs_control = GROUP(attrs2);
++
++/* Data sysfs files */
++show_union_struct_prototype(force)
++show_union_struct_prototype(force_click)
++
++static struct attribute *attrs3[] = {
++	attrify(force),
++	attrify(force_click),
++	NULL
++};
++static struct attribute_group attrs_data = GROUP(attrs3);
++
++/* Command sysfs files */
++
++static ssize_t rmi_fn_21_rezero_store(struct device *dev,
++					struct device_attribute *attr,
 +					const char *buf, size_t count);
++DEVICE_ATTR(rezero, RMI_WO_ATTR,
++		rmi_show_error,
++		rmi_fn_21_rezero_store);
 +
-+static ssize_t rmi_f09_run_bist_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_f09_run_bist_store(struct device *dev,
-+				      struct device_attribute *attr,
-+					const char *buf, size_t count);
-+
-+static ssize_t rmi_f09_test_result1_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_f09_test_result2_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_f09_control_test1_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_f09_control_test1_store(struct device *dev,
-+				      struct device_attribute *attr,
-+					const char *buf, size_t count);
-+
-+static ssize_t rmi_f09_control_test2_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf);
-+
-+static ssize_t rmi_f09_control_test2_store(struct device *dev,
-+				      struct device_attribute *attr,
-+					const char *buf, size_t count);
-+
-+static int rmi_f09_alloc_memory(struct rmi_function_container *fc);
-+
-+static void rmi_f09_free_memory(struct rmi_function_container *fc);
-+
-+static int rmi_f09_initialize(struct rmi_function_container *fc);
-+
-+static int rmi_f09_config(struct rmi_function_container *fc);
-+
-+static int rmi_f09_reset(struct rmi_function_container *fc);
-+
-+static int rmi_f09_create_sysfs(struct rmi_function_container *fc);
-+
-+
-+static struct device_attribute attrs[] = {
-+	__ATTR(status, RMI_RW_ATTR,
-+		   rmi_f09_status_show, rmi_f09_status_store),
-+	__ATTR(limitRegisterCount, RMI_RO_ATTR,
-+	       rmi_f09_limit_register_count_show, rmi_store_error),
-+	__ATTR(hostTestEnable, RMI_RW_ATTR,
-+	       rmi_f09_host_test_enable_show, rmi_f09_host_test_enable_store),
-+	__ATTR(internalLimits, RMI_RO_ATTR,
-+	       rmi_f09_internal_limits_show, rmi_store_error),
-+	__ATTR(resultRegisterCount, RMI_RO_ATTR,
-+	       rmi_f09_result_register_count_show, rmi_store_error),
-+	__ATTR(overall_bist_result, RMI_RO_ATTR,
-+	       rmi_f09_overall_bist_result_show, rmi_store_error),
-+	__ATTR(test_number_control, RMI_RW_ATTR,
-+	       rmi_f09_test_number_control_show,
-+	       rmi_f09_test_number_control_store),
-+	__ATTR(test_result1, RMI_RO_ATTR,
-+	       rmi_f09_test_result1_show, rmi_store_error),
-+	__ATTR(test_result2, RMI_RO_ATTR,
-+	       rmi_f09_test_result2_show, rmi_store_error),
-+	__ATTR(run_bist, RMI_RW_ATTR,
-+	       rmi_f09_run_bist_show, rmi_f09_run_bist_store),
-+	__ATTR(f09_control_test1, RMI_RW_ATTR,
-+	       rmi_f09_control_test1_show, rmi_f09_control_test1_store),
-+	__ATTR(f09_control_test2, RMI_RW_ATTR,
-+	       rmi_f09_control_test2_show, rmi_f09_control_test2_store),
++static struct attribute *attrs4[] = {
++	attrify(rezero),
++	NULL
 +};
++static struct attribute_group attrs_command = GROUP(attrs4);
 +
-+static int rmi_f09_init(struct rmi_function_container *fc)
++static int rmi_f21_init(struct rmi_function_container *fc)
 +{
-+	int rc;
++	int retval = 0;
 +
-+	dev_info(&fc->dev, "Intializing F09 values.");
++	dev_info(&fc->dev, "Intializing F21.");
 +
-+	rc = rmi_f09_alloc_memory(fc);
-+	if (rc < 0)
++	retval = rmi_f21_alloc_memory(fc);
++	if (retval < 0)
 +		goto error_exit;
 +
-+	rc = rmi_f09_initialize(fc);
-+	if (rc < 0)
++	retval = rmi_f21_initialize(fc);
++	if (retval < 0)
 +		goto error_exit;
 +
-+	rc = rmi_f09_create_sysfs(fc);
-+	if (rc < 0)
++	retval = rmi_f21_create_sysfs(fc);
++	if (retval < 0)
 +		goto error_exit;
 +
-+	return 0;
++	return retval;
 +
 +error_exit:
-+	rmi_f09_free_memory(fc);
++	rmi_f21_free_memory(fc);
 +
-+	return rc;
++	return retval;
 +}
 +
-+static int rmi_f09_alloc_memory(struct rmi_function_container *fc)
++static int rmi_f21_alloc_memory(struct rmi_function_container *fc)
 +{
-+	struct rmi_fn_09_data *f09;
++	struct rmi_fn_21_data *f21;
 +
-+	f09 = kzalloc(sizeof(struct rmi_fn_09_data), GFP_KERNEL);
-+	if (!f09) {
-+		dev_err(&fc->dev, "Failed to allocate rmi_fn_09_data.\n");
++	f21 = kzalloc(sizeof(struct rmi_fn_21_data), GFP_KERNEL);
++	if (!f21) {
++		dev_err(&fc->dev, "Failed to allocate rmi_fn_21_data.\n");
 +		return -ENOMEM;
 +	}
-+	fc->data = f09;
++	fc->data = f21;
 +
 +	return 0;
 +}
 +
-+static void rmi_f09_free_memory(struct rmi_function_container *fc)
++
++static void rmi_f21_free_memory(struct rmi_function_container *fc)
 +{
-+	kfree(fc->data);
-+	fc->data = NULL;
++	struct rmi_fn_21_data *f21 = fc->data;
++	u8 int_num = f21->query.max_force_sensor_count;
++	sysfs_remove_group(&fc->dev.kobj, &attrs_query);
++	sysfs_remove_group(&fc->dev.kobj, &attrs_control);
++	switch (int_num) {
++	case 7:
++		sysfs_remove_file(&fc->dev.kobj, attrify(int_en_force_6));
++	case 6:
++		sysfs_remove_file(&fc->dev.kobj, attrify(int_en_force_5));
++	case 5:
++		sysfs_remove_file(&fc->dev.kobj, attrify(int_en_force_4));
++	case 4:
++		sysfs_remove_file(&fc->dev.kobj, attrify(int_en_force_3));
++	case 3:
++		sysfs_remove_file(&fc->dev.kobj, attrify(int_en_force_2));
++	case 2:
++		sysfs_remove_file(&fc->dev.kobj, attrify(int_en_force_1));
++	case 1:
++		sysfs_remove_file(&fc->dev.kobj, attrify(int_en_force_0));
++	default:
++		break;
++	}
++	sysfs_remove_group(&fc->dev.kobj, &attrs_data);
++	sysfs_remove_group(&fc->dev.kobj, &attrs_command);
++	if (f21) {
++		kfree(f21->control.reg_0__3);
++		kfree(f21->control.reg_4->regs);
++		kfree(f21->control.reg_4);
++		kfree(f21->control.reg_5->regs);
++		kfree(f21->control.reg_5);
++		kfree(f21->control.reg_6->regs);
++		kfree(f21->control.reg_6);
++		kfree(f21->control.reg_7->regs);
++		kfree(f21->control.reg_7);
++		kfree(f21->control.reg_8->regs);
++		kfree(f21->control.reg_8);
++		kfree(f21);
++		fc->data = NULL;
++	}
 +}
 +
-+static int rmi_f09_initialize(struct rmi_function_container *fc)
++
++static int rmi_f21_initialize(struct rmi_function_container *fc)
 +{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct rmi_device_platform_data *pdata;
-+	struct rmi_fn_09_data *f09 = fc->data;
-+	u16 query_base_addr;
++	struct rmi_fn_21_data *f21 = fc->data;
++	int retval = 0;
++	u16 next_loc;
++
++	/* Read F21 Query Data */
++	f21->query.address = fc->fd.query_base_addr;
++	retval = rmi_read_block(fc->rmi_dev, f21->query.address,
++		(u8 *)&f21->query, sizeof(f21->query.regs));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read query registers from %#06x.\n",
++				f21->query.address);
++		return retval;
++	}
++
++	/* Initialize Control Data */
++	next_loc = fc->fd.control_base_addr;
++
++	f21->control.reg_0__3 =
++			kzalloc(sizeof(union f21_2df_control_0__3), GFP_KERNEL);
++	if (!f21->control.reg_0__3) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_0__3->address = next_loc;
++	next_loc += sizeof(f21->control.reg_0__3->regs);
++	retval = rmi_read_block(fc->rmi_dev, f21->control.reg_0__3->address,
++			f21->control.reg_0__3->regs,
++			sizeof(f21->control.reg_0__3->regs));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read control registers 0-3 from %#06x.\n",
++			f21->control.reg_0__3->address);
++		return retval;
++	}
++
++	f21->control.reg_4 =
++			kzalloc(sizeof(struct f21_2df_control_4), GFP_KERNEL);
++	if (!f21->control.reg_4) {
++		dev_err(&fc->dev, "Failed to allocate control register.");
++		return -ENOMEM;
++	}
++	f21->control.reg_4->length = f21->query.max_force_sensor_count;
++	f21->control.reg_4->regs = kzalloc(sizeof(struct f21_2df_control_4n) *
++			f21->control.reg_4->length, GFP_KERNEL);
++	if (!f21->control.reg_4->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_4->address = next_loc;
++	next_loc += f21->control.reg_4->length;
++	retval = rmi_read_block(fc->rmi_dev, f21->control.reg_4->address,
++		(u8 *) f21->control.reg_4->regs, f21->control.reg_4->length);
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read Control register 4 from %#06x.\n",
++			f21->control.reg_4->address);
++		return retval;
++	}
++
++
++	f21->control.reg_5 =
++			kzalloc(sizeof(struct f21_2df_control_5), GFP_KERNEL);
++	if (!f21->control.reg_5) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_5->length = f21->query.max_force_sensor_count;
++	f21->control.reg_5->regs = kzalloc(sizeof(struct f21_2df_control_5n) *
++				f21->control.reg_5->length, GFP_KERNEL);
++	if (!f21->control.reg_5->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_5->address = next_loc;
++	next_loc += f21->control.reg_5->length;
++	retval = rmi_read_block(fc->rmi_dev, f21->control.reg_5->address,
++				(u8 *) f21->control.reg_5->regs,
++				f21->control.reg_5->length);
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read Control register 5 from %#06x.\n",
++				f21->control.reg_5->address);
++		return retval;
++	}
++
++	f21->control.reg_6 =
++			kzalloc(sizeof(struct f21_2df_control_6), GFP_KERNEL);
++	if (!f21->control.reg_6) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_6->length = f21->query.max_force_sensor_count;
++	f21->control.reg_6->regs = kzalloc(sizeof(struct f21_2df_control_6n) *
++				f21->control.reg_6->length, GFP_KERNEL);
++	if (!f21->control.reg_6->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_6->address = next_loc;
++	next_loc += f21->control.reg_6->length;
++	retval = rmi_read_block(fc->rmi_dev, f21->control.reg_6->address,
++			(u8 *) f21->control.reg_6->regs,
++				sizeof(f21->control.reg_6->regs));
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read control register 6 from %#06x.\n",
++					f21->control.reg_6->address);
++		return retval;
++	}
++
++	f21->control.reg_7 =
++			kzalloc(sizeof(struct f21_2df_control_7), GFP_KERNEL);
++	if (!f21->control.reg_7) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_7->length = f21->query.max_force_sensor_count;
++	f21->control.reg_7->regs = kzalloc(sizeof(struct f21_2df_control_7n) *
++				f21->control.reg_7->length, GFP_KERNEL);
++	if (!f21->control.reg_7->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_7->address = next_loc;
++	next_loc += f21->control.reg_7->length;
++	retval = rmi_read_block(fc->rmi_dev, f21->control.reg_7->address,
++		(u8 *) f21->control.reg_7->regs, f21->control.reg_7->length);
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read control register 7 from %#06x.\n",
++				f21->control.reg_7->address);
++		return retval;
++	}
++
++	f21->control.reg_8 =
++			kzalloc(sizeof(struct f21_2df_control_8), GFP_KERNEL);
++	if (!f21->control.reg_8) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_8->length = f21->query.max_force_sensor_count;
++	f21->control.reg_8->regs = kzalloc(sizeof(struct f21_2df_control_8n) *
++					f21->control.reg_8->length, GFP_KERNEL);
++	if (!f21->control.reg_8->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_8->address = next_loc;
++	next_loc += f21->control.reg_8->length;
++	retval = rmi_read_block(fc->rmi_dev, f21->control.reg_8->address,
++		(u8 *) f21->control.reg_8->regs, f21->control.reg_8->length);
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read control register 8 from %#06x.\n",
++					f21->control.reg_8->address);
++		return retval;
++	}
++
++	f21->control.reg_9 =
++			kzalloc(sizeof(struct f21_2df_control_9), GFP_KERNEL);
++	if (!f21->control.reg_9) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_9->length = f21->query.max_force_sensor_count;
++	f21->control.reg_9->regs =
++			kzalloc(sizeof(struct f21_2df_control_9n)
++			*f21->control.reg_9->length, GFP_KERNEL);
++	if (!f21->control.reg_9->regs) {
++		dev_err(&fc->dev, "Failed to allocate control registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_9->address = next_loc;
++	retval = rmi_read_block(fc->rmi_dev, f21->control.reg_9->address,
++		(u8 *) f21->control.reg_9->regs, f21->control.reg_9->length);
++	if (retval < 0) {
++		dev_err(&fc->dev, "Could not read control register 9 from %#06x.\n",
++					f21->control.reg_9->address);
++		return retval;
++	}
++
++
++	/* initialize data registers */
++	next_loc = fc->fd.data_base_addr;
++
++	f21->data.reg_0__1.force_hi_lo = kzalloc(
++			2 * f21->query.max_force_sensor_count * sizeof(u8),
++			GFP_KERNEL);
++	if (!f21->data.reg_0__1.force_hi_lo) {
++		dev_err(&fc->dev, "Failed to allocate data registers.");
++		return -ENOMEM;
++	}
++	f21->data.reg_0__1.address = next_loc;
++	next_loc += 2 * f21->query.max_force_sensor_count;
++
++	f21->data.reg_2 =
++			kzalloc(sizeof(union f21_2df_data_2), GFP_KERNEL);
++	if (!f21->data.reg_2) {
++		dev_err(&fc->dev, "Failed to allocate data registers.");
++		return -ENOMEM;
++	}
++	f21->control.reg_0__3->address = next_loc;
++
++	mutex_init(&f21->control_mutex);
++	return 0;
++}
++
++
++static int rmi_f21_create_sysfs(struct rmi_function_container *fc)
++{
++	struct rmi_fn_21_data *f21 = fc->data;
++	u8 int_num = f21->query.max_force_sensor_count;
 +	int rc;
 +
++	if (int_num > 7)
++		int_num = 7;
++	dev_dbg(&fc->dev, "Creating sysfs files.");
 +
-+	pdata = to_rmi_platform_data(rmi_dev);
-+	query_base_addr = fc->fd.query_base_addr;
-+
-+	/* initial all default values for f09 query here */
-+	rc = rmi_read_block(rmi_dev, query_base_addr,
-+		(u8 *)&f09->query, sizeof(f09->query));
++	/* Set up sysfs device attributes. */
++	if (sysfs_create_group(&fc->dev.kobj, &attrs_query) < 0) {
++		dev_err(&fc->dev, "Failed to create query sysfs files.");
++		return -ENODEV;
++	}
++	if (sysfs_create_group(&fc->dev.kobj, &attrs_control) < 0) {
++		dev_err(&fc->dev, "Failed to create control sysfs files.");
++		return -ENODEV;
++	}
++	switch (int_num) {
++	case 7:
++		rc = sysfs_create_file(&fc->dev.kobj, attrify(int_en_force_6));
++		break;
++	case 6:
++		rc = sysfs_create_file(&fc->dev.kobj, attrify(int_en_force_5));
++		break;
++	case 5:
++		rc = sysfs_create_file(&fc->dev.kobj, attrify(int_en_force_4));
++		break;
++	case 4:
++		rc = sysfs_create_file(&fc->dev.kobj, attrify(int_en_force_3));
++		break;
++	case 3:
++		rc = sysfs_create_file(&fc->dev.kobj, attrify(int_en_force_2));
++		break;
++	case 2:
++		rc = sysfs_create_file(&fc->dev.kobj, attrify(int_en_force_1));
++		break;
++	case 1:
++		rc = sysfs_create_file(&fc->dev.kobj, attrify(int_en_force_0));
++		break;
++	default:
++		rc = 0;
++		break;
++	}
 +	if (rc < 0) {
-+		dev_err(&fc->dev, "Failed to read query register."
-+			" from 0x%04x\n", query_base_addr);
++		dev_err(&fc->dev, "Failed to create control sysfs files.\n");
 +		return rc;
 +	}
++	if (sysfs_create_group(&fc->dev.kobj, &attrs_data) < 0) {
++		dev_err(&fc->dev, "Failed to create data sysfs files.\n");
++		return -ENODEV;
++	}
++	if (sysfs_create_group(&fc->dev.kobj, &attrs_command) < 0) {
++		dev_err(&fc->dev, "Failed to create command sysfs files.\n");
++		return -ENODEV;
++	}
++	return 0;
++}
++
++
++static int rmi_f21_config(struct rmi_function_container *fc)
++{
++	struct rmi_fn_21_data *data = fc->data;
++/* repeated register functions */
++
++	/* Write Control Register values back to device */
++	rmi_write_block(fc->rmi_dev, data->control.reg_0__3->address,
++				(u8 *)data->control.reg_0__3,
++				sizeof(data->control.reg_0__3->regs));
++
++	rmi_write_block(fc->rmi_dev, data->control.reg_4->address,
++			(u8 *) data->control.reg_4->regs,
++			data->control.reg_4->length);
++
++	rmi_write_block(fc->rmi_dev, data->control.reg_5->address,
++			(u8 *) data->control.reg_5->regs,
++			data->control.reg_5->length);
++
++	rmi_write_block(fc->rmi_dev, data->control.reg_6->address,
++			(u8 *) data->control.reg_6->regs,
++			data->control.reg_6->length);
++
++	rmi_write_block(fc->rmi_dev, data->control.reg_7->address,
++			(u8 *) data->control.reg_7->regs,
++			data->control.reg_7->length);
++
++	rmi_write_block(fc->rmi_dev, data->control.reg_8->address,
++			(u8 *) data->control.reg_8->regs,
++			data->control.reg_8->length);
++
++	rmi_write_block(fc->rmi_dev, data->control.reg_9->address,
++			(u8 *) data->control.reg_9->regs,
++			data->control.reg_9->length);
 +
 +	return 0;
 +}
 +
-+static int rmi_f09_create_sysfs(struct rmi_function_container *fc)
++static void rmi_f21_remove(struct rmi_function_container *fc)
 +{
-+	int attr_count = 0;
-+	int rc;
 +
-+	dev_dbg(&fc->dev, "Creating sysfs files.");
-+	/* Set up sysfs device attributes. */
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
-+		if (sysfs_create_file
-+		    (&fc->dev.kobj, &attrs[attr_count].attr) < 0) {
-+			dev_err(&fc->dev, "Failed to create sysfs file for %s.",
-+			     attrs[attr_count].attr.name);
-+			rc = -ENODEV;
-+			goto err_remove_sysfs;
++	dev_info(&fc->dev, "Removing F21.");
++	rmi_f21_free_memory(fc);
++}
++
++/* sysfs functions */
++/* Query */
++simple_show_union_struct_unsigned(query, max_force_sensor_count)
++simple_show_union_struct_unsigned(query, has_high_resolution)
++
++/* Control */
++show_store_union_struct_unsigned(control, reg_0__3, reporting_mode)
++show_store_union_struct_unsigned(control, reg_0__3, no_rezero)
++
++show_store_union_struct_unsigned(control, reg_0__3, force_click_threshold)
++
++show_store_union_struct_unsigned(control, reg_0__3, int_en_force_0)
++show_store_union_struct_unsigned(control, reg_0__3, int_en_force_1)
++show_store_union_struct_unsigned(control, reg_0__3, int_en_force_2)
++show_store_union_struct_unsigned(control, reg_0__3, int_en_force_3)
++show_store_union_struct_unsigned(control, reg_0__3, int_en_force_4)
++show_store_union_struct_unsigned(control, reg_0__3, int_en_force_5)
++show_store_union_struct_unsigned(control, reg_0__3, int_en_force_6)
++show_store_union_struct_unsigned(control, reg_0__3, int_en_click)
++show_store_union_struct_unsigned(control, reg_0__3, force_interrupt_threshold)
++
++
++/* repeated register functions */
++show_store_repeated_union_struct_unsigned(control, reg_4, use_cfg_cal)
++show_store_repeated_union_struct_unsigned(control, reg_4,
++					  one_newton_linear_calibration)
++show_store_repeated_union_struct_unsigned(control, reg_5,
++					  one_newton_nonlinear_calibration)
++show_store_repeated_union_struct_unsigned(control, reg_6, x_location)
++show_store_repeated_union_struct_unsigned(control, reg_7, y_location)
++show_store_repeated_union_struct_unsigned(control, reg_8,
++					  transmitter_force_sensor)
++show_store_repeated_union_struct_unsigned(control, reg_9,
++					  receiver_force_sensor)
++
++/* Data */
++static ssize_t rmi_fn_21_force_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf) {
++	struct rmi_function_container *fc;
++	struct FUNCTION_DATA *data;
++	int reg_length;
++	int result, size = 0;
++	char *temp;
++	int i;
++
++	fc = to_rmi_function_container(dev);
++	data = fc->data;
++
++	/* Read current regtype values */
++	reg_length = data->query.max_force_sensor_count;
++	result = rmi_read_block(fc->rmi_dev, data->data.reg_0__1.address,
++			data->data.reg_0__1.force_hi_lo,
++			2 * reg_length * sizeof(u8));
++
++	if (result < 0) {
++		dev_err(dev, "Could not read regtype at %#06x. Data may be outdated.",
++					data->data.reg_0__1.address);
++	}
++	temp = buf;
++	for (i = 0; i < reg_length; i++) {
++		result = snprintf(temp, PAGE_SIZE - size, "%d ",
++			data->data.reg_0__1.force_hi_lo[i] * (2 << 3)
++			+ data->data.reg_0__1.force_hi_lo[i + reg_length]);
++		if (result < 0) {
++			dev_err(dev, "%s : Could not write output.", __func__);
++			return result;
 +		}
++		size += result;
++		temp += result;
 +	}
-+
-+	return 0;
-+
-+err_remove_sysfs:
-+	for (attr_count--; attr_count >= 0; attr_count--)
-+		sysfs_remove_file(&fc->dev.kobj,
-+				  &attrs[attr_count].attr);
-+
-+	return rc;
++	result = snprintf(temp, PAGE_SIZE - size, "\n");
++	if (result < 0) {
++			dev_err(dev, "%s : Could not write output.", __func__);
++			return result;
++	}
++	return size + result;
 +}
 +
-+static int rmi_f09_config(struct rmi_function_container *fc)
-+{
-+	/*we do nothing here. instead reset should notify the user.*/
-+	return 0;
-+}
++show_union_struct_unsigned(data, reg_2, force_click)
 +
-+static int rmi_f09_reset(struct rmi_function_container *fc)
-+{
-+	struct  rmi_fn_09_data  *instance_data = fc->data;
++/* Command */
 +
-+	instance_data->status = -ECONNRESET;
++static ssize_t rmi_fn_21_rezero_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t count) {
++	unsigned long val;
++	int error, result;
++	struct rmi_function_container *fc;
++	struct rmi_fn_21_data *f21;
++	struct rmi_driver *driver;
++	u8 command;
 +
-+	return 0;
-+}
++	fc = to_rmi_function_container(dev);
++	f21 = fc->data;
++	driver = fc->rmi_dev->driver;
 +
-+static void rmi_f09_remove(struct rmi_function_container *fc)
-+{
-+	int attr_count;
-+
-+	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++)
-+		sysfs_remove_file(&fc->dev.kobj,
-+				  &attrs[attr_count].attr);
-+
-+	rmi_f09_free_memory(fc);
-+}
-+
-+static int rmi_f09_attention(struct rmi_function_container *fc, u8 *irq_bits)
-+{
-+	struct rmi_device *rmi_dev = fc->rmi_dev;
-+	struct rmi_fn_09_data *data = fc->data;
-+	int error;
-+	error = rmi_read_block(rmi_dev, fc->fd.command_base_addr,
-+			(u8 *)&data->cmd, sizeof(data->cmd));
-+
-+	if (error < 0) {
-+		dev_err(&fc->dev, "Failed to read command register.\n");
++	/* need to convert the string data to an actual value */
++	error = strict_strtoul(buf, 10, &val);
++	if (error)
 +		return error;
++	/* Do nothing if not set to 1. This prevents accidental commands. */
++	if (val != 1)
++		return count;
++
++	command = (unsigned char)F21_REZERO_CMD;
++
++	/* Write the command to the command register */
++	result = rmi_write_block(fc->rmi_dev, fc->fd.command_base_addr,
++						&command, 1);
++	if (result < 0) {
++		dev_err(dev, "%s : Could not write command to 0x%x\n",
++				__func__, fc->fd.command_base_addr);
++		return result;
 +	}
-+	/* If the command register is cleared, meaning the value is 0 */
-+	if (data->status == ECONNRESET) {
-+		dev_warn(&rmi_dev->dev, "RESET occured: %#04x.\n",
-+			data->status);
-+	} else if (data->cmd.run_bist) {
-+		dev_warn(&rmi_dev->dev,
-+			"Command register not cleared: %#04x.\n",
-+			data->cmd.run_bist);
-+	}
-+	return 0;
++	return count;
 +}
 +
 +static struct rmi_function_handler function_handler = {
-+	.func = 0x09,
-+	.init = rmi_f09_init,
-+	.config = rmi_f09_config,
-+	.attention = rmi_f09_attention,
-+	.reset = rmi_f09_reset,
-+	.remove = rmi_f09_remove
++	.func = 0x21,
++	.init = rmi_f21_init,
++	.config = rmi_f21_config,
++	.reset = NULL,
++	.attention = NULL,
++	.remove = rmi_f21_remove
 +};
 +
-+static int __init rmi_f09_module_init(void)
++static int __init rmi_f21_module_init(void)
 +{
 +	int error;
 +
@@ -410,417 +869,18 @@ index 0000000..ee3058e
 +		pr_err("%s: register failed!\n", __func__);
 +		return error;
 +	}
-+
 +	return 0;
 +}
 +
-+static void rmi_f09_module_exit(void)
++static void rmi_f21_module_exit(void)
 +{
 +	rmi_unregister_function_driver(&function_handler);
 +}
 +
-+static ssize_t rmi_f09_status_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *instance_data;
++module_init(rmi_f21_module_init);
++module_exit(rmi_f21_module_exit);
 +
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	return snprintf(buf, PAGE_SIZE, "%d\n", instance_data->status);
-+}
-+
-+static ssize_t rmi_f09_status_store(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *instance_data;
-+
-+	fc = to_rmi_function_container(dev);
-+	instance_data = fc->data;
-+
-+	/* any write to status resets 1 */
-+	instance_data->status = 0;
-+
-+	return 0;
-+}
-+
-+static ssize_t rmi_f09_limit_register_count_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.limit_register_count);
-+}
-+
-+static ssize_t rmi_f09_host_test_enable_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.host_test_enable);
-+}
-+
-+static ssize_t rmi_f09_host_test_enable_store(struct device *dev,
-+					  struct device_attribute *attr,
-+					  const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+	unsigned int new_value;
-+	int result;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	if (sscanf(buf, "%u", &new_value) != 1) {
-+		dev_err(dev,
-+			"%s: Error - hostTestEnable has an invalid length.\n",
-+			__func__);
-+		return -EINVAL;
-+	}
-+
-+	if (new_value < 0 || new_value > 1) {
-+		dev_err(dev, "%s: Invalid hostTestEnable bit %s.",
-+			__func__, buf);
-+		return -EINVAL;
-+	}
-+	data->query.host_test_enable = new_value;
-+	result = rmi_write(fc->rmi_dev, fc->fd.query_base_addr,
-+		data->query.host_test_enable);
-+	if (result < 0) {
-+		dev_err(dev, "%s: Could not write hostTestEnable to 0x%x\n",
-+				__func__, fc->fd.query_base_addr);
-+		return result;
-+	}
-+
-+	return count;
-+
-+}
-+
-+static ssize_t rmi_f09_internal_limits_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.internal_limits);
-+}
-+
-+static ssize_t rmi_f09_result_register_count_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->query.result_register_count);
-+}
-+
-+static ssize_t rmi_f09_overall_bist_result_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->data.overall_bist_result);
-+}
-+
-+static ssize_t rmi_f09_test_result1_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->data.test_result1);
-+}
-+
-+static ssize_t rmi_f09_test_result2_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->data.test_result2);
-+}
-+
-+static ssize_t rmi_f09_run_bist_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->cmd.run_bist);
-+}
-+
-+static ssize_t rmi_f09_run_bist_store(struct device *dev,
-+				      struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+	unsigned int new_value;
-+	int result;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	if (sscanf(buf, "%u", &new_value) != 1) {
-+		dev_err(dev,
-+		"%s: Error - run_bist_store has an "
-+		"invalid len.\n",
-+		__func__);
-+		return -EINVAL;
-+	}
-+
-+	if (new_value < 0 || new_value > 1) {
-+		dev_err(dev, "%s: Invalid run_bist bit %s.", __func__, buf);
-+		return -EINVAL;
-+	}
-+	data->cmd.run_bist = new_value;
-+	result = rmi_write(fc->rmi_dev, fc->fd.command_base_addr,
-+		data->cmd.run_bist);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write run_bist_store to 0x%x\n",
-+				__func__, fc->fd.command_base_addr);
-+		return result;
-+	}
-+
-+	return count;
-+
-+}
-+
-+static ssize_t rmi_f09_control_test1_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u %u %u\n",
-+			data->control.test1_limit_low,
-+			data->control.test1_limit_high,
-+			data->control.test1_limit_diff);
-+}
-+
-+static ssize_t rmi_f09_control_test1_store(struct device *dev,
-+				      struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+	unsigned int new_low, new_high, new_diff;
-+	int result;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	if (sscanf(buf, "%u %u %u", &new_low, &new_high, &new_diff) != 3) {
-+		dev_err(dev,
-+		"%s: Error - f09_control_test1_store has an "
-+		"invalid len.\n",
-+		__func__);
-+		return -EINVAL;
-+	}
-+
-+	if (new_low < 0 || new_low > 1 || new_high < 0 || new_high
-+			|| new_diff < 0 || new_diff) {
-+		dev_err(dev, "%s: Invalid f09_control_test1_diff bit %s.",
-+			__func__, buf);
-+		return -EINVAL;
-+	}
-+	data->control.test1_limit_low = new_low;
-+	data->control.test1_limit_high = new_high;
-+	data->control.test1_limit_diff = new_diff;
-+	result = rmi_write(fc->rmi_dev, fc->fd.control_base_addr,
-+		data->control.test1_limit_low);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write f09_control_test1_limit_low to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	result = rmi_write(fc->rmi_dev, fc->fd.control_base_addr,
-+		data->control.test1_limit_high);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write f09_control_test1_limit_high to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	result = rmi_write(fc->rmi_dev, fc->fd.control_base_addr,
-+		data->control.test1_limit_diff);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write f09_control_test1_limit_diff to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	return count;
-+
-+}
-+
-+static ssize_t rmi_f09_control_test2_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u %u %u\n",
-+			data->control.test2_limit_low,
-+			data->control.test2_limit_high,
-+			data->control.test2_limit_diff);
-+}
-+
-+static ssize_t rmi_f09_control_test2_store(struct device *dev,
-+				      struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+	unsigned int new_low, new_high, new_diff;
-+	int result;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	if (sscanf(buf, "%u %u %u", &new_low, &new_high, &new_diff) != 3) {
-+		dev_err(dev,
-+		"%s: Error - f09_control_test1_store has an "
-+		"invalid len.\n",
-+		__func__);
-+		return -EINVAL;
-+	}
-+
-+	if (new_low < 0 || new_low > 1 || new_high < 0 || new_high > 1 ||
-+			new_diff < 0 || new_diff > 1) {
-+		dev_err(dev, "%s: Invalid f09_control_test2_diff bit %s.",
-+			__func__, buf);
-+		return -EINVAL;
-+	}
-+	data->control.test2_limit_low = new_low;
-+	data->control.test2_limit_high = new_high;
-+	data->control.test2_limit_diff = new_diff;
-+	result = rmi_write(fc->rmi_dev, fc->fd.control_base_addr,
-+		data->control.test2_limit_low);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write f09_control_test2_limit_low to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	result = rmi_write(fc->rmi_dev, fc->fd.control_base_addr,
-+		data->control.test2_limit_high);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write f09_control_test2_limit_high to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	result = rmi_write(fc->rmi_dev, fc->fd.control_base_addr,
-+		data->control.test2_limit_diff);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write f09_control_test2_limit_diff to 0x%x\n",
-+				__func__, fc->fd.control_base_addr);
-+		return result;
-+	}
-+
-+	return count;
-+
-+}
-+
-+
-+static ssize_t rmi_f09_test_number_control_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			data->data.test_number_control);
-+}
-+
-+static ssize_t rmi_f09_test_number_control_store(struct device *dev,
-+				      struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct rmi_function_container *fc;
-+	struct rmi_fn_09_data *data;
-+	unsigned int new_value;
-+	int result;
-+
-+	fc = to_rmi_function_container(dev);
-+	data = fc->data;
-+	if (sscanf(buf, "%u", &new_value) != 1) {
-+		dev_err(dev,
-+		"%s: Error - test_number_control_store has an "
-+		"invalid len.\n",
-+		__func__);
-+		return -EINVAL;
-+	}
-+
-+	if (new_value < 0 || new_value > 1) {
-+		dev_err(dev, "%s: Invalid test_number_control bit %s.",
-+			__func__, buf);
-+		return -EINVAL;
-+	}
-+	data->data.test_number_control = new_value;
-+	result = rmi_write(fc->rmi_dev, fc->fd.control_base_addr,
-+		data->data.test_number_control);
-+	if (result < 0) {
-+		dev_err(dev, "%s : Could not write "
-+				"test_number_control_store to 0x%x\n",
-+				__func__, fc->fd.data_base_addr);
-+		return result;
-+	}
-+
-+	return count;
-+}
-+
-+module_init(rmi_f09_module_init);
-+module_exit(rmi_f09_module_exit);
-+
-+MODULE_AUTHOR("Allie Xiong <axiong@Synaptics.com>");
-+MODULE_DESCRIPTION("RMI F09 module");
++MODULE_AUTHOR("Daniel Rosenberg <daniel.rosenberg@synaptics.com>");
++MODULE_DESCRIPTION("RMI F21 module");
 +MODULE_LICENSE("GPL");
 +MODULE_VERSION(RMI_DRIVER_VERSION);
