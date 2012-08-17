@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab2HQQ4R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 12:56:17 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:53549 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755929Ab2HQQ4I (ORCPT
+	id S1753556Ab2HQQ5l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 12:57:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64050 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab2HQQ5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 12:56:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345217308.3708.35.camel@gandalf.local.home>
-References: <1345204994-5400-1-git-send-email-elezegarcia@gmail.com>
-	<1345217308.3708.35.camel@gandalf.local.home>
-Date: Fri, 17 Aug 2012 13:56:07 -0300
-Message-ID: <CALF0-+UWkZmAnW0TM0FwLPUp8UKRzBLh1i+5vDih9V8yQ8r+KA@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] trace: Move trace event enable from fs_initcall to early_initcall
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, tim.bird@am.sony.com,
-        lizefan@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 17 Aug 2012 12:57:32 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf ui/gtk: Ensure not to call gtk_main_quit() twice
+Date: Sat, 18 Aug 2012 01:56:23 +0900
+Message-Id: <1345222583-3964-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 12:28 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2012-08-17 at 09:03 -0300, Ezequiel Garcia wrote:
->> This patch splits trace event initialization in two stages:
->>  * ftrace enable
->>  * sysfs event entry creation
->>
->> This allows to capture trace events from an earlier point
->> by using 'trace_event' kernel parameter and is important
->> to trace boot-up allocations.
->>
->
-> This is much better, I'll give it some tests and add it to my 3.7 queue.
->
+Currently the gtk_main_quit() is called twice when perf exits so the
+following warning is emitted:
 
-Great. Is the event_remove() code, okey? I wasn't too sure about this part.
+  [penberg@tux perf]$ ./perf report --gtk
+  ^Cperf: Interrupt
 
-And also: do you think we could try to only early-enable those events
-that were setup with 'trace_event' boot parameter?
+  (perf:4048): Gtk-CRITICAL **: IA__gtk_main_quit: assertion `main_loops != NULL' failed
 
-I tried but couldn't do it without looping through the complete
-__start_ftrace_event array and comparing each entry.
+Fix it by not to call it unnecessarily.
 
-Is this even worthy?
+Reported-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/gtk/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks for reviewing,
-Ezequiel.
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index ad40b3626fdb..ec1ee26b485a 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -13,6 +13,8 @@ int perf_gtk__init(void)
+ 
+ void perf_gtk__exit(bool wait_for_ok __used)
+ {
++	if (!perf_gtk__is_active_context(pgctx))
++		return;
+ 	perf_error__unregister(&perf_gtk_eops);
+ 	gtk_main_quit();
+ }
+-- 
+1.7.9.2
+
