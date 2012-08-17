@@ -1,157 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492Ab2HQB5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:57:03 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:52466 "EHLO isrv.corpit.ru"
+	id S1756913Ab2HQCAu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 22:00:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10196 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756144Ab2HQB47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 21:56:59 -0400
-Message-ID: <502DA4E8.9050800@msgid.tls.msk.ru>
-Date: Fri, 17 Aug 2012 05:56:56 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1756144Ab2HQCAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Aug 2012 22:00:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,782,1336374000"; 
+   d="scan'208";a="203191775"
+Date: Fri, 17 Aug 2012 10:00:46 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
+        =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>
+Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
+Message-ID: <20120817020046.GA24406@localhost>
+References: <20120805025938.GA8954@localhost>
+ <20120805165826.GB13913@kroah.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: 3.0+ NFS issues (bisected)
-References: <4FBF2C57.3070203@msgid.tls.msk.ru> <20120529152416.GC3441@fieldses.org> <4FC5C82E.4020806@msgid.tls.msk.ru> <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru> <1338469169.2420.7.camel@lade.trondhjem.org> <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru> <4FFC2573.8040804@msgid.tls.msk.ru> <20120712125303.GC16822@fieldses.org>
-In-Reply-To: <20120712125303.GC16822@fieldses.org>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120805165826.GB13913@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.07.2012 16:53, J. Bruce Fields wrote:
-> On Tue, Jul 10, 2012 at 04:52:03PM +0400, Michael Tokarev wrote:
->> I tried to debug this again, maybe to reproduce in a virtual machine,
->> and found out that it is only 32bit server code shows this issue:
->> after updating the kernel on the server to 64bit (the same version)
->> I can't reproduce this issue anymore.  Rebooting back to 32bit,
->> and voila, it is here again.
->>
->> Something apparenlty isn't right on 32bits... ;)
->>
->> (And yes, the prob is still present and is very annoying :)
+On Sun, Aug 05, 2012 at 09:58:26AM -0700, Greg KH wrote:
+> On Sun, Aug 05, 2012 at 10:59:38AM +0800, Fengguang Wu wrote:
+> > Hi all,
+> > 
+> > This line triggers an oops in kvm boot test:
+> > 
+> > usb_match_id():
+> > ==>      748         for (; id->idVendor || id->idProduct || id->bDeviceClass ||
+> >          749                id->bInterfaceClass || id->driver_info; id++) {
+> >          750                 if (usb_match_one_id(interface, id))
+> >          751                         return id;
+> >          752         }
+> > 
+> > It's an old bug and happens also in linux 3.0. It's very reproducible
+> > for the attached config. I can send the initrd (yocto-minimal-i386.cgz)
+> > on your request in private email.
 > 
-> OK, that's very useful, thanks.  So probably a bug got introduced in the
-> 32-bit case between 2.6.32 and 3.0.
+> Odds are a driver without a terminating NULL for the device id list is
+> causing this to fail.
 > 
-> My personal upstream testing is normally all x86_64 only.  I'll kick off
-> a 32-bit install and see if I can reproduce this quickly.
+> What devices are in the system and what drivers are trying to be bound?
 
-Actually it has nothing to do with 32 vs 64 bits as I
-initially thought.  It happens on 64bits too, but takes
-more time (or data to transfer) to trigger.
+The last match is for: drivers/usb/misc/emi62.c
 
+Located down by Tianyu's debug patch:
 
-> Let me know if you're able to narrow this down any more.
+[    2.206708] usb_device_match: device 1-1:1.0, driver cytherm
+[    2.207627] usb_device_match: device 1-1:1.0, driver emi62 - firmware loader
+[    2.208769] BUG: unable to handle kernel paging request at c1f7478e
+[    2.209726] IP: [<c14ac1c0>] usb_match_id+0x5b/0xcd
 
-I bisected this issue to the following commit:
-
-commit f03d78db65085609938fdb686238867e65003181
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Thu Jul 7 00:27:05 2011 -0700
-
-    net: refine {udp|tcp|sctp}_mem limits
-
-    Current tcp/udp/sctp global memory limits are not taking into account
-    hugepages allocations, and allow 50% of ram to be used by buffers of a
-    single protocol [ not counting space used by sockets / inodes ...]
-
-    Lets use nr_free_buffer_pages() and allow a default of 1/8 of kernel ram
-    per protocol, and a minimum of 128 pages.
-    Heavy duty machines sysadmins probably need to tweak limits anyway.
-
-
-Reverting this commit on top of 3.0 (or any later 3.x kernel) fixes
-the behavour here.
-
-This machine has 4Gb of memory.  On 3.0, with this patch applied
-(as it is part of 3.0), tcp_mem is like this:
-
-  21228     28306   42456
-
-with this patch reverted, tcp_mem shows:
-
-  81216     108288  162432
-
-and with these values, it works fine.
-
-So it looks like something else goes wrong there,
-which lead to all nfsds fighting with each other
-for something and eating 100% of available CPU
-instead of servicing clients.
-
-For added fun, when setting tcp_mem to the "good" value
-from "bad" value (after booting into kernel with that
-patch applied), the problem is _not_ fixed.
-
-Any further hints?
+> --- a/drivers/usb/core/driver.c
+> +++ b/drivers/usb/core/driver.c
+> @@ -778,7 +778,8 @@ static int usb_device_match(struct device *dev, struct device_driver *drv)
+>
+>                 intf = to_usb_interface(dev);
+>                 usb_drv = to_usb_driver(drv);
+> -
+> +
+> +               pr_info("%s: device %s, driver %s \n", dev_name(dev), drv->name);
+>                 id = usb_match_id(intf, usb_drv->id_table);
+>                 if (id)
+>                         return 1;
 
 Thanks,
-
-/mjt
-
->> On 31.05.2012 17:51, Michael Tokarev wrote:
->>> On 31.05.2012 17:46, Myklebust, Trond wrote:
->>>> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
->>> []
->>>>> I started tcpdump:
->>>>>
->>>>>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
->>>>>
->>>>> on the client (192.168.88.2).  Next I mounted a directory on the client,
->>>>> and started reading (tar'ing) a directory into /dev/null.  It captured a
->>>>> few stalls.  Tcpdump shows number of packets it got, the stalls are at
->>>>> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
->>>>>
->>>>> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
->>>>> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
->>>>> 10 files of 1Gb each, all made by using `truncate' utility, so does not
->>>>> take place on disk at all.  This also makes it obvious that the issue
->>>>> does not depend on the speed of disk on the server (since in this case,
->>>>> the server disk isn't even in use).
->>>>
->>>> OK. So from the above file it looks as if the traffic is mainly READ
->>>> requests.
->>>
->>> The issue here happens only with reads.
->>>
->>>> In 2 places the server stops responding. In both cases, the client seems
->>>> to be sending a single TCP frame containing several COMPOUNDS containing
->>>> READ requests (which should be legal) just prior to the hang. When the
->>>> server doesn't respond, the client pings it with a RENEW, before it ends
->>>> up severing the TCP connection and then retransmitting.
->>>
->>> And sometimes -- speaking only from the behavour I've seen, not from the
->>> actual frames sent -- server does not respond to the RENEW too, in which
->>> case the client reports "nfs server no responding", and on the next
->>> renew it may actually respond.  This happens too, but much more rare.
->>>
->>> During these stalls, ie, when there's no network activity at all,
->>> the server NFSD threads are busy eating all available CPU.
->>>
->>> What does it all tell us? :)
->>>
->>> Thank you!
->>>
->>> /mjt
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+Fengguang
