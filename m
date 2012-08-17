@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab2HQNqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:46:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:32874 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753049Ab2HQNpv (ORCPT
+	id S1755810Ab2HQNqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:46:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55898 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755598Ab2HQNqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:45:51 -0400
-Date: Fri, 17 Aug 2012 14:45:15 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
-Message-ID: <20120817134515.GH24389@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
- <alpine.LFD.2.02.1208161438110.1541@xanadu.home>
- <201208171120.40740.arnd@arndb.de>
+	Fri, 17 Aug 2012 09:46:00 -0400
+Date: Fri, 17 Aug 2012 06:45:54 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>
+Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
+Message-ID: <20120817134554.GC2124@kroah.com>
+References: <20120805025938.GA8954@localhost>
+ <20120805165826.GB13913@kroah.com>
+ <20120817020046.GA24406@localhost>
+ <20120817034825.GC7770@kroah.com>
+ <20120817054441.GA28434@localhost>
+ <87wr0xnbnm.fsf@nemi.mork.no>
+ <87sjblnaye.fsf@nemi.mork.no>
+ <20120817092708.GA30371@localhost>
+ <20120817102456.GA31230@localhost>
+ <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201208171120.40740.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 12:20:40PM +0100, Arnd Bergmann wrote:
-> On Thursday 16 August 2012, Nicolas Pitre wrote:
-> > > +3. Decompress the kernel image
-> > > +------------------------------
-> > > +
-> > > +Requirement: OPTIONAL
-> > > +
-> > > +The AArch64 kernel does not provide a decompressor and therefore
-> > > +requires gzip decompression to be performed by the boot loader if the
-> > > +default Image.gz target is used.  For bootloaders that do not implement
-> > > +this requirement, the larger Image target is available instead.
-> > 
-> > Some people will want to use bzip2 or whatever other decompressor du 
-> > jour.  Maybe this shouldn't be gzip specific, or just presented as a 
-> > possible option?
+On Fri, Aug 17, 2012 at 08:16:15PM +0800, Ming Lei wrote:
+> On Fri, Aug 17, 2012 at 6:24 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> > On Fri, Aug 17, 2012 at 05:27:08PM +0800, Fengguang Wu wrote:
+> >> Hi Bjørn,
+> >>
+> >> > -static const struct usb_device_id id_table[] __devinitconst = {
+> >> > +static const struct usb_device_id id_table[] = {
+> >>
+> >> Good catch! It magically fixed the oops. So that id_table was
+> >> freed sometime with __devinitconst?
+> >>
+> >> There are some more "usb_device_id .* __devinitconst" users in the system,
+> >> Shall they be fixed as well?
 > 
-> Good point. Whether this should be part of this document depends on
-> what assumptions we make about the boot loader getting the image
-> in the first place.
+> The issue should be triggered only when HOTPLUG is not set.
+> 
+> But,  if HOTPLUG is not enabled, should device_add() trigger driver probe
+> further after kernel init is completed?  Or even devices should be allowed
+> to add into system?
 
-It ended up here because there is a Makefile target, Image.gz, though I
-haven't used it at all. I'll expand the text so that it is not
-restricted to gzip.
+Yes, it can, and should, because you can add them through sysfs.
 
-> In the strict sense, we are documenting the interface between the boot
-> loader and the kernel here, which already specifies that  the kernel
-> must be uncompressed by the time we enter it. If the boot loader wants
-> to add its own encryption or compression methods, or its own headers
-> in front of the binary, the boot protocol isn't really impacted.
+I'll go fix these up, I really hate the __devinit* markings, they really
+are pointless these days, and only cause problems :(
 
-Yes.
+Thanks all for tracking this down.
 
-> That said, I think it's a good idea to also specify what kind of
-> format we want to be used, e.g. a stripped ELF Image compressed
-> with one of gzip/bzip2/lzo/xz and with no other headers added,
-> on a vfat/ext4/btrfs formatted file system. There are probably a
-> lot of other things one might want to specify if we go down this
-> route. Or we could refer to the UEFI spec and mandate that the
-> same format that UEFI uses should be used here independent of
-> what boot loader is used. I think we can still allow other ways to
-> get to the image for deeply embedded systems, e.g. linking the
-> kernel into the boot loader as a blob on tightly constrained
-> systems. For that case, we'd only specify the interface between
-> boot loader and kernel as described above.
-
-At least the latter case is used on the model. For the other cases, it's
-quite early to clearly specify what is needed as we don't currently have
-a boot-loader other than UEFI. We may expect GRUB as well.
-
--- 
-Catalin
+greg k-h
