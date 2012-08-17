@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030401Ab2HQCnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 22:43:50 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60228 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933184Ab2HQCnf (ORCPT
+	id S933598Ab2HQCoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 22:44:12 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:44371 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932118Ab2HQCoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 22:43:35 -0400
-Subject: [ANNOUNCE] target-pending tree updated to v3.6-rc2
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Arun Easi <arun.easi@qlogic.com>, Andy Grover <agrover@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Aug 2012 19:43:32 -0700
-Message-ID: <1345171412.25161.134.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 16 Aug 2012 22:44:07 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-132.messagelabs.com!1345171445!13459021!1
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/35] staging: comedi: cb_pcidio: remove thisboard macro
+Date: Thu, 16 Aug 2012 19:43:55 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208161943.55795.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This macro relies on a local variable having a specific name.
+Remove it and use the comedi_board() helper to get the pointer.
 
-With the release of v3.6-rc2 this afternoon, the target-pending.git tree
-now has been updated using the freshly cut -rc2 as it's new HEAD.
-Patches destined into for-3.7 code are now being added into for-next for
-linux-next build testing.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/cb_pcidio.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
-Also, thanks go out to MST, Stefan, and Paolo who managed to get
-tcm_vhost fabric code merged in mainline for -rc2  under the special
-post merge window exception rule for new kernel code, which in my
-experience tends to happens about as often as Haley's comet comes
-around..
-
-Here is the current breakdown of pending patches by branch:
-
-master: (patches headed for 3.6-rc-fixes)
-
-5b7517f8 tcm_vhost: Change vhost_scsi_target->vhost_wwpn to char *
-d0e27c88 target: fix NULL pointer dereference bug alloc_page() fails to get memory
-1fa8f450 tcm_fc: Avoid debug overhead when not debugging
-101998f6 tcm_vhost: Post-merge review changes requested by MST
-f0e0e9bb tcm_vhost: Fix incorrect IS_ERR() usage in vhost_scsi_map_iov_to_sgl
-
-for-next: (patches headed for-3.7 merge window)
-
-6a922a33 target: Fix minor spelling typos in drivers/target
-867c8e7d target: Simplify fabric sense data length handling
-3ab2a995 target: Remove unused target_core_fabric_ops.get_fabric_sense_len method
-7b43c0e6 target/sbp: Remove strict param from sbp_parse_wwn
-0fa5702d target: Cleanup transport_subsystem_check_init
-6fc3933f target: Remove request_module for target_core_stgt
-
-for-next-merge: (new fabric drivers headed for 3.7 merge window)
-
-None
-
-queue: (recent patches needing more review/testing before committing)
-
-9b840e4c target: Fix regression bug with handling of zero-length data CDBs
-e093f8a5 target: Fix ->data_length re-assignment bug with SCSI overflow
-0aa8cc14 target: Remove unused se_cmd.cmd_spdtl
-
---
-
-Please let me know if anything is missing from the list, and I'll plan
-to send out a PULL request for outstanding master -> 3.6-rc-fixes
-sometime next week.
-
-Thanks!
-
---nab
+diff --git a/drivers/staging/comedi/drivers/cb_pcidio.c b/drivers/staging/comedi/drivers/cb_pcidio.c
+index e370d0d..c377beb 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidio.c
++++ b/drivers/staging/comedi/drivers/cb_pcidio.c
+@@ -85,11 +85,6 @@ static const struct pcidio_board pcidio_boards[] = {
+ 	 },
+ };
+ 
+-/*
+- * Useful for shorthand access to the particular board structure
+- */
+-#define thisboard ((const struct pcidio_board *)dev->board_ptr)
+-
+ static struct pci_dev *pcidio_find_pci_dev(struct comedi_device *dev,
+ 					   struct comedi_devconfig *it)
+ {
+@@ -122,6 +117,7 @@ static struct pci_dev *pcidio_find_pci_dev(struct comedi_device *dev,
+ 
+ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	const struct pcidio_board *thisboard;
+ 	struct pci_dev *pcidev;
+ 	int i;
+ 	int ret;
+@@ -130,11 +126,7 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	if (!pcidev)
+ 		return -EIO;
+ 	comedi_set_hw_dev(dev, &pcidev->dev);
+-
+-/*
+- * Initialize dev->board_name.  Note that we can use the "thisboard"
+- * macro now, since we just initialized it in the last line.
+- */
++	thisboard = comedi_board(dev);
+ 	dev->board_name = thisboard->name;
+ 
+ 	if (comedi_pci_enable(pcidev, thisboard->name))
+@@ -158,6 +150,7 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ static void pcidio_detach(struct comedi_device *dev)
+ {
++	const struct pcidio_board *thisboard = comedi_board(dev);
+ 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+ 
+ 	if (pcidev) {
+-- 
+1.7.11
 
