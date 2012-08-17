@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758527Ab2HQQnf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 12:43:35 -0400
-Received: from mga12.intel.com ([143.182.124.36]:10243 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758493Ab2HQQn1 (ORCPT
+	id S1758513Ab2HQQnt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 12:43:49 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:49813 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758493Ab2HQQnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 12:43:27 -0400
+	Fri, 17 Aug 2012 12:43:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <1344918891-6283-7-git-send-email-keithp@keithp.com>
-References: <1344918891-6283-1-git-send-email-keithp@keithp.com>
-	<1344918891-6283-7-git-send-email-keithp@keithp.com>
-Date: Fri, 17 Aug 2012 17:43:22 +0100
-Message-ID: <CAPX-8+_bZNyXL0b8nBkN97sj-KnT_eZXZ-5Hp5R6P-L-D-QAKg@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH 6/7] drm/i915: Disable FDI RX before FDI TX
-From: "Lespiau, Damien" <damien.lespiau@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <502D0859.2000602@gmail.com>
+References: <502D0859.2000602@gmail.com>
+Date: Fri, 17 Aug 2012 18:43:38 +0200
+X-Google-Sender-Auth: ozUaKD3V87Hyv0S3sjJPH8A5xDo
+Message-ID: <CAHR064gbKfpS5NO7_BJrmrUq-T1G2oz3nS3B0YGQwbT5Vn+Zdg@mail.gmail.com>
+Subject: Re: [PATCH][TRIVIAL] platform/x86: fix asus_laptop.wled_type description
+From: Corentin Chary <corentincj@iksaif.net>
+To: Maxim Nikulin <m.a.nikulin@gmail.com>
+Cc: trivial@kernel.org, acpi4asus-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 5:34 AM, Keith Packard <keithp@keithp.com> wrote:
-> Doesn't make sense to disable in the other order.
+On Thu, Aug 16, 2012 at 4:48 PM, Maxim Nikulin <m.a.nikulin@gmail.com> wrote:
 >
-> Signed-off-by: Keith Packard <keithp@keithp.com>
+> MODULE_PARM_DESC for wlan_status is further in the same file
+>
+> Signed-off-by: Maxim A. Nikulin <M.A.Nikulin@gmail.com>
 > ---
->  drivers/gpu/drm/i915/intel_display.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+>  drivers/platform/x86/asus-laptop.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+> index e38f91b..f5b9d91 100644
+> --- a/drivers/platform/x86/asus-laptop.c
+> +++ b/drivers/platform/x86/asus-laptop.c
+> @@ -85,7 +85,7 @@ static char *wled_type = "unknown";
+>  static char *bled_type = "unknown";
+>
+>  module_param(wled_type, charp, 0444);
+> -MODULE_PARM_DESC(wlan_status, "Set the wled type on boot "
+> +MODULE_PARM_DESC(wled_type, "Set the wled type on boot "
+>                  "(unknown, led or rfkill). "
+>                  "default is unknown");
+>
+> --
+> 1.7.2.5
 
-I can't see anything in the docs about an order requirement for those.
-Not sure why the other way does not make sense. Somehow disabling TX
-before RX makes some sense to me (TX enabled without a ready RX looks
-weird?, no data should flow as the pipe is shutdown at that point
-anyway). Maybe it just does not matter?
+Acked-by: Corentin Chary <corentincj@iksaif.net>
 
-Another detail is that disabling the PLLs seem to have an order in the
-disabling sequence, TX, then RX.
+Thanks !
 
-I.  Disable CPU FDI Transmitter PLL
-II. Disable PCH FDI Receiver PLL
 
 -- 
-Damien
+Corentin Chary
+http://xf.iksaif.net
