@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758922Ab2HQXaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 19:30:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46691 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906Ab2HQXaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 19:30:05 -0400
-Date: Fri, 17 Aug 2012 20:29:57 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Yang Guang <guang.a.yang@intel.com>
-Subject: Re: [ 32/37] drm/i915: correctly order the ring init sequence
-Message-ID: <20120817232956.GG4039@herton-Z68MA-D2H-B3>
-References: <20120817030243.807605523@decadent.org.uk>
- <20120817030248.892667316@decadent.org.uk>
+	id S1756390Ab2HQXdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 19:33:35 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40720 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441Ab2HQXd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 19:33:26 -0400
+Message-ID: <502ED4C0.70305@linux.vnet.ibm.com>
+Date: Fri, 17 Aug 2012 18:33:20 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817030248.892667316@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Kurt Hackel <kurt.hackel@oracle.com>
+Subject: Re: [PATCH 0/4] promote zcache from staging
+References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com> <5021795A.5000509@linux.vnet.ibm.com> <5024067F.3010602@linux.vnet.ibm.com> <2e9ccb4f-1339-4c26-88dd-ea294b022127@default> <50254F69.2000409@linux.vnet.ibm.com> <8fa37327-17ff-4734-9007-40412b18d0fb@default>
+In-Reply-To: <8fa37327-17ff-4734-9007-40412b18d0fb@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081723-5112-0000-0000-00000B364DF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 04:03:15AM +0100, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
+On 08/17/2012 05:21 PM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Subject: Re: [PATCH 0/4] promote zcache from staging
+>>
+>> On 08/09/2012 03:20 PM, Dan Magenheimer wrote
+>>> I also wonder if you have anything else unusual in your
+>>> test setup, such as a fast swap disk (mine is a partition
+>>> on the same rotating disk as source and target of the kernel build,
+>>> the default install for a RHEL6 system)?
+>>
+>> I'm using a normal SATA HDD with two partitions, one for
+>> swap and the other an ext3 filesystem with the kernel source.
+>>
+>>> Or have you disabled cleancache?
+>>
+>> Yes, I _did_ disable cleancache.  I could see where having
+>> cleancache enabled could explain the difference in results.
 > 
-> ------------------
+> Sorry to beat a dead horse, but I meant to report this
+> earlier in the week and got tied up by other things.
 > 
-> From: Daniel Vetter <daniel.vetter@ffwll.ch>
+> I finally got my test scaffold set up earlier this week
+> to try to reproduce my "bad" numbers with the RHEL6-ish
+> config file.
 > 
-> commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 upstream.
+> I found that with "make -j28" and "make -j32" I experienced
+> __DATA CORRUPTION__.  This was repeatable.
+
+I actually hit this for the first time a few hours ago when
+I was running performance for your rewrite.  I didn't know
+what to make of it yet.  The 24-thread kernel build failed
+when both frontswap and cleancache were enabled.
+
+> The type of error led me to believe that the problem was
+> due to concurrency of cleancache reclaim.  I did not try
+> with cleancache disabled to prove/support this theory
+> but it is consistent with the fact that you (Seth) have not
+> seen a similar problem and has disabled cleancache.
 > 
-> We may only start to set up the new register values after having
-> confirmed that the ring is truely off. Otherwise the hw might lose the
-> newly written register values. This is caught later on in the init
-> sequence, when we check whether the register writes have stuck.
-> 
-> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50522
-> Tested-by: Yang Guang <guang.a.yang@intel.com>
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[...]
+> While this problem is most likely in my code and I am
+> suitably chagrined, it re-emphasizes the fact that
+> the current zcache in staging is 20-month old "demo"
+> code.  The proposed new zcache codebase handles concurrency
+> much more effectively.
 
-With this commit on 3.2, i915 fails to initialize on a G41 based machine
-I have here:
+I imagine this can be solved without rewriting the entire
+codebase.  If your new code contains a fix for this, can we
+just pull it as a single patch?
 
-[   36.894261] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[   36.894265] i915 0000:00:02.0: setting latency timer to 64
-[   36.933118] mtrr: type mismatch for d0000000,10000000 old: write-back new: write-combining
-[   36.933121] [drm] MTRR allocation failed.  Graphics performance may suffer.
-[   36.933467] i915 0000:00:02.0: irq 42 for MSI/MSI-X
-[   36.933471] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[   36.933472] [drm] Driver supports precise vblank timestamp query.
-[   36.933498] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-[   36.969669] [drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 00001074 tail 00000000 start 00001000
-[   36.969763] vga_switcheroo: disabled
-[   36.969765] [drm:i915_driver_load] *ERROR* failed to init modeset
-[   36.987444] i915 0000:00:02.0: PCI INT A disabled
-[   36.987453] i915: probe of 0000:00:02.0 failed with error -5
+Seth
 
-Taking a look at it, I suspected of a timing issue, especially looking at
-this commit, which isn't on 3.2:
-
-commit f01db988ef6f6c70a6cc36ee71e4a98a68901229
-Author: Sean Paul <seanpaul@chromium.org>
-Date:   Fri Mar 16 12:43:22 2012 -0400
-
-    drm/i915: Add wait_for in init_ring_common
-
-And picking it made the issue go away, so the extra delay helped and is needed
-with 0d8957c8a90bbb5d34fab9a304459448a5131e06 applied here.
-
--- 
-[]'s
-Herton
