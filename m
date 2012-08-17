@@ -1,140 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab2HQOOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:14:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35375 "EHLO mx2.suse.de"
+	id S1757206Ab2HQOOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:14:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35374 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756263Ab2HQOOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756427Ab2HQOOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Aug 2012 10:14:38 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
         Jim Schutt <jaschut@sandia.gov>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/7] Improve hugepage allocation success rates under load V5
-Date: Fri, 17 Aug 2012 15:14:26 +0100
-Message-Id: <1345212873-22447-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/7] Revert __GFP_NO_KSWAPD removal
+Date: Fri, 17 Aug 2012 15:14:27 +0100
+Message-Id: <1345212873-22447-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1345212873-22447-1-git-send-email-mgorman@suse.de>
+References: <1345212873-22447-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, the biggest change here is that I've reshuffled the patches to
-simplify merging. Please consider picking up patches 2 and 3 and merging
-them for 3.6 as they fix a broken commit merged in 3.6-rc1. The rest of
-the patches can be merged later.
+This is a temporary removal to allow the important parts of this series
+to be merged for v3.6. The patch is reimplemented later in the series.
 
-Changelog since V4
-o Rebase to latest linux-next/akpm
-o Reshuffle patches for easier merging
+mm-remove-__gfp_no_kswapd.patch
+remove-__gfp_no_kswapd-fixes.patch
+remove-__gfp_no_kswapd-fixes-fix.patch
 
-Changelog since V3
-o Add patch to backoff compaction in the event of lock contention
-o Rebase to mmotm, cope with the removal of __GFP_NO_KSWAPD
-o Removed RFC
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ drivers/mtd/mtdcore.c           |    6 ++++--
+ include/linux/gfp.h             |    5 ++++-
+ include/trace/events/gfpflags.h |    1 +
+ mm/page_alloc.c                 |    7 ++++---
+ 4 files changed, 13 insertions(+), 6 deletions(-)
 
-Changelog since V2
-o Capture !MIGRATE_MOVABLE pages where possible
-o Document the treatment of MIGRATE_MOVABLE pages while capturing
-o Expand changelogs
-
-Changelog since V1
-o Dropped kswapd related patch, basically a no-op and regresses if fixed (minchan)
-o Expanded changelogs a little
-
-Allocation success rates have been far lower since 3.4 due to commit
-[fe2c2a10: vmscan: reclaim at order 0 when compaction is enabled]. This
-commit was introduced for good reasons and it was known in advance that
-the success rates would suffer but it was justified on the grounds that
-the high allocation success rates were achieved by aggressive reclaim.
-Success rates are expected to suffer even more in 3.6 due to commit
-[7db8889a: mm: have order > 0 compaction start off where it left] which
-testing has shown to severely reduce allocation success rates under load -
-to 0% in one case.
-
-This series aims to improve the allocation success rates without regressing
-the benefits of commit fe2c2a10. The series is based on latest mmotm and
-takes into account the __GFP_NO_KSWAPD flag is going away.
-
-Patch 1 reverts the __GFP_NO_KSWAPD patch and related fixes. This is so
-	patches 2 and 3 can be merged before 3.6 releases. It is reintroduced
-	later.
-
-Patch 2 fixes the upstream commit [7db8889a: mm: have order > 0 compaction
-	start off where it left] to enable compaction again
-
-Patch 3 identifies when compacion is taking too long due to contention
-	and aborts. This fixes a performance problem for Jim Schutt that
-	commit 7db8889a was meant to fix.
-
-Patch 4 is a comment fix.
-
-Patch 5 is a rebased version of the __GFP_NO_KSWAPD patch with one change
-	in how it handles deferred_compaction.
-
-Patch 6 updates reclaim/compaction to reclaim pages scaled on the number
-	of recent failures.
-
-Patch 7 captures suitable high-order pages freed by compaction to reduce
-	races with parallel allocation requests.
-
-I tested with a high order allocation stress test. The following kernels
-were tested.
-
-revert-v5 	linux-next/mmotm based on 3.6-rc2 with patch 1 applied
-contended-v5 	patches 1-3
-capture-v5  	patches 1-7
-
-STRESS-HIGHALLOC
-                   revert-v5      contended-v5        capture-v5  
-Pass 1           0.00 ( 0.00%)    38.00 (38.00%)    45.00 (45.00%)
-Pass 2           0.00 ( 0.00%)    46.00 (46.00%)    52.00 (52.00%)
-while Rested    85.00 ( 0.00%)    86.00 ( 1.00%)    86.00 ( 1.00%)
-
-From
-http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__stress-highalloc-performance-ext3/hydra/comparison.html
-I know that the allocation success rates in 3.3.6 was 78% in comparison to
-36% in in the current akpm tree. At present the success rate is completely
-shot but with patches and 3 applied it goes back up to 38% which is what
-I would like to see merged for 3.6. With the full series applied success
-rates go up to 45% with some variability in the results.  This is not
-as high a success rate as seen in older kernels but it does not reclaim
-excessively which is a key point.
-
-MMTests Statistics: vmstat
-Page Ins                                     2889316     2904472     3037020
-Page Outs                                    8042076     8030516     8026740
-Swap Ins                                           0           0           0
-Swap Outs                                          0           0           0
-
-Note that swap in/out rates remain at 0. In 3.3.6 with 78% success rates
-there were 71881 pages swapped out.
-
-Direct pages scanned                           16822      126135       39297
-Kswapd pages scanned                         1112284     1243865     1534553
-Kswapd pages reclaimed                       1106913     1203069     1499877
-Direct pages reclaimed                         16822      113769       26457
-Kswapd efficiency                                99%         96%         97%
-Kswapd velocity                              899.586     980.634    1218.131
-Direct efficiency                               100%         90%         67%
-Direct velocity                               13.605      99.442      31.194
-
-kswapd velocity increased slightly but that is expected as __GFP_NO_KSWAPD is
-removed by the full series. The velocity with the full series applied is 1218
-pages/sec where as in kernel 3.3.6 with the high allocation success rates
-it was 8140 pages/second. Direct velocity is slightly higher but this is
-expected as a result of patch 6. Pushing direct reclaim higher would improve
-the allocation success rates but with the obvious cost of increased paging
-and swap IO.
-
- include/linux/compaction.h |    4 +-
- include/linux/mm.h         |    1 +
- mm/compaction.c            |  244 +++++++++++++++++++++++++++++++++-----------
- mm/internal.h              |    2 +
- mm/page_alloc.c            |   78 ++++++++++----
- mm/vmscan.c                |   10 ++
- 6 files changed, 256 insertions(+), 83 deletions(-)
-
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index 374c46d..ec794a7 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -1077,7 +1077,8 @@ EXPORT_SYMBOL_GPL(mtd_writev);
+  * until the request succeeds or until the allocation size falls below
+  * the system page size. This attempts to make sure it does not adversely
+  * impact system performance, so when allocating more than one page, we
+- * ask the memory allocator to avoid re-trying.
++ * ask the memory allocator to avoid re-trying, swapping, writing back
++ * or performing I/O.
+  *
+  * Note, this function also makes sure that the allocated buffer is aligned to
+  * the MTD device's min. I/O unit, i.e. the "mtd->writesize" value.
+@@ -1091,7 +1092,8 @@ EXPORT_SYMBOL_GPL(mtd_writev);
+  */
+ void *mtd_kmalloc_up_to(const struct mtd_info *mtd, size_t *size)
+ {
+-	gfp_t flags = __GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY;
++	gfp_t flags = __GFP_NOWARN | __GFP_WAIT |
++		       __GFP_NORETRY | __GFP_NO_KSWAPD;
+ 	size_t min_alloc = max_t(size_t, mtd->writesize, PAGE_SIZE);
+ 	void *kbuf;
+ 
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index f9bc873..4883f39 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -35,6 +35,7 @@ struct vm_area_struct;
+ #else
+ #define ___GFP_NOTRACK		0
+ #endif
++#define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
+ 
+@@ -89,6 +90,7 @@ struct vm_area_struct;
+ #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
+ #define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
+ 
++#define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
+ 
+@@ -118,7 +120,8 @@ struct vm_area_struct;
+ 				 __GFP_MOVABLE)
+ #define GFP_IOFS	(__GFP_IO | __GFP_FS)
+ #define GFP_TRANSHUGE	(GFP_HIGHUSER_MOVABLE | __GFP_COMP | \
+-			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN)
++			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN | \
++			 __GFP_NO_KSWAPD)
+ 
+ #ifdef CONFIG_NUMA
+ #define GFP_THISNODE	(__GFP_THISNODE | __GFP_NOWARN | __GFP_NORETRY)
+diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+index 9391706..d6fd8e5 100644
+--- a/include/trace/events/gfpflags.h
++++ b/include/trace/events/gfpflags.h
+@@ -36,6 +36,7 @@
+ 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+ 	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
+ 	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
++	{(unsigned long)__GFP_NO_KSWAPD,	"GFP_NO_KSWAPD"},	\
+ 	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
+ 	) : "GFP_NOWAIT"
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index cefac39..c10a9b7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2348,8 +2348,9 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 		goto nopage;
+ 
+ restart:
+-	wake_all_kswapd(order, zonelist, high_zoneidx,
+-					zone_idx(preferred_zone));
++	if (!(gfp_mask & __GFP_NO_KSWAPD))
++		wake_all_kswapd(order, zonelist, high_zoneidx,
++						zone_idx(preferred_zone));
+ 
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
+@@ -2432,7 +2433,7 @@ rebalance:
+ 	 * has requested the system not be heavily disrupted, fail the
+ 	 * allocation now instead of entering direct reclaim
+ 	 */
+-	if (deferred_compaction)
++	if (deferred_compaction && (gfp_mask & __GFP_NO_KSWAPD))
+ 		goto nopage;
+ 
+ 	/* Try direct reclaim and then allocating */
 -- 
 1.7.9.2
 
