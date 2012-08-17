@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab2HQS1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 14:27:17 -0400
-Received: from clem.clem-digital.net ([68.16.168.10]:46085 "EHLO
-	clem.clem-digital.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758755Ab2HQS1M (ORCPT
+	id S932396Ab2HQS1j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:27:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:43738 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303Ab2HQS1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 14:27:12 -0400
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 14:27:12 EDT
-From: Pete Clements <clem@clem.clem-digital.net>
-Message-Id: <201208171820.q7HIKB34001961@clem.clem-digital.net>
-Subject: 3.6-rc2 Panic -- Network interrupt
-To: linux-kernel@vger.kernel.org (linux-kernel)
-Date: Fri, 17 Aug 2012 14:20:11 -0400 (EDT)
-X-Mailer: ELM [version 2.5 PL7]
+	Fri, 17 Aug 2012 14:27:16 -0400
+Message-ID: <502E8CC7.4070401@windriver.com>
+Date: Fri, 17 Aug 2012 14:26:15 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Luciano Chavez <lnx1138@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Willy Tarreau <w@1wt.eu>
+Subject: Re: [v2.6.34-stable 134/165] mm: avoid null pointer access in vm_struct
+ via /proc/vmallocinfo
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com> <1345060109-9187-135-git-send-email-paul.gortmaker@windriver.com> <20120817152233.GB4039@herton-Z68MA-D2H-B3>
+In-Reply-To: <20120817152233.GB4039@herton-Z68MA-D2H-B3>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fyi: 
-  Get below panic with 3.6-rc2 soon after boot (hand copy of screen).
+On 12-08-17 11:22 AM, Herton Ronaldo Krzesinski wrote:
+> On Wed, Aug 15, 2012 at 03:47:58PM -0400, Paul Gortmaker wrote:
+>> From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+>>
+>>                    -------------------
+>>     This is a commit scheduled for the next v2.6.34 longterm release.
+>>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>>     If you see a problem with using this for longterm, please comment.
+>>                    -------------------
+>>
+>> commit f5252e009d5b87071a919221e4f6624184005368 upstream.
+>>
+>> The /proc/vmallocinfo shows information about vmalloc allocations in
+>> vmlist that is a linklist of vm_struct.  It, however, may access pages
+>> field of vm_struct where a page was not allocated.  This results in a null
+>> pointer access and leads to a kernel panic.
+>>
+>> Why this happens: In __vmalloc_node_range() called from vmalloc(), newly
+>> allocated vm_struct is added to vmlist at __get_vm_area_node() and then,
+>> some fields of vm_struct such as nr_pages and pages are set at
+>> __vmalloc_area_node().  In other words, it is added to vmlist before it is
+>> fully initialized.  At the same time, when the /proc/vmallocinfo is read,
+>> it accesses the pages field of vm_struct according to the nr_pages field
+>> at show_numa_info().  Thus, a null pointer access happens.
+>>
+>> The patch adds the newly allocated vm_struct to the vmlist *after* it is
+>> fully initialized.  So, it can avoid accessing the pages field with
+>> unallocated page when show_numa_info() is called.
+>>
+>> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: David Rientjes <rientjes@google.com>
+>> Cc: Namhyung Kim <namhyung@gmail.com>
+>> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>> Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>> [PG: .34 has VMALLOC_START/END vs. start/end in f5252e009d5]
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> [...]
+> 
+> commit 1368edf0647ac112d8cfa6ce47257dc950c50f5c ("mm: vmalloc: check for
+> page allocation failure before vmlist insertion") addresses a regression
+> on this change, something to consider for inclusion in this stable
+> update as well.
 
-[<c11ec9b6>] ? tcp_v4_rcv+0x626/0x740
-[<C11ccecf>] ? ip_local_deliver_finish+0x6f/0x120
-[<c11cce60>] ? ip_rcv+0x2b0/0x2b0
-[<c11cc9c3>] ? ip_rcv_finish+0xe3/0x2d0
-[<c11ae0a8>] ? __netif_receive_skb+03a8/0x4a0
-[<c11ae20b>] ? process_backlog+0x6b/0x100
-[<c11ae4aa>] ? net_rx_action+07a/0x100
-[<c102769f>] ? __do_softirq+0x7f/0x120
-[<c1027620>] ? irq_enter+0x50/0x50
-<IRQ>
-[<c10274b5>] ? irq_exit+0x55/0x60
-[<c1003a23>] ? do_IRQ+0x43/0xa0
-[<c121cc29>] ? common_interrupt+0x29/0x30
-[<c1007f44>] ? default_idle+0x14/0x30
-[<c1006116>] ? cpu_idle+0x26/0x40
-[<c12d490a>] ? start_kernel+0x244/0x249
-[<c12d4545>] ? kernel_init+0x16e/0x16e
-Code: a9 ff ff e9 14 ff ff ff 90 8b 4a 48 83 e1 fe ff 41 40 89 48 78 8b 52 70 89
-90 84 01 00 00 8b 51 58 85 d2 74 8c 8b 80 58 01 00 00 <8b> 52 14 89 50 68 c3 8d
-b4 26 00 00 00 00 83 ec 84 0f b6 50 0e
-EIP: [<d8886332>] inet6_sk_rx_dst_set+0x22/0x30 [ipv6] SS:ESP 0068:d7000dcc
-CR2:0000000000010016
----[ end trace 71149a645a111f5d ]---
-Kernel panic - not syncing: Fatal exception in interrupt
+Thanks Herton.
 
--- 
-Pete Clements 
+I've added Willy to CC, since v2.6.32.49 added f5252e but does
+not have 1368edf0 yet in any 2.6.32.x
+
+Paul.
+--
+
+> 
