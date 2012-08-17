@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030959Ab2HQIoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:44:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56067 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab2HQIn6 (ORCPT
+	id S933772Ab2HQIuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:50:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49658 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030962Ab2HQIod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:43:58 -0400
+	Fri, 17 Aug 2012 04:44:33 -0400
 From: Huacai Chen <chenhc@lemote.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
         Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
         Hua Yan <yanh@lemote.com>
-Subject: [PATCH V6 01/15] MIPS: Loongson: Add basic Loongson-3 definition
-Date: Fri, 17 Aug 2012 16:43:21 +0800
-Message-Id: <1345193015-3024-2-git-send-email-chenhc@lemote.com>
+Subject: [PATCH V6 08/15] MIPS: Loongson 3: Add serial port support
+Date: Fri, 17 Aug 2012 16:43:28 +0800
+Message-Id: <1345193015-3024-9-git-send-email-chenhc@lemote.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
 References: <1345193015-3024-1-git-send-email-chenhc@lemote.com>
@@ -23,142 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Loongson-3 is a multi-core MIPS family CPU, it support MIPS64 fully.
-Loongson-3 has the same IMP field (0x6300) as Loongson-2.
+Loongson family machines has three types of serial port: PCI UART, LPC
+UART and CPU internal UART. Loongson-2E and parts of Loongson-2F based
+machines use PCI UART; most Loongson-2F based machines use LPC UART;
+Loongson-2G/3A has both LPC and CPU UART but usually use CPU UART.
 
-Loongson-3 has a hardware-maintained cache, system software doesn't
-need to maintain coherency.
+Port address of UARTs:
+CPU UART: REG_BASE + OFFSET;
+LPC UART: LIO1_BASE + OFFSET;
+PCI UART: PCIIO_BASE + OFFSET.
 
-Loongson-3A is the first revision of Loongson-3, and it is the quad-
-core version of Loongson-2G. Loongson-3A has a simplified version named
-Loongson-2Gq, the main difference between Loongson-3A/2Gq is 3A has two
-HyperTransport controller but 2Gq has only one. HT0 is used for cross-
-chip interconnection and HT1 is used to link PCI bus. Therefore, 2Gq
-cannot support NUMA but 3A can. For software, Loongson-2Gq is simply
-identified as Loongson-3A.
-
-Exsisting Loongson family CPUs:
-Loongson-1: Loongson-1A, Loongson-1B, they are 32-bit MIPS CPUs.
-Loongson-2: Loongson-2E, Loongson-2F, Loongson-2G, they are 64-bit
-            single-core MIPS CPUs.
-Loongson-3: Loongson-3A(including so-called Loongson-2Gq), they are
-            64-bit multi-core MIPS CPUs.
+Since LPC UART are linked in "Local Bus", both CPU UART and LPC UART
+are called "CPU provided serial port".
 
 Signed-off-by: Huacai Chen <chenhc@lemote.com>
 Signed-off-by: Hongliang Tao <taohl@lemote.com>
 Signed-off-by: Hua Yan <yanh@lemote.com>
 ---
- arch/mips/include/asm/addrspace.h            |    6 ++++++
- arch/mips/include/asm/cpu.h                  |    5 +++--
- arch/mips/include/asm/mach-loongson/spaces.h |   15 +++++++++++++++
- arch/mips/include/asm/module.h               |    2 ++
- arch/mips/include/asm/pgtable-bits.h         |    7 +++++++
- arch/mips/loongson/Platform                  |    1 +
- 6 files changed, 34 insertions(+), 2 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-loongson/spaces.h
+ arch/mips/loongson/common/serial.c    |   26 +++++++++++++++-----------
+ arch/mips/loongson/common/uart_base.c |    9 ++++++++-
+ 2 files changed, 23 insertions(+), 12 deletions(-)
 
-diff --git a/arch/mips/include/asm/addrspace.h b/arch/mips/include/asm/addrspace.h
-index 569f80a..cf62bfb 100644
---- a/arch/mips/include/asm/addrspace.h
-+++ b/arch/mips/include/asm/addrspace.h
-@@ -116,7 +116,13 @@
- #define K_CALG_UNCACHED		2
- #define K_CALG_NONCOHERENT	3
- #define K_CALG_COH_EXCL		4
-+
-+#ifdef CONFIG_CPU_LOONGSON3
-+#define K_CALG_COH_SHAREABLE	3
-+#else
- #define K_CALG_COH_SHAREABLE	5
-+#endif
-+
- #define K_CALG_NOTUSED		6
- #define K_CALG_UNCACHED_ACCEL	7
+diff --git a/arch/mips/loongson/common/serial.c b/arch/mips/loongson/common/serial.c
+index 7580873..59c76b5 100644
+--- a/arch/mips/loongson/common/serial.c
++++ b/arch/mips/loongson/common/serial.c
+@@ -19,19 +19,19 @@
+ #include <loongson.h>
+ #include <machine.h>
  
-diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
-index f21b7c0..92a33cf 100644
---- a/arch/mips/include/asm/cpu.h
-+++ b/arch/mips/include/asm/cpu.h
-@@ -200,6 +200,7 @@
- #define PRID_REV_LOONGSON1B	0x0020
- #define PRID_REV_LOONGSON2E	0x0002
- #define PRID_REV_LOONGSON2F	0x0003
-+#define PRID_REV_LOONGSON3A	0x0005
+-#define PORT(int)			\
++#define PORT(int, clk)			\
+ {								\
+ 	.irq		= int,					\
+-	.uartclk	= 1843200,				\
++	.uartclk	= clk,					\
+ 	.iotype		= UPIO_PORT,				\
+ 	.flags		= UPF_BOOT_AUTOCONF | UPF_SKIP_TEST,	\
+ 	.regshift	= 0,					\
+ }
  
- /*
-  * Older processors used to encode processor version and revision in two
-@@ -268,8 +269,8 @@ enum cpu_type_enum {
- 	 * MIPS64 class processors
- 	 */
- 	CPU_5KC, CPU_5KE, CPU_20KC, CPU_25KF, CPU_SB1, CPU_SB1A, CPU_LOONGSON2,
--	CPU_CAVIUM_OCTEON, CPU_CAVIUM_OCTEON_PLUS, CPU_CAVIUM_OCTEON2,
--	CPU_XLR, CPU_XLP,
-+	CPU_LOONGSON3, CPU_CAVIUM_OCTEON, CPU_CAVIUM_OCTEON_PLUS,
-+	CPU_CAVIUM_OCTEON2, CPU_XLR, CPU_XLP,
+-#define PORT_M(int)				\
++#define PORT_M(int, clk)				\
+ {								\
+ 	.irq		= MIPS_CPU_IRQ_BASE + (int),		\
+-	.uartclk	= 3686400,				\
++	.uartclk	= clk,					\
+ 	.iotype		= UPIO_MEM,				\
+ 	.membase	= (void __iomem *)NULL,			\
+ 	.flags		= UPF_BOOT_AUTOCONF | UPF_SKIP_TEST,	\
+@@ -40,13 +40,17 @@
  
- 	CPU_LAST
+ static struct plat_serial8250_port uart8250_data[][2] = {
+ 	[MACH_LOONGSON_UNKNOWN]         {},
+-	[MACH_LEMOTE_FL2E]              {PORT(4), {} },
+-	[MACH_LEMOTE_FL2F]              {PORT(3), {} },
+-	[MACH_LEMOTE_ML2F7]             {PORT_M(3), {} },
+-	[MACH_LEMOTE_YL2F89]            {PORT_M(3), {} },
+-	[MACH_DEXXON_GDIUM2F10]         {PORT_M(3), {} },
+-	[MACH_LEMOTE_NAS]               {PORT_M(3), {} },
+-	[MACH_LEMOTE_LL2F]              {PORT(3), {} },
++	[MACH_LEMOTE_FL2E]              {PORT(4, 1843200), {} },
++	[MACH_LEMOTE_FL2F]              {PORT(3, 1843200), {} },
++	[MACH_LEMOTE_ML2F7]             {PORT_M(3, 3686400), {} },
++	[MACH_LEMOTE_YL2F89]            {PORT_M(3, 3686400), {} },
++	[MACH_DEXXON_GDIUM2F10]         {PORT_M(3, 3686400), {} },
++	[MACH_LEMOTE_NAS]               {PORT_M(3, 3686400), {} },
++	[MACH_LEMOTE_LL2F]              {PORT(3, 1843200), {} },
++	[MACH_LEMOTE_A1004]             {PORT_M(2, 33177600), {} },
++	[MACH_LEMOTE_A1101]             {PORT_M(2, 25000000), {} },
++	[MACH_LEMOTE_A1201]             {PORT_M(2, 25000000), {} },
++	[MACH_LEMOTE_A1205]             {PORT_M(2, 25000000), {} },
+ 	[MACH_LOONGSON_END]             {},
  };
-diff --git a/arch/mips/include/asm/mach-loongson/spaces.h b/arch/mips/include/asm/mach-loongson/spaces.h
-new file mode 100644
-index 0000000..1e82804
---- /dev/null
-+++ b/arch/mips/include/asm/mach-loongson/spaces.h
-@@ -0,0 +1,15 @@
-+#ifndef __ASM_MACH_LOONGSON_SPACES_H_
-+#define __ASM_MACH_LOONGSON_SPACES_H_
-+
-+#ifndef CAC_BASE
-+#if defined(CONFIG_64BIT)
-+#if defined(CONFIG_DMA_NONCOHERENT) || defined(CONFIG_CPU_LOONGSON3)
-+#define CAC_BASE        _AC(0x9800000000000000, UL)
-+#else
-+#define CAC_BASE        _AC(0xa800000000000000, UL)
-+#endif /* CONFIG_DMA_NONCOHERENT || CONFIG_CPU_LOONGSON3 */
-+#endif /* CONFIG_64BIT */
-+#endif /* CONFIG_CAC_BASE */
-+
-+#include <asm/mach-generic/spaces.h>
-+#endif
-diff --git a/arch/mips/include/asm/module.h b/arch/mips/include/asm/module.h
-index dca8bce..523600f 100644
---- a/arch/mips/include/asm/module.h
-+++ b/arch/mips/include/asm/module.h
-@@ -122,6 +122,8 @@ search_module_dbetables(unsigned long addr)
- #define MODULE_PROC_FAMILY "LOONGSON1 "
- #elif defined CONFIG_CPU_LOONGSON2
- #define MODULE_PROC_FAMILY "LOONGSON2 "
-+#elif defined CONFIG_CPU_LOONGSON3
-+#define MODULE_PROC_FAMILY "LOONGSON3 "
- #elif defined CONFIG_CPU_CAVIUM_OCTEON
- #define MODULE_PROC_FAMILY "OCTEON "
- #elif defined CONFIG_CPU_XLR
-diff --git a/arch/mips/include/asm/pgtable-bits.h b/arch/mips/include/asm/pgtable-bits.h
-index e9fe7e9..1afd39a 100644
---- a/arch/mips/include/asm/pgtable-bits.h
-+++ b/arch/mips/include/asm/pgtable-bits.h
-@@ -206,6 +206,13 @@ static inline uint64_t pte_to_entrylo(unsigned long pte_val)
- #define _CACHE_UNCACHED		    _CACHE_UC_B
- #define _CACHE_CACHABLE_NONCOHERENT _CACHE_WB
  
-+#elif defined(CONFIG_CPU_LOONGSON3)
-+
-+#define _CACHE_UNCACHED             (2<<_CACHE_SHIFT)  /* LOONGSON       */
-+#define _CACHE_CACHABLE_NONCOHERENT (3<<_CACHE_SHIFT)  /* LOONGSON       */
-+#define _CACHE_CACHABLE_COHERENT    (3<<_CACHE_SHIFT)  /* LOONGSON-3     */
-+#define _CACHE_UNCACHED_ACCELERATED (7<<_CACHE_SHIFT)  /* LOONGSON       */
-+
- #else
+diff --git a/arch/mips/loongson/common/uart_base.c b/arch/mips/loongson/common/uart_base.c
+index d69ea54..ea8b501 100644
+--- a/arch/mips/loongson/common/uart_base.c
++++ b/arch/mips/loongson/common/uart_base.c
+@@ -35,9 +35,16 @@ void prom_init_loongson_uart_base(void)
+ 	case MACH_DEXXON_GDIUM2F10:
+ 	case MACH_LEMOTE_NAS:
+ 	default:
+-		/* The CPU provided serial port */
++		/* The CPU provided serial port (LPC) */
+ 		loongson_uart_base = LOONGSON_LIO1_BASE + 0x3f8;
+ 		break;
++	case MACH_LEMOTE_A1004:
++	case MACH_LEMOTE_A1101:
++	case MACH_LEMOTE_A1201:
++	case MACH_LEMOTE_A1205:
++		/* The CPU provided serial port (CPU) */
++		loongson_uart_base = LOONGSON_REG_BASE + 0x1e0;
++		break;
+ 	}
  
- #define _CACHE_CACHABLE_NO_WA	    (0<<_CACHE_SHIFT)  /* R4600 only      */
-diff --git a/arch/mips/loongson/Platform b/arch/mips/loongson/Platform
-index 29692e5..6205372 100644
---- a/arch/mips/loongson/Platform
-+++ b/arch/mips/loongson/Platform
-@@ -30,3 +30,4 @@ platform-$(CONFIG_MACH_LOONGSON) += loongson/
- cflags-$(CONFIG_MACH_LOONGSON) += -I$(srctree)/arch/mips/include/asm/mach-loongson -mno-branch-likely
- load-$(CONFIG_LEMOTE_FULOONG2E) += 0xffffffff80100000
- load-$(CONFIG_LEMOTE_MACH2F) += 0xffffffff80200000
-+load-$(CONFIG_CPU_LOONGSON3) += 0xffffffff80200000
+ 	_loongson_uart_base =
 -- 
 1.7.7.3
 
