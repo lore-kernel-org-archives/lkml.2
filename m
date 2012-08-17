@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab2HQUwv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 16:52:51 -0400
-Received: from ext190.halfdog.net ([88.116.147.190]:51039 "EHLO
-	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2HQUwm (ORCPT
+	id S1754335Ab2HQUyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 16:54:40 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43515 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab2HQUyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 16:52:42 -0400
-X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 16:52:42 EDT
-Message-ID: <502EAB4D.90807@halfdog.net>
-Date: Fri, 17 Aug 2012 20:36:29 +0000
-From: halfdog <me@halfdog.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14a1
+	Fri, 17 Aug 2012 16:54:33 -0400
+Message-ID: <502EAF86.2040309@suse.cz>
+Date: Fri, 17 Aug 2012 22:54:30 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120731 Thunderbird/15.0
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Software interrupt 0x8 guest crash from userspace: virtualbox emulation
- or guest kernel bug?
+To: Joe Perches <joe@perches.com>
+CC: davem@davemloft.net, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ratelimit: check the condition in WARN_RATELIMIT first
+References: <1345210942-26906-1-git-send-email-jslaby@suse.cz>  <1345225144.10014.2.camel@joe2Laptop> <502E8A2C.3060606@suse.cz> <1345229139.10014.5.camel@joe2Laptop>
+In-Reply-To: <1345229139.10014.5.camel@joe2Laptop>
 X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -23,50 +24,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 08/17/2012 08:45 PM, Joe Perches wrote:
+> On Fri, 2012-08-17 at 20:15 +0200, Jiri Slaby wrote:
+>> On 08/17/2012 07:39 PM, Joe Perches wrote:
+>>> On Fri, 2012-08-17 at 15:42 +0200, Jiri Slaby wrote:
+>>>> Before calling __ratelimit in __WARN_RATELIMIT, check the condition
+>>>> first. When this check was not there, we got constant income of:
+>>>> tty_init_dev: 60 callbacks suppressed
+>>>> tty_init_dev: 59 callbacks suppressed
+>>> []
+>>>> diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+>>> []
+>>>> @@ -49,8 +49,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+>>>>  #define __WARN_RATELIMIT(condition, state, format...)		\
+>>>>  ({								\
+>>>>  	int rtn = 0;						\
+>>>> -	if (unlikely(__ratelimit(state)))			\
+>>>> -		rtn = WARN(condition, format);			\
+>>>> +	int __rtcond = !!condition;				\
+>>>> +	if (unlikely(__rtcond && __ratelimit(state)))		\
+>>>> +		rtn = WARN(__rtcond, format);			\
+>>>>  	rtn;							\
+>>>>  })
+>>>>  
+>>>
+>>> Hi Jiri.
+>>>
+>>> This seems fine to me but are there any conditions that
+>>> are computationally expensive?
+>>
+>> It's not about expensiveness of the computation. The complexity remained
+>> the same except I moved the computation one layer up.
+> 
+> If ratelimit(state) is not true, condition wasn't tested
+> or performed at all.  With this change, it's always done.
 
-I have observed a strange guest kernel crash in virtualbox and are
-currently trying to understand it. Since I have no real 32-bit Intel
-platform any more, I cannot verify that this crash would happen on
-native 32bit also, so perhaps someone could check that. I have also
-collected information about the crash [1], but currently fail to
-understand why this is happening.
+Ah, you meant this. Actually this was wrong/unexpected. When devs pass
+something to a function/macro they expect it to be evaluated. Exactly once.
 
-In short: Calling "int 0x8" in i386 guest on amd64 host crashes the
-guest. It seems, that "int 0x8" is handled by task gate, that fails to
-initialize "gs" correctly. The crash can be reproduced using [2], the
-same program does not crash the host. Due to lack of test platforms it
-is not clear, if that only affects virtual box guests.
+Like in this (maybe not so good) code:
+void put_ref(int refcnt) {
+  WARN_RATELIMIT(!--refcnt, "refcnt reached 0 unexpectedly");
+}
 
-Questions:
-* Does this idt entry seem sane or could it be really broken? Code says
-./arch/x86/kernel/traps.c:      set_intr_gate_ist(8, &double_fault,
-DOUBLEFAULT_STACK);
-which seems consistent with observed idt setup. I'm not sure about
-privilege levels, is it possible to invoke this interrupt also on
-native systems and cause same behavior?
-* If broken, what is idt on native i386 system (not guest) on real
-32-bit CPU? Could someone with such system send me: grep "idt_table"
-in System.map, "gdb --core /proc/kcore" and "x/64x [address of
-idt_table]" (see also [1])?
-* If broken, why? Same outcome on native i386 platform?
-* If not broken on native: why this interaction with virtualbox?
+You want the refcnt to be decremented no matter what ratelimit() returns.
 
-hd
-
-[1]
-http://www.halfdog.net/Security/2012/VirtualBoxSoftwareInterrupt0x8GuestCrash/
-[2]
-http://www.halfdog.net/Security/2012/VirtualBoxSoftwareInterrupt0x8GuestCrash/RtcInt.c
-
-- -- 
-http://www.halfdog.net/
-PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAlAuqz8ACgkQxFmThv7tq+6CzwCginL/PMRVIKxRV4YRXtRIRF+O
-tO4An2KcZs5caaoTFu+UGJQLtFOrmKpS
-=9P33
------END PGP SIGNATURE-----
+thanks,
+-- 
+js
+suse labs
