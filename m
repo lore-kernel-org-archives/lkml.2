@@ -1,593 +1,456 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030886Ab2HQH6m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:58:42 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61655 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030759Ab2HQH6g convert rfc822-to-8bit (ORCPT
+	id S1030884Ab2HQIAH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:00:07 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58754 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030208Ab2HQIAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:58:36 -0400
+	Fri, 17 Aug 2012 04:00:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1345188250.1682.887.camel@rui.sh.intel.com>
-References: <1345117305-8299-1-git-send-email-amit.kachhap@linaro.org>
-	<1345117305-8299-2-git-send-email-amit.kachhap@linaro.org>
-	<1345188250.1682.887.camel@rui.sh.intel.com>
-Date: Fri, 17 Aug 2012 13:28:35 +0530
-Message-ID: <CAK44p21qxbpvi0Qtu89ac8ciuJRWDvn44Z8=DggMMxiwjKcczw@mail.gmail.com>
-Subject: Re: [PATCH v6 1/6] thermal: add generic cpufreq cooling implementation
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@lists.linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        SangWook Ju <sw.ju@samsung.com>, Durgadoss <durgadoss.r@intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
+In-Reply-To: <1344238538-3420-1-git-send-email-zheng.z.yan@intel.com>
+References: <1344238538-3420-1-git-send-email-zheng.z.yan@intel.com>
+Date: Fri, 17 Aug 2012 10:00:00 +0200
+Message-ID: <CABPqkBTKwk1wqV0YWGRn1sHXBM0yix7jrGRFsW-JT4_=Y+F+wg@mail.gmail.com>
+Subject: Re: [RFC PATCH] perf/x86: Add cpumask for uncore PMU.
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        jolsa@redhat.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 August 2012 12:54, Zhang Rui <rui.zhang@intel.com> wrote:
-> On 四, 2012-08-16 at 17:11 +0530, Amit Daniel Kachhap wrote:
->> This patchset introduces a new generic cooling device based on cpufreq
->> that can be used on non-ACPI platforms.  As a proof of concept, we have
->> drivers for the following platforms using this mechanism now:
->>
->>  * Samsung Exynos (Exynos4 and Exynos5) in the current patchset.
->>  * Freescale i.MX (git://git.linaro.org/people/amitdanielk/linux.git imx6q_thermal)
->>
->> There is a small change in cpufreq cooling registration APIs, so a minor
->> change is needed for Freescale platforms.
->>
->> Brief Description:
->>
->> 1) The generic cooling devices code is placed inside driver/thermal/*
->>    as placing inside acpi folder will need un-necessary enabling of acpi
->>    code.  This code is architecture independent.
->>
->> 2) This patchset adds generic cpu cooling low level implementation
->>    through frequency clipping.  In future, other cpu related cooling
->>    devices may be added here.  An ACPI version of this already exists
->>    (drivers/acpi/processor_thermal.c) .But this will be useful for
->>    platforms like ARM using the generic thermal interface along with the
->>    generic cpu cooling devices.  The cooling device registration API's
->>    return cooling device pointers which can be easily binded with the
->>    thermal zone trip points.  The important APIs exposed are,
->>
->>    a) struct thermal_cooling_device *cpufreq_cooling_register(
->>         struct cpumask *clip_cpus)
->>    b) void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
->>
->> 3) Samsung exynos platform thermal implementation is done using the
->>    generic cpu cooling APIs and the new trip type.  The temperature sensor
->>    driver present in the hwmon folder(registered as hwmon driver) is moved
->>    to thermal folder and registered as a thermal driver.
->>
->> A simple data/control flow diagrams is shown below,
->>
->> Core Linux thermal <----->  Exynos thermal interface <----- Temperature Sensor
->>           |                             |
->>          \|/                            |
->>   Cpufreq cooling device <---------------
->>
->> TODO:
->> *Will send the DT enablement patches later after the driver is merged.
->>
->> This patch:
->>
->> Add support for generic cpu thermal cooling low level implementations
->> using frequency scaling up/down based on the registration parameters.
->> Different cpu related cooling devices can be registered by the user and
->> the binding of these cooling devices to the corresponding trip points can
->> be easily done as the registration APIs return the cooling device pointer.
->> The user of these APIs are responsible for passing clipping frequency .
->> The drivers can also register to recieve notification about any cooling
->> action called.
->>
->> [akpm@linux-foundation.org: fix comment layout]
->> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
->> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
->> Cc: SangWook Ju <sw.ju@samsung.com>
->> Cc: Durgadoss <durgadoss.r@intel.com>
->> Cc: Len Brown <lenb@kernel.org>
->> Cc: Jean Delvare <khali@linux-fr.org>
->> Cc: Kyungmin Park <kmpark@infradead.org>
->> Cc: Kukjin Kim <kgene.kim@samsung.com>
->> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> ---
->>  Documentation/thermal/cpu-cooling-api.txt |   52 +++
->>  drivers/thermal/Kconfig                   |   11 +
->>  drivers/thermal/Makefile                  |    1 +
->>  drivers/thermal/cpu_cooling.c             |  512 +++++++++++++++++++++++++++++
->>  include/linux/cpu_cooling.h               |   79 +++++
->>  5 files changed, 655 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/thermal/cpu-cooling-api.txt
->>  create mode 100644 drivers/thermal/cpu_cooling.c
->>  create mode 100644 include/linux/cpu_cooling.h
->>
->> diff --git a/Documentation/thermal/cpu-cooling-api.txt b/Documentation/thermal/cpu-cooling-api.txt
->> new file mode 100644
->> index 0000000..a1f2a6b
->> --- /dev/null
->> +++ b/Documentation/thermal/cpu-cooling-api.txt
->> @@ -0,0 +1,52 @@
->> +CPU cooling APIs How To
->> +===================================
->> +
->> +Written by Amit Daniel Kachhap <amit.kachhap@linaro.org>
->> +
->> +Updated: 12 May 2012
->> +
->> +Copyright (c)  2012 Samsung Electronics Co., Ltd(http://www.samsung.com)
->> +
->> +0. Introduction
->> +
->> +The generic cpu cooling(freq clipping) provides registration/unregistration APIs
->> +to the caller. The binding of the cooling devices to the trip point is left for
->> +the user. The registration APIs returns the cooling device pointer.
->> +
->> +1. cpu cooling APIs
->> +
->> +1.1 cpufreq registration/unregistration APIs
->> +1.1.1 struct thermal_cooling_device *cpufreq_cooling_register(
->> +     struct cpumask *clip_cpus)
->> +
->> +    This interface function registers the cpufreq cooling device with the name
->> +    "thermal-cpufreq-%x". This api can support multiple instances of cpufreq
->> +    cooling devices.
->> +
->> +   clip_cpus: cpumask of cpus where the frequency constraints will happen.
->> +
->> +1.1.2 void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
->> +
->> +    This interface function unregisters the "thermal-cpufreq-%x" cooling device.
->> +
->> +    cdev: Cooling device pointer which has to be unregistered.
->> +
->> +
->> +1.2 CPU cooling action notifier register/unregister interface
->> +1.2.1 int cputherm_register_notifier(struct notifier_block *nb,
->> +     unsigned int list)
->> +
->> +    This interface registers a driver with cpu cooling layer. The driver will
->> +    be notified when any cpu cooling action is called.
->> +
->> +    nb: notifier function to register
->> +    list: CPUFREQ_COOLING_START or CPUFREQ_COOLING_STOP
->> +
->> +1.2.2 int cputherm_unregister_notifier(struct notifier_block *nb,
->> +     unsigned int list)
->> +
->> +    This interface registers a driver with cpu cooling layer. The driver will
->> +    be notified when any cpu cooling action is called.
->> +
->> +    nb: notifier function to register
->> +    list: CPUFREQ_COOLING_START or CPUFREQ_COOLING_STOP
+On Mon, Aug 6, 2012 at 9:35 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
 >
-> what are these two APIs used for?
-> I did not see they are used in your patch set, do I miss something?
-No currently they are not used by my patches. I added them on request
-from Eduardo and others
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 >
->> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
->> index 7dd8c34..996003b 100644
->> --- a/drivers/thermal/Kconfig
->> +++ b/drivers/thermal/Kconfig
->> @@ -19,6 +19,17 @@ config THERMAL_HWMON
->>       depends on HWMON=y || HWMON=THERMAL
->>       default y
->>
->> +config CPU_THERMAL
->> +     bool "generic cpu cooling support"
->> +     depends on THERMAL && CPU_FREQ
->> +     help
->> +       This implements the generic cpu cooling mechanism through frequency
->> +       reduction, cpu hotplug and any other ways of reducing temperature. An
->> +       ACPI version of this already exists(drivers/acpi/processor_thermal.c).
->> +       This will be useful for platforms using the generic thermal interface
->> +       and not the ACPI interface.
->> +       If you want this support, you should say Y here.
->> +
->>  config SPEAR_THERMAL
->>       bool "SPEAr thermal sensor driver"
->>       depends on THERMAL
->> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
->> index fd9369a..aae59ad 100644
->> --- a/drivers/thermal/Makefile
->> +++ b/drivers/thermal/Makefile
->> @@ -3,5 +3,6 @@
->>  #
->>
->>  obj-$(CONFIG_THERMAL)                += thermal_sys.o
->> +obj-$(CONFIG_CPU_THERMAL)            += cpu_cooling.o
->>  obj-$(CONFIG_SPEAR_THERMAL)          += spear_thermal.o
->>  obj-$(CONFIG_RCAR_THERMAL)   += rcar_thermal.o
->> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
->> new file mode 100644
->> index 0000000..c42e557
->> --- /dev/null
->> +++ b/drivers/thermal/cpu_cooling.c
->> @@ -0,0 +1,512 @@
->> +/*
->> + *  linux/drivers/thermal/cpu_cooling.c
->> + *
->> + *  Copyright (C) 2012       Samsung Electronics Co., Ltd(http://www.samsung.com)
->> + *  Copyright (C) 2012  Amit Daniel <amit.kachhap@linaro.org>
->> + *
->> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->> + *  This program is free software; you can redistribute it and/or modify
->> + *  it under the terms of the GNU General Public License as published by
->> + *  the Free Software Foundation; version 2 of the License.
->> + *
->> + *  This program is distributed in the hope that it will be useful, but
->> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
->> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
->> + *  General Public License for more details.
->> + *
->> + *  You should have received a copy of the GNU General Public License along
->> + *  with this program; if not, write to the Free Software Foundation, Inc.,
->> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
->> + *
->> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->> + */
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/thermal.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/cpufreq.h>
->> +#include <linux/err.h>
->> +#include <linux/slab.h>
->> +#include <linux/cpu.h>
->> +#include <linux/cpu_cooling.h>
->> +
->> +/**
->> + * struct cpufreq_cooling_device
->> + * @id: unique integer value corresponding to each cpufreq_cooling_device
->> + *   registered.
->> + * @cool_dev: thermal_cooling_device pointer to keep track of the the
->> + *   egistered cooling device.
->> + * @cpufreq_state: integer value representing the current state of cpufreq
->> + *   cooling devices.
->> + * @cpufreq_val: integer value representing the absolute value of the clipped
->> + *   frequency.
->> + * @allowed_cpus: all the cpus involved for this cpufreq_cooling_device.
->> + * @node: list_head to link all cpufreq_cooling_device together.
->> + *
->> + * This structure is required for keeping information of each
->> + * cpufreq_cooling_device registered as a list whose head is represented by
->> + * cooling_cpufreq_list. In order to prevent corruption of this list a
->> + * mutex lock cooling_cpufreq_lock is used.
->> + */
->> +struct cpufreq_cooling_device {
->> +     int id;
->> +     struct thermal_cooling_device *cool_dev;
->> +     unsigned int cpufreq_state;
->> +     unsigned int cpufreq_val;
->> +     struct cpumask allowed_cpus;
->> +     struct list_head node;
->> +};
->> +static LIST_HEAD(cooling_cpufreq_list);
->> +static DEFINE_IDR(cpufreq_idr);
->> +
->> +static struct mutex cooling_cpufreq_lock;
->> +
->> +/* notify_table passes value to the CPUFREQ_ADJUST callback function. */
->> +#define NOTIFY_INVALID NULL
->> +struct cpufreq_cooling_device *notify_device;
->> +
->> +/* Head of the blocking notifier chain to inform about frequency clamping */
->> +static BLOCKING_NOTIFIER_HEAD(cputherm_state_notifier_list);
->> +
->> +/**
->> + * get_idr - function to get a unique id.
->> + * @idr: struct idr * handle used to create a id.
->> + * @id: int * value generated by this function.
->> + */
->> +static int get_idr(struct idr *idr, int *id)
->> +{
->> +     int err;
->> +again:
->> +     if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
->> +             return -ENOMEM;
->> +
->> +     mutex_lock(&cooling_cpufreq_lock);
->> +     err = idr_get_new(idr, NULL, id);
->> +     mutex_unlock(&cooling_cpufreq_lock);
->> +
->> +     if (unlikely(err == -EAGAIN))
->> +             goto again;
->> +     else if (unlikely(err))
->> +             return err;
->> +
->> +     *id = *id & MAX_ID_MASK;
->> +     return 0;
->> +}
->> +
->> +/**
->> + * release_idr - function to free the unique id.
->> + * @idr: struct idr * handle used for creating the id.
->> + * @id: int value representing the unique id.
->> + */
->> +static void release_idr(struct idr *idr, int id)
->> +{
->> +     mutex_lock(&cooling_cpufreq_lock);
->> +     idr_remove(idr, id);
->> +     mutex_unlock(&cooling_cpufreq_lock);
->> +}
->> +
->> +/**
->> + * cputherm_register_notifier - Register a notifier with cpu cooling interface.
->> + * @nb:      struct notifier_block * with callback info.
->> + * @list: integer value for which notification is needed. possible values are
->> + *   CPUFREQ_COOLING_START and CPUFREQ_COOLING_STOP.
->> + *
->> + * This exported function registers a driver with cpu cooling layer. The driver
->> + * will be notified when any cpu cooling action is called.
->> + */
->> +int cputherm_register_notifier(struct notifier_block *nb, unsigned int list)
->> +{
->> +     int ret = 0;
->> +
->> +     switch (list) {
->> +     case CPUFREQ_COOLING_START:
->> +     case CPUFREQ_COOLING_STOP:
->> +             ret = blocking_notifier_chain_register(
->> +                             &cputherm_state_notifier_list, nb);
->> +             break;
->> +     default:
->> +             ret = -EINVAL;
->> +     }
->> +     return ret;
->> +}
->> +EXPORT_SYMBOL(cputherm_register_notifier);
->> +
->> +/**
->> + * cputherm_unregister_notifier - Un-register a notifier.
->> + * @nb:      struct notifier_block * with callback info.
->> + * @list: integer value for which notification is needed. values possible are
->> + *   CPUFREQ_COOLING_START or CPUFREQ_COOLING_STOP.
->> + *
->> + * This exported function un-registers a driver with cpu cooling layer.
->> + */
->> +int cputherm_unregister_notifier(struct notifier_block *nb, unsigned int list)
->> +{
->> +     int ret = 0;
->> +
->> +     switch (list) {
->> +     case CPUFREQ_COOLING_START:
->> +     case CPUFREQ_COOLING_STOP:
->> +             ret = blocking_notifier_chain_unregister(
->> +                             &cputherm_state_notifier_list, nb);
->> +             break;
->> +     default:
->> +             ret = -EINVAL;
->> +     }
->> +     return ret;
->> +}
->> +EXPORT_SYMBOL(cputherm_unregister_notifier);
->> +
->> +/* Below code defines functions to be used for cpufreq as cooling device */
->> +
->> +/**
->> + * is_cpufreq_valid - function to check if a cpu has frequency transition policy.
->> + * @cpu: cpu for which check is needed.
->> + */
->> +static int is_cpufreq_valid(int cpu)
->> +{
->> +     struct cpufreq_policy policy;
->> +     return !cpufreq_get_policy(&policy, cpu);
->> +}
->> +
->> +/**
->> + * get_cpu_frequency - get the absolute value of frequency from level.
->> + * @cpu: cpu for which frequency is fetched.
->> + * @level: level of frequency of the CPU
->> + *   e.g level=1 --> 1st MAX FREQ, LEVEL=2 ---> 2nd MAX FREQ, .... etc
->> + */
->> +static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
->> +{
->> +     int ret = 0, i = 0;
->> +     unsigned long level_index;
->> +     bool descend = false;
->> +     struct cpufreq_frequency_table *table =
->> +                                     cpufreq_frequency_get_table(cpu);
->> +     if (!table)
->> +             return ret;
->> +
->> +     while (table[i].frequency != CPUFREQ_TABLE_END) {
->> +             if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
->> +                     continue;
->> +
->> +             /*check if table in ascending or descending order*/
->> +             if ((table[i + 1].frequency != CPUFREQ_TABLE_END) &&
->> +                     (table[i + 1].frequency < table[i].frequency)
->> +                     && !descend) {
->> +                     descend = true;
->> +             }
->> +
->> +             /*return if level matched and table in descending order*/
->> +             if (descend && i == level)
->> +                     return table[i].frequency;
->> +             i++;
->> +     }
->> +     i--;
->> +
->> +     if (level > i || descend)
->> +             return ret;
->> +     level_index = i - level;
->> +
->> +     /*Scan the table in reverse order and match the level*/
->> +     while (i >= 0) {
->> +             if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
->> +                     continue;
->> +             /*return if level matched*/
->> +             if (i == level_index)
->> +                     return table[i].frequency;
->> +             i--;
->> +     }
->> +     return ret;
->> +}
->> +
->> +/**
->> + * cpufreq_apply_cooling - function to apply frequency clipping.
->> + * @cpufreq_device: cpufreq_cooling_device pointer containing frequency
->> + *   clipping data.
->> + * @cooling_state: value of the cooling state.
->> + */
->> +static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
->> +                             unsigned long cooling_state)
->> +{
->> +     unsigned int event, cpuid, clip_freq;
->> +     struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
->> +     unsigned int cpu = cpumask_any(maskPtr);
->> +
->> +
->> +     /* Check if the old cooling action is same as new cooling action */
->> +     if (cpufreq_device->cpufreq_state == cooling_state)
->> +             return 0;
->> +
->> +     clip_freq = get_cpu_frequency(cpu, cooling_state);
->> +     if (!clip_freq)
->> +             return -EINVAL;
->> +
->> +     cpufreq_device->cpufreq_state = cooling_state;
->> +     cpufreq_device->cpufreq_val = clip_freq;
->> +     notify_device = cpufreq_device;
->> +
->> +     if (cooling_state != 0)
->> +             event = CPUFREQ_COOLING_START;
->> +     else
->> +             event = CPUFREQ_COOLING_STOP;
->> +
->> +     blocking_notifier_call_chain(&cputherm_state_notifier_list,
->> +                                             event, &clip_freq);
->> +
->> +     for_each_cpu(cpuid, maskPtr) {
->> +             if (is_cpufreq_valid(cpuid))
->> +                     cpufreq_update_policy(cpuid);
->> +     }
->> +
->> +     notify_device = NOTIFY_INVALID;
->> +
->> +     return 0;
->> +}
->> +
->> +/**
->> + * cpufreq_thermal_notifier - notifier callback for cpufreq policy change.
->> + * @nb:      struct notifier_block * with callback info.
->> + * @event: value showing cpufreq event for which this function invoked.
->> + * @data: callback-specific data
->> + */
->> +static int cpufreq_thermal_notifier(struct notifier_block *nb,
->> +                                     unsigned long event, void *data)
->> +{
->> +     struct cpufreq_policy *policy = data;
->> +     unsigned long max_freq = 0;
->> +
->> +     if (event != CPUFREQ_ADJUST || notify_device == NOTIFY_INVALID)
->> +             return 0;
->> +
->> +     if (cpumask_test_cpu(policy->cpu, &notify_device->allowed_cpus))
->> +             max_freq = notify_device->cpufreq_val;
->> +
->> +     /* Never exceed user_policy.max*/
->> +     if (max_freq > policy->user_policy.max)
->> +             max_freq = policy->user_policy.max;
->> +
->> +     if (policy->max != max_freq)
->> +             cpufreq_verify_within_limits(policy, 0, max_freq);
->> +
->> +     return 0;
->> +}
->> +
->> +/*
->> + * cpufreq cooling device callback functions are defined below
->> + */
->> +
->> +/**
->> + * cpufreq_get_max_state - callback function to get the max cooling state.
->> + * @cdev: thermal cooling device pointer.
->> + * @state: fill this variable with the max cooling state.
->> + */
->> +static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
->> +                              unsigned long *state)
->> +{
->> +     int ret = -EINVAL, i = 0;
->> +     struct cpufreq_cooling_device *cpufreq_device;
->> +     struct cpumask *maskPtr;
->> +     unsigned int cpu;
->> +     struct cpufreq_frequency_table *table;
->> +
->> +     mutex_lock(&cooling_cpufreq_lock);
->> +     list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
->> +             if (cpufreq_device && cpufreq_device->cool_dev == cdev)
->> +                     break;
->> +     }
->> +     if (cpufreq_device == NULL)
->> +             goto return_get_max_state;
->> +
->> +     maskPtr = &cpufreq_device->allowed_cpus;
->> +     cpu = cpumask_any(maskPtr);
->> +     table = cpufreq_frequency_get_table(cpu);
->> +     if (!table) {
->> +             *state = 0;
->> +             ret = 0;
->> +             goto return_get_max_state;
->> +     }
->> +
->> +     while (table[i].frequency != CPUFREQ_TABLE_END) {
->> +             if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
->> +                     continue;
->> +             i++;
->> +     }
->> +     if (i > 0) {
->> +             *state = --i;
->> +             ret = 0;
->> +     }
->> +
->> +return_get_max_state:
->> +     mutex_unlock(&cooling_cpufreq_lock);
->> +     return ret;
->> +}
->> +
->> +/**
->> + * cpufreq_get_cur_state - callback function to get the current cooling state.
->> + * @cdev: thermal cooling device pointer.
->> + * @state: fill this variable with the current cooling state.
->> + */
->> +static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
->> +                              unsigned long *state)
->> +{
->> +     int ret = -EINVAL;
->> +     struct cpufreq_cooling_device *cpufreq_device;
->> +
->> +     mutex_lock(&cooling_cpufreq_lock);
->> +     list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
->> +             if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
->> +                     *state = cpufreq_device->cpufreq_state;
->> +                     ret = 0;
->> +                     break;
->> +             }
->> +     }
->> +     mutex_unlock(&cooling_cpufreq_lock);
->> +
+> This RFC patch adds a cpumask file to the uncore pmu sysfs directory.
+> If user doesn't explicitly specify CPU list, perf-stat only collects
+> uncore events on CPUs listed in the cpumask file.
 >
-> as cpufreq may be changed in other places, e.g. via sysfs I/F, we should
-> use the current cpu frequency to get the REAL cooling state, rather than
-> using a cached value.
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 28 ++++++++++++++++++++++---
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.h |  6 ++++--
+>  tools/perf/builtin-stat.c                     | 30 ++++++++++++++++++---------
+>  tools/perf/util/cpumap.c                      | 22 +++++++++++++-------
+>  tools/perf/util/cpumap.h                      |  2 +-
+>  tools/perf/util/evsel.h                       |  1 +
+>  tools/perf/util/parse-events.c                | 14 +++++++------
+>  tools/perf/util/pmu.c                         | 30 +++++++++++++++++++++++++++
+>  tools/perf/util/pmu.h                         |  1 +
+>  9 files changed, 105 insertions(+), 29 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index 0a55710..62ec3e6 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -2341,6 +2341,27 @@ int uncore_pmu_event_init(struct perf_event *event)
+>         return ret;
+>  }
+>
+> +static ssize_t uncore_get_attr_cpumask(struct device *dev,
+> +                               struct device_attribute *attr, char *buf)
+> +{
+> +       int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
+> +
+> +       buf[n++] = '\n';
 
-Yes agreed , I will repost with your suggestion.
+Why the \n. I thought there were no \n in sysfs files.
 
-Thanks,
-Amit
+> +       buf[n] = '\0';
+> +       return n;
+> +}
+> +
+> +static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
+> +
+> +static struct attribute *uncore_pmu_attrs[] = {
+> +       &dev_attr_cpumask.attr,
+> +       NULL,
+> +};
+> +
+> +static struct attribute_group uncore_pmu_attr_group = {
+> +       .attrs = uncore_pmu_attrs,
+> +};
+> +
+>  static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+>  {
+>         int ret;
+> @@ -2378,8 +2399,8 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
+>                 free_percpu(type->pmus[i].box);
+>         kfree(type->pmus);
+>         type->pmus = NULL;
+> -       kfree(type->attr_groups[1]);
+> -       type->attr_groups[1] = NULL;
+> +       kfree(type->events_group);
+> +       type->events_group = NULL;
+>  }
 >
-> thanks,
-> rui
+>  static void __init uncore_types_exit(struct intel_uncore_type **types)
+> @@ -2431,9 +2452,10 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+>                 for (j = 0; j < i; j++)
+>                         attrs[j] = &type->event_descs[j].attr.attr;
 >
+> -               type->attr_groups[1] = events_group;
+> +               type->events_group = events_group;
+>         }
 >
+> +       type->pmu_group = &uncore_pmu_attr_group;
+>         type->pmus = pmus;
+>         return 0;
+>  fail:
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> index 5b81c18..e68a455 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> @@ -369,10 +369,12 @@ struct intel_uncore_type {
+>         struct intel_uncore_pmu *pmus;
+>         struct intel_uncore_ops *ops;
+>         struct uncore_event_desc *event_descs;
+> -       const struct attribute_group *attr_groups[3];
+> +       const struct attribute_group *attr_groups[4];
+>  };
+>
+> -#define format_group attr_groups[0]
+> +#define pmu_group attr_groups[0]
+> +#define format_group attr_groups[1]
+> +#define events_group attr_groups[2]
+>
+>  struct intel_uncore_ops {
+>         void (*init_box)(struct intel_uncore_box *);
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index 861f0ae..8b4275c 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -220,6 +220,16 @@ static void perf_evsel__free_stat_priv(struct perf_evsel *evsel)
+>         evsel->priv = NULL;
+>  }
+>
+> +static inline struct cpu_map *perf_evsel__cpus(struct perf_evsel *evsel)
+> +{
+> +       return (evsel->cpus && !target.cpu_list) ? evsel->cpus : evsel_list->cpus;
+> +}
+> +
+> +static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
+> +{
+> +       return perf_evsel__cpus(evsel)->nr;
+> +}
+> +
+>  static void update_stats(struct stats *stats, u64 val)
+>  {
+>         double delta;
+> @@ -299,7 +309,7 @@ retry:
+>                 evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
+>
+>         if (perf_target__has_cpu(&target)) {
+> -               ret = perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+> +               ret = perf_evsel__open_per_cpu(evsel, perf_evsel__cpus(evsel),
+>                                                group, group_fd);
+>                 if (ret)
+>                         goto check_ret;
+> @@ -382,7 +392,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
+>         u64 *count = counter->counts->aggr.values;
+>         int i;
+>
+> -       if (__perf_evsel__read(counter, evsel_list->cpus->nr,
+> +       if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
+>                                evsel_list->threads->nr, scale) < 0)
+>                 return -1;
+>
+> @@ -411,7 +421,7 @@ static int read_counter(struct perf_evsel *counter)
+>         u64 *count;
+>         int cpu;
+>
+> -       for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
+> +       for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+>                 if (__perf_evsel__read_on_cpu(counter, cpu, 0, scale) < 0)
+>                         return -1;
+>
+> @@ -546,12 +556,12 @@ static int run_perf_stat(int argc __used, const char **argv)
+>         if (no_aggr) {
+>                 list_for_each_entry(counter, &evsel_list->entries, node) {
+>                         read_counter(counter);
+> -                       perf_evsel__close_fd(counter, evsel_list->cpus->nr, 1);
+> +                       perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter), 1);
+>                 }
+>         } else {
+>                 list_for_each_entry(counter, &evsel_list->entries, node) {
+>                         read_counter_aggr(counter);
+> -                       perf_evsel__close_fd(counter, evsel_list->cpus->nr,
+> +                       perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter),
+>                                              evsel_list->threads->nr);
+>                 }
+>         }
+> @@ -592,7 +602,7 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
+>         if (no_aggr)
+>                 sprintf(cpustr, "CPU%*d%s",
+>                         csv_output ? 0 : -4,
+> -                       evsel_list->cpus->map[cpu], csv_sep);
+> +                       perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+>
+>         fprintf(output, fmt, cpustr, msecs, csv_sep, perf_evsel__name(evsel));
+>
+> @@ -788,7 +798,7 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+>         if (no_aggr)
+>                 sprintf(cpustr, "CPU%*d%s",
+>                         csv_output ? 0 : -4,
+> -                       evsel_list->cpus->map[cpu], csv_sep);
+> +                       perf_evsel__cpus(evsel)->map[cpu], csv_sep);
+>         else
+>                 cpu = 0;
+>
+> @@ -949,14 +959,14 @@ static void print_counter(struct perf_evsel *counter)
+>         u64 ena, run, val;
+>         int cpu;
+>
+> -       for (cpu = 0; cpu < evsel_list->cpus->nr; cpu++) {
+> +       for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+>                 val = counter->counts->cpu[cpu].val;
+>                 ena = counter->counts->cpu[cpu].ena;
+>                 run = counter->counts->cpu[cpu].run;
+>                 if (run == 0 || ena == 0) {
+>                         fprintf(output, "CPU%*d%s%*s%s%*s",
+>                                 csv_output ? 0 : -4,
+> -                               evsel_list->cpus->map[cpu], csv_sep,
+> +                               perf_evsel__cpus(counter)->map[cpu], csv_sep,
+>                                 csv_output ? 0 : 18,
+>                                 counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+>                                 csv_sep,
+> @@ -1255,7 +1265,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+>
+>         list_for_each_entry(pos, &evsel_list->entries, node) {
+>                 if (perf_evsel__alloc_stat_priv(pos) < 0 ||
+> -                   perf_evsel__alloc_counts(pos, evsel_list->cpus->nr) < 0)
+> +                   perf_evsel__alloc_counts(pos, perf_evsel__nr_cpus(pos)) < 0)
+>                         goto out_free_fd;
+>         }
+>
+> diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+> index adc72f0..2b32ffa 100644
+> --- a/tools/perf/util/cpumap.c
+> +++ b/tools/perf/util/cpumap.c
+> @@ -38,24 +38,19 @@ static struct cpu_map *cpu_map__trim_new(int nr_cpus, int *tmp_cpus)
+>         return cpus;
+>  }
+>
+> -static struct cpu_map *cpu_map__read_all_cpu_map(void)
+> +struct cpu_map *cpu_map__read(FILE *file)
+>  {
+>         struct cpu_map *cpus = NULL;
+> -       FILE *onlnf;
+>         int nr_cpus = 0;
+>         int *tmp_cpus = NULL, *tmp;
+>         int max_entries = 0;
+>         int n, cpu, prev;
+>         char sep;
+>
+> -       onlnf = fopen("/sys/devices/system/cpu/online", "r");
+> -       if (!onlnf)
+> -               return cpu_map__default_new();
+> -
+>         sep = 0;
+>         prev = -1;
+>         for (;;) {
+> -               n = fscanf(onlnf, "%u%c", &cpu, &sep);
+> +               n = fscanf(file, "%u%c", &cpu, &sep);
+>                 if (n <= 0)
+>                         break;
+>                 if (prev >= 0) {
+> @@ -95,6 +90,19 @@ static struct cpu_map *cpu_map__read_all_cpu_map(void)
+>                 cpus = cpu_map__default_new();
+>  out_free_tmp:
+>         free(tmp_cpus);
+> +       return cpus;
+> +}
+> +
+> +static struct cpu_map *cpu_map__read_all_cpu_map(void)
+> +{
+> +       struct cpu_map *cpus = NULL;
+> +       FILE *onlnf;
+> +
+> +       onlnf = fopen("/sys/devices/system/cpu/online", "r");
+> +       if (!onlnf)
+> +               return cpu_map__default_new();
+> +
+> +       cpus = cpu_map__read(onlnf);
+>         fclose(onlnf);
+>         return cpus;
+>  }
+> diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+> index c415185..17b5264 100644
+> --- a/tools/perf/util/cpumap.h
+> +++ b/tools/perf/util/cpumap.h
+> @@ -11,7 +11,7 @@ struct cpu_map {
+>  struct cpu_map *cpu_map__new(const char *cpu_list);
+>  struct cpu_map *cpu_map__dummy_new(void);
+>  void cpu_map__delete(struct cpu_map *map);
+> -
+> +struct cpu_map *cpu_map__read(FILE *file);
+>  size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
+>
+>  #endif /* __PERF_CPUMAP_H */
+> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+> index b559929..26c0095 100644
+> --- a/tools/perf/util/evsel.h
+> +++ b/tools/perf/util/evsel.h
+> @@ -65,6 +65,7 @@ struct perf_evsel {
+>                 void            *func;
+>                 void            *data;
+>         } handler;
+> +       struct cpu_map          *cpus;
+>         unsigned int            sample_size;
+>         bool                    supported;
+>  };
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 74a5af4..af07c4f 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -240,7 +240,8 @@ const char *event_type(int type)
+>  }
+>
+>  static int add_event(struct list_head **_list, int *idx,
+> -                    struct perf_event_attr *attr, char *name)
+> +                    struct perf_event_attr *attr,
+> +                    struct cpu_map *cpus, char *name)
+>  {
+>         struct perf_evsel *evsel;
+>         struct list_head *list = *_list;
+> @@ -260,6 +261,7 @@ static int add_event(struct list_head **_list, int *idx,
+>                 return -ENOMEM;
+>         }
+>
+> +       evsel->cpus = cpus;
+>         if (name)
+>                 evsel->name = strdup(name);
+>         list_add_tail(&evsel->node, list);
+> @@ -343,7 +345,7 @@ int parse_events_add_cache(struct list_head **list, int *idx,
+>         memset(&attr, 0, sizeof(attr));
+>         attr.config = cache_type | (cache_op << 8) | (cache_result << 16);
+>         attr.type = PERF_TYPE_HW_CACHE;
+> -       return add_event(list, idx, &attr, name);
+> +       return add_event(list, idx, &attr, NULL, name);
+>  }
+>
+>  static int add_tracepoint(struct list_head **list, int *idx,
+> @@ -381,7 +383,7 @@ static int add_tracepoint(struct list_head **list, int *idx,
+>         attr.sample_period = 1;
+>
+>         snprintf(name, MAX_NAME_LEN, "%s:%s", sys_name, evt_name);
+> -       return add_event(list, idx, &attr, name);
+> +       return add_event(list, idx, &attr, NULL, name);
+>  }
+>
+>  static int add_tracepoint_multi(struct list_head **list, int *idx,
+> @@ -492,7 +494,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
+>         attr.type = PERF_TYPE_BREAKPOINT;
+>         attr.sample_period = 1;
+>
+> -       return add_event(list, idx, &attr, NULL);
+> +       return add_event(list, idx, &attr, NULL, NULL);
+>  }
+>
+>  static int config_term(struct perf_event_attr *attr,
+> @@ -564,7 +566,7 @@ int parse_events_add_numeric(struct list_head **list, int *idx,
+>             config_attr(&attr, head_config, 1))
+>                 return -EINVAL;
+>
+> -       return add_event(list, idx, &attr, NULL);
+> +       return add_event(list, idx, &attr, NULL, NULL);
+>  }
+>
+>  static int parse_events__is_name_term(struct parse_events__term *term)
+> @@ -607,7 +609,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+>         if (perf_pmu__config(pmu, &attr, head_config))
+>                 return -EINVAL;
+>
+> -       return add_event(list, idx, &attr,
+> +       return add_event(list, idx, &attr, pmu->cpus,
+>                          pmu_event_name(head_config));
+>  }
+>
+> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+> index 67715a4..0b9aca6 100644
+> --- a/tools/perf/util/pmu.c
+> +++ b/tools/perf/util/pmu.c
+> @@ -9,6 +9,7 @@
+>  #include "util.h"
+>  #include "pmu.h"
+>  #include "parse-events.h"
+> +#include "cpumap.h"
+>
+>  int perf_pmu_parse(struct list_head *list, char *name);
+>  extern FILE *perf_pmu_in;
+> @@ -222,6 +223,33 @@ static int pmu_type(char *name, __u32 *type)
+>         return ret;
+>  }
+>
+> +static struct cpu_map *pmu_cpumask(char *name)
+> +{
+> +       struct stat st;
+> +       char path[PATH_MAX];
+> +       const char *sysfs;
+> +       FILE *file;
+> +       struct cpu_map *cpus;
+> +
+> +       sysfs = sysfs_find_mountpoint();
+> +       if (!sysfs)
+> +               return NULL;
+> +
+> +       snprintf(path, PATH_MAX,
+> +                "%s/bus/event_source/devices/%s/cpumask", sysfs, name);
+> +
+> +       if (stat(path, &st) < 0)
+> +               return NULL;
+> +
+> +       file = fopen(path, "r");
+> +       if (!file)
+> +               return NULL;
+> +
+> +       cpus = cpu_map__read(file);
+> +       fclose(file);
+> +       return cpus;
+> +}
+> +
+>  static struct perf_pmu *pmu_lookup(char *name)
+>  {
+>         struct perf_pmu *pmu;
+> @@ -244,6 +272,8 @@ static struct perf_pmu *pmu_lookup(char *name)
+>         if (!pmu)
+>                 return NULL;
+>
+> +       pmu->cpus = pmu_cpumask(name);
+> +
+>         pmu_aliases(name, &aliases);
+>
+>         INIT_LIST_HEAD(&pmu->format);
+> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+> index 535f2c5..277c874 100644
+> --- a/tools/perf/util/pmu.h
+> +++ b/tools/perf/util/pmu.h
+> @@ -28,6 +28,7 @@ struct perf_pmu__alias {
+>  struct perf_pmu {
+>         char *name;
+>         __u32 type;
+> +       struct cpu_map *cpus;
+>         struct list_head format;
+>         struct list_head aliases;
+>         struct list_head list;
+> --
+> 1.7.11.2
+>
+
+The key here is to ensure that perf stat -a picks one CPU on each socket
+and that from that CPU we can measure events on ALL the uncore PMU
+boxes on the socket. I think this is the case today. For instance, it is does
+not really make sense to measure one C-Box at a time. For any C-box-level
+metric, you need to cover all 8 of them.
+
+How does this play with the -C option of perf stat? I assume -C overrides.
+
+In case perf stat picks up the CPUs from cpumask, then I'd like to keep
+a trace of which CPUs were actually used. In other words, I think it would
+be useful to have this printed somewhere in the output. Unless this shows
+up only when you use the -A option.
