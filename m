@@ -1,127 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab2HQR4C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 13:56:02 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39232 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758673Ab2HQRzq (ORCPT
+	id S1758724Ab2HQSDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 14:03:13 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:31472 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab2HQSDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 13:55:46 -0400
-Date: Fri, 17 Aug 2012 13:45:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 06/11] xen/mmu: For 64-bit do not call
- xen_map_identity_early
-Message-ID: <20120817174549.GA14257@phenom.dumpdata.com>
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
- <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 17 Aug 2012 14:03:08 -0400
+Message-ID: <1345226555.3025.7.camel@lorien2>
+Subject: Re: dma mapping error check analysis
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Date: Fri, 17 Aug 2012 12:02:35 -0600
+In-Reply-To: <20120817141120.GD8093@phenom.dumpdata.com>
+References: <1344638802.8018.18.camel@lorien2>
+	 <20120817141120.GD8093@phenom.dumpdata.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 06:41:23PM +0100, Stefano Stabellini wrote:
-> On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> > B/c we do not need it. During the startup the Xen provides
-> > us with all the memory mapped that we need to function.
-> 
-> Shouldn't we check to make sure that is actually true (I am thinking at
-> nr_pt_frames)?
-
-I was looking at the source code (hypervisor) to figure it out and
-that is certainly true.
-
-
-> Or is it actually stated somewhere in the Xen headers?
-
-Couldn't find it, but after looking so long at the source code
-I didn't even bother looking for it.
-
-Thought to be honest - I only looked at how the 64-bit pagetables
-were set up, so I didn't dare to touch the 32-bit. Hence the #ifdef
-
-> 
-> 
-> 
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/mmu.c |   11 +++++------
-> >  1 files changed, 5 insertions(+), 6 deletions(-)
+On Fri, 2012-08-17 at 10:11 -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Aug 10, 2012 at 04:46:42PM -0600, Shuah Khan wrote:
+> > I analyzed current calls to dma_map_single() and dma_map_page() in the kernel
+> > to see if dma mapping errors are checked after mapping routines return.
 > > 
-> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> > index 7247e5a..a59070b 100644
-> > --- a/arch/x86/xen/mmu.c
-> > +++ b/arch/x86/xen/mmu.c
-> > @@ -84,6 +84,7 @@
-> >   */
-> >  DEFINE_SPINLOCK(xen_reservation_lock);
-> >  
-> > +#ifdef CONFIG_X86_32
-> >  /*
-> >   * Identity map, in addition to plain kernel map.  This needs to be
-> >   * large enough to allocate page table pages to allocate the rest.
-> > @@ -91,7 +92,7 @@ DEFINE_SPINLOCK(xen_reservation_lock);
-> >   */
-> >  #define LEVEL1_IDENT_ENTRIES	(PTRS_PER_PTE * 4)
-> >  static RESERVE_BRK_ARRAY(pte_t, level1_ident_pgt, LEVEL1_IDENT_ENTRIES);
-> > -
-> > +#endif
-> >  #ifdef CONFIG_X86_64
-> >  /* l3 pud for userspace vsyscall mapping */
-> >  static pud_t level3_user_vsyscall[PTRS_PER_PUD] __page_aligned_bss;
-> > @@ -1628,7 +1629,7 @@ static void set_page_prot(void *addr, pgprot_t prot)
-> >  	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
-> >  		BUG();
-> >  }
-> > -
-> > +#ifdef CONFIG_X86_32
-> >  static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
-> >  {
-> >  	unsigned pmdidx, pteidx;
-> > @@ -1679,7 +1680,7 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
-> >  
-> >  	set_page_prot(pmd, PAGE_KERNEL_RO);
-> >  }
-> > -
-> > +#endif
-> >  void __init xen_setup_machphys_mapping(void)
-> >  {
-> >  	struct xen_machphys_mapping mapping;
-> > @@ -1765,14 +1766,12 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
-> >  	/* Note that we don't do anything with level1_fixmap_pgt which
-> >  	 * we don't need. */
-> >  
-> > -	/* Set up identity map */
-> > -	xen_map_identity_early(level2_ident_pgt, max_pfn);
-> > -
-> >  	/* Make pagetable pieces RO */
-> >  	set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
-> >  	set_page_prot(level3_ident_pgt, PAGE_KERNEL_RO);
-> >  	set_page_prot(level3_kernel_pgt, PAGE_KERNEL_RO);
-> >  	set_page_prot(level3_user_vsyscall, PAGE_KERNEL_RO);
-> > +	set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
-> >  	set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
-> >  	set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
-> >  
-> > -- 
-> > 1.7.7.6
+> > Reference linux-next August 6 2012.
 > > 
+> > This analysis stemmed from the discussion on my patch that disables swiotlb
+> > overflow as a first step towards removing the support all together. Please
+> > refer to thread below:
 > > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org
-> > http://lists.xen.org/xen-devel
+> > https://lkml.org/lkml/2012/7/24/391
 > > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> > The goal of this analysis is to find drivers that don't currently check dma
+> > mapping errors and fix them. I did a grep for dma_map_single() and
+> > dma_map_page() and looked at the code that calls these routines. I classified
+> > the results of dma mapping error check status as follows:
+> > 
+> > Broken:
+> > 1. No error checks
+> > 2. Partial checks - In that source file, not all calls are followed by checks.
+> > 3. Checks dma mapping errors, doesn't unmap already mapped pages when mapping
+> >    error occurs in the middle of a multiple mapping attempt.
+> > 
+> > The first two categories are classified as broken and need fixing.
+> > 
+> > The third one needs fixing, since it leaves dangling mapped pages, and holds
+> > on to them which is equivalent to memory leak. Some drivers release all mapped
+> > pages when the device closes, but others don't. Not doing unmap might be
+> > harmless on some architectures going by the comments I found in some source
+> > files.
+> > 
+> > Good:
+> > 1. Checks dma mapping errors and unmaps already mapped pages when mapping
+> >    error occurs in the middle of a multiple mapping attempt.
+> > 2. Checks dma mapping errors without unlikely()
+> > 3. Checks dma mapping errors with unlikely()
+> > 
+> > I lumped the above three cases as good cases. Using unlikely() is icing on the
+> > cake, and something we need to be concerned about compared to other problems in
+> > this area.
+> > 
+> > - dmap_map_single() - results
+> > No error checks - 195 (46%)
+> > Partial checks - 46 (11%)
+> > Doesn't unmap: 26 (6%)
+> > Good: 147 (35%)
+> > 
+> > - dma_map_page() - results
+> > No error checks: 61 (59%)
+> > Partial checks: 7 (.06%)
+> > Doesn't unmap: 15 (14.5%)
+> > Good: 20 (19%)
+> > 
+> > In summary a large % of the cases (> 50%) go unchecked. That raises the
+> > following questions:
+> > 
+> > When do mapping errors get detected?
+> > How often do these errors occur?
+> > Why don't we see failures related to missing dma mapping error checks?
+> > Are they silent failures?
+> > 
+> > Based on what I found, I am not too eager to remove swiotlb overflow support
+> > which would increase the probability of returning dma mapping errors.
+> > 
+> > However I propose the following to gather more information:
+> > 
+> > - Change swiotlb to log (pr_info or pr_debug) cases where overflow buffer is
+> >   triggered. (This is a delta on the disable swiotlb patch I sent a few weeks
+> >   ago - References in this posting).
+> 
+> As opposed to printk(KERN_ERR ? Why?
+
+printk(KERN_ERR) is just fine.
+
+> 
+> > - Change dma_map_single() and dma_map_page() to track how many times they
+> >   return before attempting to fix all the places that don't do dma mapping
+> >   error checks. (Maybe a counter that keeps track, pr_* is not an option).
+> 
+> Perhaps this should be done in the DMA debug API instead?
+
+Yes that is a good idea. Will explore that.
+
+-- Shuah
+
+
