@@ -1,1114 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab2HQIep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 04:34:45 -0400
-Received: from nowak.cx ([88.198.26.43]:38321 "EHLO nowak.cx"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755531Ab2HQIeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 04:34:37 -0400
-X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Aug 2012 04:34:36 EDT
-From: Thorsten Nowak <not@iis.fhg.de>
-To: Thorsten Nowak <thorsten.nowak@iis.fraunhofer.de>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michael Hennerich <michael.hennerich@analog.com>
-Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Thorsten Nowak <not@iis.fhg.de>
-Subject: [PATCH 1/1] staging: iio: Integration gyroscope itg3200
-Date: Fri, 17 Aug 2012 10:27:18 +0200
-Message-Id: <1345192038-5665-1-git-send-email-not@iis.fhg.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S933711Ab2HQIf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 04:35:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44458 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932241Ab2HQIfX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 04:35:23 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Aneesh V <aneesh@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v5] memory: emif: add device tree support to emif driver
+Date: Fri, 17 Aug 2012 14:05:15 +0530
+Message-ID: <1345192515-4158-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-InvenSense ITG3200 Digital 3-Axis Gyroscope I2C driver
+From: Aneesh V <aneesh@ti.com>
 
-Signed-off-by: Thorsten Nowak <not@iis.fhg.de>
+Device tree support for the EMIF driver. LPDDR2 generic timings
+extraction from device is managed using couple of helper
+functions which can be used by other memory controller
+drivers.
+
+Reviewed-by: Benoit Cousson <b-cousson@ti.com>
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+Signed-off-by: Aneesh V <aneesh@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/iio/gyro/Kconfig           |   11 +
- drivers/staging/iio/gyro/Makefile          |    4 +
- drivers/staging/iio/gyro/itg3200.h         |  161 ++++++++
- drivers/staging/iio/gyro/itg3200_buffer.c  |  171 ++++++++
- drivers/staging/iio/gyro/itg3200_core.c    |  592 ++++++++++++++++++++++++++++
- drivers/staging/iio/gyro/itg3200_trigger.c |   90 +++++
- 6 files changed, 1029 insertions(+)
- create mode 100644 drivers/staging/iio/gyro/itg3200.h
- create mode 100644 drivers/staging/iio/gyro/itg3200_buffer.c
- create mode 100644 drivers/staging/iio/gyro/itg3200_core.c
- create mode 100644 drivers/staging/iio/gyro/itg3200_trigger.c
+v5:
+Updated the patch as per Greg's comment for moving
+the lpddr2 dt timings generic functions to separate
+file(of_memory.c)  and building it only for CONFIG_OF.
 
-diff --git a/drivers/staging/iio/gyro/Kconfig b/drivers/staging/iio/gyro/Kconfig
-index ea295b2..47b383d 100644
---- a/drivers/staging/iio/gyro/Kconfig
-+++ b/drivers/staging/iio/gyro/Kconfig
-@@ -46,4 +46,15 @@ config ADXRS450
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called adxrs450.
+ drivers/memory/Makefile    |    1 +
+ drivers/memory/emif.c      |  182 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/memory/of_memory.c |  153 +++++++++++++++++++++++++++++++++++++
+ drivers/memory/of_memory.h |   36 +++++++++
+ 4 files changed, 371 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/memory/of_memory.c
+ create mode 100644 drivers/memory/of_memory.h
+
+diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+index 42b3ce9..cd8486b 100644
+--- a/drivers/memory/Makefile
++++ b/drivers/memory/Makefile
+@@ -2,6 +2,7 @@
+ # Makefile for memory devices
+ #
  
-+config ITG3200
-+	tristate "InvenSense ITG3200 Digital 3-Axis Gyroscope I2C driver"
-+	depends on I2C
-+	select IIO_KFIFO_BUF if IIO_BUFFER
-+	help
-+	  Say Y here to add support for the InvenSense ITG3200 digital
-+	  3-axis gyroscope sensor.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called itg3200.
-+
- endmenu
-diff --git a/drivers/staging/iio/gyro/Makefile b/drivers/staging/iio/gyro/Makefile
-index 9ba5ec1..7567a50 100644
---- a/drivers/staging/iio/gyro/Makefile
-+++ b/drivers/staging/iio/gyro/Makefile
-@@ -20,3 +20,7 @@ obj-$(CONFIG_ADIS16251) += adis16251.o
++obj-$(CONFIG_OF)		+= of_memory.o
+ obj-$(CONFIG_TI_EMIF)		+= emif.o
+ obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
+ obj-$(CONFIG_TEGRA30_MC)	+= tegra30-mc.o
+diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
+index 33a4396..1424ae3 100644
+--- a/drivers/memory/emif.c
++++ b/drivers/memory/emif.c
+@@ -18,6 +18,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ #include <linux/module.h>
+@@ -25,6 +26,7 @@
+ #include <linux/spinlock.h>
+ #include <memory/jedec_ddr.h>
+ #include "emif.h"
++#include "of_memory.h"
  
- adxrs450-y             := adxrs450_core.o
- obj-$(CONFIG_ADXRS450) += adxrs450.o
+ /**
+  * struct emif_data - Per device static data for driver's use
+@@ -49,6 +51,7 @@
+  *				frequency in effect at the moment)
+  * @plat_data:			Pointer to saved platform data.
+  * @debugfs_root:		dentry to the root folder for EMIF in debugfs
++ * @np_ddr:			Pointer to ddr device tree node
+  */
+ struct emif_data {
+ 	u8				duplicate;
+@@ -63,6 +66,7 @@ struct emif_data {
+ 	struct emif_regs		*curr_regs;
+ 	struct emif_platform_data	*plat_data;
+ 	struct dentry			*debugfs_root;
++	struct device_node		*np_ddr;
+ };
+ 
+ static struct emif_data *emif1;
+@@ -1148,6 +1152,168 @@ static int is_custom_config_valid(struct emif_custom_configs *cust_cfgs,
+ 	return valid;
+ }
+ 
++#if defined(CONFIG_OF)
++static void __init_or_module of_get_custom_configs(struct device_node *np_emif,
++		struct emif_data *emif)
++{
++	struct emif_custom_configs	*cust_cfgs = NULL;
++	int				len;
++	const int			*lpmode, *poll_intvl;
 +
-+itg3200-y               := itg3200_core.o
-+itg3200-$(CONFIG_IIO_BUFFER) += itg3200_buffer.o itg3200_trigger.o
-+obj-$(CONFIG_ITG3200)   += itg3200.o
-diff --git a/drivers/staging/iio/gyro/itg3200.h b/drivers/staging/iio/gyro/itg3200.h
++	lpmode = of_get_property(np_emif, "low-power-mode", &len);
++	poll_intvl = of_get_property(np_emif, "temp-alert-poll-interval", &len);
++
++	if (lpmode || poll_intvl)
++		cust_cfgs = devm_kzalloc(emif->dev, sizeof(*cust_cfgs),
++			GFP_KERNEL);
++
++	if (!cust_cfgs)
++		return;
++
++	if (lpmode) {
++		cust_cfgs->mask |= EMIF_CUSTOM_CONFIG_LPMODE;
++		cust_cfgs->lpmode = *lpmode;
++		of_property_read_u32(np_emif,
++				"low-power-mode-timeout-performance",
++				&cust_cfgs->lpmode_timeout_performance);
++		of_property_read_u32(np_emif,
++				"low-power-mode-timeout-power",
++				&cust_cfgs->lpmode_timeout_power);
++		of_property_read_u32(np_emif,
++				"low-power-mode-freq-threshold",
++				&cust_cfgs->lpmode_freq_threshold);
++	}
++
++	if (poll_intvl) {
++		cust_cfgs->mask |=
++				EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL;
++		cust_cfgs->temp_alert_poll_interval_ms = *poll_intvl;
++	}
++
++	if (!is_custom_config_valid(cust_cfgs, emif->dev)) {
++		devm_kfree(emif->dev, cust_cfgs);
++		return;
++	}
++
++	emif->plat_data->custom_configs = cust_cfgs;
++}
++
++static void __init_or_module of_get_ddr_info(struct device_node *np_emif,
++		struct device_node *np_ddr,
++		struct ddr_device_info *dev_info)
++{
++	u32 density = 0, io_width = 0;
++	int len;
++
++	if (of_find_property(np_emif, "cs1-used", &len))
++		dev_info->cs1_used = true;
++
++	if (of_find_property(np_emif, "cal-resistor-per-cs", &len))
++		dev_info->cal_resistors_per_cs = true;
++
++	if (of_device_is_compatible(np_ddr , "jedec,lpddr2-s4"))
++		dev_info->type = DDR_TYPE_LPDDR2_S4;
++	else if (of_device_is_compatible(np_ddr , "jedec,lpddr2-s2"))
++		dev_info->type = DDR_TYPE_LPDDR2_S2;
++
++	of_property_read_u32(np_ddr, "density", &density);
++	of_property_read_u32(np_ddr, "io-width", &io_width);
++
++	/* Convert from density in Mb to the density encoding in jedc_ddr.h */
++	if (density & (density - 1))
++		dev_info->density = 0;
++	else
++		dev_info->density = __fls(density) - 5;
++
++	/* Convert from io_width in bits to io_width encoding in jedc_ddr.h */
++	if (io_width & (io_width - 1))
++		dev_info->io_width = 0;
++	else
++		dev_info->io_width = __fls(io_width) - 1;
++}
++
++static struct emif_data * __init_or_module of_get_memory_device_details(
++		struct device_node *np_emif, struct device *dev)
++{
++	struct emif_data		*emif = NULL;
++	struct ddr_device_info		*dev_info = NULL;
++	struct emif_platform_data	*pd = NULL;
++	struct device_node		*np_ddr;
++	int				len;
++
++	np_ddr = of_parse_phandle(np_emif, "device-handle", 0);
++	if (!np_ddr)
++		goto error;
++	emif	= devm_kzalloc(dev, sizeof(struct emif_data), GFP_KERNEL);
++	pd	= devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
++	dev_info = devm_kzalloc(dev, sizeof(*dev_info), GFP_KERNEL);
++
++	if (!emif || !pd || !dev_info) {
++		dev_err(dev, "%s: Out of memory!!\n",
++			__func__);
++		goto error;
++	}
++
++	emif->plat_data		= pd;
++	pd->device_info		= dev_info;
++	emif->dev		= dev;
++	emif->np_ddr		= np_ddr;
++	emif->temperature_level	= SDRAM_TEMP_NOMINAL;
++
++	if (of_device_is_compatible(np_emif, "ti,emif-4d"))
++		emif->plat_data->ip_rev = EMIF_4D;
++	else if (of_device_is_compatible(np_emif, "ti,emif-4d5"))
++		emif->plat_data->ip_rev = EMIF_4D5;
++
++	of_property_read_u32(np_emif, "phy-type", &pd->phy_type);
++
++	if (of_find_property(np_emif, "hw-caps-ll-interface", &len))
++		pd->hw_caps |= EMIF_HW_CAPS_LL_INTERFACE;
++
++	of_get_ddr_info(np_emif, np_ddr, dev_info);
++	if (!is_dev_data_valid(pd->device_info->type, pd->device_info->density,
++			pd->device_info->io_width, pd->phy_type, pd->ip_rev,
++			emif->dev)) {
++		dev_err(dev, "%s: invalid device data!!\n", __func__);
++		goto error;
++	}
++	/*
++	 * For EMIF instances other than EMIF1 see if the devices connected
++	 * are exactly same as on EMIF1(which is typically the case). If so,
++	 * mark it as a duplicate of EMIF1. This will save some memory and
++	 * computation.
++	 */
++	if (emif1 && emif1->np_ddr == np_ddr) {
++		emif->duplicate = true;
++		goto out;
++	} else if (emif1) {
++		dev_warn(emif->dev, "%s: Non-symmetric DDR geometry\n",
++			__func__);
++	}
++
++	of_get_custom_configs(np_emif, emif);
++	emif->plat_data->timings = of_get_ddr_timings(np_ddr, emif->dev,
++					emif->plat_data->device_info->type,
++					&emif->plat_data->timings_arr_size);
++
++	emif->plat_data->min_tck = of_get_min_tck(np_ddr, emif->dev);
++	goto out;
++
++error:
++	return NULL;
++out:
++	return emif;
++}
++
++#else
++
++static struct emif_data * __init_or_module of_get_memory_device_details(
++		struct device_node *np_emif, struct device *dev)
++{
++	return NULL;
++}
++#endif
++
+ static struct emif_data *__init_or_module get_device_details(
+ 		struct platform_device *pdev)
+ {
+@@ -1267,7 +1433,11 @@ static int __init_or_module emif_probe(struct platform_device *pdev)
+ 	struct resource		*res;
+ 	int			irq;
+ 
+-	emif = get_device_details(pdev);
++	if (pdev->dev.of_node)
++		emif = of_get_memory_device_details(pdev->dev.of_node, &pdev->dev);
++	else
++		emif = get_device_details(pdev);
++
+ 	if (!emif) {
+ 		pr_err("%s: error getting device data\n", __func__);
+ 		goto error;
+@@ -1644,11 +1814,21 @@ static void __attribute__((unused)) freq_post_notify_handling(void)
+ 	spin_unlock_irqrestore(&emif_lock, irq_state);
+ }
+ 
++#if defined(CONFIG_OF)
++static const struct of_device_id emif_of_match[] = {
++		{ .compatible = "ti,emif-4d" },
++		{ .compatible = "ti,emif-4d5" },
++		{},
++};
++MODULE_DEVICE_TABLE(of, emif_of_match);
++#endif
++
+ static struct platform_driver emif_driver = {
+ 	.remove		= __exit_p(emif_remove),
+ 	.shutdown	= emif_shutdown,
+ 	.driver = {
+ 		.name = "emif",
++		.of_match_table = of_match_ptr(emif_of_match),
+ 	},
+ };
+ 
+diff --git a/drivers/memory/of_memory.c b/drivers/memory/of_memory.c
 new file mode 100644
-index 0000000..a98d37d
+index 0000000..6007435
 --- /dev/null
-+++ b/drivers/staging/iio/gyro/itg3200.h
-@@ -0,0 +1,161 @@
++++ b/drivers/memory/of_memory.c
+@@ -0,0 +1,153 @@
 +/*
-+ * itg3200.h -- support InvenSense ITG3200
-+ *              Digital 3-Axis Gyroscope driver
++ * OpenFirmware helpers for memory drivers
 + *
-+ * Copyright (c) 2011 Christian Strobel <christian.strobel@iis.fraunhofer.de>
-+ * Copyright (c) 2011 Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-+ * Copyright (c) 2012 Thorsten Nowak <thorsten.nowak@iis.fraunhofer.de>
++ * Copyright (C) 2012 Texas Instruments, Inc.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + */
 +
-+#ifndef I2C_ITG3200_H_
-+#define I2C_ITG3200_H_
-+
-+#include <linux/iio/iio.h>
-+#include "../ring_sw.h"
-+
-+/* Register with I2C address (34h) */
-+#define ITG3200_REG_ADDRESS             0x00
-+
-+/* Sample rate divider
-+ * Range: 0 to 255
-+ * Default value: 0x00 */
-+#define ITG3200_REG_SAMPLE_RATE_DIV         0x15
-+
-+/* Digital low pass filter settings */
-+#define ITG3200_REG_DLPF                0x16
-+/* DLPF full scale range */
-+#define ITG3200_DLPF_FS_SEL_2000            0x18
-+/* Bandwidth (Hz) and internal sample rate
-+ * (kHz) of DLPF */
-+#define ITG3200_DLPF_256_8              0x00
-+#define ITG3200_DLPF_188_1              0x01
-+#define ITG3200_DLPF_98_1               0x02
-+#define ITG3200_DLPF_42_1               0x03
-+#define ITG3200_DLPF_20_1               0x04
-+#define ITG3200_DLPF_10_1               0x05
-+#define ITG3200_DLPF_5_1                0x06
-+
-+#define ITG3200_DLPF_CFG_MASK               0x07
-+
-+/* Configuration for interrupt operations */
-+#define ITG3200_REG_IRQ_CONFIG              0x17
-+/* Logic level */
-+#define ITG3200_IRQ_ACTIVE_LOW              0x80
-+#define ITG3200_IRQ_ACTIVE_HIGH             0x00
-+/* Drive type */
-+#define ITG3200_IRQ_OPEN_DRAIN              0x40
-+#define ITG3200_IRQ_PUSH_PULL               0x00
-+/* Latch mode */
-+#define ITG3200_IRQ_LATCH_UNTIL_CLEARED         0x20
-+#define ITG3200_IRQ_LATCH_50US_PULSE            0x00
-+/* Latch clear method */
-+#define ITG3200_IRQ_LATCH_CLEAR_ANY         0x10
-+#define ITG3200_IRQ_LATCH_CLEAR_STATUS          0x00
-+/* Enable interrupt when device is ready */
-+#define ITG3200_IRQ_DEVICE_RDY_ENABLE           0x04
-+/* Enable interrupt when data is available */
-+#define ITG3200_IRQ_DATA_RDY_ENABLE         0x01
-+
-+/* Determine the status of ITG-3200 interrupts */
-+#define ITG3200_REG_IRQ_STATUS              0x1A
-+/* Status of 'device is ready'-interrupt */
-+#define ITG3200_IRQ_DEVICE_RDY_STATUS           0x04
-+/* Status of 'data is available'-interrupt */
-+#define ITG3200_IRQ_DATA_RDY_STATUS         0x01
-+
-+/* Sensor registers */
-+#define ITG3200_REG_TEMP_OUT_H              0x1B
-+#define ITG3200_REG_TEMP_OUT_L              0x1C
-+#define ITG3200_REG_GYRO_XOUT_H             0x1D
-+#define ITG3200_REG_GYRO_XOUT_L             0x1E
-+#define ITG3200_REG_GYRO_YOUT_H             0x1F
-+#define ITG3200_REG_GYRO_YOUT_L             0x20
-+#define ITG3200_REG_GYRO_ZOUT_H             0x21
-+#define ITG3200_REG_GYRO_ZOUT_L             0x22
-+
-+/* Power management */
-+#define ITG3200_REG_POWER_MANAGEMENT            0x3E
-+/* Reset device and internal registers to the
-+ * power-up-default settings */
-+#define ITG3200_RESET                   0x80
-+/* Enable low power sleep mode */
-+#define ITG3200_SLEEP                   0x40
-+/* Put according gyroscope in standby mode */
-+#define ITG3200_STANDBY_GYRO_X              0x20
-+#define ITG3200_STANDBY_GYRO_Y              0x10
-+#define ITG3200_STANDBY_GYRO_Z              0x08
-+/* Determine the device clock source */
-+#define ITG3200_CLK_INTERNAL                0x00
-+#define ITG3200_CLK_GYRO_X              0x01
-+#define ITG3200_CLK_GYRO_Y              0x02
-+#define ITG3200_CLK_GYRO_Z              0x03
-+#define ITG3200_CLK_EXT_32K             0x04
-+#define ITG3200_CLK_EXT_19M             0x05
-+
-+#define ITG3200_MAX_TX 1
-+#define ITG3200_MAX_RX 16 /* 4 * 16bit + 64bit timestamp */
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/list.h>
++#include <linux/of.h>
++#include <linux/gfp.h>
++#include <memory/jedec_ddr.h>
++#include <linux/export.h>
 +
 +/**
-+ * struct itg3200_state - device instance specific data
-+ * @i2c:    actual i2c_client
-+ * @trig:   data ready trigger registered with iio
-+ **/
-+struct itg3200_state {
-+	struct i2c_client   *i2c;
-+	struct iio_trigger  *trig;
-+	bool            trigger_on;
-+	u8      tx[ITG3200_MAX_TX] ____cacheline_aligned;
-+	__be16      rx[ITG3200_MAX_RX] ____cacheline_aligned;
-+};
-+
-+int itg3200_read_irq_status(struct iio_dev *indio_dev);
-+
-+int itg3200_set_irq_data_rdy(struct iio_dev *indio_dev, bool enable);
-+
-+enum ITG3200_CHANNELS {
-+	ITG3200_TEMP,
-+	ITG3200_GYRO_X,
-+	ITG3200_GYRO_Y,
-+	ITG3200_GYRO_Z,
-+	ITG3200_SCAN_ELEMENTS = 4,
-+};
-+
-+#ifdef CONFIG_IIO_BUFFER
-+
-+void itg3200_remove_trigger(struct iio_dev *indio_dev);
-+int itg3200_probe_trigger(struct iio_dev *indio_dev);
-+
-+int itg3200_buffer_configure(struct iio_dev *indio_dev);
-+void itg3200_buffer_unconfigure(struct iio_dev *indio_dev);
-+
-+#define itg3200_free_buf iio_sw_rb_free
-+#define itg3200_alloc_buf iio_sw_rb_allocate
-+#define itg3200_access_funcs ring_sw_access_funcs
-+
-+#else /* CONFIG_IIO_BUFFER */
-+
-+static inline void itg3200_remove_trigger(struct iio_dev *indio_dev)
-+{
-+}
-+
-+static inline int itg3200_probe_trigger(struct iio_dev *indio_dev)
-+{
-+	return 0;
-+}
-+
-+static inline int itg3200_buffer_configure(struct iio_dev *indio_dev)
-+{
-+	return 0;
-+}
-+
-+static inline void itg3200_buffer_unconfigure(struct iio_dev *indio_dev)
-+{
-+}
-+
-+#endif  /* CONFIG_IIO_RING_BUFFER */
-+
-+#endif /* ITG3200_H_ */
-diff --git a/drivers/staging/iio/gyro/itg3200_buffer.c b/drivers/staging/iio/gyro/itg3200_buffer.c
-new file mode 100644
-index 0000000..07596d3
---- /dev/null
-+++ b/drivers/staging/iio/gyro/itg3200_buffer.c
-@@ -0,0 +1,171 @@
-+/*
-+ * itg3200_ring.c -- support InvenSense ITG3200
-+ *                   Digital 3-Axis Gyroscope driver
++ * of_get_min_tck() - extract min timing values for ddr
++ * @np: pointer to ddr device tree node
++ * @device: device requesting for min timing values
 + *
-+ * Copyright (c) 2011 Christian Strobel <christian.strobel@iis.fraunhofer.de>
-+ * Copyright (c) 2011 Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-+ * Copyright (c) 2012 Thorsten Nowak <thorsten.nowak@iis.fraunhofer.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Populates the lpddr2_min_tck structure by extracting data
++ * from device tree node. Returns a pointer to the populated
++ * structure. If any error in populating the structure, returns
++ * default min timings provided by JEDEC.
 + */
-+
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+#include <linux/iio/kfifo_buf.h>
-+#include <linux/iio/trigger_consumer.h>
-+
-+#include "itg3200.h"
-+
-+static irqreturn_t itg3200_trigger_handler(int irq, void *p)
++const struct lpddr2_min_tck *of_get_min_tck(struct device_node *np,
++		struct device *dev)
 +{
-+	struct iio_poll_func *pf = p;
-+	struct iio_dev *indio_dev = pf->indio_dev;
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	struct iio_buffer *buffer = indio_dev->buffer;
-+	int len = 0;
++	int			ret = 0;
++	struct lpddr2_min_tck	*min;
++
++	min = devm_kzalloc(dev, sizeof(*min), GFP_KERNEL);
++	if (!min)
++		goto default_min_tck;
++
++	ret |= of_property_read_u32(np, "tRPab-min-tck", &min->tRPab);
++	ret |= of_property_read_u32(np, "tRCD-min-tck", &min->tRCD);
++	ret |= of_property_read_u32(np, "tWR-min-tck", &min->tWR);
++	ret |= of_property_read_u32(np, "tRASmin-min-tck", &min->tRASmin);
++	ret |= of_property_read_u32(np, "tRRD-min-tck", &min->tRRD);
++	ret |= of_property_read_u32(np, "tWTR-min-tck", &min->tWTR);
++	ret |= of_property_read_u32(np, "tXP-min-tck", &min->tXP);
++	ret |= of_property_read_u32(np, "tRTP-min-tck", &min->tRTP);
++	ret |= of_property_read_u32(np, "tCKE-min-tck", &min->tCKE);
++	ret |= of_property_read_u32(np, "tCKESR-min-tck", &min->tCKESR);
++	ret |= of_property_read_u32(np, "tFAW-min-tck", &min->tFAW);
 +
-+	/* Clear IRQ */
-+	itg3200_read_irq_status(indio_dev);
-+
-+	if (!bitmap_empty(indio_dev->active_scan_mask, indio_dev->masklength)) {
-+		int ret;
-+		unsigned i, j = 0;
-+		st->tx[0] = 0x80 | ITG3200_REG_TEMP_OUT_H;
-+		ret = i2c_master_send(st->i2c, st->tx, 1);
-+		if (ret != 1)
-+			goto error_ret;
-+
-+		/* Receive all scan elements */
-+		ret = i2c_master_recv(st->i2c, (u8 *)st->rx,
-+				ITG3200_SCAN_ELEMENTS * 2);
-+		if (ret < 0)
-+			goto error_ret;
-+
-+		/* Select only active scan elements */
-+		for (i = 0; i < ITG3200_SCAN_ELEMENTS; i++)
-+			if (iio_scan_mask_query(indio_dev, buffer, i))
-+				st->rx[j++] = st->rx[i];
-+
-+		len = j * sizeof(u16);
-+	}
-+	/* Guaranteed to be aligned with 8 byte boundary */
-+	if (buffer->scan_timestamp)
-+		*(s64 *)(((phys_addr_t)st->rx + len
-+					+ sizeof(s64) - 1) & ~(sizeof(s64) - 1))
-+		= pf->timestamp;
-+	buffer->access->store_to(buffer, (u8 *)st->rx, pf->timestamp);
-+
-+	iio_trigger_notify_done(indio_dev->trig);
-+error_ret:
-+	return IRQ_HANDLED;
-+}
-+
-+/*
-+static int itg3200_ring_postenable(struct iio_dev *indio_dev)
-+{
-+	u8 t;
-+	int ret;
-+
-+	ret = itg3200_spi_read_reg_8(indio_dev,
-+				     ITG3200_REG_POWER_MANAGEMENT,
-+				     &t);
-+	if (ret)
-+		goto error_ret;
-+
-+	if (iio_scan_mask_query(indio_dev->ring, 1))
-+		t &= ~ITG3200_STANDBY_GYRO_X;
-+	else
-+		t |= ~ITG3200_STANDBY_GYRO_X;
-+
-+	if (iio_scan_mask_query(indio_dev->ring, 2))
-+		t &= ~ITG3200_STANDBY_GYRO_Y;
-+	else
-+		t |= ITG3200_STANDBY_GYRO_Y;
-+
-+	if (iio_scan_mask_query(indio_dev->ring, 3))
-+		t &= ITG3200_STANDBY_GYRO_Z;
-+	else
-+		t |= ITG3200_STANDBY_GYRO_Z;
-+
-+	ret = itg3200_spi_write_reg_8(indio_dev,
-+				      ITG3200_REG_POWER_MANAGEMENT,
-+				      t);
-+	if (ret)
-+		goto error_ret;
-+
-+	return iio_triggered_ring_postenable(indio_dev);
-+error_ret:
-+	return ret;
-+}
-+
-+static int itg3200_ring_predisable(struct iio_dev *indio_dev)
-+{
-+	u8 t;
-+	int ret;
-+
-+	ret = iio_triggered_ring_predisable(indio_dev);
-+	if (ret)
-+		goto error_ret;
-+
-+	ret = itg3200_spi_read_reg_8(indio_dev,
-+				     ITG3200_REG_POWER_MANAGEMENT,
-+				     &t);
-+	if (ret)
-+		goto error_ret;
-+	t &= ~(ITG3200_STANDBY_GYRO_X |
-+		ITG3200_STANDBY_GYRO_Y |
-+		ITG3200_STANDBY_GYRO_Z);
-+
-+	ret = itg3200_spi_write_reg_8(indio_dev,
-+		ITG3200_REG_POWER_MANAGEMENT, t);
-+
-+error_ret:
-+	return ret;
-+}
-+*/
-+static const struct iio_buffer_setup_ops itg3200_buffer_setup_ops = {
-+	.preenable = &iio_sw_buffer_preenable,
-+	.postenable = &iio_triggered_buffer_postenable,
-+	.predisable = &iio_triggered_buffer_predisable,
-+};
-+
-+int itg3200_buffer_configure(struct iio_dev *indio_dev)
-+{
-+	int ret = 0;
-+	struct iio_buffer *buffer;
-+
-+	buffer = iio_kfifo_allocate(indio_dev);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	/* buffer->access = &kfifo_access_funcs; */
-+	indio_dev->buffer = buffer;
-+	indio_dev->setup_ops = &itg3200_buffer_setup_ops;
-+	indio_dev->pollfunc = iio_alloc_pollfunc(&iio_pollfunc_store_time,
-+			&itg3200_trigger_handler, IRQF_ONESHOT,
-+			indio_dev, "itg3200_consumer%d", indio_dev->id);
-+	if (!indio_dev->pollfunc) {
-+		ret = -ENOMEM;
-+		goto error_free_buffer;
-+	}
-+
-+	indio_dev->modes |= INDIO_BUFFER_TRIGGERED;
-+	return 0;
-+
-+error_free_buffer:
-+	iio_kfifo_free(indio_dev->buffer);
-+	return ret;
-+}
-+
-+void itg3200_buffer_unconfigure(struct iio_dev *indio_dev)
-+{
-+	iio_dealloc_pollfunc(indio_dev->pollfunc);
-+	iio_kfifo_free(indio_dev->buffer);
-+}
-diff --git a/drivers/staging/iio/gyro/itg3200_core.c b/drivers/staging/iio/gyro/itg3200_core.c
-new file mode 100644
-index 0000000..0096b38
---- /dev/null
-+++ b/drivers/staging/iio/gyro/itg3200_core.c
-@@ -0,0 +1,592 @@
-+/*
-+ * itg3200_core.c -- support InvenSense ITG3200
-+ *                   Digital 3-Axis Gyroscope driver
-+ *
-+ * Copyright (c) 2011 Christian Strobel <christian.strobel@iis.fraunhofer.de>
-+ * Copyright (c) 2011 Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-+ * Copyright (c) 2012 Thorsten Nowak <thorsten.nowak@iis.fraunhofer.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#define DEBUG
-+
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/i2c.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+#include <linux/stat.h>
-+#include <linux/module.h>
-+#include <linux/delay.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+#include <linux/iio/events.h>
-+#include <linux/iio/buffer.h>
-+
-+#include "itg3200.h"
-+
-+/* Copied from: linux-source-3.2/arch/arm/plat-omap/include/plat/gpio.h */
-+/* Wrappers for "new style" GPIO calls, using the new infrastructure
-+ * which lets us plug in FPGA, I2C, and other implementations.
-+ * *
-+ * The original OMAP-specific calls should eventually be removed.
-+ */
-+
-+#include <linux/errno.h>
-+#include <asm-generic/gpio.h>
-+
-+static inline int irq_to_gpio(unsigned irq)
-+{
-+	int tmp;
-+
-+	/* omap1 SOC mpuio */
-+	if (cpu_class_is_omap1() && (irq < (IH_MPUIO_BASE + 16)))
-+		return (irq - IH_MPUIO_BASE) + OMAP_MAX_GPIO_LINES;
-+
-+	/* SOC gpio */
-+	tmp = irq - IH_GPIO_BASE;
-+	if (tmp < OMAP_MAX_GPIO_LINES)
-+		return tmp;
-+
-+	/* we don't supply reverse mappings for non-SOC gpios */
-+	return -EIO;
-+}
-+
-+
-+static int itg3200_write_reg_8(struct iio_dev *indio_dev,
-+		u8 reg_address, u8 val)
-+{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	int ret;
-+
-+	u8 buf[2];
-+
-+	buf[0] = 0x80 | reg_address;
-+	buf[1] = val;
-+
-+	ret = i2c_master_send(st->i2c, buf, sizeof(buf));
-+
-+	return (ret == sizeof(buf)) ? 0 : ret;
-+}
-+
-+static int itg3200_read_reg_8(struct iio_dev *indio_dev,
-+		u8 reg_address, u8 *val)
-+{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	struct i2c_client *client = st->i2c;
-+	int ret;
-+
-+	struct i2c_msg msg[2];
-+
-+	msg[0].addr = client->addr;
-+	msg[0].flags = client->flags & I2C_M_TEN;
-+	msg[0].len = 1;
-+	msg[0].buf = (char *)&reg_address;
-+
-+	msg[1].addr = client->addr;
-+	msg[1].flags = client->flags & I2C_M_TEN;
-+	msg[1].flags |= I2C_M_RD;
-+	msg[1].len = 1;
-+	msg[1].buf = (char *)val;
-+
-+	reg_address |= 0x80;
-+	ret = i2c_transfer(client->adapter, msg, 2);
-+	return (ret == 2) ? 0 : ret;
-+}
-+
-+static int itg3200_read_reg_s16(struct iio_dev *indio_dev, u8 lower_reg_address,
-+		int *val)
-+{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	struct i2c_client *client = st->i2c;
-+	int ret;
-+	s16 out;
-+
-+	struct i2c_msg msg[2];
-+
-+	msg[0].addr = client->addr;
-+	msg[0].flags = client->flags & I2C_M_TEN;
-+	msg[0].len = 1;
-+	msg[0].buf = (char *)&lower_reg_address;
-+
-+	msg[1].addr = client->addr;
-+	msg[1].flags = client->flags & I2C_M_TEN;
-+	msg[1].flags |= I2C_M_RD;
-+	msg[1].len = 2;
-+	msg[1].buf = (char *)&out;
-+
-+	lower_reg_address |= 0x80;
-+	ret = i2c_transfer(client->adapter, msg, 2);
-+	be16_to_cpus(&out);
-+	*val = out;
-+
-+	return (ret == 2) ? 0 : ret;
-+}
-+
-+static int itg3200_read_raw(struct iio_dev *indio_dev,
-+		struct iio_chan_spec const *chan,
-+		int *val, int *val2, long mask)
-+{
-+	ssize_t ret = 0;
-+	u8 reg;
-+
-+	switch (mask) {
-+	case 0:
-+		reg = (u8)chan->address;
-+		/* Take the iio_dev status lock */
-+		mutex_lock(&indio_dev->mlock);
-+		ret = itg3200_read_reg_s16(indio_dev, reg, val);
-+		mutex_unlock(&indio_dev->mlock);
-+		return IIO_VAL_INT;
-+	case IIO_CHAN_INFO_SCALE:
-+		*val = 0;
-+		if (chan->scan_index == ITG3200_TEMP)
-+			*val2 = 1000000000/280;
-+		else
-+			*val2 = 1214142;
-+		return IIO_VAL_INT_PLUS_NANO;
-+	case IIO_CHAN_INFO_OFFSET:
-+		if (chan->scan_index == ITG3200_TEMP)
-+			*val = 13200;
-+		return IIO_VAL_INT;
-+	}
-+
-+	return ret;
-+}
-+
-+static ssize_t itg3200_read_frequency(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-+	int ret, len = 0;
-+	u8 val;
-+	int sps;
-+
-+	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_DLPF, &val);
-+	if (ret)
-+		return ret;
-+
-+	sps = (val & ITG3200_DLPF_CFG_MASK) ? 1000 : 8000;
-+
-+	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_SAMPLE_RATE_DIV, &val);
-+	if (ret)
-+		return ret;
-+
-+	sps /= val + 1;
-+
-+	len = sprintf(buf, "%d\n", sps);
-+	return len;
-+}
-+
-+static ssize_t itg3200_write_frequency(struct device *dev,
-+		struct device_attribute *attr,
-+		const char *buf,
-+		size_t len)
-+{
-+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-+	long val;
-+	int ret;
-+	u8 t;
-+
-+	ret = kstrtol(buf, 10, &val);
-+	if (ret)
-+		return ret;
-+
-+	mutex_lock(&indio_dev->mlock);
-+
-+	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_DLPF, &t);
-+	if (ret)
-+		goto err_ret;
-+
-+	t = ((t & ITG3200_DLPF_CFG_MASK) ? 1000 : 8000) / val - 1;
-+
-+	ret = itg3200_write_reg_8(indio_dev, ITG3200_REG_SAMPLE_RATE_DIV, t);
-+
-+err_ret:
-+	mutex_unlock(&indio_dev->mlock);
-+
-+	return ret ? ret : len;
-+}
-+
-+int itg3200_read_irq_status(struct iio_dev *indio_dev)
-+{
-+	u8 val;
-+	int ret;
-+
-+	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_IRQ_STATUS, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	return val;
-+}
-+
-+int itg3200_set_irq_data_rdy(struct iio_dev *indio_dev, bool enable)
-+{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	int ret;
-+	u8 msc;
-+
-+	dev_dbg(&st->i2c->dev, "set data ready %s", enable ? "on" : "off");
-+
-+	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_IRQ_CONFIG, &msc);
-+	if (ret)
-+		goto error_ret;
-+
-+	if (enable)
-+		msc |= ITG3200_IRQ_DATA_RDY_ENABLE;
-+	else
-+		msc &= ~ITG3200_IRQ_DATA_RDY_ENABLE;
-+
-+	ret = itg3200_write_reg_8(indio_dev, ITG3200_REG_IRQ_CONFIG, msc);
-+	if (ret)
-+		goto error_ret;
-+
-+error_ret:
-+	return ret;
-+}
-+
-+/* Power down the device */
-+static int itg3200_stop_device(struct iio_dev *indio_dev)
-+{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	int ret;
-+
-+	dev_dbg(&st->i2c->dev, "suspend device");
-+
-+	/* Set device in low power mode */
-+	ret = itg3200_write_reg_8(indio_dev,
-+			ITG3200_REG_POWER_MANAGEMENT,
-+			ITG3200_SLEEP);
-+
-+	if (ret)
-+		dev_err(&st->i2c->dev, "problem with turning device off: SLEEP");
-+
-+	return 0;
-+}
-+
-+/* Reset device and internal registers to the power-up-default settings
-+ * Use the gyro clock as reference, as suggested by the datasheet */
-+static int itg3200_reset(struct iio_dev *indio_dev)
-+{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	int ret;
-+
-+	dev_dbg(&st->i2c->dev, "reset device");
-+
-+	ret = itg3200_write_reg_8(indio_dev,
-+			ITG3200_REG_POWER_MANAGEMENT,
-+			ITG3200_RESET);
 +	if (ret) {
-+		dev_err(&st->i2c->dev, "error resetting device");
-+		goto error_ret;
++		devm_kfree(dev, min);
++		goto default_min_tck;
 +	}
 +
-+	/* Wait for PLL (1ms according to datasheet) */
-+	udelay(1500);
++	return min;
 +
-+	ret = itg3200_write_reg_8(indio_dev,
-+			ITG3200_REG_IRQ_CONFIG,
-+			ITG3200_IRQ_LATCH_50US_PULSE |
-+			ITG3200_IRQ_LATCH_CLEAR_ANY |
-+			ITG3200_IRQ_DEVICE_RDY_ENABLE |
-+			ITG3200_IRQ_DATA_RDY_ENABLE);
-+
-+	if (ret)
-+		dev_err(&st->i2c->dev, "error init device");
-+
-+error_ret:
-+	return ret;
++default_min_tck:
++	dev_warn(dev, "%s: using default min-tck values\n", __func__);
++	return &lpddr2_jedec_min_tck;
 +}
++EXPORT_SYMBOL(of_get_min_tck);
 +
-+static ssize_t itg3200_write_reset(struct device *dev,
-+		struct device_attribute *attr,
-+		const char *buf, size_t len)
++static int of_do_get_timings(struct device_node *np,
++		struct lpddr2_timings *tim)
 +{
-+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-+	int ret = -EINVAL;
-+	if (len < 1)
-+		goto error_ret;
-+
-+	switch (buf[0]) {
-+	case '1':
-+	case 'y':
-+	case 'Y':
-+		ret = itg3200_reset(indio_dev);
-+		if (ret < 0)
-+			goto error_ret;
-+		return len;
-+	}
-+error_ret:
-+	return ret;
-+}
-+
-+static int itg3200_enable_full_scale(struct iio_dev *indio_dev)
-+{
-+	u8 val;
 +	int ret;
 +
-+	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_DLPF, &val);
-+	if (ret)
-+		goto err_ret;
++	ret = of_property_read_u32(np, "max-freq", &tim->max_freq);
++	ret |= of_property_read_u32(np, "min-freq", &tim->min_freq);
++	ret |= of_property_read_u32(np, "tRPab", &tim->tRPab);
++	ret |= of_property_read_u32(np, "tRCD", &tim->tRCD);
++	ret |= of_property_read_u32(np, "tWR", &tim->tWR);
++	ret |= of_property_read_u32(np, "tRAS-min", &tim->tRAS_min);
++	ret |= of_property_read_u32(np, "tRRD", &tim->tRRD);
++	ret |= of_property_read_u32(np, "tWTR", &tim->tWTR);
++	ret |= of_property_read_u32(np, "tXP", &tim->tXP);
++	ret |= of_property_read_u32(np, "tRTP", &tim->tRTP);
++	ret |= of_property_read_u32(np, "tCKESR", &tim->tCKESR);
++	ret |= of_property_read_u32(np, "tDQSCK-max", &tim->tDQSCK_max);
++	ret |= of_property_read_u32(np, "tFAW", &tim->tFAW);
++	ret |= of_property_read_u32(np, "tZQCS", &tim->tZQCS);
++	ret |= of_property_read_u32(np, "tZQCL", &tim->tZQCL);
++	ret |= of_property_read_u32(np, "tZQinit", &tim->tZQinit);
++	ret |= of_property_read_u32(np, "tRAS-max-ns", &tim->tRAS_max_ns);
++	ret |= of_property_read_u32(np, "tDQSCK-max-derated",
++		&tim->tDQSCK_max_derated);
 +
-+	val |= ITG3200_DLPF_FS_SEL_2000;
-+	return itg3200_write_reg_8(indio_dev, ITG3200_REG_DLPF, val);
-+
-+err_ret:
 +	return ret;
-+}
-+
-+static int itg3200_initial_setup(struct iio_dev *indio_dev)
-+{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+	int ret;
-+
-+	u8 val;
-+	ret = itg3200_read_reg_8(indio_dev, ITG3200_REG_ADDRESS, &val);
-+	if (ret)
-+		goto err_ret;
-+
-+	if (((val >> 1) & 0x3f) != 0x34) {
-+		dev_err(&st->i2c->dev, "invalid reg value 0x%02x", val);
-+		/*
-+		ret = -EINVAL;
-+		goto err_ret;
-+		*/
-+	}
-+
-+	ret = itg3200_reset(indio_dev);
-+	if (ret)
-+		goto err_ret;
-+
-+	ret = itg3200_enable_full_scale(indio_dev);
-+
-+err_ret:
-+	return ret;
-+}
-+
-+#define ITG3200_TEMP_INFO_MASK	(IIO_CHAN_INFO_OFFSET_SHARED_BIT | \
-+				 IIO_CHAN_INFO_SCALE_SHARED_BIT)
-+#define ITG3200_INFO_MASK	IIO_CHAN_INFO_SCALE_SHARED_BIT
-+
-+#define ITG3200_ST						\
-+	{ .sign = 's', .realbits = 16, .storagebits = 16, .endianness = IIO_BE }
-+
-+static const struct iio_chan_spec itg3200_channels[] = {
-+	{
-+		.type = IIO_TEMP,
-+		.output = 0,
-+		.modified = 0,
-+		.indexed = 0,
-+		.extend_name = NULL,
-+		.channel = 0,
-+		.channel2 = IIO_NO_MOD,
-+		.info_mask = ITG3200_TEMP_INFO_MASK,
-+		.address = ITG3200_REG_TEMP_OUT_H,
-+		.scan_index = ITG3200_TEMP,
-+		.scan_type = ITG3200_ST,
-+		.event_mask = 0
-+	},
-+	{
-+		.type = IIO_ANGL_VEL,
-+		.output = 0,
-+		.modified = 1,
-+		.indexed = 0,
-+		.extend_name = NULL,
-+		.channel = 0,
-+		.channel2 = IIO_MOD_X,
-+		.info_mask = ITG3200_INFO_MASK,
-+		.address = ITG3200_REG_GYRO_XOUT_H,
-+		.scan_index = ITG3200_GYRO_X,
-+		.scan_type = ITG3200_ST,
-+		.event_mask = 0
-+	},
-+	{
-+		.type = IIO_ANGL_VEL,
-+		.output = 0,
-+		.modified = 1,
-+		.indexed = 0,
-+		.extend_name = NULL,
-+		.channel = 0,
-+		.channel2 = IIO_MOD_Y,
-+		.info_mask = ITG3200_INFO_MASK,
-+		.address = ITG3200_REG_GYRO_YOUT_H,
-+		.scan_index = ITG3200_GYRO_Y,
-+		.scan_type = ITG3200_ST,
-+		.event_mask = 0
-+	},
-+	{
-+		.type = IIO_ANGL_VEL,
-+		.output = 0,
-+		.modified = 1,
-+		.indexed = 0,
-+		.extend_name = NULL,
-+		.channel = 0,
-+		.channel2 = IIO_MOD_Z,
-+		.info_mask = ITG3200_INFO_MASK,
-+		.address = ITG3200_REG_GYRO_ZOUT_H,
-+		.scan_index = ITG3200_GYRO_Z,
-+		.scan_type = ITG3200_ST,
-+		.event_mask = 0
-+	},
-+	IIO_CHAN_SOFT_TIMESTAMP(4),
-+};
-+
-+/* IIO device attributes */
-+static IIO_DEV_ATTR_SAMP_FREQ(S_IWUSR | S_IRUGO, itg3200_read_frequency,
-+		itg3200_write_frequency);
-+
-+static IIO_DEVICE_ATTR(reset, S_IWUSR, NULL, itg3200_write_reset, 0);
-+
-+static struct attribute *itg3200_attributes[] = {
-+	&iio_dev_attr_sampling_frequency.dev_attr.attr,
-+	&iio_dev_attr_reset.dev_attr.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group itg3200_attribute_group = {
-+	.attrs = itg3200_attributes,
-+};
-+
-+static const struct iio_info itg3200_info = {
-+	.read_raw = &itg3200_read_raw,
-+	/*
-+	.write_raw = &itg3200_write_raw,
-+	.read_event_value = &itg3200_read_thresh,
-+	.write_event_value = &itg3200_write_thresh,
-+	.write_event_config = &itg3200_write_event_config,
-+	.read_event_config = &itg3200_read_event_config,
-+	*/
-+	.driver_module = THIS_MODULE,
-+	.attrs = &itg3200_attribute_group,
-+};
-+
-+static int __devinit itg3200_probe(struct i2c_client *client,
-+		const struct i2c_device_id *id)
-+{
-+	int ret = 0;
-+	struct itg3200_state *st;
-+	struct iio_dev *indio_dev;
-+
-+	dev_dbg(&client->dev, "probe I2C dev with IRQ %i", client->irq);
-+
-+	indio_dev = iio_device_alloc(sizeof(*st));
-+	if (indio_dev == NULL) {
-+		ret =  -ENOMEM;
-+		goto error_ret;
-+	}
-+
-+	st = iio_priv(indio_dev);
-+
-+	i2c_set_clientdata(client, indio_dev);
-+	st->i2c = client;
-+
-+	indio_dev->dev.parent = &client->dev;
-+	indio_dev->name = client->dev.driver->name;
-+	indio_dev->channels = itg3200_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(itg3200_channels);
-+	indio_dev->info = &itg3200_info;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+
-+	ret = itg3200_buffer_configure(indio_dev);
-+	if (ret)
-+		goto error_free_dev;
-+
-+	ret = iio_buffer_register(indio_dev,
-+			indio_dev->channels,
-+			ARRAY_SIZE(itg3200_channels));
-+	if (ret)
-+		goto error_unconfigure_buffer;
-+
-+	if (client->irq && gpio_is_valid(irq_to_gpio(client->irq)) > 0) {
-+		ret = itg3200_probe_trigger(indio_dev);
-+		if (ret)
-+			goto error_unregister_buffer;
-+	}
-+
-+	ret = itg3200_initial_setup(indio_dev);
-+	if (ret)
-+		goto error_remove_trigger;
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret)
-+		goto error_remove_trigger;
-+
-+	return 0;
-+
-+error_remove_trigger:
-+	if (client->irq && gpio_is_valid(irq_to_gpio(client->irq)) > 0)
-+		itg3200_remove_trigger(indio_dev);
-+error_unregister_buffer:
-+	iio_buffer_unregister(indio_dev);
-+error_unconfigure_buffer:
-+	itg3200_buffer_unconfigure(indio_dev);
-+error_free_dev:
-+	iio_device_free(indio_dev);
-+error_ret:
-+	return ret;
-+}
-+
-+static int itg3200_remove(struct i2c_client *client)
-+{
-+	/* int ret; */
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+
-+	iio_device_unregister(indio_dev);
-+
-+	/*
-+	ret = itg3200_stop_device(indio_dev);
-+	if (ret)
-+		goto err_ret;
-+	*/
-+
-+	if (client->irq && gpio_is_valid(irq_to_gpio(client->irq)) > 0)
-+		itg3200_remove_trigger(indio_dev);
-+
-+	iio_buffer_unregister(indio_dev);
-+	itg3200_buffer_unconfigure(indio_dev);
-+
-+	iio_device_free(indio_dev);
-+
-+	return 0;
-+
-+	/*
-+	err_ret:
-+	    return ret;
-+	*/
-+}
-+
-+static const struct i2c_device_id itg3200_id[] = {
-+	{ "itg3200", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, itg3200_id);
-+
-+static struct i2c_driver itg3200_driver = {
-+	.driver = {
-+		.owner  = THIS_MODULE,
-+		.name	= "itg3200",
-+	},
-+	.id_table	= itg3200_id,
-+	.probe		= itg3200_probe,
-+	.remove		= itg3200_remove,
-+};
-+
-+static int __init itg3200_init(void)
-+{
-+	return i2c_add_driver(&itg3200_driver);
-+}
-+module_init(itg3200_init);
-+
-+static void __exit itg3200_exit(void)
-+{
-+	i2c_del_driver(&itg3200_driver);
-+}
-+module_exit(itg3200_exit);
-+
-+MODULE_AUTHOR("Christian Strobel <christian.strobel@iis.fraunhofer.de>");
-+MODULE_DESCRIPTION("ITG3200 Gyroscope I2C driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/staging/iio/gyro/itg3200_trigger.c b/drivers/staging/iio/gyro/itg3200_trigger.c
-new file mode 100644
-index 0000000..18f10a2
---- /dev/null
-+++ b/drivers/staging/iio/gyro/itg3200_trigger.c
-@@ -0,0 +1,90 @@
-+/*
-+ * itg3200_trigger.c -- support InvenSense ITG3200
-+ *                      Digital 3-Axis Gyroscope driver
-+ *
-+ * Copyright (c) 2011 Christian Strobel <christian.strobel@iis.fraunhofer.de>
-+ * Copyright (c) 2011 Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-+ * Copyright (c) 2012 Thorsten Nowak <thorsten.nowak@iis.fraunhofer.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/i2c.h>
-+#include <linux/slab.h>
-+#include <linux/interrupt.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/trigger.h>
-+
-+#include "itg3200.h"
-+
-+static irqreturn_t itg3200_data_rdy_trig_poll(int irq, void *private)
-+{
-+	struct iio_dev *indio_dev = private;
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+
-+	iio_trigger_poll(st->trig, iio_get_time_ns());
-+	return IRQ_HANDLED;
 +}
 +
 +/**
-+ * itg3200_data_rdy_trigger_set_state() set datardy interrupt state
++ * of_get_ddr_timings() - extracts the ddr timings and updates no of
++ * frequencies available.
++ * @np_ddr: Pointer to ddr device tree node
++ * @dev: Device requesting for ddr timings
++ * @device_type: Type of ddr(LPDDR2 S2/S4)
++ * @nr_frequencies: No of frequencies available for ddr
++ * (updated by this function)
++ *
++ * Populates lpddr2_timings structure by extracting data from device
++ * tree node. Returns pointer to populated structure. If any error
++ * while populating, returns default timings provided by JEDEC.
 + */
-+static int itg3200_data_rdy_trigger_set_state(struct iio_trigger *trig,
-+	bool state)
++const struct lpddr2_timings *of_get_ddr_timings(struct device_node *np_ddr,
++		struct device *dev, u32 device_type, u32 *nr_frequencies)
 +{
-+	struct iio_dev *indio_dev = trig->private_data;
-+	return itg3200_set_irq_data_rdy(indio_dev, state);
-+}
++	struct lpddr2_timings	*timings = NULL;
++	u32			arr_sz = 0, i = 0;
++	struct device_node	*np_tim;
++	char			*tim_compat;
 +
-+static const struct iio_trigger_ops itg3200_trigger_ops = {
-+	.owner = THIS_MODULE,
-+	.set_trigger_state = &itg3200_data_rdy_trigger_set_state,
-+};
-+
-+int itg3200_probe_trigger(struct iio_dev *indio_dev)
-+{
-+	int ret;
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+
-+	ret = request_irq(st->i2c->irq, &itg3200_data_rdy_trig_poll,
-+			IRQF_TRIGGER_HIGH, "itg3200_data_rdy", indio_dev);
-+	if (ret)
-+		goto error_ret;
-+
-+	st->trig = iio_trigger_alloc("itg3200-dev%d", indio_dev->id);
-+	if (!st->trig) {
-+		ret = -ENOMEM;
-+		goto error_free_irq;
++	switch (device_type) {
++	case DDR_TYPE_LPDDR2_S2:
++	case DDR_TYPE_LPDDR2_S4:
++		tim_compat = "jedec,lpddr2-timings";
++		break;
++	default:
++		dev_warn(dev, "%s: un-supported memory type\n", __func__);
 +	}
 +
-+	st->trig->dev.parent = &st->i2c->dev;
-+	st->trig->ops = &itg3200_trigger_ops;
-+	st->trig->private_data = indio_dev;
-+	ret = iio_trigger_register(st->trig);
-+	if (ret)
-+		goto error_free_trig;
++	for_each_child_of_node(np_ddr, np_tim)
++		if (of_device_is_compatible(np_tim, tim_compat))
++			arr_sz++;
 +
-+	/* select default trigger */
-+	indio_dev->trig = st->trig;
++	if (arr_sz)
++		timings = devm_kzalloc(dev, sizeof(*timings) * arr_sz,
++			GFP_KERNEL);
 +
-+	return 0;
++	if (!timings)
++		goto default_timings;
 +
-+error_free_trig:
-+	iio_trigger_free(st->trig);
-+error_free_irq:
-+	free_irq(st->i2c->irq, indio_dev);
-+error_ret:
-+	return ret;
++	for_each_child_of_node(np_ddr, np_tim) {
++		if (of_device_is_compatible(np_tim, tim_compat)) {
++			if (of_do_get_timings(np_tim, &timings[i])) {
++				devm_kfree(dev, timings);
++				goto default_timings;
++			}
++			i++;
++		}
++	}
++
++	*nr_frequencies = arr_sz;
++
++	return timings;
++
++default_timings:
++	dev_warn(dev, "%s: using default timings\n", __func__);
++	*nr_frequencies = ARRAY_SIZE(lpddr2_jedec_timings);
++	return lpddr2_jedec_timings;
 +}
++EXPORT_SYMBOL(of_get_ddr_timings);
+diff --git a/drivers/memory/of_memory.h b/drivers/memory/of_memory.h
+new file mode 100644
+index 0000000..20b496e
+--- /dev/null
++++ b/drivers/memory/of_memory.h
+@@ -0,0 +1,36 @@
++/*
++ * OpenFirmware helpers for memory drivers
++ *
++ * Copyright (C) 2012 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
 +
-+void itg3200_remove_trigger(struct iio_dev *indio_dev)
++#ifndef __LINUX_MEMORY_OF_REG_H
++#define __LINUX_MEMORY_OF_REG_H
++
++#ifdef CONFIG_OF
++extern const struct lpddr2_min_tck *of_get_min_tck(struct device_node *np,
++		struct device *dev);
++extern const struct lpddr2_timings
++	*of_get_ddr_timings(struct device_node *np_ddr, struct device *dev,
++	u32 device_type, u32 *nr_frequencies);
++#else
++static inline const struct lpddr2_min_tck
++	*of_get_min_tck(struct device_node *np, struct device *dev)
 +{
-+	struct itg3200_state *st = iio_priv(indio_dev);
-+
-+	iio_trigger_unregister(st->trig);
-+	iio_trigger_free(st->trig);
-+	free_irq(st->i2c->irq, indio_dev);
++	return NULL;
 +}
++
++static inline const struct lpddr2_timings
++	*of_get_ddr_timings(struct device_node *np_ddr, struct device *dev,
++	u32 device_type, u32 *nr_frequencies)
++{
++	return NULL;
++}
++#endif /* CONFIG_OF */
++
++#endif /* __LINUX_MEMORY_OF_REG_ */
 -- 
-1.7.10.4
+1.7.9.5
 
