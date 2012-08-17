@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab2HQOgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:36:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62831 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab2HQOf6 (ORCPT
+	id S1758090Ab2HQOhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:37:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44698 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758038Ab2HQOgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:35:58 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH 5/8] UBI: check max_beb_per1024 value in ubi_attach_mtd_dev
-Date: Fri, 17 Aug 2012 16:35:21 +0200
-Message-Id: <1345214124-5478-6-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
-References: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
+	Fri, 17 Aug 2012 10:36:54 -0400
+Date: Fri, 17 Aug 2012 11:36:44 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Worsley <amworsley@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
+        Roland Ramthun <mail@roland-ramthun.de>
+Subject: Re: [v2.6.34-stable 137/165] USB: Fix Corruption issue in USB ftdi
+ driver ftdi_sio.c
+Message-ID: <20120817143642.GA4039@herton-Z68MA-D2H-B3>
+References: <1345060109-9187-1-git-send-email-paul.gortmaker@windriver.com>
+ <1345060109-9187-138-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345060109-9187-138-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-max_beb_per1024 shouldn't be negative, and a 0 value will be treated as
-the default value.
+On Wed, Aug 15, 2012 at 03:48:01PM -0400, Paul Gortmaker wrote:
+> From: Andrew Worsley <amworsley@gmail.com>
+> 
+>                    -------------------
+>     This is a commit scheduled for the next v2.6.34 longterm release.
+>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>     If you see a problem with using this for longterm, please comment.
+>                    -------------------
+> 
+> commit b1ffb4c851f185e9051ba837c16d9b84ef688d26 upstream.
+> 
+> Fix for ftdi_set_termios() glitching output
+> 
+> ftdi_set_termios() is constantly setting the baud rate, data bits and parity
+> unnecessarily on every call, . When called while characters are being
+> transmitted can cause the FTDI chip to corrupt the serial port bit stream
+> output by stalling the output half a bit during the output of a character.
+> Simple fix by skipping this setting if the baud rate/data bits/parity are
+> unchanged.
+> 
+> Signed-off-by: Andrew Worsley <amworsley@gmail.com>
+[...]
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- drivers/mtd/ubi/build.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+commit 108e02b12921078a59dcacd048079ece48a4a983 ("USB: ftdi_sio: fix
+initial baud rate") says it addresses a regression on this change,
+something to consider for inclusion with this update.
 
-diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
-index 58fe53d..ec7311f 100644
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -855,6 +855,16 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
- 	struct ubi_device *ubi;
- 	int i, err, ref = 0;
- 
-+	if (max_beb_per1024 < 0)
-+		return -EINVAL;
-+
-+	/*
-+	 * A value of 0 is forced to the default value to keep the same
-+	 * behavior between ubiattach command and module parameter
-+	 */
-+	if (!max_beb_per1024)
-+		max_beb_per1024 = CONFIG_MTD_UBI_BEB_LIMIT;
-+
- 	/*
- 	 * Check if we already have the same MTD device attached.
- 	 *
 -- 
-1.7.2.5
-
+[]'s
+Herton
