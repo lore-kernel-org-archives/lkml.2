@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543Ab2HQBQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 21:16:41 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:53583
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S933525Ab2HQBQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 21:16:39 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:48434
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S933120Ab2HQBPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933117Ab2HQBPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Aug 2012 21:15:52 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         olaf@aepfle.de, apw@canonical.com, ben@decadent.org.uk
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V3 06/14] Tools: hv: Represent the ipv6 mask using CIDR notation
-Date: Thu, 16 Aug 2012 18:32:17 -0700
-Message-Id: <1345167145-5513-6-git-send-email-kys@microsoft.com>
+Subject: [PATCH V3 13/14] Tools: hv: Get rid of some unused variables
+Date: Thu, 16 Aug 2012 18:32:24 -0700
+Message-Id: <1345167145-5513-13-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1345167145-5513-1-git-send-email-kys@microsoft.com>
 References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
@@ -23,91 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Transform ipv6 subnet information to CIDR notation.
+Get rid of unused variables.
 
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- tools/hv/hv_kvp_daemon.c |   46 ++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 36 insertions(+), 10 deletions(-)
+ tools/hv/hv_kvp_daemon.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index de1724c..a63e83a 100644
+index e7db9ac..4a1428c 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -491,6 +491,15 @@ done:
- 	return;
+@@ -211,7 +211,7 @@ static void kvp_update_mem_state(int pool)
  }
- 
-+static unsigned int hweight32(unsigned int *w)
-+{
-+	unsigned int res = *w - ((*w >> 1) & 0x55555555);
-+	res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
-+	res = (res + (res >> 4)) & 0x0F0F0F0F;
-+	res = res + (res >> 8);
-+	return (res + (res >> 16)) & 0x000000FF;
-+}
-+
- static int kvp_process_ip_address(void *addrp,
- 				int family, char *buffer,
- 				int length,  int *offset)
-@@ -535,10 +544,15 @@ kvp_get_ip_address(int family, char *if_name, int op,
- 	struct ifaddrs *curp;
- 	int offset = 0;
- 	int sn_offset = 0;
--	const char *str;
- 	int error = 0;
- 	char *buffer;
- 	struct hv_kvp_ipaddr_value *ip_buffer;
-+	char cidr_mask[5]; /* /xyz */
-+	int weight;
-+	int i;
-+	unsigned int *w;
-+	char *sn_str;
-+	struct sockaddr_in6 *addr6;
- 
- 	if (op == KVP_OP_ENUMERATE) {
- 		buffer = out_buffer;
-@@ -611,18 +625,30 @@ kvp_get_ip_address(int family, char *if_name, int op,
- 					goto gather_ipaddr;
- 			} else {
- 				ip_buffer->addr_family |= ADDR_FAMILY_IPV6;
-+
- 				/*
--				 * Get subnet info.
-+				 * Get subnet info in CIDR format.
- 				 */
--				error = kvp_process_ip_address(
--							     curp->ifa_netmask,
--							     AF_INET6,
--							     (char *)
--							     ip_buffer->sub_net,
--							     length,
--							     &sn_offset);
--				if (error)
-+				weight = 0;
-+				sn_str = (char *)ip_buffer->sub_net;
-+				addr6 = (struct sockaddr_in6 *)
-+					curp->ifa_netmask;
-+				w = addr6->sin6_addr.s6_addr32;
-+
-+				for (i = 0; i < 4; i++)
-+					weight += hweight32(&w[i]);
-+
-+				sprintf(cidr_mask, "/%d", weight);
-+				if ((length - sn_offset) <
-+					(strlen(cidr_mask) + 1))
- 					goto gather_ipaddr;
-+
-+				if (sn_offset == 0)
-+					strcpy(sn_str, cidr_mask);
-+				else
-+					strcat(sn_str, cidr_mask);
-+				strcat((char *)ip_buffer->sub_net, ";");
-+				sn_offset += strlen(sn_str) + 1;
- 			}
- 		}
- 
+ static int kvp_file_init(void)
+ {
+-	int ret, fd;
++	int  fd;
+ 	FILE *filep;
+ 	size_t records_read;
+ 	__u8 *fname;
+@@ -327,7 +327,6 @@ static int kvp_key_add_or_modify(int pool, __u8 *key, int key_size, __u8 *value,
+ 			int value_size)
+ {
+ 	int i;
+-	int j, k;
+ 	int num_records;
+ 	struct kvp_record *record;
+ 	int num_blocks;
 -- 
 1.7.4.1
 
