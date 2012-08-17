@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964885Ab2HQG4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 02:56:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9406 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964831Ab2HQG4k (ORCPT
+	id S964896Ab2HQG5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 02:57:01 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:37510 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964805Ab2HQG47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 02:56:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 16 Aug 2012 23:56:39 -0700
-Message-ID: <502DE6FE.8040200@nvidia.com>
-Date: Fri, 17 Aug 2012 12:08:54 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 17 Aug 2012 02:56:59 -0400
+Message-ID: <502DEB32.8000106@linux.vnet.ibm.com>
+Date: Fri, 17 Aug 2012 14:56:50 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 1/5] ARM: tegra: config: enable dmaengine based APB DMA
- driver
-References: <1345126397-28864-1-git-send-email-ldewangan@nvidia.com> <1345126397-28864-2-git-send-email-ldewangan@nvidia.com> <502D33B6.7070103@wwwdotorg.org>
-In-Reply-To: <502D33B6.7070103@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] sched: remove useless code in yield_to
+References: <4F13EFBE.1030002@linux.vnet.ibm.com> <1326707503.2442.219.camel@twins> <4F14DEAE.60702@linux.vnet.ibm.com> <CAJn8CcHhaSA5kF9KVjMorzt_2NM-dTPc5mTr3-A9GvR54VRo=A@mail.gmail.com> <4F14E54E.80904@linux.vnet.ibm.com> <1327506934.2614.87.camel@laptop> <20120126100429.GA3853@elte.hu> <4F21FC69.6040402@linux.vnet.ibm.com> <4F222B2B.6010602@gmail.com> <4F24E804.5090808@linux.vnet.ibm.com> <20120129163328.GC23408@elte.hu> <4F260BFE.2070503@linux.vnet.ibm.com> <4F260DAE.4000008@gmail.com> <4F262ED9.7040003@linux.vnet.ibm.com> <4FF2925A.9060005@linux.vnet.ibm.com> <1342102029.28010.3.camel@twins>
+In-Reply-To: <1342102029.28010.3.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12081706-5490-0000-0000-000001F881D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 August 2012 11:23 PM, Stephen Warren wrote:
-> On 08/16/2012 08:13 AM, Laxman Dewangan wrote:
->> Enable config for dmaengine based Tegra APB DMA driver and
->> disable the legacy APB DMA driver (SYSTEM_DMA).
-> Laxman, if I apply this series to next-20120816 (plus a few patches in
-> my local work branch plus the CPU hotplug patches from Joseph, although
-> I suspect none of that matters), then audio playback on Tegra20 is
-> broken; the pitch is far too high. Audio playback on Tegra30 works as
-> expected.
-I run the test again on ventana and did not see any issue.
-I play one song and saw similar behavior with/without this series.
+On 07/12/2012 10:07 PM, Peter Zijlstra wrote:
+> On Tue, 2012-07-03 at 14:34 +0800, Michael Wang wrote:
+>> From: Michael Wang <wangyun@linux.vnet.ibm.com>
+>>
+>> it's impossible to enter else branch if we have set skip_clock_update
+>> in task_yield_fair(), as yield_to_task_fair() will directly return
+>> true after invoke task_yield_fair().
+> 
+> It helps if you CC the guy who wrote the code.. I think you're right,
+> although getting that skip_clock_update crap wrong is annoying.
+> 
+> Mike?
 
-With this series:
---------------------
+Hi, Peter
 
-ubuntu@tegra-ubuntu:/home$ aplay "1-04 Hungry Like The Wolf.wav"
-Playing WAVE '1-04 Hungry Like The Wolf.wav' : Signed 16 bit Little 
-Endian, Rate
-  44100 Hz, Stereo
-underrun!!! (at least 5039.388 ms long)
-underrun!!! (at least 60.601 ms long)
-underrun!!! (at least 3027.668 ms long)
-underrun!!! (at least 2063.667 ms long)
-underrun!!! (at least 1062.503 ms long)
-underrun!!! (at least 5073.551 ms long)
-underrun!!! (at least 6.461 ms long)
-underrun!!! (at least 4075.519 ms long)
-underrun!!! (at least 78.731 ms long)
-underrun!!! (at least 4042.804 ms long)
-underrun!!! (at least 28.395 ms long)
-underrun!!! (at least 5076.706 ms long)
-underrun!!! (at least 6043.105 ms long)
-underrun!!! (at least 24.857 ms long)
-underrun!!! (at least 5023.783 ms long)
-ubuntu@tegra-ubuntu:/home$
+I think Mike also agreed to remove that piece of code, should we action now?
 
-And on tot:
---------------
-ubuntu@tegra-ubuntu:/home$ aplay "1-04 Hungry Like The Wolf.wav"
-Playing WAVE '1-04 Hungry Like The Wolf.wav' : Signed 16 bit Little 
-Endian, Rate
-  44100 Hz, Stereo
-underrun!!! (at least 17098.259 ms long)
-underrun!!! (at least 5042.101 ms long)
-underrun!!! (at least 87.446 ms long)
-underrun!!! (at least 4084.481 ms long)
-underrun!!! (at least 4035.531 ms long)
-underrun!!! (at least 1026.132 ms long)
-underrun!!! (at least 3096.078 ms long)
-underrun!!! (at least 1007.028 ms long)
-underrun!!! (at least 1034.265 ms long)
-underrun!!! (at least 2092.453 ms long)
-underrun!!! (at least 1029.957 ms long)
-underrun!!! (at least 3076.209 ms long)
-underrun!!! (at least 52.042 ms long)
-underrun!!! (at least 1001.812 ms long)
-underrun!!! (at least 3083.294 ms long)
-ubuntu@tegra-ubuntu:/home$
+Regards,
+Michael Wang
+
+> 
+> 
+>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+>> ---
+>>  kernel/sched/core.c |    7 -------
+>>  1 files changed, 0 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 9bb7d28..77c14aa 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -4737,13 +4737,6 @@ again:
+>>  		 */
+>>  		if (preempt && rq != p_rq)
+>>  			resched_task(p_rq->curr);
+>> -	} else {
+>> -		/*
+>> -		 * We might have set it in task_yield_fair(), but are
+>> -		 * not going to schedule(), so don't want to skip
+>> -		 * the next update.
+>> -		 */
+>> -		rq->skip_clock_update = 0;
+>>  	}
+>>  
+>>  out:
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
