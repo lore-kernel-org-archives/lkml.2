@@ -1,135 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933781Ab2HQJSf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 05:18:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38108 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932970Ab2HQJSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 05:18:30 -0400
+	id S933800Ab2HQJTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 05:19:11 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:58429 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756077Ab2HQJTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 05:19:01 -0400
+Message-ID: <502E0BC3.8090204@parallels.com>
+Date: Fri, 17 Aug 2012 13:15:47 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20120817010519.GA2440@ymail.com>
-References: <20120816204440.GA8808@ymail.com>
-	<CA+icZUX+4mMYqNn5_5EKXTdqbZ25K1HFbsRR5TrToaGJaSPttw@mail.gmail.com>
-	<20120817010519.GA2440@ymail.com>
-Date: Fri, 17 Aug 2012 11:18:28 +0200
-Message-ID: <CA+icZUU6KS_8T5uhQZw6QKDD4iLp76xphr2N9KJ6Dvj_ib_sig@mail.gmail.com>
-Subject: Re: [overlayfs/port] overlayfs: v13 port attempt to kernel 3.5
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Andrew Watts <akwatts@ymail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Daniel Baumann <daniel@debian.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
+ children
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <20120817090005.GC18600@dhcp22.suse.cz>
+In-Reply-To: <20120817090005.GC18600@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 3:05 AM, Andrew Watts <akwatts@ymail.com> wrote:
->> Might be easier to collect/extract commits listed in [1]?
+On 08/17/2012 01:00 PM, Michal Hocko wrote:
+> On Thu 09-08-12 17:01:17, Glauber Costa wrote:
+>> The current memcg slab cache management fails to present satisfatory
+>> hierarchical behavior in the following scenario:
 >>
->> If you are on Ubuntu: Check mainline kernels in [2] (quantal) and [3] (precise).
+>> -> /cgroups/memory/A/B/C
 >>
->> - Sedat -
+>> * kmem limit set at A,
+>> * A and B have no tasks,
+>> * span a new task in in C.
 >>
+>> Because kmem_accounted is a boolean that was not set for C, no
+>> accounting would be done. This is, however, not what we expect.
+>>
+>> The basic idea, is that when a cgroup is limited, we walk the tree
+>> upwards 
+> 
+> Isn't it rather downwards? We start at A and then mark all children so
+> we go down the tree. Moreover the walk is not atomic wrt. parallel
+> charges nor to a new child creation. First one seems to be acceptable
+> as the charges go to the root. The second one requires cgroup_lock.
+> 
+
+Yes, it is downwards. I've already noticed that yesterday and updated
+in my tree.
+
+As for the lock, can't we take set_limit lock in cgroup creation just
+around the place that updates that field in the child? It is a lot more
+fine grained - everything except the dead bkl is -  and what we're
+actually protecting is the limit.
+
+If you prefer, I can use cgroup lock just fine. But then I won't sleep
+at night and probably pee my pants, which is something I don't do for at
+least two decades now.
+
+> It also seems that you are missing memcg_kmem_account_parent in
+> mem_cgroup_create (use_hierarchy path) if memcg_kmem_is_accounted(parent).
+> 
+
+You mean when we create a cgroup ontop of an already limited parent?
+Humm, you are very right.
+
+> Some further "wording" comments below. Other than that the patch looks
+> correct.
+> 
+>> (something Kame and I already thought about doing for other
+>> purposes), and make sure that we store the information about the parent
+>> being limited in kmem_accounted (that is turned into a bitmap: two
+>> booleans would not be space efficient). 
+> 
+> Two booleans even don't serve the purpose because you want to test this
+> atomically, right?
+> 
+
+Well, yes, we have that extra problem as well.
+>> The code for that is taken from sched/core.c. My reasons for not
+>> putting it into a common place is to dodge the type issues that would
+>> arise from a common implementation between memcg and the scheduler -
+>> but I think that it should ultimately happen, so if you want me to do
+>> it now, let me know.
+> 
+> Is this really relevant for the patch?
+> 
+
+Not at all. Besides not being relevant, it is also not true, since I now
+use the memcg iterator. I would prefer the tree walk instead of having
+to cope with the order imposed by the memcg iterator, but we add
+less code this way...
+
+Again, already modified that in my yesterday's update.
+
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 3216292..3d30b79 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -295,7 +295,8 @@ struct mem_cgroup {
+>>  	 * Should the accounting and control be hierarchical, per subtree?
+>>  	 */
+>>  	bool use_hierarchy;
+>> -	bool kmem_accounted;
+>> +
+>> +	unsigned long kmem_accounted; /* See KMEM_ACCOUNTED_*, below */
+>>  
+>>  	bool		oom_lock;
+>>  	atomic_t	under_oom;
+>> @@ -348,6 +349,38 @@ struct mem_cgroup {
+>>  #endif
+>>  };
+>>  
+>> +enum {
+>> +	KMEM_ACCOUNTED_THIS, /* accounted by this cgroup itself */
+>> +	KMEM_ACCOUNTED_PARENT, /* accounted by any of its parents. */
+> 
+> How it can be accounted by its parent, the charge doesn't go downwards.
+> Shouldn't it rather be /* a parent is accounted */
+> 
+indeed.
+
+>> +};
+>> +
+>> +#ifdef CONFIG_MEMCG_KMEM
+>> +static bool memcg_kmem_account(struct mem_cgroup *memcg)
+> 
+> memcg_kmem_set_account? It matches _clear_ counterpart and it makes
+> obvious that the value is changed actually.
+> 
+
+Ok.
+
+> [...]
+>> +static bool memcg_kmem_is_accounted(struct mem_cgroup *memcg)
+>> +{
+>> +	return test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted);
+>> +}
+>> +
+>> +static void memcg_kmem_account_parent(struct mem_cgroup *memcg)
+> 
+> same here _set_parent
+> 
+
+Ok, agreed.
+
+> [...]
+>> @@ -614,7 +647,7 @@ EXPORT_SYMBOL(__memcg_kmem_free_page);
+>>  
+>>  static void disarm_kmem_keys(struct mem_cgroup *memcg)
+>>  {
+>> -	if (memcg->kmem_accounted)
+>> +	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
+> 
+> memcg_kmem_is_accounted. I do not see any reason to open code this.
+> 
+
+ok.
+
+>>  #ifdef CONFIG_MEMCG_KMEM
+>> -	/*
+>> -	 * Once enabled, can't be disabled. We could in theory disable it if we
+>> -	 * haven't yet created any caches, or if we can shrink them all to
+>> -	 * death. But it is not worth the trouble.
+>> -	 */
+>> +	struct mem_cgroup *iter;
+>> +
+>>  	mutex_lock(&set_limit_mutex);
+>> -	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
+>> +	if ((val != RESOURCE_MAX) && memcg_kmem_account(memcg)) {
+>> +
+>> +		/*
+>> +		 * Once enabled, can't be disabled. We could in theory disable
+>> +		 * it if we haven't yet created any caches, or if we can shrink
+>> +		 * them all to death. But it is not worth the trouble
+>> +		 */
+>>  		static_key_slow_inc(&memcg_kmem_enabled_key);
+>> -		memcg->kmem_accounted = true;
+>> +
+>> +		if (!memcg->use_hierarchy)
+>> +			goto out;
+>> +
+>> +		for_each_mem_cgroup_tree(iter, memcg) {
+> 
+> for_each_mem_cgroup_tree does respect use_hierarchy so the above
+> shortcut is not necessary. Dunno but IMHO we should get rid of explicit
+> tests as much as possible. This doesn't look like a hot path anyway.
+> 
+
+I can't remember any reason for doing so other than gaining some time.
+I will remove it.
+
+>> +			if (iter == memcg)
+>> +				continue;
+>> +			memcg_kmem_account_parent(iter);
+>> +		}
+>> +	} else if ((val == RESOURCE_MAX) && memcg_kmem_clear_account(memcg)) {
+> 
+> Above you said "Once enabled, can't be disabled." and now you can
+> disable it? Say you are a leaf group with non accounted parents. This
+> will clear the flag and so no further accounting is done. Shouldn't
+> unlimited mean that we will never reach the limit? Or am I missing
+> something?
 >
-> That indeed was much easier and I have it working great on 3.5.2. Many
-> thanks for the link to the git repo.
->
-> It would be nice to see overlayfs ack'd into mainline at some point. Is
-> there any chance of this?
->
 
-[ TO Linus and CC LKML and Daniel (maintainer of debian-live project) ]
-( I could or should CC even more folks... )
+You are missing something, and maybe I should be more clear about that.
+The static branches can't be disabled (it is only safe to disable them
+from disarm_static_branches(), when all references are gone). Note that
+when unlimited, we flip bits, do a transversal, but there is no mention
+to the static branch.
 
-Hi,
+The limiting can come and go at will.
 
-There exists a lot of threads on LKML and here on linux-fsdevel ML
-about the topic "Union FileSystems".
-In some of these discussions you will read about pros and cons about
-"OverlayFS".
-More precisely: Endless or even fruitless(?) discussions as after so
-many years there is no upstream solution in sight.
+>> +
+>> +		if (!memcg->use_hierarchy)
+>> +			goto out;
+>> +
+>> +		for_each_mem_cgroup_tree(iter, memcg) {
+>> +			struct mem_cgroup *parent;
+>> +
+>> +			if (iter == memcg)
+>> +				continue;
+>> +			/*
+>> +			 * We should only have our parent bit cleared if none
+>> +			 * of our parents are accounted. The transversal order
+>> +			 * of our iter function forces us to always look at the
+>> +			 * parents.
+>> +			 */
+>> +			parent = parent_mem_cgroup(iter);
+>> +			for (; parent != memcg; parent = parent_mem_cgroup(iter))
+>> +				if (memcg_kmem_is_accounted(parent))
+>> +					goto noclear;
+>> +			memcg_kmem_clear_account_parent(iter);
+> 
+> Brain hurts...
+> Yes we are iterating in the creation ordering so we cannot rely on the
+> first encountered accounted memcg
+> A(a) - B - D
+>      - C (a) - E
+> 
+> 
 
-Unfortunately, some kernel developers still didn't realize that
-***Linux live-systems*** and ***Embedded Linux*** are IMHO two
-examples for great "success stories" of Linux!
-
-To run both successfully, you need this fundamental filesystem components:
-
-(1) a "Compressed Read-Only File System" (like SquashFS)
-(2) a "Union FileSystem" (like AUFS, OverlayFS, "Union Mounts", etc.)
-
-Someday we got all happy with SquashFS accepted in upstream - this was
-the first success!
-
-The other part to run a Linux live-system is a "Union FileSystem" -
-this part is missing (speaking of upstream).
-
-Since years AUFS seems to be the choice #1 in a lot of distros to
-workaround the problem.
-NOTE: AUFS was rejected from upstream (to say not accepted).
-
-I talked with so many distro kernel-teams and especially with Daniel
-Baumann (maintainer of debian-live project):
-The responsibles say if OverlayFS is upstreamed we will take it else
-NOPE followed by an "OkThxBye" from impolite people!
-[Q] So, why the hell do you include AUFS (not upstreamed) but not
-OverlayFS (also not upstreamed) :-)?
-
-As a sidenote, Linux-v3.6-rc1 got some first bits of "Union Mounts"
-which was chosen as the ***preferred*** (longterm!) upstream solution.
-But this special topic seems to me to get a ***never-ending story***.
-Maintainers changed - new developers carried (or not?) - patchsets
-were sent to MLs but got never really reviewed or finished.
-YES, ***finished***!
-I remember the "nVidia, F*** you!" video, not because of the famous(?)
-F-word, but the part where Linus talks about "visions" VS. "I like to
-see/get stuff finished".
-
-One thing is a bit strange to me: Where does the development of "Union
-Mounts" happen?
-Normally, someone would assume - as this is gonna be a part of the
-Linux kernel - this happens in the public.
-I don't know of a repository - do you know?
-
-Personally, I would like to see OverlayFS as a or the "small" solution
-besides $union-filesystem-preferred-by-upstream.
-OverlayFS is pretty small - a very good choice for embedded Linux systems.
-
-After looking into the pile #1 of VFS pull-request for Linux-v3.6-rc1,
-I noticed this...
-
-     "* preparatory bits from unionmount series (from dhowells)."
-
-So, I talked with some responsibles on #ubuntu-kernel and this was
-appreciated (and lead to some adaptation of the OverlayFS code and
-resulted in v14).
-On the one hand it is nice to see that something happens in upstream,
-on the other no one knows when "Union Mounts" will get a "working"
-solution (to say "finished").
-
-Just to name two projects:
-Ubuntu (Linux distribution) and OpenWrt (Linux embedded system) use
-OverlayFS in their live-system and build-system environments.
-
-But... I am a person which is *not* in charge or responsible for the
-development in the (near) future - nor in the position to decide.
-
-I did some early testing (against linux-next) and contributed a few lines.
-After that I am regularly testing OverlayFS since v11 till present.
-
-Anyway, I would be really happy to see any working ***upstream solution***!
-
-It might be worth to escalate this topic to Linus directly (Oops, I did?).
-
-I hope people rest calm and do NOT throw me S*** and F*** words - be
-always a Gentleman :-)!
-
-My 0.02EUR.
-
-- Sedat -
-
-> ~ Andy
+That's why I said I preferred the iterator the scheduler uses. The
+actual transverse code was much simpler, because it will stop at an
+unlimited parent. But this is the only drawback I see in the memcg
+iterator, so I decided that just documenting this "interesting" piece of
+code well would do...
