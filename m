@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030783Ab2HQDaB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Aug 2012 23:30:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46832 "EHLO
+	id S1030794Ab2HQDaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Aug 2012 23:30:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46826 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030678Ab2HQD1H (ORCPT
+	by vger.kernel.org with ESMTP id S1030676Ab2HQD1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Aug 2012 23:27:07 -0400
-Message-Id: <20120817030248.728449300@decadent.org.uk>
+	Thu, 16 Aug 2012 23:27:06 -0400
+Message-Id: <20120817030248.169429259@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 Aug 2012 04:03:14 +0100
+Date: Fri, 17 Aug 2012 04:03:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Ruan Zhijie <ruanzhijie@hotmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Eric Dumazet <edumazet@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/37] tun: dont zeroize sock->file on detach
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 28/37] ALSA: hda - Fix double quirk for Quanta FL1 / Lenovo Ideapad
 In-Reply-To: <20120817030243.807605523@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,49 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 66d1b9263a371abd15806c53f486f0645ef31a8f upstream.
+commit 012e7eb1e501d0120e0383b81477f63091f5e365 upstream.
 
-This is a fix for bug, introduced in 3.4 kernel by commit
-1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d ("tun: don't hold network
-namespace by tun sockets"), which, among other things, replaced simple
-sock_put() by sk_release_kernel(). Below is sequence, which leads to
-oops for non-persistent devices:
+The same ID is twice in the quirk table, so the second one is not used.
 
-tun_chr_close()
-tun_detach()				<== tun->socket.file = NULL
-tun_free_netdev()
-sk_release_sock()
-sock_release(sock->file == NULL)
-iput(SOCK_INODE(sock))			<== dereference on NULL pointer
-
-This patch just removes zeroing of socket's file from __tun_detach().
-sock_release() will do this.
-
-Reported-by: Ruan Zhijie <ruanzhijie@hotmail.com>
-Tested-by: Ruan Zhijie <ruanzhijie@hotmail.com>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/tun.c |    1 -
- 1 file changed, 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 926d4db..3a16d4f 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -187,7 +187,6 @@ static void __tun_detach(struct tun_struct *tun)
- 	netif_tx_lock_bh(tun->dev);
- 	netif_carrier_off(tun->dev);
- 	tun->tfile = NULL;
--	tun->socket.file = NULL;
- 	netif_tx_unlock_bh(tun->dev);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4981,6 +4981,8 @@ static const struct alc_fixup alc269_fix
+ 	[ALC269_FIXUP_PCM_44K] = {
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc269_fixup_pcm_44k,
++		.chained = true,
++		.chain_id = ALC269_FIXUP_QUANTA_MUTE
+ 	},
+ 	[ALC269_FIXUP_STEREO_DMIC] = {
+ 		.type = ALC_FIXUP_FUNC,
+@@ -5080,8 +5082,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x17aa, 0x21fa, "Thinkpad X230", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x21fb, "Thinkpad T430s", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
+-	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_QUANTA_MUTE),
+-	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Lenovo Ideapd", ALC269_FIXUP_PCM_44K),
++	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_PCM_44K),
+ 	SND_PCI_QUIRK(0x17aa, 0x9e54, "LENOVO NB", ALC269_FIXUP_LENOVO_EAPD),
  
- 	/* Drop read queue */
+ #if 1
 
 
