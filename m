@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab2HQW7H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 18:59:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60240 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755934Ab2HQW6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 18:58:55 -0400
-Date: Sat, 18 Aug 2012 08:58:43 +1000
-From: NeilBrown <neilb@suse.de>
-To: John Drescher <drescherjm@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org
-Subject: Re: mdraid6 problem post 3.5.0
-Message-ID: <20120818085843.54b231ed@notabene.brown>
-In-Reply-To: <CAEhu1-4gv=uAu7K=O6DqeXr05frD4_Yp+0VnRuF_n8mnbaqF6w@mail.gmail.com>
-References: <CAEhu1-4gv=uAu7K=O6DqeXr05frD4_Yp+0VnRuF_n8mnbaqF6w@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/2eMa55FtH7IYkFk5wD9BzL6"; protocol="application/pgp-signature"
+	id S1756676Ab2HQXEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 19:04:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44954 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756022Ab2HQXEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 19:04:30 -0400
+Date: Sat, 18 Aug 2012 00:04:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mitch Bradley <wmb@firmworks.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <acourbot@nvidia.com>, linux-fbdev@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbou@mail.ru>, linux-tegra@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
+Message-ID: <20120817230426.GC21888@opensource.wolfsonmicro.com>
+References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com>
+ <1345097337-24170-2-git-send-email-acourbot@nvidia.com>
+ <502D3E29.1010501@wwwdotorg.org>
+ <502D61C6.5050101@firmworks.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TiqCXmo5T1hvSQQg"
+Content-Disposition: inline
+In-Reply-To: <502D61C6.5050101@firmworks.com>
+X-Cookie: There was a phone call for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/2eMa55FtH7IYkFk5wD9BzL6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, 17 Aug 2012 18:30:11 -0400 John Drescher <drescherjm@gmail.com> wro=
-te:
+--TiqCXmo5T1hvSQQg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> For the last few weeks I have been doing some reliability testing on a
->  mdraid6 array. One of my test was to physically hot remove a raid
-> member disk. This worked flawlessly with gentoo-sources-3.5.0 for the
-> 5 or so times I tried it with my 12 disk + 1 spare mdraid6 array.
-> After pulling a disk a few seconds later the array automatically
-> rebuilds with a spare and after finishing all data checks out via
-> btrfs a scrub. However trying this with gentoo-sources-3.5.2 or the
-> latest kernel.org git sources the machine does not start the rebuild
-> and any access to /proc/mdstat or and disk access that is not in cache
-> for that array just leads to an a long (possibly infinite) wait
-> eventually forcing me to have to use the reset button when the sysrq
-> key combinations fail to shut down the machine. I do see some kernel
-> debug message in the console alt-ctrl-f12 but I was unable to save
-> that to copy.
->=20
-> Is this a known problem? If not it may be possible that I could bisect
-> this next week to the patch that causes this behavior.
->=20
+On Thu, Aug 16, 2012 at 11:10:30AM -1000, Mitch Bradley wrote:
+> On 8/16/2012 8:38 AM, Stephen Warren wrote:
 
-Thanks for the report.
+> > Device tree bindings shouldn't reference Linux documentation; the
+> > bindings are supposed to be OS-agnostic.
 
-The problem is not known to me..  There are no changes to raid6 between 3.5=
-.0
-and 3.5.2, so unless gentoo broke something (unlikely) this is very strange.
+> While it is true that bindings should try to be OS-agnostic, there is
+> the practical matter of where to put documentation so that it is widely
+> accessible.  The Linux source tree is one of the most accessible things
+> there is, considering how widely it is replicated.
 
-A digital-photo of the debug messages might be useful if you can catch that.
-Setting up a network console to capture messages isn't too hard if you have
-another machine with a wired network connection.
-See Documentation/networking/netconsole.txt
-If you can set that us, then alt-sysrq-T might provide useful info.
+> As the original instigator of the policy that the device tree should
+> describe the hardware "OS-neutrally", I personally don't have a problem
+> with bindings referring to Linux documentation.  I wouldn't like
+> references to proprietary and inaccessible documentation.
 
+OS agnosticness isn't the only issue here - the other problem with using
+Linux documentation is that except for things that are specifically
+userspace interfaces and the DT bindings nothing is intended to be
+stable so bindings defined in terms of Linux documentation may randomly
+change.  We're not doing an awesome job of that with DT right now but we
+should try and so we ought to avoid including non-ABI things in ABIs
+like this.
 
-NeilBrown
-
---Sig_/2eMa55FtH7IYkFk5wD9BzL6
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--TiqCXmo5T1hvSQQg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUBUC7Moznsnt1WYoG5AQLSGQ/+PwJEnpw10Aw9Hhmk1GSchdNWeAIvt6sE
-ivCXZJEZOVGFBwXKTPSjPvyhtO4KRT0sezgjYvxhRj69CVErkVV5Ynri/ruFgYlD
-iJjIaqdRkbIQU2r+iNUIUOOM6rECvDdDu8ONHYibrZloDWsfALxjBqBJ+XSLvy92
-hi0WfBsC2xXu8+/+qqwmlWSRvhU0jhmpbc6/gDYjhvvmd6/idxoLd2lINFWVdhez
-0RhGH1Cr7fi87fTBmXEadfTCXsJYuZ1NFv5TQt3kM0F4cNWopL2ld6v+UXK76os/
-SuS92i1D6F34BdV6R2QQjezAbIawnVYd40Ut2m2FoblUCAL5VSZG47Lbo0wEONKm
-jvAq8EQBgFxspkkU2+93G1zRVpTJZEnqo3M52K0jM54bKuP+cVcndVQa8bvBTNfa
-cEyCXEdgI2xyIJvHjI/k168Nrjri5FLOMk4hYz9meNGS2eEUOQVXVV6qDNAp9/zq
-oi2bOy1ShoGt9g22zSkaRLp2Mj7gZQ7sMT29AOv9bsoQHAwj45N+OBsoE978p3Qt
-x1V9wklV0qLB20kHfv+iLUjRPok5cBIZkjfcuoMO3K4NJ7lzx/zCNj5CWyYAlpAz
-3KNIcGpqJYt0rTl7DLcK3q9/0DoI9qpg9WuTSP+rZo5ul9Ge93XXPgLol9d62p19
-/Zo4ZLdrnnw=
-=qQMs
+iQIcBAEBAgAGBQJQLs3zAAoJEFJkBDiqVpZ4NucQAJowkgvCBihoqNrplgWBVFgj
+eps2rAS3cFRH8aUzgqi31UuAvyHmxxnI1+BoT4k256E86vC+b6asdeSov3iUGTKZ
+zZ6JKvaNIhkWaFYDKsciztyFbrF+26Eq2qRgLImM2vy0Z/yjayQGrI1DVJ3z9B00
+3WIaAwC7Q8SNc6Ilwnw1jOGWMGWe+2Gp8Z+BOXt3bsmqeESoQvaxP2tedU2/NYgX
+WdYbOy/eP5lC46/R35yuGvRSeCs0AU3/Ii0psRzn7eVlCwViqSBl2ST7H8rGa1Qx
+Vn94ZyWN6gVgBjadQqX6B35By05uhl/fyKA01kX1CL5JQowD0tjno+E9Ai8objER
+JuWzBH7IPKxY+p47Ak5sGhB2yrFdtJCNEQv8lnAoRLPM0C9X9D5vwmQkc1hNMSr4
+rDdiZ8xowXEfAnOcMBVryWrQcaUvpW2rvshTxuVvWamn9Mg1F4PD1m0X/nzcprv4
+hYgtOu3oF7M7rj1RpFdKdZRX7+J3HvmtRdB58E1mNJrqcGag0YhjNtBu7CFrRsrd
+dm1V8vjqKiEufh80lpvIZ+ipWcG6JAGplrL/vEwd0prv8beHGM6RUH6wMOngsVe0
+r6gZFkmTnJP5at09+4Yep99RNpFn6dPjN+ijWmAYrCqVn3JmKJK+lUnQTk/i2D12
+7Ivne2SQwes7v1TvJeQg
+=V2+Q
 -----END PGP SIGNATURE-----
 
---Sig_/2eMa55FtH7IYkFk5wD9BzL6--
+--TiqCXmo5T1hvSQQg--
