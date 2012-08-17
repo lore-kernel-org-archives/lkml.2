@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab2HQFY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 01:24:59 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56418 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2HQFY5 (ORCPT
+	id S1753746Ab2HQFeo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 01:34:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59153 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab2HQFem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 01:24:57 -0400
-Date: Fri, 17 Aug 2012 10:53:51 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: john stultz <johnstul@us.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: rcu stalls seen with numasched_v2 patches applied.
-Message-ID: <20120817052351.GB25338@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120807123305.GA7137@linux.vnet.ibm.com>
- <1344347568.27828.122.camel@twins>
- <20120807171859.GB3850@linux.vnet.ibm.com>
- <1344455938.16728.13.camel@laptop>
- <20120810162425.GD31805@linux.vnet.ibm.com>
- <1344844273.31459.1.camel@twins>
+	Fri, 17 Aug 2012 01:34:42 -0400
+Message-ID: <502DD7EE.1070903@gmail.com>
+Date: Thu, 16 Aug 2012 22:34:38 -0700
+From: Pete Delaney <piet.delaney@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1344844273.31459.1.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12081705-2674-0000-0000-000005A2FA64
+To: Rakesh Jain <Rakesh.Jain@imgtec.com>
+CC: Marc Gauthier <marc@tensilica.com>, Chris Zankel <chris@zankel.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        Kirill Krinkin <kirill.krinkin@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Max Filippov <jcmvbkbc@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "'Mahavir Prasad'" <er.mahavir@gmail.com>,
+        Prasanna Rao <Prasanna.Rao@transwitch.com>,
+        Shimon Edelhaus <Shimon.Edelhaus@transwitch.com>
+Subject: Re: xtensa port maintenance
+References: <50205592.1030205@gmail.com> <201208102115.59946.arnd@arndb.de> <50258D88.7090903@zankel.net> <5025975D.9030100@gmail.com> <522C1DF17AF50042AD8AE87F7887BD3D022DEE8CB5@exch.hq.tensilica.com> <7E6CC3A7A7876F4BAC9F5E798E9726235C5926@bamail01.ba.imgtec.org>
+In-Reply-To: <7E6CC3A7A7876F4BAC9F5E798E9726235C5926@bamail01.ba.imgtec.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-08-13 09:51:13]:
+On 08/16/2012 12:38 PM, Rakesh Jain wrote:
+> Hi Marc,
+> Is Skype library available for Xtensa Linux port?
+> They are available for ARM.
+I'd also like to know more about the Skype library.
 
-> On Fri, 2012-08-10 at 21:54 +0530, Srikar Dronamraju wrote:
-> 
-> > This change worked well on the 2 node machine 
-> > but on the 8 node machine it hangs with repeated messages
-> > 
-> > Pid: 60935, comm: numa01 Tainted: G        W    3.5.0-numasched_v2_020812+ #4
-> > Call Trace:
-> > <IRQ>  [<ffffffff810d32e2>] ? rcu_check_callback s+0x632/0x650
-> > [<ffffffff81061bb8>] ? update_process_times+0x48/0x90
-> > [<ffffffff810a2a4e>] ? tick_sched_timer+0x6e/0xe0
-> > [<ffffffff81079c85>] ? __run_hrtimer+0x75/0x1a0
-> > [<ffffffff810a29e0>] ? tick_setup_sched_timer+0x100/0x100
-> > [<ffffffff8107a036>] ? hrtimer_interrupt+0xf6/0x250
-> > [<ffffffff814f1379>] ? smp_apic_timer_interrupt+0x69/0x99
-> > [<ffffffff814f034a>] ? apic_timer_interrupt+0x6a/0x70
-> > <EOI>  [<ffffffff811082e3>] ? wait_on_page_bit+0x73/0x80
-> > [<ffffffff814e7992>] ? _raw_spin_lock+0x22/0x30
-> > [<ffffffff81131bf3>] ? handle_pte_fault+0x1b3/0xca0
-> > [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
-> > [<ffffffff8107a9a8>] ? up_read+0x18/0x30
-> > [<ffffffff814eb2be>] ? do_page_fault+0x13e/0x460
-> > [<ffffffff810137ba>] ? __switch_to+0x1aa/0x460
-> > [<ffffffff814e64f7>] ? __schedule+0x2e7/0x710
-> > [<ffffffff814e7de5>] ? page_fault+0x25/0x30
-> > { 3}  (t=62998 jiffies)
-> > 
-> 
-> If you run a -tip kernel without the numa patches, does that work?
-> 
-
-Running on -tip kernel seems okay. Will see if I can bisect the patch
-that causes this issue and let you know.
-
--- 
-Thanks and Regards
-Srikar
+-piet
+> Thanks.
+> -Rakesh
+>
+> -----Original Message-----
+> From: Marc Gauthier [mailto:marc@tensilica.com] 
+> Sent: Friday, August 10, 2012 9:47 PM
+> To: Pete Delaney; Chris Zankel; Arnd Bergmann; linux-xtensa@linux-xtensa.org; Kirill Krinkin; Stephen Rothwell; Greg KH; linux-kernel@vger.kernel.org; Max Filippov; linux-next@vger.kernel.org; Andrew Morton; Linus Torvalds; 'Mahavir Prasad'; Prasanna Rao; Shimon Edelhaus; Rakesh Jain
+> Subject: Re: xtensa port maintenance
+>
+> Chris Zankel wrote:
+>> I have set up a tree on github for now, and will work close with Max 
+>> to get his changes to Stephen's linux-next tree and eventually Linus' 
+>> tree.
+>> I think it's fine to add Max as a second maintainer [...]
+> Thanks for helping!
+>
+>
+> Pete Delaney wrote:
+>> I'm afraid that doing it piecemeal has failed in the past
+> Proper patches work fine, was just never done.
+> (Can discuss off this To: list.)
+>
+>
+>> Mind anding Marc and myself?
+> Acting as maintainer involves submitting useful patches over some period of time.  Right now that's Max and Chris.
+> (Love to do it, but have plenty as it is on my plate.)
+>
+> Thanks,
+> -Marc
+>
 
