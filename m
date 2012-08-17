@@ -1,73 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab2HQNQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 09:16:16 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:45231 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829Ab2HQNQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 09:16:04 -0400
-Date: Fri, 17 Aug 2012 09:15:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-Subject: Re: NULL pointer dereference in ext4_ext_remove_space on 3.5.1
-Message-ID: <20120817131558.GA11439@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Fengguang Wu <fengguang.wu@intel.com>,
-	Marti Raudsepp <marti@juffo.org>,
-	Kernel hackers <linux-kernel@vger.kernel.org>,
-	ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
- <20120816024654.GB3781@thunk.org>
- <20120816111051.GA16036@localhost>
- <20120816152513.GA31346@thunk.org>
- <20120817060110.GA28786@localhost>
+	id S1753502Ab2HQNQX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 09:16:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29384 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab2HQNQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 09:16:17 -0400
+Date: Fri, 17 Aug 2012 09:06:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/p2m: Fix for 32-bit builds the
+ "Reserve 8MB of _brk space for P2M"
+Message-ID: <20120817130621.GC31903@phenom.dumpdata.com>
+References: <1345132214-15298-1-git-send-email-konrad.wilk@oracle.com>
+ <1345132214-15298-2-git-send-email-konrad.wilk@oracle.com>
+ <20120816173215.GB9790@phenom.dumpdata.com>
+ <20120816210206.GA17966@phenom.dumpdata.com>
+ <502E2784.8060806@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120817060110.GA28786@localhost>
+In-Reply-To: <502E2784.8060806@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Fengguang:
+On Fri, Aug 17, 2012 at 12:14:12PM +0100, David Vrabel wrote:
+> On 16/08/12 22:02, Konrad Rzeszutek Wilk wrote:
+> > 
+> > So I thought about this some more and came up with this patch. Its
+> > RFC and going to run it through some overnight tests to see how they fare.
+> > 
+> > 
+> > commit da858a92dbeb52fb3246e3d0f1dd57989b5b1734
+> > Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Date:   Fri Jul 27 16:05:47 2012 -0400
+> > 
+> >     xen/p2m: Reuse existing P2M leafs if they are filled with 1:1 PFNs or INVALID.
+> >     
+> >     If P2M leaf is completly packed with INVALID_P2M_ENTRY or with
+> >     1:1 PFNs (so IDENTITY_FRAME type PFNs), we can swap the P2M leaf
+> >     with either a p2m_missing or p2m_identity respectively. The old
+> >     page (which was created via extend_brk or was grafted on from the
+> >     mfn_list) can be re-used for setting new PFNs.
+> 
+> Does this actually find any p2m pages to reclaim?
 
-For the record, I was able to find my own easy repro, last night using
-only a 220 meg partition:
+Very much so. When I run the kernel without dom0_mem, and end up returning
+around 372300 pages back, and then populating them back - they (mostly)
+all get to re-use the transplanted mfn_list.
 
-# mke2fs -t ext4 -b 1024 -J size=1 /dev/vdc
-# mount -t ext2 /dev/vdc /vdc
-# mkdir /vdc/a
-# cd /vdc/a
-# seq 1 210000  | xargs -n 1 fallocate -l 1m
-# seq 1 2 210000  | xargs /bin/rm
-# mkdir /vdc/b
-# cd /vdc/b
-# seq 1 103 | xargs -n 1 fallocate -l 1g
-# cd /
-# umount /vdc
-# mount -t ext4 -o commit=10000 /dev/vdc /vdc
-# rm -rf /vdc/b
+The ones in the 9a-100 obviously don't.
+> 
+> xen_set_identity_and_release() is careful to set the largest possible
+> range as 1:1 and the comments at the top of p2m.c suggest the mid
+> entries will be made to point to p2m_identity already.
 
-For future reference, there are a couple of things that are of
-interest to ext4 developers when trying to create repro's:
+Right, and that is still true - for cases where the are no mid entries
+(so P2M[3][400] for example can point in the middle of the MMIO region).
 
-1)  The use of mounting with ext2 to speed up the setup.
+But if you boot without dom0_mem=max, that region (P2M[3][400]) would at
+the start be backed by the &mfn_list, so when we call 1-1 on that region
+it ends up sticking in the &mfn_list a whole bunch of IDENTITY_FRAME(pfn).
 
-2)  The first two "seq ... | xargs ..." commands to create a very
-fragmented file system.
+This patch harvests those chunks of &mfn_list that have that and re-uses them.
 
-3) Using a 1k block size file system to stress the extent tree code
-and htree directory (since its easier to make larger tree structure).
+And without any dom0_mem= I seem to at most call extend_bkr twice (to
+allocate the top leafs P2M[4] and P2M[5]). Hm, to be on a safe side I should
+probably do 'reserve_brk(p2m_popualated, 3 * PAGE_SIZE)' in case we
+end up transplanting 3GB of PFNs in in the P2M[4], P2M[5] and P2M[6] nodes.
 
-4)  The use of the mount option commit=10000 to test what happens when
-the journal is full (without using a nice, fast device such as RAID array
-or without burning write cycles on an expensive flash device.)
-
-						- Ted
+> 
+> David
+> 
+> >     This also means we can remove git commit:
+> >     5bc6f9888db5739abfa0cae279b4b442e4db8049
+> >     xen/p2m: Reserve 8MB of _brk space for P2M leafs when populating back
+> >     which tried to fix this.
+> >     
+> >     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > 
+> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> > index 29244d0..b6b7c10 100644
+> > --- a/arch/x86/xen/p2m.c
+> > +++ b/arch/x86/xen/p2m.c
+> > @@ -194,11 +194,6 @@ RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID
+> >   * boundary violation will require three middle nodes. */
+> >  RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
+> >  
+> > -/* When we populate back during bootup, the amount of pages can vary. The
+> > - * max we have is seen is 395979, but that does not mean it can't be more.
+> > - * Some machines can have 3GB I/O holes so lets reserve for that. */
+> > -RESERVE_BRK(p2m_populated, 786432 * sizeof(unsigned long));
+> > -
+> >  static inline unsigned p2m_top_index(unsigned long pfn)
+> >  {
+> >  	BUG_ON(pfn >= MAX_P2M_PFN);
+> > @@ -575,12 +570,99 @@ static bool __init early_alloc_p2m(unsigned long pfn)
+> >  	}
+> >  	return true;
+> >  }
+> > +
+> > +/*
+> > + * Skim over the P2M tree looking at pages that are either filled with
+> > + * INVALID_P2M_ENTRY or with 1:1 PFNs. If found, re-use that page and
+> > + * replace the P2M leaf with a p2m_missing or p2m_identity.
+> > + * Stick the old page in the new P2M tree location.
+> > + */
+> > +bool __init early_can_reuse_p2m_middle(unsigned long set_pfn, unsigned long set_mfn)
+> > +{
+> > +	unsigned topidx;
+> > +	unsigned mididx;
+> > +	unsigned ident_pfns;
+> > +	unsigned inv_pfns;
+> > +	unsigned long *p2m;
+> > +	unsigned long *mid_mfn_p;
+> > +	unsigned idx;
+> > +	unsigned long pfn;
+> > +
+> > +	/* We only look when this entails a P2M middle layer */
+> > +	if (p2m_index(set_pfn))
+> > +		return false;
+> > +
+> > +	for (pfn = 0; pfn <= MAX_DOMAIN_PAGES; pfn += P2M_PER_PAGE) {
+> > +		topidx = p2m_top_index(pfn);
+> > +
+> > +		if (!p2m_top[topidx])
+> > +			continue;
+> > +
+> > +		if (p2m_top[topidx] == p2m_mid_missing)
+> > +			continue;
+> > +
+> > +		mididx = p2m_mid_index(pfn);
+> > +		p2m = p2m_top[topidx][mididx];
+> > +		if (!p2m)
+> > +			continue;
+> > +
+> > +		if ((p2m == p2m_missing) || (p2m == p2m_identity))
+> > +			continue;
+> > +
+> > +		if ((unsigned long)p2m == INVALID_P2M_ENTRY)
+> > +			continue;
+> > +
+> > +		ident_pfns = 0;
+> > +		inv_pfns = 0;
+> > +		for (idx = 0; idx < P2M_PER_PAGE; idx++) {
+> > +			/* IDENTITY_PFNs are 1:1 */
+> > +			if (p2m[idx] == IDENTITY_FRAME(pfn + idx))
+> > +				ident_pfns++;
+> > +			else if (p2m[idx] == INVALID_P2M_ENTRY)
+> > +				inv_pfns++;
+> > +			else
+> > +				break;
+> > +		}
+> > +		if ((ident_pfns == P2M_PER_PAGE) || (inv_pfns == P2M_PER_PAGE))
+> > +			goto found;
+> > +	}
+> > +	return false;
+> > +found:
+> > +	/* Found one, replace old with p2m_identity or p2m_missing */
+> > +	p2m_top[topidx][mididx] = (ident_pfns ? p2m_identity : p2m_missing);
+> > +	/* And the other for save/restore.. */
+> > +	mid_mfn_p = p2m_top_mfn_p[topidx];
+> > +	/* NOTE: Even if it is a p2m_identity it should still be point to
+> > +	 * a page filled with INVALID_P2M_ENTRY entries. */
+> > +	mid_mfn_p[mididx] = virt_to_mfn(p2m_missing);
+> > +
+> > +	/* Reset where we want to stick the old page in. */
+> > +	topidx = p2m_top_index(set_pfn);
+> > +	mididx = p2m_mid_index(set_pfn);
+> > +
+> > +	/* This shouldn't happen */
+> > +	if (WARN_ON(p2m_top[topidx] == p2m_mid_missing))
+> > +		early_alloc_p2m(set_pfn);
+> > +
+> > +	if (WARN_ON(p2m_top[topidx][mididx] != p2m_missing))
+> > +		return false;
+> > +
+> > +	p2m_init(p2m);
+> > +	p2m_top[topidx][mididx] = p2m;
+> > +	mid_mfn_p = p2m_top_mfn_p[topidx];
+> > +	mid_mfn_p[mididx] = virt_to_mfn(p2m);
+> > +
+> > +	return true;
+> > +}
+> >  bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+> >  {
+> >  	if (unlikely(!__set_phys_to_machine(pfn, mfn)))  {
+> >  		if (!early_alloc_p2m(pfn))
+> >  			return false;
+> >  
+> > +		if (early_can_reuse_p2m_middle(pfn, mfn))
+> > +			return __set_phys_to_machine(pfn, mfn);
+> > +
+> >  		if (!early_alloc_p2m_middle(pfn, false /* boundary crossover OK!*/))
+> >  			return false;
+> >  
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
