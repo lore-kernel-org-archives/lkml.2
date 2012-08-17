@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab2HQHab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 03:30:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:40970 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754936Ab2HQHaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 03:30:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,783,1336374000"; 
-   d="asc'?scan'208";a="209707572"
-Message-ID: <1345188896.27859.4.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
- parameter
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Date: Fri, 17 Aug 2012 10:34:56 +0300
-In-Reply-To: <CACQ1gAhRYSYehym1qA_Oj71KU4fB2+1MEUGi5Wfnb+E=t3jcxA@mail.gmail.com>
-References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
-	 <1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
-	 <20120816115713.726da8f2@pixies.home.jungo.com>
-	 <1345123718.3393.235.camel@sauron.fi.intel.com>
-	 <20120816165027.6520c4f4@pixies.home.jungo.com>
-	 <CACQ1gAhRYSYehym1qA_Oj71KU4fB2+1MEUGi5Wfnb+E=t3jcxA@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-NkLWXl0n8sfCP++pTx84"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1030696Ab2HQHbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 03:31:38 -0400
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:52059 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964832Ab2HQHbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 03:31:35 -0400
+Message-ID: <502DF357.8090205@hardwarefreak.com>
+Date: Fri, 17 Aug 2012 02:31:35 -0500
+From: Stan Hoeppner <stan@hardwarefreak.com>
+Reply-To: stan@hardwarefreak.com
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Miquel van Smoorenburg <mikevs@xs4all.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: O_DIRECT to md raid 6 is slow
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com> <502D6B0A.6090508@xs4all.net>
+In-Reply-To: <502D6B0A.6090508@xs4all.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/16/2012 4:50 PM, Miquel van Smoorenburg wrote:
+> On 16-08-12 1:05 PM, Stan Hoeppner wrote:
+>> On 8/15/2012 6:07 PM, Miquel van Smoorenburg wrote:
+>>> Ehrm no. If you modify, say, a 4K block on a RAID5 array, you just have
+>>> to read that 4K block, and the corresponding 4K block on the
+>>> parity drive, recalculate parity, and write back 4K of data and 4K
+>>> of parity. (read|read) modify (write|write). You do not have to
+>>> do I/O in chunksize, ehm, chunks, and you do not have to rmw all disks.
+>>
+>> See:  http://www.spinics.net/lists/xfs/msg12627.html
+>>
+>> Dave usually knows what he's talking about, and I didn't see Neil nor
+>> anyone else correcting him on his description of md RMW behavior.
+> 
+> Well he's wrong, or you're interpreting it incorrectly.
+> 
+> I did a simple test:
+> 
+> * created a 1G partition on 3 seperate disks
+> * created a md raid5 array with 512K chunksize:
+>   mdadm -C /dev/md0 -l 5 -c $((1024*512)) -n 3 /dev/sdb1 /dev/sdc1
+> /dev/sdd1
+> * ran disk monitoring using 'iostat -k 5 /dev/sdb1 /dev/sdc1 /dev/sdd1'
+> * wrote a single 4K block:
+>   dd if=/dev/zero bs=4K count=1 oflag=direct seek=30 of=/dev/md0
+> 
+> Output from iostat over the period in which the 4K write was done. Look
+> at kB read and kB written:
+> 
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sdb1              0.60         0.00         1.60          0          8
+> sdc1              0.60         0.80         0.80          4          4
+> sdd1              0.60         0.00         1.60          0          8
+> 
+> As you can see, a single 4K read, and a few writes. You see a few blocks
+> more written that you'd expect because the superblock is updated too.
 
---=-NkLWXl0n8sfCP++pTx84
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I'm no dd expert, but this looks like you're simply writing a 4KB block
+to a new stripe, using an offset, but not to an existing stripe, as the
+array is in a virgin state.  So it doesn't appear this test is going to
+trigger RMW.  Don't you need now need to do another write in the same
+stripe to to trigger RMW?  Maybe I'm just reading this wrong.
 
-On Thu, 2012-08-16 at 16:30 +0200, Richard Genoud wrote:
-> > (there's one platform known to do so in its defconfig, that's
-> > sam9_l9260_defconfig, which uses 3% instead of the "standard" 2%).
-> I found the board:
-> https://www.olimex.com/dev/sam9-L9260.html
-> and the nand datasheet:
-> http://www.rockbox.org/wiki/pub/Main/LyrePrototype/K9xxG08UXM.pdf
-> page 11, we can see that the max_bad_bebper1024 is 25 (100 for 4096)
-
-OK, thanks for the research!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-NkLWXl0n8sfCP++pTx84
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQLfQgAAoJECmIfjd9wqK0k0sP/2f50N4v+cRPDIM8lvIsqZrD
-Dx3YZMzhp8QrBLeky3XvaVNwfj6r702duhhbIHUpBrhCoTQ5q5czZogw6s3qLlt1
-ji2aG+j/psO8LtW8iMe3xvdmaQdNPGwLmDf0sWnpX8Pjn9/wDr9aTMervYiyjVsU
-7qEpdB2SXICGf1U8BvSY+ITHmtmgUG/L60g5y1xgKIGrDC1xo4RBy3/JN+/IXOZP
-zjuYH13aD3WwuBthyHRSvJWOOzmNBTPI6v7CszmXqzjZPzbfaAXPvu8FBuwtucVb
-XcJCu+Dp7VMYzMwedEFe1RCoTaUMc+4FUPgJ4FSMPHWqrrBxSdKSSd+aCE0v/r/b
-6GDOHgMMXvEu7pBHd5d0gnhL6wniIl1egZSTMN/MvngZCF6lJefYmvop9U2w6Ofp
-sHMJauJC7vguOSroZaoGX3TO4sKncbmQfQssJeAchM4Y6dXD0Hbdi5soBm1N/yJR
-K4OyymmIlyTm8wZ0Wtip6nvSJ2q4F7XyiN4Fu5wdX/9lvo5h/KBZLoJ91lYeg4+h
-bfXh9aFwne8xErLm8QoFkkWbu56VTvoO0fTXouFOxmeDm3fpm4Ozl4lSkwbSXzLo
-C1RbvxJyqMPoW86Dd9Tm5NhFee725kMFFP8syzDDZ+I6lOMUbitIQMjQ3GAhJKNH
-p4D0qfEoHoEojm7sl1wz
-=AH0o
------END PGP SIGNATURE-----
-
---=-NkLWXl0n8sfCP++pTx84--
+-- 
+Stan
 
