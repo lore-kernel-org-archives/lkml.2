@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab2HQOET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 10:04:19 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:46489 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756066Ab2HQOEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 10:04:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345211714.3708.24.camel@gandalf.local.home>
-References: <1345043907-18299-1-git-send-email-elezegarcia@gmail.com>
-	<1345151883.3708.7.camel@gandalf.local.home>
-	<CALF0-+WVoJ2NTPm7xZc0rr8-ZZ6an1BsN0SLtJvxzFd3CxA6bA@mail.gmail.com>
-	<1345211714.3708.24.camel@gandalf.local.home>
-Date: Fri, 17 Aug 2012 11:04:07 -0300
-Message-ID: <CALF0-+VbJmAr0j-84sZM3Di2Ar-qAOn_SFuwW1sbd_-1hoojNg@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/1] trace: Move trace event enable from fs_initcall
- to early_initcall
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        tim.bird@am.sony.com, lizefan@huawei.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756396Ab2HQOGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 10:06:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13901 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753054Ab2HQOF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 10:05:59 -0400
+Subject: [GIT PULL] C6X atomic64 support
+From: Mark Salter <msalter@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 17 Aug 2012 10:05:56 -0400
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1345212358.2750.70.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 10:55 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2012-08-17 at 08:01 -0300, Ezequiel Garcia wrote:
->
->> Regarding the 'complete solution': to be able to capture events from
->> the very beggining...
->> Have you thought about this?
->> Could you give me a hint on how could I implement it?
->
-> How far in the "beginning"? Before memory is set up?
+The following changes since commit 28a33cbc24e4256c143dce96c7d93bf423229f92:
 
-Yes.
+  Linux 3.5 (2012-07-21 13:58:29 -0700)
 
-> I wouldn't do that.
+are available in the git repository at:
 
-Yeah, perhaps it sounds crazy. It makes some sense for kmem events, though.
+  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git tags/for-linus
 
-> I have in the past (set up before memory was finished being
-> initialized), but things have changed since then.
->
-> One thing that we could do for those that want really early tracing, is
-> to add a config option to add a static temporary ring buffer, that gets
+for you to fetch changes up to 01ddd9a809b9a95df097ff1b5565f806e681a606:
 
-Yes, something like this would be ideal. How would this ring buffer be
-allocated?
-Perhaps as static and __initdata?
-This way it would be released afterwards, right?
+  C6X: select GENERIC_ATOMIC64 (2012-08-15 12:27:00 -0400)
 
-> copied into the default ring buffer after memory is set up. That may be
-> the easiest way.
->
-> Once memory is set up, the ring buffer can be allocated and events can
-> be traced, but the ring buffer needs to be set up first. All it would
-> take is some calls in init/main.c start_kernel() to the initialization.
->
+----------------------------------------------------------------
+Enable atomic64 ops in C6X
 
-Note that my main concern is on trace_events (kmem events to be precise).
-However this are registered through tracepoints and in turn this tracepoints
-depend on kmalloc and friends. So, right now is a chicken-egg problem.
+  - define L1_CACHE_SHIFT
+  - select GENERIC_ATOMIC64
 
-Thanks,
-Ezequiel.
+----------------------------------------------------------------
+Mark Salter (2):
+      C6X: add Lx_CACHE_SHIFT defines
+      C6X: select GENERIC_ATOMIC64
+
+ arch/c6x/Kconfig             |    1 +
+ arch/c6x/include/asm/cache.h |   16 +++++++++++-----
+ 2 files changed, 12 insertions(+), 5 deletions(-)
+
+
