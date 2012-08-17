@@ -1,116 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab2HQFhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 01:37:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35354 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab2HQFhx (ORCPT
+	id S1753412Ab2HQFka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 01:40:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46045 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab2HQFk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 01:37:53 -0400
-Message-ID: <502DD889.3040306@ti.com>
-Date: Fri, 17 Aug 2012 11:07:13 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.lad@ti.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH] media: davinci: vpif: add check for NULL handler
-References: <1345125720-24059-1-git-send-email-prabhakar.lad@ti.com> <1435592.88fOxbvhY7@avalon> <502DD4C9.2030105@ti.com>
-In-Reply-To: <502DD4C9.2030105@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Aug 2012 01:40:29 -0400
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com, rpurdie@rpsys.net
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [PATCH 1/2] mfd: max8925: use register offset as REG in backlight
+Date: Fri, 17 Aug 2012 13:41:01 +0800
+Message-Id: <1345182062-718-1-git-send-email-haojian.zhuang@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/17/2012 10:51 AM, Prabhakar Lad wrote:
-> Hi Laurent,
-> 
-> Thanks for the review.
-> 
-> On Thursday 16 August 2012 08:43 PM, Laurent Pinchart wrote:
->> Hi Prabhakar,
->>
->> Thanks for the patch.
->>
->> On Thursday 16 August 2012 19:32:00 Prabhakar Lad wrote:
->>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>>
->>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->>> Cc: Hans Verkuil <hans.verkuil@cisco.com>
->>> ---
->>>  drivers/media/video/davinci/vpif_capture.c |   12 +++++++-----
->>>  drivers/media/video/davinci/vpif_display.c |   14 ++++++++------
->>>  2 files changed, 15 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/drivers/media/video/davinci/vpif_capture.c
->>> b/drivers/media/video/davinci/vpif_capture.c index 266025e..a87b7a5 100644
->>> --- a/drivers/media/video/davinci/vpif_capture.c
->>> +++ b/drivers/media/video/davinci/vpif_capture.c
->>> @@ -311,12 +311,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
->>> unsigned int count) }
->>>
->>>  	/* configure 1 or 2 channel mode */
->>> -	ret = vpif_config_data->setup_input_channel_mode
->>> -					(vpif->std_info.ycmux_mode);
->>> +	if (vpif_config_data->setup_input_channel_mode) {
->>> +		ret = vpif_config_data->setup_input_channel_mode
->>> +						(vpif->std_info.ycmux_mode);
->>>
->>> -	if (ret < 0) {
->>> -		vpif_dbg(1, debug, "can't set vpif channel mode\n");
->>> -		return ret;
->>> +		if (ret < 0) {
->>> +			vpif_dbg(1, debug, "can't set vpif channel mode\n");
->>> +			return ret;
->>> +		}
->>
->> This change looks good to me. However, note that you will need to get rid of 
->> board code callbacks at some point to implement device tree support. It would 
->> be worth thinking about how to do so now.
->>
-> Currently VPIF driver is only used by dm646x, and the handlers for this
-> in the the board code are not null. This patch is intended for da850
-> where this handlers will be null.
-> 
->>>  	}
->>>
->>>  	/* Call vpif_set_params function to set the parameters and addresses */
->>> diff --git a/drivers/media/video/davinci/vpif_display.c
->>> b/drivers/media/video/davinci/vpif_display.c index e129c98..1e35f92 100644
->>> --- a/drivers/media/video/davinci/vpif_display.c
->>> +++ b/drivers/media/video/davinci/vpif_display.c
->>> @@ -280,12 +280,14 @@ static int vpif_start_streaming(struct vb2_queue *vq,
->>> unsigned int count) }
->>>
->>>  	/* clock settings */
->>> -	ret =
->>> -	    vpif_config_data->set_clock(ch->vpifparams.std_info.ycmux_mode,
->>> -					ch->vpifparams.std_info.hd_sd);
->>> -	if (ret < 0) {
->>> -		vpif_err("can't set clock\n");
->>> -		return ret;
->>> +	if (vpif_config_data->set_clock) {
->>
->> Does the DaVinci platform use the common clock framework ? If so, a better fix 
->> for this would be to pass a clock name through platform data instead of using 
->> a callback function.
->>
-> Currently DaVinci is not using the common clock framework.
-> 
-> Can you ACK this patch?
+Remove the register offset definition. All these register offset
+are transfered as IORESOURCE_REG resources.
 
-Yes, DaVinci has not migrated to common clock framework (yet). However,
-even without that it should be possible to use clock API in driver code.
-Using a callback to enable clocks or even passing the clock name from
-platform data would be bypassing an existing framework. Clock name
-should be IP specific, so it should be possible to use that in driver.
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+---
+ drivers/mfd/max8925-core.c           |   31 ++++++-------
+ drivers/video/backlight/max8925_bl.c |   79 ++++++++++++++++++----------------
+ 2 files changed, 55 insertions(+), 55 deletions(-)
 
-Thanks,
-Sekhar
+diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
+index 08a5723..65c6a1f 100644
+--- a/drivers/mfd/max8925-core.c
++++ b/drivers/mfd/max8925-core.c
+@@ -18,20 +18,16 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/max8925.h>
+ 
+-static struct resource backlight_resources[] = {
+-	{
+-		.name	= "max8925-backlight",
+-		.start	= MAX8925_WLED_MODE_CNTL,
+-		.end	= MAX8925_WLED_CNTL,
+-		.flags	= IORESOURCE_REG,
+-	},
++static struct resource bk_resources[] = {
++	{ 0x84, 0x84, "mode control", IORESOURCE_REG, },
++	{ 0x85, 0x85, "control",      IORESOURCE_REG, },
+ };
+ 
+-static struct mfd_cell backlight_devs[] = {
++static struct mfd_cell bk_devs[] = {
+ 	{
+ 		.name		= "max8925-backlight",
+-		.num_resources	= 1,
+-		.resources	= &backlight_resources[0],
++		.num_resources	= ARRAY_SIZE(bk_resources),
++		.resources	= &bk_resources[0],
+ 		.id		= -1,
+ 	},
+ };
+@@ -623,13 +619,14 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
+ 	}
+ 
+ 	if (pdata && pdata->backlight) {
+-		ret = mfd_add_devices(chip->dev, 0, &backlight_devs[0],
+-				      ARRAY_SIZE(backlight_devs),
+-				      &backlight_resources[0], 0);
+-		if (ret < 0) {
+-			dev_err(chip->dev, "Failed to add backlight subdev\n");
+-			goto out_dev;
+-		}
++		bk_devs[0].platform_data = &pdata->backlight;
++		bk_devs[0].pdata_size = sizeof(struct max8925_backlight_pdata);
++	}
++	ret = mfd_add_devices(chip->dev, 0, bk_devs, ARRAY_SIZE(bk_devs),
++			      NULL, 0);
++	if (ret < 0) {
++		dev_err(chip->dev, "Failed to add backlight subdev\n");
++		goto out_dev;
+ 	}
+ 
+ 	if (pdata && pdata->power) {
+diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+index 996dadf..f72ba54 100644
+--- a/drivers/video/backlight/max8925_bl.c
++++ b/drivers/video/backlight/max8925_bl.c
+@@ -27,7 +27,9 @@
+ struct max8925_backlight_data {
+ 	struct max8925_chip	*chip;
+ 
+-	int		current_brightness;
++	int	current_brightness;
++	int	reg_mode_cntl;
++	int	reg_cntl;
+ };
+ 
+ static int max8925_backlight_set(struct backlight_device *bl, int brightness)
+@@ -42,16 +44,16 @@ static int max8925_backlight_set(struct backlight_device *bl, int brightness)
+ 	else
+ 		value = brightness;
+ 
+-	ret = max8925_reg_write(chip->i2c, MAX8925_WLED_CNTL, value);
++	ret = max8925_reg_write(chip->i2c, data->reg_cntl, value);
+ 	if (ret < 0)
+ 		goto out;
+ 
+ 	if (!data->current_brightness && brightness)
+ 		/* enable WLED output */
+-		ret = max8925_set_bits(chip->i2c, MAX8925_WLED_MODE_CNTL, 1, 1);
++		ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 1, 1);
+ 	else if (!brightness)
+ 		/* disable WLED output */
+-		ret = max8925_set_bits(chip->i2c, MAX8925_WLED_MODE_CNTL, 1, 0);
++		ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 1, 0);
+ 	if (ret < 0)
+ 		goto out;
+ 	dev_dbg(chip->dev, "set brightness %d\n", value);
+@@ -85,7 +87,7 @@ static int max8925_backlight_get_brightness(struct backlight_device *bl)
+ 	struct max8925_chip *chip = data->chip;
+ 	int ret;
+ 
+-	ret = max8925_reg_read(chip->i2c, MAX8925_WLED_CNTL);
++	ret = max8925_reg_read(chip->i2c, data->reg_cntl);
+ 	if (ret < 0)
+ 		return -EINVAL;
+ 	data->current_brightness = ret;
+@@ -102,69 +104,70 @@ static const struct backlight_ops max8925_backlight_ops = {
+ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+-	struct max8925_platform_data *max8925_pdata;
+-	struct max8925_backlight_pdata *pdata = NULL;
++	struct max8925_backlight_pdata *pdata = pdev->dev.platform_data;
+ 	struct max8925_backlight_data *data;
+ 	struct backlight_device *bl;
+ 	struct backlight_properties props;
+ 	struct resource *res;
+-	char name[MAX8925_NAME_SIZE];
+ 	unsigned char value;
+-	int ret;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "No I/O resource!\n");
+-		return -EINVAL;
+-	}
+-
+-	if (pdev->dev.parent->platform_data) {
+-		max8925_pdata = pdev->dev.parent->platform_data;
+-		pdata = max8925_pdata->backlight;
+-	}
+-
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "platform data isn't assigned to "
+-			"backlight\n");
+-		return -EINVAL;
+-	}
++	int ret = 0;
+ 
+ 	data = devm_kzalloc(&pdev->dev, sizeof(struct max8925_backlight_data),
+ 			    GFP_KERNEL);
+ 	if (data == NULL)
+ 		return -ENOMEM;
+-	strncpy(name, res->name, MAX8925_NAME_SIZE);
++
++	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "No REG resource for mode control!\n");
++		ret = -ENXIO;
++		goto out;
++	}
++	data->reg_mode_cntl = res->start;
++	res = platform_get_resource(pdev, IORESOURCE_REG, 1);
++	if (!res) {
++		dev_err(&pdev->dev, "No REG resource for control!\n");
++		ret = -ENXIO;
++		goto out;
++	}
++	data->reg_cntl = res->start;
++
+ 	data->chip = chip;
+ 	data->current_brightness = 0;
+ 
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+ 	props.type = BACKLIGHT_RAW;
+ 	props.max_brightness = MAX_BRIGHTNESS;
+-	bl = backlight_device_register(name, &pdev->dev, data,
++	bl = backlight_device_register("max8925-backlight", &pdev->dev, data,
+ 					&max8925_backlight_ops, &props);
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "failed to register backlight\n");
+-		return PTR_ERR(bl);
++		ret = PTR_ERR(bl);
++		goto out;
+ 	}
+ 	bl->props.brightness = MAX_BRIGHTNESS;
+ 
+ 	platform_set_drvdata(pdev, bl);
+ 
+ 	value = 0;
+-	if (pdata->lxw_scl)
+-		value |= (1 << 7);
+-	if (pdata->lxw_freq)
+-		value |= (LWX_FREQ(pdata->lxw_freq) << 4);
+-	if (pdata->dual_string)
+-		value |= (1 << 1);
+-	ret = max8925_set_bits(chip->i2c, MAX8925_WLED_MODE_CNTL, 0xfe, value);
++	if (pdata) {
++		if (pdata->lxw_scl)
++			value |= (1 << 7);
++		if (pdata->lxw_freq)
++			value |= (LWX_FREQ(pdata->lxw_freq) << 4);
++		if (pdata->dual_string)
++			value |= (1 << 1);
++	}
++	ret = max8925_set_bits(chip->i2c, data->reg_mode_cntl, 0xfe, value);
+ 	if (ret < 0)
+-		goto out;
++		goto out_brt;
+ 
+ 	backlight_update_status(bl);
+ 	return 0;
+-out:
++out_brt:
+ 	backlight_device_unregister(bl);
++out:
++	devm_kfree(&pdev->dev, data);
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
+
