@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab2HQKKP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 06:10:15 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:34321 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab2HQKKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 06:10:11 -0400
-Message-ID: <502E17C4.7060204@parallels.com>
-Date: Fri, 17 Aug 2012 14:07:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1757434Ab2HQKKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 06:10:38 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:41249 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757363Ab2HQKKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 06:10:34 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        "David Rientjes" <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Pekka Enberg" <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
- children
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <20120817090005.GC18600@dhcp22.suse.cz> <502E0BC3.8090204@parallels.com> <20120817093504.GE18600@dhcp22.suse.cz>
-In-Reply-To: <20120817093504.GE18600@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120817100533.GE24389@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-3-git-send-email-catalin.marinas@arm.com>
+ <502E11B6.4020104@ti.com> <20120817100533.GE24389@arm.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Fri, 17 Aug 2012 15:40:12 +0530
+Message-ID: <CAMQu2gzz0j+SnxCY0u3H__H4U-Lor_xV-eyiMBSohCMngbkD2w@mail.gmail.com>
+Subject: Re: [PATCH v2 02/31] arm64: Kernel booting and initialisation
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 01:35 PM, Michal Hocko wrote:
->>> Above you said "Once enabled, can't be disabled." and now you can
->>> > > disable it? Say you are a leaf group with non accounted parents. This
->>> > > will clear the flag and so no further accounting is done. Shouldn't
->>> > > unlimited mean that we will never reach the limit? Or am I missing
->>> > > something?
->>> > >
->> > 
->> > You are missing something, and maybe I should be more clear about that.
->> > The static branches can't be disabled (it is only safe to disable them
->> > from disarm_static_branches(), when all references are gone). Note that
->> > when unlimited, we flip bits, do a transversal, but there is no mention
->> > to the static branch.
-> My little brain still doesn't get this. I wasn't concerned about static
-> branches. I was worried about memcg_can_account_kmem which will return
-> false now, doesn't it.
-> 
+On Fri, Aug 17, 2012 at 3:35 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+>
+> On Fri, Aug 17, 2012 at 10:41:10AM +0100, Santosh Shilimkar wrote:
+> > On Tuesday 14 August 2012 11:22 PM, Catalin Marinas wrote:
+> > > +The boot loader is expected to enter the kernel on each CPU in the
+> > > +following manner:
+> > > +
+> > > +- The primary CPU must jump directly to the first instruction of the
+> > > +  kernel image.  The device tree blob passed by this CPU must contain
+> > > +  for each CPU node:
+> > > +
+> > > +    1. An 'enable-method' property. Currently, the only supported
+> > > value
+> > > +       for this field is the string "spin-table".
+> > > +
+> > > +    2. A 'cpu-release-addr' property identifying a 64-bit,
+> > > +       zero-initialised memory location.
+> > > +
+> > > +  It is expected that the bootloader will generate these device tree
+> > > +  properties and insert them into the blob prior to kernel entry.
+> > > +
+> > > +- Any secondary CPUs must spin outside of the kernel in a reserved
+> > > area
+> > > +  of memory (communicated to the kernel by a /memreserve/ region in
+> > > the
+> > > +  device tree) polling their cpu-release-addr location, which must be
+> > > +  contained in the reserved region.  A wfe instruction may be
+> > > inserted
+> > > +  to reduce the overhead of the busy-loop and a sev will be issued by
+> > > +  the primary CPU.  When a read of the location pointed to by the
+> > > +  cpu-release-addr returns a non-zero value, the CPU must jump
+> > > directly
+> > > +  to this value.
+> >
+> > So you expect all the secondary CPUs to be in wakeup state and probably
+> > looping in WFE for a signal from kernel to boot. There is one issue
+> > with this requirement though. For large CPU system, you need to reset
+> > all the CPUs and hit this waiting loop. This will lead to large inrush
+> > current need at bootup which may be not be supported. To avoid this
+> > issue, secondary CPUs are kept in OFF state and then they are woken
+> > up from kernel one by one whenever they need to be brought into the
+> > system. This requirement should be considered.
+>
+> I agree, this part will be extended. That's one method that we currently
+> support and suitable to the model.
+>
+> The better method is the SMC standardisation that Charles Garcia-Tobin
+> has written (to be made available soon) and was presented at the last
+> Linaro Connect in HK. Given that the CPU power is usually controlled by
+> the secure side, we'll ask for an SMC to be issued for waking up
+> secondary CPUs, so it's up to the secure firmware to write the correct
+> hardware registers.
+>
+Thanks for the information. SMC standardization would indeed help
+to overcome some of these. Will wait for that information before
+next set of questions.
 
-Yes, it will. If I got you right, you are concerned because I said that
-can't happen. But it will.
+> > > --- /dev/null
+> > > +++ b/arch/arm64/kernel/head.S
+> > [..]
+> > > +   /*
+> > > +    * DO NOT MODIFY. Image header expected by Linux boot-loaders.
+> > > +    */
+> > > +   b       stext                           // branch to kernel start,
+> > > magic
+> > > +   .long   0                               // reserved
+> > > +   .quad   TEXT_OFFSET                     // Image load offset from
+> > > start of RAM
+> > > +   .quad   0                               // reserved
+> > > +   .quad   0                               // reserved
+> > > +
+> >
+> > Minor nit. Avoid C++ commenting style "//"  here and rest of the patch.
+>
+> That's not C++ comment style, it's the *official* assembly comment style
+> for AArch64 ('@' is no longer supported).
+>
+Ok. Thanks for clarifying.
 
-But I never said that can't happen. I said (ok, I meant) the static
-branches can't be disabled.
-
+Regards
+Santosh
