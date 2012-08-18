@@ -1,79 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934218Ab2HWSor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:44:47 -0400
-Received: from noserose.net ([66.220.18.76]:42457 "HELO noserose.net"
+	id S934248Ab2HWSpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:45:16 -0400
+Received: from noserose.net ([66.220.18.76]:41453 "HELO noserose.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S934166Ab2HWSoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934185Ab2HWSoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Aug 2012 14:44:44 -0400
-Message-Id: <cover.1345743800.git.ecashin@coraid.com>
+Message-Id: <7c895879cfd1e15dd76c2469b417b48d0462d7df.1345743801.git.ecashin@coraid.com>
+In-Reply-To: <cover.1345743800.git.ecashin@coraid.com>
+References: <cover.1345743800.git.ecashin@coraid.com>
 From: Ed Cashin <ecashin@coraid.com>
-Date: Thu, 23 Aug 2012 13:43:20 -0400
-Subject: [PATCH 00/14] aoe driver v49 performance and usability improvements
+Date: Fri, 17 Aug 2012 21:18:37 -0400
+Subject: [PATCH 01/14] aoe: for performance support larger packet payloads
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches go a long way to updating the in-kernel aoe driver with
-the changes that have been in the coraid.com-distributed version,
-bringing it from (aoe internal) version 47 to version 49.  They apply
-to commit 23dcfa61bac244e1 of the mainline git tree.
+This patch adds the ability to work with large packets composed of a
+number of segments, using the scatter gather feature of the block
+layer (biovecs) and the network layer (skb frag array).  The
+motivation is the performance gained by using a packet data payload
+greater than a page size and by using the network card's scatter
+gather feature.
 
-These updates have been too long in coming, but there is reason to be
-hopeful that once these changes are applied, there is now less of a
-chance that such a large update gap will occur again for a couple
-reasons.
+Users of the out-of-tree aoe driver already had these changes, but
+since early 2011, they have complained of increased memory utilization
+and higher CPU utilization during heavy writes.[1] The commit below
+appears related, as it disables scatter gather on non-IP protocols
+inside the harmonize_features function, even when the NIC supports sg.
 
-For one, the changes between 47 and 49 were originally produced in a
-form that required a large amount of work before they could be
-presented to the list in a form that complies with
-Documenation/Submit*.  I have done my best to disentangle the changes
-and to clean them up.  Subsequent changes are more amenable to
-submission to the LKML and should be easier to prepare soon.  Future
-changes from Coraid are expected to be similarly amenable to LKML
-submission because of changes we have made for the better in Coraid's
-development practices in the past few years.
+  commit f01a5236bd4b140198fbcc550f085e8361fd73fa
+  Author: Jesse Gross <jesse@nicira.com>
+  Date:   Sun Jan 9 06:23:31 2011 +0000
 
-Second, the users of the aoe driver increasingly demand that the
-in-kernel driver have the same high performance and advanced features
-as the one distributed at coraid.com.
+      net offloading: Generalize netif_get_vlan_features().
 
-The plan is to follow up with more changes once this patchset is
-merged, until the coraid.com-distributed driver and the in-kernel
-drivers are as close as possible.  Some bugfixes from have been
-backported to this patchset, though, from post-version-49 development.
-The important thing, though, is to get things started with a minimal
-and progressive first patchset.
+With that regression in place, transmits always linearize sg AoE
+packets, but in-kernel users did not have this patch.  Before 2.6.38,
+though, these changes were working to allow sg to increase
+performance.
 
-Ed L. Cashin (14):
-  aoe: for performance support larger packet payloads
-  aoe: kernel thread handles I/O completions for simple locking
-  aoe: become I/O request queue handler for increased user control
-  aoe: use a kernel thread for transmissions
-  aoe: use packets that work with the smallest-MTU local interface
-  aoe: failover remote interface based on aoe_deadsecs parameter
-  aoe: do revalidation steps in order
-  aoe: disallow unsupported AoE minor addresses
-  aoe: associate frames with the AoE storage target
-  aoe: increase net_device reference count while using it
-  aoe: remove unused code and add cosmetic improvements
-  aoe: update internal version number to 49
-  aoe: update copyright year in touched files
-  aoe: update documentation with new URL and VM settings reference
+1. http://www.spinics.net/lists/linux-mm/msg15184.html
 
- Documentation/aoe/aoe.txt   |    9 +-
- MAINTAINERS                 |    2 +-
- drivers/block/aoe/aoe.h     |   85 ++--
- drivers/block/aoe/aoeblk.c  |   89 +---
- drivers/block/aoe/aoechr.c  |   11 +-
- drivers/block/aoe/aoecmd.c  | 1227 ++++++++++++++++++++++++++++---------------
- drivers/block/aoe/aoedev.c  |  161 ++++--
- drivers/block/aoe/aoemain.c |   10 +-
- drivers/block/aoe/aoenet.c  |   61 ++-
- 9 files changed, 1084 insertions(+), 571 deletions(-)
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ drivers/block/aoe/aoe.h    |    2 +
+ drivers/block/aoe/aoeblk.c |    3 +
+ drivers/block/aoe/aoecmd.c |  138 ++++++++++++++++++++++++++++++-------------
+ drivers/block/aoe/aoedev.c |    1 +
+ drivers/block/aoe/aoenet.c |   13 +++-
+ 5 files changed, 111 insertions(+), 46 deletions(-)
 
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index db195ab..8ca8c8a 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -119,6 +119,8 @@ struct frame {
+ 	ulong bcnt;
+ 	sector_t lba;
+ 	struct sk_buff *skb;
++	struct bio_vec *bv;
++	ulong bv_off;
+ };
+ 
+ struct aoeif {
+diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+index 321de7b..1471f81 100644
+--- a/drivers/block/aoe/aoeblk.c
++++ b/drivers/block/aoe/aoeblk.c
+@@ -279,6 +279,9 @@ aoeblk_gdalloc(void *vp)
+ 	if (bdi_init(&d->blkq->backing_dev_info))
+ 		goto err_blkq;
+ 	spin_lock_irqsave(&d->lock, flags);
++	blk_queue_max_hw_sectors(d->blkq, BLK_DEF_MAX_SECTORS);
++	d->blkq->backing_dev_info.ra_pages = BLK_DEF_MAX_SECTORS * 1024;
++	d->blkq->backing_dev_info.ra_pages /= PAGE_CACHE_SIZE;
+ 	gd->major = AOE_MAJOR;
+ 	gd->first_minor = d->sysminor * AOE_PARTITIONS;
+ 	gd->fops = &aoe_bdops;
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index de0435e..f10ab49 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -164,7 +164,8 @@ freeframe(struct aoedev *d)
+ 						rf = f;
+ 					continue;
+ 				}
+-gotone:				skb_shinfo(skb)->nr_frags = skb->data_len = 0;
++gotone:				skb->truesize -= skb->data_len;
++				skb_shinfo(skb)->nr_frags = skb->data_len = 0;
+ 				skb_trim(skb, 0);
+ 				d->tgt = t;
+ 				ifrotate(*t);
+@@ -200,6 +201,24 @@ gotone:				skb_shinfo(skb)->nr_frags = skb->data_len = 0;
+ 	return NULL;
+ }
+ 
++static void
++skb_fillup(struct sk_buff *skb, struct bio_vec *bv, ulong off, ulong cnt)
++{
++	int frag = 0;
++	ulong fcnt;
++loop:
++	fcnt = bv->bv_len - (off - bv->bv_offset);
++	if (fcnt > cnt)
++		fcnt = cnt;
++	skb_fill_page_desc(skb, frag++, bv->bv_page, off, fcnt);
++	cnt -= fcnt;
++	if (cnt <= 0)
++		return;
++	bv++;
++	off = bv->bv_offset;
++	goto loop;
++}
++
+ static int
+ aoecmd_ata_rw(struct aoedev *d)
+ {
+@@ -210,7 +229,7 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	struct bio_vec *bv;
+ 	struct aoetgt *t;
+ 	struct sk_buff *skb;
+-	ulong bcnt;
++	ulong bcnt, fbcnt;
+ 	char writebit, extbit;
+ 
+ 	writebit = 0x10;
+@@ -225,8 +244,28 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	bcnt = t->ifp->maxbcnt;
+ 	if (bcnt == 0)
+ 		bcnt = DEFAULTBCNT;
+-	if (bcnt > buf->bv_resid)
+-		bcnt = buf->bv_resid;
++	if (bcnt > buf->resid)
++		bcnt = buf->resid;
++	fbcnt = bcnt;
++	f->bv = buf->bv;
++	f->bv_off = f->bv->bv_offset + (f->bv->bv_len - buf->bv_resid);
++	do {
++		if (fbcnt < buf->bv_resid) {
++			buf->bv_resid -= fbcnt;
++			buf->resid -= fbcnt;
++			break;
++		}
++		fbcnt -= buf->bv_resid;
++		buf->resid -= buf->bv_resid;
++		if (buf->resid == 0) {
++			d->inprocess = NULL;
++			break;
++		}
++		buf->bv++;
++		buf->bv_resid = buf->bv->bv_len;
++		WARN_ON(buf->bv_resid == 0);
++	} while (fbcnt);
++
+ 	/* initialize the headers & frame */
+ 	skb = f->skb;
+ 	h = (struct aoe_hdr *) skb_mac_header(skb);
+@@ -237,7 +276,6 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	t->nout++;
+ 	f->waited = 0;
+ 	f->buf = buf;
+-	f->bufaddr = page_address(bv->bv_page) + buf->bv_off;
+ 	f->bcnt = bcnt;
+ 	f->lba = buf->sector;
+ 
+@@ -252,10 +290,11 @@ aoecmd_ata_rw(struct aoedev *d)
+ 		ah->lba3 |= 0xe0;	/* LBA bit + obsolete 0xa0 */
+ 	}
+ 	if (bio_data_dir(buf->bio) == WRITE) {
+-		skb_fill_page_desc(skb, 0, bv->bv_page, buf->bv_off, bcnt);
++		skb_fillup(skb, f->bv, f->bv_off, bcnt);
+ 		ah->aflags |= AOEAFL_WRITE;
+ 		skb->len += bcnt;
+ 		skb->data_len = bcnt;
++		skb->truesize += bcnt;
+ 		t->wpkts++;
+ 	} else {
+ 		t->rpkts++;
+@@ -266,18 +305,7 @@ aoecmd_ata_rw(struct aoedev *d)
+ 
+ 	/* mark all tracking fields and load out */
+ 	buf->nframesout += 1;
+-	buf->bv_off += bcnt;
+-	buf->bv_resid -= bcnt;
+-	buf->resid -= bcnt;
+ 	buf->sector += bcnt >> 9;
+-	if (buf->resid == 0) {
+-		d->inprocess = NULL;
+-	} else if (buf->bv_resid == 0) {
+-		buf->bv = ++bv;
+-		buf->bv_resid = bv->bv_len;
+-		WARN_ON(buf->bv_resid == 0);
+-		buf->bv_off = bv->bv_offset;
+-	}
+ 
+ 	skb->dev = t->ifp->nd;
+ 	skb = skb_clone(skb, GFP_ATOMIC);
+@@ -364,14 +392,12 @@ resend(struct aoedev *d, struct aoetgt *t, struct frame *f)
+ 		put_lba(ah, f->lba);
+ 
+ 		n = f->bcnt;
+-		if (n > DEFAULTBCNT)
+-			n = DEFAULTBCNT;
+ 		ah->scnt = n >> 9;
+ 		if (ah->aflags & AOEAFL_WRITE) {
+-			skb_fill_page_desc(skb, 0, virt_to_page(f->bufaddr),
+-				offset_in_page(f->bufaddr), n);
++			skb_fillup(skb, f->bv, f->bv_off, n);
+ 			skb->len = sizeof *h + sizeof *ah + n;
+ 			skb->data_len = n;
++			skb->truesize += n;
+ 		}
+ 	}
+ 	skb->dev = t->ifp->nd;
+@@ -530,20 +556,6 @@ rexmit_timer(ulong vp)
+ 				ejectif(t, ifp);
+ 				ifp = NULL;
+ 			}
+-
+-			if (ata_scnt(skb_mac_header(f->skb)) > DEFAULTBCNT / 512
+-			&& ifp && ++ifp->lostjumbo > (t->nframes << 1)
+-			&& ifp->maxbcnt != DEFAULTBCNT) {
+-				printk(KERN_INFO
+-					"aoe: e%ld.%d: "
+-					"too many lost jumbo on "
+-					"%s:%pm - "
+-					"falling back to %d frames.\n",
+-					d->aoemajor, d->aoeminor,
+-					ifp->nd->name, t->addr,
+-					DEFAULTBCNT);
+-				ifp->maxbcnt = 0;
+-			}
+ 			resend(d, t, f);
+ 		}
+ 
+@@ -736,6 +748,45 @@ diskstats(struct gendisk *disk, struct bio *bio, ulong duration, sector_t sector
+ 	part_stat_unlock();
+ }
+ 
++static void
++bvcpy(struct bio_vec *bv, ulong off, struct sk_buff *skb, ulong cnt)
++{
++	ulong fcnt;
++	char *p;
++	int soff = 0;
++loop:
++	fcnt = bv->bv_len - (off - bv->bv_offset);
++	if (fcnt > cnt)
++		fcnt = cnt;
++	p = page_address(bv->bv_page) + off;
++	skb_copy_bits(skb, soff, p, fcnt);
++	soff += fcnt;
++	cnt -= fcnt;
++	if (cnt <= 0)
++		return;
++	bv++;
++	off = bv->bv_offset;
++	goto loop;
++}
++
++static void
++fadvance(struct frame *f, ulong cnt)
++{
++	ulong fcnt;
++
++	f->lba += cnt >> 9;
++loop:
++	fcnt = f->bv->bv_len - (f->bv_off - f->bv->bv_offset);
++	if (fcnt > cnt) {
++		f->bv_off += cnt;
++		return;
++	}
++	cnt -= fcnt;
++	f->bv++;
++	f->bv_off = f->bv->bv_offset;
++	goto loop;
++}
++
+ void
+ aoecmd_ata_rsp(struct sk_buff *skb)
+ {
+@@ -753,6 +804,7 @@ aoecmd_ata_rsp(struct sk_buff *skb)
+ 	u16 aoemajor;
+ 
+ 	hin = (struct aoe_hdr *) skb_mac_header(skb);
++	skb_pull(skb, sizeof(*hin));
+ 	aoemajor = get_unaligned_be16(&hin->major);
+ 	d = aoedev_by_aoeaddr(aoemajor, hin->minor);
+ 	if (d == NULL) {
+@@ -790,7 +842,8 @@ aoecmd_ata_rsp(struct sk_buff *skb)
+ 
+ 	calc_rttavg(d, tsince(f->tag));
+ 
+-	ahin = (struct aoe_atahdr *) (hin+1);
++	ahin = (struct aoe_atahdr *) skb->data;
++	skb_pull(skb, sizeof(*ahin));
+ 	hout = (struct aoe_hdr *) skb_mac_header(f->skb);
+ 	ahout = (struct aoe_atahdr *) (hout+1);
+ 	buf = f->buf;
+@@ -809,7 +862,7 @@ aoecmd_ata_rsp(struct sk_buff *skb)
+ 		switch (ahout->cmdstat) {
+ 		case ATA_CMD_PIO_READ:
+ 		case ATA_CMD_PIO_READ_EXT:
+-			if (skb->len - sizeof *hin - sizeof *ahin < n) {
++			if (skb->len < n) {
+ 				printk(KERN_ERR
+ 					"aoe: %s.  skb->len=%d need=%ld\n",
+ 					"runt data size in read", skb->len, n);
+@@ -817,7 +870,7 @@ aoecmd_ata_rsp(struct sk_buff *skb)
+ 				spin_unlock_irqrestore(&d->lock, flags);
+ 				return;
+ 			}
+-			memcpy(f->bufaddr, ahin+1, n);
++			bvcpy(f->bv, f->bv_off, skb, n);
+ 		case ATA_CMD_PIO_WRITE:
+ 		case ATA_CMD_PIO_WRITE_EXT:
+ 			ifp = getif(t, skb->dev);
+@@ -827,21 +880,22 @@ aoecmd_ata_rsp(struct sk_buff *skb)
+ 					ifp->lostjumbo = 0;
+ 			}
+ 			if (f->bcnt -= n) {
+-				f->lba += n >> 9;
+-				f->bufaddr += n;
++				fadvance(f, n);
+ 				resend(d, t, f);
+ 				goto xmit;
+ 			}
+ 			break;
+ 		case ATA_CMD_ID_ATA:
+-			if (skb->len - sizeof *hin - sizeof *ahin < 512) {
++			if (skb->len < 512) {
+ 				printk(KERN_INFO
+ 					"aoe: runt data size in ataid.  skb->len=%d\n",
+ 					skb->len);
+ 				spin_unlock_irqrestore(&d->lock, flags);
+ 				return;
+ 			}
+-			ataid_complete(d, t, (char *) (ahin+1));
++			if (skb_linearize(skb))
++				break;
++			ataid_complete(d, t, skb->data);
+ 			break;
+ 		default:
+ 			printk(KERN_INFO
+diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
+index 6b5110a..b2d1fd3 100644
+--- a/drivers/block/aoe/aoedev.c
++++ b/drivers/block/aoe/aoedev.c
+@@ -182,6 +182,7 @@ skbfree(struct sk_buff *skb)
+ 			"cannot free skb -- memory leaked.");
+ 		return;
+ 	}
++	skb->truesize -= skb->data_len;
+ 	skb_shinfo(skb)->nr_frags = skb->data_len = 0;
+ 	skb_trim(skb, 0);
+ 	dev_kfree_skb(skb);
+diff --git a/drivers/block/aoe/aoenet.c b/drivers/block/aoe/aoenet.c
+index 4d3bc0d..0787807 100644
+--- a/drivers/block/aoe/aoenet.c
++++ b/drivers/block/aoe/aoenet.c
+@@ -102,7 +102,9 @@ static int
+ aoenet_rcv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt, struct net_device *orig_dev)
+ {
+ 	struct aoe_hdr *h;
++	struct aoe_atahdr *ah;
+ 	u32 n;
++	int sn;
+ 
+ 	if (dev_net(ifp) != &init_net)
+ 		goto exit;
+@@ -110,13 +112,16 @@ aoenet_rcv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
+ 	skb = skb_share_check(skb, GFP_ATOMIC);
+ 	if (skb == NULL)
+ 		return 0;
+-	if (skb_linearize(skb))
+-		goto exit;
+ 	if (!is_aoe_netif(ifp))
+ 		goto exit;
+ 	skb_push(skb, ETH_HLEN);	/* (1) */
+-
+-	h = (struct aoe_hdr *) skb_mac_header(skb);
++	sn = sizeof(*h) + sizeof(*ah);
++	if (skb->len >= sn) {
++		sn -= skb_headlen(skb);
++		if (sn > 0 && !__pskb_pull_tail(skb, sn))
++			goto exit;
++	}
++	h = (struct aoe_hdr *) skb->data;
+ 	n = get_unaligned_be32(&h->tag);
+ 	if ((h->verfl & AOEFL_RSP) == 0 || (n & 1<<31))
+ 		goto exit;
 -- 
 1.7.2.5
 
