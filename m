@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab2HRRg0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:36:26 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:42619 "EHLO smtp.gentoo.org"
+	id S1756679Ab2HRRcb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:32:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8308 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755721Ab2HRRgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:36:23 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Fabio Estevam <festevam@gmail.com>
-Subject: Re: [PATCH 03/11] blackfin: defconfig: Remove CONFIG_MISC_DEVICES
-Date: Sat, 18 Aug 2012 13:36:21 -0400
-User-Agent: KMail/1.13.7 (Linux/3.5.0; KDE/4.6.5; x86_64; ; )
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-References: <1345307035-3545-1-git-send-email-festevam@gmail.com> <1345307035-3545-3-git-send-email-festevam@gmail.com>
-In-Reply-To: <1345307035-3545-3-git-send-email-festevam@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart8992123.02eE095VI4";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208181336.23682.vapier@gentoo.org>
+	id S1754901Ab2HRRac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 13:30:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
+   d="scan'208";a="182354051"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 24/31] sections: Fix section conflicts in drivers/platform/x86
+Date: Sat, 18 Aug 2012 10:30:15 -0700
+Message-Id: <1345311022-26328-25-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
+References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart8992123.02eE095VI4
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+From: Andi Kleen <ak@linux.intel.com>
 
-On Saturday 18 August 2012 12:23:47 Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
->=20
-> commit 7c5763 (drivers:misc: Remove MISC_DEVICES config option) removed
-> CONFIG_MISC_DEVICES option, so remove the occurrences from the config fil=
-es
-> as well
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ drivers/platform/x86/amilo-rfkill.c   |    2 +-
+ drivers/platform/x86/fujitsu-tablet.c |   10 +++++-----
+ drivers/platform/x86/thinkpad_acpi.c  |    2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-=2Dmike
+diff --git a/drivers/platform/x86/amilo-rfkill.c b/drivers/platform/x86/amilo-rfkill.c
+index a514bf6..1deca7f 100644
+--- a/drivers/platform/x86/amilo-rfkill.c
++++ b/drivers/platform/x86/amilo-rfkill.c
+@@ -74,7 +74,7 @@ static const struct rfkill_ops amilo_m7440_rfkill_ops = {
+ 	.set_block = amilo_m7440_rfkill_set_block
+ };
+ 
+-static const struct dmi_system_id __devinitdata amilo_rfkill_id_table[] = {
++static const struct dmi_system_id __devinitconst amilo_rfkill_id_table[] = {
+ 	{
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
+diff --git a/drivers/platform/x86/fujitsu-tablet.c b/drivers/platform/x86/fujitsu-tablet.c
+index 7acae3f..f774845 100644
+--- a/drivers/platform/x86/fujitsu-tablet.c
++++ b/drivers/platform/x86/fujitsu-tablet.c
+@@ -52,7 +52,7 @@ struct fujitsu_config {
+ 	unsigned int quirks;
+ };
+ 
+-static unsigned short keymap_Lifebook_Tseries[KEYMAP_LEN] __initconst = {
++static unsigned short keymap_Lifebook_Tseries[KEYMAP_LEN] __initdata = {
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+@@ -71,7 +71,7 @@ static unsigned short keymap_Lifebook_Tseries[KEYMAP_LEN] __initconst = {
+ 	KEY_LEFTALT
+ };
+ 
+-static unsigned short keymap_Lifebook_U810[KEYMAP_LEN] __initconst = {
++static unsigned short keymap_Lifebook_U810[KEYMAP_LEN] __initdata = {
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+@@ -90,7 +90,7 @@ static unsigned short keymap_Lifebook_U810[KEYMAP_LEN] __initconst = {
+ 	KEY_LEFTALT
+ };
+ 
+-static unsigned short keymap_Stylistic_Tseries[KEYMAP_LEN] __initconst = {
++static unsigned short keymap_Stylistic_Tseries[KEYMAP_LEN] __initdata = {
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+@@ -109,7 +109,7 @@ static unsigned short keymap_Stylistic_Tseries[KEYMAP_LEN] __initconst = {
+ 	KEY_LEFTALT
+ };
+ 
+-static unsigned short keymap_Stylistic_ST5xxx[KEYMAP_LEN] __initconst = {
++static unsigned short keymap_Stylistic_ST5xxx[KEYMAP_LEN] __initdata = {
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+ 	KEY_RESERVED,
+@@ -299,7 +299,7 @@ static int __devinit fujitsu_dmi_stylistic(const struct dmi_system_id *dmi)
+ 	return 1;
+ }
+ 
+-static struct dmi_system_id dmi_ids[] __initconst = {
++static const struct dmi_system_id dmi_ids[] __initconst = {
+ 	{
+ 		.callback = fujitsu_dmi_lifebook,
+ 		.ident = "Fujitsu Siemens P/T Series",
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index f28f36c..b5528ce 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -522,7 +522,7 @@ static acpi_handle ec_handle;
+ 
+ #define TPACPI_HANDLE(object, parent, paths...)			\
+ 	static acpi_handle  object##_handle;			\
+-	static const acpi_handle *object##_parent __initdata =	\
++	static const acpi_handle * const object##_parent __initconst =	\
+ 						&parent##_handle; \
+ 	static char *object##_paths[] __initdata = { paths }
+ 
+-- 
+1.7.7.6
 
---nextPart8992123.02eE095VI4
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJQL9KXAAoJEEFjO5/oN/WBVIgQAJh+fvBeU2W2Lu18cJecJtpR
-I/u1k92dtR4DSheeCtJ/EOoHBsTIjQCuHNZehJEMdBzqadgceLnWSD6j4e+qvwUU
-3xrsWxSZFANSgHK4EJLNK5phHOwDB16OgIiorKV2L2h1ANcCVVK+t1VbtjOWDwjL
-Wd4+8WhVDRRnPwoBoGKB5tiXq2Z0sar4I0XKG8YQT0wDXeMaqHft7V4I8zwukMQ0
-1FO0vCiJiO3xaXBIEHMgpH50TmpIQ6tVLedXSkg5KtPWajMoCHSW57CLx2CQkwae
-o1a6PSIO6L/HBG6kFM0tCsaucFfmvrHQMgbv9A3tbsFPlqhyvPcBT3dFBuiX9v4e
-jvgIiSuO8Gb2KS4pAU8bFGSEn7nDSV0FTqJ8r4EBz5NLhsGjkZI4x85pLPKl6rEB
-/gcU/+I5YjFDmnZ0qKfr70136EYY9ACxnVj6zHoqhPnHsTVqDPlaxaWXq2ifH8GL
-m359gyoNKakdAWvPhwwk3R2hbvN5hmT0Xh3uOTk5YDLEa7xE+RuCgF5CVLfNinfx
-QCenCFAJtnq4w46gBOCxFW//ixBiDG8f/N4KVhKniQrYuZZr6vVnxJ/LhO2Vu/nO
-i2bSAqCFtIsRA/ZNRaQ6qJ3fEkhdfvtLzgKT3gIr645Oi+f8giuKYcLP1eWTBt6Z
-hyItBXpHn/Iu/Uj6gan4
-=ZnKZ
------END PGP SIGNATURE-----
-
---nextPart8992123.02eE095VI4--
