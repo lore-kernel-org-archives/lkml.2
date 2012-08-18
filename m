@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442Ab2HRRc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:32:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60444 "EHLO mga11.intel.com"
+	id S1756626Ab2HRRcX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:32:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50329 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754841Ab2HRRab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754827Ab2HRRab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Aug 2012 13:30:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
-   d="scan'208";a="210330069"
+   d="scan'208";a="210330068"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 26/31] sections: Fix section conflicts in drivers/video
-Date: Sat, 18 Aug 2012 10:30:17 -0700
-Message-Id: <1345311022-26328-27-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 22/31] sections: Fix section conflicts in drivers/net/hamradio
+Date: Sat, 18 Aug 2012 10:30:13 -0700
+Message-Id: <1345311022-26328-23-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
@@ -27,87 +27,90 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/video/aty/aty128fb.c     |    2 +-
- drivers/video/geode/gx1fb_core.c |    2 +-
- drivers/video/gxt4500.c          |    4 ++--
- drivers/video/i810/i810_main.c   |    2 +-
- drivers/video/jz4740_fb.c        |    2 +-
- 5 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/hamradio/6pack.c    |    2 +-
+ drivers/net/hamradio/bpqether.c |    2 +-
+ drivers/net/hamradio/mkiss.c    |    6 +++---
+ drivers/net/hamradio/scc.c      |    2 +-
+ drivers/net/hamradio/yam.c      |    2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/video/aty/aty128fb.c b/drivers/video/aty/aty128fb.c
-index 747442d..0fefa84 100644
---- a/drivers/video/aty/aty128fb.c
-+++ b/drivers/video/aty/aty128fb.c
-@@ -149,7 +149,7 @@ enum {
- };
- 
- /* Must match above enum */
--static const char *r128_family[] __devinitdata = {
-+static char * const r128_family[] __devinitconst = {
- 	"AGP",
- 	"PCI",
- 	"PRO AGP",
-diff --git a/drivers/video/geode/gx1fb_core.c b/drivers/video/geode/gx1fb_core.c
-index 5a5d092..265c5ed 100644
---- a/drivers/video/geode/gx1fb_core.c
-+++ b/drivers/video/geode/gx1fb_core.c
-@@ -29,7 +29,7 @@ static int  crt_option = 1;
- static char panel_option[32] = "";
- 
- /* Modes relevant to the GX1 (taken from modedb.c) */
--static const struct fb_videomode __devinitdata gx1_modedb[] = {
-+static const struct fb_videomode __devinitconst gx1_modedb[] = {
- 	/* 640x480-60 VESA */
- 	{ NULL, 60, 640, 480, 39682,  48, 16, 33, 10, 96, 2,
- 	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
-diff --git a/drivers/video/gxt4500.c b/drivers/video/gxt4500.c
-index 0fad23f..0e9afa4 100644
---- a/drivers/video/gxt4500.c
-+++ b/drivers/video/gxt4500.c
-@@ -156,7 +156,7 @@ struct gxt4500_par {
- static char *mode_option;
- 
- /* default mode: 1280x1024 @ 60 Hz, 8 bpp */
--static const struct fb_videomode defaultmode __devinitdata = {
-+static const struct fb_videomode defaultmode __devinitconst = {
- 	.refresh = 60,
- 	.xres = 1280,
- 	.yres = 1024,
-@@ -581,7 +581,7 @@ static int gxt4500_blank(int blank, struct fb_info *info)
- 	return 0;
+diff --git a/drivers/net/hamradio/6pack.c b/drivers/net/hamradio/6pack.c
+index d225a2a..1450e33 100644
+--- a/drivers/net/hamradio/6pack.c
++++ b/drivers/net/hamradio/6pack.c
+@@ -829,7 +829,7 @@ static int __init sixpack_init_driver(void)
+ 	return status;
  }
  
--static const struct fb_fix_screeninfo gxt4500_fix __devinitdata = {
-+static const struct fb_fix_screeninfo gxt4500_fix __devinitconst = {
- 	.id = "IBM GXT4500P",
- 	.type = FB_TYPE_PACKED_PIXELS,
- 	.visual = FB_VISUAL_PSEUDOCOLOR,
-diff --git a/drivers/video/i810/i810_main.c b/drivers/video/i810/i810_main.c
-index b83f361..5c06781 100644
---- a/drivers/video/i810/i810_main.c
-+++ b/drivers/video/i810/i810_main.c
-@@ -97,7 +97,7 @@ static int i810fb_blank      (int blank_mode, struct fb_info *info);
- static void i810fb_release_resource       (struct fb_info *info, struct i810fb_par *par);
+-static const char msg_unregfail[] __exitdata = KERN_ERR \
++static const char msg_unregfail[] = KERN_ERR \
+ 	"6pack: can't unregister line discipline (err = %d)\n";
  
- /* PCI */
--static const char *i810_pci_list[] __devinitdata = {
-+static const char * const i810_pci_list[] __devinitconst = {
- 	"Intel(R) 810 Framebuffer Device"                                 ,
- 	"Intel(R) 810-DC100 Framebuffer Device"                           ,
- 	"Intel(R) 810E Framebuffer Device"                                ,
-diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
-index de36693..3c63fc2 100644
---- a/drivers/video/jz4740_fb.c
-+++ b/drivers/video/jz4740_fb.c
-@@ -136,7 +136,7 @@ struct jzfb {
- 	uint32_t pseudo_palette[16];
+ static void __exit sixpack_exit_driver(void)
+diff --git a/drivers/net/hamradio/bpqether.c b/drivers/net/hamradio/bpqether.c
+index 76d5477..c2e5497 100644
+--- a/drivers/net/hamradio/bpqether.c
++++ b/drivers/net/hamradio/bpqether.c
+@@ -87,7 +87,7 @@
+ 
+ #include <linux/bpqether.h>
+ 
+-static const char banner[] __initdata = KERN_INFO \
++static const char banner[] __initconst = KERN_INFO \
+ 	"AX.25: bpqether driver version 004\n";
+ 
+ static char bcast_addr[6]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+diff --git a/drivers/net/hamradio/mkiss.c b/drivers/net/hamradio/mkiss.c
+index 2c0894a..8e01c45 100644
+--- a/drivers/net/hamradio/mkiss.c
++++ b/drivers/net/hamradio/mkiss.c
+@@ -997,9 +997,9 @@ static struct tty_ldisc_ops ax_ldisc = {
+ 	.write_wakeup	= mkiss_write_wakeup
  };
  
--static const struct fb_fix_screeninfo jzfb_fix __devinitdata = {
-+static const struct fb_fix_screeninfo jzfb_fix __devinitconst = {
- 	.id		= "JZ4740 FB",
- 	.type		= FB_TYPE_PACKED_PIXELS,
- 	.visual		= FB_VISUAL_TRUECOLOR,
+-static const char banner[] __initdata = KERN_INFO \
++static const char banner[] __initconst = KERN_INFO \
+ 	"mkiss: AX.25 Multikiss, Hans Albas PE1AYX\n";
+-static const char msg_regfail[] __initdata = KERN_ERR \
++static const char msg_regfail[] __initconst = KERN_ERR \
+ 	"mkiss: can't register line discipline (err = %d)\n";
+ 
+ static int __init mkiss_init_driver(void)
+@@ -1015,7 +1015,7 @@ static int __init mkiss_init_driver(void)
+ 	return status;
+ }
+ 
+-static const char msg_unregfail[] __exitdata = KERN_ERR \
++static const char msg_unregfail[] = KERN_ERR \
+ 	"mkiss: can't unregister line discipline (err = %d)\n";
+ 
+ static void __exit mkiss_exit_driver(void)
+diff --git a/drivers/net/hamradio/scc.c b/drivers/net/hamradio/scc.c
+index efc6c97..1b4a47b 100644
+--- a/drivers/net/hamradio/scc.c
++++ b/drivers/net/hamradio/scc.c
+@@ -182,7 +182,7 @@
+ 
+ #include "z8530.h"
+ 
+-static const char banner[] __initdata = KERN_INFO \
++static const char banner[] __initconst = KERN_INFO \
+ 	"AX.25: Z8530 SCC driver version "VERSION".dl1bke\n";
+ 
+ static void t_dwait(unsigned long);
+diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
+index 5a6412e..c6645f1 100644
+--- a/drivers/net/hamradio/yam.c
++++ b/drivers/net/hamradio/yam.c
+@@ -76,7 +76,7 @@
+ /* --------------------------------------------------------------------- */
+ 
+ static const char yam_drvname[] = "yam";
+-static const char yam_drvinfo[] __initdata = KERN_INFO \
++static const char yam_drvinfo[] __initconst = KERN_INFO \
+ 	"YAM driver version 0.8 by F1OAT/F6FBB\n";
+ 
+ /* --------------------------------------------------------------------- */
 -- 
 1.7.7.6
 
