@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab2HRRuZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:50:25 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36806 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab2HRRuW (ORCPT
+	id S1752114Ab2HRR54 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:57:56 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:30920 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab2HRR5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:50:22 -0400
+	Sat, 18 Aug 2012 13:57:53 -0400
+Date: Sat, 18 Aug 2012 13:57:50 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: NFSv4 WARNING: at linux/fs/inode.c:280 drop_nlink+0x23/0x44()
+Message-ID: <20120818175750.GA12736@elliptictech.com>
 MIME-Version: 1.0
-In-Reply-To: <1344862344-27434-1-git-send-email-chenhc@lemote.com>
-References: <1344862344-27434-1-git-send-email-chenhc@lemote.com>
-Date: Sat, 18 Aug 2012 10:50:20 -0700
-Message-ID: <CAJiQ=7DGRxHp2hv79xpBdB_gV=iTiQaap=aytMe8=cNcm29Vrg@mail.gmail.com>
-Subject: Re: [PATCH V2] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        Zhangjin Wu <wuzhangjin@gmail.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>, Yong Zhang <yong.zhang@windriver.com>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 5:52 AM, Huacai Chen <chenhc@lemote.com> wrote:
-> When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
-> And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
-> empty function but attempt to actually disable the nonboot cpus. Since
-> system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
-> disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
-> poweroff failure.
+Hi folks,
 
-I have seen the same problem; sometimes it causes a kernel oops too.
+I just noticed the following WARNING in my logs.  Looking through the
+older logs, I see quite a few of these going (at least) all the way back
+to 3.3.x days.  The process which triggers the warning always seems to
+be the same (icecat).
 
->  #ifdef CONFIG_HOTPLUG_CPU
-> -               if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
-> -                   (system_state == SYSTEM_RUNNING ||
-> -                    system_state == SYSTEM_BOOTING))
-> +               if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
->                         play_dead();
+This is on a Linux 3.5.2 NFSv4 client machine using sec=krb5.  Other
+than the log noise, there seems to be no adverse effects.
 
-This fix works for me.
+------------[ cut here ]------------
+WARNING: at /home/nbowler/misc/linux/fs/inode.c:280 drop_nlink+0x23/0x44()
+Hardware name: System Product Name
+Modules linked in: sha1_ssse3 sha1_generic hmac aes_x86_64 aes_generic cbc cts rpcsec_gss_krb5 nfs lockd auth_rpcgss nfs_acl sunrpc ipv6 nls_iso8859_1 nls_cp437 vfat fat w83627ehf hwmon_vid snd_pcm_oss snd_mixer_oss acpi_cpufreq mperf i915 drm_kms_helper drm snd_hda_codec_hdmi snd_hda_codec_realtek arc4 ath9k mac80211 ath9k_common ath9k_hw intel_agp i2c_algo_bit intel_gtt snd_hda_intel snd_hda_codec snd_pcm snd_timer coretemp agpgart hwmon kvm_intel snd ath cfg80211 soundcore snd_page_alloc i2c_i801 r8169 mii psmouse kvm evdev video sg
+Pid: 1995, comm: icecat Not tainted 3.5.2 #46
+Call Trace:
+ [<ffffffff8102b8b3>] warn_slowpath_common+0x80/0x98
+ [<ffffffff8102b8e0>] warn_slowpath_null+0x15/0x17
+ [<ffffffff810c5195>] drop_nlink+0x23/0x44
+ [<ffffffffa03aa2a1>] nfs_dentry_iput+0x35/0x4d [nfs]
+ [<ffffffff810c25d0>] dentry_kill+0x149/0x171
+ [<ffffffff810c2850>] dput+0xed/0xfe
+ [<ffffffff810b2ff4>] fput+0x1a5/0x1bd
+ [<ffffffff810b0454>] filp_close+0x6b/0x76
+ [<ffffffff810b04f1>] sys_close+0x92/0xd4
+ [<ffffffff8131efa2>] system_call_fastpath+0x16/0x1b
+---[ end trace b160c7dc08b4910c ]---
 
-Acked-by: Kevin Cernekee <cernekee@gmail.com>
+Please let me know if you need any more info,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
-I do see SMP boot problems ("Attempted to kill the idle task!" panic)
-on a 4-way box if the !cpu_isset() check is removed.
