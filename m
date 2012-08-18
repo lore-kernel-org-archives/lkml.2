@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab2HROwy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 10:52:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38694 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab2HROww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 10:52:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,790,1336374000"; 
-   d="scan'208";a="204407679"
-Message-ID: <502FAC3F.1030803@linux.intel.com>
-Date: Sat, 18 Aug 2012 07:52:47 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1755878Ab2HRO7M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 10:59:12 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40570 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538Ab2HRO7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 10:59:09 -0400
+Date: Sat, 18 Aug 2012 15:58:56 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [BUG] Deferred probing in driver model is racy, resulting in lost
+	probes
+Message-ID: <20120818145856.GP18957@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Luming Yu <luming.yu@gmail.com>
-CC: Chris Friesen <chris.friesen@genband.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        preeti <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins> <502C98E8.20800@linux.vnet.ibm.com> <502CFD35.5000801@linux.intel.com> <20120817184100.GA13369@srcf.ucam.org> <502E90F3.2000702@linux.intel.com> <20120817184705.GB13369@srcf.ucam.org> <502E9F45.6030606@genband.com> <20120817195033.GA15589@srcf.ucam.org> <502EA680.4080608@genband.com> <CAJRGBZygPfmRcVmMzDiCrf7uJVDb_6pHsrfthdERmUZnDfygWw@mail.gmail.com>
-In-Reply-To: <CAJRGBZygPfmRcVmMzDiCrf7uJVDb_6pHsrfthdERmUZnDfygWw@mail.gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/18/2012 7:33 AM, Luming Yu wrote:
-> saving mode. But obviously, we need to spread as much as possible
-> across all cores in another socket(to race to idle). So from the
-> example above, we see a threshold that we need to reference before
-> selecting one from two complete different policy: spread or not
-> spread... As long as there is hardware limitation, we could always
-> need knob like that referenced threshold to adapt on different
-> hardware in one kernel....
+Okay, so EPROBE_DEFER seems to work when I build everything into the
+kernel, but when I build a pile of ASoC drivers as modules, it fails
+every time I've tried booting the platform so far.
 
-I think the physics are slightly simpler, if you abstract it one level.
+This is a v3.5 based kernel, with preempt enabled.
 
-every reasonable system out there has things that can be off if all cores are in the deep power state,
-that have to be on if even one of them is alive. On "big core" Intel, that's uncore and memory controller,
-on small core (atom/phone) Intel that is the chipset fabric only. On ARM it might be something else. On all of
-them it's some clocks, PLLs, voltage regulators etc etc.
+Okay, what I have is a bunch of devices already pre-registered in the
+system:
 
-not all chips are advanced enough to aggressively these things off when they could, but most are nowadays.
+	kirkwood-spdif-audio.1 (requiring module snd_soc_kirkwood_spdif)
+	kirkwood-i2s.1 (requiring module snd_soc_kirkwood_i2s)
+	kirkwood-pcm-audio.1 (requiring module snd_soc_kirkwood)
+	spdif-dit (requiring module snd_soc_spdif)
 
-so in abstract, there's a power offset that gets you from 0 to 1, Lets call this P0
-there is also a power offset to go from 1 to 2, but that's smaller than 0->1. Lets call this Pc
+and the modules were loaded in this order:
 
-or rather, 0->1 has the same kind of offset as 1->2 plus some extra offset.. so P0 = Pbase + Pc
+Module                  Size  Used by
+snd_soc_spdif           1020  0		(spdif-dit driver)
+dove                   24577  1		(dove-drm driver)
+snd_soc_kirkwood_i2s     5209  0	(kirkwood-i2s driver)
+snd_soc_kirkwood        3629  0		(kirkwood-pcm-audio driver)
+snd_soc_kirkwood_spdif     1449  0	(kirkwood-spdif-audio driver)
 
-there's also an energy cost for waking a cpu up (and letting it go back to sleep afterwards)... call it Ewake
+snd_soc_kirkwood_spdif will return -EPROBE_DEFER if it can't find the
+devices registered into ASoC by the other three modules (referred to as
+the CPU DAI, and Codec DAI).
 
-so the abstract question is
-you're running a task A on cpu 0
-you want to also run a task B, which you estimate to run for time T
+What I see in the debugging is this (I've added some to increase the
+debuggability):
 
-it's more energy efficient to wake a 2nd cpu if
+bus: 'platform': add driver kirkwood-spdif-audio
+bus: 'platform': driver_probe_device: matched device kirkwood-spdif-audio.1 with driver kirkwood-spdif-audio
+bus: 'platform': really_probe: probing driver kirkwood-spdif-audio with device kirkwood-spdif-audio.1
+kirkwood-spdif-audio kirkwood-spdif-audio.1: CPU DAI kirkwood-i2s.1 not registered
+bus: 'platform': add driver kirkwood-pcm-audio
+bus: 'platform': add driver kirkwood-i2s
+kirkwood-spdif-audio kirkwood-spdif-audio.1: failed to register card
+bus: 'platform': add driver dove-drm
+platform kirkwood-spdif-audio.1: Driver kirkwood-spdif-audio requests probe deferral
+platform kirkwood-spdif-audio.1: Added to deferred list
+bus: 'platform': driver_probe_device: matched device kirkwood-pcm-audio.1 with driver kirkwood-pcm-audio
+bus: 'platform': really_probe: probing driver kirkwood-pcm-audio with device kirkwood-pcm-audio.1
+driver: 'kirkwood-pcm-audio.1': driver_bound: bound to device 'kirkwood-pcm-audio'
+bus: 'platform': really_probe: bound device kirkwood-pcm-audio.1 to driver kirkwood-pcm-audio
+platform kirkwood-spdif-audio.1: Retrying from deferred list
+bus: device_attach 'kirkwood-spdif-audio.1' unbound
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'dove-temp'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'galcore'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'alarmtimer'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv_xor_shared'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv_xor'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'serial8250'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sata_mv'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'orion_spi'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv643xx_eth'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv643xx_eth_port'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'ap510-vmeta'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'orion-ehci'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'rtc-mv'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'mv64xxx_i2c'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'gpio-rc-recv'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sdhci-pxav2'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'sdhci-dove'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'leds-gpio'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'snd-soc-dummy'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'soc-audio'
+bus: __device_attach 'kirkwood-spdif-audio.1' probing with 'kirkwood-pcm-audio'
 
-Ewake < T * Pbase
+What you notice here is that the kirkwood-spdif-audio driver has gone
+missing - it hasn't been unloaded, and it still appears in sysfs, and
+it can still be cleanly unloaded and reloaded.
 
-(this assumes all cores are the same, you get a more complex formula if that's not the case, where T is even core specific)
+bus: 'platform': driver_probe_device: matched device kirkwood-i2s.1 with driver kirkwood-i2s
+bus: 'platform': really_probe: probing driver kirkwood-i2s with device kirkwood-i2s.1
+kirkwood-i2s kirkwood-i2s.1: found external clock
+driver: 'kirkwood-i2s.1': driver_bound: bound to device 'kirkwood-i2s'
+bus: 'platform': really_probe: bound device kirkwood-i2s.1 to driver kirkwood-i2s
+bus: 'platform': driver_probe_device: matched device dove-drm with driver dove-drm
+bus: 'platform': really_probe: probing driver dove-drm with device dove-drm
+bus: 'platform': add driver spdif-dit
+[drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+[drm] No driver support for vblank timestamp query.
+fb0: dove-drmfb frame buffer device
+drm: registered panic notifier
+[drm] Initialized dove-drm 1.0.0 20120730 on minor 0
+driver: 'dove-drm': driver_bound: bound to device 'dove-drm'
+bus: 'platform': really_probe: bound device dove-drm to driver dove-drm
+bus: 'platform': driver_probe_device: matched device spdif-dit with driver spdif-dit
+bus: 'platform': really_probe: probing driver spdif-dit with device spdif-dit
+driver: 'spdif-dit': driver_bound: bound to device 'spdif-dit'
+bus: 'platform': really_probe: bound device spdif-dit to driver spdif-dit
 
+I suspect what is going on is that we have a race condition between the
+device being added to the deferred list vs other drivers successfully
+probing and running the deferred list, and the driver with the deferred
+device being added to the driver list.
 
-there is no hardware policy *switch* in such formula, only parameters.
-If Pbase = 0 (e.g. your hardware has no extra power savings), then the formula very naturally leads to one extreme of the behavior
-if Ewake is very high, then it leads to the other extreme.
+This allows the deferred list to be run *before* the driver is placed
+onto the bus driver list, which means when we try to re-probe deferred
+devices, we find no matching driver to probe the device with.  This
+then results in the device being dropped off the deferred probe list
+(as the only way it stays on that list is if a driver is probed _and_
+it returns -EPROBE_DEFER.)
 
-The only other variable is the user preference between power and performance balance.. but that's a pure preference, not hardware
-specific anymore.
-
-
-
-
+I do not know all the details of the locking in this area, so I'm not
+going to try to come up with a patch... but as this stands, it's
+unworkable.  I have not yet had the system come up once with these
+drivers as modules and had it work without having to manually remove
+and re-add the Kirkwood SPDIF driver.
