@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab2HRNTP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 09:19:15 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:57648 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753432Ab2HRNTN (ORCPT
+	id S1755249Ab2HRNUR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 09:20:17 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39623 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab2HRNUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 09:19:13 -0400
-Date: Sat, 18 Aug 2012 09:19:12 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-cc: Jiri Kosina <jkosina@suse.cz>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-In-Reply-To: <20120818144039.0356cc7c@neptune.home>
-Message-ID: <Pine.LNX.4.44L0.1208180913440.17394-100000@netrider.rowland.org>
+	Sat, 18 Aug 2012 09:20:13 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1344275476.14513.98.camel@localhost.localdomain>
+References: <1344275476.14513.98.camel@localhost.localdomain>
+Date: Sat, 18 Aug 2012 15:20:11 +0200
+X-Google-Sender-Auth: z03K1E8eIladX_goj3kpJKJzjpg
+Message-ID: <CAMuHMdV-BMC5WSeU8RH0X17Hp32gyP1NWQJgnhDUCehniY+Rxw@mail.gmail.com>
+Subject: Re: [PATCH] m68k: Use PTR_RET rather than if(IS_ERR(.. [1]
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Aug 2012, Bruno Prémont wrote:
+Thanks, applied and queued for 3.7.
 
-> Hi Jiri,
-> 
-> [CCing Alan Stern]
-> 
-> On Thu, 16 August 2012 Jiri Kosina <jkosina@suse.cz> wrote:
-> > On Thu, 16 Aug 2012, Bruno Prémont wrote:
-> > 
-> > > > I don't really understand this explanation. Once usb_kill_urb() returns, 
-> > > > the URB should be available for future use (and therefore all queues 
-> > > > completely drained).
-> > > 
-> > > I won't have time today to check, though my guess is that on each
-> > > echo $usb-id > bind; echo $usb-id > unbind
-> > > under /sys/bus/hid/drivers/hid-picolcd/ the USB urb queue fills a bit does
-> > > not get cleared.
-> > > 
-> > > Is usb_kill_urb() called when unbinding just the specific hid driver? 
-> > 
-> > Yup, through hid_hw_stop() -> usbhid_stop().
-> > 
-> > > If so my short timing between bind/unbind must be triggering something 
-> > > else...
-> > > 
-> > > Otherwise I'm missing something as at first time I got no "output queue full"
-> > > messages, but as I repeated the bind/unbind sequences the prints per bind/unbind
-> > > iteration increased in number.
-> > > 
-> > > Anyhow, on Friday evening/week-end I will continue digging and report back with my
-> > > findings.
-> 
-> Huh, after changing some of the hid-picolcd data in order to have less racy
-> coupling between hid and framebuffer I'm now dying way too often in _mmx_memcpy
-> and most of the time I don't get a (complete) trace...
+On Mon, Aug 6, 2012 at 7:51 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> The semantic patch that makes this change is available
+> in scripts/coccinelle/api/ptr_ret.cocci.
+>
+> More information about semantic patching is available at
+> http://coccinelle.lip6.fr/
+>
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+> ---
+>
+> diff -u -p a/arch/m68k/kernel/time.c b/arch/m68k/kernel/time.c
+> --- a/arch/m68k/kernel/time.c
+> +++ b/arch/m68k/kernel/time.c
+> @@ -100,10 +100,7 @@ static int __init rtc_init(void)
+>                 return -ENODEV;
+>
+>         pdev = platform_device_register_simple("rtc-generic", -1, NULL, 0);
+> -       if (IS_ERR(pdev))
+> -               return PTR_ERR(pdev);
+> -
+> -       return 0;
+> +       return PTR_RET(pdev);
+>  }
+>
+>  module_init(rtc_init);
 
-There was a similar problem reported recently.  It turned out to be 
-caused by a __devinitconst annotation attached to a usb_device_id 
-table.
+Gr{oetje,eeting}s,
 
-If there are any __devinit* annotations in the hid-picolcd driver, you 
-should see if removing them helps.
+                        Geert
 
-Alan Stern
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
