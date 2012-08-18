@@ -1,74 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab2HRMBp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 08:01:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34657 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753219Ab2HRMBl (ORCPT
+	id S1754137Ab2HRMIj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 08:08:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64540 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab2HRMIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 08:01:41 -0400
-Date: Sat, 18 Aug 2012 13:01:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, khali@linux-fr.org,
-        swarren@nvidia.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: tegra: Fix ifdefs for suspend mode
-Message-ID: <20120818120138.GD21888@opensource.wolfsonmicro.com>
-References: <1343655187-18282-1-git-send-email-ldewangan@nvidia.com>
- <20120818070732.GA24639@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SFyWQ0h3ruR435lw"
-Content-Disposition: inline
-In-Reply-To: <20120818070732.GA24639@pengutronix.de>
-X-Cookie: There was a phone call for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 18 Aug 2012 08:08:36 -0400
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org, Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kelvin Cheung <keguang.zhang@gmail.com>
+Subject: [PATCH v2] clk: add Loongson1B clock support
+Date: Sat, 18 Aug 2012 20:08:26 +0800
+Message-Id: <1345291706-26211-1-git-send-email-keguang.zhang@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds clock support to Loongson1B SoC using the common clock
+infrastructure.
 
---SFyWQ0h3ruR435lw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+---
+ drivers/clk/Makefile   |    1 +
+ drivers/clk/clk-ls1x.c |  108 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 109 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/clk-ls1x.c
 
-On Sat, Aug 18, 2012 at 09:07:32AM +0200, Wolfram Sang wrote:
-> On Mon, Jul 30, 2012 at 07:03:07PM +0530, Laxman Dewangan wrote:
-> > CONFIG_PM covers runtime only PM.
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 5869ea3..018ec57 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
+ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
+ obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
+ obj-$(CONFIG_ARCH_INTEGRATOR)	+= versatile/
++obj-$(CONFIG_MACH_LOONGSON1)	+= clk-ls1x.o
+ 
+ # Chip specific
+ obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+diff --git a/drivers/clk/clk-ls1x.c b/drivers/clk/clk-ls1x.c
+new file mode 100644
+index 0000000..ff12fc0
+--- /dev/null
++++ b/drivers/clk/clk-ls1x.c
+@@ -0,0 +1,108 @@
++/*
++ * Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/clkdev.h>
++#include <linux/clk-provider.h>
++#include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <asm/mach-loongson1/loongson1.h>
++
++#include <loongson1.h>
++
++#define OSC	33
++
++static DEFINE_SPINLOCK(_lock);
++
++static int ls1x_pll_clk_enable(struct clk_hw *hw)
++{
++	return 0;
++}
++
++static void ls1x_pll_clk_disable(struct clk_hw *hw)
++{
++}
++
++static unsigned long ls1x_pll_recalc_rate(struct clk_hw *hw,
++					     unsigned long parent_rate)
++{
++	u32 pll, rate;
++
++	pll = __raw_readl(LS1X_CLK_PLL_FREQ);
++	rate = ((12 + (pll & 0x3f)) * 1000000) +
++		((((pll >> 8) & 0x3ff) * 1000000) >> 10);
++	rate *= OSC;
++	rate >>= 1;
++
++	return rate;
++}
++
++static const struct clk_ops ls1x_pll_clk_ops = {
++	.enable = ls1x_pll_clk_enable,
++	.disable = ls1x_pll_clk_disable,
++	.recalc_rate = ls1x_pll_recalc_rate,
++};
++
++static struct clk * __init clk_register_pll(struct device *dev,
++	 const char *name, const char *parent_name, unsigned long flags)
++{
++	struct clk_hw *hw;
++	struct clk *clk;
++	struct clk_init_data init;
++
++	/* allocate the divider */
++	hw = kzalloc(sizeof(struct clk_hw), GFP_KERNEL);
++	if (!hw) {
++		pr_err("%s: could not allocate clk_hw\n", __func__);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	init.name = name;
++	init.ops = &ls1x_pll_clk_ops;
++	init.flags = flags | CLK_IS_BASIC;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++	hw->init = &init;
++
++	/* register the clock */
++	clk = clk_register(dev, hw);
++
++	if (IS_ERR(clk))
++		kfree(hw);
++
++	return clk;
++}
++
++void __init ls1x_clk_init(void)
++{
++	struct clk *clk;
++
++	clk = clk_register_pll(NULL, "pll_clk", NULL, CLK_IS_ROOT);
++	clk_prepare_enable(clk);
++
++	clk = clk_register_divider(NULL, "cpu_clk", "pll_clk",
++			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_CPU_SHIFT,
++			DIV_CPU_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
++	clk_prepare_enable(clk);
++	clk_register_clkdev(clk, "cpu", NULL);
++
++	clk = clk_register_divider(NULL, "ddr_clk", "pll_clk",
++			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DDR_SHIFT,
++			DIV_DDR_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
++	clk_prepare_enable(clk);
++	clk_register_clkdev(clk, "ddr", NULL);
++	clk_register_clkdev(clk, "stmmaceth", NULL);
++
++	clk = clk_register_divider(NULL, "dc_clk", "pll_clk",
++			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DC_SHIFT,
++			DIV_DC_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
++	clk_prepare_enable(clk);
++	clk_register_clkdev(clk, "dc", NULL);
++	clk_register_clkdev(clk, "serial8250", NULL);
++}
+-- 
+1.7.1
 
-> I am a bit confused by this description. CONFIG_PM_RUNTIME covers
-> runtime PM, no?
-
-The issue is that CONFIG_PM doesn't actually enable any of the PM
-callbacks, it only allows you to enable CONFIG_PM_SLEEP and
-CONFIG_PM_RUNTIME.  This means that if you use CONFIG_PM to protect your
-system sleep callbacks they may end up unreferenced if only runtime PM
-is enabled.
-
-Personally I'd rather just uncondtionally enable PM rather than faff
-around with all these ifdefs...
-
---SFyWQ0h3ruR435lw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQL4QbAAoJEFJkBDiqVpZ46fgP/0yCYbdqxmC9w27xts5RG3ZL
-UIv7Kl/dTQLcuj0JSrlXUpLNc7DrZnmlCDoa2jVnEifkUae/KkCUAfc+LrQ5rmg3
-6qbKNwfCNWlPBHUN7TPRhzKNAi10vGxy9tWlxERJrSMqamRapzkadY1vfEEnuQDS
-IBratNP7eT0gfGqVyNTvXFvDSgRyHb8RzSP0kRuRfn7azeqjq/hnCTENbX9N341x
-ID+auG12uvhWwtGscRb4iHN0a+RJPJhLRwneKIPcRtaSK4KQa2gpeEdstPXYgm1u
-VwneDN5P5GtPdTNCtOaJ9op/2tQCUk9nEIdurv1s3B6z24zZ1XMOynkOa7Vblx5+
-LTUEM7XddkWWTYFcILkY16gwlXrHPqKKTcOo8bxx944aRckdsVU02DQrVjMDlwqR
-R5ACsNOK8pHntZjFTY3q+Djm7bL2Jb1xzsK94iSoWAlzm2PLiK8TiEeVED0NZ2PG
-WJBbZ2OxVYdlCM0yzWtx8CRivZeJ4/yUZ/ZDCY70+kx6ypNbMufvDXwLFXeo2WIm
-lqDs33wpm8z4YvoasW3M09JZIJiKFBz2UN1A04tdtcqUd9z5zUfi+8oV3gMhMks6
-zmisF+pvGwt51MCyvbJmUDA0ArAOC3j19H97pREriEGO11ZqNgxkUMI1THh8/hL2
-YYFeTm7UQXdsUKHHUObL
-=iAGn
------END PGP SIGNATURE-----
-
---SFyWQ0h3ruR435lw--
