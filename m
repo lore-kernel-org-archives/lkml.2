@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab2HRS3y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 14:29:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57804 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab2HRS3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 14:29:51 -0400
-Date: Sat, 18 Aug 2012 20:29:40 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "khali@linux-fr.org" <khali@linux-fr.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "olof@lixom.net" <olof@lixom.net>
-Subject: Re: [PATCH REBASE 1/2] i2c: tegra: I2_M_NOSTART functionality not
- supported in Tegra20
-Message-ID: <20120818182940.GA19802@pengutronix.de>
-References: <1345230155-4252-1-git-send-email-ldewangan@nvidia.com>
- <20120818124703.GC12839@pengutronix.de>
- <502F8F83.5030902@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
-Content-Disposition: inline
-In-Reply-To: <502F8F83.5030902@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752234Ab2HRShO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 14:37:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41466 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751632Ab2HRShJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 14:37:09 -0400
+Message-ID: <1345315025.10014.15.camel@joe2Laptop>
+Subject: Re: [bisected] Driver core fixes for 3.6-rc3 regression
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        Jason Baron <jbaron@redhat.com>
+Date: Sat, 18 Aug 2012 11:37:05 -0700
+In-Reply-To: <20120818163401.GA2013@kroah.com>
+References: <20120817171354.GA14046@kroah.com> <20120818060934.GA255@x4>
+	 <20120818163401.GA2013@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2012-08-18 at 09:34 -0700, Greg KH wrote:
+> On Sat, Aug 18, 2012 at 08:09:34AM +0200, Markus Trippelsdorf wrote:
+> > On 2012.08.17 at 10:13 -0700, Greg KH wrote:
+> > > ----------------------------------------------------------------
+> > > Driver core fixes for 3.6-rc3
+> > > 
+> > > Here are two tiny patches, one fixing a dynamic debug problem that the printk
+> > > rework turned up, and the other one fixing an extcon problem that people
+> > > reported.
+> > > 
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > 
+> > > ----------------------------------------------------------------
+> > > Axel Lin (1):
+> > >       extcon: extcon_gpio: Replace gpio_request_one by devm_gpio_request_one
+> > > 
+> > > Jim Cromie (1):
+> > >       drivers-core: make structured logging play nice with dynamic-debug
+> > 
+> > The commit af7f2158f above causes hundreds of "Failed to force enable
+> > HPET" messages to appear during boot on my system.
+> > Please also note the strange "^A0" character sequence that is also
+> > introduced by the same commit.
+> 
+> Ugh, I see the same thing here, debugging must be accidentally enabled
+> with this patch, and the ^A0 stuff is just a mess.  Sorry, I didn't
+> notice this in my testing, my fault.
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's a combination interaction because of the patch with
+a conversion of KERN_<LEVEL> from "<.>" to concatenated
+SOH "."
 
+commit: 04d2c8c83d0e3ac5f78aeede51babb3236200112
+																			
+> Reverting this resolves the issue for me.
+> 
+> Jim, any thoughts on how to fix this?  Should I just revert this patch
+> for now?
 
-> >>-	clk_prepare_enable(i2c_dev->div_clk);
-> >>+	/* Support I2C_M_NOSTART only if HW support continue xfer. */
-> >>+	for (i =3D 0; i<  num - 1; i++) {
-> >>+		if ((msgs[i + 1].flags&  I2C_M_NOSTART)&&
-> >>+			!i2c_dev->has_continue_xfer_support) {
-> >>+			dev_err(i2c_dev->dev,
-> >>+				"mesg %d have illegal flag\n", i + 1);
-> >>+			return -EINVAL;
-> >>+		}
-> >>+	}
-> >Drivers are requested to explicitly check for features of the I2C bus
-> >(like M_NOSTART) before using them, so I'd skip this extra check.
-> >
->=20
-> Ok, I kept this as part of flag checking so illegal flag should not
-> be passed. I will remove this on next version patch.
->=20
-> >>+
-> >>+	clk_prepare_enable(i2c_dev->clk);
-> > From a glimpse, this change looks unrelated at least. Even wrong, no?
-> >
->=20
-> It was already there, just before above check. Due to insertion of
-> check, this code shifted, otherwise it is not a new code.
+I have a patch to resolve dynamic debug logging.
+I'll submit it Monday along with an updated netdev_printk patch.
 
-It used to be ->div_clk and now it is ->clk?
+Joe
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---M9NhX3UHpAaciwkO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlAv3xQACgkQD27XaX1/VRuMSwCgwWBZ/GTWIGew9JIPPT1F+OJW
-QOIAoKnHdvNb2jtx3suvGHm+WNAro7p9
-=SQ3A
------END PGP SIGNATURE-----
-
---M9NhX3UHpAaciwkO--
