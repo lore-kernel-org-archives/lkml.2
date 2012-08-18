@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab2HRIbw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 04:31:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4511 "EHLO mga02.intel.com"
+	id S1753085Ab2HRIcP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 04:32:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10632 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab2HRIaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 04:30:07 -0400
+	id S1753175Ab2HRIaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 04:30:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,790,1336374000"; 
-   d="scan'208";a="182264784"
+   d="scan'208";a="182264789"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Thomas Gleixner" <tglx@linutronix.de>,
@@ -18,9 +18,9 @@ To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Borislav Petkov" <borislav.petkov@amd.com>,
         "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH 10/11] x86/mm/init.c: Copy ucode from initrd image to memory
-Date: Sat, 18 Aug 2012 01:15:28 -0700
-Message-Id: <1345277729-8399-11-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH 11/11] x86/Kconfig: Configurations to enable/disable the feature
+Date: Sat, 18 Aug 2012 01:15:29 -0700
+Message-Id: <1345277729-8399-12-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com>
 References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com>
@@ -30,42 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Before initrd image is freed, copy valid ucode patches from initrd image
-to kernel virtual memory. The saved ucode will be used to update AP in resume.
+MICROCODE_INTEL_LIB, MICROCODE_INTEL_EARLY, and MICROCODE_EARLY are three new
+configurations to enable or disable the feature.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/mm/init.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index e0e6990..58ceb82 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -16,6 +16,7 @@
- #include <asm/tlb.h>
- #include <asm/proto.h>
- #include <asm/dma.h>		/* for MAX_DMA_PFN */
-+#include <asm/microcode.h>
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 50c660d..32caa77 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1035,6 +1035,7 @@ config MICROCODE_INTEL
+ 	depends on MICROCODE
+ 	default MICROCODE
+ 	select FW_LOADER
++	select MICROCODE_INTEL_LIB
+ 	---help---
+ 	  This options enables microcode patch loading support for Intel
+ 	  processors.
+@@ -1055,6 +1056,27 @@ config MICROCODE_OLD_INTERFACE
+ 	def_bool y
+ 	depends on MICROCODE
  
- unsigned long __initdata pgt_buf_start;
- unsigned long __meminitdata pgt_buf_end;
-@@ -387,6 +388,15 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void __init free_initrd_mem(unsigned long start, unsigned long end)
- {
-+#ifdef CONFIG_MICROCODE_EARLY
-+	/*
-+	 * Remember, initrd memory may contain microcode or other useful things.
-+	 * Before we lose initrd mem, we need to find a place to hold them
-+	 * now that normal virtual memory is enabled.
-+	 */
-+	save_microcode_in_initrd(&mc_saved_data, mc_saved_in_initrd);
-+#endif
++config MICROCODE_EARLY
++	def_bool y
++	depends on MICROCODE_INTEL_EARLY
 +
- 	/*
- 	 * end could be not aligned, and We can not align that,
- 	 * decompresser could be confused by aligned initrd_end
++config MICROCODE_INTEL_LIB
++	def_bool y
++	depends on MICROCODE_INTEL_EARLY
++
++config MICROCODE_INTEL_EARLY
++	bool "Early load microcode"
++	depends on MICROCODE_INTEL && BLK_DEV_INITRD
++	default y
++	select FW_LOADER
++	select MICROCODE_EARLY
++	select MICROCODE_INTEL_LIB
++	help
++	  This option provides functionality to read additional microcode data
++	  at the beginning of initrd image. The data tells kernel to load
++	  microcode to CPU's as early as possible. No functional change if no
++	  microcode data is glued to the initrd, therefore it's safe to say Y.
++
+ config X86_MSR
+ 	tristate "/dev/cpu/*/msr - Model-specific register support"
+ 	---help---
 -- 
 1.7.2
 
