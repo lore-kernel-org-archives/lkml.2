@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab2HRRbZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:31:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21506 "EHLO mga01.intel.com"
+	id S1756301Ab2HRRbm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:31:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9940 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab2HRRa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754532Ab2HRRa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Aug 2012 13:30:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
-   d="scan'208";a="204520326"
+   d="scan'208";a="210330064"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 28/31] sections: Fix section conflicts in net/can
-Date: Sat, 18 Aug 2012 10:30:19 -0700
-Message-Id: <1345311022-26328-29-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 07/31] sections: Fix section conflicts in arch/powerpc
+Date: Sat, 18 Aug 2012 10:29:58 -0700
+Message-Id: <1345311022-26328-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
@@ -27,64 +27,92 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- net/can/af_can.c |    2 +-
- net/can/bcm.c    |    2 +-
- net/can/gw.c     |    2 +-
- net/can/raw.c    |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ arch/powerpc/platforms/40x/ppc40x_simple.c    |    2 +-
+ arch/powerpc/platforms/512x/mpc5121_generic.c |    2 +-
+ arch/powerpc/platforms/52xx/lite5200.c        |    2 +-
+ arch/powerpc/platforms/52xx/media5200.c       |    2 +-
+ arch/powerpc/platforms/83xx/mpc837x_rdb.c     |    2 +-
+ arch/powerpc/platforms/85xx/tqm85xx.c         |    2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/net/can/af_can.c b/net/can/af_can.c
-index 821022a..ddac1ee 100644
---- a/net/can/af_can.c
-+++ b/net/can/af_can.c
-@@ -63,7 +63,7 @@
+diff --git a/arch/powerpc/platforms/40x/ppc40x_simple.c b/arch/powerpc/platforms/40x/ppc40x_simple.c
+index 9761206..969dddc 100644
+--- a/arch/powerpc/platforms/40x/ppc40x_simple.c
++++ b/arch/powerpc/platforms/40x/ppc40x_simple.c
+@@ -50,7 +50,7 @@ machine_device_initcall(ppc40x_simple, ppc40x_device_probe);
+  * Again, if your board needs to do things differently then create a
+  * board.c file for it rather than adding it to this list.
+  */
+-static const char *board[] __initdata = {
++static const char * const board[] __initconst = {
+ 	"amcc,acadia",
+ 	"amcc,haleakala",
+ 	"amcc,kilauea",
+diff --git a/arch/powerpc/platforms/512x/mpc5121_generic.c b/arch/powerpc/platforms/512x/mpc5121_generic.c
+index 926731f..ca1ca66 100644
+--- a/arch/powerpc/platforms/512x/mpc5121_generic.c
++++ b/arch/powerpc/platforms/512x/mpc5121_generic.c
+@@ -26,7 +26,7 @@
+ /*
+  * list of supported boards
+  */
+-static const char *board[] __initdata = {
++static const char * const board[] __initconst = {
+ 	"prt,prtlvt",
+ 	NULL
+ };
+diff --git a/arch/powerpc/platforms/52xx/lite5200.c b/arch/powerpc/platforms/52xx/lite5200.c
+index 01ffa64..448d862 100644
+--- a/arch/powerpc/platforms/52xx/lite5200.c
++++ b/arch/powerpc/platforms/52xx/lite5200.c
+@@ -172,7 +172,7 @@ static void __init lite5200_setup_arch(void)
+ 	mpc52xx_setup_pci();
+ }
  
- #include "af_can.h"
+-static const char *board[] __initdata = {
++static const char * const board[] __initconst = {
+ 	"fsl,lite5200",
+ 	"fsl,lite5200b",
+ 	NULL,
+diff --git a/arch/powerpc/platforms/52xx/media5200.c b/arch/powerpc/platforms/52xx/media5200.c
+index 17d91b7..070d315 100644
+--- a/arch/powerpc/platforms/52xx/media5200.c
++++ b/arch/powerpc/platforms/52xx/media5200.c
+@@ -232,7 +232,7 @@ static void __init media5200_setup_arch(void)
+ }
  
--static __initdata const char banner[] = KERN_INFO
-+static __initconst const char banner[] = KERN_INFO
- 	"can: controller area network core (" CAN_VERSION_STRING ")\n";
+ /* list of the supported boards */
+-static const char *board[] __initdata = {
++static const char * const board[] __initconst = {
+ 	"fsl,media5200",
+ 	NULL
+ };
+diff --git a/arch/powerpc/platforms/83xx/mpc837x_rdb.c b/arch/powerpc/platforms/83xx/mpc837x_rdb.c
+index 16c9c9c..eca1f09 100644
+--- a/arch/powerpc/platforms/83xx/mpc837x_rdb.c
++++ b/arch/powerpc/platforms/83xx/mpc837x_rdb.c
+@@ -60,7 +60,7 @@ static void __init mpc837x_rdb_setup_arch(void)
  
- MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
-diff --git a/net/can/bcm.c b/net/can/bcm.c
-index 151b773..6f74758 100644
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -77,7 +77,7 @@
- 		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
+ machine_device_initcall(mpc837x_rdb, mpc83xx_declare_of_platform_devices);
  
- #define CAN_BCM_VERSION CAN_VERSION
--static __initdata const char banner[] = KERN_INFO
-+static __initconst const char banner[] = KERN_INFO
- 	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
+-static const char *board[] __initdata = {
++static const char * const board[] __initconst = {
+ 	"fsl,mpc8377rdb",
+ 	"fsl,mpc8378rdb",
+ 	"fsl,mpc8379rdb",
+diff --git a/arch/powerpc/platforms/85xx/tqm85xx.c b/arch/powerpc/platforms/85xx/tqm85xx.c
+index 3e70a20..b62fa87 100644
+--- a/arch/powerpc/platforms/85xx/tqm85xx.c
++++ b/arch/powerpc/platforms/85xx/tqm85xx.c
+@@ -125,7 +125,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_1520,
  
- MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
-diff --git a/net/can/gw.c b/net/can/gw.c
-index b54d5e6..4fe4fc4 100644
---- a/net/can/gw.c
-+++ b/net/can/gw.c
-@@ -58,7 +58,7 @@
- #include <net/sock.h>
+ machine_device_initcall(tqm85xx, mpc85xx_common_publish_devices);
  
- #define CAN_GW_VERSION "20101209"
--static __initdata const char banner[] =
-+static __initconst const char banner[] =
- 	KERN_INFO "can: netlink gateway (rev " CAN_GW_VERSION ")\n";
- 
- MODULE_DESCRIPTION("PF_CAN netlink gateway");
-diff --git a/net/can/raw.c b/net/can/raw.c
-index 3e9c893..5b0e3e3 100644
---- a/net/can/raw.c
-+++ b/net/can/raw.c
-@@ -55,7 +55,7 @@
- #include <net/net_namespace.h>
- 
- #define CAN_RAW_VERSION CAN_VERSION
--static __initdata const char banner[] =
-+static __initconst const char banner[] =
- 	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
- 
- MODULE_DESCRIPTION("PF_CAN raw protocol");
+-static const char *board[] __initdata = {
++static const char * const board[] __initconst = {
+ 	"tqc,tqm8540",
+ 	"tqc,tqm8541",
+ 	"tqc,tqm8548",
 -- 
 1.7.7.6
 
