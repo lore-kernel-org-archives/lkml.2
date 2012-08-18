@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2HRRec (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:34:32 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:39723 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab2HRRe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:34:28 -0400
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc: dma-iommu: fix IOMMU window check
-Date: Sat, 18 Aug 2012 20:34:15 +0300
-Message-Id: <1345311255-30657-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.7.2.5
+	id S1756932Ab2HRRdX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:33:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6543 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755631Ab2HRRai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 13:30:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
+   d="scan'208";a="182607894"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 20/31] sections: Fix section conflicts in drivers/mmc
+Date: Sat, 18 Aug 2012 10:30:11 -0700
+Message-Id: <1345311022-26328-21-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
+References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking for device mask to cover the whole IOMMU table is too strict.
-IOMMU allocators should handle mask constraint properly for each
-allocation.
+From: Andi Kleen <ak@linux.intel.com>
 
-The patch enables to use old AirPort Extreme cards on PowerMacs with
-more than 1GB of memory; without the patch the driver init fails with:
-
-  b43-pci-bridge 0001:01:01.0: Warning: IOMMU window too big for device mask
-  b43-pci-bridge 0001:01:01.0: mask: 0x3fffffff, table end: 0x80000000
-  b43-phy0 ERROR: The machine/kernel does not support the required 30-bit DMA mask
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/powerpc/kernel/dma-iommu.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/mmc/host/sdhci-pci.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/kernel/dma-iommu.c b/arch/powerpc/kernel/dma-iommu.c
-index 2d7bb8c..e489752 100644
---- a/arch/powerpc/kernel/dma-iommu.c
-+++ b/arch/powerpc/kernel/dma-iommu.c
-@@ -83,11 +83,10 @@ static int dma_iommu_dma_supported(struct device *dev, u64 mask)
- 		return 0;
- 	}
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index 504da71..9722d43 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -653,7 +653,7 @@ static const struct sdhci_pci_fixes sdhci_via = {
+ 	.probe		= via_probe,
+ };
  
--	if ((tbl->it_offset + tbl->it_size) > (mask >> IOMMU_PAGE_SHIFT)) {
--		dev_info(dev, "Warning: IOMMU window too big for device mask\n");
--		dev_info(dev, "mask: 0x%08llx, table end: 0x%08lx\n",
--				mask, (tbl->it_offset + tbl->it_size) <<
--				IOMMU_PAGE_SHIFT);
-+	if (tbl->it_offset > (mask >> IOMMU_PAGE_SHIFT)) {
-+		dev_info(dev, "Warning: IOMMU offset too big for device mask\n");
-+		dev_info(dev, "mask: 0x%08llx, table offset: 0x%08lx\n",
-+				mask, tbl->it_offset << IOMMU_PAGE_SHIFT);
- 		return 0;
- 	} else
- 		return 1;
+-static const struct pci_device_id pci_ids[] __devinitdata = {
++static const struct pci_device_id pci_ids[] __devinitconst = {
+ 	{
+ 		.vendor		= PCI_VENDOR_ID_RICOH,
+ 		.device		= PCI_DEVICE_ID_RICOH_R5C822,
 -- 
-1.7.2.5
+1.7.7.6
 
