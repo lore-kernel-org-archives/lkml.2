@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab2HRRcb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:32:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8308 "EHLO mga02.intel.com"
+	id S1756442Ab2HRRc2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:32:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60444 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754901Ab2HRRac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:30:32 -0400
+	id S1754841Ab2HRRab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 13:30:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
-   d="scan'208";a="182354051"
+   d="scan'208";a="210330069"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 24/31] sections: Fix section conflicts in drivers/platform/x86
-Date: Sat, 18 Aug 2012 10:30:15 -0700
-Message-Id: <1345311022-26328-25-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 26/31] sections: Fix section conflicts in drivers/video
+Date: Sat, 18 Aug 2012 10:30:17 -0700
+Message-Id: <1345311022-26328-27-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
@@ -27,86 +27,87 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/platform/x86/amilo-rfkill.c   |    2 +-
- drivers/platform/x86/fujitsu-tablet.c |   10 +++++-----
- drivers/platform/x86/thinkpad_acpi.c  |    2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/video/aty/aty128fb.c     |    2 +-
+ drivers/video/geode/gx1fb_core.c |    2 +-
+ drivers/video/gxt4500.c          |    4 ++--
+ drivers/video/i810/i810_main.c   |    2 +-
+ drivers/video/jz4740_fb.c        |    2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/platform/x86/amilo-rfkill.c b/drivers/platform/x86/amilo-rfkill.c
-index a514bf6..1deca7f 100644
---- a/drivers/platform/x86/amilo-rfkill.c
-+++ b/drivers/platform/x86/amilo-rfkill.c
-@@ -74,7 +74,7 @@ static const struct rfkill_ops amilo_m7440_rfkill_ops = {
- 	.set_block = amilo_m7440_rfkill_set_block
+diff --git a/drivers/video/aty/aty128fb.c b/drivers/video/aty/aty128fb.c
+index 747442d..0fefa84 100644
+--- a/drivers/video/aty/aty128fb.c
++++ b/drivers/video/aty/aty128fb.c
+@@ -149,7 +149,7 @@ enum {
  };
  
--static const struct dmi_system_id __devinitdata amilo_rfkill_id_table[] = {
-+static const struct dmi_system_id __devinitconst amilo_rfkill_id_table[] = {
- 	{
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
-diff --git a/drivers/platform/x86/fujitsu-tablet.c b/drivers/platform/x86/fujitsu-tablet.c
-index 7acae3f..f774845 100644
---- a/drivers/platform/x86/fujitsu-tablet.c
-+++ b/drivers/platform/x86/fujitsu-tablet.c
-@@ -52,7 +52,7 @@ struct fujitsu_config {
- 	unsigned int quirks;
- };
+ /* Must match above enum */
+-static const char *r128_family[] __devinitdata = {
++static char * const r128_family[] __devinitconst = {
+ 	"AGP",
+ 	"PCI",
+ 	"PRO AGP",
+diff --git a/drivers/video/geode/gx1fb_core.c b/drivers/video/geode/gx1fb_core.c
+index 5a5d092..265c5ed 100644
+--- a/drivers/video/geode/gx1fb_core.c
++++ b/drivers/video/geode/gx1fb_core.c
+@@ -29,7 +29,7 @@ static int  crt_option = 1;
+ static char panel_option[32] = "";
  
--static unsigned short keymap_Lifebook_Tseries[KEYMAP_LEN] __initconst = {
-+static unsigned short keymap_Lifebook_Tseries[KEYMAP_LEN] __initdata = {
- 	KEY_RESERVED,
- 	KEY_RESERVED,
- 	KEY_RESERVED,
-@@ -71,7 +71,7 @@ static unsigned short keymap_Lifebook_Tseries[KEYMAP_LEN] __initconst = {
- 	KEY_LEFTALT
- };
+ /* Modes relevant to the GX1 (taken from modedb.c) */
+-static const struct fb_videomode __devinitdata gx1_modedb[] = {
++static const struct fb_videomode __devinitconst gx1_modedb[] = {
+ 	/* 640x480-60 VESA */
+ 	{ NULL, 60, 640, 480, 39682,  48, 16, 33, 10, 96, 2,
+ 	  0, FB_VMODE_NONINTERLACED, FB_MODE_IS_VESA },
+diff --git a/drivers/video/gxt4500.c b/drivers/video/gxt4500.c
+index 0fad23f..0e9afa4 100644
+--- a/drivers/video/gxt4500.c
++++ b/drivers/video/gxt4500.c
+@@ -156,7 +156,7 @@ struct gxt4500_par {
+ static char *mode_option;
  
--static unsigned short keymap_Lifebook_U810[KEYMAP_LEN] __initconst = {
-+static unsigned short keymap_Lifebook_U810[KEYMAP_LEN] __initdata = {
- 	KEY_RESERVED,
- 	KEY_RESERVED,
- 	KEY_RESERVED,
-@@ -90,7 +90,7 @@ static unsigned short keymap_Lifebook_U810[KEYMAP_LEN] __initconst = {
- 	KEY_LEFTALT
- };
- 
--static unsigned short keymap_Stylistic_Tseries[KEYMAP_LEN] __initconst = {
-+static unsigned short keymap_Stylistic_Tseries[KEYMAP_LEN] __initdata = {
- 	KEY_RESERVED,
- 	KEY_RESERVED,
- 	KEY_RESERVED,
-@@ -109,7 +109,7 @@ static unsigned short keymap_Stylistic_Tseries[KEYMAP_LEN] __initconst = {
- 	KEY_LEFTALT
- };
- 
--static unsigned short keymap_Stylistic_ST5xxx[KEYMAP_LEN] __initconst = {
-+static unsigned short keymap_Stylistic_ST5xxx[KEYMAP_LEN] __initdata = {
- 	KEY_RESERVED,
- 	KEY_RESERVED,
- 	KEY_RESERVED,
-@@ -299,7 +299,7 @@ static int __devinit fujitsu_dmi_stylistic(const struct dmi_system_id *dmi)
- 	return 1;
+ /* default mode: 1280x1024 @ 60 Hz, 8 bpp */
+-static const struct fb_videomode defaultmode __devinitdata = {
++static const struct fb_videomode defaultmode __devinitconst = {
+ 	.refresh = 60,
+ 	.xres = 1280,
+ 	.yres = 1024,
+@@ -581,7 +581,7 @@ static int gxt4500_blank(int blank, struct fb_info *info)
+ 	return 0;
  }
  
--static struct dmi_system_id dmi_ids[] __initconst = {
-+static const struct dmi_system_id dmi_ids[] __initconst = {
- 	{
- 		.callback = fujitsu_dmi_lifebook,
- 		.ident = "Fujitsu Siemens P/T Series",
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index f28f36c..b5528ce 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -522,7 +522,7 @@ static acpi_handle ec_handle;
+-static const struct fb_fix_screeninfo gxt4500_fix __devinitdata = {
++static const struct fb_fix_screeninfo gxt4500_fix __devinitconst = {
+ 	.id = "IBM GXT4500P",
+ 	.type = FB_TYPE_PACKED_PIXELS,
+ 	.visual = FB_VISUAL_PSEUDOCOLOR,
+diff --git a/drivers/video/i810/i810_main.c b/drivers/video/i810/i810_main.c
+index b83f361..5c06781 100644
+--- a/drivers/video/i810/i810_main.c
++++ b/drivers/video/i810/i810_main.c
+@@ -97,7 +97,7 @@ static int i810fb_blank      (int blank_mode, struct fb_info *info);
+ static void i810fb_release_resource       (struct fb_info *info, struct i810fb_par *par);
  
- #define TPACPI_HANDLE(object, parent, paths...)			\
- 	static acpi_handle  object##_handle;			\
--	static const acpi_handle *object##_parent __initdata =	\
-+	static const acpi_handle * const object##_parent __initconst =	\
- 						&parent##_handle; \
- 	static char *object##_paths[] __initdata = { paths }
+ /* PCI */
+-static const char *i810_pci_list[] __devinitdata = {
++static const char * const i810_pci_list[] __devinitconst = {
+ 	"Intel(R) 810 Framebuffer Device"                                 ,
+ 	"Intel(R) 810-DC100 Framebuffer Device"                           ,
+ 	"Intel(R) 810E Framebuffer Device"                                ,
+diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
+index de36693..3c63fc2 100644
+--- a/drivers/video/jz4740_fb.c
++++ b/drivers/video/jz4740_fb.c
+@@ -136,7 +136,7 @@ struct jzfb {
+ 	uint32_t pseudo_palette[16];
+ };
  
+-static const struct fb_fix_screeninfo jzfb_fix __devinitdata = {
++static const struct fb_fix_screeninfo jzfb_fix __devinitconst = {
+ 	.id		= "JZ4740 FB",
+ 	.type		= FB_TYPE_PACKED_PIXELS,
+ 	.visual		= FB_VISUAL_TRUECOLOR,
 -- 
 1.7.7.6
 
