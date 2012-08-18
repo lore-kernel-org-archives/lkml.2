@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab2HRSzd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 14:55:33 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:36197 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab2HRSza (ORCPT
+	id S1753273Ab2HRTCI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 15:02:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50268 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab2HRTCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 14:55:30 -0400
-Date: Sat, 18 Aug 2012 20:55:28 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jim Cromie <jim.cromie@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
-        Jason Baron <jbaron@redhat.com>
-Subject: Re: [bisected] Driver core fixes for 3.6-rc3 regression
-Message-ID: <20120818185528.GA250@x4>
-References: <20120817171354.GA14046@kroah.com>
- <20120818060934.GA255@x4>
- <20120818163401.GA2013@kroah.com>
- <1345315025.10014.15.camel@joe2Laptop>
+	Sat, 18 Aug 2012 15:02:06 -0400
+Date: Sat, 18 Aug 2012 21:01:52 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Daniel Kurtz <djkurtz@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-i801: Add device tree support
+Message-ID: <20120818190152.GE19802@pengutronix.de>
+References: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120818094846.GA24812@pengutronix.de>
+ <20120818111745.GA15702@avionic-0098.mockup.avionic-design.de>
+ <20120818121628.GB12839@pengutronix.de>
+ <20120818123527.GA28701@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="orO6xySwJI16pVnm"
 Content-Disposition: inline
-In-Reply-To: <1345315025.10014.15.camel@joe2Laptop>
+In-Reply-To: <20120818123527.GA28701@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.08.18 at 11:37 -0700, Joe Perches wrote:
-> On Sat, 2012-08-18 at 09:34 -0700, Greg KH wrote:
-> > On Sat, Aug 18, 2012 at 08:09:34AM +0200, Markus Trippelsdorf wrote:
-> > > On 2012.08.17 at 10:13 -0700, Greg KH wrote:
-> > > > ----------------------------------------------------------------
-> > > > Driver core fixes for 3.6-rc3
-> > > > 
-> > > > Here are two tiny patches, one fixing a dynamic debug problem that the printk
-> > > > rework turned up, and the other one fixing an extcon problem that people
-> > > > reported.
-> > > > 
-> > > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > > 
-> > > > ----------------------------------------------------------------
-> > > > Axel Lin (1):
-> > > >       extcon: extcon_gpio: Replace gpio_request_one by devm_gpio_request_one
-> > > > 
-> > > > Jim Cromie (1):
-> > > >       drivers-core: make structured logging play nice with dynamic-debug
-> > > 
-> > > The commit af7f2158f above causes hundreds of "Failed to force enable
-> > > HPET" messages to appear during boot on my system.
-> > > Please also note the strange "^A0" character sequence that is also
-> > > introduced by the same commit.
-> > 
-> > Ugh, I see the same thing here, debugging must be accidentally enabled
-> > with this patch, and the ^A0 stuff is just a mess.  Sorry, I didn't
-> > notice this in my testing, my fault.
-> 
-> It's a combination interaction because of the patch with
-> a conversion of KERN_<LEVEL> from "<.>" to concatenated
-> SOH "."
-> 
-> commit: 04d2c8c83d0e3ac5f78aeede51babb3236200112
 
-IOW:
+--orO6xySwJI16pVnm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index cdd01c5..5e6e00b 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1912,8 +1912,8 @@ int __dev_printk(const char *level, const struct device *dev,
- 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
- 	}
- skip:
--	if (level[3])
--		level_extra = &level[3]; /* skip past "<L>" */
-+	if (level[2])
-+		level_extra = &level[2]; /* skip past KERN_SOH "L" */
- 
- 	return printk_emit(0, level[1] - '0',
- 			   dictlen ? dict : NULL, dictlen,
 
--- 
-Markus
+> > I thought to recall that busses which can be probed at runtime should
+> > not have nodes but should be probed. Maybe that was wrong. Can you point
+> > me to a dts-file with an example?
+>=20
+> That approach doesn't work for I2C controllers, though because you
+> couldn't attach an slaves to them. The same goes for SPI controllers or
+> any other dumb busses that can't be probed.
+
+I understand the problem. I was wondering how it has been solved. Thanks
+for the pointer, I got the idea now.
+
+> arch/x86/platform/ce4100/falconfalls.dts is an example for an X86
+> platform where PCI devices have associated device tree nodes.
+
+Do you intend to send a dts file mainline which needs the patch you sent?
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--orO6xySwJI16pVnm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlAv5qAACgkQD27XaX1/VRsBCgCgnMfKEoOhgv4MIwrZwaDet8Yn
+dNgAoJnrGR/qWQYZ1tVDv5kkc9jFHVcQ
+=KhcD
+-----END PGP SIGNATURE-----
+
+--orO6xySwJI16pVnm--
