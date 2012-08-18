@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab2HRBUC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 21:20:02 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:24657 "EHLO
+	id S1756355Ab2HRBUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 21:20:14 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:24997 "EHLO
 	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415Ab2HRBTo (ORCPT
+	with ESMTP id S1756302Ab2HRBUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 21:19:44 -0400
+	Fri, 17 Aug 2012 21:20:03 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-131.messagelabs.com!1345252783!21923467!1
-X-Originating-IP: [216.166.12.72]
+X-Msg-Ref: server-15.tower-131.messagelabs.com!1345252801!24331518!1
+X-Originating-IP: [216.166.12.31]
 X-StarScan-Received: 
 X-StarScan-Version: 6.6.1.2; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/20] staging: comedi: adv_pci_dio: use attach_pci callback
-Date: Fri, 17 Aug 2012 18:19:36 -0700
+Subject: [PATCH 16/20] staging: comedi: adv_pci_dio: convert boardinfo initialization to C99 format
+Date: Fri, 17 Aug 2012 18:19:56 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -24,143 +24,382 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201208171819.37263.hartleys@visionengravers.com>
+Message-ID: <201208171819.56466.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert this PCI driver to use the comedi PCI auto config attach
-mechanism by adding an 'attach_pci' callback function. Since the
-driver does not require any external configuration options, and
-the legacy 'attach' callback is now optional, remove it.
+Convert the boardinfo initialization to C99 format to make it
+less error prone.
+
+The struct diosubd_data information is not converted to C99 format
+yet because some of it will be removed.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/adv_pci_dio.c | 61 ++++++++++------------------
- 1 file changed, 22 insertions(+), 39 deletions(-)
+ drivers/staging/comedi/drivers/adv_pci_dio.c | 347 ++++++++++++++++++---------
+ 1 file changed, 227 insertions(+), 120 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-index 97fc6b8..36b7c8d 100644
+index 36b7c8d..0d1b441 100644
 --- a/drivers/staging/comedi/drivers/adv_pci_dio.c
 +++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-@@ -913,8 +913,7 @@ static int pci_dio_reset(struct comedi_device *dev)
- /*
- ==============================================================================
- */
--static int pci1760_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it)
-+static int pci1760_attach(struct comedi_device *dev)
- {
- 	struct comedi_subdevice *s;
- 	int subdev = 0;
-@@ -1042,60 +1041,45 @@ static int pci_dio_add_8254(struct comedi_device *dev,
- 	return 0;
- }
- 
--static struct pci_dev *pci_dio_find_pci_dev(struct comedi_device *dev,
--					    struct comedi_devconfig *it)
-+static const void *pci_dio_find_boardinfo(struct comedi_device *dev,
-+					  struct pci_dev *pcidev)
- {
--	struct pci_dev *pcidev = NULL;
--	int bus = it->options[0];
--	int slot = it->options[1];
-+	const struct dio_boardtype *this_board;
- 	int i;
- 
--	for_each_pci_dev(pcidev) {
--		if (bus || slot) {
--			if (bus != pcidev->bus->number ||
--			    slot != PCI_SLOT(pcidev->devfn))
--				continue;
--		}
--		for (i = 0; i < ARRAY_SIZE(boardtypes); ++i) {
--			if (boardtypes[i].vendor_id != pcidev->vendor)
--				continue;
--			if (boardtypes[i].device_id != pcidev->device)
--				continue;
--			dev->board_ptr = boardtypes + i;
--			return pcidev;
--		}
-+	for (i = 0; i < ARRAY_SIZE(boardtypes); ++i) {
-+		this_board = &boardtypes[i];
-+		if (this_board->vendor_id == pcidev->vendor &&
-+		    this_board->device_id == pcidev->device)
-+			return this_board;
- 	}
--	dev_err(dev->class_dev,
--		"No supported board found! (req. bus %d, slot %d)\n",
--		bus, slot);
- 	return NULL;
- }
- 
--static int pci_dio_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it)
-+static int pci_dio_attach_pci(struct comedi_device *dev,
-+			      struct pci_dev *pcidev)
- {
- 	const struct dio_boardtype *this_board;
- 	struct pci_dio_private *devpriv;
--	struct pci_dev *pcidev;
- 	struct comedi_subdevice *s;
- 	int ret, subdev, n_subdevices, i, j;
- 
-+	comedi_set_hw_dev(dev, &pcidev->dev);
-+
-+	this_board = pci_dio_find_boardinfo(dev, pcidev);
-+	if (!this_board)
-+		return -ENODEV;
-+	dev->board_ptr = this_board;
-+	dev->board_name = this_board->name;
-+
- 	ret = alloc_private(dev, sizeof(*devpriv));
- 	if (ret < 0)
- 		return ret;
- 	devpriv = dev->private;
- 
--	pcidev = pci_dio_find_pci_dev(dev, it);
--	if (!pcidev)
--		return -EIO;
--	comedi_set_hw_dev(dev, &pcidev->dev);
--	this_board = comedi_board(dev);
--	dev->board_name = this_board->name;
--
- 	ret = comedi_pci_enable(pcidev, dev->board_name);
- 	if (ret)
- 		return ret;
--
- 	dev->iobase = pci_resource_start(pcidev, this_board->main_pci_region);
- 
- 	if (this_board->cardtype == TYPE_PCI1760) {
-@@ -1161,7 +1145,7 @@ static int pci_dio_attach(struct comedi_device *dev,
- 		}
- 
- 	if (this_board->cardtype == TYPE_PCI1760)
--		pci1760_attach(dev, it);
-+		pci1760_attach(dev);
- 
- 	devpriv->valid = 1;
- 
-@@ -1211,15 +1195,14 @@ static void pci_dio_detach(struct comedi_device *dev)
- 	if (pcidev) {
- 		if (dev->iobase)
- 			comedi_pci_disable(pcidev);
--		pci_dev_put(pcidev);
- 	}
- }
- 
- static struct comedi_driver adv_pci_dio_driver = {
- 	.driver_name	= "adv_pci_dio",
- 	.module		= THIS_MODULE,
--	.attach		= pci_dio_attach,
--	.detach		= pci_dio_detach
-+	.attach_pci	= pci_dio_attach_pci,
-+	.detach		= pci_dio_detach,
+@@ -250,126 +250,233 @@ struct dio_boardtype {
  };
  
- static int __devinit adv_pci_dio_pci_probe(struct pci_dev *dev,
+ static const struct dio_boardtype boardtypes[] = {
+-	{"pci1730", PCI_VENDOR_ID_ADVANTECH, 0x1730, PCIDIO_MAINREG,
+-	 TYPE_PCI1730,
+-	 { {16, PCI1730_DI, 2, 0}, {16, PCI1730_IDI, 2, 0} },
+-	 { {16, PCI1730_DO, 2, 0}, {16, PCI1730_IDO, 2, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI173x_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1733", PCI_VENDOR_ID_ADVANTECH, 0x1733, PCIDIO_MAINREG,
+-	 TYPE_PCI1733,
+-	 { {0, 0, 0, 0}, {32, PCI1733_IDI, 4, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI173x_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1734", PCI_VENDOR_ID_ADVANTECH, 0x1734, PCIDIO_MAINREG,
+-	 TYPE_PCI1734,
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {32, PCI1734_IDO, 4, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI173x_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1735", PCI_VENDOR_ID_ADVANTECH, 0x1735, PCIDIO_MAINREG,
+-	 TYPE_PCI1735,
+-	 { {32, PCI1735_DI, 4, 0}, {0, 0, 0, 0} },
+-	 { {32, PCI1735_DO, 4, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { 4, PCI1735_BOARDID, 1, SDF_INTERNAL},
+-	 { {3, PCI1735_C8254, 1, 0} },
+-	 IO_8b},
+-	{"pci1736", PCI_VENDOR_ID_ADVANTECH, 0x1736, PCI1736_MAINREG,
+-	 TYPE_PCI1736,
+-	 { {0, 0, 0, 0}, {16, PCI1736_IDI, 2, 0} },
+-	 { {0, 0, 0, 0}, {16, PCI1736_IDO, 2, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI1736_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1739", PCI_VENDOR_ID_ADVANTECH, 0x1739, PCIDIO_MAINREG,
+-	 TYPE_PCI1739,
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {48, PCI1739_DIO, 2, 0}, {0, 0, 0, 0} },
+-	 {0, 0, 0, 0},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1750", PCI_VENDOR_ID_ADVANTECH, 0x1750, PCIDIO_MAINREG,
+-	 TYPE_PCI1750,
+-	 { {0, 0, 0, 0}, {16, PCI1750_IDI, 2, 0} },
+-	 { {0, 0, 0, 0}, {16, PCI1750_IDO, 2, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {0, 0, 0, 0},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1751", PCI_VENDOR_ID_ADVANTECH, 0x1751, PCIDIO_MAINREG,
+-	 TYPE_PCI1751,
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {48, PCI1751_DIO, 2, 0}, {0, 0, 0, 0} },
+-	 {0, 0, 0, 0},
+-	 { {3, PCI1751_CNT, 1, 0} },
+-	 IO_8b},
+-	{"pci1752", PCI_VENDOR_ID_ADVANTECH, 0x1752, PCIDIO_MAINREG,
+-	 TYPE_PCI1752,
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {32, PCI1752_IDO, 2, 0}, {32, PCI1752_IDO2, 2, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI175x_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_16b},
+-	{"pci1753", PCI_VENDOR_ID_ADVANTECH, 0x1753, PCIDIO_MAINREG,
+-	 TYPE_PCI1753,
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {96, PCI1753_DIO, 4, 0}, {0, 0, 0, 0} },
+-	 {0, 0, 0, 0},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1753e", PCI_VENDOR_ID_ADVANTECH, 0x1753, PCIDIO_MAINREG,
+-	 TYPE_PCI1753E,
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {96, PCI1753_DIO, 4, 0}, {96, PCI1753E_DIO, 4, 0} },
+-	 {0, 0, 0, 0},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1754", PCI_VENDOR_ID_ADVANTECH, 0x1754, PCIDIO_MAINREG,
+-	 TYPE_PCI1754,
+-	 { {32, PCI1754_IDI, 2, 0}, {32, PCI1754_IDI2, 2, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI175x_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_16b},
+-	{"pci1756", PCI_VENDOR_ID_ADVANTECH, 0x1756, PCIDIO_MAINREG,
+-	 TYPE_PCI1756,
+-	 { {0, 0, 0, 0}, {32, PCI1756_IDI, 2, 0} },
+-	 { {0, 0, 0, 0}, {32, PCI1756_IDO, 2, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI175x_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_16b},
+-	{"pci1760", PCI_VENDOR_ID_ADVANTECH, 0x1760, 0,
+-	 TYPE_PCI1760,
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} }, /* This card have own setup work */
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {0, 0, 0, 0},
+-	 { {0, 0, 0, 0} },
+-	 IO_8b},
+-	{"pci1762", PCI_VENDOR_ID_ADVANTECH, 0x1762, PCIDIO_MAINREG,
+-	 TYPE_PCI1762,
+-	 { {0, 0, 0, 0}, {16, PCI1762_IDI, 1, 0} },
+-	 { {0, 0, 0, 0}, {16, PCI1762_RO, 1, 0} },
+-	 { {0, 0, 0, 0}, {0, 0, 0, 0} },
+-	 {4, PCI1762_BOARDID, 1, SDF_INTERNAL},
+-	 { {0, 0, 0, 0} },
+-	 IO_16b}
++	{
++		.name		= "pci1730",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1730,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1730,
++		.sdi[0]		= { 16, PCI1730_DI, 2, 0, },
++		.sdi[1]		= { 16, PCI1730_IDI, 2, 0, },
++		.sdo[0]		= { 16, PCI1730_DO, 2, 0, },
++		.sdo[1]		= { 16, PCI1730_IDO, 2, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI173x_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1733",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1733,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1733,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 32, PCI1733_IDI, 4, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI173x_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1734",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1734,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1734,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 32, PCI1734_IDO, 4, 0, },
++		.sdio[0]	= { 0, 0, 0, 0 },
++		.sdio[1]	= { 0, 0, 0, 0 },
++		.boardid	= { 4, PCI173x_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1735",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1735,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1735,
++		.sdi[0]		= { 32, PCI1735_DI, 4, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 32, PCI1735_DO, 4, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI1735_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 3, PCI1735_C8254, 1, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1736",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1736,
++		.main_pci_region = PCI1736_MAINREG,
++		.cardtype	= TYPE_PCI1736,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 16, PCI1736_IDI, 2, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 16, PCI1736_IDO, 2, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI1736_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1739",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1739,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1739,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 48, PCI1739_DIO, 2, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 0, 0, 0, 0, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1750",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1750,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1750,
++		.sdi[0]		= { 0, 0, 0, 0,},
++		.sdi[1]		= { 16, PCI1750_IDI, 2, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 16, PCI1750_IDO, 2, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 0, 0, 0, 0, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1751",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1751,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1751,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 48, PCI1751_DIO, 2, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 0, 0, 0, 0, },
++		.s8254[0]	= { 3, PCI1751_CNT, 1, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1752",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1752,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1752,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 32, PCI1752_IDO, 2, 0, },
++		.sdo[1]		= { 32, PCI1752_IDO2, 2, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI175x_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_16b,
++	}, {
++		.name		= "pci1753",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1753,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1753,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 96, PCI1753_DIO, 4, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 0, 0, 0, 0, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1753e",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1753,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1753E,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 96, PCI1753_DIO, 4, 0, },
++		.sdio[1]	= { 96, PCI1753E_DIO, 4, 0, },
++		.boardid	= { 0, 0, 0, 0, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1754",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1754,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1754,
++		.sdi[0]		= { 32, PCI1754_IDI, 2, 0, },
++		.sdi[1]		= { 32, PCI1754_IDI2, 2, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI175x_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_16b,
++	}, {
++		.name		= "pci1756",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1756,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1756,
++		.sdi[0]		= { 0, 0, 0, 0,},
++		.sdi[1]		= { 32, PCI1756_IDI, 2, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 32, PCI1756_IDO, 2, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI175x_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_16b,
++	}, {
++		/* This card has its own 'attach' */
++		.name		= "pci1760",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1760,
++		.main_pci_region = 0,
++		.cardtype	= TYPE_PCI1760,
++		.sdi[0]		= { 0, 0, 0, 0, },
++		.sdi[1]		= { 0, 0, 0, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 0, 0, 0, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 0, 0, 0, 0, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_8b,
++	}, {
++		.name		= "pci1762",
++		.vendor_id	= PCI_VENDOR_ID_ADVANTECH,
++		.device_id	= 0x1762,
++		.main_pci_region = PCIDIO_MAINREG,
++		.cardtype	= TYPE_PCI1762,
++		.sdi[0]		= { 0, 0, 0, 0,},
++		.sdi[1]		= { 16, PCI1762_IDI, 1, 0, },
++		.sdo[0]		= { 0, 0, 0, 0, },
++		.sdo[1]		= { 16, PCI1762_RO, 1, 0, },
++		.sdio[0]	= { 0, 0, 0, 0, },
++		.sdio[1]	= { 0, 0, 0, 0, },
++		.boardid	= { 4, PCI1762_BOARDID, 1, SDF_INTERNAL, },
++		.s8254[0]	= { 0, 0, 0, 0, },
++		.io_access	= IO_16b,
++	},
+ };
+ 
+ struct pci_dio_private {
 -- 
 1.7.11
 
