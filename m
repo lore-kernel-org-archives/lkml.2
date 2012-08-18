@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab2HRULl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 16:11:41 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:52412 "EHLO smtp.gentoo.org"
+	id S1752767Ab2HRU1n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 16:27:43 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46226 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab2HRULh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 16:11:37 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H.J. Lu" <hongjiu.lu@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x32: use compat shims for {g,s}etsockopt
-Date: Sat, 18 Aug 2012 16:11:37 -0400
-Message-Id: <1345320697-15713-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.9.7
+	id S1751108Ab2HRU1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 16:27:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <ming.lei@canonical.com>
+Subject: Re: [PATCH v1 2/3] PM / Sleep: introduce dpm_for_each_dev
+Date: Sat, 18 Aug 2012 22:33:36 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+References: <1345212420-1707-1-git-send-email-ming.lei@canonical.com> <201208181538.59940.rjw@sisk.pl> <CACVXFVMxGCGJ+a=rfcCAqRuUMLG9OD3X52MMzTcfYOT4cepBGQ@mail.gmail.com>
+In-Reply-To: <CACVXFVMxGCGJ+a=rfcCAqRuUMLG9OD3X52MMzTcfYOT4cepBGQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208182233.37188.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of the arguments to {g,s}etsockopt are passed in userland pointers.
-If we try to use the 64bit entry point, we end up sometimes failing.
+On Saturday, August 18, 2012, Ming Lei wrote:
+> On Sat, Aug 18, 2012 at 9:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > My question was about the number of current users of it.  Sorry for not
+> > being clear.
+> 
+> Sorry for misunderstanding your question.
+> 
+> >
+> > If there are no more anticipated users than the current only one, please
+> > drop the unused (void *) argument.  We can always extend it in the future
+> > if need be and for now passing that NULL every time is just pointless.
+> 
+> One usage is to get statistics info about devices for debug purpose,
+> so the parameter is needed to return something.
 
-For example, dhcpcd doesn't run in x32:
-	# dhcpcd eth0
-	dhcpcd[1979]: version 5.5.6 starting
-	dhcpcd[1979]: eth0: broadcasting for a lease
-	dhcpcd[1979]: eth0: open_socket: Invalid argument
-	dhcpcd[1979]: eth0: send_raw_packet: Bad file descriptor
+So, what's the name of the _second_ function using dpm_for_each_dev()?
 
-The code in particular is getting back EINVAL when doing:
-	struct sock_fprog pf;
-	setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, &pf, sizeof(pf));
+I don't see any and device_cache_fw_images() in [3/3] clearly passes
+NULL as the first argument.
 
-Diving into the kernel code, we can see:
-include/linux/filter.h:
-	struct sock_fprog {
-		unsigned short len;
-		struct sock_filter __user *filter;
-	};
+> > And please fold [2/3] into [3/3] in this series.
+> 
+> IMO, it is better to split them to avoid coupling between fw loader and
+> device PM.
+> 
+> Looks you agreed on the patch,
 
-net/core/sock.c:
-	case SO_ATTACH_FILTER:
-		ret = -EINVAL;
-		if (optlen == sizeof(struct sock_fprog)) {
-			struct sock_fprog fprog;
+On the idea, not on the actual code.  I told you what I wanted to to change in
+it, didn't I?
 
-			ret = -EFAULT;
-			if (copy_from_user(&fprog, optval, sizeof(fprog)))
-				break;
+> and Greg has added the
+> patch into his driver-core next tree to fix -next build failure, so could
+> you just let them be that?
 
-			ret = sk_attach_filter(&fprog, sk);
-		}
-		break;
+-next is not cast in stone, you can replace patches in it with other ones
+if need be.
 
-arch/x86/syscalls/syscall_64.tbl:
-	54 common setsockopt sys_setsockopt
-	55 common getsockopt sys_getsockopt
-
-So for x64, sizeof(sock_fprog) is 16 bytes.  For x86/x32, it's 8 bytes.
-This comes down to the pointer being 32bit for x32, which means we need
-to do structure size translation.  But since x32 comes in directly to
-sys_setsockopt, it doesn't get translated like x86.
-
-After changing the syscall table and rebuilding glibc with the new kernel
-headers, dhcp runs fine in an x32 userland.
-
-Oddly, it seems like Linus noted the same thing during the initial port,
-but I guess that was missed/lost along the way:
-	https://lkml.org/lkml/2011/8/26/452
-
-Bugzilla: https://bugs.gentoo.org/423649
-Reported-by: Mads <mads@ab3.no>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- arch/x86/syscalls/syscall_64.tbl |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 29aed7a..a582bfe 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -60,8 +60,8 @@
- 51	common	getsockname		sys_getsockname
- 52	common	getpeername		sys_getpeername
- 53	common	socketpair		sys_socketpair
--54	common	setsockopt		sys_setsockopt
--55	common	getsockopt		sys_getsockopt
-+54	64	setsockopt		sys_setsockopt
-+55	64	getsockopt		sys_getsockopt
- 56	common	clone			stub_clone
- 57	common	fork			stub_fork
- 58	common	vfork			stub_vfork
-@@ -353,3 +353,5 @@
- 538	x32	sendmmsg		compat_sys_sendmmsg
- 539	x32	process_vm_readv	compat_sys_process_vm_readv
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
-+541	x32	setsockopt		compat_sys_setsockopt
-+542	x32	getsockopt		compat_sys_getsockopt
--- 
-1.7.9.7
-
+Thanks,
+Rafael
