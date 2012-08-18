@@ -1,97 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab2HROdU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 10:33:20 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57936 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab2HROdS (ORCPT
+	id S1755440Ab2HROsI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 10:48:08 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:43869 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab2HROsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 10:33:18 -0400
+	Sat, 18 Aug 2012 10:48:04 -0400
+Date: Sat, 18 Aug 2012 07:46:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Status of adaptive tickless patchset as of august 2012
+Message-ID: <20120818144659.GB3533@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120818140248.GA16073@somewhere.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <502EA680.4080608@genband.com>
-References: <5028F12C.7080405@intel.com>
-	<1345028738.31459.82.camel@twins>
-	<502C98E8.20800@linux.vnet.ibm.com>
-	<502CFD35.5000801@linux.intel.com>
-	<20120817184100.GA13369@srcf.ucam.org>
-	<502E90F3.2000702@linux.intel.com>
-	<20120817184705.GB13369@srcf.ucam.org>
-	<502E9F45.6030606@genband.com>
-	<20120817195033.GA15589@srcf.ucam.org>
-	<502EA680.4080608@genband.com>
-Date: Sat, 18 Aug 2012 22:33:16 +0800
-Message-ID: <CAJRGBZygPfmRcVmMzDiCrf7uJVDb_6pHsrfthdERmUZnDfygWw@mail.gmail.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in scheduler
-From: Luming Yu <luming.yu@gmail.com>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        preeti <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120818140248.GA16073@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12081814-7408-0000-0000-000007B9957D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 4:16 AM, Chris Friesen
-<chris.friesen@genband.com> wrote:
-> On 08/17/2012 01:50 PM, Matthew Garrett wrote:
->>
->> On Fri, Aug 17, 2012 at 01:45:09PM -0600, Chris Friesen wrote:
->>>
->>> On 08/17/2012 12:47 PM, Matthew Garrett wrote:
->>
->>
->>> The datasheet for the Xeon E5 (my variant at least) says it doesn't
->>> do C7 so never powers down the LLC.  However, as you said earlier
->>> once you can put the socket into C6 which saves about 30W compared
->>> to C1E.
->>>
->>> So as far as I can see with this CPU at least you would benefit from
->>> shutting down a whole socket when possible.
->>
->>
->> Having any active cores on the system prevents all packages from going
->> into PC6 or deeper. What I'm not clear on is whether less deep package C
->> states are also blocked.
->>
->
-> Right, we need the memory controller.
->
-> The E5 datasheet is a bit ambiguous, it reads:
->
->
-> A processor enters the package C3 low power state when:
->  -At least one core is in the C3 state.
->  -The other cores are in a C3 or lower power state, and the processor has
-> been granted permission by the platform.
->
->
-> Unfortunately it doesn't specify whether that is the other cores in the
-> package, or the other cores on the whole system.
->
+On Sat, Aug 18, 2012 at 04:02:51PM +0200, Frederic Weisbecker wrote:
+> Hi,
+> 
+> I started working on the adaptive nohz patchset by the end of 2010. Since then, I
+> iterated through one big branch:
+> 
+> - Nohz tasks (https://lwn.net/Articles/420490/)
+> - Nohz cpusets (https://lwn.net/Articles/455044/)
+> - Nohz cpusets v2 (https://lwn.net/Articles/487599/)
+> - Nohz cpusets v3 (https://lwn.net/Articles/495422/)
+> 
+> It quickly grew up to more than 40 patches. And still the full support
+> (ie: handle everything that the tick maintains, but without the tick) wasn't
+> yet finished.
+> 
+> And the more I was progressing to get this full support, the more I had patches to
+> maintain, rebase, improve, etc...
+> 
+> Some side effects went to increase:
+> 
+> - I had deep reviews about the core overall design in the first iterations. Thanks
+> to that I made nice progresses. But as the patchset grew, I got less reviews about
+> overall design but more about details. And I can totally understand that. Huge pile
+> of patches certainly don't encourage reviews.
+> 
+> - Lacking reviews on the overall design, I was feeling more and more uncomfortable about
+> whatever I was improving or whichever feature I was adding on top of the existing ones.
+> And I was indeed digging on some wrong direction for some parts.
+> 
+> - I was spending too much time in out-of-tree maintainance while my goal is to get this
+> upstream.
+> 
+> All in one, this big branch neither scaled in term of reviews nor development.
+> 
+> So I decided, after Ingo proposed me to set a tree in -tip, to cut all of the things the
+> tick is handling and isolate each of these into single separate topics and handle them
+> individually or at least iteratively, trying to push the things upstream or in a staging
+> tree in -tip piecewise. As long as this is carried by concerned maintainers and I can get
+> their insights on a regular basis. And also as long as we can iterate to some central branch
+> because, even if we can cut out things into individual topics, there are significant interdependencies.
+> 
+> I think this has been successfull so far:
+> 
+> - The detection of illegal RCU read side critical sections under RCU extended quiescent
+> state is now upstream. This even helped finding lot of bugs upstream.
+> 
+> - State of user as RCU extended quiescent state is currently pending in Paul's tree
+> in the rcu/idle branch. It's also in linux-next. This may likely go upstream or in
+> a staging branch in -tip for the next merge window.
 
-Hardware limitations is just part of the problem. We could find them
-out from various white papers or data sheets, or test out.To me, the
-key problem in terms of power and performance balancing still lies in
-CPU and memory allocation method.  For example, on a system we can
-benefit from shutting down a whole socket when possible, if a workload
-allocates 50% CPU cycles and 50% memory bandwidth and space on a two
-socket system(modern), an ideal allocation method ( I assume it's our
-goal of the discussion) should leave CPU, cache, memory controller and
-memory on one socket ( node) completely idle and in deepest power
-saving mode. But obviously, we need to spread as much as possible
-across all cores in another socket(to race to idle). So from the
-example above, we see a threshold that we need to reference before
-selecting one from two complete different policy: spread or not
-spread... As long as there is hardware limitation, we could always
-need knob like that referenced threshold to adapt on different
-hardware in one kernel....
+Indeed, the current plan is to push it for 3.7.  ;-)
 
-/l
+							Thanx, Paul
+
+> - Some preparatory work to split nohz and idle logic in nohz API. It went upstream
+> on the last merge window.
+> 
+> - Proposed something to handle nohz cputime accounting: https://lwn.net/Articles/501766/
+> Got fundamental reviews that pointed me to rather reuse virtual based cputime accounting.
+> 
+> - Consolidated/cleaned up virtual based cputime accounting (last version is
+> https://lkml.org/lkml/2012/8/17/326 and waits for inclusion in -tip or so.)
+> 
+> - On top of that vtime consolidation and the RCU pending patches, propose
+> a generic virtual cputime accounting for archs that don't have CONFIG_VTIME_CPU_ACCOUNTING.
+> See http://comments.gmane.org/gmane.linux.kernel/1337690
+> A tickless CPU can then account cputime with that.
+> 
+> So the process seem to be in a better direction now. Summer holidays have naturally made it a
+> bit smoother and the rythm will probably stay that way until the end of ksummit/linuxcon/LPC. But
+> I have the feeling we are moving forward.
+> 
+> No schedule plans, but once I get the above topics sorted out, I'll probably work on timekeeping
+> handling in adaptive tickless CPUs. And then the rest...
+> 
+> I'll still keep maintaining the big branch in my tree. But this is now going to be rather a big draft or
+> laboratory, with regular rebases on what is merged upstream or in maintainers tree. It helps me to
+> keep a practical view of the big picture.
+> 
+> Thanks.
+> 
+
