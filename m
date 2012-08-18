@@ -1,83 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab2HRLSI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 07:18:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52843 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab2HRLSF (ORCPT
+	id S1752233Ab2HRLoB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 07:44:01 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47756 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2HRLn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 07:18:05 -0400
-Date: Sat, 18 Aug 2012 13:17:45 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Daniel Kurtz <djkurtz@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-i801: Add device tree support
-Message-ID: <20120818111745.GA15702@avionic-0098.mockup.avionic-design.de>
-References: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
- <20120818094846.GA24812@pengutronix.de>
+	Sat, 18 Aug 2012 07:43:59 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
-Content-Disposition: inline
-In-Reply-To: <20120818094846.GA24812@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:cHjSu/VABAxBv3gX20Cb34+FDz39prD9Ct+8JbBldJv
- KB7/LkhkKPdeodrShIAgmO+2nM+9zYF8JX7OxfPvjTuMddFdWw
- N4ytuIwfl3dlWdNC8rkoALIagBZGAcTQIkZqpA2lTY1sfY351G
- BZ1GtDbA/ZDbo40wQS338co/B2MkPeiaB7dKcRxsO4AWjTsKOm
- cTrGs5RyUDcRuirogNowBXFyL/1vqkn2AfvTkFwSgKCs72sVt6
- qtp8LnBRuUS89c94E9QQfsa1PbelJ9ECnWPESmmIpdHoVsME2C
- nAnxQHY4h/H5B9rzwEeoT+b65nPWNSrm4He7eMIQ1ygHDnDbSg
- bg5dEXBUfzaW9dp854tmdcgI0YU56PhpWYjwRwgJFFp69+l5e5
- +yIxOh6pF68HOx5GcZPwNCed3fzzZrpW+DVoZxG/D/WiSzgLzP
- R13ik
+In-Reply-To: <1345287301-18165-1-git-send-email-keguang.zhang@gmail.com>
+References: <1345287301-18165-1-git-send-email-keguang.zhang@gmail.com>
+Date: Sat, 18 Aug 2012 13:43:58 +0200
+Message-ID: <CAAfyv36-wwvSFJGXN9bmDy8pdDOT_h0b7sy78+7f4kCW57AxuA@mail.gmail.com>
+Subject: Re: [PATCH] clk: add Loongson1B clock support
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Kelvin Cheung <keguang.zhang@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 18, 2012 at 12:55 PM, Kelvin Cheung <keguang.zhang@gmail.com> wrote:
+> This adds clock support to Loongson1B SoC using the common clock
+> infrastructure.
+>
+> Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
+> ---
+>  drivers/clk/Makefile   |    1 +
+>  drivers/clk/clk-ls1x.c |  108 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 109 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/clk/clk-ls1x.c
+>
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index 5869ea3..018ec57 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)    += socfpga/
+>  obj-$(CONFIG_PLAT_SPEAR)       += spear/
+>  obj-$(CONFIG_ARCH_U300)                += clk-u300.o
+>  obj-$(CONFIG_ARCH_INTEGRATOR)  += versatile/
+> +obj-$(CONFIG_MACH_LOONGSON1)   += clk-ls1x.o
+>
+>  # Chip specific
+>  obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+> diff --git a/drivers/clk/clk-ls1x.c b/drivers/clk/clk-ls1x.c
+> new file mode 100644
+> index 0000000..0aadf9d
+> --- /dev/null
+> +++ b/drivers/clk/clk-ls1x.c
+> @@ -0,0 +1,108 @@
+> +/*
+> + * Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
+> +
+> +#include <linux/clkdev.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/io.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <asm/mach-loongson1/loongson1.h>
+> +
+> +#include <loongson1.h>
+> +
+> +#define OSC    33
+> +
+> +static DEFINE_SPINLOCK(_lock);
+> +
+> +int ls1x_pll_clk_enable(struct clk_hw *hw)
+^^^^static
+> +{
+> +       return 0;
+> +}
+> +
+> +void ls1x_pll_clk_disable(struct clk_hw *hw)
+^^^^ also static
+> +{
+> +}
+> +
+> +static unsigned long ls1x_pll_recalc_rate(struct clk_hw *hw,
+> +                                            unsigned long parent_rate)
+> +{
+> +       u32 pll, rate;
+> +
+> +       pll = __raw_readl(LS1X_CLK_PLL_FREQ);
+> +       rate = ((12 + (pll & 0x3f)) * 1000000) +
+> +               ((((pll >> 8) & 0x3ff) * 1000000) >> 10);
+> +       rate *= OSC;
+> +       rate >>= 1;
+> +
+> +       return rate;
+> +}
+> +
+> +static const struct clk_ops ls1x_pll_clk_ops = {
+> +       .enable = ls1x_pll_clk_enable,
+> +       .disable = ls1x_pll_clk_disable,
+> +       .recalc_rate = ls1x_pll_recalc_rate,
+> +};
+> +
+> +static struct clk * __init clk_register_pll(struct device *dev,
+> +        const char *name, const char *parent_name, unsigned long flags)
+> +{
+> +       struct clk_hw *hw;
+> +       struct clk *clk;
+> +       struct clk_init_data init;
+> +
+> +       /* allocate the divider */
+> +       hw = kzalloc(sizeof(struct clk_hw), GFP_KERNEL);
+> +       if (!hw) {
+> +               pr_err("%s: could not allocate clk_hw\n", __func__);
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+> +
+> +       init.name = name;
+> +       init.ops = &ls1x_pll_clk_ops;
+> +       init.flags = flags | CLK_IS_BASIC;
+> +       init.parent_names = (parent_name ? &parent_name : NULL);
+> +       init.num_parents = (parent_name ? 1 : 0);
+> +       hw->init = &init;
+> +
+> +       /* register the clock */
+> +       clk = clk_register(dev, hw);
+> +
+> +       if (IS_ERR(clk))
+> +               kfree(hw);
+> +
+> +       return clk;
+> +}
+> +
+> +void __init ls1x_clk_init(void)
+> +{
+> +       struct clk *clk;
+> +
+> +       clk = clk_register_pll(NULL, "pll_clk", NULL, CLK_IS_ROOT);
+> +       clk_prepare_enable(clk);
+> +
+> +       clk = clk_register_divider(NULL, "cpu_clk", "pll_clk",
+> +                       CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_CPU_SHIFT,
+> +                       DIV_CPU_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
+> +       clk_prepare_enable(clk);
+> +       clk_register_clkdev(clk, "cpu", NULL);
+> +
+> +       clk = clk_register_divider(NULL, "ddr_clk", "pll_clk",
+> +                       CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DDR_SHIFT,
+> +                       DIV_DDR_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
+> +       clk_prepare_enable(clk);
+> +       clk_register_clkdev(clk, "ddr", NULL);
+> +       clk_register_clkdev(clk, "stmmaceth", NULL);
+> +
+> +       clk = clk_register_divider(NULL, "dc_clk", "pll_clk",
+> +                       CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DC_SHIFT,
+> +                       DIV_DC_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
+> +       clk_prepare_enable(clk);
+> +       clk_register_clkdev(clk, "dc", NULL);
+> +       clk_register_clkdev(clk, "serial8250", NULL);
+> +}
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---J/dobhs11T7y2rNN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+cheers,
 
-On Sat, Aug 18, 2012 at 11:48:46AM +0200, Wolfram Sang wrote:
-> On Wed, Aug 08, 2012 at 09:06:47AM +0200, Thierry Reding wrote:
-> > This commit adds support for probing slave devices parsed from the
-> > device tree.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->=20
-> How are the devicetree nodes of the slaves connected to this PCI device
-> which should not have a node itself?
+marek
 
-The matching is done by pci_set_of_node() and pci_set_bus_of_node().
-The latter will eventually call pcibios_get_phb_of_node(). What makes
-you say that PCI devices shouldn't have nodes themselves?
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-Thierry
-
---J/dobhs11T7y2rNN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQL3nZAAoJEN0jrNd/PrOhSxEQAIS8NBwXdp7WeVUznYH+rwoE
-L7Z4wjtaBX8Xo55/3rM3DuXciQDdMiNAnLG+kT1TcnUTidmKrXroWSnI7Tm5OTdB
-Y6o4aneggDWlHJlv0tCkuHGUN6u0fYh6yfOL07Nc0KmC20fNxkkoNIaFR2x5+UB8
-orggxWqu6MT5vqQpKwP/Y1n8CdMZiXcITolazsDUZw7UA75tiCA/XIqi+Zvp8+P7
-SqOG44Gw4dSytMjcYFKweHI3zb3qiztbBAuMo2j7idf/jTQ1TzG9OJpJbIsA7n+8
-ZErce+LX6fPcno+FL4q6xMZVHribE3DEMozP913q9zOT5pj9/h5QhQfE+QRhHXen
-eirsYDmMpSQUvcwMhCxGMB41rKiuq6wGieF9JRWyVkTMEg3eTFpYavy/Ew69IdJ3
-pOSdpM9tXi73XkUYO2BTv9DSRvYCV6IblPx5yC6GOx9B+a4qA4nd0oPGKkxIU3ei
-n2dYtrL85jxc16QbgpKXqCUsG9VjA436FWL04kNnMr2DYcfEHq32YetTcJA9g8ij
-UrAF2SIOueW4qGOvczXpvrliy16JZCdrddWs+IuLYTFSPNeNhRv2oNWPs6Gw1xOx
-Yxx9nXIIz04RTbSlvwa/xc6knxPeCYabvFOF77DjTUxYU07vwOcGkW8BrHb69py/
-Xed9sXKJrNLhnE3Db0Fm
-=EmG3
------END PGP SIGNATURE-----
-
---J/dobhs11T7y2rNN--
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
