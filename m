@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2HRMJL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 08:09:11 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38514 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750878Ab2HRMJH (ORCPT
+	id S1754696Ab2HRMM1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 08:12:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58802 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab2HRMM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 08:09:07 -0400
-From: Denis Efremov <yefremov.denis@gmail.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Denis Efremov <yefremov.denis@gmail.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Jesper Juhl <jj@chaosbits.net>, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] tcm_fc: rcu_deref outside rcu lock/unlock section
-Date: Sat, 18 Aug 2012 16:10:31 +0400
-Message-Id: <1345291831-5086-1-git-send-email-yefremov.denis@gmail.com>
-X-Mailer: git-send-email 1.7.7
+	Sat, 18 Aug 2012 08:12:26 -0400
+Date: Sat, 18 Aug 2012 14:12:16 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, khali@linux-fr.org,
+        swarren@nvidia.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: tegra: Fix ifdefs for suspend mode
+Message-ID: <20120818121216.GA12839@pengutronix.de>
+References: <1343655187-18282-1-git-send-email-ldewangan@nvidia.com>
+ <20120818070732.GA24639@pengutronix.de>
+ <20120818120138.GD21888@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Disposition: inline
+In-Reply-To: <20120818120138.GD21888@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use rcu_dereference_protected in order to prevent lockdep
-complaint. Sequel of the patch 863555be
 
-Found by Linux Driver Verification project (linuxtesting.org).
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
----
- drivers/target/tcm_fc/tfc_sess.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+On Sat, Aug 18, 2012 at 01:01:38PM +0100, Mark Brown wrote:
+> On Sat, Aug 18, 2012 at 09:07:32AM +0200, Wolfram Sang wrote:
+> > On Mon, Jul 30, 2012 at 07:03:07PM +0530, Laxman Dewangan wrote:
+> > > CONFIG_PM covers runtime only PM.
+>=20
+> > I am a bit confused by this description. CONFIG_PM_RUNTIME covers
+> > runtime PM, no?
+>=20
+> The issue is that CONFIG_PM doesn't actually enable any of the PM
+> callbacks, it only allows you to enable CONFIG_PM_SLEEP and
+> CONFIG_PM_RUNTIME.  This means that if you use CONFIG_PM to protect your
+> system sleep callbacks they may end up unreferenced if only runtime PM
+> is enabled.
 
-diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
-index 87901fa..3c9e5b5 100644
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -456,7 +456,9 @@ static void ft_prlo(struct fc_rport_priv *rdata)
- 	struct ft_tport *tport;
- 
- 	mutex_lock(&ft_lport_lock);
--	tport = rcu_dereference(rdata->local_port->prov[FC_TYPE_FCP]);
-+	tport = rcu_dereference_protected(rdata->local_port->prov[FC_TYPE_FCP],
-+					  lockdep_is_held(&ft_lport_lock));
-+
- 	if (!tport) {
- 		mutex_unlock(&ft_lport_lock);
- 		return;
--- 
-1.7.7
+Thanks for the explanation!
 
+Laxman, could you update the description to reflect that?
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlAvhqAACgkQD27XaX1/VRtUGwCglSe5uQRmDW9RHO+wfJjDuH37
+fI8An2P/PT9e+ZvZFS2zUNY4pXdzA7kY
+=H7JU
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
