@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab2HRJwX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 05:52:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51605 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab2HRJwW (ORCPT
+	id S1754768Ab2HRJyj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 05:54:39 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:62146 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab2HRJyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 05:52:22 -0400
-Date: Sat, 18 Aug 2012 11:52:12 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: vitalywool@gmail.com, khali@linux-fr.org, ben-linux@fluff.org,
-        grant.likely@secretlab.ca, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, jonsmirl@gmail.com
-Subject: Re: [PATCH RESEND 2/2] i2c: pnx: Fix read transactions of >= 2 bytes
-Message-ID: <20120818095212.GC24812@pengutronix.de>
-References: <1344411752-23469-1-git-send-email-stigge@antcom.de>
- <1344411752-23469-2-git-send-email-stigge@antcom.de>
+	Sat, 18 Aug 2012 05:54:36 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="c3bfwLpm8qysLVxt"
-Content-Disposition: inline
-In-Reply-To: <1344411752-23469-2-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <871ujclpqk.fsf@devron.myhome.or.jp>
+References: <1344743810-2443-1-git-send-email-linkinjeon@gmail.com>
+	<871ujclpqk.fsf@devron.myhome.or.jp>
+Date: Sat, 18 Aug 2012 18:54:35 +0900
+Message-ID: <CAKYAXd8qH4YwFJQR6SRbfvSiQwmdpd_JuA52iDS3EEY1Va3yPQ@mail.gmail.com>
+Subject: Re: [PATCH] fat: use accessor function for msdos_dir_entry 'start'
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/8/12, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> Use accessor function for msdos_dir_entry 'start'
+>
+> Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
+> Looks good. Thanks.
+>
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+>> ---
+>>  fs/fat/dir.c |    6 ++----
+>>  1 file changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+>> index 7b1b9c1..2f3e66e 100644
+>> --- a/fs/fat/dir.c
+>> +++ b/fs/fat/dir.c
+>> @@ -1143,10 +1143,8 @@ int fat_alloc_new_dir(struct inode *dir, struct
+>> timespec *ts)
+>>  		de[0].ctime_cs = de[1].ctime_cs = 0;
+>>  		de[0].adate = de[0].cdate = de[1].adate = de[1].cdate = 0;
+>>  	}
+>> -	de[0].start = cpu_to_le16(cluster);
+>> -	de[0].starthi = cpu_to_le16(cluster >> 16);
+>> -	de[1].start = cpu_to_le16(MSDOS_I(dir)->i_logstart);
+>> -	de[1].starthi = cpu_to_le16(MSDOS_I(dir)->i_logstart >> 16);
+>> +	fat_set_start(&de[0], cluster);
+>> +	fat_set_start(&de[1], MSDOS_I(dir)->i_logstart);
+>>  	de[0].size = de[1].size = 0;
+>>  	memset(de + 2, 0, sb->s_blocksize - 2 * sizeof(*de));
+>>  	set_buffer_uptodate(bhs[0]);
+>
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
+Hi. Andrew.
 
---c3bfwLpm8qysLVxt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Would you plz check this patch ?
 
-On Wed, Aug 08, 2012 at 09:42:32AM +0200, Roland Stigge wrote:
-> On transactions with n>=3D2 bytes, the controller actually wrongly clocks=
- in n+1
-> bytes. This is caused by the (wrong) assumption that RFE in the Status Re=
-gister
-> is 1 iff there is no byte already ordered (via a dummy TX byte). This lea=
-d to
-> the implementation of synchronized byte ordering, e.g.:
->=20
-> Dummy-TX - RX - Dummy-TX - RX - ...
->=20
-> But since RFE actually stays high after some Dummy-TX, it rather looks li=
-ke:
->=20
-> Dummy-TX - Dummy-TX - RX - Dummy-TX - RX - (RX)
->=20
-> The last RX byte is clocked in by the bus controller, but ignored by the =
-kernel
-> when filling the userspace buffer.
->=20
-> This patch fixes the issue by asking for RX via Dummy-TX asynchronously.
-> Introducing a separate counter for TX bytes.
->=20
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
->=20
-> ---
-> Applies to v3.6-rc1
->=20
-> This patch for i2c-pnx affects PNX4008 and LPC32xx (and LPC31xx, not yet =
-in
-> mainline). Can you please test?
->=20
-> Thanks in advance!
-
-I assume you checked this on LPC32xx? I'll wait a bit more but tend to
-take the patch anyhow, even if there is no explicit ACK from PNX.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---c3bfwLpm8qysLVxt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlAvZcwACgkQD27XaX1/VRvxbQCghFPkAvS7ICRYxWSfNNfDPKNR
-yhkAoLY/nVswtaEiUCFrIaUMBDfuh6a4
-=Hsg8
------END PGP SIGNATURE-----
-
---c3bfwLpm8qysLVxt--
+Thanks.
