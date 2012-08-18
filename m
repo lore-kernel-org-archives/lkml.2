@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932Ab2HRRdX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:33:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6543 "EHLO mga03.intel.com"
+	id S1756907Ab2HRRdS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:33:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50329 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755631Ab2HRRai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:30:38 -0400
+	id S1755089Ab2HRRaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 13:30:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
-   d="scan'208";a="182607894"
+   d="scan'208";a="210330071"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 20/31] sections: Fix section conflicts in drivers/mmc
-Date: Sat, 18 Aug 2012 10:30:11 -0700
-Message-Id: <1345311022-26328-21-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 30/31] sections: Fix section conflicts in sound
+Date: Sat, 18 Aug 2012 10:30:21 -0700
+Message-Id: <1345311022-26328-31-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
@@ -27,22 +27,22 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/mmc/host/sdhci-pci.c |    2 +-
+ sound/soc/codecs/wm5100.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 504da71..9722d43 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -653,7 +653,7 @@ static const struct sdhci_pci_fixes sdhci_via = {
- 	.probe		= via_probe,
+diff --git a/sound/soc/codecs/wm5100.c b/sound/soc/codecs/wm5100.c
+index f481729..aa62c0e 100644
+--- a/sound/soc/codecs/wm5100.c
++++ b/sound/soc/codecs/wm5100.c
+@@ -1233,7 +1233,7 @@ static const struct snd_soc_dapm_route wm5100_dapm_routes[] = {
+ 	{ "PWM2", NULL, "PWM2 Driver" },
  };
  
--static const struct pci_device_id pci_ids[] __devinitdata = {
-+static const struct pci_device_id pci_ids[] __devinitconst = {
- 	{
- 		.vendor		= PCI_VENDOR_ID_RICOH,
- 		.device		= PCI_DEVICE_ID_RICOH_R5C822,
+-static const __devinitdata struct reg_default wm5100_reva_patches[] = {
++static const __devinitconst struct reg_default wm5100_reva_patches[] = {
+ 	{ WM5100_AUDIO_IF_1_10, 0 },
+ 	{ WM5100_AUDIO_IF_1_11, 1 },
+ 	{ WM5100_AUDIO_IF_1_12, 2 },
 -- 
 1.7.7.6
 
