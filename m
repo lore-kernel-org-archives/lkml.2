@@ -1,124 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab2HRL46 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 07:56:58 -0400
-Received: from relay02ant.iops.be ([212.53.4.35]:41934 "EHLO
-	relay02ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2HRL44 (ORCPT
+	id S1753979Ab2HRMAy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 08:00:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37698 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab2HRMAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 07:56:56 -0400
-Message-ID: <502F8300.2060307@acm.org>
-Date: Sat, 18 Aug 2012 11:56:48 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Chanho Min <chanho0207@gmail.com>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH RESEND] remove the queue unlock in scsi_requset_fn
-References: <CAOAMb1Dd5_KWQme+EzXdpnABk=A50+vXuLMoS+r5et6=o0605g@mail.gmail.com> <CAOAMb1Dp=E6fjMhdh6ze6Hq48qUixTpsqHZf3z742AUAqhU5Ug@mail.gmail.com> <1344946071.3117.26.camel@dabdike.int.hansenpartnership.com> <CAOAMb1COJbAF=ys7ZcpTuJNP6QzbQzuqz7gS4qPqSc1rfbnHTw@mail.gmail.com> <502CA6C3.4040903@acm.org>
-In-Reply-To: <502CA6C3.4040903@acm.org>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 18 Aug 2012 08:00:52 -0400
+From: Kelvin Cheung <keguang.zhang@gmail.com>
+To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org
+Cc: Kelvin Cheung <keguang.zhang@gmail.com>
+Subject: [PATCH] MIPS: Loongson1B: use common clock infrastructure instead of private APIs.
+Date: Sat, 18 Aug 2012 20:00:41 +0800
+Message-Id: <1345291241-25971-1-git-send-email-keguang.zhang@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/12 07:52, Bart Van Assche wrote:
-> On 08/16/12 01:35, Chanho Min wrote:
->>> functions will occur in line.  I also don't see why the sdev reference
->>> couldn't drop to zero here.
->> scsi_request_fn is called under the lock of request_queue->queue_lock.
->> If we drop the sdev reference to zero here,
->> scsi_device_dev_release_usercontext is
->> invoked and make request_queue to NULL. When caller of scsi_request_fn try to
->> unlock request_queue->queue_lock, the oops is occurred.
-> 
-> Whether or not your patch is applied, if the put_device() call in
-> scsi_request_fn() decreases the sdev reference count to zero, the
-> scsi_request_fn() caller will still try to unlock the queue lock after
-> scsi_request_fn() finished and hence will trigger a use-after-free. I'm
-> afraid the only real solution is to modify the SCSI and/or block layers
-> such that scsi_remove_device() can't finish while scsi_request_fn() is
-> in progress. And once that is guaranteed the get_device() / put_device()
-> pair can be left out from scsi_request_fn().
+1. Remove private clock APIs, which are replaced by the code in
+   drivers/clk/clk-ls1x.c
+2. Enable COMMON_CLK in the Kconfig.
+3. some minor modifications.
 
-(replying to my own e-mail)
-
-How about the patch below ?
-
-[PATCH] Fix device removal race
-
-If the put_device() call in scsi_request_fn() drops the sdev refcount
-to zero then the spin_lock_irq() call after the put_device() call
-triggers a use-after-free. Avoid that by making sure that blk_cleanup_queue()
-can only finish after all active scsi_request_fn() calls have returned.
+Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
 ---
- block/blk-core.c        |    1 +
- drivers/scsi/scsi_lib.c |   10 ++--------
- include/linux/blkdev.h  |    5 +++++
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ arch/mips/include/asm/mach-loongson1/platform.h |    3 +-
+ arch/mips/include/asm/mach-loongson1/regs-clk.h |    7 +-
+ arch/mips/loongson1/Kconfig                     |    2 +-
+ arch/mips/loongson1/common/clock.c              |  159 +----------------------
+ arch/mips/loongson1/common/platform.c           |    9 +-
+ arch/mips/loongson1/ls1b/board.c                |    5 +-
+ 6 files changed, 16 insertions(+), 169 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4b4dbdf..0e4da3b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -388,6 +388,7 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
- 			__blk_run_queue(q);
+diff --git a/arch/mips/include/asm/mach-loongson1/platform.h b/arch/mips/include/asm/mach-loongson1/platform.h
+index 2f17161..718a122 100644
+--- a/arch/mips/include/asm/mach-loongson1/platform.h
++++ b/arch/mips/include/asm/mach-loongson1/platform.h
+@@ -18,6 +18,7 @@ extern struct platform_device ls1x_eth0_device;
+ extern struct platform_device ls1x_ehci_device;
+ extern struct platform_device ls1x_rtc_device;
  
- 		drain |= q->nr_rqs_elvpriv;
-+		drain |= q->request_fn_active;
+-void ls1x_serial_setup(void);
++extern void __init ls1x_clk_init(void);
++extern void __init ls1x_serial_setup(struct platform_device *pdev);
  
- 		/*
- 		 * Unfortunately, requests are queued at and tracked from
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index ffd7773..10bb348 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1514,9 +1514,7 @@ static void scsi_request_fn(struct request_queue *q)
- 	struct scsi_cmnd *cmd;
- 	struct request *req;
+ #endif /* __ASM_MACH_LOONGSON1_PLATFORM_H */
+diff --git a/arch/mips/include/asm/mach-loongson1/regs-clk.h b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+index 8efa7fb..a81fa3d 100644
+--- a/arch/mips/include/asm/mach-loongson1/regs-clk.h
++++ b/arch/mips/include/asm/mach-loongson1/regs-clk.h
+@@ -20,14 +20,15 @@
  
--	if(!get_device(&sdev->sdev_gendev))
--		/* We must be tearing the block queue down already */
--		return;
-+	q->request_fn_active++;
+ /* Clock PLL Divisor Register Bits */
+ #define DIV_DC_EN			(0x1 << 31)
+-#define DIV_DC				(0x1f << 26)
+ #define DIV_CPU_EN			(0x1 << 25)
+-#define DIV_CPU				(0x1f << 20)
+ #define DIV_DDR_EN			(0x1 << 19)
+-#define DIV_DDR				(0x1f << 14)
  
- 	/*
- 	 * To start with, we keep looping until the queue is empty, or until
-@@ -1626,11 +1624,7 @@ out_delay:
- 	if (sdev->device_busy == 0)
- 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
- out:
--	/* must be careful here...if we trigger the ->remove() function
--	 * we cannot be holding the q lock */
--	spin_unlock_irq(q->queue_lock);
--	put_device(&sdev->sdev_gendev);
--	spin_lock_irq(q->queue_lock);
-+	q->request_fn_active--;
+ #define DIV_DC_SHIFT			26
+ #define DIV_CPU_SHIFT			20
+ #define DIV_DDR_SHIFT			14
+ 
++#define DIV_DC_WIDTH			5
++#define DIV_CPU_WIDTH			5
++#define DIV_DDR_WIDTH			5
++
+ #endif /* __ASM_MACH_LOONGSON1_REGS_CLK_H */
+diff --git a/arch/mips/loongson1/Kconfig b/arch/mips/loongson1/Kconfig
+index a9a14d6..fbf75f6 100644
+--- a/arch/mips/loongson1/Kconfig
++++ b/arch/mips/loongson1/Kconfig
+@@ -15,7 +15,7 @@ config LOONGSON1_LS1B
+ 	select SYS_SUPPORTS_LITTLE_ENDIAN
+ 	select SYS_SUPPORTS_HIGHMEM
+ 	select SYS_HAS_EARLY_PRINTK
+-	select HAVE_CLK
++	select COMMON_CLK
+ 
+ endchoice
+ 
+diff --git a/arch/mips/loongson1/common/clock.c b/arch/mips/loongson1/common/clock.c
+index 1bbbbec..07133de 100644
+--- a/arch/mips/loongson1/common/clock.c
++++ b/arch/mips/loongson1/common/clock.c
+@@ -7,175 +7,22 @@
+  * option) any later version.
+  */
+ 
+-#include <linux/module.h>
+-#include <linux/list.h>
+-#include <linux/mutex.h>
+ #include <linux/clk.h>
+ #include <linux/err.h>
+-#include <asm/clock.h>
+ #include <asm/time.h>
+-
+-#include <loongson1.h>
+-
+-static LIST_HEAD(clocks);
+-static DEFINE_MUTEX(clocks_mutex);
+-
+-struct clk *clk_get(struct device *dev, const char *name)
+-{
+-	struct clk *c;
+-	struct clk *ret = NULL;
+-
+-	mutex_lock(&clocks_mutex);
+-	list_for_each_entry(c, &clocks, node) {
+-		if (!strcmp(c->name, name)) {
+-			ret = c;
+-			break;
+-		}
+-	}
+-	mutex_unlock(&clocks_mutex);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(clk_get);
+-
+-int clk_enable(struct clk *clk)
+-{
+-	return 0;
+-}
+-EXPORT_SYMBOL(clk_enable);
+-
+-void clk_disable(struct clk *clk)
+-{
+-}
+-EXPORT_SYMBOL(clk_disable);
+-
+-unsigned long clk_get_rate(struct clk *clk)
+-{
+-	return clk->rate;
+-}
+-EXPORT_SYMBOL(clk_get_rate);
+-
+-void clk_put(struct clk *clk)
+-{
+-}
+-EXPORT_SYMBOL(clk_put);
+-
+-static void pll_clk_init(struct clk *clk)
+-{
+-	u32 pll;
+-
+-	pll = __raw_readl(LS1X_CLK_PLL_FREQ);
+-	clk->rate = (12 + (pll & 0x3f)) * 33 / 2
+-			+ ((pll >> 8) & 0x3ff) * 33 / 1024 / 2;
+-	clk->rate *= 1000000;
+-}
+-
+-static void cpu_clk_init(struct clk *clk)
+-{
+-	u32 pll, ctrl;
+-
+-	pll = clk_get_rate(clk->parent);
+-	ctrl = __raw_readl(LS1X_CLK_PLL_DIV) & DIV_CPU;
+-	clk->rate = pll / (ctrl >> DIV_CPU_SHIFT);
+-}
+-
+-static void ddr_clk_init(struct clk *clk)
+-{
+-	u32 pll, ctrl;
+-
+-	pll = clk_get_rate(clk->parent);
+-	ctrl = __raw_readl(LS1X_CLK_PLL_DIV) & DIV_DDR;
+-	clk->rate = pll / (ctrl >> DIV_DDR_SHIFT);
+-}
+-
+-static void dc_clk_init(struct clk *clk)
+-{
+-	u32 pll, ctrl;
+-
+-	pll = clk_get_rate(clk->parent);
+-	ctrl = __raw_readl(LS1X_CLK_PLL_DIV) & DIV_DC;
+-	clk->rate = pll / (ctrl >> DIV_DC_SHIFT);
+-}
+-
+-static struct clk_ops pll_clk_ops = {
+-	.init	= pll_clk_init,
+-};
+-
+-static struct clk_ops cpu_clk_ops = {
+-	.init	= cpu_clk_init,
+-};
+-
+-static struct clk_ops ddr_clk_ops = {
+-	.init	= ddr_clk_init,
+-};
+-
+-static struct clk_ops dc_clk_ops = {
+-	.init	= dc_clk_init,
+-};
+-
+-static struct clk pll_clk = {
+-	.name	= "pll",
+-	.ops	= &pll_clk_ops,
+-};
+-
+-static struct clk cpu_clk = {
+-	.name	= "cpu",
+-	.parent = &pll_clk,
+-	.ops	= &cpu_clk_ops,
+-};
+-
+-static struct clk ddr_clk = {
+-	.name	= "ddr",
+-	.parent = &pll_clk,
+-	.ops	= &ddr_clk_ops,
+-};
+-
+-static struct clk dc_clk = {
+-	.name	= "dc",
+-	.parent = &pll_clk,
+-	.ops	= &dc_clk_ops,
+-};
+-
+-int clk_register(struct clk *clk)
+-{
+-	mutex_lock(&clocks_mutex);
+-	list_add(&clk->node, &clocks);
+-	if (clk->ops->init)
+-		clk->ops->init(clk);
+-	mutex_unlock(&clocks_mutex);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(clk_register);
+-
+-static struct clk *ls1x_clks[] = {
+-	&pll_clk,
+-	&cpu_clk,
+-	&ddr_clk,
+-	&dc_clk,
+-};
+-
+-int __init ls1x_clock_init(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(ls1x_clks); i++)
+-		clk_register(ls1x_clks[i]);
+-
+-	return 0;
+-}
++#include <platform.h>
+ 
+ void __init plat_time_init(void)
+ {
+ 	struct clk *clk;
+ 
+ 	/* Initialize LS1X clocks */
+-	ls1x_clock_init();
++	ls1x_clk_init();
+ 
+ 	/* setup mips r4k timer */
+ 	clk = clk_get(NULL, "cpu");
+ 	if (IS_ERR(clk))
+-		panic("unable to get dc clock, err=%ld", PTR_ERR(clk));
++		panic("unable to get cpu clock, err=%ld", PTR_ERR(clk));
+ 
+ 	mips_hpt_frequency = clk_get_rate(clk) / 2;
+ }
+diff --git a/arch/mips/loongson1/common/platform.c b/arch/mips/loongson1/common/platform.c
+index e92d59c..5ca38dc 100644
+--- a/arch/mips/loongson1/common/platform.c
++++ b/arch/mips/loongson1/common/platform.c
+@@ -42,16 +42,17 @@ struct platform_device ls1x_uart_device = {
+ 	},
+ };
+ 
+-void __init ls1x_serial_setup(void)
++void __init ls1x_serial_setup(struct platform_device *pdev)
+ {
+ 	struct clk *clk;
+ 	struct plat_serial8250_port *p;
+ 
+-	clk = clk_get(NULL, "dc");
++	clk = clk_get(NULL, pdev->name);
+ 	if (IS_ERR(clk))
+-		panic("unable to get dc clock, err=%ld", PTR_ERR(clk));
++		panic("unable to get %s clock, err=%ld",
++			pdev->name, PTR_ERR(clk));
+ 
+-	for (p = ls1x_serial8250_port; p->flags != 0; ++p)
++	for (p = pdev->dev.platform_data; p->flags != 0; ++p)
+ 		p->uartclk = clk_get_rate(clk);
  }
  
- u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 4e72a9d..11c1987 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -377,6 +377,11 @@ struct request_queue {
+diff --git a/arch/mips/loongson1/ls1b/board.c b/arch/mips/loongson1/ls1b/board.c
+index 295b1be..1fbd526 100644
+--- a/arch/mips/loongson1/ls1b/board.c
++++ b/arch/mips/loongson1/ls1b/board.c
+@@ -9,9 +9,6 @@
  
- 	unsigned int		nr_sorted;
- 	unsigned int		in_flight[2];
-+	/*
-+	 * Number of active request_fn() calls for those request_fn()
-+	 * implementations that unlock the queue_lock, e.g. scsi_request_fn().
-+	 */
-+	unsigned int		request_fn_active;
+ #include <platform.h>
  
- 	unsigned int		rq_timeout;
- 	struct timer_list	timeout;
+-#include <linux/serial_8250.h>
+-#include <loongson1.h>
+-
+ static struct platform_device *ls1b_platform_devices[] __initdata = {
+ 	&ls1x_uart_device,
+ 	&ls1x_eth0_device,
+@@ -23,7 +20,7 @@ static int __init ls1b_platform_init(void)
+ {
+ 	int err;
+ 
+-	ls1x_serial_setup();
++	ls1x_serial_setup(&ls1x_uart_device);
+ 
+ 	err = platform_add_devices(ls1b_platform_devices,
+ 				   ARRAY_SIZE(ls1b_platform_devices));
 -- 
-1.7.7
-
+1.7.1
 
