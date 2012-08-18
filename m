@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab2HRWos (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 18:44:48 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:44546 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752029Ab2HRWoq (ORCPT
+	id S1754403Ab2HRXXJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 19:23:09 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50588 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab2HRXXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 18:44:46 -0400
-X-Sasl-enc: NgxvqMQrdf0jcD1dfQ3xmytlIO5TjfIYS8695ZMPK99h 1345329885
-Date: Sat, 18 Aug 2012 19:44:42 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH 04/11] x86/microcode_core_early.c: Define interfaces
- for early load ucode
-Message-ID: <20120818224442.GB32120@khazad-dum.debian.net>
-References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com>
- <1345277729-8399-5-git-send-email-fenghua.yu@intel.com>
+	Sat, 18 Aug 2012 19:23:06 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sat, 18 Aug 2012 16:23:04 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        James.Bottomley@HansenPartnership.com, Andi Kleen <ak@linux.intel.com>,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH 14/31] sections: Fix section conflicts in drivers/hwmon
+Message-ID: <20120818232304.GA19997@roeck-us.net>
+References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
+ <1345311022-26328-15-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345277729-8399-5-git-send-email-fenghua.yu@intel.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1345311022-26328-15-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Aug 2012, Fenghua Yu wrote:
-> +	char ucode_name[] = "kernel/x86/microcode/GenuineIntel/microcode.hex";
+On Sat, Aug 18, 2012 at 10:30:05AM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Why name it ".hex" when you're loading binary data?  I suggest ".bin".  It
-is confusing to have .hex there, since you're not dealing with the Intel HEX
-format, nor anything text-like.
+Applied.
 
-> +void __init load_ucode_bsp(char *real_mode_data)
-> +{
-> +	u64 ramdisk_image, ramdisk_size, ramdisk_end;
-> +	unsigned long initrd_start, initrd_end;
-> +	struct boot_params *boot_params;
-> +
-> +	boot_params = (struct boot_params *)real_mode_data;
-> +	ramdisk_image = boot_params->hdr.ramdisk_image;
-> +	ramdisk_size  = boot_params->hdr.ramdisk_size;
-> +
-> +#ifdef CONFIG_X86_64
-> +	ramdisk_end  = PAGE_ALIGN(ramdisk_image + ramdisk_size);
-> +	initrd_start = ramdisk_image + PAGE_OFFSET;
-> +#else
-> +	ramdisk_end  = ramdisk_image + ramdisk_size;
-> +	initrd_start = ramdisk_image;
-> +#endif
-> +	initrd_end = initrd_start + ramdisk_size;
-> +
-> +	/*
-> +	 * It's early to get CPU vendor info at this point.
-> +	 * By searching initrd to find right name for vendor's microcode,
-> +	 * it's relative easier to get CPU vendor info.
-> +	 */
-> +	if (find_ucode_intel(initrd_start, initrd_end) == UCODE_OK)
-> +		load_ucode_intel_bsp(real_mode_data);
-> +}
+Looks like you did not include maintainers and/or subject mailing lists in your
+patch series, so I guess you won't get much feedback.
 
-I'd say something down the load_ucode_intel_bsp() chain better check the CPU
-vendor to make sure the Intel driver won't attempt to load microcode on some
-other vendor's processor.
+Guenter
 
-Or are cpu signatures a global namespace and x86 cpu vendors make sure
-(past, present and future) to never use the same cpu signature as someone
-else is going to use?  Anyway, it would still might be a good thing to do
-the vendor check somewhere to avoid wasting time going over every microcode
-of the wrong vendor on generic boot images that have both AMD and Intel
-microcode.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> ---
+>  drivers/hwmon/coretemp.c |    2 +-
+>  drivers/hwmon/w83627hf.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> index faa16f8..0fa356f 100644
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -196,7 +196,7 @@ struct tjmax {
+>  	int tjmax;
+>  };
+>  
+> -static struct tjmax __cpuinitconst tjmax_table[] = {
+> +static const struct tjmax __cpuinitconst tjmax_table[] = {
+>  	{ "CPU D410", 100000 },
+>  	{ "CPU D425", 100000 },
+>  	{ "CPU D510", 100000 },
+> diff --git a/drivers/hwmon/w83627hf.c b/drivers/hwmon/w83627hf.c
+> index ab48252..5b1a6a6 100644
+> --- a/drivers/hwmon/w83627hf.c
+> +++ b/drivers/hwmon/w83627hf.c
+> @@ -1206,7 +1206,7 @@ static int __init w83627hf_find(int sioaddr, unsigned short *addr,
+>  	int err = -ENODEV;
+>  	u16 val;
+>  
+> -	static const __initdata char *names[] = {
+> +	static __initconst char *const names[] = {
+>  		"W83627HF",
+>  		"W83627THF",
+>  		"W83697HF",
+> -- 
+> 1.7.7.6
+> 
+> 
