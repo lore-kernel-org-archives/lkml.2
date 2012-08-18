@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab2HRQKK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 12:10:10 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55057 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755920Ab2HRQJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 12:09:30 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: alan@linux.intel.com, gregkh@linuxfoundation.org
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH 2/2] tty: serial: Remove explicit use of devm_kfree
-Date: Sat, 18 Aug 2012 18:12:49 +0200
-Message-Id: <1345306369-10407-2-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345306369-10407-1-git-send-email-emilgoode@gmail.com>
-References: <1345306369-10407-1-git-send-email-emilgoode@gmail.com>
+	id S1754833Ab2HRQPm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 12:15:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31861 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342Ab2HRQPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 12:15:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
+   d="scan'208";a="182596202"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@elte.hu
+Cc: a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] pebs, x86: Make sure to really disable PEBS
+Date: Sat, 18 Aug 2012 09:15:29 -0700
+Message-Id: <1345306530-25665-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason to explicitly call devm_kfree
-in probe or remove functions.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
+When disabling a PEBS event we need to check the old value
+to determine if PEBS was running. Otherwise the last PEBS value
+could be kept running.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/tty/serial/max310x.c |    3 ---
- 1 file changed, 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
-index 06ff5ad..2bc28a5 100644
---- a/drivers/tty/serial/max310x.c
-+++ b/drivers/tty/serial/max310x.c
-@@ -1198,7 +1198,6 @@ err_freq:
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index e38d97b..db49ab3 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -438,9 +438,10 @@ void intel_pmu_pebs_disable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
++	u64 old = cpuc->pebs_enabled;
  
- err_out:
- 	dev_set_drvdata(dev, NULL);
--	devm_kfree(dev, s);
+ 	cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
+-	if (cpuc->enabled)
++	if (old)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
  
- 	return ret;
- }
-@@ -1234,8 +1233,6 @@ static int __devexit max310x_remove(struct spi_device *spi)
- 	if (s->pdata->exit)
- 		s->pdata->exit();
- 
--	devm_kfree(dev, s);
--
- 	return ret;
- }
- 
+ 	hwc->config |= ARCH_PERFMON_EVENTSEL_INT;
 -- 
-1.7.10.4
+1.7.7.6
 
