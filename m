@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab2HRUDt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 16:03:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35285 "EHLO mx1.redhat.com"
+	id S1752150Ab2HRULl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 16:11:41 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:52412 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab2HRUDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 16:03:46 -0400
-Date: Sat, 18 Aug 2012 23:04:32 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>, Zhi Yong Wu <wuzhy@cn.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [GIT PULL] tcm_vhost: Initial merge of vhost level target fabric
- driver
-Message-ID: <20120818200432.GA26215@redhat.com>
-References: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
+	id S1750984Ab2HRULh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 16:11:37 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H.J. Lu" <hongjiu.lu@intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x32: use compat shims for {g,s}etsockopt
+Date: Sat, 18 Aug 2012 16:11:37 -0400
+Message-Id: <1345320697-15713-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicholas,
-I just noticed this problem in the interface:
+Some of the arguments to {g,s}etsockopt are passed in userland pointers.
+If we try to use the 64bit entry point, we end up sometimes failing.
 
-+#include <linux/vhost.h>
-+
-+/*
-+ * Used by QEMU userspace to ensure a consistent vhost-scsi ABI.
-+ *
-+ * ABI Rev 0: July 2012 version starting point for v3.6-rc merge
-candidate +
-+ *            RFC-v2 vhost-scsi userspace.  Add GET_ABI_VERSION ioctl
-usage
-+ */
-+
-+#define VHOST_SCSI_ABI_VERSION 0
-+
-+struct vhost_scsi_target {
-+       int abi_version;
-+       unsigned char vhost_wwpn[TRANSPORT_IQN_LEN];
-+       unsigned short vhost_tpgt;
-+};
-+
+For example, dhcpcd doesn't run in x32:
+	# dhcpcd eth0
+	dhcpcd[1979]: version 5.5.6 starting
+	dhcpcd[1979]: eth0: broadcasting for a lease
+	dhcpcd[1979]: eth0: open_socket: Invalid argument
+	dhcpcd[1979]: eth0: send_raw_packet: Bad file descriptor
 
-Here TRANSPORT_IQN_LEN is 224, which is a multiple of 4.
-Since vhost_tpgt is 2 bytes and abi_version is 4, the total size would
-be 230.  But gcc needs struct size be aligned to first field size, which
-is 4 bytes, so it pads the structure by extra 2 bytes to the total of
-232.
+The code in particular is getting back EINVAL when doing:
+	struct sock_fprog pf;
+	setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, &pf, sizeof(pf));
 
-This padding is very undesirable in an ABI:
-- it can not be initialized easily
-- it can not be checked easily
-- it can leak information between kernel and userspace
+Diving into the kernel code, we can see:
+include/linux/filter.h:
+	struct sock_fprog {
+		unsigned short len;
+		struct sock_filter __user *filter;
+	};
 
-Simplest solution is probably just to make the padding
-explicit:
+net/core/sock.c:
+	case SO_ATTACH_FILTER:
+		ret = -EINVAL;
+		if (optlen == sizeof(struct sock_fprog)) {
+			struct sock_fprog fprog;
 
-+struct vhost_scsi_target {
-+       int abi_version;
-+       unsigned char vhost_wwpn[TRANSPORT_IQN_LEN];
-+       unsigned short vhost_tpgt;
-+       unsigned short reserved;
-+};
-+
+			ret = -EFAULT;
+			if (copy_from_user(&fprog, optval, sizeof(fprog)))
+				break;
 
-I think we should fix this buglet before it goes out to users.
+			ret = sk_attach_filter(&fprog, sk);
+		}
+		break;
 
+arch/x86/syscalls/syscall_64.tbl:
+	54 common setsockopt sys_setsockopt
+	55 common getsockopt sys_getsockopt
+
+So for x64, sizeof(sock_fprog) is 16 bytes.  For x86/x32, it's 8 bytes.
+This comes down to the pointer being 32bit for x32, which means we need
+to do structure size translation.  But since x32 comes in directly to
+sys_setsockopt, it doesn't get translated like x86.
+
+After changing the syscall table and rebuilding glibc with the new kernel
+headers, dhcp runs fine in an x32 userland.
+
+Oddly, it seems like Linus noted the same thing during the initial port,
+but I guess that was missed/lost along the way:
+	https://lkml.org/lkml/2011/8/26/452
+
+Bugzilla: https://bugs.gentoo.org/423649
+Reported-by: Mads <mads@ab3.no>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ arch/x86/syscalls/syscall_64.tbl |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 29aed7a..a582bfe 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -60,8 +60,8 @@
+ 51	common	getsockname		sys_getsockname
+ 52	common	getpeername		sys_getpeername
+ 53	common	socketpair		sys_socketpair
+-54	common	setsockopt		sys_setsockopt
+-55	common	getsockopt		sys_getsockopt
++54	64	setsockopt		sys_setsockopt
++55	64	getsockopt		sys_getsockopt
+ 56	common	clone			stub_clone
+ 57	common	fork			stub_fork
+ 58	common	vfork			stub_vfork
+@@ -353,3 +353,5 @@
+ 538	x32	sendmmsg		compat_sys_sendmmsg
+ 539	x32	process_vm_readv	compat_sys_process_vm_readv
+ 540	x32	process_vm_writev	compat_sys_process_vm_writev
++541	x32	setsockopt		compat_sys_setsockopt
++542	x32	getsockopt		compat_sys_getsockopt
 -- 
-MST
+1.7.9.7
+
