@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab2HRVxN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 17:53:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40863 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab2HRVxL (ORCPT
+	id S1754077Ab2HRWCj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 18:02:39 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51835 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab2HRWCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 17:53:11 -0400
-From: valentin.ilie@gmail.com
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, valentin <valentin.ilie@gmail.com>
-Subject: [PATCH] kernel: workqueue.c: fixed checkpatch issues
-Date: Sun, 19 Aug 2012 00:52:42 +0300
-Message-Id: <1345326762-21747-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 18 Aug 2012 18:02:34 -0400
+Date: Sat, 18 Aug 2012 23:06:51 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dan Luedtke <mail@danrl.de>
+Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, chaosman@ontika.net, muthur@gmail.com,
+        kerolasa@iki.fi, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+Message-ID: <20120818230651.49cef81a@pyramind.ukuu.org.uk>
+In-Reply-To: <1345333117-2826-1-git-send-email-mail@danrl.de>
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: valentin <valentin.ilie@gmail.com>
+On Sun, 19 Aug 2012 01:38:37 +0200
+Dan Luedtke <mail@danrl.de> wrote:
 
-Fixed some checkpatch warnings.
+> This patch introduces the Lanyard Filesystem (LanyFS), a filesystem
+> for highly mobile and removable storage devices.
+> 
+> Signed-off-by: Dan Luedtke <mail@danrl.de>
+> ---
+> "Release early, release often" they said. Here is my work of the
+> past weeks. This is a RFC patch, so please comment, criticize, suggest
+> and test test test. Of course patches are welcome, too.
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
----
- kernel/workqueue.c |   27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
+Starting from first principles a bit you might want to read/review Arnd
+Bergmanns work on Flash drive performance and behaviour. It has some
+fairly significant impact on how you lay out your file system and in
+particular questions like "where should I put stuff that is updated
+regularly' (in the same blocks a FAT fs would put the FAT being one clear
+answer)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 692d976..c4d57c8 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -268,16 +268,16 @@ struct workqueue_struct {
- };
- 
- struct workqueue_struct *system_wq __read_mostly;
--struct workqueue_struct *system_long_wq __read_mostly;
--struct workqueue_struct *system_nrt_wq __read_mostly;
--struct workqueue_struct *system_unbound_wq __read_mostly;
--struct workqueue_struct *system_freezable_wq __read_mostly;
--struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_wq);
-+struct workqueue_struct *system_long_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_long_wq);
-+struct workqueue_struct *system_nrt_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_nrt_wq);
-+struct workqueue_struct *system_unbound_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_unbound_wq);
-+struct workqueue_struct *system_freezable_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_freezable_wq);
-+struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
- EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
- 
- #define CREATE_TRACE_POINTS
-@@ -2011,10 +2011,9 @@ __acquires(&gcwq->lock)
- 	lock_map_release(&cwq->wq->lockdep_map);
- 
- 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
--		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
--		       "%s/0x%08x/%d\n",
-+		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n",
- 		       current->comm, preempt_count(), task_pid_nr(current));
--		printk(KERN_ERR "    last function: ");
-+		pr_err("    last function: ");
- 		print_symbol("%s\n", (unsigned long)f);
- 		debug_show_held_locks(current);
- 		dump_stack();
-@@ -2569,8 +2568,8 @@ reflush:
- 
- 		if (++flush_cnt == 10 ||
- 		    (flush_cnt % 100 == 0 && flush_cnt <= 1000))
--			pr_warning("workqueue %s: flush on destruction isn't complete after %u tries\n",
--				   wq->name, flush_cnt);
-+			pr_warn("workqueue %s: flush on destruction isn't complete after %u tries\n",
-+				wq->name, flush_cnt);
- 		goto reflush;
- 	}
- 
-@@ -2781,7 +2780,7 @@ static int try_to_grab_pending(struct work_struct *work)
- }
- 
- static bool __cancel_work_timer(struct work_struct *work,
--				struct timer_list* timer)
-+				struct timer_list *timer)
- {
- 	int ret;
- 
-@@ -3085,9 +3084,9 @@ static int wq_clamp_max_active(int max_active, unsigned int flags,
- 	int lim = flags & WQ_UNBOUND ? WQ_UNBOUND_MAX_ACTIVE : WQ_MAX_ACTIVE;
- 
- 	if (max_active < 1 || max_active > lim)
--		printk(KERN_WARNING "workqueue: max_active %d requested for %s "
--		       "is out of range, clamping between %d and %d\n",
--		       max_active, name, 1, lim);
-+		pr_warn("workqueue: max_active %d requested for %s is out of "
-+			"range, clamping between %d and %d\n",
-+			max_active, name, 1, lim);
- 
- 	return clamp_val(max_active, 1, lim);
- }
--- 
-1.7.10.4
+http://lwn.net/Articles/428584/
 
+and a pile of other stuff.
