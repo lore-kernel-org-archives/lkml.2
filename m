@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab2HRAn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 20:43:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46867 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2HRAnt (ORCPT
+	id S1754904Ab2HRA6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 20:58:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49786 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab2HRA6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 20:43:49 -0400
+	Fri, 17 Aug 2012 20:58:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <201208180002.26563.rjw@sisk.pl>
-References: <1345212420-1707-1-git-send-email-ming.lei@canonical.com>
-	<1345212420-1707-3-git-send-email-ming.lei@canonical.com>
-	<201208180002.26563.rjw@sisk.pl>
-Date: Sat, 18 Aug 2012 08:43:48 +0800
-Message-ID: <CACVXFVNVvponQD85o4RHxF9e+JRtq-AX5kZOuxvETDSGktit5A@mail.gmail.com>
-Subject: Re: [PATCH v1 2/3] PM / Sleep: introduce dpm_for_each_dev
-From: Ming Lei <ming.lei@canonical.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+In-Reply-To: <20120817144253.GA12835@kroah.com>
+References: <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1208171031100.25520-100000@netrider.rowland.org>
+	<20120817144253.GA12835@kroah.com>
+Date: Sat, 18 Aug 2012 08:58:39 +0800
+Message-ID: <CACVXFVMeUmLh=Tu3PHbgHQNX+c-z50_CoAkdJS_uCw=E3dO2dw@mail.gmail.com>
+Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
+From: Ming Lei <tom.leiming@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, August 17, 2012, Ming Lei wrote:
->> +void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
+On Fri, Aug 17, 2012 at 10:42 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, Aug 17, 2012 at 10:38:16AM -0400, Alan Stern wrote:
+>> On Fri, 17 Aug 2012, Ming Lei wrote:
+>>
+>> > But,  if HOTPLUG is not enabled, should device_add() trigger driver probe
+>> > further after kernel init is completed?  Or even devices should be allowed
+>> > to add into system?
+>>
+>> Indeed, does it make any sense to have USB support at all if HOTPLUG
+>> isn't enabled?  Should USB select HOTPLUG?
 >
-> Is this function actually used more than once?
+> Well, a long time ago people wanted to use USB but not have HOTPLUG
+> enabled in their systems for various (odd) embedded systems.  As it's
+> pretty hard to even turn off HOTPLUG these days, I'd be more likely to
+> just remove CONFIG_HOTPLUG entirely given the dynamic nature of almost
+> all systems.
 
-At least now, it is called each time before system sleep.
+It should make sense, otherwise all device id table should not use
+__devinit* markings. There are lots of pci driver usage on it.
 
 
 Thanks,
---
+-- 
 Ming Lei
