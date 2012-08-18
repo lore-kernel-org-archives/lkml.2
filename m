@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab2HRATc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 20:19:32 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41856 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519Ab2HRATX (ORCPT
+	id S1754138Ab2HRAn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 20:43:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46867 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab2HRAnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 20:19:23 -0400
-Message-ID: <502EDF87.4070402@pobox.com>
-Date: Fri, 17 Aug 2012 20:19:19 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 17 Aug 2012 20:43:49 -0400
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: ralf@linux-mips.org, linux-ide@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH 0/2] ata: Updates for pata_octeon_cf driver.
-References: <1345247673-25086-1-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1345247673-25086-1-git-send-email-ddaney.cavm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201208180002.26563.rjw@sisk.pl>
+References: <1345212420-1707-1-git-send-email-ming.lei@canonical.com>
+	<1345212420-1707-3-git-send-email-ming.lei@canonical.com>
+	<201208180002.26563.rjw@sisk.pl>
+Date: Sat, 18 Aug 2012 08:43:48 +0800
+Message-ID: <CACVXFVNVvponQD85o4RHxF9e+JRtq-AX5kZOuxvETDSGktit5A@mail.gmail.com>
+Subject: Re: [PATCH v1 2/3] PM / Sleep: introduce dpm_for_each_dev
+From: Ming Lei <ming.lei@canonical.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 07:54 PM, David Daney wrote:
-> From: David Daney <david.daney@cavium.com>
+On Sat, Aug 18, 2012 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, August 17, 2012, Ming Lei wrote:
+>> +void dpm_for_each_dev(void *data, void (*fn)(struct device *, void *))
 >
-> The main update is conversion to device tree.  Now the the OCTEON
-> device tree prerequisites are upstream, we can convert the
-> pata_octeon_cf driver.
->
-> The second change allows the driver to function when the kernel is
-> built for little-endian operation.
->
-> The only real change in the MIPS portion of the tree is deletion of
-> crap.
->
-> There is a dependence on patches Ralf has queued in linux-next so it
-> may be best to merge via the MIPS tree (as pata_octeon_cf only exists
-> in MIPS based OCTEON SOCs).  But the ata tree would be fine by me too.
-> In any even we may need some cross sub-system Acked-bys.
->
-> David Daney (2):
->    MIPS/OCTEON/ata: Convert pata_octeon_cf.c to use device tree.
->    ata: pata_octeon_cf: Use correct byte order for DMA in when built
->      little-endian.
->
->   arch/mips/cavium-octeon/octeon-irq.c           |   1 -
->   arch/mips/cavium-octeon/octeon-platform.c      | 102 ------
->   arch/mips/include/asm/mach-cavium-octeon/irq.h |   1 -
->   arch/mips/include/asm/octeon/octeon.h          |   7 -
->   drivers/ata/pata_octeon_cf.c                   | 423 +++++++++++++++++--------
->   5 files changed, 288 insertions(+), 246 deletions(-)
+> Is this function actually used more than once?
 
-patches 1 and 2 are
-
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+At least now, it is called each time before system sleep.
 
 
-
+Thanks,
+--
+Ming Lei
