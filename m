@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab2HRDGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 23:06:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48678 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab2HRDGh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 23:06:37 -0400
+	id S1756056Ab2HRDqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 23:46:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753661Ab2HRDqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 23:46:23 -0400
+Message-ID: <502F100A.1080401@redhat.com>
+Date: Fri, 17 Aug 2012 23:46:18 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <yq1fw9o3t5b.fsf@sermon.lab.mkp.net>
-References: <20120316073213.656519005@fusionio.com> <20120316073512.485027511@fusionio.com>
- <20120320162157.GE17071@redhat.com> <CANejiEWecb58G--=mwez+A4Ra6nJ0qOHGMcJA-nOGH=jmGA3qQ@mail.gmail.com>
- <4F69C62C.7020604@kernel.org> <yq18vitwejt.fsf@sermon.lab.mkp.net>
- <CANejiEX26=jqijgTwb0iLMw7WC7byF1o+whwp3K5CcY5_a8o8w@mail.gmail.com>
- <yq1zkb9uz1t.fsf@sermon.lab.mkp.net> <20120620085724.GA26295@infradead.org> <yq1fw9o3t5b.fsf@sermon.lab.mkp.net>
-From: Mike Snitzer <snitzer@redhat.com>
-Date: Fri, 17 Aug 2012 23:06:16 -0400
-X-Google-Sender-Auth: R1ko2SMVK7ngKFPBUiXh2vYZ7NY
-Message-ID: <CAMM=eLcBMrOfhJZU2GsSnMXkmWZMemJcvTM6WPLiiXkysXHYiQ@mail.gmail.com>
-Subject: Re: [patch 1/2]block: handle merged discard request
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org, neilb@suse.de,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: Repeated fork() causes SLAB to grow without bound
+References: <20120816024610.GA5350@evergreen.ssec.wisc.edu> <502D42E5.7090403@redhat.com> <20120818000312.GA4262@evergreen.ssec.wisc.edu>
+In-Reply-To: <20120818000312.GA4262@evergreen.ssec.wisc.edu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 11:46 PM, Martin K. Petersen
-<martin.petersen@oracle.com> wrote:
->>>>>> "Christoph" == Christoph Hellwig <hch@infradead.org> writes:
->
->>> There are several additional commands in the pipeline where the 1:1
->>> mapping between DMA size and block range is invalid. I want to get
->>> rid of the 1:1 assumption in general so we can handle any command
->>> without these evil workarounds.
->
-> Christoph> What's the progress on getting these issues sorted out?
->
-> This has bitrotted for a while. I'll put it on my list. I should finally
-> have some bandwidth again next week...
+On 08/17/2012 08:03 PM, Daniel Forrest wrote:
 
-Hey Martin,
+> Based on your comments, I came up with the following patch.  It boots
+> and the anon_vma/anon_vma_chain SLAB usage is stable, but I don't know
+> if I've overlooked something.  I'm not a kernel hacker.
 
-I rebased (and fixed/tested) your writesame patches on v3.6-rc2 +
-jens' for-linus branch, the git tree is available here:
-https://github.com/snitm/linux/tree/writesame
+The patch looks reasonable to me.  There is one spot left
+for optimization, which I have pointed out below.
 
-I've also made the updated patchset available here:
-http://people.redhat.com/msnitzer/patches/upstream/writesame/series.html
+Of course, that leaves the big question: do we want the
+overhead of having the atomic addition and decrement for
+every anonymous memory page, or is it easier to fix this
+issue in userspace?
 
-Should the writesame patches come before any discard merge or 1:1 DMA
-and block range assumption fixes?
-NOTE (for others besides martin):
-http://people.redhat.com/msnitzer/patches/upstream/writesame/0001-block-Clean-up-merge-logic.patch
-removes all the discard merge hacks; I think it provides a clean
-baseline to then layer discard merge support back in -- but maybe
-that's a flawed strategy?
+Given that malicious userspace could potentially run the
+system out of memory, without needing special privileges,
+and the OOM killer may not be able to reclaim it due to
+internal slab fragmentation, I guess this issue could be
+classified as a low impact denial of service vulnerability.
 
-Could be I've wasted a few hours by rebasing these patches...
-regardless, it would be great if you could share what your plans are.
+Furthermore, there is already a fair amount of bookkeeping
+being done in the rmap code, so this patch is not likely
+to add a whole lot - some testing might be useful, though.
 
-Thanks!
+> @@ -262,7 +264,10 @@ int anon_vma_clone(struct vm_area_struct
+>   		}
+>   		anon_vma = pavc->anon_vma;
+>   		root = lock_anon_vma_root(root, anon_vma);
+> -		anon_vma_chain_link(dst, avc, anon_vma);
+> +		if (!atomic_read(&anon_vma->pagecount))
+> +			anon_vma_chain_free(avc);
+> +		else
+> +			anon_vma_chain_link(dst, avc, anon_vma);
+>   	}
+>   	unlock_anon_vma_root(root);
+>   	return 0;
+
+In this function, you can do the test before the code block
+where we try to allocate an anon_vma chain.
+
+In other words:
+
+	list_for_each_entry_reverse(.....
+	struct anon_vma *anon_vma;
+
++	if (!atomic_read(&anon_vma->pagecount))
++		continue;
++
+	avc = anon_vma_chain_alloc(...
+	if (unlikely(!avc)) {
+
+The rest looks good.
+
+-- 
+All rights reversed
