@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab2HRLN7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 07:13:59 -0400
-Received: from fieldses.org ([174.143.236.118]:36105 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829Ab2HRLN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 07:13:58 -0400
-Date: Sat, 18 Aug 2012 07:13:54 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: 3.0+ NFS issues (bisected)
-Message-ID: <20120818111354.GA16611@fieldses.org>
-References: <20120817145616.GC11172@fieldses.org>
- <20120817160057.GE11172@fieldses.org>
- <502E7B86.3060702@msgid.tls.msk.ru>
- <20120817171854.GA14015@fieldses.org>
- <502E7EC3.5030006@msgid.tls.msk.ru>
- <502E7F84.3060003@msgid.tls.msk.ru>
- <20120817191800.GA14620@fieldses.org>
- <20120817200807.GB14620@fieldses.org>
- <20120817223253.GA15659@fieldses.org>
- <502F3AFB.4080401@msgid.tls.msk.ru>
+	id S1753321Ab2HRLSI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 07:18:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52843 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab2HRLSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 07:18:05 -0400
+Date: Sat, 18 Aug 2012 13:17:45 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Daniel Kurtz <djkurtz@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-i801: Add device tree support
+Message-ID: <20120818111745.GA15702@avionic-0098.mockup.avionic-design.de>
+References: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
+ <20120818094846.GA24812@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
 Content-Disposition: inline
-In-Reply-To: <502F3AFB.4080401@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120818094846.GA24812@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:cHjSu/VABAxBv3gX20Cb34+FDz39prD9Ct+8JbBldJv
+ KB7/LkhkKPdeodrShIAgmO+2nM+9zYF8JX7OxfPvjTuMddFdWw
+ N4ytuIwfl3dlWdNC8rkoALIagBZGAcTQIkZqpA2lTY1sfY351G
+ BZ1GtDbA/ZDbo40wQS338co/B2MkPeiaB7dKcRxsO4AWjTsKOm
+ cTrGs5RyUDcRuirogNowBXFyL/1vqkn2AfvTkFwSgKCs72sVt6
+ qtp8LnBRuUS89c94E9QQfsa1PbelJ9ECnWPESmmIpdHoVsME2C
+ nAnxQHY4h/H5B9rzwEeoT+b65nPWNSrm4He7eMIQ1ygHDnDbSg
+ bg5dEXBUfzaW9dp854tmdcgI0YU56PhpWYjwRwgJFFp69+l5e5
+ +yIxOh6pF68HOx5GcZPwNCed3fzzZrpW+DVoZxG/D/WiSzgLzP
+ R13ik
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 10:49:31AM +0400, Michael Tokarev wrote:
-> On 18.08.2012 02:32, J. Bruce Fields wrote:
-> > On Fri, Aug 17, 2012 at 04:08:07PM -0400, J. Bruce Fields wrote:
-> >> Wait a minute, that assumption's a problem because that calculation
-> >> depends in part on xpt_reserved, which is changed here....
-> >>
-> >> In particular, svc_xprt_release() calls svc_reserve(rqstp, 0), which
-> >> subtracts rqstp->rq_reserved and then calls svc_xprt_enqueue, now with a
-> >> lower xpt_reserved value.  That could well explain this.
-> > 
-> > So, maybe something like this?
-> 
-> Well.  What can I say?  With the change below applied (to 3.2 kernel
-> at least), I don't see any stalls or high CPU usage on the server
-> anymore.  It survived several multi-gigabyte transfers, for several
-> hours, without any problem.  So it is a good step forward ;)
-> 
-> But the whole thing seems to be quite a bit fragile.  I tried to follow
-> the logic in there, and the thing is quite a bit, well, "twisted", and
-> somewhat difficult to follow.  So I don't know if this is the right
-> fix or not.  At least it works! :)
 
-Suggestions welcomed.
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> And I really wonder why no one else reported this problem before.
-> Is me the only one in this world who uses linux nfsd? :)
+On Sat, Aug 18, 2012 at 11:48:46AM +0200, Wolfram Sang wrote:
+> On Wed, Aug 08, 2012 at 09:06:47AM +0200, Thierry Reding wrote:
+> > This commit adds support for probing slave devices parsed from the
+> > device tree.
+> >=20
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>=20
+> How are the devicetree nodes of the slaves connected to this PCI device
+> which should not have a node itself?
 
-This, for example:
+The matching is done by pci_set_of_node() and pci_set_bus_of_node().
+The latter will eventually call pcibios_get_phb_of_node(). What makes
+you say that PCI devices shouldn't have nodes themselves?
 
-	http://marc.info/?l=linux-nfs&m=134131915612287&w=2
+Thierry
 
-may well describe the same problem....  It just needed some debugging
-persistence, thanks!
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature
 
---b.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQL3nZAAoJEN0jrNd/PrOhSxEQAIS8NBwXdp7WeVUznYH+rwoE
+L7Z4wjtaBX8Xo55/3rM3DuXciQDdMiNAnLG+kT1TcnUTidmKrXroWSnI7Tm5OTdB
+Y6o4aneggDWlHJlv0tCkuHGUN6u0fYh6yfOL07Nc0KmC20fNxkkoNIaFR2x5+UB8
+orggxWqu6MT5vqQpKwP/Y1n8CdMZiXcITolazsDUZw7UA75tiCA/XIqi+Zvp8+P7
+SqOG44Gw4dSytMjcYFKweHI3zb3qiztbBAuMo2j7idf/jTQ1TzG9OJpJbIsA7n+8
+ZErce+LX6fPcno+FL4q6xMZVHribE3DEMozP913q9zOT5pj9/h5QhQfE+QRhHXen
+eirsYDmMpSQUvcwMhCxGMB41rKiuq6wGieF9JRWyVkTMEg3eTFpYavy/Ew69IdJ3
+pOSdpM9tXi73XkUYO2BTv9DSRvYCV6IblPx5yC6GOx9B+a4qA4nd0oPGKkxIU3ei
+n2dYtrL85jxc16QbgpKXqCUsG9VjA436FWL04kNnMr2DYcfEHq32YetTcJA9g8ij
+UrAF2SIOueW4qGOvczXpvrliy16JZCdrddWs+IuLYTFSPNeNhRv2oNWPs6Gw1xOx
+Yxx9nXIIz04RTbSlvwa/xc6knxPeCYabvFOF77DjTUxYU07vwOcGkW8BrHb69py/
+Xed9sXKJrNLhnE3Db0Fm
+=EmG3
+-----END PGP SIGNATURE-----
+
+--J/dobhs11T7y2rNN--
