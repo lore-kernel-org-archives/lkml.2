@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab2HRA6s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 20:58:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49786 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab2HRA6l (ORCPT
+	id S1753782Ab2HRBEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 21:04:40 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:49578 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab2HRBEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 20:58:41 -0400
+	Fri, 17 Aug 2012 21:04:32 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-160.messagelabs.com!1345251867!8735955!21
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/20] staging: comedi: update comedi pci drivers part 2
+Date: Fri, 17 Aug 2012 18:04:21 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20120817144253.GA12835@kroah.com>
-References: <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1208171031100.25520-100000@netrider.rowland.org>
-	<20120817144253.GA12835@kroah.com>
-Date: Sat, 18 Aug 2012 08:58:39 +0800
-Message-ID: <CACVXFVMeUmLh=Tu3PHbgHQNX+c-z50_CoAkdJS_uCw=E3dO2dw@mail.gmail.com>
-Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
-From: Ming Lei <tom.leiming@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208171804.21948.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 10:42 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Aug 17, 2012 at 10:38:16AM -0400, Alan Stern wrote:
->> On Fri, 17 Aug 2012, Ming Lei wrote:
->>
->> > But,  if HOTPLUG is not enabled, should device_add() trigger driver probe
->> > further after kernel init is completed?  Or even devices should be allowed
->> > to add into system?
->>
->> Indeed, does it make any sense to have USB support at all if HOTPLUG
->> isn't enabled?  Should USB select HOTPLUG?
->
-> Well, a long time ago people wanted to use USB but not have HOTPLUG
-> enabled in their systems for various (odd) embedded systems.  As it's
-> pretty hard to even turn off HOTPLUG these days, I'd be more likely to
-> just remove CONFIG_HOTPLUG entirely given the dynamic nature of almost
-> all systems.
+Another round of updates to the comedi pci drivers.
 
-It should make sense, otherwise all device id table should not use
-__devinit* markings. There are lots of pci driver usage on it.
+* remove function trace messages
+* remove devpriv and thisboard type macros
+* cleanup the boardinfo
+* remove forward declarations
+* use attach_pci and remove legacy attach (when possible)
+* misc. other changes
 
+H Hartley Sweeten (20):
+  staging: comedi: adv_pci1710: remove function trace messages
+  staging: comedi: adv_pci1710: remove devpriv and this_board macros
+  staging: comedi: adv_pci1710: convert boardinfo initialization to C99 format
+  staging: comedi: adv_pci1710: remove '0' and 'NULL' boardinfo data
+  staging: comedi: adv_pci1710: remove forward declarations
+  staging: comedi: adv_pci1723: remove function trace messages
+  staging: comedi: adv_pci1723: remove devpriv and this_board macros
+  staging: comedi: adv_pci1723: remove range_pci1723
+  staging: comedi: adv_pci1723: fix initial dio subdevice state and io_bits
+  staging: comedi: adv_pci1723: remove boardinfo
+  staging: comedi: adv_pci1723: use attach_pci callback
+  staging: comedi: adv_pci1723: cleanup card reset
+  staging: comedi: adv_pci_dio: remove function trace messages
+  staging: comedi: adv_pci_dio: remove devpriv and this_board macros
+  staging: comedi: adv_pci_dio: use attach_pci callback
+  staging: comedi: adv_pci_dio: convert boardinfo initialization to C99 format
+  staging: comedi: adv_pci_dio: remove '0' boardinfo data
+  staging: comedi: adv_pci_dio: add the number of subdevices to the boardinfo
+  staging: comedi: adv_pci_dio: simplify the 'detach'
+  staging: comedi: adv_pci_dio: fix bug in 'detach'
 
-Thanks,
+ drivers/staging/comedi/drivers/adv_pci1710.c | 590 +++++++++++++--------------
+ drivers/staging/comedi/drivers/adv_pci1723.c | 222 +++-------
+ drivers/staging/comedi/drivers/adv_pci_dio.c | 428 +++++++++----------
+ 3 files changed, 535 insertions(+), 705 deletions(-)
+
 -- 
-Ming Lei
+1.7.11
+
