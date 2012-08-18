@@ -1,170 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671Ab2HRADV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Aug 2012 20:03:21 -0400
-Received: from evergreen.ssec.wisc.edu ([128.104.108.253]:49723 "EHLO
-	evergreen.ssec.wisc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab2HRADO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Aug 2012 20:03:14 -0400
-Date: Fri, 17 Aug 2012 19:03:12 -0500
-From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: Repeated fork() causes SLAB to grow without bound
-Message-ID: <20120818000312.GA4262@evergreen.ssec.wisc.edu>
-Reply-To: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Mail-Followup-To: Rik van Riel <riel@redhat.com>,
-	linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-	linux-mm <linux-mm@kvack.org>
-References: <20120816024610.GA5350@evergreen.ssec.wisc.edu> <502D42E5.7090403@redhat.com>
+	id S1030311Ab2HRADi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Aug 2012 20:03:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33961 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932071Ab2HRAD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Aug 2012 20:03:27 -0400
+Date: Sat, 18 Aug 2012 10:03:16 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        Ivan Vasilyev <ivan.vasilyev@gmail.com>
+Subject: [PULL REQUEST] md: 2 patches, both heading for -stable
+Message-ID: <20120818100316.79b269e2@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502D42E5.7090403@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/W5HT/sQnJTs6yM=VdF_kTK0"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 02:58:45PM -0400, Rik van Riel wrote:
+--Sig_/W5HT/sQnJTs6yM=VdF_kTK0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Oh dear.
-> 
-> Basically, what happens is that at fork time, a new
-> "level" is created for the anon_vma hierarchy. This
-> works great for normal forking daemons, since the
-> parent process just keeps running, and forking off
-> children.
-> 
-> Look at anon_vma_fork() in mm/rmap.c for the details.
-> 
-> Having each child become the new parent, and the
-> previous parent exit, can result in an "infinite"
-> stack of anon_vmas.
-> 
-> Now, the parent anon_vma we cannot get rid of,
-> because that is where the anon_vma lock lives.
-> 
-> However, in your case you have many more anon_vma
-> levels than you have processes!
-> 
-> I wonder if it may be possible to fix your bug
-> by adding a refcount to the struct anon_vma,
-> one count for each VMA that is directly attached
-> to the anon_vma (ie. vma->anon_vma == anon_vma),
-> and one for each page that points to the anon_vma.
-> 
-> If the reference count on an anon_vma reaches 0,
-> we can skip that anon_vma in anon_vma_clone, and
-> the child process should not get that anon_vma.
-> 
-> A scheme like that may be enough to avoid the trouble
-> you are running into.
-> 
-> Does this sound realistic?
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-Based on your comments, I came up with the following patch.  It boots
-and the anon_vma/anon_vma_chain SLAB usage is stable, but I don't know
-if I've overlooked something.  I'm not a kernel hacker.
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
+
+are available in the git repository at:
+
+  git://neil.brown.name/md/ tags/md-3.6-fixes
+
+for you to fetch changes up to e0ee778528bbaad28a5c69d2e219269a3a096607:
+
+  md/raid10: fix problem with on-stack allocation of r10bio structure. (201=
+2-08-18 09:51:42 +1000)
+
+----------------------------------------------------------------
+2 fixes for md, tagged for -stable
+
+----------------------------------------------------------------
+NeilBrown (2):
+      md: Don't truncate size at 4TB for RAID0 and Linear
+      md/raid10: fix problem with on-stack allocation of r10bio structure.
+
+ drivers/md/md.c     |  9 ++++++---
+ drivers/md/raid10.c | 30 +++++++++++++++++++-----------
+ drivers/md/raid10.h |  2 +-
+ 3 files changed, 26 insertions(+), 15 deletions(-)
 
 
---- include/linux/rmap.h.ORIG	2011-08-05 04:59:21.000000000 +0000
-+++ include/linux/rmap.h	2012-08-16 22:52:25.000000000 +0000
-@@ -35,6 +35,7 @@ struct anon_vma {
- 	 * anon_vma if they are the last user on release
- 	 */
- 	atomic_t refcount;
-+	atomic_t pagecount;
- 
- 	/*
- 	 * NOTE: the LSB of the head.next is set by
---- mm/rmap.c.ORIG	2011-08-05 04:59:21.000000000 +0000
-+++ mm/rmap.c	2012-08-17 23:55:13.000000000 +0000
-@@ -85,6 +85,7 @@ static inline struct anon_vma *anon_vma_
- static inline void anon_vma_free(struct anon_vma *anon_vma)
- {
- 	VM_BUG_ON(atomic_read(&anon_vma->refcount));
-+	VM_BUG_ON(atomic_read(&anon_vma->pagecount));
- 
- 	/*
- 	 * Synchronize against page_lock_anon_vma() such that
-@@ -176,6 +177,7 @@ int anon_vma_prepare(struct vm_area_stru
- 		spin_lock(&mm->page_table_lock);
- 		if (likely(!vma->anon_vma)) {
- 			vma->anon_vma = anon_vma;
-+			atomic_inc(&anon_vma->pagecount);
- 			avc->anon_vma = anon_vma;
- 			avc->vma = vma;
- 			list_add(&avc->same_vma, &vma->anon_vma_chain);
-@@ -262,7 +264,10 @@ int anon_vma_clone(struct vm_area_struct
- 		}
- 		anon_vma = pavc->anon_vma;
- 		root = lock_anon_vma_root(root, anon_vma);
--		anon_vma_chain_link(dst, avc, anon_vma);
-+		if (!atomic_read(&anon_vma->pagecount))
-+			anon_vma_chain_free(avc);
-+		else
-+			anon_vma_chain_link(dst, avc, anon_vma);
- 	}
- 	unlock_anon_vma_root(root);
- 	return 0;
-@@ -314,6 +319,7 @@ int anon_vma_fork(struct vm_area_struct
- 	get_anon_vma(anon_vma->root);
- 	/* Mark this anon_vma as the one where our new (COWed) pages go. */
- 	vma->anon_vma = anon_vma;
-+	atomic_set(&anon_vma->pagecount, 1);
- 	anon_vma_lock(anon_vma);
- 	anon_vma_chain_link(vma, avc, anon_vma);
- 	anon_vma_unlock(anon_vma);
-@@ -341,6 +347,8 @@ void unlink_anon_vmas(struct vm_area_str
- 
- 		root = lock_anon_vma_root(root, anon_vma);
- 		list_del(&avc->same_anon_vma);
-+		if (vma->anon_vma == anon_vma)
-+			atomic_dec(&anon_vma->pagecount);
- 
- 		/*
- 		 * Leave empty anon_vmas on the list - we'll need
-@@ -375,6 +383,7 @@ static void anon_vma_ctor(void *data)
- 
- 	mutex_init(&anon_vma->mutex);
- 	atomic_set(&anon_vma->refcount, 0);
-+	atomic_set(&anon_vma->pagecount, 0);
- 	INIT_LIST_HEAD(&anon_vma->head);
- }
- 
-@@ -996,6 +1005,7 @@ static void __page_set_anon_rmap(struct
- 	if (!exclusive)
- 		anon_vma = anon_vma->root;
- 
-+	atomic_inc(&anon_vma->pagecount);
- 	anon_vma = (void *) anon_vma + PAGE_MAPPING_ANON;
- 	page->mapping = (struct address_space *) anon_vma;
- 	page->index = linear_page_index(vma, address);
-@@ -1142,6 +1152,11 @@ void page_remove_rmap(struct page *page)
- 	if (unlikely(PageHuge(page)))
- 		return;
- 	if (PageAnon(page)) {
-+		struct anon_vma *anon_vma;
-+
-+		anon_vma = page_anon_vma(page);
-+		if (anon_vma)
-+			atomic_dec(&anon_vma->pagecount);
- 		mem_cgroup_uncharge_page(page);
- 		if (!PageTransHuge(page))
- 			__dec_zone_page_state(page, NR_ANON_PAGES);
-@@ -1747,6 +1762,7 @@ static void __hugepage_set_anon_rmap(str
- 	if (!exclusive)
- 		anon_vma = anon_vma->root;
- 
-+	atomic_inc(&anon_vma->pagecount);
- 	anon_vma = (void *) anon_vma + PAGE_MAPPING_ANON;
- 	page->mapping = (struct address_space *) anon_vma;
- 	page->index = linear_page_index(vma, address);
+Thanks,
+NeilBrown
 
--- 
-Daniel K. Forrest		Space Science and
-dan.forrest@ssec.wisc.edu	Engineering Center
-(608) 890 - 0558		University of Wisconsin, Madison
+--Sig_/W5HT/sQnJTs6yM=VdF_kTK0
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUC7bxDnsnt1WYoG5AQLQLw//RFeJdxBlu3qNHV6lBKYpIqIP12hGK2mU
+SCDgjKxSc1KYF1ueHrX/GiVtMf/yHi5k1jbJA5MUyORMUPNq1QA84CjmxgKPA6s5
+TRsSzqRLYw+9YJ18oi1Sx1DIiM3VNQJuwtHnbR6LZdkdsbQxesGrlNgqGHflGCX1
+d/UQp30wNUNhjgY7eY4rbm3LTEyO+OBenSeFr4WpptEuxl7eynY8qOqL8BjFJ3uy
+p8g/HM2nmDKKiQAD06NPxvCGvtbvTpqDhky2n4IAYBAekX8QZkwOFFDYnuWG4qk0
+OWBeak0bJL/t5bH1l/G26IzA02Koh3DNLvgw/Ah5zcYoatJldadzAkgYChhAcU4p
+j8HyHQNBb0cngx1lO5seA2S882YVE9lXe7yiK5UFR80kutW404aodNSlMkO0xC7W
+Po8I96z473ezKJGnc1b4V8GnyKN2Hkj7IgmDjQw3LidwtAFDk1q4CcOf/JF3liFj
+t57BPHzIhL8ZAgEEPG8YkWIwhu7mwRnHCr58bhr1DXMRe2OT4Z+vBh3dk98x3z2z
+3SkEYM5NlVac17oEVBjSaAyKamgkS2gJUrhn/1xcLNqZvoW4lG0vsjSl8M+ZjvaW
+mQnnLF4LS9feyUWqXaojUvMqaJObN+CeZDv81S7SauNFdFzgRQFSHJKcb8fAu890
+Kzrv2VgLhXc=
+=Q+4w
+-----END PGP SIGNATURE-----
+
+--Sig_/W5HT/sQnJTs6yM=VdF_kTK0--
