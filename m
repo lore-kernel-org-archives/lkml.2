@@ -1,37 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934194Ab2HWSkY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:40:24 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59248 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932555Ab2HWSkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 14:40:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <50367790.4080207@gmail.com>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208231814.21168.tweek@tweek.dk>
-	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
-	<20120823180839.GR23464@ZenIV.linux.org.uk>
-	<CAJ7jCmnX17MLoHe9=bL-A2ja_qyfMw2Pa4x9oOj7TCX6rjCDgQ@mail.gmail.com>
-	<5036750A.301@gmail.com>
-	<CAJ7jCmkbujxcUYjQgS9a3pdHtdLmTukJCzExb4TAxLcZG=UJmg@mail.gmail.com>
-	<50367790.4080207@gmail.com>
-Date: Thu, 23 Aug 2012 20:40:19 +0200
-Message-ID: <CAJ7jCmmhmb86PSqAAQApivPQ3ZXEhWyMSyGnG0GH_nrunAVVTw@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Martin Nybo Andersen <tweek@tweek.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S934200Ab2HWSn3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:43:29 -0400
+Received: from noserose.net ([66.220.18.76]:48290 "HELO noserose.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932555Ab2HWSn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 14:43:27 -0400
+X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Aug 2012 14:43:27 EDT
+Message-Id: <9008f16e4d659fdc6506bc5964f8cb52779a1cb4.1345743802.git.ecashin@coraid.com>
+In-Reply-To: <cover.1345743800.git.ecashin@coraid.com>
+References: <cover.1345743800.git.ecashin@coraid.com>
+From: Ed Cashin <ecashin@coraid.com>
+Date: Fri, 17 Aug 2012 21:27:14 -0400
+Subject: [PATCH 06/14] aoe: failover remote interface based on aoe_deadsecs parameter
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/12, David Daney <ddaney.cavm@gmail.com> wrote:
-> I suspected as much.  So from your point of view, this issue is of
-> exactly zero importance.
-I'm using software which is developed by others. As I already said
-many software would be developed faster if x86-32 could be dropped.
-Support for x86-32 can mean no support for X32.
+The aoe_deadsecs module parameter allows the user to specify a hard
+limit on the number of seconds an AoE command can be retransmitted
+before the AoE block device is considered to have failed.
+
+Using aoe_deadsecs to determine the time we try using a different
+remote interface helps to ensure that the hard limit is not reached
+before we've tried to recover by sending to a different remote port.
+
+As a data storage target, the AoE target is unambiguously identified
+by its {major, minor} AoE address tuple, and an AoE target can have
+multiple MAC addresses.  However, note that "target" in the driver
+code and comments means a {major, minor, MAC address} tuple, as in
+"somewhere to send packets".
+
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ drivers/block/aoe/aoe.h    |    1 -
+ drivers/block/aoe/aoecmd.c |    8 +++-----
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index ffded64..d17b727 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -96,7 +96,6 @@ enum {
+ 	TIMERTICK = HZ / 10,
+ 	MINTIMER = HZ >> 2,
+ 	MAXTIMER = HZ << 1,
+-	HELPWAIT = 20,
+ };
+ 
+ struct buf {
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index 9bce877..b5975c5 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -632,11 +632,9 @@ rexmit_timer(ulong vp)
+ 		list_del(pos);
+ 
+ 		t = f->t;
+-		if (n > HELPWAIT) {
+-			/* see if another target can help */
+-			if (d->ntargets > 1)
+-				d->htgt = t;
+-		}
++		if (n > aoe_deadsecs/2)
++			d->htgt = t; /* see if another target can help */
++
+ 		if (t->nout == t->maxout) {
+ 			if (t->maxout > 1)
+ 				t->maxout--;
+-- 
+1.7.2.5
+
