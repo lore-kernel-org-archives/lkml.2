@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2HRLBx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 07:01:53 -0400
-Received: from www17.your-server.de ([213.133.104.17]:43030 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab2HRLBu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 07:01:50 -0400
-Message-ID: <1345287638.19305.4.camel@localhost.localdomain>
-Subject: Re: [UDL] general protection fault in fb_deferred_io_mkwrite()
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Bernie Thompson <bernie@plugable.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        airlied@linux.ie, dri-devel@lists.freedesktop.org
-Date: Sat, 18 Aug 2012 13:00:38 +0200
-In-Reply-To: <CAO1w=s8AdkbSNMe8v0HqkosYNKp05+Udk4d-r1TbRb3GMC-MNw@mail.gmail.com>
-References: <1344767672.1272.7.camel@localhost.localdomain>
-	 <CAO1w=s8AdkbSNMe8v0HqkosYNKp05+Udk4d-r1TbRb3GMC-MNw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S1755142Ab2HRLN7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 07:13:59 -0400
+Received: from fieldses.org ([174.143.236.118]:36105 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829Ab2HRLN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 07:13:58 -0400
+Date: Sat, 18 Aug 2012 07:13:54 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: 3.0+ NFS issues (bisected)
+Message-ID: <20120818111354.GA16611@fieldses.org>
+References: <20120817145616.GC11172@fieldses.org>
+ <20120817160057.GE11172@fieldses.org>
+ <502E7B86.3060702@msgid.tls.msk.ru>
+ <20120817171854.GA14015@fieldses.org>
+ <502E7EC3.5030006@msgid.tls.msk.ru>
+ <502E7F84.3060003@msgid.tls.msk.ru>
+ <20120817191800.GA14620@fieldses.org>
+ <20120817200807.GB14620@fieldses.org>
+ <20120817223253.GA15659@fieldses.org>
+ <502F3AFB.4080401@msgid.tls.msk.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <502F3AFB.4080401@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 12.08.2012, 14:22 -0700 schrieb Bernie Thompson:
-> On Sun, Aug 12, 2012 at 3:34 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
->         guilty driver is probably udl_fb.c
->         any ideas?
+On Sat, Aug 18, 2012 at 10:49:31AM +0400, Michael Tokarev wrote:
+> On 18.08.2012 02:32, J. Bruce Fields wrote:
+> > On Fri, Aug 17, 2012 at 04:08:07PM -0400, J. Bruce Fields wrote:
+> >> Wait a minute, that assumption's a problem because that calculation
+> >> depends in part on xpt_reserved, which is changed here....
+> >>
+> >> In particular, svc_xprt_release() calls svc_reserve(rqstp, 0), which
+> >> subtracts rqstp->rq_reserved and then calls svc_xprt_enqueue, now with a
+> >> lower xpt_reserved value.  That could well explain this.
+> > 
+> > So, maybe something like this?
 > 
+> Well.  What can I say?  With the change below applied (to 3.2 kernel
+> at least), I don't see any stalls or high CPU usage on the server
+> anymore.  It survived several multi-gigabyte transfers, for several
+> hours, without any problem.  So it is a good step forward ;)
 > 
-> Hi Thomas,
+> But the whole thing seems to be quite a bit fragile.  I tried to follow
+> the logic in there, and the thing is quite a bit, well, "twisted", and
+> somewhat difficult to follow.  So I don't know if this is the right
+> fix or not.  At least it works! :)
 
-Hi Bernie!
+Suggestions welcomed.
 
+> And I really wonder why no one else reported this problem before.
+> Is me the only one in this world who uses linux nfsd? :)
 
-> We were seeing similar issues in udlfb (the original fbdev version of
-> this driver), which were fixed earlier this year by getting all
-> rendering operations out of probe/disconnect -- those which might
-> trigger fb_defio page faults in an inappropriate context, or be
-> long-running. Here's some more detail:
-> http://plugable.com/2012/06/21/displaylink-usb-devices-on-linux-kernel-3-4-0/comment-page-1/#comment-5896 
-> 
-> 
-> Unfortunately, I haven't had time to get going with udl myself, so
-> haven't been able to port and confirm.  Thanks for raising and staying
-> on this.
+This, for example:
 
-Okay, I see. I'll switch to FB_UDL for now and remove DRM_UDL from my
-config.
+	http://marc.info/?l=linux-nfs&m=134131915612287&w=2
 
-Is somebody working on porting commit
-https://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=8d21547d3c9c3bc653261f26d554cfabc4a083de to the DRM_UDL driver?
+may well describe the same problem....  It just needed some debugging
+persistence, thanks!
 
-In Airlie's tree seems to be no commit related to this:
-
-http://cgit.freedesktop.org/~airlied/linux/
-
-with kind regards
-thomas
-
-> 
-> 
-> Best wishes,
-> Bernie 
-> 
-> 
->         [   45.633336] RIP  [<ffffffff8123becc>]
->         fb_deferred_io_mkwrite+0xdc/0xf0
->         [   45.633336]  RSP <ffff880126559c98>
->         [   45.711547] ---[ end trace d4732d5a0bf375fb ]---
->         [   45.720961] released /dev/fb1 user=1 count=0
->         
-> 
-
-
-
+--b.
