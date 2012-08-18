@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab2HRSwy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 14:52:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40464 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab2HRSwv (ORCPT
+	id S1753210Ab2HRSzd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 14:55:33 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:36197 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2HRSza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 14:52:51 -0400
-Date: Sat, 18 Aug 2012 20:52:44 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: khali@linux-fr.org, swarren@nvidia.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        olof@lixom.net
-Subject: Re: [PATCH REBASE 2/2] i2c: tegra: dynamically control fast clk
-Message-ID: <20120818185244.GD19802@pengutronix.de>
-References: <1345230155-4252-1-git-send-email-ldewangan@nvidia.com>
- <1345230155-4252-2-git-send-email-ldewangan@nvidia.com>
+	Sat, 18 Aug 2012 14:55:30 -0400
+Date: Sat, 18 Aug 2012 20:55:28 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Jim Cromie <jim.cromie@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        Jason Baron <jbaron@redhat.com>
+Subject: Re: [bisected] Driver core fixes for 3.6-rc3 regression
+Message-ID: <20120818185528.GA250@x4>
+References: <20120817171354.GA14046@kroah.com>
+ <20120818060934.GA255@x4>
+ <20120818163401.GA2013@kroah.com>
+ <1345315025.10014.15.camel@joe2Laptop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZARJHfwaSJQLOEUz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345230155-4252-2-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1345315025.10014.15.camel@joe2Laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012.08.18 at 11:37 -0700, Joe Perches wrote:
+> On Sat, 2012-08-18 at 09:34 -0700, Greg KH wrote:
+> > On Sat, Aug 18, 2012 at 08:09:34AM +0200, Markus Trippelsdorf wrote:
+> > > On 2012.08.17 at 10:13 -0700, Greg KH wrote:
+> > > > ----------------------------------------------------------------
+> > > > Driver core fixes for 3.6-rc3
+> > > > 
+> > > > Here are two tiny patches, one fixing a dynamic debug problem that the printk
+> > > > rework turned up, and the other one fixing an extcon problem that people
+> > > > reported.
+> > > > 
+> > > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > > 
+> > > > ----------------------------------------------------------------
+> > > > Axel Lin (1):
+> > > >       extcon: extcon_gpio: Replace gpio_request_one by devm_gpio_request_one
+> > > > 
+> > > > Jim Cromie (1):
+> > > >       drivers-core: make structured logging play nice with dynamic-debug
+> > > 
+> > > The commit af7f2158f above causes hundreds of "Failed to force enable
+> > > HPET" messages to appear during boot on my system.
+> > > Please also note the strange "^A0" character sequence that is also
+> > > introduced by the same commit.
+> > 
+> > Ugh, I see the same thing here, debugging must be accidentally enabled
+> > with this patch, and the ^A0 stuff is just a mess.  Sorry, I didn't
+> > notice this in my testing, my fault.
+> 
+> It's a combination interaction because of the patch with
+> a conversion of KERN_<LEVEL> from "<.>" to concatenated
+> SOH "."
+> 
+> commit: 04d2c8c83d0e3ac5f78aeede51babb3236200112
 
---ZARJHfwaSJQLOEUz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+IOW:
 
-On Sat, Aug 18, 2012 at 12:32:35AM +0530, Laxman Dewangan wrote:
-> Tegra I2C driver enables the fast clock during initialization
-> and does not disable till driver removed.
-> Enable this clock before transfer and disable after transfer done.
->=20
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index cdd01c5..5e6e00b 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1912,8 +1912,8 @@ int __dev_printk(const char *level, const struct device *dev,
+ 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
+ 	}
+ skip:
+-	if (level[3])
+-		level_extra = &level[3]; /* skip past "<L>" */
++	if (level[2])
++		level_extra = &level[2]; /* skip past KERN_SOH "L" */
+ 
+ 	return printk_emit(0, level[1] - '0',
+ 			   dictlen ? dict : NULL, dictlen,
 
-Except that this patch is affected from the flaw of the previous patch,
-it looks good to me.
-
-> -	clk_prepare_enable(i2c_dev->clk);
-> +	tegra_i2c_clock_enable(i2c_dev);
-
-This should be div_clk.
-
->  	for (i =3D 0; i < num; i++) {
->  		enum msg_end_type end_type =3D MSG_END_STOP;
->  		if (i < (num - 1)) {
-> @@ -597,7 +621,7 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, s=
-truct i2c_msg msgs[],
->  		if (ret)
->  			break;
->  	}
-> -	clk_disable_unprepare(i2c_dev->div_clk);
-> +	tegra_i2c_clock_disable(i2c_dev);
->  	return ret ?: i;
-
-If that is fixed, you can add
-
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---ZARJHfwaSJQLOEUz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlAv5HwACgkQD27XaX1/VRvu6QCgphMFz7+xOciNKwLbn32hqw6x
-GdgAniqA07wwMuAUHLwkEdC+phgcQzt9
-=bubb
------END PGP SIGNATURE-----
-
---ZARJHfwaSJQLOEUz--
+-- 
+Markus
