@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab2HRM6g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 08:58:36 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:36133 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709Ab2HRM6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 08:58:33 -0400
-Message-ID: <502F9177.5060100@msgid.tls.msk.ru>
-Date: Sat, 18 Aug 2012 16:58:31 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1754855Ab2HRNIW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 09:08:22 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4565 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab2HRNIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 09:08:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sat, 18 Aug 2012 06:08:19 -0700
+Message-ID: <502F8F83.5030902@nvidia.com>
+Date: Sat, 18 Aug 2012 18:20:11 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: 3.0+ NFS issues (bisected)
-References: <20120817145616.GC11172@fieldses.org> <20120817160057.GE11172@fieldses.org> <502E7B86.3060702@msgid.tls.msk.ru> <20120817171854.GA14015@fieldses.org> <502E7EC3.5030006@msgid.tls.msk.ru> <502E7F84.3060003@msgid.tls.msk.ru> <20120817191800.GA14620@fieldses.org> <20120817200807.GB14620@fieldses.org> <20120817223253.GA15659@fieldses.org> <502F3AFB.4080401@msgid.tls.msk.ru> <20120818111354.GA16611@fieldses.org>
-In-Reply-To: <20120818111354.GA16611@fieldses.org>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "olof@lixom.net" <olof@lixom.net>
+Subject: Re: [PATCH REBASE 1/2] i2c: tegra: I2_M_NOSTART functionality not
+ supported in Tegra20
+References: <1345230155-4252-1-git-send-email-ldewangan@nvidia.com> <20120818124703.GC12839@pengutronix.de>
+In-Reply-To: <20120818124703.GC12839@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.08.2012 15:13, J. Bruce Fields wrote:
-> On Sat, Aug 18, 2012 at 10:49:31AM +0400, Michael Tokarev wrote:
-[]
->> Well.  What can I say?  With the change below applied (to 3.2 kernel
->> at least), I don't see any stalls or high CPU usage on the server
->> anymore.  It survived several multi-gigabyte transfers, for several
->> hours, without any problem.  So it is a good step forward ;)
+Thanks for review.
+
+On Saturday 18 August 2012 06:17 PM, Wolfram Sang wrote:
+> * PGP Signed by an unknown key
+>
+> On Sat, Aug 18, 2012 at 12:32:34AM +0530, Laxman Dewangan wrote:
+>> +	bool has_continue_xfer_support;
+> I wonder if it makes sense to carry a pointer here to the
+> tegra_i2c_hw_feature in use instead of copying all entries by hand,
+> since they might get more and more.
+>
+
+Ok, we can store the hw pointer in device structure. I will send the new 
+patch.
+
+>>   };
 >>
->> But the whole thing seems to be quite a bit fragile.  I tried to follow
->> the logic in there, and the thing is quite a bit, well, "twisted", and
->> somewhat difficult to follow.  So I don't know if this is the right
->> fix or not.  At least it works! :)
-> 
-> Suggestions welcomed.
+>>   static void dvc_writel(struct tegra_i2c_dev *i2c_dev, u32 val, unsigned long reg)
+>> @@ -563,7 +574,17 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+>>   	if (i2c_dev->is_suspended)
+>>   		return -EBUSY;
+>>
+>> -	clk_prepare_enable(i2c_dev->div_clk);
+>> +	/* Support I2C_M_NOSTART only if HW support continue xfer. */
+>> +	for (i = 0; i<  num - 1; i++) {
+>> +		if ((msgs[i + 1].flags&  I2C_M_NOSTART)&&
+>> +			!i2c_dev->has_continue_xfer_support) {
+>> +			dev_err(i2c_dev->dev,
+>> +				"mesg %d have illegal flag\n", i + 1);
+>> +			return -EINVAL;
+>> +		}
+>> +	}
+> Drivers are requested to explicitly check for features of the I2C bus
+> (like M_NOSTART) before using them, so I'd skip this extra check.
+>
 
-Ok...
+Ok, I kept this as part of flag checking so illegal flag should not be 
+passed. I will remove this on next version patch.
 
-Meanwhile, you can add my
-Tested-By: Michael Tokarev <mjt@tls.msk.ru>
+>> +
+>> +	clk_prepare_enable(i2c_dev->clk);
+>  From a glimpse, this change looks unrelated at least. Even wrong, no?
+>
 
-to the patch.
+It was already there, just before above check. Due to insertion of 
+check, this code shifted, otherwise it is not a new code.
 
->> And I really wonder why no one else reported this problem before.
->> Is me the only one in this world who uses linux nfsd? :)
-> 
-> This, for example:
-> 
-> 	http://marc.info/?l=linux-nfs&m=134131915612287&w=2
-> 
-> may well describe the same problem....  It just needed some debugging
-> persistence, thanks!
-
-Ah.  I tried to find something when I initially
-sent this report, but weren't able to.  Apparently
-I'm not alone with this problem indeed!
-
-Thank you for all the work!
-
-/mjt
