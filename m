@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab2HRRd1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:33:27 -0400
+	id S1757113Ab2HRRdj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:33:39 -0400
 Received: from mga03.intel.com ([143.182.124.21]:22621 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755617Ab2HRRai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:30:38 -0400
+	id S1755885Ab2HRRam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 13:30:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
-   d="scan'208";a="182607893"
+   d="scan'208";a="135749108"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 17/31] sections: Fix section conflicts in drivers/media
-Date: Sat, 18 Aug 2012 10:30:08 -0700
-Message-Id: <1345311022-26328-18-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 13/31] sections: Fix section conflicts in drivers/cpufreq
+Date: Sat, 18 Aug 2012 10:30:04 -0700
+Message-Id: <1345311022-26328-14-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
@@ -27,96 +27,129 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/media/dvb/ddbridge/ddbridge-core.c |    2 +-
- drivers/media/dvb/ngene/ngene-cards.c      |    2 +-
- drivers/media/video/cx88/cx88-alsa.c       |    2 +-
- drivers/media/video/gspca/jl2005bcd.c      |    2 +-
- drivers/media/video/timblogiw.c            |    6 +++---
- 5 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/cpufreq/longhaul.h |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
-index ebf3f05..b1f3e77 100644
---- a/drivers/media/dvb/ddbridge/ddbridge-core.c
-+++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
-@@ -1679,7 +1679,7 @@ static struct ddb_info ddb_v6 = {
- 	.subvendor   = _subvend, .subdevice = _subdev, \
- 	.driver_data = (unsigned long)&_driverdata }
- 
--static const struct pci_device_id ddb_id_tbl[] __devinitdata = {
-+static const struct pci_device_id ddb_id_tbl[] __devinitconst = {
- 	DDB_ID(DDVID, 0x0002, DDVID, 0x0001, ddb_octopus),
- 	DDB_ID(DDVID, 0x0003, DDVID, 0x0001, ddb_octopus),
- 	DDB_ID(DDVID, 0x0003, DDVID, 0x0002, ddb_octopus_le),
-diff --git a/drivers/media/dvb/ngene/ngene-cards.c b/drivers/media/dvb/ngene/ngene-cards.c
-index 72ee8de..eae0c80 100644
---- a/drivers/media/dvb/ngene/ngene-cards.c
-+++ b/drivers/media/dvb/ngene/ngene-cards.c
-@@ -479,7 +479,7 @@ static struct ngene_info ngene_info_m780 = {
- 
- /****************************************************************************/
- 
--static const struct pci_device_id ngene_id_tbl[] __devinitdata = {
-+static const struct pci_device_id ngene_id_tbl[] __devinitconst = {
- 	NGENE_ID(0x18c3, 0xabc3, ngene_info_cineS2),
- 	NGENE_ID(0x18c3, 0xabc4, ngene_info_cineS2),
- 	NGENE_ID(0x18c3, 0xdb01, ngene_info_satixS2),
-diff --git a/drivers/media/video/cx88/cx88-alsa.c b/drivers/media/video/cx88/cx88-alsa.c
-index dfac6e3..c26de31 100644
---- a/drivers/media/video/cx88/cx88-alsa.c
-+++ b/drivers/media/video/cx88/cx88-alsa.c
-@@ -749,7 +749,7 @@ static struct snd_kcontrol_new snd_cx88_alc_switch = {
-  * Only boards with eeprom and byte 1 at eeprom=1 have it
+diff --git a/drivers/cpufreq/longhaul.h b/drivers/cpufreq/longhaul.h
+index cbf48fb..e2dc436 100644
+--- a/drivers/cpufreq/longhaul.h
++++ b/drivers/cpufreq/longhaul.h
+@@ -56,7 +56,7 @@ union msr_longhaul {
+ /*
+  * VIA C3 Samuel 1  & Samuel 2 (stepping 0)
   */
- 
--static const struct pci_device_id const cx88_audio_pci_tbl[] __devinitdata = {
-+static const struct pci_device_id const cx88_audio_pci_tbl[] __devinitconst = {
- 	{0x14f1,0x8801,PCI_ANY_ID,PCI_ANY_ID,0,0,0},
- 	{0x14f1,0x8811,PCI_ANY_ID,PCI_ANY_ID,0,0,0},
- 	{0, }
-diff --git a/drivers/media/video/gspca/jl2005bcd.c b/drivers/media/video/gspca/jl2005bcd.c
-index cf9d9fc..6ebe9ec 100644
---- a/drivers/media/video/gspca/jl2005bcd.c
-+++ b/drivers/media/video/gspca/jl2005bcd.c
-@@ -512,7 +512,7 @@ static const struct sd_desc sd_desc = {
+-static const int __cpuinitdata samuel1_mults[16] = {
++static const int __cpuinitconst samuel1_mults[16] = {
+ 	-1, /* 0000 -> RESERVED */
+ 	30, /* 0001 ->  3.0x */
+ 	40, /* 0010 ->  4.0x */
+@@ -75,7 +75,7 @@ static const int __cpuinitdata samuel1_mults[16] = {
+ 	-1, /* 1111 -> RESERVED */
  };
  
- /* -- module initialisation -- */
--static const __devinitdata struct usb_device_id device_table[] = {
-+static const __devinitconst struct usb_device_id device_table[] = {
- 	{USB_DEVICE(0x0979, 0x0227)},
- 	{}
- };
-diff --git a/drivers/media/video/timblogiw.c b/drivers/media/video/timblogiw.c
-index 02194c0..5f6a2cb 100644
---- a/drivers/media/video/timblogiw.c
-+++ b/drivers/media/video/timblogiw.c
-@@ -745,7 +745,7 @@ static int timblogiw_mmap(struct file *file, struct vm_area_struct *vma)
- 
- /* Platform device functions */
- 
--static __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
-+static const __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
- 	.vidioc_querycap		= timblogiw_querycap,
- 	.vidioc_enum_fmt_vid_cap	= timblogiw_enum_fmt,
- 	.vidioc_g_fmt_vid_cap		= timblogiw_g_fmt,
-@@ -767,7 +767,7 @@ static __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
- 	.vidioc_enum_framesizes		= timblogiw_enum_framesizes,
- };
- 
--static __devinitconst struct v4l2_file_operations timblogiw_fops = {
-+static const __devinitconst struct v4l2_file_operations timblogiw_fops = {
- 	.owner		= THIS_MODULE,
- 	.open		= timblogiw_open,
- 	.release	= timblogiw_close,
-@@ -777,7 +777,7 @@ static __devinitconst struct v4l2_file_operations timblogiw_fops = {
- 	.poll		= timblogiw_poll,
+-static const int __cpuinitdata samuel1_eblcr[16] = {
++static const int __cpuinitconst samuel1_eblcr[16] = {
+ 	50, /* 0000 -> RESERVED */
+ 	30, /* 0001 ->  3.0x */
+ 	40, /* 0010 ->  4.0x */
+@@ -97,7 +97,7 @@ static const int __cpuinitdata samuel1_eblcr[16] = {
+ /*
+  * VIA C3 Samuel2 Stepping 1->15
+  */
+-static const int __cpuinitdata samuel2_eblcr[16] = {
++static const int __cpuinitconst samuel2_eblcr[16] = {
+ 	50,  /* 0000 ->  5.0x */
+ 	30,  /* 0001 ->  3.0x */
+ 	40,  /* 0010 ->  4.0x */
+@@ -119,7 +119,7 @@ static const int __cpuinitdata samuel2_eblcr[16] = {
+ /*
+  * VIA C3 Ezra
+  */
+-static const int __cpuinitdata ezra_mults[16] = {
++static const int __cpuinitconst ezra_mults[16] = {
+ 	100, /* 0000 -> 10.0x */
+ 	30,  /* 0001 ->  3.0x */
+ 	40,  /* 0010 ->  4.0x */
+@@ -138,7 +138,7 @@ static const int __cpuinitdata ezra_mults[16] = {
+ 	120, /* 1111 -> 12.0x */
  };
  
--static __devinitconst struct video_device timblogiw_template = {
-+static const __devinitconst struct video_device timblogiw_template = {
- 	.name		= TIMBLOGIWIN_NAME,
- 	.fops		= &timblogiw_fops,
- 	.ioctl_ops	= &timblogiw_ioctl_ops,
+-static const int __cpuinitdata ezra_eblcr[16] = {
++static const int __cpuinitconst ezra_eblcr[16] = {
+ 	50,  /* 0000 ->  5.0x */
+ 	30,  /* 0001 ->  3.0x */
+ 	40,  /* 0010 ->  4.0x */
+@@ -160,7 +160,7 @@ static const int __cpuinitdata ezra_eblcr[16] = {
+ /*
+  * VIA C3 (Ezra-T) [C5M].
+  */
+-static const int __cpuinitdata ezrat_mults[32] = {
++static const int __cpuinitconst ezrat_mults[32] = {
+ 	100, /* 0000 -> 10.0x */
+ 	30,  /* 0001 ->  3.0x */
+ 	40,  /* 0010 ->  4.0x */
+@@ -196,7 +196,7 @@ static const int __cpuinitdata ezrat_mults[32] = {
+ 	-1,  /* 1111 -> RESERVED (12.0x) */
+ };
+ 
+-static const int __cpuinitdata ezrat_eblcr[32] = {
++static const int __cpuinitconst ezrat_eblcr[32] = {
+ 	50,  /* 0000 ->  5.0x */
+ 	30,  /* 0001 ->  3.0x */
+ 	40,  /* 0010 ->  4.0x */
+@@ -235,7 +235,7 @@ static const int __cpuinitdata ezrat_eblcr[32] = {
+ /*
+  * VIA C3 Nehemiah */
+ 
+-static const int __cpuinitdata nehemiah_mults[32] = {
++static const int __cpuinitconst nehemiah_mults[32] = {
+ 	100, /* 0000 -> 10.0x */
+ 	-1, /* 0001 -> 16.0x */
+ 	40,  /* 0010 ->  4.0x */
+@@ -270,7 +270,7 @@ static const int __cpuinitdata nehemiah_mults[32] = {
+ 	-1, /* 1111 -> 12.0x */
+ };
+ 
+-static const int __cpuinitdata nehemiah_eblcr[32] = {
++static const int __cpuinitconst nehemiah_eblcr[32] = {
+ 	50,  /* 0000 ->  5.0x */
+ 	160, /* 0001 -> 16.0x */
+ 	40,  /* 0010 ->  4.0x */
+@@ -315,7 +315,7 @@ struct mV_pos {
+ 	unsigned short pos;
+ };
+ 
+-static const struct mV_pos __cpuinitdata vrm85_mV[32] = {
++static const struct mV_pos __cpuinitconst vrm85_mV[32] = {
+ 	{1250, 8},	{1200, 6},	{1150, 4},	{1100, 2},
+ 	{1050, 0},	{1800, 30},	{1750, 28},	{1700, 26},
+ 	{1650, 24},	{1600, 22},	{1550, 20},	{1500, 18},
+@@ -326,14 +326,14 @@ static const struct mV_pos __cpuinitdata vrm85_mV[32] = {
+ 	{1475, 17},	{1425, 15},	{1375, 13},	{1325, 11}
+ };
+ 
+-static const unsigned char __cpuinitdata mV_vrm85[32] = {
++static const unsigned char __cpuinitconst mV_vrm85[32] = {
+ 	0x04,	0x14,	0x03,	0x13,	0x02,	0x12,	0x01,	0x11,
+ 	0x00,	0x10,	0x0f,	0x1f,	0x0e,	0x1e,	0x0d,	0x1d,
+ 	0x0c,	0x1c,	0x0b,	0x1b,	0x0a,	0x1a,	0x09,	0x19,
+ 	0x08,	0x18,	0x07,	0x17,	0x06,	0x16,	0x05,	0x15
+ };
+ 
+-static const struct mV_pos __cpuinitdata mobilevrm_mV[32] = {
++static const struct mV_pos __cpuinitconst mobilevrm_mV[32] = {
+ 	{1750, 31},	{1700, 30},	{1650, 29},	{1600, 28},
+ 	{1550, 27},	{1500, 26},	{1450, 25},	{1400, 24},
+ 	{1350, 23},	{1300, 22},	{1250, 21},	{1200, 20},
+@@ -344,7 +344,7 @@ static const struct mV_pos __cpuinitdata mobilevrm_mV[32] = {
+ 	{675, 3},	{650, 2},	{625, 1},	{600, 0}
+ };
+ 
+-static const unsigned char __cpuinitdata mV_mobilevrm[32] = {
++static const unsigned char __cpuinitconst mV_mobilevrm[32] = {
+ 	0x1f,	0x1e,	0x1d,	0x1c,	0x1b,	0x1a,	0x19,	0x18,
+ 	0x17,	0x16,	0x15,	0x14,	0x13,	0x12,	0x11,	0x10,
+ 	0x0f,	0x0e,	0x0d,	0x0c,	0x0b,	0x0a,	0x09,	0x08,
 -- 
 1.7.7.6
 
