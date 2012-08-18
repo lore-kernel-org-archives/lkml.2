@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2HRV0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 17:26:44 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:61456 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752836Ab2HRV0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753282Ab2HRV0W (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 18 Aug 2012 17:26:22 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:61443 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752536Ab2HRV0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 17:26:20 -0400
 X-IronPort-AV: E=Sophos;i="4.77,791,1336341600"; 
-   d="scan'208";a="170194855"
+   d="scan'208";a="170194853"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Hans de Goede <hdegoede@redhat.com>
+To: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 Cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] drivers/media/video/gspca/cpia1.c: introduce missing initialization
-Date: Sat, 18 Aug 2012 23:25:57 +0200
-Message-Id: <1345325159-7365-3-git-send-email-Julia.Lawall@lip6.fr>
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] drivers/net/wireless/ipw2x00/ipw2100.c: introduce missing initialization
+Date: Sat, 18 Aug 2012 23:25:55 +0200
+Message-Id: <1345325159-7365-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,20 +49,21 @@ if (\(ret != 0\|ret < 0\|ret == NULL\)) S2
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/video/gspca/cpia1.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ipw2x00/ipw2100.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/video/gspca/cpia1.c b/drivers/media/video/gspca/cpia1.c
-index 2499a88..b3ba47d 100644
---- a/drivers/media/video/gspca/cpia1.c
-+++ b/drivers/media/video/gspca/cpia1.c
-@@ -751,7 +751,7 @@ static int goto_high_power(struct gspca_dev *gspca_dev)
- 	if (signal_pending(current))
- 		return -EINTR;
- 
--	do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
-+	ret = do_command(gspca_dev, CPIA_COMMAND_GetCameraStatus, 0, 0, 0, 0);
- 	if (ret)
- 		return ret;
- 
+diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
+index 8a34202..2f3f6f2 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2100.c
++++ b/drivers/net/wireless/ipw2x00/ipw2100.c
+@@ -2042,7 +2042,8 @@ static void isr_indicate_associated(struct ipw2100_priv *priv, u32 status)
+ 		return;
+ 	}
+ 	len = ETH_ALEN;
+-	ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, &bssid, &len);
++	ret = ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, &bssid,
++				  &len);
+ 	if (ret) {
+ 		IPW_DEBUG_INFO("failed querying ordinals at line %d\n",
+ 			       __LINE__);
 
