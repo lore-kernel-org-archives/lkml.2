@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab2HRTCI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 15:02:08 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50268 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153Ab2HRTCG (ORCPT
+	id S1753539Ab2HRTKM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 15:10:12 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34232 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab2HRTKI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 15:02:06 -0400
-Date: Sat, 18 Aug 2012 21:01:52 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Daniel Kurtz <djkurtz@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-i801: Add device tree support
-Message-ID: <20120818190152.GE19802@pengutronix.de>
-References: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
- <20120818094846.GA24812@pengutronix.de>
- <20120818111745.GA15702@avionic-0098.mockup.avionic-design.de>
- <20120818121628.GB12839@pengutronix.de>
- <20120818123527.GA28701@avionic-0098.adnet.avionic-design.de>
+	Sat, 18 Aug 2012 15:10:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="orO6xySwJI16pVnm"
-Content-Disposition: inline
-In-Reply-To: <20120818123527.GA28701@avionic-0098.adnet.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Message-ID: <caed8bcf-9a9c-46bc-b6e5-a607e9bc7ecb@default>
+Date: Sat, 18 Aug 2012 12:09:27 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: RE: [PATCH 0/4] promote zcache from staging
+References: <1343413117-1989-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <5021795A.5000509@linux.vnet.ibm.com> <5024067F.3010602@linux.vnet.ibm.com>
+ <2e9ccb4f-1339-4c26-88dd-ea294b022127@default>
+ <50254F69.2000409@linux.vnet.ibm.com>
+ <8fa37327-17ff-4734-9007-40412b18d0fb@default>
+ <502ED4C0.70305@linux.vnet.ibm.com>
+In-Reply-To: <502ED4C0.70305@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Sent: Friday, August 17, 2012 5:33 PM
+> To: Dan Magenheimer
+> Cc: Greg Kroah-Hartman; Andrew Morton; Nitin Gupta; Minchan Kim; Konrad Wilk; Robert Jennings; linux-
+> mm@kvack.org; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org; Kurt Hackel
+> Subject: Re: [PATCH 0/4] promote zcache from staging
+> 
+> >
+> > Sorry to beat a dead horse, but I meant to report this
+> > earlier in the week and got tied up by other things.
+> >
+> > I finally got my test scaffold set up earlier this week
+> > to try to reproduce my "bad" numbers with the RHEL6-ish
+> > config file.
+> >
+> > I found that with "make -j28" and "make -j32" I experienced
+> > __DATA CORRUPTION__.  This was repeatable.
+> 
+> I actually hit this for the first time a few hours ago when
+> I was running performance for your rewrite.  I didn't know
+> what to make of it yet.  The 24-thread kernel build failed
+> when both frontswap and cleancache were enabled.
+> 
+> > The type of error led me to believe that the problem was
+> > due to concurrency of cleancache reclaim.  I did not try
+> > with cleancache disabled to prove/support this theory
+> > but it is consistent with the fact that you (Seth) have not
+> > seen a similar problem and has disabled cleancache.
+> >
+> > While this problem is most likely in my code and I am
+> > suitably chagrined, it re-emphasizes the fact that
+> > the current zcache in staging is 20-month old "demo"
+> > code.  The proposed new zcache codebase handles concurrency
+> > much more effectively.
+> 
+> I imagine this can be solved without rewriting the entire
+> codebase.  If your new code contains a fix for this, can we
+> just pull it as a single patch?
 
---orO6xySwJI16pVnm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Seth --
 
+I didn't even observe this before this week, let alone fix this
+as an individual bug.  The redesign takes into account LRU ordering
+and zombie pageframes (which have valid pointers to the contained
+zbuds and possibly valid data, so can't be recycled yet),
+taking races and concurrency carefully into account.
 
-> > I thought to recall that busses which can be probed at runtime should
-> > not have nodes but should be probed. Maybe that was wrong. Can you point
-> > me to a dts-file with an example?
->=20
-> That approach doesn't work for I2C controllers, though because you
-> couldn't attach an slaves to them. The same goes for SPI controllers or
-> any other dumb busses that can't be probed.
+The demo codebase is pretty dumb about concurrency, really
+a hack that seemed to work.  Given the above, I guess the
+hack only works _most_ of the time... when it doesn't
+data corruption can occur.
 
-I understand the problem. I was wondering how it has been solved. Thanks
-for the pointer, I got the idea now.
+It would be an interesting challenge, but likely very
+time-consuming, to fix this one bug while minimizing other
+changes so that the fix could be delivered as a self-contained
+incremental patch.  I suspect if you try, you will learn why
+the rewrite was preferable and necessary.
 
-> arch/x86/platform/ce4100/falconfalls.dts is an example for an X86
-> platform where PCI devices have associated device tree nodes.
-
-Do you intend to send a dts file mainline which needs the patch you sent?
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---orO6xySwJI16pVnm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlAv5qAACgkQD27XaX1/VRsBCgCgnMfKEoOhgv4MIwrZwaDet8Yn
-dNgAoJnrGR/qWQYZ1tVDv5kkc9jFHVcQ
-=KhcD
------END PGP SIGNATURE-----
-
---orO6xySwJI16pVnm--
+(Away from email for a few days very soon now.)
+Dan
