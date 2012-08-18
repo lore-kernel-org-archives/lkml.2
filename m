@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab2HRNtS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 09:49:18 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:48703 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924Ab2HRNtO convert rfc822-to-8bit (ORCPT
+	id S1755821Ab2HROA2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 10:00:28 -0400
+Received: from ext190.halfdog.net ([88.116.147.190]:51041 "EHLO
+	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab2HROAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 09:49:14 -0400
-Date: Sat, 18 Aug 2012 15:48:28 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jiri Kosina <jkosina@suse.cz>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-Message-ID: <20120818154828.0e992bfe@neptune.home>
-In-Reply-To: <Pine.LNX.4.44L0.1208180913440.17394-100000@netrider.rowland.org>
-References: <20120818144039.0356cc7c@neptune.home>
-	<Pine.LNX.4.44L0.1208180913440.17394-100000@netrider.rowland.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
+	Sat, 18 Aug 2012 10:00:25 -0400
+Message-ID: <502FA000.8090700@halfdog.net>
+Date: Sat, 18 Aug 2012 14:00:32 +0000
+From: halfdog <me@halfdog.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14a1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Search for patch for kernel stack disclosure in binfmt_script during
+ execve
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 August 2012 Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sat, 18 Aug 2012, Bruno Prémont wrote:
-> > On Thu, 16 August 2012 Jiri Kosina <jkosina@suse.cz> wrote:
-> > > On Thu, 16 Aug 2012, Bruno Prémont wrote:
-> > > 
-> > > > > I don't really understand this explanation. Once usb_kill_urb() returns, 
-> > > > > the URB should be available for future use (and therefore all queues 
-> > > > > completely drained).
-> > > > 
-> > > > I won't have time today to check, though my guess is that on each
-> > > > echo $usb-id > bind; echo $usb-id > unbind
-> > > > under /sys/bus/hid/drivers/hid-picolcd/ the USB urb queue fills a bit does
-> > > > not get cleared.
-> > > > 
-> > > > Is usb_kill_urb() called when unbinding just the specific hid driver? 
-> > > 
-> > > Yup, through hid_hw_stop() -> usbhid_stop().
-> > > 
-> > > > If so my short timing between bind/unbind must be triggering something 
-> > > > else...
-> > > > 
-> > > > Otherwise I'm missing something as at first time I got no "output queue full"
-> > > > messages, but as I repeated the bind/unbind sequences the prints per bind/unbind
-> > > > iteration increased in number.
-> > > > 
-> > > > Anyhow, on Friday evening/week-end I will continue digging and report back with my
-> > > > findings.
-> > 
-> > Huh, after changing some of the hid-picolcd data in order to have less racy
-> > coupling between hid and framebuffer I'm now dying way too often in _mmx_memcpy
-> > and most of the time I don't get a (complete) trace...
-> 
-> There was a similar problem reported recently.  It turned out to be 
-> caused by a __devinitconst annotation attached to a usb_device_id 
-> table.
-> 
-> If there are any __devinit* annotations in the hid-picolcd driver, you 
-> should see if removing them helps.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-There is no such annotation around in hid-picolcd.
+I'm searching for a patch for linux kernel stack disclosure in
+binfmt_script with crafted interpreter names when CONFIG_MODULES is
+active (see [1]).
+
+The simplest solution would be to return an error in load_script (from
+fs/binfmt_script.c). when maximal recursion depth is reached, but I'm
+not sure, if that is nice and could have any side effects. Apart from
+that, some change in the loop condition in search_binary_handler (from
+fs/exec.c) could have side effects hard to see and hence reintroduce
+the bug (challenge to get that right in documentation).
 
 
-One thing I just though about, how does usbhid handle the calls to
-usbhid_submit_report() when hid_hw_stop()/hid_hw_close() have already
-been called?
-I will attempt to see if it makes a difference to shortcut my
-usbhid_submit_report() calls from the point on I have called hid_hw_close()...
+Any comments?
 
-Bruno
+- --- fs/binfmt_script.c  2012-01-19 23:04:48.000000000 +0000
++++ fs/binfmt_script.c        2012-08-18 13:55:25.735748407 +0000
+@@ -22,9 +22,8 @@
+        char interp[BINPRM_BUF_SIZE];
+        int retval;
+
+- -       if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
+- -           (bprm->recursion_depth > BINPRM_MAX_RECURSION))
+- -               return -ENOEXEC;
++       if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!')) return
+- -ENOEXEC;
++        if (bprm->recursion_depth > BINPRM_MAX_RECURSION) return -ENOMEM;
+        /*
+         * This section does the #! interpretation.
+         * Sorta complicated, but hopefully it will work.  -TYT
+
+hd
+
+[1]
+http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
+
+- -- 
+http://www.halfdog.net/
+PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAlAvn0MACgkQxFmThv7tq+6nUACfdk7KWESuC6J1FXZcrMaa3kCb
+eWoAn0wV6INdYGjAZydd6ytO0i5BnhGa
+=cxbR
+-----END PGP SIGNATURE-----
