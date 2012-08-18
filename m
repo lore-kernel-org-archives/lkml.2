@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab2HRRdN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:33:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61057 "EHLO mga02.intel.com"
+	id S1756976Ab2HRRd1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:33:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:22621 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab2HRRae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:30:34 -0400
+	id S1755617Ab2HRRai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 13:30:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
-   d="scan'208";a="182354053"
+   d="scan'208";a="182607893"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 29/31] sections: Fix section conflicts in net
-Date: Sat, 18 Aug 2012 10:30:20 -0700
-Message-Id: <1345311022-26328-30-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 17/31] sections: Fix section conflicts in drivers/media
+Date: Sat, 18 Aug 2012 10:30:08 -0700
+Message-Id: <1345311022-26328-18-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
@@ -27,110 +27,96 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/net/net_namespace.h |    2 ++
- net/decnet/dn_rules.c       |    2 +-
- net/ipv4/fib_rules.c        |    2 +-
- net/ipv4/ipmr.c             |    2 +-
- net/ipv6/addrlabel.c        |    2 +-
- net/ipv6/fib6_rules.c       |    2 +-
- net/ipv6/ip6mr.c            |    2 +-
- 7 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/media/dvb/ddbridge/ddbridge-core.c |    2 +-
+ drivers/media/dvb/ngene/ngene-cards.c      |    2 +-
+ drivers/media/video/cx88/cx88-alsa.c       |    2 +-
+ drivers/media/video/gspca/jl2005bcd.c      |    2 +-
+ drivers/media/video/timblogiw.c            |    6 +++---
+ 5 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index ae1cd6c..857c95d 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -241,10 +241,12 @@ static inline struct net *read_pnet(struct net * const *pnet)
- #define __net_init
- #define __net_exit
- #define __net_initdata
-+#define __net_initconst
- #else
- #define __net_init	__init
- #define __net_exit	__exit_refok
- #define __net_initdata	__initdata
-+#define __net_initconst	__initconst
- #endif
+diff --git a/drivers/media/dvb/ddbridge/ddbridge-core.c b/drivers/media/dvb/ddbridge/ddbridge-core.c
+index ebf3f05..b1f3e77 100644
+--- a/drivers/media/dvb/ddbridge/ddbridge-core.c
++++ b/drivers/media/dvb/ddbridge/ddbridge-core.c
+@@ -1679,7 +1679,7 @@ static struct ddb_info ddb_v6 = {
+ 	.subvendor   = _subvend, .subdevice = _subdev, \
+ 	.driver_data = (unsigned long)&_driverdata }
  
- struct pernet_operations {
-diff --git a/net/decnet/dn_rules.c b/net/decnet/dn_rules.c
-index e65f2c8..faf7cc3 100644
---- a/net/decnet/dn_rules.c
-+++ b/net/decnet/dn_rules.c
-@@ -220,7 +220,7 @@ static void dn_fib_rule_flush_cache(struct fib_rules_ops *ops)
- 	dn_rt_cache_flush(-1);
- }
+-static const struct pci_device_id ddb_id_tbl[] __devinitdata = {
++static const struct pci_device_id ddb_id_tbl[] __devinitconst = {
+ 	DDB_ID(DDVID, 0x0002, DDVID, 0x0001, ddb_octopus),
+ 	DDB_ID(DDVID, 0x0003, DDVID, 0x0001, ddb_octopus),
+ 	DDB_ID(DDVID, 0x0003, DDVID, 0x0002, ddb_octopus_le),
+diff --git a/drivers/media/dvb/ngene/ngene-cards.c b/drivers/media/dvb/ngene/ngene-cards.c
+index 72ee8de..eae0c80 100644
+--- a/drivers/media/dvb/ngene/ngene-cards.c
++++ b/drivers/media/dvb/ngene/ngene-cards.c
+@@ -479,7 +479,7 @@ static struct ngene_info ngene_info_m780 = {
  
--static const struct fib_rules_ops __net_initdata dn_fib_rules_ops_template = {
-+static const struct fib_rules_ops __net_initconst dn_fib_rules_ops_template = {
- 	.family		= AF_DECnet,
- 	.rule_size	= sizeof(struct dn_fib_rule),
- 	.addr_size	= sizeof(u16),
-diff --git a/net/ipv4/fib_rules.c b/net/ipv4/fib_rules.c
-index a83d74e..97b9fb9 100644
---- a/net/ipv4/fib_rules.c
-+++ b/net/ipv4/fib_rules.c
-@@ -262,7 +262,7 @@ static void fib4_rule_flush_cache(struct fib_rules_ops *ops)
- 	rt_cache_flush(ops->fro_net, -1);
- }
+ /****************************************************************************/
  
--static const struct fib_rules_ops __net_initdata fib4_rules_ops_template = {
-+static const struct fib_rules_ops __net_initconst fib4_rules_ops_template = {
- 	.family		= AF_INET,
- 	.rule_size	= sizeof(struct fib4_rule),
- 	.addr_size	= sizeof(u32),
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index 8eec8f4..5f9ebb9 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -218,7 +218,7 @@ static int ipmr_rule_fill(struct fib_rule *rule, struct sk_buff *skb,
- 	return 0;
- }
+-static const struct pci_device_id ngene_id_tbl[] __devinitdata = {
++static const struct pci_device_id ngene_id_tbl[] __devinitconst = {
+ 	NGENE_ID(0x18c3, 0xabc3, ngene_info_cineS2),
+ 	NGENE_ID(0x18c3, 0xabc4, ngene_info_cineS2),
+ 	NGENE_ID(0x18c3, 0xdb01, ngene_info_satixS2),
+diff --git a/drivers/media/video/cx88/cx88-alsa.c b/drivers/media/video/cx88/cx88-alsa.c
+index dfac6e3..c26de31 100644
+--- a/drivers/media/video/cx88/cx88-alsa.c
++++ b/drivers/media/video/cx88/cx88-alsa.c
+@@ -749,7 +749,7 @@ static struct snd_kcontrol_new snd_cx88_alc_switch = {
+  * Only boards with eeprom and byte 1 at eeprom=1 have it
+  */
  
--static const struct fib_rules_ops __net_initdata ipmr_rules_ops_template = {
-+static const struct fib_rules_ops __net_initconst ipmr_rules_ops_template = {
- 	.family		= RTNL_FAMILY_IPMR,
- 	.rule_size	= sizeof(struct ipmr_rule),
- 	.addr_size	= sizeof(u32),
-diff --git a/net/ipv6/addrlabel.c b/net/ipv6/addrlabel.c
-index eb6a636..c66c38b 100644
---- a/net/ipv6/addrlabel.c
-+++ b/net/ipv6/addrlabel.c
-@@ -75,7 +75,7 @@ struct net *ip6addrlbl_net(const struct ip6addrlbl_entry *lbl)
+-static const struct pci_device_id const cx88_audio_pci_tbl[] __devinitdata = {
++static const struct pci_device_id const cx88_audio_pci_tbl[] __devinitconst = {
+ 	{0x14f1,0x8801,PCI_ANY_ID,PCI_ANY_ID,0,0,0},
+ 	{0x14f1,0x8811,PCI_ANY_ID,PCI_ANY_ID,0,0,0},
+ 	{0, }
+diff --git a/drivers/media/video/gspca/jl2005bcd.c b/drivers/media/video/gspca/jl2005bcd.c
+index cf9d9fc..6ebe9ec 100644
+--- a/drivers/media/video/gspca/jl2005bcd.c
++++ b/drivers/media/video/gspca/jl2005bcd.c
+@@ -512,7 +512,7 @@ static const struct sd_desc sd_desc = {
+ };
  
- #define IPV6_ADDR_LABEL_DEFAULT	0xffffffffUL
+ /* -- module initialisation -- */
+-static const __devinitdata struct usb_device_id device_table[] = {
++static const __devinitconst struct usb_device_id device_table[] = {
+ 	{USB_DEVICE(0x0979, 0x0227)},
+ 	{}
+ };
+diff --git a/drivers/media/video/timblogiw.c b/drivers/media/video/timblogiw.c
+index 02194c0..5f6a2cb 100644
+--- a/drivers/media/video/timblogiw.c
++++ b/drivers/media/video/timblogiw.c
+@@ -745,7 +745,7 @@ static int timblogiw_mmap(struct file *file, struct vm_area_struct *vma)
  
--static const __net_initdata struct ip6addrlbl_init_table
-+static const __net_initconst struct ip6addrlbl_init_table
- {
- 	const struct in6_addr *prefix;
- 	int prefixlen;
-diff --git a/net/ipv6/fib6_rules.c b/net/ipv6/fib6_rules.c
-index 0ff1cfd..d9fb911 100644
---- a/net/ipv6/fib6_rules.c
-+++ b/net/ipv6/fib6_rules.c
-@@ -238,7 +238,7 @@ static size_t fib6_rule_nlmsg_payload(struct fib_rule *rule)
- 	       + nla_total_size(16); /* src */
- }
+ /* Platform device functions */
  
--static const struct fib_rules_ops __net_initdata fib6_rules_ops_template = {
-+static const struct fib_rules_ops __net_initconst fib6_rules_ops_template = {
- 	.family			= AF_INET6,
- 	.rule_size		= sizeof(struct fib6_rule),
- 	.addr_size		= sizeof(struct in6_addr),
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index 4532973..87ecc67 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -205,7 +205,7 @@ static int ip6mr_rule_fill(struct fib_rule *rule, struct sk_buff *skb,
- 	return 0;
- }
+-static __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
++static const __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
+ 	.vidioc_querycap		= timblogiw_querycap,
+ 	.vidioc_enum_fmt_vid_cap	= timblogiw_enum_fmt,
+ 	.vidioc_g_fmt_vid_cap		= timblogiw_g_fmt,
+@@ -767,7 +767,7 @@ static __devinitconst struct v4l2_ioctl_ops timblogiw_ioctl_ops = {
+ 	.vidioc_enum_framesizes		= timblogiw_enum_framesizes,
+ };
  
--static const struct fib_rules_ops __net_initdata ip6mr_rules_ops_template = {
-+static const struct fib_rules_ops __net_initconst ip6mr_rules_ops_template = {
- 	.family		= RTNL_FAMILY_IP6MR,
- 	.rule_size	= sizeof(struct ip6mr_rule),
- 	.addr_size	= sizeof(struct in6_addr),
+-static __devinitconst struct v4l2_file_operations timblogiw_fops = {
++static const __devinitconst struct v4l2_file_operations timblogiw_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.open		= timblogiw_open,
+ 	.release	= timblogiw_close,
+@@ -777,7 +777,7 @@ static __devinitconst struct v4l2_file_operations timblogiw_fops = {
+ 	.poll		= timblogiw_poll,
+ };
+ 
+-static __devinitconst struct video_device timblogiw_template = {
++static const __devinitconst struct video_device timblogiw_template = {
+ 	.name		= TIMBLOGIWIN_NAME,
+ 	.fops		= &timblogiw_fops,
+ 	.ioctl_ops	= &timblogiw_ioctl_ops,
 -- 
 1.7.7.6
 
