@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab2HRRcw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 13:32:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9940 "EHLO mga11.intel.com"
+	id S1756833Ab2HRRdJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 13:33:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8308 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755016Ab2HRRae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 13:30:34 -0400
+	id S1752071Ab2HRRa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 13:30:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,791,1336374000"; 
-   d="scan'208";a="210330070"
+   d="scan'208";a="182354046"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 27/31] sections: Fix section conflicts in mm/percpu
-Date: Sat, 18 Aug 2012 10:30:18 -0700
-Message-Id: <1345311022-26328-28-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 11/31] sections: Fix section conflicts in drivers/atm
+Date: Sat, 18 Aug 2012 10:30:02 -0700
+Message-Id: <1345311022-26328-12-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
 References: <1345311022-26328-1-git-send-email-andi@firstfloor.org>
@@ -27,36 +27,22 @@ From: Andi Kleen <ak@linux.intel.com>
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/percpu.h |    2 +-
- mm/percpu.c            |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/atm/eni.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index 2b9f82c..cc88172 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -107,7 +107,7 @@ enum pcpu_fc {
+diff --git a/drivers/atm/eni.c b/drivers/atm/eni.c
+index 2059ee4..81e44f7 100644
+--- a/drivers/atm/eni.c
++++ b/drivers/atm/eni.c
+@@ -1567,7 +1567,7 @@ tx_complete++;
+ /*--------------------------------- entries ---------------------------------*/
  
- 	PCPU_FC_NR,
- };
--extern const char *pcpu_fc_names[PCPU_FC_NR];
-+extern const char * const pcpu_fc_names[PCPU_FC_NR];
  
- extern enum pcpu_fc pcpu_chosen_fc;
- 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index bb4be74..ddc5efb 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1370,7 +1370,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
- 
- #ifdef CONFIG_SMP
- 
--const char *pcpu_fc_names[PCPU_FC_NR] __initdata = {
-+const char * const pcpu_fc_names[PCPU_FC_NR] __initconst = {
- 	[PCPU_FC_AUTO]	= "auto",
- 	[PCPU_FC_EMBED]	= "embed",
- 	[PCPU_FC_PAGE]	= "page",
+-static const char *media_name[] __devinitdata = {
++static char * const media_name[] __devinitconst = {
+     "MMF", "SMF", "MMF", "03?", /*  0- 3 */
+     "UTP", "05?", "06?", "07?", /*  4- 7 */
+     "TAXI","09?", "10?", "11?", /*  8-11 */
 -- 
 1.7.7.6
 
