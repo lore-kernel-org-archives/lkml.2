@@ -1,33 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab2HRWbL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 18:31:11 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:50419 "EHLO
+	id S1754328Ab2HRWfh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 18:35:37 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:52047 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab2HRWbI (ORCPT
+	with ESMTP id S1753235Ab2HRWfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 18:31:08 -0400
-Subject: Re: [GIT PULL] tcm_vhost: Initial merge of vhost level target
- fabric driver
+	Sat, 18 Aug 2012 18:35:34 -0400
+Subject: Re: [PATCH] tcm_fc: rcu_deref outside rcu lock/unlock section
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        kvm-devel <kvm@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>, Zhi Yong Wu <wuzhy@cn.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <20120818200432.GA26215@redhat.com>
-References: <1343697577.22538.661.camel@haakon2.linux-iscsi.org>
-	 <20120818200432.GA26215@redhat.com>
+To: Denis Efremov <yefremov.denis@gmail.com>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Jesper Juhl <jj@chaosbits.net>, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru,
+        "Rustad, Mark D" <mark.d.rustad@intel.com>,
+        "Patil, Kiran" <kiran.patil@intel.com>
+In-Reply-To: <1345291831-5086-1-git-send-email-yefremov.denis@gmail.com>
+References: <1345291831-5086-1-git-send-email-yefremov.denis@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 18 Aug 2012 15:31:05 -0700
-Message-ID: <1345329065.25161.364.camel@haakon2.linux-iscsi.org>
+Date: Sat, 18 Aug 2012 15:35:31 -0700
+Message-ID: <1345329331.25161.367.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -35,63 +27,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-08-18 at 23:04 +0300, Michael S. Tsirkin wrote:
-> Hi Nicholas,
-> I just noticed this problem in the interface:
+On Sat, 2012-08-18 at 16:10 +0400, Denis Efremov wrote:
+> Use rcu_dereference_protected in order to prevent lockdep
+> complaint. Sequel of the patch 863555be
 > 
-> +#include <linux/vhost.h>
-> +
-> +/*
-> + * Used by QEMU userspace to ensure a consistent vhost-scsi ABI.
-> + *
-> + * ABI Rev 0: July 2012 version starting point for v3.6-rc merge
-> candidate +
-> + *            RFC-v2 vhost-scsi userspace.  Add GET_ABI_VERSION ioctl
-> usage
-> + */
-> +
-> +#define VHOST_SCSI_ABI_VERSION 0
-> +
-> +struct vhost_scsi_target {
-> +       int abi_version;
-> +       unsigned char vhost_wwpn[TRANSPORT_IQN_LEN];
-> +       unsigned short vhost_tpgt;
-> +};
-> +
+> Found by Linux Driver Verification project (linuxtesting.org).
 > 
-> Here TRANSPORT_IQN_LEN is 224, which is a multiple of 4.
-> Since vhost_tpgt is 2 bytes and abi_version is 4, the total size would
-> be 230.  But gcc needs struct size be aligned to first field size, which
-> is 4 bytes, so it pads the structure by extra 2 bytes to the total of
-> 232.
+> Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
+> ---
+>  drivers/target/tcm_fc/tfc_sess.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> This padding is very undesirable in an ABI:
-> - it can not be initialized easily
-> - it can not be checked easily
-> - it can leak information between kernel and userspace
-> 
+> diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
+> index 87901fa..3c9e5b5 100644
+> --- a/drivers/target/tcm_fc/tfc_sess.c
+> +++ b/drivers/target/tcm_fc/tfc_sess.c
+> @@ -456,7 +456,9 @@ static void ft_prlo(struct fc_rport_priv *rdata)
+>  	struct ft_tport *tport;
+>  
+>  	mutex_lock(&ft_lport_lock);
+> -	tport = rcu_dereference(rdata->local_port->prov[FC_TYPE_FCP]);
+> +	tport = rcu_dereference_protected(rdata->local_port->prov[FC_TYPE_FCP],
+> +					  lockdep_is_held(&ft_lport_lock));
+> +
+>  	if (!tport) {
+>  		mutex_unlock(&ft_lport_lock);
+>  		return;
 
-Hmmmm, yes.  Very good reasons to avoid ABI ambiguity  ..
+This looks OK to silence lockdep.  CC'ing MDR + Kiran for good measure
+here, and will move from target-pending queue -> master with their ACK.
 
-> Simplest solution is probably just to make the padding
-> explicit:
-> 
-> +struct vhost_scsi_target {
-> +       int abi_version;
-> +       unsigned char vhost_wwpn[TRANSPORT_IQN_LEN];
-> +       unsigned short vhost_tpgt;
-> +       unsigned short reserved;
-> +};
-> +
-> 
-> I think we should fix this buglet before it goes out to users.
-> 
-
-<nod>, fixing this up in target-pending/master now w/ your reported-by
-+signoff, and will change vhost-scsi's copy of these defs for next
-week's RFC-v3 posting.
-
-Thanks MST!
+Thanks Dennis!
 
 --nab
 
