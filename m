@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab2HSIsV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:48:21 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:52549 "EHLO
+	id S1752843Ab2HSItP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:49:15 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:40050 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753040Ab2HSIos (ORCPT
+	by vger.kernel.org with ESMTP id S1752162Ab2HSIol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 04:44:48 -0400
+	Sun, 19 Aug 2012 04:44:41 -0400
 X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
-   d="scan'208";a="170216900"
+   d="scan'208";a="170216893"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: kernel-janitors@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+To: Anton Vorontsov <cbou@mail.ru>
+Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/14] drivers/spi/spi-coldfire-qspi.c: fix error return code
-Date: Sun, 19 Aug 2012 10:44:25 +0200
-Message-Id: <1345365870-29831-10-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 6/14] drivers/power/wm97xx_battery.c: fix error return code
+Date: Sun, 19 Aug 2012 10:44:18 +0200
+Message-Id: <1345365870-29831-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -51,19 +51,23 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/spi/spi-coldfire-qspi.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/power/wm97xx_battery.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-coldfire-qspi.c b/drivers/spi/spi-coldfire-qspi.c
-index b2d4b9e..7889796 100644
---- a/drivers/spi/spi-coldfire-qspi.c
-+++ b/drivers/spi/spi-coldfire-qspi.c
-@@ -462,6 +462,7 @@ static int __devinit mcfqspi_probe(struct platform_device *pdev)
- 	pdata = pdev->dev.platform_data;
- 	if (!pdata) {
- 		dev_dbg(&pdev->dev, "platform data is missing\n");
-+		status = -EINVAL;
- 		goto fail4;
- 	}
- 	master->bus_num = pdata->bus_num;
+diff --git a/drivers/power/wm97xx_battery.c b/drivers/power/wm97xx_battery.c
+index d2d4c08..0ba331a 100644
+--- a/drivers/power/wm97xx_battery.c
++++ b/drivers/power/wm97xx_battery.c
+@@ -212,8 +212,10 @@ static int __devinit wm97xx_bat_probe(struct platform_device *dev)
+ 		props++;	/* POWER_SUPPLY_PROP_VOLTAGE_MIN */
+ 
+ 	prop = kzalloc(props * sizeof(*prop), GFP_KERNEL);
+-	if (!prop)
++	if (!prop) {
++		ret = -ENOMEM;
+ 		goto err3;
++	}
+ 
+ 	prop[i++] = POWER_SUPPLY_PROP_PRESENT;
+ 	if (pdata->charge_gpio >= 0)
 
