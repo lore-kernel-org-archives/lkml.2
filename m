@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab2HSC76 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 22:59:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30195 "EHLO mga09.intel.com"
+	id S1755284Ab2HSC7v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 22:59:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:30968 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358Ab2HSC50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752429Ab2HSC50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Aug 2012 22:57:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,792,1336374000"; 
-   d="scan'208";a="182422064"
+   d="scan'208";a="135817667"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
         JBeulich@suse.com, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, herbert@gondor.hengli.com.au
-Subject: [PATCH 35/74] lto, crypto, aes: mark AES tables __visible
-Date: Sat, 18 Aug 2012 19:56:31 -0700
-Message-Id: <1345345030-22211-36-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 13/74] sections: Add __visible to init/* sections
+Date: Sat, 18 Aug 2012 19:56:09 -0700
+Message-Id: <1345345030-22211-14-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
 References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
@@ -26,75 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Various tables in aes_generic are accessed by assembler code.
-Mark them __visible for LTO
-
-Cc: herbert@gondor.apana.org.au
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- crypto/aes_generic.c |    8 ++++----
- include/crypto/aes.h |    8 ++++----
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ init/do_mounts_initrd.c |    2 +-
+ init/initramfs.c        |    4 ++--
+ init/main.c             |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/crypto/aes_generic.c b/crypto/aes_generic.c
-index a68c73d..1cf1f89 100644
---- a/crypto/aes_generic.c
-+++ b/crypto/aes_generic.c
-@@ -62,7 +62,7 @@ static inline u8 byte(const u32 x, const unsigned n)
+diff --git a/init/do_mounts_initrd.c b/init/do_mounts_initrd.c
+index 135959a2..71a625e 100644
+--- a/init/do_mounts_initrd.c
++++ b/init/do_mounts_initrd.c
+@@ -36,7 +36,7 @@ __setup("noinitrd", no_initrd);
+ static int __init do_linuxrc(void *_shell)
+ {
+ 	static const char *argv[] = { "linuxrc", NULL, };
+-	extern const char *envp_init[];
++	extern __visible const char *envp_init[];
+ 	const char *shell = _shell;
  
- static const u32 rco_tab[10] = { 1, 2, 4, 8, 16, 32, 64, 128, 27, 54 };
+ 	sys_close(old_fd);sys_close(root_fd);
+diff --git a/init/initramfs.c b/init/initramfs.c
+index 84c6bf1..8a1fd07 100644
+--- a/init/initramfs.c
++++ b/init/initramfs.c
+@@ -493,8 +493,8 @@ static int __init retain_initrd_param(char *str)
+ }
+ __setup("retain_initrd", retain_initrd_param);
  
--const u32 crypto_ft_tab[4][256] = {
-+__visible const u32 crypto_ft_tab[4][256] = {
- 	{
- 		0xa56363c6, 0x847c7cf8, 0x997777ee, 0x8d7b7bf6,
- 		0x0df2f2ff, 0xbd6b6bd6, 0xb16f6fde, 0x54c5c591,
-@@ -326,7 +326,7 @@ const u32 crypto_ft_tab[4][256] = {
- 	}
- };
+-extern char __initramfs_start[];
+-extern unsigned long __initramfs_size;
++extern __visible char __initramfs_start[];
++extern __visible unsigned long __initramfs_size;
+ #include <linux/initrd.h>
+ #include <linux/kexec.h>
  
--const u32 crypto_fl_tab[4][256] = {
-+__visible const u32 crypto_fl_tab[4][256] = {
- 	{
- 		0x00000063, 0x0000007c, 0x00000077, 0x0000007b,
- 		0x000000f2, 0x0000006b, 0x0000006f, 0x000000c5,
-@@ -590,7 +590,7 @@ const u32 crypto_fl_tab[4][256] = {
- 	}
- };
+diff --git a/init/main.c b/init/main.c
+index e60679d..6438ffd 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -470,7 +470,7 @@ static void __init mm_init(void)
+ asmlinkage void __init start_kernel(void)
+ {
+ 	char * command_line;
+-	extern const struct kernel_param __start___param[], __stop___param[];
++	extern __visible const struct kernel_param __start___param[], __stop___param[];
  
--const u32 crypto_it_tab[4][256] = {
-+__visible const u32 crypto_it_tab[4][256] = {
- 	{
- 		0x50a7f451, 0x5365417e, 0xc3a4171a, 0x965e273a,
- 		0xcb6bab3b, 0xf1459d1f, 0xab58faac, 0x9303e34b,
-@@ -854,7 +854,7 @@ const u32 crypto_it_tab[4][256] = {
- 	}
- };
- 
--const u32 crypto_il_tab[4][256] = {
-+__visible const u32 crypto_il_tab[4][256] = {
- 	{
- 		0x00000052, 0x00000009, 0x0000006a, 0x000000d5,
- 		0x00000030, 0x00000036, 0x000000a5, 0x00000038,
-diff --git a/include/crypto/aes.h b/include/crypto/aes.h
-index 7524ba3..f30d38d 100644
---- a/include/crypto/aes.h
-+++ b/include/crypto/aes.h
-@@ -27,10 +27,10 @@ struct crypto_aes_ctx {
- 	u32 key_length;
- };
- 
--extern const u32 crypto_ft_tab[4][256];
--extern const u32 crypto_fl_tab[4][256];
--extern const u32 crypto_it_tab[4][256];
--extern const u32 crypto_il_tab[4][256];
-+extern __visible const u32 crypto_ft_tab[4][256];
-+extern __visible const u32 crypto_fl_tab[4][256];
-+extern __visible const u32 crypto_it_tab[4][256];
-+extern __visible const u32 crypto_il_tab[4][256];
- 
- int crypto_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
- 		unsigned int key_len);
+ 	/*
+ 	 * Need to run as early as possible, to initialize the
 -- 
 1.7.7.6
 
