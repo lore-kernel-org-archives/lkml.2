@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2HSMUF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 08:20:05 -0400
-Received: from oker.escape.de ([194.120.234.254]:54542 "EHLO oker.escape.de"
+	id S1754103Ab2HSMeA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 08:34:00 -0400
+Received: from antcom.de ([188.40.178.216]:43736 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753698Ab2HSMUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 08:20:00 -0400
-X-Greylist: delayed 873 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Aug 2012 08:20:00 EDT
-Date: Sun, 19 Aug 2012 14:02:54 +0200
-From: Jochen Striepe <jochen@tolot.escape.de>
-To: Dan Luedtke <mail@danrl.de>
-Cc: Marco Stornelli <marco.stornelli@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lanyfs@librelist.com
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-Message-ID: <20120819120254.GA2369@pompeji.miese-zwerge.org>
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
- <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
- <1345371135.4441.2.camel@tunafish>
- <5030BC7E.3030000@gmail.com>
- <1345383264.4441.56.camel@tunafish>
+	id S1751642Ab2HSMd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 08:33:59 -0400
+Message-ID: <5030DD33.7040804@antcom.de>
+Date: Sun, 19 Aug 2012 14:33:55 +0200
+From: Roland Stigge <stigge@antcom.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345383264.4441.56.camel@tunafish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, arnd@arndb.de, aletes.xgr@gmail.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Subject: Re: [PATCH] usb: gadget: lpc32xx_udc: Port to new start/stop interface
+References: <1345131276-28982-1-git-send-email-stigge@antcom.de> <502D1A49.20603@linutronix.de> <502D1CC2.9020901@antcom.de> <502E0A7B.1040607@antcom.de> <502E11F7.4080300@linutronix.de>
+In-Reply-To: <502E11F7.4080300@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hello,
+On 17/08/12 11:42, Sebastian Andrzej Siewior wrote:
+> Some minor things:
+> - please use to_udc() in start then
+> - would it make sense to use platform_get_drvdata() in
+>   lpc32xx_udc_shutdown() ?
+> - could you please remove struct usb_endpoint_descriptor from struct
+>   lpc32xx_ep? It has been removed a while back from other drivers.
 
-On Sun, Aug 19, 2012 at 03:34:24PM +0200, Dan Luedtke wrote:
-> tried using ext3, but the ownership information from my workstation
-> (were the file was copied from) did not match the ones the RaspberryPI
-> had, since I usually do not synchronize user profiles between
-> workstations and embedded devices. There are workarounds, one might say,
+I merged these changes into the patch set, and will repost it tomorrow
+after I can test it more thoroughly.
 
-You wrote a new fs just because you didn't bother to use the existing
-ones as intended?
+Thanks,
 
-Puzzled,
-Jochen.
+Roland
