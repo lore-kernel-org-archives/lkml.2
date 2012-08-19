@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab2HSDCA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 23:02:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1635 "EHLO mga11.intel.com"
+	id S1756381Ab2HSDCS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 23:02:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48688 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753864Ab2HSC5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 22:57:43 -0400
+	id S1753929Ab2HSC5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 22:57:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,792,1336374000"; 
-   d="scan'208";a="210415464"
+   d="scan'208";a="182422066"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
         JBeulich@suse.com, akpm@linux-foundation.org,
-        Joe Mario <jmario@redhat.com>, ananth@in.ibm.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 71/74] lto, kprobes: Use KSYM_NAME_LEN to size identifier buffers
-Date: Sat, 18 Aug 2012 19:57:07 -0700
-Message-Id: <1345345030-22211-72-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 41/74] x86, lto: Disable LTO for the x86 VDSO
+Date: Sat, 18 Aug 2012 19:56:37 -0700
+Message-Id: <1345345030-22211-42-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
 References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
@@ -25,40 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Mario <jmario@redhat.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-Use KSYM_NAME_LEN to size identifier buffers, so that it can
-be easier increased.
+The VDSO does not play well with LTO, so just disable LTO for it.
+Also pass a 32bit linker flag for the 32bit version.
 
-Cc: ananth@in.ibm.com
-Signed-off-by: Joe Mario <jmario@redhat.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- kernel/kprobes.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/vdso/Makefile |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index c62b854..b9bd2a8 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1955,7 +1955,7 @@ static int __init init_kprobes(void)
- {
- 	int i, err = 0;
- 	unsigned long offset = 0, size = 0;
--	char *modname, namebuf[128];
-+	char *modname, namebuf[KSYM_NAME_LEN];
- 	const char *symbol_name;
- 	void *addr;
- 	struct kprobe_blackpoint *kb;
-@@ -2081,7 +2081,7 @@ static int __kprobes show_kprobe_addr(struct seq_file *pi, void *v)
- 	const char *sym = NULL;
- 	unsigned int i = *(loff_t *) v;
- 	unsigned long offset = 0;
--	char *modname, namebuf[128];
-+	char *modname, namebuf[KSYM_NAME_LEN];
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index fd14be1..b2e15f2 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -2,6 +2,8 @@
+ # Building vDSO images for x86.
+ #
  
- 	head = &kprobe_table[i];
- 	preempt_disable();
++KBUILD_CFLAGS += ${DISABLE_LTO}
++
+ VDSO64-$(CONFIG_X86_64)		:= y
+ VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
+ VDSO32-$(CONFIG_X86_32)		:= y
+@@ -35,7 +37,8 @@ export CPPFLAGS_vdso.lds += -P -C
+ 
+ VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
+ 			-Wl,--no-undefined \
+-		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
++		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096 \
++			$(DISABLE_LTO)
+ 
+ $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
+ 
+@@ -127,7 +130,7 @@ vdso32.so-$(VDSO32-y)		+= sysenter
+ vdso32-images			= $(vdso32.so-y:%=vdso32-%.so)
+ 
+ CPPFLAGS_vdso32.lds = $(CPPFLAGS_vdso.lds)
+-VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-soname=linux-gate.so.1
++VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-m,elf_i386 -Wl,-soname=linux-gate.so.1
+ 
+ # This makes sure the $(obj) subdirectory exists even though vdso32/
+ # is not a kbuild sub-make subdirectory.
+@@ -181,7 +184,8 @@ quiet_cmd_vdso = VDSO    $@
+ 		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) && \
+ 		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
+ 
+-VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
++VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv) \
++		${LTO_CFLAGS}
+ GCOV_PROFILE := n
+ 
+ #
 -- 
 1.7.7.6
 
