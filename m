@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab2HSDB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 23:01:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48688 "EHLO mga02.intel.com"
+	id S1755993Ab2HSDBT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 23:01:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64945 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753804Ab2HSC5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 22:57:42 -0400
+	id S1753831Ab2HSC5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 22:57:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,792,1336374000"; 
-   d="scan'208";a="182422060"
+   d="scan'208";a="182422053"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
         JBeulich@suse.com, akpm@linux-foundation.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 29/74] x86, lto: Make amd.c vide visible
-Date: Sat, 18 Aug 2012 19:56:25 -0700
-Message-Id: <1345345030-22211-30-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 16/74] sections: Add __visible to lib/* sections
+Date: Sat, 18 Aug 2012 19:56:12 -0700
+Message-Id: <1345345030-22211-17-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
 References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
@@ -26,28 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-A label declared in inline assembler has to be visible
-
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/amd.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ lib/bug.c           |    2 +-
+ lib/dynamic_debug.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 9d92e19..2c02d92 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -67,8 +67,8 @@ static inline int wrmsrl_amd_safe(unsigned msr, unsigned long long val)
-  *	performance at the same time..
-  */
+diff --git a/lib/bug.c b/lib/bug.c
+index a28c141..f81e1a6 100644
+--- a/lib/bug.c
++++ b/lib/bug.c
+@@ -43,7 +43,7 @@
+ #include <linux/bug.h>
+ #include <linux/sched.h>
  
--extern void vide(void);
--__asm__(".align 4\nvide: ret");
-+extern __visible void vide(void);
-+__asm__(".globl vide\n\t.align 4\nvide: ret");
+-extern const struct bug_entry __start___bug_table[], __stop___bug_table[];
++extern __visible const struct bug_entry __start___bug_table[], __stop___bug_table[];
  
- static void __cpuinit init_amd_k5(struct cpuinfo_x86 *c)
+ static inline unsigned long bug_addr(const struct bug_entry *bug)
  {
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 7ca29a0..1760a71 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -34,8 +34,8 @@
+ #include <linux/device.h>
+ #include <linux/netdevice.h>
+ 
+-extern struct _ddebug __start___verbose[];
+-extern struct _ddebug __stop___verbose[];
++extern __visible struct _ddebug __start___verbose[];
++extern __visible struct _ddebug __stop___verbose[];
+ 
+ struct ddebug_table {
+ 	struct list_head link;
 -- 
 1.7.7.6
 
