@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab2HSAwo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:52:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41176 "EHLO
+	id S1753008Ab2HSAxY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:53:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33310 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab2HSAwL (ORCPT
+	with ESMTP id S1751211Ab2HSAwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:52:11 -0400
+	Sat, 18 Aug 2012 20:52:13 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 02/16] user_ns: use new hashtable implementation
-Date: Sun, 19 Aug 2012 02:52:15 +0200
-Message-Id: <1345337550-24304-3-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v2 02/16] userns: use new hashtable implementation
+Date: Sun, 19 Aug 2012 02:52:16 +0200
+Message-Id: <1345337550-24304-4-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
 References: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
@@ -32,8 +32,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch user_ns to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in user_ns.
+Switch to using the new hashtable implementation to store user structs.
+This reduces the amount of generic unrelated code in kernel/user.c.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
