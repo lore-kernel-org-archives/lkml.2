@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab2HSDCw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 23:02:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36894 "EHLO mga02.intel.com"
+	id S1756519Ab2HSDCr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 23:02:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64945 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753988Ab2HSC5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753990Ab2HSC5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 Aug 2012 22:57:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,792,1336374000"; 
-   d="scan'208";a="182422078"
+   d="scan'208";a="182422075"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
         JBeulich@suse.com, akpm@linux-foundation.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 62/74] Kbuild, lto: add ld-version and ld-ifversion macros
-Date: Sat, 18 Aug 2012 19:56:58 -0700
-Message-Id: <1345345030-22211-63-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 55/74] lto, workaround: Add workaround for initcall reordering
+Date: Sat, 18 Aug 2012 19:56:51 -0700
+Message-Id: <1345345030-22211-56-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
 References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
@@ -26,49 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-To check the linker version. Used by the LTO makefile.
+Work around a LTO gcc problem: when there is no reference to a variable
+in a module it will be moved to the end of the program. This causes
+reordering of initcalls which the kernel does not like.
+Add a dummy reference function to avoid this. The function is
+deleted by the linker.
+
+This replaces a previous much slower workaround.
+
+Thanks to Honza Hubicka for suggesting this technique.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- scripts/Kbuild.include |    9 +++++++++
- scripts/ld-version.sh  |    8 ++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
- create mode 100755 scripts/ld-version.sh
+ include/linux/init.h |   20 +++++++++++++++++++-
+ 1 files changed, 19 insertions(+), 1 deletions(-)
 
-diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index 6a3ee98..bda5b20 100644
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -155,6 +155,15 @@ ld-option = $(call try-run,\
- # Important: no spaces around options
- ar-option = $(call try-run, $(AR) rc$(1) "$$TMP",$(1),$(2))
+diff --git a/include/linux/init.h b/include/linux/init.h
+index c2f06b3..e425800 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -176,6 +176,23 @@ extern bool initcall_debug;
  
-+# ld-version
-+# Usage: $(call ld-version)
-+# Note this is mainly for HJ Lu's 3 number binutil versions
-+ld-version = $(shell $(LD) --version | $(srctree)/scripts/ld-version.sh)
-+
-+# ld-ifversion
-+# Usage:  $(call ld-ifversion, -ge, 22252, y)
-+ld-ifversion = $(shell [ $(call ld-version) $(1) $(2) ] && echo $(3))
-+
- ######
+ #ifndef __ASSEMBLY__
  
- ###
-diff --git a/scripts/ld-version.sh b/scripts/ld-version.sh
-new file mode 100755
-index 0000000..7eb0b76
---- /dev/null
-+++ b/scripts/ld-version.sh
-@@ -0,0 +1,8 @@
-+#!/usr/bin/awk -f
-+# extra linker version number from stdin and turn into single number
-+	{ 
-+	gsub(".*)", ""); 
-+	split($1,a, "."); 
-+	print a[1]*10000000 + a[2]*100000 + a[3]*10000 + a[4]*100 + a[5]; 
-+	exit 
++#ifdef CONFIG_LTO
++/* Work around a LTO gcc problem: when there is no reference to a variable
++ * in a module it will be moved to the end of the program. This causes
++ * reordering of initcalls which the kernel does not like.
++ * Add a dummy reference function to avoid this. The function is 
++ * deleted by the linker.
++ */
++#define LTO_REFERENCE_INITCALL(x) \
++	; /* yes this is needed */			\
++	static __used __exit void *reference_##x(void) 	\
++	{						\
++		return &x;				\
 +	}
++#else
++#define LTO_REFERENCE_INITCALL(x)
++#endif
++
+ /* initcalls are now grouped by functionality into separate 
+  * subsections. Ordering inside the subsections is determined
+  * by link order. 
+@@ -188,7 +205,8 @@ extern bool initcall_debug;
+ 
+ #define __define_initcall(level,fn,id) \
+ 	static initcall_t __initcall_##fn##id __used \
+-	__attribute__((__section__(".initcall" level ".init"))) = fn
++	__attribute__((__section__(".initcall" level ".init"))) = fn \
++	LTO_REFERENCE_INITCALL(__initcall_##fn##id)
+ 
+ /*
+  * Early initcalls run before initializing SMP.
 -- 
 1.7.7.6
 
