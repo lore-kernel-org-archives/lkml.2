@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab2HSHA7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 03:00:59 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47840 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab2HSHA5 (ORCPT
+	id S1753399Ab2HSHDL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 03:03:11 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:17835
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752428Ab2HSHDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 03:00:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120819064429.GA3252@kroah.com>
-References: <1345400832-23572-1-git-send-email-shijie8@gmail.com>
-	<20120819064429.GA3252@kroah.com>
-Date: Sun, 19 Aug 2012 03:00:56 -0400
-Message-ID: <CAMiH66ER7ZRBhdK1QS-vjihwEGmEA4Tdep_eLQHZjpeXU1am7g@mail.gmail.com>
-Subject: Re: [PATCH] serial: add a new helper function
-From: Huang Shijie <shijie8@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 19 Aug 2012 03:03:06 -0400
+X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
+   d="scan'208";a="153342468"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/10] sound/soc/fsl/imx-sgtl5000.c: fix error return code
+Date: Sun, 19 Aug 2012 09:02:52 +0200
+Message-Id: <1345359780-18647-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1345359780-18647-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1345359780-18647-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 2:44 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sun, Aug 19, 2012 at 02:27:12PM -0400, Huang Shijie wrote:
->> --- a/include/linux/tty.h
->> +++ b/include/linux/tty.h
->> @@ -43,6 +43,7 @@
->>  #include <linux/tty_driver.h>
->>  #include <linux/tty_ldisc.h>
->>  #include <linux/mutex.h>
->> +#include <linux/serial.h>
->>
->>
->>
->> @@ -513,6 +514,12 @@ static inline struct tty_port *tty_port_get(struct tty_port *port)
->>       return port;
->>  }
->>
->> +/* If the cts flow control is enabled, return true. */
->> +static inline bool tty_port_cts_enabled(struct tty_port *port)
->> +{
->> +     return port->flags & ASYNC_CTS_FLOW;
->> +}
->> +
->
-> The fact that you have to add serial.h to this file kind of implies that
-> this function shouldn't be here, right?
->
-> How about serial.h instead?  Not all tty drivers are serial drivers :)
-OK.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-thanks for so quick review.
+Initialize ret on the second call to imx_audmux_v2_configure_port so that
+the subsequent test checks that result and not the previous one.
 
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-Huang Shijie
+// <smpl>
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
 
->
-> greg k-h
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ sound/soc/fsl/imx-sgtl5000.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/soc/fsl/imx-sgtl5000.c b/sound/soc/fsl/imx-sgtl5000.c
+index fb21b17..199408e 100644
+--- a/sound/soc/fsl/imx-sgtl5000.c
++++ b/sound/soc/fsl/imx-sgtl5000.c
+@@ -94,7 +94,7 @@ static int __devinit imx_sgtl5000_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "audmux internal port setup failed\n");
+ 		return ret;
+ 	}
+-	imx_audmux_v2_configure_port(ext_port,
++	ret = imx_audmux_v2_configure_port(ext_port,
+ 			IMX_AUDMUX_V2_PTCR_SYN,
+ 			IMX_AUDMUX_V2_PDCR_RXDSEL(int_port));
+ 	if (ret) {
+
