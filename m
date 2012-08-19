@@ -1,37 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab2HSW1b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 18:27:31 -0400
-Received: from vnit.ac.in ([210.212.165.230]:37800 "EHLO mail.vnit.ac.in"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab2HSW13 convert rfc822-to-8bit (ORCPT
+	id S1752016Ab2HSXFR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 19:05:17 -0400
+Received: from matrix.voodoobox.net ([75.127.97.206]:35031 "EHLO
+	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab2HSXFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 18:27:29 -0400
-X-Greylist: delayed 1434 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Aug 2012 18:27:28 EDT
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Business Proposal
-To: Recipients <infogallaim@hsbc.com>
-From: "Terry Gillaim" <infogallaim@hsbc.com>
-Date: Sun, 19 Aug 2012 22:55:19 +0100
-Reply-To: ttialmdd@mail2Consultant.com
-Message-Id: <20120819215239.8CD613090FAC@mail.vnit.ac.in>
+	Sun, 19 Aug 2012 19:05:12 -0400
+Message-ID: <1345417456.5651.4.camel@obelisk.thedillows.org>
+Subject: Re: [PATCH 7/9] sound/pci/sis7019.c: fix error return code
+From: David Dillow <dave@thedillows.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Jaroslav Kysela <perex@perex.cz>, kernel-janitors@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 19 Aug 2012 19:04:16 -0400
+In-Reply-To: <1345359780-18647-5-git-send-email-Julia.Lawall@lip6.fr>
+References: <1345359780-18647-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1345359780-18647-5-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Terry Gilliam, I have an urgent business proposal for your
-consideration and acceptance that I wish to discuss with you.. Should
-you be of interested in this business, please kindly contact me via my
-personal email to enable me furnish you with more information and
-modalities of this business. Contact Email: ttialmdd@mail2Consultant.com
+On Sun, 2012-08-19 at 09:02 +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Initialize rc before returning on failure, as done elsewhere in the
+> function.
 
-If we can be of one accord, we should plan a meeting, soon.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-I await your response.
+Acked-by: David Dillow <dave@thedillows.org>
 
-Respectfully,
-
-Terry Gilliam
