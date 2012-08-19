@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2HSPZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 11:25:57 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58390 "EHLO
+	id S1754095Ab2HSP3V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 11:29:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58400 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab2HSPZ4 (ORCPT
+	with ESMTP id S1753727Ab2HSP3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 11:25:56 -0400
-Date: Sun, 19 Aug 2012 17:25:54 +0200
+	Sun, 19 Aug 2012 11:29:19 -0400
+Date: Sun, 19 Aug 2012 17:29:18 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        JBeulich@suse.com, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 53/74] x86, lto, paravirt: Make paravirt thunks global
-Message-ID: <20120819152554.GW11413@one.firstfloor.org>
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-54-git-send-email-andi@firstfloor.org> <5030A354.7000109@goop.org>
+To: Jan Beulich <jbeulich@suse.com>
+Cc: andi@firstfloor.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        x86@kernel.org, akpm@linux-foundation.org, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 03/74] sections: Make external kallsyms tables __visible
+Message-ID: <20120819152918.GX11413@one.firstfloor.org>
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-4-git-send-email-andi@firstfloor.org> <5030A96F020000780008A1F1@nat28.tlf.novell.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5030A354.7000109@goop.org>
+In-Reply-To: <5030A96F020000780008A1F1@nat28.tlf.novell.com>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 01:27:00AM -0700, Jeremy Fitzhardinge wrote:
-> On 08/18/2012 07:56 PM, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > The paravirt thunks use a hack of using a static reference to a static
-> > function to reference that function from the top level statement.
-> >
-> > This assumes that gcc always generates static function names in a specific
-> > format, which is not necessarily true.
-> >
-> > Simply make these functions global and asmlinkage. This way the
-> > static __used variables are not needed and everything works.
-> 
-> I'm not a huge fan of unstaticing all this stuff, but it doesn't
-> surprise me that the current code is brittle in the face of gcc changes.
+On Sun, Aug 19, 2012 at 08:53:03AM +0100, Jan Beulich wrote:
+> >>> Andi Kleen <andi@firstfloor.org> 08/19/12 5:02 AM >>>
+> >-extern const unsigned long kallsyms_addresses[] __attribute__((weak));
+> >-extern const u8 kallsyms_names[] __attribute__((weak));
+> >+extern __visible const unsigned long kallsyms_addresses[] __attribute__((weak));
+> >+extern __visible const u8 kallsyms_names[] __attribute__((weak));
+>  
+> Shouldn't we minimally aim at consistency here:
+> - all attributes in a one place (I personally prefer the placement between type
+>   and name, for compatibility with other compilers, but there are rare cases -
+>   iirc not on declarations though - where gcc doesn't allow this)
 
-Hmm actually reading my own patch again it may be wrong. You need
-regparm(3) here right? asmlinkage forces it to (0). I'll change it to 
-__visible. I think I did that earlier for all the 32bit code, but missed
-this one.
+Ok.
+
+> - not using open coded __attribute__(()) when a definition (here: __weak) is
+>   available, or alternatively open coding all of them (__attribute__((weak, ...)))?
+
+I just kept the original code. But yes it should be using __weak.
+I can change that.
 
 -Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
