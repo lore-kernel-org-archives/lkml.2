@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab2HSPBu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 11:01:50 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58299 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752480Ab2HSPBr (ORCPT
+	id S1753682Ab2HSPGa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 11:06:30 -0400
+Received: from [124.207.24.138] ([124.207.24.138]:49242 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab2HSPG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 11:01:47 -0400
-Date: Sun, 19 Aug 2012 17:01:40 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Beulich <jbeulich@suse.com>
-Cc: andi@firstfloor.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        x86@kernel.org, akpm@linux-foundation.org, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 55/74] lto, workaround: Add workaround for initcall reordering
-Message-ID: <20120819150140.GP11413@one.firstfloor.org>
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-56-git-send-email-andi@firstfloor.org> <5030B5DC020000780008A226@nat28.tlf.novell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5030B5DC020000780008A226@nat28.tlf.novell.com>
-User-Agent: Mutt/1.4.2.2i
+	Sun, 19 Aug 2012 11:06:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1345387532.5158.222.camel@edumazet-glaptop>
+References: <20120818021918.GA6499@localhost>
+	<1345380682.5158.201.camel@edumazet-glaptop>
+	<CAF1ivSaU_ur9BkKG3eAsNw7d+ND5xgYbPKutemVqNec3X9m4SA@mail.gmail.com>
+	<1345387532.5158.222.camel@edumazet-glaptop>
+Date: Sun, 19 Aug 2012 23:05:42 +0800
+Message-ID: <CAF1ivSZK8Y2XpjUXVpNg=m=bs7bGCYqF0ZQU2u_YpEUrmOrR-g@mail.gmail.com>
+Subject: Re: IPv4 BUG: held lock freed!
+From: Lin Ming <mlin@ss.pku.edu.cn>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, David Miller <davem@davemloft.net>,
+        networking <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 09:46:04AM +0100, Jan Beulich wrote:
-> >>> Andi Kleen <andi@firstfloor.org> 08/19/12 5:05 AM >>>
-> >Work around a LTO gcc problem: when there is no reference to a variable
-> >in a module it will be moved to the end of the program. This causes
-> >reordering of initcalls which the kernel does not like.
-> >Add a dummy reference function to avoid this. The function is
-> >deleted by the linker.
-> 
-> This is not even true on x86, not to speak of generally.
+On Sun, Aug 19, 2012 at 10:45 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Sun, 2012-08-19 at 22:15 +0800, Lin Ming wrote:
+>
+>> Will it still has problem if code goes here without sock_hold(sk)?
+>
+> Not sure of what you mean.
 
-Why is it not true ? 
+See my comments in the function.
+Is that a potential problem?
 
-__initcall is only defined for !MODULE and there __exit discards.
+static void tcp_write_timer(unsigned long data)
+{
+        struct sock *sk = (struct sock *)data;
 
-> 
-> >+#ifdef CONFIG_LTO
-> >+/* Work around a LTO gcc problem: when there is no reference to a variable
-> >+ * in a module it will be moved to the end of the program. This causes
-> >+ * reordering of initcalls which the kernel does not like.
-> >+ * Add a dummy reference function to avoid this. The function is 
-> >+ * deleted by the linker.
-> >+ */
-> >+#define LTO_REFERENCE_INITCALL(x) \
-> >+    ; /* yes this is needed */            \
-> >+    static __used __exit void *reference_##x(void)     \
-> 
-> Why not put it into e.g. section .discard.text? That could be expected to be
-> discarded by the linker without being arch dependent, as long as all arches
-> use DISCARDS in their linker script.
+        bh_lock_sock(sk);
+        if (!sock_owned_by_user(sk)) {
+                tcp_write_timer_handler(sk);
+
+                //if we arrive here with sk_refcnt=1
+                //then below sock_put(sk) will also free the sock.
+        } else {
+                /* deleguate our work to tcp_release_cb() */
+                set_bit(TCP_WRITE_TIMER_DEFERRED, &tcp_sk(sk)->tsq_flags);
+        }
+        bh_unlock_sock(sk);
+        sock_put(sk);
+}
 
 
-That's what __exit does, doesn't it?
+>
+> At the time tcp_write_timer() runs, we own one reference on the socket.
+> (this reference was taken in sk_reset_timer())
+>
+> On old kernels, if we found the socket locked by the user, we used to
+> rearm the timer for a 50ms delay (and thus did sock_hold() again)
+>
+> Another way to avoid the bug would to make sure sk_reset_timer()
+> increases refcount _before_ setting the timer, but its adding one atomic
+> in fast path...
 
--Andi
+I think this is safer than your previous fix.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks.
+
+>
+> diff --git a/net/core/sock.c b/net/core/sock.c
+> index 8f67ced..d1745b7 100644
+> --- a/net/core/sock.c
+> +++ b/net/core/sock.c
+> @@ -2114,8 +2114,9 @@ EXPORT_SYMBOL(sk_send_sigurg);
+>  void sk_reset_timer(struct sock *sk, struct timer_list* timer,
+>                     unsigned long expires)
+>  {
+> -       if (!mod_timer(timer, expires))
+> -               sock_hold(sk);
+> +       sock_hold(sk);
+> +       if (mod_timer(timer, expires))
+> +               __sock_put(sk);
+>  }
+>  EXPORT_SYMBOL(sk_reset_timer);
+>
+>
+>
