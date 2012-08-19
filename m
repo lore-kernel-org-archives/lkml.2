@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab2HSKmL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 06:42:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45766 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab2HSKmK (ORCPT
+	id S1753383Ab2HSLFT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 07:05:19 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:43933 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752273Ab2HSLFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 06:42:10 -0400
-Message-ID: <5030C17E.5050906@gmail.com>
-Date: Sun, 19 Aug 2012 12:35:42 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Namjae Jeon <linkinjeon@gmail.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 2/3] writeback: fix incorrect return value type of bdi_dirty_limit
-References: <1345283361-7802-1-git-send-email-linkinjeon@gmail.com> <20120819021757.GB16796@localhost> <5030BE93.50909@gmail.com>
-In-Reply-To: <5030BE93.50909@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Aug 2012 07:05:17 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, stern@rowland.harvard.edu,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, bigeasy@linutronix.de, balbi@ti.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] USB: isp1301: Remove unused static array and define
+Date: Sun, 19 Aug 2012 13:04:29 +0200
+Message-Id: <1345374269-5471-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/08/2012 12:23, Marco Stornelli ha scritto:
-> Il 19/08/2012 04:17, Fengguang Wu ha scritto:
->> On Sat, Aug 18, 2012 at 05:49:21AM -0400, Namjae Jeon wrote:
->>> unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned
->>> long dirty)
->>>
->>> Above function return type is unsigned long, but return value is
->>> kept in "u64 bdi_dirty".
->>> It can return incorrect value by type casting.
->>
->> I don't see how the cast can return wrong value.
->> The u64 is necessary for the intermediate calculations.
->>
->> Thanks,
->> Fengguang
->>
->
-> We are sure u64 is 8byte long, but unsigned long is 4byte long on 32-bit
-> machine, so if bdi_dirty can assume values bigger than 2^32 there is an
-> implicit truncate of its value, isn't it?
->
-> Marco
+This patch removes an unused statically defined array and an associated #define.
 
-Sorry but I didn't see the code, it seems not possible so the wrong 
-situation can't happen. Maybe we can simply add a comment, nothing more.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Marco
+---
+Applies to v3.6-rc2
+
+ drivers/usb/phy/isp1301.c |    6 ------
+ 1 file changed, 6 deletions(-)
+
+--- linux-2.6.orig/drivers/usb/phy/isp1301.c
++++ linux-2.6/drivers/usb/phy/isp1301.c
+@@ -15,12 +15,6 @@
+ 
+ #define DRV_NAME		"isp1301"
+ 
+-#define ISP1301_I2C_ADDR	0x2C
+-
+-static const unsigned short normal_i2c[] = {
+-	ISP1301_I2C_ADDR, ISP1301_I2C_ADDR + 1, I2C_CLIENT_END
+-};
+-
+ static const struct i2c_device_id isp1301_id[] = {
+ 	{ "isp1301", 0 },
+ 	{ }
