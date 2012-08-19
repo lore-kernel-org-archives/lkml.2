@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2HSJts (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 05:49:48 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:36221 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab2HSJtq (ORCPT
+	id S1754146Ab2HSJuF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 05:50:05 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:43898
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753858Ab2HSJuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 05:49:46 -0400
-Date: Sun, 19 Aug 2012 11:49:42 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: printks messed up in 3.6-rc2+git
-Message-ID: <20120819094942.GA251@x4>
-References: <alpine.SOC.1.00.1208191026340.18296@math.ut.ee>
+	Sun, 19 Aug 2012 05:50:01 -0400
+X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
+   d="scan'208";a="153348613"
+Date: Sun, 19 Aug 2012 11:49:58 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] drivers/net/wireless/ipw2x00/ipw2100.c: introduce
+ missing initialization
+In-Reply-To: <CA++WF2MmTe6WP6MQRV-v1VwkpcUrw4hU6yh79NdG-K4snzQkbg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1208191149400.2031@localhost6.localdomain6>
+References: <1345325159-7365-1-git-send-email-Julia.Lawall@lip6.fr> <CA++WF2MmTe6WP6MQRV-v1VwkpcUrw4hU6yh79NdG-K4snzQkbg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1208191026340.18296@math.ut.ee>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.08.19 at 10:30 +0300, Meelis Roos wrote:
-> 1. Lots of broken HPET messages scattered in PCI prontks like this:
-> pcieport 0000:00:0c.0: Force enabled HPET at 0x%lx
-> irq 40 for MSI/MSI-X
-> pcieport 0000:00:0d.0: Force enabled HPET at 0x%lx
-> irq 41 for MSI/MSI-X
-> pcieport 0000:00:0e.0: Force enabled HPET at 0x%lx
-> irq 42 for MSI/MSI-X
-> pcieport 0000:00:0f.0: Force enabled HPET at 0x%lx
-> irq 43 for MSI/MSI-X
-> 
-> 2. Lots of \0x10 in different printk lines, like this:
-> 
-> pci 0000:00:05.0: \x010Enabling HT MSI Mapping
-> pci 0000:00:05.1: \x010Enabling HT MSI Mapping
-> pci 0000:00:05.2: \x010Enabling HT MSI Mapping
-> pci 0000:00:06.0: \x010Enabling HT MSI Mapping
-> pci 0000:00:06.1: \x010Enabling HT MSI Mapping
-> pci 0000:00:08.0: \x010Enabling HT MSI Mapping
-> pci 0000:00:09.0: \x010Enabling HT MSI Mapping
-> pci 0000:00:0c.0: \x010Enabling HT MSI Mapping
-> pci 0000:00:0d.0: \x010Enabling HT MSI Mapping
-> pci 0000:00:0e.0: \x010Enabling HT MSI Mapping
-> pci 0000:00:0f.0: \x010Enabling HT MSI Mapping
-> and this:
-> usb 2-8: \x010new low-speed USB device number 5 using ohci_hcd
-> usb 2-8: \x010New USB device found, idVendor=0592, idProduct=0002
-> usb 2-8: \x010New USB device strings: Mfr=1, Product=2, SerialNumber=0
-> usb 2-8: %s: Can't disable non-U1 or U2 state.
-> 
-> 3. Many more %s and runtogether lines:
-> 
-> sata_nv 0000:00:05.1: %s: ino %lu, used %d with only %d reserved data blocksUsing SWNCQ mode
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Yes.
-Fix is already queued up:
-http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=commitdiff;h=ebdc82899ec5ed35af1c79ed6a4eeda69dad9b90
+The result of one call to a function is tested, and then at the second call
+to the same function, the previous result, and not the current result, is
+tested again.
 
--- 
-Markus
+Also changed &bssid to bssid, at the suggestion of Stanislav Yakovlev.
+
+The semantic match that finds the first problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression ret;
+identifier f;
+statement S1,S2;
+@@
+
+*ret = f(...);
+if (\(ret != 0\|ret < 0\|ret == NULL\)) S1
+... when any
+*f(...);
+if (\(ret != 0\|ret < 0\|ret == NULL\)) S2
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+v2: changed &bssid to bssid
+
+  drivers/net/wireless/ipw2x00/ipw2100.c |    3 ++-
+  1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
+index 8a34202..534e655 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2100.c
++++ b/drivers/net/wireless/ipw2x00/ipw2100.c
+@@ -2042,7 +2042,8 @@ static void isr_indicate_associated(struct ipw2100_priv *priv, u32 status)
+  		return;
+  	}
+  	len = ETH_ALEN;
+-	ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, &bssid, &len);
++	ret = ipw2100_get_ordinal(priv, IPW_ORD_STAT_ASSN_AP_BSSID, bssid,
++				  &len);
+  	if (ret) {
+  		IPW_DEBUG_INFO("failed querying ordinals at line %d\n",
+  			       __LINE__);
