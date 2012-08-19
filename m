@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab2HST3k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 15:29:40 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52659 "EHLO
+	id S1754583Ab2HSTcN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 15:32:13 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61527 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab2HST3h (ORCPT
+	with ESMTP id S1752382Ab2HSTcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 15:29:37 -0400
-Message-ID: <1345404573.1930.9.camel@kyv>
-Subject: Re: [PATCH 1/8] arm: sam9_l9260_defconfig: adjust UBI bad
- eraseblocks limit
+	Sun, 19 Aug 2012 15:32:10 -0400
+Message-ID: <1345404726.1930.10.camel@kyv>
+Subject: Re: [PATCH 3/8] UBI: introduce MTD_PARAM_MAX_COUNT
 From: Artem Bityutskiy <dedekind1@gmail.com>
 Reply-To: dedekind1@gmail.com
 To: Richard Genoud <richard.genoud@gmail.com>
 Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Sun, 19 Aug 2012 22:29:33 +0300
-In-Reply-To: <1345404079.1930.7.camel@kyv>
+        linux-mtd@lists.infradead.org
+Date: Sun, 19 Aug 2012 22:32:06 +0300
+In-Reply-To: <1345214124-5478-4-git-send-email-richard.genoud@gmail.com>
 References: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
-	 <1345214124-5478-2-git-send-email-richard.genoud@gmail.com>
-	 <1345404079.1930.7.camel@kyv>
+	 <1345214124-5478-4-git-send-email-richard.genoud@gmail.com>
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Iyp+NC1k9+XSivPnwoYi"
+	boundary="=-AAhfxh7Dwq6rt92Kx1fe"
 X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,65 +28,34 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-Iyp+NC1k9+XSivPnwoYi
+--=-AAhfxh7Dwq6rt92Kx1fe
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, 2012-08-19 at 22:21 +0300, Artem Bityutskiy wrote:
-> I'll just remove this from from the defconfig and make it use the
-> default, which is more sensible for this device, as your research
-> showed.
+On Fri, 2012-08-17 at 16:35 +0200, Richard Genoud wrote:
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  drivers/mtd/ubi/build.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+> index 82d11e1..1f45f51 100644
+> --- a/drivers/mtd/ubi/build.c
+> +++ b/drivers/mtd/ubi/build.c
+> @@ -46,6 +46,9 @@
+>  /* Maximum length of the 'mtd=3D' parameter */
+>  #define MTD_PARAM_LEN_MAX 64
+> =20
+> +/* Maximum number of comma-separated items in ht 'mtd=3D' parameter */
+> +#define MTD_PARAM_MAX_COUNT 2
 
-Actually, pushed this patch to l2-mtd.git:
-
-
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Sun, 19 Aug 2012 22:22:23 +0300
-Subject: [PATCH] arm: sam9_l9260_defconfig: correct CONFIG_MTD_UBI_BEB_LIMI=
-T
-
-UBI has changed the MTD_UBI_BEB_LIMIT semantics. It used to be a percent of
-total amount of eraseblock in the partition, and now it is the maximum
-amount of bad eraseblocks on the entire devise per 1024 eraseblocks. So not
-only the units changed, but also the meaning.
-
-Richard Genoud <richard.genoud@gmail.com> says:
-
-"I found the board:
-https://www.olimex.com/dev/sam9-L9260.html
-and the nand datasheet:
-http://www.rockbox.org/wiki/pub/Main/LyrePrototype/K9xxG08UXM.pdf
-page 11, we can see that the max_bad_bebper1024 is 25 (100 for 4096)"
-
-Thus, use "25" for sam9.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- arch/arm/configs/sam9_l9260_defconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/configs/sam9_l9260_defconfig b/arch/arm/configs/sam9_=
-l9260_defconfig
-index da276f9..b4384af 100644
---- a/arch/arm/configs/sam9_l9260_defconfig
-+++ b/arch/arm/configs/sam9_l9260_defconfig
-@@ -39,7 +39,7 @@ CONFIG_MTD_NAND=3Dy
- CONFIG_MTD_NAND_ATMEL=3Dy
- CONFIG_MTD_NAND_PLATFORM=3Dy
- CONFIG_MTD_UBI=3Dy
--CONFIG_MTD_UBI_BEB_LIMIT=3D3
-+CONFIG_MTD_UBI_BEB_LIMIT=3D25
- CONFIG_MTD_UBI_GLUEBI=3Dy
- CONFIG_BLK_DEV_LOOP=3Dy
- CONFIG_BLK_DEV_RAM=3Dy
---=20
-1.7.11.2
+Fixed the spelling of "the" and pushed to l2-mtd.git, thanks!
 
 --=20
 Best Regards,
 Artem Bityutskiy
 
---=-Iyp+NC1k9+XSivPnwoYi
+--=-AAhfxh7Dwq6rt92Kx1fe
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -97,20 +63,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQMT6dAAoJECmIfjd9wqK0MRIP/juPHYiUHZuwmEYSYJ3jUJTu
-RQqPMpAvWLPizjFMNC1zNY93RRms4CZ1wwCfcpNB3m7r3meN+0f+WnpGSjeswuvd
-EqmiXETDIDVBIt1iNiX6VjWSbhVF49R8a72fNG9MVHv2CQ88yuoGMgns6CCehKb+
-5YSIi06hbPC8gtdpmV440meVo1PwQdjHc52OvixMkXmTsU7+f5ydnyPq8WzqRagN
-VZYyc2Wq4IrtnUNGc38Ape7ULhlY/OontfVYkCLKqwrzOPJAzrWS27MdwnbO9koo
-F+A6FPf1pkLehIVkmkNfCOQ9DTc/uZkoemvsNkqrDfVjJpvaFTnmJGKznqzvM5RI
-lmeb8ReO9DSBrffUs5bGQmDQt6Boj4EXc3zA9FP+xVtg1vAd5KivGknzQ0xMCHGb
-8BGGU3TO89VtDO+RAxe48eeJQPe9NgQ0QwE9Udbbvocg0EUzMowBcKtyjRn4gSjI
-V3tAQ1wLNBo16mndzpxgL1Ht+ISrnZ6U/6fHWoiG7Zgp1AqvPG0kqHaSxIXyYz83
-kzhTX52tHZekWXZS9RQXqhz/KY1Zug+ZQXY2RqCsDArtUCrmPDt6c066EiyLP6p0
-K65SUo/wwCiFWRxjIJU8cenAtJsUDI5hbi3DarQ7JRk1vvlFTynhYfXGrKMZkPO3
-UCC1yXYV9ghjiDVM90TM
-=LvP1
+iQIcBAABAgAGBQJQMT82AAoJECmIfjd9wqK0Ze0QALf7Mo3Va/E1sGJTz3CK5pZ0
+O55/dztnOr1eJZVvE2fKLtJMfEbgoA5kP+1/DWDdUIUuvwhmAWvMhKpyr7Kmi+Zs
+CL+MCWRPCRGa3jhl6NfZbVSdn+1Smbrh1MR297PEy1kEG6qo3FL0T3jTvyrp1KYc
+h8CNbRZbubvXnQlaC3y4m67blQY92wFYj8Hml65DyKlTIn1HLDOxUulVB7s9cYQz
+5yUW6nfggu/OIP1CNlhIuC44TAtIUzBiK3G5MYco4s+WLXMsCF/Wh8/V4SuzG0xv
+jN188o+AiR5ZFblxLV08qJ0YK8hsIs3BlzF8HqaxjddNXVrQo6X2MwdGq+otEDg8
+boRuRGCq/o8ORGiz41UnCIIL3oxCvPHelSanDlobcL9xCBvYXXUBrimzMScApA81
+70xxN4CZlIsWt+y+Wob9I/UEkaGaFj7TLewTgeLB5WRR+W6fPDsK6cL1AK9qlNQP
+yycDk3A2qziSSinXlhexc/8qycFbTTYQkJZl87OXG0bsb9nCkC5j28t1Pdy56UUF
+yHl7G8/uymCVcKYsWztY6peMdVvjnNpeK1P3KBMWZVszmoVpFRPOCsB2F4VmZYa8
+JLX1iXV83XvvJ/FLVrYI56qjQZ4lu0g1PX+jUtfN7fa9BKjFrl7C9/PbmUlBXjDY
+9cp4tALfFcsCsWKOhteJ
+=Pztl
 -----END PGP SIGNATURE-----
 
---=-Iyp+NC1k9+XSivPnwoYi--
+--=-AAhfxh7Dwq6rt92Kx1fe--
 
