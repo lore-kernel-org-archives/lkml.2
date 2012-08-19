@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab2HSKYD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 06:24:03 -0400
-Received: from canardo.mork.no ([148.122.252.1]:49554 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab2HSKYB convert rfc822-to-8bit (ORCPT
+	id S1753038Ab2HSK3p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 06:29:45 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60594 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab2HSK3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 06:24:01 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Fengguang Wu <fengguang.wu@intel.com>, Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Lan\, Tianyu" <tianyu.lan@intel.com>
-Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
-Organization: m
-References: <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1208171031100.25520-100000@netrider.rowland.org>
-	<20120817144253.GA12835@kroah.com>
-	<CACVXFVMeUmLh=Tu3PHbgHQNX+c-z50_CoAkdJS_uCw=E3dO2dw@mail.gmail.com>
-Date: Sun, 19 Aug 2012 12:23:38 +0200
-In-Reply-To: <CACVXFVMeUmLh=Tu3PHbgHQNX+c-z50_CoAkdJS_uCw=E3dO2dw@mail.gmail.com>
-	(Ming Lei's message of "Sat, 18 Aug 2012 08:58:39 +0800")
-Message-ID: <87a9xrmb85.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Sun, 19 Aug 2012 06:29:41 -0400
+Message-ID: <5030BE93.50909@gmail.com>
+Date: Sun, 19 Aug 2012 12:23:15 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Namjae Jeon <linkinjeon@gmail.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 2/3] writeback: fix incorrect return value type of bdi_dirty_limit
+References: <1345283361-7802-1-git-send-email-linkinjeon@gmail.com> <20120819021757.GB16796@localhost>
+In-Reply-To: <20120819021757.GB16796@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei <tom.leiming@gmail.com> writes:
-> On Fri, Aug 17, 2012 at 10:42 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Fri, Aug 17, 2012 at 10:38:16AM -0400, Alan Stern wrote:
->>> On Fri, 17 Aug 2012, Ming Lei wrote:
->>>
->>> > But,  if HOTPLUG is not enabled, should device_add() trigger driver probe
->>> > further after kernel init is completed?  Or even devices should be allowed
->>> > to add into system?
->>>
->>> Indeed, does it make any sense to have USB support at all if HOTPLUG
->>> isn't enabled?  Should USB select HOTPLUG?
+Il 19/08/2012 04:17, Fengguang Wu ha scritto:
+> On Sat, Aug 18, 2012 at 05:49:21AM -0400, Namjae Jeon wrote:
+>> unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
 >>
->> Well, a long time ago people wanted to use USB but not have HOTPLUG
->> enabled in their systems for various (odd) embedded systems.  As it's
->> pretty hard to even turn off HOTPLUG these days, I'd be more likely to
->> just remove CONFIG_HOTPLUG entirely given the dynamic nature of almost
->> all systems.
+>> Above function return type is unsigned long, but return value is
+>> kept in "u64 bdi_dirty".
+>> It can return incorrect value by type casting.
 >
-> It should make sense, otherwise all device id table should not use
-> __devinit* markings. There are lots of pci driver usage on it.
+> I don't see how the cast can return wrong value.
+> The u64 is necessary for the intermediate calculations.
+>
+> Thanks,
+> Fengguang
+>
 
-You might want to start here then:
+We are sure u64 is 8byte long, but unsigned long is 4byte long on 32-bit 
+machine, so if bdi_dirty can assume values bigger than 2^32 there is an 
+implicit truncate of its value, isn't it?
 
-/**
- * DEFINE_PCI_DEVICE_TABLE - macro used to describe a pci device table
- * @_table: device table name
- *
- * This macro is used to create a struct pci_device_id array (a device table)
- * in a generic manner.
- */
-#define DEFINE_PCI_DEVICE_TABLE(_table) \
-        const struct pci_device_id _table[] __devinitconst
-
-
-
-Bjørn
+Marco
