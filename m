@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab2HSO1p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 10:27:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51764 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2HSO1n (ORCPT
+	id S1753353Ab2HSOfk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 10:35:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39805 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab2HSOfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 10:27:43 -0400
-Date: Sun, 19 Aug 2012 15:27:32 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dan Luedtke <mail@danrl.de>
-Cc: Jochen Striepe <jochen@tolot.escape.de>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lanyfs@librelist.com
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-Message-ID: <20120819142732.GB23464@ZenIV.linux.org.uk>
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
- <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
- <1345371135.4441.2.camel@tunafish>
- <5030BC7E.3030000@gmail.com>
- <1345383264.4441.56.camel@tunafish>
- <20120819120254.GA2369@pompeji.miese-zwerge.org>
- <1345390432.2716.34.camel@tunafish>
+	Sun, 19 Aug 2012 10:35:37 -0400
+Date: Sun, 19 Aug 2012 07:35:32 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
+Cc: Ming Lei <tom.leiming@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Fengguang Wu <fengguang.wu@intel.com>, Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>
+Subject: Re: BUG: unable to handle kernel paging request in usb_match_id()
+Message-ID: <20120819143532.GB1384@kroah.com>
+References: <CACVXFVO0TYHP0=GZVo1cz_FdxXSbX-xQ8vwrwUrZ2Y0nj7yDzg@mail.gmail.com>
+ <Pine.LNX.4.44L0.1208171031100.25520-100000@netrider.rowland.org>
+ <20120817144253.GA12835@kroah.com>
+ <CACVXFVMeUmLh=Tu3PHbgHQNX+c-z50_CoAkdJS_uCw=E3dO2dw@mail.gmail.com>
+ <87a9xrmb85.fsf@nemi.mork.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1345390432.2716.34.camel@tunafish>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87a9xrmb85.fsf@nemi.mork.no>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 05:33:52PM +0200, Dan Luedtke wrote:
+On Sun, Aug 19, 2012 at 12:23:38PM +0200, Bjørn Mork wrote:
+> Ming Lei <tom.leiming@gmail.com> writes:
+> > On Fri, Aug 17, 2012 at 10:42 PM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> >> On Fri, Aug 17, 2012 at 10:38:16AM -0400, Alan Stern wrote:
+> >>> On Fri, 17 Aug 2012, Ming Lei wrote:
+> >>>
+> >>> > But,  if HOTPLUG is not enabled, should device_add() trigger driver probe
+> >>> > further after kernel init is completed?  Or even devices should be allowed
+> >>> > to add into system?
+> >>>
+> >>> Indeed, does it make any sense to have USB support at all if HOTPLUG
+> >>> isn't enabled?  Should USB select HOTPLUG?
+> >>
+> >> Well, a long time ago people wanted to use USB but not have HOTPLUG
+> >> enabled in their systems for various (odd) embedded systems.  As it's
+> >> pretty hard to even turn off HOTPLUG these days, I'd be more likely to
+> >> just remove CONFIG_HOTPLUG entirely given the dynamic nature of almost
+> >> all systems.
+> >
+> > It should make sense, otherwise all device id table should not use
+> > __devinit* markings. There are lots of pci driver usage on it.
+> 
+> You might want to start here then:
+> 
+> /**
+>  * DEFINE_PCI_DEVICE_TABLE - macro used to describe a pci device table
+>  * @_table: device table name
+>  *
+>  * This macro is used to create a struct pci_device_id array (a device table)
+>  * in a generic manner.
+>  */
+> #define DEFINE_PCI_DEVICE_TABLE(_table) \
+>         const struct pci_device_id _table[] __devinitconst
+> 
 
-> Still wondering if anyone bothers to actually look at the code?
+That's not as big of a problem, as pci drivers are usually left as a
+module, and very few people dynamically add and remove pci devices on
+systems that do not have CONFIG_HOTPLUG enabled.
 
-Some obvious notes:
-	* unlimited recursion is a killer; here its depth is controlled
-by the fs image contents and it's trivial to cook one that would overflow
-kernel stack.  Seeing that you want to use it for removable media, that's
-a gaping security hole right there
-	* unlink() does *not* truncate the file contents; file that had been
-opened and unlinked should keep its contents until it's closed.  The same
-goes for overwriting rename().
-	* while we are at it, neither of those should free the on-disk
-inode; again, that should happen only when the inode is evicted.
-	* I might be missing something, but copying a bunch of files
-with something like cp /foo/* /mnt seems to be guaranteed to create
-really lousy binary tree in target directory (they will go in lexicographical
-order and you don't seem to rebalance the tree at all)
-	* you are really abusing iget() there.  Leaving the locking issues
-aside, that's going to get you icache filled with irrelevant stuff.  Moreover,
-it's far too heavy a club; allocating and filling struct inode when all you
-really need is name and a couple of pointers in the disk block?
-	* minor point, but endianness-flipping in place is *the* way to get
-hard-to-catch endianness bugs.  foo = cpu_to_le64(foo) is a bloody bad idea;
-either use object for host-endian all along, or use it only for (in your
-case) little-endian.
+Not to say that it couldn't happen, just that it is rare.
+
+And it shows again that __devinitconst just needs to be removed, I'll
+work on that soon and see what happens...
+
+greg k-h
