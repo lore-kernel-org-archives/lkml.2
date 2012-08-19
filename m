@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab2HSAyx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:54:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33310 "EHLO
+	id S1754532Ab2HSAyu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:54:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41176 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab2HSAwt (ORCPT
+	with ESMTP id S1752680Ab2HSAwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:52:49 -0400
+	Sat, 18 Aug 2012 20:52:47 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 16/16] tracing output: use new hashtable implementation
-Date: Sun, 19 Aug 2012 02:52:30 +0200
-Message-Id: <1345337550-24304-18-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v2 15/16] openvswitch: use new hashtable implementation
+Date: Sun, 19 Aug 2012 02:52:29 +0200
+Message-Id: <1345337550-24304-17-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
 References: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
@@ -32,87 +32,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch tracing to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the tracing module.
+Switch openvswitch to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in openvswitch.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- kernel/trace/trace_output.c |   20 ++++++++------------
- 1 files changed, 8 insertions(+), 12 deletions(-)
+ net/openvswitch/vport.c |   30 +++++++++++++-----------------
+ 1 files changed, 13 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 123b189..1324c1a 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -8,15 +8,15 @@
- #include <linux/module.h>
- #include <linux/mutex.h>
- #include <linux/ftrace.h>
+diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
+index 6140336..3484120 100644
+--- a/net/openvswitch/vport.c
++++ b/net/openvswitch/vport.c
+@@ -27,6 +27,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/rtnetlink.h>
+ #include <linux/compat.h>
 +#include <linux/hashtable.h>
  
- #include "trace_output.h"
+ #include "vport.h"
+ #include "vport-internal_dev.h"
+@@ -39,8 +40,8 @@ static const struct vport_ops *vport_ops_list[] = {
+ };
  
--/* must be a power of 2 */
--#define EVENT_HASHSIZE	128
-+#define EVENT_HASH_BITS	7
+ /* Protected by RCU read lock for reading, RTNL lock for writing. */
+-static struct hlist_head *dev_table;
+-#define VPORT_HASH_BUCKETS 1024
++#define VPORT_HASH_BITS 10
++static DEFINE_HASHTABLE(dev_table, VPORT_HASH_BITS);
  
- DECLARE_RWSEM(trace_event_mutex);
- 
--static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
-+static DEFINE_HASHTABLE(event_hash, EVENT_HASH_BITS);
- 
- static int next_event_type = __TRACE_LAST_TYPE + 1;
- 
-@@ -712,11 +712,8 @@ struct trace_event *ftrace_find_event(int type)
- {
- 	struct trace_event *event;
- 	struct hlist_node *n;
--	unsigned key;
- 
--	key = type & (EVENT_HASHSIZE - 1);
--
--	hlist_for_each_entry(event, n, &event_hash[key], node) {
-+	hash_for_each_possible(event_hash, event, n, node, type) {
- 		if (event->type == type)
- 			return event;
- 	}
-@@ -781,7 +778,6 @@ void trace_event_read_unlock(void)
+ /**
+  *	ovs_vport_init - initialize vport subsystem
+@@ -49,10 +50,7 @@ static struct hlist_head *dev_table;
   */
- int register_ftrace_event(struct trace_event *event)
+ int ovs_vport_init(void)
  {
--	unsigned key;
- 	int ret = 0;
+-	dev_table = kzalloc(VPORT_HASH_BUCKETS * sizeof(struct hlist_head),
+-			    GFP_KERNEL);
+-	if (!dev_table)
+-		return -ENOMEM;
++	hash_init(dev_table);
  
- 	down_write(&trace_event_mutex);
-@@ -833,9 +829,7 @@ int register_ftrace_event(struct trace_event *event)
- 	if (event->funcs->binary == NULL)
- 		event->funcs->binary = trace_nop_print;
- 
--	key = event->type & (EVENT_HASHSIZE - 1);
--
--	hlist_add_head(&event->node, &event_hash[key]);
-+	hash_add(event_hash, &event->node, event->type);
- 
- 	ret = event->type;
-  out:
-@@ -850,7 +844,7 @@ EXPORT_SYMBOL_GPL(register_ftrace_event);
-  */
- int __unregister_ftrace_event(struct trace_event *event)
- {
--	hlist_del(&event->node);
-+	hash_del(&event->node);
- 	list_del(&event->list);
  	return 0;
  }
-@@ -1323,6 +1317,8 @@ __init static int init_events(void)
+@@ -67,12 +65,6 @@ void ovs_vport_exit(void)
+ 	kfree(dev_table);
+ }
+ 
+-static struct hlist_head *hash_bucket(const char *name)
+-{
+-	unsigned int hash = full_name_hash(name, strlen(name));
+-	return &dev_table[hash & (VPORT_HASH_BUCKETS - 1)];
+-}
+-
+ /**
+  *	ovs_vport_locate - find a port that has already been created
+  *
+@@ -82,11 +74,11 @@ static struct hlist_head *hash_bucket(const char *name)
+  */
+ struct vport *ovs_vport_locate(const char *name)
+ {
+-	struct hlist_head *bucket = hash_bucket(name);
+ 	struct vport *vport;
+ 	struct hlist_node *node;
++	int key = full_name_hash(name, strlen(name));
+ 
+-	hlist_for_each_entry_rcu(vport, node, bucket, hash_node)
++	hash_for_each_possible_rcu(dev_table, vport, node, hash_node, key)
+ 		if (!strcmp(name, vport->ops->get_name(vport)))
+ 			return vport;
+ 
+@@ -170,14 +162,18 @@ struct vport *ovs_vport_add(const struct vport_parms *parms)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(vport_ops_list); i++) {
+ 		if (vport_ops_list[i]->type == parms->type) {
++			int key;
++			const char *name;
++
+ 			vport = vport_ops_list[i]->create(parms);
+ 			if (IS_ERR(vport)) {
+ 				err = PTR_ERR(vport);
+ 				goto out;
+ 			}
+ 
+-			hlist_add_head_rcu(&vport->hash_node,
+-					   hash_bucket(vport->ops->get_name(vport)));
++			name = vport->ops->get_name(vport);
++			key = full_name_hash(name, strlen(name));
++			hash_add_rcu(dev_table, &vport->hash_node, key);
+ 			return vport;
  		}
  	}
+@@ -218,7 +214,7 @@ void ovs_vport_del(struct vport *vport)
+ {
+ 	ASSERT_RTNL();
  
-+	hash_init(event_hash);
-+
- 	return 0;
+-	hlist_del_rcu(&vport->hash_node);
++	hash_del_rcu(&vport->hash_node);
+ 
+ 	vport->ops->destroy(vport);
  }
- early_initcall(init_events);
 -- 
 1.7.8.6
 
