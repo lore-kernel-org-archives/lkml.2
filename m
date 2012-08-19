@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2HSP3V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 11:29:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58400 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab2HSP3T (ORCPT
+	id S1754128Ab2HSPad (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 11:30:33 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58032 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab2HSPab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 11:29:19 -0400
-Date: Sun, 19 Aug 2012 17:29:18 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Beulich <jbeulich@suse.com>
-Cc: andi@firstfloor.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        x86@kernel.org, akpm@linux-foundation.org, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 03/74] sections: Make external kallsyms tables __visible
-Message-ID: <20120819152918.GX11413@one.firstfloor.org>
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-4-git-send-email-andi@firstfloor.org> <5030A96F020000780008A1F1@nat28.tlf.novell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5030A96F020000780008A1F1@nat28.tlf.novell.com>
-User-Agent: Mutt/1.4.2.2i
+	Sun, 19 Aug 2012 11:30:31 -0400
+Message-ID: <50310512.5010108@gmail.com>
+Date: Sun, 19 Aug 2012 17:24:02 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+MIME-Version: 1.0
+To: Dan Luedtke <mail@danrl.de>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>  <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>  <1345371135.4441.2.camel@tunafish> <5030BC7E.3030000@gmail.com>  <1345383264.4441.56.camel@tunafish>  <20120819120254.GA2369@pompeji.miese-zwerge.org>  <1345390432.2716.34.camel@tunafish>  <20120819142732.GB23464@ZenIV.linux.org.uk> <1345395217.2716.58.camel@tunafish>
+In-Reply-To: <1345395217.2716.58.camel@tunafish>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 08:53:03AM +0100, Jan Beulich wrote:
-> >>> Andi Kleen <andi@firstfloor.org> 08/19/12 5:02 AM >>>
-> >-extern const unsigned long kallsyms_addresses[] __attribute__((weak));
-> >-extern const u8 kallsyms_names[] __attribute__((weak));
-> >+extern __visible const unsigned long kallsyms_addresses[] __attribute__((weak));
-> >+extern __visible const u8 kallsyms_names[] __attribute__((weak));
->  
-> Shouldn't we minimally aim at consistency here:
-> - all attributes in a one place (I personally prefer the placement between type
->   and name, for compatibility with other compilers, but there are rare cases -
->   iirc not on declarations though - where gcc doesn't allow this)
+Il 19/08/2012 18:53, Dan Luedtke ha scritto:
+> On Sun, 2012-08-19 at 15:27 +0100, Al Viro wrote:
+>> 	* unlimited recursion
+> I am already working on that one, but it's tricky.
+>
+>> 	* unlink() does *not* truncate the file contents;
+> I did not know that.
 
-Ok.
+I add that vmtruncate is deprecated and I see a call to inode_dio_wait 
+but no support for direct IO. In addition the lock rules seem strange, I 
+would avoid playing with inode->i_lock.
 
-> - not using open coded __attribute__(()) when a definition (here: __weak) is
->   available, or alternatively open coding all of them (__attribute__((weak, ...)))?
+>
+>> 	* while we are at it, neither of those should free the on-disk
+>> inode; again, that should happen only when the inode is evicted.
+> Makes sense now. Thanks!
 
-I just kept the original code. But yes it should be using __weak.
-I can change that.
+And I think you'll call d_delete two times.
 
--Andi
+As general suggestion: to have a general view how things can work you 
+can look at other fs. Maybe ramfs or tmpfs are simple enough to 
+understand the general concepts.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Marco
+
