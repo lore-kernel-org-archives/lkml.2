@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab2HSGdG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 02:33:06 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:59414 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751212Ab2HSGdE (ORCPT
+	id S1752897Ab2HSGd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 02:33:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35819 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab2HSGdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 02:33:04 -0400
-X-Sasl-enc: dnJTv0/aaG35hvFxcOWfSf5MxWLHagrYBsI25tp9fTY+ 1345357984
-Date: Sat, 18 Aug 2012 23:33:02 -0700
-From: Greg KH <gregkh@linux-foundation.org>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: Re: [PATCH] dyndbg: fix for SOH in logging messages
-Message-ID: <20120819063302.GA6182@kroah.com>
-References: <1345336551-10066-1-git-send-email-jim.cromie@gmail.com>
- <20120819061352.GA1971@kroah.com>
+	Sun, 19 Aug 2012 02:33:24 -0400
+Date: Sun, 19 Aug 2012 08:33:14 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: khali@linux-fr.org, swarren@nvidia.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] i2c: tegra: I2_M_NOSTART functionality not
+ supported in Tegra20
+Message-ID: <20120819063314.GA2147@pengutronix.de>
+References: <1345317467-22258-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
 Content-Disposition: inline
-In-Reply-To: <20120819061352.GA1971@kroah.com>
+In-Reply-To: <1345317467-22258-1-git-send-email-ldewangan@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 11:13:52PM -0700, Greg KH wrote:
-> On Sat, Aug 18, 2012 at 06:35:51PM -0600, Jim Cromie wrote:
-> > commit af7f2158fde was done against master, and clashed with structured logging's change of KERN_LEVEL to SOH.
-> > 
-> > Bisected and fixed by Markus Trippelsdorf.
-> > 
-> > CC: Markus Trippelsdorf <markus@trippelsdorf.de>
-> > Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> > ---
-> >  drivers/base/core.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/base/core.c b/drivers/base/core.c
-> > index cdd01c5..5e6e00b 100644
-> > --- a/drivers/base/core.c
-> > +++ b/drivers/base/core.c
-> > @@ -1912,8 +1912,8 @@ int __dev_printk(const char *level, const struct device *dev,
-> >  				    "DEVICE=+%s:%s", subsys, dev_name(dev));
-> >  	}
-> >  skip:
-> > -	if (level[3])
-> > -		level_extra = &level[3]; /* skip past "<L>" */
-> > +	if (level[2])
-> > +		level_extra = &level[2]; /* skip past KERN_SOH "L" */
-> >  
-> >  	return printk_emit(0, level[1] - '0',
-> >  			   dictlen ? dict : NULL, dictlen,
-> 
-> No, this still doesn't resolve the issue for me, it still looks like it
-> did before this patch (exactly the same to be exact.)
-> 
-> I do seem to get the correct output if I revert your original patch
-> (af7f2158fde), should I just do that instead?
 
-Crap, no, sorry, it's late, I didn't apply your patch at all (--dry-run
-only, my bad).
+--8t9RHnE3ZwKMSgU+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Let me go test this for real now, my applogies...
+On Sun, Aug 19, 2012 at 12:47:46AM +0530, Laxman Dewangan wrote:
+> Tegra20 i2c controller does not support the continue transfer
+> which implements the I2C_M_NOSTART functionality of i2c
+> protocol mangling.
+> Removing the I2C_M_NOSTART functionality support for Tegra20.
+>=20
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> Changes from V1:
+> - make the hw feature structure as part of tegra device structure in
+>   place of copying the member.
+> - Remove check for extra M_NOSTART flag if it is not supported in xfer fu=
+nction.
+>=20
+> Please note that this should go on tegra common clock source tree to avoi=
+d conflicts.
 
-greg k-h
+Looks good to me regarding the I2C part:
+
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--8t9RHnE3ZwKMSgU+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlAwiKoACgkQD27XaX1/VRs8MwCfROdoJPccn631aBFjG2WhGuDW
+bUQAnR3c2FBXVIjkT0KHva7nssU0dhJE
+=0ojK
+-----END PGP SIGNATURE-----
+
+--8t9RHnE3ZwKMSgU+--
