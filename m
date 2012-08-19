@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab2HSAxc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:53:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41176 "EHLO
+	id S1753888Ab2HSAyA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:54:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33310 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab2HSAwQ (ORCPT
+	with ESMTP id S1752113Ab2HSAwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:52:16 -0400
+	Sat, 18 Aug 2012 20:52:23 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 03/16] mm,ksm: use new hashtable implementation
-Date: Sun, 19 Aug 2012 02:52:17 +0200
-Message-Id: <1345337550-24304-5-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v2 06/16] tracepoint: use new hashtable implementation
+Date: Sun, 19 Aug 2012 02:52:20 +0200
+Message-Id: <1345337550-24304-8-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
 References: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
@@ -32,109 +32,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch ksm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the ksm module.
+Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the tracepoints.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- mm/ksm.c |   33 +++++++++++++++------------------
- 1 files changed, 15 insertions(+), 18 deletions(-)
+ kernel/tracepoint.c |   27 +++++++++++----------------
+ 1 files changed, 11 insertions(+), 16 deletions(-)
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 9638620..dd4d6af 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -33,7 +33,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/swap.h>
- #include <linux/ksm.h>
--#include <linux/hash.h>
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index d96ba22..854df92 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+ #include <linux/static_key.h>
 +#include <linux/hashtable.h>
- #include <linux/freezer.h>
- #include <linux/oom.h>
  
-@@ -156,9 +156,8 @@ struct rmap_item {
- static struct rb_root root_stable_tree = RB_ROOT;
- static struct rb_root root_unstable_tree = RB_ROOT;
+ extern struct tracepoint * const __start___tracepoints_ptrs[];
+ extern struct tracepoint * const __stop___tracepoints_ptrs[];
+@@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+  * Protected by tracepoints_mutex.
+  */
+ #define TRACEPOINT_HASH_BITS 6
+-#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+-static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
++static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
  
--#define MM_SLOTS_HASH_SHIFT 10
--#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
--static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
-+#define MM_SLOTS_HASH_BITS 10
-+static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
- 
- static struct mm_slot ksm_mm_head = {
- 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
-@@ -275,26 +274,21 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+ /*
+  * Note about RCU :
+@@ -191,16 +191,15 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
+  */
+ static struct tracepoint_entry *get_tracepoint(const char *name)
  {
--	struct mm_slot *mm_slot;
--	struct hlist_head *bucket;
+-	struct hlist_head *head;
  	struct hlist_node *node;
-+	struct mm_slot *slot;
-+
-+	hash_for_each_possible(mm_slots_hash, slot, node, link, (unsigned long)mm) 
-+		if (slot->mm == mm)
-+			return slot;
+ 	struct tracepoint_entry *e;
+ 	u32 hash = jhash(name, strlen(name), 0);
  
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
--	hlist_for_each_entry(mm_slot, node, bucket, link) {
--		if (mm == mm_slot->mm)
--			return mm_slot;
--	}
+-	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+-	hlist_for_each_entry(e, node, head, hlist) {
++	hash_for_each_possible(tracepoint_table, e, node, hlist, hash) {
+ 		if (!strcmp(name, e->name))
+ 			return e;
+ 	}
++
  	return NULL;
  }
  
- static void insert_to_mm_slots_hash(struct mm_struct *mm,
- 				    struct mm_slot *mm_slot)
+@@ -210,19 +209,13 @@ static struct tracepoint_entry *get_tracepoint(const char *name)
+  */
+ static struct tracepoint_entry *add_tracepoint(const char *name)
  {
--	struct hlist_head *bucket;
--
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	mm_slot->mm = mm;
--	hlist_add_head(&mm_slot->link, bucket);
-+	hash_add(mm_slots_hash, &mm_slot->link, (unsigned long)mm);
+-	struct hlist_head *head;
+-	struct hlist_node *node;
+ 	struct tracepoint_entry *e;
+ 	size_t name_len = strlen(name) + 1;
+ 	u32 hash = jhash(name, name_len-1, 0);
+ 
+-	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+-	hlist_for_each_entry(e, node, head, hlist) {
+-		if (!strcmp(name, e->name)) {
+-			printk(KERN_NOTICE
+-				"tracepoint %s busy\n", name);
+-			return ERR_PTR(-EEXIST);	/* Already there */
+-		}
++	if (get_tracepoint(name)) {
++		printk(KERN_NOTICE "tracepoint %s busy\n", name);
++		return ERR_PTR(-EEXIST);	/* Already there */
+ 	}
+ 	/*
+ 	 * Using kmalloc here to allocate a variable length element. Could
+@@ -234,7 +227,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+ 	memcpy(&e->name[0], name, name_len);
+ 	e->funcs = NULL;
+ 	e->refcount = 0;
+-	hlist_add_head(&e->hlist, head);
++	hash_add(tracepoint_table, &e->hlist, hash);
+ 	return e;
  }
  
- static inline int in_stable_tree(struct rmap_item *rmap_item)
-@@ -647,7 +641,7 @@ static int unmerge_and_remove_all_rmap_items(void)
- 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
- 						struct mm_slot, mm_list);
- 		if (ksm_test_exit(mm)) {
--			hlist_del(&mm_slot->link);
-+			hash_del(&mm_slot->link);
- 			list_del(&mm_slot->mm_list);
- 			spin_unlock(&ksm_mmlist_lock);
+@@ -244,7 +237,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+  */
+ static inline void remove_tracepoint(struct tracepoint_entry *e)
+ {
+-	hlist_del(&e->hlist);
++	hash_del(&e->hlist);
+ 	kfree(e);
+ }
  
-@@ -1385,7 +1379,7 @@ next_mm:
- 		 * or when all VM_MERGEABLE areas have been unmapped (and
- 		 * mmap_sem then protects against race with MADV_MERGEABLE).
- 		 */
--		hlist_del(&slot->link);
-+		hash_del(&slot->link);
- 		list_del(&slot->mm_list);
- 		spin_unlock(&ksm_mmlist_lock);
+@@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
  
-@@ -1552,7 +1546,7 @@ void __ksm_exit(struct mm_struct *mm)
- 	mm_slot = get_mm_slot(mm);
- 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
- 		if (!mm_slot->rmap_list) {
--			hlist_del(&mm_slot->link);
-+			hash_del(&mm_slot->link);
- 			list_del(&mm_slot->mm_list);
- 			easy_to_free = 1;
- 		} else {
-@@ -2028,6 +2022,9 @@ static int __init ksm_init(void)
- 	 */
- 	hotplug_memory_notifier(ksm_memory_callback, 100);
- #endif
+ static int init_tracepoints(void)
+ {
++	hash_init(tracepoint_table);
 +
-+	hash_init(mm_slots_hash);
-+
- 	return 0;
- 
- out_free:
+ 	return register_module_notifier(&tracepoint_module_nb);
+ }
+ __initcall(init_tracepoints);
 -- 
 1.7.8.6
 
