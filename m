@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab2HSIMs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:12:48 -0400
-Received: from mail.nonattached.net ([193.160.39.60]:54765 "EHLO
-	mail.nonattached.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab2HSIMU (ORCPT
+	id S1751417Ab2HSIVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:21:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39245 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab2HSIVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 04:12:20 -0400
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-From: Dan Luedtke <mail@danrl.de>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
-	 <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Aug 2012 12:12:15 +0200
-Message-ID: <1345371135.4441.2.camel@tunafish>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Aug 2012 04:21:22 -0400
+Date: Sun, 19 Aug 2012 12:21:17 +0400
+From: Artem Savkov <artem.savkov@gmail.com>
+To: Shaun Ruffell <sruffell@digium.com>
+Cc: Dave Haywood <tla@oak.selfip.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-net@vger.kernel.org
+Subject: Re: BUG: unable to handle kernel paging request at 00010016
+Message-ID: <20120819082117.GA4634@thinkpad.lan>
+References: <502ECC74.9030605@oak.selfip.net>
+ <20120819042543.GA14461@digium.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120819042543.GA14461@digium.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resent)
-On Sun, 2012-08-19 at 00:16 +0200, richard -rw- weinberger wrote:
-> What are the use cases of this filesystem?
-> It looks very minimal without much features.
-That's the feature, actually. Think of the Arduino platform or other embedded devices (TV, Car Entertainment) that just want to read/play files. You're right, no big features, but that's by design.
+On Sat, Aug 18, 2012 at 11:25:43PM -0500, Shaun Ruffell wrote:
+> Adding linux-net to the CC list.
+> 
+> On Fri, Aug 17, 2012 at 11:57:56PM +0100, Dave Haywood wrote:
+> > [1.] One line summary of the problem:
+> > BUG: unable to handle kernel paging request at 00010016
+> > 
+> > 	System boots then crashes a 5-10 or so seconds after getting to the login prompt
+> > 	Booting without the network cable attached prevents the crash (no evidence beyond 10 minutes after boot)
+> > 
+> >   Diagnostics:
+> > 	Captured the boot and managed a login + dmesg before the crash
+> > 	Some of the log looks corrupted. Probably my crappy usb dongle serial flow control but left it in anyway
+> 
+> [snip]
+> 
+> Just a note that I see this as well. It happens reliably for me after trying to
+> login to the machine via ssh.
+> 
+> Here is the back trace I collected on the serial port.
+There is a patch posted on netdev that fixes this for me:
+http://patchwork.ozlabs.org/patch/178525/
 
-Dan
 -- 
-Sent from my mobile phone. Please excuse my brevity.
-
-
+Kind regards,
+Artem
