@@ -1,131 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab2HSNQn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 09:16:43 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:59665 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751766Ab2HSNQk (ORCPT
+	id S1752119Ab2HSNcU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 09:32:20 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61970 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab2HSNcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 09:16:40 -0400
-Date: Sun, 19 Aug 2012 09:16:37 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v2 01/16] hashtable: introduce a small and naive
-	hashtable
-Message-ID: <20120819131637.GA8272@Krystal>
-References: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com> <1345337550-24304-2-git-send-email-levinsasha928@gmail.com>
+	Sun, 19 Aug 2012 09:32:17 -0400
+Message-ID: <5030E95C.1030908@gmail.com>
+Date: Sun, 19 Aug 2012 15:25:48 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345337550-24304-2-git-send-email-levinsasha928@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Dan Luedtke <mail@danrl.de>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lanyfs@librelist.com
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>  <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>  <1345371135.4441.2.camel@tunafish>  <5030BC7E.3030000@gmail.com> <1345383264.4441.56.camel@tunafish>
+In-Reply-To: <1345383264.4441.56.camel@tunafish>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> This hashtable implementation is using hlist buckets to provide a simple
-> hashtable to prevent it from getting reimplemented all over the kernel.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  include/linux/hashtable.h |  284 +++++++++++++++++++++++++++++++++++++++++++++
-[...]
+Il 19/08/2012 15:34, Dan Luedtke ha scritto:
+> On Sun, 2012-08-19 at 12:14 +0200, Marco Stornelli wrote:
+>>   what are pros and cons of this fs
+>> compared with existing fs?
+> Pros:
+> - Simplicity. LanyFS avoids any unnecessary complexity.
+> Example: I had a lot of problems reading and writing data on the Arduino
+> platform. Most of it was, because the platform wasn't capable of dealing
+> with FAT32 when files grew. I don't know if LanyFS performs better on
+> Arduino, I haven't written a driver for Arduino yet, I am glad I managed
+> to get it working on Linux for the moment.
+>
+> - Interoperability. LanyFS was designed to unite those features which
+> are common on most operating systems. [...] All information, including
+> file and directory metadata, is stored in the most purposive format
+> without honoring the habits of any particular operating system.
+> Example: I have a nice FullHD movie file which is about 8GB in size. I
+> wanted to play that video file on a RaspberryPI connected to a TV. FAT32
+> wasn't able to store the file because it was larger than 4GB. I then
+> tried using ext3, but the ownership information from my workstation
+> (were the file was copied from) did not match the ones the RaspberryPI
+> had, since I usually do not synchronize user profiles between
+> workstations and embedded devices. There are workarounds, one might say,
+> but shouldn't it be much more easier to transfer files from one device
+> to another? There are use cases were modes/permissions and ownership of
+> files does not matter, where quota and accounting isn't necessary, where
+> access times don't need to be stored since they would never get updated
+> anyway.
+>
+> Flexibility. LanyFS adopts to the underlying storage device by
+> adjusting its parameters accordingly. It can address block
+> devices starting from 4 KiB up to 64 ZiB with minimal overhead by
+> parameterizing the filesystem at formatting time.
+> Example: At the university we sometimes work with smart cards and their
+> sometimes "strange" filesystems. I am not an expert on smart cards and
+> stuff like that, but I was being told that a more simple filesystem
+> would be welcome. AFAIK we are talking about "disks" with a size of less
+> than 1MB. I don't think this is a big feature, most other fs can be
+> adjusted to perfectly fit a particular purpose, too. Yet there still is
+> the demand for something "much more simpler".
+>
+> Cons:
+> - LanyFS is featureless. It lacks of features. This is considered a
+> feature by some people, and a big con by others :)
+>
+> - Use of recursion. It may not scale in some cases (e.g. very large
+> files on embedded platforms).
 
-Hi Sasha,
+Recursion can be a problem, we have got a little stack, I don't know if 
+it's a good idea.
 
-There are still a few API naming nits that I'd like to discuss:
+>
+> - Current restrictions due to early stage. Max blocksize is 4k, but 4MB
+> might be better. The LWN article pointed to by Alan talks about this.
+>
 
-> +
-> +/**
-> + * hash_for_each_size - iterate over a hashtable
-> + * @name: hashtable to iterate
-> + * @bits: bit count of hashing function of the hashtable
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each bucket
-> + * @obj: the type * to use as a loop cursor for each bucket
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each_size(name, bits, bkt, node, obj, member)			\
+Ok, I try to do a summary. You are trying to write a new general and 
+minimal fs for mobile storage device, minimal enough to be easy ported 
+on several fs. So at the end you are trying to replace the solution is 
+used today on many platforms (fat32). Without other consideration about 
+"no-feature is a feature", it seems to me really challenging because the 
+project can fail its goal no because there is design problem, bugs and 
+so on but because of limited use. We are talking about interoperability 
+problem, and we really know some companies out there from this point of 
+view :)
 
-What is the meaning of "for each size" ?
-
-By looking at the implementation, I see that it takes an extra "bits"
-argument to specify the key width.
-
-But in the other patches of this patchset, I cannot find a single user
-of the "*_size" API. If you do not typically expect users to specify
-this parameter by hand (thanks to use of HASH_BITS(name) in for_each
-functions that do not take the bits parameter), I would recommend to
-only expose hash_for_each() and similar defines, but not the *_size
-variants.
-
-So I recommend merging hash_for_each_size into hash_for_each (and
-doing similarly for other *_size variants). On the plus side, it will
-cut down the number of for_each macros from 12 down to 6, which is more
-reasonable.
-
-
-> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)				\
-> +		hlist_for_each_entry(obj, node, &name[bkt], member)
-> +
-> +/**
-> + * hash_for_each - iterate over a hashtable
-> + * @name: hashtable to iterate
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each bucket
-> + * @obj: the type * to use as a loop cursor for each bucket
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each(name, bkt, node, obj, member)				\
-> +	hash_for_each_size(name, HASH_BITS(name), bkt, node, obj, member)
-> +
-
-[...]
-
-> +/**
-> + * hash_for_each_possible - iterate over all possible objects for a given key
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each bucket
-> + * @bits: bit count of hashing function of the hashtable
-> + * @node: the &struct list_head to use as a loop cursor for each bucket
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible_size(name, obj, bits, node, member, key)		\
-> +	hlist_for_each_entry(obj, node,	&name[hash_min(key, bits)], member)
-
-Second point: "for_each_possible" does not express the iteration scope.
-Citing WordNet: "possible adj 1: capable of happening or existing;" --
-which has nothing to do with iteration on duplicate keys within a hash
-table.
-
-I would recommend to rename "possible" to "duplicate", e.g.:
-
-  hash_for_each_duplicate()
-
-which clearly says what is the scope of this iteration: duplicate keys.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Marco
