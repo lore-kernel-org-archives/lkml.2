@@ -1,33 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2HSHUv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 03:20:51 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36578 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab2HSHUs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 03:20:48 -0400
-Date: Sun, 19 Aug 2012 10:20:43 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 2/8] UBI: separate bad_peb_limit in a function
-Message-ID: <20120819102043.421db2aa@pixies.home.jungo.com>
-In-Reply-To: <1345214124-5478-3-git-send-email-richard.genoud@gmail.com>
-References: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
-	<1345214124-5478-3-git-send-email-richard.genoud@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753918Ab2HSHbB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 03:31:01 -0400
+Received: from bounces.ut.ee ([193.40.5.137]:47327 "EHLO bounces.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753498Ab2HSHa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 03:30:59 -0400
+Date: Sun, 19 Aug 2012 10:30:57 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: printks messed up in 3.6-rc2+git
+Message-ID: <alpine.SOC.1.00.1208191026340.18296@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Aug 2012 16:35:18 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
-> No functional changes here, just to prepare for next patch.
-> 
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+1. Lots of broken HPET messages scattered in PCI prontks like this:
+pcieport 0000:00:0c.0: Force enabled HPET at 0x%lx
+irq 40 for MSI/MSI-X
+pcieport 0000:00:0d.0: Force enabled HPET at 0x%lx
+irq 41 for MSI/MSI-X
+pcieport 0000:00:0e.0: Force enabled HPET at 0x%lx
+irq 42 for MSI/MSI-X
+pcieport 0000:00:0f.0: Force enabled HPET at 0x%lx
+irq 43 for MSI/MSI-X
 
-Reviewed-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+2. Lots of \0x10 in different printk lines, like this:
+
+pci 0000:00:05.0: \x010Enabling HT MSI Mapping
+pci 0000:00:05.1: \x010Enabling HT MSI Mapping
+pci 0000:00:05.2: \x010Enabling HT MSI Mapping
+pci 0000:00:06.0: \x010Enabling HT MSI Mapping
+pci 0000:00:06.1: \x010Enabling HT MSI Mapping
+pci 0000:00:08.0: \x010Enabling HT MSI Mapping
+pci 0000:00:09.0: \x010Enabling HT MSI Mapping
+pci 0000:00:0c.0: \x010Enabling HT MSI Mapping
+pci 0000:00:0d.0: \x010Enabling HT MSI Mapping
+pci 0000:00:0e.0: \x010Enabling HT MSI Mapping
+pci 0000:00:0f.0: \x010Enabling HT MSI Mapping
+and this:
+usb 2-8: \x010new low-speed USB device number 5 using ohci_hcd
+usb 2-8: \x010New USB device found, idVendor=0592, idProduct=0002
+usb 2-8: \x010New USB device strings: Mfr=1, Product=2, SerialNumber=0
+usb 2-8: %s: Can't disable non-U1 or U2 state.
+
+3. Many more %s and runtogether lines:
+
+sata_nv 0000:00:05.1: %s: ino %lu, used %d with only %d reserved data blocksUsing SWNCQ mode
+
+-- 
+Meelis Roos (mroos@linux.ee)
