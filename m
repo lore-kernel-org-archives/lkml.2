@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab2HSQoW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 12:44:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47455 "EHLO mx1.redhat.com"
+	id S1754336Ab2HSQzw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 12:55:52 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:51704 "EHLO ja.ssi.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754401Ab2HSQoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 12:44:17 -0400
-Date: Sun, 19 Aug 2012 18:40:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] uprobes: teach find_active_uprobe() to clear
-	MMF_HAS_UPROBES
-Message-ID: <20120819164042.GA25490@redhat.com>
+	id S1751943Ab2HSQzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 12:55:51 -0400
+X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Aug 2012 12:55:50 EDT
+Date: Sun, 19 Aug 2012 19:51:41 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Fengguang Wu <fengguang.wu@intel.com>, David Miller <davem@davemloft.net>,
+        networking <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: IPv4 BUG: held lock freed!
+In-Reply-To: <1345380682.5158.201.camel@edumazet-glaptop>
+Message-ID: <alpine.LFD.2.00.1208191647340.1893@ja.ssi.bg>
+References: <20120818021918.GA6499@localhost> <1345380682.5158.201.camel@edumazet-glaptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120819164008.GA25454@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wrong MMF_HAS_UPROBES doesn't really hurt, just it triggers
-the "slow" and unnecessary handle_swbp() path if the task hits
-the non-uprobe breakpoint.
 
-So this patch changes find_active_uprobe() to check every valid
-vma and clear MMF_HAS_UPROBES if no uprobes were found. This is
-adds the slow O(n) path, but it is only called in unlikely case
-when the task hits the normal breakpoint first time after
-uprobe_unregister().
+	Hello,
 
-Note the "not strictly accurate" comment in mmf_recalc_uprobes().
-We can fix this, we only need to teach vma_has_uprobes() to return
-a bit more more info, but I am not sure this worth the trouble.
+On Sun, 19 Aug 2012, Eric Dumazet wrote:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+> Hmm, this looks like sk_reset_timer() is called on a socket, and timer
+> triggers _before_ the sock_hold()
+> 
+> So the timer handler decrements sk_refcnt to 0 and calls sk_free()
+> 
+> Its probably a bug introduced (or uncovered) by commit 6f458dfb40 (tcp:
+> improve latencies of timer triggered events)
+> 
+> I always found sk_reset_timer() a bit racy...
+> 
+> void sk_reset_timer(struct sock *sk, struct timer_list* timer,
+>                     unsigned long expires)
+> {
+> 	if (!mod_timer(timer, expires))
+> 		sock_hold(sk); // MIGHT BE TOO LATE
+> }
+> 
+> Following should be safer...
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 176de8c..0b7918c 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1397,6 +1397,25 @@ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
- 	return false;
- }
- 
-+static void mmf_recalc_uprobes(struct mm_struct *mm)
-+{
-+	struct vm_area_struct *vma;
-+
-+	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+		if (!valid_vma(vma, false))
-+			continue;
-+		/*
-+		 * This is not strictly accurate, we can race with
-+		 * uprobe_unregister() and see the already removed
-+		 * uprobe if delete_uprobe() was not yet called.
-+		 */
-+		if (vma_has_uprobes(vma, vma->vm_start, vma->vm_end))
-+			return;
-+	}
-+
-+	clear_bit(MMF_HAS_UPROBES, &mm->flags);
-+}
-+
- static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- {
- 	struct mm_struct *mm = current->mm;
-@@ -1418,6 +1437,9 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 	} else {
- 		*is_swbp = -EFAULT;
- 	}
-+
-+	if (!uprobe && test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags))
-+		mmf_recalc_uprobes(mm);
- 	up_read(&mm->mmap_sem);
- 
- 	return uprobe;
--- 
-1.5.5.1
+	Above code is fine as long as caller holds reference.
 
+	Your change for tcp_release_cb looks correct.
+
+	Also, may be tcp_v4_mtu_reduced is missing a check
+for TCP_CLOSE state? tcp_v6_mtu_reduced already has such
+check.
+
+> void sk_reset_timer(struct sock *sk, struct timer_list* timer,
+>                     unsigned long expires)
+> {
+
+	This should not be needed:
+
+> 	sock_hold(sk);
+> 	if (mod_timer(timer, expires))
+> 		sock_put(sk);
+> }
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
