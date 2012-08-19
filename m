@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2HSAwK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:52:10 -0400
+	id S1752602Ab2HSAwo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:52:44 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:41176 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2HSAwH (ORCPT
+	with ESMTP id S1751983Ab2HSAwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:52:07 -0400
+	Sat, 18 Aug 2012 20:52:11 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,89 +22,137 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 00/16] generic hashtable implementation
-Date: Sun, 19 Aug 2012 02:52:13 +0200
-Message-Id: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH 02/16] user_ns: use new hashtable implementation
+Date: Sun, 19 Aug 2012 02:52:15 +0200
+Message-Id: <1345337550-24304-3-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
+References: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are quite a few places in the kernel which implement a hashtable
-in a very similar way. Instead of having implementations of a hashtable
-all over the kernel, we can re-use the code.
+Switch user_ns to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in user_ns.
 
-Since it looks like all the major issues we're addressed in the RFC phase
-and no major issues were raised with this patch set, I'd be happy to see
-this getting merged so that work could continue on different aspects of
-the hashtable. Some interesting directions include:
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ kernel/user.c |   33 +++++++++++++--------------------
+ 1 files changed, 13 insertions(+), 20 deletions(-)
 
- - Introducing a dynamic RCU hashtable such as the one Mathieu Desnoyers
- wrote about out in the userspace RCU.
-
- - Replacing the rest of the the kernel structures which use the same basec
- hashtable construct to use this new interface.
-
- - Same as above, but for non-obvious places (for example, I'm looking into
- using the hashtable to store KVM vcpus instead of the linked list being used
- there now - this should help performance with a large amount of vcpus).
-
-
-Changes since v1:
-
- - Added missing hash_init in rds and lockd.
- - Addressed the userns comments by Eric Biederman.
- - Ran a small test to confirm hash_32 does a good job for low key
- values (1-10000), which showed it did - this resulted in no changes to the
- code.
-
-
-Sasha Levin (16):
-  hashtable: introduce a small and naive hashtable
-  userns: use new hashtable implementation
-  mm,ksm: use new hashtable implementation
-  workqueue: use new hashtable implementation
-  mm/huge_memory: use new hashtable implementation
-  tracepoint: use new hashtable implementation
-  net,9p: use new hashtable implementation
-  block,elevator: use new hashtable implementation
-  SUNRPC/cache: use new hashtable implementation
-  dlm: use new hashtable implementation
-  net,l2tp: use new hashtable implementation
-  dm: use new hashtable implementation
-  lockd: use new hashtable implementation
-  net,rds: use new hashtable implementation
-  openvswitch: use new hashtable implementation
-  tracing output: use new hashtable implementation
-
- block/blk.h                                        |    2 +-
- block/elevator.c                                   |   23 +--
- drivers/md/dm-snap.c                               |   24 +--
- drivers/md/persistent-data/dm-block-manager.c      |    1 -
- .../persistent-data/dm-persistent-data-internal.h  |   19 --
- .../md/persistent-data/dm-transaction-manager.c    |   30 +--
- fs/dlm/lowcomms.c                                  |   47 +---
- fs/lockd/svcsubs.c                                 |   66 +++--
- include/linux/elevator.h                           |    5 +-
- include/linux/hashtable.h                          |  284 ++++++++++++++++++++
- kernel/trace/trace_output.c                        |   20 +-
- kernel/tracepoint.c                                |   27 +--
- kernel/user.c                                      |   33 +--
- kernel/workqueue.c                                 |   86 +-----
- mm/huge_memory.c                                   |   57 +---
- mm/ksm.c                                           |   33 +--
- net/9p/error.c                                     |   21 +-
- net/l2tp/l2tp_core.c                               |  134 ++++------
- net/l2tp/l2tp_core.h                               |    8 +-
- net/l2tp/l2tp_debugfs.c                            |   19 +-
- net/openvswitch/vport.c                            |   30 +--
- net/rds/bind.c                                     |   28 ++-
- net/rds/connection.c                               |  102 +++----
- net/sunrpc/cache.c                                 |   20 +-
- 24 files changed, 591 insertions(+), 528 deletions(-)
- delete mode 100644 drivers/md/persistent-data/dm-persistent-data-internal.h
- create mode 100644 include/linux/hashtable.h
-
+diff --git a/kernel/user.c b/kernel/user.c
+index b815fef..d10c484 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -16,6 +16,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/export.h>
+ #include <linux/user_namespace.h>
++#include <linux/hashtable.h>
+ 
+ /*
+  * userns count is 1 for root user, 1 for init_uts_ns,
+@@ -52,13 +53,9 @@ EXPORT_SYMBOL_GPL(init_user_ns);
+  */
+ 
+ #define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 7)
+-#define UIDHASH_SZ	(1 << UIDHASH_BITS)
+-#define UIDHASH_MASK		(UIDHASH_SZ - 1)
+-#define __uidhashfn(uid)	(((uid >> UIDHASH_BITS) + uid) & UIDHASH_MASK)
+-#define uidhashentry(uid)	(uidhash_table + __uidhashfn((__kuid_val(uid))))
+ 
+ static struct kmem_cache *uid_cachep;
+-struct hlist_head uidhash_table[UIDHASH_SZ];
++static DEFINE_HASHTABLE(uidhash_table, UIDHASH_BITS)
+ 
+ /*
+  * The uidhash_lock is mostly taken from process context, but it is
+@@ -84,22 +81,22 @@ struct user_struct root_user = {
+ /*
+  * These routines must be called with the uidhash spinlock held!
+  */
+-static void uid_hash_insert(struct user_struct *up, struct hlist_head *hashent)
++static void uid_hash_insert(struct user_struct *up)
+ {
+-	hlist_add_head(&up->uidhash_node, hashent);
++	hash_add(uidhash_table, &up->uidhash_node, __kuid_val(up->uid));
+ }
+ 
+ static void uid_hash_remove(struct user_struct *up)
+ {
+-	hlist_del_init(&up->uidhash_node);
++	hash_del(&up->uidhash_node);
+ }
+ 
+-static struct user_struct *uid_hash_find(kuid_t uid, struct hlist_head *hashent)
++static struct user_struct *uid_hash_find(kuid_t uid)
+ {
+ 	struct user_struct *user;
+ 	struct hlist_node *h;
+ 
+-	hlist_for_each_entry(user, h, hashent, uidhash_node) {
++	hash_for_each_possible(uidhash_table, user, h, uidhash_node, __kuid_val(uid)) {
+ 		if (uid_eq(user->uid, uid)) {
+ 			atomic_inc(&user->__count);
+ 			return user;
+@@ -135,7 +132,7 @@ struct user_struct *find_user(kuid_t uid)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&uidhash_lock, flags);
+-	ret = uid_hash_find(uid, uidhashentry(uid));
++	ret = uid_hash_find(uid);
+ 	spin_unlock_irqrestore(&uidhash_lock, flags);
+ 	return ret;
+ }
+@@ -156,11 +153,10 @@ void free_uid(struct user_struct *up)
+ 
+ struct user_struct *alloc_uid(kuid_t uid)
+ {
+-	struct hlist_head *hashent = uidhashentry(uid);
+ 	struct user_struct *up, *new;
+ 
+ 	spin_lock_irq(&uidhash_lock);
+-	up = uid_hash_find(uid, hashent);
++	up = uid_hash_find(uid);
+ 	spin_unlock_irq(&uidhash_lock);
+ 
+ 	if (!up) {
+@@ -176,13 +172,13 @@ struct user_struct *alloc_uid(kuid_t uid)
+ 		 * on adding the same user already..
+ 		 */
+ 		spin_lock_irq(&uidhash_lock);
+-		up = uid_hash_find(uid, hashent);
++		up = uid_hash_find(uid);
+ 		if (up) {
+ 			key_put(new->uid_keyring);
+ 			key_put(new->session_keyring);
+ 			kmem_cache_free(uid_cachep, new);
+ 		} else {
+-			uid_hash_insert(new, hashent);
++			uid_hash_insert(new);
+ 			up = new;
+ 		}
+ 		spin_unlock_irq(&uidhash_lock);
+@@ -196,17 +192,14 @@ out_unlock:
+ 
+ static int __init uid_cache_init(void)
+ {
+-	int n;
+-
+ 	uid_cachep = kmem_cache_create("uid_cache", sizeof(struct user_struct),
+ 			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+ 
+-	for(n = 0; n < UIDHASH_SZ; ++n)
+-		INIT_HLIST_HEAD(uidhash_table + n);
++	hash_init(uidhash_table);
+ 
+ 	/* Insert the root user immediately (init already runs as root) */
+ 	spin_lock_irq(&uidhash_lock);
+-	uid_hash_insert(&root_user, uidhashentry(GLOBAL_ROOT_UID));
++	uid_hash_insert(&root_user);
+ 	spin_unlock_irq(&uidhash_lock);
+ 
+ 	return 0;
 -- 
 1.7.8.6
 
