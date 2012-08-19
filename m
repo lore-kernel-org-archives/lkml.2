@@ -1,83 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab2HSGUU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 02:20:20 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49949 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab2HSGUR (ORCPT
+	id S1752290Ab2HSG0F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 02:26:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35117 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab2HSGZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 02:20:17 -0400
-Date: Sat, 18 Aug 2012 23:20:11 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v1 2/3] PM / Sleep: introduce dpm_for_each_dev
-Message-ID: <20120819062011.GC1971@kroah.com>
-References: <1345212420-1707-1-git-send-email-ming.lei@canonical.com>
- <CACVXFVMxGCGJ+a=rfcCAqRuUMLG9OD3X52MMzTcfYOT4cepBGQ@mail.gmail.com>
- <201208182233.37188.rjw@sisk.pl>
- <201208182249.06296.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208182249.06296.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 19 Aug 2012 02:25:59 -0400
+From: Huang Shijie <shijie8@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, netdev@vger.kernel.org,
+        Huang Shijie <shijie8@gmail.com>
+Subject: [PATCH] serial: add a new helper function
+Date: Sun, 19 Aug 2012 14:27:12 -0400
+Message-Id: <1345400832-23572-1-git-send-email-shijie8@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 10:49:06PM +0200, Rafael J. Wysocki wrote:
-> On Saturday, August 18, 2012, Rafael J. Wysocki wrote:
-> > On Saturday, August 18, 2012, Ming Lei wrote:
-> > > On Sat, Aug 18, 2012 at 9:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > >
-> > > > My question was about the number of current users of it.  Sorry for not
-> > > > being clear.
-> > > 
-> > > Sorry for misunderstanding your question.
-> > > 
-> > > >
-> > > > If there are no more anticipated users than the current only one, please
-> > > > drop the unused (void *) argument.  We can always extend it in the future
-> > > > if need be and for now passing that NULL every time is just pointless.
-> > > 
-> > > One usage is to get statistics info about devices for debug purpose,
-> > > so the parameter is needed to return something.
-> > 
-> > So, what's the name of the _second_ function using dpm_for_each_dev()?
-> > 
-> > I don't see any and device_cache_fw_images() in [3/3] clearly passes
-> > NULL as the first argument.
-> > 
-> > > > And please fold [2/3] into [3/3] in this series.
-> > > 
-> > > IMO, it is better to split them to avoid coupling between fw loader and
-> > > device PM.
-> > > 
-> > > Looks you agreed on the patch,
-> > 
-> > On the idea, not on the actual code.  I told you what I wanted to to change in
-> > it, didn't I?
-> > 
-> > > and Greg has added the
-> > > patch into his driver-core next tree to fix -next build failure, so could
-> > > you just let them be that?
-> > 
-> > -next is not cast in stone, you can replace patches in it with other ones
-> > if need be.
-> 
-> And it actually would be better if you replaced the patches that had introduced
-> the build problems with new fixed ones, because otherwise your whole series
-> has bisection issues potentially.
-> 
-> And since the Greg's patch queue is quilt-based, for what I can tell, that's
-> entirely doable.
+In most of the time, the driver needs to check if the cts flow control
+is enabled. But now, the driver checks the ASYNC_CTS_FLOW flag manually,
+which is not a grace way. So add a new wraper function to make the code
+tidy and clean.
 
-No, my patch queue hasn't been quilt-based for almost 2 years now.  It's
-git-based, and I can revert anything that I need to, including this
-whole series, but I can't rewrite history, sorry.
+Signed-off-by: Huang Shijie <shijie8@gmail.com>
+---
+ drivers/char/pcmcia/synclink_cs.c   |    2 +-
+ drivers/tty/amiserial.c             |    2 +-
+ drivers/tty/cyclades.c              |    2 +-
+ drivers/tty/isicom.c                |    2 +-
+ drivers/tty/mxser.c                 |    2 +-
+ drivers/tty/serial/mxs-auart.c      |    2 +-
+ drivers/tty/serial/serial_core.c    |    4 ++--
+ drivers/tty/synclink.c              |    2 +-
+ drivers/tty/synclink_gt.c           |    2 +-
+ drivers/tty/synclinkmp.c            |    2 +-
+ include/linux/tty.h                 |    7 +++++++
+ net/irda/ircomm/ircomm_tty.c        |    4 ++--
+ net/irda/ircomm/ircomm_tty_attach.c |    2 +-
+ 13 files changed, 21 insertions(+), 14 deletions(-)
 
-greg k-h
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index 5db08c7..3f57d5de 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -1050,7 +1050,7 @@ static void cts_change(MGSLPC_INFO *info, struct tty_struct *tty)
+ 	wake_up_interruptible(&info->status_event_wait_q);
+ 	wake_up_interruptible(&info->event_wait_q);
+ 
+-	if (info->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&info->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (info->serial_signals & SerialSignal_CTS) {
+ 				if (debug_level >= DEBUG_LEVEL_ISR)
+diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
+index 2b7535d..42d0a25 100644
+--- a/drivers/tty/amiserial.c
++++ b/drivers/tty/amiserial.c
+@@ -420,7 +420,7 @@ static void check_modem_status(struct serial_state *info)
+ 				tty_hangup(port->tty);
+ 		}
+ 	}
+-	if (port->flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(port)) {
+ 		if (port->tty->hw_stopped) {
+ 			if (!(status & SER_CTS)) {
+ #if (defined(SERIAL_DEBUG_INTR) || defined(SERIAL_DEBUG_FLOW))
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index e3954da..0a6a0bc 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -727,7 +727,7 @@ static void cyy_chip_modem(struct cyclades_card *cinfo, int chip,
+ 		else
+ 			tty_hangup(tty);
+ 	}
+-	if ((mdm_change & CyCTS) && (info->port.flags & ASYNC_CTS_FLOW)) {
++	if ((mdm_change & CyCTS) && tty_port_cts_enabled(&info->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (mdm_status & CyCTS) {
+ 				/* cy_start isn't used
+diff --git a/drivers/tty/isicom.c b/drivers/tty/isicom.c
+index 99cf22e..d7492e1 100644
+--- a/drivers/tty/isicom.c
++++ b/drivers/tty/isicom.c
+@@ -600,7 +600,7 @@ static irqreturn_t isicom_interrupt(int irq, void *dev_id)
+ 					port->status &= ~ISI_DCD;
+ 			}
+ 
+-			if (port->port.flags & ASYNC_CTS_FLOW) {
++			if (tty_port_cts_enabled(&port->port)) {
+ 				if (tty->hw_stopped) {
+ 					if (header & ISI_CTS) {
+ 						port->port.tty->hw_stopped = 0;
+diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
+index bb2da4c..cfda47d 100644
+--- a/drivers/tty/mxser.c
++++ b/drivers/tty/mxser.c
+@@ -830,7 +830,7 @@ static void mxser_check_modem_status(struct tty_struct *tty,
+ 			wake_up_interruptible(&port->port.open_wait);
+ 	}
+ 
+-	if (port->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&port->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (status & UART_MSR_CTS) {
+ 				tty->hw_stopped = 0;
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index 3a667ee..dafeef2 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -262,7 +262,7 @@ static void mxs_auart_set_mctrl(struct uart_port *u, unsigned mctrl)
+ 
+ 	ctrl &= ~AUART_CTRL2_RTSEN;
+ 	if (mctrl & TIOCM_RTS) {
+-		if (u->state->port.flags & ASYNC_CTS_FLOW)
++		if (tty_port_cts_enabled(&u->state->port))
+ 			ctrl |= AUART_CTRL2_RTSEN;
+ 	}
+ 
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 5b308c8..1920e5c 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -176,7 +176,7 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+ 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+ 		}
+ 
+-		if (port->flags & ASYNC_CTS_FLOW) {
++		if (tty_port_cts_enabled(port)) {
+ 			spin_lock_irq(&uport->lock);
+ 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+ 				tty->hw_stopped = 1;
+@@ -2493,7 +2493,7 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+ 
+ 	uport->icount.cts++;
+ 
+-	if (port->flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(port)) {
+ 		if (tty->hw_stopped) {
+ 			if (status) {
+ 				tty->hw_stopped = 0;
+diff --git a/drivers/tty/synclink.c b/drivers/tty/synclink.c
+index 666aa14..70e3a52 100644
+--- a/drivers/tty/synclink.c
++++ b/drivers/tty/synclink.c
+@@ -1359,7 +1359,7 @@ static void mgsl_isr_io_pin( struct mgsl_struct *info )
+ 			}
+ 		}
+ 	
+-		if ( (info->port.flags & ASYNC_CTS_FLOW) && 
++		if (tty_port_cts_enabled(&info->port) &&
+ 		     (status & MISCSTATUS_CTS_LATCHED) ) {
+ 			if (info->port.tty->hw_stopped) {
+ 				if (status & MISCSTATUS_CTS) {
+diff --git a/drivers/tty/synclink_gt.c b/drivers/tty/synclink_gt.c
+index 45f6136..b38e954 100644
+--- a/drivers/tty/synclink_gt.c
++++ b/drivers/tty/synclink_gt.c
+@@ -2053,7 +2053,7 @@ static void cts_change(struct slgt_info *info, unsigned short status)
+ 	wake_up_interruptible(&info->event_wait_q);
+ 	info->pending_bh |= BH_STATUS;
+ 
+-	if (info->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&info->port)) {
+ 		if (info->port.tty) {
+ 			if (info->port.tty->hw_stopped) {
+ 				if (info->signals & SerialSignal_CTS) {
+diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
+index 53429c8..f17d9f3 100644
+--- a/drivers/tty/synclinkmp.c
++++ b/drivers/tty/synclinkmp.c
+@@ -2500,7 +2500,7 @@ static void isr_io_pin( SLMP_INFO *info, u16 status )
+ 			}
+ 		}
+ 
+-		if ( (info->port.flags & ASYNC_CTS_FLOW) &&
++		if (tty_port_cts_enabled(&info->port) &&
+ 		     (status & MISCSTATUS_CTS_LATCHED) ) {
+ 			if ( info->port.tty ) {
+ 				if (info->port.tty->hw_stopped) {
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 69a787f..e0b4871 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -43,6 +43,7 @@
+ #include <linux/tty_driver.h>
+ #include <linux/tty_ldisc.h>
+ #include <linux/mutex.h>
++#include <linux/serial.h>
+ 
+ 
+ 
+@@ -513,6 +514,12 @@ static inline struct tty_port *tty_port_get(struct tty_port *port)
+ 	return port;
+ }
+ 
++/* If the cts flow control is enabled, return true. */
++static inline bool tty_port_cts_enabled(struct tty_port *port)
++{
++	return port->flags & ASYNC_CTS_FLOW;
++}
++
+ extern struct tty_struct *tty_port_tty_get(struct tty_port *port);
+ extern void tty_port_tty_set(struct tty_port *port, struct tty_struct *tty);
+ extern int tty_port_carrier_raised(struct tty_port *port);
+diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
+index 9668990..95a3a7a 100644
+--- a/net/irda/ircomm/ircomm_tty.c
++++ b/net/irda/ircomm/ircomm_tty.c
+@@ -1070,7 +1070,7 @@ void ircomm_tty_check_modem_status(struct ircomm_tty_cb *self)
+ 			goto put;
+ 		}
+ 	}
+-	if (tty && self->port.flags & ASYNC_CTS_FLOW) {
++	if (tty && tty_port_cts_enabled(&self->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (status & IRCOMM_CTS) {
+ 				IRDA_DEBUG(2,
+@@ -1313,7 +1313,7 @@ static void ircomm_tty_line_info(struct ircomm_tty_cb *self, struct seq_file *m)
+ 
+ 	seq_puts(m, "Flags:");
+ 	sep = ' ';
+-	if (self->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&self->port)) {
+ 		seq_printf(m, "%cASYNC_CTS_FLOW", sep);
+ 		sep = '|';
+ 	}
+diff --git a/net/irda/ircomm/ircomm_tty_attach.c b/net/irda/ircomm/ircomm_tty_attach.c
+index 3ab70e7..edab393 100644
+--- a/net/irda/ircomm/ircomm_tty_attach.c
++++ b/net/irda/ircomm/ircomm_tty_attach.c
+@@ -578,7 +578,7 @@ void ircomm_tty_link_established(struct ircomm_tty_cb *self)
+ 	 * will have to wait for the peer device (DCE) to raise the CTS
+ 	 * line.
+ 	 */
+-	if ((self->port.flags & ASYNC_CTS_FLOW) &&
++	if (tty_port_cts_enabled(&self->port) &&
+ 			((self->settings.dce & IRCOMM_CTS) == 0)) {
+ 		IRDA_DEBUG(0, "%s(), waiting for CTS ...\n", __func__ );
+ 		goto put;
+-- 
+1.7.4.4
+
