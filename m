@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab2HSPVA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 11:21:00 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58365 "EHLO
+	id S1754033Ab2HSPXv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 11:23:51 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58378 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab2HSPU7 (ORCPT
+	with ESMTP id S1753656Ab2HSPXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 11:20:59 -0400
-Date: Sun, 19 Aug 2012 17:20:58 +0200
+	Sun, 19 Aug 2012 11:23:50 -0400
+Date: Sun, 19 Aug 2012 17:23:49 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        JBeulich@suse.com, akpm@linux-foundation.org,
-        Andi Kleen <ak@linux.intel.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 37/74] lto, KVM: Don't assume asm statements end up in the same assembler file
-Message-ID: <20120819152058.GU11413@one.firstfloor.org>
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-38-git-send-email-andi@firstfloor.org> <5030AB00.3090908@redhat.com> <20120819150951.GR11413@one.firstfloor.org> <50310279.8070409@redhat.com>
+To: Jan Beulich <jbeulich@suse.com>
+Cc: andi@firstfloor.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        x86@kernel.org, akpm@linux-foundation.org, jmario@redhat.com,
+        rusty@rustcorp.com.au, mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 59/74] lto: Handle LTO common symbols in module loader
+Message-ID: <20120819152349.GV11413@one.firstfloor.org>
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-60-git-send-email-andi@firstfloor.org> <5030B77E020000780008A233@nat28.tlf.novell.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50310279.8070409@redhat.com>
+In-Reply-To: <5030B77E020000780008A233@nat28.tlf.novell.com>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 06:12:57PM +0300, Avi Kivity wrote:
-> On 08/19/2012 06:09 PM, Andi Kleen wrote:
-> >> The reason we use a local label is so that we the function isn't split
-> >> into two from the profiler's point of view.  See cd2276a795b013d1.
-> > 
-> > Hmm that commit message is not very enlightening.
-> > 
-> > The goal was to force a compiler error?
+On Sun, Aug 19, 2012 at 09:53:02AM +0100, Jan Beulich wrote:
+> >>> Andi Kleen <andi@firstfloor.org> 08/19/12 4:59 AM >>>
+> >@@ -1904,6 +1904,10 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+>  >
+> >        switch (sym[i].st_shndx) {
+> >        case SHN_COMMON:
+> >+            /* Ignore common symbols */
+> >+            if (!strncmp(name, "__gnu_lto", 9))
+> >+                break;
+> >+
+> >            /* We compiled with -fno-common.  These are not
+> >               supposed to happen.  */
+> >            pr_debug("Common symbol: %s\n", name);
 > 
-> No, the goal was to avoid a global label in the middle of a function.
-> The profiler interprets it as a new function.  After your patch,
-
-Ah got it now. I always used to have the same problem with sys_call_return.`
-
-I wonder if there shouldn't be a way to tell perf to ignore a symbol.
-
-> >> 
-> >> One way to fix this is to have a .data variable initialized to point to
-> >> .Lkvm_vmx_return (this can be done from the same asm statement in
-> >> vmx_vcpu_run), and reference that variable in
-> >> vmx_set_constant_host_state().  If no one comes up with a better idea,
-> >> I'll write a patch doing this.
-> > 
-> > I'm not clear how that is better than my patch.
+> I think it is dangerous to just match the start of the symbol name here -
+> this may in the future well lead to ignoring symbols we shouldn't be
+> ignoring.
 > 
-> My patch will not generate the artifact with kvm_vmx_return.
+> Also I would think the added comment ought to say "Ignore LTO symbols."
+> Otherwise its sort of contradicting the purpose of the case being handled
+> here.
 
-Ok fine for me. I'll keep this patch for now, until you have
-something better.
+Ok maybe should error out. This case only happens with fat LTO when
+the LTO step is not actually run.
+
+It used to happen because old versions of this patchkit 
+didn't correctly LTO modules
+
+I'll change it to error out. The reason for the prefix was that
+there is a __gnu_lto_vXXX and the version number could change.
+
+Thanks for the reviewws.
 
 -Andi
 
