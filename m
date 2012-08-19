@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2HSAyY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:54:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33310 "EHLO
+	id S1754022Ab2HSAyL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:54:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41176 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab2HSAwd (ORCPT
+	with ESMTP id S1752117Ab2HSAw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:52:33 -0400
+	Sat, 18 Aug 2012 20:52:26 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 10/16] dlm: use new hashtable implementation
-Date: Sun, 19 Aug 2012 02:52:24 +0200
-Message-Id: <1345337550-24304-12-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v2 07/16] net,9p: use new hashtable implementation
+Date: Sun, 19 Aug 2012 02:52:21 +0200
+Message-Id: <1345337550-24304-9-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
 References: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
@@ -32,142 +32,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch dlm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the dlm.
+Switch 9p error table to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in 9p.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- fs/dlm/lowcomms.c |   47 +++++++++++++----------------------------------
- 1 files changed, 13 insertions(+), 34 deletions(-)
+ net/9p/error.c |   21 ++++++++++-----------
+ 1 files changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 331ea4f..9f21774 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -55,6 +55,7 @@
- #include <net/sctp/sctp.h>
- #include <net/sctp/user.h>
- #include <net/ipv6.h>
+diff --git a/net/9p/error.c b/net/9p/error.c
+index 2ab2de7..a5cc7dd 100644
+--- a/net/9p/error.c
++++ b/net/9p/error.c
+@@ -34,7 +34,7 @@
+ #include <linux/jhash.h>
+ #include <linux/errno.h>
+ #include <net/9p/9p.h>
+-
 +#include <linux/hashtable.h>
+ /**
+  * struct errormap - map string errors from Plan 9 to Linux numeric ids
+  * @name: string sent over 9P
+@@ -50,8 +50,8 @@ struct errormap {
+ 	struct hlist_node list;
+ };
  
- #include "dlm_internal.h"
- #include "lowcomms.h"
-@@ -62,7 +63,7 @@
- #include "config.h"
+-#define ERRHASHSZ		32
+-static struct hlist_head hash_errmap[ERRHASHSZ];
++#define ERR_HASH_BITS 5
++static DEFINE_HASHTABLE(hash_errmap, ERR_HASH_BITS);
  
- #define NEEDED_RMEM (4*1024*1024)
--#define CONN_HASH_SIZE 32
-+#define CONN_HASH_BITS 5
- 
- /* Number of messages to send before rescheduling */
- #define MAX_SEND_MSG_COUNT 25
-@@ -158,34 +159,21 @@ static int dlm_allow_conn;
- static struct workqueue_struct *recv_workqueue;
- static struct workqueue_struct *send_workqueue;
- 
--static struct hlist_head connection_hash[CONN_HASH_SIZE];
-+static struct hlist_head connection_hash[CONN_HASH_BITS];
- static DEFINE_MUTEX(connections_lock);
- static struct kmem_cache *con_cache;
- 
- static void process_recv_sockets(struct work_struct *work);
- static void process_send_sockets(struct work_struct *work);
- 
--
--/* This is deliberately very simple because most clusters have simple
--   sequential nodeids, so we should be able to go straight to a connection
--   struct in the array */
--static inline int nodeid_hash(int nodeid)
--{
--	return nodeid & (CONN_HASH_SIZE-1);
--}
--
- static struct connection *__find_con(int nodeid)
+ /* FixMe - reduce to a reasonable size */
+ static struct errormap errmap[] = {
+@@ -193,18 +193,17 @@ static struct errormap errmap[] = {
+ int p9_error_init(void)
  {
--	int r;
- 	struct hlist_node *h;
- 	struct connection *con;
+ 	struct errormap *c;
+-	int bucket;
++	u32 hash;
  
--	r = nodeid_hash(nodeid);
--
--	hlist_for_each_entry(con, h, &connection_hash[r], list) {
-+	hash_for_each_possible(connection_hash, con, h, list, nodeid)
- 		if (con->nodeid == nodeid)
- 			return con;
--	}
- 	return NULL;
- }
+ 	/* initialize hash table */
+-	for (bucket = 0; bucket < ERRHASHSZ; bucket++)
+-		INIT_HLIST_HEAD(&hash_errmap[bucket]);
++	hash_init(hash_errmap);
  
-@@ -196,7 +184,6 @@ static struct connection *__find_con(int nodeid)
- static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
- {
- 	struct connection *con = NULL;
--	int r;
- 
- 	con = __find_con(nodeid);
- 	if (con || !alloc)
-@@ -206,8 +193,7 @@ static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
- 	if (!con)
- 		return NULL;
- 
--	r = nodeid_hash(nodeid);
--	hlist_add_head(&con->list, &connection_hash[r]);
-+	hash_add(connection_hash, &con->list, nodeid);
- 
- 	con->nodeid = nodeid;
- 	mutex_init(&con->sock_mutex);
-@@ -235,11 +221,8 @@ static void foreach_conn(void (*conn_func)(struct connection *c))
- 	struct hlist_node *h, *n;
- 	struct connection *con;
- 
--	for (i = 0; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry_safe(con, h, n, &connection_hash[i], list){
--			conn_func(con);
--		}
--	}
-+	hash_for_each_safe(connection_hash, i, h, n, con, list)
-+		conn_func(con);
- }
- 
- static struct connection *nodeid2con(int nodeid, gfp_t allocation)
-@@ -262,12 +245,10 @@ static struct connection *assoc2con(int assoc_id)
- 
- 	mutex_lock(&connections_lock);
- 
--	for (i = 0 ; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry(con, h, &connection_hash[i], list) {
--			if (con->sctp_assoc == assoc_id) {
--				mutex_unlock(&connections_lock);
--				return con;
--			}
-+	hash_for_each(connection_hash, i, h, con, list) {
-+		if (con->sctp_assoc == assoc_id) {
-+			mutex_unlock(&connections_lock);
-+			return con;
- 		}
+ 	/* load initial error map into hash table */
+ 	for (c = errmap; c->name != NULL; c++) {
+ 		c->namelen = strlen(c->name);
+-		bucket = jhash(c->name, c->namelen, 0) % ERRHASHSZ;
++		hash = jhash(c->name, c->namelen, 0);
+ 		INIT_HLIST_NODE(&c->list);
+-		hlist_add_head(&c->list, &hash_errmap[bucket]);
++		hash_add(hash_errmap, &c->list, hash);
  	}
- 	mutex_unlock(&connections_lock);
-@@ -1638,7 +1619,7 @@ static void free_conn(struct connection *con)
- 	close_connection(con, true);
- 	if (con->othercon)
- 		kmem_cache_free(con_cache, con->othercon);
--	hlist_del(&con->list);
-+	hash_del(&con->list);
- 	kmem_cache_free(con_cache, con);
- }
  
-@@ -1667,10 +1648,8 @@ int dlm_lowcomms_start(void)
- {
- 	int error = -EINVAL;
- 	struct connection *con;
--	int i;
+ 	return 1;
+@@ -223,13 +222,13 @@ int p9_errstr2errno(char *errstr, int len)
+ 	int errno;
+ 	struct hlist_node *p;
+ 	struct errormap *c;
+-	int bucket;
++	u32 hash;
  
--	for (i = 0; i < CONN_HASH_SIZE; i++)
--		INIT_HLIST_HEAD(&connection_hash[i]);
-+	hash_init(connection_hash);
- 
- 	init_local();
- 	if (!dlm_local_count) {
+ 	errno = 0;
+ 	p = NULL;
+ 	c = NULL;
+-	bucket = jhash(errstr, len, 0) % ERRHASHSZ;
+-	hlist_for_each_entry(c, p, &hash_errmap[bucket], list) {
++	hash = jhash(errstr, len, 0);
++	hash_for_each_possible(hash_errmap, c, p, list, hash) {
+ 		if (c->namelen == len && !memcmp(c->name, errstr, len)) {
+ 			errno = c->val;
+ 			break;
 -- 
 1.7.8.6
 
