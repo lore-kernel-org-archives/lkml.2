@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab2HSPad (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 11:30:33 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58032 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab2HSPab (ORCPT
+	id S1754230Ab2HSPan (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 11:30:43 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:56476 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab2HSPah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 11:30:31 -0400
-Message-ID: <50310512.5010108@gmail.com>
-Date: Sun, 19 Aug 2012 17:24:02 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
+	Sun, 19 Aug 2012 11:30:37 -0400
+X-Auth-Info: LXbPTWn/bXJaQK9nahs5/8ESiduGPp8gFHjTVMHwF80=
+From: Marek Vasut <marex@denx.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] IIO: arm: Add LRADC to i.MX28 dts
+Date: Sun, 19 Aug 2012 17:30:31 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>,
+        "Lars-Peter Clausen" <lars@metafoo.de>
+References: <1344784918-32352-1-git-send-email-marex@denx.de> <201208170457.03686.marex@denx.de> <CAAQ0ZWROobdtFkzn9Sr7v5B29zYTQ5YEUZV59kkNE_yv6qbmgQ@mail.gmail.com>
+In-Reply-To: <CAAQ0ZWROobdtFkzn9Sr7v5B29zYTQ5YEUZV59kkNE_yv6qbmgQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Dan Luedtke <mail@danrl.de>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>  <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>  <1345371135.4441.2.camel@tunafish> <5030BC7E.3030000@gmail.com>  <1345383264.4441.56.camel@tunafish>  <20120819120254.GA2369@pompeji.miese-zwerge.org>  <1345390432.2716.34.camel@tunafish>  <20120819142732.GB23464@ZenIV.linux.org.uk> <1345395217.2716.58.camel@tunafish>
-In-Reply-To: <1345395217.2716.58.camel@tunafish>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201208191730.31969.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/08/2012 18:53, Dan Luedtke ha scritto:
-> On Sun, 2012-08-19 at 15:27 +0100, Al Viro wrote:
->> 	* unlimited recursion
-> I am already working on that one, but it's tricky.
->
->> 	* unlink() does *not* truncate the file contents;
-> I did not know that.
+Dear Shawn Guo,
 
-I add that vmtruncate is deprecated and I see a call to inode_dio_wait 
-but no support for direct IO. In addition the lock rules seem strange, I 
-would avoid playing with inode->i_lock.
+> On 17 August 2012 10:57, Marek Vasut <marex@denx.de> wrote:
+> > Thanks ... still, is there some key for those tags? Or do you invent them
+> > at random and then let people guess what's right? Some git grep on
+> > Documentation directory gets me nothing.
+> 
+> There is no official document for this.
 
->
->> 	* while we are at it, neither of those should free the on-disk
->> inode; again, that should happen only when the inode is evicted.
-> Makes sense now. Thanks!
+Hm, maybe such document can be introduced?
 
-And I think you'll call d_delete two times.
+> But generally, each subsystem
+> has a convention on the subject prefix, so that the output of git
+> commands like git pull, git shortlog looks consistent on the patch
+> subject, and more importantly people can easily know subsystem the
+> patch touches.
+> 
+> The convention for patches touching arch/arm is "ARM: ".
+> 
+> Regards,
+> Shawn
 
-As general suggestion: to have a general view how things can work you 
-can look at other fs. Maybe ramfs or tmpfs are simple enough to 
-understand the general concepts.
-
-Marco
-
+Best regards,
+Marek Vasut
