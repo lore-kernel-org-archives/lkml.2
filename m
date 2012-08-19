@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab2HSTBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 15:01:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50204 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab2HSTBF (ORCPT
+	id S1754587Ab2HSTFI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 15:05:08 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49241 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab2HSTFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 15:01:05 -0400
-Date: Sun, 19 Aug 2012 16:00:56 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jani Nikula <jani.nikula@intel.com>,
-        Yang Guang <guang.a.yang@intel.com>
-Subject: Re: [ 32/37] drm/i915: correctly order the ring init sequence
-Message-ID: <20120819190056.GA3545@herton-Z68MA-D2H-B3>
-References: <20120817030243.807605523@decadent.org.uk>
- <20120817030248.892667316@decadent.org.uk>
- <20120817232956.GG4039@herton-Z68MA-D2H-B3>
- <CAKMK7uGYgJvWs-BYoPUwNjcmM8xFYJZhpBpyetYzoj_4br5XwA@mail.gmail.com>
- <1345388084.22400.3.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345388084.22400.3.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 19 Aug 2012 15:05:04 -0400
+Message-ID: <1345403092.1930.4.camel@kyv>
+Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
+ parameter
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Date: Sun, 19 Aug 2012 22:04:52 +0300
+In-Reply-To: <20120819100946.646cbb8a@pixies.home.jungo.com>
+References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
+	 <1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
+	 <20120816115713.726da8f2@pixies.home.jungo.com>
+	 <CACQ1gAhFJ6AKYJpc1ZiHm+3Y=APnwUmVL3f0KW=OFMDMWzCVJg@mail.gmail.com>
+	 <20120816134234.32b468f6@pixies.home.jungo.com>
+	 <1345124012.3393.239.camel@sauron.fi.intel.com>
+	 <20120819100946.646cbb8a@pixies.home.jungo.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ik5G9eFZxGIKm10HIwG/"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 03:54:44PM +0100, Ben Hutchings wrote:
-> On Sat, 2012-08-18 at 12:04 +0200, Daniel Vetter wrote:
-> > On Sat, Aug 18, 2012 at 1:29 AM, Herton Ronaldo Krzesinski
-[...]
-> > Good catch, I've forgotten to check whether all the recent ring_init
-> > patches have gone  through cc: stable. For the stable team, please
-> > pick up both patches:
-> > 
-> > f01db988ef6f6c70a6cc36ee71e4a98a68901229 and
-> > 0d8957c8a90bbb5d34fab9a304459448a5131e06
-> > 
-> > Note that all kernels that need f01db backported also need
-> > b7884eb45ec98c0d34c7f49005ae9d4b4b4e38f6 (to fix a regression
-> > introduce by the former).
-> 
-> 3.2.y already had the second and third of these, but not f01db98
-> 'drm/i915: Add wait_for in init_ring_common'.  So I've added that.
-> 
-> I don't have commit 18ef6f6c70a6cc36ee71e4a98a68901229 here, but I
-> assume it's a cherry-picked version as it has the same subject line.
 
-Ops sorry, yes, it's the same commit, just the hash was the version I
-had picked in my local branch, I did git show in the wrong tree.
+--=-ik5G9eFZxGIKm10HIwG/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Ben.
-> 
-> > Yeah, the ring init sequence is a fickle beast :( but I'm pretty sure
-> > with these three patches, stable kernels should be up to date and have
-> > all the latest fixes.
-> > 
-> > Yours, Daniel
-> 
-> -- 
-> Ben Hutchings
-> I say we take off; nuke the site from orbit.  It's the only way to be sure.
+On Sun, 2012-08-19 at 10:09 +0300, Shmulik Ladkani wrote:
+> On Thu, 16 Aug 2012 16:33:32 +0300 Artem Bityutskiy <dedekind1@gmail.com>=
+ wrote:
+> > We do not have that big user-base. No one uses 0 in the tree, most use
+> > the default. I never heard anyone using 0. I did not use it also. I
+> > think it is OK to have the lower range start from non-zero. But why it
+> > is 2 and not 1 - I am not sure :-)
+>=20
+> Artem,
+>=20
+> Note that originally range was 0..25 (percentage).
+>=20
+> It was changed to be 2..256 (per 1024) by 07ad322 in linux-ubi.
+>=20
+> Seems arbitrary change.
+> So if you'd like, we can fix to 1..256 (or 0..256) - as you prefer.
 
--- 
-[]'s
-Herton
+Yeah, I wanted to make it 1..256 but forgot, will do now. 0..256 would
+need some more work to avoid division by 0.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-ik5G9eFZxGIKm10HIwG/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQMTjUAAoJECmIfjd9wqK0V+sQAI2TWKSc60QnB2+eLnRgCfN5
+2WG9EEp5KGF5ytcjKVMH0GK6ceXIE/IYIhANUqm7Fv0itK1iLONpM8fqd49X2uhz
+ZSX6/QZ6XV4M7CzOnSzGecQb10gNB40XY/1JgkLuU4IzLy+fOh0nT5PFxpYTBUEI
+1y6riIyQ4VY8DQ0opwyeifbzsxwdJypJqWioWIiXc6zx0hizTvuxcycmqUeJthxJ
+jIVQMtJY6nTAfPJd4fpjXJD4mtWopPCuoOmcbNQnrNJfXAz3j22DhTWhiOR5y4DE
+VASu+1u36OLc6h/q9iHrENJSx5VbOx29uXeJFt82MIqJyTknK5Qoi8H8CzuBNZKp
++GY36e7qjKdhTQgVEk5TNUI9qZ6RaQDmlQM39satSmERGvphEN2UrEw4CaSznvRD
+0x4I85tlHnToLRaFzUT3HvttvcIG4Q8Dpld/xd+eFVJY0O/1gKkiG/rIoYrS+Av4
+C8+5/X9Pq+MoAuJkCSbAmbNWVlJuYhJSnl28ORVUaEhHYP+tk8omypgzicvvswT4
+35b16yLJw7GwKdcl/wh3pourchoXYjD2CMVkdn5f5UibAV31+nzoiiqPTAbX+pTZ
+g5NJTi+uzW2PkefkmHqvFIPJD42Nwn2g+DY+q2XBh8Zj0KQJDOeyWiGjfxR3Sb+6
+CB4grFeiOdD+fK2v0v9f
+=LZHI
+-----END PGP SIGNATURE-----
+
+--=-ik5G9eFZxGIKm10HIwG/--
+
