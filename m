@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab2HSIo4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:44:56 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:47863 "EHLO
+	id S1753981Ab2HSIpy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:45:54 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:40050 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752862Ab2HSIoq (ORCPT
+	by vger.kernel.org with ESMTP id S1753574Ab2HSIoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 04:44:46 -0400
+	Sun, 19 Aug 2012 04:44:55 -0400
 X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
-   d="scan'208";a="170216895"
+   d="scan'208";a="170216905"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Anton Vorontsov <cbou@mail.ru>
-Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/14] drivers/power/bq27x00_battery.c: fix error return code
-Date: Sun, 19 Aug 2012 10:44:20 +0200
-Message-Id: <1345365870-29831-5-git-send-email-Julia.Lawall@lip6.fr>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: kernel-janitors@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 14/14] drivers/spi/spi-s3c24xx.c: fix error return code
+Date: Sun, 19 Aug 2012 10:44:30 +0200
+Message-Id: <1345365870-29831-15-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -51,21 +54,21 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/power/bq27x00_battery.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Perhaps -EINVAL is not the right value in this case.
 
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index 181ddec..5860d4d 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -814,7 +814,8 @@ static int bq27x00_battery_probe(struct i2c_client *client,
- 	di->bat.name = name;
- 	di->bus.read = &bq27x00_read_i2c;
+ drivers/spi/spi-s3c24xx.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/spi/spi-s3c24xx.c b/drivers/spi/spi-s3c24xx.c
+index 8ee7d79..a2a080b 100644
+--- a/drivers/spi/spi-s3c24xx.c
++++ b/drivers/spi/spi-s3c24xx.c
+@@ -611,6 +611,7 @@ static int __devinit s3c24xx_spi_probe(struct platform_device *pdev)
+ 	if (!pdata->set_cs) {
+ 		if (pdata->pin_cs < 0) {
+ 			dev_err(&pdev->dev, "No chipselect pin\n");
++			err = -EINVAL;
+ 			goto err_register;
+ 		}
  
--	if (bq27x00_powersupply_init(di))
-+	retval = bq27x00_powersupply_init(di);
-+	if (retval)
- 		goto batt_failed_3;
- 
- 	i2c_set_clientdata(client, di);
 
