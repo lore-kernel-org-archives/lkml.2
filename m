@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab2HSAIr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:08:47 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45436 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab2HSAIo (ORCPT
+	id S1751667Ab2HSALQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:11:16 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:34371 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751220Ab2HSALO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:08:44 -0400
+	Sat, 18 Aug 2012 20:11:14 -0400
+Date: Sat, 18 Aug 2012 20:11:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+cc: Jiri Kosina <jkosina@suse.cz>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH 0/7] HID: picoLCD updates
+In-Reply-To: <20120818154828.0e992bfe@neptune.home>
+Message-ID: <Pine.LNX.4.44L0.1208182001320.25537-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20120818193221.GB250@x4>
-References: <20120817171354.GA14046@kroah.com> <20120818060934.GA255@x4>
- <20120818163401.GA2013@kroah.com> <1345315025.10014.15.camel@joe2Laptop>
- <20120818185528.GA250@x4> <CA+55aFw48y=bZQq12-ySBiDT=ef6Yuq=eh6HLo6TGqyEK2kPkw@mail.gmail.com>
- <20120818193221.GB250@x4>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 18 Aug 2012 17:08:22 -0700
-X-Google-Sender-Auth: 57NLUNpwfTETS3b9xukUurI_cfU
-Message-ID: <CA+55aFycrmPy2nX1t6xOXm7r0s63Y=fBHqX56H+T849QAQnttg@mail.gmail.com>
-Subject: Re: [bisected] Driver core fixes for 3.6-rc3 regression
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Joe Perches <joe@perches.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
-        Jason Baron <jbaron@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 12:32 PM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
->
-> Yes. Everything is fine again with this patch applied.
+On Sat, 18 Aug 2012, Bruno Prémont wrote:
 
-Ok, can you write a commit message and sign off on it, and I'll apply
-it (or Greg will, either way that message/sign-off would be needed for
-proper patch flow).
+> One thing I just though about, how does usbhid handle the calls to
+> usbhid_submit_report() when hid_hw_stop()/hid_hw_close() have already
+> been called?
 
-Thanks,
-                 Linus
+Looks like they aren't synchronized at all.  That's a bug.  
+usbhid_submit_report() should check the HID_DISCONNECTED flag.
+
+> I will attempt to see if it makes a difference to shortcut my
+> usbhid_submit_report() calls from the point on I have called hid_hw_close()...
+
+I don't know bout hid_hw_close().  Certainly no more reports should be 
+submitted following usbhid_stop().
+
+Alan Stern
+
