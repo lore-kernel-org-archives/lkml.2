@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab2HSXec (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 19:34:32 -0400
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:53307 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab2HSXe1 (ORCPT
+	id S1752352Ab2HSXrg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 19:47:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46569 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751616Ab2HSXrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 19:34:27 -0400
-Message-ID: <50317804.9010701@hardwarefreak.com>
-Date: Sun, 19 Aug 2012 18:34:28 -0500
-From: Stan Hoeppner <stan@hardwarefreak.com>
-Reply-To: stan@hardwarefreak.com
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: David Brown <david.brown@hesbynett.no>
-CC: Michael Tokarev <mjt@tls.msk.ru>,
-        Miquel van Smoorenburg <mikevs@xs4all.net>,
-        Linux RAID <linux-raid@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: O_DIRECT to md raid 6 is slow
-References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com> <502D6B0A.6090508@xs4all.net> <502DF357.8090205@hardwarefreak.com> <502E2817.8040306@xs4all.net> <502F237D.6060806@hardwarefreak.com> <502F698C.9010507@msgid.tls.msk.ru> <50305AB9.5080302@hardwarefreak.com> <5030F1C6.90205@hesbynett.no>
-In-Reply-To: <5030F1C6.90205@hesbynett.no>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Aug 2012 19:47:33 -0400
+Message-ID: <1345420039.22400.80.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH] perf: Fix include order for bison/flex-generated C files
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Sedat Dilek <sedat.dilek@gmail.com>
+Date: Mon, 20 Aug 2012 00:47:19 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-cbWNbsUU2CwhSzwN9bWy"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/19/2012 9:01 AM, David Brown wrote:
-> I'm sort of jumping in to this thread, so my apologies if I repeat
-> things other people have said already.
 
-I'm glad you jumped in David.  You made a critical statement of fact
-below which clears some things up.  If you had stated it early on,
-before Miquel stole the thread and moved it to LKML proper, it would
-have short circuited a lot of this discussion.  Which is:
+--=-cbWNbsUU2CwhSzwN9bWy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> AFAIK, there is scope for a few performance optimisations in raid6.  One
-> is that for small writes which only need to change one block, raid5 uses
-> a "short-cut" RMW cycle (read the old data block, read the old parity
-> block, calculate the new parity block, write the new data and parity
-> blocks).  A similar short-cut could be implemented in raid6, though it
-> is not clear how much a difference it would really make.
+When we use a separate output directory, we add util/ to the include
+path for the generated C files.  However, this is currently added to
+the end of the path, behind /usr/include/slang and
+/usr/include/gtk-2.0 if use of the respective libraries is enabled.
+Thus the '#include "../perf.h"' in util/parse-events.l can actually
+include /usr/include/perf.h if it exists.
 
-Thus my original statement was correct, or at least half correct[1], as
-it pertained to md/RAID6.  Then Miquel switched the discussion to
-md/RAID5 and stated I was all wet.  I wasn't, and neither was Dave
-Chinner.  I was simply unaware of this md/RAID5 single block write RMW
-shortcut.  I'm copying lkml proper on this simply to set the record
-straight.  Not that anyone was paying attention, but it needs to be in
-the same thread in the archives.  The takeaway:
+Move '-Iutil/' ahead of all the other preprocessor options.
 
-md/RAID6 must read all devices in a RMW cycle.
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ tools/perf/Makefile |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-md/RAID5 takes a shortcut for single block writes, and must only read
-one drive for the RMW cycle.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 0eee64c..434175c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -756,10 +756,10 @@ $(OUTPUT)perf.o perf.spec \
+ # over the general rule for .o
+=20
+ $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -w $<
++	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -w $<
+=20
+ $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=3D0 -DYYLTYPE_IS_T=
+RIVIAL=3D0 -Iutil/ -w $<
++	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -DYYENABLE_NLS=3D0 -DYYLT=
+YPE_IS_TRIVIAL=3D0 -w $<
+=20
+ $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
 
-[1}The only thing that's not clear at this point is if md/RAID6 also
-always writes back all chunks during RMW, or only the chunk that has
-changed.
 
--- 
-Stan
+--=-cbWNbsUU2CwhSzwN9bWy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUDF7B+e/yOyVhhEJAQq6bA//fxC7Oynh0gjhQyPTJO/HQ9e0nrDdtRix
+Bm/4YUv1aJpL0x+rWI++QW4WA9YCzVcrQwNIZUZ9Ie25j64XLu0t/MhCt7YG4ljn
+hCXGZKUr8sIa+FHtRLuzN4QB7iyiSoWNRnYXp6pxFvCxL1MPADynNSDpDP1y/91v
+gwxr+/GKa/6S9K27DToH0u81va1iU/7gRPQTf3BHlT01auvNyWqhsmXZE4yssHcC
+f7nH83MtB64N6QHLSoFKnNnufmNC1Y5PMOG+kdmeWq8PiTzSnVHWnyTvpaO+ahtc
+4WGzLoRk2/uoQqKOhQfVcLeu324r9GZ0+RDi5O8B1bbvF8zKZm+9I7ATKSb4fBtF
+7t2bviZaHoPYkeb+difb+a3RoBmXwZXTgcuOZUOT030kIRK4uneQubEaJnqP6RcW
+vP0iUavgkwMPsKX2dko+de2Ubw6k0PQnXH69xNrMZQgq+UAosyamPHvmNBHL1t0U
+Y8F2Vvvn6mYmZieXsHqYdJe8L6XsqmwC340fWcdpau59S4hZpbVJPz/WhrWMjtw0
+fzx2z7aWT7zfFxaDyQRJp1bsggPkyfP9r3HIulCobA2gOWm8n44HI+pP/oOGdi6h
+leFuSPfWJI+yR2CtO2MX5AIU/zBzriVZCJlT37nfe/OIKxrVzhgJ6Qg65Znvz/1c
+jodVOc89fXg=
+=YTse
+-----END PGP SIGNATURE-----
+
+--=-cbWNbsUU2CwhSzwN9bWy--
