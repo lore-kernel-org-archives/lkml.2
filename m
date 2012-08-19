@@ -1,162 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab2HSCHO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 22:07:14 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57975 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab2HSCHL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 22:07:11 -0400
-Date: Sun, 19 Aug 2012 04:07:10 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, James.Bottomley@HansenPartnership.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 01/31] Disable const sections for PA-RISC
-Message-ID: <20120819020710.GO11413@one.firstfloor.org>
-References: <1345311022-26328-1-git-send-email-andi@firstfloor.org> <1345311022-26328-2-git-send-email-andi@firstfloor.org> <20120818211549.GA12298@merkur.ravnborg.org>
-Mime-Version: 1.0
+	id S1752200Ab2HSCQC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 22:16:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1410 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750999Ab2HSCP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Aug 2012 22:15:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,792,1336374000"; 
+   d="scan'208";a="204886377"
+Date: Sun, 19 Aug 2012 10:15:54 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: chris.mason@fusionio.com, mfasheh@suse.com, jlbec@evilplan.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Vivek Trivedi <vtrivedi018@gmail.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/3] writeback: change nr_pages_dirtied argument into
+ local variable
+Message-ID: <20120819021554.GA16796@localhost>
+References: <1345283309-7768-1-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120818211549.GA12298@merkur.ravnborg.org>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1345283309-7768-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +config BROKEN_RODATA
-> > +	bool
-> > +	default y
+On Sat, Aug 18, 2012 at 05:48:29AM -0400, Namjae Jeon wrote:
+> There is no reason nr_pages_dirtied is argument anymore.
+> because nr_pages_dirtied value from caller is not used in
+> balance_dirty_pages_ratelimited_nr function.
+
+Looks good to me. If the fs developers don't have problems with this,
+I'll apply it to the writeback tree.
+
+Thanks,
+Fengguang
+
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
+> ---
+>  fs/btrfs/disk-io.c        |    8 ++++----
+>  fs/btrfs/file.c           |    3 +--
+>  fs/btrfs/ioctl.c          |    2 +-
+>  fs/ocfs2/file.c           |    5 +----
+>  fs/splice.c               |    5 +----
+>  include/linux/writeback.h |    9 +--------
+>  mm/page-writeback.c       |   11 +++++------
+>  7 files changed, 14 insertions(+), 29 deletions(-)
 > 
-> Could you please change this so we have a commonly defined HAVE_BROKEN_RODATA
-> symbol. Then arch's that have broken RO data can select this symbol.
-> If we experience tomorrow that sparc have the same issue then with
-> this patch sparc has to create a local definition of this symbol.
-
-Here's an updated patch with the config placed in init/Kconfig.
-I'm not going to repost the whole series.
-
--Andi
-
----
-
-Disable const sections for PA-RISC v2
-
-The PA-RISC tool chain seems to have some problem with correct read/write
-attributes on sections. This causes problems when the const sections
-are fixed up for other architecture to only contain truly read-only
-data.
-
-Disable const sections for PA-RISC
-
-This can cause a bit of noise with modpost.
-
-v2: Move config to init/Kconfig
-Cc: James.Bottomley@HansenPartnership.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/parisc/Kconfig  |    1 +
- include/linux/init.h |   27 +++++++++++++++++++--------
- init/Kconfig         |    6 ++++++
- 3 files changed, 26 insertions(+), 8 deletions(-)
-
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index 3ff21b5..77f9c81 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -19,6 +19,7 @@ config PARISC
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_STRNCPY_FROM_USER
-+	select BROKEN_RODATA
- 
- 	help
- 	  The PA-RISC microprocessor is designed by Hewlett-Packard and used
-diff --git a/include/linux/init.h b/include/linux/init.h
-index 5e664f6..c2f06b3 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -43,10 +43,21 @@
-    discard it in modules) */
- #define __init		__section(.init.text) __cold notrace
- #define __initdata	__section(.init.data)
--#define __initconst	__section(.init.rodata)
-+#define __initconst	__constsection(.init.rodata)
- #define __exitdata	__section(.exit.data)
- #define __exit_call	__used __section(.exitcall.exit)
- 
-+/* 
-+ * Some architecture have tool chains which do not handle rodata attributes
-+ * correctly. For those disable special sections for const, so that other
-+ * architectures can annotate correctly.
-+ */
-+#ifdef CONFIG_BROKEN_RODATA
-+#define __constsection(x)
-+#else
-+#define __constsection(x) __section(x)
-+#endif
-+
- /*
-  * modpost check for section mismatches during the kernel build.
-  * A section mismatch happens when there are references from a
-@@ -66,7 +77,7 @@
-  */
- #define __ref            __section(.ref.text) noinline
- #define __refdata        __section(.ref.data)
--#define __refconst       __section(.ref.rodata)
-+#define __refconst       __constsection(.ref.rodata)
- 
- /* compatibility defines */
- #define __init_refok     __ref
-@@ -85,26 +96,26 @@
- /* Used for HOTPLUG */
- #define __devinit        __section(.devinit.text) __cold notrace
- #define __devinitdata    __section(.devinit.data)
--#define __devinitconst   __section(.devinit.rodata)
-+#define __devinitconst   __constsection(.devinit.rodata)
- #define __devexit        __section(.devexit.text) __exitused __cold notrace
- #define __devexitdata    __section(.devexit.data)
--#define __devexitconst   __section(.devexit.rodata)
-+#define __devexitconst   __constsection(.devexit.rodata)
- 
- /* Used for HOTPLUG_CPU */
- #define __cpuinit        __section(.cpuinit.text) __cold notrace
- #define __cpuinitdata    __section(.cpuinit.data)
--#define __cpuinitconst   __section(.cpuinit.rodata)
-+#define __cpuinitconst   __constsection(.cpuinit.rodata)
- #define __cpuexit        __section(.cpuexit.text) __exitused __cold notrace
- #define __cpuexitdata    __section(.cpuexit.data)
--#define __cpuexitconst   __section(.cpuexit.rodata)
-+#define __cpuexitconst   __constsection(.cpuexit.rodata)
- 
- /* Used for MEMORY_HOTPLUG */
- #define __meminit        __section(.meminit.text) __cold notrace
- #define __meminitdata    __section(.meminit.data)
--#define __meminitconst   __section(.meminit.rodata)
-+#define __meminitconst   __constsection(.meminit.rodata)
- #define __memexit        __section(.memexit.text) __exitused __cold notrace
- #define __memexitdata    __section(.memexit.data)
--#define __memexitconst   __section(.memexit.rodata)
-+#define __memexitconst   __constsection(.memexit.rodata)
- 
- /* For assembly routines */
- #define __HEAD		.section	".head.text","ax"
-diff --git a/init/Kconfig b/init/Kconfig
-index af6c7f8..a8785db 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1612,4 +1612,10 @@ config PADATA
- 	depends on SMP
- 	bool
- 
-+# Can be selected by architectures with broken toolchains
-+# that get confused by correct const<->read_only section
-+# mappings
-+config BROKEN_RODATA
-+	bool
-+
- source "kernel/Kconfig.locks"
--- 
-1.7.10.4
-
+> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+> index 62e0caf..10b6128 100644
+> --- a/fs/btrfs/disk-io.c
+> +++ b/fs/btrfs/disk-io.c
+> @@ -3344,8 +3344,8 @@ void btrfs_btree_balance_dirty(struct btrfs_root *root, unsigned long nr)
+>  	num_dirty = root->fs_info->dirty_metadata_bytes;
+>  
+>  	if (num_dirty > thresh) {
+> -		balance_dirty_pages_ratelimited_nr(
+> -				   root->fs_info->btree_inode->i_mapping, 1);
+> +		balance_dirty_pages_ratelimited(
+> +				   root->fs_info->btree_inode->i_mapping);
+>  	}
+>  	return;
+>  }
+> @@ -3365,8 +3365,8 @@ void __btrfs_btree_balance_dirty(struct btrfs_root *root, unsigned long nr)
+>  	num_dirty = root->fs_info->dirty_metadata_bytes;
+>  
+>  	if (num_dirty > thresh) {
+> -		balance_dirty_pages_ratelimited_nr(
+> -				   root->fs_info->btree_inode->i_mapping, 1);
+> +		balance_dirty_pages_ratelimited(
+> +				   root->fs_info->btree_inode->i_mapping);
+>  	}
+>  	return;
+>  }
+> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> index f6b40e8..0dae684 100644
+> --- a/fs/btrfs/file.c
+> +++ b/fs/btrfs/file.c
+> @@ -1314,8 +1314,7 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
+>  
+>  		cond_resched();
+>  
+> -		balance_dirty_pages_ratelimited_nr(inode->i_mapping,
+> -						   dirty_pages);
+> +		balance_dirty_pages_ratelimited(inode->i_mapping);
+>  		if (dirty_pages < (root->leafsize >> PAGE_CACHE_SHIFT) + 1)
+>  			btrfs_btree_balance_dirty(root, 1);
+>  
+> diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+> index 7bb7556..df2e9fb 100644
+> --- a/fs/btrfs/ioctl.c
+> +++ b/fs/btrfs/ioctl.c
+> @@ -1199,7 +1199,7 @@ int btrfs_defrag_file(struct inode *inode, struct file *file,
+>  		}
+>  
+>  		defrag_count += ret;
+> -		balance_dirty_pages_ratelimited_nr(inode->i_mapping, ret);
+> +		balance_dirty_pages_ratelimited(inode->i_mapping);
+>  		mutex_unlock(&inode->i_mutex);
+>  
+>  		if (newer_than) {
+> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> index 46a1f6d..a83c964 100644
+> --- a/fs/ocfs2/file.c
+> +++ b/fs/ocfs2/file.c
+> @@ -2515,18 +2515,15 @@ static ssize_t ocfs2_file_splice_write(struct pipe_inode_info *pipe,
+>  		ret = sd.num_spliced;
+>  
+>  	if (ret > 0) {
+> -		unsigned long nr_pages;
+>  		int err;
+>  
+> -		nr_pages = (ret + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+> -
+>  		err = generic_write_sync(out, *ppos, ret);
+>  		if (err)
+>  			ret = err;
+>  		else
+>  			*ppos += ret;
+>  
+> -		balance_dirty_pages_ratelimited_nr(mapping, nr_pages);
+> +		balance_dirty_pages_ratelimited(mapping);
+>  	}
+>  
+>  	return ret;
+> diff --git a/fs/splice.c b/fs/splice.c
+> index 41514dd..36b6c17 100644
+> --- a/fs/splice.c
+> +++ b/fs/splice.c
+> @@ -1024,17 +1024,14 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+>  		ret = sd.num_spliced;
+>  
+>  	if (ret > 0) {
+> -		unsigned long nr_pages;
+>  		int err;
+>  
+> -		nr_pages = (ret + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+> -
+>  		err = generic_write_sync(out, *ppos, ret);
+>  		if (err)
+>  			ret = err;
+>  		else
+>  			*ppos += ret;
+> -		balance_dirty_pages_ratelimited_nr(mapping, nr_pages);
+> +		balance_dirty_pages_ratelimited(mapping);
+>  	}
+>  	sb_end_write(inode->i_sb);
+>  
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index 50c3e8f..b82a83a 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -161,14 +161,7 @@ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+>  			    unsigned long start_time);
+>  
+>  void page_writeback_init(void);
+> -void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+> -					unsigned long nr_pages_dirtied);
+> -
+> -static inline void
+> -balance_dirty_pages_ratelimited(struct address_space *mapping)
+> -{
+> -	balance_dirty_pages_ratelimited_nr(mapping, 1);
+> -}
+> +void balance_dirty_pages_ratelimited(struct address_space *mapping);
+>  
+>  typedef int (*writepage_t)(struct page *page, struct writeback_control *wbc,
+>  				void *data);
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 5ad5ce2..49133b6 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1069,7 +1069,7 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
+>  }
+>  
+>  /*
+> - * After a task dirtied this many pages, balance_dirty_pages_ratelimited_nr()
+> + * After a task dirtied this many pages, balance_dirty_pages_ratelimited()
+>   * will look to see if it needs to start dirty throttling.
+>   *
+>   * If dirty_poll_interval is too low, big NUMA machines will call the expensive
+> @@ -1436,9 +1436,8 @@ static DEFINE_PER_CPU(int, bdp_ratelimits);
+>  DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
+>  
+>  /**
+> - * balance_dirty_pages_ratelimited_nr - balance dirty memory state
+> + * balance_dirty_pages_ratelimited - balance dirty memory state
+>   * @mapping: address_space which was dirtied
+> - * @nr_pages_dirtied: number of pages which the caller has just dirtied
+>   *
+>   * Processes which are dirtying memory should call in here once for each page
+>   * which was newly dirtied.  The function will periodically check the system's
+> @@ -1449,8 +1448,7 @@ DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
+>   * limit we decrease the ratelimiting by a lot, to prevent individual processes
+>   * from overshooting the limit by (ratelimit_pages) each.
+>   */
+> -void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+> -					unsigned long nr_pages_dirtied)
+> +void balance_dirty_pages_ratelimited(struct address_space *mapping)
+>  {
+>  	struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  	int ratelimit;
+> @@ -1484,6 +1482,7 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+>  	 */
+>  	p = &__get_cpu_var(dirty_throttle_leaks);
+>  	if (*p > 0 && current->nr_dirtied < ratelimit) {
+> +		unsigned long nr_pages_dirtied;
+>  		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
+>  		*p -= nr_pages_dirtied;
+>  		current->nr_dirtied += nr_pages_dirtied;
+> @@ -1493,7 +1492,7 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+>  	if (unlikely(current->nr_dirtied >= ratelimit))
+>  		balance_dirty_pages(mapping, current->nr_dirtied);
+>  }
+> -EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
+> +EXPORT_SYMBOL(balance_dirty_pages_ratelimited);
+>  
+>  void throttle_vm_writeout(gfp_t gfp_mask)
+>  {
+> -- 
+> 1.7.9.5
