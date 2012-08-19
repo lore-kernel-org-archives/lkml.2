@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab2HSNpd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 09:45:33 -0400
-Received: from mail.nonattached.net ([193.160.39.60]:55218 "EHLO
-	mail.nonattached.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab2HSNpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 09:45:30 -0400
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-From: Dan Luedtke <mail@danrl.de>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lanyfs@librelist.com
-In-Reply-To: <5030E95C.1030908@gmail.com>
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
-	 <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
-	 <1345371135.4441.2.camel@tunafish>  <5030BC7E.3030000@gmail.com>
-	 <1345383264.4441.56.camel@tunafish>  <5030E95C.1030908@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Aug 2012 17:45:15 +0200
-Message-ID: <1345391115.2716.44.camel@tunafish>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1752687Ab2HSOCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 10:02:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51620 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab2HSOCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 10:02:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,794,1336374000"; 
+   d="scan'208";a="205443527"
+Date: Sun, 19 Aug 2012 22:02:32 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Kay Sievers <kay@vrfy.org>
+Subject: Force enabled HPET at 0x%lx
+Message-ID: <20120819140232.GA23629@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-08-19 at 15:25 +0200, Marco Stornelli wrote:
-> Ok, I try to do a summary. You are trying to write a new general and 
-> minimal fs for mobile storage device, minimal enough to be easy ported 
-> on several fs. So at the end you are trying to replace the solution is 
-> used today on many platforms (fat32). Without other consideration about 
-> "no-feature is a feature", it seems to me really challenging because the 
-> project can fail its goal no because there is design problem, bugs and 
-> so on but because of limited use. We are talking about interoperability 
-> problem, and we really know some companies out there from this point of 
-> view :)
-You nailed it and you made me feel like Don Quijote.
-I'd like to give it a try anyway.
+Hi,
 
-regards,
-Dan
+        [   38.650387] PCI host bridge to bus 0000:00
+        [   38.657920] pci_bus 0000:00: Force enabled HPET at 0x%lx
+                                                                ~~~
 
--- 
-Dan Luedtke
-http://www.danrl.de
+That "0x%lx" message should be emitted by one of the dev_printks in
+arch/x86/kernel/quirks.c and I failed to see anything wrong with it:
 
+                dev_printk(KERN_DEBUG, &dev->dev, "Force enabled HPET at "
+                        "0x%lx\n", force_hpet_address);
+
+So why the value of "force_hpet_address" is not printed?
+
+        [   38.657920] busn_res: [bus 00-ff] is inserted under domain [bus 00-ff]
+        [   38.658480] pci_bus 0000:00: ^A0root bus resource [bus 00-ff]
+        [   38.662411] pci_bus 0000:00: ^A0root bus resource [io  0x0000-0xffff]
+        [   38.664639] pci_bus 0000:00: ^A0root bus resource [mem 0x00000000-0xffffffffff]
+                                        ~~~
+
+And that ^A0 character also looks strange..
+
+Thanks,
+Fengguang
