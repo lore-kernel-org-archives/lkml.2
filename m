@@ -1,194 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab2HSIkV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:40:21 -0400
-Received: from ext190.halfdog.net ([88.116.147.190]:51042 "EHLO
-	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2HSIkJ (ORCPT
+	id S1752836Ab2HSIoo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:44:44 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:52549 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751938Ab2HSIoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 04:40:09 -0400
-Message-ID: <5030A65D.90305@halfdog.net>
-Date: Sun, 19 Aug 2012 08:39:57 +0000
-From: halfdog <me@halfdog.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14a1
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Search for patch for kernel stack data disclosure in binfmt_script
- during execve
-References: <502FA000.8090700@halfdog.net>
-In-Reply-To: <502FA000.8090700@halfdog.net>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: multipart/mixed;
- boundary="------------050407070200040308050100"
+	Sun, 19 Aug 2012 04:44:38 -0400
+X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
+   d="scan'208";a="170216891"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 0/14] fix error return code
+Date: Sun, 19 Aug 2012 10:44:16 +0200
+Message-Id: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050407070200040308050100
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+These patches fix cases where the return code appears to be unintentially
+nonnegative.
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+The complete semantic match that finds the problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-halfdog wrote:
-> I'm searching for a patch for linux kernel stack disclosure in 
-> binfmt_script with crafted interpreter names when CONFIG_MODULES
-> is active (see [1]).
+// <smpl>
+@ok exists@
+identifier f,ret,i;
+expression e;
+constant c;
+@@
 
-Please disregard my previous proposal [2], since it did not address
-the problem directly (referencing local stack frame data from bprm
-structure) but worked around it. I suspect, that this could increase
-probability to reintroduce similar bugs.
+f(...) {
+<+...
+(
+return -c@i;
+|
+ret = -c@i;
+... when != ret = e
+return ret;
+|
+if (ret < 0) { ... return ret; }
+)
+...+> }
 
-Opinions on (untested sketch for) second solution: Could someone look
-on the source code comments and changes in patch to judge, if this is
-going in the right direction?
+@r exists@
+identifier ret,l,ok.f;
+expression e1,e2,e3;
+statement S;
+position p1,p2,p3;
+@@
+
+f(...) {
+... when any
+(
+if@p1 (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret@p1 = 0
+)
+... when != ret = e1
+    when != &ret
+(
+ if (<+... ret = e3 ...+>) S
+|
+ if (<+... &ret ...+>) S
+|
+if@p2(...)
+ {
+  ... when != ret = e2
+      when forall
+ return@p3 ret;
+}
+)
+... when any
+}
+
+@bad exists@
+position r.p1,r.p2;
+statement S1,S2;
+identifier r.ret;
+expression e1;
+@@
+
+(
+if@p1 (\(ret < 0\|ret != 0\)) S1
+|
+ret@p1 = 0
+)
+... when any
+ret = e1
+... when any
+if@p2(...) S2
+
+@bad2@
+position r.p1,r.p2;
+identifier r.ret;
+expression e1;
+statement S2;
+@@
+
+ret@p1 = 0
+... when != if (...) { ... ret = e1 ... return ret; }
+    when any
+if@p2(...) S2
 
 
-Explanation of patch: Since load_script will start to irreversibly
-change bprm structures at some point (using stack local data was one
-of those changes), try to delay this point. Run checks if load_script
-could be the right handler, if not give other binfmt handlers the
-chance to do so.
+@script:python depends on !bad && !bad2@
+p1 << r.p1;
+p2 << r.p2;
+p3 << r.p3;
+@@
 
-If binfmt_script is the right one, try to load the interpreter
-(causing bprm modification), if failing make sure that no other binfmt
-handler has the chance to continue on the now modified bprm data.
+cocci.print_main("",p1)
+cocci.print_secs("",p2)
+cocci.print_secs("",p3)
+// </smpl>
 
-CAVEAT: This assumes, that if binfmt_script could handle the load,
-that it would be the one and only binfmt with that ability, so no
-other one, e.g. binfmt_misc should have the chance to do so. If this
-assumption is wrong, leaving binfmt_script would have to rollback all
-bprm changes (e.g. restore old credentials).
-
-hd
-
-[1]
-http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
-[2] http://lkml.org/lkml/2012/8/18/75
-
-- -- 
-http://www.halfdog.net/
-PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAlAwphsACgkQxFmThv7tq+6UAQCgh7IA8UcqNieV41YKHS5/YxGE
-IbcAn1uP1nIakg/gD1KlV0KNnLIfitEp
-=5Klt
------END PGP SIGNATURE-----
-
---------------050407070200040308050100
-Content-Type: text/plain; charset=UTF-8;
- name="patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="patch"
-
-LS0tIGZzL2JpbmZtdF9zY3JpcHQuYwkyMDEyLTAxLTE5IDIzOjA0OjQ4LjAwMDAwMDAwMCAr
-MDAwMAorKysgZnMvYmluZm10X3NjcmlwdC5jCTIwMTItMDgtMTkgMDc6MDg6NDIuNTQwNjEx
-NjA1ICswMDAwCkBAIC0xNCwxMiArMTQsMjQgQEAKICNpbmNsdWRlIDxsaW51eC9lcnIuaD4K
-ICNpbmNsdWRlIDxsaW51eC9mcy5oPgogCisvKiogQ2hlY2sgaWYgdGhpcyBoYW5kbGVyIGlz
-IHN1aXRhYmxlIHRvIGxvYWQgdGhlICJiaW5hcnkiIGlkZW50aWZpZWQKKyAqICBieSBmaXJz
-dCBCSU5QUk1fQlVGX1NJWkUgYnl0ZXMgaW4gYnBybS0+YnVmLgorICogIEByZXR1cm5zIC1F
-Tk9FWEVDIGlmIHRoaXMgaGFuZGxlciBpcyBub3Qgc3VpdGFibGUgZm9yIHRoYXQgdHlwZQor
-ICogIG9mIGJpbmFyeS4gSW4gdGhhdCBjYXNlLCB0aGUgaGFuZGxlciBtdXN0IG5vdCBtb2Rp
-ZnkgYW55IG9mIHRoZQorICogIGRhdGEgYXNzb2NpYXRlZCB3aXRoIGJwcm0uCisgKiAgQW55
-IGVycm9yIGlmIHRoZSBiaW5hcnkgc2hvdWxkIGhhdmUgYmVlbiBoYW5kbGVkIGJ5IHRoaXMg
-bG9hZGVyCisgKiAgYnV0IGhhbmRsaW5nIGZhaWxlZC4gSW4gdGhhdCBjYXNlLiBGSVhNRTog
-YmUgZGVmZW5zaXZlPyBhbHNvCisgKiAga2lsbCBicHJtLT5tbSBvciBicHJtLT5maWxlIGFs
-c28gdG8gbWFrZSBpdCBpbXBvc3NpYmxlLCB0aGF0CisgKiAgdXBwZXIgc2VhcmNoX2JpbmFy
-eV9oYW5kbGVyIGNhbiBjb250aW51ZSBoYW5kbGluZz8KKyAqICAwIChPSykgb3RoZXJ3aXNl
-LCB0aGUgbmV3IGV4ZWN1dGFibGUgaXMgcmVhZHkgaW4gYnBybS0+bW0uCisgKi8KIHN0YXRp
-YyBpbnQgbG9hZF9zY3JpcHQoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSxzdHJ1Y3QgcHRf
-cmVncyAqcmVncykKIHsKIAljb25zdCBjaGFyICppX2FyZywgKmlfbmFtZTsKIAljaGFyICpj
-cDsKIAlzdHJ1Y3QgZmlsZSAqZmlsZTsKLQljaGFyIGludGVycFtCSU5QUk1fQlVGX1NJWkVd
-OworCWNoYXIgYnBybV9idWZfY29weVtCSU5QUk1fQlVGX1NJWkVdOworCWNoYXIgKmJwcm1f
-b2xkX2ludGVycF9uYW1lOwogCWludCByZXR2YWw7CiAKIAlpZiAoKGJwcm0tPmJ1ZlswXSAh
-PSAnIycpIHx8IChicHJtLT5idWZbMV0gIT0gJyEnKSB8fApAQCAtMzAsMjUgKzQyLDI5IEBA
-IHN0YXRpYyBpbnQgbG9hZF9zY3JpcHQoc3RydWN0IGxpbnV4X2JpbnAKIAkgKiBTb3J0YSBj
-b21wbGljYXRlZCwgYnV0IGhvcGVmdWxseSBpdCB3aWxsIHdvcmsuICAtVFlUCiAJICovCiAK
-LQlicHJtLT5yZWN1cnNpb25fZGVwdGgrKzsKLQlhbGxvd193cml0ZV9hY2Nlc3MoYnBybS0+
-ZmlsZSk7Ci0JZnB1dChicHJtLT5maWxlKTsKLQlicHJtLT5maWxlID0gTlVMTDsKKwkvKiBL
-ZWVwIGJwcm0gdW5jaGFuZ2VkIHVudGlsIHdlIGtub3duLCB0aGF0IHRoaXMgaXMgYSBzY3Jp
-cHQKKwkgKiB0byBiZSBoYW5kbGVkIGJ5IHRoaXMgbG9hZGVyLiBDb3B5IGJwcm0tPmJ1ZiBm
-b3Igc3VyZSwKKwkgKiBvdGhlcndpc2UgcmV0dXJuaW5nIC1FTk9FWEVDIHdpbGwgbWFrZSBv
-dGhlciBoYW5kbGVycyBzZWUKKwkgKiBtb2RpZmllZCBkYXRhLiAoaGQpCisJICovCisJbWVt
-Y3B5KGJwcm1fYnVmX2NvcHksIGJwcm0tPmJ1ZiwgQklOUFJNX0JVRl9TSVpFKTsKIAotCWJw
-cm0tPmJ1ZltCSU5QUk1fQlVGX1NJWkUgLSAxXSA9ICdcMCc7Ci0JaWYgKChjcCA9IHN0cmNo
-cihicHJtLT5idWYsICdcbicpKSA9PSBOVUxMKQotCQljcCA9IGJwcm0tPmJ1ZitCSU5QUk1f
-QlVGX1NJWkUtMTsKKwlicHJtX2J1Zl9jb3B5W0JJTlBSTV9CVUZfU0laRSAtIDFdPSdcMCc7
-CisJaWYgKChjcCA9IHN0cmNocihicHJtX2J1Zl9jb3B5LCAnXG4nKSkgPT0gTlVMTCkKKwkJ
-Y3AgPSBicHJtX2J1Zl9jb3B5K0JJTlBSTV9CVUZfU0laRS0xOwogCSpjcCA9ICdcMCc7Ci0J
-d2hpbGUgKGNwID4gYnBybS0+YnVmKSB7CisJd2hpbGUgKGNwID4gYnBybV9idWZfY29weSkg
-ewogCQljcC0tOwogCQlpZiAoKCpjcCA9PSAnICcpIHx8ICgqY3AgPT0gJ1x0JykpCiAJCQkq
-Y3AgPSAnXDAnOwogCQllbHNlCiAJCQlicmVhazsKIAl9Ci0JZm9yIChjcCA9IGJwcm0tPmJ1
-ZisyOyAoKmNwID09ICcgJykgfHwgKCpjcCA9PSAnXHQnKTsgY3ArKyk7CisJZm9yIChjcCA9
-IGJwcm1fYnVmX2NvcHkrMjsgKCpjcCA9PSAnICcpIHx8ICgqY3AgPT0gJ1x0Jyk7IGNwKysp
-OwogCWlmICgqY3AgPT0gJ1wwJykgCi0JCXJldHVybiAtRU5PRVhFQzsgLyogTm8gaW50ZXJw
-cmV0ZXIgbmFtZSBmb3VuZCAqLworCS8qIE5vIGludGVycHJldGVyIG5hbWUgZm91bmQuIE5v
-IHByb2JsZW0gdG8gbGV0IG90aGVyIGhhbmRsZXJzCisJICogcmV0cnksIHdlIGRpZCBub3Qg
-Y2hhbmdlIGFueXRoaW5nLiAqLworCQlyZXR1cm4gLUVOT0VYRUM7CiAJaV9uYW1lID0gY3A7
-CiAJaV9hcmcgPSBOVUxMOwogCWZvciAoIDsgKmNwICYmICgqY3AgIT0gJyAnKSAmJiAoKmNw
-ICE9ICdcdCcpOyBjcCsrKQpAQCAtNTcsNDUgKzczLDgzIEBAIHN0YXRpYyBpbnQgbG9hZF9z
-Y3JpcHQoc3RydWN0IGxpbnV4X2JpbnAKIAkJKmNwKysgPSAnXDAnOwogCWlmICgqY3ApCiAJ
-CWlfYXJnID0gY3A7Ci0Jc3RyY3B5IChpbnRlcnAsIGlfbmFtZSk7CisKKwkvKiBTbyB0aGlz
-IGlzIG91ciBwb2ludC1vZi1uby1yZXR1cm46IG1vZGlmaWNhdGlvbiBvZiBicHJtCisJICog
-d2lsbCBiZSBpcnJldmVyc2libGUsIHNvIGlmIHdlIGZhaWwgdG8gc2V0dXAgZXhlY3V0aW9u
-CisJICogdXNpbmcgdGhlIG5ldyBpbnRlcnByZXRlciBuYW1lIChpX25hbWUpLCB3ZSBoYXZl
-IHRvIG1ha2UKKwkgKiBzdXJlLCB0aGF0IG5vIG90aGVyIGhhbmRsZXIgdHJpZXMgYWdhaW4u
-IChoZCkKKwkgKi8KKwogCS8qCiAJICogT0ssIHdlJ3ZlIHBhcnNlZCBvdXQgdGhlIGludGVy
-cHJldGVyIG5hbWUgYW5kCiAJICogKG9wdGlvbmFsKSBhcmd1bWVudC4KIAkgKiBTcGxpY2Ug
-aW4gKDEpIHRoZSBpbnRlcnByZXRlcidzIG5hbWUgZm9yIGFyZ3ZbMF0KLQkgKiAgICAgICAg
-ICAgKDIpIChvcHRpb25hbCkgYXJndW1lbnQgdG8gaW50ZXJwcmV0ZXIKLQkgKiAgICAgICAg
-ICAgKDMpIGZpbGVuYW1lIG9mIHNoZWxsIHNjcmlwdCAocmVwbGFjZSBhcmd2WzBdKQorCSAq
-CSAgICgyKSAob3B0aW9uYWwpIGFyZ3VtZW50IHRvIGludGVycHJldGVyCisJICoJICAgKDMp
-IGZpbGVuYW1lIG9mIHNoZWxsIHNjcmlwdCAocmVwbGFjZSBhcmd2WzBdKQogCSAqCiAJICog
-VGhpcyBpcyBkb25lIGluIHJldmVyc2Ugb3JkZXIsIGJlY2F1c2Ugb2YgaG93IHRoZQogCSAq
-IHVzZXIgZW52aXJvbm1lbnQgYW5kIGFyZ3VtZW50cyBhcmUgc3RvcmVkLgogCSAqLworCisJ
-LyogVWdseTogd2Ugc3RvcmUgcG9pbnRlciB0byBsb2NhbCBzdGFjayBmcmFtZSBpbiBicHJt
-LAorCSAqIHNvIG1ha2Ugc3VyZSB0byBjbGVhciB0aGlzIHVwIGJlZm9yZSByZXR1cm5pbmcu
-CisJICovCisJYnBybV9vbGRfaW50ZXJwX25hbWUgPSBicHJtLT5pbnRlcnA7CisJYnBybS0+
-aW50ZXJwID0gaV9uYW1lOworCiAJcmV0dmFsID0gcmVtb3ZlX2FyZ196ZXJvKGJwcm0pOwot
-CWlmIChyZXR2YWwpCi0JCXJldHVybiByZXR2YWw7Ci0JcmV0dmFsID0gY29weV9zdHJpbmdz
-X2tlcm5lbCgxLCAmYnBybS0+aW50ZXJwLCBicHJtKTsKLQlpZiAocmV0dmFsIDwgMCkgcmV0
-dXJuIHJldHZhbDsgCisJaWYgKHJldHZhbCkgZ290byBvdXQ7CisJLyogY29weV9zdHJpbmdz
-X2tlcm5lbCBpcyBvayBoZXJlLCBldmVuIHdoZW4gcmFjeTogc2luY2Ugbm8KKwkgKiB1c2Vy
-IGNhbiBiZSBhdHRhY2hlZCB0byBuZXcgbW0sIHRoZXJlIGlzIG5vYm9keSB0byByYWNlCisJ
-ICogd2l0aCBhbmQgY2FsbCBpcyBzYWZlIGZvciBub3cuIEFuZCBjb3B5X3N0cmluZ3Nfa2Vy
-bmVsCisJICogY2Fubm90IHJldHVybiAtRU5PRVhFQyBpbiBhbnkgY2FzZS4gKGhkKQorCSAq
-LworCXJldHZhbCA9IGNvcHlfc3RyaW5nc19rZXJuZWwoMSwgJmJwcm1fb2xkX2ludGVycF9u
-YW1lLCBicHJtKTsKKwlpZiAocmV0dmFsIDwgMCkgZ290byBvdXQ7CiAJYnBybS0+YXJnYysr
-OwogCWlmIChpX2FyZykgewogCQlyZXR2YWwgPSBjb3B5X3N0cmluZ3Nfa2VybmVsKDEsICZp
-X2FyZywgYnBybSk7Ci0JCWlmIChyZXR2YWwgPCAwKSByZXR1cm4gcmV0dmFsOyAKKwkJaWYg
-KHJldHZhbCA8IDApIGdvdG8gb3V0OwogCQlicHJtLT5hcmdjKys7CiAJfQotCXJldHZhbCA9
-IGNvcHlfc3RyaW5nc19rZXJuZWwoMSwgJmlfbmFtZSwgYnBybSk7Ci0JaWYgKHJldHZhbCkg
-cmV0dXJuIHJldHZhbDsgCisJcmV0dmFsID0gY29weV9zdHJpbmdzX2tlcm5lbCgxLCAmYnBy
-bS0+aW50ZXJwLCBicHJtKTsKKwlpZiAocmV0dmFsKSBnb3RvIG91dDsKIAlicHJtLT5hcmdj
-Kys7Ci0JYnBybS0+aW50ZXJwID0gaW50ZXJwOwogCiAJLyoKIAkgKiBPSywgbm93IHJlc3Rh
-cnQgdGhlIHByb2Nlc3Mgd2l0aCB0aGUgaW50ZXJwcmV0ZXIncyBkZW50cnkuCisgICAgICAg
-ICAqIFJlbGVhc2Ugb2xkIGZpbGUgZmlyc3QKIAkgKi8KLQlmaWxlID0gb3Blbl9leGVjKGlu
-dGVycCk7Ci0JaWYgKElTX0VSUihmaWxlKSkKLQkJcmV0dXJuIFBUUl9FUlIoZmlsZSk7Ci0K
-KwlhbGxvd193cml0ZV9hY2Nlc3MoYnBybS0+ZmlsZSk7CisJZnB1dChicHJtLT5maWxlKTsK
-KwlicHJtLT5maWxlID0gTlVMTDsKKwlmaWxlID0gb3Blbl9leGVjKGJwcm0tPmludGVycCk7
-CisJaWYgKElTX0VSUihmaWxlKSkgeworCQlyZXR2YWw9UFRSX0VSUihmaWxlKTsKKwkJZ290
-byBvdXQ7CisgICAgICAgIH0KIAlicHJtLT5maWxlID0gZmlsZTsKKwkvKiBDYXZlYXQ6IFRo
-aXMgYWxzbyB1cGRhdGVzIHRoZSBjcmVkZW50aWFscyBvZiB0aGUgbmV4dCBleGVjLiAqLwog
-CXJldHZhbCA9IHByZXBhcmVfYmlucHJtKGJwcm0pOwogCWlmIChyZXR2YWwgPCAwKQotCQly
-ZXR1cm4gcmV0dmFsOwotCXJldHVybiBzZWFyY2hfYmluYXJ5X2hhbmRsZXIoYnBybSxyZWdz
-KTsKKwkJZ290byBvdXQ7CisJYnBybS0+cmVjdXJzaW9uX2RlcHRoKys7CisJcmV0dmFsPXNl
-YXJjaF9iaW5hcnlfaGFuZGxlcihicHJtLHJlZ3MpOworCitvdXQ6CS8qIE1ha2Ugc3VyZSwg
-d2UgZG8gbm90IHJldHVybiBsb2NhbCBzdGFjayBmcmFtZSBkYXRhLiBJZgorCSAqIGl0IHdv
-dWxkIGJlIG5lZWRlZCBhZnRlciByZXR1cm5pbmcsIHdlIHdvdWxkIGhhdmUgbmVlZGVkCisJ
-ICogdG8gYWxsb2NhdGUgbWVtb3J5IG9yIHVzZSBjb3B5IGZyb20gbmV3IGJwcm0tPm1tIGFu
-eXdheS4gKGhkKQorICAgICAgICAgKi8KKwlicHJtLT5pbnRlcnAgPSBicHJtX29sZF9pbnRl
-cnBfbmFtZTsgCisJaWYoIXJldHZhbCkgeworCQkvKiBUaGUgaGFuZGxlcnMgZm9yIHN0YXJ0
-aW5nIG9mIGludGVycHJldGVyIGZhaWxlZC4KKwkJICogYnBybSBpcyBhbHJlYWR5IG1vZGlm
-aWVkLCBoZW5jZSB3ZSBhcmUgZGVhZCBoZXJlLgorCQkgKiBNYWtlIHN1cmUsIHRoYXQgd2Ug
-ZG8gbm90IHJldHVybiAtRU5PRVhFQywgdGhhdCB3b3VsZAorCQkgKiBhbGxvdyBzZWFyY2hp
-bmcgZm9yIGhhbmRsZXJzIHRvIGNvbnRpbnVlLiAoaGQpLgorCQkgKi8KKwkJaWYocmV0dmFs
-PT0tRU5PRVhFQykgcmV0dmFsPS1FSU5WQUw7CisJfQorCXJldHVybihyZXR2YWwpOwogfQog
-CiBzdGF0aWMgc3RydWN0IGxpbnV4X2JpbmZtdCBzY3JpcHRfZm9ybWF0ID0gewo=
---------------050407070200040308050100--
