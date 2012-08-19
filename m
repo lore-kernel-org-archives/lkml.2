@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab2HSIs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:48:29 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:47863 "EHLO
+	id S1754201Ab2HSIsX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:48:23 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:40050 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752879Ab2HSIor (ORCPT
+	by vger.kernel.org with ESMTP id S1752944Ab2HSIor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 19 Aug 2012 04:44:47 -0400
 X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
-   d="scan'208";a="170216898"
+   d="scan'208";a="170216899"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-mtd@lists.infradead.org,
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/14] drivers/mtd/maps/rbtx4939-flash.c: delete unneeded test
-Date: Sun, 19 Aug 2012 10:44:23 +0200
-Message-Id: <1345365870-29831-8-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 8/14] drivers/video/sunxvr2500.c: fix error return code
+Date: Sun, 19 Aug 2012 10:44:24 +0200
+Message-Id: <1345365870-29831-9-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,8 +25,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Err has only been initialized to 0 at this, so it is not possible that this
-test can be true.
+Initialize return variable before exiting on an error path.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -52,20 +51,23 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/mtd/maps/rbtx4939-flash.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/video/sunxvr2500.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/maps/rbtx4939-flash.c b/drivers/mtd/maps/rbtx4939-flash.c
-index 6f52e1f..49c3fe7 100644
---- a/drivers/mtd/maps/rbtx4939-flash.c
-+++ b/drivers/mtd/maps/rbtx4939-flash.c
-@@ -100,8 +100,6 @@ static int rbtx4939_flash_probe(struct platform_device *dev)
- 		goto err_out;
- 	}
- 	info->mtd->owner = THIS_MODULE;
--	if (err)
--		goto err_out;
- 	err = mtd_device_parse_register(info->mtd, NULL, NULL, pdata->parts,
- 					pdata->nr_parts);
+diff --git a/drivers/video/sunxvr2500.c b/drivers/video/sunxvr2500.c
+index 5848436..7fbcba8 100644
+--- a/drivers/video/sunxvr2500.c
++++ b/drivers/video/sunxvr2500.c
+@@ -181,8 +181,10 @@ static int __devinit s3d_pci_register(struct pci_dev *pdev,
+ 	sp->fb_size = info->fix.line_length * sp->height;
  
+ 	sp->fb_base = ioremap(sp->fb_base_phys, sp->fb_size);
+-	if (!sp->fb_base)
++	if (!sp->fb_base) {
++		err = -ENOMEM;
+ 		goto err_release_pci;
++	}
+ 
+ 	err = s3d_set_fbinfo(sp);
+ 	if (err)
 
