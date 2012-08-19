@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab2HSALQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:11:16 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:34371 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751220Ab2HSALO (ORCPT
+	id S1751900Ab2HSAgQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:36:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43686 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab2HSAgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:11:14 -0400
-Date: Sat, 18 Aug 2012 20:11:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-cc: Jiri Kosina <jkosina@suse.cz>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 0/7] HID: picoLCD updates
-In-Reply-To: <20120818154828.0e992bfe@neptune.home>
-Message-ID: <Pine.LNX.4.44L0.1208182001320.25537-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 18 Aug 2012 20:36:14 -0400
+From: Jim Cromie <jim.cromie@gmail.com>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linux-foundation.org, Jim Cromie <jim.cromie@gmail.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: [PATCH] dyndbg: fix for SOH in logging messages
+Date: Sat, 18 Aug 2012 18:35:51 -0600
+Message-Id: <1345336551-10066-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.10.1.487.ga3935e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Aug 2012, Bruno Prémont wrote:
+commit af7f2158fde was done against master, and clashed with structured logging's change of KERN_LEVEL to SOH.
 
-> One thing I just though about, how does usbhid handle the calls to
-> usbhid_submit_report() when hid_hw_stop()/hid_hw_close() have already
-> been called?
+Bisected and fixed by Markus Trippelsdorf.
 
-Looks like they aren't synchronized at all.  That's a bug.  
-usbhid_submit_report() should check the HID_DISCONNECTED flag.
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ drivers/base/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> I will attempt to see if it makes a difference to shortcut my
-> usbhid_submit_report() calls from the point on I have called hid_hw_close()...
-
-I don't know bout hid_hw_close().  Certainly no more reports should be 
-submitted following usbhid_stop().
-
-Alan Stern
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index cdd01c5..5e6e00b 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1912,8 +1912,8 @@ int __dev_printk(const char *level, const struct device *dev,
+ 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
+ 	}
+ skip:
+-	if (level[3])
+-		level_extra = &level[3]; /* skip past "<L>" */
++	if (level[2])
++		level_extra = &level[2]; /* skip past KERN_SOH "L" */
+ 
+ 	return printk_emit(0, level[1] - '0',
+ 			   dictlen ? dict : NULL, dictlen,
+-- 
+1.7.10.1.487.ga3935e6
 
