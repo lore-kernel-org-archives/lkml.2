@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab2HSOpk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 10:45:40 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58180 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2HSOph (ORCPT
+	id S1753562Ab2HSOxz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 10:53:55 -0400
+Received: from mail.nonattached.net ([193.160.39.60]:55322 "EHLO
+	mail.nonattached.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab2HSOxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 10:45:37 -0400
-Subject: Re: IPv4 BUG: held lock freed!
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, David Miller <davem@davemloft.net>,
-        networking <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAF1ivSaU_ur9BkKG3eAsNw7d+ND5xgYbPKutemVqNec3X9m4SA@mail.gmail.com>
-References: <20120818021918.GA6499@localhost>
-	 <1345380682.5158.201.camel@edumazet-glaptop>
-	 <CAF1ivSaU_ur9BkKG3eAsNw7d+ND5xgYbPKutemVqNec3X9m4SA@mail.gmail.com>
+	Sun, 19 Aug 2012 10:53:52 -0400
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+From: Dan Luedtke <mail@danrl.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120819142732.GB23464@ZenIV.linux.org.uk>
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>
+	 <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
+	 <1345371135.4441.2.camel@tunafish> <5030BC7E.3030000@gmail.com>
+	 <1345383264.4441.56.camel@tunafish>
+	 <20120819120254.GA2369@pompeji.miese-zwerge.org>
+	 <1345390432.2716.34.camel@tunafish>
+	 <20120819142732.GB23464@ZenIV.linux.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Aug 2012 16:45:32 +0200
-Message-ID: <1345387532.5158.222.camel@edumazet-glaptop>
+Date: Sun, 19 Aug 2012 18:53:37 +0200
+Message-ID: <1345395217.2716.58.camel@tunafish>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-08-19 at 22:15 +0800, Lin Ming wrote:
+On Sun, 2012-08-19 at 15:27 +0100, Al Viro wrote:
+> 	* unlimited recursion
+I am already working on that one, but it's tricky.
 
-> Will it still has problem if code goes here without sock_hold(sk)?
+> 	* unlink() does *not* truncate the file contents;
+I did not know that.
 
-Not sure of what you mean.
+> 	* while we are at it, neither of those should free the on-disk
+> inode; again, that should happen only when the inode is evicted.
+Makes sense now. Thanks!
 
-At the time tcp_write_timer() runs, we own one reference on the socket.
-(this reference was taken in sk_reset_timer())
+> 	* I might be missing something, but copying a bunch of files
+> with something like cp /foo/* /mnt seems to be guaranteed to create
+> really lousy binary tree in target directory (they will go in lexicographical
+> order and you don't seem to rebalance the tree at all)
+You missed nothing, there is no rebalancing yet. Thats why performance
+is bad at the moment as soon as the "tree" stops being a tree.
 
-On old kernels, if we found the socket locked by the user, we used to
-rearm the timer for a 50ms delay (and thus did sock_hold() again)
+> 	* you are really abusing iget() there.
+Noted. Thanks!
 
-Another way to avoid the bug would to make sure sk_reset_timer()
-increases refcount _before_ setting the timer, but its adding one atomic
-in fast path...
+> 	* minor point, but endianness-flipping in place is *the* way to get
+> hard-to-catch endianness bugs.  foo = cpu_to_le64(foo) is a bloody bad idea;
+> either use object for host-endian all along, or use it only for (in your
+> case) little-endian.
+I am not sure I understood this right.
+At what point should I convert e.g. the file size (little endian 64bit
+value stored on disk) to host endianess? When filling the inode?
+Is inode->i_size = le64_to_cpu(size) bad, too?
 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 8f67ced..d1745b7 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -2114,8 +2114,9 @@ EXPORT_SYMBOL(sk_send_sigurg);
- void sk_reset_timer(struct sock *sk, struct timer_list* timer,
- 		    unsigned long expires)
- {
--	if (!mod_timer(timer, expires))
--		sock_hold(sk);
-+	sock_hold(sk);
-+	if (mod_timer(timer, expires))
-+		__sock_put(sk);
- }
- EXPORT_SYMBOL(sk_reset_timer);
- 
+Thank you very much for your comments! That'll keep me busy a few weeks.
 
+regards,
+Dan
+
+
+PS: As Jochen Striepe pointed out, lanyfs@librelist.com behaves badly, I
+removed it.
+-- 
+Dan Luedtke
+http://www.danrl.de
 
