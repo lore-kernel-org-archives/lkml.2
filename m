@@ -1,56 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab2HSApL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Aug 2012 20:45:11 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:34530 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751134Ab2HSApJ (ORCPT
+	id S1752051Ab2HSAwK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Aug 2012 20:52:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41176 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2HSAwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Aug 2012 20:45:09 -0400
-Message-ID: <50303714.3090204@xenotime.net>
-Date: Sat, 18 Aug 2012 17:45:08 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] sched: fix kernel-doc warnings in kernel/sched/fair.c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sat, 18 Aug 2012 20:52:07 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH v2 00/16] generic hashtable implementation
+Date: Sun, 19 Aug 2012 02:52:13 +0200
+Message-Id: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+There are quite a few places in the kernel which implement a hashtable
+in a very similar way. Instead of having implementations of a hashtable
+all over the kernel, we can re-use the code.
 
-Fix kernel-doc warnings in kernel/sched/fair.c:
+Since it looks like all the major issues we're addressed in the RFC phase
+and no major issues were raised with this patch set, I'd be happy to see
+this getting merged so that work could continue on different aspects of
+the hashtable. Some interesting directions include:
 
-Warning(kernel/sched/fair.c:3660): Excess function parameter 'cpus' description in 'update_sg_lb_stats'
-Warning(kernel/sched/fair.c:3806): Excess function parameter 'cpus' description in 'update_sd_lb_stats'
+ - Introducing a dynamic RCU hashtable such as the one Mathieu Desnoyers
+ wrote about out in the userspace RCU.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	Ingo Molnar <mingo@redhat.com>
-Cc:	Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched/fair.c |    2 --
- 1 file changed, 2 deletions(-)
+ - Replacing the rest of the the kernel structures which use the same basec
+ hashtable construct to use this new interface.
 
---- lnx-36-rc2.orig/kernel/sched/fair.c
-+++ lnx-36-rc2/kernel/sched/fair.c
-@@ -3650,7 +3650,6 @@ fix_small_capacity(struct sched_domain *
-  * @group: sched_group whose statistics are to be updated.
-  * @load_idx: Load index of sched_domain of this_cpu for load calc.
-  * @local_group: Does group contain this_cpu.
-- * @cpus: Set of cpus considered for load balancing.
-  * @balance: Should we balance.
-  * @sgs: variable to hold the statistics for this group.
-  */
-@@ -3797,7 +3796,6 @@ static bool update_sd_pick_busiest(struc
- /**
-  * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
-  * @env: The load balancing environment.
-- * @cpus: Set of cpus considered for load balancing.
-  * @balance: Should we balance.
-  * @sds: variable to hold the statistics for this sched_domain.
-  */
+ - Same as above, but for non-obvious places (for example, I'm looking into
+ using the hashtable to store KVM vcpus instead of the linked list being used
+ there now - this should help performance with a large amount of vcpus).
+
+
+Changes since v1:
+
+ - Added missing hash_init in rds and lockd.
+ - Addressed the userns comments by Eric Biederman.
+ - Ran a small test to confirm hash_32 does a good job for low key
+ values (1-10000), which showed it did - this resulted in no changes to the
+ code.
+
+
+Sasha Levin (16):
+  hashtable: introduce a small and naive hashtable
+  userns: use new hashtable implementation
+  mm,ksm: use new hashtable implementation
+  workqueue: use new hashtable implementation
+  mm/huge_memory: use new hashtable implementation
+  tracepoint: use new hashtable implementation
+  net,9p: use new hashtable implementation
+  block,elevator: use new hashtable implementation
+  SUNRPC/cache: use new hashtable implementation
+  dlm: use new hashtable implementation
+  net,l2tp: use new hashtable implementation
+  dm: use new hashtable implementation
+  lockd: use new hashtable implementation
+  net,rds: use new hashtable implementation
+  openvswitch: use new hashtable implementation
+  tracing output: use new hashtable implementation
+
+ block/blk.h                                        |    2 +-
+ block/elevator.c                                   |   23 +--
+ drivers/md/dm-snap.c                               |   24 +--
+ drivers/md/persistent-data/dm-block-manager.c      |    1 -
+ .../persistent-data/dm-persistent-data-internal.h  |   19 --
+ .../md/persistent-data/dm-transaction-manager.c    |   30 +--
+ fs/dlm/lowcomms.c                                  |   47 +---
+ fs/lockd/svcsubs.c                                 |   66 +++--
+ include/linux/elevator.h                           |    5 +-
+ include/linux/hashtable.h                          |  284 ++++++++++++++++++++
+ kernel/trace/trace_output.c                        |   20 +-
+ kernel/tracepoint.c                                |   27 +--
+ kernel/user.c                                      |   33 +--
+ kernel/workqueue.c                                 |   86 +-----
+ mm/huge_memory.c                                   |   57 +---
+ mm/ksm.c                                           |   33 +--
+ net/9p/error.c                                     |   21 +-
+ net/l2tp/l2tp_core.c                               |  134 ++++------
+ net/l2tp/l2tp_core.h                               |    8 +-
+ net/l2tp/l2tp_debugfs.c                            |   19 +-
+ net/openvswitch/vport.c                            |   30 +--
+ net/rds/bind.c                                     |   28 ++-
+ net/rds/connection.c                               |  102 +++----
+ net/sunrpc/cache.c                                 |   20 +-
+ 24 files changed, 591 insertions(+), 528 deletions(-)
+ delete mode 100644 drivers/md/persistent-data/dm-persistent-data-internal.h
+ create mode 100644 include/linux/hashtable.h
+
+-- 
+1.7.8.6
+
