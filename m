@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2HSIr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:47:58 -0400
+	id S1754270Ab2HSIs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:48:29 -0400
 Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:47863 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753224Ab2HSIov (ORCPT
+	by vger.kernel.org with ESMTP id S1752879Ab2HSIor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 04:44:51 -0400
+	Sun, 19 Aug 2012 04:44:47 -0400
 X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
-   d="scan'208";a="170216901"
+   d="scan'208";a="170216898"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: kernel-janitors@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 11/14] drivers/spi/spi-orion.c: fix error return code
-Date: Sun, 19 Aug 2012 10:44:26 +0200
-Message-Id: <1345365870-29831-11-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 7/14] drivers/mtd/maps/rbtx4939-flash.c: delete unneeded test
+Date: Sun, 19 Aug 2012 10:44:23 +0200
+Message-Id: <1345365870-29831-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,7 +25,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Initialize return variable before exiting on an error path.
+Err has only been initialized to 0 at this, so it is not possible that this
+test can be true.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -51,24 +52,20 @@ ret@p1 = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-Actually, orion_spi_reset currently always returns 0, so the test is
-never true.  Perhaps this should be taken into account in some other way.
+ drivers/mtd/maps/rbtx4939-flash.c |    2 --
+ 1 file changed, 2 deletions(-)
 
- drivers/spi/spi-orion.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/spi/spi-orion.c b/drivers/spi/spi-orion.c
-index b17c09c..cc12803 100644
---- a/drivers/spi/spi-orion.c
-+++ b/drivers/spi/spi-orion.c
-@@ -435,7 +435,8 @@ static int __init orion_spi_probe(struct platform_device *pdev)
+diff --git a/drivers/mtd/maps/rbtx4939-flash.c b/drivers/mtd/maps/rbtx4939-flash.c
+index 6f52e1f..49c3fe7 100644
+--- a/drivers/mtd/maps/rbtx4939-flash.c
++++ b/drivers/mtd/maps/rbtx4939-flash.c
+@@ -100,8 +100,6 @@ static int rbtx4939_flash_probe(struct platform_device *dev)
+ 		goto err_out;
  	}
- 	spi->base = ioremap(r->start, SZ_1K);
+ 	info->mtd->owner = THIS_MODULE;
+-	if (err)
+-		goto err_out;
+ 	err = mtd_device_parse_register(info->mtd, NULL, NULL, pdata->parts,
+ 					pdata->nr_parts);
  
--	if (orion_spi_reset(spi) < 0)
-+	status = orion_spi_reset(spi);
-+	if (status < 0)
- 		goto out_rel_mem;
- 
- 	master->dev.of_node = pdev->dev.of_node;
 
