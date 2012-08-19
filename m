@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2HSItU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:49:20 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:52549 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751961Ab2HSIol (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 04:44:41 -0400
-X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
-   d="scan'208";a="170216892"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/14] drivers/rpmsg/virtio_rpmsg_bus.c: fix error return code
-Date: Sun, 19 Aug 2012 10:44:17 +0200
-Message-Id: <1345365870-29831-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754019Ab2HSIxK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:53:10 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37268 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753260Ab2HSIxG convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:2>);
+	Sun, 19 Aug 2012 04:53:06 -0400
+Message-Id: <5030B77E020000780008A233@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Sun, 19 Aug 2012 09:53:02 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <andi@firstfloor.org>, <ak@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>
+Cc: <x86@kernel.org>, <akpm@linux-foundation.org>, <jmario@redhat.com>,
+        <rusty@rustcorp.com.au>, <mmarek@suse.cz>,
+        <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH 59/74] lto: Handle LTO common symbols in module
+ loader
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
+ <1345345030-22211-60-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1345345030-22211-60-git-send-email-andi@firstfloor.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>> Andi Kleen <andi@firstfloor.org> 08/19/12 4:59 AM >>>
+>@@ -1904,6 +1904,10 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+ >
+>        switch (sym[i].st_shndx) {
+>        case SHN_COMMON:
+>+            /* Ignore common symbols */
+>+            if (!strncmp(name, "__gnu_lto", 9))
+>+                break;
+>+
+>            /* We compiled with -fno-common.  These are not
+>               supposed to happen.  */
+>            pr_debug("Common symbol: %s\n", name);
 
-Initialize return variable before exiting on an error path.
+I think it is dangerous to just match the start of the symbol name here -
+this may in the future well lead to ignoring symbols we shouldn't be
+ignoring.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Also I would think the added comment ought to say "Ignore LTO symbols."
+Otherwise its sort of contradicting the purpose of the case being handled
+here.
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/rpmsg/virtio_rpmsg_bus.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
-index 590cfaf..c5e66d9 100644
---- a/drivers/rpmsg/virtio_rpmsg_bus.c
-+++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-@@ -959,8 +959,10 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	bufs_va = dma_alloc_coherent(vdev->dev.parent->parent,
- 				RPMSG_TOTAL_BUF_SPACE,
- 				&vrp->bufs_dma, GFP_KERNEL);
--	if (!bufs_va)
-+	if (!bufs_va) {
-+		err = -ENOMEM;
- 		goto vqs_del;
-+	}
- 
- 	dev_dbg(&vdev->dev, "buffers: va %p, dma 0x%llx\n", bufs_va,
- 					(unsigned long long)vrp->bufs_dma);
+Jan
 
