@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2HSOQr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 10:16:47 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:59716 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752607Ab2HSOQo (ORCPT
+	id S1753098Ab2HSOSa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 10:18:30 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:52010 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab2HSOS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 10:16:44 -0400
-Date: Sun, 19 Aug 2012 10:16:41 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v2 01/16] hashtable: introduce a small and naive
-	hashtable
-Message-ID: <20120819141641.GA9082@Krystal>
-References: <1345337550-24304-1-git-send-email-levinsasha928@gmail.com> <1345337550-24304-2-git-send-email-levinsasha928@gmail.com> <20120819131637.GA8272@Krystal>
+	Sun, 19 Aug 2012 10:18:27 -0400
+Date: Sun, 19 Aug 2012 16:18:24 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Kay Sievers <kay@vrfy.org>
+Subject: Re: Force enabled HPET at 0x%lx
+Message-ID: <20120819141824.GC251@x4>
+References: <20120819140232.GA23629@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120819131637.GA8272@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120819140232.GA23629@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> * Sasha Levin (levinsasha928@gmail.com) wrote:
-[...]
-> > +/**
-> > + * hash_for_each_possible - iterate over all possible objects for a given key
-> > + * @name: hashtable to iterate
-> > + * @obj: the type * to use as a loop cursor for each bucket
-> > + * @bits: bit count of hashing function of the hashtable
-> > + * @node: the &struct list_head to use as a loop cursor for each bucket
-> > + * @member: the name of the hlist_node within the struct
-> > + * @key: the key of the objects to iterate over
-> > + */
-> > +#define hash_for_each_possible_size(name, obj, bits, node, member, key)		\
-> > +	hlist_for_each_entry(obj, node,	&name[hash_min(key, bits)], member)
+On 2012.08.19 at 22:02 +0800, Fengguang Wu wrote:
+> Hi,
 > 
-> Second point: "for_each_possible" does not express the iteration scope.
-> Citing WordNet: "possible adj 1: capable of happening or existing;" --
-> which has nothing to do with iteration on duplicate keys within a hash
-> table.
+>         [   38.650387] PCI host bridge to bus 0000:00
+>         [   38.657920] pci_bus 0000:00: Force enabled HPET at 0x%lx
+>                                                                 ~~~
 > 
-> I would recommend to rename "possible" to "duplicate", e.g.:
+> That "0x%lx" message should be emitted by one of the dev_printks in
+> arch/x86/kernel/quirks.c and I failed to see anything wrong with it:
 > 
->   hash_for_each_duplicate()
+>                 dev_printk(KERN_DEBUG, &dev->dev, "Force enabled HPET at "
+>                         "0x%lx\n", force_hpet_address);
 > 
-> which clearly says what is the scope of this iteration: duplicate keys.
+> So why the value of "force_hpet_address" is not printed?
+> 
+>         [   38.657920] busn_res: [bus 00-ff] is inserted under domain [bus 00-ff]
+>         [   38.658480] pci_bus 0000:00: ^A0root bus resource [bus 00-ff]
+>         [   38.662411] pci_bus 0000:00: ^A0root bus resource [io  0x0000-0xffff]
+>         [   38.664639] pci_bus 0000:00: ^A0root bus resource [mem 0x00000000-0xffffffffff]
+>                                         ~~~
+> 
+> And that ^A0 character also looks strange..
 
-OK, about this part: I now see that you iterate over all objects within
-the same hash chain. I guess the description "iterate over all possible
-objects for a given key" is misleading: it's not all objects with a
-given key, but rather all objects hashing to the same bucket.
+http://lkml.org/lkml/2012/8/18/143
 
-I understand that you don't want to build knowledge of the key
-comparison function in the iterator (which makes sense for a simple hash
-table).
-
-By the way, the comment "@obj: the type * to use as a loop cursor for
-each bucket" is also misleading: it's a loop cursor for each entry,
-since you iterate on all nodes within single bucket. Same for "@node:
-the &struct list_head to use as a loop cursor for each bucket".
-
-So with these documentation changes applied, hash_for_each_possible
-starts to make more sense, because it refers to entries that can
-_possibly_ be a match (or not). Other options would be
-hash_chain_for_each() or hash_bucket_for_each().
-
-Thanks,
-
-Mathieu
+Fix:
+http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=commitdiff;h=ebdc82899ec5ed35af1c79ed6a4eeda69dad9b90
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Markus
