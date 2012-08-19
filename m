@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab2HSIrV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 04:47:21 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:40050 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753279Ab2HSIow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 04:44:52 -0400
-X-IronPort-AV: E=Sophos;i="4.77,792,1336341600"; 
-   d="scan'208";a="170216902"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: kernel-janitors@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 10/14] drivers/spi/spi-ep93xx.c: fix error return code
-Date: Sun, 19 Aug 2012 10:44:27 +0200
-Message-Id: <1345365870-29831-12-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1345365870-29831-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754078Ab2HSIre (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 04:47:34 -0400
+Received: from antcom.de ([188.40.178.216]:51307 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796Ab2HSIr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 04:47:28 -0400
+Message-ID: <5030A81E.5090508@antcom.de>
+Date: Sun, 19 Aug 2012 10:47:26 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: kevin.wells@nxp.com, vitalywool@gmail.com, khali@linux-fr.org,
+        ben-linux@fluff.org, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, jonsmirl@gmail.com
+Subject: Re: [PATCH RESEND 1/2] i2c: pnx: Fix bit definitions
+References: <1344411752-23469-1-git-send-email-stigge@antcom.de> <20120818095108.GB24812@pengutronix.de>
+In-Reply-To: <20120818095108.GB24812@pengutronix.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 18/08/12 11:51, Wolfram Sang wrote:
+> On Wed, Aug 08, 2012 at 09:42:31AM +0200, Roland Stigge wrote:
+>> The I2C Control Register bits RFDAIE and RFFIE were mixed up. In
+>> addition to this fix, this patch adds the missing bit DRSIE for
+>> completeness.
+>> 
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>> 
+>> --- Applies to v3.6-rc1
+>> 
+>> This patch for i2c-pnx affects PNX4008 and LPC32xx (and LPC31xx,
+>> not yet in mainline). Can you please test and double-check the
+>> manuals of PNX4008 and LPC31xx? I only found this via the manual
+>> of LPC32xx but assume it's the same for the others, also.
+>> 
+>> Thanks in advance!
+> 
+> Kevin, since the other manuals seem to be not easily available, can
+> you please check?
 
-Initialize return variable before exiting on an error path.
+Yes, would be great if someone at NXP could confirm that PNX actually
+uses the same IP core for the I2C controller as LPCs do (which is
+currently assumed by Linux anyway).
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Thanks in advance,
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/spi/spi-ep93xx.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
-index f97f1d2..9e7fdfd 100644
---- a/drivers/spi/spi-ep93xx.c
-+++ b/drivers/spi/spi-ep93xx.c
-@@ -1105,6 +1105,7 @@ static int __devinit ep93xx_spi_probe(struct platform_device *pdev)
- 	espi->wq = create_singlethread_workqueue("ep93xx_spid");
- 	if (!espi->wq) {
- 		dev_err(&pdev->dev, "unable to create workqueue\n");
-+		error = -ENOMEM;
- 		goto fail_free_dma;
- 	}
- 	INIT_WORK(&espi->msg_work, ep93xx_spi_work);
-
+Roland
