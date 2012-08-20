@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab2HTH3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 03:29:40 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:51813 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab2HTH3i (ORCPT
+	id S1755581Ab2HTHa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 03:30:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61837 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab2HTHa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 03:29:38 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <5031E753.5070200@jic23.retrosnub.co.uk>
-Date: Mon, 20 Aug 2012 08:29:23 +0100
-From: Jonathan Cameron <jic23@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
+	Mon, 20 Aug 2012 03:30:26 -0400
+Subject: Re: [PATCH] Extcon: Minor change in the declaration of cable_names
+From: anish kumar <anish198519851985@gmail.com>
+To: myungjoo.ham@samsung.com
+Cc: =?UTF-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 3/3] IIO: arm: Add LRADC to i.MX28 dts
-References: <1344784918-32352-1-git-send-email-marex@denx.de> <201208170457.03686.marex@denx.de> <CAAQ0ZWROobdtFkzn9Sr7v5B29zYTQ5YEUZV59kkNE_yv6qbmgQ@mail.gmail.com> <201208191730.31969.marex@denx.de>
-In-Reply-To: <201208191730.31969.marex@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <28057486.209671345445798709.JavaMail.weblogic@epml13>
+References: <28057486.209671345445798709.JavaMail.weblogic@epml13>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Aug 2012 12:57:15 +0530
+Message-ID: <1345447635.1568.1.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/08/12 16:30, Marek Vasut wrote:
-> Dear Shawn Guo,
->
->> On 17 August 2012 10:57, Marek Vasut <marex@denx.de> wrote:
->>> Thanks ... still, is there some key for those tags? Or do you invent them
->>> at random and then let people guess what's right? Some git grep on
->>> Documentation directory gets me nothing.
->>
->> There is no official document for this.
->
-> Hm, maybe such document can be introduced?
-Sounds like a voluteer ;) More seriously I suspect it would never get
-updated or be correct in the first place. It would be a pile of grief
-for whoever was looking after it.
+On Mon, 2012-08-20 at 06:56 +0000, 함명주 wrote:
+> > From: anish kumar <anish198519851985@gmail.com>
+> > 
+> > Instead of "const char **supported_cable" it is better to have
+> > it as "const char *const *supported_cable".
+> > 
+> > Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> 
+> Could you please elaborate on why it's better?
+> 
+> (Is this fixing the using the standard naming issue Mark mentioned before?)
+No, It is what Lars(Lars-Peter Clausen) mentioned when he was doing the
+review earlier.It is nothing but a general practise as cable_names is
+constant. 
+> 
+> 
+> Cheers!
+> MyungJoo
+> 
+> > ---
+> >  include/linux/extcon.h                 |    2 +-
+> >  include/linux/extcon/extcon-adc-jack.h |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+> > index cdd4014..a6bcc29 100644
+> > --- a/include/linux/extcon.h
+> > +++ b/include/linux/extcon.h
+> > @@ -111,7 +111,7 @@ struct extcon_cable;
+> >  struct extcon_dev {
+> >  	/* --- Optional user initializing data --- */
+> >  	const char	*name;
+> > -	const char **supported_cable;
+> > +	const char *const *supported_cable;
+> >  	const u32	*mutually_exclusive;
+> >  
+> >  	/* --- Optional callbacks to override class functions --- */
+> > diff --git a/include/linux/extcon/extcon-adc-jack.h b/include/linux/extcon/extcon-adc-jack.h
+> > index 20e9eef..f27f2e8 100644
+> > --- a/include/linux/extcon/extcon-adc-jack.h
+> > +++ b/include/linux/extcon/extcon-adc-jack.h
+> > @@ -60,7 +60,7 @@ struct adc_jack_pdata {
+> >  	/*
+> >  	 * The last entry should be NULL
+> >  	 */
+> > -	const char **cable_names;
+> > +	const char *const *cable_names;
+> >  	/* The last entry's state should be 0 */
+> >  	struct adc_jack_cond *adc_conditions;
+> >  
+> > -- 
+> > 1.7.1
+> > 
+> > 
+> > 
+> > 
+> >        
+> >   
+> >          
+> > 
 
-Mostly these prefixes are an excuse for grumpy maintainers to moan
-at people :)
->
->> But generally, each subsystem
->> has a convention on the subject prefix, so that the output of git
->> commands like git pull, git shortlog looks consistent on the patch
->> subject, and more importantly people can easily know subsystem the
->> patch touches.
->>
->> The convention for patches touching arch/arm is "ARM: ".
->>
->> Regards,
->> Shawn
->
-> Best regards,
-> Marek Vasut
->
 
