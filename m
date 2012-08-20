@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab2HTOxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:53:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61196 "EHLO
+	id S1756893Ab2HTOx6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:53:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48719 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756744Ab2HTOuL (ORCPT
+	with ESMTP id S1754308Ab2HTOuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:50:11 -0400
+	Mon, 20 Aug 2012 10:50:09 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>,
         Jason Wessel <jason.wessel@windriver.com>,
@@ -17,9 +17,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 06/12] tty/serial/kgdboc: Add and wire up clear_irqs callback
-Date: Mon, 20 Aug 2012 07:47:24 -0700
-Message-Id: <1345474050-8339-6-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 05/12] tty/serial/amba-pl011: Implement poll_init callback
+Date: Mon, 20 Aug 2012 07:47:23 -0700
+Message-Id: <1345474050-8339-5-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.11.5
 In-Reply-To: <20120820144449.GA32560@lizard>
 References: <20120820144449.GA32560@lizard>
@@ -27,158 +27,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a new callback: clear_irqs. It is used for the
-cases when KDB-entry (e.g. NMI) and KDB IO (e.g. serial port) shares
-the same interrupt. To get the idea, let's take some real example (ARM
-machine): we have a serial port which interrupt is routed to an NMI,
-and the interrupt is used to enter KDB. Once there is some activity on
-the serial port, the CPU receives NMI exception, and we fall into KDB
-shell. So, it is our "debug console", and it is able to interrupt (and
-thus debug) even IRQ handlers themselves.
+The callback is used to initialize the hardware, nothing else should be
+done, i.e. we should not request interrupts (but we can and do unmask
+some of them, as they might be useful for NMI entry).
 
-When used that way, the interrupt never reaches serial driver's IRQ
-handler routine, which means that serial driver will not silence the
-interrupt. NMIs behaviour are quite arch-specific, and we can't assume
-that we can use them as ordinary IRQs, e.g. on some arches (like ARM)
-we can't handle data aborts, the behaviour is undefined then. So we
-can't just handle execution to serial driver's IRQ handler from the
-NMI context once we're done with KDB (plus this would defeat the
-debugger's purpose: we want the NMI handler be as simple as possible,
-so it will have less chances to hang).
+As a side-effect, the patch also fixes a division by zero[1] when booting
+with kgdboc options specified (e.g. kgdboc=ttyAMA0,115200n8). The issue
+happens because serial core calls set_termios callback, but the driver
+doesn't know clock frequency, and thus cannot calculate proper baud rate
+values.
 
-So, given that have to deal with it somehow, we have two options:
-
-1. Implement something that clears the interrupt;
-2. Implement a whole new concept of grabbing tty for exclusive KDB use,
-   plus implement mask/unmask callbacks, i.e.:
-   - Since consoles might use ttys w/o opending them, we would have
-     to make kdb respect CON_ENABLED flag (maybe a good idea to do it
-     anyway);
-   - Add 'bool exclusive' argument to tty_find_polling_driver(), if set
-     to 1, the function will refuse to return an already tty; and will
-     use the flag in tty_reopen() to not allow multiple users (there are
-     already checks for pty masters, which are "open once" ttys);
-   - Once we got the tty exclusively, we would need to call some new
-     uart->mask_all_but_rx_interrupts call before we want to use the
-     port for NMI/KDB, and unmask_all_but_rx_interrupts after we're
-     done with it.
-
-The second option is obviously more complex, needlessly so, and less
-generic. So I went with the first one: we just consume all the interrupts.
-The tty becomes silently unusable for the rest of the world when we use
-it with KDB; but once we reroute the serial IRQ source back from NMI to
-an ordinary IRQ (in KDB this can be done with 'disable_nmi' command), it
-will behave as normal.
-
-p.s. Since the callback is so far used only by polling user, we place
-it under the appropriate #ifdef.
+[1]
+WARNING: at drivers/tty/serial/serial_core.c:400 uart_get_baud_rate+0xe8/0x14c()
+Modules linked in:
+[<c0018e50>] (unwind_backtrace+0x0/0xf0) from [<c0020ae8>] (warn_slowpath_common+0x4c/0x64)
+[<c0020ae8>] (warn_slowpath_common+0x4c/0x64) from [<c0020b1c>] (warn_slowpath_null+0x1c/0x24)
+[<c0020b1c>] (warn_slowpath_null+0x1c/0x24) from [<c0185ed8>] (uart_get_baud_rate+0xe8/0x14c)
+[<c0185ed8>] (uart_get_baud_rate+0xe8/0x14c) from [<c0187078>] (pl011_set_termios+0x48/0x278)
+[<c0187078>] (pl011_set_termios+0x48/0x278) from [<c01850b0>] (uart_set_options+0xe8/0x114)
+[<c01850b0>] (uart_set_options+0xe8/0x114) from [<c0185de4>] (uart_poll_init+0xd4/0xe0)
+[<c0185de4>] (uart_poll_init+0xd4/0xe0) from [<c016da8c>] (tty_find_polling_driver+0x100/0x17c)
+[<c016da8c>] (tty_find_polling_driver+0x100/0x17c) from [<c0188538>] (configure_kgdboc+0xc8/0x1b8)
+[<c0188538>] (configure_kgdboc+0xc8/0x1b8) from [<c00088a4>] (do_one_initcall+0x30/0x168)
+[<c00088a4>] (do_one_initcall+0x30/0x168) from [<c033784c>] (do_basic_setup+0x94/0xc8)
+[<c033784c>] (do_basic_setup+0x94/0xc8) from [<c03378e0>] (kernel_init+0x60/0xf4)
+[<c03378e0>] (kernel_init+0x60/0xf4) from [<c00144a0>] (kernel_thread_exit+0x0/0x8)
+---[ end trace 7d41c9186f342c40 ]---
+Division by zero in kernel.
+[<c0018e50>] (unwind_backtrace+0x0/0xf0) from [<c014546c>] (Ldiv0+0x8/0x10)
+[<c014546c>] (Ldiv0+0x8/0x10) from [<c0187098>] (pl011_set_termios+0x68/0x278)
+[<c0187098>] (pl011_set_termios+0x68/0x278) from [<c01850b0>] (uart_set_options+0xe8/0x114)
+[<c01850b0>] (uart_set_options+0xe8/0x114) from [<c0185de4>] (uart_poll_init+0xd4/0xe0)
+[<c0185de4>] (uart_poll_init+0xd4/0xe0) from [<c016da8c>] (tty_find_polling_driver+0x100/0x17c)
+[<c016da8c>] (tty_find_polling_driver+0x100/0x17c) from [<c0188538>] (configure_kgdboc+0xc8/0x1b8)
+[<c0188538>] (configure_kgdboc+0xc8/0x1b8) from [<c00088a4>] (do_one_initcall+0x30/0x168)
+[<c00088a4>] (do_one_initcall+0x30/0x168) from [<c033784c>] (do_basic_setup+0x94/0xc8)
+[<c033784c>] (do_basic_setup+0x94/0xc8) from [<c03378e0>] (kernel_init+0x60/0xf4)
+[<c03378e0>] (kernel_init+0x60/0xf4) from [<c00144a0>] (kernel_thread_exit+0x0/0x8)
+Division by zero in kernel.
+[<c0018e50>] (unwind_backtrace+0x0/0xf0) from [<c014546c>] (Ldiv0+0x8/0x10)
+[<c014546c>] (Ldiv0+0x8/0x10) from [<c0183a98>] (uart_update_timeout+0x4c/0x5c)
+[<c0183a98>] (uart_update_timeout+0x4c/0x5c) from [<c01870f8>] (pl011_set_termios+0xc8/0x278)
+[<c01870f8>] (pl011_set_termios+0xc8/0x278) from [<c01850b0>] (uart_set_options+0xe8/0x114)
+[<c01850b0>] (uart_set_options+0xe8/0x114) from [<c0185de4>] (uart_poll_init+0xd4/0xe0)
+[<c0185de4>] (uart_poll_init+0xd4/0xe0) from [<c016da8c>] (tty_find_polling_driver+0x100/0x17c)
+[<c016da8c>] (tty_find_polling_driver+0x100/0x17c) from [<c0188538>] (configure_kgdboc+0xc8/0x1b8)
+[<c0188538>] (configure_kgdboc+0xc8/0x1b8) from [<c00088a4>] (do_one_initcall+0x30/0x168)
+[<c00088a4>] (do_one_initcall+0x30/0x168) from [<c033784c>] (do_basic_setup+0x94/0xc8)
+[<c033784c>] (do_basic_setup+0x94/0xc8) from [<c03378e0>] (kernel_init+0x60/0xf4)
+[<c03378e0>] (kernel_init+0x60/0xf4) from [<c00144a0>] (kernel_thread_exit+0x0/0x8)
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/tty/serial/kgdboc.c      | 10 ++++++++++
- drivers/tty/serial/serial_core.c | 15 +++++++++++++++
- include/linux/kgdb.h             |  1 +
- include/linux/serial_core.h      |  1 +
- include/linux/tty_driver.h       |  1 +
- 5 files changed, 28 insertions(+)
+ drivers/tty/serial/amba-pl011.c | 47 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 35 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/tty/serial/kgdboc.c b/drivers/tty/serial/kgdboc.c
-index 2b42a01..0aa08c8 100644
---- a/drivers/tty/serial/kgdboc.c
-+++ b/drivers/tty/serial/kgdboc.c
-@@ -227,6 +227,15 @@ static int kgdboc_get_char(void)
- 						kgdb_tty_line);
- }
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index d3553b5..90f2302 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1310,10 +1310,9 @@ static void pl010_put_poll_char(struct uart_port *port,
  
-+static void kgdboc_clear_irqs(void)
-+{
-+	if (!kgdb_tty_driver)
-+		return;
-+	if (kgdb_tty_driver->ops->clear_irqs)
-+		kgdb_tty_driver->ops->clear_irqs(kgdb_tty_driver,
-+						 kgdb_tty_line);
-+}
-+
- static void kgdboc_put_char(u8 chr)
+ #endif /* CONFIG_CONSOLE_POLL */
+ 
+-static int pl011_startup(struct uart_port *port)
++static int pl011_hwinit(struct uart_port *port)
  {
- 	if (!kgdb_tty_driver)
-@@ -298,6 +307,7 @@ static struct kgdb_io kgdboc_io_ops = {
- 	.name			= "kgdboc",
- 	.read_char		= kgdboc_get_char,
- 	.write_char		= kgdboc_put_char,
-+	.clear_irqs		= kgdboc_clear_irqs,
- 	.pre_exception		= kgdboc_pre_exp_handler,
- 	.post_exception		= kgdboc_post_exp_handler,
- };
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index cba8443..908d108 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2169,6 +2169,20 @@ static void uart_poll_put_char(struct tty_driver *driver, int line, char ch)
- 	port = state->uart_port;
- 	port->ops->poll_put_char(port, ch);
- }
+ 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+-	unsigned int cr;
+ 	int retval;
+ 
+ 	/* Optionaly enable pins to be muxed in and configured */
+@@ -1342,6 +1341,39 @@ static int pl011_startup(struct uart_port *port)
+ 	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
+ 
+ 	/*
++	 * Save interrupts enable mask, and enable RX interrupts in case if
++	 * the interrupt is used for NMI entry.
++	 */
++	uap->im = readw(uap->port.membase + UART011_IMSC);
++	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
 +
-+static void uart_clear_irqs(struct tty_driver *driver, int line)
-+{
-+	struct uart_driver *drv = driver->driver_state;
-+	struct uart_state *state = drv->state + line;
-+	struct uart_port *port;
++	if (uap->port.dev->platform_data) {
++		struct amba_pl011_data *plat;
 +
-+	if (!state || !state->uart_port)
-+		return;
-+
-+	port = state->uart_port;
-+	if (port->ops->clear_irqs)
-+		port->ops->clear_irqs(port);
++		plat = uap->port.dev->platform_data;
++		if (plat->init)
++			plat->init();
++	}
++	return 0;
++clk_unprep:
++	clk_unprepare(uap->clk);
++out:
++	return retval;
 +}
- #endif
++
++static int pl011_startup(struct uart_port *port)
++{
++	struct uart_amba_port *uap = (struct uart_amba_port *)port;
++	unsigned int cr;
++	int retval;
++
++	retval = pl011_hwinit(port);
++	if (retval)
++		goto clk_dis;
++
++	writew(uap->im, uap->port.membase + UART011_IMSC);
++
++	/*
+ 	 * Allocate the IRQ
+ 	 */
+ 	retval = request_irq(uap->port.irq, pl011_int, 0, "uart-pl011", uap);
+@@ -1400,21 +1432,11 @@ static int pl011_startup(struct uart_port *port)
+ 	writew(uap->im, uap->port.membase + UART011_IMSC);
+ 	spin_unlock_irq(&uap->port.lock);
  
- static const struct tty_operations uart_ops = {
-@@ -2201,6 +2215,7 @@ static const struct tty_operations uart_ops = {
- 	.poll_init	= uart_poll_init,
- 	.poll_get_char	= uart_poll_get_char,
- 	.poll_put_char	= uart_poll_put_char,
-+	.clear_irqs	= uart_clear_irqs,
- #endif
- };
+-	if (uap->port.dev->platform_data) {
+-		struct amba_pl011_data *plat;
+-
+-		plat = uap->port.dev->platform_data;
+-		if (plat->init)
+-			plat->init();
+-	}
+-
+ 	return 0;
  
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index 3b111a6..1fd1cf0 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -295,6 +295,7 @@ struct kgdb_io {
- 	const char		*name;
- 	int			(*read_char) (void);
- 	void			(*write_char) (u8);
-+	void			(*clear_irqs) (void);
- 	void			(*flush) (void);
- 	int			(*init) (void);
- 	void			(*pre_exception) (void);
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 3642710..114b3f3 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -277,6 +277,7 @@ struct uart_ops {
- 	int		(*poll_init)(struct uart_port *);
- 	void	(*poll_put_char)(struct uart_port *, unsigned char);
- 	int		(*poll_get_char)(struct uart_port *);
-+	void	(*clear_irqs)(struct uart_port *);
- #endif
- };
+  clk_dis:
+ 	clk_disable(uap->clk);
+- clk_unprep:
+ 	clk_unprepare(uap->clk);
+- out:
+ 	return retval;
+ }
  
-diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index 6e6dbb7..94b14cd 100644
---- a/include/linux/tty_driver.h
-+++ b/include/linux/tty_driver.h
-@@ -287,6 +287,7 @@ struct tty_operations {
- 	int (*poll_init)(struct tty_driver *driver, int line, char *options);
- 	int (*poll_get_char)(struct tty_driver *driver, int line);
- 	void (*poll_put_char)(struct tty_driver *driver, int line, char ch);
-+	void (*clear_irqs)(struct tty_driver *driver, int line);
+@@ -1696,6 +1718,7 @@ static struct uart_ops amba_pl011_pops = {
+ 	.config_port	= pl010_config_port,
+ 	.verify_port	= pl010_verify_port,
+ #ifdef CONFIG_CONSOLE_POLL
++	.poll_init	= pl011_hwinit,
+ 	.poll_get_char = pl010_get_poll_char,
+ 	.poll_put_char = pl010_put_poll_char,
  #endif
- 	const struct file_operations *proc_fops;
- };
 -- 
 1.7.11.5
 
