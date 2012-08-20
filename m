@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab2HTP10 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:27:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55363 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757080Ab2HTP1Y convert rfc822-to-8bit (ORCPT
+	id S1757105Ab2HTPbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:31:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53944 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757031Ab2HTPbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:27:24 -0400
-Message-ID: <1345476436.23018.54.camel@twins>
-Subject: Re: lockdep trace from posix timers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Mon, 20 Aug 2012 17:27:16 +0200
-In-Reply-To: <1345475434.23018.48.camel@twins>
-References: <20120724203613.GA9637@redhat.com>
-	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
-	 <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins>
-	 <20120820145919.GB18499@redhat.com> <1345475434.23018.48.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 20 Aug 2012 11:31:13 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Andreas Heider <andreas@meetr.de>
+Subject: Re: [RFC PATCH 3/5] drm/i915: register LVDS connector even if we can't get a panel mode
+Date: Mon, 20 Aug 2012 10:30:57 -0500
+Message-Id: <1345476664-22066-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20120806045150.GA23652@thinkpad-t410>
+References: <20120806045150.GA23652@thinkpad-t410>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 17:10 +0200, Peter Zijlstra wrote:
-> On Mon, 2012-08-20 at 16:59 +0200, Oleg Nesterov wrote:
-> > On 08/20, Peter Zijlstra wrote:
-> > >
-> > >  task_work_cancel(struct task_struct *task, task_work_func_t func)
-> > >  {
-> > > ...
-> > > +
-> > > +again:
-> > > +	workp = &task->task_works;
-> > > +	work = *workp;
-> > > +	while (work) {
-> > > +		if (work->func == func) {
-> > 
-> > But this all can race with task_work_run() if task != current.
-> > 
-> > This "work" can be freed/reused. And it should only return !NULL
-> > if twork->func() was not called.
-> 
-> Ah, because we could be iterating the list after the xchg done by run.
+On Fri, Aug 10, 2012 at 05:19:48PM -0500, Seth Forshee wrote:
+> First, I don't have a solution for the ordering of initialization. It
+> just happens to work out for me right now.
 
-I guess we could steal the entire list and requeue it afterwards and
-lift TIF_NOTIFY_RESUME along with it.. but I can't say that's pretty.
+Okay, I've got a proof-of-concept implementation of delaying secondary
+GPU initialization until the i2c can be muxed over to that card. It's
+not exactly pretty, but it is working. I'd really like to get some
+feedback on the concept and implementation before spending more time on
+it. Patches follow.
 
+One problem I'm aware of is if the switcheroo handler is in the driver
+for the secondary GPU. I think this was the case for a machine I used to
+have with Optimus graphics. In that scenario the secondary graphics
+device is never initialized because the switcheroo handler is registered
+during initialization of the secondary device. The driver load method
+would need to be split up to cope with this.
 
-
+Thanks,
+Seth
 
