@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab2HTP04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:26:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36042 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756963Ab2HTP0v (ORCPT
+	id S1757093Ab2HTP1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:27:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64146 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757077Ab2HTP06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:26:51 -0400
-Message-ID: <50325734.3090905@linutronix.de>
-Date: Mon, 20 Aug 2012 17:26:44 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Mon, 20 Aug 2012 11:26:58 -0400
+Message-ID: <50325732.3000700@gmail.com>
+Date: Mon, 20 Aug 2012 23:26:42 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
-        gdb-patches@sourceware.org
-Subject: Re: [RFC 5/5] uprobes: add global breakpoints
-References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de>  <1344355952-2382-6-git-send-email-bigeasy@linutronix.de> <1344857686.31459.25.camel@twins>
-In-Reply-To: <1344857686.31459.25.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities
+ registers
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com> <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+In-Reply-To: <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2012 01:34 PM, Peter Zijlstra wrote:
-> I'm not really happy with any of this. I would suggest limiting this
-> stuff much further, like say only have it affect ptraced
-> processes/tasks. That way you cannot accidentally freeze the entire
-> system into oblivion.
+On 08/14/2012 12:25 PM, Bjorn Helgaas wrote:
+> On Wed, Aug 1, 2012 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> From: Jiang Liu <liuj97@gmail.com>
+>>
+>> As suggested by Bjorn Helgaas and Don Dutile in threads
+>> http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
+>> to PCIe capabilities register in to way:
+>> 1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
+>>    repeatedly reading this register because it's read only.
+>> 2) provide access functions for PCIe Capabilities registers to hide differences
+>>    among PCIe base specifications, so the caller don't need to handle those
+>>    differences.
+>>
+>> This patch set applies to
+>> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
+> 
+> Would you mind rebasing this to v3.6-rc1?  I think you posted this
+> when my branch was still 3.5-based, and there are some upstream
+> changes that cause minor conflicts here.
+> 
+> You currently have:
+> 
+>     int pci_pcie_capability_change_word(struct pci_dev *dev, int pos,
+> u16 set_bits, u16 clear_bits)
+> 
+> I think this is a bit awkward because the function name doesn't
+> suggest *how* the word will be changed, and the clearing happens
+> before the setting (opposite the parameter order).  Something like:
+> 
+>     int pci_pcie_capability_mask_and_set_word(..., u16 mask, u16 set) or
+>     int pci_pcie_capability_clear_and_set_word(..., u16 clear, u16 set)
+> 
+> would be more obvious.  If you use "mask_and_set", I think the
+> function should do "(val & mask) | set" with the complement being at
+> the call site.  If you use "clear_and_set", I think it's OK to do
+> "(val & ~mask) | set" as in your current patch.
+> 
+> I know I suggested the "pci_pcie_capability_*" names, but they're
+> getting a bit unwieldy, especially if we do "mask_and_set" or similar.
+>  There are already several "pcie_*" functions, so maybe we should
+> drop the leading "pci_" from these and just have:
+> 
+>     pcie_capability_read_word
+>     pcie_capability_write_word
+>     pcie_capability_mask_and_set_word
+> 
+> Bjorn
+> 
+Hi Bjorn,
+	I have made following changes according to your suggestions,
+	1) get rid of the "pci_" prefix for access functions.
+	2) rename pci_pcie_capability_change_{word|dword}() to
+	pcie_capability_clear_and_set_{word|dword}.
+	3) add pcie_capability_{set|clear}_{word|dword}().
+	4) Add "Acked-by" and "Reviewed-by"
+	5) rebase to your latest pci-next tree
 
-I'be been browsing over the cgroup Documentation and it seems to look
-usefull. What I have in mind is the following:
-/sys/fs/cgroup/gb
+	So could you please help to pull from "https://github.com/jiangliu/linux.git topic/pcie-cap"
+or should I send all the patches to mail list again?
 
-The root group is the default one where a breakpoint triggers. Below
-you could have two groups:
-- excluded
-- active
+	Regards!
+	Gerry
 
-The excluded group would never trigger a breakpoint.
-Once a task in the root set triggers a breakpoint it will be moved into
-to the active set. The eventfd notifcation API of cgroups could be used
-to learn about this change.
-
-The whole concept fails if the user does not move a single task into
-the excluded group. To be overprotective here, I could try not do
-anything until we have at least one pid in the "excluded" set.
-
-So far I like this, it could be heat though.
-
-Sebastian
