@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab2HTFLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 01:11:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751535Ab2HTFLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 01:11:40 -0400
-Date: Mon, 20 Aug 2012 08:12:18 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120820051218.GA1095@redhat.com>
-References: <cover.1344619987.git.aquini@redhat.com>
- <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com>
- <20120813084123.GF14081@redhat.com>
- <87lihis5qi.fsf@rustcorp.com.au>
- <20120814083320.GA3597@redhat.com>
- <20120814184409.GC13338@t510.redhat.com>
- <20120814193109.GA28840@redhat.com>
- <20120815123457.GA2175@t510.redhat.com>
- <20120815144019.GH3068@redhat.com>
- <87fw7i5ma0.fsf@rustcorp.com.au>
+	id S1754747Ab2HTFNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 01:13:16 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:35890 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754369Ab2HTFNN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 01:13:13 -0400
+Message-ID: <5031C765.9050107@xenotime.net>
+Date: Sun, 19 Aug 2012 22:13:09 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fw7i5ma0.fsf@rustcorp.com.au>
+To: Dave Airlie <airlied@gmail.com>
+CC: "Justin M. Forbes" <jforbes@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org, dri-devel@lists.freedesktop.org
+Subject: Re: 3.5.x boot hang after conflicting fb hw usage <driver> vs VESA
+ VGA - removing generic driver
+References: <1345242330.3841.8.camel@fedora64.linuxtx.org>	<502EC5A6.7040502@xenotime.net>	<CAPM=9tzcmU-uBSaH0jASmp0iCu43fPROefip9mr_Q9qCAMzZEw@mail.gmail.com> <CAPM=9ty9UUZKcgp4MijM9CDGyDaD0dWi2z2htPvjMRHbCHRhUw@mail.gmail.com>
+In-Reply-To: <CAPM=9ty9UUZKcgp4MijM9CDGyDaD0dWi2z2htPvjMRHbCHRhUw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 11:59:11AM +0930, Rusty Russell wrote:
-> On Wed, 15 Aug 2012 17:40:19 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Wed, Aug 15, 2012 at 09:34:58AM -0300, Rafael Aquini wrote:
-> > > On Tue, Aug 14, 2012 at 10:31:09PM +0300, Michael S. Tsirkin wrote:
-> > > > > > now CPU1 executes the next instruction:
-> > > > > > 
-> > > > > > }
-> > > > > > 
-> > > > > > which would normally return to function's caller,
-> > > > > > but it has been overwritten by CPU2 so we get corruption.
-> > > > > > 
-> > > > > > No?
-> > > > > 
-> > > > > At the point CPU2 is unloading the module, it will be kept looping at the
-> > > > > snippet Rusty pointed out because the isolation / migration steps do not mess
-> > > > > with 'vb->num_pages'. The driver will only unload after leaking the total amount
-> > > > > of balloon's inflated pages, which means (for this hypothetical case) CPU2 will
-> > > > > wait until CPU1 finishes the putaback procedure.
-> > > > > 
-> > > > 
-> > > > Yes but only until unlock finishes. The last return from function
-> > > > is not guarded and can be overwritten.
-> > > 
-> > > CPU1 will be returning to putback_balloon_page() which code is located at core
-> > > mm/compaction.c, outside the driver.
-> > 
-> > Sorry, I don't seem to be able to articulate this clearly.
-> > But this is a correctness issue so I am compelled to try again.
+On 08/17/12 15:55, Dave Airlie wrote:
+
+> On Sat, Aug 18, 2012 at 8:54 AM, Dave Airlie <airlied@gmail.com> wrote:
+>> On Sat, Aug 18, 2012 at 8:28 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>>> On 08/17/2012 03:25 PM, Justin M. Forbes wrote:
+>>>
+>>>> for <driver>, we have verified cases on inteldrmfb, radeondrmfb, and
+>>>> cirrusdrmfb.
+>>>>
+>>>> This is the last message displayed before the system hangs.  This seems
+>>>> to be hitting a large number of users in Fedora, though certainly not
+>>>> everyone.  This started happening with the 3.5 updates, and is still an
+>>>> issue.  It appears to be a race condition, because various things have
+>>>> allowed boot to continue for some users, though there is no clear work
+>>>> around. Has anyone else run across this?  Any ideas.  For more
+>>>> background we have the following bugs:
+>>>>
+>>>> inteldrmfb:
+>>>> https://bugzilla.redhat.com/show_bug.cgi?id=843826
+>>>>
+>>>> radeondrmfb:
+>>>> https://bugzilla.redhat.com/show_bug.cgi?id=845745
+>>>>
+>>>> cirrusdrmfb <kvm>:
+>>>> https://bugzilla.redhat.com/show_bug.cgi?id=843860
+>>>>
+>>>> It should be noted that the conflicting fb hw usage message is not new,
+>>>> it has been around for a while, but this is the last message seen before
+>>>> the hang.
+>>>
+>>>
+>>> Hi,  (adding dri-devel mailing list)
+>>>
+>>>
+>>> I started seeing this problem on 3.5-rc6.
+>>>
+>>> AFAICT, the system is not actually hung, it's just that no output
+>>> is showing up on the real (physical) output device (display) -- it's
+>>> going somewhere else (or to the bit bucket).
+>>>
+>>
+>> Can we bisect this at all?
+
+I guess I'll have to try again.  My first attempt did not
+prove anything, I think because the conflict does not happen
+100% of the time (i.e., it feels like a timing problem).
+
+>> I worry the intel one will bisect to where we moved the conflict
+>> resolution earlier, but I'd like to see if applying that patch earlier
+>> causes the issue, since radeon has it.
+
+Do you know of a specific commit that I could revert and test?
+
+>> I haven't reproduced this on any hw I own, I also can't get it under qemu.
 > 
-> But if there are 0 balloon pages, how is it migrating a page?
-
-It could be we just finished migrating a page
-dropped page lock and are 1 instruction away from
-returning from callback.
-
-> > In the end the rule is simple: you can not
-> > prevent module unloading from within module
-> > itself. It always must be the caller of your
-> > module that uses some lock to do this.
+> I'm also wondering whether this grub2 related in some way, grub2 is
+> starting to mess with the graphics adapter pointlessly.
 > 
-> Not quite.  If you clean up everything in your cleanup function, it also
-> works,
+> Dave.
 
-No, we also need a way to make sure we returned
-to caller, this is missing here.
-
-> which is what this does, right?
-> 
-> Cheers,
-> Rusty.
-
-
-This makes sure callback was invoked but not that it returned
-to caller.
-
-All will be well if callbacks are done in rcu critical section
-and we synchronise it before unload.
 
 
 -- 
-MST
+~Randy
