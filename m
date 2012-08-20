@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab2HTSx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:53:59 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:20568 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753155Ab2HTSx5 (ORCPT
+	id S1753422Ab2HTS7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:59:22 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49561 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2HTS7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:53:57 -0400
-X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPV:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz4015Izz1202hzzz2dh87h2a8h668h839h8e2h8e3h944he96h107ahbe9i)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 20 Aug 2012 14:53:52 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-X-X-Sender: vweaver1@cl320.icl.utk.edu
-To: <linux-kernel@vger.kernel.org>
-CC: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: perf: PERF_EVENT_IOC_RESET and multiplexing
-Message-ID: <alpine.DEB.2.00.1208201447150.29057@cl320.icl.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 20 Aug 2012 14:59:20 -0400
+Message-ID: <503288ED.10306@linaro.org>
+Date: Mon, 20 Aug 2012 11:58:53 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Andreas Schwab <schwab@linux-m68k.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 4/8] time: Condense timekeeper.xtime into xtime_sec
+References: <1342156917-25092-1-git-send-email-john.stultz@linaro.org> <1342156917-25092-5-git-send-email-john.stultz@linaro.org> <m2fw7ilhnm.fsf@igel.home>
+In-Reply-To: <m2fw7ilhnm.fsf@igel.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082018-5518-0000-0000-000006FA804B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On 08/19/2012 02:02 PM, Andreas Schwab wrote:
+> John Stultz <john.stultz@linaro.org> writes:
+>
+>> The timekeeper struct has a xtime_nsec, which keeps the
+>> sub-nanosecond remainder.  This ends up being somewhat
+>> duplicative of the timekeeper.xtime.tv_nsec value, and we
+>> have to do extra work to keep them apart, copying the full
+>> nsec portion out and back in over and over.
+>>
+>> This patch simplifies some of the logic by taking the timekeeper
+>> xtime value and splitting it into timekeeper.xtime_sec and
+>> reuses the timekeeper.xtime_nsec for the sub-second portion
+>> (stored in higher res shifted nanoseconds).
+>>
+>> This simplifies some of the accumulation logic. And will
+>> allow for more accurate timekeeping once the vsyscall code
+>> is updated to use the shifted nanosecond remainder.
+> This (together with b44d50d "time: Fix casting issue in tk_set_xtime and
+> tk_xtime_add") is causing resume to hang on the iBook (PowerBook6,7).
+> The fact that the add-on commit is needed to uncover the bug might give
+> a hint, but I'm unable to decipher it.
 
-I have a perf API question.
+Thanks for the bug report and narrowing this down.
 
-When I run PERF_EVENT_IOC_RESET, all it resets is the event count.
-It does not reset the PERF_FORMAT_TOTAL_TIME_ENABLED or
-PERF_FORMAT_TOTAL_TIME_RUNNING values.
+I'm not very familiar w/ the iBook hardware, but does it use a 
+clocksource, or does it use arch_gettimeoffset()?
 
-Is this expected?  It means if I'm trying to do multiplexing and want to 
-reset the counts to zero, there's no way to reset the enabled/running 
-values.
+I suspect that the casting has avoided clipping some strange values from 
+the persistent clock.
 
-I suppose I can just close/reopen the events, or allocate some space to 
-store the previous values, but that seems like unncessary overhead.
+Could you try with the following patch against Linus' HEAD? I suspect it 
+will let the box resume (although it will seem as though no time was 
+spent in resume) and then let me know what the JDB lines print out?
 
+thanks
+-john
 
-
-As an aside while I have your attention, can someone explain the 
-difference between the "inherit" and the "inherit_stat" options in
-perf.attr?  I can't seem to make a test case exhibit a difference, and
-the events/core.c code in the kernel is a horrible wall of uncommented 
-code that is nearly impossible to follow.
-
-Thanks,
-
-Vince
-vweaver1@eecs.utk.edu
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index e16af19..03f5a82 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -753,10 +753,14 @@ static void timekeeping_resume(void)
+  	clocksource_resume();
+  
+  	write_seqlock_irqsave(&tk->lock, flags);
++	printk("JDB: suspend_time: %ld:%ld  resume_time: %ld:%ld\n",
++		timekeeping_suspend_time.tv_sec, timekeeping_suspend_time.tv_nsec,
++		ts.tv_sec, ts.tv_nsec);
+  
+  	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
+  		ts = timespec_sub(ts, timekeeping_suspend_time);
+-		__timekeeping_inject_sleeptime(tk, &ts);
++		printk("JDB: Trying to add: %ld:%ld\n", ts.tv_sec, ts.tv_nsec);
++		//__timekeeping_inject_sleeptime(tk, &ts);
+  	}
+  	/* re-base the last cycle value */
+  	tk->clock->cycle_last = tk->clock->read(tk->clock);
 
