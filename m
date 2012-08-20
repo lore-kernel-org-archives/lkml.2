@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab2HTWY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 18:24:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54655 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab2HTWY4 (ORCPT
+	id S1756636Ab2HTW2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 18:28:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39111 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab2HTW2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 18:24:56 -0400
-Date: Mon, 20 Aug 2012 15:24:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org
-Subject: the 3.4 kernel tree will be -longterm
-Message-ID: <20120820222453.GB2118@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 Aug 2012 18:28:03 -0400
+Date: Mon, 20 Aug 2012 15:28:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
+        aarcange@redhat.com, dwmw2@infradead.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH v3 3/9] rbtree: place easiest case first in rb_erase()
+Message-Id: <20120820152802.272ec736.akpm@linux-foundation.org>
+In-Reply-To: <1345500331-10546-4-git-send-email-walken@google.com>
+References: <1345500331-10546-1-git-send-email-walken@google.com>
+	<1345500331-10546-4-git-send-email-walken@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I'm getting a few questions about this, and I realized that I never
-sent out an email about this, yes, the 3.4 kernel tree will be the next
--longterm kernel that I will be maintaining for at least 2 years.
+On Mon, 20 Aug 2012 15:05:25 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-Currently I'm maintaining the following stable kernel trees for the
-following amount of time:
-	3.0 - for at least one more year
-	3.4 - for at least two years
-	3.5 - until 3.6.1 is out
+> In rb_erase, move the easy case (node to erase has no more than
+> 1 child) first. I feel the code reads easier that way.
 
-Hope this helps clear up any rumors floating around.  If anyone has any
-questions, please let me know.
+Well.  For efficiency we should put the commonest case first.  Is that
+the case here?
 
-greg k-h
+> --- a/lib/rbtree.c
+> +++ b/lib/rbtree.c
+> @@ -368,17 +368,28 @@ static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
+>  
+>  void rb_erase(struct rb_node *node, struct rb_root *root)
+>  {
+> -	struct rb_node *child, *parent;
+> +	struct rb_node *child = node->rb_right, *tmp = node->rb_left;
+
+Coding style nit: multiple-definitions-per-line makes it harder to
+locate a particular definition, and from long experience I can assure
+you that it makes management of subsequent overlapping patches quite a
+lot harder.  Also, one-definition-per-line gives room for a nice little
+comment, and we all like nice little comments.
+
+Also, "tmp" is a rotten name.  Your choice of an identifier is your
+opportunity to communicate something to the reader.  When you choose
+"tmp", you threw away that opportunity.  Should it be called "left"?
+
+
+--- a/lib/rbtree.c~rbtree-place-easiest-case-first-in-rb_erase-fix
++++ a/lib/rbtree.c
+@@ -368,12 +368,13 @@ static void __rb_erase_color(struct rb_n
+ 
+ void rb_erase(struct rb_node *node, struct rb_root *root)
+ {
+-	struct rb_node *child = node->rb_right, *tmp = node->rb_left;
++	struct rb_node *child = node->rb_right
++	struct rb_node *tmp = node->rb_left;
+ 	struct rb_node *parent;
+ 	int color;
+ 
+ 	if (!tmp) {
+-	case1:
++case1:
+ 		/* Case 1: node to erase has no more than 1 child (easy!) */
+ 
+ 		parent = rb_parent(node);
+_
+
