@@ -1,379 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab2HTOWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:22:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42005 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab2HTOWt (ORCPT
+	id S1756666Ab2HTOXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:23:05 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34284 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab2HTOXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:22:49 -0400
-Message-ID: <50324835.6030806@gmail.com>
-Date: Mon, 20 Aug 2012 09:22:45 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 20 Aug 2012 10:23:01 -0400
 MIME-Version: 1.0
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-CC: Roland Stigge <stigge@antcom.de>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net,
-        "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH RESEND v4] spi/pl022: add devicetree support
-References: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com>
-In-Reply-To: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com>
+In-Reply-To: <1345468396.2355.27.camel@falcor>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
+	<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
+	<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
+	<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
+	<CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
+	<1345164802.2433.21.camel@falcor.watson.ibm.com>
+	<CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
+	<1345223322.2257.75.camel@falcor>
+	<CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
+	<1345424724.2384.15.camel@falcor>
+	<CA+5PVA5=p9Xrd7BWN9XCyG=LJ279wsOfCgWjfhtttUuh9Gp_oQ@mail.gmail.com>
+	<1345468396.2355.27.camel@falcor>
+Date: Mon, 20 Aug 2012 10:23:00 -0400
+Message-ID: <CA+5PVA7MYSwrUsX1fY_d5vmO=eje=+t9KOse1qxrBG4KyysP4g@mail.gmail.com>
+Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
+ sign modules
+From: Josh Boyer <jwboyer@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, jmorris@namei.org,
+        rusty@rustcorp.com.au, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 06:39 AM, Alexandre Pereira da Silva wrote:
-> Add the chipselect array and cur_cs properties to pl022 main structure
-> 
-> Add a wrapper function to decide if the cs should be controlled by the
-> cs_control callback or the chipselect gpio
-> 
-> Populate chipselect property from cs-gpios
-> 
-> Populate master->dev.of_node, so the spi bus can find child spi
-> devices and register them
-> 
-> At pl022 setup, fill chip_data structure from dt nodes, if not provided
-> by platform.
-> 
-> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> Acked-by: Roland Stigge <stigge@antcom.de>
-> ---
-> Applies to v3.6-rc1
-> 
-> Changes since v3:
-> * Proper use of IS_ENABLED
-> 
-> Changes since v2:
-> * Use IS_ENABLED instead of #ifdef
-> * Remove bogus const change
-> 
-> Changes since v1:
-> * return EPROBE_DEFFER if gpios are not initialized yet
-> 
-> Thanks Thierry Reding for reviewing and improvements suggestions
-> 
->  .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
->  drivers/spi/spi-pl022.c                            |  114 ++++++++++++++++----
->  2 files changed, 110 insertions(+), 19 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/spi/spi_pl022.txt b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-> index 306ec3f..b089ec7 100644
-> --- a/Documentation/devicetree/bindings/spi/spi_pl022.txt
-> +++ b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-> @@ -6,7 +6,22 @@ Required properties:
->  - interrupts : Should contain SPI controller interrupt
->  
->  Optional properties:
-> +- pl022,num-chipselects : total number of chipselects
+On Mon, Aug 20, 2012 at 9:13 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Mon, 2012-08-20 at 08:32 -0400, Josh Boyer wrote:
+>> On Sun, Aug 19, 2012 at 9:05 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> > On Fri, 2012-08-17 at 13:44 -0400, Josh Boyer wrote:
+>> >> On Fri, Aug 17, 2012 at 1:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> >> >> I don't see a need for the kernel make system to ever delete a key.
+>> >> >> If one doesn't exist, it should create one if the config options are
+>> >> >> set and leave it alone entirely after that.  If one exists already,
+>> >> >> then it should leave it alone as it already does.
+>> >> >
+>> >> > Ok.  Other than generating a key the first time, the normal development
+>> >> > build process now uses the same key, never requiring the developer to do
+>> >> > anything additional.  The developer controls the frequency the keys are
+>> >> > created/deleted.  I wonder how often that will be ...
+>> >>
+>> >> For a developer, probably not often.  Though in reality, the usage of
+>> >> this by a single developer seems fair small.  A much wider, already
+>> >> existing usage is distribution kernel signing.
+>> >
+>> > This seems to be the real issue.  Do developers need to sign their own
+>> > builds?   Nobody is forcing the developer to enable signed modules.  If,
+>> > however, the developer decides to enforce signed modules, leaving the
+>> > private key lying around kind of defeats the purpose.
+>>
+>> Right.  The issue is that you're making the kernel buildsystem do key
+>> management policy instead of trusting the developers using the keys
+>> mechanism to know what they're doing.
+>>
+>> >> For a distribution kernel there are normally two cases:
+>> >>
+>> >> 1) Existing permanent company/distro key.  This is already handled.
+>> >> 2) per-kernel-build key (equivalent to your ephemeral key).  This would
+>> >> be handled fine if the key was generated if it didn't already exist and
+>> >> left alone.  The distro build system would remove it when it cleaned up
+>> >> the buildroot.
+>> >
+>> > Ok, I think we agree here, with the normal 'make', 'make modules_install
+>> > install', using an existing key or creating a new key if needed.
+>> >
+>> >> >> If you really want to enforce ephemeral keys in the make system, then
+>> >> >> doing it via 'make clean' or 'make distclean' would make more sense to
+>> >> >> me.  But I personally think key management is something the developers
+>> >> >> or distros should be handling on their own.  Creating a key for them is
+>> >> >> a convenience so it's worthwhile, but removing it should be done by
+>> >> >> them.
+>> >> >
+>> >> > Sorry, I disagree.  Without the signed_modules_install target, the
+>> >> > developer would need to do each step manually - create new key, sign
+>> >> > modules, remove private key, and embed the new public key in the
+>> >> > bzImage.
+>> >>
+>> >> Not if the buildsystem just made the key for them at 'make' time.  I'm
+>> >> still missing why it isn't done until 'modules_install' time.  Seems
+>> >> pretty sub-optimal.
+>> >
+>> > Using a private key that has been lying around for an unknown period of
+>> > time, kind of defeats the purpose.
+>>
+>> Why is that?  Again, you're enforcing policy instead of leaving it up
+>> to the developers.  In the existing key case, you have no idea how long
+>> that key has been sitting around either, so I really see a disconnect
+>> between "existing company/private key" and "no key, create one for them
+>> during build time" cases.
+>
+> Either the company build process, creates and cleans up after the build,
+> removing the private key, as you described above, or the "private key"
+> is held securely using an existing signing process (or some combination
+> of the two).
+>
+> In the "no key, create one for them during build time", there is no
+> process in place cleaning up, other than the suggested new make target.
 
-We have this for other spi controllers too. Define a generic property.
+You could have 'make clean/distclean' remove the key if you really
+wanted.
 
->  - cs-gpios : should specify GPIOs used for chipselects.
->    The gpios will be referred to as reg = <index> in the SPI child nodes.
->    If unspecified, a single SPI device without a chip select can be used.
->  
-> +SPI slave nodes must be children of the SPI master node and can
-> +contain the following properties.
-> +See include/linux/amba/pl022.h for more details
+>> >> If
+>> >> the config options are set, just have 'make modules_install' do it and
+>> >> create a key if one doesn't exist (or better yet, have 'make' do it).
+>> >
+>> > If creating the key is deferred to 'make modules_install', for the
+>> > reason given above or any other reason, the public key wasn't available
+>> > at the time the bzImage was created.  'make modules_install' would now
+>> > need to rebuild the bzImage.
+>>
+>> Right, which is an utter pain and backwards.  That's why I suggested it
+>> be done at 'make' time.
+>
+> Agreed, no doubt about it being a pain or backwards, but the solution
+> isn't to deny the problem, but to address it.  I'm open to
+> suggestions. :)
 
-DT binding is independent of Linux, so you should not refer to Linux docs.
+I've made multiple suggestions.  I have no more.  Either you agree with
+them or your don't.  Our fundamental disagreement is the management of
+automatically created keys.  You want them removed ASAP, I suggest that
+people/companies/distributions using that mechanism should be aware of
+what they're doing and be responsible for removing keys when they see
+fit.  Aside from making the behavior dependent on perhaps some kind of
+"expert" config setting, I don't see a way past that difference.
 
-> +
-> +- pl022,hierarchy : master or slave interface
-
-Is attaching a master and using the pl022 as a slave really a supported
-use case? The DT spi bindings are really designed for a master node with
-N slave nodes. So there is more general question of how to describe a
-spi controller as a slave. It's not really one I care to answer as the
-Linux spi framework isn't designed to act as a slave.
-
-> +- pl022,interface : interface type
-
-And valid values are?
-
-> +- pl022,slave-tx-disable : disconnect tx line in slave mode
-> +- pl022,com-mode : polling, interrupt or dma
-> +- pl022,rx-level-trig : Rx FIFO watermark level
-> +- pl022,tx-level-trig : Tx FIFO watermark level
-> +- pl022,ctrl-len : Microwire interface: Control length
-> +- pl022,wait-state : Microwire interface: Wait state
-> +- pl022,duplex : Microwire interface: Full/Half duplex
-
-Most of these properties aren't used anywhere in the kernel other than
-u300 and I'm not sure what to purpose of dummy_chip_info is. Perhaps
-Linus has some input? I think either they can be decided by the spi
-controller (com-mode, fifo watermark) or should be standard properties
-(microwire settings). I would argue they should be removed if the spi
-framework doesn't have support in a standard way.
-
-> +
-> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-> index 400ae21..d8d7d21 100644
-> --- a/drivers/spi/spi-pl022.c
-> +++ b/drivers/spi/spi-pl022.c
-> @@ -40,6 +40,8 @@
->  #include <linux/dma-mapping.h>
->  #include <linux/scatterlist.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
->  
->  /*
->   * This macro is used to define some register default values.
-> @@ -389,6 +391,8 @@ struct pl022 {
->  	char				*dummypage;
->  	bool				dma_running;
->  #endif
-> +	int cur_cs;
-> +	int chipselect[0];
->  };
->  
->  /**
-> @@ -433,6 +437,14 @@ static void null_cs_control(u32 command)
->  	pr_debug("pl022: dummy chip select control, CS=0x%x\n", command);
->  }
->  
-> +static void pl022_cs_control(struct pl022 *pl022, u32 command)
-> +{
-> +	if (gpio_is_valid(pl022->cur_cs))
-> +		gpio_set_value(pl022->cur_cs, command);
-> +	else
-> +		pl022->cur_chip->cs_control(command);
-> +}
-> +
->  /**
->   * giveback - current spi_message is over, schedule next message and call
->   * callback of this message. Assumes that caller already
-> @@ -479,7 +491,7 @@ static void giveback(struct pl022 *pl022)
->  		if (next_msg && next_msg->spi != pl022->cur_msg->spi)
->  			next_msg = NULL;
->  		if (!next_msg || pl022->cur_msg->state == STATE_ERROR)
-> -			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
-> +			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
->  		else
->  			pl022->next_msg_cs_active = true;
->  
-> @@ -813,8 +825,7 @@ static void dma_callback(void *data)
->  	/* Update total bytes transferred */
->  	msg->actual_length += pl022->cur_transfer->len;
->  	if (pl022->cur_transfer->cs_change)
-> -		pl022->cur_chip->
-> -			cs_control(SSP_CHIP_DESELECT);
-> +		pl022_cs_control(pl022, SSP_CHIP_DESELECT);
->  
->  	/* Move to next transfer */
->  	msg->state = next_transfer(pl022);
-> @@ -1247,8 +1258,7 @@ static irqreturn_t pl022_interrupt_handler(int irq, void *dev_id)
->  		/* Update total bytes transferred */
->  		msg->actual_length += pl022->cur_transfer->len;
->  		if (pl022->cur_transfer->cs_change)
-> -			pl022->cur_chip->
-> -				cs_control(SSP_CHIP_DESELECT);
-> +			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
->  		/* Move to next transfer */
->  		msg->state = next_transfer(pl022);
->  		tasklet_schedule(&pl022->pump_transfers);
-> @@ -1333,7 +1343,7 @@ static void pump_transfers(unsigned long data)
->  
->  		/* Reselect chip select only if cs_change was requested */
->  		if (previous->cs_change)
-> -			pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-> +			pl022_cs_control(pl022, SSP_CHIP_SELECT);
->  	} else {
->  		/* STATE_START */
->  		message->state = STATE_RUNNING;
-> @@ -1372,7 +1382,7 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
->  
->  	/* Enable target chip, if not already active */
->  	if (!pl022->next_msg_cs_active)
-> -		pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-> +		pl022_cs_control(pl022, SSP_CHIP_SELECT);
->  
->  	if (set_up_next_transfer(pl022, pl022->cur_transfer)) {
->  		/* Error path */
-> @@ -1424,12 +1434,12 @@ static void do_polling_transfer(struct pl022 *pl022)
->  			if (previous->delay_usecs)
->  				udelay(previous->delay_usecs);
->  			if (previous->cs_change)
-> -				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-> +				pl022_cs_control(pl022, SSP_CHIP_SELECT);
->  		} else {
->  			/* STATE_START */
->  			message->state = STATE_RUNNING;
->  			if (!pl022->next_msg_cs_active)
-> -				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-> +				pl022_cs_control(pl022, SSP_CHIP_SELECT);
->  		}
->  
->  		/* Configuration Changing Per Transfer */
-> @@ -1461,7 +1471,7 @@ static void do_polling_transfer(struct pl022 *pl022)
->  		/* Update total byte transferred */
->  		message->actual_length += pl022->cur_transfer->len;
->  		if (pl022->cur_transfer->cs_change)
-> -			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
-> +			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
->  		/* Move to next transfer */
->  		message->state = next_transfer(pl022);
->  	}
-> @@ -1490,6 +1500,7 @@ static int pl022_transfer_one_message(struct spi_master *master,
->  
->  	/* Setup the SPI using the per chip configuration */
->  	pl022->cur_chip = spi_get_ctldata(msg->spi);
-> +	pl022->cur_cs = pl022->chipselect[msg->spi->chip_select];
->  
->  	restore_state(pl022);
->  	flush(pl022);
-> @@ -1761,12 +1772,14 @@ static const struct pl022_config_chip pl022_default_chip_info = {
->  static int pl022_setup(struct spi_device *spi)
->  {
->  	struct pl022_config_chip const *chip_info;
-> +	struct pl022_config_chip chip_info_dt;
->  	struct chip_data *chip;
->  	struct ssp_clock_params clk_freq = { .cpsdvsr = 0, .scr = 0};
->  	int status = 0;
->  	struct pl022 *pl022 = spi_master_get_devdata(spi->master);
->  	unsigned int bits = spi->bits_per_word;
->  	u32 tmp;
-> +	struct device_node *np = spi->dev.of_node;
->  
->  	if (!spi->max_speed_hz)
->  		return -EINVAL;
-> @@ -1789,10 +1802,36 @@ static int pl022_setup(struct spi_device *spi)
->  	chip_info = spi->controller_data;
->  
->  	if (chip_info == NULL) {
-> -		chip_info = &pl022_default_chip_info;
-> -		/* spi_board_info.controller_data not is supplied */
-> -		dev_dbg(&spi->dev,
-> -			"using default controller_data settings\n");
-> +		if (np) {
-> +			chip_info_dt = pl022_default_chip_info;
-> +
-> +			of_property_read_u32(np, "pl022,hierarchy",
-> +				&chip_info_dt.hierarchy);
-> +			of_property_read_u32(np, "pl022,interface",
-> +				&chip_info_dt.iface);
-> +			chip_info_dt.slave_tx_disable =
-> +				of_property_read_bool(np,
-> +					"pl022,slave-tx-disable");
-> +			of_property_read_u32(np, "pl022,com-mode",
-> +				&chip_info_dt.com_mode);
-> +			of_property_read_u32(np, "pl022,rx-level-trig",
-> +				&chip_info_dt.rx_lev_trig);
-> +			of_property_read_u32(np, "pl022,tx-level-trig",
-> +				&chip_info_dt.tx_lev_trig);
-> +			of_property_read_u32(np, "pl022,ctrl-len",
-> +				&chip_info_dt.ctrl_len);
-> +			of_property_read_u32(np, "pl022,wait-state",
-> +				&chip_info_dt.wait_state);
-> +			of_property_read_u32(np, "pl022,duplex",
-> +				&chip_info_dt.duplex);
-> +
-> +			chip_info = &chip_info_dt;
-> +		} else {
-> +			chip_info = &pl022_default_chip_info;
-> +			/* spi_board_info.controller_data not is supplied */
-> +			dev_dbg(&spi->dev,
-> +				"using default controller_data settings\n");
-> +		}
->  	} else
->  		dev_dbg(&spi->dev,
->  			"using user supplied controller_data settings\n");
-> @@ -1835,8 +1874,9 @@ static int pl022_setup(struct spi_device *spi)
->  	chip->xfer_type = chip_info->com_mode;
->  	if (!chip_info->cs_control) {
->  		chip->cs_control = null_cs_control;
-> -		dev_warn(&spi->dev,
-> -			 "chip select function is NULL for this chip\n");
-> +		if (!gpio_is_valid(pl022->chipselect[spi->chip_select]))
-> +			dev_warn(&spi->dev,
-> +				 "chip select function is NULL for this chip\n");
->  	} else
->  		chip->cs_control = chip_info->cs_control;
->  
-> @@ -1988,7 +2028,8 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
->  	struct pl022_ssp_controller *platform_info = adev->dev.platform_data;
->  	struct spi_master *master;
->  	struct pl022 *pl022 = NULL;	/*Data for this driver */
-> -	int status = 0;
-> +	struct device_node *np = adev->dev.of_node;
-> +	int status = 0, i, num_cs;
->  
->  	dev_info(&adev->dev,
->  		 "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
-> @@ -1998,8 +2039,14 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
->  		goto err_no_pdata;
->  	}
->  
-> +	num_cs = platform_info->num_chipselect;
-> +	if (IS_ENABLED(CONFIG_OF))
-> +		of_property_read_u32(np, "pl022,num-chipselects", &num_cs);
-> +
-> +
->  	/* Allocate master with space for data */
-> -	master = spi_alloc_master(dev, sizeof(struct pl022));
-> +	master = spi_alloc_master(dev,
-> +		sizeof(struct pl022) + sizeof(int) * num_cs);
->  	if (master == NULL) {
->  		dev_err(&adev->dev, "probe - cannot alloc SPI master\n");
->  		status = -ENOMEM;
-> @@ -2017,13 +2064,41 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
->  	 * on this board
->  	 */
->  	master->bus_num = platform_info->bus_id;
-> -	master->num_chipselect = platform_info->num_chipselect;
-> +	master->num_chipselect = num_cs;
->  	master->cleanup = pl022_cleanup;
->  	master->setup = pl022_setup;
->  	master->prepare_transfer_hardware = pl022_prepare_transfer_hardware;
->  	master->transfer_one_message = pl022_transfer_one_message;
->  	master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
->  	master->rt = platform_info->rt;
-> +	master->dev.of_node = dev->of_node;
-> +
-> +	if (IS_ENABLED(CONFIG_OF)) {
-> +		for (i = 0; i < num_cs; i++) {
-> +			int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
-> +
-> +			if (cs_gpio == -EPROBE_DEFER) {
-> +				status = -EPROBE_DEFER;
-> +				goto err_no_gpio;
-> +			}
-> +
-> +			pl022->chipselect[i] = cs_gpio;
-> +
-> +			if (gpio_is_valid(cs_gpio)) {
-> +				if (gpio_request(cs_gpio, "ssp-pl022"))
-> +					dev_err(&adev->dev,
-> +						"could not request %d gpio\n",
-> +						cs_gpio);
-> +				else if (gpio_direction_output(cs_gpio, 1))
-> +					dev_err(&adev->dev,
-> +						"could set gpio %d as output\n",
-> +						cs_gpio);
-> +			}
-> +		}
-> +	} else {
-> +		for (i = 0; i < num_cs; i++)
-> +			pl022->chipselect[i] = -EINVAL;
-> +	}
->  
->  	/*
->  	 * Supports mode 0-3, loopback, and active low CS. Transfers are
-> @@ -2130,6 +2205,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
->   err_no_ioremap:
->  	amba_release_regions(adev);
->   err_no_ioregion:
-> + err_no_gpio:
->  	spi_master_put(master);
->   err_no_master:
->   err_no_pdata:
-> 
+josh
