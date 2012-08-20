@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab2HTESk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:18:40 -0400
+	id S1754234Ab2HTD4s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:56:48 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab2HTD4x (ORCPT
+	with ESMTP id S1754058Ab2HTD4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:56:53 -0400
+	Sun, 19 Aug 2012 23:56:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Edwin Klein Mentink <e.kleinmentink@zonnet.nl>
-Subject: [ 08/16] xhci: Increase reset timeout for Renesas 720201 host.
-Date: Sun, 19 Aug 2012 20:56:07 -0700
-Message-Id: <20120820035458.842440263@linuxfoundation.org>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 03/16] xen: mark local pages as FOREIGN in the m2p_override
+Date: Sun, 19 Aug 2012 20:56:02 -0700
+Message-Id: <20120820035458.152660010@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035457.653002510@linuxfoundation.org>
 References: <20120820035457.653002510@linuxfoundation.org>
@@ -30,47 +30,154 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 22ceac191211cf6688b1bf6ecd93c8b6bf80ed9b upstream.
+commit b9e0d95c041ca2d7ad297ee37c2e9cfab67a188f upstream.
 
-The NEC/Renesas 720201 xHCI host controller does not complete its reset
-within 250 milliseconds.  In fact, it takes about 9 seconds to reset the
-host controller, and 1 second for the host to be ready for doorbell
-rings.  Extend the reset and CNR polling timeout to 10 seconds each.
+When the frontend and the backend reside on the same domain, even if we
+add pages to the m2p_override, these pages will never be returned by
+mfn_to_pfn because the check "get_phys_to_machine(pfn) != mfn" will
+always fail, so the pfn of the frontend will be returned instead
+(resulting in a deadlock because the frontend pages are already locked).
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit 66d4eadd8d067269ea8fead1a50fe87c2979a80d "USB: xhci:
-BIOS handoff and HW initialization."
+INFO: task qemu-system-i38:1085 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+qemu-system-i38 D ffff8800cfc137c0     0  1085      1 0x00000000
+ ffff8800c47ed898 0000000000000282 ffff8800be4596b0 00000000000137c0
+ ffff8800c47edfd8 ffff8800c47ec010 00000000000137c0 00000000000137c0
+ ffff8800c47edfd8 00000000000137c0 ffffffff82213020 ffff8800be4596b0
+Call Trace:
+ [<ffffffff81101ee0>] ? __lock_page+0x70/0x70
+ [<ffffffff81a0fdd9>] schedule+0x29/0x70
+ [<ffffffff81a0fe80>] io_schedule+0x60/0x80
+ [<ffffffff81101eee>] sleep_on_page+0xe/0x20
+ [<ffffffff81a0e1ca>] __wait_on_bit_lock+0x5a/0xc0
+ [<ffffffff81101ed7>] __lock_page+0x67/0x70
+ [<ffffffff8106f750>] ? autoremove_wake_function+0x40/0x40
+ [<ffffffff811867e6>] ? bio_add_page+0x36/0x40
+ [<ffffffff8110b692>] set_page_dirty_lock+0x52/0x60
+ [<ffffffff81186021>] bio_set_pages_dirty+0x51/0x70
+ [<ffffffff8118c6b4>] do_blockdev_direct_IO+0xb24/0xeb0
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff8118ca95>] __blockdev_direct_IO+0x55/0x60
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff811e91c8>] ext3_direct_IO+0xf8/0x390
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff81004b60>] ? xen_mc_flush+0xb0/0x1b0
+ [<ffffffff81104027>] generic_file_aio_read+0x737/0x780
+ [<ffffffff813bedeb>] ? gnttab_map_refs+0x15b/0x1e0
+ [<ffffffff811038f0>] ? find_get_pages+0x150/0x150
+ [<ffffffff8119736c>] aio_rw_vect_retry+0x7c/0x1d0
+ [<ffffffff811972f0>] ? lookup_ioctx+0x90/0x90
+ [<ffffffff81198856>] aio_run_iocb+0x66/0x1a0
+ [<ffffffff811998b8>] do_io_submit+0x708/0xb90
+ [<ffffffff81199d50>] sys_io_submit+0x10/0x20
+ [<ffffffff81a18d69>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Edwin Klein Mentink <e.kleinmentink@zonnet.nl>
+The explanation is in the comment within the code:
+
+We need to do this because the pages shared by the frontend
+(xen-blkfront) can be already locked (lock_page, called by
+do_read_cache_page); when the userspace backend tries to use them
+with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
+do_blockdev_direct_IO is going to try to lock the same pages
+again resulting in a deadlock.
+
+A simplified call graph looks like this:
+
+pygrub                          QEMU
+-----------------------------------------------
+do_read_cache_page              io_submit
+  |                              |
+lock_page                       ext3_direct_IO
+                                 |
+                                bio_add_page
+                                 |
+                                lock_page
+
+Internally the xen-blkback uses m2p_add_override to swizzle (temporarily)
+a 'struct page' to have a different MFN (so that it can point to another
+guest). It also can easily find out whether another pfn corresponding
+to the mfn exists in the m2p, and can set the FOREIGN bit
+in the p2m, making sure that mfn_to_pfn returns the pfn of the backend.
+
+This allows the backend to perform direct_IO on these pages, but as a
+side effect prevents the frontend from using get_user_pages_fast on
+them while they are being shared with the backend.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/xen/p2m.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -163,7 +163,7 @@ int xhci_reset(struct xhci_hcd *xhci)
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -683,6 +683,7 @@ int m2p_add_override(unsigned long mfn,
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
++	int ret = 0;
  
- 	ret = handshake(xhci, &xhci->op_regs->command,
--			CMD_RESET, 0, 250 * 1000);
-+			CMD_RESET, 0, 10 * 1000 * 1000);
- 	if (ret)
- 		return ret;
+ 	pfn = page_to_pfn(page);
+ 	if (!PageHighMem(page)) {
+@@ -706,6 +707,24 @@ int m2p_add_override(unsigned long mfn,
+ 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+ 	spin_unlock_irqrestore(&m2p_override_lock, flags);
  
-@@ -172,7 +172,8 @@ int xhci_reset(struct xhci_hcd *xhci)
- 	 * xHCI cannot write to any doorbells or operational registers other
- 	 * than status until the "Controller Not Ready" flag is cleared.
- 	 */
--	return handshake(xhci, &xhci->op_regs->status, STS_CNR, 0, 250 * 1000);
-+	return handshake(xhci, &xhci->op_regs->status,
-+			 STS_CNR, 0, 10 * 1000 * 1000);
++	/* p2m(m2p(mfn)) == mfn: the mfn is already present somewhere in
++	 * this domain. Set the FOREIGN_FRAME_BIT in the p2m for the other
++	 * pfn so that the following mfn_to_pfn(mfn) calls will return the
++	 * pfn from the m2p_override (the backend pfn) instead.
++	 * We need to do this because the pages shared by the frontend
++	 * (xen-blkfront) can be already locked (lock_page, called by
++	 * do_read_cache_page); when the userspace backend tries to use them
++	 * with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
++	 * do_blockdev_direct_IO is going to try to lock the same pages
++	 * again resulting in a deadlock.
++	 * As a side effect get_user_pages_fast might not be safe on the
++	 * frontend pages while they are being shared with the backend,
++	 * because mfn_to_pfn (that ends up being called by GUPF) will
++	 * return the backend pfn rather than the frontend pfn. */
++	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
++	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
++		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
++
+ 	return 0;
  }
+ EXPORT_SYMBOL_GPL(m2p_add_override);
+@@ -717,6 +736,7 @@ int m2p_remove_override(struct page *pag
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
++	int ret = 0;
  
- /*
+ 	pfn = page_to_pfn(page);
+ 	mfn = get_phys_to_machine(pfn);
+@@ -743,6 +763,22 @@ int m2p_remove_override(struct page *pag
+ 		/* No tlb flush necessary because the caller already
+ 		 * left the pte unmapped. */
+ 
++	/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
++	 * somewhere in this domain, even before being added to the
++	 * m2p_override (see comment above in m2p_add_override).
++	 * If there are no other entries in the m2p_override corresponding
++	 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
++	 * the original pfn (the one shared by the frontend): the backend
++	 * cannot do any IO on this page anymore because it has been
++	 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
++	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
++	 * pfn again. */
++	mfn &= ~FOREIGN_FRAME_BIT;
++	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
++	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
++			m2p_find_override(mfn) == NULL)
++		set_phys_to_machine(pfn, mfn);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(m2p_remove_override);
 
 
