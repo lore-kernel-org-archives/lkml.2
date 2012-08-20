@@ -1,230 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab2HTS3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:29:10 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:14741 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2HTS3F (ORCPT
+	id S1752828Ab2HTS3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:29:21 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58051 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752778Ab2HTS3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:29:05 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-131.messagelabs.com!1345487302!21581519!90
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.2; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] staging: comedi: aio_aio12_8: document the register map
-Date: Mon, 20 Aug 2012 11:28:52 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201208201128.53053.hartleys@visionengravers.com>
+	Mon, 20 Aug 2012 14:29:14 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] video: hpfb: Fix error handling
+Date: Mon, 20 Aug 2012 20:32:25 +0200
+Message-Id: <1345487545-9590-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fully document the register map and add namespace to all the
-defines.
+This patch solves problems with the error handling by
+introducing labels for proper error paths and it also
+frees resources that where missed.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
- drivers/staging/comedi/drivers/aio_aio12_8.c | 129 ++++++++++++++++-----------
- 1 file changed, 75 insertions(+), 54 deletions(-)
+ drivers/video/hpfb.c |   28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/aio_aio12_8.c b/drivers/staging/comedi/drivers/aio_aio12_8.c
-index c06f5cb..46ef41a 100644
---- a/drivers/staging/comedi/drivers/aio_aio12_8.c
-+++ b/drivers/staging/comedi/drivers/aio_aio12_8.c
-@@ -43,34 +43,43 @@ Notes:
- #include <linux/ioport.h>
- #include "8255.h"
- 
--#define AIO12_8_STATUS			0x00
--#define AIO12_8_INTERRUPT		0x01
--#define AIO12_8_ADC			0x02
--#define AIO12_8_DAC_0			0x04
--#define AIO12_8_DAC_1			0x06
--#define AIO12_8_DAC_2			0x08
--#define AIO12_8_DAC_3			0x0A
--#define AIO12_8_COUNTER_0		0x0C
--#define AIO12_8_COUNTER_1		0x0D
--#define AIO12_8_COUNTER_2		0x0E
--#define AIO12_8_COUNTER_CONTROL		0x0F
--#define AIO12_8_DIO_0			0x10
--#define AIO12_8_DIO_1			0x11
--#define AIO12_8_DIO_2			0x12
--#define AIO12_8_DIO_STATUS		0x13
--#define AIO12_8_DIO_CONTROL		0x14
--#define AIO12_8_ADC_TRIGGER_CONTROL	0x15
--#define AIO12_8_TRIGGER			0x16
--#define AIO12_8_POWER			0x17
--
--#define STATUS_ADC_EOC			0x80
--
--#define ADC_MODE_NORMAL			0x00
--#define ADC_MODE_INTERNAL_CLOCK		0x40
--#define ADC_MODE_STANDBY		0x80
--#define ADC_MODE_POWERDOWN		0xC0
--
--#define DAC_ENABLE			0x18
-+/*
-+ * Register map
-+ */
-+#define AIO12_8_STATUS_REG		0x00
-+#define AIO12_8_STATUS_ADC_EOC		(1 << 7)
-+#define AIO12_8_STATUS_PORT_C_COS	(1 << 6)
-+#define AIO12_8_STATUS_IRQ_ENA		(1 << 2)
-+#define AIO12_8_INTERRUPT_REG		0x01
-+#define AIO12_8_INTERRUPT_ADC		(1 << 7)
-+#define AIO12_8_INTERRUPT_COS		(1 << 6)
-+#define AIO12_8_INTERRUPT_COUNTER1	(1 << 5)
-+#define AIO12_8_INTERRUPT_PORT_C3	(1 << 4)
-+#define AIO12_8_INTERRUPT_PORT_C0	(1 << 3)
-+#define AIO12_8_INTERRUPT_ENA		(1 << 2)
-+#define AIO12_8_ADC_REG			0x02
-+#define AIO12_8_ADC_MODE_NORMAL		(0 << 6)
-+#define AIO12_8_ADC_MODE_INT_CLK	(1 << 6)
-+#define AIO12_8_ADC_MODE_STANDBY	(2 << 6)
-+#define AIO12_8_ADC_MODE_POWERDOWN	(3 << 6)
-+#define AIO12_8_ADC_ACQ_3USEC		(0 << 5)
-+#define AIO12_8_ADC_ACQ_PROGRAM		(1 << 5)
-+#define AIO12_8_ADC_RANGE(x)		((x) << 3)
-+#define AIO12_8_ADC_CHAN(x)		((x) << 0)
-+#define AIO12_8_DAC_REG(x)		(0x04 + (x) * 2)
-+#define AIO12_8_8254_BASE_REG		0x0c
-+#define AIO12_8_8255_BASE_REG		0x10
-+#define AIO12_8_DIO_CONTROL_REG		0x14
-+#define AIO12_8_DIO_CONTROL_TST		(1 << 0)
-+#define AIO12_8_ADC_TRIGGER_REG		0x15
-+#define AIO12_8_ADC_TRIGGER_RANGE(x)	((x) << 3)
-+#define AIO12_8_ADC_TRIGGER_CHAN(x)	((x) << 0)
-+#define AIO12_8_TRIGGER_REG		0x16
-+#define AIO12_8_TRIGGER_ADTRIG		(1 << 1)
-+#define AIO12_8_TRIGGER_DACTRIG		(1 << 0)
-+#define AIO12_8_COS_REG			0x17
-+#define AIO12_8_DAC_ENABLE_REG		0x18
-+#define AIO12_8_DAC_ENABLE_REF_ENA	(1 << 0)
- 
- struct aio12_8_boardtype {
- 	const char *name;
-@@ -100,35 +109,42 @@ static int aio_aio12_8_ai_read(struct comedi_device *dev,
- 			       struct comedi_subdevice *s,
- 			       struct comedi_insn *insn, unsigned int *data)
+diff --git a/drivers/video/hpfb.c b/drivers/video/hpfb.c
+index ebf8495..7324865 100644
+--- a/drivers/video/hpfb.c
++++ b/drivers/video/hpfb.c
+@@ -210,6 +210,7 @@ static int __devinit hpfb_init_one(unsigned long phys_base,
+ 				   unsigned long virt_base)
  {
-+	unsigned int chan = CR_CHAN(insn->chanspec);
-+	unsigned int range = CR_RANGE(insn->chanspec);
-+	unsigned int val;
-+	unsigned char control;
- 	int n;
--	unsigned char control =
--	    ADC_MODE_NORMAL |
--	    (CR_RANGE(insn->chanspec) << 3) | CR_CHAN(insn->chanspec);
+ 	unsigned long fboff, fb_width, fb_height, fb_start;
++	int ret;
  
--	/* read status to clear EOC latch */
--	inb(dev->iobase + AIO12_8_STATUS);
-+	/*
-+	 * Setup the control byte for internal 2MHz clock, 3uS conversion,
-+	 * at the desired range of the requested channel.
-+	 */
-+	control = AIO12_8_ADC_MODE_NORMAL | AIO12_8_ADC_ACQ_3USEC |
-+		  AIO12_8_ADC_RANGE(range) | AIO12_8_ADC_CHAN(chan);
+ 	fb_regs = virt_base;
+ 	fboff = (in_8(fb_regs + HPFB_FBOMSB) << 8) | in_8(fb_regs + HPFB_FBOLSB);
+@@ -290,19 +291,29 @@ static int __devinit hpfb_init_one(unsigned long phys_base,
+ 	fb_info.var   = hpfb_defined;
+ 	fb_info.screen_base = (char *)fb_start;
+ 
+-	fb_alloc_cmap(&fb_info.cmap, 1 << hpfb_defined.bits_per_pixel, 0);
++	ret = fb_alloc_cmap(&fb_info.cmap, 1 << hpfb_defined.bits_per_pixel, 0);
++	if (ret < 0)
++		goto unmap_screen_base;
+ 
+-	if (register_framebuffer(&fb_info) < 0) {
+-		fb_dealloc_cmap(&fb_info.cmap);
+-		iounmap(fb_info.screen_base);
+-		fb_info.screen_base = NULL;
+-		return 1;
+-	}
++	ret = register_framebuffer(&fb_info);
++	if (ret < 0)
++		goto dealloc_cmap;
+ 
+ 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+ 	       fb_info.node, fb_info.fix.id);
+ 
+ 	return 0;
 +
-+	/* Read status to clear EOC latch */
-+	inb(dev->iobase + AIO12_8_STATUS_REG);
- 
- 	for (n = 0; n < insn->n; n++) {
- 		int timeout = 5;
- 
- 		/*  Setup and start conversion */
--		outb(control, dev->iobase + AIO12_8_ADC);
-+		outb(control, dev->iobase + AIO12_8_ADC_REG);
- 
- 		/*  Wait for conversion to complete */
--		while (timeout &&
--		       !(inb(dev->iobase + AIO12_8_STATUS) & STATUS_ADC_EOC)) {
-+		do {
-+			val = inb(dev->iobase + AIO12_8_STATUS_REG);
- 			timeout--;
--			printk(KERN_ERR "timeout %d\n", timeout);
--			udelay(1);
--		}
--		if (timeout == 0) {
--			comedi_error(dev, "ADC timeout");
--			return -EIO;
--		}
--
--		data[n] = inw(dev->iobase + AIO12_8_ADC) & 0x0FFF;
-+			if (timeout == 0) {
-+				dev_err(dev->class_dev, "ADC timeout\n");
-+				return -ETIMEDOUT;
-+			}
-+		} while (!(val & AIO12_8_STATUS_ADC_EOC));
++dealloc_cmap:
++	fb_dealloc_cmap(&fb_info.cmap);
 +
-+		data[n] = inw(dev->iobase + AIO12_8_ADC_REG) & s->maxdata;
- 	}
--	return n;
++unmap_screen_base:
++	if (fb_info.screen_base) {
++		iounmap(fb_info.screen_base);
++		fb_info.screen_base = NULL;
++	}
 +
-+	return insn->n;
++	return ret;
  }
  
- static int aio_aio12_8_ao_read(struct comedi_device *dev,
-@@ -136,8 +152,9 @@ static int aio_aio12_8_ao_read(struct comedi_device *dev,
- 			       struct comedi_insn *insn, unsigned int *data)
- {
- 	struct aio12_8_private *devpriv = dev->private;
-+	unsigned int chan = CR_CHAN(insn->chanspec);
-+	int val = devpriv->ao_readback[chan];
- 	int i;
--	int val = devpriv->ao_readback[CR_CHAN(insn->chanspec)];
- 
- 	for (i = 0; i < insn->n; i++)
- 		data[i] = val;
-@@ -149,18 +166,21 @@ static int aio_aio12_8_ao_write(struct comedi_device *dev,
- 				struct comedi_insn *insn, unsigned int *data)
- {
- 	struct aio12_8_private *devpriv = dev->private;
-+	unsigned int chan = CR_CHAN(insn->chanspec);
-+	unsigned long port = dev->iobase + AIO12_8_DAC_REG(chan);
-+	unsigned int val = 0;
- 	int i;
--	int chan = CR_CHAN(insn->chanspec);
--	unsigned long port = dev->iobase + AIO12_8_DAC_0 + (2 * chan);
- 
- 	/* enable DACs */
--	outb(0x01, dev->iobase + DAC_ENABLE);
-+	outb(AIO12_8_DAC_ENABLE_REF_ENA, dev->iobase + AIO12_8_DAC_ENABLE_REG);
- 
- 	for (i = 0; i < insn->n; i++) {
--		outb(data[i] & 0xFF, port);	/*  LSB */
--		outb((data[i] >> 8) & 0x0F, port + 1);	/*  MSB */
--		devpriv->ao_readback[chan] = data[i];
-+		val = data[i];
-+		outw(val, port);
- 	}
-+
-+	devpriv->ao_readback[chan] = val;
-+
- 	return insn->n;
+ /* 
+@@ -345,6 +356,9 @@ static void __devexit hpfb_remove_one(struct dio_dev *d)
+ 	if (d->scode >= DIOII_SCBASE)
+ 		iounmap((void *)fb_regs);
+ 	release_mem_region(d->resource.start, resource_size(&d->resource));
++	fb_dealloc_cmap(&fb_info.cmap);
++	if (fb_info.screen_base)
++		iounmap(fb_info.screen_base);
  }
  
-@@ -230,7 +250,8 @@ static int aio_aio12_8_attach(struct comedi_device *dev,
- 
- 	s = dev->subdevices + 2;
- 	/* 8255 Digital i/o subdevice */
--	ret = subdev_8255_init(dev, s, NULL, dev->iobase + AIO12_8_DIO_0);
-+	iobase = dev->iobase + AIO12_8_8255_BASE_REG;
-+	ret = subdev_8255_init(dev, s, NULL, iobase);
- 	if (ret)
- 		return ret;
- 
+ static struct dio_device_id hpfb_dio_tbl[] = {
 -- 
-1.7.11
+1.7.10.4
 
