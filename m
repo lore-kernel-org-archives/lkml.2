@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2HTUFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:05:05 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:49173 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab2HTUFC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:05:02 -0400
-X-Auth-Info: EhMjSMYTNy2KShdJI49PkZIaIALOR4pra1wQ6Oo8HDI=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 4/8] time: Condense timekeeper.xtime into xtime_sec
-References: <1342156917-25092-1-git-send-email-john.stultz@linaro.org>
-	<1342156917-25092-5-git-send-email-john.stultz@linaro.org>
-	<m2fw7ilhnm.fsf@igel.home> <503288ED.10306@linaro.org>
-	<m2fw7h4ab5.fsf@igel.home> <503296C1.4070906@linaro.org>
-X-Yow: First, I'm going to give you all the ANSWERS to today's test..
- So just plug in your SONY WALKMANS and relax!!
-Date: Mon, 20 Aug 2012 22:04:58 +0200
-In-Reply-To: <503296C1.4070906@linaro.org> (John Stultz's message of "Mon, 20
-	Aug 2012 12:57:53 -0700")
-Message-ID: <m2boi549ed.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753626Ab2HTUJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:09:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51046 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab2HTUJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:09:31 -0400
+Message-ID: <50329951.9030805@zytor.com>
+Date: Mon, 20 Aug 2012 13:08:49 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Borislav Petkov <bp@amd64.org>
+CC: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH 04/11] x86/microcode_core_early.c: Define interfaces for
+ early load ucode
+References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com> <1345277729-8399-5-git-send-email-fenghua.yu@intel.com> <20120818224442.GB32120@khazad-dum.debian.net> <3E5A0FA7E9CA944F9D5414FEC6C71220077879BF@ORSMSX105.amr.corp.intel.com> <503078A2.9030204@zytor.com> <3E5A0FA7E9CA944F9D5414FEC6C7122007787B22@ORSMSX105.amr.corp.intel.com> <20120820140630.GD24149@aftab.osrc.amd.com>
+In-Reply-To: <20120820140630.GD24149@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John Stultz <john.stultz@linaro.org> writes:
+On 08/20/2012 07:06 AM, Borislav Petkov wrote:
+> 
+> Or,
+> 
+> in case we want to supply more vendor-specific stuff early at boot, we
+> could do:
+> 
+> kernel/x86/<vendor>/microcode...
+> 		|-> bios_overrides
+> 		|-> ...
+> 
+> and have this layout extensible from the beginning...
+> 
 
-> Huh.  Yea, that looks fine.  And without the
-> __timekeeping_inject_sleeptime() call, the system resumed ok?
+Does that make sense, though?  I'm a bit concerned about having multiple
+files named microcode.bin by default; the pathname isn't as sticky as
+the filename when people move things around...
 
-Yes, it does.
-
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+	-hpa
