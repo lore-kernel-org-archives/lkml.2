@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab2HTD4q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:56:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
+	id S1754168Ab2HTETP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:19:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754055Ab2HTD43 (ORCPT
+	with ESMTP id S1754173Ab2HTD4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:56:29 -0400
+	Sun, 19 Aug 2012 23:56:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zach Brown <zab@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 02/16] fuse: verify all ioctl retry iov elements
-Date: Sun, 19 Aug 2012 20:56:01 -0700
-Message-Id: <20120820035458.010460371@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Gary E. Miller" <gem@rellim.com>
+Subject: [ 07/16] xhci: Add Etron XHCI_TRUST_TX_LENGTH quirk.
+Date: Sun, 19 Aug 2012 20:56:06 -0700
+Message-Id: <20120820035458.704061947@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035457.653002510@linuxfoundation.org>
 References: <20120820035457.653002510@linuxfoundation.org>
@@ -29,42 +30,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Zach Brown <zab@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit fb6ccff667712c46b4501b920ea73a326e49626a upstream.
+commit 5cb7df2b2d3afee7638b3ef23a5bcb89c6f07bd9 upstream.
 
-Commit 7572777eef78ebdee1ecb7c258c0ef94d35bad16 attempted to verify that
-the total iovec from the client doesn't overflow iov_length() but it
-only checked the first element.  The iovec could still overflow by
-starting with a small element.  The obvious fix is to check all the
-elements.
+Gary reports that with recent kernels, he notices more xHCI driver
+warnings:
 
-The overflow case doesn't look dangerous to the kernel as the copy is
-limited by the length after the overflow.  This fix restores the
-intention of returning an error instead of successfully copying less
-than the iovec represented.
+xhci_hcd 0000:03:00.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
 
-I found this by code inspection.  I built it but don't have a test case.
-I'm cc:ing stable because the initial commit did as well.
+We think his Etron xHCI host controller may have the same buggy behavior
+as the Fresco Logic xHCI host.  When a short transfer is received, the
+host will mark the transfer as successfully completed when it should be
+marking it with a short completion.
 
-Signed-off-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Fix this by turning on the XHCI_TRUST_TX_LENGTH quirk when the Etron
+host is discovered.  Note that Gary has revision 1, but if Etron fixes
+this bug in future revisions, the quirk will have no effect.
+
+This patch should be backported to kernels as old as 2.6.36, that
+contain a backported version of commit
+1530bbc6272d9da1e39ef8e06190d42c13a02733 "xhci: Add new short TX quirk
+for Fresco Logic host."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Gary E. Miller <gem@rellim.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1710,7 +1710,7 @@ static int fuse_verify_ioctl_iov(struct
- 	size_t n;
- 	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
- 
--	for (n = 0; n < count; n++) {
-+	for (n = 0; n < count; n++, iov++) {
- 		if (iov->iov_len > (size_t) max)
- 			return -ENOMEM;
- 		max -= iov->iov_len;
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -145,6 +145,7 @@ static int xhci_pci_setup(struct usb_hcd
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
++		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
 
 
