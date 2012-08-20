@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2HTOuQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:50:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49521 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703Ab2HTOuE (ORCPT
+	id S1756873Ab2HTOva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:51:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49677 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756778Ab2HTOv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:50:04 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
+	Mon, 20 Aug 2012 10:51:26 -0400
+Message-ID: <50324EE8.9010206@gmail.com>
+Date: Mon, 20 Aug 2012 16:51:20 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 02/12] kdb: Implement disable_nmi command
-Date: Mon, 20 Aug 2012 07:47:20 -0700
-Message-Id: <1345474050-8339-2-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.11.5
-In-Reply-To: <20120820144449.GA32560@lizard>
-References: <20120820144449.GA32560@lizard>
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 01/11] pinctrl: mvebu: pinctrl driver core
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>	<1344689809-6223-2-git-send-email-sebastian.hesselbarth@gmail.com>	<CACRpkda0wUW4E3y=ucGRFu5fwwyFWo2dc=4qBaH6CFSOW2ZL_A@mail.gmail.com>	<CABJ1b_TCF=Jfb0uuoh-M87n6faezj4OqZ4S_nJLA0yKga2-ioQ@mail.gmail.com> <CACRpkdaozBQPe1PkjaKrnqYZ=tpX1mv1iS-rCrJaSFAsQqzgnA@mail.gmail.com>
+In-Reply-To: <CACRpkdaozBQPe1PkjaKrnqYZ=tpX1mv1iS-rCrJaSFAsQqzgnA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This command disables NMI-entry. If NMI source has been previously shared
-with a serial console ("debug port"), this effectively releases the port
-from KDB exclusive use, and makes the console available for normal use.
+On 08/20/2012 04:18 PM, Linus Walleij wrote:
+>> I'll review the variant types but inside pinctrl-mvebu variant
+>> is used as a bit mask to distinguish different variants. Anyway,
+>> they should always be the same size.
+>
+> Aha bitmask, seems you can only have 8 different variants of
+> the Marvell's then?
 
-Of course, NMI can be reenabled, enable_nmi modparam is used for that:
+Only 8 different variants of one SoC! Currently, there are 5 for
+Kirkwood, none for Dove. I think there are two more Kirkwood's that
+never appeared in public, but it is still < 8.
 
-	echo 1 > /sys/module/kdb/parameters/enable_nmi
+>> Well, I see if I can clarify the description but wrt the datasheet it
+>> _should_ be quite obvious.
+>
+> I mainly worry about being able to read the code and figure out
+> what's going on, if the datasheet is vital then pls include some
+> link to it or so in the header of the file (but preferrably the code
+> should speak for itself).
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- kernel/debug/kdb/kdb_main.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+Ok, I clarify whats meant by mvebu_*_ctrl/ctrl_setting/mode. I am not
+that happy with that names either, but honestly pinctrl core already
+took all names that I'd have chosen. Therefore, I chose some that do
+not interfere with pinctrl core as the meaning is different.
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 31df170..9fadff1 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -21,6 +21,7 @@
- #include <linux/smp.h>
- #include <linux/utsname.h>
- #include <linux/vmalloc.h>
-+#include <linux/atomic.h>
- #include <linux/module.h>
- #include <linux/mm.h>
- #include <linux/init.h>
-@@ -2107,6 +2108,32 @@ static int kdb_dmesg(int argc, const char **argv)
- 	return 0;
- }
- #endif /* CONFIG_PRINTK */
-+
-+/* Make sure we balance enable/disable calls, must disable first. */
-+static atomic_t kdb_nmi_disabled;
-+
-+static int kdb_disable_nmi(int argc, const char *argv[])
-+{
-+	if (atomic_read(&kdb_nmi_disabled))
-+		return 0;
-+	atomic_set(&kdb_nmi_disabled, 1);
-+	kgdb_enable_nmi(0);
-+	return 0;
-+}
-+
-+static int kdb_param_enable_nmi(const char *val, const struct kernel_param *kp)
-+{
-+	if (!atomic_add_unless(&kdb_nmi_disabled, -1, 0))
-+		return -EINVAL;
-+	kgdb_enable_nmi(1);
-+	return 0;
-+}
-+
-+static const struct kernel_param_ops kdb_param_ops_enable_nmi = {
-+	.set = kdb_param_enable_nmi,
-+};
-+module_param_cb(enable_nmi, &kdb_param_ops_enable_nmi, NULL, 0600);
-+
- /*
-  * kdb_cpu - This function implements the 'cpu' command.
-  *	cpu	[<cpunum>]
-@@ -2851,6 +2878,8 @@ static void __init kdb_inittab(void)
- 	kdb_register_repeat("dmesg", kdb_dmesg, "[lines]",
- 	  "Display syslog buffer", 0, KDB_REPEAT_NONE);
- #endif
-+	kdb_register_repeat("disable_nmi", kdb_disable_nmi, "",
-+	  "Disable NMI entry to KDB", 0, KDB_REPEAT_NONE);
- 	kdb_register_repeat("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
- 	  "Define a set of commands, down to endefcmd", 0, KDB_REPEAT_NONE);
- 	kdb_register_repeat("kill", kdb_kill, "<-signal> <pid>",
--- 
-1.7.11.5
-
+Sebastian
