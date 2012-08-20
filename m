@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab2HTQcQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:32:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56621 "EHLO
+	id S1757291Ab2HTQcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:32:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56625 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab2HTQ0k (ORCPT
+	with ESMTP id S1754587Ab2HTQ0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Aug 2012 12:26:40 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/24] perf ui gtk: Add perf_gtk__show_helpline() for pr_*
-Date: Mon, 20 Aug 2012 13:26:14 -0300
-Message-Id: <1345479985-18669-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 17/24] perf tools: Rename global variable 'events' in util/header.c
+Date: Mon, 20 Aug 2012 13:26:18 -0300
+Message-Id: <1345479985-18669-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1345479985-18669-1-git-send-email-acme@infradead.org>
 References: <1345479985-18669-1-git-send-email-acme@infradead.org>
@@ -26,202 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Robert Richter <robert.richter@amd.com>
 
-Use helpline for printing error/debug messages. The code resembles a TUI
-counter part and only print the first line of the message.
+Trivial patch that renames global variable 'events' in util/header.c.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Use a more specific naming to avoid conflicts. Same for variable
+'event_count'.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1345104894-14205-5-git-send-email-namhyung@kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1345144224-27280-5-git-send-email-robert.richter@amd.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/gtk/helpline.c |   26 ++++++++++++++++++++++++++
- tools/perf/ui/gtk/util.c     |    5 -----
- tools/perf/ui/helpline.h     |   23 +++++++++++++++++++++++
- tools/perf/ui/setup.c        |    4 ++++
- tools/perf/ui/tui/setup.c    |    2 --
- tools/perf/util/debug.c      |    4 +++-
- tools/perf/util/debug.h      |    8 +-------
- 7 files changed, 57 insertions(+), 15 deletions(-)
+ tools/perf/util/header.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/tools/perf/ui/gtk/helpline.c b/tools/perf/ui/gtk/helpline.c
-index 2511b37..5db4432 100644
---- a/tools/perf/ui/gtk/helpline.c
-+++ b/tools/perf/ui/gtk/helpline.c
-@@ -1,5 +1,10 @@
-+#include <stdio.h>
-+#include <string.h>
-+
- #include "gtk.h"
-+#include "../ui.h"
- #include "../helpline.h"
-+#include "../../util/debug.h"
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index e2e5129..1e5b6aa 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -23,8 +23,8 @@
  
- static void gtk_helpline_pop(void)
- {
-@@ -28,3 +33,24 @@ void perf_gtk__init_helpline(void)
- {
- 	helpline_fns = &gtk_helpline_fns;
+ static bool no_buildid_cache = false;
+ 
+-static int event_count;
+-static struct perf_trace_event_type *events;
++static int trace_event_count;
++static struct perf_trace_event_type *trace_events;
+ 
+ static u32 header_argc;
+ static const char **header_argv;
+@@ -36,24 +36,24 @@ int perf_header__push_event(u64 id, const char *name)
+ 	if (strlen(name) > MAX_EVENT_NAME)
+ 		pr_warning("Event %s will be truncated\n", name);
+ 
+-	nevents = realloc(events, (event_count + 1) * sizeof(*events));
++	nevents = realloc(trace_events, (trace_event_count + 1) * sizeof(*trace_events));
+ 	if (nevents == NULL)
+ 		return -ENOMEM;
+-	events = nevents;
++	trace_events = nevents;
+ 
+-	memset(&events[event_count], 0, sizeof(struct perf_trace_event_type));
+-	events[event_count].event_id = id;
+-	strncpy(events[event_count].name, name, MAX_EVENT_NAME - 1);
+-	event_count++;
++	memset(&trace_events[trace_event_count], 0, sizeof(struct perf_trace_event_type));
++	trace_events[trace_event_count].event_id = id;
++	strncpy(trace_events[trace_event_count].name, name, MAX_EVENT_NAME - 1);
++	trace_event_count++;
+ 	return 0;
  }
-+
-+int perf_gtk__show_helpline(const char *fmt, va_list ap)
-+{
-+	int ret;
-+	char *ptr;
-+	static int backlog;
-+
-+	ret = vscnprintf(ui_helpline__current + backlog,
-+			 sizeof(ui_helpline__current) - backlog, fmt, ap);
-+	backlog += ret;
-+
-+	/* only first line can be displayed */
-+	ptr = strchr(ui_helpline__current, '\n');
-+	if (ptr && (ptr - ui_helpline__current) <= backlog) {
-+		*ptr = '\0';
-+		ui_helpline__puts(ui_helpline__current);
-+		backlog = 0;
-+	}
-+
-+	return ret;
-+}
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index 0ead373..b8efb96 100644
---- a/tools/perf/ui/gtk/util.c
-+++ b/tools/perf/ui/gtk/util.c
-@@ -117,11 +117,6 @@ struct perf_error_ops perf_gtk_eops = {
-  *        For now, just add stubs for NO_NEWT=1 build.
-  */
- #ifdef NO_NEWT_SUPPORT
--int ui_helpline__show_help(const char *format __used, va_list ap __used)
--{
--	return 0;
--}
--
- void ui_progress__update(u64 curr __used, u64 total __used,
- 			 const char *title __used)
+ 
+ char *perf_header__find_event(u64 id)
  {
-diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
-index 61118b2..a2487f9 100644
---- a/tools/perf/ui/helpline.h
-+++ b/tools/perf/ui/helpline.h
-@@ -4,6 +4,8 @@
- #include <stdio.h>
- #include <stdarg.h>
+ 	int i;
+-	for (i = 0 ; i < event_count; i++) {
+-		if (events[i].event_id == id)
+-			return events[i].name;
++	for (i = 0 ; i < trace_event_count; i++) {
++		if (trace_events[i].event_id == id)
++			return trace_events[i].name;
+ 	}
+ 	return NULL;
+ }
+@@ -1726,9 +1726,9 @@ out_err_write:
+ 	}
  
-+#include "../util/cache.h"
-+
- struct ui_helpline {
- 	void (*pop)(void);
- 	void (*push)(const char *msg);
-@@ -21,4 +23,25 @@ void ui_helpline__puts(const char *msg);
+ 	header->event_offset = lseek(fd, 0, SEEK_CUR);
+-	header->event_size = event_count * sizeof(struct perf_trace_event_type);
+-	if (events) {
+-		err = do_write(fd, events, header->event_size);
++	header->event_size = trace_event_count * sizeof(struct perf_trace_event_type);
++	if (trace_events) {
++		err = do_write(fd, trace_events, header->event_size);
+ 		if (err < 0) {
+ 			pr_debug("failed to write perf header events\n");
+ 			return err;
+@@ -2211,13 +2211,13 @@ int perf_session__read_header(struct perf_session *session, int fd)
  
- extern char ui_helpline__current[512];
+ 	if (f_header.event_types.size) {
+ 		lseek(fd, f_header.event_types.offset, SEEK_SET);
+-		events = malloc(f_header.event_types.size);
+-		if (events == NULL)
++		trace_events = malloc(f_header.event_types.size);
++		if (trace_events == NULL)
+ 			return -ENOMEM;
+-		if (perf_header__getbuffer64(header, fd, events,
++		if (perf_header__getbuffer64(header, fd, trace_events,
+ 					     f_header.event_types.size))
+ 			goto out_errno;
+-		event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
++		trace_event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
+ 	}
  
-+#ifdef NO_NEWT_SUPPORT
-+static inline int ui_helpline__show_help(const char *format __used,
-+					 va_list ap __used)
-+{
-+	return 0;
-+}
-+#else
-+extern char ui_helpline__last_msg[];
-+int ui_helpline__show_help(const char *format, va_list ap);
-+#endif /* NO_NEWT_SUPPORT */
-+
-+#ifdef NO_GTK2_SUPPORT
-+static inline int perf_gtk__show_helpline(const char *format __used,
-+					  va_list ap __used)
-+{
-+	return 0;
-+}
-+#else
-+int perf_gtk__show_helpline(const char *format, va_list ap);
-+#endif /* NO_GTK2_SUPPORT */
-+
- #endif /* _PERF_UI_HELPLINE_H_ */
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index 791fb15..c7820e5 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -1,7 +1,11 @@
-+#include <pthread.h>
-+
- #include "../cache.h"
- #include "../debug.h"
+ 	perf_header__process_sections(header, fd, &session->pevent,
+@@ -2362,8 +2362,8 @@ int perf_event__synthesize_event_types(struct perf_tool *tool,
+ 	struct perf_trace_event_type *type;
+ 	int i, err = 0;
  
+-	for (i = 0; i < event_count; i++) {
+-		type = &events[i];
++	for (i = 0; i < trace_event_count; i++) {
++		type = &trace_events[i];
  
-+pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
-+
- void setup_browser(bool fallback_to_pager)
- {
- 	if (!isatty(1) || dump_trace)
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index e813c1d..4c936e0 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -11,8 +11,6 @@
- #include "../libslang.h"
- #include "../keysyms.h"
- 
--pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
--
- static volatile int ui__need_resize;
- 
- extern struct perf_error_ops perf_tui_eops;
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 4dfe0bb..66eb382 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -23,8 +23,10 @@ int eprintf(int level, const char *fmt, ...)
- 
- 	if (verbose >= level) {
- 		va_start(args, fmt);
--		if (use_browser > 0)
-+		if (use_browser == 1)
- 			ret = ui_helpline__show_help(fmt, args);
-+		else if (use_browser == 2)
-+			ret = perf_gtk__show_helpline(fmt, args);
- 		else
- 			ret = vfprintf(stderr, fmt, args);
- 		va_end(args);
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 015c91d..05e660c 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -4,6 +4,7 @@
- 
- #include <stdbool.h>
- #include "event.h"
-+#include "../ui/helpline.h"
- 
- extern int verbose;
- extern bool quiet, dump_trace;
-@@ -15,11 +16,6 @@ struct ui_progress;
- struct perf_error_ops;
- 
- #if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
--static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
--{
--	return 0;
--}
--
- static inline void ui_progress__update(u64 curr __used, u64 total __used,
- 				       const char *title __used) {}
- 
-@@ -39,8 +35,6 @@ perf_error__unregister(struct perf_error_ops *eops __used)
- 
- #else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
- 
--extern char ui_helpline__last_msg[];
--int ui_helpline__show_help(const char *format, va_list ap);
- #include "../ui/progress.h"
- int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
- #include "../ui/util.h"
+ 		err = perf_event__synthesize_event_type(tool, type->event_id,
+ 							type->name, process,
 -- 
 1.7.1
 
