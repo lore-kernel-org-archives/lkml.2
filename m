@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab2HTEBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:01:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab2HTEBF (ORCPT
+	id S1752368Ab2HTEBE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:01:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab2HTEA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:01:05 -0400
+	Mon, 20 Aug 2012 00:00:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Denis Turischev <denis@compulab.co.il>
-Subject: [ 29/46] xhci: Switch PPT ports to EHCI on shutdown.
-Date: Sun, 19 Aug 2012 20:59:05 -0700
-Message-Id: <20120820035836.304177567@linuxfoundation.org>
+        "Gary E. Miller" <gem@rellim.com>
+Subject: [ 27/46] xhci: Add Etron XHCI_TRUST_TX_LENGTH quirk.
+Date: Sun, 19 Aug 2012 20:59:03 -0700
+Message-Id: <20120820035836.030571798@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -32,110 +32,44 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit e95829f474f0db3a4d940cae1423783edd966027 upstream.
+commit 5cb7df2b2d3afee7638b3ef23a5bcb89c6f07bd9 upstream.
 
-The Intel desktop boards DH77EB and DH77DF have a hardware issue that
-can be worked around by BIOS.  If the USB ports are switched to xHCI on
-shutdown, the xHCI host will send a spurious interrupt, which will wake
-the system.  Some BIOS will work around this, but not all.
+Gary reports that with recent kernels, he notices more xHCI driver
+warnings:
 
-The bug can be avoided if the USB ports are switched back to EHCI on
-shutdown.  The Intel Windows driver switches the ports back to EHCI, so
-change the Linux xHCI driver to do the same.
+xhci_hcd 0000:03:00.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
 
-Unfortunately, we can't tell the two effected boards apart from other
-working motherboards, because the vendors will change the DMI strings
-for the DH77EB and DH77DF boards to their own custom names.  One example
-is Compulab's mini-desktop, the Intense-PC.  Instead, key off the
-Panther Point xHCI host PCI vendor and device ID, and switch the ports
-over for all PPT xHCI hosts.
+We think his Etron xHCI host controller may have the same buggy behavior
+as the Fresco Logic xHCI host.  When a short transfer is received, the
+host will mark the transfer as successfully completed when it should be
+marking it with a short completion.
 
-The only impact this will have on non-effected boards is to add a couple
-hundred milliseconds delay on boot when the BIOS has to switch the ports
-over from EHCI to xHCI.
+Fix this by turning on the XHCI_TRUST_TX_LENGTH quirk when the Etron
+host is discovered.  Note that Gary has revision 1, but if Etron fixes
+this bug in future revisions, the quirk will have no effect.
 
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
+This patch should be backported to kernels as old as 2.6.36, that
+contain a backported version of commit
+1530bbc6272d9da1e39ef8e06190d42c13a02733 "xhci: Add new short TX quirk
+for Fresco Logic host."
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Denis Turischev <denis@compulab.co.il>
-Tested-by: Denis Turischev <denis@compulab.co.il>
+Reported-by: Gary E. Miller <gem@rellim.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |    7 +++++++
- drivers/usb/host/pci-quirks.h |    1 +
- drivers/usb/host/xhci-pci.c   |    9 +++++++++
- drivers/usb/host/xhci.c       |    3 +++
- drivers/usb/host/xhci.h       |    1 +
- 5 files changed, 21 insertions(+)
+ drivers/usb/host/xhci-pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -800,6 +800,13 @@ void usb_enable_xhci_ports(struct pci_de
- }
- EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
- 
-+void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
-+{
-+	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN, 0x0);
-+	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR, 0x0);
-+}
-+EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
-+
- /**
-  * PCI Quirks for xHCI.
-  *
---- a/drivers/usb/host/pci-quirks.h
-+++ b/drivers/usb/host/pci-quirks.h
-@@ -10,6 +10,7 @@ void usb_amd_quirk_pll_disable(void);
- void usb_amd_quirk_pll_enable(void);
- bool usb_is_intel_switchable_xhci(struct pci_dev *pdev);
- void usb_enable_xhci_ports(struct pci_dev *xhci_pdev);
-+void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
- #else
- static inline void usb_amd_quirk_pll_disable(void) {}
- static inline void usb_amd_quirk_pll_enable(void) {}
 --- a/drivers/usb/host/xhci-pci.c
 +++ b/drivers/usb/host/xhci-pci.c
-@@ -94,6 +94,15 @@ static void xhci_pci_quirks(struct devic
- 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
- 		xhci->limit_active_eps = 64;
- 		xhci->quirks |= XHCI_SW_BW_CHECKING;
-+		/*
-+		 * PPT desktop boards DH77EB and DH77DF will power back on after
-+		 * a few seconds of being shutdown.  The fix for this is to
-+		 * switch the ports from xHCI to EHCI on shutdown.  We can't use
-+		 * DMI information to find those particular boards (since each
-+		 * vendor will change the board name), so we have to key off all
-+		 * PPT chipsets.
-+		 */
-+		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+@@ -99,6 +99,7 @@ static void xhci_pci_quirks(struct devic
  			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -659,6 +659,9 @@ void xhci_shutdown(struct usb_hcd *hcd)
- {
- 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
- 
-+	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
-+		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
-+
- 	spin_lock_irq(&xhci->lock);
- 	xhci_halt(xhci);
- 	spin_unlock_irq(&xhci->lock);
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1494,6 +1494,7 @@ struct xhci_hcd {
- #define XHCI_TRUST_TX_LENGTH	(1 << 10)
- #define XHCI_LPM_SUPPORT	(1 << 11)
- #define XHCI_INTEL_HOST		(1 << 12)
-+#define XHCI_SPURIOUS_REBOOT	(1 << 13)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
++		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
 
 
