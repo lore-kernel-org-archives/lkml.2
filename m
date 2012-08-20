@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab2HTVsm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 17:48:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39491 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab2HTVsi (ORCPT
+	id S1755726Ab2HTVta (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 17:49:30 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18205 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418Ab2HTVt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 17:48:38 -0400
+	Mon, 20 Aug 2012 17:49:28 -0400
+Date: Mon, 20 Aug 2012 14:49:17 -0700
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, abbotti@mev.co.uk
+Subject: Re: [PATCH 09/20] staging: comedi: adv_pci1723: fix initial dio
+ subdevice state and io_bits
+Message-ID: <20120820214916.GA11795@mwanda>
+References: <201208171817.38918.hartleys@visionengravers.com>
 MIME-Version: 1.0
-In-Reply-To: <20120820180037.GV4232@outflux.net>
-References: <E1T1N2q-0001xm-5X@morero.ard.nu>
-	<20120820180037.GV4232@outflux.net>
-Date: Mon, 20 Aug 2012 23:48:37 +0200
-Message-ID: <CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com>
-Subject: Re: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
-From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208171817.38918.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This seems like a good idea to me. It would allow more than just the
-> loader to harden userspace allocations. It's a more direct version of
-> PaX's "MPROTECT" feature[1]. That feature hardens existing loaders,
-> but doesn't play nice with JITs (like Java), but this lets a loader
-> (or JIT) opt-in to the protection and have some direct control over it.
->
+On Fri, Aug 17, 2012 at 06:17:38PM -0700, H Hartley Sweeten wrote:
+> +	if (this_board->n_diochan) {
+> +		s = dev->subdevices + subdev;
 
-If desired, additional restrictions can be imposed by using the
-security framework, e.g,, disallow non-final r-x mappings.
+This pointer math sucks still...  I feel like the unreadable code is
+part of what caused this bug.
 
-> It seems like there needs to be a sensible way to detect that this flag is
-> available, though.
->
+We don't have to change these all at once.  If we fix only one line,
+then at least one line will be readable and that is one more than
+before so *improvement*.
 
-I am open for suggestions to address this. Our particular
-implementation of the loader (on an embedded system) tries to set it
-on the first mmap invocation, and stops trying if it fails. Not the
-most elegant approach, I know ...
+regards,
+dan carpenter
 
--- 
-Ard.
-
-
-> -Kees
->
-> [1] http://pax.grsecurity.net/docs/mprotect.txt
->
-> --
-> Kees Cook                                            @outflux.net
