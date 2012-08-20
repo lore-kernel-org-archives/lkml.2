@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab2HTT6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 15:58:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53697 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753912Ab2HTT62 (ORCPT
+	id S1754681Ab2HTT6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 15:58:20 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54609 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab2HTT6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 15:58:28 -0400
-Date: Mon, 20 Aug 2012 20:58:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH v2] regulator: ab8500: provide per-regulator shift
-Message-ID: <20120820195826.GQ26991@opensource.wolfsonmicro.com>
-References: <1345480895-18278-1-git-send-email-linus.walleij@stericsson.com>
+	Mon, 20 Aug 2012 15:58:15 -0400
+Message-ID: <503296C1.4070906@linaro.org>
+Date: Mon, 20 Aug 2012 12:57:53 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6tPipYVl+OcoAvSh"
-Content-Disposition: inline
-In-Reply-To: <1345480895-18278-1-git-send-email-linus.walleij@stericsson.com>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Schwab <schwab@linux-m68k.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 4/8] time: Condense timekeeper.xtime into xtime_sec
+References: <1342156917-25092-1-git-send-email-john.stultz@linaro.org> <1342156917-25092-5-git-send-email-john.stultz@linaro.org> <m2fw7ilhnm.fsf@igel.home> <503288ED.10306@linaro.org> <m2fw7h4ab5.fsf@igel.home>
+In-Reply-To: <m2fw7h4ab5.fsf@igel.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082019-5518-0000-0000-000006FACFDC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/20/2012 12:45 PM, Andreas Schwab wrote:
+> John Stultz <john.stultz@linaro.org> writes:
+>
+>> I'm not very familiar w/ the iBook hardware, but does it use a
+>> clocksource, or does it use arch_gettimeoffset()?
+> clocksource: timebase mult[3640e38e] shift[24] registered
+>
+>> I suspect that the casting has avoided clipping some strange values from
+>> the persistent clock.
+> That's my guess as well.
+>
+>> Could you try with the following patch against Linus' HEAD? I suspect it
+>> will let the box resume (although it will seem as though no time was
+>> spent in resume) and then let me know what the JDB lines print out?
+> JDB: suspend_time: 1345491706:0  resume_time: 1345491737:0
+> JDB: Trying to add: 31:0
+>
+> (Looks reasonable.)
+Huh.  Yea, that looks fine.  And without the 
+__timekeeping_inject_sleeptime() call, the system resumed ok?
 
---6tPipYVl+OcoAvSh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for the testing!  I'll keep looking here.
+-john
 
-On Mon, Aug 20, 2012 at 06:41:35PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->=20
-> This encodes the voltage shifts (the number of bits to shift
-> the register to get to the selector) into the regulator info.
-> We have several new variants of the AB8500 so this varies a
-> lot.
 
-Applied, thanks.
 
---6tPipYVl+OcoAvSh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQMpbMAAoJEFJkBDiqVpZ4JmkQAK2/m/qU7TvrgYpFbS8dYomE
-IMa+SyCmb82TecLExlSweihqMKl9jpy3zZhWjonf/oH7aHUh9jgyQqIDGPbFpcQJ
-VmyE9W3fsi2dzIT2JhFcTOw19Bph9HeS6DDPQHBVJpL8vV77iVmVsC5weBkSlPZQ
-Adc36wzo/9Q3dO/LgvMBz+AWikDN4CwjLXgYUGcNmt0wt2E3A4CPCr4f09E5wEVH
-GJmgbw/13WMrCEt1ZaHrw+9PXvonBWO9dObKNy/TetyCmXra+XiVpHWna7hWY9Of
-lQ7FjBw1Y+y2A0UUQkLpH/OoQce6lEJMk+kYnB1Zl4DM78u+aHiOnZclitppz0ES
-n6TkjR9xHNH+VEhg0MNguldH3ucrJuzujIe/mFw7HfJmGjQdnbmRn/gCwwV2m0gE
-tR1jm5/pglkTJo1SPlvyic1ZrtQ1BIUKPhyPb/cMaP4PjbEQ++KHBoMo+b6O4V/V
-oNvusm2q/OakyAhPyU6g5EA9tGpcTP6Wya9Q4P92uukQJQ4HjCoZYA2N7vcuFixX
-ZCNSfHkmibo/B7QGocIkVtTGYLd1DbLdrx/L2tQKBIkT7e83UZfeqH9Q0OqyypsV
-o/JIZL0AmIeiRfkiZd7VP9hVX42ynJTatJ9lxUsVqgM0zfWjFoIy3vVo/shrkPPb
-ZoHDOgoEGOvKkEWr99BJ
-=tUb+
------END PGP SIGNATURE-----
-
---6tPipYVl+OcoAvSh--
