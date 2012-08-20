@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab2HTJbG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 05:31:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13029 "EHLO song.cn.fujitsu.com"
+	id S1756160Ab2HTJcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 05:32:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31798 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753642Ab2HTJaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 05:30:52 -0400
+	id S1756063Ab2HTJbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 05:31:06 -0400
 X-IronPort-AV: E=Sophos;i="4.77,796,1336320000"; 
-   d="scan'208";a="5672998"
+   d="scan'208";a="5673008"
 From: wency@cn.fujitsu.com
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -18,34 +18,26 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC V7 PATCH 01/19] memory-hotplug: rename remove_memory() to offline_memory()/offline_pages()
-Date: Mon, 20 Aug 2012 17:35:24 +0800
-Message-Id: <1345455342-27752-2-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC V7 PATCH 13/19] memory-hotplug: check page type in get_page_bootmem
+Date: Mon, 20 Aug 2012 17:35:36 +0800
+Message-Id: <1345455342-27752-14-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
 References: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:41,
+ 2012/08/20 17:30:42,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:46,
-	Serialize complete at 2012/08/20 17:30:46
+ 2012/08/20 17:30:50,
+	Serialize complete at 2012/08/20 17:30:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-remove_memory() only try to offline pages. It is called in two cases:
-1. hot remove a memory device
-2. echo offline >/sys/devices/system/memory/memoryXX/state
-
-In the 1st case, we should also change memory block's state, and notify
-the userspace that the memory block's state is changed after offlining
-pages.
-
-So rename remove_memory() to offline_memory()/offline_pages(). And in
-the 1st case, offline_memory() will be used. The function offline_memory()
-is not implemented. In the 2nd case, offline_pages() will be used.
+There is a possibility that get_page_bootmem() is called to the same page many
+times. So when get_page_bootmem is called to the same page, the function only
+increments page->_count.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -56,121 +48,38 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- drivers/acpi/acpi_memhotplug.c |    2 +-
- drivers/base/memory.c          |    9 +++------
- include/linux/memory_hotplug.h |    3 ++-
- mm/memory_hotplug.c            |   22 ++++++++++++++--------
- 4 files changed, 20 insertions(+), 16 deletions(-)
+ mm/memory_hotplug.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 24c807f..2a7beac 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -318,7 +318,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
- 	 */
- 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
- 		if (info->enabled) {
--			result = remove_memory(info->start_addr, info->length);
-+			result = offline_memory(info->start_addr, info->length);
- 			if (result)
- 				return result;
- 		}
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 7dda4f7..44e7de6 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -248,26 +248,23 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
- {
--	unsigned long start_pfn, start_paddr;
-+	unsigned long start_pfn;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
- 	struct page *first_page;
- 	int ret;
- 
- 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
-+	start_pfn = page_to_pfn(first_page);
- 
- 	switch (action) {
- 		case MEM_ONLINE:
--			start_pfn = page_to_pfn(first_page);
--
- 			if (!pages_correctly_reserved(start_pfn, nr_pages))
- 				return -EBUSY;
- 
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
--			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
--			ret = remove_memory(start_paddr,
--					    nr_pages << PAGE_SHIFT);
-+			ret = offline_pages(start_pfn, nr_pages);
- 			break;
- 		default:
- 			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 910550f..c183f39 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -233,7 +233,8 @@ static inline int is_mem_section_removable(unsigned long pfn,
- extern int mem_online_node(int nid);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
--extern int remove_memory(u64 start, u64 size);
-+extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
-+extern int offline_memory(u64 start, u64 size);
- extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 								int nr_pages);
- extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 3ad25f9..c182c76 100644
+index 5f9f8c7..d85af6d 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -866,7 +866,7 @@ check_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
- 	return offlined;
- }
- 
--static int __ref offline_pages(unsigned long start_pfn,
-+static int __ref __offline_pages(unsigned long start_pfn,
- 		  unsigned long end_pfn, unsigned long timeout)
+@@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+ static void get_page_bootmem(unsigned long info,  struct page *page,
+ 			     unsigned long type)
  {
- 	unsigned long pfn, nr_pages, expire;
-@@ -994,18 +994,24 @@ out:
- 	return ret;
- }
- 
--int remove_memory(u64 start, u64 size)
-+int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
- {
--	unsigned long start_pfn, end_pfn;
-+	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
-+}
- 
--	start_pfn = PFN_DOWN(start);
--	end_pfn = start_pfn + PFN_DOWN(size);
--	return offline_pages(start_pfn, end_pfn, 120 * HZ);
-+int offline_memory(u64 start, u64 size)
-+{
-+	return -EINVAL;
- }
- #else
--int remove_memory(u64 start, u64 size)
-+int offline_pages(u64 start, u64 size)
-+{
-+	return -EINVAL;
-+}
+-	page->lru.next = (struct list_head *) type;
+-	SetPagePrivate(page);
+-	set_page_private(page, info);
+-	atomic_inc(&page->_count);
++	unsigned long page_type;
 +
-+int offline_memory(u64 start, u64 size)
- {
- 	return -EINVAL;
++	page_type = (unsigned long) page->lru.next;
++	if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
++	    page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
++		page->lru.next = (struct list_head *) type;
++		SetPagePrivate(page);
++		set_page_private(page, info);
++		atomic_inc(&page->_count);
++	} else
++		atomic_inc(&page->_count);
  }
- #endif /* CONFIG_MEMORY_HOTREMOVE */
--EXPORT_SYMBOL_GPL(remove_memory);
-+EXPORT_SYMBOL_GPL(offline_memory);
+ 
+ /* reference to __meminit __free_pages_bootmem is valid
 -- 
 1.7.1
 
