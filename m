@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab2HTH5Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 03:57:16 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:46559 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab2HTH5O (ORCPT
+	id S1755818Ab2HTH51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 03:57:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52198 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab2HTH5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 03:57:14 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <5031EDD7.1050404@jic23.retrosnub.co.uk>
-Date: Mon, 20 Aug 2012 08:57:11 +0100
-From: Jonathan Cameron <jic23@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 20 Aug 2012 03:57:21 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: kernel@pengutronix.de, linux-serial@vger.kernel.org
+Subject: [PATCH] serial/imx: improve error diagnosics for clock and pinctrl failures
+Date: Mon, 20 Aug 2012 09:57:04 +0200
+Message-Id: <1345449424-24075-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Marek Vasut <marex@denx.de>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 3/3] IIO: arm: Add LRADC to i.MX28 dts
-References: <1344784918-32352-1-git-send-email-marex@denx.de> <201208170457.03686.marex@denx.de> <CAAQ0ZWROobdtFkzn9Sr7v5B29zYTQ5YEUZV59kkNE_yv6qbmgQ@mail.gmail.com> <201208191730.31969.marex@denx.de> <5031E753.5070200@jic23.retrosnub.co.uk> <20120820075249.GJ24242@S2101-09.ap.freescale.net>
-In-Reply-To: <20120820075249.GJ24242@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/08/12 08:52, Shawn Guo wrote:
-> On Mon, Aug 20, 2012 at 08:29:23AM +0100, Jonathan Cameron wrote:
->> Mostly these prefixes are an excuse for grumpy maintainers to moan
->> at people :)
->
-> Yeah, I have to become grumpy when my comment gets ignored and I have
-> to make it right (for several times) to avoid my upstream moaning at me.
-Not at all. My upstream has never moaned at me about it, but I still 
-like to moan about it myself ;)
->
-> Is it so hard?  You are not creating a new subsystem but just patching
-> an existing file.  A "git log" on the file simply shows you how to do it
->
-Indeed. A file listing these would be add just one more piece of largely
-pointless horrendous documentation.
+These error paths are used more often now after deep changes to the
+clock code and pinctrl is still new for imx. So help debugging and give
+clues in the boot log.
 
-Perhaps if Marek feels particularly strongly about this, proposing an
-additional line to for the SubmittingPatches document to say get your
-title format by looking at the log for what you are patching will do
-the job? (I can't immediately spot anything equivalent in there...)
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/tty/serial/imx.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index d5c689d6..ce44de7 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1505,18 +1505,21 @@ static int serial_imx_probe(struct platform_device *pdev)
+ 	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+ 	if (IS_ERR(pinctrl)) {
+ 		ret = PTR_ERR(pinctrl);
++		dev_err(&pdev->dev, "failed to get default pinctrl: %d\n", ret);
+ 		goto unmap;
+ 	}
+ 
+ 	sport->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
+ 	if (IS_ERR(sport->clk_ipg)) {
+ 		ret = PTR_ERR(sport->clk_ipg);
++		dev_err(&pdev->dev, "failed to get ipg clk: %d\n", ret);
+ 		goto unmap;
+ 	}
+ 
+ 	sport->clk_per = devm_clk_get(&pdev->dev, "per");
+ 	if (IS_ERR(sport->clk_per)) {
+ 		ret = PTR_ERR(sport->clk_per);
++		dev_err(&pdev->dev, "failed to get per clk: %d\n", ret);
+ 		goto unmap;
+ 	}
+ 
+-- 
+1.7.10.4
 
