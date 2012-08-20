@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab2HTD7g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:59:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab2HTD71 (ORCPT
+	id S1755105Ab2HTELZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:11:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755128Ab2HTD7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:27 -0400
+	Sun, 19 Aug 2012 23:59:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Ferrell <mferrell@uplogix.com>
-Subject: [ 30/32] usb: serial: mos7840: Fixup mos7840_chars_in_buffer()
-Date: Sun, 19 Aug 2012 20:57:26 -0700
-Message-Id: <20120820035652.053100835@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 01/46] s390/compat: fix compat wrappers for process_vm system calls
+Date: Sun, 19 Aug 2012 20:58:37 -0700
+Message-Id: <20120820035832.462721447@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
-In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
-References: <20120820035647.862247088@linuxfoundation.org>
+In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
+References: <20120820035832.274275502@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mark Ferrell <mferrell@uplogix.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 5c263b92f828af6a8cf54041db45ceae5af8f2ab upstream.
+commit 82aabdb6f1eb61e0034ec23901480f5dd23db7c4 upstream.
 
- * Use the buffer content length as opposed to the total buffer size.  This can
-   be a real problem when using the mos7840 as a usb serial-console as all
-   kernel output is truncated during boot.
+The compat wrappers incorrectly called the non compat versions of
+the system process_vm system calls.
 
-Signed-off-by: Mark Ferrell <mferrell@uplogix.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/s390/kernel/compat_wrapper.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1189,9 +1189,12 @@ static int mos7840_chars_in_buffer(struc
- 	}
+--- a/arch/s390/kernel/compat_wrapper.S
++++ b/arch/s390/kernel/compat_wrapper.S
+@@ -1636,7 +1636,7 @@ ENTRY(compat_sys_process_vm_readv_wrappe
+ 	llgfr	%r6,%r6			# unsigned long
+ 	llgf	%r0,164(%r15)		# unsigned long
+ 	stg	%r0,160(%r15)
+-	jg	sys_process_vm_readv
++	jg	compat_sys_process_vm_readv
  
- 	spin_lock_irqsave(&mos7840_port->pool_lock, flags);
--	for (i = 0; i < NUM_URBS; ++i)
--		if (mos7840_port->busy[i])
--			chars += URB_TRANSFER_BUFFER_SIZE;
-+	for (i = 0; i < NUM_URBS; ++i) {
-+		if (mos7840_port->busy[i]) {
-+			struct urb *urb = mos7840_port->write_urb_pool[i];
-+			chars += urb->transfer_buffer_length;
-+		}
-+	}
- 	spin_unlock_irqrestore(&mos7840_port->pool_lock, flags);
- 	dbg("%s - returns %d", __func__, chars);
- 	return chars;
+ ENTRY(compat_sys_process_vm_writev_wrapper)
+ 	lgfr	%r2,%r2			# compat_pid_t
+@@ -1646,4 +1646,4 @@ ENTRY(compat_sys_process_vm_writev_wrapp
+ 	llgfr	%r6,%r6			# unsigned long
+ 	llgf	%r0,164(%r15)		# unsigned long
+ 	stg	%r0,160(%r15)
+-	jg	sys_process_vm_writev
++	jg	compat_sys_process_vm_writev
 
 
