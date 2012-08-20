@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2HTWFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 18:05:52 -0400
+	id S1756500Ab2HTWGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 18:06:01 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:53735 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab2HTWFs (ORCPT
+	with ESMTP id S1755975Ab2HTWFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 18:05:48 -0400
+	Mon, 20 Aug 2012 18:05:53 -0400
 From: Michel Lespinasse <walken@google.com>
 To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
         aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v3 2/9] rbtree: add __rb_change_child() helper function
-Date: Mon, 20 Aug 2012 15:05:24 -0700
-Message-Id: <1345500331-10546-3-git-send-email-walken@google.com>
+Subject: [PATCH v3 6/9] rbtree: augmented rbtree test
+Date: Mon, 20 Aug 2012 15:05:28 -0700
+Message-Id: <1345500331-10546-7-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1345500331-10546-1-git-send-email-walken@google.com>
 References: <1345500331-10546-1-git-send-email-walken@google.com>
@@ -22,102 +22,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add __rb_change_child() as an inline helper function to replace code that
-would otherwise be duplicated 4 times in the source.
-
-No changes to binary size or speed.
+Small test to measure the performance of augmented rbtrees.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 
 ---
- lib/rbtree.c |   46 +++++++++++++++++-----------------------------
- 1 files changed, 17 insertions(+), 29 deletions(-)
+ lib/rbtree_test.c |  103 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 101 insertions(+), 2 deletions(-)
 
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 61cdd0e3e538..de89a614b1ba 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -66,6 +66,19 @@ static inline struct rb_node *rb_red_parent(struct rb_node *red)
- 	return (struct rb_node *)red->__rb_parent_color;
+diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
+index fd09465d82ca..66e41d4bfc39 100644
+--- a/lib/rbtree_test.c
++++ b/lib/rbtree_test.c
+@@ -10,6 +10,10 @@
+ struct test_node {
+ 	struct rb_node rb;
+ 	u32 key;
++
++	/* following fields used for testing augmented rbtree functionality */
++	u32 val;
++	u32 augmented;
+ };
+ 
+ static struct rb_root root = RB_ROOT;
+@@ -20,10 +24,11 @@ static struct rnd_state rnd;
+ static void insert(struct test_node *node, struct rb_root *root)
+ {
+ 	struct rb_node **new = &root->rb_node, *parent = NULL;
++	u32 key = node->key;
+ 
+ 	while (*new) {
+ 		parent = *new;
+-		if (node->key < rb_entry(parent, struct test_node, rb)->key)
++		if (key < rb_entry(parent, struct test_node, rb)->key)
+ 			new = &parent->rb_left;
+ 		else
+ 			new = &parent->rb_right;
+@@ -38,11 +43,62 @@ static inline void erase(struct test_node *node, struct rb_root *root)
+ 	rb_erase(&node->rb, root);
  }
  
-+static inline void
-+__rb_change_child(struct rb_node *old, struct rb_node *new,
-+		  struct rb_node *parent, struct rb_root *root)
++static inline u32 augment_recompute(struct test_node *node)
 +{
-+	if (parent) {
-+		if (parent->rb_left == old)
-+			parent->rb_left = new;
-+		else
-+			parent->rb_right = new;
-+	} else
-+		root->rb_node = new;
++	u32 max = node->val, child_augmented;
++	if (node->rb.rb_left) {
++		child_augmented = rb_entry(node->rb.rb_left, struct test_node,
++					   rb)->augmented;
++		if (max < child_augmented)
++			max = child_augmented;
++	}
++	if (node->rb.rb_right) {
++		child_augmented = rb_entry(node->rb.rb_right, struct test_node,
++					   rb)->augmented;
++		if (max < child_augmented)
++			max = child_augmented;
++	}
++	return max;
 +}
 +
- /*
-  * Helper function for rotations:
-  * - old's parent and color get assigned to new
-@@ -78,13 +91,7 @@ __rb_rotate_set_parents(struct rb_node *old, struct rb_node *new,
- 	struct rb_node *parent = rb_parent(old);
- 	new->__rb_parent_color = old->__rb_parent_color;
- 	rb_set_parent_color(old, new, color);
--	if (parent) {
--		if (parent->rb_left == old)
--			parent->rb_left = new;
--		else
--			parent->rb_right = new;
--	} else
--		root->rb_node = new;
-+	__rb_change_child(old, new, parent, root);
++static void augment_callback(struct rb_node *rb, void *unused)
++{
++	struct test_node *node = rb_entry(rb, struct test_node, rb);
++	node->augmented = augment_recompute(node);
++}
++
++static void insert_augmented(struct test_node *node, struct rb_root *root)
++{
++	struct rb_node **new = &root->rb_node, *parent = NULL;
++	u32 key = node->key;
++
++	while (*new) {
++		parent = *new;
++		if (key < rb_entry(parent, struct test_node, rb)->key)
++			new = &parent->rb_left;
++		else
++			new = &parent->rb_right;
++	}
++
++	rb_link_node(&node->rb, parent, new);
++	rb_insert_color(&node->rb, root);
++	rb_augment_insert(&node->rb, augment_callback, NULL);
++}
++
++static void erase_augmented(struct test_node *node, struct rb_root *root)
++{
++	struct rb_node *deepest = rb_augment_erase_begin(&node->rb);
++	rb_erase(&node->rb, root);
++	rb_augment_erase_end(deepest, augment_callback, NULL);
++}
++
+ static void init(void)
+ {
+ 	int i;
+-	for (i = 0; i < NODES; i++)
++	for (i = 0; i < NODES; i++) {
+ 		nodes[i].key = prandom32(&rnd);
++		nodes[i].val = prandom32(&rnd);
++	}
  }
  
- void rb_insert_color(struct rb_node *node, struct rb_root *root)
-@@ -375,13 +382,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 		while ((left = node->rb_left) != NULL)
- 			node = left;
+ static bool is_red(struct rb_node *rb)
+@@ -81,6 +137,17 @@ static void check(int nr_nodes)
+ 	WARN_ON_ONCE(count != nr_nodes);
+ }
  
--		if (rb_parent(old)) {
--			if (rb_parent(old)->rb_left == old)
--				rb_parent(old)->rb_left = node;
--			else
--				rb_parent(old)->rb_right = node;
--		} else
--			root->rb_node = node;
-+		__rb_change_child(old, node, rb_parent(old), root);
++static void check_augmented(int nr_nodes)
++{
++	struct rb_node *rb;
++
++	check(nr_nodes);
++	for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
++		struct test_node *node = rb_entry(rb, struct test_node, rb);
++		WARN_ON_ONCE(node->augmented != augment_recompute(node));
++	}
++}
++
+ static int rbtree_test_init(void)
+ {
+ 	int i, j;
+@@ -119,6 +186,38 @@ static int rbtree_test_init(void)
+ 		check(0);
+ 	}
  
- 		child = node->rb_right;
- 		parent = rb_parent(node);
-@@ -410,13 +411,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
++	printk(KERN_ALERT "augmented rbtree testing");
++
++	init();
++
++	time1 = get_cycles();
++
++	for (i = 0; i < PERF_LOOPS; i++) {
++		for (j = 0; j < NODES; j++)
++			insert_augmented(nodes + j, &root);
++		for (j = 0; j < NODES; j++)
++			erase_augmented(nodes + j, &root);
++	}
++
++	time2 = get_cycles();
++	time = time2 - time1;
++
++	time = div_u64(time, PERF_LOOPS);
++	printk(" -> %llu cycles\n", (unsigned long long)time);
++
++	for (i = 0; i < CHECK_LOOPS; i++) {
++		init();
++		for (j = 0; j < NODES; j++) {
++			check_augmented(j);
++			insert_augmented(nodes + j, &root);
++		}
++		for (j = 0; j < NODES; j++) {
++			check_augmented(NODES - j);
++			erase_augmented(nodes + j, &root);
++		}
++		check_augmented(0);
++	}
++
+ 	return -EAGAIN; /* Fail will directly unload the module */
+ }
  
- 	if (child)
- 		rb_set_parent(child, parent);
--	if (parent) {
--		if (parent->rb_left == node)
--			parent->rb_left = child;
--		else
--			parent->rb_right = child;
--	} else
--		root->rb_node = child;
-+	__rb_change_child(node, child, parent, root);
- 
- color:
- 	if (color == RB_BLACK)
-@@ -591,14 +586,7 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
- 	struct rb_node *parent = rb_parent(victim);
- 
- 	/* Set the surrounding nodes to point to the replacement */
--	if (parent) {
--		if (victim == parent->rb_left)
--			parent->rb_left = new;
--		else
--			parent->rb_right = new;
--	} else {
--		root->rb_node = new;
--	}
-+	__rb_change_child(victim, new, parent, root);
- 	if (victim->rb_left)
- 		rb_set_parent(victim->rb_left, new);
- 	if (victim->rb_right)
 -- 
 1.7.7.3
