@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab2HTCnN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 22:43:13 -0400
-Received: from eth5850.nsw.adsl.internode.on.net ([59.167.243.217]:34480 "EHLO
-	xionine.xdna.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab2HTCnM (ORCPT
+	id S1753294Ab2HTCux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 22:50:53 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:55596 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751809Ab2HTCuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 22:43:12 -0400
-X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Aug 2012 22:43:12 EDT
-From: Cam Hutchison <camh@xdna.net>
-To: thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org
-Orig-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: awful kconfig help texts.
-Newsgroups: gmane.linux.kernel
-References: <20120731151600.GA19412@redhat.com> <20120731170741.GA4735@x1.osrc.amd.com> <20120816095439.GA30794@avionic-0098.mockup.avionic-design.de> <20120816111044.GA12029@x1.osrc.amd.com> <20120816120541.GA10154@avionic-0098.adnet.avionic-design.de> <20120817061102.GA6003@avionic-0098.adnet.avionic-design.de>
-Message-Id: <20120820023429.DB1AE35BC8@xionine.xdna.net>
-Date: Mon, 20 Aug 2012 12:34:29 +1000 (EST)
+	Sun, 19 Aug 2012 22:50:51 -0400
+From: Chao Xie <xiechao.mail@gmail.com>
+To: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
+        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, chao.xie@marvell.com,
+        arnd@arndb.de
+Subject: [PATCH V5 0/5] clk: mmp: add clock framework for mmp
+Date: Mon, 20 Aug 2012 10:55:10 +0800
+Message-Id: <1345431315-8037-1-git-send-email-xiechao.mail@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 20 Aug 2012 02:50:32.0837 (UTC) FILETIME=[91108350:01CD7E7E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->How about the patch below?
+From: Chao Xie <chao.xie@marvell.com>
 
->[...]
->+	  Generic Pulse-Width Modulation (PWM) support.
->+
->+	  In Pulse-Width Modulation, a variation of the width of pulses
->+	  in a rectangular pulse signal is used as a means to alter the
->+	  average power of the signal. Applications include efficient
->+	  power delivery and voltage regulation. In computer systems,
->+	  PWMs are commonly used to control fans or the brightness of
->+	  display backlights.
->+
->+	  This framework provides a generic interface to PWM devices
->+	  within the Linux kernel. On the driver side it provides an API
->+	  to register and unregister a PWM chip, an abstraction of a PWM
->+	  controller, that supports one or more PWM devices. Client
->+	  drivers can request PWM devices and use the generic framework
->+	  to configure as well as enable and disable them.
->+
->+	  The new generic framework replaces the legacy PWM framework
->+	  which allows only a single driver implementing the required
->+	  API. Not all legacy implementations have been ported to the
->+	  new framework yet. The new framework provides an API that is
->+	  backward compatible with the legacy framework so that existing
->+	  client drivers continue to work as expected.
+v1->v2:
+replace __raw_xxx with xxx_relax
+use ioremap to remap the registers. Finaly it will use device tree to
+get the physical address.
+do not use macro to register clocks, and directly call the functions.
 
-Instead of writing "[Tt]he new framework", write "[Tt]his framework". In 4
-years, this will no longer be so new. And when the next framework comes
-along, this will look like it is referencing the new one instead of itself.
+v2->v3:
+pxa910 will have APB extension clock, so some peripharals will have
+clocks in APB extension base.
+change pxa168-pwm to be pxa910-pwm for pxa910. It will fit the current
+pwm driver.
 
+v3->v4:
+remove addtional clock name definition
+replace left __raw_xxx
+
+v4->v5:
+change the format of the file
+
+Chao Xie (5):
+  clk: mmp: add mmp specific clocks
+  clk: mmp: add clock definition for pxa168
+  clk: mmp: add clock definition for pxa910
+  clk: mmp: add clock definition for mmp2
+  arm: mmp: make all SOCs use common clock by default
+
+ arch/arm/mach-mmp/Kconfig    |    3 +
+ drivers/clk/Makefile         |    3 +
+ drivers/clk/mmp/Makefile     |    9 +
+ drivers/clk/mmp/clk-apbc.c   |  152 ++++++++++++++
+ drivers/clk/mmp/clk-apmu.c   |   97 +++++++++
+ drivers/clk/mmp/clk-frac.c   |  153 ++++++++++++++
+ drivers/clk/mmp/clk-mmp2.c   |  449 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk-pxa168.c |  346 ++++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk-pxa910.c |  320 ++++++++++++++++++++++++++++++
+ drivers/clk/mmp/clk.h        |   35 ++++
+ 10 files changed, 1567 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/mmp/Makefile
+ create mode 100644 drivers/clk/mmp/clk-apbc.c
+ create mode 100644 drivers/clk/mmp/clk-apmu.c
+ create mode 100644 drivers/clk/mmp/clk-frac.c
+ create mode 100644 drivers/clk/mmp/clk-mmp2.c
+ create mode 100644 drivers/clk/mmp/clk-pxa168.c
+ create mode 100644 drivers/clk/mmp/clk-pxa910.c
+ create mode 100644 drivers/clk/mmp/clk.h
 
