@@ -1,217 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab2HTOSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:18:50 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62085 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754954Ab2HTOSs (ORCPT
+	id S1756643Ab2HTOWx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:22:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42005 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab2HTOWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:18:48 -0400
-Date: Mon, 20 Aug 2012 10:08:44 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, joro@8bytes.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg
- call-back
-Message-ID: <20120820140843.GA7732@phenom.dumpdata.com>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
+	Mon, 20 Aug 2012 10:22:49 -0400
+Message-ID: <50324835.6030806@gmail.com>
+Date: Mon, 20 Aug 2012 09:22:45 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+CC: Roland Stigge <stigge@antcom.de>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net,
+        "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH RESEND v4] spi/pl022: add devicetree support
+References: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com>
+In-Reply-To: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 03:56:03PM +0200, Joerg Roedel wrote:
-> This call-back points to the right function for initializing
-> the msi_msg structure.
-
-What is the 'hpet_id' purpose in this?
-
+On 08/20/2012 06:39 AM, Alexandre Pereira da Silva wrote:
+> Add the chipselect array and cur_cs properties to pl022 main structure
 > 
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> Add a wrapper function to decide if the cs should be controlled by the
+> cs_control callback or the chipselect gpio
+> 
+> Populate chipselect property from cs-gpios
+> 
+> Populate master->dev.of_node, so the spi bus can find child spi
+> devices and register them
+> 
+> At pl022 setup, fill chip_data structure from dt nodes, if not provided
+> by platform.
+> 
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> Acked-by: Roland Stigge <stigge@antcom.de>
 > ---
->  arch/x86/include/asm/io_apic.h  |    4 +++
->  arch/x86/include/asm/x86_init.h |    4 +++
->  arch/x86/kernel/apic/io_apic.c  |   59 ++++++++++++++++++++-------------------
->  arch/x86/kernel/x86_init.c      |    1 +
->  drivers/iommu/irq_remapping.c   |    9 ++++--
->  5 files changed, 46 insertions(+), 31 deletions(-)
+> Applies to v3.6-rc1
 > 
-> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-> index 0db4429..59a3f4e 100644
-> --- a/arch/x86/include/asm/io_apic.h
-> +++ b/arch/x86/include/asm/io_apic.h
-> @@ -160,6 +160,9 @@ extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
->  					  unsigned int pin, int vector);
->  extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
+> Changes since v3:
+> * Proper use of IS_ENABLED
+> 
+> Changes since v2:
+> * Use IS_ENABLED instead of #ifdef
+> * Remove bogus const change
+> 
+> Changes since v1:
+> * return EPROBE_DEFFER if gpios are not initialized yet
+> 
+> Thanks Thierry Reding for reviewing and improvements suggestions
+> 
+>  .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
+>  drivers/spi/spi-pl022.c                            |  114 ++++++++++++++++----
+>  2 files changed, 110 insertions(+), 19 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/spi/spi_pl022.txt b/Documentation/devicetree/bindings/spi/spi_pl022.txt
+> index 306ec3f..b089ec7 100644
+> --- a/Documentation/devicetree/bindings/spi/spi_pl022.txt
+> +++ b/Documentation/devicetree/bindings/spi/spi_pl022.txt
+> @@ -6,7 +6,22 @@ Required properties:
+>  - interrupts : Should contain SPI controller interrupt
 >  
-> +extern void native_compose_msi_msg(struct pci_dev *pdev,
-> +				   unsigned int irq, unsigned int dest,
-> +				   struct msi_msg *msg, u8 hpet_id);
->  int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
+>  Optional properties:
+> +- pl022,num-chipselects : total number of chipselects
+
+We have this for other spi controllers too. Define a generic property.
+
+>  - cs-gpios : should specify GPIOs used for chipselects.
+>    The gpios will be referred to as reg = <index> in the SPI child nodes.
+>    If unspecified, a single SPI device without a chip select can be used.
 >  
->  extern int save_ioapic_entries(void);
-> @@ -245,6 +248,7 @@ static inline void disable_ioapic_support(void) { }
->  #define native_ioapic_set_affinity	NULL
->  #define native_setup_ioapic_entry	NULL
->  #define native_setup_timer_pin		NULL
-> +#define native_compose_msi_msg		NULL
+> +SPI slave nodes must be children of the SPI master node and can
+> +contain the following properties.
+> +See include/linux/amba/pl022.h for more details
+
+DT binding is independent of Linux, so you should not refer to Linux docs.
+
+> +
+> +- pl022,hierarchy : master or slave interface
+
+Is attaching a master and using the pl022 as a slave really a supported
+use case? The DT spi bindings are really designed for a master node with
+N slave nodes. So there is more general question of how to describe a
+spi controller as a slave. It's not really one I care to answer as the
+Linux spi framework isn't designed to act as a slave.
+
+> +- pl022,interface : interface type
+
+And valid values are?
+
+> +- pl022,slave-tx-disable : disconnect tx line in slave mode
+> +- pl022,com-mode : polling, interrupt or dma
+> +- pl022,rx-level-trig : Rx FIFO watermark level
+> +- pl022,tx-level-trig : Tx FIFO watermark level
+> +- pl022,ctrl-len : Microwire interface: Control length
+> +- pl022,wait-state : Microwire interface: Wait state
+> +- pl022,duplex : Microwire interface: Full/Half duplex
+
+Most of these properties aren't used anywhere in the kernel other than
+u300 and I'm not sure what to purpose of dummy_chip_info is. Perhaps
+Linus has some input? I think either they can be decided by the spi
+controller (com-mode, fifo watermark) or should be standard properties
+(microwire settings). I would argue they should be removed if the spi
+framework doesn't have support in a standard way.
+
+> +
+> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+> index 400ae21..d8d7d21 100644
+> --- a/drivers/spi/spi-pl022.c
+> +++ b/drivers/spi/spi-pl022.c
+> @@ -40,6 +40,8 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/scatterlist.h>
+>  #include <linux/pm_runtime.h>
+> +#include <linux/gpio.h>
+> +#include <linux/of_gpio.h>
+>  
+>  /*
+>   * This macro is used to define some register default values.
+> @@ -389,6 +391,8 @@ struct pl022 {
+>  	char				*dummypage;
+>  	bool				dma_running;
 >  #endif
->  
->  #endif /* _ASM_X86_IO_APIC_H */
-> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-> index ffe5860..1430af0 100644
-> --- a/arch/x86/include/asm/x86_init.h
-> +++ b/arch/x86/include/asm/x86_init.h
-> @@ -180,9 +180,13 @@ struct x86_platform_ops {
+> +	int cur_cs;
+> +	int chipselect[0];
 >  };
 >  
->  struct pci_dev;
-> +struct msi_msg;
+>  /**
+> @@ -433,6 +437,14 @@ static void null_cs_control(u32 command)
+>  	pr_debug("pl022: dummy chip select control, CS=0x%x\n", command);
+>  }
 >  
->  struct x86_msi_ops {
->  	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
-> +	void (*compose_msi_msg)(struct pci_dev *dev, unsigned int irq,
-> +				unsigned int dest, struct msi_msg *msg,
-> +			       u8 hpet_id);
->  	void (*teardown_msi_irq)(unsigned int irq);
->  	void (*teardown_msi_irqs)(struct pci_dev *dev);
->  	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index c2f2d2d..aac3f62 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -2989,37 +2989,16 @@ void destroy_irq(unsigned int irq)
->  /*
->   * MSI message composition
->   */
-> -#ifdef CONFIG_PCI_MSI
-> -static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
-> -			   struct msi_msg *msg, u8 hpet_id)
-> +void native_compose_msi_msg(struct pci_dev *pdev,
-> +			    unsigned int irq, unsigned int dest,
-> +			    struct msi_msg *msg, u8 hpet_id)
->  {
-> -	struct irq_cfg *cfg;
-> -	int err;
-> -	unsigned dest;
-> -
-> -	if (disable_apic)
-> -		return -ENXIO;
-> -
-> -	cfg = irq_cfg(irq);
-> -	err = assign_irq_vector(irq, cfg, apic->target_cpus());
-> -	if (err)
-> -		return err;
-> -
-> -	err = apic->cpu_mask_to_apicid_and(cfg->domain,
-> -					   apic->target_cpus(), &dest);
-> -	if (err)
-> -		return err;
-> +	struct irq_cfg *cfg = irq_cfg(irq);
->  
-> -	if (irq_remapped(cfg)) {
-> -		compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
-> -		return err;
-> -	}
-> +	msg->address_hi = MSI_ADDR_BASE_HI;
->  
->  	if (x2apic_enabled())
-> -		msg->address_hi = MSI_ADDR_BASE_HI |
-> -				  MSI_ADDR_EXT_DEST_ID(dest);
-> -	else
-> -		msg->address_hi = MSI_ADDR_BASE_HI;
-> +		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
->  
->  	msg->address_lo =
->  		MSI_ADDR_BASE_LO |
-> @@ -3038,8 +3017,32 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
->  			MSI_DATA_DELIVERY_FIXED:
->  			MSI_DATA_DELIVERY_LOWPRI) |
->  		MSI_DATA_VECTOR(cfg->vector);
-> +}
->  
-> -	return err;
-> +#ifdef CONFIG_PCI_MSI
-> +static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
-> +			   struct msi_msg *msg, u8 hpet_id)
+> +static void pl022_cs_control(struct pl022 *pl022, u32 command)
 > +{
-> +	struct irq_cfg *cfg;
-> +	int err;
-> +	unsigned dest;
+> +	if (gpio_is_valid(pl022->cur_cs))
+> +		gpio_set_value(pl022->cur_cs, command);
+> +	else
+> +		pl022->cur_chip->cs_control(command);
+> +}
 > +
-> +	if (disable_apic)
-> +		return -ENXIO;
-> +
-> +	cfg = irq_cfg(irq);
-> +	err = assign_irq_vector(irq, cfg, apic->target_cpus());
-> +	if (err)
-> +		return err;
-> +
-> +	err = apic->cpu_mask_to_apicid_and(cfg->domain,
-> +					   apic->target_cpus(), &dest);
-> +	if (err)
-> +		return err;
-> +
-> +	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-> +
-> +	return 0;
->  }
+>  /**
+>   * giveback - current spi_message is over, schedule next message and call
+>   * callback of this message. Assumes that caller already
+> @@ -479,7 +491,7 @@ static void giveback(struct pl022 *pl022)
+>  		if (next_msg && next_msg->spi != pl022->cur_msg->spi)
+>  			next_msg = NULL;
+>  		if (!next_msg || pl022->cur_msg->state == STATE_ERROR)
+> -			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
+> +			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+>  		else
+>  			pl022->next_msg_cs_active = true;
 >  
->  static int
-> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-> index eba02e5..af5874e 100644
-> --- a/arch/x86/kernel/x86_init.c
-> +++ b/arch/x86/kernel/x86_init.c
-> @@ -115,6 +115,7 @@ struct x86_platform_ops x86_platform = {
->  EXPORT_SYMBOL_GPL(x86_platform);
->  struct x86_msi_ops x86_msi = {
->  	.setup_msi_irqs		= native_setup_msi_irqs,
-> +	.compose_msi_msg	= native_compose_msi_msg,
->  	.teardown_msi_irq	= native_teardown_msi_irq,
->  	.teardown_msi_irqs	= default_teardown_msi_irqs,
->  	.restore_msi_irqs	= default_restore_msi_irqs,
-> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-> index d9cd920f..e61a174 100644
-> --- a/drivers/iommu/irq_remapping.c
-> +++ b/drivers/iommu/irq_remapping.c
-> @@ -102,6 +102,7 @@ static void __init irq_remapping_modify_x86_ops(void)
->  	x86_io_apic_ops.setup_timer_pin	= irq_remapping_setup_timer_pin;
->  	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
->  	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
-> +	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
->  }
+> @@ -813,8 +825,7 @@ static void dma_callback(void *data)
+>  	/* Update total bytes transferred */
+>  	msg->actual_length += pl022->cur_transfer->len;
+>  	if (pl022->cur_transfer->cs_change)
+> -		pl022->cur_chip->
+> -			cs_control(SSP_CHIP_DESELECT);
+> +		pl022_cs_control(pl022, SSP_CHIP_DESELECT);
 >  
->  static __init int setup_nointremap(char *str)
-> @@ -242,10 +243,12 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
->  			      unsigned int irq, unsigned int dest,
->  			      struct msi_msg *msg, u8 hpet_id)
+>  	/* Move to next transfer */
+>  	msg->state = next_transfer(pl022);
+> @@ -1247,8 +1258,7 @@ static irqreturn_t pl022_interrupt_handler(int irq, void *dev_id)
+>  		/* Update total bytes transferred */
+>  		msg->actual_length += pl022->cur_transfer->len;
+>  		if (pl022->cur_transfer->cs_change)
+> -			pl022->cur_chip->
+> -				cs_control(SSP_CHIP_DESELECT);
+> +			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+>  		/* Move to next transfer */
+>  		msg->state = next_transfer(pl022);
+>  		tasklet_schedule(&pl022->pump_transfers);
+> @@ -1333,7 +1343,7 @@ static void pump_transfers(unsigned long data)
+>  
+>  		/* Reselect chip select only if cs_change was requested */
+>  		if (previous->cs_change)
+> -			pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +			pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>  	} else {
+>  		/* STATE_START */
+>  		message->state = STATE_RUNNING;
+> @@ -1372,7 +1382,7 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
+>  
+>  	/* Enable target chip, if not already active */
+>  	if (!pl022->next_msg_cs_active)
+> -		pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +		pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>  
+>  	if (set_up_next_transfer(pl022, pl022->cur_transfer)) {
+>  		/* Error path */
+> @@ -1424,12 +1434,12 @@ static void do_polling_transfer(struct pl022 *pl022)
+>  			if (previous->delay_usecs)
+>  				udelay(previous->delay_usecs);
+>  			if (previous->cs_change)
+> -				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +				pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>  		} else {
+>  			/* STATE_START */
+>  			message->state = STATE_RUNNING;
+>  			if (!pl022->next_msg_cs_active)
+> -				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +				pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>  		}
+>  
+>  		/* Configuration Changing Per Transfer */
+> @@ -1461,7 +1471,7 @@ static void do_polling_transfer(struct pl022 *pl022)
+>  		/* Update total byte transferred */
+>  		message->actual_length += pl022->cur_transfer->len;
+>  		if (pl022->cur_transfer->cs_change)
+> -			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
+> +			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+>  		/* Move to next transfer */
+>  		message->state = next_transfer(pl022);
+>  	}
+> @@ -1490,6 +1500,7 @@ static int pl022_transfer_one_message(struct spi_master *master,
+>  
+>  	/* Setup the SPI using the per chip configuration */
+>  	pl022->cur_chip = spi_get_ctldata(msg->spi);
+> +	pl022->cur_cs = pl022->chipselect[msg->spi->chip_select];
+>  
+>  	restore_state(pl022);
+>  	flush(pl022);
+> @@ -1761,12 +1772,14 @@ static const struct pl022_config_chip pl022_default_chip_info = {
+>  static int pl022_setup(struct spi_device *spi)
 >  {
-> -	if (!remap_ops || !remap_ops->compose_msi_msg)
-> -		return;
-> +	struct irq_cfg *cfg = irq_get_chip_data(irq);
+>  	struct pl022_config_chip const *chip_info;
+> +	struct pl022_config_chip chip_info_dt;
+>  	struct chip_data *chip;
+>  	struct ssp_clock_params clk_freq = { .cpsdvsr = 0, .scr = 0};
+>  	int status = 0;
+>  	struct pl022 *pl022 = spi_master_get_devdata(spi->master);
+>  	unsigned int bits = spi->bits_per_word;
+>  	u32 tmp;
+> +	struct device_node *np = spi->dev.of_node;
 >  
-> -	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-> +	if (cfg && !irq_remapped(cfg))
-> +		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
-> +	else if (remap_ops && remap_ops->compose_msi_msg)
-> +		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
->  }
+>  	if (!spi->max_speed_hz)
+>  		return -EINVAL;
+> @@ -1789,10 +1802,36 @@ static int pl022_setup(struct spi_device *spi)
+>  	chip_info = spi->controller_data;
 >  
->  static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
-> -- 
-> 1.7.9.5
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  	if (chip_info == NULL) {
+> -		chip_info = &pl022_default_chip_info;
+> -		/* spi_board_info.controller_data not is supplied */
+> -		dev_dbg(&spi->dev,
+> -			"using default controller_data settings\n");
+> +		if (np) {
+> +			chip_info_dt = pl022_default_chip_info;
+> +
+> +			of_property_read_u32(np, "pl022,hierarchy",
+> +				&chip_info_dt.hierarchy);
+> +			of_property_read_u32(np, "pl022,interface",
+> +				&chip_info_dt.iface);
+> +			chip_info_dt.slave_tx_disable =
+> +				of_property_read_bool(np,
+> +					"pl022,slave-tx-disable");
+> +			of_property_read_u32(np, "pl022,com-mode",
+> +				&chip_info_dt.com_mode);
+> +			of_property_read_u32(np, "pl022,rx-level-trig",
+> +				&chip_info_dt.rx_lev_trig);
+> +			of_property_read_u32(np, "pl022,tx-level-trig",
+> +				&chip_info_dt.tx_lev_trig);
+> +			of_property_read_u32(np, "pl022,ctrl-len",
+> +				&chip_info_dt.ctrl_len);
+> +			of_property_read_u32(np, "pl022,wait-state",
+> +				&chip_info_dt.wait_state);
+> +			of_property_read_u32(np, "pl022,duplex",
+> +				&chip_info_dt.duplex);
+> +
+> +			chip_info = &chip_info_dt;
+> +		} else {
+> +			chip_info = &pl022_default_chip_info;
+> +			/* spi_board_info.controller_data not is supplied */
+> +			dev_dbg(&spi->dev,
+> +				"using default controller_data settings\n");
+> +		}
+>  	} else
+>  		dev_dbg(&spi->dev,
+>  			"using user supplied controller_data settings\n");
+> @@ -1835,8 +1874,9 @@ static int pl022_setup(struct spi_device *spi)
+>  	chip->xfer_type = chip_info->com_mode;
+>  	if (!chip_info->cs_control) {
+>  		chip->cs_control = null_cs_control;
+> -		dev_warn(&spi->dev,
+> -			 "chip select function is NULL for this chip\n");
+> +		if (!gpio_is_valid(pl022->chipselect[spi->chip_select]))
+> +			dev_warn(&spi->dev,
+> +				 "chip select function is NULL for this chip\n");
+>  	} else
+>  		chip->cs_control = chip_info->cs_control;
+>  
+> @@ -1988,7 +2028,8 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>  	struct pl022_ssp_controller *platform_info = adev->dev.platform_data;
+>  	struct spi_master *master;
+>  	struct pl022 *pl022 = NULL;	/*Data for this driver */
+> -	int status = 0;
+> +	struct device_node *np = adev->dev.of_node;
+> +	int status = 0, i, num_cs;
+>  
+>  	dev_info(&adev->dev,
+>  		 "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
+> @@ -1998,8 +2039,14 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>  		goto err_no_pdata;
+>  	}
+>  
+> +	num_cs = platform_info->num_chipselect;
+> +	if (IS_ENABLED(CONFIG_OF))
+> +		of_property_read_u32(np, "pl022,num-chipselects", &num_cs);
+> +
+> +
+>  	/* Allocate master with space for data */
+> -	master = spi_alloc_master(dev, sizeof(struct pl022));
+> +	master = spi_alloc_master(dev,
+> +		sizeof(struct pl022) + sizeof(int) * num_cs);
+>  	if (master == NULL) {
+>  		dev_err(&adev->dev, "probe - cannot alloc SPI master\n");
+>  		status = -ENOMEM;
+> @@ -2017,13 +2064,41 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>  	 * on this board
+>  	 */
+>  	master->bus_num = platform_info->bus_id;
+> -	master->num_chipselect = platform_info->num_chipselect;
+> +	master->num_chipselect = num_cs;
+>  	master->cleanup = pl022_cleanup;
+>  	master->setup = pl022_setup;
+>  	master->prepare_transfer_hardware = pl022_prepare_transfer_hardware;
+>  	master->transfer_one_message = pl022_transfer_one_message;
+>  	master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
+>  	master->rt = platform_info->rt;
+> +	master->dev.of_node = dev->of_node;
+> +
+> +	if (IS_ENABLED(CONFIG_OF)) {
+> +		for (i = 0; i < num_cs; i++) {
+> +			int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
+> +
+> +			if (cs_gpio == -EPROBE_DEFER) {
+> +				status = -EPROBE_DEFER;
+> +				goto err_no_gpio;
+> +			}
+> +
+> +			pl022->chipselect[i] = cs_gpio;
+> +
+> +			if (gpio_is_valid(cs_gpio)) {
+> +				if (gpio_request(cs_gpio, "ssp-pl022"))
+> +					dev_err(&adev->dev,
+> +						"could not request %d gpio\n",
+> +						cs_gpio);
+> +				else if (gpio_direction_output(cs_gpio, 1))
+> +					dev_err(&adev->dev,
+> +						"could set gpio %d as output\n",
+> +						cs_gpio);
+> +			}
+> +		}
+> +	} else {
+> +		for (i = 0; i < num_cs; i++)
+> +			pl022->chipselect[i] = -EINVAL;
+> +	}
+>  
+>  	/*
+>  	 * Supports mode 0-3, loopback, and active low CS. Transfers are
+> @@ -2130,6 +2205,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>   err_no_ioremap:
+>  	amba_release_regions(adev);
+>   err_no_ioregion:
+> + err_no_gpio:
+>  	spi_master_put(master);
+>   err_no_master:
+>   err_no_pdata:
 > 
