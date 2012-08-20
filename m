@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab2HTAst (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 20:48:49 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47948 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab2HTAsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 20:48:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120819025724.GC16796@localhost>
-References: <1345283402-7889-1-git-send-email-linkinjeon@gmail.com>
-	<20120819025724.GC16796@localhost>
-Date: Mon, 20 Aug 2012 09:48:42 +0900
-Message-ID: <CAKYAXd83r3RNi3Rn5s3DAEE=34YYbk_hUWcG6R3Zu3JwUw74aA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] writeback: add dirty_ratio_time per bdi variable (NFS
- write performance)
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752416Ab2HTBHB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 21:07:01 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:47577 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751941Ab2HTBG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 21:06:57 -0400
+Message-ID: <1345424724.2384.15.camel@falcor>
+Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys
+ and sign modules
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, jmorris@namei.org,
+        rusty@rustcorp.com.au, dhowells@redhat.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 19 Aug 2012 21:05:24 -0400
+In-Reply-To: <CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
+References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
+	 <2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
+		<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
+		<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
+		<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
+		<CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
+		<1345164802.2433.21.camel@falcor.watson.ibm.com>
+		<CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
+		<1345223322.2257.75.camel@falcor>
+	 <CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082001-5112-0000-0000-00000B4180FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
-> On Sat, Aug 18, 2012 at 05:50:02AM -0400, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> This patch is based on suggestion by Wu Fengguang:
->> https://lkml.org/lkml/2011/8/19/19
->>
->> kernel has mechanism to do writeback as per dirty_ratio and
->> dirty_background
->> ratio. It also maintains per task dirty rate limit to keep balance of
->> dirty pages at any given instance by doing bdi bandwidth estimation.
->>
->> Kernel also has max_ratio/min_ratio tunables to specify percentage of
->> writecache
->> to control per bdi dirty limits and task throtelling.
->>
->> However, there might be a usecase where user wants a writeback tuning
->> parameter to flush dirty data at desired/tuned time interval.
->>
->> dirty_background_time provides an interface where user can tune
->> background
->> writeback start time using /sys/block/sda/bdi/dirty_background_time
->>
->> dirty_background_time is used alongwith average bdi write bandwidth
->> estimation
->> to start background writeback.
->
-> Here lies my major concern about dirty_background_time: the write
-> bandwidth estimation is an _estimation_ and will sure become wildly
-> wrong in some cases. So the dirty_background_time implementation based
-> on it will not always work to the user expectations.
->
-> One important case is, some users (eg. Dave Chinner) explicitly take
-> advantage of the existing behavior to quickly create & delete a big
-> 1GB temp file without worrying about triggering unnecessary IOs.
->
-Hi. Wu.
-Okay, I have a question.
+On Fri, 2012-08-17 at 13:44 -0400, Josh Boyer wrote:
+> On Fri, Aug 17, 2012 at 1:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >> I don't see a need for the kernel make system to ever delete a key.
+> >> If one doesn't exist, it should create one if the config options are
+> >> set and leave it alone entirely after that.  If one exists already,
+> >> then it should leave it alone as it already does.
+> >
+> > Ok.  Other than generating a key the first time, the normal development
+> > build process now uses the same key, never requiring the developer to do
+> > anything additional.  The developer controls the frequency the keys are
+> > created/deleted.  I wonder how often that will be ...
+> 
+> For a developer, probably not often.  Though in reality, the usage of
+> this by a single developer seems fair small.  A much wider, already
+> existing usage is distribution kernel signing.
 
-If making dirty_writeback_interval per bdi to tune short interval
-instead of background_time, We can get similar performance
-improvement.
-/sys/block/<device>/bdi/dirty_writeback_interval
-/sys/block/<device>/bdi/dirty_expire_interval
+This seems to be the real issue.  Do developers need to sign their own
+builds?   Nobody is forcing the developer to enable signed modules.  If,
+however, the developer decides to enforce signed modules, leaving the
+private key lying around kind of defeats the purpose. 
 
-NFS write performance improvement is just one usecase.
+> For a distribution kernel there are normally two cases:
+> 
+> 1) Existing permanent company/distro key.  This is already handled.
+> 2) per-kernel-build key (equivalent to your ephemeral key).  This would
+> be handled fine if the key was generated if it didn't already exist and
+> left alone.  The distro build system would remove it when it cleaned up
+> the buildroot.
 
-If we can set interval/time per bdi,  other usecases will be created
-by applying.
+Ok, I think we agree here, with the normal 'make', 'make modules_install
+install', using an existing key or creating a new key if needed.
 
-How do you think ?
+> >> If you really want to enforce ephemeral keys in the make system, then
+> >> doing it via 'make clean' or 'make distclean' would make more sense to
+> >> me.  But I personally think key management is something the developers
+> >> or distros should be handling on their own.  Creating a key for them is
+> >> a convenience so it's worthwhile, but removing it should be done by
+> >> them.
+> >
+> > Sorry, I disagree.  Without the signed_modules_install target, the
+> > developer would need to do each step manually - create new key, sign
+> > modules, remove private key, and embed the new public key in the
+> > bzImage.
+> 
+> Not if the buildsystem just made the key for them at 'make' time.  I'm
+> still missing why it isn't done until 'modules_install' time.  Seems
+> pretty sub-optimal.
 
->The numbers are impressive! FYI, I tried another NFS specific approach
->to avoid big NFS COMMITs, which achieved similar performance gains:
+Using a private key that has been lying around for an unknown period of
+time, kind of defeats the purpose.
 
->nfs: writeback pages wait queue
->https://lkml.org/lkml/2011/10/20/235
+> > I still think the signed_modules_install script, renamed to something
+> > like ephemeral_signed_modules_install, is worthwhile and becomes a
+> > convience tool for the developer, wanting to use ephemeral keys.  The
+> > private key, in Dmitry's updated patches soon to be posted, will be
+> > password protected with a random number, that is only accessible to the
+> > current shell.
+> 
+> I think the existence of an additional make target for signed modules
+> is really confusing.  Particularly when you consider the target still
+> exists even if the kernel isn't setup to work with signed modules.  
 
-Thanks.
+Ok, I see your concern.
+
+> If
+> the config options are set, just have 'make modules_install' do it and
+> create a key if one doesn't exist (or better yet, have 'make' do it).
+
+If creating the key is deferred to 'make modules_install', for the
+reason given above or any other reason, the public key wasn't available
+at the time the bzImage was created.  'make modules_install' would now
+need to rebuild the bzImage.
+
+thanks,
+
+Mimi
+
