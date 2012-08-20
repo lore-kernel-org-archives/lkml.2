@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab2HTEBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:01:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab2HTEBZ (ORCPT
+	id S1754694Ab2HTEBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:01:24 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab2HTEBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:01:25 -0400
+	Mon, 20 Aug 2012 00:01:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>
-Subject: =?UTF-8?q?=5B=2035/46=5D=20USB=3A=20option=3A=20add=20ZTE=20K5006-Z?=
-Date: Sun, 19 Aug 2012 20:59:11 -0700
-Message-Id: <20120820035837.134431617@linuxfoundation.org>
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Henrik Rydberg <rydberg@bitmath.se>
+Subject: [ 33/46] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
+Date: Sun, 19 Aug 2012 20:59:09 -0700
+Message-Id: <20120820035836.862693996@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,40 +31,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
-commit f1b5c997e68533df1f96dcd3068a231bca495603 upstream.
+commit d81a5d1956731c453b85c141458d4ff5d6cc5366 upstream.
 
-The ZTE (Vodafone) K5006-Z use the following
-interface layout:
+A lot of Broadcom Bluetooth devices provides vendor specific interface
+class and we are getting flooded by patches adding new device support.
+This change will help us enable support for any other Broadcom with vendor
+specific device that arrives in the future.
 
-00 DIAG
-01 secondary
-02 modem
-03 networkcard
-04 storage
+Only the product id changes for those devices, so this macro would be
+perfect for us:
 
-Ignoring interface #3 which is handled by the qmi_wwan
-driver.
+{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Acked-by: Henrik Rydberg <rydberg@bitmath.se>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/usb.h |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -886,6 +886,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1018, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1058, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1059, 0xff, 0xff, 0xff) },
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -828,6 +828,27 @@ static inline int usb_make_path(struct u
+ 	.bInterfaceSubClass = (sc), \
+ 	.bInterfaceProtocol = (pr)
+ 
++/**
++ * USB_VENDOR_AND_INTERFACE_INFO - describe a specific usb vendor with a class of usb interfaces
++ * @vend: the 16 bit USB Vendor ID
++ * @cl: bInterfaceClass value
++ * @sc: bInterfaceSubClass value
++ * @pr: bInterfaceProtocol value
++ *
++ * This macro is used to create a struct usb_device_id that matches a
++ * specific vendor with a specific class of interfaces.
++ *
++ * This is especially useful when explicitly matching devices that have
++ * vendor specific bDeviceClass values, but standards-compliant interfaces.
++ */
++#define USB_VENDOR_AND_INTERFACE_INFO(vend, cl, sc, pr) \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
++		| USB_DEVICE_ID_MATCH_VENDOR, \
++	.idVendor = (vend), \
++	.bInterfaceClass = (cl), \
++	.bInterfaceSubClass = (sc), \
++	.bInterfaceProtocol = (pr)
++
+ /* ----------------------------------------------------------------------- */
+ 
+ /* Stuff for dynamic usb ids */
 
 
