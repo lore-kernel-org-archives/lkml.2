@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab2HTO2E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:28:04 -0400
+	id S1756694Ab2HTO2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:28:21 -0400
 Received: from mail-vb0-f46.google.com ([209.85.212.46]:43979 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab2HTO2B (ORCPT
+	with ESMTP id S1756599Ab2HTO2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:28:01 -0400
+	Mon, 20 Aug 2012 10:28:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <1344689809-6223-9-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1344689809-6223-10-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-9-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 20 Aug 2012 16:28:00 +0200
-Message-ID: <CACRpkda_tac95mYmw9y6dW-0TS4P5Fknji11E39_TUPjp0Tw2w@mail.gmail.com>
-Subject: Re: [PATCH 08/11] ARM: mvebu: Add pinctrl support to Armada 370 SoC
+	<1344689809-6223-10-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Mon, 20 Aug 2012 16:28:17 +0200
+Message-ID: <CACRpkdb5+FuFU3pqkZosiTuhp=6Yr5rqcTng072+KDkUh=J5ag@mail.gmail.com>
+Subject: Re: [PATCH 09/11] ARM: mvebu: adjust Armada XP evaluation board DTS
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -35,8 +35,10 @@ On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
 
 > From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 >
-> This commits adds the necessary device tree information to define the
-> compatible property for the pinctrl driver instance of Armada 370 SoC.
+> The Armada XP evaluation board is based on the MV78460 Armava XP
+> SoC. Now that we have separate .dtsi files for the three different
+> SoCs of the Armada XP family, use the appropriate one as include for
+> the Armada XP evaluation board .dts file.
 >
 > Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
