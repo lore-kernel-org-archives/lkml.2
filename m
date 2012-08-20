@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab2HTGHy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 02:07:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49795 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab2HTGHv (ORCPT
+	id S1752919Ab2HTGL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 02:11:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50224 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab2HTGLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 02:07:51 -0400
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-From: Raymond Jennings <shentino@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Carlos Alberto Lopez Perez <clopez@igalia.com>,
-        Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lanyfs@librelist.com
-In-Reply-To: <20120820004705.GA3710@thunk.org>
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
-	 <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
-	 <1345371135.4441.2.camel@tunafish> <5030BC7E.3030000@gmail.com>
-	 <1345383264.4441.56.camel@tunafish>
-	 <20120819120254.GA2369@pompeji.miese-zwerge.org>
-	 <1345390432.2716.34.camel@tunafish> <20120819210455.GA9208@thunk.org>
-	 <5031716C.1060003@igalia.com>  <20120820004705.GA3710@thunk.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Sun, 19 Aug 2012 23:07:32 -0700
-Message-ID: <1345442852.3906.0.camel@warfang.spyronet>
+	Mon, 20 Aug 2012 02:11:55 -0400
+Date: Mon, 20 Aug 2012 16:11:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        AceLan Kao <acelan.kao@canonical.com>
+Subject: linux-next: build failure after merge of the drivers-x86 tree
+Message-Id: <20120820161146.8961b8d9151f11a27b2fb48f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__20_Aug_2012_16_11_46_+1000_KILVy.JL0v5_KzTC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-08-19 at 20:47 -0400, Theodore Ts'o wrote:
-> On Mon, Aug 20, 2012 at 01:06:20AM +0200, Carlos Alberto Lopez Perez wrote:
-> > 
-> > > I also seriously question the niche of people who want to use a thumb
-> > > drive to transfer > 4GB files.  Try it sometime and see what a painful
-> > > user experience it is....
-> > 
-> > Think for example on consumer devices, for example on most moderns TV
-> > you can plug a USB memory disk with videos and play them.
-> 
-> More and more consumer devices, including TV's, are network-enabled.
-> I'm not at all convinced the USB memory disk model is the one which
-> makes sense --- you can make a much better user experience work if you
-> can rely on networking.  That way you don't have to move USB storage
-> devices around, and USB storage devices are *slow* when the most
-> common types are HDD's and crappy flash devices.  How many people are
-> going to drop several hundred dollars for a USB-attached SSD, when
-> using a networking transfer mechanism is much more convenient?
-> 
-> > And I doubt that the majority of this consumer devices are able to read
-> > nothing more than FAT32 file-systems, so the 4GB limit is a big problem.
-> > And here is where Microsoft is pushing their exFAT FS since it allows
-> > working with 4GB+ files without the NTFS overhead.
-> 
-> We'll see how popular a heavily IP-encumbered file system will be,
-> especially given that its main use case is for devices which are so
-> constrained that they can't afford to use a "real file system" (like
-> ntfs or ext4 or some other more sophisticated file system), but which
-> nevertheless needs to be able to handle 4GB+ files.
+--Signature=_Mon__20_Aug_2012_16_11_46_+1000_KILVy.JL0v5_KzTC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My two cents:
+Hi Matthew,
 
-After seeing microsoft's attack on TomTom over the vfat patents I
-honesstly would consider it a good move to have an alternative free
-format available.
+After merging the drivers-x86 tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-> I'm sure there will be some use cases that might fit that niche, but
-> it seems pretty tiny.  And this is completely ignoring what might
-> happen if in the future people take 1gig fiber connections to the home
-> (such as what many people in Kansas City will be enjoying very
-> shortly) for granted....
-> 
-> > As a side note, it would be possible to write a driver for exFAT and get
-> > it merged upstream on the Linux Kernel without "breaking any law"?
-> > Goggling I found an attempt to write such driver but seems that never
-> > got merged:  https://lkml.org/lkml/2009/2/8/24
-> 
-> You'll need to talk to a lawyer about that, since that's fundamentally
-> a legal question.
-> 
-> Regards,
-> 
-> 						- Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+drivers/platform/x86/asus-wmi.c: In function 'asus_new_rfkill':
+drivers/platform/x86/asus-wmi.c:892:3: error: implicit declaration of funct=
+ion 'rfkill_set_led_trigger_name' [-Werror=3Dimplicit-function-declaration]
 
+Caused by commit 154a7a7b2234 ("asus-wmi: update wlan LED through rfkill
+led trigger").  Please build test this stuff ... according to the bug
+report, this patch depends on another rfkill patch.
 
+I have used the drivers-x86 tree from next-20120817 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__20_Aug_2012_16_11_46_+1000_KILVy.JL0v5_KzTC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQMdUiAAoJEECxmPOUX5FEfD4P/irbo588D9YNcsh2D6+VeAw3
+pctH0iGIRzbf7kJvGkfuJ2gr00kGDWB+CgVpWieu9ln8l99kj0E3NuNWc7FGQswI
+eyVZIpzrjdd3NW4G0E6wrCJ1lfg2nnlT1+BE4gn+skSEKmmKa5u6PoYExJOzUtsx
+9u/XnBFWOWklLD9RU3x2XtAvh5LjhjDD4ki/UJoDBkYodMkHzXF6hpovjJExPsJP
+U5tYZDg69MAV1bVGakwDco/reU2ufSd5uLshVWZqU+RicqgmR7Vpr3Iur0CQi1ka
+rpwVZ+yCSRj++k3P+rQ/UxiCVEskIyjBMz9JApLQ9axS5Vt9A68IjB+stjbyEpaT
+xNELZ92XUsCxxbzXZP/LwYNRzk3kSDUXAcFTk6hc5SdYYkQ4KMGPggdeSzLfT9jU
+naTn4gEyjIhwffUS0+KXLsGYNJKyigiUYo4gzjccV1nQO8Pj20MXYZ8k/LFSQVZo
+bXzK3mx0xiK5N+kBCZi6ZT+avjt63Lv5b9DTk/wpm7drPHeFz61CU9ip29ItCeb/
+/Tq1eGEe6IK6idlSil5qWbqzOX3JmC0IZlaTfoUbHKbxDCpBShxe6b348M80B7kK
+D8pJxWIeoM/F9yfdS+aTPpVEK2MS5yC4xa5W8fnOtYh40r15TxRfnAoSrk0qdL2Z
+2Z30juZbWgGmPj8IKzMn
+=lR65
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Aug_2012_16_11_46_+1000_KILVy.JL0v5_KzTC--
