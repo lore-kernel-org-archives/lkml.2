@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab2HTEEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:04:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab2HTEBf (ORCPT
+	id S1755368Ab2HTEEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:04:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61536 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815Ab2HTEB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:01:35 -0400
+	Mon, 20 Aug 2012 00:01:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tatyana Brokhman <tlinder@codeaurora.org>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 38/46] usb: gadget: u_ether: fix kworker 100% CPU issue with still used interfaces in eth_stop
-Date: Sun, 19 Aug 2012 20:59:14 -0700
-Message-Id: <20120820035837.553778146@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        James Ettle <theholyettlz@googlemail.com>,
+        Matthew Hall <mhall@mhcomputing.net>
+Subject: [ 30/46] xhci: Fix bug after deq ptr set to link TRB.
+Date: Sun, 19 Aug 2012 20:59:06 -0700
+Message-Id: <20120820035836.433036955@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -31,73 +31,121 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit b1b552a69b8805e7e338074a9e8b670b4a795218 upstream.
+commit 50d0206fcaea3e736f912fd5b00ec6233fb4ce44 upstream.
 
-This patch fixes an issue introduced by patch:
+This patch fixes a particularly nasty bug that was revealed by the ring
+expansion patches.  The bug has been present since the very beginning of
+the xHCI driver history, and could have caused general protection faults
+from bad memory accesses.
 
-    72c973d usb: gadget: add usb_endpoint_descriptor to struct usb_ep
+The first thing to note is that a Set TR Dequeue Pointer command can
+move the dequeue pointer to a link TRB, if the canceled or stalled
+transfer TD ended just before a link TRB.  The function to increment the
+dequeue pointer, inc_deq, was written before cancellation and stall
+support was added.  It assumed that the dequeue pointer could never
+point to a link TRB.  It would unconditionally increment the dequeue
+pointer at the start of the function, check if the pointer was now on a
+link TRB, and move it to the top of the next segment if so.
 
-Without this patch we see a kworker taking 100% CPU, after this sequence:
+This means that if a Set TR Dequeue Point command moved the dequeue
+pointer to a link TRB, a subsequent call to inc_deq() would move the
+pointer off the segment and into la-la-land.  It would then read from
+that memory to determine if it was a link TRB.  Other functions would
+often call inc_deq() until the dequeue pointer matched some other
+pointer, which means this function would quite happily read all of
+system memory before wrapping around to the right pointer value.
 
-- Connect gadget to a windows host
-- load g_ether
-- ifconfig up <ip>; ifconfig down; ifconfig up
-- ping <windows host>
+Often, there would be another endpoint segment from a different ring
+allocated from the same DMA pool, which would be contiguous to the
+segment inc_deq just stepped off of.  inc_deq would eventually find the
+link TRB in that segment, and blindly move the dequeue pointer back to
+the top of the correct ring segment.
 
-The "ifconfig down" results in calling eth_stop(), which will call
-usb_ep_disable() and, if the carrier is still ok, usb_ep_enable():
+The only reason the original code worked at all is because there was
+only one ring segment.  With the ring expansion patches, the dequeue
+pointer would eventually wrap into place, but the dequeue segment would
+be out-of-sync.  On the second TD after the dequeue pointer was moved to
+a link TRB, trb_in_td() would fail (because the dequeue pointer and
+dequeue segment were out-of-sync), and this message would appear:
 
-         usb_ep_disable(link->in_ep);
-         usb_ep_disable(link->out_ep);
-         if (netif_carrier_ok(net)) {
-                 usb_ep_enable(link->in_ep);
-                 usb_ep_enable(link->out_ep);
-         }
+ERROR Transfer event TRB DMA ptr not part of current TD
 
-The ep should stay enabled, but will not, as ep_disable set the desc
-pointer to NULL, therefore the subsequent ep_enable will fail. This leads
-to permanent rescheduling of the eth_work() worker as usb_ep_queue()
-(called by the worker) will fail due to the unconfigured endpoint.
+This fixes bugzilla entry 4333 (option-based modem unhappy on USB 3.0
+port: "Transfer event TRB DMA ptr not part of current TD", "rejecting
+I/O to offline device"),
 
-We fix this issue by saving the ep descriptors and re-assign them before
-usb_ep_enable().
+	https://bugzilla.kernel.org/show_bug.cgi?id=43333
 
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+and possibly other general protection fault bugs as well.
+
+This patch should be backported to kernels as old as 2.6.31.  A separate
+patch will be created for kernels older than 3.4, since inc_deq was
+modified in 3.4 and this patch will not apply.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: James Ettle <theholyettlz@googlemail.com>
+Tested-by: Matthew Hall <mhall@mhcomputing.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/u_ether.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/host/xhci-ring.c |   36 ++++++++++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 14 deletions(-)
 
---- a/drivers/usb/gadget/u_ether.c
-+++ b/drivers/usb/gadget/u_ether.c
-@@ -669,6 +669,8 @@ static int eth_stop(struct net_device *n
- 	spin_lock_irqsave(&dev->lock, flags);
- 	if (dev->port_usb) {
- 		struct gether	*link = dev->port_usb;
-+		const struct usb_endpoint_descriptor *in;
-+		const struct usb_endpoint_descriptor *out;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -145,29 +145,37 @@ static void next_trb(struct xhci_hcd *xh
+  */
+ static void inc_deq(struct xhci_hcd *xhci, struct xhci_ring *ring)
+ {
+-	union xhci_trb *next;
+ 	unsigned long long addr;
  
- 		if (link->close)
- 			link->close(link);
-@@ -682,10 +684,14 @@ static int eth_stop(struct net_device *n
- 		 * their own pace; the network stack can handle old packets.
- 		 * For the moment we leave this here, since it works.
- 		 */
-+		in = link->in_ep->desc;
-+		out = link->out_ep->desc;
- 		usb_ep_disable(link->in_ep);
- 		usb_ep_disable(link->out_ep);
- 		if (netif_carrier_ok(net)) {
- 			DBG(dev, "host still using in/out endpoints\n");
-+			link->in_ep->desc = in;
-+			link->out_ep->desc = out;
- 			usb_ep_enable(link->in_ep);
- 			usb_ep_enable(link->out_ep);
+ 	ring->deq_updates++;
+ 
+-	/* If this is not event ring, there is one more usable TRB */
++	/*
++	 * If this is not event ring, and the dequeue pointer
++	 * is not on a link TRB, there is one more usable TRB
++	 */
+ 	if (ring->type != TYPE_EVENT &&
+ 			!last_trb(xhci, ring, ring->deq_seg, ring->dequeue))
+ 		ring->num_trbs_free++;
+-	next = ++(ring->dequeue);
+ 
+-	/* Update the dequeue pointer further if that was a link TRB or we're at
+-	 * the end of an event ring segment (which doesn't have link TRBS)
+-	 */
+-	while (last_trb(xhci, ring, ring->deq_seg, next)) {
+-		if (ring->type == TYPE_EVENT &&	last_trb_on_last_seg(xhci,
+-				ring, ring->deq_seg, next)) {
+-			ring->cycle_state = (ring->cycle_state ? 0 : 1);
++	do {
++		/*
++		 * Update the dequeue pointer further if that was a link TRB or
++		 * we're at the end of an event ring segment (which doesn't have
++		 * link TRBS)
++		 */
++		if (last_trb(xhci, ring, ring->deq_seg, ring->dequeue)) {
++			if (ring->type == TYPE_EVENT &&
++					last_trb_on_last_seg(xhci, ring,
++						ring->deq_seg, ring->dequeue)) {
++				ring->cycle_state = (ring->cycle_state ? 0 : 1);
++			}
++			ring->deq_seg = ring->deq_seg->next;
++			ring->dequeue = ring->deq_seg->trbs;
++		} else {
++			ring->dequeue++;
  		}
+-		ring->deq_seg = ring->deq_seg->next;
+-		ring->dequeue = ring->deq_seg->trbs;
+-		next = ring->dequeue;
+-	}
++	} while (last_trb(xhci, ring, ring->deq_seg, ring->dequeue));
++
+ 	addr = (unsigned long long) xhci_trb_virt_to_dma(ring->deq_seg, ring->dequeue);
+ }
+ 
 
 
