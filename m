@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab2HTEGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:06:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
+	id S1755022Ab2HTEHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:07:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab2HTEAr (ORCPT
+	with ESMTP id S1751911Ab2HTEAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:00:47 -0400
+	Mon, 20 Aug 2012 00:00:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Jones <davej@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 24/46] ext4: dont call ext4_error while block group is locked
-Date: Sun, 19 Aug 2012 20:59:00 -0700
-Message-Id: <20120820035835.633774496@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 22/46] ext4: make sure the journal sb is written in ext4_clear_journal_err()
+Date: Sun, 19 Aug 2012 20:58:58 -0700
+Message-Id: <20120820035835.353329055@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -31,146 +31,68 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 From: Theodore Ts'o <tytso@mit.edu>
 
-commit 7a4c5de27efa4c2ecca87af0a3deea63446367e2 upstream.
+commit d796c52ef0b71a988364f6109aeb63d79c5b116b upstream.
 
-While in ext4_validate_block_bitmap(), if an block allocation bitmap
-is found to be invalid, we call ext4_error() while the block group is
-still locked.  This causes ext4_commit_super() to call a function
-which might sleep while in an atomic context.
+After we transfer set the EXT4_ERROR_FS bit in the file system
+superblock, it's not enough to call jbd2_journal_clear_err() to clear
+the error indication from journal superblock --- we need to call
+jbd2_journal_update_sb_errno() as well.  Otherwise, when the root file
+system is mounted read-only, the journal is replayed, and the error
+indicator is transferred to the superblock --- but the s_errno field
+in the jbd2 superblock is left set (since although we cleared it in
+memory, we never flushed it out to disk).
 
-There's no need to keep the block group locked at this point, so hoist
-the ext4_error() call up to ext4_validate_block_bitmap() and release
-the block group spinlock before calling ext4_error().
+This can end up confusing e2fsck.  We should make e2fsck more robust
+in this case, but the kernel shouldn't be leaving things in this
+confused state, either.
 
-The reported stack trace can be found at:
-
-	http://article.gmane.org/gmane.comp.file-systems.ext4/33731
-
-Reported-by: Dave Jones <davej@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/balloc.c |   62 ++++++++++++++++++++++++++++++++-----------------------
- fs/ext4/bitmap.c |    1 
- 2 files changed, 37 insertions(+), 26 deletions(-)
+ fs/ext4/super.c      |    1 +
+ fs/jbd2/journal.c    |    3 ++-
+ include/linux/jbd2.h |    1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -280,14 +280,18 @@ struct ext4_group_desc * ext4_get_group_
- 	return desc;
- }
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4406,6 +4406,7 @@ static void ext4_clear_journal_err(struc
+ 		ext4_commit_super(sb, 1);
  
--static int ext4_valid_block_bitmap(struct super_block *sb,
--				   struct ext4_group_desc *desc,
--				   unsigned int block_group,
--				   struct buffer_head *bh)
-+/*
-+ * Return the block number which was discovered to be invalid, or 0 if
-+ * the block bitmap is valid.
-+ */
-+static ext4_fsblk_t ext4_valid_block_bitmap(struct super_block *sb,
-+					    struct ext4_group_desc *desc,
-+					    unsigned int block_group,
-+					    struct buffer_head *bh)
- {
- 	ext4_grpblk_t offset;
- 	ext4_grpblk_t next_zero_bit;
--	ext4_fsblk_t bitmap_blk;
-+	ext4_fsblk_t blk;
- 	ext4_fsblk_t group_first_block;
- 
- 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
-@@ -297,37 +301,33 @@ static int ext4_valid_block_bitmap(struc
- 		 * or it has to also read the block group where the bitmaps
- 		 * are located to verify they are set.
- 		 */
--		return 1;
-+		return 0;
+ 		jbd2_journal_clear_err(journal);
++		jbd2_journal_update_sb_errno(journal);
  	}
- 	group_first_block = ext4_group_first_block_no(sb, block_group);
- 
- 	/* check whether block bitmap block number is set */
--	bitmap_blk = ext4_block_bitmap(sb, desc);
--	offset = bitmap_blk - group_first_block;
-+	blk = ext4_block_bitmap(sb, desc);
-+	offset = blk - group_first_block;
- 	if (!ext4_test_bit(offset, bh->b_data))
- 		/* bad block bitmap */
--		goto err_out;
-+		return blk;
- 
- 	/* check whether the inode bitmap block number is set */
--	bitmap_blk = ext4_inode_bitmap(sb, desc);
--	offset = bitmap_blk - group_first_block;
-+	blk = ext4_inode_bitmap(sb, desc);
-+	offset = blk - group_first_block;
- 	if (!ext4_test_bit(offset, bh->b_data))
- 		/* bad block bitmap */
--		goto err_out;
-+		return blk;
- 
- 	/* check whether the inode table block number is set */
--	bitmap_blk = ext4_inode_table(sb, desc);
--	offset = bitmap_blk - group_first_block;
-+	blk = ext4_inode_table(sb, desc);
-+	offset = blk - group_first_block;
- 	next_zero_bit = ext4_find_next_zero_bit(bh->b_data,
- 				offset + EXT4_SB(sb)->s_itb_per_group,
- 				offset);
--	if (next_zero_bit >= offset + EXT4_SB(sb)->s_itb_per_group)
--		/* good bitmap for inode tables */
--		return 1;
--
--err_out:
--	ext4_error(sb, "Invalid block bitmap - block_group = %d, block = %llu",
--			block_group, bitmap_blk);
-+	if (next_zero_bit < offset + EXT4_SB(sb)->s_itb_per_group)
-+		/* bad bitmap for inode tables */
-+		return blk;
- 	return 0;
  }
  
-@@ -336,14 +336,26 @@ void ext4_validate_block_bitmap(struct s
- 			       unsigned int block_group,
- 			       struct buffer_head *bh)
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1377,7 +1377,7 @@ static void jbd2_mark_journal_empty(jour
+  * Update a journal's errno.  Write updated superblock to disk waiting for IO
+  * to complete.
+  */
+-static void jbd2_journal_update_sb_errno(journal_t *journal)
++void jbd2_journal_update_sb_errno(journal_t *journal)
  {
-+	ext4_fsblk_t	blk;
-+
- 	if (buffer_verified(bh))
- 		return;
+ 	journal_superblock_t *sb = journal->j_superblock;
  
- 	ext4_lock_group(sb, block_group);
--	if (ext4_valid_block_bitmap(sb, desc, block_group, bh) &&
--	    ext4_block_bitmap_csum_verify(sb, block_group, desc, bh,
--					  EXT4_BLOCKS_PER_GROUP(sb) / 8))
--		set_buffer_verified(bh);
-+	blk = ext4_valid_block_bitmap(sb, desc, block_group, bh);
-+	if (unlikely(blk != 0)) {
-+		ext4_unlock_group(sb, block_group);
-+		ext4_error(sb, "bg %u: block %llu: invalid block bitmap",
-+			   block_group, blk);
-+		return;
-+	}
-+	if (unlikely(!ext4_block_bitmap_csum_verify(sb, block_group,
-+			desc, bh, EXT4_BLOCKS_PER_GROUP(sb) / 8))) {
-+		ext4_unlock_group(sb, block_group);
-+		ext4_error(sb, "bg %u: bad block bitmap checksum", block_group);
-+		return;
-+	}
-+	set_buffer_verified(bh);
- 	ext4_unlock_group(sb, block_group);
+@@ -1390,6 +1390,7 @@ static void jbd2_journal_update_sb_errno
+ 
+ 	jbd2_write_superblock(journal, WRITE_SYNC);
  }
++EXPORT_SYMBOL(jbd2_journal_update_sb_errno);
  
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -86,7 +86,6 @@ int ext4_block_bitmap_csum_verify(struct
- 	if (provided == calculated)
- 		return 1;
- 
--	ext4_error(sb, "Bad block bitmap checksum: block_group = %u", group);
- 	return 0;
- }
- 
+ /*
+  * Read the superblock for a given journal, performing initial
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -1125,6 +1125,7 @@ extern int	   jbd2_journal_destroy    (j
+ extern int	   jbd2_journal_recover    (journal_t *journal);
+ extern int	   jbd2_journal_wipe       (journal_t *, int);
+ extern int	   jbd2_journal_skip_recovery	(journal_t *);
++extern void	   jbd2_journal_update_sb_errno(journal_t *);
+ extern void	   jbd2_journal_update_sb_log_tail	(journal_t *, tid_t,
+ 				unsigned long, int);
+ extern void	   __jbd2_journal_abort_hard	(journal_t *);
 
 
