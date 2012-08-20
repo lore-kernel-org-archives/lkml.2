@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2HTSwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:52:17 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:52994 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab2HTSwP convert rfc822-to-8bit (ORCPT
+	id S1753369Ab2HTSx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:53:59 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:20568 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753155Ab2HTSx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:52:15 -0400
-Date: Mon, 20 Aug 2012 20:51:59 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 04/11] pinctrl: mvebu: add pinctrl driver for Armada 370
-Message-ID: <20120820205159.63001848@skate>
-In-Reply-To: <50327B8F.3050503@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-5-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkdYNZar7865-T12J37h3AWA9-8R1R5tymuOhaB0b3ddEAA@mail.gmail.com>
-	<50326A60.1070007@gmail.com>
-	<20120820193622.4e539451@skate>
-	<50327B8F.3050503@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Aug 2012 14:53:57 -0400
+X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPV:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz4015Izz1202hzzz2dh87h2a8h668h839h8e2h8e3h944he96h107ahbe9i)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 20 Aug 2012 14:53:52 -0400
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+X-X-Sender: vweaver1@cl320.icl.utk.edu
+To: <linux-kernel@vger.kernel.org>
+CC: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: perf: PERF_EVENT_IOC_RESET and multiplexing
+Message-ID: <alpine.DEB.2.00.1208201447150.29057@cl320.icl.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Mon, 20 Aug 2012 20:01:51 +0200,
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
+Hello
 
-> > If that's fine with you, then I would prefer if we keep the single
-> > MACH_ARMADA_370_XP symbol for now, so that your pinctrl set of
-> > patches does not depend on something else. We would do the small
-> > Kconfig option refactoring as a follow-up set of patches. Thoughts?
-> 
-> Despite any objections, I will remove all arch/arm/*/Kconfig patches
-> from pinctrl patch set.
+I have a perf API question.
 
-Ok, fine with me, but we'll have to send separate patches for those,
-then.
+When I run PERF_EVENT_IOC_RESET, all it resets is the event count.
+It does not reset the PERF_FORMAT_TOTAL_TIME_ENABLED or
+PERF_FORMAT_TOTAL_TIME_RUNNING values.
 
-Thanks!
+Is this expected?  It means if I'm trying to do multiplexing and want to 
+reset the counts to zero, there's no way to reset the enabled/running 
+values.
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+I suppose I can just close/reopen the events, or allocate some space to 
+store the previous values, but that seems like unncessary overhead.
+
+
+
+As an aside while I have your attention, can someone explain the 
+difference between the "inherit" and the "inherit_stat" options in
+perf.attr?  I can't seem to make a test case exhibit a difference, and
+the events/core.c code in the kernel is a horrible wall of uncommented 
+code that is nearly impossible to follow.
+
+Thanks,
+
+Vince
+vweaver1@eecs.utk.edu
+
