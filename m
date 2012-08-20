@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab2HTO1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:27:10 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:38227 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab2HTO1G (ORCPT
+	id S1756698Ab2HTO13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:27:29 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53579 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756400Ab2HTO10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:27:06 -0400
+	Mon, 20 Aug 2012 10:27:26 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] drm: stop vmgfx driver explosion
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Mon, 20 Aug 2012 15:44:52 +0100
+Message-ID: <20120820144438.6255.39723.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1344689809-6223-7-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-7-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 20 Aug 2012 16:27:05 +0200
-Message-ID: <CACRpkdaWKf2se6PE7SMoOoqbTCLaMBMgjKbJa5tpQzr-RTSmJg@mail.gmail.com>
-Subject: Re: [PATCH 06/11] ARM: mvebu: add pinctrl device in DT for Armada
- 370/XP SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+From: Alan Cox <alan@linux.intel.com>
 
-> From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->
-> The Armada 370 and XP SoCs have configurable muxing for a certain
-> number of their pins, controlled through a pinctrl driver.
->
-> The 'compatible' property is defined in the SoC-specific .dtsi files,
-> since the compatible string identifies the number of pins and other
-> SoC-specific properties.
->
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+If you do a page flip with no flags set then event is NULL. If event is
+NULL then the vmw_gfx driver likes to go digging into NULL and extracts
+NULL->base.file_priv.
 
-FWIW:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+On a modern kernel with NULL mapping protection it's just another oops,
+without it there are some "intriguing" possibilities.
 
-Yours,
-Linus Walleij
+What it should do is an open question but that for the driver owners to
+sort out.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+index 6b0078f..c50724b 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -1688,15 +1688,19 @@ int vmw_du_page_flip(struct drm_crtc *crtc,
+ 	struct vmw_private *dev_priv = vmw_priv(crtc->dev);
+ 	struct drm_framebuffer *old_fb = crtc->fb;
+ 	struct vmw_framebuffer *vfb = vmw_framebuffer_to_vfb(fb);
+-	struct drm_file *file_priv = event->base.file_priv;
++	struct drm_file *file_priv ;
+ 	struct vmw_fence_obj *fence = NULL;
+ 	struct drm_clip_rect clips;
+ 	int ret;
+ 
++	if (event == NULL)
++		return -EINVAL;
++
+ 	/* require ScreenObject support for page flipping */
+ 	if (!dev_priv->sou_priv)
+ 		return -ENOSYS;
+ 
++	file_priv = event->base.file_priv;
+ 	if (!vmw_kms_screen_object_flippable(dev_priv, crtc))
+ 		return -EINVAL;
+ 
+
