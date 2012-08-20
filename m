@@ -1,69 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab2HTWRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 18:17:41 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60303 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab2HTWRj (ORCPT
+	id S1756611Ab2HTWY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 18:24:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54655 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab2HTWY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 18:17:39 -0400
-Subject: Re: [RFC PATCH 1/1] fair.c: Add/Export find_idlest_perfer_cpu API
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com,
-        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        sri@us.ibm.com, vivek@us.ibm.com
-In-Reply-To: <1345464035.23018.38.camel@twins>
-References: <1345232770.16533.234.camel@oc3660625478.ibm.com>
-	 <1345464035.23018.38.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Aug 2012 15:17:21 -0700
-Message-ID: <1345501041.6378.10.camel@oc3660625478.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082022-6148-0000-0000-000008CDDA43
+	Mon, 20 Aug 2012 18:24:56 -0400
+Date: Mon, 20 Aug 2012 15:24:53 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
+Subject: the 3.4 kernel tree will be -longterm
+Message-ID: <20120820222453.GB2118@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 14:00 +0200, Peter Zijlstra wrote:
-> On Fri, 2012-08-17 at 12:46 -0700, Shirley Ma wrote:
-> > Add/Export a new API for per-cpu thread model networking device
-> driver
-> > to choose a preferred idlest cpu within allowed cpumask.
-> > 
-> > The receiving CPUs of a networking device are not under cgroup
-> controls.
-> > Normally the receiving work will be scheduled on the cpu on which
-> the
-> > interrupts are received. When such a networking device uses per-cpu
-> > thread model, the cpu which is chose to process the packets might
-> not be
-> > part of cgroup cpusets without using such an API here. 
-> > 
-> > On NUMA system, by using the preferred cpumask from the same NUMA
-> node
-> > would help to reduce expensive cross memory access to/from the other
-> > NUMA node.
-> > 
-> > KVM per-cpu vhost will be the first one to use this API. Any other
-> > device driver which uses per-cpu thread model and has cgroup cpuset
-> > control will use this API later.
-> 
-> How often will this be called and how do you obtain the cpumasks
-> provided to the function? 
+As I'm getting a few questions about this, and I realized that I never
+sent out an email about this, yes, the 3.4 kernel tree will be the next
+-longterm kernel that I will be maintaining for at least 2 years.
 
-It depends. It might be called pretty often if the user keeps changing
-cgroups control cpuset. It might be less called if the cgroups control
-cpuset is stable, and the host scheduler always schedules the work on
-the same NUMA node.
+Currently I'm maintaining the following stable kernel trees for the
+following amount of time:
+	3.0 - for at least one more year
+	3.4 - for at least two years
+	3.5 - until 3.6.1 is out
 
-The preferred cpumasks are obtained from local numa node. The allowed
-cpumasks are obtained from caller's task allowed cpumasks (cgroups
-control cpuset).
+Hope this helps clear up any rumors floating around.  If anyone has any
+questions, please let me know.
 
-Thanks
-Shirley
-
+greg k-h
