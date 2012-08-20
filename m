@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab2HTGtY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 02:49:24 -0400
-Received: from bitmer.com ([213.157.87.50]:46135 "EHLO bitmer.com"
+	id S1755226Ab2HTGud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 02:50:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44490 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab2HTGtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 02:49:22 -0400
-X-Greylist: delayed 2376 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 02:49:21 EDT
-Message-ID: <5031D49F.7050301@bitmer.com>
-Date: Mon, 20 Aug 2012 09:09:35 +0300
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1752437Ab2HTGua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 02:50:30 -0400
+From: Oliver Neukum <oneukum@suse.de>
+To: Raymond Jennings <shentino@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Carlos Alberto Lopez Perez <clopez@igalia.com>,
+        Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lanyfs@librelist.com
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+Date: Mon, 20 Aug 2012 08:49:18 +0200
+Message-ID: <1410165.Y5eGtVk1DB@linux-lqwf.site>
+Organization: SUSE
+User-Agent: KMail/4.8.4 (Linux/3.5.0-12-desktop+; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1345442852.3906.0.camel@warfang.spyronet>
+References: <1345333117-2826-1-git-send-email-mail@danrl.de> <20120820004705.GA3710@thunk.org> <1345442852.3906.0.camel@warfang.spyronet>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, kernel-janitors@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] sound/soc/omap/am3517evm.c: fix error return code
-References: <1345359780-18647-1-git-send-email-Julia.Lawall@lip6.fr> <1345359780-18647-10-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1345359780-18647-10-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2012 10:03 AM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> It was forgotten to initialize ret to the result of calling
-> snd_soc_dai_set_sysclk, unlike at the other calls in the same function.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> 
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  sound/soc/omap/am3517evm.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/sound/soc/omap/am3517evm.c b/sound/soc/omap/am3517evm.c
-> index 009533a..df65f98 100644
-> --- a/sound/soc/omap/am3517evm.c
-> +++ b/sound/soc/omap/am3517evm.c
-> @@ -59,7 +59,7 @@ static int am3517evm_hw_params(struct snd_pcm_substream *substream,
->  		return ret;
->  	}
->  
-> -	snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_FSR_SRC_FSX, 0,
-> +	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_FSR_SRC_FSX, 0,
->  				SND_SOC_CLOCK_IN);
->  	if (ret < 0) {
->  		printk(KERN_ERR "can't set CPU system clock OMAP_MCBSP_FSR_SRC_FSX\n");
-> 
+On Sunday 19 August 2012 23:07:32 Raymond Jennings wrote:
+> On Sun, 2012-08-19 at 20:47 -0400, Theodore Ts'o wrote:
+> > On Mon, Aug 20, 2012 at 01:06:20AM +0200, Carlos Alberto Lopez Perez wrote:
+> > > 
+> > > > I also seriously question the niche of people who want to use a thumb
+> > > > drive to transfer > 4GB files.  Try it sometime and see what a painful
+> > > > user experience it is....
+> > > 
+> > > Think for example on consumer devices, for example on most moderns TV
+> > > you can plug a USB memory disk with videos and play them.
+> > 
+> > More and more consumer devices, including TV's, are network-enabled.
+> > I'm not at all convinced the USB memory disk model is the one which
+> > makes sense --- you can make a much better user experience work if you
+> > can rely on networking.  That way you don't have to move USB storage
+> > devices around, and USB storage devices are slow when the most
+> > common types are HDD's and crappy flash devices.  How many people are
+> > going to drop several hundred dollars for a USB-attached SSD, when
+> > using a networking transfer mechanism is much more convenient?
 
-Acked-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
+The cost of such drives will not stay so high and the speed will leap drastically
+once UAS over USB 3.0 will have become established.  And I am sure that you
+don't want every content to go over the network. And far from everywhere will have
+the bandwidth to transfer so much data. And of course you assume that you
+know where you are going to need your content before you leave or have remote
+access to your base system.
+
+You may argue that networked transfers will take up a bigger slice of the cake, but
+storage devices are far from dead, even for large amounts of data. And the definition
+of largeness is growing.
+
+	Regards
+		Oliver
+
