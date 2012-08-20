@@ -1,197 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2HTOvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:51:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25972 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756778Ab2HTOuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:50:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,797,1336374000"; 
-   d="scan'208";a="206519017"
-Date: Mon, 20 Aug 2012 22:50:32 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 3/3] writeback: add dirty_ratio_time per bdi variable
- (NFS write performance)
-Message-ID: <20120820145032.GA7469@localhost>
-References: <1345283402-7889-1-git-send-email-linkinjeon@gmail.com>
- <20120819025724.GC16796@localhost>
- <CAKYAXd83r3RNi3Rn5s3DAEE=34YYbk_hUWcG6R3Zu3JwUw74aA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKYAXd83r3RNi3Rn5s3DAEE=34YYbk_hUWcG6R3Zu3JwUw74aA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756825Ab2HTOuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:50:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49521 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754703Ab2HTOuE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:50:04 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 02/12] kdb: Implement disable_nmi command
+Date: Mon, 20 Aug 2012 07:47:20 -0700
+Message-Id: <1345474050-8339-2-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.11.5
+In-Reply-To: <20120820144449.GA32560@lizard>
+References: <20120820144449.GA32560@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 09:48:42AM +0900, Namjae Jeon wrote:
-> 2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
-> > On Sat, Aug 18, 2012 at 05:50:02AM -0400, Namjae Jeon wrote:
-> >> From: Namjae Jeon <namjae.jeon@samsung.com>
-> >>
-> >> This patch is based on suggestion by Wu Fengguang:
-> >> https://lkml.org/lkml/2011/8/19/19
-> >>
-> >> kernel has mechanism to do writeback as per dirty_ratio and
-> >> dirty_background
-> >> ratio. It also maintains per task dirty rate limit to keep balance of
-> >> dirty pages at any given instance by doing bdi bandwidth estimation.
-> >>
-> >> Kernel also has max_ratio/min_ratio tunables to specify percentage of
-> >> writecache
-> >> to control per bdi dirty limits and task throtelling.
-> >>
-> >> However, there might be a usecase where user wants a writeback tuning
-> >> parameter to flush dirty data at desired/tuned time interval.
-> >>
-> >> dirty_background_time provides an interface where user can tune
-> >> background
-> >> writeback start time using /sys/block/sda/bdi/dirty_background_time
-> >>
-> >> dirty_background_time is used alongwith average bdi write bandwidth
-> >> estimation
-> >> to start background writeback.
-> >
-> > Here lies my major concern about dirty_background_time: the write
-> > bandwidth estimation is an _estimation_ and will sure become wildly
-> > wrong in some cases. So the dirty_background_time implementation based
-> > on it will not always work to the user expectations.
-> >
-> > One important case is, some users (eg. Dave Chinner) explicitly take
-> > advantage of the existing behavior to quickly create & delete a big
-> > 1GB temp file without worrying about triggering unnecessary IOs.
-> >
-> Hi. Wu.
-> Okay, I have a question.
-> 
-> If making dirty_writeback_interval per bdi to tune short interval
-> instead of background_time, We can get similar performance
-> improvement.
-> /sys/block/<device>/bdi/dirty_writeback_interval
-> /sys/block/<device>/bdi/dirty_expire_interval
-> 
-> NFS write performance improvement is just one usecase.
-> 
-> If we can set interval/time per bdi,  other usecases will be created
-> by applying.
+This command disables NMI-entry. If NMI source has been previously shared
+with a serial console ("debug port"), this effectively releases the port
+from KDB exclusive use, and makes the console available for normal use.
 
-Per-bdi interval/time tunables, if there comes such a need, will in
-essential be for data caching and safety. If turning them into some
-requirement for better performance, the users will potential be
-stretched on choosing the "right" value for balanced data cache,
-safety and performance.  Hmm, not a comfortable prospection.
+Of course, NMI can be reenabled, enable_nmi modparam is used for that:
 
-> >The numbers are impressive! FYI, I tried another NFS specific approach
-> >to avoid big NFS COMMITs, which achieved similar performance gains:
-> 
-> >nfs: writeback pages wait queue
-> >https://lkml.org/lkml/2011/10/20/235
-> 
-> Thanks.
+	echo 1 > /sys/module/kdb/parameters/enable_nmi
 
-The NFS write queue, on the other hand, is directly aimed for
-improving NFS performance, latency and responsiveness.
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ kernel/debug/kdb/kdb_main.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-In comparison to the per-bdi interval/time, it's more a guarantee of
-smoother NFS writes.  As the tests show in the original email, with
-the cost of a little more commits, it gains much better write
-throughput and latency.
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 31df170..9fadff1 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -21,6 +21,7 @@
+ #include <linux/smp.h>
+ #include <linux/utsname.h>
+ #include <linux/vmalloc.h>
++#include <linux/atomic.h>
+ #include <linux/module.h>
+ #include <linux/mm.h>
+ #include <linux/init.h>
+@@ -2107,6 +2108,32 @@ static int kdb_dmesg(int argc, const char **argv)
+ 	return 0;
+ }
+ #endif /* CONFIG_PRINTK */
++
++/* Make sure we balance enable/disable calls, must disable first. */
++static atomic_t kdb_nmi_disabled;
++
++static int kdb_disable_nmi(int argc, const char *argv[])
++{
++	if (atomic_read(&kdb_nmi_disabled))
++		return 0;
++	atomic_set(&kdb_nmi_disabled, 1);
++	kgdb_enable_nmi(0);
++	return 0;
++}
++
++static int kdb_param_enable_nmi(const char *val, const struct kernel_param *kp)
++{
++	if (!atomic_add_unless(&kdb_nmi_disabled, -1, 0))
++		return -EINVAL;
++	kgdb_enable_nmi(1);
++	return 0;
++}
++
++static const struct kernel_param_ops kdb_param_ops_enable_nmi = {
++	.set = kdb_param_enable_nmi,
++};
++module_param_cb(enable_nmi, &kdb_param_ops_enable_nmi, NULL, 0600);
++
+ /*
+  * kdb_cpu - This function implements the 'cpu' command.
+  *	cpu	[<cpunum>]
+@@ -2851,6 +2878,8 @@ static void __init kdb_inittab(void)
+ 	kdb_register_repeat("dmesg", kdb_dmesg, "[lines]",
+ 	  "Display syslog buffer", 0, KDB_REPEAT_NONE);
+ #endif
++	kdb_register_repeat("disable_nmi", kdb_disable_nmi, "",
++	  "Disable NMI entry to KDB", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
+ 	  "Define a set of commands, down to endefcmd", 0, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("kill", kdb_kill, "<-signal> <pid>",
+-- 
+1.7.11.5
 
-The NFS write queue is even a requirement, if we want to get
-reasonable good responsiveness. Without it, the 20% dirty limit may
-well be filled by NFS writeback/unstable pages. This is very bad for
-responsiveness. Let me quote contents of two old emails (with small
-fixes):
-
-: PG_writeback pages have been the biggest source of
-: latency issues in the various parts of the system.
-: 
-: It's not uncommon for me to see filesystems sleep on PG_writeback
-: pages during heavy writeback, within some lock or transaction, which in
-: turn stall many tasks that try to do IO or merely dirty some page in
-: memory. Random writes are especially susceptible to such stalls. The
-: stable page feature also vastly increase the chances of stalls by
-: locking the writeback pages.
- 
-: When there are N seconds worth of writeback pages, it may
-: take N/2 seconds on average for wait_on_page_writeback() to finish.
-: So the total time cost of running into a random writeback page and
-: waiting on it is also O(n^2):
-
-:       E(PG_writeback waits) = P(hit PG_writeback) * E(wait on it)
-
-: That means we can hardly keep more than 1-second worth of writeback
-: pages w/o worrying about long waits on PG_writeback in various parts
-: of the kernel.
-
-: Page reclaim may also block on PG_writeback and/or PG_dirty pages. In
-: the case of direct reclaim, it means blocking random tasks that are
-: allocating memory in the system.
-: 
-: PG_writeback pages are much worse than PG_dirty pages in that they are
-: not movable. This makes a big difference for high-order page allocations.
-: To make room for a 2MB huge page, vmscan has the option to migrate
-: PG_dirty pages, but for PG_writeback it has no better choices than to
-: wait for IO completion.
-: 
-: The difficulty of THP allocation goes up *exponentially* with the
-: number of PG_writeback pages. Assume PG_writeback pages are randomly
-: distributed in the physical memory space. Then we have formula
-: 
-:         P(reclaimable for THP) = P(non-PG_writeback)^512
-: 
-: That's the possibly for a contiguous range of 512 pages to be free of
-: PG_writeback, so that it's immediately reclaimable for use by
-: transparent huge page. This ruby script shows us the concrete numbers.
-: 
-: irb> 1.upto(10) { |i| j=i/1000.0; printf "%.3f\t\t\t%.3f\n", j, (1-j)**512 }
-: 
-:         P(hit PG_writeback)     P(reclaimable for THP)
-:         0.001                   0.599
-:         0.002                   0.359
-:         0.003                   0.215
-:         0.004                   0.128
-:         0.005                   0.077
-:         0.006                   0.046
-:         0.007                   0.027
-:         0.008                   0.016
-:         0.009                   0.010
-:         0.010                   0.006
-: 
-: The numbers show that when the PG_writeback pages go up from 0.1% to
-: 1% of system memory, the THP reclaim success ratio drops quickly from
-: 60% to 0.6%. It indicates that in order to use THP without constantly
-: running into stalls, the reasonable PG_writeback ratio is <= 0.1%.
-: Going beyond that threshold, it quickly becomes intolerable.
-: 
-: That makes a limit of 256MB writeback pages for a mem=256GB system.
-: Looking at the real vmstat:nr_writeback numbers in dd write tests:
-: 
-: JBOD-12SSD-thresh=8G/ext4-1dd-1-3.3.0/vmstat-end:nr_writeback 217009
-: JBOD-12SSD-thresh=8G/ext4-10dd-1-3.3.0/vmstat-end:nr_writeback 198335
-: JBOD-12SSD-thresh=8G/xfs-1dd-1-3.3.0/vmstat-end:nr_writeback 306026
-: JBOD-12SSD-thresh=8G/xfs-10dd-1-3.3.0/vmstat-end:nr_writeback 315099
-: JBOD-12SSD-thresh=8G/btrfs-1dd-1-3.3.0/vmstat-end:nr_writeback 1216058
-: JBOD-12SSD-thresh=8G/btrfs-10dd-1-3.3.0/vmstat-end:nr_writeback 895335
-: 
-: Oops btrfs has 4GB writeback pages -- which asks for some bug fixing.
-: Even ext4's 800MB still looks way too high, but that's ~1s worth of
-: data per queue (or 130ms worth of data for the high performance Intel
-: SSD, which is perhaps in danger of queue underruns?). So this system
-: would require 512GB memory to comfortably run KVM instances with THP
-: support.
-
-The main concern on the NFS write wait queue, however, was that it
-might hurt performance for long fat network pipes with large
-bandwidth-delay products. If the pipe size can be properly estimated,
-we'll be able to set adequate queue size and remove the last obstacle
-of that patch.
-
-Thanks,
-Fengguang
