@@ -1,34 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2HTGbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 02:31:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46579 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab2HTGbT convert rfc822-to-8bit (ORCPT
+	id S1754820Ab2HTGcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 02:32:04 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53153 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab2HTGcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 02:31:19 -0400
-Message-ID: <1345444270.29668.65.camel@twins>
-Subject: Re: [PATCH] sched: fix kernel-doc warnings in kernel/sched/fair.c
-From: Peter Zijlstra <peterz@infradead.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-Date: Mon, 20 Aug 2012 08:31:10 +0200
-In-Reply-To: <50303714.3090204@xenotime.net>
-References: <50303714.3090204@xenotime.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 20 Aug 2012 02:32:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120819120804.15c33931@pixies.home.jungo.com>
+References: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
+ <1345214124-5478-6-git-send-email-richard.genoud@gmail.com> <20120819120804.15c33931@pixies.home.jungo.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Mon, 20 Aug 2012 08:31:39 +0200
+Message-ID: <CACQ1gAgLirwiwiUOoL7ig7R_RpB8xDr2-g2gVOEUZNvAHB60pQ@mail.gmail.com>
+Subject: Re: [PATCH 5/8] UBI: check max_beb_per1024 value in ubi_attach_mtd_dev
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-08-18 at 17:45 -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix kernel-doc warnings in kernel/sched/fair.c:
-> 
-> Warning(kernel/sched/fair.c:3660): Excess function parameter 'cpus' description in 'update_sg_lb_stats'
-> Warning(kernel/sched/fair.c:3806): Excess function parameter 'cpus' description in 'update_sd_lb_stats'
+Hi Shmulik,
 
-Thanks!
+2012/8/19 Shmulik Ladkani <shmulik.ladkani@gmail.com>:
+> Hi Richard,
+>
+> On Fri, 17 Aug 2012 16:35:21 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
+>> +     /*
+>> +      * A value of 0 is forced to the default value to keep the same
+>> +      * behavior between ubiattach command and module parameter
+>> +      */
+>
+> Minor thing.
+>
+> Since the module parameter is not yet introduced (only in a later
+> patch), and since last part of sentence isn't that important, I would
+> simply state:
+>
+> +        * Use the default if max_beb_per1024 isn't provided.
+>
+That's right, I'll correct that in next version.
+Thanks !
