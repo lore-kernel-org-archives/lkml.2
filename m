@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab2HTEDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:03:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61536 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab2HTECH (ORCPT
+	id S1755409Ab2HTEDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:03:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab2HTEB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:02:07 -0400
+	Mon, 20 Aug 2012 00:01:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joseph Glanville <joseph.glanville@orionvm.com.au>,
-        David Dillow <dillowda@ornl.gov>, Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 46/46] IB/srp: Fix a race condition
-Date: Sun, 19 Aug 2012 20:59:22 -0700
-Message-Id: <20120820035838.625766798@linuxfoundation.org>
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Orit Wasserman <owasserm@rehdat.com>, Avi Kivity <avi@redhat.com>
+Subject: [ 44/46] KVM: VMX: Fix KVM_SET_SREGS with big real mode segments
+Date: Sun, 19 Aug 2012 20:59:20 -0700
+Message-Id: <20120820035838.375306085@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -31,160 +30,125 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Orit Wasserman <owasserm@redhat.com>
 
-commit 220329916c72ee3d54ae7262b215a050f04a18fc upstream.
+(cherry picked from commit b246dd5df139501b974bd6b28f7815e53b3a792f)
 
-Avoid a crash caused by the scmnd->scsi_done(scmnd) call in
-srp_process_rsp() being invoked with scsi_done == NULL.  This can
-happen if a reply is received during or after a command abort.
+For example migration between Westmere and Nehelem hosts, caught in big real mode.
 
-Reported-by: Joseph Glanville <joseph.glanville@orionvm.com.au>
-Reference: http://marc.info/?l=linux-rdma&m=134314367801595
-Acked-by: David Dillow <dillowda@ornl.gov>
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+The code that fixes the segments for real mode guest was moved from enter_rmode
+to vmx_set_segments. enter_rmode calls vmx_set_segments for each segment.
+
+Signed-off-by: Orit Wasserman <owasserm@rehdat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |   87 ++++++++++++++++++++++++++----------
- 1 file changed, 63 insertions(+), 24 deletions(-)
+ arch/x86/kvm/vmx.c |   74 ++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 60 insertions(+), 14 deletions(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -586,24 +586,62 @@ static void srp_unmap_data(struct scsi_c
- 			scmnd->sc_data_direction);
- }
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -615,6 +615,10 @@ static void kvm_cpu_vmxon(u64 addr);
+ static void kvm_cpu_vmxoff(void);
+ static void vmx_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3);
+ static int vmx_set_tss_addr(struct kvm *kvm, unsigned int addr);
++static void vmx_set_segment(struct kvm_vcpu *vcpu,
++			    struct kvm_segment *var, int seg);
++static void vmx_get_segment(struct kvm_vcpu *vcpu,
++			    struct kvm_segment *var, int seg);
  
--static void srp_remove_req(struct srp_target_port *target,
--			   struct srp_request *req, s32 req_lim_delta)
-+/**
-+ * srp_claim_req - Take ownership of the scmnd associated with a request.
-+ * @target: SRP target port.
-+ * @req: SRP request.
-+ * @scmnd: If NULL, take ownership of @req->scmnd. If not NULL, only take
-+ *         ownership of @req->scmnd if it equals @scmnd.
-+ *
-+ * Return value:
-+ * Either NULL or a pointer to the SCSI command the caller became owner of.
-+ */
-+static struct scsi_cmnd *srp_claim_req(struct srp_target_port *target,
-+				       struct srp_request *req,
-+				       struct scsi_cmnd *scmnd)
+ static DEFINE_PER_CPU(struct vmcs *, vmxarea);
+ static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
+@@ -2763,6 +2767,7 @@ static void enter_rmode(struct kvm_vcpu
  {
  	unsigned long flags;
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
++	struct kvm_segment var;
  
--	srp_unmap_data(req->scmnd, target, req);
-+	spin_lock_irqsave(&target->lock, flags);
-+	if (!scmnd) {
-+		scmnd = req->scmnd;
-+		req->scmnd = NULL;
-+	} else if (req->scmnd == scmnd) {
-+		req->scmnd = NULL;
-+	} else {
-+		scmnd = NULL;
-+	}
-+	spin_unlock_irqrestore(&target->lock, flags);
-+
-+	return scmnd;
-+}
-+
-+/**
-+ * srp_free_req() - Unmap data and add request to the free request list.
-+ */
-+static void srp_free_req(struct srp_target_port *target,
-+			 struct srp_request *req, struct scsi_cmnd *scmnd,
-+			 s32 req_lim_delta)
-+{
-+	unsigned long flags;
-+
-+	srp_unmap_data(scmnd, target, req);
-+
- 	spin_lock_irqsave(&target->lock, flags);
- 	target->req_lim += req_lim_delta;
--	req->scmnd = NULL;
- 	list_add_tail(&req->list, &target->free_reqs);
- 	spin_unlock_irqrestore(&target->lock, flags);
- }
+ 	if (enable_unrestricted_guest)
+ 		return;
+@@ -2806,20 +2811,23 @@ static void enter_rmode(struct kvm_vcpu
+ 	if (emulate_invalid_guest_state)
+ 		goto continue_rmode;
  
- static void srp_reset_req(struct srp_target_port *target, struct srp_request *req)
- {
--	req->scmnd->result = DID_RESET << 16;
--	req->scmnd->scsi_done(req->scmnd);
--	srp_remove_req(target, req, 0);
-+	struct scsi_cmnd *scmnd = srp_claim_req(target, req, NULL);
-+
-+	if (scmnd) {
-+		scmnd->result = DID_RESET << 16;
-+		scmnd->scsi_done(scmnd);
-+		srp_free_req(target, req, scmnd, 0);
-+	}
- }
- 
- static int srp_reconnect_target(struct srp_target_port *target)
-@@ -1073,11 +1111,18 @@ static void srp_process_rsp(struct srp_t
- 		complete(&target->tsk_mgmt_done);
- 	} else {
- 		req = &target->req_ring[rsp->tag];
--		scmnd = req->scmnd;
--		if (!scmnd)
-+		scmnd = srp_claim_req(target, req, NULL);
-+		if (!scmnd) {
- 			shost_printk(KERN_ERR, target->scsi_host,
- 				     "Null scmnd for RSP w/tag %016llx\n",
- 				     (unsigned long long) rsp->tag);
-+
-+			spin_lock_irqsave(&target->lock, flags);
-+			target->req_lim += be32_to_cpu(rsp->req_lim_delta);
-+			spin_unlock_irqrestore(&target->lock, flags);
-+
-+			return;
-+		}
- 		scmnd->result = rsp->status;
- 
- 		if (rsp->flags & SRP_RSP_FLAG_SNSVALID) {
-@@ -1092,7 +1137,9 @@ static void srp_process_rsp(struct srp_t
- 		else if (rsp->flags & (SRP_RSP_FLAG_DIOVER | SRP_RSP_FLAG_DIUNDER))
- 			scsi_set_resid(scmnd, be32_to_cpu(rsp->data_in_res_cnt));
- 
--		srp_remove_req(target, req, be32_to_cpu(rsp->req_lim_delta));
-+		srp_free_req(target, req, scmnd,
-+			     be32_to_cpu(rsp->req_lim_delta));
-+
- 		scmnd->host_scribble = NULL;
- 		scmnd->scsi_done(scmnd);
- 	}
-@@ -1631,25 +1678,17 @@ static int srp_abort(struct scsi_cmnd *s
- {
- 	struct srp_target_port *target = host_to_target(scmnd->device->host);
- 	struct srp_request *req = (struct srp_request *) scmnd->host_scribble;
--	int ret = SUCCESS;
- 
- 	shost_printk(KERN_ERR, target->scsi_host, "SRP abort called\n");
- 
--	if (!req || target->qp_in_error)
--		return FAILED;
--	if (srp_send_tsk_mgmt(target, req->index, scmnd->device->lun,
--			      SRP_TSK_ABORT_TASK))
-+	if (!req || target->qp_in_error || !srp_claim_req(target, req, scmnd))
- 		return FAILED;
-+	srp_send_tsk_mgmt(target, req->index, scmnd->device->lun,
-+			  SRP_TSK_ABORT_TASK);
-+	srp_free_req(target, req, scmnd, 0);
-+	scmnd->result = DID_ABORT << 16;
- 
--	if (req->scmnd) {
--		if (!target->tsk_mgmt_status) {
--			srp_remove_req(target, req, 0);
--			scmnd->result = DID_ABORT << 16;
--		} else
--			ret = FAILED;
--	}
+-	vmcs_write16(GUEST_SS_SELECTOR, vmcs_readl(GUEST_SS_BASE) >> 4);
+-	vmcs_write32(GUEST_SS_LIMIT, 0xffff);
+-	vmcs_write32(GUEST_SS_AR_BYTES, 0xf3);
 -
--	return ret;
-+	return SUCCESS;
+-	vmcs_write32(GUEST_CS_AR_BYTES, 0xf3);
+-	vmcs_write32(GUEST_CS_LIMIT, 0xffff);
+-	if (vmcs_readl(GUEST_CS_BASE) == 0xffff0000)
+-		vmcs_writel(GUEST_CS_BASE, 0xf0000);
+-	vmcs_write16(GUEST_CS_SELECTOR, vmcs_readl(GUEST_CS_BASE) >> 4);
+-
+-	fix_rmode_seg(VCPU_SREG_ES, &vmx->rmode.es);
+-	fix_rmode_seg(VCPU_SREG_DS, &vmx->rmode.ds);
+-	fix_rmode_seg(VCPU_SREG_GS, &vmx->rmode.gs);
+-	fix_rmode_seg(VCPU_SREG_FS, &vmx->rmode.fs);
++	vmx_get_segment(vcpu, &var, VCPU_SREG_SS);
++	vmx_set_segment(vcpu, &var, VCPU_SREG_SS);
++
++	vmx_get_segment(vcpu, &var, VCPU_SREG_CS);
++	vmx_set_segment(vcpu, &var, VCPU_SREG_CS);
++
++	vmx_get_segment(vcpu, &var, VCPU_SREG_ES);
++	vmx_set_segment(vcpu, &var, VCPU_SREG_ES);
++
++	vmx_get_segment(vcpu, &var, VCPU_SREG_DS);
++	vmx_set_segment(vcpu, &var, VCPU_SREG_DS);
++
++	vmx_get_segment(vcpu, &var, VCPU_SREG_GS);
++	vmx_set_segment(vcpu, &var, VCPU_SREG_GS);
++
++	vmx_get_segment(vcpu, &var, VCPU_SREG_FS);
++	vmx_set_segment(vcpu, &var, VCPU_SREG_FS);
+ 
+ continue_rmode:
+ 	kvm_mmu_reset_context(vcpu);
+@@ -3222,6 +3230,44 @@ static void vmx_set_segment(struct kvm_v
+ 
+ 	vmcs_write32(sf->ar_bytes, ar);
+ 	__clear_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
++
++	/*
++	 * Fix segments for real mode guest in hosts that don't have
++	 * "unrestricted_mode" or it was disabled.
++	 * This is done to allow migration of the guests from hosts with
++	 * unrestricted guest like Westmere to older host that don't have
++	 * unrestricted guest like Nehelem.
++	 */
++	if (!enable_unrestricted_guest && vmx->rmode.vm86_active) {
++		switch (seg) {
++		case VCPU_SREG_CS:
++			vmcs_write32(GUEST_CS_AR_BYTES, 0xf3);
++			vmcs_write32(GUEST_CS_LIMIT, 0xffff);
++			if (vmcs_readl(GUEST_CS_BASE) == 0xffff0000)
++				vmcs_writel(GUEST_CS_BASE, 0xf0000);
++			vmcs_write16(GUEST_CS_SELECTOR,
++				     vmcs_readl(GUEST_CS_BASE) >> 4);
++			break;
++		case VCPU_SREG_ES:
++			fix_rmode_seg(VCPU_SREG_ES, &vmx->rmode.es);
++			break;
++		case VCPU_SREG_DS:
++			fix_rmode_seg(VCPU_SREG_DS, &vmx->rmode.ds);
++			break;
++		case VCPU_SREG_GS:
++			fix_rmode_seg(VCPU_SREG_GS, &vmx->rmode.gs);
++			break;
++		case VCPU_SREG_FS:
++			fix_rmode_seg(VCPU_SREG_FS, &vmx->rmode.fs);
++			break;
++		case VCPU_SREG_SS:
++			vmcs_write16(GUEST_SS_SELECTOR,
++				     vmcs_readl(GUEST_SS_BASE) >> 4);
++			vmcs_write32(GUEST_SS_LIMIT, 0xffff);
++			vmcs_write32(GUEST_SS_AR_BYTES, 0xf3);
++			break;
++		}
++	}
  }
  
- static int srp_reset_device(struct scsi_cmnd *scmnd)
+ static void vmx_get_cs_db_l_bits(struct kvm_vcpu *vcpu, int *db, int *l)
 
 
