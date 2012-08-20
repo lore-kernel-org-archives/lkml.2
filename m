@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2HTIUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 04:20:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3096 "EHLO mga11.intel.com"
+	id S1753893Ab2HTIVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 04:21:23 -0400
+Received: from asav3.lyse.net ([81.167.37.131]:45135 "EHLO asav3.lyse.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750Ab2HTIUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 04:20:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,796,1336374000"; 
-   d="asc'?scan'208";a="206197564"
-Message-ID: <1345451128.2848.14.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 5/8] UBI: check max_beb_per1024 value in
- ubi_attach_mtd_dev
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Date: Mon, 20 Aug 2012 11:25:28 +0300
-In-Reply-To: <CACQ1gAgLirwiwiUOoL7ig7R_RpB8xDr2-g2gVOEUZNvAHB60pQ@mail.gmail.com>
-References: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
-	 <1345214124-5478-6-git-send-email-richard.genoud@gmail.com>
-	 <20120819120804.15c33931@pixies.home.jungo.com>
-	 <CACQ1gAgLirwiwiUOoL7ig7R_RpB8xDr2-g2gVOEUZNvAHB60pQ@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-S+THycFNlnRdkA1nVaUr"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1752750Ab2HTIVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 04:21:19 -0400
+X-Greylist: delayed 1474 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 04:21:18 EDT
+Message-ID: <5031EB9B.5010400@hesbynett.no>
+Date: Mon, 20 Aug 2012 09:47:39 +0200
+From: David Brown <david.brown@hesbynett.no>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: NeilBrown <neilb@suse.de>
+CC: stan@hardwarefreak.com, Michael Tokarev <mjt@tls.msk.ru>,
+        Miquel van Smoorenburg <mikevs@xs4all.net>,
+        Linux RAID <linux-raid@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: O_DIRECT to md raid 6 is slow
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com> <502D6B0A.6090508@xs4all.net> <502DF357.8090205@hardwarefreak.com> <502E2817.8040306@xs4all.net> <502F237D.6060806@hardwarefreak.com> <502F698C.9010507@msgid.tls.msk.ru> <50305AB9.5080302@hardwarefreak.com> <5030F1C6.90205@hesbynett.no> <50317804.9010701@hardwarefreak.com> <20120820100134.22b2b056@notabene.brown>
+In-Reply-To: <20120820100134.22b2b056@notabene.brown>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20/08/2012 02:01, NeilBrown wrote:
+> On Sun, 19 Aug 2012 18:34:28 -0500 Stan Hoeppner <stan@hardwarefreak.com>
+> wrote:
+>
+>
+> Since we are trying to set the record straight....
+>
+>> md/RAID6 must read all devices in a RMW cycle.
+>
+> md/RAID6 must read all data devices (i.e. not parity devices) which it is not
+> going to write to, in an RWM cycle (which the code actually calls RCW -
+> reconstruct-write).
+>
+>>
+>> md/RAID5 takes a shortcut for single block writes, and must only read
+>> one drive for the RMW cycle.
+>
+> md/RAID5 uses an alternate mechanism when the number of data blocks that need
+> to be written is less than half the number of data blocks in a stripe.  In
+> this alternate mechansim (which the code calls RMW - read-modify-write),
+> md/RAID5 reads all the blocks that it is about to write to, plus the parity
+> block.  It then computes the new parity and writes it out along with the new
+> data.
+>
 
---=-S+THycFNlnRdkA1nVaUr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I've learned something here too - I thought this mechanism was only used 
+for a single block write.  Thanks for the correction, Neil.
 
-On Mon, 2012-08-20 at 08:31 +0200, Richard Genoud wrote:
-> That's right, I'll correct that in next version.
-> Thanks !
+If you (or anyone else) are ever interested in implementing the same 
+thing in raid6, the maths is not actually too bad (now that I've thought 
+about it).  (I understand the theory here, but I'm afraid I don't have 
+the experience with kernel programming to do the implementation.)
 
-I've amended this patch, added Shmulik's reviewed-by and pushed to
-linux-ubi.git, thanks!
+To change a few data blocks, you need to read in the old data blocks 
+(Da, Db, etc.) and the old parities (P, Q).
 
---=20
-Best Regards,
-Artem Bityutskiy
+Calculate the xor differences Xa = Da + D'a, Xb = Db + D'b, etc.
 
---=-S+THycFNlnRdkA1nVaUr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+The new P parity is P' = P + Xa + Xb +...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The new Q parity is Q' = P + (g^a).Xa + (g^b).Xb + ...
+The power series there is just the normal raid6 Q-parity calculation 
+with most entries set to 0, and the Xa, Xb, etc. in the appropriate spots.
 
-iQIcBAABAgAGBQJQMfR4AAoJECmIfjd9wqK0Ax4QAMkh31Tjvg/t8bnxBcCfag1r
-oEZxItVyO7+tS2Ve7QG38rVVE8dwr/gcz2kkELCJSnLFNXDwJSwROJ0QH1JOVfYU
-Rtl19BmWm2g083WsTjw+b4R+qCuPa/gReB1H8V4au12Bh/Ew6JWvTUQOzoAW45+i
-AgS6i6r8zoTnyslx8yUg0nQoSD+iwCLYG2Jsql5T5zFHpjKWK8pwrg3cQoLAtGEh
-LzkbT8wY2+6ZWOSIhCw8a1jYYJdRgdBkm1chjeFkV4TNKRe4D95868/Z0RHYUG6q
-c+ySVNhdfplMWu+pVAKGRjAR7vVm+a4Oxx1pRVxb1lk1ZCsk2d3Gyx0MwczDGPP1
-3kFmDpc8aSmsBKsHOMjg/qFULRK1lpnVzMCusNfaTj26pQSSzIzciQ5Er87u9A4j
-QS39f7t32TmX7IQbuShHVDK02/KknqcONGAq+7Oc8q7Hm00+yZU6HnG5DSPmqm3U
-nYUW5PTJIHbQNYrUycQjTW8b+xNgH64I+djpBo1u1QNAO3M5MyK2cKp1jjB0HSZ6
-B3gYOBVU9GGx8289qAQ/8vUw9rZWkkwK0IvGpwaa+DzV25WpXubJWSsxvHkd6qJE
-qmytxNtM7wlKv7QIikW4BumwMB2CynorvEvB7HrbpjAzDn2WEoGJVr8NIt/tD7fU
-TdQsDEygK9KWoN5bQcLZ
-=o5Ws
------END PGP SIGNATURE-----
+If the raid6 Q-parity function already has short-cuts for handling zero 
+entries (I haven't looked, but the mechanism might be in place to 
+slightly speed up dual-failure recovery), then all the blocks are in place.
 
---=-S+THycFNlnRdkA1nVaUr--
 
