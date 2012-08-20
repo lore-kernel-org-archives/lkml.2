@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab2HTWRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 18:17:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38962 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab2HTWRM (ORCPT
+	id S1756594Ab2HTWRl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 18:17:41 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60303 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab2HTWRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 18:17:12 -0400
-Date: Mon, 20 Aug 2012 15:17:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
-        aarcange@redhat.com, dwmw2@infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v3 2/9] rbtree: add __rb_change_child() helper function
-Message-Id: <20120820151710.eeed9bcf.akpm@linux-foundation.org>
-In-Reply-To: <1345500331-10546-3-git-send-email-walken@google.com>
-References: <1345500331-10546-1-git-send-email-walken@google.com>
-	<1345500331-10546-3-git-send-email-walken@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 20 Aug 2012 18:17:39 -0400
+Subject: Re: [RFC PATCH 1/1] fair.c: Add/Export find_idlest_perfer_cpu API
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        sri@us.ibm.com, vivek@us.ibm.com
+In-Reply-To: <1345464035.23018.38.camel@twins>
+References: <1345232770.16533.234.camel@oc3660625478.ibm.com>
+	 <1345464035.23018.38.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Aug 2012 15:17:21 -0700
+Message-ID: <1345501041.6378.10.camel@oc3660625478.ibm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082022-6148-0000-0000-000008CDDA43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012 15:05:24 -0700
-Michel Lespinasse <walken@google.com> wrote:
-
-> Add __rb_change_child() as an inline helper function to replace code that
-> would otherwise be duplicated 4 times in the source.
+On Mon, 2012-08-20 at 14:00 +0200, Peter Zijlstra wrote:
+> On Fri, 2012-08-17 at 12:46 -0700, Shirley Ma wrote:
+> > Add/Export a new API for per-cpu thread model networking device
+> driver
+> > to choose a preferred idlest cpu within allowed cpumask.
+> > 
+> > The receiving CPUs of a networking device are not under cgroup
+> controls.
+> > Normally the receiving work will be scheduled on the cpu on which
+> the
+> > interrupts are received. When such a networking device uses per-cpu
+> > thread model, the cpu which is chose to process the packets might
+> not be
+> > part of cgroup cpusets without using such an API here. 
+> > 
+> > On NUMA system, by using the preferred cpumask from the same NUMA
+> node
+> > would help to reduce expensive cross memory access to/from the other
+> > NUMA node.
+> > 
+> > KVM per-cpu vhost will be the first one to use this API. Any other
+> > device driver which uses per-cpu thread model and has cgroup cpuset
+> > control will use this API later.
 > 
-> No changes to binary size or speed.
-> 
-> ...
->
-> --- a/lib/rbtree.c
-> +++ b/lib/rbtree.c
-> @@ -66,6 +66,19 @@ static inline struct rb_node *rb_red_parent(struct rb_node *red)
->  	return (struct rb_node *)red->__rb_parent_color;
->  }
->  
-> +static inline void
-> +__rb_change_child(struct rb_node *old, struct rb_node *new,
-> +		  struct rb_node *parent, struct rb_root *root)
-> +{
-> +	if (parent) {
-> +		if (parent->rb_left == old)
-> +			parent->rb_left = new;
-> +		else
-> +			parent->rb_right = new;
-> +	} else
-> +		root->rb_node = new;
-> +}
+> How often will this be called and how do you obtain the cpumasks
+> provided to the function? 
 
-I'm inclined to agree with Peter here - "inline" is now a vague,
-pathetic and useless thing.  The problem is that the reader just
-doesn't *know* whether or not the writer really wanted it to be
-inlined.
+It depends. It might be called pretty often if the user keeps changing
+cgroups control cpuset. It might be less called if the cgroups control
+cpuset is stable, and the host scheduler always schedules the work on
+the same NUMA node.
 
-If we have carefully made a decision to inline a function, we should
-(now) use __always_inline.
+The preferred cpumasks are obtained from local numa node. The allowed
+cpumasks are obtained from caller's task allowed cpumasks (cgroups
+control cpuset).
 
-If we have carefully made a decision to not inline a function, we
-should use noinline.
-
-If we don't care, we should omit all such markings.
-
-This leaves no place for "inline"?
-
-
-Marking it noinline shrinks the text by 60-odd bytes.  Given the number
-of args, my gut feel is that this will be slower, despite the cache
-benefit.  But that might be wrong.
+Thanks
+Shirley
 
