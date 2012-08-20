@@ -1,47 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab2HTQxb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:53:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36619 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514Ab2HTQx3 (ORCPT
+	id S1757467Ab2HTQyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:54:08 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37690 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757403Ab2HTQyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:53:29 -0400
-Message-ID: <50326B84.4010204@linutronix.de>
-Date: Mon, 20 Aug 2012 18:53:24 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	Mon, 20 Aug 2012 12:54:03 -0400
+Date: Mon, 20 Aug 2012 17:54:01 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: torvalds@linux-foundation.org
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] Updates for x86 platform drivers
+Message-ID: <20120820165401.GA32139@srcf.ucam.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] drivers-core: beware dev_printk() from printing nonsense
-References: <20120820103337.GA16744@linutronix.de> <20120820152611.GB28039@kroah.com>
-In-Reply-To: <20120820152611.GB28039@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 05:26 PM, Greg Kroah-Hartman wrote:
->>   skip:
->> -	if (level[3])
->> +	if (level[sizeof(KERN_ERR) - 1])
->
-> This has already been fixed in my driver-core tree and will go to Linus
-> in a few hours.
+(Resend - you'd think I could get Linus's address right)
 
-Ah. So I'm too late. Care to send a patch which replace [2] with the
-sizeof() operator like above?
+Hi Linus,
 
->
-> thanks,
->
-> greg k-h
+Some small updates for a few drivers, and some hardware enablement for 
+new Ideapads and the gmux hardware in the latest Macs. This code won't 
+run on older devices and has been well tested on new ones, so low risk 
+of regressions.
 
-Sebastian
+The following changes since commit 846b99964a7f43255e816f9c5475de37dc5a0a1b:
+
+  Merge tag 'rdma-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband (2012-08-17 11:45:58 -0700)
+
+are available in the git repository at:
+
+
+  git://cavan.codon.org.uk/platform-drivers-x86.git for_linus
+
+for you to fetch changes up to 0c7bbeb9f1373cea9e8efb43221118be2102a01c:
+
+  ideapad: add Lenovo IdeaPad Z570 support (part 3) (2012-08-20 12:44:41 -0400)
+
+----------------------------------------------------------------
+AceLan Kao (2):
+      asus-wmi: record wlan status while controlled by userapp
+      dell-laptop: Fixed typo in touchpad LED quirk
+
+Andreas Heider (1):
+      apple-gmux: Add display mux support
+
+Carlos Alberto Lopez Perez (1):
+      classmate-laptop: always call input_sync() after input_report_switch()
+
+Manoj Iyer (1):
+      thinkpad-acpi: recognize latest V-Series using DMI_BIOS_VENDOR
+
+Matthew Garrett (3):
+      gmux: Add generic write32 function
+      apple_gmux: Add support for newer hardware
+      apple_gmux: Fix ACPI video unregister
+
+Maxim Mikityanskiy (3):
+      ideapad: add Lenovo IdeaPad Z570 support (part 1)
+      ideapad: add Lenovo IdeaPad Z570 support (part 2)
+      ideapad: add Lenovo IdeaPad Z570 support (part 3)
+
+Seth Forshee (3):
+      apple-gmux: Fix kconfig dependencies
+      vga_switcheroo: Remove assumptions about registration/unregistration ordering
+      vga_switcheroo: Don't require handler init callback
+
+ .../ABI/testing/sysfs-platform-ideapad-laptop      |  11 +
+ drivers/gpu/drm/nouveau/nouveau_acpi.c             |   6 -
+ drivers/gpu/vga/vga_switcheroo.c                   |  61 +--
+ drivers/platform/x86/Kconfig                       |   6 +-
+ drivers/platform/x86/apple-gmux.c                  | 426 +++++++++++++++++++--
+ drivers/platform/x86/asus-wmi.c                    |  21 +-
+ drivers/platform/x86/asus-wmi.h                    |   1 +
+ drivers/platform/x86/classmate-laptop.c            |  12 +-
+ drivers/platform/x86/dell-laptop.c                 |  12 +-
+ drivers/platform/x86/ideapad-laptop.c              | 110 +++++-
+ drivers/platform/x86/thinkpad_acpi.c               |   7 +
+ 11 files changed, 606 insertions(+), 67 deletions(-)
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
