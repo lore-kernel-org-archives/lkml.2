@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab2HTUEj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:04:39 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:54557 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab2HTUEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:04:37 -0400
-Date: Mon, 20 Aug 2012 22:04:26 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH 00/11] x86/microcode: Early load microcode
-Message-ID: <20120820200426.GA15006@aftab.osrc.amd.com>
-References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com>
- <20120820153927.GB8623@aftab.osrc.amd.com>
- <50328722.9060009@zytor.com>
+	id S1752687Ab2HTUFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:05:05 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:49173 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab2HTUFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:05:02 -0400
+X-Auth-Info: EhMjSMYTNy2KShdJI49PkZIaIALOR4pra1wQ6Oo8HDI=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 4/8] time: Condense timekeeper.xtime into xtime_sec
+References: <1342156917-25092-1-git-send-email-john.stultz@linaro.org>
+	<1342156917-25092-5-git-send-email-john.stultz@linaro.org>
+	<m2fw7ilhnm.fsf@igel.home> <503288ED.10306@linaro.org>
+	<m2fw7h4ab5.fsf@igel.home> <503296C1.4070906@linaro.org>
+X-Yow: First, I'm going to give you all the ANSWERS to today's test..
+ So just plug in your SONY WALKMANS and relax!!
+Date: Mon, 20 Aug 2012 22:04:58 +0200
+In-Reply-To: <503296C1.4070906@linaro.org> (John Stultz's message of "Mon, 20
+	Aug 2012 12:57:53 -0700")
+Message-ID: <m2boi549ed.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50328722.9060009@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 11:51:14AM -0700, H. Peter Anvin wrote:
-> Not really, but that isn't even Fenghua's fault.
+John Stultz <john.stultz@linaro.org> writes:
 
-Of course it isn't - I was simply pointing out that this is something
-that should be fixed at some point in time, when someone needs a project
-over an otherwise eventless weekend :-).
+> Huh.  Yea, that looks fine.  And without the
+> __timekeeping_inject_sleeptime() call, the system resumed ok?
 
-> The cpu directory was originally for cpu detection.  The whole kernel/
-> directory, of course, is a morass that might as well be called "misc".
-> Some things are legitimately there -- mainly the syscall table and
-> things that mirror the global kernel/ -- but a ton of stuff doesn't make
-> any sense there.
-> 
-> Reorganizing the kernel/ directory and promoting cpu up one level would
+Yes, it does.
 
-Yep, arch/x86/cpu, should contain all cpu-related stuff.
-
-> make that make more sense.  The pci and irq code are examples of things
-> that could use their own directories.
-
-Yep.
-
-Thanks.
+Andreas.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
