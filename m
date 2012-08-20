@@ -1,105 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab2HTTW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 15:22:28 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:2385 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab2HTTWZ convert rfc822-to-8bit (ORCPT
+	id S1753989Ab2HTTW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 15:22:57 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:6772 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753752Ab2HTTWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 15:22:25 -0400
-From: Rakesh Jain <Rakesh.Jain@imgtec.com>
-To: Pete Delaney <piet.delaney@gmail.com>
-CC: Marc Gauthier <marc@tensilica.com>, Chris Zankel <chris@zankel.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Kirill Krinkin <kirill.krinkin@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Max Filippov <jcmvbkbc@gmail.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	Mon, 20 Aug 2012 15:22:55 -0400
+Date: Mon, 20 Aug 2012 19:22:53 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Arjan van de Ven <arjan@linux.intel.com>, Alex Shi <alex.shi@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "'Mahavir Prasad'" <er.mahavir@gmail.com>,
-        Prasanna Rao <Prasanna.Rao@transwitch.com>,
-        "Shimon Edelhaus" <Shimon.Edelhaus@transwitch.com>
-Subject: RE: xtensa port maintenance
-Thread-Topic: xtensa port maintenance
-Thread-Index: AQHNd3xdpoBr8I1omUi+onrbsd09hJdc3fTQgAEcaACAAM95YA==
-Date: Mon, 20 Aug 2012 19:17:49 +0000
-Message-ID: <7E6CC3A7A7876F4BAC9F5E798E97262361F307@bamail01.ba.imgtec.org>
-References: <50205592.1030205@gmail.com> <201208102115.59946.arnd@arndb.de>
- <50258D88.7090903@zankel.net> <5025975D.9030100@gmail.com>
- <522C1DF17AF50042AD8AE87F7887BD3D022DEE8CB5@exch.hq.tensilica.com>
- <7E6CC3A7A7876F4BAC9F5E798E9726235C5926@bamail01.ba.imgtec.org>
- <502DD7EE.1070903@gmail.com>
-In-Reply-To: <502DD7EE.1070903@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.111.3]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+In-Reply-To: <20120820155203.GB29974@srcf.ucam.org>
+Message-ID: <00000139457cd7a4-6dc13b06-c387-4c5e-9297-121c9cde6c39-000000@email.amazonses.com>
+References: <5028F12C.7080405@intel.com> <20120815161911.GA14534@srcf.ucam.org> <502C7F24.6020900@intel.com> <502CFC41.1030501@linux.intel.com> <0000013944b80714-c594cc1e-de63-4901-9aa7-0b5a3d8629e5-000000@email.amazonses.com>
+ <20120820155203.GB29974@srcf.ucam.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-SEF-Processed: 7_3_0_01181__2012_08_20_20_21_51
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Piet and Marc,
-Skype does not provide source code for their app.
-Skype provides libraries for embedded Linux platforms for ARM architecture such as TV widgets.
-If my customer wants to provide Skype application for Xtensa platform, is there way to get Skype library for xtensa?
--Rakesh
+On Mon, 20 Aug 2012, Matthew Garrett wrote:
 
+> On Mon, Aug 20, 2012 at 03:47:54PM +0000, Christoph Lameter wrote:
+>
+> > So please make sure that there are obvious and easy ways to switch this
+> > stuff off or provide "low latency" know that keeps the system from
+> > assuming that idle time means that full performance is not needed.
+>
+> That seems like an issue for cpuidle, not the scheduler. Does pm_qos not
+> already do what you want?
 
------Original Message-----
-From: Pete Delaney [mailto:piet.delaney@gmail.com] 
-Sent: Thursday, August 16, 2012 10:35 PM
-To: Rakesh Jain
-Cc: Marc Gauthier; Chris Zankel; Arnd Bergmann; linux-xtensa@linux-xtensa.org; Kirill Krinkin; Stephen Rothwell; Greg KH; linux-kernel@vger.kernel.org; Max Filippov; linux-next@vger.kernel.org; Andrew Morton; Linus Torvalds; 'Mahavir Prasad'; Prasanna Rao; Shimon Edelhaus
-Subject: Re: xtensa port maintenance
-
-On 08/16/2012 12:38 PM, Rakesh Jain wrote:
-> Hi Marc,
-> Is Skype library available for Xtensa Linux port?
-> They are available for ARM.
-I'd also like to know more about the Skype library.
-
--piet
-> Thanks.
-> -Rakesh
->
-> -----Original Message-----
-> From: Marc Gauthier [mailto:marc@tensilica.com]
-> Sent: Friday, August 10, 2012 9:47 PM
-> To: Pete Delaney; Chris Zankel; Arnd Bergmann; 
-> linux-xtensa@linux-xtensa.org; Kirill Krinkin; Stephen Rothwell; Greg 
-> KH; linux-kernel@vger.kernel.org; Max Filippov; 
-> linux-next@vger.kernel.org; Andrew Morton; Linus Torvalds; 'Mahavir 
-> Prasad'; Prasanna Rao; Shimon Edelhaus; Rakesh Jain
-> Subject: Re: xtensa port maintenance
->
-> Chris Zankel wrote:
->> I have set up a tree on github for now, and will work close with Max 
->> to get his changes to Stephen's linux-next tree and eventually Linus'
->> tree.
->> I think it's fine to add Max as a second maintainer [...]
-> Thanks for helping!
->
->
-> Pete Delaney wrote:
->> I'm afraid that doing it piecemeal has failed in the past
-> Proper patches work fine, was just never done.
-> (Can discuss off this To: list.)
->
->
->> Mind anding Marc and myself?
-> Acting as maintainer involves submitting useful patches over some period of time.  Right now that's Max and Chris.
-> (Love to do it, but have plenty as it is on my plate.)
->
-> Thanks,
-> -Marc
->
-
+Dont know. A simple solution is not to compile power management into the
+kernel.
 
