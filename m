@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2HTSbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:31:50 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:33501 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab2HTSbq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:31:46 -0400
-Message-ID: <5032824F.6090607@linux.vnet.ibm.com>
-Date: Mon, 20 Aug 2012 20:30:39 +0200
-From: Steffen Maier <maier@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752901Ab2HTScd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:32:33 -0400
+Received: from fieldses.org ([174.143.236.118]:37381 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116Ab2HTScb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 14:32:31 -0400
+Date: Mon, 20 Aug 2012 14:32:25 -0400
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120820183225.GB4911@fieldses.org>
+References: <20120815092116.700948346@openvz.org>
+ <20120815092409.591460800@openvz.org>
+ <87fw7habo4.fsf@skywalker.in.ibm.com>
+ <20120820163338.GN23596@moon>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: kernel-janitors@vger.kernel.org, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 7/7] drivers/s390/scsi/zfcp_cfdc.c: remove invalid reference
- to list iterator variable
-References: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr> <1341747464-1772-8-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1341747464-1772-8-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12082018-1948-0000-0000-000002B76B6B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120820163338.GN23596@moon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+On Mon, Aug 20, 2012 at 08:33:38PM +0400, Cyrill Gorcunov wrote:
+> On Mon, Aug 20, 2012 at 07:49:23PM +0530, Aneesh Kumar K.V wrote:
+> > Cyrill Gorcunov <gorcunov@openvz.org> writes:
+> > 
+> > > To provide fsnotify object inodes being watched without
+> > > binding to alphabetical path we need to encode them with
+> > > exportfs help. This patch adds a helper which operates
+> > > with plain inodes directly.
+> > 
+> > doesn't name_to_handle_at()  work for you ? It also allows to get a file
+> > handle using file descriptor.
+> 
+> Hi, sorry for dealy. Well, the last idea is to get rid of this helper,
+> I've sent out an updated version where ino+dev is only printed.
 
-sorry for the long delay until I finally responded.
-Thanks a lot for your report and patch.
-I'll queue this and send it for v3.6rcX hopefully soon.
+I don't understand how ino and dev are useful to you, though, if you're
+still hoping to be able to look up inodes using this information later
+on.
 
-On 07/08/2012 01:37 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> If list_for_each_entry, etc complete a traversal of the list, the iterator
-> variable ends up pointing to an address at an offset from the list head,
-> and not a meaningful structure.  Thus this value should not be used after
-> the end of the iterator.  Replace port->adapter->scsi_host by
-> adapter->scsi_host.
->
-> This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
-> This is not tested, an I am not sure that this is the right change.
-> Indeed, I'm not at all sure how the original code could have worked, since
-> port->adapter->scsi_host should be a completely random value.
-
-This is most probably a copy & paste oversight in
-commit a1ca48319a9aa1c5b57ce142f538e76050bb8972
-"[SCSI] zfcp: Move ACL/CFDC code to zfcp_cfdc.c"
-v2.6.37
-where the content of
-
-static void zfcp_erp_port_access_changed(struct zfcp_port *port, char *id,
-                                        void *ref)
-{
-       struct scsi_device *sdev;
-       int status = atomic_read(&port->status);
-
-       if (!(status & (ZFCP_STATUS_COMMON_ACCESS_DENIED |
-                       ZFCP_STATUS_COMMON_ACCESS_BOXED))) {
-               shost_for_each_device(sdev, port->adapter->scsi_host)
-                                           ^^^^
-
-was merged into
-zfcp_cfdc_adapter_access_changed(struct zfcp_adapter *adapter)
-
-Since this code is for older hardware and users not using NPIV
-and this is only executed on dynamic access changes,
-nobody has noticed this so far I guess.
-
->   drivers/s390/scsi/zfcp_cfdc.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/s390/scsi/zfcp_cfdc.c b/drivers/s390/scsi/zfcp_cfdc.c
-> index fab2c25..8ed63aa 100644
-> --- a/drivers/s390/scsi/zfcp_cfdc.c
-> +++ b/drivers/s390/scsi/zfcp_cfdc.c
-> @@ -293,7 +293,7 @@ void zfcp_cfdc_adapter_access_changed(struct zfcp_adapter *adapter)
->   	}
->   	read_unlock_irqrestore(&adapter->port_list_lock, flags);
->
-> -	shost_for_each_device(sdev, port->adapter->scsi_host) {
-> +	shost_for_each_device(sdev, adapter->scsi_host) {
->   		zfcp_sdev = sdev_to_zfcp(sdev);
->   		status = atomic_read(&zfcp_sdev->status);
->   		if ((status & ZFCP_STATUS_COMMON_ACCESS_DENIED) ||
->
-
-Steffen
-
-Linux on System z Development
-
-IBM Deutschland Research & Development GmbH
-Vorsitzende des Aufsichtsrats: Martina Koederitz
-Geschäftsführung: Dirk Wittkopp
-Sitz der Gesellschaft: Böblingen
-Registergericht: Amtsgericht Stuttgart, HRB 243294
-
+--b.
