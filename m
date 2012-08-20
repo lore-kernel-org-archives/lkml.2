@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2HTSbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:31:37 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:52868 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab2HTSbe convert rfc822-to-8bit (ORCPT
+	id S1752926Ab2HTSbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:31:50 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:33501 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2HTSbq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:31:34 -0400
-Date: Mon, 20 Aug 2012 19:16:55 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 02/11] pinctrl: mvebu: dove pinctrl driver
-Message-ID: <20120820191655.5e2f2dba@skate>
-In-Reply-To: <CACRpkda9BL5+NiDOsMKG0kv2coBsw=Er=ZccXnNkgeftV9hPhQ@mail.gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-3-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkda9BL5+NiDOsMKG0kv2coBsw=Er=ZccXnNkgeftV9hPhQ@mail.gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 20 Aug 2012 14:31:46 -0400
+Message-ID: <5032824F.6090607@linux.vnet.ibm.com>
+Date: Mon, 20 Aug 2012 20:30:39 +0200
+From: Steffen Maier <maier@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: kernel-janitors@vger.kernel.org, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 7/7] drivers/s390/scsi/zfcp_cfdc.c: remove invalid reference
+ to list iterator variable
+References: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr> <1341747464-1772-8-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1341747464-1772-8-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+x-cbid: 12082018-1948-0000-0000-000002B76B6B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Mon, 20 Aug 2012 15:43:11 +0200,
-Linus Walleij <linus.walleij@linaro.org> a Ã©crit :
+Hi Julia,
 
-> >  config PINCTRL_MVEBU
-> >         bool "Marvell SoC pin controller drivers"
-> > -       depends on ARCH_MVEBU
-> > +       depends on ARCH_MVEBU || ARCH_DOVE
-> 
-> Hmmmm.
-> 
-> Shouldn't this thing rather be:
-> 
-> depends on PLAT_ORION
-> 
-> else you end up lining up all Marvell machines here...
+sorry for the long delay until I finally responded.
+Thanks a lot for your report and patch.
+I'll queue this and send it for v3.6rcX hopefully soon.
 
-When we started working on this, ARCH_MVEBU was not a PLAT_ORION
-platform, because PLAT_ORION includes its own custom pinmux code, gpio
-code, etc, and what we're trying to achieve with Sebastian is to clean
-all this. Ultimately, our goal is to have all Orion, Kirkwood, Dove,
-Discovery and Armada 370/XP supported in mach-mvebu, and therefore
-plat-orion would most likely disappear.
+On 07/08/2012 01:37 PM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> If list_for_each_entry, etc complete a traversal of the list, the iterator
+> variable ends up pointing to an address at an offset from the list head,
+> and not a meaningful structure.  Thus this value should not be used after
+> the end of the iterator.  Replace port->adapter->scsi_host by
+> adapter->scsi_host.
+>
+> This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> ---
+> This is not tested, an I am not sure that this is the right change.
+> Indeed, I'm not at all sure how the original code could have worked, since
+> port->adapter->scsi_host should be a completely random value.
 
-In the mean time, a patch got accepted that separates PLAT_ORION for
-PLAT_ORION_LEGACY, and therefore MACH_MVEBU now selects PLAT_ORION to
-access things that are still useful (address decoding code) while all
-other platforms select PLAT_ORION_LEGACY to get the old pinmux code,
-old gpio code, etc. All this is very much a work in progress.
+This is most probably a copy & paste oversight in
+commit a1ca48319a9aa1c5b57ce142f538e76050bb8972
+"[SCSI] zfcp: Move ACL/CFDC code to zfcp_cfdc.c"
+v2.6.37
+where the content of
 
-Best regards,
+static void zfcp_erp_port_access_changed(struct zfcp_port *port, char *id,
+                                        void *ref)
+{
+       struct scsi_device *sdev;
+       int status = atomic_read(&port->status);
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+       if (!(status & (ZFCP_STATUS_COMMON_ACCESS_DENIED |
+                       ZFCP_STATUS_COMMON_ACCESS_BOXED))) {
+               shost_for_each_device(sdev, port->adapter->scsi_host)
+                                           ^^^^
+
+was merged into
+zfcp_cfdc_adapter_access_changed(struct zfcp_adapter *adapter)
+
+Since this code is for older hardware and users not using NPIV
+and this is only executed on dynamic access changes,
+nobody has noticed this so far I guess.
+
+>   drivers/s390/scsi/zfcp_cfdc.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/s390/scsi/zfcp_cfdc.c b/drivers/s390/scsi/zfcp_cfdc.c
+> index fab2c25..8ed63aa 100644
+> --- a/drivers/s390/scsi/zfcp_cfdc.c
+> +++ b/drivers/s390/scsi/zfcp_cfdc.c
+> @@ -293,7 +293,7 @@ void zfcp_cfdc_adapter_access_changed(struct zfcp_adapter *adapter)
+>   	}
+>   	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+>
+> -	shost_for_each_device(sdev, port->adapter->scsi_host) {
+> +	shost_for_each_device(sdev, adapter->scsi_host) {
+>   		zfcp_sdev = sdev_to_zfcp(sdev);
+>   		status = atomic_read(&zfcp_sdev->status);
+>   		if ((status & ZFCP_STATUS_COMMON_ACCESS_DENIED) ||
+>
+
+Steffen
+
+Linux on System z Development
+
+IBM Deutschland Research & Development GmbH
+Vorsitzende des Aufsichtsrats: Martina Koederitz
+Geschäftsführung: Dirk Wittkopp
+Sitz der Gesellschaft: Böblingen
+Registergericht: Amtsgericht Stuttgart, HRB 243294
+
