@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab2HTPbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:31:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53984 "EHLO
+	id S1757210Ab2HTPcR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:32:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53970 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757103Ab2HTPbZ (ORCPT
+	with ESMTP id S1757129Ab2HTPbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:31:25 -0400
+	Mon, 20 Aug 2012 11:31:19 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
         Matthew Garrett <mjg59@srcf.ucam.org>, David Airlie <airlied@linux.ie>
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 6/7] drm/pci: Add drm_put_pci_dev()
-Date: Mon, 20 Aug 2012 10:31:03 -0500
-Message-Id: <1345476664-22066-7-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 4/7] apple-gmux: Add switch_ddc support
+Date: Mon, 20 Aug 2012 10:31:01 -0500
+Message-Id: <1345476664-22066-5-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345476664-22066-1-git-send-email-seth.forshee@canonical.com>
 References: <20120806045150.GA23652@thinkpad-t410>
@@ -23,159 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When deferred initialization support for pci devices is added some
-additional cleanup will be needed. Add a pci-specific put function to
-serve this purpose, and convert the pci drivers over to using it. For
-now it just calls drm_put_dev(), so this commit has no functional
-change.
+The gmux allows muxing the DDC independently from the display, so
+support this functionality. This will allow reading the EDID for the
+inactive GPU, fixing issues with machines that either don't have a VBT
+or have invalid mode data in the VBT.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/gpu/drm/ast/ast_drv.c         |    2 +-
- drivers/gpu/drm/cirrus/cirrus_drv.c   |    2 +-
- drivers/gpu/drm/drm_pci.c             |    6 ++++++
- drivers/gpu/drm/gma500/psb_drv.c      |    2 +-
- drivers/gpu/drm/i915/i915_drv.c       |    2 +-
- drivers/gpu/drm/mgag200/mgag200_drv.c |    2 +-
- drivers/gpu/drm/nouveau/nouveau_drv.c |    2 +-
- drivers/gpu/drm/radeon/radeon_drv.c   |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   |    2 +-
- include/drm/drmP.h                    |    1 +
- 10 files changed, 15 insertions(+), 8 deletions(-)
+ drivers/platform/x86/apple-gmux.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/ast/ast_drv.c b/drivers/gpu/drm/ast/ast_drv.c
-index d0c4574..001298d 100644
---- a/drivers/gpu/drm/ast/ast_drv.c
-+++ b/drivers/gpu/drm/ast/ast_drv.c
-@@ -72,7 +72,7 @@ ast_pci_remove(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
+diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
+index c72e81e..f702e90 100644
+--- a/drivers/platform/x86/apple-gmux.c
++++ b/drivers/platform/x86/apple-gmux.c
+@@ -269,14 +269,21 @@ static const struct backlight_ops gmux_bl_ops = {
+ 	.update_status = gmux_update_status,
+ };
  
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
- }
- 
- 
-diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
-index 7053140..c7ca02b 100644
---- a/drivers/gpu/drm/cirrus/cirrus_drv.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
-@@ -64,7 +64,7 @@ static void cirrus_pci_remove(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
- }
- 
- static const struct file_operations cirrus_driver_fops = {
-diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
-index 5320364..4896c96 100644
---- a/drivers/gpu/drm/drm_pci.c
-+++ b/drivers/gpu/drm/drm_pci.c
-@@ -388,6 +388,12 @@ err_g1:
- }
- EXPORT_SYMBOL(drm_get_pci_dev);
- 
-+void drm_put_pci_dev(struct drm_device *dev)
++static int gmux_switch_ddc(enum vga_switcheroo_client_id id)
 +{
-+	drm_put_dev(dev);
++	if (id == VGA_SWITCHEROO_IGD)
++		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 1);
++	else
++		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 2);
++	return 0;
 +}
-+EXPORT_SYMBOL(drm_put_pci_dev);
 +
- /**
-  * PCI device initialization. Called direct from modules at load time.
-  *
-diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 0c47374..d7c3c9c 100644
---- a/drivers/gpu/drm/gma500/psb_drv.c
-+++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -585,7 +585,7 @@ static void psb_driver_preclose(struct drm_device *dev, struct drm_file *priv)
- static void psb_remove(struct pci_dev *pdev)
+ static int gmux_switchto(enum vga_switcheroo_client_id id)
  {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
+ 	if (id == VGA_SWITCHEROO_IGD) {
+-		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 1);
+ 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DISPLAY, 2);
+ 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_EXTERNAL, 2);
+ 	} else {
+-		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 2);
+ 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DISPLAY, 3);
+ 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_EXTERNAL, 3);
+ 	}
+@@ -343,6 +350,7 @@ gmux_active_client(struct apple_gmux_data *gmux_data)
  }
  
- static const struct dev_pm_ops psb_pm_ops = {
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index a24ffbe..86ae5a2 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -856,7 +856,7 @@ i915_pci_remove(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
- }
- 
- static int i915_pm_suspend(struct device *dev)
-diff --git a/drivers/gpu/drm/mgag200/mgag200_drv.c b/drivers/gpu/drm/mgag200/mgag200_drv.c
-index ea1024d..a3b0a4a 100644
---- a/drivers/gpu/drm/mgag200/mgag200_drv.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_drv.c
-@@ -73,7 +73,7 @@ static void mga_pci_remove(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
- }
- 
- static const struct file_operations mgag200_driver_fops = {
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.c b/drivers/gpu/drm/nouveau/nouveau_drv.c
-index 9a36f5f..b74b02a 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drv.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
-@@ -168,7 +168,7 @@ nouveau_pci_remove(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
- }
- 
- int
-diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
-index d7269f4..298697a 100644
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -308,7 +308,7 @@ radeon_pci_remove(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
- }
- 
- static int
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-index 4d9edea..cf901cc 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@ -982,7 +982,7 @@ static void vmw_remove(struct pci_dev *pdev)
- {
- 	struct drm_device *dev = pci_get_drvdata(pdev);
- 
--	drm_put_dev(dev);
-+	drm_put_pci_dev(dev);
- }
- 
- static int vmwgfx_pm_notifier(struct notifier_block *nb, unsigned long val,
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index d6b67bb..eb99e96 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1748,6 +1748,7 @@ extern void drm_pci_exit(struct drm_driver *driver, struct pci_driver *pdriver);
- extern int drm_get_pci_dev(struct pci_dev *pdev,
- 			   const struct pci_device_id *ent,
- 			   struct drm_driver *driver);
-+extern void drm_put_pci_dev(struct drm_device *dev);
- 
- #define DRM_PCIE_SPEED_25 1
- #define DRM_PCIE_SPEED_50 2
+ static struct vga_switcheroo_handler gmux_handler = {
++	.switch_ddc = gmux_switch_ddc,
+ 	.switchto = gmux_switchto,
+ 	.power_state = gmux_set_power_state,
+ 	.get_client_id = gmux_get_client_id,
 -- 
 1.7.9.5
 
