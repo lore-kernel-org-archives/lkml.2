@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab2HTR34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 13:29:56 -0400
-Received: from mx.meyering.net ([88.168.87.75]:44792 "EHLO hx.meyering.net"
+	id S1755592Ab2HTR3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 13:29:47 -0400
+Received: from mx.meyering.net ([88.168.87.75]:44788 "EHLO hx.meyering.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755466Ab2HTR3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 13:29:46 -0400
-X-Greylist: delayed 1959 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 13:29:45 EDT
+	id S1753889Ab2HTR3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 13:29:30 -0400
+X-Greylist: delayed 1926 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 13:29:30 EDT
 From: Jim Meyering <jim@meyering.net>
 To: linux-kernel@vger.kernel.org
-Cc: Jim Meyering <meyering@redhat.com>, Jing Huang <huangj@brocade.com>,
-        Krishna C Gudipati <kgudipat@brocade.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH] bfa: avoid buffer overrun for 12-byte model name
-Date: Mon, 20 Aug 2012 18:55:23 +0200
-Message-Id: <1345481724-30108-5-git-send-email-jim@meyering.net>
+Cc: Jim Meyering <meyering@redhat.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org
+Subject: [PATCH] cifs: remove misleading strncpy: each name has length < 16
+Date: Mon, 20 Aug 2012 18:55:24 +0200
+Message-Id: <1345481724-30108-6-git-send-email-jim@meyering.net>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1345481724-30108-1-git-send-email-jim@meyering.net>
 References: <1345481724-30108-1-git-send-email-jim@meyering.net>
@@ -25,48 +23,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Meyering <meyering@redhat.com>
 
-we use strncpy to copy a model name of length up to 15 (16, if you count
-the NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
-However, strncpy does not always NUL-terminate, so whenever the original
-model string has strlen >= 12, the following strncat reads beyond end
-of the ->sym_name buffer as it attempts to find end of string.
-
-bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
-{
-	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
-	...
-	strncpy((char *)&port_cfg->sym_name, model,
-		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
-	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
-		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
-	...
-
-bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model)
-{
-	struct bfi_ioc_attr_s	*ioc_attr;
-
-	WARN_ON(!model);
-	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
-
-BFA_ADAPTER_MODEL_NAME_LEN = 16
+Each of the protocols[i].name strings (statically declared above)
+has length less than 16, so this use of strncpy is misleading:
+  strncpy(pSMB->DialectsArray+count, protocols[i].name, 16);
+Besides, if a new name were added with length N >= 16, the existing
+strncpy-using code would be buggy, creating a ->DialectsArray buffer
+containing N-16+1 unset bytes where the NUL terminator should have
+been.  Instead, traverse the name only once go get its length,
+use a BUG_ON assertion to enforce the length restriction
+and use memcpy to perform the copy.
 
 Signed-off-by: Jim Meyering <meyering@redhat.com>
 ---
- drivers/scsi/bfa/bfa_fcs.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/cifs/cifssmb.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c
-index eaac57e..3329493 100644
---- a/drivers/scsi/bfa/bfa_fcs.c
-+++ b/drivers/scsi/bfa/bfa_fcs.c
-@@ -713,6 +713,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
- 	/* Model name/number */
- 	strncpy((char *)&port_cfg->sym_name, model,
- 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
-+	port_cfg->sym_name[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1] = 0;
- 	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
- 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
+index 074923c..16a9018 100644
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -441,8 +441,10 @@ CIFSSMBNegotiate(const unsigned int xid, struct cifs_ses *ses)
 
+ 	count = 0;
+ 	for (i = 0; i < CIFS_NUM_PROT; i++) {
+-		strncpy(pSMB->DialectsArray+count, protocols[i].name, 16);
+-		count += strlen(protocols[i].name) + 1;
++		size_t len = strlen(protocols[i].name);
++		BUG_ON(len >= 16);
++		memcpy(pSMB->DialectsArray+count, protocols[i].name, len + 1);
++		count += len + 1;
+ 		/* null at end of source and target buffers anyway */
+ 	}
+ 	inc_rfc1001_len(pSMB, count);
 -- 
 1.7.12
 
