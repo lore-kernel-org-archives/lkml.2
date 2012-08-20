@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab2HTO2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:28:21 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43979 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab2HTO2R (ORCPT
+	id S1756711Ab2HTO2q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:28:46 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53585 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756599Ab2HTO2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:28:17 -0400
+	Mon, 20 Aug 2012 10:28:41 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH RESEND] dj: memory scribble in logi_dj
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 20 Aug 2012 15:46:10 +0100
+Message-ID: <20120820144554.6301.66896.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1344689809-6223-10-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-10-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 20 Aug 2012 16:28:17 +0200
-Message-ID: <CACRpkdb5+FuFU3pqkZosiTuhp=6Yr5rqcTng072+KDkUh=J5ag@mail.gmail.com>
-Subject: Re: [PATCH 09/11] ARM: mvebu: adjust Armada XP evaluation board DTS
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+From: Alan Cox <alan@linux.intel.com>
 
-> From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->
-> The Armada XP evaluation board is based on the MV78460 Armava XP
-> SoC. Now that we have separate .dtsi files for the three different
-> SoCs of the Armada XP family, use the appropriate one as include for
-> the Armada XP evaluation board .dts file.
->
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Allocate a structure not a pointer to it !
 
-FWIW:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-Yours,
-Linus Walleij
+ drivers/hid/hid-logitech-dj.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index 0f9c146..4d524b5 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -439,7 +439,7 @@ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+ 	struct dj_report *dj_report;
+ 	int retval;
+ 
+-	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+ 	if (!dj_report)
+ 		return -ENOMEM;
+ 	dj_report->report_id = REPORT_ID_DJ_SHORT;
+@@ -456,7 +456,7 @@ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+ 	struct dj_report *dj_report;
+ 	int retval;
+ 
+-	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
+ 	if (!dj_report)
+ 		return -ENOMEM;
+ 	dj_report->report_id = REPORT_ID_DJ_SHORT;
+
