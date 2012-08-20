@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2HTJbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 05:31:13 -0400
+	id S1756098Ab2HTJbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 05:31:10 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:55098 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320Ab2HTJbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 05:31:01 -0400
+	id S1752707Ab2HTJav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 05:30:51 -0400
 X-IronPort-AV: E=Sophos;i="4.77,796,1336320000"; 
-   d="scan'208";a="5673005"
+   d="scan'208";a="5672997"
 From: wency@cn.fujitsu.com
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -17,31 +17,38 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC V7 PATCH 15/19] memory-hotplug: implement register_page_bootmem_info_section of sparse-vmemmap
-Date: Mon, 20 Aug 2012 17:35:38 +0800
-Message-Id: <1345455342-27752-16-git-send-email-wency@cn.fujitsu.com>
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Subject: [RFC V7 PATCH 02/19] memory-hotplug: implement offline_memory()
+Date: Mon, 20 Aug 2012 17:35:25 +0800
+Message-Id: <1345455342-27752-3-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
 References: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:42,
+ 2012/08/20 17:30:41,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:49,
-	Serialize complete at 2012/08/20 17:30:49
+ 2012/08/20 17:30:46,
+	Serialize complete at 2012/08/20 17:30:46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-For removing memmap region of sparse-vmemmap which is allocated bootmem,
-memmap region of sparse-vmemmap needs to be registered by get_page_bootmem().
-So the patch searches pages of virtual mapping and registers the pages by
-get_page_bootmem().
+The function offline_memory() will be called when hot removing a
+memory device. The memory device may contain more than one memory
+block. If the memory block has been offlined, __offline_pages()
+will fail. So we should try to offline one memory block at a
+time.
 
-Note: register_page_bootmem_memmap() is not implemented for ia64, ppc, s390,
-and sparc.
+If the memory block is offlined in offline_memory(), we also
+update it's state, and notify the userspace that its state is
+changed.
+
+The function offline_memory() also check each memory block's
+state. So there is no need to check the memory block's state
+before calling offline_memory().
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -52,224 +59,146 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- arch/ia64/mm/discontig.c       |    6 ++++
- arch/powerpc/mm/init_64.c      |    6 ++++
- arch/s390/mm/vmem.c            |    6 ++++
- arch/sparc/mm/init_64.c        |    6 ++++
- arch/x86/mm/init_64.c          |   52 ++++++++++++++++++++++++++++++++++++++++
- include/linux/memory_hotplug.h |    2 +
- include/linux/mm.h             |    3 +-
- mm/memory_hotplug.c            |   31 +++++++++++++++++++++--
- 8 files changed, 108 insertions(+), 4 deletions(-)
+ drivers/base/memory.c          |   31 +++++++++++++++++++++++++++----
+ include/linux/memory_hotplug.h |    2 ++
+ mm/memory_hotplug.c            |   37 ++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 65 insertions(+), 5 deletions(-)
 
-diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
-index c641333..33943db 100644
---- a/arch/ia64/mm/discontig.c
-+++ b/arch/ia64/mm/discontig.c
-@@ -822,4 +822,10 @@ int __meminit vmemmap_populate(struct page *start_page,
- {
- 	return vmemmap_populate_basepages(start_page, size, node);
- }
-+
-+void register_page_bootmem_memmap(unsigned long section_nr,
-+				  struct page *start_page, unsigned long size)
-+{
-+	/* TODO */
-+}
- #endif
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index 620b7ac..3690c44 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -298,5 +298,11 @@ int __meminit vmemmap_populate(struct page *start_page,
- 
- 	return 0;
- }
-+
-+void register_page_bootmem_memmap(unsigned long section_nr,
-+				  struct page *start_page, unsigned long size)
-+{
-+	/* TODO */
-+}
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
-diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
-index 6f896e7..eda55cd 100644
---- a/arch/s390/mm/vmem.c
-+++ b/arch/s390/mm/vmem.c
-@@ -227,6 +227,12 @@ out:
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 44e7de6..86c8821 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -275,13 +275,11 @@ memory_block_action(unsigned long phys_index, unsigned long action)
  	return ret;
  }
  
-+void register_page_bootmem_memmap(unsigned long section_nr,
-+				  struct page *start_page, unsigned long size)
-+{
-+	/* TODO */
-+}
-+
- /*
-  * Add memory segment to the segment list if it doesn't overlap with
-  * an already present segment.
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index d58edf5..add1cc7 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2077,6 +2077,12 @@ void __meminit vmemmap_populate_print_last(void)
- 		node_start = 0;
- 	}
- }
-+
-+void register_page_bootmem_memmap(unsigned long section_nr,
-+				  struct page *start_page, unsigned long size)
-+{
-+	/* TODO */
-+}
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
- static void prot_init_common(unsigned long page_none,
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index e0d88ba..0075592 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1138,6 +1138,58 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
- 	return 0;
- }
- 
-+void register_page_bootmem_memmap(unsigned long section_nr,
-+				  struct page *start_page, unsigned long size)
-+{
-+	unsigned long addr = (unsigned long)start_page;
-+	unsigned long end = (unsigned long)(start_page + size);
-+	unsigned long next;
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+
-+	for (; addr < end; addr = next) {
-+		pte_t *pte = NULL;
-+
-+		pgd = pgd_offset_k(addr);
-+		if (pgd_none(*pgd)) {
-+			next = (addr + PAGE_SIZE) & PAGE_MASK;
-+			continue;
-+		}
-+		get_page_bootmem(section_nr, pgd_page(*pgd), MIX_SECTION_INFO);
-+
-+		pud = pud_offset(pgd, addr);
-+		if (pud_none(*pud)) {
-+			next = (addr + PAGE_SIZE) & PAGE_MASK;
-+			continue;
-+		}
-+		get_page_bootmem(section_nr, pud_page(*pud), MIX_SECTION_INFO);
-+
-+		if (!cpu_has_pse) {
-+			next = (addr + PAGE_SIZE) & PAGE_MASK;
-+			pmd = pmd_offset(pud, addr);
-+			if (pmd_none(*pmd))
-+				continue;
-+			get_page_bootmem(section_nr, pmd_page(*pmd),
-+					 MIX_SECTION_INFO);
-+
-+			pte = pte_offset_kernel(pmd, addr);
-+			if (pte_none(*pte))
-+				continue;
-+			get_page_bootmem(section_nr, pte_page(*pte),
-+					 SECTION_INFO);
-+		} else {
-+			next = pmd_addr_end(addr, end);
-+
-+			pmd = pmd_offset(pud, addr);
-+			if (pmd_none(*pmd))
-+				continue;
-+			get_page_bootmem(section_nr, pmd_page(*pmd),
-+					 SECTION_INFO);
-+		}
-+	}
-+}
-+
- void __meminit vmemmap_populate_print_last(void)
+-static int memory_block_change_state(struct memory_block *mem,
++static int __memory_block_change_state(struct memory_block *mem,
+ 		unsigned long to_state, unsigned long from_state_req)
  {
- 	if (p_start) {
+ 	int ret = 0;
+ 
+-	mutex_lock(&mem->state_mutex);
+-
+ 	if (mem->state != from_state_req) {
+ 		ret = -EINVAL;
+ 		goto out;
+@@ -309,10 +307,20 @@ static int memory_block_change_state(struct memory_block *mem,
+ 		break;
+ 	}
+ out:
+-	mutex_unlock(&mem->state_mutex);
+ 	return ret;
+ }
+ 
++static int memory_block_change_state(struct memory_block *mem,
++		unsigned long to_state, unsigned long from_state_req)
++{
++	int ret;
++
++	mutex_lock(&mem->state_mutex);
++	ret = __memory_block_change_state(mem, to_state, from_state_req);
++	mutex_unlock(&mem->state_mutex);
++
++	return ret;
++}
+ static ssize_t
+ store_mem_state(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count)
+@@ -653,6 +661,21 @@ int unregister_memory_section(struct mem_section *section)
+ }
+ 
+ /*
++ * offline one memory block. If the memory block has been offlined, do nothing.
++ */
++int offline_memory_block(struct memory_block *mem)
++{
++	int ret = 0;
++
++	mutex_lock(&mem->state_mutex);
++	if (mem->state != MEM_OFFLINE)
++		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE);
++	mutex_unlock(&mem->state_mutex);
++
++	return ret;
++}
++
++/*
+  * Initialize the sysfs support for memory devices...
+  */
+ int __init memory_dev_init(void)
 diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 1133e63..2d18235 100644
+index c183f39..0b040bb 100644
 --- a/include/linux/memory_hotplug.h
 +++ b/include/linux/memory_hotplug.h
-@@ -164,6 +164,8 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
+@@ -10,6 +10,7 @@ struct page;
+ struct zone;
+ struct pglist_data;
+ struct mem_section;
++struct memory_block;
  
- extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
- extern void put_page_bootmem(struct page *page);
-+extern void get_page_bootmem(unsigned long ingo, struct page *page,
-+			     unsigned long type);
+ #ifdef CONFIG_MEMORY_HOTPLUG
  
- /*
-  * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 311be90..c607913 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1618,7 +1618,8 @@ int vmemmap_populate_basepages(struct page *start_page,
- 						unsigned long pages, int node);
- int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
- void vmemmap_populate_print_last(void);
--
-+void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
-+				  unsigned long size);
- 
- enum mf_flags {
- 	MF_COUNT_INCREASED = 1 << 0,
+@@ -234,6 +235,7 @@ extern int mem_online_node(int nid);
+ extern int add_memory(int nid, u64 start, u64 size);
+ extern int arch_add_memory(int nid, u64 start, u64 size);
+ extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
++extern int offline_memory_block(struct memory_block *mem);
+ extern int offline_memory(u64 start, u64 size);
+ extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+ 								int nr_pages);
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 3ca66bc..d8495ff 100644
+index c182c76..3113cd4 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -91,8 +91,8 @@ static void release_memory_resource(struct resource *res)
- }
+@@ -1001,7 +1001,42 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
  
- #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
--static void get_page_bootmem(unsigned long info,  struct page *page,
--			     unsigned long type)
-+void get_page_bootmem(unsigned long info,  struct page *page,
-+		      unsigned long type)
+ int offline_memory(u64 start, u64 size)
  {
- 	unsigned long page_type;
- 
-@@ -164,8 +164,33 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
- 
+-	return -EINVAL;
++	struct memory_block *mem = NULL;
++	struct mem_section *section;
++	unsigned long start_pfn, end_pfn;
++	unsigned long pfn, section_nr;
++	int ret;
++
++	start_pfn = PFN_DOWN(start);
++	end_pfn = start_pfn + PFN_DOWN(size);
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
++		section_nr = pfn_to_section_nr(pfn);
++		if (!present_section_nr(section_nr))
++			continue;
++
++		section = __nr_to_section(section_nr);
++		/* same memblock? */
++		if (mem)
++			if ((section_nr >= mem->start_section_nr) &&
++			    (section_nr <= mem->end_section_nr))
++				continue;
++
++		mem = find_memory_block_hinted(section, mem);
++		if (!mem)
++			continue;
++
++		ret = offline_memory_block(mem);
++		if (ret) {
++			kobject_put(&mem->dev.kobj);
++			return ret;
++		}
++	}
++
++	if (mem)
++		kobject_put(&mem->dev.kobj);
++
++	return 0;
  }
  #else
--static inline void register_page_bootmem_info_section(unsigned long start_pfn)
-+static void register_page_bootmem_info_section(unsigned long start_pfn)
- {
-+	unsigned long *usemap, mapsize, section_nr, i;
-+	struct mem_section *ms;
-+	struct page *page, *memmap;
-+
-+	if (!pfn_valid(start_pfn))
-+		return;
-+
-+	section_nr = pfn_to_section_nr(start_pfn);
-+	ms = __nr_to_section(section_nr);
-+
-+	memmap = sparse_decode_mem_map(ms->section_mem_map, section_nr);
-+
-+	page = virt_to_page(memmap);
-+	mapsize = sizeof(struct page) * PAGES_PER_SECTION;
-+	mapsize = PAGE_ALIGN(mapsize) >> PAGE_SHIFT;
-+
-+	register_page_bootmem_memmap(section_nr, memmap, PAGES_PER_SECTION);
-+
-+	usemap = __nr_to_section(section_nr)->pageblock_flags;
-+	page = virt_to_page(usemap);
-+
-+	mapsize = PAGE_ALIGN(usemap_size()) >> PAGE_SHIFT;
-+
-+	for (i = 0; i < mapsize; i++, page++)
-+		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
- }
- #endif
- 
+ int offline_pages(u64 start, u64 size)
 -- 
 1.7.1
 
