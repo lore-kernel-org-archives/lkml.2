@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab2HTPrG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:47:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab2HTPrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753563Ab2HTPrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:47:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42423 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab2HTPrD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Aug 2012 11:47:03 -0400
-Date: Mon, 20 Aug 2012 17:43:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
+Message-ID: <1345477609.23018.61.camel@twins>
+Subject: Re: lockdep trace from posix timers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
 Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
         dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: lockdep trace from posix timers
-Message-ID: <20120820154331.GA20796@redhat.com>
-References: <20120724203613.GA9637@redhat.com> <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com> <1345446957.23018.14.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345446957.23018.14.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Mon, 20 Aug 2012 17:46:49 +0200
+In-Reply-To: <20120820153225.GA20258@redhat.com>
+References: <20120724203613.GA9637@redhat.com>
+	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
+	 <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins>
+	 <20120820145919.GB18499@redhat.com> <1345475434.23018.48.camel@twins>
+	 <1345476436.23018.54.camel@twins> <20120820153225.GA20258@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20, Peter Zijlstra wrote:
->
-> Also, can't task_work use llist stuff? That would also avoid using
-> ->pi_lock.
+On Mon, 2012-08-20 at 17:32 +0200, Oleg Nesterov wrote:
 
-BTW, do you think it is really important to try to avoid ->pi_lock?
+> > I guess we could steal the entire list and requeue it afterwards and
+> > lift TIF_NOTIFY_RESUME along with it..
+> 
+> We can't. This can race with exit_task_work(). And this can break
+> fput(), the task can return to the userspace without __fput().
 
-Oleg.
+So we could put that spinlock back around cancel and run and leave add
+lockless. That'd solve my immediate problem but its not something I'm
+proud of.
 
+All schemes I can come up with end up being broken or effectively the
+same as the above proposal.
