@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab2HTEJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:09:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
+	id S1753857Ab2HTEKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:10:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab2HTD74 (ORCPT
+	with ESMTP id S1755068Ab2HTD7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:56 -0400
+	Sun, 19 Aug 2012 23:59:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 04/46] drm/mgag200: fix G200ER pll picking algorithm
-Date: Sun, 19 Aug 2012 20:58:40 -0700
-Message-Id: <20120820035832.862360251@linuxfoundation.org>
+        Zach Brown <zab@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 06/46] fuse: verify all ioctl retry iov elements
+Date: Sun, 19 Aug 2012 20:58:42 -0700
+Message-Id: <20120820035833.146006093@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -29,59 +29,42 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Dave Airlie <airlied@gmail.com>
+From: Zach Brown <zab@redhat.com>
 
-commit 9830605d4c070b16ec5c24a75503877cc7698409 upstream.
+commit fb6ccff667712c46b4501b920ea73a326e49626a upstream.
 
-The original code was misported from the X driver,
+Commit 7572777eef78ebdee1ecb7c258c0ef94d35bad16 attempted to verify that
+the total iovec from the client doesn't overflow iov_length() but it
+only checked the first element.  The iovec could still overflow by
+starting with a small element.  The obvious fix is to check all the
+elements.
 
-a) an int went to unsigned int, breaking the downward counting testm code
-b) the port did the vco/computed clock bits completely wrong.
+The overflow case doesn't look dangerous to the kernel as the copy is
+limited by the length after the overflow.  This fix restores the
+intention of returning an error instead of successfully copying less
+than the iovec represented.
 
-This fixes an infinite loop on modprobe on some Dell servers with the G200ER
-chipset variant.
+I found this by code inspection.  I built it but don't have a test case.
+I'm cc:ing stable because the initial commit did as well.
 
-Found in internal testing.
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ fs/fuse/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -468,10 +468,11 @@ static int mga_g200er_set_plls(struct mg
- {
- 	unsigned int vcomax, vcomin, pllreffreq;
- 	unsigned int delta, tmpdelta;
--	unsigned int testr, testn, testm, testo;
-+	int testr, testn, testm, testo;
- 	unsigned int p, m, n;
--	unsigned int computed;
-+	unsigned int computed, vco;
- 	int tmp;
-+	const unsigned int m_div_val[] = { 1, 2, 4, 8 };
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1700,7 +1700,7 @@ static int fuse_verify_ioctl_iov(struct
+ 	size_t n;
+ 	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
  
- 	m = n = p = 0;
- 	vcomax = 1488000;
-@@ -490,12 +491,13 @@ static int mga_g200er_set_plls(struct mg
- 				if (delta == 0)
- 					break;
- 				for (testo = 5; testo < 33; testo++) {
--					computed = pllreffreq * (testn + 1) /
-+					vco = pllreffreq * (testn + 1) /
- 						(testr + 1);
--					if (computed < vcomin)
-+					if (vco < vcomin)
- 						continue;
--					if (computed > vcomax)
-+					if (vco > vcomax)
- 						continue;
-+					computed = vco / (m_div_val[testm] * (testo + 1));
- 					if (computed > clock)
- 						tmpdelta = computed - clock;
- 					else
+-	for (n = 0; n < count; n++) {
++	for (n = 0; n < count; n++, iov++) {
+ 		if (iov->iov_len > (size_t) max)
+ 			return -ENOMEM;
+ 		max -= iov->iov_len;
 
 
