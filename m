@@ -1,45 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab2HTVAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 17:00:08 -0400
-Received: from plane.gmane.org ([80.91.229.3]:57439 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab2HTVAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 17:00:03 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: fieraru persida-maria <fpersida@yahoo.com>
-Subject: Re: Post News Bonus!
-Date: Mon, 20 Aug 2012 20:58:01 +0000 (UTC)
-Message-ID: <loom.20120820T225556-571@post.gmane.org>
-References: <M92E86$5097A80967781305EA9C1DA983902BC9@libero.it>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 109.102.153.203 (Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1)
+	id S1755278Ab2HTVCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 17:02:18 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47121 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab2HTVCN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 17:02:13 -0400
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-acpi@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Corentin Chary <corentin.chary@gmail.com>, Joey Lee <jlee@novell.com>,
+        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        acpi4asus-user@lists.sourceforge.net
+Subject: [PATCH 1/3] drivers-platform-x86: remove useless #ifdef CONFIG_ACPI_VIDEO
+Date: Mon, 20 Aug 2012 23:01:50 +0200
+Message-Id: <1345496512-11780-2-git-send-email-corentin.chary@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345496512-11780-1-git-send-email-corentin.chary@gmail.com>
+References: <1345496512-11780-1-git-send-email-corentin.chary@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucky winner <hoop2 <at> libero.it> writes:
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+---
+ drivers/platform/x86/acer-wmi.c       |    2 --
+ drivers/platform/x86/apple-gmux.c     |    4 ----
+ drivers/platform/x86/asus-wmi.c       |    4 ----
+ drivers/platform/x86/samsung-laptop.c |    4 ----
+ 4 files changed, 14 deletions(-)
 
-> 
-> We are please to inform you that the summer promotion award program held 19th 
-Aug 2012,have pronounce your
-> email-address as the lucky winner of a total
-> sum: of 50,000.
-> CONTACT:
-> The claim office/Email:Postinfo <at> luckymail.com,with your winning Serial-
-No:LE
-> 0031#44230.
-> *******************
-> Postcodesloterij.nl
-> 
-> 
-
-
-
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 3782e1c..934d861 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -2196,10 +2196,8 @@ static int __init acer_wmi_init(void)
+ 		interface->capability &= ~ACER_CAP_BRIGHTNESS;
+ 		pr_info("Brightness must be controlled by acpi video driver\n");
+ 	} else {
+-#ifdef CONFIG_ACPI_VIDEO
+ 		pr_info("Disabling ACPI video driver\n");
+ 		acpi_video_unregister();
+-#endif
+ 	}
+ 
+ 	if (wmi_has_guid(WMID_GUID3)) {
+diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
+index dfb1a92..dca31ce 100644
+--- a/drivers/platform/x86/apple-gmux.c
++++ b/drivers/platform/x86/apple-gmux.c
+@@ -505,9 +505,7 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
+ 	 * Disable the other backlight choices.
+ 	 */
+ 	acpi_video_dmi_promote_vendor();
+-#if defined (CONFIG_ACPI_VIDEO) || defined (CONFIG_ACPI_VIDEO_MODULE)
+ 	acpi_video_unregister();
+-#endif
+ 	apple_bl_unregister();
+ 
+ 	gmux_data->power_state = VGA_SWITCHEROO_ON;
+@@ -593,9 +591,7 @@ static void __devexit gmux_remove(struct pnp_dev *pnp)
+ 	kfree(gmux_data);
+ 
+ 	acpi_video_dmi_demote_vendor();
+-#if defined (CONFIG_ACPI_VIDEO) || defined (CONFIG_ACPI_VIDEO_MODULE)
+ 	acpi_video_register();
+-#endif
+ 	apple_bl_register();
+ }
+ 
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 6a91a0c..912ec7d 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -47,9 +47,7 @@
+ #include <linux/thermal.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+-#ifdef CONFIG_ACPI_VIDEO
+ #include <acpi/video.h>
+-#endif
+ 
+ #include "asus-wmi.h"
+ 
+@@ -1780,10 +1778,8 @@ static int asus_wmi_add(struct platform_device *pdev)
+ 	if (asus->driver->quirks->wmi_backlight_power)
+ 		acpi_video_dmi_promote_vendor();
+ 	if (!acpi_video_backlight_support()) {
+-#ifdef CONFIG_ACPI_VIDEO
+ 		pr_info("Disabling ACPI video driver\n");
+ 		acpi_video_unregister();
+-#endif
+ 		err = asus_wmi_backlight_init(asus);
+ 		if (err && err != -ENODEV)
+ 			goto fail_backlight;
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+index c1ca7bc..dd90d15 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -26,9 +26,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/debugfs.h>
+ #include <linux/ctype.h>
+-#ifdef CONFIG_ACPI_VIDEO
+ #include <acpi/video.h>
+-#endif
+ 
+ /*
+  * This driver is needed because a number of Samsung laptops do not hook
+@@ -1558,9 +1556,7 @@ static int __init samsung_init(void)
+ 		samsung->handle_backlight = false;
+ 	} else if (samsung->quirks->broken_acpi_video) {
+ 		pr_info("Disabling ACPI video driver\n");
+-#ifdef CONFIG_ACPI_VIDEO
+ 		acpi_video_unregister();
+-#endif
+ 	}
+ #endif
+ 
+-- 
+1.7.9.5
 
