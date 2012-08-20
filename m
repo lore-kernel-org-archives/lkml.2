@@ -1,270 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab2HTIMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 04:12:25 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:52741 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752514Ab2HTIMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 04:12:02 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: bigeasy@linutronix.de, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        arnd@arndb.de, aletes.xgr@gmail.com, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 3/3] usb: gadget: lpc32xx_udc: Support multiple controllers
-Date: Mon, 20 Aug 2012 10:11:46 +0200
-Message-Id: <1345450306-4996-3-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345450306-4996-1-git-send-email-stigge@antcom.de>
-References: <1345450306-4996-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1753676Ab2HTINL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 04:13:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12934 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753424Ab2HTIMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 04:12:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,796,1336374000"; 
+   d="asc'?scan'208";a="188611115"
+Message-ID: <1345450620.2848.12.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 4/4] UBI: replace MTD_UBI_BEB_LIMIT with user-space
+ parameter
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Date: Mon, 20 Aug 2012 11:17:00 +0300
+In-Reply-To: <CACQ1gAh7db9Dnqouzv5S=uAfTfavw45dwWSRAozGU4s7y8FA9w@mail.gmail.com>
+References: <1341937423-16516-1-git-send-email-richard.genoud@gmail.com>
+	 <1341937423-16516-5-git-send-email-richard.genoud@gmail.com>
+	 <20120816115713.726da8f2@pixies.home.jungo.com>
+	 <CACQ1gAhFJ6AKYJpc1ZiHm+3Y=APnwUmVL3f0KW=OFMDMWzCVJg@mail.gmail.com>
+	 <20120816134234.32b468f6@pixies.home.jungo.com>
+	 <1345124012.3393.239.camel@sauron.fi.intel.com>
+	 <20120819100946.646cbb8a@pixies.home.jungo.com>
+	 <1345403092.1930.4.camel@kyv>
+	 <CACQ1gAh7db9Dnqouzv5S=uAfTfavw45dwWSRAozGU4s7y8FA9w@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-IUx3Saz9a/lyA5X1WIiy"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lpc32xx_udc driver supported only one controller by defining a global
-static struct for it. This patch enables multiple instances of the controller
-by dynamic allocation of the struct at probe(). A static struct is kept as a
-template on initialization since it does some complex preset, reflecting fixed
-hardware endpoint structure.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+--=-IUx3Saz9a/lyA5X1WIiy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
----
- drivers/usb/gadget/lpc32xx_udc.c |   55 ++++++++++++++++++++-------------------
- 1 file changed, 29 insertions(+), 26 deletions(-)
+On Mon, 2012-08-20 at 08:55 +0200, Richard Genoud wrote:
+> Hi Artem,
+> 2012/8/19 Artem Bityutskiy <dedekind1@gmail.com>:
+> > Yeah, I wanted to make it 1..256 but forgot, will do now. 0..256 would
+> > need some more work to avoid division by 0.
+> Division by 0 is handled in the get_bad_peb_limit() function, I don't
+> see another dangerous place.
 
---- linux-2.6.orig/drivers/usb/gadget/lpc32xx_udc.c
-+++ linux-2.6/drivers/usb/gadget/lpc32xx_udc.c
-@@ -2608,10 +2608,9 @@ static void nop_release(struct device *d
- 	/* nothing to free */
- }
- 
--static struct lpc32xx_udc controller = {
-+static struct lpc32xx_udc controller_template = {
- 	.gadget = {
- 		.ops	= &lpc32xx_udc_ops,
--		.ep0	= &controller.ep[0].ep,
- 		.name	= driver_name,
- 		.dev	= {
- 			.init_name = "gadget",
-@@ -2623,7 +2622,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep0",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 0,
- 		.hwep_num	= 0, /* Can be 0 or 1, has special handling */
-@@ -2635,7 +2633,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep1-int",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 2,
- 		.hwep_num	= 0, /* 2 or 3, will be set later */
-@@ -2647,7 +2644,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep2-bulk",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 4,
- 		.hwep_num	= 0, /* 4 or 5, will be set later */
-@@ -2659,7 +2655,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep3-iso",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 1023,
- 		.hwep_num_base	= 6,
- 		.hwep_num	= 0, /* 6 or 7, will be set later */
-@@ -2671,7 +2666,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep4-int",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 8,
- 		.hwep_num	= 0, /* 8 or 9, will be set later */
-@@ -2683,7 +2677,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep5-bulk",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 10,
- 		.hwep_num	= 0, /* 10 or 11, will be set later */
-@@ -2695,7 +2688,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep6-iso",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 1023,
- 		.hwep_num_base	= 12,
- 		.hwep_num	= 0, /* 12 or 13, will be set later */
-@@ -2707,7 +2699,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep7-int",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 14,
- 		.hwep_num	= 0,
-@@ -2719,7 +2710,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep8-bulk",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 16,
- 		.hwep_num	= 0,
-@@ -2731,7 +2721,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep9-iso",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 1023,
- 		.hwep_num_base	= 18,
- 		.hwep_num	= 0,
-@@ -2743,7 +2732,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep10-int",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 20,
- 		.hwep_num	= 0,
-@@ -2755,7 +2743,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep11-bulk",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 22,
- 		.hwep_num	= 0,
-@@ -2767,7 +2754,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep12-iso",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 1023,
- 		.hwep_num_base	= 24,
- 		.hwep_num	= 0,
-@@ -2779,7 +2765,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep13-int",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 26,
- 		.hwep_num	= 0,
-@@ -2791,7 +2776,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep14-bulk",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 64,
- 		.hwep_num_base	= 28,
- 		.hwep_num	= 0,
-@@ -2803,7 +2787,6 @@ static struct lpc32xx_udc controller = {
- 			.name	= "ep15-bulk",
- 			.ops	= &lpc32xx_ep_ops,
- 		},
--		.udc		= &controller,
- 		.maxpacket	= 1023,
- 		.hwep_num_base	= 30,
- 		.hwep_num	= 0,
-@@ -3090,12 +3073,21 @@ static u64 lpc32xx_usbd_dmamask = ~(u32)
- static int __init lpc32xx_udc_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
--	struct lpc32xx_udc *udc = &controller;
-+	struct lpc32xx_udc *udc;
- 	int retval, i;
- 	struct resource *res;
- 	dma_addr_t dma_handle;
- 	struct device_node *isp1301_node;
- 
-+	udc = kzalloc(sizeof(*udc), GFP_KERNEL);
-+	if (!udc)
-+		return -ENOMEM;
-+
-+	memcpy(udc, &controller_template, sizeof(*udc));
-+	for (i = 0; i <= 15; i++)
-+		udc->ep[i].udc = udc;
-+	udc->gadget.ep0 = &udc->ep[0].ep;
-+
- 	/* init software state */
- 	udc->gadget.dev.parent = dev;
- 	udc->pdev = pdev;
-@@ -3110,8 +3102,10 @@ static int __init lpc32xx_udc_probe(stru
- 	}
- 
- 	udc->isp1301_i2c_client = isp1301_get_client(isp1301_node);
--	if (!udc->isp1301_i2c_client)
--		return -EPROBE_DEFER;
-+	if (!udc->isp1301_i2c_client) {
-+		retval = -EPROBE_DEFER;
-+		goto phy_fail;
-+	}
- 
- 	dev_info(udc->dev, "ISP1301 I2C device at address 0x%x\n",
- 		 udc->isp1301_i2c_client->addr);
-@@ -3130,8 +3124,10 @@ static int __init lpc32xx_udc_probe(stru
- 	 *  IORESOURCE_IRQ, USB transceiver interrupt number
- 	 */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENXIO;
-+	if (!res) {
-+		retval = -ENXIO;
-+		goto resource_fail;
-+	}
- 
- 	spin_lock_init(&udc->lock);
- 
-@@ -3141,7 +3137,8 @@ static int __init lpc32xx_udc_probe(stru
- 		if (udc->udp_irq[i] < 0) {
- 			dev_err(udc->dev,
- 				"irq resource %d not available!\n", i);
--			return udc->udp_irq[i];
-+			retval = udc->udp_irq[i];
-+			goto irq_fail;
- 		}
- 	}
- 
-@@ -3149,7 +3146,8 @@ static int __init lpc32xx_udc_probe(stru
- 	udc->io_p_size = resource_size(res);
- 	if (!request_mem_region(udc->io_p_start, udc->io_p_size, driver_name)) {
- 		dev_err(udc->dev, "someone's using UDC memory\n");
--		return -EBUSY;
-+		retval = -EBUSY;
-+		goto request_mem_region_fail;
- 	}
- 
- 	udc->udp_baseaddr = ioremap(udc->io_p_start, udc->io_p_size);
-@@ -3346,7 +3344,11 @@ pll_get_fail:
- io_map_fail:
- 	release_mem_region(udc->io_p_start, udc->io_p_size);
- 	dev_err(udc->dev, "%s probe failed, %d\n", driver_name, retval);
--
-+request_mem_region_fail:
-+irq_fail:
-+resource_fail:
-+phy_fail:
-+	kfree(udc);
- 	return retval;
- }
- 
-@@ -3384,6 +3386,7 @@ static int __devexit lpc32xx_udc_remove(
- 	clk_put(udc->usb_pll_clk);
- 	iounmap(udc->udp_baseaddr);
- 	release_mem_region(udc->io_p_start, udc->io_p_size);
-+	kfree(udc);
- 
- 	return 0;
- }
+        if (mult_frac(limit, 1024, max_beb_per1024) < device_pebs)
+
+will divide by 0 if max_beb_per1024 is 0.
+
+> (and if we want to be coherent with user-space, it should be 0..255,
+> as the range is coded with an u8)
+
+I think it should be uint16_t instead, because we are defining ABI here
+and we should not assume no one will ever nee values higher than 255.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-IUx3Saz9a/lyA5X1WIiy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQMfJ8AAoJECmIfjd9wqK0avkP/0kybOWI/RMspTGm3CaHoBE4
+BkAxoPJnH3lYH+Ug+GE2YAnvcLb32jierhZ/WbDLLvQC7fAF3kuhl0lVdYIBGXp/
+XG/VSD6qx/Y00bzVYSaHPOdAANdKyl/CyGbqlidXCcSQtn3BYLoAtbQj5nkynYf9
+D2APlqud1hs/zgRJKud8m3/735cadJS0Po578CiSq+L8ut042IITvNMcJVlYLp84
+uYaxbajBR0yUZBmmM+LiM6irf4+XnX9FqTbKsZn4oSVKW3k76OSYTAxLp9t/BTXk
+N3IH9EcnteIcJAE70oRzBSTstG5qgkEz7BmAxPMid78kanvThftxaRNKbtC39/CF
+A5ceNr5UOxUxq8R0NzQgHKc8TdXtLkh9TxXp+6zYwHyDZkk8GtEy0viYpIZncuan
+MbRv6gv5bpNpqjcBjpjazTEgx9zyLvxuhW+lW68M/3os5ScWoJ+Hq1mh13CPlYAP
+AAe3M9J/waxdfwTrweDDmWkYkwShq8gp1pOqmm0fAvyhw7kTfPuhbMHBe/ij40B2
+u7mGoetKtVznKyU4cvDBgf/dcv6Fy5zUaclj/wGWV1XocFBqJ7Y+GFFcSy2NBw3l
++zqF/uJAD4/vHFEDUi3M1v40yqXivdgL+rmkBwrG9vD/kFEv5IbGJ2Pj82e+L9BA
+GLRYA+HXFgxBGs/24HV6
+=yztP
+-----END PGP SIGNATURE-----
+
+--=-IUx3Saz9a/lyA5X1WIiy--
+
