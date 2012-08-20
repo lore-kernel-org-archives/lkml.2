@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab2HTOLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:11:38 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52189 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755176Ab2HTOLg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:11:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344689809-6223-2-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-2-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 20 Aug 2012 16:11:35 +0200
-Message-ID: <CACRpkdZvjLx4+2CpgOemwWVfyFjFbRe-pzZbwAjExqHhQqBOjA@mail.gmail.com>
-Subject: Re: [PATCH 01/11] pinctrl: mvebu: pinctrl driver core
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756456Ab2HTOMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:12:41 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:43136 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2HTOMh convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 20 Aug 2012 10:12:37 -0400
+Message-Id: <503261F00200007800096710@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 20 Aug 2012 15:12:32 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Alex Shi" <alex.shi@intel.com>
+Cc: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: apparent regressions from TLB range flushing page set
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+Alex,
 
-> This patch adds a pinctrl driver core for Marvell SoCs plus DT
-> binding documentation. This core driver will be used by SoC family
-> specific drivers, i.e. Armada XP, Armada 370, Dove, Kirkwood, aso.
-(...)
-> +config PINCTRL_MVEBU
-> +       bool "Marvell SoC pin controller drivers"
-> +       depends on ARCH_MVEBU
+without even having run that code yet, I think I see two bugs here,
+both of which I'm pretty sure I pointed out at least once during the
+review cycle:
 
-So altering earlier statements I suspect this should be simply:
+For one, while TLB_FLUSH_ALL gets passed as 'end' argument to
+flush_tlb_others(), the Xen code was made to check its 'start'
+parameter.
 
-depends on PLAT_ORION
+Second, the UV code doesn't flush the full range at all, it simply
+ignores its 'end' parameter (and hence also the "all" indicator).
 
-Yours,
-Linus Walleij
+While the Xen one is simple to fix, I have no clue what to do for
+the UV code.
+
+Jan
+
