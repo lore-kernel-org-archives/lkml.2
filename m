@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab2HTEEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:04:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59366 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab2HTEBm (ORCPT
+	id S1755341Ab2HTEEb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:04:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab2HTEBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:01:42 -0400
+	Mon, 20 Aug 2012 00:01:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: [ 40/46] KVM: PIC: call ack notifiers for irqs that are dropped form irr
-Date: Sun, 19 Aug 2012 20:59:16 -0700
-Message-Id: <20120820035837.834733550@linuxfoundation.org>
+        Tatyana Brokhman <tlinder@codeaurora.org>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 38/46] usb: gadget: u_ether: fix kworker 100% CPU issue with still used interfaces in eth_stop
+Date: Sun, 19 Aug 2012 20:59:14 -0700
+Message-Id: <20120820035837.553778146@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -30,55 +31,73 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Gleb Natapov <gleb@redhat.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-(cherry picked from commit aea218f3cbbcaac249b6b2c98930a00d6d931f1e)
+commit b1b552a69b8805e7e338074a9e8b670b4a795218 upstream.
 
-After commit 242ec97c358256 PIT interrupts are no longer delivered after
-PIC reset. It happens because PIT injects interrupt only if previous one
-was acked, but since on PIC reset it is dropped from irr it will never
-be delivered and hence acknowledged. Fix that by calling ack notifier on
-PIC reset.
+This patch fixes an issue introduced by patch:
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+    72c973d usb: gadget: add usb_endpoint_descriptor to struct usb_ep
+
+Without this patch we see a kworker taking 100% CPU, after this sequence:
+
+- Connect gadget to a windows host
+- load g_ether
+- ifconfig up <ip>; ifconfig down; ifconfig up
+- ping <windows host>
+
+The "ifconfig down" results in calling eth_stop(), which will call
+usb_ep_disable() and, if the carrier is still ok, usb_ep_enable():
+
+         usb_ep_disable(link->in_ep);
+         usb_ep_disable(link->out_ep);
+         if (netif_carrier_ok(net)) {
+                 usb_ep_enable(link->in_ep);
+                 usb_ep_enable(link->out_ep);
+         }
+
+The ep should stay enabled, but will not, as ep_disable set the desc
+pointer to NULL, therefore the subsequent ep_enable will fail. This leads
+to permanent rescheduling of the eth_work() worker as usb_ep_queue()
+(called by the worker) will fail due to the unconfigured endpoint.
+
+We fix this issue by saving the ep descriptors and re-assign them before
+usb_ep_enable().
+
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/x86/kvm/i8259.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
 
---- a/arch/x86/kvm/i8259.c
-+++ b/arch/x86/kvm/i8259.c
-@@ -305,6 +305,11 @@ static void pic_ioport_write(void *opaqu
- 	addr &= 1;
- 	if (addr == 0) {
- 		if (val & 0x10) {
-+			u8 edge_irr = s->irr & ~s->elcr;
-+			int i;
-+			bool found;
-+			struct kvm_vcpu *vcpu;
-+
- 			s->init4 = val & 1;
- 			s->last_irr = 0;
- 			s->irr &= s->elcr;
-@@ -322,6 +327,18 @@ static void pic_ioport_write(void *opaqu
- 			if (val & 0x08)
- 				pr_pic_unimpl(
- 					"level sensitive irq not supported");
-+
-+			kvm_for_each_vcpu(i, vcpu, s->pics_state->kvm)
-+				if (kvm_apic_accept_pic_intr(vcpu)) {
-+					found = true;
-+					break;
-+				}
-+
-+
-+			if (found)
-+				for (irq = 0; irq < PIC_NUM_PINS/2; irq++)
-+					if (edge_irr & (1 << irq))
-+						pic_clear_isr(s, irq);
- 		} else if (val & 0x08) {
- 			if (val & 0x04)
- 				s->poll = 1;
+---
+ drivers/usb/gadget/u_ether.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -669,6 +669,8 @@ static int eth_stop(struct net_device *n
+ 	spin_lock_irqsave(&dev->lock, flags);
+ 	if (dev->port_usb) {
+ 		struct gether	*link = dev->port_usb;
++		const struct usb_endpoint_descriptor *in;
++		const struct usb_endpoint_descriptor *out;
+ 
+ 		if (link->close)
+ 			link->close(link);
+@@ -682,10 +684,14 @@ static int eth_stop(struct net_device *n
+ 		 * their own pace; the network stack can handle old packets.
+ 		 * For the moment we leave this here, since it works.
+ 		 */
++		in = link->in_ep->desc;
++		out = link->out_ep->desc;
+ 		usb_ep_disable(link->in_ep);
+ 		usb_ep_disable(link->out_ep);
+ 		if (netif_carrier_ok(net)) {
+ 			DBG(dev, "host still using in/out endpoints\n");
++			link->in_ep->desc = in;
++			link->out_ep->desc = out;
+ 			usb_ep_enable(link->in_ep);
+ 			usb_ep_enable(link->out_ep);
+ 		}
 
 
