@@ -1,150 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab2HTLTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 07:19:41 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:37434 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753611Ab2HTLTi (ORCPT
+	id S1754276Ab2HTLTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 07:19:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39734 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab2HTLTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 07:19:38 -0400
+	Mon, 20 Aug 2012 07:19:43 -0400
+Date: Mon, 20 Aug 2012 04:19:38 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Alan Stern'" <stern@rowland.harvard.edu>
+Subject: Re: [RFC 0/2] USB gadget - configfs
+Message-ID: <20120820111938.GH2102@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+	Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+	'Kyungmin Park' <kyungmin.park@samsung.com>,
+	'Felipe Balbi' <balbi@ti.com>,
+	'Greg Kroah-Hartman' <gregkh@linuxfoundation.org>,
+	Marek Szyprowski <m.szyprowski@samsung.com>,
+	'Alan Stern' <stern@rowland.harvard.edu>
+References: <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
+ <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
+ <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
+ <502CF9E3.2010608@linutronix.de>
+ <20120817014609.GB2949@dhcp-172-17-9-228.mtv.corp.google.com>
+ <502E0D3B.10006@linutronix.de>
+ <000201cd7c63$60186370$20492a50$%p@samsung.com>
+ <502E1E23.60201@linutronix.de>
+ <20120820055958.GD2102@dhcp-172-17-9-228.mtv.corp.google.com>
+ <503218EF.7080906@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1344942937-4685-1-git-send-email-sourav.poddar@ti.com>
-References: <1344942937-4685-1-git-send-email-sourav.poddar@ti.com>
-Date: Mon, 20 Aug 2012 16:49:36 +0530
-Message-ID: <CAKdam57n1jA5_7EOLcsB=u5X4wX6hPVXoZ2HLrnpEKS3kLZ=OQ@mail.gmail.com>
-Subject: Re: [PATCHv7] arm/dts: omap4-sdp: Add keypad data
-From: "Poddar, Sourav" <sourav.poddar@ti.com>
-To: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Sourav Poddar <sourav.poddar@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <503218EF.7080906@linutronix.de>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Mon, Aug 20, 2012 at 01:01:03PM +0200, Sebastian Andrzej Siewior wrote:
+> On 08/20/2012 07:59 AM, Joel Becker wrote:
+> >	I think what you want here is a symlink.  Create a directory
+> >high in the tree called 'ready' or 'available', and when you want to
+> >lock the device in place, symlink it into that directory.  This will pin
+> >the item.  You can also make use of the ->allow_link() and ->drop_link()
+> >callbacks to prevent symlinking an item until it is fully configured,
+> >and prevent unlinking an item that is in use.
+> >
+> >   $ ln -s /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/lun0 \
+> >         /cfg/usb-function-gadget/ready/
+> >
+> >or something like that.
+> 
+> That would be something like
+> 
+>   $ ln -s /cfg/usb-function-gadget/G1 \
+>         /cfg/usb-function-gadget/udcs/udc1/
+> 
+> Where we "bind" the complete gadget (G1) including the mass storage
+> configuration to the UDC (udc1 in this example).
+> 
+> At this point we could snapshot the complete configuration so we have
+> it persistent and if somebody changes attributes within /cfg/usb-
+> function-gadget/G1 it doesn't matter because we have the copy.
+> 
+> Is it _this_ what you want us to do? A snapshot?
 
-On Tue, Aug 14, 2012 at 4:45 PM, Sourav Poddar <sourav.poddar@ti.com> wrote:
-> Add keypad data node in omap4 device tree file.
-> Also fill the device tree binding parameters
-> with the required value in "omap4-sdp" dts file.
->
-> Tested on omap4430 sdp.
->
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
-> v6->v7
-> Add key name as a comment.
->  arch/arm/boot/dts/omap4-sdp.dts |   70 +++++++++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/omap4.dtsi    |    5 +++
->  2 files changed, 75 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
-> index 72216e9..8e200f4 100644
-> --- a/arch/arm/boot/dts/omap4-sdp.dts
-> +++ b/arch/arm/boot/dts/omap4-sdp.dts
-> @@ -113,6 +113,76 @@
->                         "DMic", "Digital Mic",
->                         "Digital Mic", "Digital Mic1 Bias";
->         };
-> +
-> +       keypad {
-> +               keypad,num-rows = <8>;
-> +               keypad,num-columns = <8>;
-> +               linux,keymap = < 0x00000012 /* KEY_E */
-> +                       0x00010013 /* KEY_R */
-> +                       0x00020014 /* KEY_T */
-> +                       0x00030066 /* KEY_HOME */
-> +                       0x0004003f /* KEY_F5 */
-> +                       0x000500f0 /* KEY_UNKNOWN */
-> +                       0x00060017 /* KEY_I */
-> +                       0x0007002a /* KEY_LEFTSHIFT */
-> +                       0x01000020 /* KEY_D*/
-> +                       0x01010021 /* KEY_F */
-> +                       0x01020022 /* KEY_G */
-> +                       0x010300e7 /* KEY_SEND */
-> +                       0x01040040 /* KEY_F6 */
-> +                       0x010500f0 /* KEY_UNKNOWN */
-> +                       0x01060025 /* KEY_K */
-> +                       0x0107001c /* KEY_ENTER */
-> +                       0x0200002d /* KEY_X */
-> +                       0x0201002e /* KEY_C */
-> +                       0x0202002f /* KEY_V */
-> +                       0x0203006b /* KEY_END */
-> +                       0x02040041 /* KEY_F7 */
-> +                       0x020500f0 /* KEY_UNKNOWN */
-> +                       0x02060034 /* KEY_DOT */
-> +                       0x0207003a /* KEY_CAPSLOCK */
-> +                       0x0300002c /* KEY_Z */
-> +                       0x0301004e /* KEY_KPLUS */
-> +                       0x03020030 /* KEY_B */
-> +                       0x0303003b /* KEY_F1 */
-> +                       0x03040042 /* KEY_F8 */
-> +                       0x030500f0 /* KEY_UNKNOWN */
-> +                       0x03060018 /* KEY_O */
-> +                       0x03070039 /* KEY_SPACE */
-> +                       0x04000011 /* KEY_W */
-> +                       0x04010015 /* KEY_Y */
-> +                       0x04020016 /* KEY_U */
-> +                       0x0403003c /* KEY_F2 */
-> +                       0x04040073 /* KEY_VOLUMEUP */
-> +                       0x040500f0 /* KEY_UNKNOWN */
-> +                       0x04060026 /* KEY_L */
-> +                       0x04070069 /* KEY_LEFT */
-> +                       0x0500001f /* KEY_S */
-> +                       0x05010023 /* KEY_H */
-> +                       0x05020024 /* KEY_J */
-> +                       0x0503003d /* KEY_F3 */
-> +                       0x05040043 /* KEY_F9 */
-> +                       0x05050072 /* KEY_VOLUMEDOWN */
-> +                       0x05060032 /* KEY_M */
-> +                       0x0507006a /* KEY_RIGHT */
-> +                       0x06000010 /* KEY_Q */
-> +                       0x0601001e /* KEY_A */
-> +                       0x06020031 /* KEY_N */
-> +                       0x0603009e /* KEY_BACK */
-> +                       0x0604000e /* KEY_BACKSPACE */
-> +                       0x060500f0 /* KEY_UNKNOWN */
-> +                       0x06060019 /* KEY_P */
-> +                       0x06070067 /* KEY_UP */
-> +                       0x07000094 /* KEY_PROG1 */
-> +                       0x07010095 /* KEY_PROG2 */
-> +                       0x070200ca /* KEY_PROG3 */
-> +                       0x070300cb /* KEY_PROG4 */
-> +                       0x0704003e /* KEY_F4 */
-> +                       0x070500f0 /* KEY_UNKNOWN */
-> +                       0x07060160 /* KEY_OK */
-> +                       0x0707006c >; /* KEY_DOWN */
-> +               linux,input-no-autorepeat;
-> +       };
->  };
->
->  &i2c1 {
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index 04cbbcb..e78a1f1 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -296,4 +296,9 @@
->                         ti,hwmods = "dmic";
->                 };
->         };
-> +
-> +       keypad {
-> +               compatible = "ti,omap4-keypad";
-> +               ti,hwmods = "kbd";
-> +       };
->  };
-> --
-> 1.7.1
->
-Any more comments on this?
+	No, I don't see why you would snapshot.  You can, btw, reject
+->store_attribute() operations once you are in a "ready" state.  That's
+different from preventing the removal of items.
 
-~Sourav
+Joel
+
+
+-- 
+
+The Graham Corollary:
+
+	The longer a socially-moderated news website exists, the
+	probability of an old Paul Graham link appearing at the top
+	approaches certainty.
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
