@@ -1,123 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab2HTNy2 (ORCPT <rfc822;w@1wt.eu>);
+	id S1756128Ab2HTNyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:54:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33480 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755550Ab2HTNy2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Aug 2012 09:54:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60656 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755176Ab2HTNwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 09:52:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,797,1336374000"; 
-   d="scan'208";a="206475020"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: linux-mm@kvack.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [PATCH v4 6/8] mm: make clear_huge_page cache clear only around the fault address
-Date: Mon, 20 Aug 2012 16:52:35 +0300
-Message-Id: <1345470757-12005-7-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
+Message-ID: <50324189.9040406@gmail.com>
+Date: Mon, 20 Aug 2012 21:54:17 +0800
+From: Jianguo Wu <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: tony.luck@intel.com, fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jiang.liu@huawei.com,
+        guohanjun@huawei.com, qiuxishi@huawei.com, liuj97@gmail.com
+Subject: Re: [PATCH]mm/ia64: fix a node distance bug
+References: <5031D763.9010808@gmail.com> <5031E208.2080202@cn.fujitsu.com>
+In-Reply-To: <5031E208.2080202@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 2012/8/20 15:06, Wen Congyang wrote:
+> At 08/20/2012 02:21 PM, wujianguo Wrote:
+>> From: Jianguo Wu <wujianguo@huawei.com>
+>>
+>> Hi all,
+>> 	When doing memory-hot-plug, We found node distance is wrong after offline
+>> a node in IA64 platform. For example system has 4 nodes:
+>> node distances:
+>> node   0   1   2   3
+>>   0:  10  21  21  32
+>>   1:  21  10  32  21
+>>   2:  21  32  10  21
+>>   3:  32  21  21  10
+>>
+>> linux-drf:/sys/devices/system/node/node0 # cat distance
+>> 10  21  21  32
+>> linux-drf:/sys/devices/system/node/node1 # cat distance
+>> 21  10  32  21
+>>
+>> After offline node2:
+>> linux-drf:/sys/devices/system/node/node0 # cat distance
+>> 10 21 32
+>> linux-drf:/sys/devices/system/node/node1 # cat distance
+>> 32 21 32	--------->expected value is: 21  10  21
+>>
+>> In arch IA, we have following definition:
+>> extern u8 numa_slit[MAX_NUMNODES * MAX_NUMNODES];
+>> #define node_distance(from,to) (numa_slit[(from) * num_online_nodes() + (to)])
+>>
+>> node distance is setup as following:
+>> acpi_numa_arch_fixup()
+>> {
+>> 	...
+>> 	memset(numa_slit, -1, sizeof(numa_slit));
+>> 	for (i = 0; i < slit_table->locality_count; i++) {
+>> 		if (!pxm_bit_test(i))
+>> 			continue;
+>> 		node_from = pxm_to_node(i);
+>> 		for (j = 0; j < slit_table->locality_count; j++) {
+>> 			if (!pxm_bit_test(j))
+>> 				continue;
+>> 			node_to = pxm_to_node(j);
+>> 			node_distance(node_from, node_to) =
+>> 			    slit_table->entry[i * slit_table->locality_count + j];
+>> 		}
+>> 	}
+>> 	...
+>> }
+>> 	num_online_nodes() is a variable value, during system boot the return vale is 4,
+>> but after offline node2, the return value is 3, so we read a wrong node distance value.
+>> This patch is trying to fix this bug.
+>>
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+>> ---
+>>  arch/ia64/include/asm/numa.h |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/ia64/include/asm/numa.h b/arch/ia64/include/asm/numa.h
+>> index 6a8a27c..2e27ef1 100644
+>> --- a/arch/ia64/include/asm/numa.h
+>> +++ b/arch/ia64/include/asm/numa.h
+>> @@ -59,7 +59,7 @@ extern struct node_cpuid_s node_cpuid[NR_CPUS];
+>>   */
+>>
+>>  extern u8 numa_slit[MAX_NUMNODES * MAX_NUMNODES];
+>> -#define node_distance(from,to) (numa_slit[(from) * num_online_nodes() + (to)])
+>> +#define node_distance(from,to) (numa_slit[(from) * MAX_NUMNODES + (to)])
+> 
+> Hmm, MAX_NUMNODES is too large. I think num_possible_nodes() is better.
+> 
+> Thanks
+> Wen Congyang
+> 
 
-Clearing a 2MB huge page will typically blow away several levels
-of CPU caches. To avoid this only cache clear the 4K area
-around the fault address and use a cache avoiding clears
-for the rest of the 2MB area.
+Hi Congyang,
+	Thanks for you comments.
+	numa_slit[MAX_NUMNODES * MAX_NUMNODES] is a static array, so I think it makes
+no difference using MAX_NUMNODES or num_online_nodes().
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- mm/memory.c |   37 +++++++++++++++++++++++++++++--------
- 1 files changed, 29 insertions(+), 8 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index dfc179b..625ca33 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3969,18 +3969,32 @@ EXPORT_SYMBOL(might_fault);
- #endif
- 
- #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
-+
-+#ifndef ARCH_HAS_USER_NOCACHE
-+#define ARCH_HAS_USER_NOCACHE 0
-+#endif
-+
-+#if ARCH_HAS_USER_NOCACHE == 0
-+#define clear_user_highpage_nocache clear_user_highpage
-+#endif
-+
- static void clear_gigantic_page(struct page *page,
--				unsigned long addr,
--				unsigned int pages_per_huge_page)
-+		unsigned long haddr, unsigned long fault_address,
-+		unsigned int pages_per_huge_page)
- {
- 	int i;
- 	struct page *p = page;
-+	unsigned long vaddr;
-+	int target = (fault_address - haddr) >> PAGE_SHIFT;
- 
- 	might_sleep();
--	for (i = 0; i < pages_per_huge_page;
--	     i++, p = mem_map_next(p, page, i)) {
-+	for (i = 0, vaddr = haddr; i < pages_per_huge_page;
-+			i++, p = mem_map_next(p, page, i), vaddr += PAGE_SIZE) {
- 		cond_resched();
--		clear_user_highpage(p, addr + i * PAGE_SIZE);
-+		if (!ARCH_HAS_USER_NOCACHE  || i == target)
-+			clear_user_highpage(p, vaddr);
-+		else
-+			clear_user_highpage_nocache(p, vaddr);
- 	}
- }
- void clear_huge_page(struct page *page,
-@@ -3988,16 +4002,23 @@ void clear_huge_page(struct page *page,
- 		     unsigned int pages_per_huge_page)
- {
- 	int i;
-+	unsigned long vaddr;
-+	int target = (fault_address - haddr) >> PAGE_SHIFT;
- 
- 	if (unlikely(pages_per_huge_page > MAX_ORDER_NR_PAGES)) {
--		clear_gigantic_page(page, haddr, pages_per_huge_page);
-+		clear_gigantic_page(page, haddr, fault_address,
-+				pages_per_huge_page);
- 		return;
- 	}
- 
- 	might_sleep();
--	for (i = 0; i < pages_per_huge_page; i++) {
-+	for (i = 0, vaddr = haddr; i < pages_per_huge_page;
-+			i++, page++, vaddr += PAGE_SIZE) {
- 		cond_resched();
--		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
-+		if (!ARCH_HAS_USER_NOCACHE || i == target)
-+			clear_user_highpage(page, vaddr);
-+		else
-+			clear_user_highpage_nocache(page, vaddr);
- 	}
- }
- 
--- 
-1.7.7.6
+>>
+>>  extern int paddr_to_nid(unsigned long paddr);
+>>
+> 
+> 
 
