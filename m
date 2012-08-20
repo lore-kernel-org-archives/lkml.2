@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab2HTTfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 15:35:18 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:14488 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751691Ab2HTTfP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 15:35:15 -0400
-Date: Mon, 20 Aug 2012 19:35:14 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/5] mempolicy: Remove mempolicy sharing
-In-Reply-To: <1345480594-27032-3-git-send-email-mgorman@suse.de>
-Message-ID: <00000139458826d2-f72fceae-338d-4f6c-84f3-67d8817ece99-000000@email.amazonses.com>
-References: <1345480594-27032-1-git-send-email-mgorman@suse.de> <1345480594-27032-3-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+	id S1754097Ab2HTTjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 15:39:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46702 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752304Ab2HTTjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 15:39:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,798,1336374000"; 
+   d="scan'208";a="183097948"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        greg@kroah.com
+Subject: [PATCH] USB: Build usb_speed_string unconditionally
+Date: Mon, 20 Aug 2012 12:38:28 -0700
+Message-Id: <1345491508-30966-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012, Mel Gorman wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> Ideally, the shared policy handling would be rewritten to either properly
-> handle COW of the policy structures or at least reference count MPOL_F_SHARED
-> based exclusively on information within the policy.  However, this patch takes
-> the easier approach of disabling any policy sharing between VMAs. Each new
-> range allocated with sp_alloc will allocate a new policy, set the reference
-> count to 1 and drop the reference count of the old policy. This increases
-> the memory footprint but is not expected to be a major problem as mbind()
-> is unlikely to be used for fine-grained ranges. It is also inefficient
-> because it means we allocate a new policy even in cases where mbind_range()
-> could use the new_policy passed to it. However, it is more straight-forward
-> and the change should be invisible to the user.
+The usb core uses usb_speed_string(). But it's only selected
+for USB_GADGET. Enable it unconditionally.
 
+Fixes a lot of randconfig builds.
 
-Hmmm. I dont like the additional memory use but this is definitely an
-issue that needs addressing.
+Cc: greg@kroah.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ drivers/usb/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
+index f5ed3d7..d74535b 100644
+--- a/drivers/usb/Makefile
++++ b/drivers/usb/Makefile
+@@ -57,4 +57,4 @@ obj-$(CONFIG_USB_CHIPIDEA)	+= chipidea/
+ obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
+ obj-$(CONFIG_USB_GADGET)	+= gadget/
+ 
+-obj-$(CONFIG_USB_COMMON)	+= usb-common.o
++obj-y				+= usb-common.o
+-- 
+1.7.7.6
+
