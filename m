@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab2HTHbt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 03:31:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64424 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519Ab2HTHbr (ORCPT
+	id S1755602Ab2HTHiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 03:38:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54470 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab2HTHix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 03:31:47 -0400
-Date: Mon, 20 Aug 2012 09:31:42 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Bryan Wu <bryan.wu@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] leds-lm3530: replace pwm platform functions with generic
- pwm functions
-Message-ID: <20120820073141.GA27645@avionic-0098.mockup.avionic-design.de>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF0095@DQHE02.ent.ti.com>
- <201208200537.48993.arnd@arndb.de>
- <20120820055817.GA17149@avionic-0098.adnet.avionic-design.de>
- <A874F61F95741C4A9BA573A70FE3998F41EF0939@DQHE02.ent.ti.com>
+	Mon, 20 Aug 2012 03:38:53 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF0939@DQHE02.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:90mmISKuWr5JMdSuvrI+B6KW1EZc77m4COtpJhIsOj/
- uP1go3IV+M07TFdvnZxAJ3m+D5gYLfgM1fdhoIreSb5yImH+jo
- x0Tp7Ow7T/9JWm7xrEE2maWcb/Jh0y4sbveWe7+wDECoIBEZnh
- wG7e6QZdL5a2DXSc+QLVUoDYTR7/6g9vIZ6ZpeMUwnbqDazqoT
- YljIpl/uXrhRCF9PtjcjwPd4DqlhKmNypFJF9q2cuaoVLN8iGs
- bmN1aSkyTW+hhEAZSN+xL5WHvDIl7i8NVDJNtq2c/HOE3lxfJX
- +5841Lkc4s5c2EX5ibzPXvOlV6MBfF4U16vqM+mGoVOHTdPIB4
- Vq2/1Aui73AN5VovpcYI6zSdzRo18jlfSAYlhzpBL1dbS+Td8d
- nR4xiDqHyQi5saNzfry+DWQscH29dlelLc=
+In-Reply-To: <20120819122634.252f1ea5@pixies.home.jungo.com>
+References: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
+ <1345214124-5478-7-git-send-email-richard.genoud@gmail.com> <20120819122634.252f1ea5@pixies.home.jungo.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Mon, 20 Aug 2012 09:38:31 +0200
+Message-ID: <CACQ1gAgUdXj9KKtgjf=Lx0Kz2v18Xgz4RjiRQnKHMsf3m3THJw@mail.gmail.com>
+Subject: Re: [PATCH 6/8] UBI: replace MTD_UBI_BEB_LIMIT with module parameter
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/8/19 Shmulik Ladkani <shmulik.ladkani@gmail.com>:
+> Hi Richard,
+>
+> On Fri, 17 Aug 2012 16:35:22 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
+>> +                   "MTD devices may be specified by their number, name, or path to the MTD character device node.\n"
+>> +                   "Optional \"vid_hdr_offs\" parameter specifies UBI VID header position to be used by UBI. (default value if 0 or not set)\n"
+>> +                   "Optional \"max_beb_per1024\" parameter specifies the maximum expected bad eraseblock per 1024 eraseblocks. (default value ("
+>> +                   __stringify(CONFIG_MTD_UBI_BEB_LIMIT) ") if 0 or not set)\n"
+>
+> Looks like "mtd=/dev/mtd1,,25" is invalid, although we state "default
+> value if 0 or not set".
+I'm going to check that.
+>
+> Also, lines are exceeding 80 chars, not sure this is more readable than
+> if they were broken.
+Actually, I didn't split those lines to make checkpatch happy.
+Checkpatch.pl doesn't like split strings because they are hard to grep.
+So there's an exception on the 80 column rule for strings.
 
---FL5UXtIhxfXey3p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>
+> Regards,
+> Shmulik
 
-On Mon, Aug 20, 2012 at 06:16:41AM +0000, Kim, Milo wrote:
-> > > * Rather than having to do the #ifdef here, I think it would be
-> > better if
-> > >   the PWM subsystem provided stub functions for pwm_request,
-> > pwm_config,
-> > >   pwm_enable, pwm_disable and pwm_free that do nothing, so you can in
-> > effect
-> > >   let the compiler optimize away the above code.
-> >=20
-> > That's actually on my TODO list, but I think it needs to wait until we
-> > have gotten rid of all legacy implementations. The stubs would have to
-> > move into the !CONFIG_PWM branch, which will in turn break because the
-> > legacy implementations would provide non-inlined duplicates.
-> >=20
-> > Thierry
->=20
-> OK, then it's better to wait fixing that first.
->=20
-> Bryan,
-> please just ignore this patch.
-> I'll resend the patch later.
 
-Maybe we should get this resolved somehow in the meantime. Resolving the
-other issues may take another cycle or two, so you may not want to wait
-that long.
 
-Thierry
-
---FL5UXtIhxfXey3p5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQMefdAAoJEN0jrNd/PrOhPyMP/A7wBDJGTfz0RRPgpCAAyoeA
-+hYmo+SzK+tCANaBC2R2A6gFma4TVvhQAdfwVYv7HB54b2mJ6MY5mXIxjBsoIa3W
-+DUnSeqZlJmxwx3ntJmoL5fE+TrI3oc7LhlTkpQvZQIVuzqV+Sj/8LDJgJxf3Xe2
-Jtcn554rl6RcSbolyrRoZnbFwNya3GpNICcpvY2Xew1A1wEME/WuedQ6byrpktxL
-CajkvnItlV7ztlWvGlS9oJGuTi4qvx6QQvUD+x9SamY0gXqyfRfGZ3vAfT6xAaDz
-54JC40+ZDFLKL521h7ENYNTi8vWsUB20N7MaeAikYGg0WdaYBeVvfao0r/bFcpjM
-/wXEo9s/JDSa25K4swDPEAVk0Ame3tMHHMeKT5efHBQt24Hg50RA5B0Rv//V3xxP
-u+3ePFG2N6XV8YWogQcuIVCKkuN7e3ODVJOFTCmdmUkf2suz0N8Tl8kb8hyttnMr
-TrQ2M8dAXoA8nVeAf2rY2q885jBUsrghIyUCl6ueHtsVnGotY75RCHOmNEdGiC1F
-7OBfJ9yE1Dp20GxfHOIjKdhXCFx+ZFuP8yESSKtfGQkJo8Yyt2t+IjaJZ6Z17HLy
-1RTijdYKpw8fHmILm1FpGfgX4XcOJjsl2zuL3QOA7XffEKtPJLpDyeporNPKGY7A
-qfJ9fiuM+E8qP0NwcIzm
-=d4Q+
------END PGP SIGNATURE-----
-
---FL5UXtIhxfXey3p5--
+-- 
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
