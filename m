@@ -1,100 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab2HTWpR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 18:45:17 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:58284 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756618Ab2HTWpM (ORCPT
+	id S1756745Ab2HTXMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 19:12:00 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54380 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab2HTXL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 18:45:12 -0400
-Message-ID: <5032BDF5.1060800@xenotime.net>
-Date: Mon, 20 Aug 2012 15:45:09 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: "Justin M. Forbes" <jforbes@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org, dri-devel@lists.freedesktop.org
-Subject: Re: 3.5.x boot hang after conflicting fb hw usage <driver> vs VESA
- VGA - removing generic driver
-References: <1345242330.3841.8.camel@fedora64.linuxtx.org>	<502EC5A6.7040502@xenotime.net>	<CAPM=9tzcmU-uBSaH0jASmp0iCu43fPROefip9mr_Q9qCAMzZEw@mail.gmail.com>	<CAPM=9ty9UUZKcgp4MijM9CDGyDaD0dWi2z2htPvjMRHbCHRhUw@mail.gmail.com>	<5031C765.9050107@xenotime.net> <CAPM=9twHc4i9eOUt3AwW_WQ+K70WvW9qMsOKsOxH-rHHQAd4qQ@mail.gmail.com>
-In-Reply-To: <CAPM=9twHc4i9eOUt3AwW_WQ+K70WvW9qMsOKsOxH-rHHQAd4qQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 20 Aug 2012 19:11:56 -0400
+Date: Tue, 21 Aug 2012 00:16:35 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: "mr.shroom" <mr.shroom@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: Bug report
+Message-ID: <20120821001635.5e9e2afc@pyramind.ukuu.org.uk>
+In-Reply-To: <5032BD97.7070701@xenotime.net>
+References: <CAL=PgHMH=5A5rLaO=RvYYA8MmcKEt1zay7f2=SS83RYayVVh+w@mail.gmail.com>
+	<5032BD97.7070701@xenotime.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2012 10:22 PM, Dave Airlie wrote:
+On Mon, 20 Aug 2012 15:43:35 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-> On Mon, Aug 20, 2012 at 3:13 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> On 08/17/12 15:55, Dave Airlie wrote:
->>
->>> On Sat, Aug 18, 2012 at 8:54 AM, Dave Airlie <airlied@gmail.com> wrote:
->>>> On Sat, Aug 18, 2012 at 8:28 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->>>>> On 08/17/2012 03:25 PM, Justin M. Forbes wrote:
->>>>>
->>>>>> for <driver>, we have verified cases on inteldrmfb, radeondrmfb, and
->>>>>> cirrusdrmfb.
->>>>>>
->>>>>> This is the last message displayed before the system hangs.  This seems
->>>>>> to be hitting a large number of users in Fedora, though certainly not
->>>>>> everyone.  This started happening with the 3.5 updates, and is still an
->>>>>> issue.  It appears to be a race condition, because various things have
->>>>>> allowed boot to continue for some users, though there is no clear work
->>>>>> around. Has anyone else run across this?  Any ideas.  For more
->>>>>> background we have the following bugs:
->>>>>>
->>>>>> inteldrmfb:
->>>>>> https://bugzilla.redhat.com/show_bug.cgi?id=843826
->>>>>>
->>>>>> radeondrmfb:
->>>>>> https://bugzilla.redhat.com/show_bug.cgi?id=845745
->>>>>>
->>>>>> cirrusdrmfb <kvm>:
->>>>>> https://bugzilla.redhat.com/show_bug.cgi?id=843860
->>>>>>
->>>>>> It should be noted that the conflicting fb hw usage message is not new,
->>>>>> it has been around for a while, but this is the last message seen before
->>>>>> the hang.
->>>>>
->>>>>
->>>>> Hi,  (adding dri-devel mailing list)
->>>>>
->>>>>
->>>>> I started seeing this problem on 3.5-rc6.
->>>>>
->>>>> AFAICT, the system is not actually hung, it's just that no output
->>>>> is showing up on the real (physical) output device (display) -- it's
->>>>> going somewhere else (or to the bit bucket).
->>>>>
->>>>
->>>> Can we bisect this at all?
->>
->> I guess I'll have to try again.  My first attempt did not
->> prove anything, I think because the conflict does not happen
->> 100% of the time (i.e., it feels like a timing problem).
->>
->>>> I worry the intel one will bisect to where we moved the conflict
->>>> resolution earlier, but I'd like to see if applying that patch earlier
->>>> causes the issue, since radeon has it.
->>
->> Do you know of a specific commit that I could revert and test?
-> 
-> 9f846a16d213523fbe6daea17e20df6b8ac5a1e5
-> 
-> might work, but it just changes the timing mostly.
-> 
-> also testing 3.4 with that on top would be good.
+> (cc-ing linux-ide mailing list)
 
-
-That commit doesn't apply cleanly to 3.4, but reverting
-it on 3.5-rc6 (where I first saw the problem) allows me to boot
-3.5-rc6 multiple times without a problem.
-
-Maybe Justin can get more stable testing done also..
-
-thanks,
--- 
-~Randy
+Classic "no IRQ being delivered" - looks like a platform IRQ routing
+problem
