@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab2HTXVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 19:21:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39300 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618Ab2HTXUs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 19:20:48 -0400
-Date: Mon, 20 Aug 2012 16:20:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Sage Weil <sage@inktank.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org,
-        neilb@suse.de, a.p.zijlstra@chello.nl, michaelc@cs.wisc.edu,
-        emunson@mgebm.net, sebastian@breakpoint.cc, cl@linux.com,
-        torvalds@linux-foundation.org
-Subject: Re: regression with poll(2)
-Message-Id: <20120820162046.f827f758.akpm@linux-foundation.org>
-In-Reply-To: <1345455059.5158.302.camel@edumazet-glaptop>
-References: <alpine.DEB.2.00.1208151226250.15721@cobra.newdream.net>
-	<alpine.DEB.2.00.1208191051150.15570@cobra.newdream.net>
-	<20120820090443.GA3275@suse.de>
-	<1345455059.5158.302.camel@edumazet-glaptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756780Ab2HTXXZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 19:23:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52605 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756618Ab2HTXXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 19:23:23 -0400
+Message-ID: <5032C6DD.7060506@zytor.com>
+Date: Mon, 20 Aug 2012 16:23:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86, microcode, AMD: Per-family patches cache
+References: <20120817143035.GA25700@aftab.osrc.amd.com>
+In-Reply-To: <20120817143035.GA25700@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012 11:30:59 +0200
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On 08/17/2012 07:30 AM, Borislav Petkov wrote:
+> Hi guys,
+>
+> please pull, thanks.
+>
+> The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
+>
+>    Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
+>
+> are available in the git repository at:
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode-updates-for-3.7
+>
+> for you to fetch changes up to cd692919bed1d59a440ffaed585ebc3c9d8c3406:
+>
+>    x86, microcode, AMD: Rewrite patch application procedure (2012-08-17 14:17:42 +0200)
+>
 
-> On Mon, 2012-08-20 at 10:04 +0100, Mel Gorman wrote:
-> 
-> > Can the following patch be tested please? It is reported to fix an fio
-> > regression that may be similar to what you are experiencing but has not
-> > been picked up yet.
-> > 
-> > -
-> 
-> This seems to help here.
-> 
-> Boot your machine with "mem=768M" or a bit less depending on your setup,
-> and try a netperf.
-> 
-> -> before patch :
-> 
-> # netperf
-> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
-> localhost.localdomain () port 0 AF_INET
-> Recv   Send    Send                          
-> Socket Socket  Message  Elapsed              
-> Size   Size    Size     Time     Throughput  
-> bytes  bytes   bytes    secs.    10^6bits/sec  
-> 
->  87380  16384  16384    14.00       6.05   
-> 
-> -> after patch :
-> 
-> Recv   Send    Send                          
-> Socket Socket  Message  Elapsed              
-> Size   Size    Size     Time     Throughput  
-> bytes  bytes   bytes    secs.    10^6bits/sec  
-> 
->  87380  16384  16384    10.00    18509.73   
+Hmmm... this isn't actually present on git.kernel.org, and 01/12 is 
+missing from your "v0" patchset on LKML (nevermind that a "v0" 
+designator screams "don't apply"...)
 
-"seem to help"?  Was previous performance fully restored?
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
