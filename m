@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab2HTEOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:14:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828Ab2HTD6L (ORCPT
+	id S1754941Ab2HTEPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:15:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61536 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735Ab2HTD6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:58:11 -0400
+	Sun, 19 Aug 2012 23:58:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: [ 12/32] drm/radeon: do not reenable crtc after moving vram start address
-Date: Sun, 19 Aug 2012 20:57:08 -0700
-Message-Id: <20120820035649.566601892@linuxfoundation.org>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 05/32] xen: mark local pages as FOREIGN in the m2p_override
+Date: Sun, 19 Aug 2012 20:57:01 -0700
+Message-Id: <20120820035648.601655699@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
 References: <20120820035647.862247088@linuxfoundation.org>
@@ -29,171 +30,154 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 81ee8fb6b52ec69eeed37fe7943446af1dccecc5 upstream.
+commit b9e0d95c041ca2d7ad297ee37c2e9cfab67a188f upstream.
 
-It seems we can not update the crtc scanout address. After disabling
-crtc, update to base address do not take effect after crtc being
-reenable leading to at least frame being scanout from the old crtc
-base address. Disabling crtc display request lead to same behavior.
+When the frontend and the backend reside on the same domain, even if we
+add pages to the m2p_override, these pages will never be returned by
+mfn_to_pfn because the check "get_phys_to_machine(pfn) != mfn" will
+always fail, so the pfn of the frontend will be returned instead
+(resulting in a deadlock because the frontend pages are already locked).
 
-So after changing the vram address if we don't keep crtc disabled
-we will have the GPU trying to read some random system memory address
-with some iommu this will broke the crtc engine and will lead to
-broken display and iommu error message.
+INFO: task qemu-system-i38:1085 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+qemu-system-i38 D ffff8800cfc137c0     0  1085      1 0x00000000
+ ffff8800c47ed898 0000000000000282 ffff8800be4596b0 00000000000137c0
+ ffff8800c47edfd8 ffff8800c47ec010 00000000000137c0 00000000000137c0
+ ffff8800c47edfd8 00000000000137c0 ffffffff82213020 ffff8800be4596b0
+Call Trace:
+ [<ffffffff81101ee0>] ? __lock_page+0x70/0x70
+ [<ffffffff81a0fdd9>] schedule+0x29/0x70
+ [<ffffffff81a0fe80>] io_schedule+0x60/0x80
+ [<ffffffff81101eee>] sleep_on_page+0xe/0x20
+ [<ffffffff81a0e1ca>] __wait_on_bit_lock+0x5a/0xc0
+ [<ffffffff81101ed7>] __lock_page+0x67/0x70
+ [<ffffffff8106f750>] ? autoremove_wake_function+0x40/0x40
+ [<ffffffff811867e6>] ? bio_add_page+0x36/0x40
+ [<ffffffff8110b692>] set_page_dirty_lock+0x52/0x60
+ [<ffffffff81186021>] bio_set_pages_dirty+0x51/0x70
+ [<ffffffff8118c6b4>] do_blockdev_direct_IO+0xb24/0xeb0
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff8118ca95>] __blockdev_direct_IO+0x55/0x60
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff811e91c8>] ext3_direct_IO+0xf8/0x390
+ [<ffffffff811e71a0>] ? ext3_get_blocks_handle+0xe00/0xe00
+ [<ffffffff81004b60>] ? xen_mc_flush+0xb0/0x1b0
+ [<ffffffff81104027>] generic_file_aio_read+0x737/0x780
+ [<ffffffff813bedeb>] ? gnttab_map_refs+0x15b/0x1e0
+ [<ffffffff811038f0>] ? find_get_pages+0x150/0x150
+ [<ffffffff8119736c>] aio_rw_vect_retry+0x7c/0x1d0
+ [<ffffffff811972f0>] ? lookup_ioctx+0x90/0x90
+ [<ffffffff81198856>] aio_run_iocb+0x66/0x1a0
+ [<ffffffff811998b8>] do_io_submit+0x708/0xb90
+ [<ffffffff81199d50>] sys_io_submit+0x10/0x20
+ [<ffffffff81a18d69>] system_call_fastpath+0x16/0x1b
 
-So to avoid this, disable crtc. For flicker less boot we will need
-to avoid moving the vram start address.
+The explanation is in the comment within the code:
 
-This patch should also fix :
+We need to do this because the pages shared by the frontend
+(xen-blkfront) can be already locked (lock_page, called by
+do_read_cache_page); when the userspace backend tries to use them
+with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
+do_blockdev_direct_IO is going to try to lock the same pages
+again resulting in a deadlock.
 
-https://bugs.freedesktop.org/show_bug.cgi?id=42373
+A simplified call graph looks like this:
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+pygrub                          QEMU
+-----------------------------------------------
+do_read_cache_page              io_submit
+  |                              |
+lock_page                       ext3_direct_IO
+                                 |
+                                bio_add_page
+                                 |
+                                lock_page
+
+Internally the xen-blkback uses m2p_add_override to swizzle (temporarily)
+a 'struct page' to have a different MFN (so that it can point to another
+guest). It also can easily find out whether another pfn corresponding
+to the mfn exists in the m2p, and can set the FOREIGN bit
+in the p2m, making sure that mfn_to_pfn returns the pfn of the backend.
+
+This allows the backend to perform direct_IO on these pages, but as a
+side effect prevents the frontend from using get_user_pages_fast on
+them while they are being shared with the backend.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c   |   57 -----------------------------------
- drivers/gpu/drm/radeon/radeon_asic.h |    8 +---
- drivers/gpu/drm/radeon/rv515.c       |   13 -------
- 3 files changed, 2 insertions(+), 76 deletions(-)
+ arch/x86/xen/p2m.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1117,24 +1117,8 @@ void evergreen_agp_enable(struct radeon_
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -686,6 +686,7 @@ int m2p_add_override(unsigned long mfn,
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
++	int ret = 0;
  
- void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *save)
- {
--	save->vga_control[0] = RREG32(D1VGA_CONTROL);
--	save->vga_control[1] = RREG32(D2VGA_CONTROL);
- 	save->vga_render_control = RREG32(VGA_RENDER_CONTROL);
- 	save->vga_hdp_control = RREG32(VGA_HDP_CONTROL);
--	save->crtc_control[0] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET);
--	save->crtc_control[1] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
--	if (rdev->num_crtc >= 4) {
--		save->vga_control[2] = RREG32(EVERGREEN_D3VGA_CONTROL);
--		save->vga_control[3] = RREG32(EVERGREEN_D4VGA_CONTROL);
--		save->crtc_control[2] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET);
--		save->crtc_control[3] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET);
--	}
--	if (rdev->num_crtc >= 6) {
--		save->vga_control[4] = RREG32(EVERGREEN_D5VGA_CONTROL);
--		save->vga_control[5] = RREG32(EVERGREEN_D6VGA_CONTROL);
--		save->crtc_control[4] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET);
--		save->crtc_control[5] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
--	}
+ 	pfn = page_to_pfn(page);
+ 	if (!PageHighMem(page)) {
+@@ -721,6 +722,24 @@ int m2p_add_override(unsigned long mfn,
+ 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+ 	spin_unlock_irqrestore(&m2p_override_lock, flags);
  
- 	/* Stop all video */
- 	WREG32(VGA_RENDER_CONTROL, 0);
-@@ -1245,47 +1229,6 @@ void evergreen_mc_resume(struct radeon_d
- 	/* Unlock host access */
- 	WREG32(VGA_HDP_CONTROL, save->vga_hdp_control);
- 	mdelay(1);
--	/* Restore video state */
--	WREG32(D1VGA_CONTROL, save->vga_control[0]);
--	WREG32(D2VGA_CONTROL, save->vga_control[1]);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_D3VGA_CONTROL, save->vga_control[2]);
--		WREG32(EVERGREEN_D4VGA_CONTROL, save->vga_control[3]);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_D5VGA_CONTROL, save->vga_control[4]);
--		WREG32(EVERGREEN_D6VGA_CONTROL, save->vga_control[5]);
--	}
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 1);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 1);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 1);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 1);
--	}
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, save->crtc_control[0]);
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, save->crtc_control[1]);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, save->crtc_control[2]);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, save->crtc_control[3]);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, save->crtc_control[4]);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, save->crtc_control[5]);
--	}
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
--	}
- 	WREG32(VGA_RENDER_CONTROL, save->vga_render_control);
- }
- 
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -262,13 +262,10 @@ extern int rs690_mc_wait_for_idle(struct
-  * rv515
-  */
- struct rv515_mc_save {
--	u32 d1vga_control;
--	u32 d2vga_control;
- 	u32 vga_render_control;
- 	u32 vga_hdp_control;
--	u32 d1crtc_control;
--	u32 d2crtc_control;
- };
++	/* p2m(m2p(mfn)) == mfn: the mfn is already present somewhere in
++	 * this domain. Set the FOREIGN_FRAME_BIT in the p2m for the other
++	 * pfn so that the following mfn_to_pfn(mfn) calls will return the
++	 * pfn from the m2p_override (the backend pfn) instead.
++	 * We need to do this because the pages shared by the frontend
++	 * (xen-blkfront) can be already locked (lock_page, called by
++	 * do_read_cache_page); when the userspace backend tries to use them
++	 * with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
++	 * do_blockdev_direct_IO is going to try to lock the same pages
++	 * again resulting in a deadlock.
++	 * As a side effect get_user_pages_fast might not be safe on the
++	 * frontend pages while they are being shared with the backend,
++	 * because mfn_to_pfn (that ends up being called by GUPF) will
++	 * return the backend pfn rather than the frontend pfn. */
++	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
++	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
++		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
 +
- int rv515_init(struct radeon_device *rdev);
- void rv515_fini(struct radeon_device *rdev);
- uint32_t rv515_mc_rreg(struct radeon_device *rdev, uint32_t reg);
-@@ -401,11 +398,10 @@ void r700_cp_fini(struct radeon_device *
-  * evergreen
-  */
- struct evergreen_mc_save {
--	u32 vga_control[6];
- 	u32 vga_render_control;
- 	u32 vga_hdp_control;
--	u32 crtc_control[6];
- };
-+
- void evergreen_pcie_gart_tlb_flush(struct radeon_device *rdev);
- int evergreen_init(struct radeon_device *rdev);
- void evergreen_fini(struct radeon_device *rdev);
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -281,12 +281,8 @@ int rv515_debugfs_ga_info_init(struct ra
- 
- void rv515_mc_stop(struct radeon_device *rdev, struct rv515_mc_save *save)
- {
--	save->d1vga_control = RREG32(R_000330_D1VGA_CONTROL);
--	save->d2vga_control = RREG32(R_000338_D2VGA_CONTROL);
- 	save->vga_render_control = RREG32(R_000300_VGA_RENDER_CONTROL);
- 	save->vga_hdp_control = RREG32(R_000328_VGA_HDP_CONTROL);
--	save->d1crtc_control = RREG32(R_006080_D1CRTC_CONTROL);
--	save->d2crtc_control = RREG32(R_006880_D2CRTC_CONTROL);
- 
- 	/* Stop all video */
- 	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
-@@ -311,15 +307,6 @@ void rv515_mc_resume(struct radeon_devic
- 	/* Unlock host access */
- 	WREG32(R_000328_VGA_HDP_CONTROL, save->vga_hdp_control);
- 	mdelay(1);
--	/* Restore video state */
--	WREG32(R_000330_D1VGA_CONTROL, save->d1vga_control);
--	WREG32(R_000338_D2VGA_CONTROL, save->d2vga_control);
--	WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
--	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
--	WREG32(R_006080_D1CRTC_CONTROL, save->d1crtc_control);
--	WREG32(R_006880_D2CRTC_CONTROL, save->d2crtc_control);
--	WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
--	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
- 	WREG32(R_000300_VGA_RENDER_CONTROL, save->vga_render_control);
+ 	return 0;
  }
+ EXPORT_SYMBOL_GPL(m2p_add_override);
+@@ -732,6 +751,7 @@ int m2p_remove_override(struct page *pag
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
++	int ret = 0;
  
+ 	pfn = page_to_pfn(page);
+ 	mfn = get_phys_to_machine(pfn);
+@@ -801,6 +821,22 @@ int m2p_remove_override(struct page *pag
+ 	} else
+ 		set_phys_to_machine(pfn, page->index);
+ 
++	/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
++	 * somewhere in this domain, even before being added to the
++	 * m2p_override (see comment above in m2p_add_override).
++	 * If there are no other entries in the m2p_override corresponding
++	 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
++	 * the original pfn (the one shared by the frontend): the backend
++	 * cannot do any IO on this page anymore because it has been
++	 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
++	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
++	 * pfn again. */
++	mfn &= ~FOREIGN_FRAME_BIT;
++	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
++	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
++			m2p_find_override(mfn) == NULL)
++		set_phys_to_machine(pfn, mfn);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(m2p_remove_override);
 
 
