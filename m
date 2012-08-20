@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab2HTM5Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 08:57:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51343 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab2HTM5N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 08:57:13 -0400
-Message-ID: <50323426.7040205@parallels.com>
-Date: Mon, 20 Aug 2012 16:57:10 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1755177Ab2HTM6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 08:58:20 -0400
+Received: from antcom.de ([188.40.178.216]:48997 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753158Ab2HTM6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 08:58:17 -0400
+Message-ID: <50323464.4070006@antcom.de>
+Date: Mon, 20 Aug 2012 14:58:12 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3 00/11] Series short description
-References: <20120703161844.11911.92996.stgit@localhost.localdomain> <20120724223617.GP8570@fieldses.org>
-In-Reply-To: <20120724223617.GP8570@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH RESEND v4] spi/pl022: add devicetree support
+References: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com>
+In-Reply-To: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-25.07.2012 02:36, J. Bruce Fields пишет:
-> On Tue, Jul 03, 2012 at 08:19:23PM +0400, Stanislav Kinsbursky wrote:
->> v3: Rebased on Bruce's tree, "for-3.6" branch
->>
->> v2: Rebased on Bruce's tree, "for-3.5" branch
->
-> Aside from the one question, this looks OK to me.
->
-> I seem to recall this needed to go through my tree for some reason, but
-> does Trond still want a chance to ACK/NACK it?
->
-> --b.
->
+Hi all,
 
-Bruce, I'll send this patch set once more to Trond.
-Thanks for your time.
+On 08/20/2012 01:39 PM, Alexandre Pereira da Silva wrote:
+> Add the chipselect array and cur_cs properties to pl022 main structure
+>
+> Add a wrapper function to decide if the cs should be controlled by the
+> cs_control callback or the chipselect gpio
+>
+> Populate chipselect property from cs-gpios
+>
+> Populate master->dev.of_node, so the spi bus can find child spi
+> devices and register them
+>
+> At pl022 setup, fill chip_data structure from dt nodes, if not provided
+> by platform.
+>
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> Acked-by: Roland Stigge <stigge@antcom.de>
 
+We somehow missed 3.6 with this one. Would be nice to have it in 3.7 now
+since it's useful for mach-lpc32xx when it's available.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+If there are any open issues, I can assist Alexandre on this patch.
+
+Thanks in advance,
+
+Roland
