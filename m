@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2HTD4y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:56:54 -0400
+	id S1754534Ab2HTD46 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:56:58 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092Ab2HTD4j (ORCPT
+	with ESMTP id S1753766Ab2HTD4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:56:39 -0400
+	Sun, 19 Aug 2012 23:56:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: [ 05/16] drm/radeon: do not reenable crtc after moving vram start address
-Date: Sun, 19 Aug 2012 20:56:04 -0700
-Message-Id: <20120820035458.422685232@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 01/16] s390/compat: fix mmap compat system calls
+Date: Sun, 19 Aug 2012 20:56:00 -0700
+Message-Id: <20120820035457.877880593@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035457.653002510@linuxfoundation.org>
 References: <20120820035457.653002510@linuxfoundation.org>
@@ -29,170 +30,51 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 81ee8fb6b52ec69eeed37fe7943446af1dccecc5 upstream.
+commit e85871218513c54f7dfdb6009043cb638f2fecbe upstream.
 
-It seems we can not update the crtc scanout address. After disabling
-crtc, update to base address do not take effect after crtc being
-reenable leading to at least frame being scanout from the old crtc
-base address. Disabling crtc display request lead to same behavior.
+The native 31 bit and the compat behaviour for the mmap system calls differ:
 
-So after changing the vram address if we don't keep crtc disabled
-we will have the GPU trying to read some random system memory address
-with some iommu this will broke the crtc engine and will lead to
-broken display and iommu error message.
+In native 31 bit mode the passed in address for the mmap system call will be
+unmodified passed to sys_mmap_pgoff().
+In compat mode however the passed in address will be modified with
+compat_ptr() which masks out the most significant bit.
 
-So to avoid this, disable crtc. For flicker less boot we will need
-to avoid moving the vram start address.
+The result is that in native 31 bit mode each mmap request (with MAP_FIXED)
+will fail where the most significat bit is set, while in compat mode it
+may succeed.
 
-This patch should also fix :
+This odd behaviour was introduced with d3815898 "[S390] mmap: add missing
+compat_ptr conversion to both mmap compat syscalls".
 
-https://bugs.freedesktop.org/show_bug.cgi?id=42373
+To restore a consistent behaviour accross native and compat mode this
+patch functionally reverts the above mentioned commit.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c   |   57 -----------------------------------
- drivers/gpu/drm/radeon/radeon_asic.h |    8 +---
- drivers/gpu/drm/radeon/rv515.c       |   13 -------
- 3 files changed, 2 insertions(+), 76 deletions(-)
+ arch/s390/kernel/compat_linux.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1019,24 +1019,8 @@ void evergreen_agp_enable(struct radeon_
- 
- void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *save)
- {
--	save->vga_control[0] = RREG32(D1VGA_CONTROL);
--	save->vga_control[1] = RREG32(D2VGA_CONTROL);
- 	save->vga_render_control = RREG32(VGA_RENDER_CONTROL);
- 	save->vga_hdp_control = RREG32(VGA_HDP_CONTROL);
--	save->crtc_control[0] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET);
--	save->crtc_control[1] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
--	if (rdev->num_crtc >= 4) {
--		save->vga_control[2] = RREG32(EVERGREEN_D3VGA_CONTROL);
--		save->vga_control[3] = RREG32(EVERGREEN_D4VGA_CONTROL);
--		save->crtc_control[2] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET);
--		save->crtc_control[3] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET);
--	}
--	if (rdev->num_crtc >= 6) {
--		save->vga_control[4] = RREG32(EVERGREEN_D5VGA_CONTROL);
--		save->vga_control[5] = RREG32(EVERGREEN_D6VGA_CONTROL);
--		save->crtc_control[4] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET);
--		save->crtc_control[5] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
--	}
- 
- 	/* Stop all video */
- 	WREG32(VGA_RENDER_CONTROL, 0);
-@@ -1147,47 +1131,6 @@ void evergreen_mc_resume(struct radeon_d
- 	/* Unlock host access */
- 	WREG32(VGA_HDP_CONTROL, save->vga_hdp_control);
- 	mdelay(1);
--	/* Restore video state */
--	WREG32(D1VGA_CONTROL, save->vga_control[0]);
--	WREG32(D2VGA_CONTROL, save->vga_control[1]);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_D3VGA_CONTROL, save->vga_control[2]);
--		WREG32(EVERGREEN_D4VGA_CONTROL, save->vga_control[3]);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_D5VGA_CONTROL, save->vga_control[4]);
--		WREG32(EVERGREEN_D6VGA_CONTROL, save->vga_control[5]);
--	}
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 1);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 1);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 1);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 1);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 1);
--	}
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, save->crtc_control[0]);
--	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, save->crtc_control[1]);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, save->crtc_control[2]);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, save->crtc_control[3]);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, save->crtc_control[4]);
--		WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, save->crtc_control[5]);
--	}
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
--	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
--	if (rdev->num_crtc >= 4) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
--	}
--	if (rdev->num_crtc >= 6) {
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
--		WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
--	}
- 	WREG32(VGA_RENDER_CONTROL, save->vga_render_control);
+--- a/arch/s390/kernel/compat_linux.c
++++ b/arch/s390/kernel/compat_linux.c
+@@ -631,7 +631,6 @@ asmlinkage unsigned long old32_mmap(stru
+ 		return -EFAULT;
+ 	if (a.offset & ~PAGE_MASK)
+ 		return -EINVAL;
+-	a.addr = (unsigned long) compat_ptr(a.addr);
+ 	return sys_mmap_pgoff(a.addr, a.len, a.prot, a.flags, a.fd,
+ 			      a.offset >> PAGE_SHIFT);
  }
+@@ -642,7 +641,6 @@ asmlinkage long sys32_mmap2(struct mmap_
  
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -253,13 +253,10 @@ void rs690_line_buffer_adjust(struct rad
-  * rv515
-  */
- struct rv515_mc_save {
--	u32 d1vga_control;
--	u32 d2vga_control;
- 	u32 vga_render_control;
- 	u32 vga_hdp_control;
--	u32 d1crtc_control;
--	u32 d2crtc_control;
- };
-+
- int rv515_init(struct radeon_device *rdev);
- void rv515_fini(struct radeon_device *rdev);
- uint32_t rv515_mc_rreg(struct radeon_device *rdev, uint32_t reg);
-@@ -387,11 +384,10 @@ void r700_cp_fini(struct radeon_device *
-  * evergreen
-  */
- struct evergreen_mc_save {
--	u32 vga_control[6];
- 	u32 vga_render_control;
- 	u32 vga_hdp_control;
--	u32 crtc_control[6];
- };
-+
- void evergreen_pcie_gart_tlb_flush(struct radeon_device *rdev);
- int evergreen_init(struct radeon_device *rdev);
- void evergreen_fini(struct radeon_device *rdev);
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -281,12 +281,8 @@ int rv515_debugfs_ga_info_init(struct ra
- 
- void rv515_mc_stop(struct radeon_device *rdev, struct rv515_mc_save *save)
- {
--	save->d1vga_control = RREG32(R_000330_D1VGA_CONTROL);
--	save->d2vga_control = RREG32(R_000338_D2VGA_CONTROL);
- 	save->vga_render_control = RREG32(R_000300_VGA_RENDER_CONTROL);
- 	save->vga_hdp_control = RREG32(R_000328_VGA_HDP_CONTROL);
--	save->d1crtc_control = RREG32(R_006080_D1CRTC_CONTROL);
--	save->d2crtc_control = RREG32(R_006880_D2CRTC_CONTROL);
- 
- 	/* Stop all video */
- 	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
-@@ -311,15 +307,6 @@ void rv515_mc_resume(struct radeon_devic
- 	/* Unlock host access */
- 	WREG32(R_000328_VGA_HDP_CONTROL, save->vga_hdp_control);
- 	mdelay(1);
--	/* Restore video state */
--	WREG32(R_000330_D1VGA_CONTROL, save->d1vga_control);
--	WREG32(R_000338_D2VGA_CONTROL, save->d2vga_control);
--	WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 1);
--	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 1);
--	WREG32(R_006080_D1CRTC_CONTROL, save->d1crtc_control);
--	WREG32(R_006880_D2CRTC_CONTROL, save->d2crtc_control);
--	WREG32(R_0060E8_D1CRTC_UPDATE_LOCK, 0);
--	WREG32(R_0068E8_D2CRTC_UPDATE_LOCK, 0);
- 	WREG32(R_000300_VGA_RENDER_CONTROL, save->vga_render_control);
+ 	if (copy_from_user(&a, arg, sizeof(a)))
+ 		return -EFAULT;
+-	a.addr = (unsigned long) compat_ptr(a.addr);
+ 	return sys_mmap_pgoff(a.addr, a.len, a.prot, a.flags, a.fd, a.offset);
  }
  
 
