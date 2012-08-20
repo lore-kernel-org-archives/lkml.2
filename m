@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab2HTOvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:51:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62370 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756827Ab2HTOvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:51:52 -0400
+	id S1756925Ab2HTOwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:52:05 -0400
+Received: from mail.us.es ([193.147.175.20]:52801 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756827Ab2HTOwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:52:01 -0400
+Date: Mon, 20 Aug 2012 16:51:44 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: walter harms <wharms@bfs.de>, netfilter-devel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] netfilter: PTR_RET can be used
+Message-ID: <20120820145144.GA18676@1984>
+References: <20120729004550.GA7049@localhost>
+ <5015280A.6000105@bfs.de>
+ <20120729121449.GA16489@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1345442050.25011.38.camel@marge.simpson.net>
-References: <CALKntY0G6WBYT-MGbzQ-e6X_XyRENzeJww7FiLGAgiHtrfwQiA@mail.gmail.com>
-	<1345442050.25011.38.camel@marge.simpson.net>
-Date: Mon, 20 Aug 2012 07:51:52 -0700
-Message-ID: <CALKntY0dQFxmSz+61Bia-zxpvsQg7kySG1mfk1GVc90YCc27qw@mail.gmail.com>
-Subject: Re: changing timeslice in linux
-From: Xin Tong <xerox.time.tech@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120729121449.GA16489@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 10:54 PM, Mike Galbraith <efault@gmx.de> wrote:
-> On Sun, 2012-08-19 at 11:58 -0700, Xin Tong wrote:
->> I have 2 questions about linux 2.6 x86_64 scheduler.
->>
->> 1. is the default scheduling algorithm SCHED_NORMAL in linux ?
->
-> Yes.
-Is there any document describing what the sched_normal is ? it is more
-difficult than SCHED_RR to infer its meaning just based on its name ?
->
->> 2. how do i change the time slice in linux source code ?
->
-> You shouldn't need to.  You can tune "slice" by adjusting
-> sched_latency_ns and sched_min_granularity_ns, but note that "slice" is
-> not a fixed quantum.  Also note that CFS preemption decisions are based
-> upon instantaneous state.  A task may have received a full (variable)
-> "slice" of CPU time, but preemption will be triggered only if a more
-> deserving task is available, so a "slice" is not the "max uninterrupted
-> CPU time" that you may expect it to be.. but it is somewhat similar.
->
-> -Mike
->
-This can be done without recompiling and reinstalling the kernel ?
-maybe one simply needs to write to a device file under /dev ?
+On Sun, Jul 29, 2012 at 08:14:49PM +0800, Fengguang Wu wrote:
+> > > --- linux.orig/net/bridge/netfilter/ebtable_filter.c	2012-07-29 08:41:09.703759534 +0800
+> > > +++ linux/net/bridge/netfilter/ebtable_filter.c	2012-07-29 08:41:14.255759643 +0800
+> > > @@ -100,9 +100,7 @@ static struct nf_hook_ops ebt_ops_filter
+> > >  static int __net_init frame_filter_net_init(struct net *net)
+> > >  {
+> > >  	net->xt.frame_filter = ebt_register_table(net, &frame_filter);
+> > > -	if (IS_ERR(net->xt.frame_filter))
+> > > -		return PTR_ERR(net->xt.frame_filter);
+> > > -	return 0;
+> > > +	return PTR_RET(net->xt.frame_filter);
+> > >  }
+> > >  
+> > 
+> > i do not understand this,
+> > ebt_register_table() return (struct ebt_table *) on success
+> > 
+> > Does PTR_RET really return 0 if this is a propper pointer ?
+> 
+> Right. Here is how PTR_RET defined. This patch does not change any behavior.
+> 
+> static inline int __must_check PTR_RET(const void *ptr)
+> {      
+>         if (IS_ERR(ptr))
+>                 return PTR_ERR(ptr);
+>         else   
+>                 return 0;
+> }
 
-Xin
+Applied, thanks Fengguang.
