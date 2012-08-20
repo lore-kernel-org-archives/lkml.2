@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab2HTNwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 09:52:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62428 "EHLO mga09.intel.com"
+	id S1755699Ab2HTNy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:54:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60656 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab2HTNwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 09:52:39 -0400
+	id S1755176Ab2HTNwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 09:52:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.77,797,1336374000"; 
-   d="scan'208";a="182911831"
+   d="scan'208";a="206475020"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: linux-mm@kvack.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -26,9 +26,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
         linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [PATCH v4 1/8] THP: Use real address for NUMA policy
-Date: Mon, 20 Aug 2012 16:52:30 +0300
-Message-Id: <1345470757-12005-2-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v4 6/8] mm: make clear_huge_page cache clear only around the fault address
+Date: Mon, 20 Aug 2012 16:52:35 +0300
+Message-Id: <1345470757-12005-7-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -38,51 +38,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Use the fault address, not the rounded down hpage address for NUMA
-policy purposes. In some circumstances this can give more exact
-NUMA policy.
+Clearing a 2MB huge page will typically blow away several levels
+of CPU caches. To avoid this only cache clear the 4K area
+around the fault address and use a cache avoiding clears
+for the rest of the 2MB area.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/huge_memory.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ mm/memory.c |   37 +++++++++++++++++++++++++++++--------
+ 1 files changed, 29 insertions(+), 8 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 57c4b93..70737ec 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -681,11 +681,11 @@ static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
+diff --git a/mm/memory.c b/mm/memory.c
+index dfc179b..625ca33 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3969,18 +3969,32 @@ EXPORT_SYMBOL(might_fault);
+ #endif
  
- static inline struct page *alloc_hugepage_vma(int defrag,
- 					      struct vm_area_struct *vma,
--					      unsigned long haddr, int nd,
-+					      unsigned long address, int nd,
- 					      gfp_t extra_gfp)
+ #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
++
++#ifndef ARCH_HAS_USER_NOCACHE
++#define ARCH_HAS_USER_NOCACHE 0
++#endif
++
++#if ARCH_HAS_USER_NOCACHE == 0
++#define clear_user_highpage_nocache clear_user_highpage
++#endif
++
+ static void clear_gigantic_page(struct page *page,
+-				unsigned long addr,
+-				unsigned int pages_per_huge_page)
++		unsigned long haddr, unsigned long fault_address,
++		unsigned int pages_per_huge_page)
  {
- 	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag, extra_gfp),
--			       HPAGE_PMD_ORDER, vma, haddr, nd);
-+			       HPAGE_PMD_ORDER, vma, address, nd);
- }
+ 	int i;
+ 	struct page *p = page;
++	unsigned long vaddr;
++	int target = (fault_address - haddr) >> PAGE_SHIFT;
  
- #ifndef CONFIG_NUMA
-@@ -710,7 +710,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (unlikely(khugepaged_enter(vma)))
- 			return VM_FAULT_OOM;
- 		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					  vma, haddr, numa_node_id(), 0);
-+					  vma, address, numa_node_id(), 0);
- 		if (unlikely(!page)) {
- 			count_vm_event(THP_FAULT_FALLBACK);
- 			goto out;
-@@ -944,7 +944,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (transparent_hugepage_enabled(vma) &&
- 	    !transparent_hugepage_debug_cow())
- 		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
--					      vma, haddr, numa_node_id(), 0);
-+					      vma, address, numa_node_id(), 0);
- 	else
- 		new_page = NULL;
+ 	might_sleep();
+-	for (i = 0; i < pages_per_huge_page;
+-	     i++, p = mem_map_next(p, page, i)) {
++	for (i = 0, vaddr = haddr; i < pages_per_huge_page;
++			i++, p = mem_map_next(p, page, i), vaddr += PAGE_SIZE) {
+ 		cond_resched();
+-		clear_user_highpage(p, addr + i * PAGE_SIZE);
++		if (!ARCH_HAS_USER_NOCACHE  || i == target)
++			clear_user_highpage(p, vaddr);
++		else
++			clear_user_highpage_nocache(p, vaddr);
+ 	}
+ }
+ void clear_huge_page(struct page *page,
+@@ -3988,16 +4002,23 @@ void clear_huge_page(struct page *page,
+ 		     unsigned int pages_per_huge_page)
+ {
+ 	int i;
++	unsigned long vaddr;
++	int target = (fault_address - haddr) >> PAGE_SHIFT;
+ 
+ 	if (unlikely(pages_per_huge_page > MAX_ORDER_NR_PAGES)) {
+-		clear_gigantic_page(page, haddr, pages_per_huge_page);
++		clear_gigantic_page(page, haddr, fault_address,
++				pages_per_huge_page);
+ 		return;
+ 	}
+ 
+ 	might_sleep();
+-	for (i = 0; i < pages_per_huge_page; i++) {
++	for (i = 0, vaddr = haddr; i < pages_per_huge_page;
++			i++, page++, vaddr += PAGE_SIZE) {
+ 		cond_resched();
+-		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
++		if (!ARCH_HAS_USER_NOCACHE || i == target)
++			clear_user_highpage(page, vaddr);
++		else
++			clear_user_highpage_nocache(page, vaddr);
+ 	}
+ }
  
 -- 
 1.7.7.6
