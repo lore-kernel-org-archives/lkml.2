@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab2HTFiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 01:38:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54182 "EHLO
+	id S1754959Ab2HTFjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 01:39:23 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63324 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab2HTFh5 (ORCPT
+	with ESMTP id S1752872Ab2HTFjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 01:37:57 -0400
+	Mon, 20 Aug 2012 01:39:21 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Subject: Re: [PATCH] leds-lm3530: replace pwm platform functions with generic pwm functions
-Date: Mon, 20 Aug 2012 05:37:48 +0000
+To: Chao Xie <xiechao.mail@gmail.com>
+Subject: Re: [PATCH V5 0/5] clk: mmp: add clock framework for mmp
+Date: Mon, 20 Aug 2012 05:39:17 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Bryan Wu <bryan.wu@canonical.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF0095@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF0095@DQHE02.ent.ti.com>
+Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
+        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, chao.xie@marvell.com
+References: <1345431315-8037-1-git-send-email-xiechao.mail@gmail.com>
+In-Reply-To: <1345431315-8037-1-git-send-email-xiechao.mail@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208200537.48993.arnd@arndb.de>
-X-Provags-ID: V02:K0:Le+myXu809roeKGcXyhBcr2UC05aTKxztdDQg0Rq+zr
- AnbL79E07U4sehH+QVzvcyTTk4k5wbdGjI8E2n49ZDZiArtnzB
- 8b0SwbVsgOrW7cSUwcw0pNdCWZxvNrYLJxymrFZYcMGxF0/hMb
- 8CI9egYgGP7YinuY6K50O9NYqcU53Rm9hBj6rqi/arLaveYJTS
- hnvWpDG/3AWYyNCHnrNgpTUehcQ3BjETJAI4C2XaC0wGLYexVH
- ny6iMsvNYc/yYpXYk86+vdcIcTyvy6UFLTdLvms+xkdePvhyN9
- PaUpNc9hxCN91HKjKbMWJ+Yj9VUNsK1myviIhAdPwZRUP4MPrY
- kepFfOQH6exK7CnIpC6I=
+Message-Id: <201208200539.17878.arnd@arndb.de>
+X-Provags-ID: V02:K0:fc5WV4VS6nwbi2UynLr6SXGy4JTs64u7nakKQMkTrsG
+ t5fhWbbjFJp65vGvDjNcAGoHoq+XOLjpb62WODBp3HZiNxTuqk
+ v/uNQduKq9ZD7E/CfGF3RQ6sKGt/C/ZX4gIInpJ6TzIARVzSO0
+ qkgeHRsjCQJxTWtmOJlq1iIXjwUxaGnApT5KJbsfiriQTbGqnJ
+ sCMbtfuCP2uRBEvJiMi1Fts9KPfEK/IRo3qlvOJcE6zhwo6toX
+ /M0ls369XW7hgalH9aSKtyI6ReuN0sbksk+VdNgCqwkmYj+cJG
+ KsSJKCafAfxItHEKVjUT6H4XGRvWMuLA9P7ujuXg3jVC3ndTA6
+ 4cMmnD2eHwwkZAktlzq0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 August 2012, Kim, Milo wrote:
-> +#ifdef CONFIG_PWM
-> +static int lm3530_pwm_request(struct lm3530_data *drvdata)
-> +{
-> +       int pwm_id;
-> +
-> +       /* if the pwm device exists, skip requesting the device */
-> +       if (drvdata->pwm)
-> +               return 0;
-> +
-> +       pwm_id = drvdata->pdata ? drvdata->pdata->pwm_id : 0;
-> +
-> +       drvdata->pwm = pwm_request(pwm_id, "lm3530-pwm");
-> +       drvdata->period_ns = drvdata->pdata ? drvdata->pdata->period_ns : 0;
-> +
-> +       return IS_ERR(drvdata->pwm) ? PTR_ERR(drvdata->pwm) : 0;
-> +}
-> +
+On Monday 20 August 2012, Chao Xie wrote:
+> 
+> From: Chao Xie <chao.xie@marvell.com>
+> 
+> v1->v2:
+> replace __raw_xxx with xxx_relax
+> use ioremap to remap the registers. Finaly it will use device tree to
+> get the physical address.
+> do not use macro to register clocks, and directly call the functions.
+> 
+> v2->v3:
+> pxa910 will have APB extension clock, so some peripharals will have
+> clocks in APB extension base.
+> change pxa168-pwm to be pxa910-pwm for pxa910. It will fit the current
+> pwm driver.
+> 
+> v3->v4:
+> remove addtional clock name definition
+> replace left __raw_xxx
+> 
+> v4->v5:
+> change the format of the file
+> 
 
-A few comments on this:
-
-* Rather than having to do the #ifdef here, I think it would be better if
-  the PWM subsystem provided stub functions for pwm_request, pwm_config,
-  pwm_enable, pwm_disable and pwm_free that do nothing, so you can in effect
-  let the compiler optimize away the above code.
-
-* I don't understand why you need the "if (rvdata->pwm) return 0;" case.
-  It's normally better to do the initialization exactly once from the
-  probe() function. You might want to return -EPROBE_DEFER if the pwm
-  source is not yet available though.
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
 	Arnd
