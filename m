@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2HTIxC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 04:53:02 -0400
-Received: from shmail0.sohard.de ([212.114.139.117]:48414 "EHLO
-	shmail0.sohard.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab2HTIw7 convert rfc822-to-8bit (ORCPT
+	id S1754191Ab2HTIxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 04:53:50 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:44898 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2HTIxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 04:52:59 -0400
-Date: Mon, 20 Aug 2012 10:52:56 +0200 (CEST)
-From: Rene Buergel <rene.buergel@sohard.de>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3]: ezusb cleanup, FX2 support, firmware downloading support
-Message-ID: <7ea0bc18-451f-4025-885b-5071b82e8769@shmail0>
-In-Reply-To: <20120815222055.GA22907@kroah.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Originating-IP: [194.138.39.52]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - IE8 (Win)/7.1.3_GA_3346)
+	Mon, 20 Aug 2012 04:53:48 -0400
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+To: "'Joel Becker'" <jlbec@evilplan.org>,
+        "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Alan Stern'" <stern@rowland.harvard.edu>
+References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
+ <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
+ <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
+ <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
+ <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
+ <502CF9E3.2010608@linutronix.de>
+ <20120817014609.GB2949@dhcp-172-17-9-228.mtv.corp.google.com>
+ <502E0D3B.10006@linutronix.de> <000201cd7c63$60186370$20492a50$%p@samsung.com>
+ <502E1E23.60201@linutronix.de>
+ <20120820055958.GD2102@dhcp-172-17-9-228.mtv.corp.google.com>
+In-reply-to: <20120820055958.GD2102@dhcp-172-17-9-228.mtv.corp.google.com>
+Subject: RE: [RFC 0/2] USB gadget - configfs
+Date: Mon, 20 Aug 2012 10:53:42 +0200
+Message-id: <000001cd7eb1$4d189420$e749bc60$%p@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1+mQ5hyTVBQJBhTIyVmYuWUfy2wQAFwdRw
+Content-language: pl
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Ursprüngliche Mail -----
-> On Fri, Aug 03, 2012 at 05:06:27PM +0200, René Bürgel wrote:
-> > Hello,
-> > 
-> > this is a patches-series for controllers using the ezusb-functions.
-> > 
-> > ezusb:  remove dependency to usb_serial interface
-> > euzsb: add support for Cypress FX2LP
-> > ezusb: add functions for firmware download
+Hello Joel,
+
+Thanks for your reply.
+
+On Monday, August 20, 2012 8:00 AM Joel Becker wrote:
 > 
-> Nice series, but your patches are white-space damaged, and I can't
-> apply
-> them at all.
+> 	I think what you want here is a symlink.  Create a directory
+> high in the tree called 'ready' or 'available', and when you want to
+> lock the device in place, symlink it into that directory.  This will pin
+> the item.  You can also make use of the ->allow_link() and ->drop_link()
+> callbacks to prevent symlinking an item until it is fully configured,
+> and prevent unlinking an item that is in use.
 > 
-> Also, your third patch has the wrong Subject: line 
-> 
-> Care to resend them in a format that I can apply them in?
-> 
-> thanks,
-> 
-> greg k-h
+>   $ ln -s /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/lun0 \
+>         /cfg/usb-function-gadget/ready/
 > 
 
-Thanks for reviewing it. 
+Is using the userspace program "ln" the way you suggest doing it? Or just
+a suggestion about what should be the link target and the link name?
 
-I will check my email-settings and resend the patches.
+If links are to be created from userspace then some other process can race
+us and rmdir "lun0" before ln is called, can't it?
 
-I'm sorry about the wrong Subject line, this will be corrected when resending.
+And a question to you as the creator of configfs: is using symlinks to
+prevent config item deletion their intended purpose? How do you like it?
 
-I got some further questions: 
-- Although i removed the dependency from ezusb to usb_serial,
-  ezusb.c still resides in drivers/usb/serial.
-  Can you give me a hint, where to put it instead?
-  I would like to do that with an additional patch.
-- is it fine to base the soon-to-be-resent patches on 3.6-rc2?
+Thanks,
+
+Andrzej
 
 
-René Bürgel
