@@ -1,180 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab2HTOt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:49:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38811 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308Ab2HTOt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:49:56 -0400
-Message-ID: <50324E84.6080407@ti.com>
-Date: Mon, 20 Aug 2012 16:49:40 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.luna@linaro.org>
-CC: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] ARM: OMAP: hwmod: partially un-reset hwmods might
- not be properly enabled
-References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org> <1342466485-1050-2-git-send-email-omar.luna@linaro.org>
-In-Reply-To: <1342466485-1050-2-git-send-email-omar.luna@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756799Ab2HTOuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:50:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44536 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308Ab2HTOuC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:50:02 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 01/12] kernel/debug: Mask KGDB NMI upon entry
+Date: Mon, 20 Aug 2012 07:47:19 -0700
+Message-Id: <1345474050-8339-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.11.5
+In-Reply-To: <20120820144449.GA32560@lizard>
+References: <20120820144449.GA32560@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Omar,
+The new arch callback should manage NMIs that usually cause KGDB to
+enter. That is, not all NMIs should be enabled/disabled, but only
+those that issue kgdb_handle_exception().
 
-On 07/16/2012 09:21 PM, Omar Ramirez Luna wrote:
-> Some IP blocks might not be using/controlling more than one
-> reset line, this check loosens the restriction to fully use
-> hwmod framework for those drivers.
-> 
-> E.g.: ipu has reset lines: mmu_cache, cpu0 and cpu1.
-> - cpu1 might not be used and hence (with previous check)
->   won't be fully enabled by hwmod code.
+We must mask it as serial-line interrupt can be used as an NMI, so
+if the original KGDB-entry cause was say a breakpoint, then every
+input to KDB console will cause KGDB to reenter, which we don't want.
 
-You mean that you might have some case where you need to enable the
-mmu_cache and cpu0 and thus deassert only the mmu/cpu0 while keeping the
-cpu1 under reset?
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ include/linux/kgdb.h      | 23 +++++++++++++++++++++++
+ kernel/debug/debug_core.c | 36 +++++++++++++++++++++++++++++++++---
+ 2 files changed, 56 insertions(+), 3 deletions(-)
 
-So the any_hardreset is indeed not appropriate in that case.
-
-In fact, since the hardreset cannot be handled at all by the hwmod fmwk,
-I'm even wondering if we should take care of checking the state at all.
-But as Paul stated, if was done due to the lack of understanding about
-the diver usage, so maybe things will become clearer once we will have
-that code available.
-
-So I guess that checking for all the lines for the hardreset state is
-anyway already a first step toward a good understanding of the reset
-need for the remote processors.
-
-The patch looks fine to me considering that we do not have a lot of
-information about the usage :-(
-
-Maybe you could add more information in the changelog to explain the way
-you are going to use the reset API.
-
-Regards,
-Benoit
-
-
-> While at it, prevent _omap4_module_disable if all the hardreset
-> lines on an IP block are not under reset.
-
-
-> 
-> Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
-> ---
->  arch/arm/mach-omap2/omap_hwmod.c |   37 ++++++++++++++++++++++---------------
->  1 files changed, 22 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-> index 3215dad..091c199 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod.c
-> @@ -1558,25 +1558,28 @@ static int _read_hardreset(struct omap_hwmod *oh, const char *name)
->  }
->  
->  /**
-> - * _are_any_hardreset_lines_asserted - return true if part of @oh is hard-reset
-> + * _are_all_hardreset_lines_asserted - return true if the @oh is hard-reset
->   * @oh: struct omap_hwmod *
->   *
-> - * If any hardreset line associated with @oh is asserted, then return true.
-> - * Otherwise, if @oh has no hardreset lines associated with it, or if
-> - * no hardreset lines associated with @oh are asserted, then return false.
-> + * If all hardreset lines associated with @oh are asserted, then return true.
-> + * Otherwise, if part of @oh is out hardreset or if no hardreset lines
-> + * associated with @oh are asserted, then return false.
->   * This function is used to avoid executing some parts of the IP block
-> - * enable/disable sequence if a hardreset line is set.
-> + * enable/disable sequence if its hardreset line is set.
->   */
-> -static bool _are_any_hardreset_lines_asserted(struct omap_hwmod *oh)
-> +static bool _are_all_hardreset_lines_asserted(struct omap_hwmod *oh)
->  {
-> -	int i;
-> +	int i, rst_cnt = 0;
->  
->  	if (oh->rst_lines_cnt == 0)
->  		return false;
->  
->  	for (i = 0; i < oh->rst_lines_cnt; i++)
->  		if (_read_hardreset(oh, oh->rst_lines[i].name) > 0)
-> -			return true;
-> +			rst_cnt++;
-> +
-> +	if (oh->rst_lines_cnt == rst_cnt)
-> +		return true;
->  
->  	return false;
->  }
-> @@ -1595,6 +1598,13 @@ static int _omap4_disable_module(struct omap_hwmod *oh)
->  	if (!oh->clkdm || !oh->prcm.omap4.modulemode)
->  		return -EINVAL;
->  
-> +	/*
-> +	 * Since integration code might still be doing something, only
-> +	 * disable if all lines are under hardreset.
-> +	 */
-> +	if (!_are_all_hardreset_lines_asserted(oh))
-> +		return 0;
-> +
->  	pr_debug("omap_hwmod: %s: %s\n", oh->name, __func__);
->  
->  	omap4_cminst_module_disable(oh->clkdm->prcm_partition,
-> @@ -1602,9 +1612,6 @@ static int _omap4_disable_module(struct omap_hwmod *oh)
->  				    oh->clkdm->clkdm_offs,
->  				    oh->prcm.omap4.clkctrl_offs);
->  
-> -	if (_are_any_hardreset_lines_asserted(oh))
-> -		return 0;
-> -
->  	v = _omap4_wait_target_disable(oh);
->  	if (v)
->  		pr_warn("omap_hwmod: %s: _wait_target_disable failed\n",
-> @@ -1830,7 +1837,7 @@ static int _enable(struct omap_hwmod *oh)
->  	}
->  
->  	/*
-> -	 * If an IP block contains HW reset lines and any of them are
-> +	 * If an IP block contains HW reset lines and all of them are
->  	 * asserted, we let integration code associated with that
->  	 * block handle the enable.  We've received very little
->  	 * information on what those driver authors need, and until
-> @@ -1838,7 +1845,7 @@ static int _enable(struct omap_hwmod *oh)
->  	 * posted to the public lists, this is probably the best we
->  	 * can do.
->  	 */
-> -	if (_are_any_hardreset_lines_asserted(oh))
-> +	if (_are_all_hardreset_lines_asserted(oh))
->  		return 0;
->  
->  	/* Mux pins for device runtime if populated */
-> @@ -1918,7 +1925,7 @@ static int _idle(struct omap_hwmod *oh)
->  		return -EINVAL;
->  	}
->  
-> -	if (_are_any_hardreset_lines_asserted(oh))
-> +	if (_are_all_hardreset_lines_asserted(oh))
->  		return 0;
->  
->  	if (oh->class->sysc)
-> @@ -2006,7 +2013,7 @@ static int _shutdown(struct omap_hwmod *oh)
->  		return -EINVAL;
->  	}
->  
-> -	if (_are_any_hardreset_lines_asserted(oh))
-> +	if (_are_all_hardreset_lines_asserted(oh))
->  		return 0;
->  
->  	pr_debug("omap_hwmod: %s: disabling\n", oh->name);
-> 
+diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
+index c4d2fc1..3b111a6 100644
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -221,6 +221,29 @@ extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
+  */
+ extern void kgdb_arch_late(void);
+ 
++/**
++ *	kgdb_arch_enable_nmi - Enable or disable KGDB-entry NMI
++ *	@on: Flag to either enable or disable an NMI
++ *
++ *	This is an architecture-specific "back-end" for kgdb_enable_nmi(). The
++ *	call does not count disable/enable requests, do not use it directly.
++ */
++extern void kgdb_arch_enable_nmi(bool on);
++
++/**
++ *	kgdb_enable_nmi - Enable or disable KGDB-entry NMI
++ *	@on: Flag to either enable or disable an NMI
++ *
++ *	This function manages NMIs that usually cause KGDB to enter. That is,
++ *	not all NMIs should be enabled or disabled, but only those that issue
++ *	kgdb_handle_exception().
++ *
++ *	The call counts disable requests, and thus allows to nest disables.
++ *	But trying to enable already enabled NMI is an error. The call returns
++ *	1 if NMI has been actually enabled after the call, and a value <= 0 if
++ *	it is still disabled.
++ */
++extern int kgdb_enable_nmi(bool on);
+ 
+ /**
+  * struct kgdb_arch - Describe architecture specific values.
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 0557f24..b621d1e 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -214,6 +214,30 @@ int __weak kgdb_skipexception(int exception, struct pt_regs *regs)
+ 	return 0;
+ }
+ 
++void __weak kgdb_arch_enable_nmi(bool on)
++{
++}
++
++int kgdb_enable_nmi(bool on)
++{
++	static atomic_t cnt;
++	int ret;
++
++	ret = atomic_add_return(on ? 1 : -1, &cnt);
++	if (ret > 1 && on) {
++		/*
++		 * There should be only one instance that calls this function
++		 * in "enable, disable" order. All other users must call
++		 * disable first, then enable. If not, something is wrong.
++		 */
++		WARN_ON(1);
++		return 1;
++	}
++
++	kgdb_arch_enable_nmi(ret > 0);
++	return ret;
++}
++
+ /*
+  * Some architectures need cache flushes when we set/clear a
+  * breakpoint:
+@@ -672,6 +696,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+ {
+ 	struct kgdb_state kgdb_var;
+ 	struct kgdb_state *ks = &kgdb_var;
++	int ret = 0;
++
++	kgdb_enable_nmi(0);
+ 
+ 	ks->cpu			= raw_smp_processor_id();
+ 	ks->ex_vector		= evector;
+@@ -681,11 +708,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+ 	ks->linux_regs		= regs;
+ 
+ 	if (kgdb_reenter_check(ks))
+-		return 0; /* Ouch, double exception ! */
++		goto out; /* Ouch, double exception ! */
+ 	if (kgdb_info[ks->cpu].enter_kgdb != 0)
+-		return 0;
++		goto out;
+ 
+-	return kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
++	ret = kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
++out:
++	kgdb_enable_nmi(1);
++	return ret;
+ }
+ 
+ int kgdb_nmicallback(int cpu, void *regs)
+-- 
+1.7.11.5
 
