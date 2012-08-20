@@ -1,111 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab2HTOSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:18:18 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57757 "EHLO
+	id S1756648Ab2HTOSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:18:50 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62085 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2HTOSQ (ORCPT
+	with ESMTP id S1754954Ab2HTOSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:18:16 -0400
+	Mon, 20 Aug 2012 10:18:48 -0400
+Date: Mon, 20 Aug 2012 10:08:44 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, joro@8bytes.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg
+ call-back
+Message-ID: <20120820140843.GA7732@phenom.dumpdata.com>
+References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+ <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CABJ1b_TCF=Jfb0uuoh-M87n6faezj4OqZ4S_nJLA0yKga2-ioQ@mail.gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-2-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkda0wUW4E3y=ucGRFu5fwwyFWo2dc=4qBaH6CFSOW2ZL_A@mail.gmail.com>
-	<CABJ1b_TCF=Jfb0uuoh-M87n6faezj4OqZ4S_nJLA0yKga2-ioQ@mail.gmail.com>
-Date: Mon, 20 Aug 2012 16:18:15 +0200
-Message-ID: <CACRpkdaozBQPe1PkjaKrnqYZ=tpX1mv1iS-rCrJaSFAsQqzgnA@mail.gmail.com>
-Subject: Re: [PATCH 01/11] pinctrl: mvebu: pinctrl driver core
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 11:46 AM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
-> On 8/20/12, Linus Walleij <linus.walleij@linaro.org> wrote:
+On Mon, Aug 20, 2012 at 03:56:03PM +0200, Joerg Roedel wrote:
+> This call-back points to the right function for initializing
+> the msi_msg structure.
 
->> Are you taking this patch series through some Marvell tree or do you want
->> me to carry it in the pinctrl tree?
->
-> I think it would be better to take it through the Marvell tree of Jason
-> Cooper. It is only for Marvell SoCs anyway.
+What is the 'hpet_id' purpose in this?
 
-OK.
-
->> There is some other "variant" field elsewhere that is
->> a u8, is this correct? In this and the other case, should
->> this "variant" rather be an enum?
->
-> I'll review the variant types but inside pinctrl-mvebu variant
-> is used as a bit mask to distinguish different variants. Anyway,
-> they should always be the same size.
-
-Aha bitmask, seems you can only have 8 different variants of
-the Marvell's then?
-
->> Is it possible to use devm_* managed devm_kzalloc() for this map
->> so you don't need to free it explicitly?
->>
->> (Maybe not, just checking.)
->
-> Hmm, I guess not as I thought I've read not to use devm_kfree when
-> you allocate _and_ free stuff on runtime without removing the device
-> itself, right?
-
-You're right.
-
->> So, there will never be > 256 pins on a Marvell platform?
->
-> Well, with all current platforms we are well below 100. I guess
-> 256 max (muxable) pins will be enough.
-
-OK.
-
->>> + * struct mvebu_mpp_ctrl_setting - describe a mpp ctrl setting
->>> + * @val: ctrl setting value
->>
->> It is not obvious to me what this means, it it possible to elaborate
->> on how this member is defined and used?
->
-> Well, I see if I can clarify the description but wrt the datasheet it
-> _should_ be quite obvious.
-
-I mainly worry about being able to read the code and figure out
-what's going on, if the datasheet is vital then pls include some
-link to it or so in the header of the file (but preferrably the code
-should speak for itself).
-
->>> + * @variant: (optional) variant identifier mask
->>
->> This thing again, there are lots of "variants" around here.
->> Is it a candidate for an enum?
->
-> As it is a mask, I don't think enum fits here.
-
-OK. No big deal anyway.
-
-> In some internal review with Andrew I also added a spinlock to
-> mvebu_pinconf_get/_set that will protect all calls to generic and specific
-> _get/_set register accesses. Moreover, I replaced clk_get_sys in pinctrl-dove
-> with the devm_ counterpart and removed the explicit clk_put.
-
-I had some separate comments on that clk thing...
-Anyway, looking forward to v2, this is progressing quickly
-I think.
-
-Yours,
-Linus Walleij
+> 
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  arch/x86/include/asm/io_apic.h  |    4 +++
+>  arch/x86/include/asm/x86_init.h |    4 +++
+>  arch/x86/kernel/apic/io_apic.c  |   59 ++++++++++++++++++++-------------------
+>  arch/x86/kernel/x86_init.c      |    1 +
+>  drivers/iommu/irq_remapping.c   |    9 ++++--
+>  5 files changed, 46 insertions(+), 31 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+> index 0db4429..59a3f4e 100644
+> --- a/arch/x86/include/asm/io_apic.h
+> +++ b/arch/x86/include/asm/io_apic.h
+> @@ -160,6 +160,9 @@ extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
+>  					  unsigned int pin, int vector);
+>  extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
+>  
+> +extern void native_compose_msi_msg(struct pci_dev *pdev,
+> +				   unsigned int irq, unsigned int dest,
+> +				   struct msi_msg *msg, u8 hpet_id);
+>  int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
+>  
+>  extern int save_ioapic_entries(void);
+> @@ -245,6 +248,7 @@ static inline void disable_ioapic_support(void) { }
+>  #define native_ioapic_set_affinity	NULL
+>  #define native_setup_ioapic_entry	NULL
+>  #define native_setup_timer_pin		NULL
+> +#define native_compose_msi_msg		NULL
+>  #endif
+>  
+>  #endif /* _ASM_X86_IO_APIC_H */
+> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+> index ffe5860..1430af0 100644
+> --- a/arch/x86/include/asm/x86_init.h
+> +++ b/arch/x86/include/asm/x86_init.h
+> @@ -180,9 +180,13 @@ struct x86_platform_ops {
+>  };
+>  
+>  struct pci_dev;
+> +struct msi_msg;
+>  
+>  struct x86_msi_ops {
+>  	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
+> +	void (*compose_msi_msg)(struct pci_dev *dev, unsigned int irq,
+> +				unsigned int dest, struct msi_msg *msg,
+> +			       u8 hpet_id);
+>  	void (*teardown_msi_irq)(unsigned int irq);
+>  	void (*teardown_msi_irqs)(struct pci_dev *dev);
+>  	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index c2f2d2d..aac3f62 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -2989,37 +2989,16 @@ void destroy_irq(unsigned int irq)
+>  /*
+>   * MSI message composition
+>   */
+> -#ifdef CONFIG_PCI_MSI
+> -static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+> -			   struct msi_msg *msg, u8 hpet_id)
+> +void native_compose_msi_msg(struct pci_dev *pdev,
+> +			    unsigned int irq, unsigned int dest,
+> +			    struct msi_msg *msg, u8 hpet_id)
+>  {
+> -	struct irq_cfg *cfg;
+> -	int err;
+> -	unsigned dest;
+> -
+> -	if (disable_apic)
+> -		return -ENXIO;
+> -
+> -	cfg = irq_cfg(irq);
+> -	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+> -	if (err)
+> -		return err;
+> -
+> -	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+> -					   apic->target_cpus(), &dest);
+> -	if (err)
+> -		return err;
+> +	struct irq_cfg *cfg = irq_cfg(irq);
+>  
+> -	if (irq_remapped(cfg)) {
+> -		compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
+> -		return err;
+> -	}
+> +	msg->address_hi = MSI_ADDR_BASE_HI;
+>  
+>  	if (x2apic_enabled())
+> -		msg->address_hi = MSI_ADDR_BASE_HI |
+> -				  MSI_ADDR_EXT_DEST_ID(dest);
+> -	else
+> -		msg->address_hi = MSI_ADDR_BASE_HI;
+> +		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
+>  
+>  	msg->address_lo =
+>  		MSI_ADDR_BASE_LO |
+> @@ -3038,8 +3017,32 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+>  			MSI_DATA_DELIVERY_FIXED:
+>  			MSI_DATA_DELIVERY_LOWPRI) |
+>  		MSI_DATA_VECTOR(cfg->vector);
+> +}
+>  
+> -	return err;
+> +#ifdef CONFIG_PCI_MSI
+> +static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+> +			   struct msi_msg *msg, u8 hpet_id)
+> +{
+> +	struct irq_cfg *cfg;
+> +	int err;
+> +	unsigned dest;
+> +
+> +	if (disable_apic)
+> +		return -ENXIO;
+> +
+> +	cfg = irq_cfg(irq);
+> +	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+> +	if (err)
+> +		return err;
+> +
+> +	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+> +					   apic->target_cpus(), &dest);
+> +	if (err)
+> +		return err;
+> +
+> +	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+> +
+> +	return 0;
+>  }
+>  
+>  static int
+> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+> index eba02e5..af5874e 100644
+> --- a/arch/x86/kernel/x86_init.c
+> +++ b/arch/x86/kernel/x86_init.c
+> @@ -115,6 +115,7 @@ struct x86_platform_ops x86_platform = {
+>  EXPORT_SYMBOL_GPL(x86_platform);
+>  struct x86_msi_ops x86_msi = {
+>  	.setup_msi_irqs		= native_setup_msi_irqs,
+> +	.compose_msi_msg	= native_compose_msi_msg,
+>  	.teardown_msi_irq	= native_teardown_msi_irq,
+>  	.teardown_msi_irqs	= default_teardown_msi_irqs,
+>  	.restore_msi_irqs	= default_restore_msi_irqs,
+> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+> index d9cd920f..e61a174 100644
+> --- a/drivers/iommu/irq_remapping.c
+> +++ b/drivers/iommu/irq_remapping.c
+> @@ -102,6 +102,7 @@ static void __init irq_remapping_modify_x86_ops(void)
+>  	x86_io_apic_ops.setup_timer_pin	= irq_remapping_setup_timer_pin;
+>  	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
+>  	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+> +	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
+>  }
+>  
+>  static __init int setup_nointremap(char *str)
+> @@ -242,10 +243,12 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
+>  			      unsigned int irq, unsigned int dest,
+>  			      struct msi_msg *msg, u8 hpet_id)
+>  {
+> -	if (!remap_ops || !remap_ops->compose_msi_msg)
+> -		return;
+> +	struct irq_cfg *cfg = irq_get_chip_data(irq);
+>  
+> -	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+> +	if (cfg && !irq_remapped(cfg))
+> +		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+> +	else if (remap_ops && remap_ops->compose_msi_msg)
+> +		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+>  }
+>  
+>  static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+> -- 
+> 1.7.9.5
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
