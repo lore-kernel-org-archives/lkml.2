@@ -1,142 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab2HTNPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 09:15:22 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35605 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab2HTNPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 09:15:16 -0400
-Message-ID: <1345468396.2355.27.camel@falcor>
-Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys
- and sign modules
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, jmorris@namei.org,
-        rusty@rustcorp.com.au, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 20 Aug 2012 09:13:16 -0400
-In-Reply-To: <CA+5PVA5=p9Xrd7BWN9XCyG=LJ279wsOfCgWjfhtttUuh9Gp_oQ@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	 <2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
-		<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-		<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
-		<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
-		<CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
-		<1345164802.2433.21.camel@falcor.watson.ibm.com>
-		<CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
-		<1345223322.2257.75.camel@falcor>
-		<CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
-		<1345424724.2384.15.camel@falcor>
-	 <CA+5PVA5=p9Xrd7BWN9XCyG=LJ279wsOfCgWjfhtttUuh9Gp_oQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082013-9360-0000-0000-000009A3555E
+	id S1755847Ab2HTNWB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:22:01 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45857 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754065Ab2HTNV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 09:21:59 -0400
+Date: Mon, 20 Aug 2012 09:21:41 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Alexander Thomas <alexander.thomas@esaturnus.com>
+Cc: Carlos Alberto Lopez Perez <clopez@igalia.com>,
+        Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lanyfs@librelist.com
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+Message-ID: <20120820132141.GC5197@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Alexander Thomas <alexander.thomas@esaturnus.com>,
+	Carlos Alberto Lopez Perez <clopez@igalia.com>,
+	Dan Luedtke <mail@danrl.de>,
+	Jochen Striepe <jochen@tolot.escape.de>,
+	Marco Stornelli <marco.stornelli@gmail.com>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	lanyfs@librelist.com
+References: <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
+ <1345371135.4441.2.camel@tunafish>
+ <5030BC7E.3030000@gmail.com>
+ <1345383264.4441.56.camel@tunafish>
+ <20120819120254.GA2369@pompeji.miese-zwerge.org>
+ <1345390432.2716.34.camel@tunafish>
+ <20120819210455.GA9208@thunk.org>
+ <5031716C.1060003@igalia.com>
+ <20120820004705.GA3710@thunk.org>
+ <CAKr4yMxkrMXpVXmX9zgieTKrWmKtRx+Y2toZ2msrUdrBKFq13w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKr4yMxkrMXpVXmX9zgieTKrWmKtRx+Y2toZ2msrUdrBKFq13w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 08:32 -0400, Josh Boyer wrote:
-> On Sun, Aug 19, 2012 at 9:05 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > On Fri, 2012-08-17 at 13:44 -0400, Josh Boyer wrote:
-> >> On Fri, Aug 17, 2012 at 1:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >> >> I don't see a need for the kernel make system to ever delete a key.
-> >> >> If one doesn't exist, it should create one if the config options are
-> >> >> set and leave it alone entirely after that.  If one exists already,
-> >> >> then it should leave it alone as it already does.
-> >> >
-> >> > Ok.  Other than generating a key the first time, the normal development
-> >> > build process now uses the same key, never requiring the developer to do
-> >> > anything additional.  The developer controls the frequency the keys are
-> >> > created/deleted.  I wonder how often that will be ...
-> >>
-> >> For a developer, probably not often.  Though in reality, the usage of
-> >> this by a single developer seems fair small.  A much wider, already
-> >> existing usage is distribution kernel signing.
-> >
-> > This seems to be the real issue.  Do developers need to sign their own
-> > builds?   Nobody is forcing the developer to enable signed modules.  If,
-> > however, the developer decides to enforce signed modules, leaving the
-> > private key lying around kind of defeats the purpose.
+On Mon, Aug 20, 2012 at 11:12:07AM +0200, Alexander Thomas wrote:
 > 
-> Right.  The issue is that you're making the kernel buildsystem do key
-> management policy instead of trusting the developers using the keys
-> mechanism to know what they're doing.
-> 
-> >> For a distribution kernel there are normally two cases:
-> >>
-> >> 1) Existing permanent company/distro key.  This is already handled.
-> >> 2) per-kernel-build key (equivalent to your ephemeral key).  This would
-> >> be handled fine if the key was generated if it didn't already exist and
-> >> left alone.  The distro build system would remove it when it cleaned up
-> >> the buildroot.
-> >
-> > Ok, I think we agree here, with the normal 'make', 'make modules_install
-> > install', using an existing key or creating a new key if needed.
-> >
-> >> >> If you really want to enforce ephemeral keys in the make system, then
-> >> >> doing it via 'make clean' or 'make distclean' would make more sense to
-> >> >> me.  But I personally think key management is something the developers
-> >> >> or distros should be handling on their own.  Creating a key for them is
-> >> >> a convenience so it's worthwhile, but removing it should be done by
-> >> >> them.
-> >> >
-> >> > Sorry, I disagree.  Without the signed_modules_install target, the
-> >> > developer would need to do each step manually - create new key, sign
-> >> > modules, remove private key, and embed the new public key in the
-> >> > bzImage.
-> >>
-> >> Not if the buildsystem just made the key for them at 'make' time.  I'm
-> >> still missing why it isn't done until 'modules_install' time.  Seems
-> >> pretty sub-optimal.
-> >
-> > Using a private key that has been lying around for an unknown period of
-> > time, kind of defeats the purpose.
-> 
-> Why is that?  Again, you're enforcing policy instead of leaving it up
-> to the developers.  In the existing key case, you have no idea how long
-> that key has been sitting around either, so I really see a disconnect
-> between "existing company/private key" and "no key, create one for them
-> during build time" cases.
+> Flash drives are getting faster as well. Copying an 8GB file to/from a
+> USB drive is not excruciatingly slow and may be quicker and more
+> certain than figuring out how to get a working network connection in
+> some random place, if possible at all. If it is some lousy WiFi with
+> the base station at a distance, a flash drive will be faster. And
+> sometimes people just want to be sure that their data will be at a
+> certain place at a certain time without having to rely on a network
+> that may go down due to external reasons.
 
-Either the company build process, creates and cleans up after the build,
-removing the private key, as you described above, or the "private key"
-is held securely using an existing signing process (or some combination
-of the two).
+OK --- and how many of these situations will you be using such a
+stripped down operating system that you can't afford to implement ntfs
+or ext4?  Samsung is considering an Android-power point-and-shoot
+digital camera[1].  And mobile phones are using Android phones where
+implementation of ext4 is a worked example (and not particularly
+difficult, either).
 
-In the "no key, create one for them during build time", there is no
-process in place cleaning up, other than the suggested new make target.
+If this file system had gotten implemented for Arduino first (and
+someone actually had a worked example of why you would need > 4GB
+vfiles for an Arduino device --- if I were going to be implementing
+something with video I'd probably be using a full Linux kernel), the
+claimed use case might be more compelling.  It would also demonstrate
+that in fact this was a decent file system for an Arduino device (and
+to demonstrate the infinite stack recursion problem wouldn't be a
+gaping security hole problem for them either).
 
-> >> > I still think the signed_modules_install script, renamed to something
-> >> > like ephemeral_signed_modules_install, is worthwhile and becomes a
-> >> > convience tool for the developer, wanting to use ephemeral keys.  The
-> >> > private key, in Dmitry's updated patches soon to be posted, will be
-> >> > password protected with a random number, that is only accessible to the
-> >> > current shell.
-> >>
-> >> I think the existence of an additional make target for signed modules
-> >> is really confusing.  Particularly when you consider the target still
-> >> exists even if the kernel isn't setup to work with signed modules.
-> >
-> > Ok, I see your concern.
-> >
-> >> If
-> >> the config options are set, just have 'make modules_install' do it and
-> >> create a key if one doesn't exist (or better yet, have 'make' do it).
-> >
-> > If creating the key is deferred to 'make modules_install', for the
-> > reason given above or any other reason, the public key wasn't available
-> > at the time the bzImage was created.  'make modules_install' would now
-> > need to rebuild the bzImage.
-> 
-> Right, which is an utter pain and backwards.  That's why I suggested it
-> be done at 'make' time.
+I used to think that we would need an IP unencumbered file system,
+given issues around TomTom and Microsoft, but these days, given how
+quickly Linux has taken over the embedded and mobile landscape[2] for
+all but the most tiniest of devices, I don't think that's as important
+of an issue, since we can just simply use a native linux file system.
+In the time that it would take to get some other new file system
+adopted across the industry, it's likely Linux will have enough market
+share to perhaps compel the other OS vendors to provide
+interoperability solutions.  (Just as the BSD folks have implemented
+ext2 support; Linux hasn't bothered to implement FFS2 support....)
 
-Agreed, no doubt about it being a pain or backwards, but the solution
-isn't to deny the problem, but to address it.  I'm open to
-suggestions. :)
+	  	  	      		- Ted
 
-Mimi
+[1] http://www.engadget.com/2012/03/14/samsung-researching-android-based-digital-camera/
 
+[2] http://money.cnn.com/2012/08/08/technology/smartphone-market-share/index.html
