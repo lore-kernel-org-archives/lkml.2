@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab2HTHiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 03:38:55 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54470 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab2HTHix (ORCPT
+	id S1755641Ab2HTHlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 03:41:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47023 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755598Ab2HTHlk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 03:38:53 -0400
+	Mon, 20 Aug 2012 03:41:40 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Bryan Wu <bryan.wu@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: [PATCH] leds-lm3530: replace pwm platform functions with
+ generic pwm functions
+Thread-Topic: [PATCH] leds-lm3530: replace pwm platform functions with
+ generic pwm functions
+Thread-Index: Ac1+iI3X+iN5rabESjyXTrhr06HT3P//lKUAgAAFuYD//3VuQIAApKsA//95ceA=
+Date: Mon, 20 Aug 2012 07:41:31 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF096C@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF0095@DQHE02.ent.ti.com>
+ <201208200537.48993.arnd@arndb.de>
+ <20120820055817.GA17149@avionic-0098.adnet.avionic-design.de>
+ <A874F61F95741C4A9BA573A70FE3998F41EF0939@DQHE02.ent.ti.com>
+ <20120820073141.GA27645@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120820073141.GA27645@avionic-0098.mockup.avionic-design.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120819122634.252f1ea5@pixies.home.jungo.com>
-References: <1345214124-5478-1-git-send-email-richard.genoud@gmail.com>
- <1345214124-5478-7-git-send-email-richard.genoud@gmail.com> <20120819122634.252f1ea5@pixies.home.jungo.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Mon, 20 Aug 2012 09:38:31 +0200
-Message-ID: <CACQ1gAgUdXj9KKtgjf=Lx0Kz2v18Xgz4RjiRQnKHMsf3m3THJw@mail.gmail.com>
-Subject: Re: [PATCH 6/8] UBI: replace MTD_UBI_BEB_LIMIT with module parameter
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/19 Shmulik Ladkani <shmulik.ladkani@gmail.com>:
-> Hi Richard,
->
-> On Fri, 17 Aug 2012 16:35:22 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
->> +                   "MTD devices may be specified by their number, name, or path to the MTD character device node.\n"
->> +                   "Optional \"vid_hdr_offs\" parameter specifies UBI VID header position to be used by UBI. (default value if 0 or not set)\n"
->> +                   "Optional \"max_beb_per1024\" parameter specifies the maximum expected bad eraseblock per 1024 eraseblocks. (default value ("
->> +                   __stringify(CONFIG_MTD_UBI_BEB_LIMIT) ") if 0 or not set)\n"
->
-> Looks like "mtd=/dev/mtd1,,25" is invalid, although we state "default
-> value if 0 or not set".
-I'm going to check that.
->
-> Also, lines are exceeding 80 chars, not sure this is more readable than
-> if they were broken.
-Actually, I didn't split those lines to make checkpatch happy.
-Checkpatch.pl doesn't like split strings because they are hard to grep.
-So there's an exception on the 80 column rule for strings.
+> Maybe we should get this resolved somehow in the meantime. Resolving
+> the
+> other issues may take another cycle or two, so you may not want to wait
+> that long.
 
->
-> Regards,
-> Shmulik
+Is that job also including HAVE_PWM configurations?
+Some SoCs still set HAVE_PWMs and codes exist under arch/ directory.
+As I far as understand, new PWM subsystem uses CONFIG_PWM not HAVE_PWM, right?
+And then will HAVE_PWM be cleaned-up?
+
+Best Regards,
+Milo
 
 
 
--- 
-for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
