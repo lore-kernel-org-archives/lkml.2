@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab2HTMi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 08:38:27 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:47921 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab2HTMiX convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
-	Mon, 20 Aug 2012 08:38:23 -0400
-Message-Id: <50324BD902000078000966B7@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 20 Aug 2012 13:38:17 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andi Kleen" <ak@linux.intel.com>
-Cc: "Andi Kleen" <andi@firstfloor.org>, <x86@kernel.org>,
-        <akpm@linux-foundation.org>, <mmarek@suse.cz>,
-        <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 46/74] x86, lto: Disable fancy hweight
- optimizations for LTO
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
- <1345345030-22211-47-git-send-email-andi@firstfloor.org>
- <5030B1A5020000780008A200@nat28.tlf.novell.com>
- <20120819151516.GS11413@one.firstfloor.org>
- <50323427020000780009660E@nat28.tlf.novell.com>
- <20120820111838.GC4461@tassilo.jf.intel.com>
-In-Reply-To: <20120820111838.GC4461@tassilo.jf.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754140Ab2HTMtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 08:49:18 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48133 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab2HTMtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 08:49:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120820113649.GB906@elf.ucw.cz>
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>
+	<CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
+	<1345371135.4441.2.camel@tunafish>
+	<5030BC7E.3030000@gmail.com>
+	<1345383264.4441.56.camel@tunafish>
+	<20120819120254.GA2369@pompeji.miese-zwerge.org>
+	<1345390432.2716.34.camel@tunafish>
+	<20120819210455.GA9208@thunk.org>
+	<5031716C.1060003@igalia.com>
+	<20120820004705.GA3710@thunk.org>
+	<20120820113649.GB906@elf.ucw.cz>
+Date: Mon, 20 Aug 2012 12:49:11 +0000
+Message-ID: <CAGa+R33n2pe8HPP6MjE5XA0Q7vMFMKsBSuJjO5AhVTE_QY3jcw@mail.gmail.com>
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+From: Ronnie Collinson <notthinking@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Carlos Alberto Lopez Perez <clopez@igalia.com>,
+        Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lanyfs@librelist.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 20.08.12 at 13:18, Andi Kleen <ak@linux.intel.com> wrote:
->>  That's not the point: The point really is that you could allow the
->> alternative regardless of LTO, and just penalize the LTO case
->> by having even the asm clobber the registers that a function call
->> would not preserve.
-> 
-> That's just what a normal call does, right?
-
-Exactly.
-
-Jan
-
+The question is less about the importance of flash drives (or any
+portable hard drive) today or embedded appliances, but the importance
+of them in 3-5+ years time (dev time + adoption time).
