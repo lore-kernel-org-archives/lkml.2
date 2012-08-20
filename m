@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab2HTVbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 17:31:00 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:31962 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab2HTVa6 (ORCPT
+	id S1755558Ab2HTVbU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 17:31:20 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:63566 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab2HTVbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 17:30:58 -0400
+	Mon, 20 Aug 2012 17:31:18 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-209.messagelabs.com!1345498239!3790891!34
-X-Originating-IP: [216.166.12.31]
+X-Msg-Ref: server-8.tower-132.messagelabs.com!1345498268!10941713!17
+X-Originating-IP: [216.166.12.99]
 X-StarScan-Received: 
 X-StarScan-Version: 6.6.1.2; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] staging: comedi: comedi_parport: cleanup 'attach' printk's
-Date: Mon, 20 Aug 2012 14:30:53 -0700
+Subject: [PATCH 4/4] staging: comedi: comedi_parport: remove the printk noise
+Date: Mon, 20 Aug 2012 14:31:10 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -24,62 +24,47 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201208201430.53543.hartleys@visionengravers.com>
+Message-ID: <201208201431.10581.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the printk messages in the 'attach' to dev_printk messages.
-Consolidate the attach message into one message after the device
-is attached.
+Remove the function trace message in parport_intr_cancel() and the
+"bogus irq..." message is parport_interrupt(). They are just added
+noise.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/comedi_parport.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/comedi_parport.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/comedi_parport.c b/drivers/staging/comedi/drivers/comedi_parport.c
-index fc59cb2..48d529e 100644
+index 48d529e..2dce9df 100644
 --- a/drivers/staging/comedi/drivers/comedi_parport.c
 +++ b/drivers/staging/comedi/drivers/comedi_parport.c
-@@ -305,20 +305,18 @@ static int parport_attach(struct comedi_device *dev,
- 	dev->board_name = dev->driver->driver_name;
+@@ -265,8 +265,6 @@ static int parport_intr_cancel(struct comedi_device *dev,
+ {
+ 	struct parport_private *devpriv = dev->private;
  
- 	iobase = it->options[0];
--	printk(KERN_INFO "comedi%d: parport: 0x%04lx ", dev->minor, iobase);
- 	if (!request_region(iobase, PARPORT_SIZE, dev->board_name)) {
--		printk(KERN_ERR "I/O port conflict\n");
-+		dev_err(dev->class_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
- 
- 	irq = it->options[1];
- 	if (irq) {
--		printk(KERN_INFO " irq=%u", irq);
- 		ret = request_irq(irq, parport_interrupt, 0, dev->board_name,
- 				  dev);
- 		if (ret < 0) {
--			printk(KERN_ERR " irq not available\n");
-+			dev_err(dev->class_dev, "irq not available\n");
- 			return -EINVAL;
- 		}
- 		dev->irq = irq;
-@@ -379,8 +377,10 @@ static int parport_attach(struct comedi_device *dev,
- 	devpriv->c_data = 0;
+-	printk(KERN_DEBUG "parport_intr_cancel()\n");
+-
+ 	devpriv->c_data &= ~0x10;
  	outb(devpriv->c_data, dev->iobase + PARPORT_C);
  
--	printk(KERN_INFO "\n");
--	return 1;
-+	dev_info(dev->class_dev, "%s: iobase=0x%04lx, irq %sabled",
-+		dev->board_name, dev->iobase, dev->irq ? "en" : "dis");
-+
-+	return 0;
- }
+@@ -281,10 +279,8 @@ static irqreturn_t parport_interrupt(int irq, void *d)
+ 	struct parport_private *devpriv = dev->private;
+ 	struct comedi_subdevice *s = dev->subdevices + 3;
  
- static void parport_detach(struct comedi_device *dev)
+-	if (!devpriv->enable_irq) {
+-		printk(KERN_ERR "comedi_parport: bogus irq, ignored\n");
++	if (!devpriv->enable_irq)
+ 		return IRQ_NONE;
+-	}
+ 
+ 	comedi_buf_put(s->async, 0);
+ 	s->async->events |= COMEDI_CB_BLOCK | COMEDI_CB_EOS;
 -- 
 1.7.11
 
