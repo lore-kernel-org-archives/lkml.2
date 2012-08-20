@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab2HTD6I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:58:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab2HTD6B (ORCPT
+	id S1754853Ab2HTD6O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:58:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab2HTD6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:58:01 -0400
+	Sun, 19 Aug 2012 23:58:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benoit Gschwind <gschwind@gnu-log.net>,
-        Francois Rigaut <frigaut@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 09/32] drm/i915: ignore eDP bpc settings from vbt
-Date: Sun, 19 Aug 2012 20:57:05 -0700
-Message-Id: <20120820035649.163112912@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 11/32] drm/radeon: properly handle crtc powergating
+Date: Sun, 19 Aug 2012 20:57:07 -0700
+Message-Id: <20120820035649.439895894@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
 References: <20120820035647.862247088@linuxfoundation.org>
@@ -31,63 +29,114 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 4344b813f105a19f793f1fd93ad775b784648b95 upstream.
+commit 6c0ae2ab85fc4a95cae82047a7db1f688a7737ab upstream.
 
-This has originally been introduced to not oversubscribe the dp links
-in
+Need to make sure the crtc is gated on before modesetting.
+Explicitly gate the crtc on in prepare() and set a flag
+so that the dpms functions don't gate it off during
+mode set.
 
-commit 885a5fb5b120a5c7e0b3baad7b0feb5a89f76c18
-Author: Zhenyu Wang <zhenyuw@linux.intel.com>
-Date:   Tue Jan 12 05:38:31 2010 +0800
+Noticed by sylware on IRC.
 
-    drm/i915: fix pixel color depth setting on eDP
-
-Since then we've fixed up the dp link bandwidth calculation code and
-should now automatically fall back to 6bpc dithering. So this is
-unnecessary.
-
-Furthermore it seems to break the new MacbookPro with retina display,
-hence let's just rip this out.
-
-Reported-by: Benoit Gschwind <gschwind@gnu-log.net>
-Cc: Benoit Gschwind <gschwind@gnu-log.net>
-Cc: Francois Rigaut <frigaut@gmail.com>
-Tested-by: Benoit Gschwind <gschwind@gnu-log.net>
-Tested-by: Bernhard Froemel <froemel at vmars tuwien.ac.at>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---
-
-Testing feedback highgly welcome, and thanks for Benoit for finding
-out that the bpc computations are busted.
--Daniel
-
 ---
- drivers/gpu/drm/i915/intel_display.c |   11 -----------
- 1 file changed, 11 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c      |   14 ++++++++++++--
+ drivers/gpu/drm/radeon/radeon_legacy_crtc.c |    4 ++++
+ drivers/gpu/drm/radeon/radeon_mode.h        |    1 +
+ 3 files changed, 17 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4982,17 +4982,6 @@ static bool intel_choose_pipe_bpp_dither
- 			continue;
- 		}
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -259,7 +259,7 @@ void atombios_crtc_dpms(struct drm_crtc
+ 		/* adjust pm to dpms changes BEFORE enabling crtcs */
+ 		radeon_pm_compute_clocks(rdev);
+ 		/* disable crtc pair power gating before programming */
+-		if (ASIC_IS_DCE6(rdev))
++		if (ASIC_IS_DCE6(rdev) && !radeon_crtc->in_mode_set)
+ 			atombios_powergate_crtc(crtc, ATOM_DISABLE);
+ 		atombios_enable_crtc(crtc, ATOM_ENABLE);
+ 		if (ASIC_IS_DCE3(rdev) && !ASIC_IS_DCE6(rdev))
+@@ -279,7 +279,7 @@ void atombios_crtc_dpms(struct drm_crtc
+ 		atombios_enable_crtc(crtc, ATOM_DISABLE);
+ 		radeon_crtc->enabled = false;
+ 		/* power gating is per-pair */
+-		if (ASIC_IS_DCE6(rdev)) {
++		if (ASIC_IS_DCE6(rdev) && !radeon_crtc->in_mode_set) {
+ 			struct drm_crtc *other_crtc;
+ 			struct radeon_crtc *other_radeon_crtc;
+ 			list_for_each_entry(other_crtc, &rdev->ddev->mode_config.crtc_list, head) {
+@@ -1634,18 +1634,28 @@ static bool atombios_crtc_mode_fixup(str
+ static void atombios_crtc_prepare(struct drm_crtc *crtc)
+ {
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
++	struct drm_device *dev = crtc->dev;
++	struct radeon_device *rdev = dev->dev_private;
  
--		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
--			/* Use VBT settings if we have an eDP panel */
--			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
--
--			if (edp_bpc < display_bpc) {
--				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
--				display_bpc = edp_bpc;
--			}
--			continue;
--		}
--
- 		/* Not one of the known troublemakers, check the EDID */
- 		list_for_each_entry(connector, &dev->mode_config.connector_list,
- 				    head) {
++	radeon_crtc->in_mode_set = true;
+ 	/* pick pll */
+ 	radeon_crtc->pll_id = radeon_atom_pick_pll(crtc);
+ 
++	/* disable crtc pair power gating before programming */
++	if (ASIC_IS_DCE6(rdev))
++		atombios_powergate_crtc(crtc, ATOM_DISABLE);
++
+ 	atombios_lock_crtc(crtc, ATOM_ENABLE);
+ 	atombios_crtc_dpms(crtc, DRM_MODE_DPMS_OFF);
+ }
+ 
+ static void atombios_crtc_commit(struct drm_crtc *crtc)
+ {
++	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
++
+ 	atombios_crtc_dpms(crtc, DRM_MODE_DPMS_ON);
+ 	atombios_lock_crtc(crtc, ATOM_DISABLE);
++	radeon_crtc->in_mode_set = false;
+ }
+ 
+ static void atombios_crtc_disable(struct drm_crtc *crtc)
+--- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
+@@ -1025,9 +1025,11 @@ static int radeon_crtc_mode_set(struct d
+ 
+ static void radeon_crtc_prepare(struct drm_crtc *crtc)
+ {
++	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_crtc *crtci;
+ 
++	radeon_crtc->in_mode_set = true;
+ 	/*
+ 	* The hardware wedges sometimes if you reconfigure one CRTC
+ 	* whilst another is running (see fdo bug #24611).
+@@ -1038,6 +1040,7 @@ static void radeon_crtc_prepare(struct d
+ 
+ static void radeon_crtc_commit(struct drm_crtc *crtc)
+ {
++	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_crtc *crtci;
+ 
+@@ -1048,6 +1051,7 @@ static void radeon_crtc_commit(struct dr
+ 		if (crtci->enabled)
+ 			radeon_crtc_dpms(crtci, DRM_MODE_DPMS_ON);
+ 	}
++	radeon_crtc->in_mode_set = false;
+ }
+ 
+ static const struct drm_crtc_helper_funcs legacy_helper_funcs = {
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -266,6 +266,7 @@ struct radeon_crtc {
+ 	u16 lut_r[256], lut_g[256], lut_b[256];
+ 	bool enabled;
+ 	bool can_tile;
++	bool in_mode_set;
+ 	uint32_t crtc_offset;
+ 	struct drm_gem_object *cursor_bo;
+ 	uint64_t cursor_addr;
 
 
