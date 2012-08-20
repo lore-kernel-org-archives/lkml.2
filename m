@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab2HTJff (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 05:35:35 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55098 "EHLO song.cn.fujitsu.com"
+	id S1756221Ab2HTJgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 05:36:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:13029 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab2HTJay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 05:30:54 -0400
+	id S1751905Ab2HTJas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 05:30:48 -0400
 X-IronPort-AV: E=Sophos;i="4.77,796,1336320000"; 
-   d="scan'208";a="5673000"
+   d="scan'208";a="5672994"
 From: wency@cn.fujitsu.com
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -18,97 +18,183 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC V7 PATCH 09/19] memory-hotplug: does not release memory region in PAGES_PER_SECTION chunks
-Date: Mon, 20 Aug 2012 17:35:32 +0800
-Message-Id: <1345455342-27752-10-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC V7 PATCH 00/19] memory-hotplug: hot-remove physical memory
+Date: Mon, 20 Aug 2012 17:35:23 +0800
+Message-Id: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
-References: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:42,
+ 2012/08/20 17:30:41,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:49,
-	Serialize complete at 2012/08/20 17:30:49
+ 2012/08/20 17:30:45,
+	Serialize complete at 2012/08/20 17:30:45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-Since applying a patch(de7f0cba96786c), release_mem_region() has been changed
-as called in PAGES_PER_SECTION chunks because register_memory_resource() is
-called in PAGES_PER_SECTION chunks by add_memory(). But it seems firmware
-dependency. If CRS are written in the PAGES_PER_SECTION chunks in ACPI DSDT
-Table, register_memory_resource() is called in PAGES_PER_SECTION chunks.
-But if CRS are written in the DIMM unit in ACPI DSDT Table,
-register_memory_resource() is called in DIMM unit. So release_mem_region()
-should not be called in PAGES_PER_SECTION chunks. The patch fixes it.
+This patch series aims to support physical memory hot-remove.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- arch/powerpc/platforms/pseries/hotplug-memory.c |   13 +++++++++----
- mm/memory_hotplug.c                             |    4 ++--
- 2 files changed, 11 insertions(+), 6 deletions(-)
+The patches can free/remove the following things:
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
-index 11d8e05..dc0a035 100644
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -77,7 +77,8 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
- {
- 	unsigned long start, start_pfn;
- 	struct zone *zone;
--	int ret;
-+	int i, ret;
-+	int sections_to_remove;
+  - acpi_memory_info                          : [RFC PATCH 4/19]
+  - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
+  - iomem_resource                            : [RFC PATCH 9/19]
+  - mem_section and related sysfs files       : [RFC PATCH 10-11, 13-16/19]
+  - page table of removed memory              : [RFC PATCH 12/19]
+  - node and related sysfs files              : [RFC PATCH 18-19/19]
+
+If you find lack of function for physical memory hot-remove, please let me
+know.
+
+Known problems:
+1. memory can't be offlined when CONFIG_MEMCG is selected.
+
+change log of v7:
+ [RFC PATCH v7 4/19]
+   * do not continue if acpi_memory_device_remove_memory() fails.
+ [RFC PATCH v7 15/19]
+   * handle usemap in register_page_bootmem_info_section() too.
+
+change log of v6:
+ [RFC PATCH v6 12/19]
+   * fix building error on other archtitectures than x86
+
+ [RFC PATCH v6 15-16/19]
+   * fix building error on other archtitectures than x86
+
+change log of v5:
+ * merge the patchset to clear page table and the patchset to hot remove
+   memory(from ishimatsu) to one big patchset.
+
+ [RFC PATCH v5 1/19]
+   * rename remove_memory() to offline_memory()/offline_pages()
+
+ [RFC PATCH v5 2/19]
+   * new patch: implement offline_memory(). This function offlines pages,
+     update memory block's state, and notify the userspace that the memory
+     block's state is changed.
+
+ [RFC PATCH v5 4/19]
+   * offline and remove memory in acpi_memory_disable_device() too.
+
+ [RFC PATCH v5 17/19]
+   * new patch: add a new function __remove_zone() to revert the things done
+     in the function __add_zone().
+
+ [RFC PATCH v5 18/19]
+   * flush work befor reseting node device.
+
+change log of v4:
+ * remove "memory-hotplug : unify argument of firmware_map_add_early/hotplug"
+   from the patch series, since the patch is a bugfix. It is being disccussed
+   on other thread. But for testing the patch series, the patch is needed.
+   So I added the patch as [PATCH 0/13].
+
+ [RFC PATCH v4 2/13]
+   * check memory is online or not at remove_memory()
+   * add memory_add_physaddr_to_nid() to acpi_memory_device_remove() for
+     getting node id
  
- 	start_pfn = base >> PAGE_SHIFT;
- 
-@@ -97,9 +98,13 @@ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_siz
- 	 * to sysfs "state" file and we can't remove sysfs entries
- 	 * while writing to it. So we have to defer it to here.
- 	 */
--	ret = __remove_pages(zone, start_pfn, memblock_size >> PAGE_SHIFT);
--	if (ret)
--		return ret;
-+	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
-+	for (i = 0; i < sections_to_remove; i++) {
-+		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
-+		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	/*
- 	 * Update memory regions for memory remove
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 45b03b3..29aff4d 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -358,11 +358,11 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
- 	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
- 	BUG_ON(nr_pages % PAGES_PER_SECTION);
- 
-+	release_mem_region(phys_start_pfn << PAGE_SHIFT,  nr_pages * PAGE_SIZE);
-+
- 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
--		release_mem_region(pfn << PAGE_SHIFT,
--				   PAGES_PER_SECTION << PAGE_SHIFT);
- 		ret = __remove_section(zone, __pfn_to_section(pfn));
- 		if (ret)
- 			break;
--- 
-1.7.1
+ [RFC PATCH v4 3/13]
+   * create new patch : check memory is online or not at online_pages()
+
+ [RFC PATCH v4 4/13]
+   * add __ref section to remove_memory()
+   * call firmware_map_remove_entry() before remove_sysfs_fw_map_entry()
+
+ [RFC PATCH v4 11/13]
+   * rewrite register_page_bootmem_memmap() for removing page used as PT/PMD
+
+change log of v3:
+ * rebase to 3.5.0-rc6
+
+ [RFC PATCH v2 2/13]
+   * remove extra kobject_put()
+
+   * The patch was commented by Wen. Wen's comment is
+     "acpi_memory_device_remove() should ignore a return value of
+     remove_memory() since caller does not care the return value".
+     But I did not change it since I think caller should care the
+     return value. And I am trying to fix it as follow:
+
+     https://lkml.org/lkml/2012/7/5/624
+
+ [RFC PATCH v2 4/13]
+   * remove a firmware_memmap_entry allocated by kzmalloc()
+
+change log of v2:
+ [RFC PATCH v2 2/13]
+   * check whether memory block is offline or not before calling offline_memory()
+   * check whether section is valid or not in is_memblk_offline()
+   * call kobject_put() for each memory_block in is_memblk_offline()
+
+ [RFC PATCH v2 3/13]
+   * unify the end argument of firmware_map_add_early/hotplug
+
+ [RFC PATCH v2 4/13]
+   * add release_firmware_map_entry() for freeing firmware_map_entry
+
+ [RFC PATCH v2 6/13]
+  * add release_memory_block() for freeing memory_block
+
+ [RFC PATCH v2 11/13]
+  * fix wrong arguments of free_pages()
+
+Wen Congyang (6):
+  memory-hotplug: implement offline_memory()
+  memory-hotplug: store the node id in acpi_memory_device
+  memory-hotplug: offline and remove memory when removing the memory
+    device
+  memory-hotplug: export the function acpi_bus_remove()
+  memory-hotplug: call acpi_bus_remove() to remove memory device
+  memory-hotplug: introduce new function arch_remove_memory()
+
+Yasuaki Ishimatsu (13):
+  memory-hotplug: rename remove_memory() to
+    offline_memory()/offline_pages()
+  memory-hotplug: check whether memory is present or not
+  memory-hotplug: remove /sys/firmware/memmap/X sysfs
+  memory-hotplug: does not release memory region in PAGES_PER_SECTION
+    chunks
+  memory-hotplug: add memory_block_release
+  memory-hotplug: remove_memory calls __remove_pages
+  memory-hotplug: check page type in get_page_bootmem
+  memory-hotplug: move register_page_bootmem_info_node and
+    put_page_bootmem for sparse-vmemmap
+  memory-hotplug: implement register_page_bootmem_info_section of
+    sparse-vmemmap
+  memory-hotplug: free memmap of sparse-vmemmap
+  memory_hotplug: clear zone when the memory is removed
+  memory-hotplug: add node_device_release
+  memory-hotplug: remove sysfs file of node
+
+ arch/ia64/mm/discontig.c                        |   14 +
+ arch/ia64/mm/init.c                             |   16 +
+ arch/powerpc/mm/init_64.c                       |   14 +
+ arch/powerpc/mm/mem.c                           |   14 +
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
+ arch/s390/mm/init.c                             |   12 +
+ arch/s390/mm/vmem.c                             |   14 +
+ arch/sh/mm/init.c                               |   15 +
+ arch/sparc/mm/init_64.c                         |   14 +
+ arch/tile/mm/init.c                             |    8 +
+ arch/x86/include/asm/pgtable_types.h            |    1 +
+ arch/x86/mm/init_32.c                           |   10 +
+ arch/x86/mm/init_64.c                           |  331 ++++++++++++++++++++++
+ arch/x86/mm/pageattr.c                          |   47 ++--
+ drivers/acpi/acpi_memhotplug.c                  |   54 +++-
+ drivers/acpi/scan.c                             |    3 +-
+ drivers/base/memory.c                           |   90 +++++-
+ drivers/base/node.c                             |    8 +
+ drivers/firmware/memmap.c                       |   78 +++++-
+ include/acpi/acpi_bus.h                         |    1 +
+ include/linux/firmware-map.h                    |    6 +
+ include/linux/memory.h                          |    5 +
+ include/linux/memory_hotplug.h                  |   25 +-
+ include/linux/mm.h                              |    5 +-
+ include/linux/mmzone.h                          |   19 ++
+ mm/memory_hotplug.c                             |  345 +++++++++++++++++++++--
+ mm/sparse.c                                     |    5 +-
+ 27 files changed, 1079 insertions(+), 91 deletions(-)
 
