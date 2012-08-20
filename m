@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab2HTMiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 08:38:10 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:37163 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab2HTMiH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 08:38:07 -0400
-Date: Mon, 20 Aug 2012 09:37:57 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Sedat Dilek <sedat.dilek@gmail.com>
-Subject: Re: [PATCH] perf: Fix include order for bison/flex-generated C files
-Message-ID: <20120820123757.GA2256@infradead.org>
-References: <1345420039.22400.80.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754203Ab2HTMi1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 08:38:27 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:47921 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab2HTMiX convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
+	Mon, 20 Aug 2012 08:38:23 -0400
+Message-Id: <50324BD902000078000966B7@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 20 Aug 2012 13:38:17 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andi Kleen" <ak@linux.intel.com>
+Cc: "Andi Kleen" <andi@firstfloor.org>, <x86@kernel.org>,
+        <akpm@linux-foundation.org>, <mmarek@suse.cz>,
+        <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 46/74] x86, lto: Disable fancy hweight
+ optimizations for LTO
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
+ <1345345030-22211-47-git-send-email-andi@firstfloor.org>
+ <5030B1A5020000780008A200@nat28.tlf.novell.com>
+ <20120819151516.GS11413@one.firstfloor.org>
+ <50323427020000780009660E@nat28.tlf.novell.com>
+ <20120820111838.GC4461@tassilo.jf.intel.com>
+In-Reply-To: <20120820111838.GC4461@tassilo.jf.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1345420039.22400.80.camel@deadeye.wl.decadent.org.uk>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 20, 2012 at 12:47:19AM +0100, Ben Hutchings escreveu:
-> When we use a separate output directory, we add util/ to the include
-> path for the generated C files.  However, this is currently added to
-> the end of the path, behind /usr/include/slang and
-> /usr/include/gtk-2.0 if use of the respective libraries is enabled.
-> Thus the '#include "../perf.h"' in util/parse-events.l can actually
-> include /usr/include/perf.h if it exists.
+>>> On 20.08.12 at 13:18, Andi Kleen <ak@linux.intel.com> wrote:
+>>  That's not the point: The point really is that you could allow the
+>> alternative regardless of LTO, and just penalize the LTO case
+>> by having even the asm clobber the registers that a function call
+>> would not preserve.
 > 
-> Move '-Iutil/' ahead of all the other preprocessor options.
+> That's just what a normal call does, right?
 
-Thanks, applied
+Exactly.
 
-> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  tools/perf/Makefile |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 0eee64c..434175c 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -756,10 +756,10 @@ $(OUTPUT)perf.o perf.spec \
->  # over the general rule for .o
->  
->  $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
-> -	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -w $<
-> +	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -w $<
->  
->  $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
-> -	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -w $<
-> +	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -w $<
->  
->  $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
->  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-> 
-
+Jan
 
