@@ -1,156 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab2HTUgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:36:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38480 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab2HTUgm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:36:42 -0400
-Date: Mon, 20 Aug 2012 13:36:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "G.Shark Jeong" <gshark.jeong@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] backlight: Add Backlight driver for lm3630 chip
-Message-Id: <20120820133639.aa6db587.akpm@linux-foundation.org>
-In-Reply-To: <1344832471-13568-2-git-send-email-gshark.jeong@gmail.com>
-References: <1344832471-13568-1-git-send-email-gshark.jeong@gmail.com>
-	<1344832471-13568-2-git-send-email-gshark.jeong@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754287Ab2HTUiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:38:51 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:50688 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920Ab2HTUis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:38:48 -0400
+X-Greylist: delayed 7107 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 16:38:46 EDT
+From: Jim Meyering <jim@meyering.net>
+To: Krishna Gudipati <kgudipat@Brocade.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+In-Reply-To: <B5EE62D80D50B84BB9E5174F7FCCE80A2839ABC2C4@HQ1-EXCH02.corp.brocade.com>
+	(Krishna Gudipati's message of "Mon, 20 Aug 2012 12:42:19 -0700")
+References: <1345481724-30108-1-git-send-email-jim@meyering.net>
+	<1345481724-30108-5-git-send-email-jim@meyering.net>
+	<B5EE62D80D50B84BB9E5174F7FCCE80A2839ABC2C4@HQ1-EXCH02.corp.brocade.com>
+Date: Mon, 20 Aug 2012 22:38:39 +0200
+Message-ID: <87d32ll2nk.fsf@rho.meyering.net>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Aug 2012 13:34:31 +0900
-"G.Shark Jeong" <gshark.jeong@gmail.com> wrote:
+Krishna Gudipati wrote:
+>> -----Original Message-----
+>> From: Jim Meyering [mailto:jim@meyering.net]
+>> Sent: Monday, August 20, 2012 9:55 AM
+>> To: linux-kernel@vger.kernel.org
+>> Cc: Jim Meyering; Jing Huang; Krishna Gudipati; James E.J. Bottomley; linux-
+>> scsi@vger.kernel.org
+>> Subject: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+>>
+>> From: Jim Meyering <meyering@redhat.com>
+>>
+>> we use strncpy to copy a model name of length up to 15 (16, if you count the
+>> NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+>> However, strncpy does not always NUL-terminate, so whenever the original
+>> model string has strlen >= 12, the following strncat reads beyond end of the -
+>> >sym_name buffer as it attempts to find end of string.
+>>
+>> bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric) {
+>> 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+>> 	...
+>> 	strncpy((char *)&port_cfg->sym_name, model,
+>> 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+>> 	strncat((char *)&port_cfg->sym_name,
+>> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+>> 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+>> 	...
+>>
+>> bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model) {
+>> 	struct bfi_ioc_attr_s	*ioc_attr;
+>>
+>> 	WARN_ON(!model);
+>> 	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+>>
+>> BFA_ADAPTER_MODEL_NAME_LEN = 16
+>>
+>> Signed-off-by: Jim Meyering <meyering@redhat.com>
+>> ---
+>>  drivers/scsi/bfa/bfa_fcs.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c index
+>> eaac57e..3329493 100644
+>> --- a/drivers/scsi/bfa/bfa_fcs.c
+>> +++ b/drivers/scsi/bfa/bfa_fcs.c
+>> @@ -713,6 +713,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s
+>> *fabric)
+>>  	/* Model name/number */
+>>  	strncpy((char *)&port_cfg->sym_name, model,
+>>  		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+>> +	port_cfg->sym_name[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1]
+>> = 0;
+>>  	strncat((char *)&port_cfg->sym_name,
+>> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+>>  		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+>
+> Nacked-by: Krishna Gudipati <kgudipat@brocade.com>
+>
+> Hi Jim,
+>
+> This model number is of length 12 bytes and the logic added here will
+> reset the model last byte.
+> In addition strncat does not need the src to be null terminated, the
+> change does not compile even.
+> NACK to this change.
 
-> This driver is a general version for LM3630 backlgiht driver chip of TI.
-> 
-> LM3630 :
-> The LM3630 is a current mode boost converter which supplies the power
-> and controls the current in two strings of up to 10 LEDs per string.
-> Programming is done over an I2C compatible interface.
-> www.ti.com
+Hi Krishna,
 
-Looks OK to me.  Please review (and test!) my commentary-via-patch:
+Thanks for the quick feedback and sorry the patch wasn't quite right.
+However, the log is accurate: there is at least a theoretical problem
+when the string in "model" (a buffer of size 16 bytes) has strlen >= 12.
+While strncat does not require that its second argument be NUL-terminated,
+the first one (the destination) must be.  Otherwise, it has no way to
+determine the end of the string to which it must append the source bytes.
 
+Here is a v2 patch to which I've added the requisite (char*) cast.
+However, this whole function is rather unreadable due to the
+repetition (12 times!) of "(char *)&port_cfg->sym_name".
+In case someone prefers to factor out that repetition,
+I've appended a larger, v3 patch to do that.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: backlight-add-backlight-driver-for-lm3630-chip-fix
+>From 4d1ce4e5caf8a5041e5c4f3ae4deddb79c9e247c Mon Sep 17 00:00:00 2001
+From: Jim Meyering <meyering@redhat.com>
+Date: Sun, 29 Apr 2012 10:41:05 +0200
+Subject: [PATCHv2] bfa: avoid buffer overrun for 12-byte model name
 
-- make bled_name[] static
+we use strncpy to copy a model name of length up to 15 (16, if you count
+the NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+However, strncpy does not always NUL-terminate, so whenever the original
+model string has strlen >= 12, the following strncat reads beyond end
+of the ->sym_name buffer as it attempts to find end of string.
 
-- a few coding style tuneups
+bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+{
+	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+	...
+	strncpy((char *)&port_cfg->sym_name, model,
+		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+	...
 
-- create new set_intensity(), partly to avoid awkward layout gymnastics
+bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model)
+{
+	struct bfi_ioc_attr_s	*ioc_attr;
 
-Cc: "G.Shark Jeong" <gshark.jeong@gmail.com>
-Cc: Daniel Jeong <daniel.jeong@ti.com>
-Cc: G.Shark Jeong <gshark.jeong@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+	WARN_ON(!model);
+	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+
+BFA_ADAPTER_MODEL_NAME_LEN = 16
+
+Signed-off-by: Jim Meyering <meyering@redhat.com>
 ---
+ drivers/scsi/bfa/bfa_fcs.c | 1 +
+ 1 file changed, 1 insertion(+)
 
- drivers/video/backlight/lm3630_bl.c |   41 ++++++++++++--------------
- 1 file changed, 20 insertions(+), 21 deletions(-)
+diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c
+index eaac57e..242c37f 100644
+--- a/drivers/scsi/bfa/bfa_fcs.c
++++ b/drivers/scsi/bfa/bfa_fcs.c
+@@ -713,6 +713,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	/* Model name/number */
+ 	strncpy((char *)&port_cfg->sym_name, model,
+ 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
++	((char *)&port_cfg->sym_name)[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1] = 0;
+ 	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
 
-diff -puN drivers/video/backlight/Kconfig~backlight-add-backlight-driver-for-lm3630-chip-fix drivers/video/backlight/Kconfig
-diff -puN drivers/video/backlight/Makefile~backlight-add-backlight-driver-for-lm3630-chip-fix drivers/video/backlight/Makefile
-diff -puN drivers/video/backlight/lm3630_bl.c~backlight-add-backlight-driver-for-lm3630-chip-fix drivers/video/backlight/lm3630_bl.c
---- a/drivers/video/backlight/lm3630_bl.c~backlight-add-backlight-driver-for-lm3630-chip-fix
-+++ a/drivers/video/backlight/lm3630_bl.c
-@@ -37,7 +37,7 @@ enum lm3630_leds {
- 	BLED_2
- };
- 
--const char *bled_name[] = {
-+static const char *bled_name[] = {
- 	[BLED_ALL] = "lm3630_bled",	/*Bank1 controls all string */
- 	[BLED_1] = "lm3630_bled1",	/*Bank1 controls bled1 */
- 	[BLED_2] = "lm3630_bled2",	/*Bank1 or 2 controls bled2 */
-@@ -62,15 +62,14 @@ static int __devinit lm3630_chip_init(st
- 	struct lm3630_platform_data *pdata = pchip->pdata;
- 
- 	/*pwm control */
--	reg_val = ((pdata->pwm_active & 0x01) << 2)
--	    | (pdata->pwm_ctrl & 0x03);
-+	reg_val = ((pdata->pwm_active & 0x01) << 2) | (pdata->pwm_ctrl & 0x03);
- 	ret = regmap_update_bits(pchip->regmap, REG_CONFIG, 0x07, reg_val);
- 	if (ret < 0)
- 		goto out;
- 
- 	/* bank control */
--	reg_val = ((pdata->bank_b_ctrl & 0x01) << 1)
--	    | (pdata->bank_a_ctrl & 0x07);
-+	reg_val = ((pdata->bank_b_ctrl & 0x01) << 1) |
-+			(pdata->bank_a_ctrl & 0x07);
- 	ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x07, reg_val);
- 	if (ret < 0)
- 		goto out;
-@@ -105,8 +104,9 @@ static void lm3630_delayed_func(struct w
- {
- 	int ret;
- 	unsigned int reg_val;
--	struct lm3630_chip_data *pchip =
--	    container_of(work, struct lm3630_chip_data, work.work);
-+	struct lm3630_chip_data *pchip;
-+
-+	pchip = container_of(work, struct lm3630_chip_data, work.work);
- 
- 	ret = regmap_read(pchip->regmap, REG_INT_STATUS, &reg_val);
- 	if (ret < 0) {
-@@ -153,6 +153,16 @@ static int lm3630_intr_config(struct lm3
- 	return 0;
- }
- 
-+static bool
-+set_intensity(struct backlight_device *bl, struct lm3630_chip_data *pchip)
-+{
-+	if (!pchip->pdata->pwm_set_intensity)
-+		return false;
-+	pchip->pdata->pwm_set_intensity(bl->props.brightness - 1,
-+					pchip->pdata->pwm_period);
-+	return true;
-+}
-+
- /* update and get brightness */
- static int lm3630_bank_a_update_status(struct backlight_device *bl)
- {
-@@ -170,14 +180,8 @@ static int lm3630_bank_a_update_status(s
- 
- 	/* pwm control */
- 	if (pwm_ctrl == PWM_CTRL_BANK_A || pwm_ctrl == PWM_CTRL_BANK_ALL) {
--		if (pchip->pdata->pwm_set_intensity)
--			pchip->pdata->pwm_set_intensity(bl->props.brightness -
--							1,
--							pchip->pdata->
--							pwm_period);
--		else
--			dev_err(pchip->dev,
--				"No pwm control func. in plat-data\n");
-+		if (!set_intensity(bl, pchip))
-+			dev_err(pchip->dev, "No pwm control func. in plat-data\n");
+--
+1.7.12
+
+
+>From d7f49a0a2f835ec4808772678fe6c4d595ffa8f5 Mon Sep 17 00:00:00 2001
+From: Jim Meyering <meyering@redhat.com>
+Date: Sun, 29 Apr 2012 10:41:05 +0200
+Subject: [PATCHv3] bfa: avoid buffer overrun for 12-byte model name
+
+we use strncpy to copy a model name of length up to 15 (16, if you count
+the NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+However, strncpy does not always NUL-terminate, so whenever the original
+model string has strlen >= 12, the following strncat reads beyond end
+of the ->sym_name buffer as it attempts to find end of string.
+Also, factor out the 12 uses of (char *)&port_cfg->sym_name.
+
+bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+{
+	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+	...
+	strncpy((char *)&port_cfg->sym_name, model,
+		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+	...
+
+bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model)
+{
+	struct bfi_ioc_attr_s	*ioc_attr;
+
+	WARN_ON(!model);
+	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+
+BFA_ADAPTER_MODEL_NAME_LEN = 16
+
+Signed-off-by: Jim Meyering <meyering@redhat.com>
+---
+ drivers/scsi/bfa/bfa_fcs.c | 31 +++++++++++++------------------
+ 1 file changed, 13 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c
+index eaac57e..77d08f9 100644
+--- a/drivers/scsi/bfa/bfa_fcs.c
++++ b/drivers/scsi/bfa/bfa_fcs.c
+@@ -707,26 +707,26 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	struct bfa_lport_cfg_s *port_cfg = &fabric->bport.port_cfg;
+ 	char model[BFA_ADAPTER_MODEL_NAME_LEN] = {0};
+ 	struct bfa_fcs_driver_info_s *driver_info = &fabric->fcs->driver_info;
++	char *s_name = (char *)&port_cfg->sym_name;
+
+ 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+
+ 	/* Model name/number */
+-	strncpy((char *)&port_cfg->sym_name, model,
+-		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+-	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
++	strncpy(s_name, model, BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
++	s_name[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1] = 0;
++	strncat(s_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+
+ 	/* Driver Version */
+-	strncat((char *)&port_cfg->sym_name, (char *)driver_info->version,
++	strncat(s_name, (char *)driver_info->version,
+ 		BFA_FCS_PORT_SYMBNAME_VERSION_SZ);
+-	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
++	strncat(s_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+
+ 	/* Host machine name */
+-	strncat((char *)&port_cfg->sym_name,
+-		(char *)driver_info->host_machine_name,
++	strncat(s_name, (char *)driver_info->host_machine_name,
+ 		BFA_FCS_PORT_SYMBNAME_MACHINENAME_SZ);
+-	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
++	strncat(s_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+
+ 	/*
+@@ -735,23 +735,18 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	 * OS name string and instead copy the entire OS info string (64 bytes).
+ 	 */
+ 	if (driver_info->host_os_patch[0] == '\0') {
+-		strncat((char *)&port_cfg->sym_name,
+-			(char *)driver_info->host_os_name,
++		strncat(s_name, (char *)driver_info->host_os_name,
+ 			BFA_FCS_OS_STR_LEN);
+-		strncat((char *)&port_cfg->sym_name,
+-			BFA_FCS_PORT_SYMBNAME_SEPARATOR,
++		strncat(s_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 			sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
  	} else {
- 
- 		/* i2c control */
-@@ -242,12 +246,7 @@ static int lm3630_bank_b_update_status(s
- 	enum lm3630_pwm_ctrl pwm_ctrl = pchip->pdata->pwm_ctrl;
- 
- 	if (pwm_ctrl == PWM_CTRL_BANK_B || pwm_ctrl == PWM_CTRL_BANK_ALL) {
--		if (pchip->pdata->pwm_set_intensity)
--			pchip->pdata->pwm_set_intensity(bl->props.brightness -
--							1,
--							pchip->pdata->
--							pwm_period);
--		else
-+		if (!set_intensity(bl, pchip))
- 			dev_err(pchip->dev,
- 				"no pwm control func. in plat-data\n");
- 	} else {
-diff -puN include/linux/platform_data/lm3630_bl.h~backlight-add-backlight-driver-for-lm3630-chip-fix include/linux/platform_data/lm3630_bl.h
-_
+-		strncat((char *)&port_cfg->sym_name,
+-			(char *)driver_info->host_os_name,
++		strncat(s_name, (char *)driver_info->host_os_name,
+ 			BFA_FCS_PORT_SYMBNAME_OSINFO_SZ);
+-		strncat((char *)&port_cfg->sym_name,
+-			BFA_FCS_PORT_SYMBNAME_SEPARATOR,
++		strncat(s_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 			sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
 
+ 		/* Append host OS Patch Info */
+-		strncat((char *)&port_cfg->sym_name,
+-			(char *)driver_info->host_os_patch,
++		strncat(s_name, (char *)driver_info->host_os_patch,
+ 			BFA_FCS_PORT_SYMBNAME_OSPATCH_SZ);
+ 	}
+
+--
+1.7.12
