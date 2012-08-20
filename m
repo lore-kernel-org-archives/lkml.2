@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab2HTKGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 06:06:47 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37884 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751401Ab2HTKGo (ORCPT
+	id S1752122Ab2HTKKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 06:10:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35868 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab2HTKKV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 06:06:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120820094138.GA16230@one.firstfloor.org>
-References: <20120820092421.GA11284@quad>
-	<20120820094138.GA16230@one.firstfloor.org>
-Date: Mon, 20 Aug 2012 12:06:42 +0200
-Message-ID: <CABPqkBQREL4HpNoB_3BBbC1ecisuRYoCoMoATCkRFZAGzTchCA@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86: enable Intel Cedarview Atom suppport
-From: Stephane Eranian <eranian@google.com>
+	Mon, 20 Aug 2012 06:10:21 -0400
+Message-ID: <1345457400.23018.28.camel@twins>
+Subject: Re: [PATCH 1/2] pebs, x86: Make sure to really disable PEBS
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        zheng.z.yan@intel.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Date: Mon, 20 Aug 2012 12:10:00 +0200
+In-Reply-To: <1345306530-25665-1-git-send-email-andi@firstfloor.org>
+References: <1345306530-25665-1-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 11:41 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
->> index 7f2739e..0d3d63a 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
->> @@ -2008,6 +2008,7 @@ __init int intel_pmu_init(void)
->>               break;
->>
->>       case 28: /* Atom */
->> +     case 54: /* Cedariew */
->
-> Ack. We currently miss some more 32nm Atoms too, will send patches soon.
->
->>               memcpy(hw_cache_event_ids, atom_hw_cache_event_ids,
->>                      sizeof(hw_cache_event_ids));
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> index 520b426..da02e9c 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> @@ -686,7 +686,8 @@ void intel_pmu_lbr_init_atom(void)
->>        * to have an operational LBR which can freeze
->>        * on PMU interrupt
->>        */
->> -     if (boot_cpu_data.x86_mask < 10) {
->> +     if (boot_cpu_data.x86_model == 28
->> +         && boot_cpu_data.x86_mask < 10) {
->
-> Is that correct?
->
-Yes, had to do that to re-enable LBR on Cedarview.
-The < 10 is a trick to disable LBR on very old Atom (prior to N4xx generation).
+On Sat, 2012-08-18 at 09:15 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> When disabling a PEBS event we need to check the old value
+> to determine if PEBS was running. Otherwise the last PEBS value
+> could be kept running.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index e38d97b..db49ab3 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -438,9 +438,10 @@ void intel_pmu_pebs_disable(struct perf_event *event)
+>  {
+>  	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>  	struct hw_perf_event *hwc = &event->hw;
+> +	u64 old = cpuc->pebs_enabled;
+>  
+>  	cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
+> -	if (cpuc->enabled)
+> +	if (old)
+
+cpuc->enabled != cpuc->pebs_enabled
+
+>  		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
+>  
+>  	hwc->config |= ARCH_PERFMON_EVENTSEL_INT;
+
