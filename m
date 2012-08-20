@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab2HTPcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:32:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53970 "EHLO
+	id S1757198Ab2HTPcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:32:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53977 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757129Ab2HTPbT (ORCPT
+	with ESMTP id S1757137Ab2HTPbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:31:19 -0400
+	Mon, 20 Aug 2012 11:31:22 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
         Matthew Garrett <mjg59@srcf.ucam.org>, David Airlie <airlied@linux.ie>
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 4/7] apple-gmux: Add switch_ddc support
-Date: Mon, 20 Aug 2012 10:31:01 -0500
-Message-Id: <1345476664-22066-5-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 5/7] drm/edid: Switch DDC when reading the EDID
+Date: Mon, 20 Aug 2012 10:31:02 -0500
+Message-Id: <1345476664-22066-6-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345476664-22066-1-git-send-email-seth.forshee@canonical.com>
 References: <20120806045150.GA23652@thinkpad-t410>
@@ -23,52 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The gmux allows muxing the DDC independently from the display, so
-support this functionality. This will allow reading the EDID for the
-inactive GPU, fixing issues with machines that either don't have a VBT
-or have invalid mode data in the VBT.
+Some dual graphics machines support muxing the DDC separately from the
+display, so make use of this functionality when reading the EDID on the
+inactive GPU. Also serialize drm_get_edid() with a mutex to avoid races
+on the DDC mux state.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/platform/x86/apple-gmux.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_edid.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
-index c72e81e..f702e90 100644
---- a/drivers/platform/x86/apple-gmux.c
-+++ b/drivers/platform/x86/apple-gmux.c
-@@ -269,14 +269,21 @@ static const struct backlight_ops gmux_bl_ops = {
- 	.update_status = gmux_update_status,
- };
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index a8743c3..1a4b661 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -31,6 +31,7 @@
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/module.h>
++#include <linux/vga_switcheroo.h>
+ #include "drmP.h"
+ #include "drm_edid.h"
+ #include "drm_edid_modes.h"
+@@ -82,6 +83,8 @@ struct detailed_mode_closure {
+ #define LEVEL_GTF2	2
+ #define LEVEL_CVT	3
  
-+static int gmux_switch_ddc(enum vga_switcheroo_client_id id)
-+{
-+	if (id == VGA_SWITCHEROO_IGD)
-+		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 1);
-+	else
-+		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 2);
-+	return 0;
-+}
++static DEFINE_MUTEX(drm_edid_mutex);
 +
- static int gmux_switchto(enum vga_switcheroo_client_id id)
+ static struct edid_quirk {
+ 	char vendor[4];
+ 	int product_id;
+@@ -395,12 +398,26 @@ struct edid *drm_get_edid(struct drm_connector *connector,
+ 			  struct i2c_adapter *adapter)
  {
- 	if (id == VGA_SWITCHEROO_IGD) {
--		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 1);
- 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DISPLAY, 2);
- 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_EXTERNAL, 2);
- 	} else {
--		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DDC, 2);
- 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_DISPLAY, 3);
- 		gmux_write8(apple_gmux_data, GMUX_PORT_SWITCH_EXTERNAL, 3);
- 	}
-@@ -343,6 +350,7 @@ gmux_active_client(struct apple_gmux_data *gmux_data)
- }
+ 	struct edid *edid = NULL;
++	struct pci_dev *pdev = connector->dev->pdev;
++	struct pci_dev *active_pdev = NULL;
++
++	mutex_lock(&drm_edid_mutex);
++
++	if (pdev) {
++		active_pdev = vga_switcheroo_get_active_client();
++		if (active_pdev != pdev)
++			vga_switcheroo_switch_ddc(pdev);
++	}
  
- static struct vga_switcheroo_handler gmux_handler = {
-+	.switch_ddc = gmux_switch_ddc,
- 	.switchto = gmux_switchto,
- 	.power_state = gmux_set_power_state,
- 	.get_client_id = gmux_get_client_id,
+ 	if (drm_probe_ddc(adapter))
+ 		edid = (struct edid *)drm_do_get_edid(connector, adapter);
+ 
++	if (active_pdev && active_pdev != pdev)
++		vga_switcheroo_switch_ddc(active_pdev);
++
+ 	connector->display_info.raw_edid = (char *)edid;
+ 
++	mutex_unlock(&drm_edid_mutex);
+ 	return edid;
+ 
+ }
 -- 
 1.7.9.5
 
