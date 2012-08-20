@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2HTNzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 09:55:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37118 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754737Ab2HTNwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 09:52:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,797,1336374000"; 
-   d="scan'208";a="188747945"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: linux-mm@kvack.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [PATCH v4 2/8] THP: Pass fault address to __do_huge_pmd_anonymous_page()
-Date: Mon, 20 Aug 2012 16:52:31 +0300
-Message-Id: <1345470757-12005-3-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1754874Ab2HTN4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:56:15 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:1145
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751820Ab2HTN4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 09:56:12 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah11b5h)
+X-WSS-ID: 0M9241L-01-3DC-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <x86@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 02/19] [RFC] x86, apic: Mask IO-APIC and PIC unconditionally on LAPIC resume
+Date: Mon, 20 Aug 2012 15:55:48 +0200
+Message-ID: <1345470965-24410-3-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+IO-APIC and PIC use the same resume routines when IRQ
+remapping is enabled or disabled. So it should be safe to
+mask the other APICs for the IRQ-remapping-disabled case
+too.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- mm/huge_memory.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apic/apic.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 70737ec..6f0825b611 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -633,7 +633,8 @@ static inline pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma)
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 41681b3..109380a 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -2233,16 +2233,15 @@ static void lapic_resume(void)
+ 		return;
  
- static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
- 					struct vm_area_struct *vma,
--					unsigned long haddr, pmd_t *pmd,
-+					unsigned long haddr,
-+					unsigned long address, pmd_t *pmd,
- 					struct page *page)
- {
- 	pgtable_t pgtable;
-@@ -720,8 +721,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			put_page(page);
- 			goto out;
- 		}
--		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr, pmd,
--							  page))) {
-+		if (unlikely(__do_huge_pmd_anonymous_page(mm, vma, haddr,
-+						address, pmd, page))) {
- 			mem_cgroup_uncharge_page(page);
- 			put_page(page);
- 			goto out;
+ 	local_irq_save(flags);
+-	if (irq_remapping_enabled) {
+-		/*
+-		 * IO-APIC and PIC have their own resume routines.
+-		 * We just mask them here to make sure the interrupt
+-		 * subsystem is completely quiet while we enable x2apic
+-		 * and interrupt-remapping.
+-		 */
+-		mask_ioapic_entries();
+-		legacy_pic->mask_all();
+-	}
++
++	/*
++	 * IO-APIC and PIC have their own resume routines.
++	 * We just mask them here to make sure the interrupt
++	 * subsystem is completely quiet while we enable x2apic
++	 * and interrupt-remapping.
++	 */
++	mask_ioapic_entries();
++	legacy_pic->mask_all();
+ 
+ 	if (x2apic_mode)
+ 		enable_x2apic();
 -- 
-1.7.7.6
+1.7.9.5
+
 
