@@ -1,226 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab2HTLo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 07:44:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50970 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab2HTLov convert rfc822-to-8bit (ORCPT
+	id S1754242Ab2HTLqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 07:46:09 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:37906 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab2HTLqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 07:44:51 -0400
-Message-ID: <1345463081.23018.34.camel@twins>
-Subject: Re: lockdep trace from posix timers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Mon, 20 Aug 2012 13:44:41 +0200
-In-Reply-To: <1345446957.23018.14.camel@twins>
-References: <20120724203613.GA9637@redhat.com>
-	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
-	 <1345446957.23018.14.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 20 Aug 2012 07:46:07 -0400
+X-IronPort-AV: E=Sophos;i="4.77,796,1336348800"; 
+   d="scan'208";a="14082988"
+Date: Mon, 20 Aug 2012 12:45:45 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [Xen-devel] [PATCH 06/11] xen/mmu: For 64-bit do not call
+ xen_map_identity_early
+In-Reply-To: <20120817174549.GA14257@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1208201243180.15568@kaball.uk.xensource.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com> <20120817174549.GA14257@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 09:15 +0200, Peter Zijlstra wrote:
-> On Fri, 2012-08-17 at 17:14 +0200, Oleg Nesterov wrote:
-> > I still think that task_work_add() should synhronize with exit_task_work()
-> > itself and fail if necessary. But I wasn't able to convince Al ;)
+On Fri, 17 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> On Fri, Aug 17, 2012 at 06:41:23PM +0100, Stefano Stabellini wrote:
+> > On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> > > B/c we do not need it. During the startup the Xen provides
+> > > us with all the memory mapped that we need to function.
+> > 
+> > Shouldn't we check to make sure that is actually true (I am thinking at
+> > nr_pt_frames)?
 > 
-> I'm not at all sure how that relates to needing task_lock() in the
-> keyctl stuff.
+> I was looking at the source code (hypervisor) to figure it out and
+> that is certainly true.
 > 
-> Also, can't task_work use llist stuff? That would also avoid using
-> ->pi_lock.
+> 
+> > Or is it actually stated somewhere in the Xen headers?
+> 
+> Couldn't find it, but after looking so long at the source code
+> I didn't even bother looking for it.
+> 
+> Thought to be honest - I only looked at how the 64-bit pagetables
+> were set up, so I didn't dare to touch the 32-bit. Hence the #ifdef
 
-How about something like the below?
+I think that we need to involve some Xen maintainers and get this
+written down somewhere in the public headers, otherwise we have no
+guarantees that it is going to stay as it is in the next Xen versions.
 
----
- include/linux/task_work.h |   7 +--
- kernel/exit.c             |   2 +-
- kernel/task_work.c        | 120 ++++++++++++++++++++++++----------------------
- 3 files changed, 65 insertions(+), 64 deletions(-)
-
-diff --git a/include/linux/task_work.h b/include/linux/task_work.h
-index fb46b03..f365416 100644
---- a/include/linux/task_work.h
-+++ b/include/linux/task_work.h
-@@ -15,11 +15,6 @@ init_task_work(struct callback_head *twork, task_work_func_t func)
- int task_work_add(struct task_struct *task, struct callback_head *twork, bool);
- struct callback_head *task_work_cancel(struct task_struct *, task_work_func_t);
- void task_work_run(void);
--
--static inline void exit_task_work(struct task_struct *task)
--{
--	if (unlikely(task->task_works))
--		task_work_run();
--}
-+void task_work_exit(void);
- 
- #endif	/* _LINUX_TASK_WORK_H */
-diff --git a/kernel/exit.c b/kernel/exit.c
-index f65345f..92aa94b 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -992,7 +992,7 @@ void do_exit(long code)
- 	exit_shm(tsk);
- 	exit_files(tsk);
- 	exit_fs(tsk);
--	exit_task_work(tsk);
-+	task_work_exit();
- 	check_stack_usage();
- 	exit_thread();
- 
-diff --git a/kernel/task_work.c b/kernel/task_work.c
-index 91d4e17..e5eac14 100644
---- a/kernel/task_work.c
-+++ b/kernel/task_work.c
-@@ -2,79 +2,85 @@
- #include <linux/task_work.h>
- #include <linux/tracehook.h>
- 
-+static void task_work_nop(struct callback_head *work)
-+{
-+}
-+
-+static struct callback_head dead = { 
-+	.next = NULL,
-+	.func = task_work_nop,
-+};
-+
- int
--task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
-+task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
- {
--	struct callback_head *last, *first;
--	unsigned long flags;
--
--	/*
--	 * Not inserting the new work if the task has already passed
--	 * exit_task_work() is the responisbility of callers.
--	 */
--	raw_spin_lock_irqsave(&task->pi_lock, flags);
--	last = task->task_works;
--	first = last ? last->next : twork;
--	twork->next = first;
--	if (last)
--		last->next = twork;
--	task->task_works = twork;
--	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+	struct callback_head **head = &task->task_works;
-+	struct callback_head *entry, *old_entry;
-+
-+	entry = &head;
-+	for (;;) {
-+		if (entry == &dead)
-+			return -ESRCH;
-+
-+		old_entry = entry;
-+		work->next = entry;
-+		entry = cmpxchg(head, old_entry, work);
-+		if (entry == old_entry)
-+			break;
-+	}
- 
- 	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
- 	if (notify)
- 		set_notify_resume(task);
-+
- 	return 0;
- }
- 
- struct callback_head *
- task_work_cancel(struct task_struct *task, task_work_func_t func)
- {
--	unsigned long flags;
--	struct callback_head *last, *res = NULL;
--
--	raw_spin_lock_irqsave(&task->pi_lock, flags);
--	last = task->task_works;
--	if (last) {
--		struct callback_head *q = last, *p = q->next;
--		while (1) {
--			if (p->func == func) {
--				q->next = p->next;
--				if (p == last)
--					task->task_works = q == p ? NULL : q;
--				res = p;
--				break;
--			}
--			if (p == last)
--				break;
--			q = p;
--			p = q->next;
-+	struct callback_head **workp, *work;
-+
-+again:
-+	workp = &task->task_works;
-+	work = *workp;
-+	while (work) {
-+		if (work->func == func) {
-+			if (cmpxchg(workp, work, work->next) == work)
-+				return work;
-+			goto again;
- 		}
-+
-+		workp = &work->next;
-+		work = *workp;
- 	}
--	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
--	return res;
-+
-+	return NULL;
- }
- 
--void task_work_run(void)
-+static void __task_work_run(struct callback_head *tail)
- {
--	struct task_struct *task = current;
--	struct callback_head *p, *q;
--
--	while (1) {
--		raw_spin_lock_irq(&task->pi_lock);
--		p = task->task_works;
--		task->task_works = NULL;
--		raw_spin_unlock_irq(&task->pi_lock);
--
--		if (unlikely(!p))
--			return;
--
--		q = p->next; /* head */
--		p->next = NULL; /* cut it */
--		while (q) {
--			p = q->next;
--			q->func(q);
--			q = p;
-+	struct callback_head **head = &current->task_works;
-+
-+	do {
-+		struct callback_head *work = xchg(head, NULL);
-+		while (work) {
-+			struct callback_head *next = ACCESS_ONCE(work->next);
-+
-+			WARN_ON_ONCE(work == &dead);
-+
-+			work->func(work);
-+			work = next;
- 		}
--	}
-+	} while (cmpxchg(head, NULL, tail) != NULL);
-+}
-+
-+void task_work_run(void)
-+{
-+	__task_work_run(NULL);
-+}
-+
-+void task_work_exit(void)
-+{
-+	__task_work_run(&dead);
- }
-
+Maybe we just need to add a couple of lines of comment to
+xen/include/public/xen.h.
