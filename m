@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2HTD5i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:57:38 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab2HTD5d (ORCPT
+	id S1753789Ab2HTD5s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:57:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab2HTD5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:57:33 -0400
+	Sun, 19 Aug 2012 23:57:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [ 00/32] 3.4.10-stable review
-Date: Sun, 19 Aug 2012 20:56:56 -0700
-Message-Id: <20120820035647.862247088@linuxfoundation.org>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 02/32] s390/compat: fix mmap compat system calls
+Date: Sun, 19 Aug 2012 20:56:58 -0700
+Message-Id: <20120820035648.191362414@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
+In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
+References: <20120820035647.862247088@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,60 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-This is the start of the stable review cycle for the 3.4.10 release.
-There are 33 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Aug 22 03:56:46 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.10-rc1.gz
-and the diffstat can be found below.
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-thanks,
+commit e85871218513c54f7dfdb6009043cb638f2fecbe upstream.
 
-greg k-h
+The native 31 bit and the compat behaviour for the mmap system calls differ:
 
--------------
- Makefile                                    |   4 +-
- arch/s390/kernel/compat_linux.c             |   2 -
- arch/s390/kernel/compat_wrapper.S           |   4 +-
- arch/x86/xen/p2m.c                          |  36 ++++
- drivers/dma/imx-dma.c                       |  36 ++--
- drivers/gpu/drm/i915/intel_display.c        |  11 --
- drivers/gpu/drm/i915/intel_dp.c             |  18 +-
- drivers/gpu/drm/i915/intel_ringbuffer.c     |   7 +-
- drivers/gpu/drm/nouveau/nvd0_display.c      |   2 +-
- drivers/gpu/drm/radeon/atombios_crtc.c      |  14 +-
- drivers/gpu/drm/radeon/evergreen.c          |  71 ++-----
- drivers/gpu/drm/radeon/ni.c                 |  14 +-
- drivers/gpu/drm/radeon/radeon_asic.h        |   8 +-
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |   4 +
- drivers/gpu/drm/radeon/radeon_mode.h        |   1 +
- drivers/gpu/drm/radeon/rv515.c              |  13 --
- drivers/infiniband/ulp/srp/ib_srp.c         |  87 ++++++---
- drivers/net/wireless/rt2x00/rt2800usb.c     |   1 +
- drivers/tty/serial/pmac_zilog.c             |  12 +-
- drivers/usb/gadget/u_ether.c                |   6 +
- drivers/usb/host/pci-quirks.c               |   7 +
- drivers/usb/host/pci-quirks.h               |   1 +
- drivers/usb/host/xhci-pci.c                 |  10 +
- drivers/usb/host/xhci-ring.c                |  36 ++--
- drivers/usb/host/xhci.c                     |   8 +-
- drivers/usb/host/xhci.h                     |   1 +
- drivers/usb/serial/ftdi_sio.c               |   1 +
- drivers/usb/serial/ftdi_sio_ids.h           |   7 +
- drivers/usb/serial/mos7840.c                |   9 +-
- drivers/usb/serial/option.c                 | 281 +++++++++++-----------------
- fs/ext4/extents.c                           |   1 +
- fs/ext4/super.c                             |   6 +
- fs/fuse/file.c                              |   2 +-
- fs/jbd2/journal.c                           |   3 +-
- include/drm/drm_pciids.h                    |   3 +
- include/linux/jbd2.h                        |   1 +
- include/linux/usb.h                         |  21 +++
- 37 files changed, 409 insertions(+), 340 deletions(-)
+In native 31 bit mode the passed in address for the mmap system call will be
+unmodified passed to sys_mmap_pgoff().
+In compat mode however the passed in address will be modified with
+compat_ptr() which masks out the most significant bit.
+
+The result is that in native 31 bit mode each mmap request (with MAP_FIXED)
+will fail where the most significat bit is set, while in compat mode it
+may succeed.
+
+This odd behaviour was introduced with d3815898 "[S390] mmap: add missing
+compat_ptr conversion to both mmap compat syscalls".
+
+To restore a consistent behaviour accross native and compat mode this
+patch functionally reverts the above mentioned commit.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/s390/kernel/compat_linux.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/arch/s390/kernel/compat_linux.c
++++ b/arch/s390/kernel/compat_linux.c
+@@ -612,7 +612,6 @@ asmlinkage unsigned long old32_mmap(stru
+ 		return -EFAULT;
+ 	if (a.offset & ~PAGE_MASK)
+ 		return -EINVAL;
+-	a.addr = (unsigned long) compat_ptr(a.addr);
+ 	return sys_mmap_pgoff(a.addr, a.len, a.prot, a.flags, a.fd,
+ 			      a.offset >> PAGE_SHIFT);
+ }
+@@ -623,7 +622,6 @@ asmlinkage long sys32_mmap2(struct mmap_
+ 
+ 	if (copy_from_user(&a, arg, sizeof(a)))
+ 		return -EFAULT;
+-	a.addr = (unsigned long) compat_ptr(a.addr);
+ 	return sys_mmap_pgoff(a.addr, a.len, a.prot, a.flags, a.fd, a.offset);
+ }
+ 
 
 
