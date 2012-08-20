@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab2HTO13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:27:29 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53579 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab2HTO10 (ORCPT
+	id S1756705Ab2HTO1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:27:44 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:58033 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab2HTO1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:27:26 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] drm: stop vmgfx driver explosion
-To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Date: Mon, 20 Aug 2012 15:44:52 +0100
-Message-ID: <20120820144438.6255.39723.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Mon, 20 Aug 2012 10:27:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1344689809-6223-8-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1344689809-6223-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Mon, 20 Aug 2012 16:27:41 +0200
+Message-ID: <CACRpkdbNpeBLy-JmUz-YjFYVZfAw3mavUAWigLKyXU=iQ_wMSQ@mail.gmail.com>
+Subject: Re: [PATCH 07/11] ARM: mvebu: Add pinctrl support to Armada XP SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
 
-If you do a page flip with no flags set then event is NULL. If event is
-NULL then the vmw_gfx driver likes to go digging into NULL and extracts
-NULL->base.file_priv.
+> From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+>
+> This commits adds the necessary device tree information to define the
+> compatible property for the pinctrl driver instance of Armada XP SoCs.
+>
+> Until now, the device tree representation considered the Armada XP as
+> a single SoC. But in fact, there are three different SoCs in the
+> Armada XP families, with different number of CPU cores, different
+> number of Ethernet interfaces... and different number of muxable pins
+> or functions. We therefore introduce three armada-xp-mv78xx0.dtsi for
+> the three SoCs of the Armada XP family. The current armada-xp-db.dts
+> evaluation board uses the MV78460 variant of the SoC.
+>
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-On a modern kernel with NULL mapping protection it's just another oops,
-without it there are some "intriguing" possibilities.
+FWIW:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-What it should do is an open question but that for the driver owners to
-sort out.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-index 6b0078f..c50724b 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
-@@ -1688,15 +1688,19 @@ int vmw_du_page_flip(struct drm_crtc *crtc,
- 	struct vmw_private *dev_priv = vmw_priv(crtc->dev);
- 	struct drm_framebuffer *old_fb = crtc->fb;
- 	struct vmw_framebuffer *vfb = vmw_framebuffer_to_vfb(fb);
--	struct drm_file *file_priv = event->base.file_priv;
-+	struct drm_file *file_priv ;
- 	struct vmw_fence_obj *fence = NULL;
- 	struct drm_clip_rect clips;
- 	int ret;
- 
-+	if (event == NULL)
-+		return -EINVAL;
-+
- 	/* require ScreenObject support for page flipping */
- 	if (!dev_priv->sou_priv)
- 		return -ENOSYS;
- 
-+	file_priv = event->base.file_priv;
- 	if (!vmw_kms_screen_object_flippable(dev_priv, crtc))
- 		return -EINVAL;
- 
-
+Yours,
+Linus Walleij
