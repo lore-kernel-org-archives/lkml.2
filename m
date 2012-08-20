@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2HTD57 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:57:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
+	id S1754821Ab2HTD6I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:58:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab2HTD5v (ORCPT
+	with ESMTP id S1754717Ab2HTD6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:57:51 -0400
+	Sun, 19 Aug 2012 23:58:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 06/32] drm/i915: prefer wide & slow to fast & narrow in DP configs
-Date: Sun, 19 Aug 2012 20:57:02 -0700
-Message-Id: <20120820035648.743958782@linuxfoundation.org>
+        Benoit Gschwind <gschwind@gnu-log.net>,
+        Francois Rigaut <frigaut@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 09/32] drm/i915: ignore eDP bpc settings from vbt
+Date: Sun, 19 Aug 2012 20:57:05 -0700
+Message-Id: <20120820035649.163112912@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
 References: <20120820035647.862247088@linuxfoundation.org>
@@ -31,39 +31,63 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 2514bc510d0c3aadcc5204056bb440fa36845147 upstream.
+commit 4344b813f105a19f793f1fd93ad775b784648b95 upstream.
 
-High frequency link configurations have the potential to cause trouble
-with long and/or cheap cables, so prefer slow and wide configurations
-instead.  This patch has the potential to cause trouble for eDP
-configurations that lie about available lanes, so if we run into that we
-can make it conditional on eDP.
+This has originally been introduced to not oversubscribe the dp links
+in
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45801
-Tested-by: peter@colberg.org
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+commit 885a5fb5b120a5c7e0b3baad7b0feb5a89f76c18
+Author: Zhenyu Wang <zhenyuw@linux.intel.com>
+Date:   Tue Jan 12 05:38:31 2010 +0800
+
+    drm/i915: fix pixel color depth setting on eDP
+
+Since then we've fixed up the dp link bandwidth calculation code and
+should now automatically fall back to 6bpc dithering. So this is
+unnecessary.
+
+Furthermore it seems to break the new MacbookPro with retina display,
+hence let's just rip this out.
+
+Reported-by: Benoit Gschwind <gschwind@gnu-log.net>
+Cc: Benoit Gschwind <gschwind@gnu-log.net>
+Cc: Francois Rigaut <frigaut@gmail.com>
+Tested-by: Benoit Gschwind <gschwind@gnu-log.net>
+Tested-by: Bernhard Froemel <froemel at vmars tuwien.ac.at>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/gpu/drm/i915/intel_dp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+--
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -712,8 +712,8 @@ intel_dp_mode_fixup(struct drm_encoder *
+Testing feedback highgly welcome, and thanks for Benoit for finding
+out that the bpc computations are busted.
+-Daniel
+
+---
+ drivers/gpu/drm/i915/intel_display.c |   11 -----------
+ 1 file changed, 11 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4982,17 +4982,6 @@ static bool intel_choose_pipe_bpp_dither
+ 			continue;
+ 		}
  
- 	bpp = adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
- 
--	for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
--		for (clock = 0; clock <= max_clock; clock++) {
-+	for (clock = 0; clock <= max_clock; clock++) {
-+		for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
- 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
- 
- 			if (intel_dp_link_required(mode->clock, bpp)
+-		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
+-			/* Use VBT settings if we have an eDP panel */
+-			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
+-
+-			if (edp_bpc < display_bpc) {
+-				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+-				display_bpc = edp_bpc;
+-			}
+-			continue;
+-		}
+-
+ 		/* Not one of the known troublemakers, check the EDID */
+ 		list_for_each_entry(connector, &dev->mode_config.connector_list,
+ 				    head) {
 
 
