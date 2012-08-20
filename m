@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab2HTKSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 06:18:37 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43738 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab2HTKSe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 06:18:34 -0400
-Message-ID: <50320EE5.10307@parallels.com>
-Date: Mon, 20 Aug 2012 14:18:13 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+	id S1752550Ab2HTKWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 06:22:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52471 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab2HTKWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 06:22:14 -0400
+Message-ID: <50320FC4.2020100@ti.com>
+Date: Mon, 20 Aug 2012 12:21:56 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "bfields@redhat.com" <bfields@redhat.com>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH 0/5] net: socket bind to file descriptor introduced
-References: <20120815161141.7598.16682.stgit@localhost.localdomain> <87y5lf7d37.fsf@xmission.com>
-In-Reply-To: <87y5lf7d37.fsf@xmission.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+CC: Vaibhav Hiremath <hvaibhav@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ARM: OMAP: hwmod: revise deassert sequence
+References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org> <1342466485-1050-3-git-send-email-omar.luna@linaro.org> <alpine.DEB.2.00.1208020150240.4177@utopia.booyaka.com> <CALLhW=6-b+kjfG-u3+uXiD64UwoNEdufjJKu0Mx-sGWp6n9csg@mail.gmail.com> <501B609F.9030403@ti.com> <CALLhW=7yJTq_cfB=KGY5VT8fNO1u_hrY118ysihFuQA+gVFRuQ@mail.gmail.com>
+In-Reply-To: <CALLhW=7yJTq_cfB=KGY5VT8fNO1u_hrY118ysihFuQA+gVFRuQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-16.08.2012 07:03, Eric W. Biederman пишет:
-> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
->
->> This patch set introduces new socket operation and new system call:
->> sys_fbind(), which allows to bind socket to opened file.
->> File to bind to can be created by sys_mknod(S_IFSOCK) and opened by
->> open(O_PATH).
+Hi Omar,
+
+On 08/03/2012 05:52 PM, Omar Ramirez Luna wrote:
+> On 3 August 2012 00:24, Vaibhav Hiremath <hvaibhav@ti.com> wrote:
+>> On 8/3/2012 3:50 AM, Omar Ramirez Luna wrote:
+>>> So in _enable:
+>>>
+>>>         _enable_clocks(oh);
+>>>         if (soc_ops.enable_module)
+>>>                 soc_ops.enable_module(oh);
+>>>
+>>> The enable_module part seems redundant to me, since the module should
+>>> be already enabled by the first call to _enable_clocks.
 >>
->> This system call is especially required for UNIX sockets, which has name
->> lenght limitation.
->>
->> The following series implements...
->
-> Hmm.  I just realized this patchset is even sillier than I thought.
->
-> Stanislav is the problem you are ultimately trying to solve nfs clients
-> in a container connecting to the wrong user space rpciod?
->
+>> Yes they do same thing, I believe the plan is to get rid of all clock
+>> leaf-nodes in the near future, and let hwmod handle module
+>> enable/disable part.
+> 
+> If this is the case then an enable_module call is needed in my patch
+> for when these changes are made. The original works fine but only
+> because currently clock framework does what enable_module is doing.
 
-Hi, Eric.
-The problem you mentioned was the reason why I started to think about this.
-But currently I believe, that limitations in unix sockets connect or bind should 
-be removed, because it will be useful it least for CRIU project.
+Yes, that's the case, but I plan to remove most of the leaf clocks ASAP,
+so we cannot rely on that.
 
-> Aka net/sunrpc/xprtsock.c:xs_setup_local only taking an absolute path
-> and then creating a delayed work item to actually open the unix domain
-> socket?
->
-> The straight correct and straight forward thing to do appears to be:
-> - Capture the root from current->fs in xs_setup_local.
-> - In xs_local_finish_connect change current->fs.root to the captured
->    version of root before kernel_connect, and restore current->fs.root
->    after kernel_connect.
->
-> It might not be a bad idea to implement open on unix domain sockets in
-> a filesystem as create(AF_LOCAL)+connect() which would allow you to
-> replace __sock_create + kernel_connect with a simple file_open_root.
->
+> Please let me know if you want me to resend with this change.
 
-I like the idea of introducing new family (AF_LOCAL_AT for example) and new 
-sockaddr for connecting or binding from specified root. The only thing I'm 
-worrying is passing file descriptor to unix bind or connect routine. Because 
-this approach doesn't provide easy way to use such family and sockaddr in kernel 
-(like in NFS example).
+Yes, could you please repost with that change?
 
-> But I think the simple scheme of:
-> struct path old_root;
-> old_root = current->fs.root;
-> kernel_connect(...);
-> current->fs.root = old_root;
->
-> Is more than sufficient and will remove the need for anything
-> except a purely local change to get nfs clients to connect from
-> containers.
->
+It will be good as well that you remove the leaf clock and use the
+parent clock of current leaf as the main_clock. In that case it will
+ensure that this is the hwmod fmwk that does enable the modulemode and
+not the clock fmwk.
 
-That was my first idea. And probably it would be worth to change all fs_struct 
-to support sockets with relative path.
-What do you think about it?
+Regards,
+Benoit
 
-> Eric
->
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
