@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2HTE74 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:59:56 -0400
+	id S1754710Ab2HTFAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 01:00:01 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56341 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab2HTE7J (ORCPT
+	with ESMTP id S1753369Ab2HTE7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:59:09 -0400
-X-AuditID: 9c930197-b7bb2ae0000011d9-22-5031c41cfe03
+	Mon, 20 Aug 2012 00:59:11 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-28-5031c41c59a8
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 2/7] perf hists: Refactor some functions
-Date: Mon, 20 Aug 2012 13:52:06 +0900
-Message-Id: <1345438331-20234-3-git-send-email-namhyung@kernel.org>
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 4/7] perf hists: Handle field separator properly
+Date: Mon, 20 Aug 2012 13:52:08 +0900
+Message-Id: <1345438331-20234-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1345438331-20234-1-git-send-email-namhyung@kernel.org>
 References: <1345438331-20234-1-git-send-email-namhyung@kernel.org>
@@ -26,146 +27,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Rename functions for consistency and move callchain print function
-into hist_entry__fprintf().
+When a field separator is given, the output format doesn't need to be
+fancy like aligning to column length, coloring the percent value and
+so on. And since there's a slight difference to normal format, fix it
+not to break backward compatibility.
 
+Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c |  4 ++--
- tools/perf/ui/stdio/hist.c     | 51 +++++++++++++++++++++++-------------------
- tools/perf/util/hist.h         |  4 ++--
- 3 files changed, 32 insertions(+), 27 deletions(-)
+ tools/perf/ui/hist.c       | 42 ++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/ui/stdio/hist.c |  3 ++-
+ 2 files changed, 42 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index b8094692c153..81bd8c2af730 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -586,7 +586,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 	}
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 8062b38f7971..29c787c93452 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -30,6 +30,10 @@ static int hpp_entry_overhead(struct hpp_context *ctx,
+ 			      struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period / ctx->total_period;
++
++	if (symbol_conf.field_sep)
++		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
++
+ 	return scnprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
+ }
  
- 	if (row_offset == 0) {
--		hist_entry__snprintf(entry, s, sizeof(s), browser->hists);
-+		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
- 		percent = (entry->period * 100.0) / browser->hists->stats.total_period;
+@@ -54,6 +58,10 @@ static int hpp_entry_overhead_sys(struct hpp_context *ctx,
+ 				  struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / ctx->total_period;
++
++	if (symbol_conf.field_sep)
++		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
++
+ 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
+ }
  
- 		ui_browser__set_percent_color(&browser->b, percent, current_entry);
-@@ -931,7 +931,7 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 	if (symbol_conf.use_callchain)
- 		folded_sign = hist_entry__folded(he);
+@@ -78,6 +86,10 @@ static int hpp_entry_overhead_us(struct hpp_context *ctx,
+ 				 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / ctx->total_period;
++
++	if (symbol_conf.field_sep)
++		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
++
+ 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
+ }
  
--	hist_entry__snprintf(he, s, sizeof(s), browser->hists);
-+	hist_entry__sort_snprintf(he, s, sizeof(s), browser->hists);
- 	percent = (he->period * 100.0) / browser->hists->stats.total_period;
+@@ -102,6 +114,10 @@ static int hpp_entry_overhead_guest_sys(struct hpp_context *ctx,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / ctx->total_period;
++
++	if (symbol_conf.field_sep)
++		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
++
+ 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
+ }
  
- 	if (symbol_conf.use_callchain)
+@@ -126,6 +142,10 @@ static int hpp_entry_overhead_guest_us(struct hpp_context *ctx,
+ 				       struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / ctx->total_period;
++
++	if (symbol_conf.field_sep)
++		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
++
+ 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
+ }
+ 
+@@ -142,6 +162,9 @@ static int hpp_width_samples(struct hpp_context *ctx __used)
+ static int hpp_entry_samples(struct hpp_context *ctx,
+ 			     struct hist_entry *he)
+ {
++	if (symbol_conf.field_sep)
++		return scnprintf(ctx->s, ctx->size, "%" PRIu64, he->nr_events);
++
+ 	return scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->nr_events);
+ }
+ 
+@@ -158,6 +181,9 @@ static int hpp_width_period(struct hpp_context *ctx __used)
+ static int hpp_entry_period(struct hpp_context *ctx,
+ 			    struct hist_entry *he)
+ {
++	if (symbol_conf.field_sep)
++		return scnprintf(ctx->s, ctx->size, "%" PRIu64, he->period);
++
+ 	return scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->period);
+ }
+ 
+@@ -189,10 +215,16 @@ static int hpp_entry_delta(struct hpp_context *ctx,
+ 		new_percent = 100.0 * he->period / new_total;
+ 
+ 	diff = new_percent - old_percent;
+-	if (fabs(diff) < 0.01)
++	if (fabs(diff) < 0.01) {
++		if (symbol_conf.field_sep)
++			return scnprintf(ctx->s, ctx->size, " ");
+ 		return scnprintf(ctx->s, ctx->size, "       ");
++	}
+ 
+ 	scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
++
++	if (symbol_conf.field_sep)
++		scnprintf(ctx->s, ctx->size, "%s", buf);
+ 	return scnprintf(ctx->s, ctx->size, "%7.7s", buf);
+ }
+ 
+@@ -211,10 +243,16 @@ static int hpp_entry_displ(struct hpp_context *ctx,
+ {
+ 	char buf[32];
+ 
+-	if (!ctx->displacement)
++	if (!ctx->displacement) {
++		if (symbol_conf.field_sep)
++			return scnprintf(ctx->s, ctx->size, " ");
+ 		return scnprintf(ctx->s, ctx->size, "     ");
++	}
+ 
+ 	scnprintf(buf, sizeof(buf), "%+4ld", ctx->displacement);
++
++	if (symbol_conf.field_sep)
++		scnprintf(ctx->s, ctx->size, "%s", buf);
+ 	return scnprintf(ctx->s, ctx->size, "%6.6s", buf);
+ }
+ 
 diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 7881d625e17a..9bf7e9e5a72e 100644
+index c040b03cc6f4..0712fb5c1bb7 100644
 --- a/tools/perf/ui/stdio/hist.c
 +++ b/tools/perf/ui/stdio/hist.c
-@@ -291,7 +291,7 @@ static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
- 	return 0;
- }
+@@ -319,11 +319,12 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 		.displacement	= displacement,
+ 		.ptr		= pair_hists,
+ 	};
++	bool color = !symbol_conf.field_sep;
  
--static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
-+static int hist_entry__period_snprintf(struct hist_entry *he, char *s,
- 				     size_t size, struct hists *pair_hists,
- 				     bool show_displacement, long displacement,
- 				     bool color, u64 total_period)
-@@ -404,8 +404,8 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
- 	return ret;
- }
- 
--int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
--			 struct hists *hists)
-+int hist_entry__sort_snprintf(struct hist_entry *he, char *s, size_t size,
-+			      struct hists *hists)
- {
- 	const char *sep = symbol_conf.field_sep;
- 	struct sort_entry *se;
-@@ -423,6 +423,22 @@ int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
- 	return ret;
- }
- 
-+static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
-+					    struct hists *hists,
-+					    u64 total_period, FILE *fp)
-+{
-+	int left_margin = 0;
-+
-+	if (sort__first_dimension == SORT_COMM) {
-+		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
-+							 typeof(*se), list);
-+		left_margin = hists__col_len(hists, se->se_width_idx);
-+		left_margin -= thread__comm_len(he->thread);
-+	}
-+
-+	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
-+}
-+
- static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 			       struct hists *hists, struct hists *pair_hists,
- 			       bool show_displacement, long displacement,
-@@ -434,27 +450,18 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
  	if (size == 0 || size > sizeof(bf))
- 		size = sizeof(bf);
+ 		size = ctx.size = sizeof(bf);
  
--	ret = hist_entry__pcnt_snprintf(he, bf, size, pair_hists,
--					show_displacement, displacement,
--					true, total_period);
--	hist_entry__snprintf(he, bf + ret, size - ret, hists);
--	return fprintf(fp, "%s\n", bf);
--}
-+	ret = hist_entry__period_snprintf(he, bf, size, pair_hists,
-+					  show_displacement, displacement,
-+					  true, total_period);
-+	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
+-	ret = hist_entry__period_snprintf(&ctx, he, true);
++	ret = hist_entry__period_snprintf(&ctx, he, color);
+ 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
  
--static size_t hist_entry__fprintf_callchain(struct hist_entry *he,
--					    struct hists *hists,
--					    u64 total_period, FILE *fp)
--{
--	int left_margin = 0;
-+	ret = fprintf(fp, "%s\n", bf);
- 
--	if (sort__first_dimension == SORT_COMM) {
--		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
--							 typeof(*se), list);
--		left_margin = hists__col_len(hists, se->se_width_idx);
--		left_margin -= thread__comm_len(he->thread);
--	}
-+	if (symbol_conf.use_callchain)
-+		ret += hist_entry__callchain_fprintf(he, hists,
-+						     total_period, fp);
- 
--	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
-+	return ret;
- }
- 
- size_t hists__fprintf(struct hists *hists, struct hists *pair,
-@@ -608,8 +615,6 @@ print_entries:
- 		ret += hist_entry__fprintf(h, max_cols, hists, pair, show_displacement,
- 					   displacement, total_period, fp);
- 
--		if (symbol_conf.use_callchain)
--			ret += hist_entry__fprintf_callchain(h, hists, total_period, fp);
- 		if (max_rows && ++nr_rows >= max_rows)
- 			goto out;
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 69fab7d9abcd..2e650ffb7d23 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -75,8 +75,8 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 				      struct symbol *parent, u64 period);
- int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
- int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
--int hist_entry__snprintf(struct hist_entry *self, char *bf, size_t size,
--			 struct hists *hists);
-+int hist_entry__sort_snprintf(struct hist_entry *self, char *bf, size_t size,
-+			      struct hists *hists);
- void hist_entry__free(struct hist_entry *);
- 
- struct hist_entry *__hists__add_branch_entry(struct hists *self,
+ 	ret = fprintf(fp, "%s\n", bf);
 -- 
 1.7.11.2
 
