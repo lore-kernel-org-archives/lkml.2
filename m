@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab2HTEM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:12:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002Ab2HTD64 (ORCPT
+	id S1754951Ab2HTD6m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:58:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab2HTD6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:58:56 -0400
+	Sun, 19 Aug 2012 23:58:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Henrik Rydberg <rydberg@bitmath.se>
-Subject: [ 24/32] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
-Date: Sun, 19 Aug 2012 20:57:20 -0700
-Message-Id: <20120820035651.220139623@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 18/32] ext4: fix long mount times on very big file systems
+Date: Sun, 19 Aug 2012 20:57:14 -0700
+Message-Id: <20120820035650.382535526@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
 References: <20120820035647.862247088@linuxfoundation.org>
@@ -31,58 +29,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit d81a5d1956731c453b85c141458d4ff5d6cc5366 upstream.
+commit 0548bbb85337e532ca2ed697c3e9b227ff2ed4b4 upstream.
 
-A lot of Broadcom Bluetooth devices provides vendor specific interface
-class and we are getting flooded by patches adding new device support.
-This change will help us enable support for any other Broadcom with vendor
-specific device that arrives in the future.
+Commit 8aeb00ff85a: "ext4: fix overhead calculation used by
+ext4_statfs()" introduced a O(n**2) calculation which makes very large
+file systems take forever to mount.  Fix this with an optimization for
+non-bigalloc file systems.  (For bigalloc file systems the overhead
+needs to be set in the the superblock.)
 
-Only the product id changes for those devices, so this macro would be
-perfect for us:
-
-{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
-
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Acked-by: Henrik Rydberg <rydberg@bitmath.se>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/usb.h |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ fs/ext4/super.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -783,6 +783,27 @@ static inline int usb_make_path(struct u
- 	.bInterfaceSubClass = (sc), \
- 	.bInterfaceProtocol = (pr)
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2969,6 +2969,10 @@ static int count_overhead(struct super_b
+ 	ext4_group_t		i, ngroups = ext4_get_groups_count(sb);
+ 	int			s, j, count = 0;
  
-+/**
-+ * USB_VENDOR_AND_INTERFACE_INFO - describe a specific usb vendor with a class of usb interfaces
-+ * @vend: the 16 bit USB Vendor ID
-+ * @cl: bInterfaceClass value
-+ * @sc: bInterfaceSubClass value
-+ * @pr: bInterfaceProtocol value
-+ *
-+ * This macro is used to create a struct usb_device_id that matches a
-+ * specific vendor with a specific class of interfaces.
-+ *
-+ * This is especially useful when explicitly matching devices that have
-+ * vendor specific bDeviceClass values, but standards-compliant interfaces.
-+ */
-+#define USB_VENDOR_AND_INTERFACE_INFO(vend, cl, sc, pr) \
-+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-+		| USB_DEVICE_ID_MATCH_VENDOR, \
-+	.idVendor = (vend), \
-+	.bInterfaceClass = (cl), \
-+	.bInterfaceSubClass = (sc), \
-+	.bInterfaceProtocol = (pr)
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_BIGALLOC))
++		return (ext4_bg_has_super(sb, grp) + ext4_bg_num_gdb(sb, grp) +
++			sbi->s_itb_per_group + 2);
 +
- /* ----------------------------------------------------------------------- */
- 
- /* Stuff for dynamic usb ids */
+ 	first_block = le32_to_cpu(sbi->s_es->s_first_data_block) +
+ 		(grp * EXT4_BLOCKS_PER_GROUP(sb));
+ 	last_block = first_block + EXT4_BLOCKS_PER_GROUP(sb) - 1;
 
 
