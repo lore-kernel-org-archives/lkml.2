@@ -1,122 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab2HTJUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 05:20:50 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42430 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab2HTJUs (ORCPT
+	id S1756012Ab2HTJVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 05:21:23 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55006 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab2HTJVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 05:20:48 -0400
-Message-ID: <50320163.5080703@linux.vnet.ibm.com>
-Date: Mon, 20 Aug 2012 17:20:35 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 20 Aug 2012 05:21:20 -0400
+Date: Mon, 20 Aug 2012 11:21:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20120820092114.GA9875@gmail.com>
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: scheduling while atomic, under native_smp_prepare_cpus()
-References: <20120817134944.GA539@localhost>
-In-Reply-To: <20120817134944.GA539@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082009-8256-0000-0000-000003CC83D5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 09:49 PM, Fengguang Wu wrote:
+Linus,
 
-Hi, FengGuang
+Please pull the latest x86-urgent-for-linus git tree from:
 
-native_smp_prepare_cpus has already disabled the preempt before
-reach __irq_alloc_descs(), and sleep in mutex_lock() cause the bug.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-May be the follow patch could help to solve the issue(actually I
-think the true problem should be in _cond_resched...).
+   HEAD: 515c7af85ed92696c311c53d53cb4898ff32d784 x32: Use compat shims for {g,s}etsockopt
 
-I can't do test by my self since I can't reproduce the issue on my
-machine, the kernel_init thread never got a need sched flag set at
-that moment in my case...
+Please have an extra look at:
 
-Regards,
-Michael Wang
+  515c7af85ed9 x32: Use compat shims for {g,s}etsockopt
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4376c9f..3396c33 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3321,7 +3321,8 @@ static inline void schedule_debug(struct task_struct *prev)
-         * schedule() atomically, we ignore that path for now.
-         * Otherwise, whine if we are scheduling when we should not be.
-         */
--       if (unlikely(in_atomic_preempt_off() && !prev->exit_state))
-+       if (unlikely(in_atomic_preempt_off() && !prev->exit_state
-+                                       && system_state == SYSTEM_RUNNING))
-                __schedule_bug(prev);
-        rcu_sleep_check();
+Which contains a socket ABI fix with a -stable backport tag.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Andrew Boie (1):
+      x86, build: Globally set -fno-pic
+
+H. Peter Anvin (1):
+      Revert "x86-64/efi: Use EFI to deal with platform wall clock"
+
+Mike Frysinger (1):
+      x32: Use compat shims for {g,s}etsockopt
+
+Suresh Siddha (2):
+      x86, avx: don't use avx instructions with "noxsave" boot param
+      x86, apic: fix broken legacy interrupts in the logical apic mode
 
 
-> Trace one (full config/dmesg attached):
-> 
-> [    0.042794] init IO_APIC IRQs [    0.043305]  apic 2 pin 0 not 
-> connected [    0.043953] BUG: scheduling while atomic: 
-> swapper/0/1/0x10000002 [    0.044017] no locks held by swapper/0/1. [
-> 0.044692] Pid: 1, comm: swapper/0 Not tainted 
-> 3.6.0-rc1-00420-gb7aebb9 #34 [    0.045861] Call Trace: [ 0.048071] 
-> [<c106361e>] __schedule_bug+0x5e/0x70 [    0.048890] [<c1b28701>] 
-> __schedule+0x91/0xb10 [    0.049660]  [<c14472ea>] ? 
-> vsnprintf+0x33a/0x450 [    0.050444]  [<c1060006>] ? 
-> lg_local_lock+0x6/0x70 [    0.051256]  [<c14fb5b1>] ? 
-> wait_for_xmitr+0x31/0x90 [    0.052019]  [<c144fd55>] ? 
-> do_raw_spin_unlock+0xa5/0xf0 [    0.052903]  [<c1b2a532>] ? 
-> _raw_spin_unlock+0x22/0x30 [    0.053759]  [<c105cdbb>] ? 
-> up+0x1b/0x70 [    0.054421]  [<c1065d6b>] __cond_resched+0x1b/0x30 [
->  0.055228]  [<c1b292d5>] _cond_resched+0x45/0x50 [    0.056020] 
-> [<c1b26c58>] mutex_lock_nested+0x28/0x370 [    0.056884]
-> [<c1034222>] ? console_unlock+0x3a2/0x4e0 [    0.057741]
-> [<c1ac8559>] __irq_alloc_descs+0x39/0x1c0 [    0.058589]
-> [<c10223bc>] io_apic_setup_irq_pin+0x2c/0x310 [    0.060042]
-> [<c20638df>] setup_IO_APIC+0x101/0x744 [    0.060878]  [<c1021d51>] ?
->  clear_IO_APIC+0x31/0x50 [    0.061695]  [<c20600f4>] 
-> native_smp_prepare_cpus+0x538/0x680 [    0.062644]  [<c2056a91>] ? 
-> do_one_initcall+0x12c/0x12c [    0.063517]  [<c2056a91>] ? 
-> do_one_initcall+0x12c/0x12c [    0.064016]  [<c2056adc>] 
-> kernel_init+0x4b/0x17f [    0.064790]  [<c2056a91>] ? 
-> do_one_initcall+0x12c/0x12c [    0.065660]  [<c1b2bbd6>] 
-> kernel_thread_helper+0x6/0x10 [    0.066592] IOAPIC[0]: Set routing 
-> entry (2-1 -> 0x41 -> IRQ 1 Mode:0 Active:0 Dest:1) [    0.068045] 
-> IOAPIC[0]: Set routing entry (2-2 -> 0x51 -> IRQ 0 Mode:0 Active:0 
-> Dest:1)
-> 
-> Trace two (triggered by another config):
-> 
-> [    0.288018] tlb_flushall_shift is 0xffffffff [    0.316019] 
-> Freeing SMP alternatives: 20k freed [    0.364022] BUG: scheduling 
-> while atomic: swapper/0/1/0x10000002 [    0.364022] no locks held by
->  swapper/0/1. [    0.368023] Pid: 1, comm: swapper/0 Not tainted 
-> 3.6.0-rc1 #1 [    0.368023] Call Trace: [    0.368023]  [<79812e23>]
->  __schedule_bug+0x41/0x53 [    0.372023]  [<79820393>] 
-> __schedule+0x62/0x488 [    0.376023]  [<792d17ae>] ? 
-> radix_tree_lookup+0xa/0xc [    0.376023]  [<79071f4e>] ? 
-> rcu_irq_exit+0x61/0x66 [    0.376023]  [<79026be7>] ? 
-> irq_exit+0x60/0x6c [    0.376023]  [<790035df>] ? do_IRQ+0x6c/0x80 [
->  0.380023]  [<7903d794>] __cond_resched+0x16/0x26 [    0.380023] 
-> [<79820888>] _cond_resched+0x13/0x1c [    0.380023]  [<7909f30a>] 
-> slab_pre_alloc_hook.isra.44+0x2e/0x33 [    0.380023]  [<790a09c6>] 
-> kmem_cache_alloc+0x1b/0xbb [    0.384024]  [<792ce416>] ? 
-> alloc_cpumask_var_node+0x1a/0x72 [    0.384024]  [<792ce416>] 
-> alloc_cpumask_var_node+0x1a/0x72 [    0.384024]  [<792ce486>] 
-> alloc_cpumask_var+0xb/0xd [    0.388024]  [<792ce493>] 
-> zalloc_cpumask_var+0xb/0xd [    0.388024]  [<79bfe1fd>] 
-> native_smp_prepare_cpus+0x93/0x380 [    0.388024]  [<79bf6a7e>] ? 
-> do_one_initcall+0x10c/0x10c [    0.388024]  [<79bf6ac6>] 
-> kernel_init+0x48/0x16e [    0.392024]  [<79bf6a7e>] ? 
-> do_one_initcall+0x10c/0x10c [    0.392024]  [<7982241e>] 
-> kernel_thread_helper+0x6/0xd [    0.400025] smpboot: SMP disabled [ 
-> 0.400025] Performance Events:
-> 
-> Thanks, Fengguang
-> 
+ arch/x86/Makefile                |  4 ++++
+ arch/x86/boot/Makefile           |  2 +-
+ arch/x86/kernel/apic/io_apic.c   | 10 ++++++++++
+ arch/x86/kernel/cpu/common.c     |  2 ++
+ arch/x86/mm/pageattr.c           | 10 ++++------
+ arch/x86/platform/efi/efi.c      | 30 ++++++++++++++++++++++++++----
+ arch/x86/realmode/rm/Makefile    |  2 +-
+ arch/x86/syscalls/syscall_64.tbl |  6 ++++--
+ include/linux/efi.h              |  2 ++
+ init/main.c                      |  8 ++++----
+ 10 files changed, 58 insertions(+), 18 deletions(-)
 
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index b0c5276..682e9c2 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -27,6 +27,10 @@ ifeq ($(CONFIG_X86_32),y)
+ 
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+ 
++        # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
++        # with nonstandard options
++        KBUILD_CFLAGS += -fno-pic
++
+         # prevent gcc from keeping the stack 16 byte aligned
+         KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=2)
+ 
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index 5a747dd..f7535be 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -57,7 +57,7 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -g -Os -D_SETUP -D__KERNEL__ \
+ 		   -Wall -Wstrict-prototypes \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer \
++		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+ 			$(call cc-option, -fno-unit-at-a-time)) \
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index a6c64aa..c265593 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1356,6 +1356,16 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
+ 	if (!IO_APIC_IRQ(irq))
+ 		return;
+ 
++	/*
++	 * For legacy irqs, cfg->domain starts with cpu 0. Now that IO-APIC
++	 * can handle this irq and the apic driver is finialized at this point,
++	 * update the cfg->domain.
++	 */
++	if (irq < legacy_pic->nr_legacy_irqs &&
++	    cpumask_equal(cfg->domain, cpumask_of(0)))
++		apic->vector_allocation_domain(0, cfg->domain,
++					       apic->target_cpus());
++
+ 	if (assign_irq_vector(irq, cfg, apic->target_cpus()))
+ 		return;
+ 
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 46d8786..a5fbc3c 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -144,6 +144,8 @@ static int __init x86_xsave_setup(char *s)
+ {
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
++	setup_clear_cpu_cap(X86_FEATURE_AVX);
++	setup_clear_cpu_cap(X86_FEATURE_AVX2);
+ 	return 1;
+ }
+ __setup("noxsave", x86_xsave_setup);
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 931930a..a718e0d 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -919,13 +919,11 @@ static int change_page_attr_set_clr(unsigned long *addr, int numpages,
+ 
+ 	/*
+ 	 * On success we use clflush, when the CPU supports it to
+-	 * avoid the wbindv. If the CPU does not support it, in the
+-	 * error case, and during early boot (for EFI) we fall back
+-	 * to cpa_flush_all (which uses wbinvd):
++	 * avoid the wbindv. If the CPU does not support it and in the
++	 * error case we fall back to cpa_flush_all (which uses
++	 * wbindv):
+ 	 */
+-	if (early_boot_irqs_disabled)
+-		__cpa_flush_all((void *)(long)cache);
+-	else if (!ret && cpu_has_clflush) {
++	if (!ret && cpu_has_clflush) {
+ 		if (cpa.flags & (CPA_PAGES_ARRAY | CPA_ARRAY)) {
+ 			cpa_flush_array(addr, numpages, cache,
+ 					cpa.flags, pages);
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 2dc29f5..92660eda 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -234,7 +234,22 @@ static efi_status_t __init phys_efi_set_virtual_address_map(
+ 	return status;
+ }
+ 
+-static int efi_set_rtc_mmss(unsigned long nowtime)
++static efi_status_t __init phys_efi_get_time(efi_time_t *tm,
++					     efi_time_cap_t *tc)
++{
++	unsigned long flags;
++	efi_status_t status;
++
++	spin_lock_irqsave(&rtc_lock, flags);
++	efi_call_phys_prelog();
++	status = efi_call_phys2(efi_phys.get_time, virt_to_phys(tm),
++				virt_to_phys(tc));
++	efi_call_phys_epilog();
++	spin_unlock_irqrestore(&rtc_lock, flags);
++	return status;
++}
++
++int efi_set_rtc_mmss(unsigned long nowtime)
+ {
+ 	int real_seconds, real_minutes;
+ 	efi_status_t 	status;
+@@ -263,7 +278,7 @@ static int efi_set_rtc_mmss(unsigned long nowtime)
+ 	return 0;
+ }
+ 
+-static unsigned long efi_get_time(void)
++unsigned long efi_get_time(void)
+ {
+ 	efi_status_t status;
+ 	efi_time_t eft;
+@@ -606,13 +621,18 @@ static int __init efi_runtime_init(void)
+ 	}
+ 	/*
+ 	 * We will only need *early* access to the following
+-	 * EFI runtime service before set_virtual_address_map
++	 * two EFI runtime services before set_virtual_address_map
+ 	 * is invoked.
+ 	 */
++	efi_phys.get_time = (efi_get_time_t *)runtime->get_time;
+ 	efi_phys.set_virtual_address_map =
+ 		(efi_set_virtual_address_map_t *)
+ 		runtime->set_virtual_address_map;
+-
++	/*
++	 * Make efi_get_time can be called before entering
++	 * virtual mode.
++	 */
++	efi.get_time = phys_efi_get_time;
+ 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
+ 
+ 	return 0;
+@@ -700,10 +720,12 @@ void __init efi_init(void)
+ 		efi_enabled = 0;
+ 		return;
+ 	}
++#ifdef CONFIG_X86_32
+ 	if (efi_native) {
+ 		x86_platform.get_wallclock = efi_get_time;
+ 		x86_platform.set_wallclock = efi_set_rtc_mmss;
+ 	}
++#endif
+ 
+ #if EFI_DEBUG
+ 	print_efi_memmap();
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index b2d534c..8869287 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -72,7 +72,7 @@ KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ -D_WAKEUP \
+ 		   -Wall -Wstrict-prototypes \
+ 		   -march=i386 -mregparm=3 \
+ 		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer \
++		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+ 		   $(call cc-option, -ffreestanding) \
+ 		   $(call cc-option, -fno-toplevel-reorder,\
+ 			$(call cc-option, -fno-unit-at-a-time)) \
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 29aed7a..a582bfe 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -60,8 +60,8 @@
+ 51	common	getsockname		sys_getsockname
+ 52	common	getpeername		sys_getpeername
+ 53	common	socketpair		sys_socketpair
+-54	common	setsockopt		sys_setsockopt
+-55	common	getsockopt		sys_getsockopt
++54	64	setsockopt		sys_setsockopt
++55	64	getsockopt		sys_getsockopt
+ 56	common	clone			stub_clone
+ 57	common	fork			stub_fork
+ 58	common	vfork			stub_vfork
+@@ -353,3 +353,5 @@
+ 538	x32	sendmmsg		compat_sys_sendmmsg
+ 539	x32	process_vm_readv	compat_sys_process_vm_readv
+ 540	x32	process_vm_writev	compat_sys_process_vm_writev
++541	x32	setsockopt		compat_sys_setsockopt
++542	x32	getsockopt		compat_sys_getsockopt
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 103adc6..ec45ccd 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -503,6 +503,8 @@ extern u64 efi_mem_attribute (unsigned long phys_addr, unsigned long size);
+ extern int __init efi_uart_console_only (void);
+ extern void efi_initialize_iomem_resources(struct resource *code_resource,
+ 		struct resource *data_resource, struct resource *bss_resource);
++extern unsigned long efi_get_time(void);
++extern int efi_set_rtc_mmss(unsigned long nowtime);
+ extern void efi_reserve_boot_services(void);
+ extern struct efi_memory_map memmap;
+ 
+diff --git a/init/main.c b/init/main.c
+index e60679d..b286730 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -461,10 +461,6 @@ static void __init mm_init(void)
+ 	percpu_init_late();
+ 	pgtable_cache_init();
+ 	vmalloc_init();
+-#ifdef CONFIG_X86
+-	if (efi_enabled)
+-		efi_enter_virtual_mode();
+-#endif
+ }
+ 
+ asmlinkage void __init start_kernel(void)
+@@ -606,6 +602,10 @@ asmlinkage void __init start_kernel(void)
+ 	calibrate_delay();
+ 	pidmap_init();
+ 	anon_vma_init();
++#ifdef CONFIG_X86
++	if (efi_enabled)
++		efi_enter_virtual_mode();
++#endif
+ 	thread_info_cache_init();
+ 	cred_init();
+ 	fork_init(totalram_pages);
