@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab2HTPLG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:11:06 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49819 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756822Ab2HTPLE convert rfc822-to-8bit (ORCPT
+	id S1756998Ab2HTPLO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:11:14 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48952 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982Ab2HTPLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:11:04 -0400
-Message-ID: <50325384.9070506@parallels.com>
-Date: Mon, 20 Aug 2012 19:11:00 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 20 Aug 2012 11:11:08 -0400
+Date: Mon, 20 Aug 2012 08:09:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20120820150950.GC2435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120816131236.13013e1ec18b1f1074f6dc92@canb.auug.org.au>
+ <20120816194651.GK2445@linux.vnet.ibm.com>
+ <20120817105633.0aba80ddf7eb9523e04c264d@canb.auug.org.au>
+ <20120817115019.GJ2438@linux.vnet.ibm.com>
+ <20120820145404.f12977568303f4982ce89e8e@canb.auug.org.au>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>, "neilb@suse.de" <neilb@suse.de>
-Subject: Re: [PATCH v3] SUNRPC: protect service sockets lists during per-net
- shutdown
-References: <20120703125851.3850.86782.stgit@localhost.localdomain> <20120724194036.GK8570@fieldses.org> <20120816192902.GB4385@fieldses.org> <50321A0D.1020904@parallels.com> <20120820145656.GB1411@fieldses.org>
-In-Reply-To: <20120820145656.GB1411@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120820145404.f12977568303f4982ce89e8e@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082015-7408-0000-0000-000007C31CFA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.08.2012 18:56, J. Bruce Fields пишет:
-> On Mon, Aug 20, 2012 at 03:05:49PM +0400, Stanislav Kinsbursky wrote:
->> 16.08.2012 23:29, J. Bruce Fields пишет:
->>> Looking back at this:
->>>
->>> 	- adding the sv_lock looks like the right thing to do anyway
->>> 	  independent of containers, because svc_age_temp_xprts may
->>> 	  still be running.
->>>
->>> 	- I'm increasingly unhappy about sharing rpc servers between
->>> 	  network namespaces.  Everything would be easier to understand
->>> 	  if they were independent.  Can we figure out how to do that?
->>>
->>
->> Could you, please, elaborate on your your unhappiness?
->
-> It seems like you're having to do a lot of work on each individual rpc
-> server (callback server, lockd, etc.) to make per-net startup/shutdown
-> work.  And then we still don't have it quite right (see the shutdown
-> races).)
->
-> In general whenever we have the opportunity to have entirely separate
-> data structures, I'd expect that to simplify things: it should eliminate
-> some locking and reference-counting issues.
->
+On Mon, Aug 20, 2012 at 02:54:04PM +1000, Stephen Rothwell wrote:
+> Hi Paul,
+> 
+> On Fri, 17 Aug 2012 04:50:19 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > Does the following help?
+> 
+> Yes, that fixes the warnings.  Please submit those two patches to the tip
+> folks ASAP as I can't build the tip tree without them.
 
-Agreed. But current solution still looks like the easies way to me to implement 
-desired functionality.
+Will do.  Unless you tell me otherwise, with your Tested-by.
 
->> I.e. I don't like it too. But the problem here, is that rpc server
->> is tied with kernel threads creation and destruction. And these
->> threads can be only a part of initial pid namespace (because we have
->> only one kthreadd). And we decided do not create new kernel thread
->> per container when were discussing the problem last time.
->
-> There really should be some way to create a kernel thread in a specific
-> namespace, shouldn't there?
->
+							Thanx, Paul
 
-
-Kthreads support in a container is rather a "political" problem, than an 
-implementation problem.
-
-Currently, when you call kthread_create(), you add new job to kthreadd queue. 
-Kthreadd is unique, starts right after init and lives in global initial 
-environment. So, any kthread inherits namespaces from it.
-Of course, we can start one kthread per environment and change it's root or even 
-network namespace in kthread function. But pid namespace of this kthread will 
-remain global.
-It looks like not a big problem, when we shutdown kthread by some variable. But 
-what about killable nfsd kthreads?
-1) We can't kill them from nested pid namespace.
-2) How we will differ nfsd kthreads in initial pid namespace?
-
-In OpenVZ we have kthreadd per pid hamespace and it allows us to create kthreads 
-(and thus services) per pid namespace.
-
-> Until we have that, could the threads be taught to fix their namespace
-> on startup?
->
-
-Unfortunately, changing of pid namespace for kthreads doesn't look like an easy 
-trick.
-
-> --b.
->
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
