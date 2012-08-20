@@ -1,138 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab2HTOXF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:23:05 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34284 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab2HTOXB (ORCPT
+	id S1756676Ab2HTOXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:23:18 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:46761 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756638Ab2HTOXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:23:01 -0400
+	Mon, 20 Aug 2012 10:23:13 -0400
+Date: Mon, 20 Aug 2012 10:13:05 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 02/11] xen/x86: Use memblock_reserve for
+ sensitive areas.
+Message-ID: <20120820141305.GA2713@phenom.dumpdata.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <1345468396.2355.27.camel@falcor>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	<2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
-	<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-	<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
-	<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
-	<CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
-	<1345164802.2433.21.camel@falcor.watson.ibm.com>
-	<CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
-	<1345223322.2257.75.camel@falcor>
-	<CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
-	<1345424724.2384.15.camel@falcor>
-	<CA+5PVA5=p9Xrd7BWN9XCyG=LJ279wsOfCgWjfhtttUuh9Gp_oQ@mail.gmail.com>
-	<1345468396.2355.27.camel@falcor>
-Date: Mon, 20 Aug 2012 10:23:00 -0400
-Message-ID: <CA+5PVA7MYSwrUsX1fY_d5vmO=eje=+t9KOse1qxrBG4KyysP4g@mail.gmail.com>
-Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys and
- sign modules
-From: Josh Boyer <jwboyer@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, jmorris@namei.org,
-        rusty@rustcorp.com.au, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 9:13 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Mon, 2012-08-20 at 08:32 -0400, Josh Boyer wrote:
->> On Sun, Aug 19, 2012 at 9:05 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> > On Fri, 2012-08-17 at 13:44 -0400, Josh Boyer wrote:
->> >> On Fri, Aug 17, 2012 at 1:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> >> >> I don't see a need for the kernel make system to ever delete a key.
->> >> >> If one doesn't exist, it should create one if the config options are
->> >> >> set and leave it alone entirely after that.  If one exists already,
->> >> >> then it should leave it alone as it already does.
->> >> >
->> >> > Ok.  Other than generating a key the first time, the normal development
->> >> > build process now uses the same key, never requiring the developer to do
->> >> > anything additional.  The developer controls the frequency the keys are
->> >> > created/deleted.  I wonder how often that will be ...
->> >>
->> >> For a developer, probably not often.  Though in reality, the usage of
->> >> this by a single developer seems fair small.  A much wider, already
->> >> existing usage is distribution kernel signing.
->> >
->> > This seems to be the real issue.  Do developers need to sign their own
->> > builds?   Nobody is forcing the developer to enable signed modules.  If,
->> > however, the developer decides to enforce signed modules, leaving the
->> > private key lying around kind of defeats the purpose.
->>
->> Right.  The issue is that you're making the kernel buildsystem do key
->> management policy instead of trusting the developers using the keys
->> mechanism to know what they're doing.
->>
->> >> For a distribution kernel there are normally two cases:
->> >>
->> >> 1) Existing permanent company/distro key.  This is already handled.
->> >> 2) per-kernel-build key (equivalent to your ephemeral key).  This would
->> >> be handled fine if the key was generated if it didn't already exist and
->> >> left alone.  The distro build system would remove it when it cleaned up
->> >> the buildroot.
->> >
->> > Ok, I think we agree here, with the normal 'make', 'make modules_install
->> > install', using an existing key or creating a new key if needed.
->> >
->> >> >> If you really want to enforce ephemeral keys in the make system, then
->> >> >> doing it via 'make clean' or 'make distclean' would make more sense to
->> >> >> me.  But I personally think key management is something the developers
->> >> >> or distros should be handling on their own.  Creating a key for them is
->> >> >> a convenience so it's worthwhile, but removing it should be done by
->> >> >> them.
->> >> >
->> >> > Sorry, I disagree.  Without the signed_modules_install target, the
->> >> > developer would need to do each step manually - create new key, sign
->> >> > modules, remove private key, and embed the new public key in the
->> >> > bzImage.
->> >>
->> >> Not if the buildsystem just made the key for them at 'make' time.  I'm
->> >> still missing why it isn't done until 'modules_install' time.  Seems
->> >> pretty sub-optimal.
->> >
->> > Using a private key that has been lying around for an unknown period of
->> > time, kind of defeats the purpose.
->>
->> Why is that?  Again, you're enforcing policy instead of leaving it up
->> to the developers.  In the existing key case, you have no idea how long
->> that key has been sitting around either, so I really see a disconnect
->> between "existing company/private key" and "no key, create one for them
->> during build time" cases.
->
-> Either the company build process, creates and cleans up after the build,
-> removing the private key, as you described above, or the "private key"
-> is held securely using an existing signing process (or some combination
-> of the two).
->
-> In the "no key, create one for them during build time", there is no
-> process in place cleaning up, other than the suggested new make target.
+On Fri, Aug 17, 2012 at 06:35:12PM +0100, Stefano Stabellini wrote:
+> On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> > instead of a big memblock_reserve. This way we can be more
+> > selective in freeing regions (and it also makes it easier
+> > to understand where is what).
+> > 
+> > [v1: Move the auto_translate_physmap to proper line]
+> > [v2: Per Stefano suggestion add more comments]
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> much better now!
 
-You could have 'make clean/distclean' remove the key if you really
-wanted.
+Thought interestingly enough it breaks 32-bit dom0s (and only dom0s).
+Will have a revised patch posted shortly.
 
->> >> If
->> >> the config options are set, just have 'make modules_install' do it and
->> >> create a key if one doesn't exist (or better yet, have 'make' do it).
->> >
->> > If creating the key is deferred to 'make modules_install', for the
->> > reason given above or any other reason, the public key wasn't available
->> > at the time the bzImage was created.  'make modules_install' would now
->> > need to rebuild the bzImage.
->>
->> Right, which is an utter pain and backwards.  That's why I suggested it
->> be done at 'make' time.
->
-> Agreed, no doubt about it being a pain or backwards, but the solution
-> isn't to deny the problem, but to address it.  I'm open to
-> suggestions. :)
-
-I've made multiple suggestions.  I have no more.  Either you agree with
-them or your don't.  Our fundamental disagreement is the management of
-automatically created keys.  You want them removed ASAP, I suggest that
-people/companies/distributions using that mechanism should be aware of
-what they're doing and be responsible for removing keys when they see
-fit.  Aside from making the behavior dependent on perhaps some kind of
-"expert" config setting, I don't see a way past that difference.
-
-josh
+> 
+> >  arch/x86/xen/enlighten.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  arch/x86/xen/p2m.c       |    5 ++++
+> >  arch/x86/xen/setup.c     |    9 --------
+> >  3 files changed, 53 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> > index ff962d4..e532eb5 100644
+> > --- a/arch/x86/xen/enlighten.c
+> > +++ b/arch/x86/xen/enlighten.c
+> > @@ -998,7 +998,54 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+> >  
+> >  	return ret;
+> >  }
+> > +/*
+> > + * If the MFN is not in the m2p (provided to us by the hypervisor) this
+> > + * function won't do anything. In practice this means that the XenBus
+> > + * MFN won't be available for the initial domain. */
+> > +static void __init xen_reserve_mfn(unsigned long mfn)
+> > +{
+> > +	unsigned long pfn;
+> > +
+> > +	if (!mfn)
+> > +		return;
+> > +	pfn = mfn_to_pfn(mfn);
+> > +	if (phys_to_machine_mapping_valid(pfn))
+> > +		memblock_reserve(PFN_PHYS(pfn), PAGE_SIZE);
+> > +}
+> > +static void __init xen_reserve_internals(void)
+> > +{
+> > +	unsigned long size;
+> > +
+> > +	if (!xen_pv_domain())
+> > +		return;
+> > +
+> > +	/* xen_start_info does not exist in the M2P, hence can't use
+> > +	 * xen_reserve_mfn. */
+> > +	memblock_reserve(__pa(xen_start_info), PAGE_SIZE);
+> > +
+> > +	xen_reserve_mfn(PFN_DOWN(xen_start_info->shared_info));
+> > +	xen_reserve_mfn(xen_start_info->store_mfn);
+> >  
+> > +	if (!xen_initial_domain())
+> > +		xen_reserve_mfn(xen_start_info->console.domU.mfn);
+> > +
+> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
+> > +		return;
+> > +
+> > +	/*
+> > +	 * ALIGN up to compensate for the p2m_page pointing to an array that
+> > +	 * can partially filled (look in xen_build_dynamic_phys_to_machine).
+> > +	 */
+> > +
+> > +	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
+> > +
+> > +	/* We could use xen_reserve_mfn here, but would end up looping quite
+> > +	 * a lot (and call memblock_reserve for each PAGE), so lets just use
+> > +	 * the easy way and reserve it wholesale. */
+> > +	memblock_reserve(__pa(xen_start_info->mfn_list), size);
+> > +
+> > +	/* The pagetables are reserved in mmu.c */
+> > +}
+> >  void xen_setup_shared_info(void)
+> >  {
+> >  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> > @@ -1362,6 +1409,7 @@ asmlinkage void __init xen_start_kernel(void)
+> >  	xen_raw_console_write("mapping kernel into physical memory\n");
+> >  	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
+> >  
+> > +	xen_reserve_internals();
+> >  	/* Allocate and initialize top and mid mfn levels for p2m structure */
+> >  	xen_build_mfn_list_list();
+> >  
+> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> > index e4adbfb..6a2bfa4 100644
+> > --- a/arch/x86/xen/p2m.c
+> > +++ b/arch/x86/xen/p2m.c
+> > @@ -388,6 +388,11 @@ void __init xen_build_dynamic_phys_to_machine(void)
+> >  	}
+> >  
+> >  	m2p_override_init();
+> > +
+> > +	/* NOTE: We cannot call memblock_reserve here for the mfn_list as there
+> > +	 * isn't enough pieces to make it work (for one - we are still using the
+> > +	 * Xen provided pagetable). Do it later in xen_reserve_internals.
+> > +	 */
+> >  }
+> >  
+> >  unsigned long get_phys_to_machine(unsigned long pfn)
+> > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> > index a4790bf..9efca75 100644
+> > --- a/arch/x86/xen/setup.c
+> > +++ b/arch/x86/xen/setup.c
+> > @@ -424,15 +424,6 @@ char * __init xen_memory_setup(void)
+> >  	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
+> >  			E820_RESERVED);
+> >  
+> > -	/*
+> > -	 * Reserve Xen bits:
+> > -	 *  - mfn_list
+> > -	 *  - xen_start_info
+> > -	 * See comment above "struct start_info" in <xen/interface/xen.h>
+> > -	 */
+> > -	memblock_reserve(__pa(xen_start_info->mfn_list),
+> > -			 xen_start_info->pt_base - xen_start_info->mfn_list);
+> > -
+> >  	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+> >  
+> >  	return "Xen";
+> > -- 
+> > 1.7.7.6
+> > 
+> > 
+> > _______________________________________________
+> > Xen-devel mailing list
+> > Xen-devel@lists.xen.org
+> > http://lists.xen.org/xen-devel
+> > 
