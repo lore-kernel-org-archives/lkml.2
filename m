@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab2HTR3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 13:29:30 -0400
-Received: from mx.meyering.net ([88.168.87.75]:44784 "EHLO hx.meyering.net"
+	id S1755128Ab2HTR3k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 13:29:40 -0400
+Received: from mx.meyering.net ([88.168.87.75]:44788 "EHLO hx.meyering.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751259Ab2HTR3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 13:29:18 -0400
-X-Greylist: delayed 1784 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 13:29:17 EDT
+	id S1753596Ab2HTR30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 13:29:26 -0400
 From: Jim Meyering <jim@meyering.net>
 To: linux-kernel@vger.kernel.org
-Cc: Jim Meyering <meyering@redhat.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH] ACPI: remove unwarranted use of strncpy
-Date: Mon, 20 Aug 2012 18:55:20 +0200
-Message-Id: <1345481724-30108-2-git-send-email-jim@meyering.net>
+Cc: Jim Meyering <meyering@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, linux-mm@kvack.org
+Subject: [PATCH] kmemleak: avoid buffer overrun: NUL-terminate strncpy-copied command
+Date: Mon, 20 Aug 2012 18:55:22 +0200
+Message-Id: <1345481724-30108-4-git-send-email-jim@meyering.net>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1345481724-30108-1-git-send-email-jim@meyering.net>
 References: <1345481724-30108-1-git-send-email-jim@meyering.net>
@@ -23,31 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Meyering <meyering@redhat.com>
 
-strncpy is best avoided in general.  Here, using strcpy would have
-been clearer and semantically equivalent, but we can do better still
-by removing it: i.e., use kstrdup in place of kzalloc+strncpy.
+strncpy NUL-terminates only when the length of the source string
+is smaller than the size of the destination buffer.
+The two other strncpy uses (just preceding) happen to be ok
+with the current TASK_COMM_LEN (16), because the literals
+"hardirq" and "softirq" are both shorter than 16.  However,
+technically it'd be better to use strcpy along with a
+compile-time assertion that they fit in the buffer.
 
 Signed-off-by: Jim Meyering <meyering@redhat.com>
 ---
- drivers/acpi/sysfs.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ mm/kmemleak.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/acpi/sysfs.c b/drivers/acpi/sysfs.c
-index 7c3f98b..20cc627 100644
---- a/drivers/acpi/sysfs.c
-+++ b/drivers/acpi/sysfs.c
-@@ -674,10 +674,9 @@ void acpi_irq_stats_init(void)
- 		else
- 			sprintf(buffer, "bug%02X", i);
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 45eb621..947257f 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -555,6 +555,7 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
+ 		 * case, the command line is not correct.
+ 		 */
+ 		strncpy(object->comm, current->comm, sizeof(object->comm));
++		object->comm[sizeof(object->comm) - 1] = 0;
+ 	}
 
--		name = kzalloc(strlen(buffer) + 1, GFP_KERNEL);
-+		name = kstrdup(buffer, GFP_KERNEL);
- 		if (name == NULL)
- 			goto fail;
--		strncpy(name, buffer, strlen(buffer) + 1);
-
- 		sysfs_attr_init(&counter_attrs[i].attr);
- 		counter_attrs[i].attr.name = name;
+ 	/* kernel backtrace */
 -- 
 1.7.12
 
