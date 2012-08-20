@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2HTHrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 03:47:43 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6230 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755622Ab2HTHrk (ORCPT
+	id S1755690Ab2HTHso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 03:48:44 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56618 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755622Ab2HTHsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 03:47:40 -0400
-Message-ID: <5031EB66.50307@huawei.com>
-Date: Mon, 20 Aug 2012 15:46:46 +0800
-From: Hanjun Guo <guohanjun@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 20 Aug 2012 03:48:41 -0400
+Date: Mon, 20 Aug 2012 09:48:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, JBeulich@suse.com,
+        akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: Link Time Optimization support for the kernel
+Message-ID: <20120820074835.GA6710@gmail.com>
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Haren Myneni <hbabu@us.ibm.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [BUGFIX PATCH][RESEND] kexec & iosapic: kexec oops when iosapic
- was removed
-References: <1344583395-9128-1-git-send-email-guohanjun@huawei.com>  <5025CD41.2030502@huawei.com>  <3908561D78D1C84285E8C5FCA982C28F19375F30@ORSMSX104.amr.corp.intel.com>  <502CCB38.1030705@huawei.com> <1345145597.4732.21.camel@misato.fc.hp.com>
-In-Reply-To: <1345145597.4732.21.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.25]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/8/17 3:33, Toshi Kani wrote:
-> On Thu, 2012-08-16 at 18:28 +0800, Hanjun Guo wrote:
->> On 2012/8/13 10:54, Luck, Tony wrote:
->>>> 		vec = irq_to_vector(irq);
->>>> 		list_for_each_entry(rte, &info->rtes,
->>>> 				rte_list) {
->>>> +			if (rte->refcnt == NO_REF_RTE)
->>>> +				continue;
->>>> +
->>>> 			iosapic_write(rte->iosapic,
->>>> 					IOSAPIC_RTE_LOW(rte->rte_index),
->>>> 					IOSAPIC_MASK|vec);
->>>
->>> This will work - but is it papering over a problem when you removed the
->>> iosapic? Should we really have removed this "rte" from rte_list when the
->>> iosapic was removed?
->>>
->>> -Tony
->>>
->>
->> Hi Tony,
->>     Thanks for your comments, and sorry for the late reply.
->>
->> We only set rte->refcnt to NO_REF_RTE if no device attach to this RTE when
->> unregister a GSI, and increase the rte->refcnt if the RTE is already existing
->> when register a GSI, so "rte" will not removed from rte_list when the
->> iosapic is removed.
+
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> This rather large patchkit enables gcc Link Time Optimization (LTO) 
+> support for the kernel. 
 > 
-> Hi Hanjun,
-> 
-> I think updating rte->refcnt makes sense as long as rte->iosapic points
-> to a valid iosapic entry.  It looks odd to me that rte->iosapic is left
-> pointing an invalid iosapic entry after this iosapic is removed.  So, I
-> agree with Tony's concern.
+> With LTO gcc will do whole program optimizations for
+> the whole kernel and each module. This increases compile time,
+> but can generate faster code.
 
-Hi Toshi,
+By how much does it increase compile time?
 
-I agree with you and Tony.
-I will find a better solution and do some clean up, and then send another patch.
+How much faster does kernel code get?
 
-Thanks
-Hanjun Guo
+Last time I checked LTO optimizations (half a year ago) it 
+resulted in significantly slower build times.
 
+I tried out and measured the LTO speedups and was less than 
+impressed by them - a lot of build time increase for not much 
+increase in performance. There was also visible, ongoing 
+maintenance cost.
 
+The combination of these seemed like a show-stopper.
 
+It's obviously an optimization feature we should consider, but 
+we really need hard numbers to make a cost/benefit analysis.
 
+Thanks,
+
+	Ingo
