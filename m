@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab2HTFWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 01:22:19 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56611 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab2HTFWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 01:22:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <5031C765.9050107@xenotime.net>
-References: <1345242330.3841.8.camel@fedora64.linuxtx.org>
-	<502EC5A6.7040502@xenotime.net>
-	<CAPM=9tzcmU-uBSaH0jASmp0iCu43fPROefip9mr_Q9qCAMzZEw@mail.gmail.com>
-	<CAPM=9ty9UUZKcgp4MijM9CDGyDaD0dWi2z2htPvjMRHbCHRhUw@mail.gmail.com>
-	<5031C765.9050107@xenotime.net>
-Date: Mon, 20 Aug 2012 15:22:15 +1000
-Message-ID: <CAPM=9twHc4i9eOUt3AwW_WQ+K70WvW9qMsOKsOxH-rHHQAd4qQ@mail.gmail.com>
-Subject: Re: 3.5.x boot hang after conflicting fb hw usage <driver> vs VESA
- VGA - removing generic driver
-From: Dave Airlie <airlied@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: "Justin M. Forbes" <jforbes@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754307Ab2HTFYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 01:24:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46167 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab2HTFYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 01:24:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,795,1336374000"; 
+   d="scan'208";a="210767190"
+Message-ID: <1345440349.30835.3.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH] x86/fixup_irq: using the cpu_online_mask instead of
+ cpu_all_mask
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>, linux-kernel@vger.kernel.org
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>
+Date: Mon, 20 Aug 2012 13:25:49 +0800
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A137286@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A137286@SHSMSX101.ccr.corp.intel.com>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 3:13 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 08/17/12 15:55, Dave Airlie wrote:
->
->> On Sat, Aug 18, 2012 at 8:54 AM, Dave Airlie <airlied@gmail.com> wrote:
->>> On Sat, Aug 18, 2012 at 8:28 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->>>> On 08/17/2012 03:25 PM, Justin M. Forbes wrote:
->>>>
->>>>> for <driver>, we have verified cases on inteldrmfb, radeondrmfb, and
->>>>> cirrusdrmfb.
->>>>>
->>>>> This is the last message displayed before the system hangs.  This seems
->>>>> to be hitting a large number of users in Fedora, though certainly not
->>>>> everyone.  This started happening with the 3.5 updates, and is still an
->>>>> issue.  It appears to be a race condition, because various things have
->>>>> allowed boot to continue for some users, though there is no clear work
->>>>> around. Has anyone else run across this?  Any ideas.  For more
->>>>> background we have the following bugs:
->>>>>
->>>>> inteldrmfb:
->>>>> https://bugzilla.redhat.com/show_bug.cgi?id=843826
->>>>>
->>>>> radeondrmfb:
->>>>> https://bugzilla.redhat.com/show_bug.cgi?id=845745
->>>>>
->>>>> cirrusdrmfb <kvm>:
->>>>> https://bugzilla.redhat.com/show_bug.cgi?id=843860
->>>>>
->>>>> It should be noted that the conflicting fb hw usage message is not new,
->>>>> it has been around for a while, but this is the last message seen before
->>>>> the hang.
->>>>
->>>>
->>>> Hi,  (adding dri-devel mailing list)
->>>>
->>>>
->>>> I started seeing this problem on 3.5-rc6.
->>>>
->>>> AFAICT, the system is not actually hung, it's just that no output
->>>> is showing up on the real (physical) output device (display) -- it's
->>>> going somewhere else (or to the bit bucket).
->>>>
->>>
->>> Can we bisect this at all?
->
-> I guess I'll have to try again.  My first attempt did not
-> prove anything, I think because the conflict does not happen
-> 100% of the time (i.e., it feels like a timing problem).
->
->>> I worry the intel one will bisect to where we moved the conflict
->>> resolution earlier, but I'd like to see if applying that patch earlier
->>> causes the issue, since radeon has it.
->
-> Do you know of a specific commit that I could revert and test?
+On Tue, 2012-08-14 at 06:55 +0000, Liu, Chuansheng wrote:
+> From: liu chuansheng <chuansheng.liu@intel.com>
+> Subject: [PATCH] x86/fixup_irq: using the cpu_online_mask instead of cpu_all_mask
+> 
+> When one CPU is going down, and this CPU is the last one in irq affinity,
+> current code is setting cpu_all_mask as the new affinity for that irq.
+> 
+> But for some system the firmware maybe send the interrupt to each CPU
+> in irq affinity averagely, and cpu_all_mask include all CPUs.
+> 
+> Here replacing cpu_all_mask with cpu_online_mask, it is more reasonable
+> and fittable.
+It's a good finding. The issue exists on Medfield Android mobile. 
 
-9f846a16d213523fbe6daea17e20df6b8ac5a1e5
 
-might work, but it just changes the timing mostly.
+> 
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  arch/x86/kernel/irq.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+> index 7ad683d..d44f782 100644
+> --- a/arch/x86/kernel/irq.c
+> +++ b/arch/x86/kernel/irq.c
+> @@ -270,7 +270,7 @@ void fixup_irqs(void)
+>  
+>                 if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
+>                         break_affinity = 1;
+> -                       affinity = cpu_all_mask;
+> +                       affinity = cpu_online_mask;
+>                 }
+>  
+>                 chip = irq_data_get_irq_chip(data);
 
-also testing 3.4 with that on top would be good.
 
-Dave.
