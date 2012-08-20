@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2HTEI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:08:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab2HTEAU (ORCPT
+	id S1752910Ab2HTEIo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:08:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab2HTEAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:00:20 -0400
+	Mon, 20 Aug 2012 00:00:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 16/46] drm/radeon: add some new SI pci ids
-Date: Sun, 19 Aug 2012 20:58:52 -0700
-Message-Id: <20120820035834.531967081@linuxfoundation.org>
+        Christoph Bumiller <e0425955@student.tuwien.ac.at>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 09/46] drm/nvd0/disp: mask off high 16 bit of negative cursor x-coordinate
+Date: Sun, 19 Aug 2012 20:58:45 -0700
+Message-Id: <20120820035833.564780628@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -29,31 +30,28 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Christoph Bumiller <e0425955@student.tuwien.ac.at>
 
-commit 2f292004dd1fb005788dc0a9cdd5559812ed866e upstream.
+commit af5e7d84b0ec45b2b614b0d6e3657cbdceaa21f9 upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Christoph Bumiller <e0425955@student.tuwien.ac.at>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/nouveau/nvd0_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -213,9 +213,12 @@
- 	{0x1002, 0x6800, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6801, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6802, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6806, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6808, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6809, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6810, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6816, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6817, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6818, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6819, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6820, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+--- a/drivers/gpu/drm/nouveau/nvd0_display.c
++++ b/drivers/gpu/drm/nouveau/nvd0_display.c
+@@ -790,7 +790,7 @@ nvd0_crtc_cursor_move(struct drm_crtc *c
+ 	struct nouveau_crtc *nv_crtc = nouveau_crtc(crtc);
+ 	int ch = EVO_CURS(nv_crtc->index);
+ 
+-	evo_piow(crtc->dev, ch, 0x0084, (y << 16) | x);
++	evo_piow(crtc->dev, ch, 0x0084, (y << 16) | (x & 0xffff));
+ 	evo_piow(crtc->dev, ch, 0x0080, 0x00000000);
+ 	return 0;
+ }
 
 
