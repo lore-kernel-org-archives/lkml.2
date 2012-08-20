@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab2HTQsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:48:39 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58406 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab2HTQsh (ORCPT
+	id S1757438Ab2HTQuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:50:00 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49491 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755514Ab2HTQtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:48:37 -0400
-Message-ID: <50326A60.1070007@gmail.com>
-Date: Mon, 20 Aug 2012 18:48:32 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Mon, 20 Aug 2012 12:49:55 -0400
+Date: Mon, 20 Aug 2012 17:49:50 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
+Message-ID: <20120820164949.GB22749@gmail.com>
+References: <1344527635-6163-1-git-send-email-lee.jones@linaro.org>
+ <1344527635-6163-6-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZ7bMBytyDppV2sB1d1sUbDpPRqAQVOq8k4UOYdmg+Mkw@mail.gmail.com>
+ <201208140942.54773.arnd@arndb.de>
+ <CACRpkdYbOBEPNbCdfi+=gupdqS8_7t7MpOgXs7VCVTs8Y3j_mQ@mail.gmail.com>
+ <20120820083640.GH8450@gmail.com>
+ <20120820121055.GA26991@opensource.wolfsonmicro.com>
+ <20120820125531.GA20242@gmail.com>
+ <20120820162923.GF26991@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 04/11] pinctrl: mvebu: add pinctrl driver for Armada 370
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1344689809-6223-5-git-send-email-sebastian.hesselbarth@gmail.com> <CACRpkdYNZar7865-T12J37h3AWA9-8R1R5tymuOhaB0b3ddEAA@mail.gmail.com>
-In-Reply-To: <CACRpkdYNZar7865-T12J37h3AWA9-8R1R5tymuOhaB0b3ddEAA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120820162923.GF26991@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 04:25 PM, Linus Walleij wrote:
->> +config PINCTRL_ARMADA_370
->> +       bool "Support for Marvell Armada 370 SoCs"
->> +       depends on PINCTRL_MVEBU
->> +       depends on MACH_ARMADA_370_XP
->
-> select PINCTRL_MVEBU simply?
->
-> And then have the Armada Kconfig
->
-> select PINCTRL
-> select PINCTRL_ARMADA_370
+On Mon, Aug 20, 2012 at 05:29:23PM +0100, Mark Brown wrote:
+> On Mon, Aug 20, 2012 at 01:55:32PM +0100, Lee Jones wrote:
+> 
+> > Right, that was the initial intention. It would be a trivial semantic
+> > change if drivers without DT support wished to use the functionality
+> > though. However, the only examples I found of a non-DT enabled driver
+> > that could make good use of it in order to strip out some cruft would
+> > be the Arizona and one of the Samsung drivers, and they each have
+> 
+> All of the regmap devices could use this.
 
-Linus, Thomas, Gregory,
+Only if they have linear domains and don't support DT.
 
-this is really difficult here ;) I thought I could just add PINCTRL_DOVE
-to MACH_DOVE inside ARCH_MVEBU, PINCTRL_KIRKWOOD to MACH_KIRKWOOD, aso.
-But there is a common MACH_ARMADA_370_XP for both 370 and XP obviously.
+If they don't have linear domains there's no point, if they support DT
+then they can use it as it is.
 
-If it is ok for you I will add both PINCTRL_ stubs to the Kconfig and
-you work it out if you ever have two distinct MACHs? Or it could remain
-selectable in pinctrl/Kconfig but that will then be different with the
-other stubs.
+> > their own hand-rolled methods of hwirq -> virq conversion now, so any
+> > change to support them would result in multiple invocations of
+> > irq_create_mapping which would likely cause breakage.
+> 
+> Multiple calls to irq_create_mapping() are totally fine.
 
-Sebastian
+Sorry, perhaps I wasn't clear.
+
+<mfd_parent_device>_probe()
+|
++-> mfd_add_device()
+    |
+    +-> res->start = res->end = irq_create_mapping(res->start); // Now a VIRQ
+
+
+<mfd_child_device>_probe()
+|
++-> <mfd_parent_device>_irq_get_virq(res->start) // Ahhh, double VIRQ conversion
+
+To stop being DT dependent we'd need to remove all hand-rolled stuff 
+that these drivers are currently using, or else they will be attempting
+to convert and already converted VIRQ value. 
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
