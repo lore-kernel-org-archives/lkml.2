@@ -1,287 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560Ab2HTOLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:11:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40325 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab2HTOLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:11:19 -0400
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>, Sekhar Nori <nsekhar@ti.com>
-Subject: [PATCH v2 2/2] ARM: da850/omap-l138: Add EVM specific code for VPIF to work
-Date: Mon, 20 Aug 2012 19:38:51 +0530
-Message-ID: <1345471731-31678-3-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1345471731-31678-1-git-send-email-prabhakar.lad@ti.com>
-References: <1345471731-31678-1-git-send-email-prabhakar.lad@ti.com>
+	id S1756529Ab2HTOLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:11:38 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:52189 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab2HTOLg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:11:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1344689809-6223-2-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1344689809-6223-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Mon, 20 Aug 2012 16:11:35 +0200
+Message-ID: <CACRpkdZvjLx4+2CpgOemwWVfyFjFbRe-pzZbwAjExqHhQqBOjA@mail.gmail.com>
+Subject: Re: [PATCH 01/11] pinctrl: mvebu: pinctrl driver core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunath Hadli <manjunath.hadli@ti.com>
+On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
 
-Include the expander settings to select VPIF peripheral on
-UI card and add registration call in EVM init. Also add platform
-data to configure display and capture devices.
+> This patch adds a pinctrl driver core for Marvell SoCs plus DT
+> binding documentation. This core driver will be used by SoC family
+> specific drivers, i.e. Armada XP, Armada 370, Dove, Kirkwood, aso.
+(...)
+> +config PINCTRL_MVEBU
+> +       bool "Marvell SoC pin controller drivers"
+> +       depends on ARCH_MVEBU
 
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
----
- arch/arm/mach-davinci/Kconfig           |    9 ++
- arch/arm/mach-davinci/board-da850-evm.c |  178 +++++++++++++++++++++++++++++++
- 2 files changed, 187 insertions(+), 0 deletions(-)
+So altering earlier statements I suspect this should be simply:
 
-diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
-index ab99c3c..436b47c 100644
---- a/arch/arm/mach-davinci/Kconfig
-+++ b/arch/arm/mach-davinci/Kconfig
-@@ -186,6 +186,15 @@ config DA850_UI_RMII
- 	  NOTE: Please take care while choosing this option, MII PHY will
- 	  not be functional if RMII mode is selected.
- 
-+config DA850_UI_SD_VIDEO_PORT
-+	bool "Video Port Interface"
-+	help
-+	  Say Y if you want to use Video Port Interface (VPIF) on the
-+	  DA850/OMAP-L138 EVM. The Video decoders/encoders are found on the
-+	  UI daughter card that is supplied with the EVM.
-+	  NOTE: Please make sure to disable RMII and CLCD options when you
-+	  select Video Port Interface.
-+
- endchoice
- 
- config DA850_WL12XX
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 0149fb4..cdbbced 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -45,6 +45,8 @@
- #include <mach/aemif.h>
- #include <mach/spi.h>
- 
-+#include <media/tvp514x.h>
-+
- #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
- #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
- #define DA850_LCD_BL_PIN		GPIO_TO_PIN(2, 15)
-@@ -121,6 +123,12 @@ static struct spi_board_info da850evm_spi_info[] = {
- 	},
- };
- 
-+#define TVP5147_CH0		"tvp514x-0"
-+#define TVP5147_CH1		"tvp514x-1"
-+
-+#define VPIF_STATUS		0x002c
-+#define VPIF_STATUS_CLR		0x0030
-+
- #ifdef CONFIG_MTD
- static void da850_evm_m25p80_notify_add(struct mtd_info *mtd)
- {
-@@ -452,6 +460,15 @@ static void da850_evm_ui_keys_init(unsigned gpio)
- 	}
- }
- 
-+#ifdef CONFIG_DA850_UI_SD_VIDEO_PORT
-+static inline void da850_evm_setup_video_port(int video_sel)
-+{
-+	gpio_set_value_cansleep(video_sel, 0);
-+}
-+#else
-+static inline void da850_evm_setup_video_port(int video_sel) { }
-+#endif
-+
- static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
- 						unsigned ngpio, void *c)
- {
-@@ -497,6 +514,8 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
- 
- 	da850_evm_setup_emac_rmii(sel_a);
- 
-+	da850_evm_setup_video_port(sel_c);
-+
- 	return 0;
- 
- exp_setup_keys_fail:
-@@ -1149,6 +1168,133 @@ static __init int da850_evm_init_cpufreq(void)
- static __init int da850_evm_init_cpufreq(void) { return 0; }
- #endif
- 
-+#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
-+
-+/* VPIF capture configuration */
-+static struct tvp514x_platform_data tvp5146_pdata = {
-+	.clk_polarity = 0,
-+	.hs_polarity = 1,
-+	.vs_polarity = 1
-+};
-+
-+#define TVP514X_STD_ALL (V4L2_STD_NTSC | V4L2_STD_PAL)
-+
-+static const struct vpif_input da850_ch0_inputs[] = {
-+	{
-+		.input = {
-+			.index = 0,
-+			.name = "Composite",
-+			.type = V4L2_INPUT_TYPE_CAMERA,
-+			.std = TVP514X_STD_ALL,
-+		},
-+		.subdev_name = TVP5147_CH0,
-+	},
-+};
-+
-+static const struct vpif_input da850_ch1_inputs[] = {
-+	{
-+		.input = {
-+			.index = 0,
-+			.name = "S-Video",
-+			.type = V4L2_INPUT_TYPE_CAMERA,
-+			.std = TVP514X_STD_ALL,
-+		},
-+		.subdev_name = TVP5147_CH1,
-+	},
-+};
-+#endif
-+
-+static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
-+#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
-+	{
-+		.name	= TVP5147_CH0,
-+		.board_info = {
-+			I2C_BOARD_INFO("tvp5146", 0x5d),
-+			.platform_data = &tvp5146_pdata,
-+		},
-+		.input = INPUT_CVBS_VI2B,
-+		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
-+		.can_route = 1,
-+		.vpif_if = {
-+			.if_type = VPIF_IF_BT656,
-+			.hd_pol = 1,
-+			.vd_pol = 1,
-+			.fid_pol = 0,
-+		},
-+	},
-+	{
-+		.name	= TVP5147_CH1,
-+		.board_info = {
-+			I2C_BOARD_INFO("tvp5146", 0x5c),
-+			.platform_data = &tvp5146_pdata,
-+		},
-+		.input = INPUT_SVIDEO_VI2C_VI1C,
-+		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
-+		.can_route = 1,
-+		.vpif_if = {
-+			.if_type = VPIF_IF_BT656,
-+			.hd_pol = 1,
-+			.vd_pol = 1,
-+			.fid_pol = 0,
-+		},
-+	},
-+#endif
-+};
-+
-+static struct vpif_capture_config da850_vpif_capture_config = {
-+	.subdev_info = da850_vpif_capture_sdev_info,
-+	.subdev_count = ARRAY_SIZE(da850_vpif_capture_sdev_info),
-+#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
-+	.chan_config[0] = {
-+		.inputs = da850_ch0_inputs,
-+		.input_count = ARRAY_SIZE(da850_ch0_inputs),
-+	},
-+	.chan_config[1] = {
-+		.inputs = da850_ch1_inputs,
-+		.input_count = ARRAY_SIZE(da850_ch1_inputs),
-+	},
-+#endif
-+	.card_name      = "DA850/OMAP-L138 Video Capture",
-+};
-+
-+/* VPIF display configuration */
-+static struct vpif_subdev_info da850_vpif_subdev[] = {
-+	{
-+		.name	= "adv7343",
-+		.board_info = {
-+			I2C_BOARD_INFO("adv7343", 0x2a),
-+		},
-+	},
-+};
-+
-+static const char const *vpif_output[] = {
-+	"Composite",
-+	"Component",
-+	"S-Video",
-+};
-+
-+static struct vpif_display_config da850_vpif_display_config = {
-+	.subdevinfo	= da850_vpif_subdev,
-+	.subdev_count	= ARRAY_SIZE(da850_vpif_subdev),
-+	.output		= vpif_output,
-+	.output_count	= ARRAY_SIZE(vpif_output),
-+	.card_name	= "DA850/OMAP-L138 Video Display",
-+};
-+
-+#if defined(CONFIG_VIDEO_DAVINCI_VPIF_DISPLAY) ||\
-+		defined(CONFIG_VIDEO_DAVINCI_VPIF_DISPLAY_MODULE)
-+#define HAS_VPIF_DISPLAY 1
-+#else
-+#define HAS_VPIF_DISPLAY 0
-+#endif
-+
-+#if defined(CONFIG_VIDEO_DAVINCI_VPIF_CAPTURE) ||\
-+		defined(CONFIG_VIDEO_DAVINCI_VPIF_CAPTURE_MODULE)
-+#define HAS_VPIF_CAPTURE 1
-+#else
-+#define HAS_VPIF_CAPTURE 0
-+#endif
-+
- #ifdef CONFIG_DA850_WL12XX
- 
- static void wl12xx_set_power(int index, bool power_on)
-@@ -1375,6 +1521,38 @@ static __init void da850_evm_init(void)
- 		pr_warning("da850_evm_init: suspend registration failed: %d\n",
- 				ret);
- 
-+	if (HAS_VPIF_DISPLAY || HAS_VPIF_CAPTURE) {
-+		ret = da850_register_vpif();
-+		if (ret)
-+			pr_warn("da850_evm_init: VPIF setup failed: %d\n", ret);
-+	}
-+
-+	if (HAS_VPIF_CAPTURE) {
-+		ret = davinci_cfg_reg_list(da850_vpif_capture_pins);
-+		if (ret)
-+			pr_warn(
-+			"da850_evm_init: VPIF capture mux setup failed: %d\n",
-+			ret);
-+
-+		ret = da850_register_vpif_capture(&da850_vpif_capture_config);
-+		if (ret)
-+			pr_warn(
-+			"da850_evm_init: VPIF capture setup failed: %d\n", ret);
-+	}
-+
-+	if (HAS_VPIF_DISPLAY) {
-+		ret = davinci_cfg_reg_list(da850_vpif_display_pins);
-+		if (ret)
-+			pr_warn(
-+			"da850_evm_init: VPIF display mux setup failed: %d\n",
-+			ret);
-+
-+		ret = da850_register_vpif_display(&da850_vpif_display_config);
-+		if (ret)
-+			pr_warn(
-+			"da850_evm_init: VPIF display setup failed: %d\n", ret);
-+	}
-+
- 	ret = da8xx_register_spi(1, da850evm_spi_info,
- 				 ARRAY_SIZE(da850evm_spi_info));
- 	if (ret)
--- 
-1.7.0.4
+depends on PLAT_ORION
 
+Yours,
+Linus Walleij
