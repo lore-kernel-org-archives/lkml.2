@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab2HTTrv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 15:47:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35425 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751671Ab2HTTrt (ORCPT
+	id S1753788Ab2HTTtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 15:49:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56771 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab2HTTtm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 15:47:49 -0400
-Date: Mon, 20 Aug 2012 15:47:48 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Andi Kleen <andi@firstfloor.org>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, <greg@kroah.com>
-Subject: Re: [PATCH] USB: Build usb_speed_string unconditionally
-In-Reply-To: <1345491508-30966-1-git-send-email-andi@firstfloor.org>
-Message-ID: <Pine.LNX.4.44L0.1208201541520.1182-100000@iolanthe.rowland.org>
+	Mon, 20 Aug 2012 15:49:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH RESEND 1/2] i2c: pnx: Fix bit definitions
+Date: Mon, 20 Aug 2012 19:49:05 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Kevin Wells <kevin.wells@nxp.com>, Wolfram Sang <w.sang@pengutronix.de>,
+        "vitalywool@gmail.com" <vitalywool@gmail.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srinivas Bakki <srinivas.bakki@nxp.com>,
+        "aletes.xgr@gmail.com" <aletes.xgr@gmail.com>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        Russell King <linux@arm.linux.org.uk>
+References: <1344411752-23469-1-git-send-email-stigge@antcom.de> <083DF309106F364B939360100EC290F823A0354A3D@eu1rdcrdc1wx030.exi.nxp.com> <50326A3E.9070607@antcom.de>
+In-Reply-To: <50326A3E.9070607@antcom.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201208201949.06530.arnd@arndb.de>
+X-Provags-ID: V02:K0:sGNd68MJukYXGKsslYgcOUhffdJQfXdzaFwK3hCObli
+ EqV57AYTt0VbLmm+0lJrVxVVn5YPH2FAbBmnpKBiv21dterA3K
+ Orufpf+j/OhECrqTL0agHzSFU56Ew4OD9HSnl1XPiZvv+V7bgZ
+ T422fu+/vl76eFl7JH+GlkRTu1Q8e7X9/mpBiULgBnoe45egKY
+ TR/ksWUCZI0z2vHv0mC/7fRWCBBeg7PCzmzz/EkhTYzcgqlQLa
+ KApMUUiZ5K2vqKvlWmh2ZfvIMV4EINOqKeDfOsyfQqDbmjGfH6
+ Vh1qbOJBOUpya9kdzexGlA/5cL+a4aoYtWi7o2XeEYi/MTL3E4
+ t5tBB+q5O4inhKLKXOvc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012, Andi Kleen wrote:
-
-> From: Andi Kleen <ak@linux.intel.com>
+On Monday 20 August 2012, Roland Stigge wrote:
+> On 08/20/2012 06:26 PM, Kevin Wells wrote:
+> > I've never had my hands on a PNX4008 chip at NXP, but I do believe they
+> > are the same IP. That specific I2C IP was used in a number of NXP/Phillips
+> > chips besides the PNX4008/LPC32xx. I don't think there are any PNX4008's in
+> > the wild, and even working in NXP, I can't find any non-marketing reference
+> > material for that part (including the user manual).
 > 
-> The usb core uses usb_speed_string(). But it's only selected
-> for USB_GADGET. Enable it unconditionally.
-
-What are you talking about?  USB_COMMON isn't selected at all, but it
-does get built whenever USB or USB_GAGDET is enabled.  From
-drivers/usb/Kconfig:
-
-config USB_COMMON
-	tristate
-	default y
-	depends on USB || USB_GADGET
-
-One could argue that USB_COMMON should never be set to M, that it
-should be Y if either USB or USB_GADGET is enabled at all.  But that's 
-a separate matter.
-
-> Fixes a lot of randconfig builds.
-
-How?
-
-Alan Stern
-
-> Cc: greg@kroah.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/usb/Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Considering this, it might be a good idea to remove support for PNX4008
+> (arch/arm/mach-pnx4008/) altogether. It's hard to maintain support for
+> hardware which isn't available, even at NXP. It would also simplify
+> maintenance of mach-lpc32xx because the overlap currently makes me
+> always wonder if the respective changes still work with mach-pnx4008.
 > 
-> diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
-> index f5ed3d7..d74535b 100644
-> --- a/drivers/usb/Makefile
-> +++ b/drivers/usb/Makefile
-> @@ -57,4 +57,4 @@ obj-$(CONFIG_USB_CHIPIDEA)	+= chipidea/
->  obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
->  obj-$(CONFIG_USB_GADGET)	+= gadget/
->  
-> -obj-$(CONFIG_USB_COMMON)	+= usb-common.o
-> +obj-y				+= usb-common.o
+> Any opposition?
+> 
+> 
+> PS: I just wonder how mach-pnx4008 came into the kernel at all...
 
+According to the git logs, Vitaly Wool originally added support for the
+platform in 2006 when working at MontaVista, and that year was also the
+last time he or anyone else from that company contributed anything in
+that directory. Russell was the only other person to make substantial
+contributions to it, but they all seem to be cross-platform changes.
+
+In the platform code, there is only a single board number reserved,
+with the name of the SoC: MACHINE_START(PNX4008, "Philips PNX4008").
+This indicates that whoever was actually using the code did not have
+their board code upstream and relied on out-of-tree patches for the
+platform.
+
+>From all I can tell, the PNX4008 family probably went to ST-Ericsson,
+not to NXP in the various acquisitions and mergers that happened
+around NXP. This explains why Kevin has no documentation or hardware
+for it. On the ST-Ericsson web site, I could find some information
+about the PNX4908, presumably a follow-on chip, but not about PNX4008,
+so I guess the company also considers the product line dead.
+
+Finally, the chips seems to be targetted at mobile phones and was
+introduced seven years ago, which is multiple generations of
+products in that market, so probably people stopped caring about
+them long ago, unlike embedded chips from the same era for other
+markets.
+
+I'd say let's wait for Vitaly to reply on this matter, if he doesn't
+care about the code, we can kill it off in 3.7 or 3.8.
+
+	Arnd
