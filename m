@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab2HTJcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 05:32:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:31798 "EHLO song.cn.fujitsu.com"
+	id S1756192Ab2HTJdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 05:33:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55098 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756063Ab2HTJbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 05:31:06 -0400
+	id S1752944Ab2HTJbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 05:31:05 -0400
 X-IronPort-AV: E=Sophos;i="4.77,796,1336320000"; 
-   d="scan'208";a="5673008"
+   d="scan'208";a="5673007"
 From: wency@cn.fujitsu.com
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC V7 PATCH 13/19] memory-hotplug: check page type in get_page_bootmem
-Date: Mon, 20 Aug 2012 17:35:36 +0800
-Message-Id: <1345455342-27752-14-git-send-email-wency@cn.fujitsu.com>
+Subject: [RFC V7 PATCH 14/19] memory-hotplug: move register_page_bootmem_info_node and put_page_bootmem for sparse-vmemmap
+Date: Mon, 20 Aug 2012 17:35:37 +0800
+Message-Id: <1345455342-27752-15-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
 References: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
@@ -35,9 +35,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-There is a possibility that get_page_bootmem() is called to the same page many
-times. So when get_page_bootmem is called to the same page, the function only
-increments page->_count.
+For implementing register_page_bootmem_info_node of sparse-vmemmap,
+register_page_bootmem_info_node and put_page_bootmem are moved to
+memory_hotplug.c
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -51,35 +51,72 @@ CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 CC: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- mm/memory_hotplug.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+ include/linux/memory_hotplug.h |    9 ---------
+ mm/memory_hotplug.c            |    8 ++++++--
+ 2 files changed, 6 insertions(+), 11 deletions(-)
 
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index cdbbd79..1133e63 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -162,17 +162,8 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
+ #endif /* CONFIG_NUMA */
+ #endif /* CONFIG_HAVE_ARCH_NODEDATA_EXTENSION */
+ 
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
+-{
+-}
+-static inline void put_page_bootmem(struct page *page)
+-{
+-}
+-#else
+ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
+ extern void put_page_bootmem(struct page *page);
+-#endif
+ 
+ /*
+  * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 5f9f8c7..d85af6d 100644
+index d85af6d..3ca66bc 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -95,10 +95,17 @@ static void release_memory_resource(struct resource *res)
+@@ -91,7 +91,6 @@ static void release_memory_resource(struct resource *res)
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+-#ifndef CONFIG_SPARSEMEM_VMEMMAP
  static void get_page_bootmem(unsigned long info,  struct page *page,
  			     unsigned long type)
  {
--	page->lru.next = (struct list_head *) type;
--	SetPagePrivate(page);
--	set_page_private(page, info);
--	atomic_inc(&page->_count);
-+	unsigned long page_type;
-+
-+	page_type = (unsigned long) page->lru.next;
-+	if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
-+	    page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
-+		page->lru.next = (struct list_head *) type;
-+		SetPagePrivate(page);
-+		set_page_private(page, info);
-+		atomic_inc(&page->_count);
-+	} else
-+		atomic_inc(&page->_count);
+@@ -127,6 +126,7 @@ void __ref put_page_bootmem(struct page *page)
+ 
  }
  
- /* reference to __meminit __free_pages_bootmem is valid
++#ifndef CONFIG_SPARSEMEM_VMEMMAP
+ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ {
+ 	unsigned long *usemap, mapsize, section_nr, i;
+@@ -163,6 +163,11 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ 		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
+ 
+ }
++#else
++static inline void register_page_bootmem_info_section(unsigned long start_pfn)
++{
++}
++#endif
+ 
+ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+@@ -198,7 +203,6 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ 		register_page_bootmem_info_section(pfn);
+ 
+ }
+-#endif /* !CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+ 			   unsigned long end_pfn)
 -- 
 1.7.1
 
