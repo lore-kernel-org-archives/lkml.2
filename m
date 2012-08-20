@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2HTUXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:23:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8346 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab2HTUXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:23:08 -0400
-Message-ID: <50329CA6.6000705@redhat.com>
-Date: Mon, 20 Aug 2012 17:23:02 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754294Ab2HTU1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:27:52 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:38742 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754172Ab2HTU1s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:27:48 -0400
+Message-ID: <50329DBF.9060206@xenotime.net>
+Date: Mon, 20 Aug 2012 13:27:43 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 20 (media: gspca)
-References: <20120820192336.1be51b225ce2883bdcad5b15@canb.auug.org.au> <50325AE5.8060304@xenotime.net>
-In-Reply-To: <50325AE5.8060304@xenotime.net>
-X-Enigmail-Version: 1.4.3
+To: Andi Kleen <ak@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Andi Kleen <andi@firstfloor.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        greg@kroah.com
+Subject: Re: [PATCH] USB: Build usb_speed_string unconditionally
+References: <1345491508-30966-1-git-send-email-andi@firstfloor.org> <Pine.LNX.4.44L0.1208201541520.1182-100000@iolanthe.rowland.org> <20120820195808.GD4461@tassilo.jf.intel.com>
+In-Reply-To: <20120820195808.GD4461@tassilo.jf.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 20-08-2012 12:42, Randy Dunlap escreveu:
-> On 08/20/12 02:23, Stephen Rothwell wrote:
-> 
->> Hi all,
+On 08/20/12 12:58, Andi Kleen wrote:
+
+> On Mon, Aug 20, 2012 at 03:47:48PM -0400, Alan Stern wrote:
+>> On Mon, 20 Aug 2012, Andi Kleen wrote:
 >>
->> Changes since 20120817:
+>>> From: Andi Kleen <ak@linux.intel.com>
+>>>
+>>> The usb core uses usb_speed_string(). But it's only selected
+>>> for USB_GADGET. Enable it unconditionally.
 >>
+>> What are you talking about?  USB_COMMON isn't selected at all, but it
+>> does get built whenever USB or USB_GAGDET is enabled.  From
+>> drivers/usb/Kconfig:
 > 
+> Just trying to fix my LTO randconfigs.
 > 
-> on x86_64:
-> 
-> gspca.c:(.text+0x22aa81): undefined reference to `usb_alloc_urb'
-> gspca.c:(.text+0x22aaad): undefined reference to `usb_alloc_coherent'
-> gspca.c:(.text+0x22ac38): undefined reference to `usb_submit_urb'
-> gspca.c:(.text+0x22af0a): undefined reference to `usb_free_coherent'
-> gspca.c:(.text+0x22af12): undefined reference to `usb_free_urb'
-> gspca.c:(.text+0x22af6c): undefined reference to `usb_ifnum_to_if'
-> gspca.c:(.text+0x22afef): undefined reference to `usb_kill_urb'
-> gspca.c:(.text+0x22b00a): undefined reference to `usb_free_coherent'
-> gspca.c:(.text+0x22b0f9): undefined reference to `usb_set_interface'
-> gspca.c:(.text+0x22b539): undefined reference to `usb_ifnum_to_if'
-> gspca.c:(.text+0x22b64e): undefined reference to `usb_set_interface'
-> gspca.c:(.text+0x22b6af): undefined reference to `usb_clear_halt'
-> 
-> 
-> when CONFIG_USB_SUPPORT is not enabled.
-> 
-> Full randconfig file is attached.
+> Here's a config that violated it on rc2.
 
-Randy,
 
-Thanks for the report!
+Involves known problem with DRM_USB AFAICT.
 
-Not really sure why it failed here... I suspect it is because:
+Greg just accepted a patch from Guenter Roeck that should
+fix this:
+[PATCH RESEND] gpu/mfd/usb: Fix USB randconfig problems
 
-menu "Media USB Adapters"
-       visible if USB && MEDIA_SUPPORT
-
-doesn't do the same as:
-
-menuconfig MEDIA_USB_SUPPORT
-       bool "Media USB Adapters"
-       depends on USB && MEDIA_SUPPORT
-
-Anyway, there is one patch on my experimental tree changes from one
-syntax into the other one:
-
-http://git.linuxtv.org/mchehab/experimental.git/commitdiff/6dbbfefe6c101d617670c486b1aa665e09df5244
-
-Testing your randconfig against my experimental tree, after the above
-patch, fixed it.
-
-As I'm waiting for some feedback on this (hopefully) final series
-of reorg patches, I'll wait until tomorrow before merging it at
--next.
-
-Thanks!
-Mauro
+-- 
+~Randy
