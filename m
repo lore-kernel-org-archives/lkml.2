@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2HTJhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 05:37:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:31798 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841Ab2HTJas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 05:30:48 -0400
-X-IronPort-AV: E=Sophos;i="4.77,796,1336320000"; 
-   d="scan'208";a="5672995"
-From: wency@cn.fujitsu.com
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com
-Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RFC V7 PATCH 06/19] memory-hotplug: export the function acpi_bus_remove()
-Date: Mon, 20 Aug 2012 17:35:29 +0800
-Message-Id: <1345455342-27752-7-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
-References: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 17:30:45,
-	Serialize complete at 2012/08/20 17:30:45
+	id S1756050Ab2HTJj3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 05:39:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60447 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab2HTJj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 05:39:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+References: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
+	<502D42E5.7090403@redhat.com>
+	<20120818000312.GA4262@evergreen.ssec.wisc.edu>
+	<502F100A.1080401@redhat.com>
+	<alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+Date: Mon, 20 Aug 2012 02:39:26 -0700
+Message-ID: <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+Subject: Re: Repeated fork() causes SLAB to grow without bound
+From: Michel Lespinasse <walken@google.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On Mon, Aug 20, 2012 at 1:00 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Fri, 17 Aug 2012, Rik van Riel wrote:
+>> Of course, that leaves the big question: do we want the
+>> overhead of having the atomic addition and decrement for
+>> every anonymous memory page, or is it easier to fix this
+>> issue in userspace?
+>
+> I've not given any thought to alternatives, and I've not done any
+> performance analysis; but my instinct says that we really do not
+> want another atomic increment and decrement (and another cache
+> line redirtied) for every single page mapped.
 
-The function acpi_bus_remove() can remove a acpi device from acpi device.
-When a acpi device is removed, we need to call this function to remove
-the acpi device from acpi bus. So export this function.
+I am concerned about this as well.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- drivers/acpi/scan.c     |    3 ++-
- include/acpi/acpi_bus.h |    1 +
- 2 files changed, 3 insertions(+), 1 deletions(-)
+> May I dare to think: what if we just backed out all the anon_vma_chain
+> complexity, and returned to the simple anon_vma list we had in 2.6.33?
+>
+> Just how realistic was the workload which led you to anon_vma_chains?
+> And isn't it correct to say that the performance evaluation was made
+> while believing that each anon_vma->lock was useful, before the sad
+> realization that anon_vma->root->lock (or ->mutex) had to be used?
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index d1ecca2..1cefc34 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1224,7 +1224,7 @@ static int acpi_device_set_context(struct acpi_device *device)
- 	return -ENODEV;
- }
- 
--static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
-+int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
- {
- 	if (!dev)
- 		return -EINVAL;
-@@ -1246,6 +1246,7 @@ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(acpi_bus_remove);
- 
- static int acpi_add_single_object(struct acpi_device **child,
- 				  acpi_handle handle, int type,
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index bde976e..2ccf109 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -360,6 +360,7 @@ bool acpi_bus_power_manageable(acpi_handle handle);
- bool acpi_bus_can_wakeup(acpi_handle handle);
- int acpi_power_resource_register_device(struct device *dev, acpi_handle handle);
- void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle);
-+int acpi_bus_remove(struct acpi_device *dev, int rmdevice);
- #ifdef CONFIG_ACPI_PROC_EVENT
- int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
- int acpi_bus_generate_proc_event4(const char *class, const char *bid, u8 type, int data);
+Thanks for suggesting this - I certainly wish we could go that way. I
+suspect there will be a strong case against this, but I'd certainly
+like to hear it (and see if it can be addressed another way).
+
+Here we just don't have processes that fork a lot of children that
+don't immediately exec, so anon_vmas don't bring any value for us.
+
+> I've Cc'ed Michel, because I think he has plans (or at least hopes) for
+> the anon_vmas, in his relentless pursuit of world domination by rbtree.
+
+Unfortunately I don't have great ideas there.
+
+It would be easy to add a flag to track if an anon_vma has ever been
+referenced by a struct page, and not clone the anon_vma if the flag
+isn't set. But, this wouldn't help at all with the DOS potential here.
+
+If there are pages referencing the anon_vma, we could reassign these
+to the parent anon_vma, but finding all such pages would be expensive
+too.
+
+Instead of adding an atomic count for page references, we could limit
+the anon_vma stacking depth. In fork, we would only clone anon_vmas
+that have a low enough generation count. I think that's not great
+(adds a special case for the deep-fork-without-exec behavior), but
+still better than the atomic page reference counter.
+
+I would still prefer if we could just remove the anon_vma_chain stuff, though.
+
 -- 
-1.7.1
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
