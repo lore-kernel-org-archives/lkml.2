@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab2HTArU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 20:47:20 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:45759 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab2HTArR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 20:47:17 -0400
-Date: Sun, 19 Aug 2012 20:47:05 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Carlos Alberto Lopez Perez <clopez@igalia.com>
-Cc: Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lanyfs@librelist.com
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-Message-ID: <20120820004705.GA3710@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Carlos Alberto Lopez Perez <clopez@igalia.com>,
-	Dan Luedtke <mail@danrl.de>,
-	Jochen Striepe <jochen@tolot.escape.de>,
-	Marco Stornelli <marco.stornelli@gmail.com>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-	lanyfs@librelist.com
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
- <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
- <1345371135.4441.2.camel@tunafish>
- <5030BC7E.3030000@gmail.com>
- <1345383264.4441.56.camel@tunafish>
- <20120819120254.GA2369@pompeji.miese-zwerge.org>
- <1345390432.2716.34.camel@tunafish>
- <20120819210455.GA9208@thunk.org>
- <5031716C.1060003@igalia.com>
+	id S1752414Ab2HTAst (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 20:48:49 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:47948 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab2HTAsn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 20:48:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5031716C.1060003@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20120819025724.GC16796@localhost>
+References: <1345283402-7889-1-git-send-email-linkinjeon@gmail.com>
+	<20120819025724.GC16796@localhost>
+Date: Mon, 20 Aug 2012 09:48:42 +0900
+Message-ID: <CAKYAXd83r3RNi3Rn5s3DAEE=34YYbk_hUWcG6R3Zu3JwUw74aA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] writeback: add dirty_ratio_time per bdi variable (NFS
+ write performance)
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 01:06:20AM +0200, Carlos Alberto Lopez Perez wrote:
-> 
-> > I also seriously question the niche of people who want to use a thumb
-> > drive to transfer > 4GB files.  Try it sometime and see what a painful
-> > user experience it is....
-> 
-> Think for example on consumer devices, for example on most moderns TV
-> you can plug a USB memory disk with videos and play them.
+2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
+> On Sat, Aug 18, 2012 at 05:50:02AM -0400, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> This patch is based on suggestion by Wu Fengguang:
+>> https://lkml.org/lkml/2011/8/19/19
+>>
+>> kernel has mechanism to do writeback as per dirty_ratio and
+>> dirty_background
+>> ratio. It also maintains per task dirty rate limit to keep balance of
+>> dirty pages at any given instance by doing bdi bandwidth estimation.
+>>
+>> Kernel also has max_ratio/min_ratio tunables to specify percentage of
+>> writecache
+>> to control per bdi dirty limits and task throtelling.
+>>
+>> However, there might be a usecase where user wants a writeback tuning
+>> parameter to flush dirty data at desired/tuned time interval.
+>>
+>> dirty_background_time provides an interface where user can tune
+>> background
+>> writeback start time using /sys/block/sda/bdi/dirty_background_time
+>>
+>> dirty_background_time is used alongwith average bdi write bandwidth
+>> estimation
+>> to start background writeback.
+>
+> Here lies my major concern about dirty_background_time: the write
+> bandwidth estimation is an _estimation_ and will sure become wildly
+> wrong in some cases. So the dirty_background_time implementation based
+> on it will not always work to the user expectations.
+>
+> One important case is, some users (eg. Dave Chinner) explicitly take
+> advantage of the existing behavior to quickly create & delete a big
+> 1GB temp file without worrying about triggering unnecessary IOs.
+>
+Hi. Wu.
+Okay, I have a question.
 
-More and more consumer devices, including TV's, are network-enabled.
-I'm not at all convinced the USB memory disk model is the one which
-makes sense --- you can make a much better user experience work if you
-can rely on networking.  That way you don't have to move USB storage
-devices around, and USB storage devices are *slow* when the most
-common types are HDD's and crappy flash devices.  How many people are
-going to drop several hundred dollars for a USB-attached SSD, when
-using a networking transfer mechanism is much more convenient?
+If making dirty_writeback_interval per bdi to tune short interval
+instead of background_time, We can get similar performance
+improvement.
+/sys/block/<device>/bdi/dirty_writeback_interval
+/sys/block/<device>/bdi/dirty_expire_interval
 
-> And I doubt that the majority of this consumer devices are able to read
-> nothing more than FAT32 file-systems, so the 4GB limit is a big problem.
-> And here is where Microsoft is pushing their exFAT FS since it allows
-> working with 4GB+ files without the NTFS overhead.
+NFS write performance improvement is just one usecase.
 
-We'll see how popular a heavily IP-encumbered file system will be,
-especially given that its main use case is for devices which are so
-constrained that they can't afford to use a "real file system" (like
-ntfs or ext4 or some other more sophisticated file system), but which
-nevertheless needs to be able to handle 4GB+ files.
+If we can set interval/time per bdi,  other usecases will be created
+by applying.
 
-I'm sure there will be some use cases that might fit that niche, but
-it seems pretty tiny.  And this is completely ignoring what might
-happen if in the future people take 1gig fiber connections to the home
-(such as what many people in Kansas City will be enjoying very
-shortly) for granted....
+How do you think ?
 
-> As a side note, it would be possible to write a driver for exFAT and get
-> it merged upstream on the Linux Kernel without "breaking any law"?
-> Goggling I found an attempt to write such driver but seems that never
-> got merged:  https://lkml.org/lkml/2009/2/8/24
+>The numbers are impressive! FYI, I tried another NFS specific approach
+>to avoid big NFS COMMITs, which achieved similar performance gains:
 
-You'll need to talk to a lawyer about that, since that's fundamentally
-a legal question.
+>nfs: writeback pages wait queue
+>https://lkml.org/lkml/2011/10/20/235
 
-Regards,
-
-						- Ted
+Thanks.
