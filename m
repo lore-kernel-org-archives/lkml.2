@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab2HTKWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 06:22:17 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52471 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647Ab2HTKWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 06:22:14 -0400
-Message-ID: <50320FC4.2020100@ti.com>
-Date: Mon, 20 Aug 2012 12:21:56 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752713Ab2HTKdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 06:33:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33553 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab2HTKdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 06:33:39 -0400
+Date: Mon, 20 Aug 2012 12:33:37 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
+        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH] drivers-core: beware dev_printk() from printing nonsense
+Message-ID: <20120820103337.GA16744@linutronix.de>
 MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.luna@linaro.org>
-CC: Vaibhav Hiremath <hvaibhav@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Kevin Hilman <khilman@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: OMAP: hwmod: revise deassert sequence
-References: <1342466485-1050-1-git-send-email-omar.luna@linaro.org> <1342466485-1050-3-git-send-email-omar.luna@linaro.org> <alpine.DEB.2.00.1208020150240.4177@utopia.booyaka.com> <CALLhW=6-b+kjfG-u3+uXiD64UwoNEdufjJKu0Mx-sGWp6n9csg@mail.gmail.com> <501B609F.9030403@ti.com> <CALLhW=7yJTq_cfB=KGY5VT8fNO1u_hrY118ysihFuQA+gVFRuQ@mail.gmail.com>
-In-Reply-To: <CALLhW=7yJTq_cfB=KGY5VT8fNO1u_hrY118ysihFuQA+gVFRuQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Omar,
+on boot I saw plenty of rubbish like:
 
-On 08/03/2012 05:52 PM, Omar Ramirez Luna wrote:
-> On 3 August 2012 00:24, Vaibhav Hiremath <hvaibhav@ti.com> wrote:
->> On 8/3/2012 3:50 AM, Omar Ramirez Luna wrote:
->>> So in _enable:
->>>
->>>         _enable_clocks(oh);
->>>         if (soc_ops.enable_module)
->>>                 soc_ops.enable_module(oh);
->>>
->>> The enable_module part seems redundant to me, since the module should
->>> be already enabled by the first call to _enable_clocks.
->>
->> Yes they do same thing, I believe the plan is to get rid of all clock
->> leaf-nodes in the near future, and let hwmod handle module
->> enable/disable part.
-> 
-> If this is the case then an enable_module call is needed in my patch
-> for when these changes are made. The original works fine but only
-> because currently clock framework does what enable_module is doing.
+|ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+|pci_root PNP0A03:00: Force enabled HPET at 0x%lx
+|host bridge window [io  0x0000-0x0cf7] (ignored)
+|pci_root PNP0A03:00: Force enabled HPET at 0x%lx
+|host bridge window [io  0x0d00-0xffff] (ignored)
+|pci_root PNP0A03:00: Force enabled HPET at 0x%lx
+|ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 10
+|virtio-pci 0000:00:05.0: Force enabled HPET at 0x%lx
 
-Yes, that's the case, but I plan to remove most of the leaf clocks ASAP,
-so we cannot rely on that.
+First I wonder myself why the kernel Force enables more than one HPET
+and why the address isn't printed. Then I wasn't sure why virtio-pci
+does the same thing.
+As it turns out commit af7f2158fdee ("drivers-core: make structured
+logging play nice with dynamic-debug") has probably an off by one error.
+Since commit 314ba3520 ("printk: add kern_levels.h to make KERN_<LEVEL>
+available for asm use") the whole shrunk by one byte. And for some
+reason the compiler put the HPET string just after one of the kernel log
+levels so level[3] was always true.
 
-> Please let me know if you want me to resend with this change.
+This should make the rubish go away, I am not sure if the dynamic debug
+is still working. Jim could you please try?
 
-Yes, could you please repost with that change?
+Cc: Jim Cromie <jim.cromie@gmail.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: stable <stable@vger.kernel.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/base/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-It will be good as well that you remove the leaf clock and use the
-parent clock of current leaf as the main_clock. In that case it will
-ensure that this is the hwmod fmwk that does enable the modulemode and
-not the clock fmwk.
-
-Regards,
-Benoit
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index cdd01c5..5a864c3 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1912,7 +1912,7 @@ int __dev_printk(const char *level, const struct device *dev,
+ 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
+ 	}
+ skip:
+-	if (level[3])
++	if (level[sizeof(KERN_ERR) - 1])
+ 		level_extra = &level[3]; /* skip past "<L>" */
+ 
+ 	return printk_emit(0, level[1] - '0',
+-- 
+1.7.10.4
 
