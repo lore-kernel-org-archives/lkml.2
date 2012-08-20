@@ -1,131 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab2HTUUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:20:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37277 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab2HTUUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:20:24 -0400
+	id S1753173Ab2HTUXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:23:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8346 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab2HTUXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:23:08 -0400
+Message-ID: <50329CA6.6000705@redhat.com>
+Date: Mon, 20 Aug 2012 17:23:02 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D413805C50@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D413805C50@USINDEM103.corp.hds.com>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 20 Aug 2012 13:13:29 -0700
-Message-ID: <CAGTjWtBN0Ai_H0u6ACVbTCKgRXJU7Ln9nhjeb9wdOFQ0GQpP3w@mail.gmail.com>
-Subject: Re: [RFC][PATCH v2 3/3] efi_pstore: Skip scheduling a workqueue in
- cases other than oops
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-media <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for Aug 20 (media: gspca)
+References: <20120820192336.1be51b225ce2883bdcad5b15@canb.auug.org.au> <50325AE5.8060304@xenotime.net>
+In-Reply-To: <50325AE5.8060304@xenotime.net>
+X-Enigmail-Version: 1.4.3
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 12:15 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
-> [Problem]
-> efi_pstore creates sysfs files when logging kernel messages to NVRAM.
-> Currently, the sysfs files are updated in a workqueue which is registered in a write callback.
->
-> On the other hand, a situation which users need the sysfs files is just oops case because a system will
-> be down and they can't access to sysfs files in other cases like panic, reboot or emergency_restart.
->
-> Also, if kernel panics due to a bug of workqueue operations and a write callback of efi_pstore is called in
-> panic case, efi_pstore may fail due to a failure of schedule_work().
-> And panic_notifier_chain()/emergency_restart() is not kicked if efi_pstore fails.
-> This may cause user's unwanted result.
->
-> [Patch Description]
-> This patch skips a registration of a workqueue in a write callback in cases other than oops.
->
-> Also, a logic of erase callback is freshly created instead of sharing with a write callback because the sysfs
-> operation is kicked in just oops case in a write callback and an erase callback doesn't work without any change.
-> By separating a logic to a write callback, an erase callback works correctly.
+Em 20-08-2012 12:42, Randy Dunlap escreveu:
+> On 08/20/12 02:23, Stephen Rothwell wrote:
+> 
+>> Hi all,
+>>
+>> Changes since 20120817:
+>>
+> 
+> 
+> on x86_64:
+> 
+> gspca.c:(.text+0x22aa81): undefined reference to `usb_alloc_urb'
+> gspca.c:(.text+0x22aaad): undefined reference to `usb_alloc_coherent'
+> gspca.c:(.text+0x22ac38): undefined reference to `usb_submit_urb'
+> gspca.c:(.text+0x22af0a): undefined reference to `usb_free_coherent'
+> gspca.c:(.text+0x22af12): undefined reference to `usb_free_urb'
+> gspca.c:(.text+0x22af6c): undefined reference to `usb_ifnum_to_if'
+> gspca.c:(.text+0x22afef): undefined reference to `usb_kill_urb'
+> gspca.c:(.text+0x22b00a): undefined reference to `usb_free_coherent'
+> gspca.c:(.text+0x22b0f9): undefined reference to `usb_set_interface'
+> gspca.c:(.text+0x22b539): undefined reference to `usb_ifnum_to_if'
+> gspca.c:(.text+0x22b64e): undefined reference to `usb_set_interface'
+> gspca.c:(.text+0x22b6af): undefined reference to `usb_clear_halt'
+> 
+> 
+> when CONFIG_USB_SUPPORT is not enabled.
+> 
+> Full randconfig file is attached.
 
-I don't understand why this part of the patch is required.
+Randy,
 
->
-> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> ---
->  drivers/firmware/efivars.c |   53 ++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 51 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-> index 8717ea9..4811abb 100644
-> --- a/drivers/firmware/efivars.c
-> +++ b/drivers/firmware/efivars.c
-> @@ -747,7 +747,11 @@ static int efi_pstore_write(enum pstore_type_id type,
->
->         spin_unlock_irqrestore(&efivars->lock, flags);
->
-> -       schedule_work(&efivar_work);
-> +       /*
-> +        * The user may want to see an entry for this write in sysfs.
-> +        */
-> +       if (reason == KMSG_DUMP_OOPS)
-> +               schedule_work(&efivar_work);
->
->         *id = part;
->         return ret;
-> @@ -756,7 +760,52 @@ static int efi_pstore_write(enum pstore_type_id type,
->  static int efi_pstore_erase(enum pstore_type_id type, u64 id,
->                             struct pstore_info *psi)
->  {
-> -       efi_pstore_write(type, 0, &id, (unsigned int)id, 0, psi);
-> +       char stub_name[DUMP_NAME_LEN];
-> +       efi_char16_t efi_name[DUMP_NAME_LEN];
-> +       efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
-> +       struct efivars *efivars = psi->data;
-> +       struct efivar_entry *entry, *found = NULL;
-> +       int i;
-> +       unsigned long flags;
-> +
-> +       sprintf(stub_name, "dump-type%u-%llu-", type, id);
-> +
-> +       spin_lock_irqsave(&efivars->lock, flags);
-> +
-> +       for (i = 0; i < DUMP_NAME_LEN; i++)
-> +               efi_name[i] = stub_name[i];
-> +
-> +       /*
-> +        * Clean up any entries with the same name
-> +        */
-> +
-> +       list_for_each_entry(entry, &efivars->list, list) {
-> +               get_var_data_locked(efivars, &entry->var);
-> +
-> +               if (efi_guidcmp(entry->var.VendorGuid, vendor))
-> +                       continue;
-> +               if (utf16_strncmp(entry->var.VariableName, efi_name,
-> +                                 utf16_strlen(efi_name)))
-> +                       continue;
-> +               /* Needs to be a prefix */
-> +               if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
-> +                       continue;
-> +
-> +               /* found */
-> +               found = entry;
-> +               efivars->ops->set_variable(entry->var.VariableName,
-> +                                          &entry->var.VendorGuid,
-> +                                          PSTORE_EFI_ATTRIBUTES,
-> +                                          0, NULL);
-> +       }
-> +
-> +       if (found)
-> +               list_del(&found->list);
-> +
-> +       spin_unlock_irqrestore(&efivars->lock, flags);
-> +
-> +       if (found)
-> +               efivar_unregister(found);
->
->         return 0;
->  }
-> -- 1.7.1
+Thanks for the report!
+
+Not really sure why it failed here... I suspect it is because:
+
+menu "Media USB Adapters"
+       visible if USB && MEDIA_SUPPORT
+
+doesn't do the same as:
+
+menuconfig MEDIA_USB_SUPPORT
+       bool "Media USB Adapters"
+       depends on USB && MEDIA_SUPPORT
+
+Anyway, there is one patch on my experimental tree changes from one
+syntax into the other one:
+
+http://git.linuxtv.org/mchehab/experimental.git/commitdiff/6dbbfefe6c101d617670c486b1aa665e09df5244
+
+Testing your randconfig against my experimental tree, after the above
+patch, fixed it.
+
+As I'm waiting for some feedback on this (hopefully) final series
+of reorg patches, I'll wait until tomorrow before merging it at
+-next.
+
+Thanks!
+Mauro
