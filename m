@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab2HTUrP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:47:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55918 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab2HTUrM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:47:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 08/31] arm64: CPU support
-Date: Mon, 20 Aug 2012 20:47:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <20120815001043.GD19607@quad.lixom.net> <20120820155740.GA912@arm.com>
-In-Reply-To: <20120820155740.GA912@arm.com>
+	id S1755021Ab2HTUrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:47:37 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:34724 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754254Ab2HTUrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:47:35 -0400
+From: Jim Meyering <jim@meyering.net>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: a few strncpy-related patches
+In-Reply-To: <m24nnx8ggt.fsf@firstfloor.org> (Andi Kleen's message of "Mon, 20
+	Aug 2012 13:18:42 -0700")
+References: <1345481724-30108-1-git-send-email-jim@meyering.net>
+	<m24nnx8ggt.fsf@firstfloor.org>
+Date: Mon, 20 Aug 2012 22:47:27 +0200
+Message-ID: <87393hl28w.fsf@rho.meyering.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208202047.07991.arnd@arndb.de>
-X-Provags-ID: V02:K0:J8LHUiClHyEdObB3QiSkolVIdvGRLhCUPo6ivUY+G9W
- YOIF//D7lBMlue2rh5RtqvOx4Mw4Q5K12zzYpQupWwDwer3fbA
- FNqhm1GRJw72NF1zbao7p9F4NlLaVbaunQjAiexgrYK/EPudG2
- yToa46h6nrmS+hRtaPPAfMSBU3b6QDUx/aHgsPHMKE3A3VF2dg
- WlgUH91C6BiKmbXsUT8rygVzqQ5PmpJR+60Hg6YqCLFzqZ+63g
- et1YQ1XugY95So893KOxEgRyUuqhC20E6yhoDElmeXJkA8eaCx
- wJ3i7f4wlKl+EQXBAy+Qhg7XFDoKA6uUGUybwt/JTbeOsj+xNY
- Nbiv2sZLJZgZTBk9uBxs=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 August 2012, Catalin Marinas wrote:
-> > > --- /dev/null
-> > > +++ b/arch/arm64/mm/proc-syms.c
-> ...
-> > > +EXPORT_SYMBOL(__cpuc_flush_kern_all);
-> > > +EXPORT_SYMBOL(__cpuc_flush_user_all);
-> > > +EXPORT_SYMBOL(__cpuc_flush_user_range);
-> > > +EXPORT_SYMBOL(__cpuc_coherent_kern_range);
-> > > +EXPORT_SYMBOL(__cpuc_flush_dcache_area);
-> > 
-> > See comment on other email about putting function pointers in a struct
-> > instead.
-> 
-> There is no need to support multiple CPU architectures with different
-> implementations, so allowing these functions to be called without
-> indirection is better.
+Andi Kleen wrote:
+> Jim Meyering <jim@meyering.net> writes:
+>
+>> I've seen a few too many cases of strncpy misuse.
+>> Looking through linux sources, I spotted/fixed these:
+>>
+>> [PATCH] ACPI: remove unwarranted use of strncpy
+>> [PATCH] fs/9p: avoid debug OOPS when reading a long symlink
+>> [PATCH] kmemleak: avoid buffer overrun: NUL-terminate strncpy-copied
+>> [PATCH] bfa: avoid buffer overrun for 12-byte model name
+>> [PATCH] cifs: remove misleading strncpy: each name has length < 16
+>
+> Better to convert tham all to strlcpy?
+>
+> The kernel has it.
 
-What is the __cpuc prefix about then? Could you just drop it?
+Anything is better than strncpy.
+Is there consensus here that strlcpy is preferred?
+Would the integrator(s) even require consensus?
 
-	Arnd
+    $ git grep -w strncpy|wc -l
+    987
+    $ git grep -w strlcpy|wc -l
+    1345
+
+In any case, shouldn't fixing bugs and obvious misuse be separate
+from any global NSC conversion?
