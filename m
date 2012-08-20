@@ -1,102 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab2HTCUH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 22:20:07 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65134 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2HTCUE (ORCPT
+	id S1753273Ab2HTCYa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 22:24:30 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43070 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab2HTCY3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 22:20:04 -0400
-X-AuditID: 9c930197-b7bb2ae0000011d9-0c-50319ed2047a
+	Sun, 19 Aug 2012 22:24:29 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-d2-50319fdbf7e4
 From: Namhyung Kim <namhyung@kernel.org>
 To: David Ahern <dsahern@gmail.com>
 Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] perf: silence GTK2 probing errors
-References: <1345391202-71865-1-git-send-email-dsahern@gmail.com>
-Date: Mon, 20 Aug 2012 11:13:07 +0900
-In-Reply-To: <1345391202-71865-1-git-send-email-dsahern@gmail.com> (David
-	Ahern's message of "Sun, 19 Aug 2012 09:46:42 -0600")
-Message-ID: <87vcgeia4s.fsf@sejong.aot.lge.com>
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf: fix builds with NO_LIBELF set
+References: <1345391234-71906-1-git-send-email-dsahern@gmail.com>
+Date: Mon, 20 Aug 2012 11:17:31 +0900
+In-Reply-To: <1345391234-71906-1-git-send-email-dsahern@gmail.com> (David
+	Ahern's message of "Sun, 19 Aug 2012 09:47:14 -0600")
+Message-ID: <87r4r2i9xg.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, David
-
-On Sun, 19 Aug 2012 09:46:42 -0600, David Ahern wrote:
-> If GTK2 development packages are not installed, make is rather noisy:
+On Sun, 19 Aug 2012 09:47:14 -0600, David Ahern wrote:
+> Build currently fails:
+> $ make -C tools/perf O=/tmp/pbuild NO_LIBELF=1
 >
-> $ make -C tools/perf O=/tmp/pbuild
-> Package gtk+-2.0 was not found in the pkg-config search path.
-> Perhaps you should add the directory containing `gtk+-2.0.pc'
-> to the PKG_CONFIG_PATH environment variable
-> No package 'gtk+-2.0' found
-> make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
-> Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
-> PERF_VERSION = 3.6.rc1.205.gdb146f.dirty
+> util/symbol.c: In function ‘dso__load’:
+> util/symbol.c:1128:27: error: ‘struct symsrc’ has no member named ‘dynsym’
+>     CC /tmp/pbuild/util/pager.o
+> make: *** [/tmp/pbuild/util/symbol.o] Error 1
+> make: *** Waiting for unfinished jobs....
+>
+> Moving the dynsym reference to symbol-elf.c reveals that NO_LIBELF requires
+> NO_LIBUNWIND:
+>
+> $ make -C tools/perf O=/tmp/pbuild NO_LIBELF=1
+>
+>     LINK /tmp/pbuild/perf
+> /tmp/pbuild/libperf.a(unwind.o): In function `elf_section_offset':
+> /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:176: undefined reference to `elf_begin'
+> /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:181: undefined reference to `gelf_getehdr'
+> /tmp/pbuild/libperf.a(unwind.o): In function `elf_section_by_name':
+> /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:157: undefined reference to `elf_nextscn'
+> /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:160: undefined reference to `gelf_getshdr'
+> /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:161: undefined reference to `elf_strptr'
+> /tmp/pbuild/libperf.a(unwind.o): In function `elf_section_offset':
+> /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:190: undefined reference to `elf_end'
+> /tmp/pbuild/libperf.a(unwind.o): In function `read_unwind_spec':
+> /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:190: undefined reference to `elf_end'
+> collect2: ld returned 1 exit status
+> make: *** [/tmp/pbuild/perf] Error 1
 > make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
-> Package gtk+-2.0 was not found in the pkg-config search path.
-> Perhaps you should add the directory containing `gtk+-2.0.pc'
-> to the PKG_CONFIG_PATH environment variable
-> No package 'gtk+-2.0' found
-> make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
-> Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
-> ...
 >
-> Silence the pkg-config errors. Aftewards:
+> This patch fixes both.
 >
-> $ make -C tools/perf O=/tmp/pbuild
-> make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
-> Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
-> PERF_VERSION = 3.6.rc1.206.gd43ff9.dirty
-> make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
-> make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
-> Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
-> ...
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Jiri Olsa <jolsa@redhat.com>
 
-The patch looks good to me.  But I wonder why we see this "GTK2 not
-found" message twice even in -j1 build.  Perhaps we need to define the
-NO_GTK2 after the feature-test.
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
 
 Thanks,
 Namhyung
 
 
->
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
 > ---
->  tools/perf/Makefile |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+>  tools/perf/Makefile          |    1 +
+>  tools/perf/util/symbol-elf.c |    3 +++
+>  tools/perf/util/symbol.c     |    2 +-
+>  3 files changed, 5 insertions(+), 1 deletion(-)
 >
 > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 1eb7f12..90cfecf 100644
+> index 75af93d..1eb7f12 100644
 > --- a/tools/perf/Makefile
 > +++ b/tools/perf/Makefile
-> @@ -588,7 +588,7 @@ endif
->  ifdef NO_GTK2
->  	BASIC_CFLAGS += -DNO_GTK2_SUPPORT
+> @@ -469,6 +469,7 @@ PYRF_OBJS += $(OUTPUT)util/xyarray.o
+>  ifdef NO_LIBELF
+>  	NO_DWARF := 1
+>  	NO_DEMANGLE := 1
+> +	NO_LIBUNWIND := 1
 >  else
-> -	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0)
-> +	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
->  	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
->  		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
->  		BASIC_CFLAGS += -DNO_GTK2_SUPPORT
-> @@ -596,8 +596,8 @@ else
->  		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2)),y)
->  			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
->  		endif
-> -		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
-> -		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
-> +		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-> +		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
->  		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
->  		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
->  		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+>  FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+>  ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
+> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+> index 5b37e13..db0cc92 100644
+> --- a/tools/perf/util/symbol-elf.c
+> +++ b/tools/perf/util/symbol-elf.c
+> @@ -183,6 +183,9 @@ int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss, struct map *
+>  	Elf *elf;
+>  	int nr = 0, symidx, err = 0;
+>  
+> +	if (!ss->dynsym)
+> +		return 0;
+> +
+>  	elf = ss->elf;
+>  	ehdr = ss->ehdr;
+>  
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index 2293a4a..753699a 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -1125,7 +1125,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+>  	else
+>  		ret = -1;
+>  
+> -	if (ret > 0 && runtime_ss->dynsym) {
+> +	if (ret > 0) {
+>  		int nr_plt;
+>  
+>  		nr_plt = dso__synthesize_plt_symbols(dso, runtime_ss, map, filter);
