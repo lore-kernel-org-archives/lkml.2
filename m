@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab2HTSNQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:13:16 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46089 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751255Ab2HTSNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:13:15 -0400
-Message-ID: <1345486393.3252.3.camel@joe2Laptop>
-Subject: Re: [PATCH] drivers-core: beware dev_printk() from printing nonsense
-From: Joe Perches <joe@perches.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 20 Aug 2012 11:13:13 -0700
-In-Reply-To: <50326B84.4010204@linutronix.de>
-References: <20120820103337.GA16744@linutronix.de>
-	 <20120820152611.GB28039@kroah.com> <50326B84.4010204@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752235Ab2HTSOj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:14:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40327 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751641Ab2HTSOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 14:14:35 -0400
+Date: Mon, 20 Aug 2012 19:14:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] ARM: dt: tegra: harmony: add regulators
+Message-ID: <20120820181432.GJ26991@opensource.wolfsonmicro.com>
+References: <1345186799-18229-1-git-send-email-ldewangan@nvidia.com>
+ <502E9B09.3080800@wwwdotorg.org>
+ <502EA1AC.4090205@wwwdotorg.org>
+ <50327242.80103@nvidia.com>
+ <50327897.5030601@wwwdotorg.org>
+ <20120820175410.GI26991@opensource.wolfsonmicro.com>
+ <50327D2D.6000509@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lZZ4ablUVnt2XgAh"
+Content-Disposition: inline
+In-Reply-To: <50327D2D.6000509@wwwdotorg.org>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 18:53 +0200, Sebastian Andrzej Siewior wrote:
-> On 08/20/2012 05:26 PM, Greg Kroah-Hartman wrote:
-> >>   skip:
-> >> -	if (level[3])
-> >> +	if (level[sizeof(KERN_ERR) - 1])
-> >
-> > This has already been fixed in my driver-core tree and will go to Linus
-> > in a few hours.
-> 
-> Ah. So I'm too late. Care to send a patch which replace [2] with the
-> sizeof() operator like above?
 
-Nope, the better fix is to use a different mechanism.
+--lZZ4ablUVnt2XgAh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-See commit acc8fa41ad31c5
-("printk: add generic functions to find KERN_<LEVEL> headers")
+On Mon, Aug 20, 2012 at 12:08:45PM -0600, Stephen Warren wrote:
 
-and
+> The patch in this thread adds all the required regulators to the DT
+> file. However, it should also remove the special case so the
+> regulators don't get registered twice, once from the board file and
+> once from DT. However, doing that would prevent regulators getting
+> registered at all, since v3.6-rc* don't have all the required
+> (TPS6586x) regulator (driver) patches to get the regulators
+> instantiated from DT. Everything will only work in linux-next or
+> sometime during the 3.7 merge window.  Hence, git bisect would be broken.
 
-commit 04d2c8c83d0e3a
-("printk: convert the format for KERN_<LEVEL> to a 2 byte pattern")
+> One solution to this is to bring the regulator tree into the Tegra
+> tree as a dependency, and then apply a patch which adds the regulators
+> to DT, and removes the special case from the board file. I'm asking
+> for your OK to do that.
 
-I'll submit that "better fix" shortly after Greg's update has
-been pulled/merged by Linus.
+Why not just pull the patch in via the regulator tree?  The idea of
+merging the entire regulator drivers branch into the Tegra tree doesn't
+seem awesome...
 
-cheers, Joe
+--lZZ4ablUVnt2XgAh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQMn5zAAoJEFJkBDiqVpZ4PJ8QAJCSD9QML6peiFybks33ZvuY
+HIWqKd8uGcjmQ2bFCSp+NRyVCcO2Htsf8GHQzOFiy7DLYkjxbetGvIlYir0BJxAt
+q2F6nPVBmpllmnFoKl2iTHhlqqO4YxZrsK9fsmveUOFyBLJGbPZBzvFwx8Q+nNLx
+/xY/wkb9e8lVvsPY+PkPCgNL3nGRoblHt80860SBYmcprUg+fGzKcYqMVMK0FJ7M
+915Yh3nT2yxynvMoLQJIBcdTXZRIgL7Pv3wR2ilmoQiLdywjsTUlJk03YhLExqBV
+O6xPC0uvV9nKlN7fGy8LjeStdgMHNeJrMxgku4Tcs+RTVgEZgU4+BvF/pbvpEgbP
+VhQa5qPPPYungxgi8Zfrme+SLRAfLd7n7mO1lRlYsLty4FVc6eTi3JevEklMpPE/
+Iy3+VxVzPR6gJtUItoL1YG/NkGa5IzwPtux7KGmhgpjHSgFtD2Ly32pchzE5Nptu
+x6sblgz7vYbfRwa4+Sx0d2macV4UbE4QfStZPLgY/d5T8GVSDjHWtXqzhPbNmfi+
+/b3OqNA3Jpohto6F76v9FqG81zerui0t3VInU+QfunjcLzwUq69Do8iQJHwEx19E
+547qg5WMPEOhyoJ9Y9yYoAVhNJYw/ICKUVKdIvu1Nf2B3tDNOmcmJ/nyyHsrRVvE
+h0FNEHV2mk4ey3/Z0+wO
+=cWEk
+-----END PGP SIGNATURE-----
+
+--lZZ4ablUVnt2XgAh--
