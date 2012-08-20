@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab2HTELZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:11:25 -0400
+	id S1755172Ab2HTELl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:11:41 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755128Ab2HTD7a (ORCPT
+	with ESMTP id S1755099Ab2HTD7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:30 -0400
+	Sun, 19 Aug 2012 23:59:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 01/46] s390/compat: fix compat wrappers for process_vm system calls
-Date: Sun, 19 Aug 2012 20:58:37 -0700
-Message-Id: <20120820035832.462721447@linuxfoundation.org>
+        Tatyana Brokhman <tlinder@codeaurora.org>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 31/32] usb: gadget: u_ether: fix kworker 100% CPU issue with still used interfaces in eth_stop
+Date: Sun, 19 Aug 2012 20:57:27 -0700
+Message-Id: <20120820035652.193779682@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
-In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
-References: <20120820035832.274275502@linuxfoundation.org>
+In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
+References: <20120820035647.862247088@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-commit 82aabdb6f1eb61e0034ec23901480f5dd23db7c4 upstream.
+commit b1b552a69b8805e7e338074a9e8b670b4a795218 upstream.
 
-The compat wrappers incorrectly called the non compat versions of
-the system process_vm system calls.
+This patch fixes an issue introduced by patch:
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+    72c973d usb: gadget: add usb_endpoint_descriptor to struct usb_ep
+
+Without this patch we see a kworker taking 100% CPU, after this sequence:
+
+- Connect gadget to a windows host
+- load g_ether
+- ifconfig up <ip>; ifconfig down; ifconfig up
+- ping <windows host>
+
+The "ifconfig down" results in calling eth_stop(), which will call
+usb_ep_disable() and, if the carrier is still ok, usb_ep_enable():
+
+         usb_ep_disable(link->in_ep);
+         usb_ep_disable(link->out_ep);
+         if (netif_carrier_ok(net)) {
+                 usb_ep_enable(link->in_ep);
+                 usb_ep_enable(link->out_ep);
+         }
+
+The ep should stay enabled, but will not, as ep_disable set the desc
+pointer to NULL, therefore the subsequent ep_enable will fail. This leads
+to permanent rescheduling of the eth_work() worker as usb_ep_queue()
+(called by the worker) will fail due to the unconfigured endpoint.
+
+We fix this issue by saving the ep descriptors and re-assign them before
+usb_ep_enable().
+
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/compat_wrapper.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/u_ether.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/s390/kernel/compat_wrapper.S
-+++ b/arch/s390/kernel/compat_wrapper.S
-@@ -1636,7 +1636,7 @@ ENTRY(compat_sys_process_vm_readv_wrappe
- 	llgfr	%r6,%r6			# unsigned long
- 	llgf	%r0,164(%r15)		# unsigned long
- 	stg	%r0,160(%r15)
--	jg	sys_process_vm_readv
-+	jg	compat_sys_process_vm_readv
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -669,6 +669,8 @@ static int eth_stop(struct net_device *n
+ 	spin_lock_irqsave(&dev->lock, flags);
+ 	if (dev->port_usb) {
+ 		struct gether	*link = dev->port_usb;
++		const struct usb_endpoint_descriptor *in;
++		const struct usb_endpoint_descriptor *out;
  
- ENTRY(compat_sys_process_vm_writev_wrapper)
- 	lgfr	%r2,%r2			# compat_pid_t
-@@ -1646,4 +1646,4 @@ ENTRY(compat_sys_process_vm_writev_wrapp
- 	llgfr	%r6,%r6			# unsigned long
- 	llgf	%r0,164(%r15)		# unsigned long
- 	stg	%r0,160(%r15)
--	jg	sys_process_vm_writev
-+	jg	compat_sys_process_vm_writev
+ 		if (link->close)
+ 			link->close(link);
+@@ -682,10 +684,14 @@ static int eth_stop(struct net_device *n
+ 		 * their own pace; the network stack can handle old packets.
+ 		 * For the moment we leave this here, since it works.
+ 		 */
++		in = link->in_ep->desc;
++		out = link->out_ep->desc;
+ 		usb_ep_disable(link->in_ep);
+ 		usb_ep_disable(link->out_ep);
+ 		if (netif_carrier_ok(net)) {
+ 			DBG(dev, "host still using in/out endpoints\n");
++			link->in_ep->desc = in;
++			link->out_ep->desc = out;
+ 			usb_ep_enable(link->in_ep);
+ 			usb_ep_enable(link->out_ep);
+ 		}
 
 
