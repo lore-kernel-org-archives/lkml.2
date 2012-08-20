@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab2HTEKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:10:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
+	id S1755201Ab2HTD7m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:59:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39891 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab2HTD7q (ORCPT
+	with ESMTP id S1755008Ab2HTD7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:46 -0400
+	Sun, 19 Aug 2012 23:59:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zach Brown <zab@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 06/46] fuse: verify all ioctl retry iov elements
-Date: Sun, 19 Aug 2012 20:58:42 -0700
-Message-Id: <20120820035833.146006093@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 02/46] s390/compat: fix mmap compat system calls
+Date: Sun, 19 Aug 2012 20:58:38 -0700
+Message-Id: <20120820035832.598136284@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -29,42 +30,52 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Zach Brown <zab@redhat.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit fb6ccff667712c46b4501b920ea73a326e49626a upstream.
+commit e85871218513c54f7dfdb6009043cb638f2fecbe upstream.
 
-Commit 7572777eef78ebdee1ecb7c258c0ef94d35bad16 attempted to verify that
-the total iovec from the client doesn't overflow iov_length() but it
-only checked the first element.  The iovec could still overflow by
-starting with a small element.  The obvious fix is to check all the
-elements.
+The native 31 bit and the compat behaviour for the mmap system calls differ:
 
-The overflow case doesn't look dangerous to the kernel as the copy is
-limited by the length after the overflow.  This fix restores the
-intention of returning an error instead of successfully copying less
-than the iovec represented.
+In native 31 bit mode the passed in address for the mmap system call will be
+unmodified passed to sys_mmap_pgoff().
+In compat mode however the passed in address will be modified with
+compat_ptr() which masks out the most significant bit.
 
-I found this by code inspection.  I built it but don't have a test case.
-I'm cc:ing stable because the initial commit did as well.
+The result is that in native 31 bit mode each mmap request (with MAP_FIXED)
+will fail where the most significat bit is set, while in compat mode it
+may succeed.
 
-Signed-off-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+This odd behaviour was introduced with d3815898 "[S390] mmap: add missing
+compat_ptr conversion to both mmap compat syscalls".
+
+To restore a consistent behaviour accross native and compat mode this
+patch functionally reverts the above mentioned commit.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/kernel/compat_linux.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1700,7 +1700,7 @@ static int fuse_verify_ioctl_iov(struct
- 	size_t n;
- 	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
+--- a/arch/s390/kernel/compat_linux.c
++++ b/arch/s390/kernel/compat_linux.c
+@@ -622,7 +622,6 @@ asmlinkage unsigned long old32_mmap(stru
+ 		return -EFAULT;
+ 	if (a.offset & ~PAGE_MASK)
+ 		return -EINVAL;
+-	a.addr = (unsigned long) compat_ptr(a.addr);
+ 	return sys_mmap_pgoff(a.addr, a.len, a.prot, a.flags, a.fd,
+ 			      a.offset >> PAGE_SHIFT);
+ }
+@@ -633,7 +632,6 @@ asmlinkage long sys32_mmap2(struct mmap_
  
--	for (n = 0; n < count; n++) {
-+	for (n = 0; n < count; n++, iov++) {
- 		if (iov->iov_len > (size_t) max)
- 			return -ENOMEM;
- 		max -= iov->iov_len;
+ 	if (copy_from_user(&a, arg, sizeof(a)))
+ 		return -EFAULT;
+-	a.addr = (unsigned long) compat_ptr(a.addr);
+ 	return sys_mmap_pgoff(a.addr, a.len, a.prot, a.flags, a.fd, a.offset);
+ }
+ 
 
 
