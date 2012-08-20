@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab2HTR3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 13:29:47 -0400
-Received: from mx.meyering.net ([88.168.87.75]:44788 "EHLO hx.meyering.net"
+	id S1755448Ab2HTR3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 13:29:44 -0400
+Received: from mx.meyering.net ([88.168.87.75]:44784 "EHLO hx.meyering.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753889Ab2HTR3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 13:29:30 -0400
-X-Greylist: delayed 1926 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 13:29:30 EDT
+	id S1751692Ab2HTR3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 13:29:13 -0400
+X-Greylist: delayed 1999 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 13:29:12 EDT
 From: Jim Meyering <jim@meyering.net>
 To: linux-kernel@vger.kernel.org
-Cc: Jim Meyering <meyering@redhat.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org
-Subject: [PATCH] cifs: remove misleading strncpy: each name has length < 16
-Date: Mon, 20 Aug 2012 18:55:24 +0200
-Message-Id: <1345481724-30108-6-git-send-email-jim@meyering.net>
+Subject: a few strncpy-related patches
+Date: Mon, 20 Aug 2012 18:55:19 +0200
+Message-Id: <1345481724-30108-1-git-send-email-jim@meyering.net>
 X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1345481724-30108-1-git-send-email-jim@meyering.net>
-References: <1345481724-30108-1-git-send-email-jim@meyering.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Meyering <meyering@redhat.com>
+I've seen a few too many cases of strncpy misuse.
+Looking through linux sources, I spotted/fixed these:
 
-Each of the protocols[i].name strings (statically declared above)
-has length less than 16, so this use of strncpy is misleading:
-  strncpy(pSMB->DialectsArray+count, protocols[i].name, 16);
-Besides, if a new name were added with length N >= 16, the existing
-strncpy-using code would be buggy, creating a ->DialectsArray buffer
-containing N-16+1 unset bytes where the NUL terminator should have
-been.  Instead, traverse the name only once go get its length,
-use a BUG_ON assertion to enforce the length restriction
-and use memcpy to perform the copy.
+[PATCH] ACPI: remove unwarranted use of strncpy
+[PATCH] fs/9p: avoid debug OOPS when reading a long symlink
+[PATCH] kmemleak: avoid buffer overrun: NUL-terminate strncpy-copied
+[PATCH] bfa: avoid buffer overrun for 12-byte model name
+[PATCH] cifs: remove misleading strncpy: each name has length < 16
 
-Signed-off-by: Jim Meyering <meyering@redhat.com>
----
- fs/cifs/cifssmb.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index 074923c..16a9018 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -441,8 +441,10 @@ CIFSSMBNegotiate(const unsigned int xid, struct cifs_ses *ses)
-
- 	count = 0;
- 	for (i = 0; i < CIFS_NUM_PROT; i++) {
--		strncpy(pSMB->DialectsArray+count, protocols[i].name, 16);
--		count += strlen(protocols[i].name) + 1;
-+		size_t len = strlen(protocols[i].name);
-+		BUG_ON(len >= 16);
-+		memcpy(pSMB->DialectsArray+count, protocols[i].name, len + 1);
-+		count += len + 1;
- 		/* null at end of source and target buffers anyway */
- 	}
- 	inc_rfc1001_len(pSMB, count);
--- 
-1.7.12
-
+ drivers/acpi/sysfs.c       |    3 +--
+ drivers/scsi/bfa/bfa_fcs.c |    1 +
+ fs/9p/vfs_inode.c          |    8 ++++----
+ fs/cifs/cifssmb.c          |    6 ++++--
+ mm/kmemleak.c              |    1 +
+ 5 files changed, 11 insertions(+), 8 deletions(-)
