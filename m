@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab2HTPbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:31:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53963 "EHLO
+	id S932098Ab2HTPbc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:31:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53991 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757119Ab2HTPbS (ORCPT
+	with ESMTP id S932076Ab2HTPb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:31:18 -0400
+	Mon, 20 Aug 2012 11:31:28 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
         Matthew Garrett <mjg59@srcf.ucam.org>, David Airlie <airlied@linux.ie>
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 3/7] vga_switcheroo: Add notifier call chain for switcheroo events
-Date: Mon, 20 Aug 2012 10:31:00 -0500
-Message-Id: <1345476664-22066-4-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 7/7] drm/pci: Defer initialization of secondary graphics devices until switcheroo is ready
+Date: Mon, 20 Aug 2012 10:31:04 -0500
+Message-Id: <1345476664-22066-8-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345476664-22066-1-git-send-email-seth.forshee@canonical.com>
 References: <20120806045150.GA23652@thinkpad-t410>
@@ -23,148 +23,246 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DRM needs to be notified of client and handler registration in order to
-defer initialization of the secondary GPU until the EDID can be read
-from the LVDS panel. To support this add a notifier call chain to
-vga_switcheroo for subscribing to switcheroo events. Events are
-generated for registration and unregistration of handlers and clients.
+Deferring initiailzation of the secondary GPU until switcheroo is ready
+will allow successfully reading the EDID in systems which support muxing
+the DDC seperately from the display.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/gpu/vga/vga_switcheroo.c |   34 ++++++++++++++++++++++++++++++++++
- include/linux/vga_switcheroo.h   |   14 ++++++++++++++
- 2 files changed, 48 insertions(+)
+ drivers/gpu/drm/drm_drv.c |    3 +
+ drivers/gpu/drm/drm_pci.c |  141 +++++++++++++++++++++++++++++++++++++++------
+ include/drm/drmP.h        |    2 +
+ 3 files changed, 129 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
-index e53f67d..d5cd274 100644
---- a/drivers/gpu/vga/vga_switcheroo.c
-+++ b/drivers/gpu/vga/vga_switcheroo.c
-@@ -24,6 +24,7 @@
- #include <linux/fs.h>
- #include <linux/debugfs.h>
- #include <linux/fb.h>
-+#include <linux/notifier.h>
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+index 9238de4..124fd8a 100644
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -276,6 +276,8 @@ static int __init drm_core_init(void)
+ 		goto err_p3;
+ 	}
  
- #include <linux/pci.h>
- #include <linux/vga_switcheroo.h>
-@@ -70,6 +71,28 @@ static struct vgasr_priv vgasr_priv = {
- 	.clients = LIST_HEAD_INIT(vgasr_priv.clients),
++	drm_pci_module_init();
++
+ 	DRM_INFO("Initialized %s %d.%d.%d %s\n",
+ 		 CORE_NAME, CORE_MAJOR, CORE_MINOR, CORE_PATCHLEVEL, CORE_DATE);
+ 	return 0;
+@@ -291,6 +293,7 @@ err_p1:
+ 
+ static void __exit drm_core_exit(void)
+ {
++	drm_pci_module_exit();
+ 	remove_proc_entry("dri", NULL);
+ 	debugfs_remove(drm_debugfs_root);
+ 	drm_sysfs_destroy();
+diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
+index 4896c96..9da0cd2 100644
+--- a/drivers/gpu/drm/drm_pci.c
++++ b/drivers/gpu/drm/drm_pci.c
+@@ -40,6 +40,9 @@
+ #include <linux/slab.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/export.h>
++#include <linux/notifier.h>
++#include <linux/vgaarb.h>
++#include <linux/vga_switcheroo.h>
+ #include "drmP.h"
+ 
+ /**********************************************************************/
+@@ -297,19 +300,8 @@ static struct drm_bus drm_pci_bus = {
+ 	.agp_init = drm_pci_agp_init,
  };
  
-+static BLOCKING_NOTIFIER_HEAD(vga_switcheroo_notifier_list);
-+
-+int vga_switcheroo_register_notifier(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_register(&vga_switcheroo_notifier_list,
-+						nb);
-+}
-+EXPORT_SYMBOL(vga_switcheroo_register_notifier);
-+
-+int vga_switcheroo_unregister_notifier(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_unregister(&vga_switcheroo_notifier_list,
-+						  nb);
-+}
-+EXPORT_SYMBOL(vga_switcheroo_unregister_notifier);
-+
-+static int vga_switcheroo_notifier_call_chain(enum vga_switcheroo_event event)
-+{
-+	return blocking_notifier_call_chain(&vga_switcheroo_notifier_list,
-+					    event, NULL);
-+}
-+
- static bool vga_switcheroo_ready(void)
+-/**
+- * Register.
+- *
+- * \param pdev - PCI device structure
+- * \param ent entry from the PCI ID table with device type flags
+- * \return zero on success or a negative number on failure.
+- *
+- * Attempt to gets inter module "drm" information. If we are first
+- * then register the character device and inter module information.
+- * Try and register, if we fail to register, backout previous work.
+- */
+-int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
+-		    struct drm_driver *driver)
++int __drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
++		      struct drm_driver *driver)
  {
- 	/* we're ready if we get two clients + handler */
-@@ -113,10 +136,18 @@ int vga_switcheroo_register_handler(struct vga_switcheroo_handler *handler)
- 		vga_switcheroo_enable();
- 	}
- 	mutex_unlock(&vgasr_mutex);
-+
-+	vga_switcheroo_notifier_call_chain(VGA_SWITCHEROO_HANDLER_REGISTERED);
+ 	struct drm_device *dev;
+ 	int ret;
+@@ -334,8 +326,6 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
+ 	dev->hose = pdev->sysdata;
+ #endif
+ 
+-	mutex_lock(&drm_global_mutex);
+-
+ 	if ((ret = drm_fill_in_dev(dev, ent, driver))) {
+ 		printk(KERN_ERR "DRM: Fill_in_dev failed.\n");
+ 		goto err_g2;
+@@ -371,7 +361,6 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
+ 		 driver->name, driver->major, driver->minor, driver->patchlevel,
+ 		 driver->date, pci_name(pdev), dev->primary->index);
+ 
+-	mutex_unlock(&drm_global_mutex);
  	return 0;
- }
- EXPORT_SYMBOL(vga_switcheroo_register_handler);
  
-+bool vga_switcheroo_handler_registered(void)
-+{
-+	return !!vgasr_priv.handler;
-+}
-+EXPORT_SYMBOL(vga_switcheroo_handler_registered);
+ err_g4:
+@@ -386,10 +375,116 @@ err_g1:
+ 	mutex_unlock(&drm_global_mutex);
+ 	return ret;
+ }
 +
- void vga_switcheroo_unregister_handler(void)
- {
- 	mutex_lock(&vgasr_mutex);
-@@ -127,6 +158,7 @@ void vga_switcheroo_unregister_handler(void)
- 		vgasr_priv.active = false;
- 	}
- 	mutex_unlock(&vgasr_mutex);
-+	vga_switcheroo_notifier_call_chain(VGA_SWITCHEROO_HANDLER_UNREGISTERED);
- }
- EXPORT_SYMBOL(vga_switcheroo_unregister_handler);
- 
-@@ -156,6 +188,7 @@ static int register_client(struct pci_dev *pdev,
- 		vga_switcheroo_enable();
- 	}
- 	mutex_unlock(&vgasr_mutex);
-+	vga_switcheroo_notifier_call_chain(VGA_SWITCHEROO_CLIENT_REGISTERED);
- 	return 0;
- }
- 
-@@ -250,6 +283,7 @@ void vga_switcheroo_unregister_client(struct pci_dev *pdev)
- 		vgasr_priv.active = false;
- 	}
- 	mutex_unlock(&vgasr_mutex);
-+	vga_switcheroo_notifier_call_chain(VGA_SWITCHEROO_CLIENT_UNREGISTERED);
- }
- EXPORT_SYMBOL(vga_switcheroo_unregister_client);
- 
-diff --git a/include/linux/vga_switcheroo.h b/include/linux/vga_switcheroo.h
-index e361858..c3d7c6f 100644
---- a/include/linux/vga_switcheroo.h
-+++ b/include/linux/vga_switcheroo.h
-@@ -11,6 +11,7 @@
- #define _LINUX_VGA_SWITCHEROO_H_
- 
- #include <linux/fb.h>
-+#include <linux/notifier.h>
- 
- struct pci_dev;
- 
-@@ -28,6 +29,13 @@ enum vga_switcheroo_client_id {
- 	VGA_SWITCHEROO_MAX_CLIENTS,
- };
- 
-+enum vga_switcheroo_event {
-+	VGA_SWITCHEROO_CLIENT_REGISTERED,
-+	VGA_SWITCHEROO_CLIENT_UNREGISTERED,
-+	VGA_SWITCHEROO_HANDLER_REGISTERED,
-+	VGA_SWITCHEROO_HANDLER_UNREGISTERED,
++struct deferred_init_data {
++	struct list_head list;
++	struct pci_dev *pdev;
++	const struct pci_device_id *ent;
++	struct drm_driver *driver;
 +};
 +
- struct vga_switcheroo_handler {
- 	int (*switch_ddc)(enum vga_switcheroo_client_id id);
- 	int (*switchto)(enum vga_switcheroo_client_id id);
-@@ -44,6 +52,9 @@ struct vga_switcheroo_client_ops {
- };
++static LIST_HEAD(deferred_init_list);
++
++static void drm_deferred_init_work_fn(struct work_struct *work)
++{
++	struct deferred_init_data *di_data, *temp;
++
++	mutex_lock(&drm_global_mutex);
++
++	if (!vga_switcheroo_handler_registered() ||
++	    !vga_switcheroo_get_active_client()) {
++		mutex_unlock(&drm_global_mutex);
++		return;
++	}
++
++	list_for_each_entry_safe(di_data, temp, &deferred_init_list, list) {
++		if (__drm_get_pci_dev(di_data->pdev, di_data->ent,
++				      di_data->driver))
++			DRM_ERROR("pci device initialization failed\n");
++		list_del(&di_data->list);
++		kfree(di_data);
++	}
++	mutex_unlock(&drm_global_mutex);
++}
++static DECLARE_WORK(deferred_init_work, drm_deferred_init_work_fn);
++
++static int drm_switcheroo_notifier_fn(struct notifier_block *nb,
++				      unsigned long val, void *unused)
++{
++	if (val == VGA_SWITCHEROO_CLIENT_REGISTERED ||
++	    val == VGA_SWITCHEROO_HANDLER_REGISTERED)
++		queue_work(system_nrt_wq, &deferred_init_work);
++	return NOTIFY_OK;
++}
++static struct notifier_block drm_switcheroo_notifier = {
++	.notifier_call = drm_switcheroo_notifier_fn,
++};
++
++/**
++ * Register.
++ *
++ * \param pdev - PCI device structure
++ * \param ent entry from the PCI ID table with device type flags
++ * \return zero on success or a negative number on failure.
++ *
++ * Attempt to gets inter module "drm" information. If we are first
++ * then register the character device and inter module information.
++ * Try and register, if we fail to register, backout previous work.
++ */
++int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
++		    struct drm_driver *driver)
++{
++	int ret = 0;
++
++	mutex_lock(&drm_global_mutex);
++
++	/*
++	 * For secondary graphics devices shouldn't be initialized
++	 * until the handler and primary graphics device have been
++	 * registered with vga_switcheroo.
++	 *
++	 * FIXME: Is vga_default_device() reliable enough for this
++	 * purpose?
++	 *
++	 * FIXME: If vga_switcheroo is disabled secondary devices
++	 * never gets initialized. Is this okay? Maybe it is, since
++	 * we can't switch to the secondary GPU anyway.
++	 */
++	if (vga_default_device() == pdev ||
++	    (vga_switcheroo_handler_registered() &&
++	     vga_switcheroo_get_active_client())) {
++		ret = __drm_get_pci_dev(pdev, ent, driver);
++	} else {
++		struct deferred_init_data *di_data =
++			kmalloc(sizeof(*di_data), GFP_KERNEL);
++		if (!di_data) {
++			ret = -ENOMEM;
++		} else {
++			di_data->pdev = pdev;
++			di_data->ent = ent;
++			di_data->driver = driver;
++			list_add_tail(&di_data->list, &deferred_init_list);
++		}
++	}
++
++	return ret;
++}
+ EXPORT_SYMBOL(drm_get_pci_dev);
  
- #if defined(CONFIG_VGA_SWITCHEROO)
-+int vga_switcheroo_register_notifier(struct notifier_block *nb);
-+int vga_switcheroo_unregister_notifier(struct notifier_block *nb);
-+bool vga_switcheroo_handler_registered(void);
- void vga_switcheroo_unregister_client(struct pci_dev *dev);
- int vga_switcheroo_register_client(struct pci_dev *dev,
- 				   const struct vga_switcheroo_client_ops *ops);
-@@ -66,6 +77,9 @@ int vga_switcheroo_get_client_state(struct pci_dev *dev);
+ void drm_put_pci_dev(struct drm_device *dev)
+ {
++	struct deferred_init_data *di_data;
++
++	mutex_lock(&drm_global_mutex);
++	list_for_each_entry(di_data, &deferred_init_list, list) {
++		if (di_data->pdev == dev->pdev) {
++			list_del(&di_data->list);
++			kfree(di_data);
++			break;
++		}
++	}
++	mutex_unlock(&drm_global_mutex);
++
+ 	drm_put_dev(dev);
+ }
+ EXPORT_SYMBOL(drm_put_pci_dev);
+@@ -466,7 +561,7 @@ void drm_pci_exit(struct drm_driver *driver, struct pci_driver *pdriver)
+ 		pci_unregister_driver(pdriver);
+ 	} else {
+ 		list_for_each_entry_safe(dev, tmp, &driver->device_list, driver_item)
+-			drm_put_dev(dev);
++			drm_put_pci_dev(dev);
+ 	}
+ 	DRM_INFO("Module unloaded\n");
+ }
+@@ -520,3 +615,15 @@ int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
+ 	return 0;
+ }
+ EXPORT_SYMBOL(drm_pcie_get_speed_cap_mask);
++
++int drm_pci_module_init(void)
++{
++	return vga_switcheroo_register_notifier(&drm_switcheroo_notifier);
++}
++EXPORT_SYMBOL(drm_pci_module_init);
++
++void drm_pci_module_exit(void)
++{
++	vga_switcheroo_unregister_notifier(&drm_switcheroo_notifier);
++}
++EXPORT_SYMBOL(drm_pci_module_exit);
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index eb99e96..0e9401f 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1749,6 +1749,8 @@ extern int drm_get_pci_dev(struct pci_dev *pdev,
+ 			   const struct pci_device_id *ent,
+ 			   struct drm_driver *driver);
+ extern void drm_put_pci_dev(struct drm_device *dev);
++extern int drm_pci_module_init(void);
++extern void drm_pci_module_exit(void);
  
- #else
- 
-+static inline int vga_switcheroo_register_notifier(struct notifier_block *nb) { return 0; }
-+static inline int vga_switcheroo_unregister_notifier(struct notifier_block *nb) { return 0; }
-+static inline bool vga_switcheroo_handler_registered(void) { return false; }
- static inline void vga_switcheroo_unregister_client(struct pci_dev *dev) {}
- static inline int vga_switcheroo_register_client(struct pci_dev *dev,
- 		const struct vga_switcheroo_client_ops *ops) { return 0; }
+ #define DRM_PCIE_SPEED_25 1
+ #define DRM_PCIE_SPEED_50 2
 -- 
 1.7.9.5
 
