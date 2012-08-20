@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab2HTN5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 09:57:00 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:27971
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756205Ab2HTN43 (ORCPT
+	id S1756037Ab2HTN40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:56:26 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:13017
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751820Ab2HTN4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 09:56:29 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Mon, 20 Aug 2012 09:56:15 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah11b5h)
-X-WSS-ID: 0M9241O-01-3DK-02
+X-WSS-ID: 0M9241J-02-F0P-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 08/19] x86, io_apic: Convert setup_ioapic_entry to function pointer
-Date: Mon, 20 Aug 2012 15:55:54 +0200
-Message-ID: <1345470965-24410-9-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 06/19] x86, msi: Use IRQ remapping specific setup_msi_irqs routine
+Date: Mon, 20 Aug 2012 15:55:52 +0200
+Message-ID: <1345470965-24410-7-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
 References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
@@ -30,119 +30,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pointer is changed to a different function when IRQ
-remapping is enabled.
+Use seperate routines to setup MSI IRQs for both
+irq_remapping_enabled cases.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/io_apic.h  |    5 +++++
- arch/x86/include/asm/x86_init.h |    5 +++++
- arch/x86/kernel/apic/io_apic.c  |   14 +++++---------
- arch/x86/kernel/x86_init.c      |    1 +
- drivers/iommu/irq_remapping.c   |    1 +
- 5 files changed, 17 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |   12 -------
+ arch/x86/include/asm/pci.h           |    2 ++
+ arch/x86/kernel/apic/io_apic.c       |   26 ++--------------
+ drivers/iommu/irq_remapping.c        |   57 ++++++++++++++++++++++++++++++++--
+ 4 files changed, 59 insertions(+), 38 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index a744cbb..71f5f08 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -149,6 +149,10 @@ extern int io_apic_set_pci_routing(struct device *dev, int irq,
- void setup_IO_APIC_irq_extra(u32 gsi);
- extern void ioapic_insert_resources(void);
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index 5fb9bbb..0ee1e88 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -47,9 +47,6 @@ extern void free_remapped_irq(int irq);
+ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 				     unsigned int irq, unsigned int dest,
+ 				     struct msi_msg *msg, u8 hpet_id);
+-extern int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec);
+-extern int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-				  int index, int sub_handle);
+ extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
  
-+extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
-+				     unsigned int, int,
-+				     struct io_apic_irq_attr *);
-+
- int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
- 
- extern int save_ioapic_entries(void);
-@@ -232,6 +236,7 @@ static inline void disable_ioapic_support(void) { }
- #define native_disable_io_apic		NULL
- #define native_io_apic_print_entries	NULL
- #define native_ioapic_set_affinity	NULL
-+#define native_setup_ioapic_entry	NULL
- #endif
- 
- #endif /* _ASM_X86_IO_APIC_H */
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index f5f712b..bc13022 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -189,6 +189,8 @@ struct x86_msi_ops {
- 	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
- };
- 
-+struct IO_APIC_route_entry;
-+struct io_apic_irq_attr;
- struct irq_data;
- struct cpumask;
- 
-@@ -202,6 +204,9 @@ struct x86_io_apic_ops {
- 	int		(*set_affinity)(struct irq_data *data,
- 					const struct cpumask *mask,
- 					bool force);
-+	int		(*setup_entry)(int irq, struct IO_APIC_route_entry *entry,
-+				       unsigned int destination, int vector,
-+				       struct io_apic_irq_attr *attr);
- };
- 
- extern struct x86_init_ops x86_init;
+ #else  /* CONFIG_IRQ_REMAP */
+@@ -83,15 +80,6 @@ static inline void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 					    struct msi_msg *msg, u8 hpet_id)
+ {
+ }
+-static inline int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+-{
+-	return -ENODEV;
+-}
+-static inline int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-					 int index, int sub_handle)
+-{
+-	return -ENODEV;
+-}
+ static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+ {
+ 	return -ENODEV;
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index df75d07..1470b53 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -121,9 +121,11 @@ static inline void x86_restore_msi_irqs(struct pci_dev *dev, int irq)
+ #define arch_teardown_msi_irq x86_teardown_msi_irq
+ #define arch_restore_msi_irqs x86_restore_msi_irqs
+ /* implemented in arch/x86/kernel/apic/io_apic. */
++struct msi_desc;
+ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
+ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev, int irq);
++int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq);
+ /* default to the implementation in drivers/lib/msi.c */
+ #define HAVE_DEFAULT_MSI_TEARDOWN_IRQS
+ #define HAVE_DEFAULT_MSI_RESTORE_IRQS
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index fb91d1a..5d372be 100644
+index 3d58775..811e930 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1319,14 +1319,10 @@ static void ioapic_register_intr(unsigned int irq, struct irq_cfg *cfg,
- 				      fasteoi ? "fasteoi" : "edge");
- }
- 
--static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
--			       unsigned int destination, int vector,
--			       struct io_apic_irq_attr *attr)
-+int native_setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
-+			      unsigned int destination, int vector,
-+			      struct io_apic_irq_attr *attr)
- {
--	if (irq_remapping_enabled)
--		return setup_ioapic_remapped_entry(irq, entry, destination,
--						   vector, attr);
--
- 	memset(entry, 0, sizeof(*entry));
- 
- 	entry->delivery_mode = apic->irq_delivery_mode;
-@@ -1374,8 +1370,8 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
- 		    attr->ioapic, mpc_ioapic_id(attr->ioapic), attr->ioapic_pin,
- 		    cfg->vector, irq, attr->trigger, attr->polarity, dest);
- 
--	if (setup_ioapic_entry(irq, &entry, dest, cfg->vector, attr)) {
--		pr_warn("Failed to setup ioapic entry for ioapic %d, pin %d\n",
-+	if (x86_io_apic_ops.setup_entry(irq, &entry, dest, cfg->vector, attr)) {
-+		pr_warn("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
- 			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
- 		__clear_irq_vector(irq, cfg);
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 8806d0b..3cd6bf7 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -129,4 +129,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.disable		= native_disable_io_apic,
- 	.print_entries		= native_io_apic_print_entries,
- 	.set_affinity		= native_ioapic_set_affinity,
-+	.setup_entry		= native_setup_ioapic_entry,
+@@ -3135,7 +3135,7 @@ static struct irq_chip msi_chip = {
+ 	.irq_retrigger		= ioapic_retrigger_irq,
  };
+ 
+-static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
++int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
+ {
+ 	struct irq_chip *chip = &msi_chip;
+ 	struct msi_msg msg;
+@@ -3162,9 +3162,9 @@ static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
+ 
+ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ {
+-	int node, ret, sub_handle, index = 0;
+ 	unsigned int irq, irq_want;
+ 	struct msi_desc *msidesc;
++	int node, ret;
+ 
+ 	/* x86 doesn't support multiple MSI yet */
+ 	if (type == PCI_CAP_ID_MSI && nvec > 1)
+@@ -3172,36 +3172,16 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 
+ 	node = dev_to_node(&dev->dev);
+ 	irq_want = nr_irqs_gsi;
+-	sub_handle = 0;
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		irq = create_irq_nr(irq_want, node);
+ 		if (irq == 0)
+ 			return -1;
++
+ 		irq_want = irq + 1;
+-		if (!irq_remapping_enabled)
+-			goto no_ir;
+ 
+-		if (!sub_handle) {
+-			/*
+-			 * allocate the consecutive block of IRTE's
+-			 * for 'nvec'
+-			 */
+-			index = msi_alloc_remapped_irq(dev, irq, nvec);
+-			if (index < 0) {
+-				ret = index;
+-				goto error;
+-			}
+-		} else {
+-			ret = msi_setup_remapped_irq(dev, irq, index,
+-						     sub_handle);
+-			if (ret < 0)
+-				goto error;
+-		}
+-no_ir:
+ 		ret = setup_msi_irq(dev, msidesc, irq);
+ 		if (ret < 0)
+ 			goto error;
+-		sub_handle++;
+ 	}
+ 	return 0;
+ 
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index ccf87e5..5b28e28 100644
+index f439151..984104b 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -91,6 +91,7 @@ static void __init irq_remapping_modify_x86_ops(void)
+@@ -4,6 +4,8 @@
+ #include <linux/cpumask.h>
+ #include <linux/errno.h>
+ #include <linux/msi.h>
++#include <linux/irq.h>
++#include <linux/pci.h>
+ 
+ #include <asm/hw_irq.h>
+ #include <asm/irq_remapping.h>
+@@ -21,6 +23,10 @@ int no_x2apic_optout;
+ 
+ static struct irq_remap_ops *remap_ops;
+ 
++static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec);
++static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
++				  int index, int sub_handle);
++
+ static void irq_remapping_disable_io_apic(void)
+ {
+ 	/*
+@@ -34,9 +40,54 @@ static void irq_remapping_disable_io_apic(void)
+ 		disconnect_bsp_APIC(0);
+ }
+ 
++static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
++					int nvec, int type)
++{
++	int node, ret, sub_handle, index = 0;
++	struct msi_desc *msidesc;
++	unsigned int irq;
++
++	/* We don't support multiple MSI yet */
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
++	node		= dev_to_node(&dev->dev);
++	irq		= get_nr_irqs_gsi();
++	sub_handle	= 0;
++
++	list_for_each_entry(msidesc, &dev->msi_list, list) {
++
++		irq = create_irq_nr(irq, node);
++		if (irq == 0)
++			return -1;
++
++		if (sub_handle == 0)
++			ret = index = msi_alloc_remapped_irq(dev, irq, nvec);
++		else
++			ret = msi_setup_remapped_irq(dev, irq, index, sub_handle);
++
++		if (ret < 0)
++			goto error;
++
++		ret = setup_msi_irq(dev, msidesc, irq);
++		if (ret < 0)
++			goto error;
++
++		sub_handle += 1;
++		irq        += 1;
++	}
++
++	return 0;
++
++error:
++	destroy_irq(irq);
++	return ret;
++}
++
+ static void __init irq_remapping_modify_x86_ops(void)
  {
  	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
- 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
-+	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
- 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
++	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
  	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
  }
+ 
+@@ -181,7 +232,7 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+ }
+ 
+-int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
++static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+ {
+ 	if (!remap_ops || !remap_ops->msi_alloc_irq)
+ 		return -ENODEV;
+@@ -189,8 +240,8 @@ int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+ 	return remap_ops->msi_alloc_irq(pdev, irq, nvec);
+ }
+ 
+-int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-			   int index, int sub_handle)
++static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
++				  int index, int sub_handle)
+ {
+ 	if (!remap_ops || !remap_ops->msi_setup_irq)
+ 		return -ENODEV;
 -- 
 1.7.9.5
 
