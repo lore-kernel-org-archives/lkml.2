@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab2HTTAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 15:00:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537Ab2HTTAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 15:00:46 -0400
-Date: Mon, 20 Aug 2012 15:00:39 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        Lennart Poettering <lpoetter@redhat.com>
-Subject: Re: [PATCH v6 1/4] xattr: extract simple_xattr code from tmpfs
-Message-ID: <20120820190039.GR25353@redhat.com>
-References: <20120816174453.154143248@napanee.usersys.redhat.com>
- <20120816174453.507922179@napanee.usersys.redhat.com>
- <20120816195831.GF24861@google.com>
- <alpine.LSU.2.00.1208192356580.24824@eggly.anvils>
+	id S1753529Ab2HTTGR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 15:06:17 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51434 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab2HTTGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 15:06:11 -0400
+Date: Mon, 20 Aug 2012 23:06:06 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120820190606.GE27443@moon>
+References: <20120815092116.700948346@openvz.org>
+ <20120815092409.591460800@openvz.org>
+ <87fw7habo4.fsf@skywalker.in.ibm.com>
+ <20120820163338.GN23596@moon>
+ <20120820183225.GB4911@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1208192356580.24824@eggly.anvils>
+In-Reply-To: <20120820183225.GB4911@fieldses.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 12:10:09AM -0700, Hugh Dickins wrote:
-> Yes, it looks nice to me.  I might have preferred more as inlines in
-> the header file to lower the slight init/evict overhead, and I don't
-> see why __simple_xattr_set() isn't using simple_xattr_alloc() in the
-> same way that shmem_xattr_set() used shmem_xattr_alloc().  But none
-> of that matters:
+On Mon, Aug 20, 2012 at 02:32:25PM -0400, J. Bruce Fields wrote:
+> On Mon, Aug 20, 2012 at 08:33:38PM +0400, Cyrill Gorcunov wrote:
+> > On Mon, Aug 20, 2012 at 07:49:23PM +0530, Aneesh Kumar K.V wrote:
+> > > Cyrill Gorcunov <gorcunov@openvz.org> writes:
+> > > 
+> > > > To provide fsnotify object inodes being watched without
+> > > > binding to alphabetical path we need to encode them with
+> > > > exportfs help. This patch adds a helper which operates
+> > > > with plain inodes directly.
+> > > 
+> > > doesn't name_to_handle_at()  work for you ? It also allows to get a file
+> > > handle using file descriptor.
+> > 
+> > Hi, sorry for dealy. Well, the last idea is to get rid of this helper,
+> > I've sent out an updated version where ino+dev is only printed.
 > 
-> Acked-by: Hugh Dickins <hughd@google.com>
+> I don't understand how ino and dev are useful to you, though, if you're
+> still hoping to be able to look up inodes using this information later
+> on.
 
-I can submit additional patches to fix these. What functions you want
-inlined?
+Hi Bruce, I believe having ino+dev is better than nothing. Otherwise we
+simply have no clue which targets are bound to inotify mark. Sometime
+(!) we can try to generate fhandle in userspace from this ino+dev bundle
+and then open the target file.
 
-On why __simple_xattr_set() is not using simple_xattr_alloc(), there's
-no reason to be that way, I missed it.
-
-Thanks for reviewing!
-
--- 
-Aristeu
-
+	Cyrill
