@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab2HTQls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:41:48 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:34554 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752392Ab2HTQlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:41:45 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: Mattias Wallin <mattias.wallin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Axel Lin <axel.lin@gmail.com>
-Subject: [PATCH v2] regulator: ab8500: provide per-regulator shift
-Date: Mon, 20 Aug 2012 18:41:35 +0200
-Message-ID: <1345480895-18278-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757397Ab2HTQme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:42:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54361 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392Ab2HTQm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 12:42:29 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/5] Revert "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages"
+Date: Mon, 20 Aug 2012 17:36:30 +0100
+Message-Id: <1345480594-27032-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1345480594-27032-1-git-send-email-mgorman@suse.de>
+References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 
-This encodes the voltage shifts (the number of bits to shift
-the register to get to the selector) into the regulator info.
-We have several new variants of the AB8500 so this varies a
-lot.
+commit [05f144a0: mm: mempolicy: Let vma_merge and vma_split handle
+vma->vm_policy linkages] removed vma->vm_policy updates code but it is
+the purpose of mbind_range(). Now, mbind_range() is virtually a no-op
+and while it does not allow memory corruption it is not the right fix.
+This patch is a revert.
 
-Cc: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+[mgorman@suse.de: Edited changelog]
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/regulator/ab8500.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ mm/mempolicy.c |   41 ++++++++++++++++++++++++-----------------
+ 1 files changed, 24 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 8807166..812611f 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -37,6 +37,7 @@
-  * @voltage_bank: bank to control regulator voltage
-  * @voltage_reg: register to control regulator voltage
-  * @voltage_mask: mask to control regulator voltage
-+ * @voltage_shift: shift to control regulator voltage
-  * @delay: startup/set voltage delay in us
-  */
- struct ab8500_regulator_info {
-@@ -50,6 +51,7 @@ struct ab8500_regulator_info {
- 	u8 voltage_bank;
- 	u8 voltage_reg;
- 	u8 voltage_mask;
-+	u8 voltage_shift;
- 	unsigned int delay;
- };
- 
-@@ -195,17 +197,14 @@ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
- 	}
- 
- 	dev_vdbg(rdev_get_dev(rdev),
--		"%s-get_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
--		" 0x%x\n",
--		info->desc.name, info->voltage_bank, info->voltage_reg,
--		info->voltage_mask, regval);
-+		"%s-get_voltage (bank, reg, mask, shift, value): "
-+		"0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		info->desc.name, info->voltage_bank,
-+		info->voltage_reg, info->voltage_mask,
-+		info->voltage_shift, regval);
- 
--	/* vintcore has a different layout */
- 	val = regval & info->voltage_mask;
--	if (info->desc.id == AB8500_LDO_INTCORE)
--		return val >> 0x3;
--	else
--		return val;
-+	return val >> info->voltage_shift;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index bd92431..22dcf9a 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -607,6 +607,27 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 	return first;
  }
  
- static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
-@@ -221,7 +220,7 @@ static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
++/* Apply policy to a single VMA */
++static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
++{
++	int err = 0;
++	struct mempolicy *old = vma->vm_policy;
++
++	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
++		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
++		 vma->vm_ops, vma->vm_file,
++		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
++
++	if (vma->vm_ops && vma->vm_ops->set_policy)
++		err = vma->vm_ops->set_policy(vma, new);
++	if (!err) {
++		mpol_get(new);
++		vma->vm_policy = new;
++		mpol_put(old);
++	}
++	return err;
++}
++
+ /* Step 2: apply policy to a range and do splits. */
+ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 		       unsigned long end, struct mempolicy *new_pol)
+@@ -655,23 +676,9 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 			if (err)
+ 				goto out;
+ 		}
+-
+-		/*
+-		 * Apply policy to a single VMA. The reference counting of
+-		 * policy for vma_policy linkages has already been handled by
+-		 * vma_merge and split_vma as necessary. If this is a shared
+-		 * policy then ->set_policy will increment the reference count
+-		 * for an sp node.
+-		 */
+-		pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+-			vma->vm_start, vma->vm_end, vma->vm_pgoff,
+-			vma->vm_ops, vma->vm_file,
+-			vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+-		if (vma->vm_ops && vma->vm_ops->set_policy) {
+-			err = vma->vm_ops->set_policy(vma, new_pol);
+-			if (err)
+-				goto out;
+-		}
++		err = policy_vma(vma, new_pol);
++		if (err)
++			goto out;
  	}
  
- 	/* set the registers for the request */
--	regval = (u8)selector;
-+	regval = (u8)selector << info->voltage_shift;
- 	ret = abx500_mask_and_set_register_interruptible(info->dev,
- 			info->voltage_bank, info->voltage_reg,
- 			info->voltage_mask, regval);
-@@ -349,6 +348,7 @@ static struct ab8500_regulator_info
- 		.voltage_bank		= 0x03,
- 		.voltage_reg		= 0x80,
- 		.voltage_mask		= 0x38,
-+		.voltage_shift		= 3,
- 	},
- 
- 	/*
+  out:
 -- 
-1.7.11.3
+1.7.7
 
