@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab2HTEyT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:54:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53968 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566Ab2HTEyR (ORCPT
+	id S1753103Ab2HTE7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:59:09 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44965 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab2HTE7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:54:17 -0400
-Date: Mon, 20 Aug 2012 14:54:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-Id: <20120820145404.f12977568303f4982ce89e8e@canb.auug.org.au>
-In-Reply-To: <20120817115019.GJ2438@linux.vnet.ibm.com>
-References: <20120816131236.13013e1ec18b1f1074f6dc92@canb.auug.org.au>
-	<20120816194651.GK2445@linux.vnet.ibm.com>
-	<20120817105633.0aba80ddf7eb9523e04c264d@canb.auug.org.au>
-	<20120817115019.GJ2438@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__20_Aug_2012_14_54_04_+1000_LYzqDb00YNwulCj1"
+	Mon, 20 Aug 2012 00:59:07 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-0b-5031c41a95bc
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCHSET 0/7] Cleanup hist printing code (v3)
+Date: Mon, 20 Aug 2012 13:52:04 +0900
+Message-Id: <1345438331-20234-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__20_Aug_2012_14_54_04_+1000_LYzqDb00YNwulCj1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Paul,
+This is a cleanup and refactoring patchset for the hist printing code
+by adding hist_period_print functions and hpp_context.  I believe it
+makes the code easy to maintain and to add new functionalities like
+upcoming group viewing and callchain accumulation.
 
-On Fri, 17 Aug 2012 04:50:19 -0700 "Paul E. McKenney" <paulmck@linux.vnet.i=
-bm.com> wrote:
->
-> Does the following help?
+Any comments are welcome, thanks.
+Namhyung
 
-Yes, that fixes the warnings.  Please submit those two patches to the tip
-folks ASAP as I can't build the tip tree without them.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+v2 -> v3:
+ * Rebase to current acme/perf/core
+ * Move fprintf code to ui/stdio/hist.c (Arnaldo)
+ * Add ack from Pekka
 
---Signature=_Mon__20_Aug_2012_14_54_04_+1000_LYzqDb00YNwulCj1
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Namhyung Kim (7):
+  perf hists: Separate out hist print functions
+  perf hists: Refactor some functions
+  perf hists: Introduce hist_period_print functions
+  perf hists: Handle field separator properly
+  perf hists: Use hpp_functions->width to calculate the column widths
+  perf ui/browser: Use hist_period_print functions
+  perf gtk/browser: Use hist_period_print functions
 
-iQIcBAEBCAAGBQJQMcLsAAoJEECxmPOUX5FEnSIQAIpxM6xgI9r1rUFlNvdGo2cv
-chKkoneW6AGFr+3nCo1CVgkf8XIsPOU+sTHS7QlWVUp0IyZP4iHzYQ05p6FTOFGT
-cJ2Ju8N4L+nG/WW86PmnEmc/r4pOvKNvqjMMbGfgLSXSXLSkbMgibnttLuz0SWhK
-WOpxShHoZXIOHRUDwId58ppm8I/WvJrgLC9k0ithaG5nvytiRBcwckBL8fb483r3
-WpJEF3W5+Ig4o6Xv7QXwbQeBhX93eP2znz4CLUUduTax+ZDEKUK+BMayFsiAJWFX
-oGE6erz8UyegI5uRh8uPoxOvtCrduWwRF0JfDJ2R7eir71ck8C3c8SzCniyJg6Xc
-9QmFghN10d5/Ztf92rQoE2KwrUv3355Zvtc1dEkfMdWPCZTQJ92j7rshzgkFopEi
-1ilV2AuVDJBTwDGFjpr+AfWJGHD2MGwsPhaEo2FWERcAtv7+JoCfk6X/a5Wm3Umo
-JXrapPyi05fOJqtDYE/Pc9x8v44vHJ7nc/cqTv1XNoERnB29oMaI/wu0iGtr4Xno
-L51Cj6BeYODhvFc3gwiEJewMiBa/azudO3C4m6eXGhM0T7P4tG/WLqbpE/pahpoj
-8cQ9PrikHqIUVtixz0SdHe6KrPEVff96zTEYVHr31a/7samzxRm+8etF65jmgXag
-RyGEMyNV7u8JjIX8KNVs
-=hd/O
------END PGP SIGNATURE-----
+ tools/perf/Makefile            |   5 +-
+ tools/perf/builtin-diff.c      |   1 +
+ tools/perf/ui/browsers/hists.c |  96 ++++--
+ tools/perf/ui/gtk/browser.c    | 101 +++++-
+ tools/perf/ui/gtk/gtk.h        |   1 +
+ tools/perf/ui/gtk/setup.c      |   1 +
+ tools/perf/ui/hist.c           | 391 +++++++++++++++++++++++
+ tools/perf/ui/setup.c          |   8 +-
+ tools/perf/ui/stdio/hist.c     | 498 +++++++++++++++++++++++++++++
+ tools/perf/ui/tui/setup.c      |   4 +
+ tools/perf/util/hist.c         | 710 ++---------------------------------------
+ tools/perf/util/hist.h         |  43 ++-
+ 12 files changed, 1121 insertions(+), 738 deletions(-)
+ create mode 100644 tools/perf/ui/hist.c
+ create mode 100644 tools/perf/ui/stdio/hist.c
 
---Signature=_Mon__20_Aug_2012_14_54_04_+1000_LYzqDb00YNwulCj1--
+-- 
+1.7.11.2
+
