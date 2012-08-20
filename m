@@ -1,349 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2HTLjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 07:39:03 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:63557 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab2HTLit (ORCPT
+	id S1754125Ab2HTLo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 07:44:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50970 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab2HTLov convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 07:38:49 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Subject: [PATCH RESEND v4] spi/pl022: add devicetree support
-Date: Mon, 20 Aug 2012 08:39:29 -0300
-Message-Id: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Mon, 20 Aug 2012 07:44:51 -0400
+Message-ID: <1345463081.23018.34.camel@twins>
+Subject: Re: lockdep trace from posix timers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Date: Mon, 20 Aug 2012 13:44:41 +0200
+In-Reply-To: <1345446957.23018.14.camel@twins>
+References: <20120724203613.GA9637@redhat.com>
+	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
+	 <1345446957.23018.14.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the chipselect array and cur_cs properties to pl022 main structure
+On Mon, 2012-08-20 at 09:15 +0200, Peter Zijlstra wrote:
+> On Fri, 2012-08-17 at 17:14 +0200, Oleg Nesterov wrote:
+> > I still think that task_work_add() should synhronize with exit_task_work()
+> > itself and fail if necessary. But I wasn't able to convince Al ;)
+> 
+> I'm not at all sure how that relates to needing task_lock() in the
+> keyctl stuff.
+> 
+> Also, can't task_work use llist stuff? That would also avoid using
+> ->pi_lock.
 
-Add a wrapper function to decide if the cs should be controlled by the
-cs_control callback or the chipselect gpio
+How about something like the below?
 
-Populate chipselect property from cs-gpios
-
-Populate master->dev.of_node, so the spi bus can find child spi
-devices and register them
-
-At pl022 setup, fill chip_data structure from dt nodes, if not provided
-by platform.
-
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Acked-by: Roland Stigge <stigge@antcom.de>
 ---
-Applies to v3.6-rc1
+ include/linux/task_work.h |   7 +--
+ kernel/exit.c             |   2 +-
+ kernel/task_work.c        | 120 ++++++++++++++++++++++++----------------------
+ 3 files changed, 65 insertions(+), 64 deletions(-)
 
-Changes since v3:
-* Proper use of IS_ENABLED
-
-Changes since v2:
-* Use IS_ENABLED instead of #ifdef
-* Remove bogus const change
-
-Changes since v1:
-* return EPROBE_DEFFER if gpios are not initialized yet
-
-Thanks Thierry Reding for reviewing and improvements suggestions
-
- .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
- drivers/spi/spi-pl022.c                            |  114 ++++++++++++++++----
- 2 files changed, 110 insertions(+), 19 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/spi/spi_pl022.txt b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-index 306ec3f..b089ec7 100644
---- a/Documentation/devicetree/bindings/spi/spi_pl022.txt
-+++ b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-@@ -6,7 +6,22 @@ Required properties:
- - interrupts : Should contain SPI controller interrupt
+diff --git a/include/linux/task_work.h b/include/linux/task_work.h
+index fb46b03..f365416 100644
+--- a/include/linux/task_work.h
++++ b/include/linux/task_work.h
+@@ -15,11 +15,6 @@ init_task_work(struct callback_head *twork, task_work_func_t func)
+ int task_work_add(struct task_struct *task, struct callback_head *twork, bool);
+ struct callback_head *task_work_cancel(struct task_struct *, task_work_func_t);
+ void task_work_run(void);
+-
+-static inline void exit_task_work(struct task_struct *task)
+-{
+-	if (unlikely(task->task_works))
+-		task_work_run();
+-}
++void task_work_exit(void);
  
- Optional properties:
-+- pl022,num-chipselects : total number of chipselects
- - cs-gpios : should specify GPIOs used for chipselects.
-   The gpios will be referred to as reg = <index> in the SPI child nodes.
-   If unspecified, a single SPI device without a chip select can be used.
+ #endif	/* _LINUX_TASK_WORK_H */
+diff --git a/kernel/exit.c b/kernel/exit.c
+index f65345f..92aa94b 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -992,7 +992,7 @@ void do_exit(long code)
+ 	exit_shm(tsk);
+ 	exit_files(tsk);
+ 	exit_fs(tsk);
+-	exit_task_work(tsk);
++	task_work_exit();
+ 	check_stack_usage();
+ 	exit_thread();
  
-+SPI slave nodes must be children of the SPI master node and can
-+contain the following properties.
-+See include/linux/amba/pl022.h for more details
-+
-+- pl022,hierarchy : master or slave interface
-+- pl022,interface : interface type
-+- pl022,slave-tx-disable : disconnect tx line in slave mode
-+- pl022,com-mode : polling, interrupt or dma
-+- pl022,rx-level-trig : Rx FIFO watermark level
-+- pl022,tx-level-trig : Tx FIFO watermark level
-+- pl022,ctrl-len : Microwire interface: Control length
-+- pl022,wait-state : Microwire interface: Wait state
-+- pl022,duplex : Microwire interface: Full/Half duplex
-+
-diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-index 400ae21..d8d7d21 100644
---- a/drivers/spi/spi-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@ -40,6 +40,8 @@
- #include <linux/dma-mapping.h>
- #include <linux/scatterlist.h>
- #include <linux/pm_runtime.h>
-+#include <linux/gpio.h>
-+#include <linux/of_gpio.h>
+diff --git a/kernel/task_work.c b/kernel/task_work.c
+index 91d4e17..e5eac14 100644
+--- a/kernel/task_work.c
++++ b/kernel/task_work.c
+@@ -2,79 +2,85 @@
+ #include <linux/task_work.h>
+ #include <linux/tracehook.h>
  
- /*
-  * This macro is used to define some register default values.
-@@ -389,6 +391,8 @@ struct pl022 {
- 	char				*dummypage;
- 	bool				dma_running;
- #endif
-+	int cur_cs;
-+	int chipselect[0];
- };
- 
- /**
-@@ -433,6 +437,14 @@ static void null_cs_control(u32 command)
- 	pr_debug("pl022: dummy chip select control, CS=0x%x\n", command);
- }
- 
-+static void pl022_cs_control(struct pl022 *pl022, u32 command)
++static void task_work_nop(struct callback_head *work)
 +{
-+	if (gpio_is_valid(pl022->cur_cs))
-+		gpio_set_value(pl022->cur_cs, command);
-+	else
-+		pl022->cur_chip->cs_control(command);
 +}
 +
- /**
-  * giveback - current spi_message is over, schedule next message and call
-  * callback of this message. Assumes that caller already
-@@ -479,7 +491,7 @@ static void giveback(struct pl022 *pl022)
- 		if (next_msg && next_msg->spi != pl022->cur_msg->spi)
- 			next_msg = NULL;
- 		if (!next_msg || pl022->cur_msg->state == STATE_ERROR)
--			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 		else
- 			pl022->next_msg_cs_active = true;
- 
-@@ -813,8 +825,7 @@ static void dma_callback(void *data)
- 	/* Update total bytes transferred */
- 	msg->actual_length += pl022->cur_transfer->len;
- 	if (pl022->cur_transfer->cs_change)
--		pl022->cur_chip->
--			cs_control(SSP_CHIP_DESELECT);
-+		pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 
- 	/* Move to next transfer */
- 	msg->state = next_transfer(pl022);
-@@ -1247,8 +1258,7 @@ static irqreturn_t pl022_interrupt_handler(int irq, void *dev_id)
- 		/* Update total bytes transferred */
- 		msg->actual_length += pl022->cur_transfer->len;
- 		if (pl022->cur_transfer->cs_change)
--			pl022->cur_chip->
--				cs_control(SSP_CHIP_DESELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 		/* Move to next transfer */
- 		msg->state = next_transfer(pl022);
- 		tasklet_schedule(&pl022->pump_transfers);
-@@ -1333,7 +1343,7 @@ static void pump_transfers(unsigned long data)
- 
- 		/* Reselect chip select only if cs_change was requested */
- 		if (previous->cs_change)
--			pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 	} else {
- 		/* STATE_START */
- 		message->state = STATE_RUNNING;
-@@ -1372,7 +1382,7 @@ static void do_interrupt_dma_transfer(struct pl022 *pl022)
- 
- 	/* Enable target chip, if not already active */
- 	if (!pl022->next_msg_cs_active)
--		pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+		pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 
- 	if (set_up_next_transfer(pl022, pl022->cur_transfer)) {
- 		/* Error path */
-@@ -1424,12 +1434,12 @@ static void do_polling_transfer(struct pl022 *pl022)
- 			if (previous->delay_usecs)
- 				udelay(previous->delay_usecs);
- 			if (previous->cs_change)
--				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+				pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 		} else {
- 			/* STATE_START */
- 			message->state = STATE_RUNNING;
- 			if (!pl022->next_msg_cs_active)
--				pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
-+				pl022_cs_control(pl022, SSP_CHIP_SELECT);
- 		}
- 
- 		/* Configuration Changing Per Transfer */
-@@ -1461,7 +1471,7 @@ static void do_polling_transfer(struct pl022 *pl022)
- 		/* Update total byte transferred */
- 		message->actual_length += pl022->cur_transfer->len;
- 		if (pl022->cur_transfer->cs_change)
--			pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
-+			pl022_cs_control(pl022, SSP_CHIP_DESELECT);
- 		/* Move to next transfer */
- 		message->state = next_transfer(pl022);
- 	}
-@@ -1490,6 +1500,7 @@ static int pl022_transfer_one_message(struct spi_master *master,
- 
- 	/* Setup the SPI using the per chip configuration */
- 	pl022->cur_chip = spi_get_ctldata(msg->spi);
-+	pl022->cur_cs = pl022->chipselect[msg->spi->chip_select];
- 
- 	restore_state(pl022);
- 	flush(pl022);
-@@ -1761,12 +1772,14 @@ static const struct pl022_config_chip pl022_default_chip_info = {
- static int pl022_setup(struct spi_device *spi)
++static struct callback_head dead = { 
++	.next = NULL,
++	.func = task_work_nop,
++};
++
+ int
+-task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
++task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
  {
- 	struct pl022_config_chip const *chip_info;
-+	struct pl022_config_chip chip_info_dt;
- 	struct chip_data *chip;
- 	struct ssp_clock_params clk_freq = { .cpsdvsr = 0, .scr = 0};
- 	int status = 0;
- 	struct pl022 *pl022 = spi_master_get_devdata(spi->master);
- 	unsigned int bits = spi->bits_per_word;
- 	u32 tmp;
-+	struct device_node *np = spi->dev.of_node;
- 
- 	if (!spi->max_speed_hz)
- 		return -EINVAL;
-@@ -1789,10 +1802,36 @@ static int pl022_setup(struct spi_device *spi)
- 	chip_info = spi->controller_data;
- 
- 	if (chip_info == NULL) {
--		chip_info = &pl022_default_chip_info;
--		/* spi_board_info.controller_data not is supplied */
--		dev_dbg(&spi->dev,
--			"using default controller_data settings\n");
-+		if (np) {
-+			chip_info_dt = pl022_default_chip_info;
+-	struct callback_head *last, *first;
+-	unsigned long flags;
+-
+-	/*
+-	 * Not inserting the new work if the task has already passed
+-	 * exit_task_work() is the responisbility of callers.
+-	 */
+-	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	last = task->task_works;
+-	first = last ? last->next : twork;
+-	twork->next = first;
+-	if (last)
+-		last->next = twork;
+-	task->task_works = twork;
+-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++	struct callback_head **head = &task->task_works;
++	struct callback_head *entry, *old_entry;
 +
-+			of_property_read_u32(np, "pl022,hierarchy",
-+				&chip_info_dt.hierarchy);
-+			of_property_read_u32(np, "pl022,interface",
-+				&chip_info_dt.iface);
-+			chip_info_dt.slave_tx_disable =
-+				of_property_read_bool(np,
-+					"pl022,slave-tx-disable");
-+			of_property_read_u32(np, "pl022,com-mode",
-+				&chip_info_dt.com_mode);
-+			of_property_read_u32(np, "pl022,rx-level-trig",
-+				&chip_info_dt.rx_lev_trig);
-+			of_property_read_u32(np, "pl022,tx-level-trig",
-+				&chip_info_dt.tx_lev_trig);
-+			of_property_read_u32(np, "pl022,ctrl-len",
-+				&chip_info_dt.ctrl_len);
-+			of_property_read_u32(np, "pl022,wait-state",
-+				&chip_info_dt.wait_state);
-+			of_property_read_u32(np, "pl022,duplex",
-+				&chip_info_dt.duplex);
++	entry = &head;
++	for (;;) {
++		if (entry == &dead)
++			return -ESRCH;
 +
-+			chip_info = &chip_info_dt;
-+		} else {
-+			chip_info = &pl022_default_chip_info;
-+			/* spi_board_info.controller_data not is supplied */
-+			dev_dbg(&spi->dev,
-+				"using default controller_data settings\n");
-+		}
- 	} else
- 		dev_dbg(&spi->dev,
- 			"using user supplied controller_data settings\n");
-@@ -1835,8 +1874,9 @@ static int pl022_setup(struct spi_device *spi)
- 	chip->xfer_type = chip_info->com_mode;
- 	if (!chip_info->cs_control) {
- 		chip->cs_control = null_cs_control;
--		dev_warn(&spi->dev,
--			 "chip select function is NULL for this chip\n");
-+		if (!gpio_is_valid(pl022->chipselect[spi->chip_select]))
-+			dev_warn(&spi->dev,
-+				 "chip select function is NULL for this chip\n");
- 	} else
- 		chip->cs_control = chip_info->cs_control;
- 
-@@ -1988,7 +2028,8 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
- 	struct pl022_ssp_controller *platform_info = adev->dev.platform_data;
- 	struct spi_master *master;
- 	struct pl022 *pl022 = NULL;	/*Data for this driver */
--	int status = 0;
-+	struct device_node *np = adev->dev.of_node;
-+	int status = 0, i, num_cs;
- 
- 	dev_info(&adev->dev,
- 		 "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
-@@ -1998,8 +2039,14 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
- 		goto err_no_pdata;
- 	}
- 
-+	num_cs = platform_info->num_chipselect;
-+	if (IS_ENABLED(CONFIG_OF))
-+		of_property_read_u32(np, "pl022,num-chipselects", &num_cs);
-+
-+
- 	/* Allocate master with space for data */
--	master = spi_alloc_master(dev, sizeof(struct pl022));
-+	master = spi_alloc_master(dev,
-+		sizeof(struct pl022) + sizeof(int) * num_cs);
- 	if (master == NULL) {
- 		dev_err(&adev->dev, "probe - cannot alloc SPI master\n");
- 		status = -ENOMEM;
-@@ -2017,13 +2064,41 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
- 	 * on this board
- 	 */
- 	master->bus_num = platform_info->bus_id;
--	master->num_chipselect = platform_info->num_chipselect;
-+	master->num_chipselect = num_cs;
- 	master->cleanup = pl022_cleanup;
- 	master->setup = pl022_setup;
- 	master->prepare_transfer_hardware = pl022_prepare_transfer_hardware;
- 	master->transfer_one_message = pl022_transfer_one_message;
- 	master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
- 	master->rt = platform_info->rt;
-+	master->dev.of_node = dev->of_node;
-+
-+	if (IS_ENABLED(CONFIG_OF)) {
-+		for (i = 0; i < num_cs; i++) {
-+			int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
-+
-+			if (cs_gpio == -EPROBE_DEFER) {
-+				status = -EPROBE_DEFER;
-+				goto err_no_gpio;
-+			}
-+
-+			pl022->chipselect[i] = cs_gpio;
-+
-+			if (gpio_is_valid(cs_gpio)) {
-+				if (gpio_request(cs_gpio, "ssp-pl022"))
-+					dev_err(&adev->dev,
-+						"could not request %d gpio\n",
-+						cs_gpio);
-+				else if (gpio_direction_output(cs_gpio, 1))
-+					dev_err(&adev->dev,
-+						"could set gpio %d as output\n",
-+						cs_gpio);
-+			}
-+		}
-+	} else {
-+		for (i = 0; i < num_cs; i++)
-+			pl022->chipselect[i] = -EINVAL;
++		old_entry = entry;
++		work->next = entry;
++		entry = cmpxchg(head, old_entry, work);
++		if (entry == old_entry)
++			break;
 +	}
  
- 	/*
- 	 * Supports mode 0-3, loopback, and active low CS. Transfers are
-@@ -2130,6 +2205,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
-  err_no_ioremap:
- 	amba_release_regions(adev);
-  err_no_ioregion:
-+ err_no_gpio:
- 	spi_master_put(master);
-  err_no_master:
-  err_no_pdata:
--- 
-1.7.10
+ 	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
+ 	if (notify)
+ 		set_notify_resume(task);
++
+ 	return 0;
+ }
+ 
+ struct callback_head *
+ task_work_cancel(struct task_struct *task, task_work_func_t func)
+ {
+-	unsigned long flags;
+-	struct callback_head *last, *res = NULL;
+-
+-	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	last = task->task_works;
+-	if (last) {
+-		struct callback_head *q = last, *p = q->next;
+-		while (1) {
+-			if (p->func == func) {
+-				q->next = p->next;
+-				if (p == last)
+-					task->task_works = q == p ? NULL : q;
+-				res = p;
+-				break;
+-			}
+-			if (p == last)
+-				break;
+-			q = p;
+-			p = q->next;
++	struct callback_head **workp, *work;
++
++again:
++	workp = &task->task_works;
++	work = *workp;
++	while (work) {
++		if (work->func == func) {
++			if (cmpxchg(workp, work, work->next) == work)
++				return work;
++			goto again;
+ 		}
++
++		workp = &work->next;
++		work = *workp;
+ 	}
+-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+-	return res;
++
++	return NULL;
+ }
+ 
+-void task_work_run(void)
++static void __task_work_run(struct callback_head *tail)
+ {
+-	struct task_struct *task = current;
+-	struct callback_head *p, *q;
+-
+-	while (1) {
+-		raw_spin_lock_irq(&task->pi_lock);
+-		p = task->task_works;
+-		task->task_works = NULL;
+-		raw_spin_unlock_irq(&task->pi_lock);
+-
+-		if (unlikely(!p))
+-			return;
+-
+-		q = p->next; /* head */
+-		p->next = NULL; /* cut it */
+-		while (q) {
+-			p = q->next;
+-			q->func(q);
+-			q = p;
++	struct callback_head **head = &current->task_works;
++
++	do {
++		struct callback_head *work = xchg(head, NULL);
++		while (work) {
++			struct callback_head *next = ACCESS_ONCE(work->next);
++
++			WARN_ON_ONCE(work == &dead);
++
++			work->func(work);
++			work = next;
+ 		}
+-	}
++	} while (cmpxchg(head, NULL, tail) != NULL);
++}
++
++void task_work_run(void)
++{
++	__task_work_run(NULL);
++}
++
++void task_work_exit(void)
++{
++	__task_work_run(&dead);
+ }
 
