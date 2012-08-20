@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab2HTN66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 09:58:58 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:40658
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755883Ab2HTN4U (ORCPT
+	id S1756459Ab2HTN6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:58:54 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:59503
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753566Ab2HTN4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 09:56:20 -0400
+	Mon, 20 Aug 2012 09:56:21 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah11b5h)
-X-WSS-ID: 0M9241N-02-F0Y-02
+X-WSS-ID: 0M9241K-02-F0T-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 13/19] x86, io-apic: Move CONFIG_IRQ_REMAP code out of x86 core
-Date: Mon, 20 Aug 2012 15:55:59 +0200
-Message-ID: <1345470965-24410-14-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg call-back
+Date: Mon, 20 Aug 2012 15:56:03 +0200
+Message-ID: <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
 References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
@@ -30,228 +30,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move all the code to either to the header file
-asm/irq_remapping.h or to drivers/iommu/.
+This call-back points to the right function for initializing
+the msi_msg structure.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/hw_irq.h        |    1 +
- arch/x86/include/asm/io_apic.h       |    2 ++
- arch/x86/include/asm/irq_remapping.h |   17 +++++++++++++
- arch/x86/kernel/apic/io_apic.c       |   44 +---------------------------------
- drivers/iommu/intel_irq_remapping.c  |    4 ++++
- drivers/iommu/irq_remapping.c        |   25 +++++++++++++++++++
- 6 files changed, 50 insertions(+), 43 deletions(-)
+ arch/x86/include/asm/io_apic.h  |    4 +++
+ arch/x86/include/asm/x86_init.h |    4 +++
+ arch/x86/kernel/apic/io_apic.c  |   59 ++++++++++++++++++++-------------------
+ arch/x86/kernel/x86_init.c      |    1 +
+ drivers/iommu/irq_remapping.c   |    9 ++++--
+ 5 files changed, 46 insertions(+), 31 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index fc89a2a..c84403e 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -127,6 +127,7 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
-+	bool			remapped;
- 	union {
- 		struct irq_2_iommu irq_2_iommu;
- 		struct irq_2_irte  irq_2_irte;
 diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index bb5caee..0db4429 100644
+index 0db4429..59a3f4e 100644
 --- a/arch/x86/include/asm/io_apic.h
 +++ b/arch/x86/include/asm/io_apic.h
-@@ -144,6 +144,7 @@ extern int timer_through_8259;
- 	(mp_irq_entries && !skip_ioapic_setup && io_apic_irqs)
- 
- struct io_apic_irq_attr;
-+struct irq_cfg;
- extern int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr);
- void setup_IO_APIC_irq_extra(u32 gsi);
-@@ -157,6 +158,7 @@ extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
- 				     struct io_apic_irq_attr *);
- extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
+@@ -160,6 +160,9 @@ extern void __init native_setup_timer_pin(unsigned int ioapic_idx,
  					  unsigned int pin, int vector);
-+extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
+ extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
  
++extern void native_compose_msi_msg(struct pci_dev *pdev,
++				   unsigned int irq, unsigned int dest,
++				   struct msi_msg *msg, u8 hpet_id);
  int io_apic_setup_irq_pin_once(unsigned int irq, int node, struct io_apic_irq_attr *attr);
  
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index 6f4b48b..1888148 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -45,6 +45,13 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
- extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
- extern void panic_if_irq_remap(const char *msg);
+ extern int save_ioapic_entries(void);
+@@ -245,6 +248,7 @@ static inline void disable_ioapic_support(void) { }
+ #define native_ioapic_set_affinity	NULL
+ #define native_setup_ioapic_entry	NULL
+ #define native_setup_timer_pin		NULL
++#define native_compose_msi_msg		NULL
+ #endif
  
-+static inline bool irq_remapped(struct irq_cfg *cfg)
-+{
-+	return cfg->remapped;
-+}
-+
-+void irq_remap_modify_chip_defaults(struct irq_chip *chip);
-+
- #else  /* CONFIG_IRQ_REMAP */
+ #endif /* _ASM_X86_IO_APIC_H */
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index ffe5860..1430af0 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -180,9 +180,13 @@ struct x86_platform_ops {
+ };
  
- static inline void setup_irq_remapping_ops(void) { }
-@@ -76,6 +83,16 @@ static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
- static inline void panic_if_irq_remap(const char *msg)
- {
- }
-+
-+static inline bool irq_remapped(struct irq_cfg *cfg)
-+{
-+	return false;
-+}
-+
-+static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
-+{
-+}
-+
- #endif /* CONFIG_IRQ_REMAP */
+ struct pci_dev;
++struct msi_msg;
  
- #endif /* __X86_IRQ_REMAPPING_H */
+ struct x86_msi_ops {
+ 	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
++	void (*compose_msi_msg)(struct pci_dev *dev, unsigned int irq,
++				unsigned int dest, struct msi_msg *msg,
++			       u8 hpet_id);
+ 	void (*teardown_msi_irq)(unsigned int irq);
+ 	void (*teardown_msi_irqs)(struct pci_dev *dev);
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 22e6bef..fa6bfb3 100644
+index c2f2d2d..aac3f62 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -68,22 +68,6 @@
- #define for_each_irq_pin(entry, head) \
- 	for (entry = head; entry; entry = entry->next)
- 
--#ifdef CONFIG_IRQ_REMAP
--static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
--static inline bool irq_remapped(struct irq_cfg *cfg)
--{
--	return cfg->irq_2_iommu.iommu != NULL;
--}
--#else
--static inline bool irq_remapped(struct irq_cfg *cfg)
--{
--	return false;
--}
--static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
--{
--}
--#endif
--
+@@ -2989,37 +2989,16 @@ void destroy_irq(unsigned int irq)
  /*
-  *      Is the SiS APIC rmw bug present ?
-  *      -1 = don't know, 0 = no, 1 = yes
-@@ -606,7 +590,7 @@ static void __eoi_ioapic_pin(int apic, int pin, int vector, struct irq_cfg *cfg)
- 	}
+  * MSI message composition
+  */
+-#ifdef CONFIG_PCI_MSI
+-static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+-			   struct msi_msg *msg, u8 hpet_id)
++void native_compose_msi_msg(struct pci_dev *pdev,
++			    unsigned int irq, unsigned int dest,
++			    struct msi_msg *msg, u8 hpet_id)
+ {
+-	struct irq_cfg *cfg;
+-	int err;
+-	unsigned dest;
+-
+-	if (disable_apic)
+-		return -ENXIO;
+-
+-	cfg = irq_cfg(irq);
+-	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+-					   apic->target_cpus(), &dest);
+-	if (err)
+-		return err;
++	struct irq_cfg *cfg = irq_cfg(irq);
+ 
+-	if (irq_remapped(cfg)) {
+-		compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
+-		return err;
+-	}
++	msg->address_hi = MSI_ADDR_BASE_HI;
+ 
+ 	if (x2apic_enabled())
+-		msg->address_hi = MSI_ADDR_BASE_HI |
+-				  MSI_ADDR_EXT_DEST_ID(dest);
+-	else
+-		msg->address_hi = MSI_ADDR_BASE_HI;
++		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
+ 
+ 	msg->address_lo =
+ 		MSI_ADDR_BASE_LO |
+@@ -3038,8 +3017,32 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ 			MSI_DATA_DELIVERY_FIXED:
+ 			MSI_DATA_DELIVERY_LOWPRI) |
+ 		MSI_DATA_VECTOR(cfg->vector);
++}
+ 
+-	return err;
++#ifdef CONFIG_PCI_MSI
++static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
++			   struct msi_msg *msg, u8 hpet_id)
++{
++	struct irq_cfg *cfg;
++	int err;
++	unsigned dest;
++
++	if (disable_apic)
++		return -ENXIO;
++
++	cfg = irq_cfg(irq);
++	err = assign_irq_vector(irq, cfg, apic->target_cpus());
++	if (err)
++		return err;
++
++	err = apic->cpu_mask_to_apicid_and(cfg->domain,
++					   apic->target_cpus(), &dest);
++	if (err)
++		return err;
++
++	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
++
++	return 0;
  }
  
--static void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
-+void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
- {
- 	struct irq_pin_list *entry;
- 	unsigned long flags;
-@@ -2541,32 +2525,6 @@ static void ack_apic_level(struct irq_data *data)
- 	ioapic_irqd_unmask(data, cfg, masked);
- }
- 
--#ifdef CONFIG_IRQ_REMAP
--static void ir_ack_apic_edge(struct irq_data *data)
--{
--	ack_APIC_irq();
--}
--
--static void ir_ack_apic_level(struct irq_data *data)
--{
--	ack_APIC_irq();
--	eoi_ioapic_irq(data->irq, data->chip_data);
--}
--
--static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
--{
--	seq_printf(p, " IR-%s", data->chip->name);
--}
--
--static void irq_remap_modify_chip_defaults(struct irq_chip *chip)
--{
--	chip->irq_print_chip = ir_print_prefix;
--	chip->irq_ack = ir_ack_apic_edge;
--	chip->irq_eoi = ir_ack_apic_level;
--	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
--}
--#endif /* CONFIG_IRQ_REMAP */
--
- static struct irq_chip ioapic_chip __read_mostly = {
- 	.name			= "IO-APIC",
- 	.irq_startup		= startup_ioapic_irq,
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 321db1a..5299f5b 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -68,6 +68,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	u16 index, start_index;
- 	unsigned int mask = 0;
- 	unsigned long flags;
-@@ -115,6 +116,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- 	for (i = index; i < index + count; i++)
- 		table->base[i].present = 1;
- 
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index =  index;
- 	irq_iommu->sub_handle = 0;
-@@ -155,6 +157,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	unsigned long flags;
- 
- 	if (!irq_iommu)
-@@ -162,6 +165,7 @@ static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subha
- 
- 	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
- 
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index = index;
- 	irq_iommu->sub_handle = subhandle;
+ static int
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index eba02e5..af5874e 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -115,6 +115,7 @@ struct x86_platform_ops x86_platform = {
+ EXPORT_SYMBOL_GPL(x86_platform);
+ struct x86_msi_ops x86_msi = {
+ 	.setup_msi_irqs		= native_setup_msi_irqs,
++	.compose_msi_msg	= native_compose_msi_msg,
+ 	.teardown_msi_irq	= native_teardown_msi_irq,
+ 	.teardown_msi_irqs	= default_teardown_msi_irqs,
+ 	.restore_msi_irqs	= default_restore_msi_irqs,
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 71824fc..3957fb2 100644
+index d9cd920f..e61a174 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -1,3 +1,4 @@
-+#include <linux/seq_file.h>
- #include <linux/cpumask.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
-@@ -274,3 +275,27 @@ void panic_if_irq_remap(const char *msg)
- 	if (irq_remapping_enabled)
- 		panic(msg);
+@@ -102,6 +102,7 @@ static void __init irq_remapping_modify_x86_ops(void)
+ 	x86_io_apic_ops.setup_timer_pin	= irq_remapping_setup_timer_pin;
+ 	x86_msi.setup_msi_irqs		= irq_remapping_setup_msi_irqs;
+ 	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
++	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
  }
-+
-+static void ir_ack_apic_edge(struct irq_data *data)
-+{
-+	ack_APIC_irq();
-+}
-+
-+static void ir_ack_apic_level(struct irq_data *data)
-+{
-+	ack_APIC_irq();
-+	eoi_ioapic_irq(data->irq, data->chip_data);
-+}
-+
-+static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
-+{
-+	seq_printf(p, " IR-%s", data->chip->name);
-+}
-+
-+void irq_remap_modify_chip_defaults(struct irq_chip *chip)
-+{
-+	chip->irq_print_chip = ir_print_prefix;
-+	chip->irq_ack = ir_ack_apic_edge;
-+	chip->irq_eoi = ir_ack_apic_level;
-+	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
-+}
+ 
+ static __init int setup_nointremap(char *str)
+@@ -242,10 +243,12 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 			      unsigned int irq, unsigned int dest,
+ 			      struct msi_msg *msg, u8 hpet_id)
+ {
+-	if (!remap_ops || !remap_ops->compose_msi_msg)
+-		return;
++	struct irq_cfg *cfg = irq_get_chip_data(irq);
+ 
+-	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
++	if (cfg && !irq_remapped(cfg))
++		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
++	else if (remap_ops && remap_ops->compose_msi_msg)
++		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+ }
+ 
+ static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
 -- 
 1.7.9.5
 
