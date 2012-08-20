@@ -1,105 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab2HTOJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:09:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46152 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab2HTOJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:09:52 -0400
-Message-ID: <50324524.5000501@gmail.com>
-Date: Mon, 20 Aug 2012 22:09:40 +0800
-From: Jianguo Wu <wujianguo106@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1755560Ab2HTOLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:11:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40325 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab2HTOLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:11:19 -0400
+From: Prabhakar Lad <prabhakar.lad@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-kernel@vger.kernel.org>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>, Sekhar Nori <nsekhar@ti.com>
+Subject: [PATCH v2 2/2] ARM: da850/omap-l138: Add EVM specific code for VPIF to work
+Date: Mon, 20 Aug 2012 19:38:51 +0530
+Message-ID: <1345471731-31678-3-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1345471731-31678-1-git-send-email-prabhakar.lad@ti.com>
+References: <1345471731-31678-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [RFC V7 PATCH 18/19] memory-hotplug: add node_device_release
-References: <1345455342-27752-1-git-send-email-wency@cn.fujitsu.com> <1345455342-27752-19-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1345455342-27752-19-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/8/20 17:35, wency@cn.fujitsu.com wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> When calling unregister_node(), the function shows following message at
-> device_release().
-> 
-> Device 'node2' does not have a release() function, it is broken and must be
-> fixed.
-> 
-> So the patch implements node_device_release()
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  drivers/base/node.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/base/node.c b/drivers/base/node.c
-> index af1a177..9bc2f57 100644
-> --- a/drivers/base/node.c
-> +++ b/drivers/base/node.c
-> @@ -252,6 +252,13 @@ static inline void hugetlb_register_node(struct node *node) {}
->  static inline void hugetlb_unregister_node(struct node *node) {}
->  #endif
->  
-> +static void node_device_release(struct device *dev)
-> +{
-> +	struct node *node_dev = to_node(dev);
-> +
-> +	flush_work(&node_dev->node_work);
+From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-Hi Congyang,
-	I think this should be:
-#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
-	flush_work(&node_dev->node_work);
-#endif
+Include the expander settings to select VPIF peripheral on
+UI card and add registration call in EVM init. Also add platform
+data to configure display and capture devices.
 
-	As struct node defined in node.h:
-struct node {
-	struct sys_device	sysdev;
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
+---
+ arch/arm/mach-davinci/Kconfig           |    9 ++
+ arch/arm/mach-davinci/board-da850-evm.c |  178 +++++++++++++++++++++++++++++++
+ 2 files changed, 187 insertions(+), 0 deletions(-)
 
-#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
-	struct work_struct	node_work;
-#endif
-};
-
-	Thanks
-	Jianguo Wu
-
-> +	memset(node_dev, 0, sizeof(struct node));
-> +}
->  
->  /*
->   * register_node - Setup a sysfs device for a node.
-> @@ -265,6 +272,7 @@ int register_node(struct node *node, int num, struct node *parent)
->  
->  	node->dev.id = num;
->  	node->dev.bus = &node_subsys;
-> +	node->dev.release = node_device_release;
->  	error = device_register(&node->dev);
->  
->  	if (!error){
-> 
+diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+index ab99c3c..436b47c 100644
+--- a/arch/arm/mach-davinci/Kconfig
++++ b/arch/arm/mach-davinci/Kconfig
+@@ -186,6 +186,15 @@ config DA850_UI_RMII
+ 	  NOTE: Please take care while choosing this option, MII PHY will
+ 	  not be functional if RMII mode is selected.
+ 
++config DA850_UI_SD_VIDEO_PORT
++	bool "Video Port Interface"
++	help
++	  Say Y if you want to use Video Port Interface (VPIF) on the
++	  DA850/OMAP-L138 EVM. The Video decoders/encoders are found on the
++	  UI daughter card that is supplied with the EVM.
++	  NOTE: Please make sure to disable RMII and CLCD options when you
++	  select Video Port Interface.
++
+ endchoice
+ 
+ config DA850_WL12XX
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 0149fb4..cdbbced 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -45,6 +45,8 @@
+ #include <mach/aemif.h>
+ #include <mach/spi.h>
+ 
++#include <media/tvp514x.h>
++
+ #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
+ #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
+ #define DA850_LCD_BL_PIN		GPIO_TO_PIN(2, 15)
+@@ -121,6 +123,12 @@ static struct spi_board_info da850evm_spi_info[] = {
+ 	},
+ };
+ 
++#define TVP5147_CH0		"tvp514x-0"
++#define TVP5147_CH1		"tvp514x-1"
++
++#define VPIF_STATUS		0x002c
++#define VPIF_STATUS_CLR		0x0030
++
+ #ifdef CONFIG_MTD
+ static void da850_evm_m25p80_notify_add(struct mtd_info *mtd)
+ {
+@@ -452,6 +460,15 @@ static void da850_evm_ui_keys_init(unsigned gpio)
+ 	}
+ }
+ 
++#ifdef CONFIG_DA850_UI_SD_VIDEO_PORT
++static inline void da850_evm_setup_video_port(int video_sel)
++{
++	gpio_set_value_cansleep(video_sel, 0);
++}
++#else
++static inline void da850_evm_setup_video_port(int video_sel) { }
++#endif
++
+ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ 						unsigned ngpio, void *c)
+ {
+@@ -497,6 +514,8 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ 
+ 	da850_evm_setup_emac_rmii(sel_a);
+ 
++	da850_evm_setup_video_port(sel_c);
++
+ 	return 0;
+ 
+ exp_setup_keys_fail:
+@@ -1149,6 +1168,133 @@ static __init int da850_evm_init_cpufreq(void)
+ static __init int da850_evm_init_cpufreq(void) { return 0; }
+ #endif
+ 
++#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
++
++/* VPIF capture configuration */
++static struct tvp514x_platform_data tvp5146_pdata = {
++	.clk_polarity = 0,
++	.hs_polarity = 1,
++	.vs_polarity = 1
++};
++
++#define TVP514X_STD_ALL (V4L2_STD_NTSC | V4L2_STD_PAL)
++
++static const struct vpif_input da850_ch0_inputs[] = {
++	{
++		.input = {
++			.index = 0,
++			.name = "Composite",
++			.type = V4L2_INPUT_TYPE_CAMERA,
++			.std = TVP514X_STD_ALL,
++		},
++		.subdev_name = TVP5147_CH0,
++	},
++};
++
++static const struct vpif_input da850_ch1_inputs[] = {
++	{
++		.input = {
++			.index = 0,
++			.name = "S-Video",
++			.type = V4L2_INPUT_TYPE_CAMERA,
++			.std = TVP514X_STD_ALL,
++		},
++		.subdev_name = TVP5147_CH1,
++	},
++};
++#endif
++
++static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
++#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
++	{
++		.name	= TVP5147_CH0,
++		.board_info = {
++			I2C_BOARD_INFO("tvp5146", 0x5d),
++			.platform_data = &tvp5146_pdata,
++		},
++		.input = INPUT_CVBS_VI2B,
++		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
++		.can_route = 1,
++		.vpif_if = {
++			.if_type = VPIF_IF_BT656,
++			.hd_pol = 1,
++			.vd_pol = 1,
++			.fid_pol = 0,
++		},
++	},
++	{
++		.name	= TVP5147_CH1,
++		.board_info = {
++			I2C_BOARD_INFO("tvp5146", 0x5c),
++			.platform_data = &tvp5146_pdata,
++		},
++		.input = INPUT_SVIDEO_VI2C_VI1C,
++		.output = OUTPUT_10BIT_422_EMBEDDED_SYNC,
++		.can_route = 1,
++		.vpif_if = {
++			.if_type = VPIF_IF_BT656,
++			.hd_pol = 1,
++			.vd_pol = 1,
++			.fid_pol = 0,
++		},
++	},
++#endif
++};
++
++static struct vpif_capture_config da850_vpif_capture_config = {
++	.subdev_info = da850_vpif_capture_sdev_info,
++	.subdev_count = ARRAY_SIZE(da850_vpif_capture_sdev_info),
++#if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
++	.chan_config[0] = {
++		.inputs = da850_ch0_inputs,
++		.input_count = ARRAY_SIZE(da850_ch0_inputs),
++	},
++	.chan_config[1] = {
++		.inputs = da850_ch1_inputs,
++		.input_count = ARRAY_SIZE(da850_ch1_inputs),
++	},
++#endif
++	.card_name      = "DA850/OMAP-L138 Video Capture",
++};
++
++/* VPIF display configuration */
++static struct vpif_subdev_info da850_vpif_subdev[] = {
++	{
++		.name	= "adv7343",
++		.board_info = {
++			I2C_BOARD_INFO("adv7343", 0x2a),
++		},
++	},
++};
++
++static const char const *vpif_output[] = {
++	"Composite",
++	"Component",
++	"S-Video",
++};
++
++static struct vpif_display_config da850_vpif_display_config = {
++	.subdevinfo	= da850_vpif_subdev,
++	.subdev_count	= ARRAY_SIZE(da850_vpif_subdev),
++	.output		= vpif_output,
++	.output_count	= ARRAY_SIZE(vpif_output),
++	.card_name	= "DA850/OMAP-L138 Video Display",
++};
++
++#if defined(CONFIG_VIDEO_DAVINCI_VPIF_DISPLAY) ||\
++		defined(CONFIG_VIDEO_DAVINCI_VPIF_DISPLAY_MODULE)
++#define HAS_VPIF_DISPLAY 1
++#else
++#define HAS_VPIF_DISPLAY 0
++#endif
++
++#if defined(CONFIG_VIDEO_DAVINCI_VPIF_CAPTURE) ||\
++		defined(CONFIG_VIDEO_DAVINCI_VPIF_CAPTURE_MODULE)
++#define HAS_VPIF_CAPTURE 1
++#else
++#define HAS_VPIF_CAPTURE 0
++#endif
++
+ #ifdef CONFIG_DA850_WL12XX
+ 
+ static void wl12xx_set_power(int index, bool power_on)
+@@ -1375,6 +1521,38 @@ static __init void da850_evm_init(void)
+ 		pr_warning("da850_evm_init: suspend registration failed: %d\n",
+ 				ret);
+ 
++	if (HAS_VPIF_DISPLAY || HAS_VPIF_CAPTURE) {
++		ret = da850_register_vpif();
++		if (ret)
++			pr_warn("da850_evm_init: VPIF setup failed: %d\n", ret);
++	}
++
++	if (HAS_VPIF_CAPTURE) {
++		ret = davinci_cfg_reg_list(da850_vpif_capture_pins);
++		if (ret)
++			pr_warn(
++			"da850_evm_init: VPIF capture mux setup failed: %d\n",
++			ret);
++
++		ret = da850_register_vpif_capture(&da850_vpif_capture_config);
++		if (ret)
++			pr_warn(
++			"da850_evm_init: VPIF capture setup failed: %d\n", ret);
++	}
++
++	if (HAS_VPIF_DISPLAY) {
++		ret = davinci_cfg_reg_list(da850_vpif_display_pins);
++		if (ret)
++			pr_warn(
++			"da850_evm_init: VPIF display mux setup failed: %d\n",
++			ret);
++
++		ret = da850_register_vpif_display(&da850_vpif_display_config);
++		if (ret)
++			pr_warn(
++			"da850_evm_init: VPIF display setup failed: %d\n", ret);
++	}
++
+ 	ret = da8xx_register_spi(1, da850evm_spi_info,
+ 				 ARRAY_SIZE(da850evm_spi_info));
+ 	if (ret)
+-- 
+1.7.0.4
 
