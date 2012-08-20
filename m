@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab2HTFAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 01:00:01 -0400
+	id S1755150Ab2HTFAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 01:00:16 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56341 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab2HTE7L (ORCPT
+	with ESMTP id S1753614Ab2HTE7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:59:11 -0400
-X-AuditID: 9c930197-b7bb2ae0000011d9-28-5031c41c59a8
+	Mon, 20 Aug 2012 00:59:14 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-2f-5031c41ccedf
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/7] perf hists: Handle field separator properly
-Date: Mon, 20 Aug 2012 13:52:08 +0900
-Message-Id: <1345438331-20234-5-git-send-email-namhyung@kernel.org>
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 7/7] perf gtk/browser: Use hist_period_print functions
+Date: Mon, 20 Aug 2012 13:52:11 +0900
+Message-Id: <1345438331-20234-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1345438331-20234-1-git-send-email-namhyung@kernel.org>
 References: <1345438331-20234-1-git-send-email-namhyung@kernel.org>
@@ -27,151 +26,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-When a field separator is given, the output format doesn't need to be
-fancy like aligning to column length, coloring the percent value and
-so on. And since there's a slight difference to normal format, fix it
-not to break backward compatibility.
+Now we can support color using pango markup with this change.
 
-Cc: Stephane Eranian <eranian@google.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c       | 42 ++++++++++++++++++++++++++++++++++++++++--
- tools/perf/ui/stdio/hist.c |  3 ++-
- 2 files changed, 42 insertions(+), 3 deletions(-)
+ tools/perf/ui/gtk/browser.c | 101 +++++++++++++++++++++++++++++++++++++-------
+ tools/perf/ui/gtk/gtk.h     |   1 +
+ tools/perf/ui/gtk/setup.c   |   1 +
+ 3 files changed, 87 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 8062b38f7971..29c787c93452 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -30,6 +30,10 @@ static int hpp_entry_overhead(struct hpp_context *ctx,
- 			      struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%%", percent);
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 26b5b652a8cd..4a890fc17b91 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -36,6 +36,57 @@ static void perf_gtk__resize_window(GtkWidget *window)
+ 	gtk_window_resize(GTK_WINDOW(window), width, height);
  }
  
-@@ -54,6 +58,10 @@ static int hpp_entry_overhead_sys(struct hpp_context *ctx,
- 				  struct hist_entry *he)
++static const char *perf_gtk__get_percent_color(double percent)
++{
++	if (percent >= MIN_RED)
++		return "<span fgcolor='red'>";
++	if (percent >= MIN_GREEN)
++		return "<span fgcolor='dark green'>";
++	return NULL;
++}
++
++#define HPP_COLOR_FN(_name, _field)						\
++static int perf_gtk__hpp_color_ ## _name(struct hpp_context *ctx,		\
++					 struct hist_entry *he)			\
++{										\
++	double percent = 100.0 * he->_field / ctx->total_period;		\
++	const char *markup;							\
++	int ret = 0;								\
++										\
++	markup = perf_gtk__get_percent_color(percent);				\
++	if (markup)								\
++		ret += scnprintf(ctx->s, ctx->size, "%s", markup);		\
++	ret += scnprintf(ctx->s + ret, ctx->size - ret, "%5.2f%%", percent); 	\
++	if (markup)								\
++		ret += scnprintf(ctx->s + ret, ctx->size - ret, "</span>"); 	\
++										\
++	return ret;								\
++}
++
++HPP_COLOR_FN(overhead, period)
++HPP_COLOR_FN(overhead_sys, period_sys)
++HPP_COLOR_FN(overhead_us, period_us)
++HPP_COLOR_FN(overhead_guest_sys, period_guest_sys)
++HPP_COLOR_FN(overhead_guest_us, period_guest_us)
++
++#undef HPP_COLOR_FN
++
++void perf_gtk__init_hpp(void)
++{
++	perf_hpp__init(false, false);
++
++	hpp_functions[PERF_HPP__OVERHEAD].color =
++				perf_gtk__hpp_color_overhead;
++	hpp_functions[PERF_HPP__OVERHEAD_SYS].color =
++				perf_gtk__hpp_color_overhead_sys;
++	hpp_functions[PERF_HPP__OVERHEAD_US].color =
++				perf_gtk__hpp_color_overhead_us;
++	hpp_functions[PERF_HPP__OVERHEAD_GUEST_SYS].color =
++				perf_gtk__hpp_color_overhead_guest_sys;
++	hpp_functions[PERF_HPP__OVERHEAD_GUEST_US].color =
++				perf_gtk__hpp_color_overhead_guest_us;
++}
++
+ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
  {
- 	double percent = 100.0 * he->period_sys / ctx->total_period;
+ 	GType col_types[MAX_COLUMNS];
+@@ -43,15 +94,25 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 	struct sort_entry *se;
+ 	GtkListStore *store;
+ 	struct rb_node *nd;
+-	u64 total_period;
+ 	GtkWidget *view;
+-	int col_idx;
++	int i, col_idx;
+ 	int nr_cols;
++	char s[512];
 +
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
++	struct hpp_context ctx = {
++		.s		= s,
++		.size		= sizeof(s),
++		.total_period	= hists->stats.total_period,
++	};
  
-@@ -78,6 +86,10 @@ static int hpp_entry_overhead_us(struct hpp_context *ctx,
- 				 struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period_us / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "%5.2f%%", percent);
- }
+ 	nr_cols = 0;
  
-@@ -102,6 +114,10 @@ static int hpp_entry_overhead_guest_sys(struct hpp_context *ctx,
- 					struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period_guest_sys / ctx->total_period;
+-	/* The percentage column */
+-	col_types[nr_cols++] = G_TYPE_STRING;
++	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
++		if (!hpp_functions[i].cond)
++			continue;
 +
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
-@@ -126,6 +142,10 @@ static int hpp_entry_overhead_guest_us(struct hpp_context *ctx,
- 				       struct hist_entry *he)
- {
- 	double percent = 100.0 * he->period_guest_us / ctx->total_period;
-+
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%.2f", percent);
-+
- 	return scnprintf(ctx->s, ctx->size, "  %5.2f%% ", percent);
- }
- 
-@@ -142,6 +162,9 @@ static int hpp_width_samples(struct hpp_context *ctx __used)
- static int hpp_entry_samples(struct hpp_context *ctx,
- 			     struct hist_entry *he)
- {
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%" PRIu64, he->nr_events);
-+
- 	return scnprintf(ctx->s, ctx->size, "%11" PRIu64, he->nr_events);
- }
- 
-@@ -158,6 +181,9 @@ static int hpp_width_period(struct hpp_context *ctx __used)
- static int hpp_entry_period(struct hpp_context *ctx,
- 			    struct hist_entry *he)
- {
-+	if (symbol_conf.field_sep)
-+		return scnprintf(ctx->s, ctx->size, "%" PRIu64, he->period);
-+
- 	return scnprintf(ctx->s, ctx->size, "%12" PRIu64, he->period);
- }
- 
-@@ -189,10 +215,16 @@ static int hpp_entry_delta(struct hpp_context *ctx,
- 		new_percent = 100.0 * he->period / new_total;
- 
- 	diff = new_percent - old_percent;
--	if (fabs(diff) < 0.01)
-+	if (fabs(diff) < 0.01) {
-+		if (symbol_conf.field_sep)
-+			return scnprintf(ctx->s, ctx->size, " ");
- 		return scnprintf(ctx->s, ctx->size, "       ");
++		col_types[nr_cols++] = G_TYPE_STRING;
 +	}
  
- 	scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		if (se->elide)
+@@ -68,11 +129,17 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 	col_idx = 0;
+ 
+-	/* The percentage column */
+-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+-						    -1, "Overhead (%)",
+-						    renderer, "text",
+-						    col_idx++, NULL);
++	for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
++		if (!hpp_functions[i].cond)
++			continue;
 +
-+	if (symbol_conf.field_sep)
-+		scnprintf(ctx->s, ctx->size, "%s", buf);
- 	return scnprintf(ctx->s, ctx->size, "%7.7s", buf);
- }
- 
-@@ -211,10 +243,16 @@ static int hpp_entry_displ(struct hpp_context *ctx,
- {
- 	char buf[32];
- 
--	if (!ctx->displacement)
-+	if (!ctx->displacement) {
-+		if (symbol_conf.field_sep)
-+			return scnprintf(ctx->s, ctx->size, " ");
- 		return scnprintf(ctx->s, ctx->size, "     ");
++		hpp_functions[i].header(&ctx);
++
++		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
++							    -1, s,
++							    renderer, "markup",
++							    col_idx++, NULL);
 +	}
  
- 	scnprintf(buf, sizeof(buf), "%+4ld", ctx->displacement);
-+
-+	if (symbol_conf.field_sep)
-+		scnprintf(ctx->s, ctx->size, "%s", buf);
- 	return scnprintf(ctx->s, ctx->size, "%6.6s", buf);
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		if (se->elide)
+@@ -88,13 +155,9 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 	g_object_unref(GTK_TREE_MODEL(store));
+ 
+-	total_period = hists->stats.total_period;
+-
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 		GtkTreeIter iter;
+-		double percent;
+-		char s[512];
+ 
+ 		if (h->filtered)
+ 			continue;
+@@ -103,11 +166,17 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
+ 
+ 		col_idx = 0;
+ 
+-		percent = (h->period * 100.0) / total_period;
++		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
++			if (!hpp_functions[i].cond)
++				continue;
+ 
+-		snprintf(s, ARRAY_SIZE(s), "%.2f", percent);
++			if (hpp_functions[i].color)
++				hpp_functions[i].color(&ctx, h);
++			else
++				hpp_functions[i].entry(&ctx, h);
+ 
+-		gtk_list_store_set(store, &iter, col_idx++, s, -1);
++			gtk_list_store_set(store, &iter, col_idx++, s, -1);
++		}
+ 
+ 		list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 			if (se->elide)
+diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
+index 793cb6116ddf..687af0bba187 100644
+--- a/tools/perf/ui/gtk/gtk.h
++++ b/tools/perf/ui/gtk/gtk.h
+@@ -30,6 +30,7 @@ struct perf_gtk_context *perf_gtk__activate_context(GtkWidget *window);
+ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx);
+ 
+ void perf_gtk__init_helpline(void);
++void perf_gtk__init_hpp(void);
+ 
+ #ifndef HAVE_GTK_INFO_BAR
+ static inline GtkWidget *perf_gtk__setup_info_bar(void)
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index ad40b3626fdb..2588da865652 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -8,6 +8,7 @@ int perf_gtk__init(void)
+ {
+ 	perf_error__register(&perf_gtk_eops);
+ 	perf_gtk__init_helpline();
++	perf_gtk__init_hpp();
+ 	return gtk_init_check(NULL, NULL) ? 0 : -1;
  }
  
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index c040b03cc6f4..0712fb5c1bb7 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -319,11 +319,12 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.displacement	= displacement,
- 		.ptr		= pair_hists,
- 	};
-+	bool color = !symbol_conf.field_sep;
- 
- 	if (size == 0 || size > sizeof(bf))
- 		size = ctx.size = sizeof(bf);
- 
--	ret = hist_entry__period_snprintf(&ctx, he, true);
-+	ret = hist_entry__period_snprintf(&ctx, he, color);
- 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
- 
- 	ret = fprintf(fp, "%s\n", bf);
 -- 
 1.7.11.2
 
