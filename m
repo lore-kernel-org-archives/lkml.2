@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab2HTEDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:03:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab2HTEBt (ORCPT
+	id S1755362Ab2HTEEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:04:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59366 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab2HTEBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:01:49 -0400
+	Mon, 20 Aug 2012 00:01:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Chris Clayron <chris2553@googlemail.com>, Avi Kivity <avi@redhat.com>
-Subject: [ 42/46] KVM: VMX: Fix ds/es corruption on i386 with preemption
-Date: Sun, 19 Aug 2012 20:59:18 -0700
-Message-Id: <20120820035838.102511580@linuxfoundation.org>
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: [ 40/46] KVM: PIC: call ack notifiers for irqs that are dropped form irr
+Date: Sun, 19 Aug 2012 20:59:16 -0700
+Message-Id: <20120820035837.834733550@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -30,88 +30,55 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Gleb Natapov <gleb@redhat.com>
 
-(cherry picked from commit aa67f6096c19bcdb1951ef88be3cf3d2118809dc)
+(cherry picked from commit aea218f3cbbcaac249b6b2c98930a00d6d931f1e)
 
-Commit b2da15ac26a0c ("KVM: VMX: Optimize %ds, %es reload") broke i386
-in the following scenario:
+After commit 242ec97c358256 PIT interrupts are no longer delivered after
+PIC reset. It happens because PIT injects interrupt only if previous one
+was acked, but since on PIC reset it is dropped from irr it will never
+be delivered and hence acknowledged. Fix that by calling ack notifier on
+PIC reset.
 
-  vcpu_load
-  ...
-  vmx_save_host_state
-  vmx_vcpu_run
-  (ds.rpl, es.rpl cleared by hardware)
-
-  interrupt
-    push ds, es  # pushes bad ds, es
-    schedule
-      vmx_vcpu_put
-        vmx_load_host_state
-          reload ds, es (with __USER_DS)
-    pop ds, es  # of other thread's stack
-    iret
-  # other thread runs
-  interrupt
-    push ds, es
-    schedule  # back in vcpu thread
-    pop ds, es  # now with rpl=0
-    iret
-  ...
-  vcpu_put
-  resume_userspace
-  iret  # clears ds, es due to mismatched rpl
-
-(instead of resume_userspace, we might return with SYSEXIT and then
-take an exception; when the exception IRETs we end up with cleared
-ds, es)
-
-Fix by avoiding the optimization on i386 and reloading ds, es on the
-lightweight exit path.
-
-Reported-by: Chris Clayron <chris2553@googlemail.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/x86/kvm/vmx.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ arch/x86/kvm/i8259.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1470,13 +1470,6 @@ static void __vmx_load_host_state(struct
- 		loadsegment(ds, vmx->host_state.ds_sel);
- 		loadsegment(es, vmx->host_state.es_sel);
- 	}
--#else
--	/*
--	 * The sysexit path does not restore ds/es, so we must set them to
--	 * a reasonable value ourselves.
--	 */
--	loadsegment(ds, __USER_DS);
--	loadsegment(es, __USER_DS);
- #endif
- 	reload_tss();
- #ifdef CONFIG_X86_64
-@@ -6273,6 +6266,19 @@ static void __noclone vmx_vcpu_run(struc
- #endif
- 	      );
- 
-+#ifndef CONFIG_X86_64
-+	/*
-+	 * The sysexit path does not restore ds/es, so we must set them to
-+	 * a reasonable value ourselves.
-+	 *
-+	 * We can't defer this to vmx_load_host_state() since that function
-+	 * may be executed in interrupt context, which saves and restore segments
-+	 * around it, nullifying its effect.
-+	 */
-+	loadsegment(ds, __USER_DS);
-+	loadsegment(es, __USER_DS);
-+#endif
+--- a/arch/x86/kvm/i8259.c
++++ b/arch/x86/kvm/i8259.c
+@@ -305,6 +305,11 @@ static void pic_ioport_write(void *opaqu
+ 	addr &= 1;
+ 	if (addr == 0) {
+ 		if (val & 0x10) {
++			u8 edge_irr = s->irr & ~s->elcr;
++			int i;
++			bool found;
++			struct kvm_vcpu *vcpu;
 +
- 	vcpu->arch.regs_avail = ~((1 << VCPU_REGS_RIP) | (1 << VCPU_REGS_RSP)
- 				  | (1 << VCPU_EXREG_RFLAGS)
- 				  | (1 << VCPU_EXREG_CPL)
+ 			s->init4 = val & 1;
+ 			s->last_irr = 0;
+ 			s->irr &= s->elcr;
+@@ -322,6 +327,18 @@ static void pic_ioport_write(void *opaqu
+ 			if (val & 0x08)
+ 				pr_pic_unimpl(
+ 					"level sensitive irq not supported");
++
++			kvm_for_each_vcpu(i, vcpu, s->pics_state->kvm)
++				if (kvm_apic_accept_pic_intr(vcpu)) {
++					found = true;
++					break;
++				}
++
++
++			if (found)
++				for (irq = 0; irq < PIC_NUM_PINS/2; irq++)
++					if (edge_irr & (1 << irq))
++						pic_clear_isr(s, irq);
+ 		} else if (val & 0x08) {
+ 			if (val & 0x04)
+ 				s->poll = 1;
 
 
