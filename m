@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab2HTER3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:17:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab2HTD5K (ORCPT
+	id S1754287Ab2HTD5H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:57:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab2HTD5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:57:10 -0400
+	Sun, 19 Aug 2012 23:57:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Ozan=20=C3=87a=C4=9Flayan?= <ozancag@gmail.com>
-Subject: =?UTF-8?q?=5B=2013/16=5D=20USB=3A=20ftdi=5Fsio=3A=20Add=20VID/PID=20for=20Kondo=20Serial=20USB?=
-Date: Sun, 19 Aug 2012 20:56:12 -0700
-Message-Id: <20120820035459.534020955@linuxfoundation.org>
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Henrik Rydberg <rydberg@bitmath.se>
+Subject: [ 10/16] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
+Date: Sun, 19 Aug 2012 20:56:09 -0700
+Message-Id: <20120820035459.124021821@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035457.653002510@linuxfoundation.org>
 References: <20120820035457.653002510@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,49 +31,58 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ozan Çağlayan <ozancag@gmail.com>
+From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
-commit 7724a1edbe463b06d4e7831a41149ba095b16c53 upstream.
+commit d81a5d1956731c453b85c141458d4ff5d6cc5366 upstream.
 
-This adds VID/PID for Kondo Kagaku Co. Ltd. Serial USB Adapter
-interface:
-http://www.kondo-robot.com/EN/wp/?cat=28
+A lot of Broadcom Bluetooth devices provides vendor specific interface
+class and we are getting flooded by patches adding new device support.
+This change will help us enable support for any other Broadcom with vendor
+specific device that arrives in the future.
 
-Tested by controlling an RCB3 board using libRCB3.
+Only the product id changes for those devices, so this macro would be
+perfect for us:
 
-Signed-off-by: Ozan Çağlayan <ozancag@gmail.com>
+{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
+
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Acked-by: Henrik Rydberg <rydberg@bitmath.se>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 8 insertions(+)
+ include/linux/usb.h |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -809,6 +809,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
- 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
- 	{ USB_DEVICE(PI_VID, PI_E861_PID) },
-+	{ USB_DEVICE(KONDO_VID, KONDO_USB_SERIAL_PID) },
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -795,6 +795,13 @@
- #define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -757,6 +757,27 @@ static inline int usb_make_path(struct u
+ 	.bInterfaceSubClass = (sc), \
+ 	.bInterfaceProtocol = (pr)
  
- /*
-+ * Kondo Kagaku Co.Ltd.
-+ * http://www.kondo-robot.com/EN
++/**
++ * USB_VENDOR_AND_INTERFACE_INFO - describe a specific usb vendor with a class of usb interfaces
++ * @vend: the 16 bit USB Vendor ID
++ * @cl: bInterfaceClass value
++ * @sc: bInterfaceSubClass value
++ * @pr: bInterfaceProtocol value
++ *
++ * This macro is used to create a struct usb_device_id that matches a
++ * specific vendor with a specific class of interfaces.
++ *
++ * This is especially useful when explicitly matching devices that have
++ * vendor specific bDeviceClass values, but standards-compliant interfaces.
 + */
-+#define KONDO_VID 		0x165c
-+#define KONDO_USB_SERIAL_PID	0x0002
++#define USB_VENDOR_AND_INTERFACE_INFO(vend, cl, sc, pr) \
++	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
++		| USB_DEVICE_ID_MATCH_VENDOR, \
++	.idVendor = (vend), \
++	.bInterfaceClass = (cl), \
++	.bInterfaceSubClass = (sc), \
++	.bInterfaceProtocol = (pr)
 +
-+/*
-  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-  * http://winglucofacts.com/cables/
-  */
+ /* ----------------------------------------------------------------------- */
+ 
+ /* Stuff for dynamic usb ids */
 
 
