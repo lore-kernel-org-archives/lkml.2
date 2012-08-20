@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab2HTRlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 13:41:10 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1278 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab2HTRlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 13:41:06 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 20 Aug 2012 10:40:56 -0700
-Message-ID: <50327242.80103@nvidia.com>
-Date: Mon, 20 Aug 2012 22:52:10 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1752642Ab2HTRm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 13:42:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773Ab2HTRmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 13:42:55 -0400
+Date: Mon, 20 Aug 2012 19:42:47 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] perf tools: Catch event names from command line
+Message-ID: <20120820174247.GD1176@krava.brq.redhat.com>
+References: <1345144224-27280-1-git-send-email-robert.richter@amd.com>
+ <1345144224-27280-6-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dt: tegra: harmony: add regulators
-References: <1345186799-18229-1-git-send-email-ldewangan@nvidia.com> <502E9B09.3080800@wwwdotorg.org> <502EA1AC.4090205@wwwdotorg.org>
-In-Reply-To: <502EA1AC.4090205@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345144224-27280-6-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 18 August 2012 01:25 AM, Stephen Warren wrote:
-> On 08/17/2012 01:27 PM, Stephen Warren wrote:
->> On 08/17/2012 12:59 AM, Laxman Dewangan wrote:
->>> Harmony uses a TPS6586x regulator. Instantiate this, and hook up a
->>> couple of fixed GPIO-controlled regulators too.
->>>
->>> Based on Ventana regulator patch by Stephen Warren<swarren@nvidia.com>
->>> and converted to Harmony.
->> Thanks, applied to Tegra's for-3.7/dt branch.
-> Oh hang on, this adds regulators to DT, but doesn't do anything to
-> remove the board-file registration of Harmony's regulators from
-> board-dt-tegra20.c, which end up conflicting, and preventing the PCIe
-> driver from being registered.
->
-> So, this patch really wants to remove the legacy code to, but doing so
-> will be problematic; to avoid runtime git bisect failures, we'd need to
-> merge the regulator tree in first, or wait until next kernel release or
-> something... Thoughts?
+On Thu, Aug 16, 2012 at 09:10:21PM +0200, Robert Richter wrote:
+> Use command line string provided by the -e option to name events. This
+> way we get unique events names that also support pmu event syntax
+> (<pmu_name>/<config>/<modifier>). No need to reconstruct the name
+> anymore from its attributes. We use the event_desc of the header to
+> store the name in the perf.data header. Thus it is also available for
+> perf report.
+> 
+> Implemented by putting the parser in different states to parse events
+> or configs.
 
-Why not just remove the regulator registration from board files along 
-with the dt entry (in one patch). That will resolve the issue of bisect.
+I like the idea of multiple states in parser,
+but parse tests fails:
 
+[jolsa@krava perf]$ ./perf test -vvv parse
+ 5: parse events tests:
+--- start ---
+running test 0 'syscalls:sys_enter_open'
+running test 1 'syscalls:*'
+running test 2 'r1a'
+running test 3 '1:1'
+running test 4 'instructions'
+running test 5 'cycles/period=100000,config2/'
+running test 6 'faults'
+running test 7 'L1-dcache-load-miss'
+running test 8 'mem:0'
+running test 9 'mem:0:x'
+running test 10 'mem:0:r'
+running test 11 'mem:0:w'
+running test 12 'syscalls:sys_enter_open:k'
+running test 13 'syscalls:*:u'
+running test 14 'r1a:kp'
+running test 15 '1:1:hp'
+running test 16 'instructions:h'
+running test 17 'faults:u'
+running test 18 'L1-dcache-load-miss:kp'
+running test 19 'mem:0:u'
+FAILED util/parse-events-test.c:309 wrong name
+---- end ----
+parse events tests: FAILED!
+
+
+jirka
