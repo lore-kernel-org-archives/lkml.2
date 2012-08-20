@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2HTP5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:57:14 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:5274 "EHLO csmtp3.one.com"
+	id S1755981Ab2HTP5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:57:18 -0400
+Received: from csmtp2.one.com ([91.198.169.22]:21187 "EHLO csmtp2.one.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753113Ab2HTP5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:57:09 -0400
-X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 11:57:09 EDT
+	id S1755361Ab2HTP5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 11:57:14 -0400
 From: "Henrik Rydberg" <rydberg@bitmath.se>
-Date: Mon, 20 Aug 2012 17:53:40 +0200
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Date: Mon, 20 Aug 2012 18:01:50 +0200
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/19] Input: MT - Handle frame synchronization in core
-Message-ID: <20120820155340.GA655@polaris.bitmath.org>
+Subject: Re: [PATCH 19/19] HID: multitouch: Remove the redundant touch state
+Message-ID: <20120820160150.GA660@polaris.bitmath.org>
 References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
- <1344807757-2217-10-git-send-email-rydberg@euromail.se>
- <CAN+gG=G0P3m03WK8-fcsV5RFWLiXBQvxgaM7qMqHzB-C=tQQUg@mail.gmail.com>
+ <1344807757-2217-20-git-send-email-rydberg@euromail.se>
+ <CAN+gG=F6hhOxU--mF2v3sCTzFLHqd6vK5JqcvvDXigss7EkPHQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAN+gG=G0P3m03WK8-fcsV5RFWLiXBQvxgaM7qMqHzB-C=tQQUg@mail.gmail.com>
+In-Reply-To: <CAN+gG=F6hhOxU--mF2v3sCTzFLHqd6vK5JqcvvDXigss7EkPHQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Collect common frame synchronization tasks in a new function,
-> > input_mt_sync_frame(). Depending on the flags set, it drops
-> > unseen contacts and performs pointer emulation.
+Hi Benjamin,
+
+> This patch seems to be a little bit complex.
+> It has very good things, but also many things that hinders the readability.
 > 
-> I was really wondering why you needed to put in input-mt something
-> that appeared only in hid-multitouch.... until I noted that you are
-> going to use it for bcm5974.
+> And you should also remove the /* touchscreen emulation */ things in
+> mt_input_mapping as input_mt_init_slots handles now the init of ABS_X
+> ABS_Y and ABS_PRESSURE.
 
-True, you were only copied in on the patch specific to
-hid-multitouch. The core changes will naturally be used for some other
-drivers as well.
+Yes, it could be changed as well, like the bit patterns. As you
+mention below, the logic around the bits could be enhanced, and the
+ABS_X/Y should go in that set of changes.
 
-> Maybe you should add a comment on it (otherwise, it seams like you're
-> just adding unused code). Maybe this would also help people
-> understanding the *frame thing.
+> > -struct mt_slot {
+> > -       __s32 x, y, p, w, h;
+> > -       __s32 contactid;        /* the device ContactID assigned to this slot */
+> > -       bool touch_state;       /* is the touch valid? */
+> > -       bool seen_in_this_frame;/* has this slot been updated */
+> > -};
+> 
+> Why removing this struct?
+> Removing it infers a lot of unneeded changes in the patch.
+> 
+> As the mt_sync_frame handle the quirk NOT_SEEN_MEANS_UP, we should
+> just remove the field seen_in_this_frame.
 
-More comments on those plans, agreed. The "frame thing" is really only
-an input core change; it can most likely be better explained as well,
-but it really should not matter to drivers.
+Well, it is no longer needed, but sure, one could keep it and just
+remove the unused fields.
 
-> > +void input_mt_sync_frame(struct input_dev *dev)
+> > @@ -464,12 +438,31 @@ static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+> >         return -1;
+> >  }
+> >
+> > -static int mt_compute_slot(struct mt_device *td)
+> > +static void mt_input_configured(struct hid_device *hdev, struct hid_input *hi)
+> > +
 > > +{
-> > +       struct input_mt *mt = dev->mt;
-> > +       struct input_mt_slot *s;
+> > +       struct mt_device *td = hid_get_drvdata(hdev);
+> > +       struct mt_class *cls = &td->mtclass;
+> > +       struct input_dev *input = hi->input;
+> > +       unsigned int flags = 0;
 > > +
-> > +       if (!mt)
-> > +               return;
-> > +
-> > +       if (mt->flags & INPUT_MT_DROP_UNUSED) {
-> > +               for (s = mt->slots; s != mt->slots + mt->num_slots; s++) {
-> > +                       if (s->frame == mt->frame)
-> > +                               continue;
-> > +                       input_mt_slot(dev, s - mt->slots);
-> > +                       input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
+> > +       if (test_bit(INPUT_PROP_POINTER, input->propbit))
+> > +               flags |= INPUT_MT_POINTER;
+> > +       if (test_bit(INPUT_PROP_DIRECT, input->propbit))
+> > +               flags |= INPUT_MT_DIRECT;
 > 
-> Shouldn't we rely on input_mt_report_slot_state instead of doing it by hand?
+> These two tests are really strange: the function input_mt_init_slots
+> already sets those bits....
+> Maybe we should handle INPUT_PROP_POINTER, INPUT_PROP_DIRECT by
+> keeping the flag instead of setting the bits and re-read them to
+> finally re-set them...
 
-No, input_mt_report_slot_state() is a driver api function with side
-effects which are not desired here.
- 
-> > +               }
-> > +       }
-> > +
-> > +       if (mt->flags & INPUT_MT_POINTER)
-> > +               input_mt_report_pointer_emulation(dev, true);
-> > +
-> > +       if (mt->flags & INPUT_MT_DIRECT)
-> > +               input_mt_report_pointer_emulation(dev, false);
-> 
-> The function input_mt_report_pointer_emulation could be called twice
-> if the driver has both INPUT_MT_POINTER and INPUT_MT_DIRECT flags. Are
-> they mutual exclusive?
-
-You are right, and they are not. Will fix.
+Ok, I will extend the patchset for hid-multitouch to include such
+changes as well.
 
 Thanks,
 Henrik
+
