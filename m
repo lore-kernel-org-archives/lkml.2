@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab2HTEqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:46:10 -0400
+	id S1754482Ab2HTEqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:46:09 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:64603 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab2HTEpM (ORCPT
+	with ESMTP id S1754513Ab2HTEpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:45:12 -0400
+	Mon, 20 Aug 2012 00:45:22 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
         David Ahern <dsahern@gmail.com>
-Subject: [RFC PATCH 3/7] perf: make python support based on CONFIG_LIBPYTHON
-Date: Sun, 19 Aug 2012 22:44:47 -0600
-Message-Id: <1345437891-78830-4-git-send-email-dsahern@gmail.com>
+Subject: [RFC PATCH 6/7] perf: make dwarf unwind support based on CONFIG_LIBUNWIND
+Date: Sun, 19 Aug 2012 22:44:50 -0600
+Message-Id: <1345437891-78830-7-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1345437891-78830-1-git-send-email-dsahern@gmail.com>
 References: <1345437891-78830-1-git-send-email-dsahern@gmail.com>
@@ -24,209 +24,199 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile                     |  117 ++++++++++++++-----------------
- tools/perf/config/feature-tests.mak     |    2 +-
- tools/perf/util/trace-event-scripting.c |   17 ++---
- 3 files changed, 60 insertions(+), 76 deletions(-)
+ tools/perf/Makefile                 |   43 +++++++++++++++--------------------
+ tools/perf/arch/x86/Makefile        |    2 +-
+ tools/perf/builtin-record.c         |   15 ++++++------
+ tools/perf/config/feature-tests.mak |    2 +-
+ tools/perf/util/unwind.h            |    5 ++--
+ 5 files changed, 31 insertions(+), 36 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index a447aa8..35448ef 100644
+index 012434d..b481d77 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -16,8 +16,6 @@ include config/utilities.mak
+@@ -37,9 +37,6 @@ include config/utilities.mak
+ # Define NO_DEMANGLE if you do not want C++ symbol demangling.
  #
- # Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.
- #
--# Define NO_LIBPYTHON to disable python script extension.
+ # Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
 -#
- # Define PYTHON to point to the python binary if the default
- # `python' is not correct; for example: PYTHON=python2
- #
-@@ -630,78 +628,67 @@ ifdef CONFIG_LIBPERL
-        LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
- endif
+-# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
+-# backtrace post unwind.
  
--disable-python = $(eval $(disable-python_code))
--define disable-python_code
--  BASIC_CFLAGS += -DNO_LIBPYTHON
--  $(if $(1),$(warning No $(1) was found))
--  $(warning Python support won't be built)
--endef
--
--override PYTHON := \
--  $(call get-executable-or-default,PYTHON,python)
--
--ifndef PYTHON
--  $(call disable-python,python interpreter)
--  python-clean :=
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -480,20 +477,25 @@ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
+ endif
+ endif # NO_LIBELF
+ 
+-ifndef NO_LIBUNWIND
+-# for linking with debug library, run like:
+-# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
+-ifdef LIBUNWIND_DIR
+-	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
+-	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
+-endif
++ifdef CONFIG_LIBUNWIND
++    # for linking with debug library, run like:
++    # make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
++    ifdef LIBUNWIND_DIR
++	    LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
++	    LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
++    endif
+ 
+-FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+-ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
+-	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
+-	NO_LIBUNWIND := 1
+-endif # Libunwind support
+-endif # NO_LIBUNWIND
++    FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
++    ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
++        $(warning No libunwind found. Please install libunwind >= 0.99)
++        $(error )
++    endif # Libunwind support
++
++	EXTLIBS += $(LIBUNWIND_LIBS)
++	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
++	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
++	LIB_OBJS += $(OUTPUT)util/unwind.o
++endif # CONFIG_LIBUNWIND
+ 
+ -include arch/$(ARCH)/Makefile
+ 
+@@ -541,15 +543,6 @@ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ endif # NO_LIBELF
+ 
+-ifdef NO_LIBUNWIND
+-	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
 -else
-+ifdef CONFIG_LIBPYTHON
-+    override PYTHON := \
-+        $(call get-executable-or-default,PYTHON,python)
- 
--  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
-+    ifndef PYTHON
-+        $(warning python interpreter not found.)
-+        $(warning Install it or unset CONFIG_LIBPYTHON to continue.)
-+        $(error )
-+    endif
- 
--  # python extension build directories
--  PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
--  PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
--  PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
--  export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
-+    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
- 
--  python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
-+    # python extension build directories
-+    PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
-+    PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
-+    PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
-+    export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
- 
--  ifdef NO_LIBPYTHON
--    $(call disable-python)
--  else
-+    python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
- 
-     override PYTHON_CONFIG := \
--      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-+        $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
- 
-     ifndef PYTHON_CONFIG
--      $(call disable-python,python-config tool)
--    else
+-	EXTLIBS += $(LIBUNWIND_LIBS)
+-	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
+-	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
+-	LIB_OBJS += $(OUTPUT)util/unwind.o
+-endif
 -
--      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
--
--      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
--      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
--      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
--
--      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
--        $(call disable-python,Python.h (for Python 2.x))
--      else
--
--        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED)),y)
--          $(warning Python 3 is not yet supported; please set)
--          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
--          $(warning If you also have Python 2 installed, then)
--          $(warning try something like:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make PYTHON=python2)
--          $(warning $(and ,))
--          $(warning Otherwise, disable Python support entirely:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make NO_LIBPYTHON=1)
--          $(warning $(and ,))
--          $(error   $(and ,))
--        else
--          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
--          EXTLIBS += $(PYTHON_EMBED_LIBADD)
--          LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
--          LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
--          LANG_BINDINGS += $(OUTPUT)python/perf.so
--        endif
--
--      endif
-+        $(warning python-config not found.)
-+        $(warning Install it or unset CONFIG_LIBPYTHON to continue.)
-+        $(error )
-     endif
--  endif
-+
-+    PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
-+
-+    PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
-+    PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
-+    PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
-+    PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-+    FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
-+
-+    ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
-+        $(warning Failed to detect python development kit.)
-+        $(warning Install it or unset CONFIG_LIBPYTHON to continue.)
-+        $(warning e.g., apt-get install python-dev (ubuntu).)
-+        $(warning       yum install python-devel (Fedora).)
-+        $(error )
-+    endif
-+
-+    ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED)),y)
-+        $(warning Python 3 is not yet supported; please set)
-+        $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
-+        $(warning If you also have Python 2 installed, then)
-+        $(warning try something like:)
-+        $(warning $(and ,))
-+        $(warning $(and ,)  make PYTHON=python2)
-+        $(warning $(and ,))
-+        $(warning Otherwise, disable Python support entirely by unsetting CONFIG_LIBPYTHON.)
-+    endif
-+
-+    ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
-+    EXTLIBS += $(PYTHON_EMBED_LIBADD)
-+    LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
-+    LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
-+    LANG_BINDINGS += $(OUTPUT)python/perf.so
+ ifdef CONFIG_NEWT
+     FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt
+     ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT)),y)
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 815841c..3a6dc3d 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -2,7 +2,7 @@ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
  endif
- 
- ifdef NO_DEMANGLE
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 0145c05..dbf1127 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -106,7 +106,7 @@ return 0;
- endef
+-ifndef NO_LIBUNWIND
++ifdef CONFIG_LIBUNWIND
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
  endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 479ff2a..3f0c5f5 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -26,6 +26,7 @@
+ #include "util/symbol.h"
+ #include "util/cpumap.h"
+ #include "util/thread_map.h"
++#include "generated/autoconf.h"
  
--ifndef NO_LIBPYTHON
-+ifdef CONFIG_LIBPYTHON
- define SOURCE_PYTHON_VERSION
- #include <Python.h>
- #if PY_VERSION_HEX >= 0x03000000
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index edaed05..85115b8 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -46,11 +46,8 @@ static void process_event_unsupported(union perf_event *event __unused,
+ #include <unistd.h>
+ #include <sched.h>
+@@ -33,11 +34,11 @@
  
- static void print_python_unsupported_msg(void)
- {
--	fprintf(stderr, "Python scripting not supported."
--		"  Install libpython and rebuild perf to enable it.\n"
--		"For example:\n  # apt-get install python-dev (ubuntu)"
--		"\n  # yum install python-devel (Fedora)"
--		"\n  etc.\n");
-+	fprintf(stderr, "Python scripting not supported.\n"
-+		"Enable CONFIG_LIBPYTHON and rebuild perf to enable it.\n");
- }
+ #define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
  
- static int python_start_script_unsupported(const char *script __unused,
-@@ -92,17 +89,17 @@ static void register_python_scripting(struct scripting_ops *scripting_ops)
- 	scripting_context = malloc(sizeof(struct scripting_context));
- }
- 
--#ifdef NO_LIBPYTHON
-+#ifdef CONFIG_LIBPYTHON
-+extern struct scripting_ops python_scripting_ops;
-+
- void setup_python_scripting(void)
- {
--	register_python_scripting(&python_scripting_unsupported_ops);
-+	register_python_scripting(&python_scripting_ops);
- }
- #else
--extern struct scripting_ops python_scripting_ops;
--
- void setup_python_scripting(void)
- {
--	register_python_scripting(&python_scripting_ops);
-+	register_python_scripting(&python_scripting_unsupported_ops);
- }
+-#ifdef NO_LIBUNWIND_SUPPORT
+-static char callchain_help[] = CALLCHAIN_HELP "[fp]";
+-#else
++#ifdef CONFIG_LIBUNWIND
+ static unsigned long default_stack_dump_size = 8192;
+ static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
++#else
++static char callchain_help[] = CALLCHAIN_HELP "[fp]";
  #endif
  
+ enum write_mode_t {
+@@ -738,7 +739,7 @@ error:
+ 	return ret;
+ }
+ 
+-#ifndef NO_LIBUNWIND_SUPPORT
++#ifdef CONFIG_LIBUNWIND
+ static int get_stack_size(char *str, unsigned long *_size)
+ {
+ 	char *endptr;
+@@ -764,7 +765,7 @@ static int get_stack_size(char *str, unsigned long *_size)
+ 	       max_size, str);
+ 	return -1;
+ }
+-#endif /* !NO_LIBUNWIND_SUPPORT */
++#endif /* CONFIG_LIBUNWIND */
+ 
+ static int
+ parse_callchain_opt(const struct option *opt __used, const char *arg,
+@@ -803,7 +804,7 @@ parse_callchain_opt(const struct option *opt __used, const char *arg,
+ 				       "needed for -g fp\n");
+ 			break;
+ 
+-#ifndef NO_LIBUNWIND_SUPPORT
++#ifdef CONFIG_LIBUNWIND
+ 		/* Dwarf style */
+ 		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
+ 			ret = 0;
+@@ -821,7 +822,7 @@ parse_callchain_opt(const struct option *opt __used, const char *arg,
+ 			if (!ret)
+ 				pr_debug("callchain: stack dump size %d\n",
+ 					 rec->opts.stack_dump_size);
+-#endif /* !NO_LIBUNWIND_SUPPORT */
++#endif /* CONFIG_LIBUNWIND */
+ 		} else {
+ 			pr_err("callchain: Unknown -g option "
+ 			       "value: %s\n", arg);
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index aabe4e4..dbda9b5 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -155,7 +155,7 @@ int main(void)
+ }
+ endef
+ 
+-ifndef NO_LIBUNWIND
++ifdef CONFIG_LIBUNWIND
+ define SOURCE_LIBUNWIND
+ #include <libunwind.h>
+ #include <stdlib.h>
+diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
+index 919bd6a..8dd9e03 100644
+--- a/tools/perf/util/unwind.h
++++ b/tools/perf/util/unwind.h
+@@ -4,6 +4,7 @@
+ #include "types.h"
+ #include "event.h"
+ #include "symbol.h"
++#include "generated/autoconf.h"
+ 
+ struct unwind_entry {
+ 	struct map	*map;
+@@ -13,7 +14,7 @@ struct unwind_entry {
+ 
+ typedef int (*unwind_entry_cb_t)(struct unwind_entry *entry, void *arg);
+ 
+-#ifndef NO_LIBUNWIND_SUPPORT
++#ifdef CONFIG_LIBUNWIND
+ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 			struct machine *machine,
+ 			struct thread *thread,
+@@ -30,5 +31,5 @@ unwind__get_entries(unwind_entry_cb_t cb __used, void *arg __used,
+ {
+ 	return 0;
+ }
+-#endif /* NO_LIBUNWIND_SUPPORT */
++#endif /* CONFIG_LIBUNWIND */
+ #endif /* __UNWIND_H */
 -- 
 1.7.10.1
 
