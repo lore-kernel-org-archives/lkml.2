@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2HTHBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 03:01:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:3625 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab2HTHBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 03:01:35 -0400
-X-IronPort-AV: E=Sophos;i="4.77,796,1336320000"; 
-   d="scan'208";a="5670424"
-Message-ID: <5031E208.2080202@cn.fujitsu.com>
-Date: Mon, 20 Aug 2012 15:06:48 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1755470Ab2HTHBs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 03:01:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:35767 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755406Ab2HTHBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 03:01:38 -0400
+From: Rusty Russell <rusty@ozlabs.org>
+To: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
+        JBeulich@suse.com, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 27/74] lto: Mark EXPORT_SYMBOL symbols __visible
+In-Reply-To: <1345345030-22211-28-git-send-email-andi@firstfloor.org>
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-28-git-send-email-andi@firstfloor.org>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 20 Aug 2012 16:24:04 +0930
+Message-ID: <87txvy3vg3.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: wujianguo <wujianguo106@gmail.com>
-CC: tony.luck@intel.com, fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jiang.liu@huawei.com,
-        guohanjun@huawei.com, qiuxishi@huawei.com, liuj97@gmail.com
-Subject: Re: [PATCH]mm/ia64: fix a node distance bug
-References: <5031D763.9010808@gmail.com>
-In-Reply-To: <5031D763.9010808@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 15:01:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/20 15:01:37,
-	Serialize complete at 2012/08/20 15:01:37
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 08/20/2012 02:21 PM, wujianguo Wrote:
-> From: Jianguo Wu <wujianguo@huawei.com>
-> 
-> Hi all,
-> 	When doing memory-hot-plug, We found node distance is wrong after offline
-> a node in IA64 platform. For example system has 4 nodes:
-> node distances:
-> node   0   1   2   3
->   0:  10  21  21  32
->   1:  21  10  32  21
->   2:  21  32  10  21
->   3:  32  21  21  10
-> 
-> linux-drf:/sys/devices/system/node/node0 # cat distance
-> 10  21  21  32
-> linux-drf:/sys/devices/system/node/node1 # cat distance
-> 21  10  32  21
-> 
-> After offline node2:
-> linux-drf:/sys/devices/system/node/node0 # cat distance
-> 10 21 32
-> linux-drf:/sys/devices/system/node/node1 # cat distance
-> 32 21 32	--------->expected value is: 21  10  21
-> 
-> In arch IA, we have following definition:
-> extern u8 numa_slit[MAX_NUMNODES * MAX_NUMNODES];
-> #define node_distance(from,to) (numa_slit[(from) * num_online_nodes() + (to)])
-> 
-> node distance is setup as following:
-> acpi_numa_arch_fixup()
-> {
-> 	...
-> 	memset(numa_slit, -1, sizeof(numa_slit));
-> 	for (i = 0; i < slit_table->locality_count; i++) {
-> 		if (!pxm_bit_test(i))
-> 			continue;
-> 		node_from = pxm_to_node(i);
-> 		for (j = 0; j < slit_table->locality_count; j++) {
-> 			if (!pxm_bit_test(j))
-> 				continue;
-> 			node_to = pxm_to_node(j);
-> 			node_distance(node_from, node_to) =
-> 			    slit_table->entry[i * slit_table->locality_count + j];
-> 		}
-> 	}
-> 	...
-> }
-> 	num_online_nodes() is a variable value, during system boot the return vale is 4,
-> but after offline node2, the return value is 3, so we read a wrong node distance value.
-> This patch is trying to fix this bug.
-> 
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> ---
->  arch/ia64/include/asm/numa.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/numa.h b/arch/ia64/include/asm/numa.h
-> index 6a8a27c..2e27ef1 100644
-> --- a/arch/ia64/include/asm/numa.h
-> +++ b/arch/ia64/include/asm/numa.h
-> @@ -59,7 +59,7 @@ extern struct node_cpuid_s node_cpuid[NR_CPUS];
->   */
-> 
->  extern u8 numa_slit[MAX_NUMNODES * MAX_NUMNODES];
-> -#define node_distance(from,to) (numa_slit[(from) * num_online_nodes() + (to)])
-> +#define node_distance(from,to) (numa_slit[(from) * MAX_NUMNODES + (to)])
+On Sat, 18 Aug 2012 19:56:23 -0700, Andi Kleen <andi@firstfloor.org> wrote:
+> @@ -78,11 +78,13 @@ extern struct module __this_module;
+>  
+>  #else /* !CONFIG_MODULES... */
+>  
+> -#define EXPORT_SYMBOL(sym)
+> -#define EXPORT_SYMBOL_GPL(sym)
+> -#define EXPORT_SYMBOL_GPL_FUTURE(sym)
+> -#define EXPORT_UNUSED_SYMBOL(sym)
+> -#define EXPORT_UNUSED_SYMBOL_GPL(sym)
+> +/* Even without modules keep the __visible side effect */
+> +
+> +#define EXPORT_SYMBOL(sym) extern typeof(sym) sym __visible
+> +#define EXPORT_SYMBOL_GPL(sym) extern typeof(sym) sym __visible
+> +#define EXPORT_SYMBOL_GPL_FUTURE(sym) extern typeof(sym) sym __visible
+> +#define EXPORT_UNUSED_SYMBOL(sym) extern typeof(sym) sym __visible
+> +#define EXPORT_UNUSED_SYMBOL_GPL(sym) extern typeof(sym) sym __visible
+>  
+>  #endif /* CONFIG_MODULES */
 
-Hmm, MAX_NUMNODES is too large. I think num_possible_nodes() is better.
+Really, why?  Seems like a win to have them eliminated if unused.
 
-Thanks
-Wen Congyang
+Naively, I would think many cases of __visible should be #ifdef
+CONFIG_MODULES.  What am I missing?
 
-> 
->  extern int paddr_to_nid(unsigned long paddr);
-> 
-
+Thanks,
+Rusty.
