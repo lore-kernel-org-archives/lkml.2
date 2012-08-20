@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab2HTU1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:27:52 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:38742 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754172Ab2HTU1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:27:48 -0400
-Message-ID: <50329DBF.9060206@xenotime.net>
-Date: Mon, 20 Aug 2012 13:27:43 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1752162Ab2HTUes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:34:48 -0400
+Received: from mx0a-000f0801.pphosted.com ([67.231.144.122]:42135 "EHLO
+	mx0a-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751149Ab2HTUep convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:34:45 -0400
+X-Greylist: delayed 3119 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 16:34:45 EDT
+From: Krishna Gudipati <kgudipat@Brocade.com>
+To: Jim Meyering <jim@meyering.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Jim Meyering <meyering@redhat.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Mon, 20 Aug 2012 12:42:19 -0700
+Subject: RE: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+Thread-Topic: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+Thread-Index: Ac1+9LM3CA0PQp0NQ0So+BIbJ0B5UAAFVAWA
+Message-ID: <B5EE62D80D50B84BB9E5174F7FCCE80A2839ABC2C4@HQ1-EXCH02.corp.brocade.com>
+References: <1345481724-30108-1-git-send-email-jim@meyering.net>
+ <1345481724-30108-5-git-send-email-jim@meyering.net>
+In-Reply-To: <1345481724-30108-5-git-send-email-jim@meyering.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, Andi Kleen <andi@firstfloor.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        greg@kroah.com
-Subject: Re: [PATCH] USB: Build usb_speed_string unconditionally
-References: <1345491508-30966-1-git-send-email-andi@firstfloor.org> <Pine.LNX.4.44L0.1208201541520.1182-100000@iolanthe.rowland.org> <20120820195808.GD4461@tassilo.jf.intel.com>
-In-Reply-To: <20120820195808.GD4461@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-08-20_04:2012-08-20,2012-08-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=1 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1207200000 definitions=main-1208200231
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/12 12:58, Andi Kleen wrote:
-
-> On Mon, Aug 20, 2012 at 03:47:48PM -0400, Alan Stern wrote:
->> On Mon, 20 Aug 2012, Andi Kleen wrote:
->>
->>> From: Andi Kleen <ak@linux.intel.com>
->>>
->>> The usb core uses usb_speed_string(). But it's only selected
->>> for USB_GADGET. Enable it unconditionally.
->>
->> What are you talking about?  USB_COMMON isn't selected at all, but it
->> does get built whenever USB or USB_GAGDET is enabled.  From
->> drivers/usb/Kconfig:
+> -----Original Message-----
+> From: Jim Meyering [mailto:jim@meyering.net]
+> Sent: Monday, August 20, 2012 9:55 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Jim Meyering; Jing Huang; Krishna Gudipati; James E.J. Bottomley; linux-
+> scsi@vger.kernel.org
+> Subject: [PATCH] bfa: avoid buffer overrun for 12-byte model name
 > 
-> Just trying to fix my LTO randconfigs.
+> From: Jim Meyering <meyering@redhat.com>
 > 
-> Here's a config that violated it on rc2.
+> we use strncpy to copy a model name of length up to 15 (16, if you count the
+> NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+> However, strncpy does not always NUL-terminate, so whenever the original
+> model string has strlen >= 12, the following strncat reads beyond end of the -
+> >sym_name buffer as it attempts to find end of string.
+> 
+> bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric) {
+> 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+> 	...
+> 	strncpy((char *)&port_cfg->sym_name, model,
+> 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+> 	strncat((char *)&port_cfg->sym_name,
+> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+> 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+> 	...
+> 
+> bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model) {
+> 	struct bfi_ioc_attr_s	*ioc_attr;
+> 
+> 	WARN_ON(!model);
+> 	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+> 
+> BFA_ADAPTER_MODEL_NAME_LEN = 16
+> 
+> Signed-off-by: Jim Meyering <meyering@redhat.com>
+> ---
+>  drivers/scsi/bfa/bfa_fcs.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c index
+> eaac57e..3329493 100644
+> --- a/drivers/scsi/bfa/bfa_fcs.c
+> +++ b/drivers/scsi/bfa/bfa_fcs.c
+> @@ -713,6 +713,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s
+> *fabric)
+>  	/* Model name/number */
+>  	strncpy((char *)&port_cfg->sym_name, model,
+>  		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+> +	port_cfg->sym_name[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1]
+> = 0;
+>  	strncat((char *)&port_cfg->sym_name,
+> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+>  		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
 
+Nacked-by: Krishna Gudipati <kgudipat@brocade.com>
 
-Involves known problem with DRM_USB AFAICT.
+Hi Jim,
 
-Greg just accepted a patch from Guenter Roeck that should
-fix this:
-[PATCH RESEND] gpu/mfd/usb: Fix USB randconfig problems
+This model number is of length 12 bytes and the logic added here will reset the model last byte.
+In addition strncat does not need the src to be null terminated, the change does not compile even.
+NACK to this change.
 
--- 
-~Randy
+Thanks,
+Krishna
