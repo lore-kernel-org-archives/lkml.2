@@ -1,306 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab2HTOBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:01:15 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:44941 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465Ab2HTOBI (ORCPT
+	id S1756497Ab2HTOAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:00:16 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:13017
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755485Ab2HTN4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:01:08 -0400
-From: Trevor Brandt <tjbrandt@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>, Eric Paris <eparis@redhat.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Trevor Brandt <tjbrandt@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Mon, 20 Aug 2012 09:56:18 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah11b5h)
+X-WSS-ID: 0M9241L-01-3DD-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <x86@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-Cc: team-fjord@googlegroups.com
-Subject: [PATCHv2 2/2] sched: Support compiling out real-time scheduling with REALTIME_SCHED.
-Date: Mon, 20 Aug 2012 07:00:23 -0700
-Message-Id: <1345471224-14997-2-git-send-email-tjbrandt@gmail.com>
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 04/19] x86, io_apic: Introduce x86_io_apic_ops.print_entries for debugging
+Date: Mon, 20 Aug 2012 15:55:50 +0200
+Message-ID: <1345470965-24410-5-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345471224-14997-1-git-send-email-tjbrandt@gmail.com>
-References: <y>
- <1345471224-14997-1-git-send-email-tjbrandt@gmail.com>
+In-Reply-To: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for compiling out the real-time scheduler (SCHED_FIFO
-and SCHED_RR) to save space. Changes sched_set_stop_task to use
-SCHED_NORMAL rather than SCHED_FIFO, since the kernel only uses this
-function as a fake scheduling priority for userspace to read to avoid
-exposing the stop class to userspace. Bloat-o-meter gives a space
-savings of 1877 bytes with REALTIME_SCHED turned off.
+This call-back is used to dump IO-APIC entries for debugging
+purposes into the kernel log. VT-d needs a special routine
+for this and will overwrite the default.
 
-Userspace works fine with REALTIME_SCHED turned off. Processes
-attempting to set a real-time scheduling policy get EINVAL, exactly
-the response that the sched_setscheduler manpage documents you will
-get if the "scheduling policy is not one of the recognized policies."
-
-Signed-off-by: Trevor Brandt <tjbrandt@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
-v2: The second revision compiles out cpupri.c when REALTIME_SCHED=n.
+ arch/x86/include/asm/io_apic.h      |    3 +
+ arch/x86/include/asm/x86_init.h     |    1 +
+ arch/x86/kernel/apic/io_apic.c      |  109 ++++++++++++++++++-----------------
+ arch/x86/kernel/x86_init.c          |    1 +
+ drivers/iommu/intel_irq_remapping.c |    4 ++
+ 5 files changed, 65 insertions(+), 53 deletions(-)
 
- init/Kconfig             |    8 ++++++++
- kernel/sched/Makefile    |    6 ++++--
- kernel/sched/core.c      |   14 ++++++--------
- kernel/sched/cpupri.h    |    3 ++-
- kernel/sched/rt.c        |    2 --
- kernel/sched/sched.h     |   46 ++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/stop_task.c |    4 ++++
- 7 files changed, 70 insertions(+), 13 deletions(-)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 3f42cd6..1206961 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -753,6 +753,7 @@ config CFS_BANDWIDTH
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index d59e172..21aa81e 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -180,6 +180,8 @@ extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
+ extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
+ extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
+ extern void native_disable_io_apic(void);
++extern void native_io_apic_print_entries(unsigned int apic, unsigned int nr_entries);
++extern void intel_ir_io_apic_print_entries(unsigned int apic, unsigned int nr_entries);
  
- config RT_GROUP_SCHED
- 	bool "Group scheduling for SCHED_RR/FIFO"
-+	depends on REALTIME_SCHED
- 	depends on EXPERIMENTAL
- 	depends on CGROUP_SCHED
- 	default n
-@@ -972,6 +973,13 @@ menuconfig EXPERT
-           environments which can tolerate a "non-standard" kernel.
-           Only use this if you really know what you are doing.
- 
-+config REALTIME_SCHED
-+	bool "Realtime Scheduler" if EXPERT
-+	default y
-+	help
-+	  This option enables support for the realtime scheduler and the
-+	  corresponding scheduling classes SCHED_FIFO and SCHED_RR.
-+
- config UID16
- 	bool "Enable 16-bit UID system calls" if EXPERT
- 	depends on ARM || BLACKFIN || CRIS || FRV || H8300 || X86_32 || M68K || (S390 && !64BIT) || SUPERH || SPARC32 || (SPARC64 && COMPAT) || UML || (X86_64 && IA32_EMULATION)
-diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index 9a7dd35..76fe500 100644
---- a/kernel/sched/Makefile
-+++ b/kernel/sched/Makefile
-@@ -11,8 +11,10 @@ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
- CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
- endif
- 
--obj-y += core.o clock.o idle_task.o fair.o rt.o stop_task.o
--obj-$(CONFIG_SMP) += cpupri.o
-+obj-y += core.o clock.o idle_task.o fair.o stop_task.o
-+obj-$(CONFIG_REALTIME_SCHED) += realtime.o
-+realtime-y += rt.o
-+realtime-$(CONFIG_SMP) += cpupri.o
- obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
- obj-$(CONFIG_SCHEDSTATS) += stats.o
- obj-$(CONFIG_SCHED_DEBUG) += debug.o
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 478a04c..3579286 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -85,6 +85,8 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/sched.h>
- 
-+struct rt_bandwidth def_rt_bandwidth;
-+
- void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
+ static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
  {
- 	unsigned long delta;
-@@ -959,19 +961,15 @@ static int irqtime_account_si_update(void)
- 
- void sched_set_stop_task(int cpu, struct task_struct *stop)
- {
--	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
-+	struct sched_param param = { .sched_priority = 0 };
- 	struct task_struct *old_stop = cpu_rq(cpu)->stop;
- 
- 	if (stop) {
- 		/*
--		 * Make it appear like a SCHED_FIFO task, its something
-+		 * Make it appear like a SCHED_NORMAL task, its something
- 		 * userspace knows about and won't get confused about.
--		 *
--		 * Also, it will make PI more or less work without too
--		 * much confusion -- but then, stop work should not
--		 * rely on PI working anyway.
- 		 */
--		sched_setscheduler_nocheck(stop, SCHED_FIFO, &param);
-+		sched_setscheduler_nocheck(stop, SCHED_NORMAL, &param);
- 
- 		stop->sched_class = &stop_sched_class;
- 	}
-@@ -983,7 +981,7 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
- 		 * Reset it back to a normal scheduling class so that
- 		 * it can die in pieces.
- 		 */
--		old_stop->sched_class = &rt_sched_class;
-+		old_stop->sched_class = &fair_sched_class;
- 	}
- }
- 
-diff --git a/kernel/sched/cpupri.h b/kernel/sched/cpupri.h
-index fd7914c..8ee2796 100644
---- a/kernel/sched/cpupri.h
-+++ b/kernel/sched/cpupri.h
-@@ -20,7 +20,7 @@ struct cpupri {
- 	int               cpu_to_pri[NR_CPUS];
- };
- 
--#ifdef CONFIG_SMP
-+#if defined(CONFIG_SMP) && defined(CONFIG_REALTIME_SCHED)
- int  cpupri_find(struct cpupri *cp,
- 		 struct task_struct *p, struct cpumask *lowest_mask);
- void cpupri_set(struct cpupri *cp, int cpu, int pri);
-@@ -32,6 +32,7 @@ static inline int cpupri_init(struct cpupri *cp)
- {
- 	return 0;
- }
-+static inline void cpupri_cleanup(struct cpupri *cp) { }
+@@ -225,6 +227,7 @@ static inline void disable_ioapic_support(void) { }
+ #define native_io_apic_write		NULL
+ #define native_io_apic_modify		NULL
+ #define native_disable_io_apic		NULL
++#define native_io_apic_print_entries	NULL
  #endif
  
- #endif /* _LINUX_CPUPRI_H */
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index f42ae7f..4100803 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -9,8 +9,6 @@
+ #endif /* _ASM_X86_IO_APIC_H */
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 8e1b44c..be8e9a6 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -194,6 +194,7 @@ struct x86_io_apic_ops {
+ 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
+ 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
+ 	void		(*disable)(void);
++	void		(*print_entries)(unsigned int apic, unsigned int nr_entries);
+ };
  
- static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun);
- 
--struct rt_bandwidth def_rt_bandwidth;
--
- static enum hrtimer_restart sched_rt_period_timer(struct hrtimer *timer)
- {
- 	struct rt_bandwidth *rt_b =
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 98c0c26..ed41cb7 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -47,6 +47,8 @@ extern __read_mostly int scheduler_running;
-  */
- #define RUNTIME_INF	((u64)~0ULL)
- 
-+#ifdef CONFIG_REALTIME_SCHED
-+
- static inline int rt_policy(int policy)
- {
- 	if (policy == SCHED_FIFO || policy == SCHED_RR)
-@@ -59,6 +61,19 @@ static inline int task_has_rt_policy(struct task_struct *p)
- 	return rt_policy(p->policy);
+ extern struct x86_init_ops x86_init;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index b919f1e..1ac89a6 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1517,9 +1517,63 @@ static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
+ 	ioapic_write_entry(ioapic_idx, pin, entry);
  }
  
-+#else /* CONFIG_REALTIME_SCHED */
+-__apicdebuginit(void) print_IO_APIC(int ioapic_idx)
++void native_io_apic_print_entries(unsigned int apic, unsigned int nr_entries)
++{
++	int i;
 +
-+static inline int rt_policy(int policy)
-+{
-+	return 0;
-+}
-+static inline int task_has_rt_policy(struct task_struct *p)
-+{
-+	return 0;
++	pr_debug(" NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:\n");
++
++	for (i = 0; i <= nr_entries; i++) {
++		struct IO_APIC_route_entry entry;
++
++		entry = ioapic_read_entry(apic, i);
++
++		pr_debug(" %02x %02X  ", i, entry.dest);
++		pr_cont("%1d    %1d    %1d   %1d   %1d    "
++			"%1d    %1d    %02X\n",
++			entry.mask,
++			entry.trigger,
++			entry.irr,
++			entry.polarity,
++			entry.delivery_status,
++			entry.dest_mode,
++			entry.delivery_mode,
++			entry.vector);
++	}
 +}
 +
-+#endif /* CONFIG_REALTIME_SCHED */
++void intel_ir_io_apic_print_entries(unsigned int apic,
++				    unsigned int nr_entries)
+ {
+ 	int i;
 +
- /*
-  * This is the priority-queue data structure of the RT scheduling class:
-  */
-@@ -190,8 +205,17 @@ extern void __refill_cfs_bandwidth_runtime(struct cfs_bandwidth *cfs_b);
- extern void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b);
- extern void unthrottle_cfs_rq(struct cfs_rq *cfs_rq);
- 
-+#ifdef CONFIG_REALTIME_SCHED
- extern void free_rt_sched_group(struct task_group *tg);
- extern int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent);
-+#else
-+static inline void free_rt_sched_group(struct task_group *tg) { }
-+static inline int alloc_rt_sched_group(struct task_group *tg,
-+			struct task_group *parent)
-+{
-+	return 1;
++	pr_debug(" NR Indx Fmt Mask Trig IRR Pol Stat Indx2 Zero Vect:\n");
++
++	for (i = 0; i <= nr_entries; i++) {
++		struct IR_IO_APIC_route_entry *ir_entry;
++		struct IO_APIC_route_entry entry;
++
++		entry = ioapic_read_entry(apic, i);
++
++		ir_entry = (struct IR_IO_APIC_route_entry *)&entry;
++
++		pr_debug(" %02x %04X ", i, ir_entry->index);
++		pr_cont("%1d   %1d    %1d    %1d   %1d   "
++			"%1d    %1d     %X    %02X\n",
++			ir_entry->format,
++			ir_entry->mask,
++			ir_entry->trigger,
++			ir_entry->irr,
++			ir_entry->polarity,
++			ir_entry->delivery_status,
++			ir_entry->index2,
++			ir_entry->zero,
++			ir_entry->vector);
++	}
 +}
-+#endif
- extern void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
- 		struct sched_rt_entity *rt_se, int cpu,
- 		struct sched_rt_entity *parent);
-@@ -852,7 +876,11 @@ enum cpuacct_stat_index {
-    for (class = sched_class_highest; class; class = class->next)
- 
- extern const struct sched_class stop_sched_class;
-+#ifdef CONFIG_REALTIME_SCHED
- extern const struct sched_class rt_sched_class;
-+#else
-+static const struct sched_class rt_sched_class = { };
-+#endif
- extern const struct sched_class fair_sched_class;
- extern const struct sched_class idle_sched_class;
- 
-@@ -874,15 +902,29 @@ extern void sysrq_sched_debug_show(void);
- extern void sched_init_granularity(void);
- extern void update_max_interval(void);
- extern void update_group_power(struct sched_domain *sd, int cpu);
-+#ifdef CONFIG_REALTIME_SCHED
- extern int update_runtime(struct notifier_block *nfb, unsigned long action, void *hcpu);
- extern void init_sched_rt_class(void);
-+#else
-+static inline int update_runtime(struct notifier_block *nfb,
-+			unsigned long action, void *hcpu)
++
++__apicdebuginit(void) print_IO_APIC(int ioapic_idx)
 +{
-+	return 0;
-+}
-+static inline void init_sched_rt_class(void) { }
-+#endif
- extern void init_sched_fair_class(void);
+ 	union IO_APIC_reg_00 reg_00;
+ 	union IO_APIC_reg_01 reg_01;
+ 	union IO_APIC_reg_02 reg_02;
+@@ -1572,58 +1626,7 @@ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
  
- extern void resched_task(struct task_struct *p);
- extern void resched_cpu(int cpu);
+ 	printk(KERN_DEBUG ".... IRQ redirection table:\n");
  
- extern struct rt_bandwidth def_rt_bandwidth;
-+#ifdef CONFIG_REALTIME_SCHED
- extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
-+#else
-+static inline void init_rt_bandwidth(struct rt_bandwidth *rt_b,
-+			u64 period, u64 runtime) { }
-+#endif
+-	if (irq_remapping_enabled) {
+-		printk(KERN_DEBUG " NR Indx Fmt Mask Trig IRR"
+-			" Pol Stat Indx2 Zero Vect:\n");
+-	} else {
+-		printk(KERN_DEBUG " NR Dst Mask Trig IRR Pol"
+-			" Stat Dmod Deli Vect:\n");
+-	}
+-
+-	for (i = 0; i <= reg_01.bits.entries; i++) {
+-		if (irq_remapping_enabled) {
+-			struct IO_APIC_route_entry entry;
+-			struct IR_IO_APIC_route_entry *ir_entry;
+-
+-			entry = ioapic_read_entry(ioapic_idx, i);
+-			ir_entry = (struct IR_IO_APIC_route_entry *) &entry;
+-			printk(KERN_DEBUG " %02x %04X ",
+-				i,
+-				ir_entry->index
+-			);
+-			pr_cont("%1d   %1d    %1d    %1d   %1d   "
+-				"%1d    %1d     %X    %02X\n",
+-				ir_entry->format,
+-				ir_entry->mask,
+-				ir_entry->trigger,
+-				ir_entry->irr,
+-				ir_entry->polarity,
+-				ir_entry->delivery_status,
+-				ir_entry->index2,
+-				ir_entry->zero,
+-				ir_entry->vector
+-			);
+-		} else {
+-			struct IO_APIC_route_entry entry;
+-
+-			entry = ioapic_read_entry(ioapic_idx, i);
+-			printk(KERN_DEBUG " %02x %02X  ",
+-				i,
+-				entry.dest
+-			);
+-			pr_cont("%1d    %1d    %1d   %1d   %1d    "
+-				"%1d    %1d    %02X\n",
+-				entry.mask,
+-				entry.trigger,
+-				entry.irr,
+-				entry.polarity,
+-				entry.delivery_status,
+-				entry.dest_mode,
+-				entry.delivery_mode,
+-				entry.vector
+-			);
+-		}
+-	}
++	x86_io_apic_ops.print_entries(ioapic_idx, reg_01.bits.entries);
+ }
  
- extern void update_cpu_load(struct rq *this_rq);
+ __apicdebuginit(void) print_IO_APICs(void)
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 3ea56c2..dc19c50 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -125,4 +125,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
+ 	.write			= native_io_apic_write,
+ 	.modify			= native_io_apic_modify,
+ 	.disable		= native_disable_io_apic,
++	.print_entries		= native_io_apic_print_entries,
+ };
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index e0b18f3..321db1a 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -617,6 +617,10 @@ static int __init intel_enable_irq_remapping(void)
+ 		goto error;
  
-@@ -1150,7 +1192,11 @@ extern void print_cfs_stats(struct seq_file *m, int cpu);
- extern void print_rt_stats(struct seq_file *m, int cpu);
+ 	irq_remapping_enabled = 1;
++
++	/* VT-d needs a special routine to print IO-APIC entries */
++	x86_io_apic_ops.print_entries = intel_ir_io_apic_print_entries;
++
+ 	pr_info("Enabled IRQ remapping in %s mode\n", eim ? "x2apic" : "xapic");
  
- extern void init_cfs_rq(struct cfs_rq *cfs_rq);
-+#ifdef CONFIG_REALTIME_SCHED
- extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
-+#else
-+static inline void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq) { }
-+#endif
- extern void unthrottle_offline_cfs_rqs(struct rq *rq);
- 
- extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 7b386e8..5c29766 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -83,7 +83,11 @@ get_rr_interval_stop(struct rq *rq, struct task_struct *task)
-  * Simple, special scheduling class for the per-CPU stop tasks:
-  */
- const struct sched_class stop_sched_class = {
-+#ifdef CONFIG_REALTIME_SCHED
- 	.next			= &rt_sched_class,
-+#else
-+	.next			= &fair_sched_class,
-+#endif
- 
- 	.enqueue_task		= enqueue_task_stop,
- 	.dequeue_task		= dequeue_task_stop,
+ 	return eim ? IRQ_REMAP_X2APIC_MODE : IRQ_REMAP_XAPIC_MODE;
 -- 
 1.7.9.5
+
 
