@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab2HTTcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 15:32:10 -0400
-Received: from fieldses.org ([174.143.236.118]:59971 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753745Ab2HTTcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 15:32:08 -0400
-Date: Mon, 20 Aug 2012 15:32:04 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120820193204.GD5779@fieldses.org>
-References: <20120815092116.700948346@openvz.org>
- <20120815092409.591460800@openvz.org>
- <87fw7habo4.fsf@skywalker.in.ibm.com>
- <20120820163338.GN23596@moon>
- <20120820183225.GB4911@fieldses.org>
- <20120820190606.GE27443@moon>
+	id S1753699Ab2HTTfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 15:35:18 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:14488 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751691Ab2HTTfP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 15:35:15 -0400
+Date: Mon, 20 Aug 2012 19:35:14 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/5] mempolicy: Remove mempolicy sharing
+In-Reply-To: <1345480594-27032-3-git-send-email-mgorman@suse.de>
+Message-ID: <00000139458826d2-f72fceae-338d-4f6c-84f3-67d8817ece99-000000@email.amazonses.com>
+References: <1345480594-27032-1-git-send-email-mgorman@suse.de> <1345480594-27032-3-git-send-email-mgorman@suse.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120820190606.GE27443@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 11:06:06PM +0400, Cyrill Gorcunov wrote:
-> On Mon, Aug 20, 2012 at 02:32:25PM -0400, J. Bruce Fields wrote:
-> > On Mon, Aug 20, 2012 at 08:33:38PM +0400, Cyrill Gorcunov wrote:
-> > > On Mon, Aug 20, 2012 at 07:49:23PM +0530, Aneesh Kumar K.V wrote:
-> > > > Cyrill Gorcunov <gorcunov@openvz.org> writes:
-> > > > 
-> > > > > To provide fsnotify object inodes being watched without
-> > > > > binding to alphabetical path we need to encode them with
-> > > > > exportfs help. This patch adds a helper which operates
-> > > > > with plain inodes directly.
-> > > > 
-> > > > doesn't name_to_handle_at()  work for you ? It also allows to get a file
-> > > > handle using file descriptor.
-> > > 
-> > > Hi, sorry for dealy. Well, the last idea is to get rid of this helper,
-> > > I've sent out an updated version where ino+dev is only printed.
-> > 
-> > I don't understand how ino and dev are useful to you, though, if you're
-> > still hoping to be able to look up inodes using this information later
-> > on.
-> 
-> Hi Bruce, I believe having ino+dev is better than nothing. Otherwise we
-> simply have no clue which targets are bound to inotify mark. Sometime
-> (!) we can try to generate fhandle in userspace from this ino+dev bundle
-> and then open the target file.
+On Mon, 20 Aug 2012, Mel Gorman wrote:
 
-That's insufficient to generate a filehandle in general.
+> Ideally, the shared policy handling would be rewritten to either properly
+> handle COW of the policy structures or at least reference count MPOL_F_SHARED
+> based exclusively on information within the policy.  However, this patch takes
+> the easier approach of disabling any policy sharing between VMAs. Each new
+> range allocated with sp_alloc will allocate a new policy, set the reference
+> count to 1 and drop the reference count of the old policy. This increases
+> the memory footprint but is not expected to be a major problem as mbind()
+> is unlikely to be used for fine-grained ranges. It is also inefficient
+> because it means we allocate a new policy even in cases where mbind_range()
+> could use the new_policy passed to it. However, it is more straight-forward
+> and the change should be invisible to the user.
 
-(Also: there's the usual inode-number aliasing problem: the inode number
-could get reused by another file.  Unless you know the file is being
-held open the whole time.)
 
---b.
+Hmmm. I dont like the additional memory use but this is definitely an
+issue that needs addressing.
+
+Reviewed-by: Christoph Lameter <cl@linux.com>
