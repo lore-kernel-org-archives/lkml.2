@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2HTWF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 18:05:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46382 "EHLO
+	id S1756546Ab2HTWGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 18:06:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53735 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756075Ab2HTWFw (ORCPT
+	with ESMTP id S1755954Ab2HTWF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 18:05:52 -0400
+	Mon, 20 Aug 2012 18:05:57 -0400
 From: Michel Lespinasse <walken@google.com>
 To: riel@redhat.com, peterz@infradead.org, daniel.santos@pobox.com,
         aarcange@redhat.com, dwmw2@infradead.org, akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org
-Subject: [PATCH v3 5/9] rbtree: low level optimizations in rb_erase()
-Date: Mon, 20 Aug 2012 15:05:27 -0700
-Message-Id: <1345500331-10546-6-git-send-email-walken@google.com>
+Subject: [PATCH v3 9/9] rbtree: add RB_DECLARE_CALLBACKS() macro
+Date: Mon, 20 Aug 2012 15:05:31 -0700
+Message-Id: <1345500331-10546-10-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1345500331-10546-1-git-send-email-walken@google.com>
 References: <1345500331-10546-1-git-send-email-walken@google.com>
@@ -22,166 +22,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various minor optimizations in rb_erase():
-- Avoid multiple loading of node->__rb_parent_color when computing parent
-  and color information (possibly not in close sequence, as there might
-  be further branches in the algorithm)
-- In the 1-child subcase of case 1, copy the __rb_parent_color field from
-  the erased node to the child instead of recomputing it from the desired
-  parent and color
-- When searching for the erased node's successor, differentiate between
-  cases 2 and 3 based on whether any left links were followed. This avoids
-  a condition later down.
-- In case 3, keep a pointer to the erased node's right child so we don't
-  have to refetch it later to adjust its parent.
-- In the no-childs subcase of cases 2 and 3, place the rebalance assigment
-  last so that the compiler can remove the following if(rebalance) test.
-
-Also, added some comments to illustrate cases 2 and 3.
+As proposed by Peter Zijlstra, this makes it easier to define the augmented
+rbtree callbacks.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
-Acked-by: Rik van Riel <riel@redhat.com>
 
 ---
- lib/rbtree.c |   98 ++++++++++++++++++++++++++++++++++++++--------------------
- 1 files changed, 64 insertions(+), 34 deletions(-)
+ arch/x86/mm/pat_rbtree.c |   37 ++-----------------------------------
+ include/linux/rbtree.h   |   30 ++++++++++++++++++++++++++++++
+ lib/rbtree_test.c        |   34 ++--------------------------------
+ 3 files changed, 34 insertions(+), 67 deletions(-)
 
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 80b092538fa9..938061ecbe61 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -47,9 +47,14 @@
- #define	RB_RED		0
- #define	RB_BLACK	1
+diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
+index 7e1515bd4770..4d116959075d 100644
+--- a/arch/x86/mm/pat_rbtree.c
++++ b/arch/x86/mm/pat_rbtree.c
+@@ -69,41 +69,8 @@ static u64 compute_subtree_max_end(struct memtype *data)
+ 	return max_end;
+ }
  
--#define rb_color(r)   ((r)->__rb_parent_color & 1)
--#define rb_is_red(r)   (!rb_color(r))
--#define rb_is_black(r) rb_color(r)
-+#define __rb_parent(pc)    ((struct rb_node *)(pc & ~3))
+-/* Update 'subtree_max_end' for node and its parents */
+-static void memtype_rb_propagate_cb(struct rb_node *node, struct rb_node *stop)
+-{
+-	while (node != stop) {
+-		struct memtype *data = container_of(node, struct memtype, rb);
+-		u64 subtree_max_end = compute_subtree_max_end(data);
+-		if (data->subtree_max_end == subtree_max_end)
+-			break;
+-		data->subtree_max_end = subtree_max_end;
+-		node = rb_parent(&data->rb);
+-	}
+-}
+-
+-static void memtype_rb_copy_cb(struct rb_node *old, struct rb_node *new)
+-{
+-	struct memtype *old_data = container_of(old, struct memtype, rb);
+-	struct memtype *new_data = container_of(new, struct memtype, rb);
+-
+-	new_data->subtree_max_end = old_data->subtree_max_end;
+-}
+-
+-/* Update 'subtree_max_end' after tree rotation. old and new are the
+- * former and current subtree roots */
+-static void memtype_rb_rotate_cb(struct rb_node *old, struct rb_node *new)
+-{
+-	struct memtype *old_data = container_of(old, struct memtype, rb);
+-	struct memtype *new_data = container_of(new, struct memtype, rb);
+-
+-	new_data->subtree_max_end = old_data->subtree_max_end;
+-	old_data->subtree_max_end = compute_subtree_max_end(old_data);
+-}
+-
+-static const struct rb_augment_callbacks memtype_rb_augment_cb = {
+-	memtype_rb_propagate_cb, memtype_rb_copy_cb, memtype_rb_rotate_cb
+-};
++RB_DECLARE_CALLBACKS(static, memtype_rb_augment_cb, struct memtype, rb,
++		     u64, subtree_max_end, compute_subtree_max_end)
+ 
+ /* Find the first (lowest start addr) overlapping range from rb tree */
+ static struct memtype *memtype_rb_lowest_match(struct rb_root *root,
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index 4ace31b33380..8d1e83b1c87b 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -79,6 +79,36 @@ rb_insert_augmented(struct rb_node *node, struct rb_root *root,
+ 	__rb_insert_augmented(node, root, augment->rotate);
+ }
+ 
++#define RB_DECLARE_CALLBACKS(rbstatic, rbname, rbstruct, rbfield,	      \
++			     rbtype, rbaugmented, rbcompute)		      \
++static void rbname ## _propagate(struct rb_node *rb, struct rb_node *stop)    \
++{									      \
++	while (rb != stop) {						      \
++		rbstruct *node = rb_entry(rb, rbstruct, rbfield);	      \
++		rbtype augmented = rbcompute(node);			      \
++		if (node->rbaugmented == augmented)			      \
++			break;						      \
++		node->rbaugmented = augmented;				      \
++		rb = rb_parent(&node->rbfield);				      \
++	}								      \
++}									      \
++static void rbname ## _copy(struct rb_node *rb_old, struct rb_node *rb_new)   \
++{									      \
++	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		      \
++	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		      \
++	new->rbaugmented = old->rbaugmented;				      \
++}									      \
++static void rbname ## _rotate(struct rb_node *rb_old, struct rb_node *rb_new) \
++{									      \
++	rbstruct *old = rb_entry(rb_old, rbstruct, rbfield);		      \
++	rbstruct *new = rb_entry(rb_new, rbstruct, rbfield);		      \
++	new->rbaugmented = old->rbaugmented;				      \
++	old->rbaugmented = rbcompute(old);				      \
++}									      \
++rbstatic const struct rb_augment_callbacks rbname = {			      \
++	rbname ## _propagate, rbname ## _copy, rbname ## _rotate	      \
++};
 +
-+#define __rb_color(pc)     ((pc) & 1)
-+#define __rb_is_black(pc)  __rb_color(pc)
-+#define __rb_is_red(pc)    (!__rb_color(pc))
-+#define rb_color(rb)       __rb_color((rb)->__rb_parent_color)
-+#define rb_is_red(rb)      __rb_is_red((rb)->__rb_parent_color)
-+#define rb_is_black(rb)    __rb_is_black((rb)->__rb_parent_color)
  
- static inline void rb_set_black(struct rb_node *rb)
+ /* Find logical next and previous nodes in a tree */
+ extern struct rb_node *rb_next(const struct rb_node *);
+diff --git a/lib/rbtree_test.c b/lib/rbtree_test.c
+index e28345df09bf..b20e99969b0f 100644
+--- a/lib/rbtree_test.c
++++ b/lib/rbtree_test.c
+@@ -61,38 +61,8 @@ static inline u32 augment_recompute(struct test_node *node)
+ 	return max;
+ }
+ 
+-static void augment_propagate(struct rb_node *rb, struct rb_node *stop)
+-{
+-	while (rb != stop) {
+-		struct test_node *node = rb_entry(rb, struct test_node, rb);
+-		u32 augmented = augment_recompute(node);
+-		if (node->augmented == augmented)
+-			break;
+-		node->augmented = augmented;
+-		rb = rb_parent(&node->rb);
+-	}
+-}
+-
+-static void augment_copy(struct rb_node *rb_old, struct rb_node *rb_new)
+-{
+-	struct test_node *old = rb_entry(rb_old, struct test_node, rb);
+-	struct test_node *new = rb_entry(rb_new, struct test_node, rb);
+-	new->augmented = old->augmented;
+-}
+-
+-static void augment_rotate(struct rb_node *rb_old, struct rb_node *rb_new)
+-{
+-	struct test_node *old = rb_entry(rb_old, struct test_node, rb);
+-	struct test_node *new = rb_entry(rb_new, struct test_node, rb);
+-
+-	/* Rotation doesn't change subtree's augmented value */
+-	new->augmented = old->augmented;
+-	old->augmented = augment_recompute(old);
+-}
+-
+-static const struct rb_augment_callbacks augment_callbacks = {
+-	augment_propagate, augment_copy, augment_rotate
+-};
++RB_DECLARE_CALLBACKS(static, augment_callbacks, struct test_node, rb,
++		     u32, augmented, augment_recompute)
+ 
+ static void insert_augmented(struct test_node *node, struct rb_root *root)
  {
-@@ -378,6 +383,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- {
- 	struct rb_node *child = node->rb_right, *tmp = node->rb_left;
- 	struct rb_node *parent, *rebalance;
-+	unsigned long pc;
- 
- 	if (!tmp) {
- 		/*
-@@ -387,51 +393,75 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 		 * and node must be black due to 4). We adjust colors locally
- 		 * so as to bypass __rb_erase_color() later on.
- 		 */
--
--		parent = rb_parent(node);
-+		pc = node->__rb_parent_color;
-+		parent = __rb_parent(pc);
- 		__rb_change_child(node, child, parent, root);
- 		if (child) {
--			rb_set_parent_color(child, parent, RB_BLACK);
-+			child->__rb_parent_color = pc;
- 			rebalance = NULL;
--		} else {
--			rebalance = rb_is_black(node) ? parent : NULL;
--		}
-+		} else
-+			rebalance = __rb_is_black(pc) ? parent : NULL;
- 	} else if (!child) {
- 		/* Still case 1, but this time the child is node->rb_left */
--		parent = rb_parent(node);
-+		tmp->__rb_parent_color = pc = node->__rb_parent_color;
-+		parent = __rb_parent(pc);
- 		__rb_change_child(node, tmp, parent, root);
--		rb_set_parent_color(tmp, parent, RB_BLACK);
- 		rebalance = NULL;
- 	} else {
--		struct rb_node *old = node, *left;
--
--		node = child;
--		while ((left = node->rb_left) != NULL)
--			node = left;
--
--		__rb_change_child(old, node, rb_parent(old), root);
--
--		child = node->rb_right;
--		parent = rb_parent(node);
--
--		if (parent == old) {
--			parent = node;
-+		struct rb_node *successor = child, *child2;
-+		tmp = child->rb_left;
-+		if (!tmp) {
-+			/*
-+			 * Case 2: node's successor is its right child
-+			 *
-+			 *    (n)          (s)
-+			 *    / \          / \
-+			 *  (x) (s)  ->  (x) (c)
-+			 *        \
-+			 *        (c)
-+			 */
-+			parent = child;
-+			child2 = child->rb_right;
- 		} else {
--			parent->rb_left = child;
--
--			node->rb_right = old->rb_right;
--			rb_set_parent(old->rb_right, node);
-+			/*
-+			 * Case 3: node's successor is leftmost under
-+			 * node's right child subtree
-+			 *
-+			 *    (n)          (s)
-+			 *    / \          / \
-+			 *  (x) (y)  ->  (x) (y)
-+			 *      /            /
-+			 *    (p)          (p)
-+			 *    /            /
-+			 *  (s)          (c)
-+			 *    \
-+			 *    (c)
-+			 */
-+			do {
-+				parent = successor;
-+				successor = tmp;
-+				tmp = tmp->rb_left;
-+			} while (tmp);
-+			parent->rb_left = child2 = successor->rb_right;
-+			successor->rb_right = child;
-+			rb_set_parent(child, successor);
- 		}
- 
--		if (child) {
--			rb_set_parent_color(child, parent, RB_BLACK);
-+		successor->rb_left = tmp = node->rb_left;
-+		rb_set_parent(tmp, successor);
-+
-+		pc = node->__rb_parent_color;
-+		tmp = __rb_parent(pc);
-+		__rb_change_child(node, successor, tmp, root);
-+		if (child2) {
-+			successor->__rb_parent_color = pc;
-+			rb_set_parent_color(child2, parent, RB_BLACK);
- 			rebalance = NULL;
- 		} else {
--			rebalance = rb_is_black(node) ? parent : NULL;
-+			unsigned long pc2 = successor->__rb_parent_color;
-+			successor->__rb_parent_color = pc;
-+			rebalance = __rb_is_black(pc2) ? parent : NULL;
- 		}
--		node->__rb_parent_color = old->__rb_parent_color;
--		node->rb_left = old->rb_left;
--		rb_set_parent(old->rb_left, node);
- 	}
- 
- 	if (rebalance)
 -- 
 1.7.7.3
