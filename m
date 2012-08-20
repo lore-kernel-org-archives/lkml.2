@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab2HTWIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 18:08:53 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:43810 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab2HTWIv convert rfc822-to-8bit (ORCPT
+	id S1756569Ab2HTWOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 18:14:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56887 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab2HTWOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 18:08:51 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Mike Waychison <mikew@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH v2 1/3] efivars: Disable external interrupt while
- holding efivars->lock
-Thread-Topic: [RFC][PATCH v2 1/3] efivars: Disable external interrupt while
- holding efivars->lock
-Thread-Index: AQHNfwhyC+DIWUp3g0mFikVdMA2/0ZdjQehQ
-Date: Mon, 20 Aug 2012 22:08:35 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413805F5B@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D413805C31@USINDEM103.corp.hds.com>
- <CAGTjWtAeL4AMWhWeiCrtXjumNSCjT1KTXd0KnH3_-4g_L91=Dw@mail.gmail.com>
-In-Reply-To: <CAGTjWtAeL4AMWhWeiCrtXjumNSCjT1KTXd0KnH3_-4g_L91=Dw@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Aug 2012 18:14:16 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-08-20_04:2012-08-20,2012-08-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1208200279
+In-Reply-To: <CAErSpo6t9m0xmWkXfmONtbicjqLR_z5dLsjKCLWQfcktzRKkUA@mail.gmail.com>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+ <50325732.3000700@gmail.com> <CAErSpo4-SGH__kE5tPNzz+VO=V-GKOMdcKCqqy6s3=5sNKgG0w@mail.gmail.com>
+ <50325C18.9030207@gmail.com> <CAErSpo6t9m0xmWkXfmONtbicjqLR_z5dLsjKCLWQfcktzRKkUA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 20 Aug 2012 16:13:54 -0600
+Message-ID: <CAErSpo5=OUM9veX8890USWegTG_Fhh10soxPJbjemd80bAO0qg@mail.gmail.com>
+Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities registers
+To: Jiang Liu <liuj97@gmail.com>, Yu Zhao <yu.zhao@intel.com>,
+        Dexuan Cui <dexuan.cui@intel.com>
+Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 20, 2012 at 10:10 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
+> So I'll try pulling your branch (I'll do something about the tsi721.c
+> stuff myself).
 
-> -----Original Message-----
-> From: Mike Waychison [mailto:mikew@google.com]
-> Sent: Monday, August 20, 2012 3:17 PM
-> To: Seiji Aguchi
-> Cc: linux-kernel@vger.kernel.org; Luck, Tony (tony.luck@intel.com); Matthew Garrett (mjg@redhat.com); dzickus@redhat.com; dle-
-> develop@lists.sourceforge.net; Satoru Moriya
-> Subject: Re: [RFC][PATCH v2 1/3] efivars: Disable external interrupt while holding efivars->lock
-> 
-> Acked-by: Mike Waychison <mikew@google.com>
-> 
-> > @@ -1101,11 +1107,12 @@ out_free:
-> >  void unregister_efivars(struct efivars *efivars)  {
-> >         struct efivar_entry *entry, *n;
-> > +       unsigned long flags;
-> >
-> >         list_for_each_entry_safe(entry, n, &efivars->list, list) {
-> > -               spin_lock(&efivars->lock);
-> > +               spin_lock_irqsave(&efivars->lock, flags);
-> >                 list_del(&entry->list);
-> > -               spin_unlock(&efivars->lock);
-> > +               spin_unlock_irqrestore(&efivars->lock, flags);
-> >                 efivar_unregister(entry);
-> >         }
-> >         if (efivars->new_var)
-> 
-> Feel free to remove any other uses of flags where you know that you
-> are being called from process context.
+I pulled this into
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
+pci/jiang-pcie-cap with the following changes:
 
-OK. I will remove the flags from unregister_efivars(), efivar_store_raw(), efivar_create() and efivar_delete().
+  - Dropped some "pci_" prefixes on internal functions in access.c
+  - Minor restructure of pcie_capability_read_*()
+  - Removed export of pcie_capability_reg_implemented()
+  - Reworked reset_intel_82599_sfp_virtfn() to check for FLR bit in
+DEVCAP rather than using pcie_capability_reg_implemented()
+  - Split driver patches into one driver per patch
+  - Fixed myri10ge_toggle_relaxed() -- previous code returned useful
+value, but your patch made it always return zero
+  - Use 16-bit, not 32-bit, accesses for DEVCTL, DEVCTL2 (tsi721)
 
-If I'm missing something, please let me know.
+I am still concerned about reset_intel_82599_sfp_virtfn().  It looks
+wrong and possibly unnecessary.  It looks wrong because it sets
+PCI_EXP_DEVCTL_BCR_FLR and blindly clears all other bits in
+PCI_EXP_DEVCTL.  Most of the bits are probably cleared by the FLR
+anyway, but Aux Power PM Enable is RWS ("sticky"), so it is *not*
+modified by FLR.  Therefore, using reset_intel_82599_sfp_virtfn() has
+the probably unintended side effect of clearing Aux Power PM Enable.
 
-Seiji
+It looks possibly unnecessary because the generic pcie_flr() does
+essentially the same thing, so it's not clear why we need a special
+case for 82599.
 
+Yu or Dexuan, can you comment on these 82599 questions?
 
+The proposed new code is here:
+http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=blob;f=drivers/pci/quirks.c;h=9abbf56e93fe5c98364a7dfe2b0b724047dfa4a9;hb=ef529bf0cb5606ff5bd1422d2d2700a821d8218b#l3082
+
+Bjorn
