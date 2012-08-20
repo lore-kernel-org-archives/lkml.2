@@ -1,202 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab2HTQoC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:44:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54362 "EHLO mx2.suse.de"
+	id S1757415Ab2HTQrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:47:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12954 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755514Ab2HTQm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:42:29 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/5] mempolicy: Remove mempolicy sharing
-Date: Mon, 20 Aug 2012 17:36:31 +0100
-Message-Id: <1345480594-27032-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1345480594-27032-1-git-send-email-mgorman@suse.de>
-References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
+	id S1752392Ab2HTQq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 12:46:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,797,1336374000"; 
+   d="scan'208";a="188825275"
+Subject: Re: [RFC PATCH 2/2] mm: Batch page_check_references in
+ shrink_page_list sharing the same i_mmap_mutex
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alex Shi <alex.shi@intel.com>
+In-Reply-To: <1345251998.13492.235.camel@schen9-DESK>
+References: <1345251998.13492.235.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 20 Aug 2012 09:43:02 -0700
+Message-ID: <1345480982.13492.239.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Fri, 2012-08-17 at 18:06 -0700, Tim Chen wrote:
+> In shrink_page_list, call to page_referenced_file will causes the
+> acquisition/release of mapping->i_mmap_mutex for each page in the page
+> list.  However, it is very likely that successive pages in the list
+> share the same mapping and we can reduce the frequency of i_mmap_mutex
+> acquisition by holding the mutex in shrink_page_list. This improves the
+> performance when the system has a lot page reclamations for file mapped
+> pages if workloads are using a lot of memory for page cache.
+> 
+> Tim
+> 
+> ---
 
-Dave Jones' system call fuzz testing tool "trinity" triggered the following
-bug error with slab debugging enabled
+The patch I sent previously was generated against an intermediate tree.
+Here's the correct version.
 
-[ 7613.229315] =============================================================================
-[ 7613.229955] BUG numa_policy (Not tainted): Poison overwritten
-[ 7613.230560] -----------------------------------------------------------------------------
-[ 7613.230560]
-[ 7613.231834] INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
-[ 7613.232518] INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
-[ 7613.233188]  __slab_alloc+0x3d3/0x445
-[ 7613.233877]  kmem_cache_alloc+0x29d/0x2b0
-[ 7613.234564]  mpol_new+0xa3/0x140
-[ 7613.235236]  sys_mbind+0x142/0x620
-[ 7613.235929]  system_call_fastpath+0x16/0x1b
-[ 7613.236640] INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
-[ 7613.237354]  __slab_free+0x2e/0x1de
-[ 7613.238080]  kmem_cache_free+0x25a/0x260
-[ 7613.238799]  __mpol_put+0x27/0x30
-[ 7613.239515]  remove_vma+0x68/0x90
-[ 7613.240223]  exit_mmap+0x118/0x140
-[ 7613.240939]  mmput+0x73/0x110
-[ 7613.241651]  exit_mm+0x108/0x130
-[ 7613.242367]  do_exit+0x162/0xb90
-[ 7613.243074]  do_group_exit+0x4f/0xc0
-[ 7613.243790]  sys_exit_group+0x17/0x20
-[ 7613.244507]  system_call_fastpath+0x16/0x1b
-[ 7613.245212] INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
-[ 7613.246000] INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
+Thanks.
 
-The problem is that the structure is being prematurely freed due to a
-reference count imbalance. In the following case mbind(addr, len) should
-replace the memory policies of both vma1 and vma2 and thus they will
-become to share the same mempolicy and the new mempolicy will have the
-MPOL_F_SHARED flag.
+Tim
 
-  +-------------------+-------------------+
-  |     vma1          |     vma2(shmem)   |
-  +-------------------+-------------------+
-  |                                       |
- addr                                 addr+len
-
-alloc_pages_vma() uses get_vma_policy() and mpol_cond_put() pair for
-maintaining the mempolicy reference count. The current rule is that
-get_vma_policy() only increments refcount for shmem VMA and mpol_conf_put()
-only decrements refcount if the policy has MPOL_F_SHARED.
-
-In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED!
-The reference count will be decreased even though was not increased whenever
-alloc_page_vma() is called. This has been broken since commit [52cd3b07:
-mempolicy: rework mempolicy Reference Counting] in 2008.
-
-There is another serious bug with the sharing of memory policies. Currently,
-mempolicy rebind logic (it is called from cpuset rebinding) ignores a refcount
-of mempolicy and override it forcibly. Thus, any mempolicy sharing may cause
-mempolicy corruption. The bug was introduced by commit [68860ec1: cpusets:
-automatic numa mempolicy rebinding].
-
-Ideally, the shared policy handling would be rewritten to either properly
-handle COW of the policy structures or at least reference count MPOL_F_SHARED
-based exclusively on information within the policy.  However, this patch takes
-the easier approach of disabling any policy sharing between VMAs. Each new
-range allocated with sp_alloc will allocate a new policy, set the reference
-count to 1 and drop the reference count of the old policy. This increases
-the memory footprint but is not expected to be a major problem as mbind()
-is unlikely to be used for fine-grained ranges. It is also inefficient
-because it means we allocate a new policy even in cases where mbind_range()
-could use the new_policy passed to it. However, it is more straight-forward
-and the change should be invisible to the user.
-
-[mgorman@suse.de: Edited changelog]
-Reported-by: Dave Jones <davej@redhat.com>,
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>,
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/mempolicy.c |   52 ++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 38 insertions(+), 14 deletions(-)
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 22dcf9a..8025720 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -607,24 +607,39 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 	return first;
- }
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index fd07c45..f0174ae 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -156,8 +156,8 @@ static inline void page_dup_rmap(struct page *page)
+ /*
+  * Called from mm/vmscan.c to handle paging out
+  */
+-int page_referenced(struct page *, int is_locked,
+-			struct mem_cgroup *memcg, unsigned long *vm_flags);
++int page_referenced(struct page *, int is_locked, struct mem_cgroup *memcg,
++				unsigned long *vm_flags, int mmap_mutex_locked);
+ int page_referenced_one(struct page *, struct vm_area_struct *,
+ 	unsigned long address, unsigned int *mapcount, unsigned long *vm_flags);
  
--/* Apply policy to a single VMA */
--static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
-+/*
-+ * Apply policy to a single VMA
-+ * This must be called with the mmap_sem held for writing.
-+ */
-+static int vma_replace_policy(struct vm_area_struct *vma,
-+						struct mempolicy *pol)
- {
--	int err = 0;
--	struct mempolicy *old = vma->vm_policy;
-+	int err;
-+	struct mempolicy *old;
-+	struct mempolicy *new;
+@@ -175,7 +175,7 @@ enum ttu_flags {
  
- 	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
- 		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
- 		 vma->vm_ops, vma->vm_file,
- 		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+ bool is_vma_temporary_stack(struct vm_area_struct *vma);
  
--	if (vma->vm_ops && vma->vm_ops->set_policy)
-+	new = mpol_dup(pol);
-+	if (IS_ERR(new))
-+		return PTR_ERR(new);
-+
-+	if (vma->vm_ops && vma->vm_ops->set_policy) {
- 		err = vma->vm_ops->set_policy(vma, new);
--	if (!err) {
--		mpol_get(new);
--		vma->vm_policy = new;
--		mpol_put(old);
-+		if (err)
-+			goto err_out;
+-int try_to_unmap(struct page *, enum ttu_flags flags);
++int try_to_unmap(struct page *, enum ttu_flags flags, int mmap_mutex_locked);
+ int try_to_unmap_one(struct page *, struct vm_area_struct *,
+ 			unsigned long address, enum ttu_flags flags);
+ 
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 97cc273..5f162c7 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -953,7 +953,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	if (hpage != ppage)
+ 		lock_page(ppage);
+ 
+-	ret = try_to_unmap(ppage, ttu);
++	ret = try_to_unmap(ppage, ttu, 0);
+ 	if (ret != SWAP_SUCCESS)
+ 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+ 				pfn, page_mapcount(ppage));
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 1107238..1aa37b1 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -802,7 +802,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
  	}
-+
-+	old = vma->vm_policy;
-+	vma->vm_policy = new; /* protected by mmap_sem */
-+	mpol_put(old);
-+
-+	return 0;
-+ err_out:
-+	mpol_put(new);
- 	return err;
+ 
+ 	/* Establish migration ptes or remove ptes */
+-	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
++	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS, 0);
+ 
+ skip_unmap:
+ 	if (!page_mapped(page))
+@@ -918,7 +918,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 	if (PageAnon(hpage))
+ 		anon_vma = page_get_anon_vma(hpage);
+ 
+-	try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
++	try_to_unmap(hpage,
++		     TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS, 0);
+ 
+ 	if (!page_mapped(hpage))
+ 		rc = move_to_new_page(new_hpage, hpage, 1, mode);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 5b5ad58..63fc84b 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -820,7 +820,7 @@ static int page_referenced_anon(struct page *page,
+  */
+ static int page_referenced_file(struct page *page,
+ 				struct mem_cgroup *memcg,
+-				unsigned long *vm_flags)
++				unsigned long *vm_flags, int mmap_mutex_locked)
+ {
+ 	unsigned int mapcount;
+ 	struct address_space *mapping = page->mapping;
+@@ -844,7 +844,8 @@ static int page_referenced_file(struct page *page,
+ 	 */
+ 	BUG_ON(!PageLocked(page));
+ 
+-	mutex_lock(&mapping->i_mmap_mutex);
++	if (!mmap_mutex_locked)
++		mutex_lock(&mapping->i_mmap_mutex);
+ 
+ 	/*
+ 	 * i_mmap_mutex does not stabilize mapcount at all, but mapcount
+@@ -869,7 +870,8 @@ static int page_referenced_file(struct page *page,
+ 			break;
+ 	}
+ 
+-	mutex_unlock(&mapping->i_mmap_mutex);
++	if (!mmap_mutex_locked)
++		mutex_unlock(&mapping->i_mmap_mutex);
+ 	return referenced;
  }
  
-@@ -676,7 +691,7 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
- 			if (err)
- 				goto out;
+@@ -886,7 +888,7 @@ static int page_referenced_file(struct page *page,
+ int page_referenced(struct page *page,
+ 		    int is_locked,
+ 		    struct mem_cgroup *memcg,
+-		    unsigned long *vm_flags)
++		    unsigned long *vm_flags, int mmap_mutex_locked)
+ {
+ 	int referenced = 0;
+ 	int we_locked = 0;
+@@ -908,7 +910,7 @@ int page_referenced(struct page *page,
+ 								vm_flags);
+ 		else if (page->mapping)
+ 			referenced += page_referenced_file(page, memcg,
+-								vm_flags);
++						 vm_flags, mmap_mutex_locked);
+ 		if (we_locked)
+ 			unlock_page(page);
+ 
+@@ -1548,7 +1550,8 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+  * vm_flags for that VMA.  That should be OK, because that vma shouldn't be
+  * 'LOCKED.
+  */
+-static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
++static int try_to_unmap_file(struct page *page, enum ttu_flags flags,
++				int mmap_mutex_locked)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+@@ -1560,7 +1563,8 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+ 	unsigned long max_nl_size = 0;
+ 	unsigned int mapcount;
+ 
+-	mutex_lock(&mapping->i_mmap_mutex);
++	if (!mmap_mutex_locked)
++		mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
+ 		unsigned long address = vma_address(page, vma);
+ 		if (address == -EFAULT)
+@@ -1640,7 +1644,8 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+ 	list_for_each_entry(vma, &mapping->i_mmap_nonlinear, shared.vm_set.list)
+ 		vma->vm_private_data = NULL;
+ out:
+-	mutex_unlock(&mapping->i_mmap_mutex);
++	if (!mmap_mutex_locked)
++		mutex_unlock(&mapping->i_mmap_mutex);
+ 	return ret;
+ }
+ 
+@@ -1658,7 +1663,7 @@ out:
+  * SWAP_FAIL	- the page is unswappable
+  * SWAP_MLOCK	- page is mlocked.
+  */
+-int try_to_unmap(struct page *page, enum ttu_flags flags)
++int try_to_unmap(struct page *page, enum ttu_flags flags, int mmap_mutex_locked)
+ {
+ 	int ret;
+ 
+@@ -1670,7 +1675,7 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
+ 	else if (PageAnon(page))
+ 		ret = try_to_unmap_anon(page, flags);
+ 	else
+-		ret = try_to_unmap_file(page, flags);
++		ret = try_to_unmap_file(page, flags, mmap_mutex_locked);
+ 	if (ret != SWAP_MLOCK && !page_mapped(page))
+ 		ret = SWAP_SUCCESS;
+ 	return ret;
+@@ -1700,7 +1705,7 @@ int try_to_munlock(struct page *page)
+ 	else if (PageAnon(page))
+ 		return try_to_unmap_anon(page, TTU_MUNLOCK);
+ 	else
+-		return try_to_unmap_file(page, TTU_MUNLOCK);
++		return try_to_unmap_file(page, TTU_MUNLOCK, 0);
+ }
+ 
+ void __put_anon_vma(struct anon_vma *anon_vma)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a538565..1af1f1c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -27,6 +27,7 @@
+ 					buffer_heads_over_limit */
+ #include <linux/mm_inline.h>
+ #include <linux/backing-dev.h>
++#include <linux/ksm.h>
+ #include <linux/rmap.h>
+ #include <linux/topology.h>
+ #include <linux/cpu.h>
+@@ -781,12 +782,14 @@ enum page_references {
+ 
+ static enum page_references page_check_references(struct page *page,
+ 						  struct mem_cgroup_zone *mz,
+-						  struct scan_control *sc)
++						  struct scan_control *sc,
++						  int mmap_mutex_locked)
+ {
+ 	int referenced_ptes, referenced_page;
+ 	unsigned long vm_flags;
+ 
+-	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
++	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags,
++					  mmap_mutex_locked);
+ 	referenced_page = TestClearPageReferenced(page);
+ 
+ 	/* Lumpy reclaim - ignore references */
+@@ -856,6 +859,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 	unsigned long nr_congested = 0;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_writeback = 0;
++	struct mutex *i_mmap_mutex = NULL;
+ 
+ 	cond_resched();
+ 
+@@ -865,12 +869,14 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		struct address_space *mapping;
+ 		struct page *page;
+ 		int may_enter_fs;
++		int mmap_mutex_locked;
+ 
+ 		cond_resched();
+ 
+ 		page = lru_to_page(page_list);
+ 		list_del(&page->lru);
+ 
++		mmap_mutex_locked = 0;
+ 		if (!trylock_page(page))
+ 			goto keep;
+ 
+@@ -909,7 +915,23 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			}
  		}
--		err = policy_vma(vma, new_pol);
-+		err = vma_replace_policy(vma, new_pol);
- 		if (err)
- 			goto out;
+ 
+-		references = page_check_references(page, mz, sc);
++		if (page->mapping) {
++			if (i_mmap_mutex == &page->mapping->i_mmap_mutex) {
++				mmap_mutex_locked = 1;
++			} else {
++				if (page_mapped(page) && page_rmapping(page)
++					&& !PageKsm(page) && !PageAnon(page)) {
++					if (i_mmap_mutex)
++						mutex_unlock(i_mmap_mutex);
++					i_mmap_mutex = &page->mapping->i_mmap_mutex;
++					mutex_lock(i_mmap_mutex);
++					mmap_mutex_locked = 1;
++				}
++			}
++		}
++
++		references = page_check_references(page, mz, sc,
++						   mmap_mutex_locked);
+ 		switch (references) {
+ 		case PAGEREF_ACTIVATE:
+ 			goto activate_locked;
+@@ -939,7 +961,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		 * processes. Try to unmap it here.
+ 		 */
+ 		if (page_mapped(page) && mapping) {
+-			switch (try_to_unmap(page, TTU_UNMAP)) {
++			switch (try_to_unmap(page, TTU_UNMAP,
++						mmap_mutex_locked)) {
+ 			case SWAP_FAIL:
+ 				goto activate_locked;
+ 			case SWAP_AGAIN:
+@@ -1090,6 +1113,8 @@ keep_lumpy:
+ 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
  	}
-@@ -2153,15 +2168,24 @@ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
- static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
- 				struct mempolicy *pol)
- {
--	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
-+	struct sp_node *n;
-+	struct mempolicy *newpol;
  
-+	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
- 	if (!n)
- 		return NULL;
-+
-+	newpol = mpol_dup(pol);
-+	if (IS_ERR(newpol)) {
-+		kmem_cache_free(sn_cache, n);
-+		return NULL;
-+	}
-+	newpol->flags |= MPOL_F_SHARED;
-+
- 	n->start = start;
- 	n->end = end;
--	mpol_get(pol);
--	pol->flags |= MPOL_F_SHARED;	/* for unref */
--	n->policy = pol;
-+	n->policy = newpol;
-+
- 	return n;
- }
++	if (i_mmap_mutex)
++		mutex_unlock(i_mmap_mutex);
+ 	nr_reclaimed += __remove_mapping_batch(&unmap_pages, &ret_pages,
+ 					       &free_pages);
  
--- 
-1.7.7
+@@ -1818,7 +1843,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 			}
+ 		}
+ 
+-		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
++		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags, 0)) {
+ 			nr_rotated += hpage_nr_pages(page);
+ 			/*
+ 			 * Identify referenced, file-backed active pages and
+
 
