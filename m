@@ -1,160 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2HTQKV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:10:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58906 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498Ab2HTQKQ (ORCPT
+	id S1757240Ab2HTQKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:10:37 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40538 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756185Ab2HTQKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:10:16 -0400
+	Mon, 20 Aug 2012 12:10:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1345454817.23018.27.camel@twins>
-References: <1345124749.31092.2.camel@localhost.localdomain>
-	<1345125384.29668.30.camel@twins>
-	<CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
-	<1345128138.29668.42.camel@twins>
-	<CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
-	<1345139199.29668.46.camel@twins>
-	<CADZ9YHgNhTGWicX0kFfrNoL17JkxfZcXryqqa-wHLVLh05SvAg@mail.gmail.com>
-	<1345454817.23018.27.camel@twins>
-Date: Mon, 20 Aug 2012 22:10:15 +0600
-Message-ID: <CADZ9YHik4-DiEVB5azyXe8Y7GOsqobcNbUprXvqOyWmLLRZoGQ@mail.gmail.com>
-Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes down.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <50325C18.9030207@gmail.com>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+ <50325732.3000700@gmail.com> <CAErSpo4-SGH__kE5tPNzz+VO=V-GKOMdcKCqqy6s3=5sNKgG0w@mail.gmail.com>
+ <50325C18.9030207@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 20 Aug 2012 10:10:12 -0600
+Message-ID: <CAErSpo6t9m0xmWkXfmONtbicjqLR_z5dLsjKCLWQfcktzRKkUA@mail.gmail.com>
+Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities registers
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/20/12, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2012-08-17 at 19:39 +0600, Rakib Mullick wrote:
->> On 8/16/12, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, 2012-08-16 at 21:32 +0600, Rakib Mullick wrote:
->> >> And also I think migrate_nr_uninterruptible() is meaning less too.
->> >
->> > Hmm, I think I see a problem.. we forget to migrate the effective delta
->> > created by rq->calc_load_active.
->> >
->> And rq->calc_load_active needs to be migrated to the proper dest_rq
->> not like currently picking any random rq.
->
->
-> OK, so how about something like the below, it would also solve Paul's
-> issue with that code.
->
->
-> Please do double check the logic, I've had all of 4 hours sleep and its
-> far too warm for a brain to operate in any case.
->
-> ---
-> Subject: sched: Fix load avg vs cpu-hotplug
->
-> Rabik and Paul reported two different issues related to the same few
-> lines of code.
->
-First of all, you've misspelled my name, it's Rakib not Rabik.
+On Mon, Aug 20, 2012 at 9:47 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> On 08/20/2012 11:35 PM, Bjorn Helgaas wrote:
+>> On Mon, Aug 20, 2012 at 9:26 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>> On 08/14/2012 12:25 PM, Bjorn Helgaas wrote:
+>>>> On Wed, Aug 1, 2012 at 8:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>>>> From: Jiang Liu <liuj97@gmail.com>
+>>>>>
+>>>>> As suggested by Bjorn Helgaas and Don Dutile in threads
+>>>>> http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
+>>>>> to PCIe capabilities register in to way:
+>>>>> 1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
+>>>>>    repeatedly reading this register because it's read only.
+>>>>> 2) provide access functions for PCIe Capabilities registers to hide differences
+>>>>>    among PCIe base specifications, so the caller don't need to handle those
+>>>>>    differences.
+>>>>>
+>>>>> This patch set applies to
+>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
+>>>>
+>>>> Would you mind rebasing this to v3.6-rc1?  I think you posted this
+>>>> when my branch was still 3.5-based, and there are some upstream
+>>>> changes that cause minor conflicts here.
+>>>>
+>>>> You currently have:
+>>>>
+>>>>     int pci_pcie_capability_change_word(struct pci_dev *dev, int pos,
+>>>> u16 set_bits, u16 clear_bits)
+>>>>
+>>>> I think this is a bit awkward because the function name doesn't
+>>>> suggest *how* the word will be changed, and the clearing happens
+>>>> before the setting (opposite the parameter order).  Something like:
+>>>>
+>>>>     int pci_pcie_capability_mask_and_set_word(..., u16 mask, u16 set) or
+>>>>     int pci_pcie_capability_clear_and_set_word(..., u16 clear, u16 set)
+>>>>
+>>>> would be more obvious.  If you use "mask_and_set", I think the
+>>>> function should do "(val & mask) | set" with the complement being at
+>>>> the call site.  If you use "clear_and_set", I think it's OK to do
+>>>> "(val & ~mask) | set" as in your current patch.
+>>>>
+>>>> I know I suggested the "pci_pcie_capability_*" names, but they're
+>>>> getting a bit unwieldy, especially if we do "mask_and_set" or similar.
+>>>>  There are already several "pcie_*" functions, so maybe we should
+>>>> drop the leading "pci_" from these and just have:
+>>>>
+>>>>     pcie_capability_read_word
+>>>>     pcie_capability_write_word
+>>>>     pcie_capability_mask_and_set_word
+>>>>
+>>>> Bjorn
+>>>>
+>>> Hi Bjorn,
+>>>         I have made following changes according to your suggestions,
+>>>         1) get rid of the "pci_" prefix for access functions.
+>>>         2) rename pci_pcie_capability_change_{word|dword}() to
+>>>         pcie_capability_clear_and_set_{word|dword}.
+>>>         3) add pcie_capability_{set|clear}_{word|dword}().
+>>
+>> Are 2) and 3) really the same?  If they're really different, we'll end up with:
+>>
+>>     pcie_capability_clear_and_set_word()
+>>     pcie_capability_clear_and_set_dword()
+>>     pcie_capability_set_word()
+>>     pcie_capability_set_dword()
+>>     pcie_capability_clear_word()
+>>     pcie_capability_clear_dword()
+>>
+>> It seems a little excessive to have all six interfaces, since the
+>> first two are sufficient to provide all the functionality.
+>>
+> Hi Bjorn,
+>         pcie_capability_{set|clear}_{word|dword}() are implemented as inline functions
+> which just call pcie_capability_clear_and_set_{word|dword}(). If it seems a little redundant,
+> I could help to remove them.
 
-> Rabik's issue is that the nr_uninterruptible migration code is wrong in
-> that he sees artifacts due to this (Rabik please do expand in more
-> detail).
->
-Okay, I was thinking about per rq->nr_uninterruptible accounting due
-to it's use in delta calculation at calc_load_fold_active(). So, I
-proposed to migrate nr_uninterruptible to the rq, where tasks were
-migrated as if, they gets folded from update_cpu_load(). Now, note
-that, delta is calculated using rq->nr_running and
-rq->nr_uninterruptible, so if we migrate tasks into a rq, but migrate
-nr_uninterruptible into another rq, its wrong and we're screwing the
-delta calculation.
+I looked through your v3 patches and found
 
-> Paul's issue is that this code as it stands relies on us using
-> stop_machine() for unplug, we all would like to remove this assumption
-> so that eventually we can remove this stop_machine() usage altogether.
->
-> The only reason we'd have to migrate nr_uninterruptible is so that we
-> could use for_each_online_cpu() loops in favour of
-> for_each_possible_cpu() loops, however since nr_uninterruptible() is the
-> only such loop and its using possible lets not bother at all.
->
-> The problem Rabik sees is (probably) caused by the fact that by
-> migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
-> involved.
->
-Certainly, we don't care about the rq which is going down. But, the dest_rq.
+  12 clear_word callers
+  9 set_word callers
+  11 clear_and_set_word callers
+  0 clear_dword callers
+  0 set_dword callers
+  2 clear_and_set_dword callers that should be clear_and_set_word
+callers (in tsi721.c)
+  1 clear_and_set_dword caller (PCI_EXP_RTSTA, Root Status)
 
-> So don't bother with fancy migration schemes (meaning we now have to
-> keep using for_each_possible_cpu()) and instead fold any nr_active delta
-> after we migrate all tasks away to make sure we don't have any skewed
-> nr_active accounting.
->
->
-> Reported-by: Rakib Mullick <rakib.mullick@gmail.com>
-> Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/sched/core.c | 31 ++++++++++---------------------
->  1 file changed, 10 insertions(+), 21 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 4376c9f..06d23c6 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5338,27 +5338,17 @@ void idle_task_exit(void)
->  }
->
->  /*
-> - * While a dead CPU has no uninterruptible tasks queued at this point,
-> - * it might still have a nonzero ->nr_uninterruptible counter, because
-> - * for performance reasons the counter is not stricly tracking tasks to
-> - * their home CPUs. So we just add the counter to another CPU's counter,
-> - * to keep the global sum constant after CPU-down:
-> - */
-> -static void migrate_nr_uninterruptible(struct rq *rq_src)
-> -{
-> -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
-> -
-> -	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
-> -	rq_src->nr_uninterruptible = 0;
-> -}
-> -
-> -/*
-> - * remove the tasks which were accounted by rq from calc_load_tasks.
-> + * Since this CPU is going 'away' for a while, fold any nr_active delta
-> + * we might have. Assumes we're called after migrate_tasks() so that the
-> + * nr_active count is stable.
-> + *
-But after migrate_tasks(), it's likely that rq->nr_running will be 1.
-Then, nr_active will be screwed. No?
+I had expected that almost all would be clear_and_set users, but that
+wasn't the case.  Bottom line, it does seem like there are enough
+callers of clear, set, and clear_and_set to keep all of them.
 
-> + * Also see the comment "Global load-average calculations".
->   */
-> -static void calc_global_load_remove(struct rq *rq)
-> +static void calc_load_migrate(struct rq *rq)
->  {
-> -	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
-> -	rq->calc_load_active = 0;
-> +	long delta = calc_load_fold_active(rq);
-> +	if (delta)
-> +		atomic_long_add(delta, &calc_load_tasks);
->  }
->
->  /*
-> @@ -5652,8 +5642,7 @@ migration_call(struct notifier_block *nfb, unsigned
-> long action, void *hcpu)
->  		BUG_ON(rq->nr_running != 1); /* the migration thread */
->  		raw_spin_unlock_irqrestore(&rq->lock, flags);
->
-> -		migrate_nr_uninterruptible(rq);
-> -		calc_global_load_remove(rq);
-> +		calc_load_migrate(rq);
->  		break;
->  #endif
->  	}
->
+There's only one legitimate user of the dword interfaces, but I'm OK
+with keeping all of them for symmetry with the word interfaces.
 
+So I'll try pulling your branch (I'll do something about the tsi721.c
+stuff myself).
 
-Thanks,
-Rakib
+Thanks!
+
+Bjorn
