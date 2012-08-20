@@ -1,164 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2HTKFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 06:05:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33745 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab2HTKFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 06:05:46 -0400
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org, Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH v3] clk: add Loongson1B clock support
-Date: Mon, 20 Aug 2012 18:05:35 +0800
-Message-Id: <1345457135-12737-1-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752385Ab2HTKGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 06:06:20 -0400
+Received: from 8bytes.org ([85.214.48.195]:55204 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401Ab2HTKGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 06:06:17 -0400
+Date: Mon, 20 Aug 2012 12:06:13 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU Fixes for v3.6-rc2
+Message-ID: <20120820100613.GA2980@8bytes.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Aug 20 12:06:15 2012
+X-DSPAM-Confidence: 0.9988
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 50320c1722978043564008
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds clock support to Loongson1B SoC using the common clock
-infrastructure.
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
----
- drivers/clk/Makefile   |    1 +
- drivers/clk/clk-ls1x.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 112 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clk/clk-ls1x.c
+--mYCpIKhGyMATD0i+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 5869ea3..018ec57 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
- obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
- obj-$(CONFIG_ARCH_INTEGRATOR)	+= versatile/
-+obj-$(CONFIG_MACH_LOONGSON1)	+= clk-ls1x.o
- 
- # Chip specific
- obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
-diff --git a/drivers/clk/clk-ls1x.c b/drivers/clk/clk-ls1x.c
-new file mode 100644
-index 0000000..f20b750
---- /dev/null
-+++ b/drivers/clk/clk-ls1x.c
-@@ -0,0 +1,111 @@
-+/*
-+ * Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+
-+#include <loongson1.h>
-+
-+#define OSC	33
-+
-+static DEFINE_SPINLOCK(_lock);
-+
-+static int ls1x_pll_clk_enable(struct clk_hw *hw)
-+{
-+	return 0;
-+}
-+
-+static void ls1x_pll_clk_disable(struct clk_hw *hw)
-+{
-+}
-+
-+static unsigned long ls1x_pll_recalc_rate(struct clk_hw *hw,
-+					     unsigned long parent_rate)
-+{
-+	u32 pll, rate;
-+
-+	pll = __raw_readl(LS1X_CLK_PLL_FREQ);
-+	rate = ((12 + (pll & 0x3f)) * 1000000) +
-+		((((pll >> 8) & 0x3ff) * 1000000) >> 10);
-+	rate *= OSC;
-+	rate >>= 1;
-+
-+	return rate;
-+}
-+
-+static const struct clk_ops ls1x_pll_clk_ops = {
-+	.enable = ls1x_pll_clk_enable,
-+	.disable = ls1x_pll_clk_disable,
-+	.recalc_rate = ls1x_pll_recalc_rate,
-+};
-+
-+static struct clk * __init clk_register_pll(struct device *dev,
-+	 const char *name, const char *parent_name, unsigned long flags)
-+{
-+	struct clk_hw *hw;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+
-+	/* allocate the divider */
-+	hw = kzalloc(sizeof(struct clk_hw), GFP_KERNEL);
-+	if (!hw) {
-+		pr_err("%s: could not allocate clk_hw\n", __func__);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	init.name = name;
-+	init.ops = &ls1x_pll_clk_ops;
-+	init.flags = flags | CLK_IS_BASIC;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+	hw->init = &init;
-+
-+	/* register the clock */
-+	clk = clk_register(dev, hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(hw);
-+
-+	return clk;
-+}
-+
-+void __init ls1x_clk_init(void)
-+{
-+	struct clk *clk;
-+
-+	clk = clk_register_pll(NULL, "pll_clk", NULL, CLK_IS_ROOT);
-+	clk_prepare_enable(clk);
-+
-+	clk = clk_register_divider(NULL, "cpu_clk", "pll_clk",
-+			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_CPU_SHIFT,
-+			DIV_CPU_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "cpu", NULL);
-+
-+	clk = clk_register_divider(NULL, "dc_clk", "pll_clk",
-+			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DC_SHIFT,
-+			DIV_DC_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "dc", NULL);
-+
-+	clk = clk_register_divider(NULL, "ahb_clk", "pll_clk",
-+			CLK_SET_RATE_PARENT, LS1X_CLK_PLL_DIV, DIV_DDR_SHIFT,
-+			DIV_DDR_WIDTH, CLK_DIVIDER_ONE_BASED, &_lock);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "ahb", NULL);
-+	clk_register_clkdev(clk, "stmmaceth", NULL);
-+
-+	clk = clk_register_fixed_factor(NULL, "apb_clk", "ahb_clk", 0, 1, 2);
-+	clk_prepare_enable(clk);
-+	clk_register_clkdev(clk, "apb", NULL);
-+	clk_register_clkdev(clk, "serial8250", NULL);
-+}
--- 
-1.7.1
+Hi Linus,
+
+The following changes since commit 31fe943599b7e5870edb9decb7fbb9538b218f26:
+
+  iommu/amd: Fix ACS path checking (2012-08-06 18:10:04 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-v3.6-rc2
+
+for you to fetch changes up to 2bd5ed002c0c493ac328f13a9e2a504261a7d48e:
+
+  iommu/amd: Fix wrong check for ARRAY_SIZE() (2012-08-10 11:34:08 +0200)
+
+----------------------------------------------------------------
+IOMMU Fixes for Linux v3.6-rc2
+
+Two fixes are necessary. One patch fixes a boot crash on MacBook Air
+with interrupt remapping enabled and the other patch fixes a regression
+(which causes a boot crash on AMD IOMMUv2 systems too) in the init code
+of the AMD IOMMU driver.
+
+----------------------------------------------------------------
+Joerg Roedel (1):
+      iommu/amd: Fix wrong check for ARRAY_SIZE()
+
+Seth Forshee (1):
+      irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
+
+ drivers/iommu/amd_iommu_init.c      |    2 +-
+ drivers/iommu/intel_irq_remapping.c |   18 +++++++++++++-----
+ 2 files changed, 14 insertions(+), 6 deletions(-)
+
+Please pull.
+
+Regards,
+
+	Joerg
+
+
+--mYCpIKhGyMATD0i+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQMgwVAAoJECvwRC2XARrjBjAQAIKWbHYEGTuqkd4QvKfZ/Kts
+xbyLgvc+P2wtVo4DEKZqz9/CskpO859xdzkY4lbf9NuEAQpggWCZIeVMGHf5Awbc
+LRiAStRMe6MvdA0yDx9Kg/DjOni3RlfHPiy/wT+v+BiW5t73J8YKnfACKNhIZ/8w
+KmLEqNvsbepqEbNw0FMdUhCb/BwUxHT2k1iP42TkCBbs99Lga/jGP8B5gSwz6TO8
+DnZDFsynM/XgpRrEdJE9cFITakNn1+Ykij9Gk0hoSG/IUxNWZvyNcE1K4ZTdtCmb
+j09pQJIch3qBdA6R5RsaYQs4Ti/bFhuJD/yz6CyPbQxgMYJ2WXRUWTmSrdDxIuB1
+vPENmWP4nR50fO2zUKEIMUqnBP7eQVJLUWBBhJ+o5S6r9xdUMmHa627LLbH2UsUK
+Ry1RZjq/ebMXdAd0p/jiqqoBed4gbE/RUos8DC3BX6B1IqF1Mlz++W4pdjhqVxHM
+LIIoi7rtgCb3MGb5tBlBbxSLE6i5VeOKu0koZpV9y8aOzL2qyEz4c2V4jZPfbcw9
+k5oGapV9j+XnjONSHmzWbNVZx7wJUcr7d0824rC970z9tNwjtKyhcVgLi/3IP0XB
+0C/EiuhYNyZdpIKcz7d6eaYImvClCIV58aWsvP9sCaO1Qqtc49SMFGPENRgwqKx5
+OtqXPsthJZjehBbxSTRa
+=8jKX
+-----END PGP SIGNATURE-----
+
+--mYCpIKhGyMATD0i+--
+
 
