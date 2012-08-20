@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab2HTPdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:33:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53949 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab2HTPbO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:31:14 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Andreas Heider <andreas@meetr.de>
-Subject: [RFC PATCH 1/7] vga_switcheroo: Add support for switching only the DDC
-Date: Mon, 20 Aug 2012 10:30:58 -0500
-Message-Id: <1345476664-22066-2-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345476664-22066-1-git-send-email-seth.forshee@canonical.com>
-References: <20120806045150.GA23652@thinkpad-t410>
- <1345476664-22066-1-git-send-email-seth.forshee@canonical.com>
+	id S932083Ab2HTPdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:33:40 -0400
+Received: from antcom.de ([188.40.178.216]:40784 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757066Ab2HTPdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 11:33:37 -0400
+Message-ID: <503258CE.9030106@antcom.de>
+Date: Mon, 20 Aug 2012 17:33:34 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net,
+        "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH RESEND v4] spi/pl022: add devicetree support
+References: <1345462769-17386-1-git-send-email-aletes.xgr@gmail.com> <50324835.6030806@gmail.com>
+In-Reply-To: <50324835.6030806@gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During graphics driver initialization its useful to be able to mux only
-the DDC to the inactive client in order to read the EDID. Add a
-switch_ddc callback to allow capable handlers to provide this
-functionality, and add vga_switcheroo_switch_ddc() to allow DRM to mux
-only the DDC.
+On 08/20/2012 04:22 PM, Rob Herring wrote:
+>>  .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
+>>  drivers/spi/spi-pl022.c                            |  114 ++++++++++++++++----
+>>  2 files changed, 110 insertions(+), 19 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/spi/spi_pl022.txt b/Documentation/devicetree/bindings/spi/spi_pl022.txt
+>> index 306ec3f..b089ec7 100644
+>> --- a/Documentation/devicetree/bindings/spi/spi_pl022.txt
+>> +++ b/Documentation/devicetree/bindings/spi/spi_pl022.txt
+>> @@ -6,7 +6,22 @@ Required properties:
+>>  - interrupts : Should contain SPI controller interrupt
+>>  
+>>  Optional properties:
+>> +- pl022,num-chipselects : total number of chipselects
+> 
+> We have this for other spi controllers too. Define a generic property.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/gpu/vga/vga_switcheroo.c |   39 +++++++++++++++++++++++++++++++++++++-
- include/linux/vga_switcheroo.h   |    4 ++++
- 2 files changed, 42 insertions(+), 1 deletion(-)
+Currently, we have:
 
-diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
-index e25cf31..ea6bcc2 100644
---- a/drivers/gpu/vga/vga_switcheroo.c
-+++ b/drivers/gpu/vga/vga_switcheroo.c
-@@ -252,6 +252,29 @@ void vga_switcheroo_client_fb_set(struct pci_dev *pdev,
- }
- EXPORT_SYMBOL(vga_switcheroo_client_fb_set);
- 
-+int vga_switcheroo_switch_ddc(struct pci_dev *pdev)
-+{
-+	int ret = 0;
-+	int id;
-+
-+	mutex_lock(&vgasr_mutex);
-+
-+	if (!vgasr_priv.handler) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	if (vgasr_priv.handler->switch_ddc) {
-+		id = vgasr_priv.handler->get_client_id(pdev);
-+		ret = vgasr_priv.handler->switch_ddc(id);
-+	}
-+
-+out:
-+	mutex_unlock(&vgasr_mutex);
-+	return ret;
-+}
-+EXPORT_SYMBOL(vga_switcheroo_switch_ddc);
-+
- static int vga_switcheroo_show(struct seq_file *m, void *v)
- {
- 	struct vga_switcheroo_client *client;
-@@ -342,9 +365,15 @@ static int vga_switchto_stage2(struct vga_switcheroo_client *new_client)
- 		fb_notifier_call_chain(FB_EVENT_REMAP_ALL_CONSOLE, &event);
- 	}
- 
-+	if (vgasr_priv.handler->switch_ddc) {
-+		ret = vgasr_priv.handler->switch_ddc(new_client->id);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	ret = vgasr_priv.handler->switchto(new_client->id);
- 	if (ret)
--		return ret;
-+		goto restore_ddc;
- 
- 	if (new_client->ops->reprobe)
- 		new_client->ops->reprobe(new_client->pdev);
-@@ -356,6 +385,14 @@ static int vga_switchto_stage2(struct vga_switcheroo_client *new_client)
- 
- 	new_client->active = true;
- 	return 0;
-+
-+restore_ddc:
-+	if (vgasr_priv.handler->switch_ddc) {
-+		int id = (new_client->id == VGA_SWITCHEROO_IGD) ?
-+				VGA_SWITCHEROO_DIS : VGA_SWITCHEROO_IGD;
-+		ret = vgasr_priv.handler->switch_ddc(id);
-+	}
-+	return ret;
- }
- 
- static bool check_can_switch(void)
-diff --git a/include/linux/vga_switcheroo.h b/include/linux/vga_switcheroo.h
-index ddb419c..b0d0839 100644
---- a/include/linux/vga_switcheroo.h
-+++ b/include/linux/vga_switcheroo.h
-@@ -29,6 +29,7 @@ enum vga_switcheroo_client_id {
- };
- 
- struct vga_switcheroo_handler {
-+	int (*switch_ddc)(enum vga_switcheroo_client_id id);
- 	int (*switchto)(enum vga_switcheroo_client_id id);
- 	int (*power_state)(enum vga_switcheroo_client_id id,
- 			   enum vga_switcheroo_state state);
-@@ -53,6 +54,8 @@ int vga_switcheroo_register_audio_client(struct pci_dev *pdev,
- void vga_switcheroo_client_fb_set(struct pci_dev *dev,
- 				  struct fb_info *info);
- 
-+int vga_switcheroo_switch_ddc(struct pci_dev *pdev);
-+
- int vga_switcheroo_register_handler(struct vga_switcheroo_handler *handler);
- void vga_switcheroo_unregister_handler(void);
- 
-@@ -66,6 +69,7 @@ static inline void vga_switcheroo_unregister_client(struct pci_dev *dev) {}
- static inline int vga_switcheroo_register_client(struct pci_dev *dev,
- 		const struct vga_switcheroo_client_ops *ops) { return 0; }
- static inline void vga_switcheroo_client_fb_set(struct pci_dev *dev, struct fb_info *info) {}
-+static inline void vga_switcheroo_switch_ddc(struct pci_dev *pdev) { return NULL; }
- static inline int vga_switcheroo_register_handler(struct vga_switcheroo_handler *handler) { return 0; }
- static inline int vga_switcheroo_register_audio_client(struct pci_dev *pdev,
- 	const struct vga_switcheroo_client_ops *ops,
--- 
-1.7.9.5
+num-cs
+ti,spi-num-cs
+fsl,spi-num-chipselects
+fsl,espi-num-chipselects
+(pl022,num-chipselects)
 
+Would "num-cs" be the right one to use?
+
+Thanks,
+
+Roland
