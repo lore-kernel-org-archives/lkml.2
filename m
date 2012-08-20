@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2HTGQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 02:16:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43173 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab2HTGQu convert rfc822-to-8bit (ORCPT
+	id S1754563Ab2HTGVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 02:21:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63080 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab2HTGVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 02:16:50 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>,
-        Bryan Wu <bryan.wu@canonical.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: RE: [PATCH] leds-lm3530: replace pwm platform functions with
- generic pwm functions
-Thread-Topic: [PATCH] leds-lm3530: replace pwm platform functions with
- generic pwm functions
-Thread-Index: Ac1+iI3X+iN5rabESjyXTrhr06HT3P//lKUAgAAFuYD//3VuQA==
-Date: Mon, 20 Aug 2012 06:16:41 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0939@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF0095@DQHE02.ent.ti.com>
- <201208200537.48993.arnd@arndb.de>
- <20120820055817.GA17149@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20120820055817.GA17149@avionic-0098.adnet.avionic-design.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Aug 2012 02:21:30 -0400
+Message-ID: <5031D763.9010808@gmail.com>
+Date: Mon, 20 Aug 2012 14:21:23 +0800
+From: wujianguo <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
+To: tony.luck@intel.com, fenghua.yu@intel.com
+CC: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jiang.liu@huawei.com, guohanjun@huawei.com, qiuxishi@huawei.com,
+        liuj97@gmail.com
+Subject: [PATCH]mm/ia64: fix a node distance bug
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > * Rather than having to do the #ifdef here, I think it would be
-> better if
-> >   the PWM subsystem provided stub functions for pwm_request,
-> pwm_config,
-> >   pwm_enable, pwm_disable and pwm_free that do nothing, so you can in
-> effect
-> >   let the compiler optimize away the above code.
-> 
-> That's actually on my TODO list, but I think it needs to wait until we
-> have gotten rid of all legacy implementations. The stubs would have to
-> move into the !CONFIG_PWM branch, which will in turn break because the
-> legacy implementations would provide non-inlined duplicates.
-> 
-> Thierry
+From: Jianguo Wu <wujianguo@huawei.com>
 
-OK, then it's better to wait fixing that first.
+Hi all,
+	When doing memory-hot-plug, We found node distance is wrong after offline
+a node in IA64 platform. For example system has 4 nodes:
+node distances:
+node   0   1   2   3
+  0:  10  21  21  32
+  1:  21  10  32  21
+  2:  21  32  10  21
+  3:  32  21  21  10
 
-Bryan,
-please just ignore this patch.
-I'll resend the patch later.
+linux-drf:/sys/devices/system/node/node0 # cat distance
+10  21  21  32
+linux-drf:/sys/devices/system/node/node1 # cat distance
+21  10  32  21
 
-Thank you.
+After offline node2:
+linux-drf:/sys/devices/system/node/node0 # cat distance
+10 21 32
+linux-drf:/sys/devices/system/node/node1 # cat distance
+32 21 32	--------->expected value is: 21  10  21
 
-Best Regards,
-Milo
+In arch IA, we have following definition:
+extern u8 numa_slit[MAX_NUMNODES * MAX_NUMNODES];
+#define node_distance(from,to) (numa_slit[(from) * num_online_nodes() + (to)])
+
+node distance is setup as following:
+acpi_numa_arch_fixup()
+{
+	...
+	memset(numa_slit, -1, sizeof(numa_slit));
+	for (i = 0; i < slit_table->locality_count; i++) {
+		if (!pxm_bit_test(i))
+			continue;
+		node_from = pxm_to_node(i);
+		for (j = 0; j < slit_table->locality_count; j++) {
+			if (!pxm_bit_test(j))
+				continue;
+			node_to = pxm_to_node(j);
+			node_distance(node_from, node_to) =
+			    slit_table->entry[i * slit_table->locality_count + j];
+		}
+	}
+	...
+}
+	num_online_nodes() is a variable value, during system boot the return vale is 4,
+but after offline node2, the return value is 3, so we read a wrong node distance value.
+This patch is trying to fix this bug.
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+---
+ arch/ia64/include/asm/numa.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/ia64/include/asm/numa.h b/arch/ia64/include/asm/numa.h
+index 6a8a27c..2e27ef1 100644
+--- a/arch/ia64/include/asm/numa.h
++++ b/arch/ia64/include/asm/numa.h
+@@ -59,7 +59,7 @@ extern struct node_cpuid_s node_cpuid[NR_CPUS];
+  */
+
+ extern u8 numa_slit[MAX_NUMNODES * MAX_NUMNODES];
+-#define node_distance(from,to) (numa_slit[(from) * num_online_nodes() + (to)])
++#define node_distance(from,to) (numa_slit[(from) * MAX_NUMNODES + (to)])
+
+ extern int paddr_to_nid(unsigned long paddr);
+
+-- 
+1.7.6.1
+
+
+
+.
 
 
 
