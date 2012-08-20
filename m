@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab2HTUtx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:49:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62909 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab2HTUtt (ORCPT
+	id S1755054Ab2HTUvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:51:38 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56539 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab2HTUvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:49:49 -0400
-Date: Mon, 20 Aug 2012 13:49:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: Build usb_speed_string unconditionally
-Message-ID: <20120820204944.GA19667@kroah.com>
-References: <20120820195808.GD4461@tassilo.jf.intel.com>
- <Pine.LNX.4.44L0.1208201639050.1182-100000@iolanthe.rowland.org>
+	Mon, 20 Aug 2012 16:51:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1208201639050.1182-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120820144449.GA32560@lizard>
+References: <20120820144449.GA32560@lizard>
+Date: Mon, 20 Aug 2012 13:51:33 -0700
+Message-ID: <CANqkERCzQdViRjhtz19wbSWEEnxYjpDcuUZNP9jNHYrtANwp-g@mail.gmail.com>
+Subject: Re: [PATCH v4 0/12] KGDB/KDB FIQ (NMI) debugger
+From: Brian Swetland <swetland@google.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 04:42:44PM -0400, Alan Stern wrote:
-> On Mon, 20 Aug 2012, Andi Kleen wrote:
-> 
-> > On Mon, Aug 20, 2012 at 03:47:48PM -0400, Alan Stern wrote:
-> > > On Mon, 20 Aug 2012, Andi Kleen wrote:
-> > > 
-> > > > From: Andi Kleen <ak@linux.intel.com>
-> > > > 
-> > > > The usb core uses usb_speed_string(). But it's only selected
-> > > > for USB_GADGET. Enable it unconditionally.
-> > > 
-> > > What are you talking about?  USB_COMMON isn't selected at all, but it
-> > > does get built whenever USB or USB_GAGDET is enabled.  From
-> > > drivers/usb/Kconfig:
-> > 
-> > Just trying to fix my LTO randconfigs.
-> > 
-> > Here's a config that violated it on rc2.
-> 
-> Okay, I see the problem.  Your config has:
-> 
-> # CONFIG_USB_SUPPORT is not set
-> CONFIG_USB=m
-> 
-> That combination should not be possible, because in 
-> drivers/usb/Kconfig, the definition of USB is inside an "if 
-> USB_SUPPORT" block.
-> 
-> Runing "make oldconfig" shows that this happened because:
-> 
-> warning: (MOUSE_APPLETOUCH && MOUSE_BCM5974 && MOUSE_SYNAPTICS_USB && JOYSTICK_XPAD && TABLET_USB_ACECAD && TABLET_USB_AIPTEK && TABLET_USB_HANWANG && TABLET_USB_KBTAB && TABLET_USB_WACOM && TOUCHSCREEN_USB_COMPOSITE && INPUT_ATI_REMOTE2 && INPUT_KEYSPAN_REMOTE && INPUT_POWERMATE && INPUT_YEALINK && INPUT_CM109 && RC_ATI_REMOTE && IR_IMON && IR_MCEUSB && IR_REDRAT3 && IR_STREAMZAP && IR_IGUANA && DRM_USB) selects USB which has unmet direct dependencies (USB_SUPPORT && USB_ARCH_HAS_HCD)
-> 
-> The culprit is DRM_USB, and I think Greg has just accepted a patch to 
-> fix it.
+On Mon, Aug 20, 2012 at 7:44 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+>
+> - KGDB/KDB FIQ debugger shell is synchronous. In Google's version you
+>   could have a dedicated shell always running in the FIQ context, so
+>   when you type something on a serial line, you won't actually cause any
+>   debugging actions, FIQ would save the characters in its own buffer and
+>   continue execution normally. But when you hit return key after the
+>   command, then the command is executed.
+>
+>   In KGDB/KDB FIQ debugger it is different. Once you enter KGDB, the
+>   kernel will stop until you instruct it to continue.
+>
+>   This might look as a drastic change, but it is not. There is actually
+>   no difference whether you have sync or async shell, or at least I
+>   couldn't find any use-case where this would matter at all. Anyways, it
+>   is still possible to do async shell in KDB, just don't see any need
+>   for this.
 
-Yes, it's now in Linus's tree.
+The main reason we did this asynchronously was that it's entirely possible
+to get the occasional random character on the debug serial port (which is
+often multiplexed with the audio path on the headphone jack), and having
+the device freeze mysteriously when this happens is problematic.
 
-Andi, care to try this again with this .config on Linus's tree to see if
-it all now works properly?
+Since the FIQ debugger is incredibly useful for diagnosing "my device is
+stuck" type problems, we tend to leave it enabled on large numbers of
+devices during internal testing, so that if somebody runs into a problem
+an engineer can plug in a serial debug cable and take a look.  It's
+important that the presence of the debug feature doesn't lead to instability,
+and thus we don't want a single random character to stop the normal
+operation ofthe device.
 
-thanks,
-
-greg k-h
+Brian
