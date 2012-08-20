@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab2HTPLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:11:14 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48952 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982Ab2HTPLI (ORCPT
+	id S1756969Ab2HTPMU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:12:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54999 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab2HTPMS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:11:08 -0400
-Date: Mon, 20 Aug 2012 08:09:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20120820150950.GC2435@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120816131236.13013e1ec18b1f1074f6dc92@canb.auug.org.au>
- <20120816194651.GK2445@linux.vnet.ibm.com>
- <20120817105633.0aba80ddf7eb9523e04c264d@canb.auug.org.au>
- <20120817115019.GJ2438@linux.vnet.ibm.com>
- <20120820145404.f12977568303f4982ce89e8e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120820145404.f12977568303f4982ce89e8e@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082015-7408-0000-0000-000007C31CFA
+	Mon, 20 Aug 2012 11:12:18 -0400
+Message-ID: <1345475530.23018.50.camel@twins>
+Subject: Re: lockdep trace from posix timers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Date: Mon, 20 Aug 2012 17:12:10 +0200
+In-Reply-To: <20120820150507.GC18499@redhat.com>
+References: <20120724203613.GA9637@redhat.com>
+	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
+	 <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins>
+	 <20120820150507.GC18499@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 02:54:04PM +1000, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> On Fri, 17 Aug 2012 04:50:19 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Mon, 2012-08-20 at 17:05 +0200, Oleg Nesterov wrote:
+> On 08/20, Peter Zijlstra wrote:
 > >
-> > Does the following help?
+> > +static void __task_work_run(struct callback_head *tail)
+> >  {
+> > -	struct task_struct *task = current;
+> > -	struct callback_head *p, *q;
+> > -
+> > -	while (1) {
+> > -		raw_spin_lock_irq(&task->pi_lock);
+> > -		p = task->task_works;
+> > -		task->task_works = NULL;
+> > -		raw_spin_unlock_irq(&task->pi_lock);
+> > -
+> > -		if (unlikely(!p))
+> > -			return;
+> > -
+> > -		q = p->next; /* head */
+> > -		p->next = NULL; /* cut it */
+> > -		while (q) {
+> > -			p = q->next;
+> > -			q->func(q);
+> > -			q = p;
+> > +	struct callback_head **head = &current->task_works;
+> > +
+> > +	do {
+> > +		struct callback_head *work = xchg(head, NULL);
+> > +		while (work) {
+> > +			struct callback_head *next = ACCESS_ONCE(work->next);
+> > +
+> > +			WARN_ON_ONCE(work == &dead);
+> > +
+> > +			work->func(work);
+> > +			work = next;
+> >  		}
+> > -	}
+> > +	} while (cmpxchg(head, NULL, tail) != NULL);
 > 
-> Yes, that fixes the warnings.  Please submit those two patches to the tip
-> folks ASAP as I can't build the tip tree without them.
+> Yes, we can add the explicit argument to __task_work_run(), but it can
+> check PF_EXITING instead, this looks simpler to me.
 
-Will do.  Unless you tell me otherwise, with your Tested-by.
+I guess we could.. but I thought the explicit callback was simpler ;-)
 
-							Thanx, Paul
+> Note also your patch breaks fifo, but this is fixable.
 
+Why do you care about the order? Iterating a single linked queue in fifo
+seems more expensive than useful.
