@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab2HTPSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:18:34 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:39575 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758Ab2HTPSb convert rfc822-to-8bit (ORCPT
+	id S1757057Ab2HTP0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:26:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41600 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756963Ab2HTP0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:18:31 -0400
+	Mon, 20 Aug 2012 11:26:16 -0400
+Date: Mon, 20 Aug 2012 08:26:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
+        Jason Baron <jbaron@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] drivers-core: beware dev_printk() from printing nonsense
+Message-ID: <20120820152611.GB28039@kroah.com>
+References: <20120820103337.GA16744@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1345474316.9850.4.camel@phoenix>
-References: <1345465097-31576-1-git-send-email-linus.walleij@stericsson.com>
-	<1345474316.9850.4.camel@phoenix>
-Date: Mon, 20 Aug 2012 17:18:28 +0200
-Message-ID: <CACRpkdZFNhDbAYkcbWhRmOpos_Vbjk0P4SSNCMCC3MXddzc4ZA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: ab8500: fix voltage selector regression
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120820103337.GA16744@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 4:51 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> 於 一，2012-08-20 於 14:18 +0200，Linus Walleij 提到：
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> Commit 3bf6e90e476fb34ca47b6dda270f41d9cebcb1ac
->> "regulator: Convert ab8499 to use get_voltage_sel()"
->> and commit ae713d394d9e2aacaab620acd3212855f1f06b00
->> "regulator: Convert ab8500 to set_voltage_sel"
->> corrupted the voltage selector mechanism is two ways:
->
-> I'm not very sure the commits you mentioned is the root cause,
-> because it looks that here is no behavior change with both commits.
-> Does it really work if you revert above commits you mention?
+On Mon, Aug 20, 2012 at 12:33:37PM +0200, Sebastian Andrzej Siewior wrote:
+> on boot I saw plenty of rubbish like:
+> 
+> |ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+> |pci_root PNP0A03:00: Force enabled HPET at 0x%lx
+> |host bridge window [io  0x0000-0x0cf7] (ignored)
+> |pci_root PNP0A03:00: Force enabled HPET at 0x%lx
+> |host bridge window [io  0x0d00-0xffff] (ignored)
+> |pci_root PNP0A03:00: Force enabled HPET at 0x%lx
+> |ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 10
+> |virtio-pci 0000:00:05.0: Force enabled HPET at 0x%lx
+> 
+> First I wonder myself why the kernel Force enables more than one HPET
+> and why the address isn't printed. Then I wasn't sure why virtio-pci
+> does the same thing.
+> As it turns out commit af7f2158fdee ("drivers-core: make structured
+> logging play nice with dynamic-debug") has probably an off by one error.
+> Since commit 314ba3520 ("printk: add kern_levels.h to make KERN_<LEVEL>
+> available for asm use") the whole shrunk by one byte. And for some
+> reason the compiler put the HPET string just after one of the kernel log
+> levels so level[3] was always true.
+> 
+> This should make the rubish go away, I am not sure if the dynamic debug
+> is still working. Jim could you please try?
+> 
+> Cc: Jim Cromie <jim.cromie@gmail.com>
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: stable <stable@vger.kernel.org>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Joe Perches <joe@perches.com>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  drivers/base/core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index cdd01c5..5a864c3 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1912,7 +1912,7 @@ int __dev_printk(const char *level, const struct device *dev,
+>  				    "DEVICE=+%s:%s", subsys, dev_name(dev));
+>  	}
+>  skip:
+> -	if (level[3])
+> +	if (level[sizeof(KERN_ERR) - 1])
 
-No you're right, I've screwed up completely... I confused
-two codebases. I'll fix a proper patch adding the proper
-voltage shift fields to the regulator info.
+This has already been fixed in my driver-core tree and will go to Linus
+in a few hours.
 
-Sorry about this Axel!
+thanks,
 
-Yours,
-Linus Walleij
+greg k-h
