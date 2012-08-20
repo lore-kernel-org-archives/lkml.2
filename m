@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab2HTUnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:43:19 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:49260 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752656Ab2HTUnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:43:16 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andre Przywara <andre.przywara@amd.com>
-Subject: Re: [PATCH 7/8] cpufreq: Remove support for hardware P-state chips from powernow-k8
-Date: Mon, 20 Aug 2012 22:49:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: cpufreq@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Thomas Renninger <trenn@suse.de>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1343305724-2809-1-git-send-email-andre.przywara@amd.com> <201208052333.15608.rjw@sisk.pl> <503234FA.908@amd.com>
-In-Reply-To: <503234FA.908@amd.com>
+	id S1754779Ab2HTUny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:43:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44780 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab2HTUnv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:43:51 -0400
+Date: Mon, 20 Aug 2012 13:38:43 -0700
+From: Tejun Heo <tj@kernel.org>
+To: valentin.ilie@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] workqueue: fix checkpatch issues
+Message-ID: <20120820203843.GU24861@google.com>
+References: <1345326762-21747-1-git-send-email-valentin.ilie@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208202249.16445.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345326762-21747-1-git-send-email-valentin.ilie@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 20, 2012, Andre Przywara wrote:
-> On 08/05/2012 11:33 PM, Rafael J. Wysocki wrote:
-> > On Thursday, July 26, 2012, Andre Przywara wrote:
-> >> From: Matthew Garrett <mjg@redhat.com>
-> >>
-> >> These chips are now supported by acpi-cpufreq, so we can delete all the
-> >> code handling them.
-> >>
-> >> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> >> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> >
-> > Would it be very wrong/confusing to keep that support in the powernow-k8
-> > driver for the time being, perhaps making it print a message that the ACPI
-> > driver is recommended for those chips?
-> 
-> Why would you like to do this? Are you concerned about regressions?
+>From 044c782ce3a901fbd17cbe701c592f582381174d Mon Sep 17 00:00:00 2001
+From: Valentin Ilie <valentin.ilie@gmail.com>
+Date: Sun, 19 Aug 2012 00:52:42 +0300
 
-Yes.  Suppose you have a system configured to use the powernow-k8 driver
-right now and you find that it stopped working due to a kernel update.
-You would be quite upset I suppose.
+Fixed some checkpatch warnings.
 
-> Or do you just want to avoid the introduction of the doomed "cpb" feature 
-> in acpi-cpufreq?
-> 
-> I am not sure if keeping support in powernow-k8 would just make people 
-> use it still in the future. At least if it would just load easily as before.
-> One idea could be to keep the code around, but only load on family 10h 
-> if a force_fam10h or so command line option is provided. But again this 
-> could just push distributions to provide this option to avoid the 
-> transition.
+tj: adapted to wq/for-3.7 and massaged pr_xxx() format strings a bit.
 
-We don't force transitions like that, mind you.
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+LKML-Reference: <1345326762-21747-1-git-send-email-valentin.ilie@gmail.com>
+---
+Applied to wq/for-3.7 with some updates.
 
-> One of my motivations was to keep only _one_ driver around, the code 
-> removal of the fam10h support from powernow-k8 supports this.
-> 
-> If you insist, I can keep the code in powernow-k8, but it probably 
-> wouldn't receive any support anymore and would increase confusion on the 
-> user side.
+Thanks.
 
-I'm not afraid of that.  And as I said, you can just add info messages to
-powernow-k8 saying that the feature is deprecated and will be removed in the
-future and _then_ you actually _can_ remove it in the future (say, 2-3 major
-kernel releasew from now).
+ kernel/workqueue.c |   29 +++++++++++++----------------
+ 1 files changed, 13 insertions(+), 16 deletions(-)
 
-Thanks,
-Rafael
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 7da2471..de429ba 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -269,18 +269,18 @@ struct workqueue_struct {
+ };
+ 
+ struct workqueue_struct *system_wq __read_mostly;
+-struct workqueue_struct *system_highpri_wq __read_mostly;
+-struct workqueue_struct *system_long_wq __read_mostly;
+-struct workqueue_struct *system_nrt_wq __read_mostly;
+-struct workqueue_struct *system_unbound_wq __read_mostly;
+-struct workqueue_struct *system_freezable_wq __read_mostly;
+-struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_wq);
++struct workqueue_struct *system_highpri_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_highpri_wq);
++struct workqueue_struct *system_long_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_long_wq);
++struct workqueue_struct *system_nrt_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_nrt_wq);
++struct workqueue_struct *system_unbound_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_unbound_wq);
++struct workqueue_struct *system_freezable_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_freezable_wq);
++struct workqueue_struct *system_nrt_freezable_wq __read_mostly;
+ EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
+ 
+ #define CREATE_TRACE_POINTS
+@@ -2232,11 +2232,9 @@ __acquires(&gcwq->lock)
+ 	lock_map_release(&cwq->wq->lockdep_map);
+ 
+ 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
+-		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
+-		       "%s/0x%08x/%d\n",
+-		       current->comm, preempt_count(), task_pid_nr(current));
+-		printk(KERN_ERR "    last function: ");
+-		print_symbol("%s\n", (unsigned long)f);
++		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
++		       "     last function: %pf\n",
++		       current->comm, preempt_count(), task_pid_nr(current), f);
+ 		debug_show_held_locks(current);
+ 		dump_stack();
+ 	}
+@@ -2790,8 +2788,8 @@ reflush:
+ 
+ 		if (++flush_cnt == 10 ||
+ 		    (flush_cnt % 100 == 0 && flush_cnt <= 1000))
+-			pr_warning("workqueue %s: flush on destruction isn't complete after %u tries\n",
+-				   wq->name, flush_cnt);
++			pr_warn("workqueue %s: flush on destruction isn't complete after %u tries\n",
++				wq->name, flush_cnt);
+ 		goto reflush;
+ 	}
+ 
+@@ -3275,9 +3273,8 @@ static int wq_clamp_max_active(int max_active, unsigned int flags,
+ 	int lim = flags & WQ_UNBOUND ? WQ_UNBOUND_MAX_ACTIVE : WQ_MAX_ACTIVE;
+ 
+ 	if (max_active < 1 || max_active > lim)
+-		printk(KERN_WARNING "workqueue: max_active %d requested for %s "
+-		       "is out of range, clamping between %d and %d\n",
+-		       max_active, name, 1, lim);
++		pr_warn("workqueue: max_active %d requested for %s is out of range, clamping between %d and %d\n",
++			max_active, name, 1, lim);
+ 
+ 	return clamp_val(max_active, 1, lim);
+ }
+-- 
+1.7.7.3
+
