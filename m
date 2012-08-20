@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab2HTS3V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:29:21 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58051 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752778Ab2HTS3O (ORCPT
+	id S1752886Ab2HTS3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:29:50 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:54658 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab2HTS3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:29:14 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: FlorianSchandinat@gmx.de
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] video: hpfb: Fix error handling
-Date: Mon, 20 Aug 2012 20:32:25 +0200
-Message-Id: <1345487545-9590-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 20 Aug 2012 14:29:46 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-209.messagelabs.com!1345487384!7944198!6
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.2; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/4] staging: comedi: aio_aio12_8: fix i/o region size
+Date: Mon, 20 Aug 2012 11:29:16 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201208201129.16773.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch solves problems with the error handling by
-introducing labels for proper error paths and it also
-frees resources that where missed.
+This board has jumpers to set the board base address. These
+jumpers are marked A5 through A9 and A5 is the least significant
+bit of the address. This makes the address reqion for the board
+32 bytes not 24.
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/video/hpfb.c |   28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/aio_aio12_8.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/hpfb.c b/drivers/video/hpfb.c
-index ebf8495..7324865 100644
---- a/drivers/video/hpfb.c
-+++ b/drivers/video/hpfb.c
-@@ -210,6 +210,7 @@ static int __devinit hpfb_init_one(unsigned long phys_base,
- 				   unsigned long virt_base)
- {
- 	unsigned long fboff, fb_width, fb_height, fb_start;
-+	int ret;
+diff --git a/drivers/staging/comedi/drivers/aio_aio12_8.c b/drivers/staging/comedi/drivers/aio_aio12_8.c
+index 46ef41a..c07de3e 100644
+--- a/drivers/staging/comedi/drivers/aio_aio12_8.c
++++ b/drivers/staging/comedi/drivers/aio_aio12_8.c
+@@ -206,7 +206,7 @@ static int aio_aio12_8_attach(struct comedi_device *dev,
+ 	dev->board_name = board->name;
  
- 	fb_regs = virt_base;
- 	fboff = (in_8(fb_regs + HPFB_FBOMSB) << 8) | in_8(fb_regs + HPFB_FBOLSB);
-@@ -290,19 +291,29 @@ static int __devinit hpfb_init_one(unsigned long phys_base,
- 	fb_info.var   = hpfb_defined;
- 	fb_info.screen_base = (char *)fb_start;
- 
--	fb_alloc_cmap(&fb_info.cmap, 1 << hpfb_defined.bits_per_pixel, 0);
-+	ret = fb_alloc_cmap(&fb_info.cmap, 1 << hpfb_defined.bits_per_pixel, 0);
-+	if (ret < 0)
-+		goto unmap_screen_base;
- 
--	if (register_framebuffer(&fb_info) < 0) {
--		fb_dealloc_cmap(&fb_info.cmap);
--		iounmap(fb_info.screen_base);
--		fb_info.screen_base = NULL;
--		return 1;
--	}
-+	ret = register_framebuffer(&fb_info);
-+	if (ret < 0)
-+		goto dealloc_cmap;
- 
- 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
- 	       fb_info.node, fb_info.fix.id);
- 
- 	return 0;
-+
-+dealloc_cmap:
-+	fb_dealloc_cmap(&fb_info.cmap);
-+
-+unmap_screen_base:
-+	if (fb_info.screen_base) {
-+		iounmap(fb_info.screen_base);
-+		fb_info.screen_base = NULL;
-+	}
-+
-+	return ret;
- }
- 
- /* 
-@@ -345,6 +356,9 @@ static void __devexit hpfb_remove_one(struct dio_dev *d)
- 	if (d->scode >= DIOII_SCBASE)
- 		iounmap((void *)fb_regs);
- 	release_mem_region(d->resource.start, resource_size(&d->resource));
-+	fb_dealloc_cmap(&fb_info.cmap);
-+	if (fb_info.screen_base)
-+		iounmap(fb_info.screen_base);
- }
- 
- static struct dio_device_id hpfb_dio_tbl[] = {
+ 	iobase = it->options[0];
+-	if (!request_region(iobase, 24, dev->board_name)) {
++	if (!request_region(iobase, 32, dev->board_name)) {
+ 		printk(KERN_ERR "I/O port conflict");
+ 		return -EIO;
+ 	}
 -- 
-1.7.10.4
+1.7.11
 
