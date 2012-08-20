@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab2HTPjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:39:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41562 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab2HTPjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:39:31 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, Axel Lin <axel.lin@gmail.com>,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] regulator: max8907: fix compile error when !CONFIG_OF
-Date: Mon, 20 Aug 2012 09:39:10 -0600
-Message-Id: <1345477150-25933-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	id S1755559Ab2HTPjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:39:42 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:52969 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751127Ab2HTPjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 11:39:37 -0400
+Date: Mon, 20 Aug 2012 17:39:27 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH 00/11] x86/microcode: Early load microcode
+Message-ID: <20120820153927.GB8623@aftab.osrc.amd.com>
+References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Sat, Aug 18, 2012 at 01:15:18AM -0700, Fenghua Yu wrote:
+>  Documentation/x86/earlyucode.txt        |   43 +++
+>  arch/x86/Kconfig                        |   22 ++
+>  arch/x86/include/asm/cpio.h             |   10 +
+>  arch/x86/include/asm/microcode.h        |   23 ++
+>  arch/x86/include/asm/microcode_intel.h  |  103 +++++++
+>  arch/x86/kernel/Makefile                |    3 +
+>  arch/x86/kernel/head64.c                |    6 +
+>  arch/x86/kernel/head_32.S               |    6 +
+>  arch/x86/kernel/microcode_core.c        |    7 +-
+>  arch/x86/kernel/microcode_core_early.c  |   74 +++++
+>  arch/x86/kernel/microcode_intel.c       |  185 +------------
+>  arch/x86/kernel/microcode_intel_early.c |  482 +++++++++++++++++++++++++++++++
+>  arch/x86/kernel/microcode_intel_lib.c   |  163 +++++++++++
 
-Fix the following:
+One more thing:
 
-  CC [M]  drivers/regulator/max8907-regulator.o
-drivers/regulator/max8907-regulator.c: In function 'max8907_regulator_probe':
-drivers/regulator/max8907-regulator.c:297:12: error: 'max8907_matches' undeclared (first use in this function)
+This screams for adding a directory called "microcode" in the kernel
+sources and moving all the microcode-related files there. IOW:
 
-by removing direct references to max8907_matches[], which only exists when
-CONFIG_OF is defined.
+arch/x86/kernel/cpu/microcode/core.c
+arch/x86/kernel/cpu/microcode/core_early.c
+arch/x86/kernel/cpu/microcode/intel.c
+arch/x86/kernel/cpu/microcode/amd.c
+...
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-Note: It's possible that the MAX8907 PMIC is only used with Tegra; there
-certainly is a reference to AP15 (an old Tegra version) in the MAX8907
-documentation. If so, Tegra implies CONFIG_OF, so we could just make
-MAX8907 depend on CONFIG_OF and remove all the ifdefs from the driver.
-That said, I'm not at all sure whether the MAX8907 is Tegra-specific.
----
- drivers/regulator/max8907-regulator.c |   24 ++++++++++++++++++++++--
- 1 files changed, 22 insertions(+), 2 deletions(-)
+And yes, they should be under "cpu" too.
 
-diff --git a/drivers/regulator/max8907-regulator.c b/drivers/regulator/max8907-regulator.c
-index 831488f..0d03e71 100644
---- a/drivers/regulator/max8907-regulator.c
-+++ b/drivers/regulator/max8907-regulator.c
-@@ -248,11 +248,31 @@ static int max8907_regulator_parse_dt(struct platform_device *pdev)
- 
- 	return 0;
- }
-+
-+static inline struct regulator_init_data *match_init_data(int index)
-+{
-+	return max8907_matches[index].init_data;
-+}
-+
-+static inline struct device_node *match_of_node(int index)
-+{
-+	return max8907_matches[index].of_node;
-+}
- #else
- static int max8907_regulator_parse_dt(struct platform_device *pdev)
- {
- 	return 0;
- }
-+
-+static inline struct regulator_init_data *match_init_data(int index)
-+{
-+	return NULL;
-+}
-+
-+static inline struct device_node *match_of_node(int index)
-+{
-+	return NULL;
-+}
- #endif
- 
- static __devinit int max8907_regulator_probe(struct platform_device *pdev)
-@@ -294,11 +314,11 @@ static __devinit int max8907_regulator_probe(struct platform_device *pdev)
- 		if (pdata)
- 			idata = pdata->init_data[i];
- 		else
--			idata = max8907_matches[i].init_data;
-+			idata = match_init_data(i);
- 		config.init_data = idata;
- 		config.driver_data = pmic;
- 		config.regmap = max8907->regmap_gen;
--		config.of_node = max8907_matches[i].of_node;
-+		config.of_node = match_of_node(i);
- 
- 		switch (pmic->desc[i].id) {
- 		case MAX8907_MBATT:
 -- 
-1.7.0.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
