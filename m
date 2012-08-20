@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab2HTXMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 19:12:00 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54380 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2HTXL4 (ORCPT
+	id S1756770Ab2HTXVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 19:21:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39300 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756618Ab2HTXUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 19:11:56 -0400
-Date: Tue, 21 Aug 2012 00:16:35 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: "mr.shroom" <mr.shroom@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: Bug report
-Message-ID: <20120821001635.5e9e2afc@pyramind.ukuu.org.uk>
-In-Reply-To: <5032BD97.7070701@xenotime.net>
-References: <CAL=PgHMH=5A5rLaO=RvYYA8MmcKEt1zay7f2=SS83RYayVVh+w@mail.gmail.com>
-	<5032BD97.7070701@xenotime.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Mon, 20 Aug 2012 19:20:48 -0400
+Date: Mon, 20 Aug 2012 16:20:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Sage Weil <sage@inktank.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org,
+        neilb@suse.de, a.p.zijlstra@chello.nl, michaelc@cs.wisc.edu,
+        emunson@mgebm.net, sebastian@breakpoint.cc, cl@linux.com,
+        torvalds@linux-foundation.org
+Subject: Re: regression with poll(2)
+Message-Id: <20120820162046.f827f758.akpm@linux-foundation.org>
+In-Reply-To: <1345455059.5158.302.camel@edumazet-glaptop>
+References: <alpine.DEB.2.00.1208151226250.15721@cobra.newdream.net>
+	<alpine.DEB.2.00.1208191051150.15570@cobra.newdream.net>
+	<20120820090443.GA3275@suse.de>
+	<1345455059.5158.302.camel@edumazet-glaptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -26,10 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012 15:43:35 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Mon, 20 Aug 2012 11:30:59 +0200
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-> (cc-ing linux-ide mailing list)
+> On Mon, 2012-08-20 at 10:04 +0100, Mel Gorman wrote:
+> 
+> > Can the following patch be tested please? It is reported to fix an fio
+> > regression that may be similar to what you are experiencing but has not
+> > been picked up yet.
+> > 
+> > -
+> 
+> This seems to help here.
+> 
+> Boot your machine with "mem=768M" or a bit less depending on your setup,
+> and try a netperf.
+> 
+> -> before patch :
+> 
+> # netperf
+> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
+> localhost.localdomain () port 0 AF_INET
+> Recv   Send    Send                          
+> Socket Socket  Message  Elapsed              
+> Size   Size    Size     Time     Throughput  
+> bytes  bytes   bytes    secs.    10^6bits/sec  
+> 
+>  87380  16384  16384    14.00       6.05   
+> 
+> -> after patch :
+> 
+> Recv   Send    Send                          
+> Socket Socket  Message  Elapsed              
+> Size   Size    Size     Time     Throughput  
+> bytes  bytes   bytes    secs.    10^6bits/sec  
+> 
+>  87380  16384  16384    10.00    18509.73   
 
-Classic "no IRQ being delivered" - looks like a platform IRQ routing
-problem
+"seem to help"?  Was previous performance fully restored?
