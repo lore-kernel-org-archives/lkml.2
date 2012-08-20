@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab2HTOCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:02:07 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:34703 "EHLO relay.sw.ru"
+	id S1756560Ab2HTOCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:02:12 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:30272 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756461Ab2HTOCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:02:01 -0400
-Subject: [PATCH v4 02/10] NFS: callback service creation function introduced
+	id S1756510Ab2HTOCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:02:07 -0400
+Subject: [PATCH v4 03/10] NFS: move per-net callback thread initialization to
+	nfs_callback_up_net()
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 20 Aug 2012 18:00:11 +0400
-Message-ID: <20120820140011.17404.7429.stgit@localhost.localdomain>
+Date: Mon, 20 Aug 2012 18:00:16 +0400
+Message-ID: <20120820140016.17404.975.stgit@localhost.localdomain>
 In-Reply-To: <20120820134734.17404.53946.stgit@localhost.localdomain>
 References: <20120820134734.17404.53946.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,116 +24,241 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function creates service if it's not exist, or increase usage counter of
-the existent, and returns pointer to it.
-Usage counter will be droppepd by svc_destroy() later in nfs_callback_up().
+v4:
+1) Callback transport creation routine selection by version simlified.
+
+This new function in now called before nfs_minorversion_callback_svc_setup()).
+
+Also few small changes:
+1) current network namespace in nfs_callback_up() was replaced by transport net.
+2) svc_shutdown_net() was moved prior to callback usage counter decrement
+(because in case of per-net data allocation faulure svc_shutdown_net() have to
+be skipped).
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/callback.c |   63 +++++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 49 insertions(+), 14 deletions(-)
+ fs/nfs/callback.c   |  133 +++++++++++++++++++++++++++++++++------------------
+ fs/nfs/nfs4client.c |    2 -
+ 2 files changed, 87 insertions(+), 48 deletions(-)
 
 diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index 51297b2..18efeb5 100644
+index 18efeb5..a53b4e5 100644
 --- a/fs/nfs/callback.c
 +++ b/fs/nfs/callback.c
-@@ -217,12 +217,50 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
- }
- #endif /* CONFIG_NFS_V4_1 */
+@@ -39,6 +39,32 @@ static struct svc_program nfs4_callback_program;
  
-+static struct svc_serv *nfs_callback_create_svc(int minorversion)
+ unsigned short nfs_callback_tcpport6;
+ 
++static int nfs4_callback_up_net(struct svc_serv *serv, struct net *net)
 +{
-+	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
-+	struct svc_serv *serv;
++	int ret;
 +
-+	/*
-+	 * Check whether we're already up and running.
-+	 */
-+	if (cb_info->task) {
-+		/*
-+		 * Note: increase service usage, because later in case of error
-+		 * svc_destroy() will be called.
-+		 */
-+		svc_get(cb_info->serv);
-+		return cb_info->serv;
-+	}
++	ret = svc_create_xprt(serv, "tcp", net, PF_INET,
++				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
++	if (ret <= 0)
++		goto out_err;
++	nfs_callback_tcpport = ret;
++	dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
++			nfs_callback_tcpport, PF_INET, net);
 +
-+	/*
-+	 * Sanity check: if there's no task,
-+	 * we should be the first user ...
-+	 */
-+	if (cb_info->users)
-+		printk(KERN_WARNING "nfs_callback_create_svc: no kthread, %d users??\n",
-+			cb_info->users);
++	ret = svc_create_xprt(serv, "tcp", net, PF_INET6,
++				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
++	if (ret > 0) {
++		nfs_callback_tcpport6 = ret;
++		dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
++				nfs_callback_tcpport6, PF_INET6, net);
++	} else if (ret != -EAFNOSUPPORT)
++		goto out_err;
++	return 0;
 +
-+	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, NULL);
-+	if (!serv) {
-+		printk(KERN_ERR "nfs_callback_create_svc: create service failed\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	/* As there is only one thread we need to over-ride the
-+	 * default maximum of 80 connections
-+	 */
-+	serv->sv_maxconn = 1024;
-+	dprintk("nfs_callback_create_svc: service created\n");
-+	return serv;
++out_err:
++	return (ret) ? ret : -ENOMEM;
 +}
 +
  /*
-  * Bring up the callback thread if it is not already up.
+  * This is the NFSv4 callback kernel thread.
   */
- int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+@@ -80,36 +106,21 @@ nfs4_callback_svc(void *vrqstp)
+ static struct svc_rqst *
+ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
  {
--	struct svc_serv *serv = NULL;
-+	struct svc_serv *serv;
- 	struct svc_rqst *rqstp;
- 	int (*callback_svc)(void *vrqstp);
- 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
-@@ -232,19 +270,17 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
- 	struct net *net = &init_net;
+-	int ret;
+-
+-	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
+-				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+-	if (ret <= 0)
+-		goto out_err;
+-	nfs_callback_tcpport = ret;
+-	dprintk("NFS: Callback listener port = %u (af %u)\n",
+-			nfs_callback_tcpport, PF_INET);
+-
+-	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
+-				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+-	if (ret > 0) {
+-		nfs_callback_tcpport6 = ret;
+-		dprintk("NFS: Callback listener port = %u (af %u)\n",
+-				nfs_callback_tcpport6, PF_INET6);
+-	} else if (ret == -EAFNOSUPPORT)
+-		ret = 0;
+-	else
+-		goto out_err;
+-
+ 	return svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
+-
+-out_err:
+-	if (ret == 0)
+-		ret = -ENOMEM;
+-	return ERR_PTR(ret);
+ }
  
- 	mutex_lock(&nfs_callback_mutex);
+ #if defined(CONFIG_NFS_V4_1)
++static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
++{
++	/*
++	 * Create an svc_sock for the back channel service that shares the
++	 * fore channel connection.
++	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
++	 */
++	return svc_create_xprt(serv, "tcp-bc", net, PF_INET, 0,
++			      SVC_SOCK_ANONYMOUS);
++}
 +
-+	serv = nfs_callback_create_svc(minorversion);
-+	if (IS_ERR(serv)) {
-+		ret = PTR_ERR(serv);
-+		goto err_create;
+ /*
+  * The callback service for NFSv4.1 callbacks
+  */
+@@ -152,19 +163,6 @@ static struct svc_rqst *
+ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+ {
+ 	struct svc_rqst *rqstp;
+-	int ret;
+-
+-	/*
+-	 * Create an svc_sock for the back channel service that shares the
+-	 * fore channel connection.
+-	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
+-	 */
+-	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
+-			      SVC_SOCK_ANONYMOUS);
+-	if (ret < 0) {
+-		rqstp = ERR_PTR(ret);
+-		goto out;
+-	}
+ 
+ 	/*
+ 	 * Save the svc_serv in the transport so that it can
+@@ -180,7 +178,6 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+ 		svc_xprt_put(serv->sv_bc_xprt);
+ 		serv->sv_bc_xprt = NULL;
+ 	}
+-out:
+ 	dprintk("--> %s return %ld\n", __func__,
+ 		IS_ERR(rqstp) ? PTR_ERR(rqstp) : 0);
+ 	return rqstp;
+@@ -204,6 +201,11 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
+ 		xprt->bc_serv = cb_info->serv;
+ }
+ #else
++static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
++{
++	return 0;
++}
++
+ static inline int nfs_minorversion_callback_svc_setup(u32 minorversion,
+ 		struct svc_serv *serv, struct rpc_xprt *xprt,
+ 		struct svc_rqst **rqstpp, int (**callback_svc)(void *vrqstp))
+@@ -217,6 +219,44 @@ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
+ }
+ #endif /* CONFIG_NFS_V4_1 */
+ 
++static int nfs_callback_up_net(int minorversion, struct svc_serv *serv, struct net *net)
++{
++	int ret;
++
++	dprintk("NFS: create per-net callback data; net=%p\n", net);
++
++	ret = svc_bind(serv, net);
++	if (ret < 0) {
++		printk(KERN_WARNING "NFS: bind callback service failed\n");
++		goto err_bind;
 +	}
 +
- 	if (cb_info->users++ || cb_info->task != NULL) {
- 		nfs_callback_bc_serv(minorversion, xprt, cb_info);
++	switch (minorversion) {
++		case 0:
++			ret = nfs4_callback_up_net(serv, net);
++			break;
++		case 1:
++			ret = nfs41_callback_up_net(serv, net);
++			break;
++		default:
++			printk(KERN_ERR "NFS: unknown callback version: %d\n",
++					minorversion);
++			ret = -EINVAL;
++			break;
++	}
++
++	if (ret < 0) {
++		printk(KERN_ERR "NFS: callback service start failed\n");
++		goto err_socks;
++	}
++	return 0;
++
++err_socks:
++	svc_rpcb_cleanup(serv, net);
++err_bind:
++	return ret;
++}
++
+ static struct svc_serv *nfs_callback_create_svc(int minorversion)
+ {
+ 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
+@@ -267,7 +307,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 	char svc_name[12];
+ 	int ret = 0;
+ 	int minorversion_setup;
+-	struct net *net = &init_net;
++	struct net *net = xprt->xprt_net;
+ 
+ 	mutex_lock(&nfs_callback_mutex);
+ 
+@@ -282,11 +322,9 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
  		goto out;
  	}
--	serv = svc_create(&nfs4_callback_program, NFS4_CALLBACK_BUFSIZE, NULL);
--	if (!serv) {
--		ret = -ENOMEM;
+ 
+-	ret = svc_bind(serv, net);
+-	if (ret < 0) {
+-		printk(KERN_WARNING "NFS: bind callback service failed\n");
 -		goto out_err;
 -	}
--	/* As there is only one thread we need to over-ride the
--	 * default maximum of 80 connections
--	 */
--	serv->sv_maxconn = 1024;
++	ret = nfs_callback_up_net(minorversion, serv, net);
++	if (ret < 0)
++		goto err_net;
  
- 	ret = svc_bind(serv, net);
- 	if (ret < 0) {
-@@ -285,16 +321,15 @@ out:
- 	 * on both success and failure so that the refcount is 1 when the
- 	 * thread exits.
- 	 */
--	if (serv)
--		svc_destroy(serv);
-+	svc_destroy(serv);
-+err_create:
+ 	minorversion_setup =  nfs_minorversion_callback_svc_setup(minorversion,
+ 					serv, xprt, &rqstp, &callback_svc);
+@@ -326,10 +364,11 @@ err_create:
  	mutex_unlock(&nfs_callback_mutex);
  	return ret;
  out_err:
++	svc_shutdown_net(serv, net);
++err_net:
  	dprintk("NFS: Couldn't create callback socket or server thread; "
  		"err = %d\n", ret);
  	cb_info->users--;
--	if (serv)
--		svc_shutdown_net(serv, net);
-+	svc_shutdown_net(serv, net);
+-	svc_shutdown_net(serv, net);
  	goto out;
  }
  
+diff --git a/fs/nfs/nfs4client.c b/fs/nfs/nfs4client.c
+index 1dfaa13..a89aebb 100644
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -85,7 +85,7 @@ error:
+ static void nfs4_destroy_callback(struct nfs_client *clp)
+ {
+ 	if (__test_and_clear_bit(NFS_CS_CALLBACK, &clp->cl_res_state))
+-		nfs_callback_down(clp->cl_mvops->minor_version, &init_net);
++		nfs_callback_down(clp->cl_mvops->minor_version, clp->cl_net);
+ }
+ 
+ static void nfs4_shutdown_client(struct nfs_client *clp)
 
