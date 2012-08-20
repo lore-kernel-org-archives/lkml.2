@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab2HTLTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 07:19:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39734 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab2HTLTn (ORCPT
+	id S1751927Ab2HTL0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 07:26:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37804 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab2HTL0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 07:19:43 -0400
-Date: Mon, 20 Aug 2012 04:19:38 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-Subject: Re: [RFC 0/2] USB gadget - configfs
-Message-ID: <20120820111938.GH2102@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-	Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-	'Kyungmin Park' <kyungmin.park@samsung.com>,
-	'Felipe Balbi' <balbi@ti.com>,
-	'Greg Kroah-Hartman' <gregkh@linuxfoundation.org>,
-	Marek Szyprowski <m.szyprowski@samsung.com>,
-	'Alan Stern' <stern@rowland.harvard.edu>
-References: <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
- <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
- <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
- <502CF9E3.2010608@linutronix.de>
- <20120817014609.GB2949@dhcp-172-17-9-228.mtv.corp.google.com>
- <502E0D3B.10006@linutronix.de>
- <000201cd7c63$60186370$20492a50$%p@samsung.com>
- <502E1E23.60201@linutronix.de>
- <20120820055958.GD2102@dhcp-172-17-9-228.mtv.corp.google.com>
- <503218EF.7080906@linutronix.de>
+	Mon, 20 Aug 2012 07:26:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503218EF.7080906@linutronix.de>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <8326.1345459098@jrobl>
+References: <20120816204440.GA8808@ymail.com>
+	<CA+icZUX+4mMYqNn5_5EKXTdqbZ25K1HFbsRR5TrToaGJaSPttw@mail.gmail.com>
+	<20120817010519.GA2440@ymail.com>
+	<CA+icZUU6KS_8T5uhQZw6QKDD4iLp76xphr2N9KJ6Dvj_ib_sig@mail.gmail.com>
+	<8326.1345459098@jrobl>
+Date: Mon, 20 Aug 2012 13:26:46 +0200
+Message-ID: <CA+icZUW5tmGca8oVRjxqHVw6KTnCR+8vg5UCqhwrRbAoStEd=A@mail.gmail.com>
+Subject: Re: [overlayfs/port] overlayfs: v13 port attempt to kernel 3.5
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Andrew Watts <akwatts@ymail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Daniel Baumann <daniel@debian.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 01:01:03PM +0200, Sebastian Andrzej Siewior wrote:
-> On 08/20/2012 07:59 AM, Joel Becker wrote:
-> >	I think what you want here is a symlink.  Create a directory
-> >high in the tree called 'ready' or 'available', and when you want to
-> >lock the device in place, symlink it into that directory.  This will pin
-> >the item.  You can also make use of the ->allow_link() and ->drop_link()
-> >callbacks to prevent symlinking an item until it is fully configured,
-> >and prevent unlinking an item that is in use.
-> >
-> >   $ ln -s /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/lun0 \
-> >         /cfg/usb-function-gadget/ready/
-> >
-> >or something like that.
-> 
-> That would be something like
-> 
->   $ ln -s /cfg/usb-function-gadget/G1 \
->         /cfg/usb-function-gadget/udcs/udc1/
-> 
-> Where we "bind" the complete gadget (G1) including the mass storage
-> configuration to the UDC (udc1 in this example).
-> 
-> At this point we could snapshot the complete configuration so we have
-> it persistent and if somebody changes attributes within /cfg/usb-
-> function-gadget/G1 it doesn't matter because we have the copy.
-> 
-> Is it _this_ what you want us to do? A snapshot?
+On Mon, Aug 20, 2012 at 12:38 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+>
+> Sedat Dilek:
+>> The other part to run a Linux live-system is a "Union FileSystem" -
+>> this part is missing (speaking of upstream).
+>>
+>> Since years AUFS seems to be the choice #1 in a lot of distros to
+>> workaround the problem.
+>> NOTE: AUFS was rejected from upstream (to say not accepted).
+>
+> Exactly.
+> The reason was that linux rejects all union-type filesystems but
+> UnionMount (which is union-type mount).
+> Later, the development of UnionMount seems to be almost stopped. The
+> essential design of overlayfs is based upon UnionMount, and I have
+> pointed out several issues such as
+> - for users, the inode number may change silently. eg. copy-up.
+> - hardlinks may break by copy-up.
+> - read(2) may get an obsoleted filedata (fstat(2) for metadata too).
+> - fcntl(F_SETLK) may be broken by copy-up.
+> - unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
+>   open(O_RDWR).
+> - Later I noticed one more thing. /proc/PID/{fd/,exe} may not work
+>   correctly for overlayfs ...
+> - etc...
+> They are called "unPOSIXy behavior", and unforunately many of them are
+> NOT seem to be addressed in recent patches either.
+>
+> Also I have posted
+>         If the development of UnionMount is really stopped, then I'd ask people
+>         to consider merging aufs as well as overlayfs.
+> but I am not sure whether LKML people are still waiting for UnionMount
+> and rejecting aufs.
+>
 
-	No, I don't see why you would snapshot.  You can, btw, reject
-->store_attribute() operations once you are in a "ready" state.  That's
-different from preventing the removal of items.
+Okajima san /o\,
 
-Joel
+thanks for the short summary of history, quick overview of AUFS
+features and OverlayFS design.
+I can't say much about AUFS, I just simply used it for so long.
 
+But it looks like you agree with me that something should happen in
+case of Union Filesystem's.
+Anyway, as said I would like to see an upstream solution in the near future.
+If this will be AUFS, I am OK with that decision.
 
--- 
+Regards,
+- Sedat -
 
-The Graham Corollary:
-
-	The longer a socially-moderated news website exists, the
-	probability of an old Paul Graham link appearing at the top
-	approaches certainty.
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+> J. R. Okajima
