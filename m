@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab2HTSht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 14:37:49 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41201 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab2HTShr (ORCPT
+	id S1753069Ab2HTSk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 14:40:57 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:37195 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2HTSkz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 14:37:47 -0400
-Message-ID: <503283F8.4070808@wwwdotorg.org>
-Date: Mon, 20 Aug 2012 12:37:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 20 Aug 2012 14:40:55 -0400
+From: Jim Meyering <jim@meyering.net>
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org, Steve French <sfrench@samba.org>
+Subject: Re: [PATCH] cifs: remove misleading strncpy: each name has length < 16
+In-Reply-To: <CAE2SPAbBmRov9qK2HiBQBQXaZpfJ8pmZJ-PL18FEyoZhzDza4A@mail.gmail.com>
+	(Bastien ROUCARIES's message of "Mon, 20 Aug 2012 19:36:26 +0200")
+References: <1345481724-30108-1-git-send-email-jim@meyering.net>
+	<1345481724-30108-6-git-send-email-jim@meyering.net>
+	<CAE2SPAbBmRov9qK2HiBQBQXaZpfJ8pmZJ-PL18FEyoZhzDza4A@mail.gmail.com>
+Date: Mon, 20 Aug 2012 20:40:10 +0200
+Message-ID: <87628dmmph.fsf@rho.meyering.net>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] ARM: dt: tegra: harmony: add regulators
-References: <1345186799-18229-1-git-send-email-ldewangan@nvidia.com> <502E9B09.3080800@wwwdotorg.org> <502EA1AC.4090205@wwwdotorg.org> <50327242.80103@nvidia.com> <50327897.5030601@wwwdotorg.org> <20120820175410.GI26991@opensource.wolfsonmicro.com> <50327D2D.6000509@wwwdotorg.org> <20120820181432.GJ26991@opensource.wolfsonmicro.com>
-In-Reply-To: <20120820181432.GJ26991@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 12:14 PM, Mark Brown wrote:
-> On Mon, Aug 20, 2012 at 12:08:45PM -0600, Stephen Warren wrote:
-> 
->> The patch in this thread adds all the required regulators to the
->> DT file. However, it should also remove the special case so the 
->> regulators don't get registered twice, once from the board file
->> and once from DT. However, doing that would prevent regulators
->> getting registered at all, since v3.6-rc* don't have all the
->> required (TPS6586x) regulator (driver) patches to get the
->> regulators instantiated from DT. Everything will only work in
->> linux-next or sometime during the 3.7 merge window.  Hence, git
->> bisect would be broken.
-> 
->> One solution to this is to bring the regulator tree into the
->> Tegra tree as a dependency, and then apply a patch which adds the
->> regulators to DT, and removes the special case from the board
->> file. I'm asking for your OK to do that.
-> 
-> Why not just pull the patch in via the regulator tree?  The idea
-> of merging the entire regulator drivers branch into the Tegra tree
-> doesn't seem awesome...
+Bastien ROUCARIES wrote:
+> Le 20 août 2012 19:29, "Jim Meyering" <jim@meyering.net> a écrit :
+>>
+>> From: Jim Meyering <meyering@redhat.com>
+>>
+>> Each of the protocols[i].name strings (statically declared above)
+>> has length less than 16, so this use of strncpy is misleading:
+>>   strncpy(pSMB->DialectsArray+count, protocols[i].name, 16);
+>> Besides, if a new name were added with length N >= 16, the existing
+>> strncpy-using code would be buggy, creating a ->DialectsArray buffer
+>> containing N-16+1 unset bytes where the NUL terminator should have
+>> been.  Instead, traverse the name only once go get its length,
+>> use a BUG_ON assertion to enforce the length restriction
+>> and use memcpy to perform the copy.
+>
+> Could you use ARRAY_SIZE instead of hard coding 16?
 
-I think that'd end up causing some annoying conflicts with other
-changes that also touch arch/arm/match-tegra/board-dt-tegra20.c.
-Perhaps they're manageable; they probably aren't that bad, but it
-seems better to avoid them.
+Not that I can see: the DialectsArray member is declared like this:
+
+    typedef struct negotiate_req {
+            struct smb_hdr hdr;	/* wct = 0 */
+            __le16 ByteCount;
+            unsigned char DialectsArray[1];
+    } __attribute__((packed)) NEGOTIATE_REQ;
+
+...
+>> diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
+>> index 074923c..16a9018 100644
+>> --- a/fs/cifs/cifssmb.c
+>> +++ b/fs/cifs/cifssmb.c
+>> @@ -441,8 +441,10 @@ CIFSSMBNegotiate(const unsigned int xid, struct cifs_ses
+> *ses)
+>>
+>>         count = 0;
+>>         for (i = 0; i < CIFS_NUM_PROT; i++) {
+>> -               strncpy(pSMB->DialectsArray+count, protocols[i].name, 16);
+>> -               count += strlen(protocols[i].name) + 1;
+>> +               size_t len = strlen(protocols[i].name);
+>> +               BUG_ON(len >= 16);
+>> +               memcpy(pSMB->DialectsArray+count, protocols[i].name, len + 1);
+>> +               count += len + 1;
