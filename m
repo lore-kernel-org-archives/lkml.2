@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab2HTD5z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:57:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39891 "EHLO
+	id S1754794Ab2HTD57 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:57:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754743Ab2HTD5r (ORCPT
+	with ESMTP id S1754717Ab2HTD5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:57:47 -0400
+	Sun, 19 Aug 2012 23:57:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zach Brown <zab@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 04/32] fuse: verify all ioctl retry iov elements
-Date: Sun, 19 Aug 2012 20:57:00 -0700
-Message-Id: <20120820035648.469927264@linuxfoundation.org>
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 06/32] drm/i915: prefer wide & slow to fast & narrow in DP configs
+Date: Sun, 19 Aug 2012 20:57:02 -0700
+Message-Id: <20120820035648.743958782@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
 References: <20120820035647.862247088@linuxfoundation.org>
@@ -29,42 +31,39 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Zach Brown <zab@redhat.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit fb6ccff667712c46b4501b920ea73a326e49626a upstream.
+commit 2514bc510d0c3aadcc5204056bb440fa36845147 upstream.
 
-Commit 7572777eef78ebdee1ecb7c258c0ef94d35bad16 attempted to verify that
-the total iovec from the client doesn't overflow iov_length() but it
-only checked the first element.  The iovec could still overflow by
-starting with a small element.  The obvious fix is to check all the
-elements.
+High frequency link configurations have the potential to cause trouble
+with long and/or cheap cables, so prefer slow and wide configurations
+instead.  This patch has the potential to cause trouble for eDP
+configurations that lie about available lanes, so if we run into that we
+can make it conditional on eDP.
 
-The overflow case doesn't look dangerous to the kernel as the copy is
-limited by the length after the overflow.  This fix restores the
-intention of returning an error instead of successfully copying less
-than the iovec represented.
-
-I found this by code inspection.  I built it but don't have a test case.
-I'm cc:ing stable because the initial commit did as well.
-
-Signed-off-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45801
+Tested-by: peter@colberg.org
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_dp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1698,7 +1698,7 @@ static int fuse_verify_ioctl_iov(struct
- 	size_t n;
- 	u32 max = FUSE_MAX_PAGES_PER_REQ << PAGE_SHIFT;
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -712,8 +712,8 @@ intel_dp_mode_fixup(struct drm_encoder *
  
--	for (n = 0; n < count; n++) {
-+	for (n = 0; n < count; n++, iov++) {
- 		if (iov->iov_len > (size_t) max)
- 			return -ENOMEM;
- 		max -= iov->iov_len;
+ 	bpp = adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
+ 
+-	for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
+-		for (clock = 0; clock <= max_clock; clock++) {
++	for (clock = 0; clock <= max_clock; clock++) {
++		for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
+ 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
+ 
+ 			if (intel_dp_link_required(mode->clock, bpp)
 
 
