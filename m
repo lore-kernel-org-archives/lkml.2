@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab2HTEJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:09:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61536 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab2HTEAD (ORCPT
+	id S1753720Ab2HTEJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:09:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754715Ab2HTD74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:00:03 -0400
+	Sun, 19 Aug 2012 23:59:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benoit Gschwind <gschwind@gnu-log.net>,
-        Francois Rigaut <frigaut@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 11/46] drm/i915: ignore eDP bpc settings from vbt
-Date: Sun, 19 Aug 2012 20:58:47 -0700
-Message-Id: <20120820035833.847091443@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 04/46] drm/mgag200: fix G200ER pll picking algorithm
+Date: Sun, 19 Aug 2012 20:58:40 -0700
+Message-Id: <20120820035832.862360251@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -31,63 +29,59 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Dave Airlie <airlied@gmail.com>
 
-commit 4344b813f105a19f793f1fd93ad775b784648b95 upstream.
+commit 9830605d4c070b16ec5c24a75503877cc7698409 upstream.
 
-This has originally been introduced to not oversubscribe the dp links
-in
+The original code was misported from the X driver,
 
-commit 885a5fb5b120a5c7e0b3baad7b0feb5a89f76c18
-Author: Zhenyu Wang <zhenyuw@linux.intel.com>
-Date:   Tue Jan 12 05:38:31 2010 +0800
+a) an int went to unsigned int, breaking the downward counting testm code
+b) the port did the vco/computed clock bits completely wrong.
 
-    drm/i915: fix pixel color depth setting on eDP
+This fixes an infinite loop on modprobe on some Dell servers with the G200ER
+chipset variant.
 
-Since then we've fixed up the dp link bandwidth calculation code and
-should now automatically fall back to 6bpc dithering. So this is
-unnecessary.
+Found in internal testing.
 
-Furthermore it seems to break the new MacbookPro with retina display,
-hence let's just rip this out.
-
-Reported-by: Benoit Gschwind <gschwind@gnu-log.net>
-Cc: Benoit Gschwind <gschwind@gnu-log.net>
-Cc: Francois Rigaut <frigaut@gmail.com>
-Tested-by: Benoit Gschwind <gschwind@gnu-log.net>
-Tested-by: Bernhard Froemel <froemel at vmars tuwien.ac.at>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---
-
-Testing feedback highgly welcome, and thanks for Benoit for finding
-out that the bpc computations are busted.
--Daniel
-
 ---
- drivers/gpu/drm/i915/intel_display.c |   11 -----------
- 1 file changed, 11 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -3581,17 +3581,6 @@ static bool intel_choose_pipe_bpp_dither
- 			continue;
- 		}
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -468,10 +468,11 @@ static int mga_g200er_set_plls(struct mg
+ {
+ 	unsigned int vcomax, vcomin, pllreffreq;
+ 	unsigned int delta, tmpdelta;
+-	unsigned int testr, testn, testm, testo;
++	int testr, testn, testm, testo;
+ 	unsigned int p, m, n;
+-	unsigned int computed;
++	unsigned int computed, vco;
+ 	int tmp;
++	const unsigned int m_div_val[] = { 1, 2, 4, 8 };
  
--		if (intel_encoder->type == INTEL_OUTPUT_EDP) {
--			/* Use VBT settings if we have an eDP panel */
--			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
--
--			if (edp_bpc < display_bpc) {
--				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
--				display_bpc = edp_bpc;
--			}
--			continue;
--		}
--
- 		/* Not one of the known troublemakers, check the EDID */
- 		list_for_each_entry(connector, &dev->mode_config.connector_list,
- 				    head) {
+ 	m = n = p = 0;
+ 	vcomax = 1488000;
+@@ -490,12 +491,13 @@ static int mga_g200er_set_plls(struct mg
+ 				if (delta == 0)
+ 					break;
+ 				for (testo = 5; testo < 33; testo++) {
+-					computed = pllreffreq * (testn + 1) /
++					vco = pllreffreq * (testn + 1) /
+ 						(testr + 1);
+-					if (computed < vcomin)
++					if (vco < vcomin)
+ 						continue;
+-					if (computed > vcomax)
++					if (vco > vcomax)
+ 						continue;
++					computed = vco / (m_div_val[testm] * (testo + 1));
+ 					if (computed > clock)
+ 						tmpdelta = computed - clock;
+ 					else
 
 
