@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab2HTOFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:05:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17441 "EHLO mx1.redhat.com"
+	id S1755360Ab2HTOGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:06:43 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:52233 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753912Ab2HTOFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:05:47 -0400
-Message-ID: <50324439.1000307@redhat.com>
-Date: Mon, 20 Aug 2012 16:05:45 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752893Ab2HTOGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:06:39 -0400
+Date: Mon, 20 Aug 2012 16:06:30 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH 04/11] x86/microcode_core_early.c: Define interfaces for
+ early load ucode
+Message-ID: <20120820140630.GD24149@aftab.osrc.amd.com>
+References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com>
+ <1345277729-8399-5-git-send-email-fenghua.yu@intel.com>
+ <20120818224442.GB32120@khazad-dum.debian.net>
+ <3E5A0FA7E9CA944F9D5414FEC6C71220077879BF@ORSMSX105.amr.corp.intel.com>
+ <503078A2.9030204@zytor.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007787B22@ORSMSX105.amr.corp.intel.com>
 MIME-Version: 1.0
-To: "Richard W.M. Jones" <rjones@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] [SCSI] virtio-scsi: Initialize scatterlist structure.
-References: <1345471490-17289-1-git-send-email-rjones@redhat.com>
-In-Reply-To: <1345471490-17289-1-git-send-email-rjones@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122007787B22@ORSMSX105.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/08/2012 16:04, Richard W.M. Jones ha scritto:
-> From: "Richard W.M. Jones" <rjones@redhat.com>
-> 
-> The sg struct is used without being initialized.
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=847548
-> 
-> Signed-off-by: Richard W.M. Jones <rjones@redhat.com>
-> ---
->  drivers/scsi/virtio_scsi.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index c7030fb..8a66f83 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -219,7 +219,7 @@ static int virtscsi_kick_event(struct virtio_scsi *vscsi,
->  	struct scatterlist sg;
->  	unsigned long flags;
->  
-> -	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
-> +	sg_init_one(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
->  
->  	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
->  
-> 
+On Sun, Aug 19, 2012 at 04:39:42PM +0000, Yu, Fenghua wrote:
+> > Actually I think we can also skip one level of indirection here... no
+> > need to mention "microcode" twice.
+> > 
+> > kernel/x86/microcode/GenuineIntel or GenuineIntel.bin seems good
+> > enough... the idea here of course is that the string can come from
+> > CPUID.
+> That's right. Will do this.
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Or,
 
-Paolo
+in case we want to supply more vendor-specific stuff early at boot, we
+could do:
+
+kernel/x86/<vendor>/microcode...
+		|-> bios_overrides
+		|-> ...
+
+and have this layout extensible from the beginning...
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
