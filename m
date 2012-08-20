@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2HTAJp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 20:09:45 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52396 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab2HTAJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 20:09:43 -0400
+	id S1752218Ab2HTArU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 20:47:20 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45759 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751566Ab2HTArR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 20:47:17 -0400
+Date: Sun, 19 Aug 2012 20:47:05 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Carlos Alberto Lopez Perez <clopez@igalia.com>
+Cc: Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lanyfs@librelist.com
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+Message-ID: <20120820004705.GA3710@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Carlos Alberto Lopez Perez <clopez@igalia.com>,
+	Dan Luedtke <mail@danrl.de>,
+	Jochen Striepe <jochen@tolot.escape.de>,
+	Marco Stornelli <marco.stornelli@gmail.com>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	lanyfs@librelist.com
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>
+ <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
+ <1345371135.4441.2.camel@tunafish>
+ <5030BC7E.3030000@gmail.com>
+ <1345383264.4441.56.camel@tunafish>
+ <20120819120254.GA2369@pompeji.miese-zwerge.org>
+ <1345390432.2716.34.camel@tunafish>
+ <20120819210455.GA9208@thunk.org>
+ <5031716C.1060003@igalia.com>
 MIME-Version: 1.0
-In-Reply-To: <20120819021757.GB16796@localhost>
-References: <1345283361-7802-1-git-send-email-linkinjeon@gmail.com>
-	<20120819021757.GB16796@localhost>
-Date: Mon, 20 Aug 2012 09:09:42 +0900
-Message-ID: <CAKYAXd8pEYcnLf7+YWF8i4ytO2dhUvt2+85VyC2sttmedPkf_Q@mail.gmail.com>
-Subject: Re: [PATCH 2/3] writeback: fix incorrect return value type of bdi_dirty_limit
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5031716C.1060003@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
-> On Sat, Aug 18, 2012 at 05:49:21AM -0400, Namjae Jeon wrote:
->> unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long
->> dirty)
->>
->> Above function return type is unsigned long, but return value is
->> kept in "u64 bdi_dirty".
->> It can return incorrect value by type casting.
->
-> I don't see how the cast can return wrong value.
-> The u64 is necessary for the intermediate calculations.
->
-> Thanks,
-> Fengguang
-Hi Wu.
-I understand.
-Thanks for your reply.
->
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->> ---
->>  mm/page-writeback.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->> index 49133b6..73a7a06 100644
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -546,7 +546,7 @@ static unsigned long hard_dirty_limit(unsigned long
->> thresh)
->>   */
->>  unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long
->> dirty)
->>  {
->> -	u64 bdi_dirty;
->> +	unsigned long bdi_dirty;
->>  	long numerator, denominator;
->>
->>  	/*
->> --
->> 1.7.9.5
->
+On Mon, Aug 20, 2012 at 01:06:20AM +0200, Carlos Alberto Lopez Perez wrote:
+> 
+> > I also seriously question the niche of people who want to use a thumb
+> > drive to transfer > 4GB files.  Try it sometime and see what a painful
+> > user experience it is....
+> 
+> Think for example on consumer devices, for example on most moderns TV
+> you can plug a USB memory disk with videos and play them.
+
+More and more consumer devices, including TV's, are network-enabled.
+I'm not at all convinced the USB memory disk model is the one which
+makes sense --- you can make a much better user experience work if you
+can rely on networking.  That way you don't have to move USB storage
+devices around, and USB storage devices are *slow* when the most
+common types are HDD's and crappy flash devices.  How many people are
+going to drop several hundred dollars for a USB-attached SSD, when
+using a networking transfer mechanism is much more convenient?
+
+> And I doubt that the majority of this consumer devices are able to read
+> nothing more than FAT32 file-systems, so the 4GB limit is a big problem.
+> And here is where Microsoft is pushing their exFAT FS since it allows
+> working with 4GB+ files without the NTFS overhead.
+
+We'll see how popular a heavily IP-encumbered file system will be,
+especially given that its main use case is for devices which are so
+constrained that they can't afford to use a "real file system" (like
+ntfs or ext4 or some other more sophisticated file system), but which
+nevertheless needs to be able to handle 4GB+ files.
+
+I'm sure there will be some use cases that might fit that niche, but
+it seems pretty tiny.  And this is completely ignoring what might
+happen if in the future people take 1gig fiber connections to the home
+(such as what many people in Kansas City will be enjoying very
+shortly) for granted....
+
+> As a side note, it would be possible to write a driver for exFAT and get
+> it merged upstream on the Linux Kernel without "breaking any law"?
+> Goggling I found an attempt to write such driver but seems that never
+> got merged:  https://lkml.org/lkml/2009/2/8/24
+
+You'll need to talk to a lawyer about that, since that's fundamentally
+a legal question.
+
+Regards,
+
+						- Ted
