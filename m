@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab2HTELl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:11:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755099Ab2HTD7U (ORCPT
+	id S1755202Ab2HTEMD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:12:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755000Ab2HTD7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:20 -0400
+	Sun, 19 Aug 2012 23:59:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tatyana Brokhman <tlinder@codeaurora.org>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 31/32] usb: gadget: u_ether: fix kworker 100% CPU issue with still used interfaces in eth_stop
-Date: Sun, 19 Aug 2012 20:57:27 -0700
-Message-Id: <20120820035652.193779682@linuxfoundation.org>
+        Jason Wessel <jason.wessel@windriver.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 25/32] pmac_zilog,kdb: Fix console poll hook to return instead of loop
+Date: Sun, 19 Aug 2012 20:57:21 -0700
+Message-Id: <20120820035651.360719363@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
 References: <20120820035647.862247088@linuxfoundation.org>
@@ -31,73 +30,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit b1b552a69b8805e7e338074a9e8b670b4a795218 upstream.
+commit 38f8eefccf3a23c4058a570fa2938a4f553cf8e0 upstream.
 
-This patch fixes an issue introduced by patch:
+kdb <-> kgdb transitioning does not work properly with this UART
+driver because the get character routine loops indefinitely as opposed
+to returning NO_POLL_CHAR per the expectation of the KDB I/O driver
+API.
 
-    72c973d usb: gadget: add usb_endpoint_descriptor to struct usb_ep
+The symptom is a kernel hang when trying to switch debug modes.
 
-Without this patch we see a kworker taking 100% CPU, after this sequence:
-
-- Connect gadget to a windows host
-- load g_ether
-- ifconfig up <ip>; ifconfig down; ifconfig up
-- ping <windows host>
-
-The "ifconfig down" results in calling eth_stop(), which will call
-usb_ep_disable() and, if the carrier is still ok, usb_ep_enable():
-
-         usb_ep_disable(link->in_ep);
-         usb_ep_disable(link->out_ep);
-         if (netif_carrier_ok(net)) {
-                 usb_ep_enable(link->in_ep);
-                 usb_ep_enable(link->out_ep);
-         }
-
-The ep should stay enabled, but will not, as ep_disable set the desc
-pointer to NULL, therefore the subsequent ep_enable will fail. This leads
-to permanent rescheduling of the eth_work() worker as usb_ep_queue()
-(called by the worker) will fail due to the unconfigured endpoint.
-
-We fix this issue by saving the ep descriptors and re-assign them before
-usb_ep_enable().
-
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/u_ether.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/tty/serial/pmac_zilog.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/gadget/u_ether.c
-+++ b/drivers/usb/gadget/u_ether.c
-@@ -669,6 +669,8 @@ static int eth_stop(struct net_device *n
- 	spin_lock_irqsave(&dev->lock, flags);
- 	if (dev->port_usb) {
- 		struct gether	*link = dev->port_usb;
-+		const struct usb_endpoint_descriptor *in;
-+		const struct usb_endpoint_descriptor *out;
+--- a/drivers/tty/serial/pmac_zilog.c
++++ b/drivers/tty/serial/pmac_zilog.c
+@@ -1348,10 +1348,16 @@ static int pmz_verify_port(struct uart_p
+ static int pmz_poll_get_char(struct uart_port *port)
+ {
+ 	struct uart_pmac_port *uap = (struct uart_pmac_port *)port;
++	int tries = 2;
  
- 		if (link->close)
- 			link->close(link);
-@@ -682,10 +684,14 @@ static int eth_stop(struct net_device *n
- 		 * their own pace; the network stack can handle old packets.
- 		 * For the moment we leave this here, since it works.
- 		 */
-+		in = link->in_ep->desc;
-+		out = link->out_ep->desc;
- 		usb_ep_disable(link->in_ep);
- 		usb_ep_disable(link->out_ep);
- 		if (netif_carrier_ok(net)) {
- 			DBG(dev, "host still using in/out endpoints\n");
-+			link->in_ep->desc = in;
-+			link->out_ep->desc = out;
- 			usb_ep_enable(link->in_ep);
- 			usb_ep_enable(link->out_ep);
- 		}
+-	while ((read_zsreg(uap, R0) & Rx_CH_AV) == 0)
+-		udelay(5);
+-	return read_zsdata(uap);
++	while (tries) {
++		if ((read_zsreg(uap, R0) & Rx_CH_AV) != 0)
++			return read_zsdata(uap);
++		if (tries--)
++			udelay(5);
++	}
++
++	return NO_POLL_CHAR;
+ }
+ 
+ static void pmz_poll_put_char(struct uart_port *port, unsigned char c)
 
 
