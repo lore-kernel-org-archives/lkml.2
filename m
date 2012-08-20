@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab2HTPNt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:13:49 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:52320 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756671Ab2HTPNq (ORCPT
+	id S1757051Ab2HTPSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:18:34 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39575 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756758Ab2HTPSb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:13:46 -0400
-X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 11:13:46 EDT
-Date: Mon, 20 Aug 2012 08:04:05 -0700 (PDT)
-From: Jakob Bornecrantz <jakob@vmware.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Message-ID: <790319256.19256264.1345475045195.JavaMail.root@vmware.com>
-In-Reply-To: <20120820144438.6255.39723.stgit@localhost.localdomain>
-Subject: Re: [PATCH] drm: stop vmgfx driver explosion
+	Mon, 20 Aug 2012 11:18:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [85.225.38.204]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC18 (Linux)/7.2.0_GA_2669)
+In-Reply-To: <1345474316.9850.4.camel@phoenix>
+References: <1345465097-31576-1-git-send-email-linus.walleij@stericsson.com>
+	<1345474316.9850.4.camel@phoenix>
+Date: Mon, 20 Aug 2012 17:18:28 +0200
+Message-ID: <CACRpkdZFNhDbAYkcbWhRmOpos_Vbjk0P4SSNCMCC3MXddzc4ZA@mail.gmail.com>
+Subject: Re: [PATCH] regulator: ab8500: fix voltage selector regression
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> If you do a page flip with no flags set then event is NULL. If event
-> is NULL then the vmw_gfx driver likes to go digging into NULL and
-> extracts NULL->base.file_priv.
-> 
-> On a modern kernel with NULL mapping protection it's just another
-> oops, without it there are some "intriguing" possibilities.
-> 
-> What it should do is an open question but that for the driver owners
-> to sort out.
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
+On Mon, Aug 20, 2012 at 4:51 PM, Axel Lin <axel.lin@gmail.com> wrote:
+> 於 一，2012-08-20 於 14:18 +0200，Linus Walleij 提到：
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> Commit 3bf6e90e476fb34ca47b6dda270f41d9cebcb1ac
+>> "regulator: Convert ab8499 to use get_voltage_sel()"
+>> and commit ae713d394d9e2aacaab620acd3212855f1f06b00
+>> "regulator: Convert ab8500 to set_voltage_sel"
+>> corrupted the voltage selector mechanism is two ways:
+>
+> I'm not very sure the commits you mentioned is the root cause,
+> because it looks that here is no behavior change with both commits.
+> Does it really work if you revert above commits you mention?
 
-Thanks Alan!
+No you're right, I've screwed up completely... I confused
+two codebases. I'll fix a proper patch adding the proper
+voltage shift fields to the regulator info.
 
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Sorry about this Axel!
 
-I think CC stable is in order.
-
-Cheers, Jakob.
+Yours,
+Linus Walleij
