@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2HTQUB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:20:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56457 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab2HTQT6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:19:58 -0400
-Message-ID: <1345479590.23018.75.camel@twins>
-Subject: Re: lockdep trace from posix timers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Mon, 20 Aug 2012 18:19:50 +0200
-In-Reply-To: <20120820161012.GC21400@redhat.com>
-References: <20120724203613.GA9637@redhat.com>
-	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
-	 <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins>
-	 <20120820150507.GC18499@redhat.com> <1345475530.23018.50.camel@twins>
-	 <20120820154154.GB20258@redhat.com> <1345478211.23018.69.camel@twins>
-	 <20120820161012.GC21400@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753426Ab2HTQUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:20:20 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25819 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753096Ab2HTQUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 12:20:17 -0400
+Subject: [PATCH] NFS: free client is case of idr allocation failure
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 20 Aug 2012 20:17:59 +0400
+Message-ID: <20120820161759.30323.48812.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 18:10 +0200, Oleg Nesterov wrote:
-> task->task_works points to the last node in the circular single-linked list,
-> task_work_add() adds the new element after the last one and updates
-> task->task_works. This is O(1).
+Simple kfree() is not enough, because we need to clean up the allocation of
+cl_hostname, put the module and the network namespace, etc
 
-Agreed, the way I was looking at that is: ->task_works points to the
-head and we put a new one in front, that too is O(1) ;-)
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfs/nfs4client.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> > > But the list should be short, we can reverse it in _run() if we change
-> > > task_work_add() to add to the head.
-> >
-> > Reversing a (single linked) list is O(n^2)..
-> 
-> Hmm. This is O(n). You can simply iterate over this list once, changing
-> the ->next pointer to point back. 
+diff --git a/fs/nfs/nfs4client.c b/fs/nfs/nfs4client.c
+index cbcdfaf..24eb663 100644
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -74,7 +74,7 @@ struct nfs_client *nfs4_alloc_client(const struct nfs_client_initdata *cl_init)
+ 	return clp;
+ 
+ error:
+-	kfree(clp);
++	nfs_free_client(clp);
+ 	return ERR_PTR(err);
+ }
+ 
 
-OK, I'm going to stop and step away from the computer now.. clearly I
-more than useless today :/
-
-But yeah.. that could be done.
-
-Anyway, would taking ->pi_lock over _cancel and _run suffice?
