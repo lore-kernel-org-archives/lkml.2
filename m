@@ -1,144 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab2HTNtF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 09:49:05 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47375 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755688Ab2HTNtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 09:49:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1344689809-6223-4-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-4-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 20 Aug 2012 15:49:01 +0200
-Message-ID: <CACRpkdbG4jkFcVP_6AmAZzciffQCamKXw7PcFnTdccyq7AMa8A@mail.gmail.com>
-Subject: Re: [PATCH 03/11] pinctrl: mvebu: kirkwood pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756183Ab2HTNws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:52:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55024 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753122Ab2HTNwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 09:52:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,797,1336374000"; 
+   d="scan'208";a="136222982"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: linux-mm@kvack.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Alex Shi <alex.shu@intel.com>,
+        Jan Beulich <jbeulich@novell.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: [PATCH v4 4/8] mm: pass fault address to clear_huge_page()
+Date: Mon, 20 Aug 2012 16:52:33 +0300
+Message-Id: <1345470757-12005-5-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1345470757-12005-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-> This patch adds a SoC specific pinctrl driver for Marvell Kirkwood SoCs
-> plus DT binding documentation. This driver will use the mvebu pinctrl
-> driver core.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/mm.h |    2 +-
+ mm/huge_memory.c   |    2 +-
+ mm/hugetlb.c       |    3 ++-
+ mm/memory.c        |    7 ++++---
+ 4 files changed, 8 insertions(+), 6 deletions(-)
 
-Thanks for working on Kirkwood. Love this platform.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 311be90..2858723 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1638,7 +1638,7 @@ extern void dump_page(struct page *page);
+ 
+ #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
+ extern void clear_huge_page(struct page *page,
+-			    unsigned long addr,
++			    unsigned long haddr, unsigned long fault_address,
+ 			    unsigned int pages_per_huge_page);
+ extern void copy_user_huge_page(struct page *dst, struct page *src,
+ 				unsigned long addr, struct vm_area_struct *vma,
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 6f0825b611..070bf89 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -644,7 +644,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ 	if (unlikely(!pgtable))
+ 		return VM_FAULT_OOM;
+ 
+-	clear_huge_page(page, haddr, HPAGE_PMD_NR);
++	clear_huge_page(page, haddr, address, HPAGE_PMD_NR);
+ 	__SetPageUptodate(page);
+ 
+ 	spin_lock(&mm->page_table_lock);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 3c86d3d..5182192 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2718,7 +2718,8 @@ retry:
+ 				ret = VM_FAULT_SIGBUS;
+ 			goto out;
+ 		}
+-		clear_huge_page(page, haddr, pages_per_huge_page(h));
++		clear_huge_page(page, haddr, fault_address,
++				pages_per_huge_page(h));
+ 		__SetPageUptodate(page);
+ 
+ 		if (vma->vm_flags & VM_MAYSHARE) {
+diff --git a/mm/memory.c b/mm/memory.c
+index 5736170..dfc179b 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3984,19 +3984,20 @@ static void clear_gigantic_page(struct page *page,
+ 	}
+ }
+ void clear_huge_page(struct page *page,
+-		     unsigned long addr, unsigned int pages_per_huge_page)
++		     unsigned long haddr, unsigned long fault_address,
++		     unsigned int pages_per_huge_page)
+ {
+ 	int i;
+ 
+ 	if (unlikely(pages_per_huge_page > MAX_ORDER_NR_PAGES)) {
+-		clear_gigantic_page(page, addr, pages_per_huge_page);
++		clear_gigantic_page(page, haddr, pages_per_huge_page);
+ 		return;
+ 	}
+ 
+ 	might_sleep();
+ 	for (i = 0; i < pages_per_huge_page; i++) {
+ 		cond_resched();
+-		clear_user_highpage(page + i, addr + i * PAGE_SIZE);
++		clear_user_highpage(page + i, haddr + i * PAGE_SIZE);
+ 	}
+ }
+ 
+-- 
+1.7.7.6
 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index cd3d827..361f513 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -596,6 +596,7 @@ config ARCH_KIRKWOOD
->         select GENERIC_CLOCKEVENTS
->         select NEED_MACH_IO_H
->         select PLAT_ORION
-> +       select PINCTRL
-
-select PINCTRL_KIRKWOOD too I think.
-Then it's just automatic.
-
-> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-> index e2427eb..1f84090 100644
-> --- a/drivers/pinctrl/Kconfig
-> +++ b/drivers/pinctrl/Kconfig
-> @@ -147,7 +147,7 @@ config PINCTRL_COH901
->
->  config PINCTRL_MVEBU
->         bool "Marvell SoC pin controller drivers"
-> -       depends on ARCH_MVEBU || ARCH_DOVE
-> +       depends on ARCH_MVEBU || ARCH_DOVE || ARCH_KIRKWOOD
-
-As stated elsewhere I think this should be
-depends on PLAT_ORION
-
-> +config PINCTRL_KIRKWOOD
-> +       bool "Support for Marvell Kirkwood SoCs"
-> +       depends on PINCTRL_MVEBU
-
-depends on ARCH_KIRKWOOD
-select PINCTRL_MVEBU
-
-(...)
-> diff --git a/drivers/pinctrl/pinctrl-kirkwood.c b/drivers/pinctrl/pinctrl-kirkwood.c
-> +static struct mvebu_pinctrl_soc_info kirkwood_pinctrl_info;
-> +
-> +static struct of_device_id kirkwood_pinctrl_of_match[] __devinitdata = {
-> +       { .compatible = "marvell,88f6180-pinctrl",
-> +                                         .data = (void *)VARIANT_MV88F6180 },
-> +       { .compatible = "marvell,88f6190-pinctrl",
-> +                                         .data = (void *)VARIANT_MV88F6190 },
-> +       { .compatible = "marvell,88f6192-pinctrl",
-> +                                         .data = (void *)VARIANT_MV88F6192 },
-> +       { .compatible = "marvell,88f6281-pinctrl",
-> +                                         .data = (void *)VARIANT_MV88F6281 },
-> +       { .compatible = "marvell,88f6282-pinctrl",
-> +                                         .data = (void *)VARIANT_MV88F6282 },
-> +       { }
-> +};
-
-I'm thinking this variant should maybe be an enum... unless it is
-strongly established somewhere in Orion/Marvell stuff.
-
-> +static int __devinit kirkwood_pinctrl_probe(struct platform_device *pdev)
-> +{
-> +       struct mvebu_pinctrl_soc_info *soc = &kirkwood_pinctrl_info;
-> +       const struct of_device_id *match =
-> +               of_match_device(kirkwood_pinctrl_of_match, &pdev->dev);
-> +
-> +       if (match) {
-> +               soc->variant = (unsigned)match->data & 0xff;
-> +               switch (soc->variant) {
-> +               case VARIANT_MV88F6180:
-> +                       soc->controls = mv88f6180_mpp_controls;
-> +                       soc->ncontrols = ARRAY_SIZE(mv88f6180_mpp_controls);
-> +                       soc->modes = mv88f6xxx_mpp_modes;
-> +                       soc->nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes);
-> +                       soc->gpioranges = mv88f6180_gpio_ranges;
-> +                       soc->ngpioranges = ARRAY_SIZE(mv88f6180_gpio_ranges);
-> +                       break;
-> +               case VARIANT_MV88F6190:
-> +               case VARIANT_MV88F6192:
-> +                       soc->controls = mv88f619x_mpp_controls;
-> +                       soc->ncontrols = ARRAY_SIZE(mv88f619x_mpp_controls);
-> +                       soc->modes = mv88f6xxx_mpp_modes;
-> +                       soc->nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes);
-> +                       soc->gpioranges = mv88f619x_gpio_ranges;
-> +                       soc->ngpioranges = ARRAY_SIZE(mv88f619x_gpio_ranges);
-> +                       break;
-> +               case VARIANT_MV88F6281:
-> +               case VARIANT_MV88F6282:
-> +                       soc->controls = mv88f628x_mpp_controls;
-> +                       soc->ncontrols = ARRAY_SIZE(mv88f628x_mpp_controls);
-> +                       soc->modes = mv88f6xxx_mpp_modes;
-> +                       soc->nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes);
-> +                       soc->gpioranges = mv88f628x_gpio_ranges;
-> +                       soc->ngpioranges = ARRAY_SIZE(mv88f628x_gpio_ranges);
-> +                       break;
-> +               }
-> +               pdev->dev.platform_data = soc;
-> +       }
-> +       return mvebu_pinctrl_probe(pdev);
-> +}
-
-This is looking real good, clean & nice.
-
-No further comments on this driver.
-
-Yours,
-Linus Walleij
