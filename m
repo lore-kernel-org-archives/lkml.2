@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab2HTD76 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:59:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51799 "EHLO
+	id S1755268Ab2HTEAL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:00:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39891 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab2HTD7x (ORCPT
+	with ESMTP id S1755215Ab2HTEAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:53 -0400
+	Mon, 20 Aug 2012 00:00:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 08/46] drm/i915: prefer wide & slow to fast & narrow in DP configs
-Date: Sun, 19 Aug 2012 20:58:44 -0700
-Message-Id: <20120820035833.418629997@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Yang Guang <guang.a.yang@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 10/46] drm/i915: correctly order the ring init sequence
+Date: Sun, 19 Aug 2012 20:58:46 -0700
+Message-Id: <20120820035833.701732607@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -31,39 +31,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 2514bc510d0c3aadcc5204056bb440fa36845147 upstream.
+commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 upstream.
 
-High frequency link configurations have the potential to cause trouble
-with long and/or cheap cables, so prefer slow and wide configurations
-instead.  This patch has the potential to cause trouble for eDP
-configurations that lie about available lanes, so if we run into that we
-can make it conditional on eDP.
+We may only start to set up the new register values after having
+confirmed that the ring is truely off. Otherwise the hw might lose the
+newly written register values. This is caught later on in the init
+sequence, when we check whether the register writes have stuck.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45801
-Tested-by: peter@colberg.org
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50522
+Tested-by: Yang Guang <guang.a.yang@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -726,8 +726,8 @@ intel_dp_mode_fixup(struct drm_encoder *
- 	bpp = adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC ? 18 : 24;
- 	mode_rate = intel_dp_link_required(mode->clock, bpp);
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -280,8 +280,6 @@ static int init_ring_common(struct intel
+ 	I915_WRITE_HEAD(ring, 0);
+ 	ring->write_tail(ring, 0);
  
--	for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
--		for (clock = 0; clock <= max_clock; clock++) {
-+	for (clock = 0; clock <= max_clock; clock++) {
-+		for (lane_count = 1; lane_count <= max_lane_count; lane_count <<= 1) {
- 			int link_avail = intel_dp_max_data_rate(intel_dp_link_clock(bws[clock]), lane_count);
+-	/* Initialize the ring. */
+-	I915_WRITE_START(ring, obj->gtt_offset);
+ 	head = I915_READ_HEAD(ring) & HEAD_ADDR;
  
- 			if (mode_rate <= link_avail) {
+ 	/* G45 ring initialization fails to reset head to zero */
+@@ -307,6 +305,11 @@ static int init_ring_common(struct intel
+ 		}
+ 	}
+ 
++	/* Initialize the ring. This must happen _after_ we've cleared the ring
++	 * registers with the above sequence (the readback of the HEAD registers
++	 * also enforces ordering), otherwise the hw might lose the new ring
++	 * register values. */
++	I915_WRITE_START(ring, obj->gtt_offset);
+ 	I915_WRITE_CTL(ring,
+ 			((ring->size - PAGE_SIZE) & RING_NR_PAGES)
+ 			| RING_VALID);
 
 
