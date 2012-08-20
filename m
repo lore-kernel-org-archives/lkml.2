@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab2HTN4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 09:56:30 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:53678
+	id S1756333Ab2HTN4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 09:56:36 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:49337
 	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755055Ab2HTN4P (ORCPT
+	by vger.kernel.org with ESMTP id S1755043Ab2HTN4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Aug 2012 09:56:15 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah11b5h)
-X-WSS-ID: 0M9241M-01-3DE-02
+X-WSS-ID: 0M9241J-02-F0Q-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <x86@kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 03/19] x86, io_apic: Introduce x86_io_apic_ops.disable()
-Date: Mon, 20 Aug 2012 15:55:49 +0200
-Message-ID: <1345470965-24410-4-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 05/19] x86, hpet: Introduce x86_msi_ops.setup_hpet_msi
+Date: Mon, 20 Aug 2012 15:55:51 +0200
+Message-ID: <1345470965-24410-6-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
 References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
@@ -30,207 +30,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function pointer is used to call a system-specific
-function for disabling the IO-APIC. Currently this is used
-for IRQ remapping which has its own disable routine.
+This function pointer can be overwritten by the IRQ
+remapping code. The irq_remapping_enabled check can be
+removed from default_setup_hpet_msi.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/io_apic.h  |    2 ++
- arch/x86/include/asm/x86_init.h |    9 +++++----
- arch/x86/kernel/apic/io_apic.c  |   41 ++++++++++++++++++---------------------
- arch/x86/kernel/x86_init.c      |    9 +++++----
- drivers/iommu/irq_remapping.c   |   31 ++++++++++++++++++++++++++++-
- 5 files changed, 61 insertions(+), 31 deletions(-)
+ arch/x86/include/asm/hpet.h     |    5 +++--
+ arch/x86/include/asm/x86_init.h |    1 +
+ arch/x86/kernel/apic/io_apic.c  |    7 +------
+ arch/x86/kernel/hpet.c          |    2 +-
+ arch/x86/kernel/x86_init.c      |   10 ++++++----
+ drivers/iommu/irq_remapping.c   |    3 ++-
+ 6 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 73d8c53..d59e172 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -179,6 +179,7 @@ extern void __init native_io_apic_init_mappings(void);
- extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
- extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
-+extern void native_disable_io_apic(void);
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 2c392d6..ad2dae0 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -82,9 +82,9 @@ extern void hpet_msi_write(struct hpet_dev *hdev, struct msi_msg *msg);
+ extern void hpet_msi_read(struct hpet_dev *hdev, struct msi_msg *msg);
  
- static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
+ #ifdef CONFIG_PCI_MSI
+-extern int arch_setup_hpet_msi(unsigned int irq, unsigned int id);
++extern int default_setup_hpet_msi(unsigned int irq, unsigned int id);
+ #else
+-static inline int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
++static inline int default_setup_hpet_msi(unsigned int irq, unsigned int id)
  {
-@@ -223,6 +224,7 @@ static inline void disable_ioapic_support(void) { }
- #define native_io_apic_read		NULL
- #define native_io_apic_write		NULL
- #define native_io_apic_modify		NULL
-+#define native_disable_io_apic		NULL
- #endif
+ 	return -EINVAL;
+ }
+@@ -113,6 +113,7 @@ extern void hpet_unregister_irq_handler(rtc_irq_handler handler);
+ static inline int hpet_enable(void) { return 0; }
+ static inline int is_hpet_enabled(void) { return 0; }
+ #define hpet_readl(a) 0
++#define default_setup_hpet_msi	NULL
  
- #endif /* _ASM_X86_IO_APIC_H */
+ #endif
+ #endif /* _ASM_X86_HPET_H */
 diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 38155f6..8e1b44c 100644
+index be8e9a6..1f49c8a 100644
 --- a/arch/x86/include/asm/x86_init.h
 +++ b/arch/x86/include/asm/x86_init.h
-@@ -189,10 +189,11 @@ struct x86_msi_ops {
+@@ -186,6 +186,7 @@ struct x86_msi_ops {
+ 	void (*teardown_msi_irq)(unsigned int irq);
+ 	void (*teardown_msi_irqs)(struct pci_dev *dev);
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
++	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
  };
  
  struct x86_io_apic_ops {
--	void		(*init)  (void);
--	unsigned int	(*read)  (unsigned int apic, unsigned int reg);
--	void		(*write) (unsigned int apic, unsigned int reg, unsigned int value);
--	void		(*modify)(unsigned int apic, unsigned int reg, unsigned int value);
-+	void		(*init)   (void);
-+	unsigned int	(*read)   (unsigned int apic, unsigned int reg);
-+	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
-+	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
-+	void		(*disable)(void);
- };
- 
- extern struct x86_init_ops x86_init;
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index a6c64aa..b919f1e 100644
+index 1ac89a6..3d58775 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1925,30 +1925,14 @@ void __init enable_IO_APIC(void)
- 	clear_IO_APIC();
- }
+@@ -3297,17 +3297,12 @@ static struct irq_chip hpet_msi_type = {
+ 	.irq_retrigger = ioapic_retrigger_irq,
+ };
  
--/*
-- * Not an __init, needed by the reboot code
-- */
--void disable_IO_APIC(void)
-+void native_disable_io_apic(void)
+-int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
++int default_setup_hpet_msi(unsigned int irq, unsigned int id)
  {
- 	/*
--	 * Clear the IO-APIC before rebooting:
--	 */
--	clear_IO_APIC();
--
--	if (!legacy_pic->nr_legacy_irqs)
--		return;
--
--	/*
- 	 * If the i8259 is routed through an IOAPIC
- 	 * Put that IOAPIC in virtual wire mode
- 	 * so legacy interrupts can be delivered.
--	 *
--	 * With interrupt-remapping, for now we will use virtual wire A mode,
--	 * as virtual wire B is little complex (need to configure both
--	 * IOAPIC RTE as well as interrupt-remapping table entry).
--	 * As this gets called during crash dump, keep this simple for now.
- 	 */
--	if (ioapic_i8259.pin != -1 && !irq_remapping_enabled) {
-+	if (ioapic_i8259.pin != -1) {
- 		struct IO_APIC_route_entry entry;
+ 	struct irq_chip *chip = &hpet_msi_type;
+ 	struct msi_msg msg;
+ 	int ret;
  
- 		memset(&entry, 0, sizeof(entry));
-@@ -1968,12 +1952,25 @@ void disable_IO_APIC(void)
- 		ioapic_write_entry(ioapic_i8259.apic, ioapic_i8259.pin, entry);
+-	if (irq_remapping_enabled) {
+-		if (!setup_hpet_msi_remapped(irq, id))
+-			return -1;
+-	}
+-
+ 	ret = msi_compose_msg(NULL, irq, &msg, id);
+ 	if (ret < 0)
+ 		return ret;
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 1460a5d..22d4fe5 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -478,7 +478,7 @@ static int hpet_msi_next_event(unsigned long delta,
+ 
+ static int hpet_setup_msi_irq(unsigned int irq)
+ {
+-	if (arch_setup_hpet_msi(irq, hpet_blockid)) {
++	if (x86_msi.setup_hpet_msi(irq, hpet_blockid)) {
+ 		destroy_irq(irq);
+ 		return -EINVAL;
  	}
- 
-+	if (cpu_has_apic || apic_from_smp_config())
-+		disconnect_bsp_APIC(ioapic_i8259.pin != -1);
-+
-+}
-+
-+/*
-+ * Not an __init, needed by the reboot code
-+ */
-+void disable_IO_APIC(void)
-+{
- 	/*
--	 * Use virtual wire A mode when interrupt remapping is enabled.
-+	 * Clear the IO-APIC before rebooting:
- 	 */
--	if (cpu_has_apic || apic_from_smp_config())
--		disconnect_bsp_APIC(!irq_remapping_enabled &&
--				ioapic_i8259.pin != -1);
-+	clear_IO_APIC();
-+
-+	if (!legacy_pic->nr_legacy_irqs)
-+		return;
-+
-+	x86_io_apic_ops.disable();
- }
- 
- #ifdef CONFIG_X86_32
 diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 9f3167e..3ea56c2 100644
+index dc19c50..339e108 100644
 --- a/arch/x86/kernel/x86_init.c
 +++ b/arch/x86/kernel/x86_init.c
-@@ -120,8 +120,9 @@ struct x86_msi_ops x86_msi = {
+@@ -19,6 +19,7 @@
+ #include <asm/time.h>
+ #include <asm/irq.h>
+ #include <asm/io_apic.h>
++#include <asm/hpet.h>
+ #include <asm/pat.h>
+ #include <asm/tsc.h>
+ #include <asm/iommu.h>
+@@ -113,10 +114,11 @@ struct x86_platform_ops x86_platform = {
+ 
+ EXPORT_SYMBOL_GPL(x86_platform);
+ struct x86_msi_ops x86_msi = {
+-	.setup_msi_irqs = native_setup_msi_irqs,
+-	.teardown_msi_irq = native_teardown_msi_irq,
+-	.teardown_msi_irqs = default_teardown_msi_irqs,
+-	.restore_msi_irqs = default_restore_msi_irqs,
++	.setup_msi_irqs		= native_setup_msi_irqs,
++	.teardown_msi_irq	= native_teardown_msi_irq,
++	.teardown_msi_irqs	= default_teardown_msi_irqs,
++	.restore_msi_irqs	= default_restore_msi_irqs,
++	.setup_hpet_msi		= default_setup_hpet_msi,
  };
  
  struct x86_io_apic_ops x86_io_apic_ops = {
--	.init	= native_io_apic_init_mappings,
--	.read	= native_io_apic_read,
--	.write	= native_io_apic_write,
--	.modify	= native_io_apic_modify,
-+	.init			= native_io_apic_init_mappings,
-+	.read			= native_io_apic_read,
-+	.write			= native_io_apic_write,
-+	.modify			= native_io_apic_modify,
-+	.disable		= native_disable_io_apic,
- };
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 283a43f..f72a5e8 100644
+index f72a5e8..f439151 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -1,3 +1,4 @@
-+#include <linux/cpumask.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
- #include <linux/cpumask.h>
-@@ -6,6 +7,9 @@
+@@ -36,7 +36,8 @@ static void irq_remapping_disable_io_apic(void)
  
- #include <asm/hw_irq.h>
- #include <asm/irq_remapping.h>
-+#include <asm/processor.h>
-+#include <asm/x86_init.h>
-+#include <asm/apic.h>
- 
- #include "irq_remapping.h"
- 
-@@ -17,6 +21,24 @@ int no_x2apic_optout;
- 
- static struct irq_remap_ops *remap_ops;
- 
-+static void irq_remapping_disable_io_apic(void)
-+{
-+	/*
-+	 * With interrupt-remapping, for now we will use virtual wire A
-+	 * mode, as virtual wire B is little complex (need to configure
-+	 * both IOAPIC RTE as well as interrupt-remapping table entry).
-+	 * As this gets called during crash dump, keep this simple for
-+	 * now.
-+	 */
-+	if (cpu_has_apic || apic_from_smp_config())
-+		disconnect_bsp_APIC(0);
-+}
-+
-+static void __init irq_remapping_modify_x86_ops(void)
-+{
-+	x86_io_apic_ops.disable	=	irq_remapping_disable_io_apic;
-+}
-+
- static __init int setup_nointremap(char *str)
+ static void __init irq_remapping_modify_x86_ops(void)
  {
- 	disable_irq_remap = 1;
-@@ -74,10 +96,17 @@ int __init irq_remapping_prepare(void)
- 
- int __init irq_remapping_enable(void)
- {
-+	int ret;
-+
- 	if (!remap_ops || !remap_ops->enable)
- 		return -ENODEV;
- 
--	return remap_ops->enable();
-+	ret = remap_ops->enable();
-+
-+	if (irq_remapping_enabled)
-+		irq_remapping_modify_x86_ops();
-+
-+	return ret;
+-	x86_io_apic_ops.disable	=	irq_remapping_disable_io_apic;
++	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
++	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
  }
  
- void irq_remapping_disable(void)
+ static __init int setup_nointremap(char *str)
 -- 
 1.7.9.5
 
