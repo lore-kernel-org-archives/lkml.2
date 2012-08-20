@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab2HTQcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:32:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56625 "EHLO
+	id S1757292Ab2HTQdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:33:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56591 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab2HTQ0k (ORCPT
+	with ESMTP id S1753367Ab2HTQ0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:26:40 -0400
+	Mon, 20 Aug 2012 12:26:37 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/24] perf tools: Rename global variable 'events' in util/header.c
-Date: Mon, 20 Aug 2012 13:26:18 -0300
-Message-Id: <1345479985-18669-18-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 02/24] perf tools: Add missing files to build the python binding
+Date: Mon, 20 Aug 2012 13:26:03 -0300
+Message-Id: <1345479985-18669-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1345479985-18669-1-git-send-email-acme@infradead.org>
 References: <1345479985-18669-1-git-send-email-acme@infradead.org>
@@ -25,114 +29,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Trivial patch that renames global variable 'events' in util/header.c.
+Changeset 0f6a3015:
+"perf tools: Support user regs and stack in sample parsing"
 
-Use a more specific naming to avoid conflicts. Same for variable
-'event_count'.
+uses hweight_long in evsel.c, so we need to drag util/hweight.c
+to the python binding.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Ditto for ee8dd3c:
+"perf tools: Change strlist to use the new rblist"
+
+where we need to add util/rblist.c.
+
+Now twatch.py works again:
+
+ # export PYTHONPATH=~acme/git/build/perf/python/
+ # ~acme/git/linux/tools/perf/python/twatch.py
+ cpu:  4, pid: 23639, tid: 23639 { type: fork, pid: 30659, ppid: 23639, tid: 30659, ptid: 23639, time: 36287872076780}
+ cpu:  5, pid: 30659, tid: 30659 { type: comm, pid: 30659, tid: 30659, comm: ls }
+ cpu:  5, pid: 30659, tid: 30659 { type: exit, pid: 30659, ppid: 30659, tid: 30659, ptid: 30659, time: 36287873681539}
+ cpu:  4, pid: 23639, tid: 23639 { type: fork, pid: 30660, ppid: 23639, tid: 30660, ptid: 23639, time: 36291720420480}
+ cpu:  5, pid: 30659, tid: 30659 { type: exit, pid: 30659, ppid: 30659, tid: 30659, ptid: 30659, time: 36287873685714}
+ cpu:  5, pid: 30660, tid: 30660 { type: comm, pid: 30660, tid: 30660, comm: git }
+ ^C
+ KeyboardInterrupt
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1345144224-27280-5-git-send-email-robert.richter@amd.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-gmq82zp5blin9aml9g5tzokr@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |   40 ++++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+ tools/perf/util/python-ext-sources |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index e2e5129..1e5b6aa 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -23,8 +23,8 @@
- 
- static bool no_buildid_cache = false;
- 
--static int event_count;
--static struct perf_trace_event_type *events;
-+static int trace_event_count;
-+static struct perf_trace_event_type *trace_events;
- 
- static u32 header_argc;
- static const char **header_argv;
-@@ -36,24 +36,24 @@ int perf_header__push_event(u64 id, const char *name)
- 	if (strlen(name) > MAX_EVENT_NAME)
- 		pr_warning("Event %s will be truncated\n", name);
- 
--	nevents = realloc(events, (event_count + 1) * sizeof(*events));
-+	nevents = realloc(trace_events, (trace_event_count + 1) * sizeof(*trace_events));
- 	if (nevents == NULL)
- 		return -ENOMEM;
--	events = nevents;
-+	trace_events = nevents;
- 
--	memset(&events[event_count], 0, sizeof(struct perf_trace_event_type));
--	events[event_count].event_id = id;
--	strncpy(events[event_count].name, name, MAX_EVENT_NAME - 1);
--	event_count++;
-+	memset(&trace_events[trace_event_count], 0, sizeof(struct perf_trace_event_type));
-+	trace_events[trace_event_count].event_id = id;
-+	strncpy(trace_events[trace_event_count].name, name, MAX_EVENT_NAME - 1);
-+	trace_event_count++;
- 	return 0;
- }
- 
- char *perf_header__find_event(u64 id)
- {
- 	int i;
--	for (i = 0 ; i < event_count; i++) {
--		if (events[i].event_id == id)
--			return events[i].name;
-+	for (i = 0 ; i < trace_event_count; i++) {
-+		if (trace_events[i].event_id == id)
-+			return trace_events[i].name;
- 	}
- 	return NULL;
- }
-@@ -1726,9 +1726,9 @@ out_err_write:
- 	}
- 
- 	header->event_offset = lseek(fd, 0, SEEK_CUR);
--	header->event_size = event_count * sizeof(struct perf_trace_event_type);
--	if (events) {
--		err = do_write(fd, events, header->event_size);
-+	header->event_size = trace_event_count * sizeof(struct perf_trace_event_type);
-+	if (trace_events) {
-+		err = do_write(fd, trace_events, header->event_size);
- 		if (err < 0) {
- 			pr_debug("failed to write perf header events\n");
- 			return err;
-@@ -2211,13 +2211,13 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 
- 	if (f_header.event_types.size) {
- 		lseek(fd, f_header.event_types.offset, SEEK_SET);
--		events = malloc(f_header.event_types.size);
--		if (events == NULL)
-+		trace_events = malloc(f_header.event_types.size);
-+		if (trace_events == NULL)
- 			return -ENOMEM;
--		if (perf_header__getbuffer64(header, fd, events,
-+		if (perf_header__getbuffer64(header, fd, trace_events,
- 					     f_header.event_types.size))
- 			goto out_errno;
--		event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
-+		trace_event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
- 	}
- 
- 	perf_header__process_sections(header, fd, &session->pevent,
-@@ -2362,8 +2362,8 @@ int perf_event__synthesize_event_types(struct perf_tool *tool,
- 	struct perf_trace_event_type *type;
- 	int i, err = 0;
- 
--	for (i = 0; i < event_count; i++) {
--		type = &events[i];
-+	for (i = 0; i < trace_event_count; i++) {
-+		type = &trace_events[i];
- 
- 		err = perf_event__synthesize_event_type(tool, type->event_id,
- 							type->name, process,
+diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
+index 2884e67..2133628 100644
+--- a/tools/perf/util/python-ext-sources
++++ b/tools/perf/util/python-ext-sources
+@@ -10,10 +10,12 @@ util/ctype.c
+ util/evlist.c
+ util/evsel.c
+ util/cpumap.c
++util/hweight.c
+ util/thread_map.c
+ util/util.c
+ util/xyarray.c
+ util/cgroup.c
+ util/debugfs.c
++util/rblist.c
+ util/strlist.c
+ ../../lib/rbtree.c
 -- 
 1.7.1
 
