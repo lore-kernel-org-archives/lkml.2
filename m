@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab2HTTuq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 15:50:46 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:46116 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817Ab2HTTun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 15:50:43 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Massimo Piccioni <dafastidio@libero.it>
-Subject: [PATCH] snd-als100: fix suspend/resume
-Date: Mon, 20 Aug 2012 21:50:13 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: alsa-devel@alsa-project.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
+	id S1754211Ab2HTTvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 15:51:13 -0400
+Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:23100 "EHLO
+	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751817Ab2HTTvM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 15:51:12 -0400
+Date: Mon, 20 Aug 2012 19:51:10 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 5/5] mempolicy: fix a memory corruption by refcount
+ imbalance in alloc_pages_vma()
+In-Reply-To: <1345480594-27032-6-git-send-email-mgorman@suse.de>
+Message-ID: <000001394596bd69-2c16d7fb-71b5-4009-95cc-7068103b2bfd-000000@email.amazonses.com>
+References: <1345480594-27032-1-git-send-email-mgorman@suse.de> <1345480594-27032-6-git-send-email-mgorman@suse.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201208202150.13593.linux@rainbow-software.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-snd_card_als100_probe() does not set pcm field in struct snd_sb.
-As a result, PCM is not suspended and applications don't know that they need
-to resume the playback.
+On Mon, 20 Aug 2012, Mel Gorman wrote:
 
-Tested with Labway A381-F20 card (ALS120).
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 45f9825..82e872f 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1545,15 +1545,28 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
+>  		struct vm_area_struct *vma, unsigned long addr)
+>  {
+>  	struct mempolicy *pol = task->mempolicy;
+> +	int got_ref;
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+New variable. Need to set it to zero?
 
---- a/sound/isa/als100.c
-+++ b/sound/isa/als100.c
-@@ -233,7 +233,7 @@ static int __devinit snd_card_als100_probe(int dev,
- 			irq[dev], dma8[dev], dma16[dev]);
- 	}
- 
--	if ((error = snd_sb16dsp_pcm(chip, 0, NULL)) < 0) {
-+	if ((error = snd_sb16dsp_pcm(chip, 0, &chip->pcm)) < 0) {
- 		snd_card_free(card);
- 		return error;
- 	}
+>
+>  	if (vma) {
+>  		if (vma->vm_ops && vma->vm_ops->get_policy) {
+>  			struct mempolicy *vpol = vma->vm_ops->get_policy(vma,
+>  									addr);
+> -			if (vpol)
+> +			if (vpol) {
+>  				pol = vpol;
+> -		} else if (vma->vm_policy)
+> +				got_ref = 1;
+
+Set the new variable. But it was not initialzed before. So now its 1 or
+undefined?
+
+> +			}
+> +		} else if (vma->vm_policy) {
+>  			pol = vma->vm_policy;
+> +
+> +			/*
+> +			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
+> +			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
+> +			 * count on these policies which will be dropped by
+> +			 * mpol_cond_put() later
+> +			 */
+> +			if (mpol_needs_cond_ref(pol))
+> +				mpol_get(pol);
+> +		}
+>  	}
+>  	if (!pol)
+>  		pol = &default_policy;
+>
+
+I do not see any use of got_ref. Can we get rid of the variable?
 
 
-
-
--- 
-Ondrej Zary
