@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab2HTPMU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:12:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54999 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756671Ab2HTPMS convert rfc822-to-8bit (ORCPT
+	id S1756991Ab2HTPNt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:13:49 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:52320 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756671Ab2HTPNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:12:18 -0400
-Message-ID: <1345475530.23018.50.camel@twins>
-Subject: Re: lockdep trace from posix timers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Mon, 20 Aug 2012 17:12:10 +0200
-In-Reply-To: <20120820150507.GC18499@redhat.com>
-References: <20120724203613.GA9637@redhat.com>
-	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
-	 <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins>
-	 <20120820150507.GC18499@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 20 Aug 2012 11:13:46 -0400
+X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 11:13:46 EDT
+Date: Mon, 20 Aug 2012 08:04:05 -0700 (PDT)
+From: Jakob Bornecrantz <jakob@vmware.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Message-ID: <790319256.19256264.1345475045195.JavaMail.root@vmware.com>
+In-Reply-To: <20120820144438.6255.39723.stgit@localhost.localdomain>
+Subject: Re: [PATCH] drm: stop vmgfx driver explosion
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [85.225.38.204]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC18 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 17:05 +0200, Oleg Nesterov wrote:
-> On 08/20, Peter Zijlstra wrote:
-> >
-> > +static void __task_work_run(struct callback_head *tail)
-> >  {
-> > -	struct task_struct *task = current;
-> > -	struct callback_head *p, *q;
-> > -
-> > -	while (1) {
-> > -		raw_spin_lock_irq(&task->pi_lock);
-> > -		p = task->task_works;
-> > -		task->task_works = NULL;
-> > -		raw_spin_unlock_irq(&task->pi_lock);
-> > -
-> > -		if (unlikely(!p))
-> > -			return;
-> > -
-> > -		q = p->next; /* head */
-> > -		p->next = NULL; /* cut it */
-> > -		while (q) {
-> > -			p = q->next;
-> > -			q->func(q);
-> > -			q = p;
-> > +	struct callback_head **head = &current->task_works;
-> > +
-> > +	do {
-> > +		struct callback_head *work = xchg(head, NULL);
-> > +		while (work) {
-> > +			struct callback_head *next = ACCESS_ONCE(work->next);
-> > +
-> > +			WARN_ON_ONCE(work == &dead);
-> > +
-> > +			work->func(work);
-> > +			work = next;
-> >  		}
-> > -	}
-> > +	} while (cmpxchg(head, NULL, tail) != NULL);
+----- Original Message -----
+> From: Alan Cox <alan@linux.intel.com>
 > 
-> Yes, we can add the explicit argument to __task_work_run(), but it can
-> check PF_EXITING instead, this looks simpler to me.
+> If you do a page flip with no flags set then event is NULL. If event
+> is NULL then the vmw_gfx driver likes to go digging into NULL and
+> extracts NULL->base.file_priv.
+> 
+> On a modern kernel with NULL mapping protection it's just another
+> oops, without it there are some "intriguing" possibilities.
+> 
+> What it should do is an open question but that for the driver owners
+> to sort out.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-I guess we could.. but I thought the explicit callback was simpler ;-)
+Thanks Alan!
 
-> Note also your patch breaks fifo, but this is fixable.
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 
-Why do you care about the order? Iterating a single linked queue in fifo
-seems more expensive than useful.
+I think CC stable is in order.
+
+Cheers, Jakob.
