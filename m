@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2HTGAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 02:00:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42035 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047Ab2HTGAJ (ORCPT
+	id S1753625Ab2HTGHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 02:07:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49795 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2HTGHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 02:00:09 -0400
-Date: Sun, 19 Aug 2012 22:59:58 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-Subject: Re: [RFC 0/2] USB gadget - configfs
-Message-ID: <20120820055958.GD2102@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-	Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-	'Kyungmin Park' <kyungmin.park@samsung.com>,
-	'Felipe Balbi' <balbi@ti.com>,
-	'Greg Kroah-Hartman' <gregkh@linuxfoundation.org>,
-	Marek Szyprowski <m.szyprowski@samsung.com>,
-	'Alan Stern' <stern@rowland.harvard.edu>
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
- <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
- <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
- <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
- <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
- <502CF9E3.2010608@linutronix.de>
- <20120817014609.GB2949@dhcp-172-17-9-228.mtv.corp.google.com>
- <502E0D3B.10006@linutronix.de>
- <000201cd7c63$60186370$20492a50$%p@samsung.com>
- <502E1E23.60201@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502E1E23.60201@linutronix.de>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 20 Aug 2012 02:07:51 -0400
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+From: Raymond Jennings <shentino@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Carlos Alberto Lopez Perez <clopez@igalia.com>,
+        Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lanyfs@librelist.com
+In-Reply-To: <20120820004705.GA3710@thunk.org>
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>
+	 <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com>
+	 <1345371135.4441.2.camel@tunafish> <5030BC7E.3030000@gmail.com>
+	 <1345383264.4441.56.camel@tunafish>
+	 <20120819120254.GA2369@pompeji.miese-zwerge.org>
+	 <1345390432.2716.34.camel@tunafish> <20120819210455.GA9208@thunk.org>
+	 <5031716C.1060003@igalia.com>  <20120820004705.GA3710@thunk.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sun, 19 Aug 2012 23:07:32 -0700
+Message-ID: <1345442852.3906.0.camel@warfang.spyronet>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 12:34:11PM +0200, Sebastian Andrzej Siewior wrote:
-> On 08/17/2012 12:30 PM, Andrzej Pietrasiewicz wrote:
-> >>There is a separation between "setting myself up" and "seeing that a host
-> >>wants to talk to me". You are a woman. And if you not done yet done you
-> >ignore
-> >>the host until you are ready. Can also be ready before the host wants to
-> >talk
-> >>to you. It depends on your mood / use case (give the use the choice
-> >between
-> >>storage&  network and offer always both because we are self powered).
-> >>
-> >
-> >You never know when she is ready... ;)
-> >
-> >Please note, that in the example implementation it is userspace
-> >who needs to explicitly store "1" into the "connect" attribute;
-> >if it is not set, connecting the cable will have no effect and,
-> >conversely, if the cable is connected but the "1" is not stored,
-> >the gadget will not be seen by the host.
+On Sun, 2012-08-19 at 20:47 -0400, Theodore Ts'o wrote:
+> On Mon, Aug 20, 2012 at 01:06:20AM +0200, Carlos Alberto Lopez Perez wrote:
+> > 
+> > > I also seriously question the niche of people who want to use a thumb
+> > > drive to transfer > 4GB files.  Try it sometime and see what a painful
+> > > user experience it is....
+> > 
+> > Think for example on consumer devices, for example on most moderns TV
+> > you can plug a USB memory disk with videos and play them.
 > 
-> maybe we should rename "connect" here to "ready" or "available". It
-> seems to cause confusion.
+> More and more consumer devices, including TV's, are network-enabled.
+> I'm not at all convinced the USB memory disk model is the one which
+> makes sense --- you can make a much better user experience work if you
+> can rely on networking.  That way you don't have to move USB storage
+> devices around, and USB storage devices are *slow* when the most
+> common types are HDD's and crappy flash devices.  How many people are
+> going to drop several hundred dollars for a USB-attached SSD, when
+> using a networking transfer mechanism is much more convenient?
+> 
+> > And I doubt that the majority of this consumer devices are able to read
+> > nothing more than FAT32 file-systems, so the 4GB limit is a big problem.
+> > And here is where Microsoft is pushing their exFAT FS since it allows
+> > working with 4GB+ files without the NTFS overhead.
+> 
+> We'll see how popular a heavily IP-encumbered file system will be,
+> especially given that its main use case is for devices which are so
+> constrained that they can't afford to use a "real file system" (like
+> ntfs or ext4 or some other more sophisticated file system), but which
+> nevertheless needs to be able to handle 4GB+ files.
 
-	I think what you want here is a symlink.  Create a directory
-high in the tree called 'ready' or 'available', and when you want to
-lock the device in place, symlink it into that directory.  This will pin
-the item.  You can also make use of the ->allow_link() and ->drop_link()
-callbacks to prevent symlinking an item until it is fully configured,
-and prevent unlinking an item that is in use.
+My two cents:
 
-  $ ln -s /cfg/usb-function-gadget/G1/C1/F1/f_mass_storage/lun0 \
-        /cfg/usb-function-gadget/ready/
+After seeing microsoft's attack on TomTom over the vfat patents I
+honesstly would consider it a good move to have an alternative free
+format available.
 
-or something like that.
+> I'm sure there will be some use cases that might fit that niche, but
+> it seems pretty tiny.  And this is completely ignoring what might
+> happen if in the future people take 1gig fiber connections to the home
+> (such as what many people in Kansas City will be enjoying very
+> shortly) for granted....
+> 
+> > As a side note, it would be possible to write a driver for exFAT and get
+> > it merged upstream on the Linux Kernel without "breaking any law"?
+> > Goggling I found an attempt to write such driver but seems that never
+> > got merged:  https://lkml.org/lkml/2009/2/8/24
+> 
+> You'll need to talk to a lawyer about that, since that's fundamentally
+> a legal question.
+> 
+> Regards,
+> 
+> 						- Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Joel
 
--- 
-
-"Born under a bad sign.
- I been down since I began to crawl.
- If it wasn't for bad luck,
- I wouldn't have no luck at all."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
