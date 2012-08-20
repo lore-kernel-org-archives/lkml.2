@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2HTEFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:05:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39891 "EHLO
+	id S1755356Ab2HTEGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:06:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab2HTEBL (ORCPT
+	with ESMTP id S1752778Ab2HTEBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:01:11 -0400
+	Mon, 20 Aug 2012 00:01:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jim Cromie <jim.cromie@gmail.com>, Jason Baron <jbaron@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: [ 31/46] drivers-core: make structured logging play nice with dynamic-debug
-Date: Sun, 19 Aug 2012 20:59:07 -0700
-Message-Id: <20120820035836.580148816@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Edwin Klein Mentink <e.kleinmentink@zonnet.nl>
+Subject: [ 28/46] xhci: Increase reset timeout for Renesas 720201 host.
+Date: Sun, 19 Aug 2012 20:59:04 -0700
+Message-Id: <20120820035836.172530757@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -30,56 +30,47 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jim Cromie <jim.cromie@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit af7f2158fdee9d7f55b793b09f8170a3391f889a upstream.
+commit 22ceac191211cf6688b1bf6ecd93c8b6bf80ed9b upstream.
 
-commit c4e00daaa96d3a0786f1f4fe6456281c60ef9a16 changed __dev_printk
-in a way that broke dynamic-debug's ability to control the dynamic
-prefix of dev_dbg(dev,..), but not dev_dbg(NULL,..) or pr_debug(..),
-which is why it wasnt noticed sooner.
+The NEC/Renesas 720201 xHCI host controller does not complete its reset
+within 250 milliseconds.  In fact, it takes about 9 seconds to reset the
+host controller, and 1 second for the host to be ready for doorbell
+rings.  Extend the reset and CNR polling timeout to 10 seconds each.
 
-When dev==NULL, __dev_printk() just calls printk(), which just works.
-But otherwise, it assumed that level was always a string like "<L>"
-and just plucked out the 'L', ignoring the rest.  However,
-dynamic_emit_prefix() adds "[tid] module:func:line:" to the string,
-those additions all got lost.
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit 66d4eadd8d067269ea8fead1a50fe87c2979a80d "USB: xhci:
+BIOS handoff and HW initialization."
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Edwin Klein Mentink <e.kleinmentink@zonnet.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/core.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1848,6 +1848,7 @@ int __dev_printk(const char *level, cons
- 		 struct va_format *vaf)
- {
- 	char dict[128];
-+	const char *level_extra = "";
- 	size_t dictlen = 0;
- 	const char *subsys;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -166,7 +166,7 @@ int xhci_reset(struct xhci_hcd *xhci)
+ 	xhci_writel(xhci, command, &xhci->op_regs->command);
  
-@@ -1894,10 +1895,14 @@ int __dev_printk(const char *level, cons
- 				    "DEVICE=+%s:%s", subsys, dev_name(dev));
- 	}
- skip:
-+	if (level[3])
-+		level_extra = &level[3]; /* skip past "<L>" */
-+
- 	return printk_emit(0, level[1] - '0',
- 			   dictlen ? dict : NULL, dictlen,
--			   "%s %s: %pV",
--			   dev_driver_string(dev), dev_name(dev), vaf);
-+			   "%s %s: %s%pV",
-+			   dev_driver_string(dev), dev_name(dev),
-+			   level_extra, vaf);
- }
- EXPORT_SYMBOL(__dev_printk);
+ 	ret = handshake(xhci, &xhci->op_regs->command,
+-			CMD_RESET, 0, 250 * 1000);
++			CMD_RESET, 0, 10 * 1000 * 1000);
+ 	if (ret)
+ 		return ret;
  
+@@ -175,7 +175,8 @@ int xhci_reset(struct xhci_hcd *xhci)
+ 	 * xHCI cannot write to any doorbells or operational registers other
+ 	 * than status until the "Controller Not Ready" flag is cleared.
+ 	 */
+-	ret = handshake(xhci, &xhci->op_regs->status, STS_CNR, 0, 250 * 1000);
++	ret = handshake(xhci, &xhci->op_regs->status,
++			STS_CNR, 0, 10 * 1000 * 1000);
+ 
+ 	for (i = 0; i < 2; ++i) {
+ 		xhci->bus_state[i].port_c_suspend = 0;
 
 
