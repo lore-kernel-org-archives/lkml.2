@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab2HTR3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 13:29:40 -0400
-Received: from mx.meyering.net ([88.168.87.75]:44788 "EHLO hx.meyering.net"
+	id S1754500Ab2HTR34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 13:29:56 -0400
+Received: from mx.meyering.net ([88.168.87.75]:44792 "EHLO hx.meyering.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753596Ab2HTR30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 13:29:26 -0400
+	id S1755466Ab2HTR3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 13:29:46 -0400
+X-Greylist: delayed 1959 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 13:29:45 EDT
 From: Jim Meyering <jim@meyering.net>
 To: linux-kernel@vger.kernel.org
-Cc: Jim Meyering <meyering@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, linux-mm@kvack.org
-Subject: [PATCH] kmemleak: avoid buffer overrun: NUL-terminate strncpy-copied command
-Date: Mon, 20 Aug 2012 18:55:22 +0200
-Message-Id: <1345481724-30108-4-git-send-email-jim@meyering.net>
+Cc: Jim Meyering <meyering@redhat.com>, Jing Huang <huangj@brocade.com>,
+        Krishna C Gudipati <kgudipat@brocade.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+Date: Mon, 20 Aug 2012 18:55:23 +0200
+Message-Id: <1345481724-30108-5-git-send-email-jim@meyering.net>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1345481724-30108-1-git-send-email-jim@meyering.net>
 References: <1345481724-30108-1-git-send-email-jim@meyering.net>
@@ -22,31 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Meyering <meyering@redhat.com>
 
-strncpy NUL-terminates only when the length of the source string
-is smaller than the size of the destination buffer.
-The two other strncpy uses (just preceding) happen to be ok
-with the current TASK_COMM_LEN (16), because the literals
-"hardirq" and "softirq" are both shorter than 16.  However,
-technically it'd be better to use strcpy along with a
-compile-time assertion that they fit in the buffer.
+we use strncpy to copy a model name of length up to 15 (16, if you count
+the NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+However, strncpy does not always NUL-terminate, so whenever the original
+model string has strlen >= 12, the following strncat reads beyond end
+of the ->sym_name buffer as it attempts to find end of string.
+
+bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+{
+	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+	...
+	strncpy((char *)&port_cfg->sym_name, model,
+		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+	...
+
+bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model)
+{
+	struct bfi_ioc_attr_s	*ioc_attr;
+
+	WARN_ON(!model);
+	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+
+BFA_ADAPTER_MODEL_NAME_LEN = 16
 
 Signed-off-by: Jim Meyering <meyering@redhat.com>
 ---
- mm/kmemleak.c | 1 +
+ drivers/scsi/bfa/bfa_fcs.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 45eb621..947257f 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -555,6 +555,7 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
- 		 * case, the command line is not correct.
- 		 */
- 		strncpy(object->comm, current->comm, sizeof(object->comm));
-+		object->comm[sizeof(object->comm) - 1] = 0;
- 	}
+diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c
+index eaac57e..3329493 100644
+--- a/drivers/scsi/bfa/bfa_fcs.c
++++ b/drivers/scsi/bfa/bfa_fcs.c
+@@ -713,6 +713,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	/* Model name/number */
+ 	strncpy((char *)&port_cfg->sym_name, model,
+ 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
++	port_cfg->sym_name[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1] = 0;
+ 	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
 
- 	/* kernel backtrace */
 -- 
 1.7.12
 
