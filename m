@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab2HTIMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 04:12:07 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:42499 "EHLO
+	id S1753177Ab2HTIM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 04:12:29 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:42500 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751979Ab2HTIL7 (ORCPT
+	with ESMTP id S1752511Ab2HTIL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Aug 2012 04:11:59 -0400
 From: Roland Stigge <stigge@antcom.de>
@@ -13,137 +13,120 @@ To: bigeasy@linutronix.de, balbi@ti.com, linux-usb@vger.kernel.org,
         arnd@arndb.de, aletes.xgr@gmail.com, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 1/3] usb: gadget: lpc32xx_udc: Port to new start/stop interface
-Date: Mon, 20 Aug 2012 10:11:44 +0200
-Message-Id: <1345450306-4996-1-git-send-email-stigge@antcom.de>
+Subject: [PATCH 2/3] usb: gadget: lpc32xx_udc: Remove usb_endpoint_descriptor
+Date: Mon, 20 Aug 2012 10:11:45 +0200
+Message-Id: <1345450306-4996-2-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345450306-4996-1-git-send-email-stigge@antcom.de>
+References: <1345450306-4996-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adjusts the LPC32xx USB gadget driver to the new udc_start /
-udc_stop interface.
+This patch removes the utilization of struct usb_endpoint_descriptor, as done
+by other drivers also. This was done on request by the USB gadget maintainers,
+since this API is obsoleted.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
 
-Applies to v3.6-rc2
-
- drivers/usb/gadget/lpc32xx_udc.c |   49 +++++++++++----------------------------
- 1 file changed, 14 insertions(+), 35 deletions(-)
+ drivers/usb/gadget/lpc32xx_udc.c |   23 +++++++----------------
+ 1 file changed, 7 insertions(+), 16 deletions(-)
 
 --- linux-2.6.orig/drivers/usb/gadget/lpc32xx_udc.c
 +++ linux-2.6/drivers/usb/gadget/lpc32xx_udc.c
-@@ -2599,9 +2599,8 @@ static int lpc32xx_pullup(struct usb_gad
- 	return 0;
- }
+@@ -141,8 +141,6 @@ struct lpc32xx_ep {
+ 	u32                     totalints;
  
--static int lpc32xx_start(struct usb_gadget_driver *driver,
--			 int (*bind)(struct usb_gadget *));
--static int lpc32xx_stop(struct usb_gadget_driver *driver);
-+static int lpc32xx_start(struct usb_gadget *, struct usb_gadget_driver *);
-+static int lpc32xx_stop(struct usb_gadget *, struct usb_gadget_driver *);
- 
- static const struct usb_gadget_ops lpc32xx_udc_ops = {
- 	.get_frame		= lpc32xx_get_frame,
-@@ -2609,8 +2608,8 @@ static const struct usb_gadget_ops lpc32
- 	.set_selfpowered	= lpc32xx_set_selfpowered,
- 	.vbus_session		= lpc32xx_vbus_session,
- 	.pullup			= lpc32xx_pullup,
--	.start			= lpc32xx_start,
--	.stop			= lpc32xx_stop,
-+	.udc_start		= lpc32xx_start,
-+	.udc_stop		= lpc32xx_stop,
+ 	bool			wedge;
+-
+-	const struct usb_endpoint_descriptor *desc;
  };
  
- static void nop_release(struct device *dev)
-@@ -2987,14 +2986,13 @@ static irqreturn_t lpc32xx_usb_vbus_irq(
- 	return IRQ_HANDLED;
- }
+ /*
+@@ -556,10 +554,8 @@ static int proc_udc_show(struct seq_file
  
--static int lpc32xx_start(struct usb_gadget_driver *driver,
--			 int (*bind)(struct usb_gadget *))
-+static int lpc32xx_start(struct usb_gadget *gadget,
-+			 struct usb_gadget_driver *driver)
- {
--	struct lpc32xx_udc *udc = &controller;
--	int retval, i;
-+	struct lpc32xx_udc *udc = to_udc(gadget);
-+	int i;
- 
--	if (!driver || driver->max_speed < USB_SPEED_FULL ||
--	    !bind || !driver->setup) {
-+	if (!driver || driver->max_speed < USB_SPEED_FULL || !driver->setup) {
- 		dev_err(udc->dev, "bad parameter.\n");
- 		return -EINVAL;
- 	}
-@@ -3011,18 +3009,6 @@ static int lpc32xx_start(struct usb_gadg
- 	udc->selfpowered = 1;
- 	udc->vbus = 0;
- 
--	retval = bind(&udc->gadget);
--	if (retval) {
--		dev_err(udc->dev, "bind() returned %d\n", retval);
--		udc->enabled = 0;
--		udc->selfpowered = 0;
--		udc->driver = NULL;
--		udc->gadget.dev.driver = NULL;
--		return retval;
--	}
--
--	dev_dbg(udc->dev, "bound to %s\n", driver->driver.name);
--
- 	/* Force VBUS process once to check for cable insertion */
- 	udc->last_vbus = udc->vbus = 0;
- 	schedule_work(&udc->vbus_job);
-@@ -3034,22 +3020,19 @@ static int lpc32xx_start(struct usb_gadg
- 	return 0;
- }
- 
--static int lpc32xx_stop(struct usb_gadget_driver *driver)
-+static int lpc32xx_stop(struct usb_gadget *gadget,
-+			struct usb_gadget_driver *driver)
- {
- 	int i;
--	struct lpc32xx_udc *udc = &controller;
-+	struct lpc32xx_udc *udc = to_udc(gadget);
- 
--	if (!driver || driver != udc->driver || !driver->unbind)
-+	if (!driver || driver != udc->driver)
- 		return -EINVAL;
- 
--	/* Disable USB pullup */
--	isp1301_pullup_enable(udc, 0, 1);
--
- 	for (i = IRQ_USB_LP; i <= IRQ_USB_ATX; i++)
- 		disable_irq(udc->udp_irq[i]);
- 
- 	if (udc->clocked) {
--
- 		spin_lock(&udc->lock);
- 		stop_activity(udc);
- 		spin_unlock(&udc->lock);
-@@ -3069,20 +3052,16 @@ static int lpc32xx_stop(struct usb_gadge
+ 	if (udc->enabled && udc->vbus) {
+ 		proc_ep_show(s, &udc->ep[0]);
+-		list_for_each_entry(ep, &udc->gadget.ep_list, ep.ep_list) {
+-			if (ep->desc)
+-				proc_ep_show(s, ep);
+-		}
++		list_for_each_entry(ep, &udc->gadget.ep_list, ep.ep_list)
++			proc_ep_show(s, ep);
  	}
  
- 	udc->enabled = 0;
--	pullup(udc, 0);
+ 	spin_unlock_irqrestore(&udc->lock, flags);
+@@ -1453,7 +1449,6 @@ static void udc_reinit(struct lpc32xx_ud
+ 
+ 		if (i != 0)
+ 			list_add_tail(&ep->ep.ep_list, &udc->gadget.ep_list);
+-		ep->desc = NULL;
+ 		ep->ep.maxpacket = ep->maxpacket;
+ 		INIT_LIST_HEAD(&ep->queue);
+ 		ep->req_pending = 0;
+@@ -1515,7 +1510,7 @@ static void nuke(struct lpc32xx_ep *ep,
+ 		done(ep, req, status);
+ 	}
+ 
+-	if (ep->desc && status == -ESHUTDOWN) {
++	if (status == -ESHUTDOWN) {
+ 		uda_disable_hwepint(ep->udc, ep->hwep_num);
+ 		udc_disable_hwep(ep->udc, ep->hwep_num);
+ 	}
+@@ -1658,9 +1653,6 @@ static int lpc32xx_ep_disable(struct usb
+ 
+ 	nuke(ep, -ESHUTDOWN);
+ 
+-	/* restore the endpoint's pristine config */
+-	ep->desc = NULL;
 -
--	driver->unbind(&udc->gadget);
- 	udc->gadget.dev.driver = NULL;
- 	udc->driver = NULL;
+ 	/* Clear all DMA statuses for this EP */
+ 	udc_ep_dma_disable(udc, ep->hwep_num);
+ 	writel(1 << ep->hwep_num, USBD_EOTINTCLR(udc->udp_baseaddr));
+@@ -1696,7 +1688,7 @@ static int lpc32xx_ep_enable(struct usb_
+ 	unsigned long flags;
  
--	dev_dbg(udc->dev, "unbound from %s\n", driver->driver.name);
- 	return 0;
- }
+ 	/* Verify EP data */
+-	if ((!_ep) || (!ep) || (!desc) || (ep->desc) ||
++	if ((!_ep) || (!ep) || (!desc) ||
+ 	    (desc->bDescriptorType != USB_DT_ENDPOINT)) {
+ 		dev_dbg(udc->dev, "bad ep or descriptor\n");
+ 		return -EINVAL;
+@@ -1754,7 +1746,6 @@ static int lpc32xx_ep_enable(struct usb_
  
- static void lpc32xx_udc_shutdown(struct platform_device *dev)
- {
- 	/* Force disconnect on reboot */
--	struct lpc32xx_udc *udc = &controller;
-+	struct lpc32xx_udc *udc = platform_get_drvdata(dev);
+ 	/* Initialize endpoint to match the selected descriptor */
+ 	ep->is_in = (desc->bEndpointAddress & USB_DIR_IN) != 0;
+-	ep->desc = desc;
+ 	ep->ep.maxpacket = maxpacket;
  
- 	pullup(udc, 0);
- }
+ 	/* Map hardware endpoint from base and direction */
+@@ -1837,7 +1828,7 @@ static int lpc32xx_ep_queue(struct usb_e
+ 
+ 	udc = ep->udc;
+ 
+-	if (!_ep || (!ep->desc && ep->hwep_num_base != 0)) {
++	if (!_ep) {
+ 		dev_dbg(udc->dev, "invalid ep\n");
+ 		return -EINVAL;
+ 	}
+@@ -1976,7 +1967,7 @@ static int lpc32xx_ep_set_halt(struct us
+ 	struct lpc32xx_udc *udc = ep->udc;
+ 	unsigned long flags;
+ 
+-	if ((!ep) || (ep->desc == NULL) || (ep->hwep_num <= 1))
++	if ((!ep) || (ep->hwep_num <= 1))
+ 		return -EINVAL;
+ 
+ 	/* Don't halt an IN EP */
+@@ -2262,7 +2253,7 @@ static int udc_get_status(struct lpc32xx
+ 	case USB_RECIP_ENDPOINT:
+ 		tmp = wIndex & USB_ENDPOINT_NUMBER_MASK;
+ 		ep = &udc->ep[tmp];
+-		if ((tmp == 0) || (tmp >= NUM_ENDPOINTS) || (tmp && !ep->desc))
++		if ((tmp == 0) || (tmp >= NUM_ENDPOINTS))
+ 			return -EOPNOTSUPP;
+ 
+ 		if (wIndex & USB_DIR_IN) {
