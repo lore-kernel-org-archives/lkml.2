@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab2HTOyh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:54:37 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61679 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758Ab2HTOyc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:54:32 -0400
-Message-ID: <50324FA3.9030005@gmail.com>
-Date: Mon, 20 Aug 2012 16:54:27 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1756795Ab2HTO5C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:57:02 -0400
+Received: from fieldses.org ([174.143.236.118]:44759 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754308Ab2HTO47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 10:56:59 -0400
+Date: Mon, 20 Aug 2012 10:56:56 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>, "neilb@suse.de" <neilb@suse.de>
+Subject: Re: [PATCH v3] SUNRPC: protect service sockets lists during
+ per-net shutdown
+Message-ID: <20120820145656.GB1411@fieldses.org>
+References: <20120703125851.3850.86782.stgit@localhost.localdomain>
+ <20120724194036.GK8570@fieldses.org>
+ <20120816192902.GB4385@fieldses.org>
+ <50321A0D.1020904@parallels.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 11/11] arm: mvebu: add pinctrl support in defconfig
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>	<1344689809-6223-12-git-send-email-sebastian.hesselbarth@gmail.com> <CACRpkdaF3OuBLC7odWyH5C_EJT9uFq1rYQMh6=kr8PQjvA68sA@mail.gmail.com>
-In-Reply-To: <CACRpkdaF3OuBLC7odWyH5C_EJT9uFq1rYQMh6=kr8PQjvA68sA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50321A0D.1020904@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 04:31 PM, Linus Walleij wrote:
-> On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
-> <sebastian.hesselbarth@gmail.com>  wrote:
->> +CONFIG_PINCTRL_ARMADA_370=y
->> +CONFIG_PINCTRL_ARMADA_XP=y
->
-> If the system is not even booting without pinctrl you should
-> (IMHO) select these from the machine's Kconfig entry insteaf.
+On Mon, Aug 20, 2012 at 03:05:49PM +0400, Stanislav Kinsbursky wrote:
+> 16.08.2012 23:29, J. Bruce Fields пишет:
+> >Looking back at this:
+> >
+> >	- adding the sv_lock looks like the right thing to do anyway
+> >	  independent of containers, because svc_age_temp_xprts may
+> >	  still be running.
+> >
+> >	- I'm increasingly unhappy about sharing rpc servers between
+> >	  network namespaces.  Everything would be easier to understand
+> >	  if they were independent.  Can we figure out how to do that?
+> >
+> 
+> Could you, please, elaborate on your your unhappiness?
 
-I don't have a strong opinion on this but I think most systems
-will boot just fine without pinctrl. The basic stuff is set up
-by u-boot. Anyway, I think we should enable pinctrl for each soc
-by default.
+It seems like you're having to do a lot of work on each individual rpc
+server (callback server, lockd, etc.) to make per-net startup/shutdown
+work.  And then we still don't have it quite right (see the shutdown
+races).)
 
-Sebastian
+In general whenever we have the opportunity to have entirely separate
+data structures, I'd expect that to simplify things: it should eliminate
+some locking and reference-counting issues.
+
+> I.e. I don't like it too. But the problem here, is that rpc server
+> is tied with kernel threads creation and destruction. And these
+> threads can be only a part of initial pid namespace (because we have
+> only one kthreadd). And we decided do not create new kernel thread
+> per container when were discussing the problem last time.
+
+There really should be some way to create a kernel thread in a specific
+namespace, shouldn't there?
+
+Until we have that, could the threads be taught to fix their namespace
+on startup?  
+
+--b.
