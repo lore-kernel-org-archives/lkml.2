@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab2HTUrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:47:37 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:34724 "EHLO smtp5-g21.free.fr"
+	id S1755100Ab2HTUrt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:47:49 -0400
+Received: from antcom.de ([188.40.178.216]:35927 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754254Ab2HTUrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:47:35 -0400
-From: Jim Meyering <jim@meyering.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: a few strncpy-related patches
-In-Reply-To: <m24nnx8ggt.fsf@firstfloor.org> (Andi Kleen's message of "Mon, 20
-	Aug 2012 13:18:42 -0700")
-References: <1345481724-30108-1-git-send-email-jim@meyering.net>
-	<m24nnx8ggt.fsf@firstfloor.org>
-Date: Mon, 20 Aug 2012 22:47:27 +0200
-Message-ID: <87393hl28w.fsf@rho.meyering.net>
+	id S1754954Ab2HTUrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:47:36 -0400
+Message-ID: <5032A261.8060702@antcom.de>
+Date: Mon, 20 Aug 2012 22:47:29 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Kevin Wells <kevin.wells@nxp.com>,
+        "vitalywool@gmail.com" <vitalywool@gmail.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srinivas Bakki <srinivas.bakki@nxp.com>,
+        "aletes.xgr@gmail.com" <aletes.xgr@gmail.com>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+Subject: Re: [PATCH RESEND 1/2] i2c: pnx: Fix bit definitions
+References: <1344411752-23469-1-git-send-email-stigge@antcom.de> <20120818095108.GB24812@pengutronix.de> <5030A81E.5090508@antcom.de> <083DF309106F364B939360100EC290F823A0354A3D@eu1rdcrdc1wx030.exi.nxp.com> <20120820175527.GA9169@pengutronix.de>
+In-Reply-To: <20120820175527.GA9169@pengutronix.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen wrote:
-> Jim Meyering <jim@meyering.net> writes:
->
->> I've seen a few too many cases of strncpy misuse.
->> Looking through linux sources, I spotted/fixed these:
->>
->> [PATCH] ACPI: remove unwarranted use of strncpy
->> [PATCH] fs/9p: avoid debug OOPS when reading a long symlink
->> [PATCH] kmemleak: avoid buffer overrun: NUL-terminate strncpy-copied
->> [PATCH] bfa: avoid buffer overrun for 12-byte model name
->> [PATCH] cifs: remove misleading strncpy: each name has length < 16
->
-> Better to convert tham all to strlcpy?
->
-> The kernel has it.
+On 20/08/12 19:55, Wolfram Sang wrote:
+>> I've never had my hands on a PNX4008 chip at NXP, but I do
+>> believe they are the same IP. That specific I2C IP was used in a
+>> number of NXP/Phillips chips besides the PNX4008/LPC32xx. I don't
+>> think there are any PNX4008's in the wild, and even working in
+>> NXP, I can't find any non-marketing reference material for that
+>> part (including the user manual).
+> 
+> Thanks for the heads up. I'll apply both patches, then.
+> 
+> Roland, this looks like 3.6-material?
 
-Anything is better than strncpy.
-Is there consensus here that strlcpy is preferred?
-Would the integrator(s) even require consensus?
+Yes, all bugfixes.
 
-    $ git grep -w strncpy|wc -l
-    987
-    $ git grep -w strlcpy|wc -l
-    1345
+Thanks,
 
-In any case, shouldn't fixing bugs and obvious misuse be separate
-from any global NSC conversion?
+Roland
