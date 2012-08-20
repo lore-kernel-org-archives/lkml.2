@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab2HTP5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 11:57:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43062 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab2HTP5C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 11:57:02 -0400
-Message-ID: <1345478211.23018.69.camel@twins>
-Subject: Re: lockdep trace from posix timers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Mon, 20 Aug 2012 17:56:51 +0200
-In-Reply-To: <20120820154154.GB20258@redhat.com>
-References: <20120724203613.GA9637@redhat.com>
-	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
-	 <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins>
-	 <20120820150507.GC18499@redhat.com> <1345475530.23018.50.camel@twins>
-	 <20120820154154.GB20258@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755467Ab2HTP5O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 11:57:14 -0400
+Received: from csmtp3.one.com ([91.198.169.23]:5274 "EHLO csmtp3.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753113Ab2HTP5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 11:57:09 -0400
+X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 11:57:09 EDT
+From: "Henrik Rydberg" <rydberg@bitmath.se>
+Date: Mon, 20 Aug 2012 17:53:40 +0200
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/19] Input: MT - Handle frame synchronization in core
+Message-ID: <20120820155340.GA655@polaris.bitmath.org>
+References: <1344807757-2217-1-git-send-email-rydberg@euromail.se>
+ <1344807757-2217-10-git-send-email-rydberg@euromail.se>
+ <CAN+gG=G0P3m03WK8-fcsV5RFWLiXBQvxgaM7qMqHzB-C=tQQUg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=G0P3m03WK8-fcsV5RFWLiXBQvxgaM7qMqHzB-C=tQQUg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 17:41 +0200, Oleg Nesterov wrote:
-
-> I won't insist. The patch I sent uses PF_EXITING and the fake
-> "struct callback_head* TWORK_EXITED", but this looks almost the same.
-
-Right, I used a fake callback_head because it avoided a few special
-cases since its a dereferencable pointer.
-
-> > > Note also your patch breaks fifo, but this is fixable.
-> >
-> > Why do you care about the order?
+> > Collect common frame synchronization tasks in a new function,
+> > input_mt_sync_frame(). Depending on the flags set, it drops
+> > unseen contacts and performs pointer emulation.
 > 
-> IMHO, this is just more natural.
+> I was really wondering why you needed to put in input-mt something
+> that appeared only in hid-multitouch.... until I noted that you are
+> going to use it for bcm5974.
 
-Depends on what you're used to I guess ;-) Both RCU and irq_work are
-filo, this seems to be the natural way for single linked lists.
+True, you were only copied in on the patch specific to
+hid-multitouch. The core changes will naturally be used for some other
+drivers as well.
 
-> For example. keyctl_session_to_parent() does _cancel only to protect
-> from exploits doing keyctl(KEYCTL_SESSION_TO_PARENT) in an endless
-> loop. It could simply do task_work_add(), but in this case we need
-> fifo for correctness.
+> Maybe you should add a comment on it (otherwise, it seams like you're
+> just adding unused code). Maybe this would also help people
+> understanding the *frame thing.
 
-I'm not entirely sure I see, not doing the cancel would delay the free
-until the executing of key_change_session_keyring()? doing that keyctl()
-in an indefinite loop involves going back to userspace, so where's the
-resource issue?
+More comments on those plans, agreed. The "frame thing" is really only
+an input core change; it can most likely be better explained as well,
+but it really should not matter to drivers.
 
-Also, I'm not seeing where the FIFO requirement comes from.
-
-> > Iterating a single linked queue in fifo
-> > seems more expensive than useful.
+> > +void input_mt_sync_frame(struct input_dev *dev)
+> > +{
+> > +       struct input_mt *mt = dev->mt;
+> > +       struct input_mt_slot *s;
+> > +
+> > +       if (!mt)
+> > +               return;
+> > +
+> > +       if (mt->flags & INPUT_MT_DROP_UNUSED) {
+> > +               for (s = mt->slots; s != mt->slots + mt->num_slots; s++) {
+> > +                       if (s->frame == mt->frame)
+> > +                               continue;
+> > +                       input_mt_slot(dev, s - mt->slots);
+> > +                       input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
 > 
-> Currently the list is fifo (we add to the last element), this is O(1).
+> Shouldn't we rely on input_mt_report_slot_state instead of doing it by hand?
 
-depends on what way you look at the list I guess, with a single linked
-list there's only one end you can add to in O(1), so we're calling that
-the tail?
+No, input_mt_report_slot_state() is a driver api function with side
+effects which are not desired here.
+ 
+> > +               }
+> > +       }
+> > +
+> > +       if (mt->flags & INPUT_MT_POINTER)
+> > +               input_mt_report_pointer_emulation(dev, true);
+> > +
+> > +       if (mt->flags & INPUT_MT_DIRECT)
+> > +               input_mt_report_pointer_emulation(dev, false);
+> 
+> The function input_mt_report_pointer_emulation could be called twice
+> if the driver has both INPUT_MT_POINTER and INPUT_MT_DIRECT flags. Are
+> they mutual exclusive?
 
-> But the list should be short, we can reverse it in _run() if we change
-> task_work_add() to add to the head.
+You are right, and they are not. Will fix.
 
-Reversing a (single linked) list is O(n^2).. which is indeed doable for
-short lists, but why assume its short?
+Thanks,
+Henrik
