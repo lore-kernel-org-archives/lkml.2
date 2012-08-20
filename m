@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab2HTI0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 04:26:46 -0400
-Received: from plane.gmane.org ([80.91.229.3]:45762 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754465Ab2HTI0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 04:26:40 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Holger Hoffstaette" <holger.hoffstaette@googlemail.com>
-Subject: Re: [ 00/46] 3.5.3-stable review
-Date: Mon, 20 Aug 2012 10:26:25 +0200
-Organization: The Fists of the White Lotus
-Message-ID: <pan.2012.08.20.08.26.25.90194@googlemail.com>
-References: <20120820035832.274275502@linuxfoundation.org>
+	id S1755084Ab2HTI0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 04:26:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48099 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab2HTI0p convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 04:26:45 -0400
+Message-ID: <1345451187.23018.15.camel@twins>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Date: Mon, 20 Aug 2012 10:26:27 +0200
+In-Reply-To: <20120820080606.GA6931@gmail.com>
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins>
+	 <502BA7DC.7060907@linux.intel.com> <1345041548.31459.90.camel@twins>
+	 <502BB5A3.5000403@linux.intel.com> <1345043096.31459.106.camel@twins>
+	 <502BE38D.9030405@linux.intel.com> <20120820080606.GA6931@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5086a976.dip.t-dialin.net
-User-Agent: Pan/0.13.91 (Before we let euphoria convince us we are free)
-Cc: stable@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(CC: J. Bruce Fields)
+On Mon, 2012-08-20 at 10:06 +0200, Ingo Molnar wrote:
+> > > I was really more thinking of something useful for the 
+> > > laptops out there, when they pull the power cord it makes 
+> > > sense to try and keep CPUs asleep until the one that's awake 
+> > > is saturated.
+> 
+> s/CPU/core ? 
 
-Greg,
-
-it looks like a fix for a regression in NFS is not mentioned in this
-patch even though it was supposedly sent to -stable:
-http://lkml.indiana.edu/hypermail/linux/kernel/1208.2/00594.html
-
-I tried to locate the patch in git but could not find it anywhere. As far
-as I can tell the fix works; in my case I noticed repeatable hangs when
-trying to "move files to the trash" in XFCE and these hangs are now gone.
-Have not noticed any negative side effects either.
-
-thanks
-Holger
-
-
+I was thinking logical cpus, but whatever really.
