@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab2HTERF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:17:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab2HTD5R (ORCPT
+	id S1754734Ab2HTER3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:17:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612Ab2HTD5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:57:17 -0400
+	Sun, 19 Aug 2012 23:57:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeongdo Son <sohn9086@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 15/16] rt2x00: Add support for BUFFALO WLI-UC-GNM2 to rt2800usb.
-Date: Sun, 19 Aug 2012 20:56:14 -0700
-Message-Id: <20120820035459.800973479@linuxfoundation.org>
+        =?UTF-8?q?Ozan=20=C3=87a=C4=9Flayan?= <ozancag@gmail.com>
+Subject: =?UTF-8?q?=5B=2013/16=5D=20USB=3A=20ftdi=5Fsio=3A=20Add=20VID/PID=20for=20Kondo=20Serial=20USB?=
+Date: Sun, 19 Aug 2012 20:56:12 -0700
+Message-Id: <20120820035459.534020955@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035457.653002510@linuxfoundation.org>
 References: <20120820035457.653002510@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,29 +32,49 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Jeongdo Son <sohn9086@gmail.com>
+From: Ozan Çağlayan <ozancag@gmail.com>
 
-commit a769f9577232afe2c754606a83aad85127e7052a upstream.
+commit 7724a1edbe463b06d4e7831a41149ba095b16c53 upstream.
 
-This is a RT3070 based device.
+This adds VID/PID for Kondo Kagaku Co. Ltd. Serial USB Adapter
+interface:
+http://www.kondo-robot.com/EN/wp/?cat=28
 
-Signed-off-by: Jeongdo Son <sohn9086@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Tested by controlling an RCB3 board using libRCB3.
+
+Signed-off-by: Ozan Çağlayan <ozancag@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -829,6 +829,7 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x0411, 0x015d) },
- 	{ USB_DEVICE(0x0411, 0x016f) },
- 	{ USB_DEVICE(0x0411, 0x01a2) },
-+	{ USB_DEVICE(0x0411, 0x01ee) },
- 	/* Corega */
- 	{ USB_DEVICE(0x07aa, 0x002f) },
- 	{ USB_DEVICE(0x07aa, 0x003c) },
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -809,6 +809,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
+ 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
+ 	{ USB_DEVICE(PI_VID, PI_E861_PID) },
++	{ USB_DEVICE(KONDO_VID, KONDO_USB_SERIAL_PID) },
+ 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -795,6 +795,13 @@
+ #define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
+ 
+ /*
++ * Kondo Kagaku Co.Ltd.
++ * http://www.kondo-robot.com/EN
++ */
++#define KONDO_VID 		0x165c
++#define KONDO_USB_SERIAL_PID	0x0002
++
++/*
+  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
+  * http://winglucofacts.com/cables/
+  */
 
 
