@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab2HTO36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 10:29:58 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50868 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755140Ab2HTO34 (ORCPT
+	id S1756712Ab2HTOb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 10:31:27 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64915 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2HTObZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 10:29:56 -0400
+	Mon, 20 Aug 2012 10:31:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <1344689809-6223-11-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1344689809-6223-12-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1344689809-6223-11-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 20 Aug 2012 16:29:55 +0200
-Message-ID: <CACRpkda+X5-GtsMJ07TA7UBbbk1W+pJzTtQjQJ8VPD9z_5UoDQ@mail.gmail.com>
-Subject: Re: [PATCH 10/11] arm: mvebu: enable PINCTRL usage
+	<1344689809-6223-12-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Mon, 20 Aug 2012 16:31:25 +0200
+Message-ID: <CACRpkdaF3OuBLC7odWyH5C_EJT9uFq1rYQMh6=kr8PQjvA68sA@mail.gmail.com>
+Subject: Re: [PATCH 11/11] arm: mvebu: add pinctrl support in defconfig
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -33,30 +33,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
 <sebastian.hesselbarth@gmail.com> wrote:
 
-> From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->
-> Now that we have a proper pinctrl driver for Marvell EBU platforms,
-> enable PINCTRL support in ARCH_MVEBU.
->
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> diff --git a/arch/arm/configs/mvebu_defconfig b/arch/arm/configs/mvebu_defconfig
+> index 2e86b31..cb07e64 100644
+> --- a/arch/arm/configs/mvebu_defconfig
+> +++ b/arch/arm/configs/mvebu_defconfig
+> @@ -21,6 +21,8 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+>  CONFIG_SERIAL_8250=y
+>  CONFIG_SERIAL_8250_CONSOLE=y
+>  CONFIG_SERIAL_OF_PLATFORM=y
+> +CONFIG_PINCTRL_ARMADA_370=y
+> +CONFIG_PINCTRL_ARMADA_XP=y
 
-(...)
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 361f513..95317a9 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -573,6 +573,7 @@ config ARCH_MVEBU
->         select GENERIC_IRQ_CHIP
->         select IRQ_DOMAIN
->         select COMMON_CLK
-> +       select PINCTRL
->         help
->           Support for the Marvell SoC Family with device tree support
+If the system is not even booting without pinctrl you should
+(IMHO) select these from the machine's Kconfig entry insteaf.
 
-So this symbol collects all the DT-migrated platforms?
-
-Probably OK but want to figure out if the PLAT_NOMADIK symbol
-is applicable.
+If they boot fine without I'm fine with this ... the arch maintainer
+gets to choose anyway.
 
 Yours,
 Linus Walleij
