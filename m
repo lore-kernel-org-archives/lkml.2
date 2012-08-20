@@ -1,170 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2HTIZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 04:25:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59674 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab2HTIZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 04:25:44 -0400
+	id S1754392Ab2HTI0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 04:26:35 -0400
+Received: from antcom.de ([188.40.178.216]:43709 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796Ab2HTI0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 04:26:33 -0400
+Message-ID: <5031F4B5.300@antcom.de>
+Date: Mon, 20 Aug 2012 10:26:29 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <1341866270-4915-2-git-send-email-jolsa@redhat.com>
-References: <1341866270-4915-1-git-send-email-jolsa@redhat.com>
-	<1341866270-4915-2-git-send-email-jolsa@redhat.com>
-Date: Mon, 20 Aug 2012 10:25:42 +0200
-Message-ID: <CABPqkBQ7ZFw2c706JwvMVq1i1LCGo4108MCvynMqpXkPCbk39g@mail.gmail.com>
-Subject: Re: [PATCH 1/6] perf, x86: Making hardware events translations
- available in sysfs
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, arnd@arndb.de, aletes.xgr@gmail.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Subject: Re: [PATCH 2/3] usb: gadget: lpc32xx_udc: Remove usb_endpoint_descriptor
+References: <1345450306-4996-1-git-send-email-stigge@antcom.de> <1345450306-4996-2-git-send-email-stigge@antcom.de> <5031F328.80702@linutronix.de>
+In-Reply-To: <5031F328.80702@linutronix.de>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 10:37 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> Making hardware events translations available through the sysfs.
-> Adding 'events' group attribute under the sysfs x86 PMU record
-> with attribute/file for each hardware event:
->
->   # ls  /sys/devices/cpu/events/
->   branch-instructions
->   branch-misses
->   bus-cycles
->   cache-misses
->   cache-references
->   cpu-cycles
->   instructions
->   ref-cycles
->   stalled-cycles-backend
->   stalled-cycles-frontend
->
-> The file - hw event ID mappings is:
->
->   file                      hw event ID
->   ---------------------------------------------------------------
->   cpu-cycles                PERF_COUNT_HW_CPU_CYCLES
->   instructions              PERF_COUNT_HW_INSTRUCTIONS
->   cache-references          PERF_COUNT_HW_CACHE_REFERENCES
->   cache-misses              PERF_COUNT_HW_CACHE_MISSES
->   branch-instructions       PERF_COUNT_HW_BRANCH_INSTRUCTIONS
->   branch-misses             PERF_COUNT_HW_BRANCH_MISSES
->   bus-cycles                PERF_COUNT_HW_BUS_CYCLES
->   stalled-cycles-frontend   PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
->   stalled-cycles-backend    PERF_COUNT_HW_STALLED_CYCLES_BACKEND
->   ref-cycles                PERF_COUNT_HW_REF_CPU_CYCLES
->
-> Each file in 'events' directory contains term translation for the
-> symbolic hw event for the currently running cpu model.
->
->   # cat /sys/devices/cpu/events/stalled-cycles-backend
->   event=0xb1,umask=0x01,inv,cmask=0x01
->
-> Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c |   74 ++++++++++++++++++++++++++++++++++++++
->  1 file changed, 74 insertions(+)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 29557aa..09452c2 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1638,9 +1638,83 @@ static struct attribute_group x86_pmu_attr_group = {
->         .attrs = x86_pmu_attrs,
->  };
->
-> +static ssize_t event_sysfs_data(char *page, u64 config)
-> +{
-> +       u64 event  = (config & ARCH_PERFMON_EVENTSEL_EVENT) |
-> +                    (config & AMD64_EVENTSEL_EVENT) >> 24;
-> +       u64 umask  = (config & ARCH_PERFMON_EVENTSEL_UMASK) >> 8;
-> +       u64 inv    = (config & ARCH_PERFMON_EVENTSEL_INV) >> 23;
-> +       u64 cmask  = (config & ARCH_PERFMON_EVENTSEL_CMASK) >> 24;
-> +       ssize_t ret;
-> +
-> +       /*
-> +        * We have whole page size to spend and just little data
-> +        * to write, so we can safely use sprintf.
-> +        */
-> +       ret = sprintf(page, "event=0x%02llx", event);
-> +
-> +       if (umask)
-> +               ret += sprintf(page + ret, ",umask=0x%02llx", umask);
-> +
-> +       if (inv)
-> +               ret += sprintf(page + ret, ",inv");
-> +
-> +       if (cmask)
-> +               ret += sprintf(page + ret, ",cmask=0x%02llx", cmask);
-> +
+On 08/20/2012 10:19 AM, Sebastian Andrzej Siewior wrote:
+> On 08/20/2012 10:11 AM, Roland Stigge wrote:
+>> This patch removes the utilization of struct usb_endpoint_descriptor,
+>> as done
+>> by other drivers also. This was done on request by the USB gadget
+>> maintainers,
+>> since this API is obsoleted.
+> 
+> #1 and #2 look good. #3 could use a const besides that it looks good :)
 
-You are not handling the model specific modifiers such as any_thread on Intel.
-It's not used right now. But you should handle the case now. That will avoid
-problems in the future.
+Thanks for reviewing! Reposting.
 
-> +       ret += sprintf(page + ret, "\n");
-> +
-> +       return ret;
-> +}
-> +
-> +#define PMU_EVENTS_ATTR(_name, _id)                    \
-> +static ssize_t                                         \
-> +_id##_show(struct device *dev,                         \
-> +          struct device_attribute *attr,               \
-> +          char *page)                                  \
-> +{                                                      \
-> +       u64 config = x86_pmu.event_map(_id);            \
-> +       BUILD_BUG_ON(_id >= PERF_COUNT_HW_MAX);         \
-> +       return event_sysfs_data(page, config);          \
-> +}                                                      \
-> +                                                       \
-> +static struct device_attribute event_attr_##_id =      \
-> +       __ATTR(_name, 0444, _id##_show, NULL)
-> +
-> +PMU_EVENTS_ATTR(cpu-cycles, PERF_COUNT_HW_CPU_CYCLES);
-> +PMU_EVENTS_ATTR(instructions, PERF_COUNT_HW_INSTRUCTIONS);
-> +PMU_EVENTS_ATTR(cache-references, PERF_COUNT_HW_CACHE_REFERENCES);
-> +PMU_EVENTS_ATTR(cache-misses, PERF_COUNT_HW_CACHE_MISSES);
-> +PMU_EVENTS_ATTR(branch-instructions, PERF_COUNT_HW_BRANCH_INSTRUCTIONS);
-> +PMU_EVENTS_ATTR(branch-misses, PERF_COUNT_HW_BRANCH_MISSES);
-> +PMU_EVENTS_ATTR(bus-cycles, PERF_COUNT_HW_BUS_CYCLES);
-> +PMU_EVENTS_ATTR(stalled-cycles-frontend, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND);
-> +PMU_EVENTS_ATTR(stalled-cycles-backend, PERF_COUNT_HW_STALLED_CYCLES_BACKEND);
-> +PMU_EVENTS_ATTR(ref-cycles, PERF_COUNT_HW_REF_CPU_CYCLES);
-> +
-> +static struct attribute *events_attr[] = {
-> +       &event_attr_PERF_COUNT_HW_CPU_CYCLES.attr,
-> +       &event_attr_PERF_COUNT_HW_INSTRUCTIONS.attr,
-> +       &event_attr_PERF_COUNT_HW_CACHE_REFERENCES.attr,
-> +       &event_attr_PERF_COUNT_HW_CACHE_MISSES.attr,
-> +       &event_attr_PERF_COUNT_HW_BRANCH_INSTRUCTIONS.attr,
-> +       &event_attr_PERF_COUNT_HW_BRANCH_MISSES.attr,
-> +       &event_attr_PERF_COUNT_HW_BUS_CYCLES.attr,
-> +       &event_attr_PERF_COUNT_HW_STALLED_CYCLES_FRONTEND.attr,
-> +       &event_attr_PERF_COUNT_HW_STALLED_CYCLES_BACKEND.attr,
-> +       &event_attr_PERF_COUNT_HW_REF_CPU_CYCLES.attr,
-> +       NULL,
-> +};
-> +
-> +static struct attribute_group x86_pmu_events_group = {
-> +       .name = "events",
-> +       .attrs = events_attr,
-> +};
-> +
->  static const struct attribute_group *x86_pmu_attr_groups[] = {
->         &x86_pmu_attr_group,
->         &x86_pmu_format_group,
-> +       &x86_pmu_events_group,
->         NULL,
->  };
->
-You are not checking whether or not the generic event is even available on the
-host core PMU. You don't want to expose generic events which are not available.
-
-And if you do this, then you need to take care of the other arch as well. They
-also deserve the extended syntax.
+Roland
