@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab2HTD70 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 23:59:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab2HTD7O (ORCPT
+	id S1755091Ab2HTD7U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:59:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42117 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755025Ab2HTD67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:14 -0400
+	Sun, 19 Aug 2012 23:58:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Ozan=20=C3=87a=C4=9Flayan?= <ozancag@gmail.com>
-Subject: =?UTF-8?q?=5B=2029/32=5D=20USB=3A=20ftdi=5Fsio=3A=20Add=20VID/PID=20for=20Kondo=20Serial=20USB?=
-Date: Sun, 19 Aug 2012 20:57:25 -0700
-Message-Id: <20120820035651.910839269@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Gary E. Miller" <gem@rellim.com>
+Subject: [ 20/32] xhci: Add Etron XHCI_TRUST_TX_LENGTH quirk.
+Date: Sun, 19 Aug 2012 20:57:16 -0700
+Message-Id: <20120820035650.662411172@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
 References: <20120820035647.862247088@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,49 +30,46 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Ozan Çağlayan <ozancag@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 7724a1edbe463b06d4e7831a41149ba095b16c53 upstream.
+commit 5cb7df2b2d3afee7638b3ef23a5bcb89c6f07bd9 upstream.
 
-This adds VID/PID for Kondo Kagaku Co. Ltd. Serial USB Adapter
-interface:
-http://www.kondo-robot.com/EN/wp/?cat=28
+Gary reports that with recent kernels, he notices more xHCI driver
+warnings:
 
-Tested by controlling an RCB3 board using libRCB3.
+xhci_hcd 0000:03:00.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
 
-Signed-off-by: Ozan Çağlayan <ozancag@gmail.com>
+We think his Etron xHCI host controller may have the same buggy behavior
+as the Fresco Logic xHCI host.  When a short transfer is received, the
+host will mark the transfer as successfully completed when it should be
+marking it with a short completion.
+
+Fix this by turning on the XHCI_TRUST_TX_LENGTH quirk when the Etron
+host is discovered.  Note that Gary has revision 1, but if Etron fixes
+this bug in future revisions, the quirk will have no effect.
+
+This patch should be backported to kernels as old as 2.6.36, that
+contain a backported version of commit
+1530bbc6272d9da1e39ef8e06190d42c13a02733 "xhci: Add new short TX quirk
+for Fresco Logic host."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Gary E. Miller <gem@rellim.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 8 insertions(+)
+ drivers/usb/host/xhci-pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -811,6 +811,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
- 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
- 	{ USB_DEVICE(PI_VID, PI_E861_PID) },
-+	{ USB_DEVICE(KONDO_VID, KONDO_USB_SERIAL_PID) },
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -795,6 +795,13 @@
- #define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
- 
- /*
-+ * Kondo Kagaku Co.Ltd.
-+ * http://www.kondo-robot.com/EN
-+ */
-+#define KONDO_VID 		0x165c
-+#define KONDO_USB_SERIAL_PID	0x0002
-+
-+/*
-  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-  * http://winglucofacts.com/cables/
-  */
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -95,6 +95,7 @@ static void xhci_pci_quirks(struct devic
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
++		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
 
 
