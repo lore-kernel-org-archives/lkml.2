@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab2HTUvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:51:38 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56539 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab2HTUvf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:51:35 -0400
+	id S1755131Ab2HTUwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:52:43 -0400
+Received: from fieldses.org ([174.143.236.118]:43205 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751302Ab2HTUwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 16:52:41 -0400
+Date: Mon, 20 Aug 2012 16:52:31 -0400
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 0/4] fat: fix ESTALE errors
+Message-ID: <20120820205231.GG5779@fieldses.org>
+References: <1345282899-7534-1-git-send-email-linkinjeon@gmail.com>
+ <20120818132524.GW23464@ZenIV.linux.org.uk>
+ <87pq6op9zz.fsf@devron.myhome.or.jp>
+ <CAKYAXd_VyRg5PYjcYb_JtDeXHeMSRtwwT665hcMcf4WCer7a_Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120820144449.GA32560@lizard>
-References: <20120820144449.GA32560@lizard>
-Date: Mon, 20 Aug 2012 13:51:33 -0700
-Message-ID: <CANqkERCzQdViRjhtz19wbSWEEnxYjpDcuUZNP9jNHYrtANwp-g@mail.gmail.com>
-Subject: Re: [PATCH v4 0/12] KGDB/KDB FIQ (NMI) debugger
-From: Brian Swetland <swetland@google.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd_VyRg5PYjcYb_JtDeXHeMSRtwwT665hcMcf4WCer7a_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 7:44 AM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
->
-> - KGDB/KDB FIQ debugger shell is synchronous. In Google's version you
->   could have a dedicated shell always running in the FIQ context, so
->   when you type something on a serial line, you won't actually cause any
->   debugging actions, FIQ would save the characters in its own buffer and
->   continue execution normally. But when you hit return key after the
->   command, then the command is executed.
->
->   In KGDB/KDB FIQ debugger it is different. Once you enter KGDB, the
->   kernel will stop until you instruct it to continue.
->
->   This might look as a drastic change, but it is not. There is actually
->   no difference whether you have sync or async shell, or at least I
->   couldn't find any use-case where this would matter at all. Anyways, it
->   is still possible to do async shell in KDB, just don't see any need
->   for this.
+On Mon, Aug 20, 2012 at 01:19:51PM +0900, Namjae Jeon wrote:
+> 2012/8/18, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> > Al Viro <viro@ZenIV.linux.org.uk> writes:
+> >
+> >> On Sat, Aug 18, 2012 at 05:41:39AM -0400, Namjae Jeon wrote:
+> >>> From: Namjae Jeon <namjae.jeon@samsung.com>
+> >>>
+> >>> This patch-set eliminates the client side ESTALE errors when
+> >>> a FAT partition exported over NFS has its dentries evicted
+> >>> from the cache.
+> >>>
+> >>> One of the reasons for this error is lack of permanent inode
+> >>> numbers on FAT which makes it difficult to construct persistent
+> >>> file handles.This can be overcome by using the on-disk location
+> >>> of the directory entries (i_pos) as the inode number.
+> >>
+> >> The hell it can.  You've just made them unstable on rename(2).
+> >
+> > As more hint. We can't use i_pos as the inode number.
+> >
+> > E.g. inode is unlinked but is still opened (orphaned inode), the dir
+> > entry is free and you can create the inode on same i_pos. After that,
+> > both inodes have same i_pos (so inode number).
+> >
+> > Thanks.
+> Hi. Ogawa.
+> Thanks for specific explanation. I will check it.
 
-The main reason we did this asynchronously was that it's entirely possible
-to get the occasional random character on the debug serial port (which is
-often multiplexed with the audio path on the headphone jack), and having
-the device freeze mysteriously when this happens is problematic.
+Fo somebody that knows more about fat than me--is there really any hope
+of making it play well with nfs?
 
-Since the FIQ debugger is incredibly useful for diagnosing "my device is
-stuck" type problems, we tend to leave it enabled on large numbers of
-devices during internal testing, so that if somebody runs into a problem
-an engineer can plug in a serial debug cable and take a look.  It's
-important that the presence of the debug feature doesn't lead to instability,
-and thus we don't want a single random character to stop the normal
-operation ofthe device.
-
-Brian
+--b.
