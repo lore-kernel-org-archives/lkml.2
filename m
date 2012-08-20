@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab2HTQkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:40:21 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63818 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335Ab2HTQkU (ORCPT
+	id S1755701Ab2HTQls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:41:48 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:34554 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752392Ab2HTQlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:40:20 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 20 Aug 2012 09:40:22 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.6-rc3
-Message-ID: <20120820164022.GA20942@roeck-us.net>
+	Mon, 20 Aug 2012 12:41:45 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>
+Cc: Mattias Wallin <mattias.wallin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Axel Lin <axel.lin@gmail.com>
+Subject: [PATCH v2] regulator: ab8500: provide per-regulator shift
+Date: Mon, 20 Aug 2012 18:41:35 +0200
+Message-ID: <1345480895-18278-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Linus Walleij <linus.walleij@linaro.org>
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This encodes the voltage shifts (the number of bits to shift
+the register to get to the selector) into the regulator info.
+We have several new variants of the AB8500 so this varies a
+lot.
 
-Hi Linus,
+Cc: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/regulator/ab8500.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-Please pull hwmon fixes for Linux 3.6-rc3 from signed tag:
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 8807166..812611f 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -37,6 +37,7 @@
+  * @voltage_bank: bank to control regulator voltage
+  * @voltage_reg: register to control regulator voltage
+  * @voltage_mask: mask to control regulator voltage
++ * @voltage_shift: shift to control regulator voltage
+  * @delay: startup/set voltage delay in us
+  */
+ struct ab8500_regulator_info {
+@@ -50,6 +51,7 @@ struct ab8500_regulator_info {
+ 	u8 voltage_bank;
+ 	u8 voltage_reg;
+ 	u8 voltage_mask;
++	u8 voltage_shift;
+ 	unsigned int delay;
+ };
+ 
+@@ -195,17 +197,14 @@ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 	}
+ 
+ 	dev_vdbg(rdev_get_dev(rdev),
+-		"%s-get_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
+-		" 0x%x\n",
+-		info->desc.name, info->voltage_bank, info->voltage_reg,
+-		info->voltage_mask, regval);
++		"%s-get_voltage (bank, reg, mask, shift, value): "
++		"0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
++		info->desc.name, info->voltage_bank,
++		info->voltage_reg, info->voltage_mask,
++		info->voltage_shift, regval);
+ 
+-	/* vintcore has a different layout */
+ 	val = regval & info->voltage_mask;
+-	if (info->desc.id == AB8500_LDO_INTCORE)
+-		return val >> 0x3;
+-	else
+-		return val;
++	return val >> info->voltage_shift;
+ }
+ 
+ static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
+@@ -221,7 +220,7 @@ static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
+ 	}
+ 
+ 	/* set the registers for the request */
+-	regval = (u8)selector;
++	regval = (u8)selector << info->voltage_shift;
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 			info->voltage_bank, info->voltage_reg,
+ 			info->voltage_mask, regval);
+@@ -349,6 +348,7 @@ static struct ab8500_regulator_info
+ 		.voltage_bank		= 0x03,
+ 		.voltage_reg		= 0x80,
+ 		.voltage_mask		= 0x38,
++		.voltage_shift		= 3,
+ 	},
+ 
+ 	/*
+-- 
+1.7.11.3
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-------
-
-The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
-
-  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 64f503076f9921fc714a2c79fb0fa520869d2c08:
-
-  sections: Fix section conflicts in drivers/hwmon (2012-08-18 16:17:43 -0700)
-
-----------------------------------------------------------------
-One patch with section conflict fixes.
-
-----------------------------------------------------------------
-Andi Kleen (1):
-      sections: Fix section conflicts in drivers/hwmon
-
- drivers/hwmon/coretemp.c |    2 +-
- drivers/hwmon/w83627hf.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQMmh2AAoJEMsfJm/On5mB86EP/1vQjUyZYd15QHoITEB1J/Xb
-MZHvsw2toHMqtQuuNXLxKOuFt1F/MlQJK+jSxNu7yR5rbb7SdMb45cCD+fLp+Hhf
-PXB9QGfFfxdGU498GJUzO0tIcdPHp0AKVb8wHcz/MsHOOKSUOpc56lsCKuQTNsKu
-DxbL5uFp8hgOKUVKpwngH5my1gm31SbzqaOBukXIT0av6MmLhFz4fIafrdUjS6dG
-+92F1Ez0uiAjDuDv/f+FfdHuc4tRad7lAOHlQ9eEuiLBHddw5mP74aE58K+hP6r+
-UOomFBboIepLhoZ1Ln0kkoxVNDiyvY7xOyFInfCeN/664klOF8W6YPyVYV1wpNTC
-FFkg5vQUI+OqyUNAlE7rNHrmglSK4evgY7HlKs78u/6w8EK1bN7j89NgS8KfAjKg
-vN1IMtkwG+uaFUUKBky4kp5NGhhN8JsbWH90dMFztLNpgwO3ZThm7dQnOPPDD8AK
-fg4Hfmc0o55K8tuQl9Uy4HCWp+dM8TxSr3tzKUmjaQuASxQ6kX1dCzT1R/4IxUtR
-n0gEHEfmGq/R5Sb57UQMo+3kIeWzaYNO9fdo526lodXaC+z2La5in+J7i1jj25QY
-55CZOs7tRv2sZSI0dJC2NhnD5CLEHKqVJt7j5gyndVcqF4cHLKTYHWNr06FX5w6b
-+vNYPVefJ3gVrJn9eg83
-=i4fl
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
