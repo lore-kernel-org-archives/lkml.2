@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab2HTBHB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Aug 2012 21:07:01 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:47577 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab2HTBG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 21:06:57 -0400
-Message-ID: <1345424724.2384.15.camel@falcor>
-Subject: Re: [RFC v2 7/7] modsig: build rules and scripts to generate keys
- and sign modules
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>, jmorris@namei.org,
-        rusty@rustcorp.com.au, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 19 Aug 2012 21:05:24 -0400
-In-Reply-To: <CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	 <2114492cd221edc44622e528d66feeed342d2d34.1345055639.git.dmitry.kasatkin@intel.com>
-		<CA+5PVA4qONeO+VqWQX+f87cs6KAdVPCOEEkpRzfo0M+LR6JHSA@mail.gmail.com>
-		<CALLzPKbP_9jS2E=AG5gHsHYXEfxXh95j=UvwMfVA3OdgYF28eQ@mail.gmail.com>
-		<CA+5PVA6UKvmAb+r2PPtKdDhz5CAWkGihfMS=1nwiO4XpBGrD=g@mail.gmail.com>
-		<CALLzPKYKTbWZMpjKvnCJeqXDknTtKPLSYEPky49a5yNm=8CcHw@mail.gmail.com>
-		<1345164802.2433.21.camel@falcor.watson.ibm.com>
-		<CA+5PVA7ffHv7xOom1SNN8=-qYUQAUnHNXi=TNSX_FcKPUBtgzw@mail.gmail.com>
-		<1345223322.2257.75.camel@falcor>
-	 <CA+5PVA71aN+OtY4VA6b+VQO-Wg5vVFE0yJE2ORg5bQWoQk+Yqw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082001-5112-0000-0000-00000B4180FC
+	id S1752567Ab2HTBIU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 21:08:20 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13740 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab2HTBIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Aug 2012 21:08:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 19 Aug 2012 18:08:15 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: <sameo@linux.intel.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>
+CC: <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
+        <thierry.reding@avionic-design.de>, <swarren@wwwdotorg.org>,
+        <xxie@nvidia.com>, <lrg@slimlogic.co.uk>, <jhovold@gmail.com>,
+        <kyle.manna@fuel7.com>, <rklein@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Bill Huang <bilhuang@nvidia.com>
+Subject: [PATCH v2 0/2] mfd: dt: add power off support for Tegra20/Tegra30
+Date: Sun, 19 Aug 2012 18:07:54 -0700
+Message-ID: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-17 at 13:44 -0400, Josh Boyer wrote:
-> On Fri, Aug 17, 2012 at 1:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >> I don't see a need for the kernel make system to ever delete a key.
-> >> If one doesn't exist, it should create one if the config options are
-> >> set and leave it alone entirely after that.  If one exists already,
-> >> then it should leave it alone as it already does.
-> >
-> > Ok.  Other than generating a key the first time, the normal development
-> > build process now uses the same key, never requiring the developer to do
-> > anything additional.  The developer controls the frequency the keys are
-> > created/deleted.  I wonder how often that will be ...
-> 
-> For a developer, probably not often.  Though in reality, the usage of
-> this by a single developer seems fair small.  A much wider, already
-> existing usage is distribution kernel signing.
+This patch series add new property into regulator DT for telling whether or not
+to hook pmic's power off routine to system call "pm_power_off".
 
-This seems to be the real issue.  Do developers need to sign their own
-builds?   Nobody is forcing the developer to enable signed modules.  If,
-however, the developer decides to enforce signed modules, leaving the
-private key lying around kind of defeats the purpose. 
+Patch 1 add power off support for Tegra20 boards using TPS6586x
+Patch 2 add power off support for Tegra30 boards using TPS65910
 
-> For a distribution kernel there are normally two cases:
-> 
-> 1) Existing permanent company/distro key.  This is already handled.
-> 2) per-kernel-build key (equivalent to your ephemeral key).  This would
-> be handled fine if the key was generated if it didn't already exist and
-> left alone.  The distro build system would remove it when it cleaned up
-> the buildroot.
+Verified on Seaboard (Tegra20) and Cardhu (Tegra30)
 
-Ok, I think we agree here, with the normal 'make', 'make modules_install
-install', using an existing key or creating a new key if needed.
+V2:
+* Take multiple pmic instances into consideration while assigning global variables
+  as per suggestion from Thierry Reding <thierry.reding@avionic-design.de>
 
-> >> If you really want to enforce ephemeral keys in the make system, then
-> >> doing it via 'make clean' or 'make distclean' would make more sense to
-> >> me.  But I personally think key management is something the developers
-> >> or distros should be handling on their own.  Creating a key for them is
-> >> a convenience so it's worthwhile, but removing it should be done by
-> >> them.
-> >
-> > Sorry, I disagree.  Without the signed_modules_install target, the
-> > developer would need to do each step manually - create new key, sign
-> > modules, remove private key, and embed the new public key in the
-> > bzImage.
-> 
-> Not if the buildsystem just made the key for them at 'make' time.  I'm
-> still missing why it isn't done until 'modules_install' time.  Seems
-> pretty sub-optimal.
+V1:
+* Based on master branch of sameo/mfd-2.6.git
 
-Using a private key that has been lying around for an unknown period of
-time, kind of defeats the purpose.
+Bill Huang (2):
+  mfd: dt: tps6586x: Add power off control
+  mfd: dt: tps65910: add power off control
 
-> > I still think the signed_modules_install script, renamed to something
-> > like ephemeral_signed_modules_install, is worthwhile and becomes a
-> > convience tool for the developer, wanting to use ephemeral keys.  The
-> > private key, in Dmitry's updated patches soon to be posted, will be
-> > password protected with a random number, that is only accessible to the
-> > current shell.
-> 
-> I think the existence of an additional make target for signed modules
-> is really confusing.  Particularly when you consider the target still
-> exists even if the kernel isn't setup to work with signed modules.  
+ Documentation/devicetree/bindings/mfd/tps65910.txt |    4 +++
+ .../devicetree/bindings/regulator/tps6586x.txt     |    6 +++++
+ drivers/mfd/tps6586x.c                             |   19 +++++++++++++++++
+ drivers/mfd/tps65910.c                             |   22 ++++++++++++++++++++
+ include/linux/mfd/tps6586x.h                       |    1 +
+ include/linux/mfd/tps65910.h                       |    3 ++
+ 6 files changed, 55 insertions(+), 0 deletions(-)
 
-Ok, I see your concern.
-
-> If
-> the config options are set, just have 'make modules_install' do it and
-> create a key if one doesn't exist (or better yet, have 'make' do it).
-
-If creating the key is deferred to 'make modules_install', for the
-reason given above or any other reason, the public key wasn't available
-at the time the bzImage was created.  'make modules_install' would now
-need to rebuild the bzImage.
-
-thanks,
-
-Mimi
+-- 
+1.7.4.1
 
