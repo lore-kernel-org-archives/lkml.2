@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab2HTFjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 01:39:23 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63324 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab2HTFjV (ORCPT
+	id S1755089Ab2HTFyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 01:54:16 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:40766 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754133Ab2HTFyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 01:39:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Subject: Re: [PATCH V5 0/5] clk: mmp: add clock framework for mmp
-Date: Mon, 20 Aug 2012 05:39:17 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: haojian.zhuang@gmail.com, mturquette@linaro.org, viresh.linux@gmail.com,
-        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, chao.xie@marvell.com
-References: <1345431315-8037-1-git-send-email-xiechao.mail@gmail.com>
-In-Reply-To: <1345431315-8037-1-git-send-email-xiechao.mail@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 20 Aug 2012 01:54:14 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18ysndj/iIyfgHf5bYd1uTaTRDP6G4UYpVfKyLkn2
+	WI+LexH8R2lxy/
+Message-ID: <1345442050.25011.38.camel@marge.simpson.net>
+Subject: Re: changing timeslice in linux
+From: Mike Galbraith <efault@gmx.de>
+To: Xin Tong <xerox.time.tech@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Aug 2012 07:54:10 +0200
+In-Reply-To: <CALKntY0G6WBYT-MGbzQ-e6X_XyRENzeJww7FiLGAgiHtrfwQiA@mail.gmail.com>
+References: <CALKntY0G6WBYT-MGbzQ-e6X_XyRENzeJww7FiLGAgiHtrfwQiA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208200539.17878.arnd@arndb.de>
-X-Provags-ID: V02:K0:fc5WV4VS6nwbi2UynLr6SXGy4JTs64u7nakKQMkTrsG
- t5fhWbbjFJp65vGvDjNcAGoHoq+XOLjpb62WODBp3HZiNxTuqk
- v/uNQduKq9ZD7E/CfGF3RQ6sKGt/C/ZX4gIInpJ6TzIARVzSO0
- qkgeHRsjCQJxTWtmOJlq1iIXjwUxaGnApT5KJbsfiriQTbGqnJ
- sCMbtfuCP2uRBEvJiMi1Fts9KPfEK/IRo3qlvOJcE6zhwo6toX
- /M0ls369XW7hgalH9aSKtyI6ReuN0sbksk+VdNgCqwkmYj+cJG
- KsSJKCafAfxItHEKVjUT6H4XGRvWMuLA9P7ujuXg3jVC3ndTA6
- 4cMmnD2eHwwkZAktlzq0=
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 August 2012, Chao Xie wrote:
+On Sun, 2012-08-19 at 11:58 -0700, Xin Tong wrote: 
+> I have 2 questions about linux 2.6 x86_64 scheduler.
 > 
-> From: Chao Xie <chao.xie@marvell.com>
-> 
-> v1->v2:
-> replace __raw_xxx with xxx_relax
-> use ioremap to remap the registers. Finaly it will use device tree to
-> get the physical address.
-> do not use macro to register clocks, and directly call the functions.
-> 
-> v2->v3:
-> pxa910 will have APB extension clock, so some peripharals will have
-> clocks in APB extension base.
-> change pxa168-pwm to be pxa910-pwm for pxa910. It will fit the current
-> pwm driver.
-> 
-> v3->v4:
-> remove addtional clock name definition
-> replace left __raw_xxx
-> 
-> v4->v5:
-> change the format of the file
-> 
+> 1. is the default scheduling algorithm SCHED_NORMAL in linux ?
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Yes.
 
-	Arnd
+> 2. how do i change the time slice in linux source code ?
+
+You shouldn't need to.  You can tune "slice" by adjusting
+sched_latency_ns and sched_min_granularity_ns, but note that "slice" is
+not a fixed quantum.  Also note that CFS preemption decisions are based
+upon instantaneous state.  A task may have received a full (variable)
+"slice" of CPU time, but preemption will be triggered only if a more
+deserving task is available, so a "slice" is not the "max uninterrupted
+CPU time" that you may expect it to be.. but it is somewhat similar.
+
+-Mike
+
