@@ -1,96 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab2HTUfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 16:35:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53775 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab2HTUe7 (ORCPT
+	id S1754452Ab2HTUgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 16:36:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38480 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2HTUgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 16:34:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 21/31] arm64: 32-bit (compat) applications support
-Date: Mon, 20 Aug 2012 20:34:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-22-git-send-email-catalin.marinas@arm.com> <20120820105308.GA906@elf.ucw.cz>
-In-Reply-To: <20120820105308.GA906@elf.ucw.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 20 Aug 2012 16:36:42 -0400
+Date: Mon, 20 Aug 2012 13:36:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "G.Shark Jeong" <gshark.jeong@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] backlight: Add Backlight driver for lm3630 chip
+Message-Id: <20120820133639.aa6db587.akpm@linux-foundation.org>
+In-Reply-To: <1344832471-13568-2-git-send-email-gshark.jeong@gmail.com>
+References: <1344832471-13568-1-git-send-email-gshark.jeong@gmail.com>
+	<1344832471-13568-2-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208202034.55135.arnd@arndb.de>
-X-Provags-ID: V02:K0:mglmpDStT4MVSTIyndD4m4LGqW7B0lSIWgyBGdHMLo4
- Hy4oTZbjlNAj6G5J/p/biJbWFS6izsM93ZWBr6yDx2yVdsAfRW
- lxbhvHHuNcznrAEPTyoIoV8Kahz4hU5zZqJcqRejLDTeW0XLB0
- vvRtqrHkhw533pHlw98vb7i0eQeowH/SX7uATY5qYJQg9IAeb0
- O6iXqU1HJ6wNXVRx4cy+d13km5SHo/DaYOaWVT3M2qY09Hsm8W
- SpW8rXDIPlvC1ndqNvkvW9Km81JZJsI/XpR17lyBXs6fZI1yKY
- rRBqmwzpQdtmOAX4WnV9N7NA2pY2X7JPa1Xulacf8A3fqboG1T
- NmFtH7/n7cUkfdAE7bPU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 August 2012, Pavel Machek wrote:
-> > This patch adds support for 32-bit applications. The vectors page is a
-> > binary blob mapped into the application user space at 0xffff0000 (the
-> > AArch64 toolchain does not support compilation of AArch32 code). Full
-> > compatibility with ARMv7 user space is supported. The use of deprecated
-> > ARMv7 functionality (SWP, CP15 barriers) has been disabled by default on
-> > AArch64 kernels and unaligned LDM/STM is not supported.
-> > 
-> > Please note that only the ARM 32-bit EABI is supported, so no OABI
-> > compatibility.
+On Mon, 13 Aug 2012 13:34:31 +0900
+"G.Shark Jeong" <gshark.jeong@gmail.com> wrote:
+
+> This driver is a general version for LM3630 backlgiht driver chip of TI.
 > 
-> > +struct compat_statfs {
-> > +     int             f_type;
-> > +     int             f_bsize;
-> > +     int             f_blocks;
-> > +     int             f_bfree;
-> > +     int             f_bavail;
-> > +     int             f_files;
-> > +     int             f_ffree;
-> > +     compat_fsid_t   f_fsid;
-> > +     int             f_namelen;      /* SunOS ignores this field. */
-> 
-> I'm sure it does. But is it good comment?
+> LM3630 :
+> The LM3630 is a current mode boost converter which supplies the power
+> and controls the current in two strings of up to 10 LEDs per string.
+> Programming is done over an I2C compatible interface.
+> www.ti.com
 
-Good catch. It seems that some of the other compat platforms (x86,
-sparc, powerpc) have the same thing. I guess the real solution would
-be to introduce an asm-generic/compat.h file that contains a bunch
-of those definitions, like
+Looks OK to me.  Please review (and test!) my commentary-via-patch:
 
-#ifndef compat_timespec
-struct compat_timespec {
-        compat_time_t   tv_sec;
-        s32             tv_nsec;
-};
-#endif
 
-#ifndef compat_timeval
-struct compat_timeval {
-        compat_time_t   tv_sec;
-        s32             tv_usec;
-};
-#endif
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: backlight-add-backlight-driver-for-lm3630-chip-fix
 
-#ifndef compat_sysctl
-struct compat_sysctl {
-        unsigned int    name;
-        int             nlen;
-        unsigned int    oldval;
-        unsigned int    oldlenp;
-        unsigned int    newval;
-        unsigned int    newlen;
-        unsigned int    __unused[4];
-};
-#endif
+- make bled_name[] static
 
-For the most part, arch/tile should have useful defaults, though not in the
-case of struct statfs, because its 32 bit version does not have a statfs syscall
-(it only has statfs64).
+- a few coding style tuneups
 
-	Arnd
+- create new set_intensity(), partly to avoid awkward layout gymnastics
+
+Cc: "G.Shark Jeong" <gshark.jeong@gmail.com>
+Cc: Daniel Jeong <daniel.jeong@ti.com>
+Cc: G.Shark Jeong <gshark.jeong@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/video/backlight/lm3630_bl.c |   41 ++++++++++++--------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
+
+diff -puN drivers/video/backlight/Kconfig~backlight-add-backlight-driver-for-lm3630-chip-fix drivers/video/backlight/Kconfig
+diff -puN drivers/video/backlight/Makefile~backlight-add-backlight-driver-for-lm3630-chip-fix drivers/video/backlight/Makefile
+diff -puN drivers/video/backlight/lm3630_bl.c~backlight-add-backlight-driver-for-lm3630-chip-fix drivers/video/backlight/lm3630_bl.c
+--- a/drivers/video/backlight/lm3630_bl.c~backlight-add-backlight-driver-for-lm3630-chip-fix
++++ a/drivers/video/backlight/lm3630_bl.c
+@@ -37,7 +37,7 @@ enum lm3630_leds {
+ 	BLED_2
+ };
+ 
+-const char *bled_name[] = {
++static const char *bled_name[] = {
+ 	[BLED_ALL] = "lm3630_bled",	/*Bank1 controls all string */
+ 	[BLED_1] = "lm3630_bled1",	/*Bank1 controls bled1 */
+ 	[BLED_2] = "lm3630_bled2",	/*Bank1 or 2 controls bled2 */
+@@ -62,15 +62,14 @@ static int __devinit lm3630_chip_init(st
+ 	struct lm3630_platform_data *pdata = pchip->pdata;
+ 
+ 	/*pwm control */
+-	reg_val = ((pdata->pwm_active & 0x01) << 2)
+-	    | (pdata->pwm_ctrl & 0x03);
++	reg_val = ((pdata->pwm_active & 0x01) << 2) | (pdata->pwm_ctrl & 0x03);
+ 	ret = regmap_update_bits(pchip->regmap, REG_CONFIG, 0x07, reg_val);
+ 	if (ret < 0)
+ 		goto out;
+ 
+ 	/* bank control */
+-	reg_val = ((pdata->bank_b_ctrl & 0x01) << 1)
+-	    | (pdata->bank_a_ctrl & 0x07);
++	reg_val = ((pdata->bank_b_ctrl & 0x01) << 1) |
++			(pdata->bank_a_ctrl & 0x07);
+ 	ret = regmap_update_bits(pchip->regmap, REG_CTRL, 0x07, reg_val);
+ 	if (ret < 0)
+ 		goto out;
+@@ -105,8 +104,9 @@ static void lm3630_delayed_func(struct w
+ {
+ 	int ret;
+ 	unsigned int reg_val;
+-	struct lm3630_chip_data *pchip =
+-	    container_of(work, struct lm3630_chip_data, work.work);
++	struct lm3630_chip_data *pchip;
++
++	pchip = container_of(work, struct lm3630_chip_data, work.work);
+ 
+ 	ret = regmap_read(pchip->regmap, REG_INT_STATUS, &reg_val);
+ 	if (ret < 0) {
+@@ -153,6 +153,16 @@ static int lm3630_intr_config(struct lm3
+ 	return 0;
+ }
+ 
++static bool
++set_intensity(struct backlight_device *bl, struct lm3630_chip_data *pchip)
++{
++	if (!pchip->pdata->pwm_set_intensity)
++		return false;
++	pchip->pdata->pwm_set_intensity(bl->props.brightness - 1,
++					pchip->pdata->pwm_period);
++	return true;
++}
++
+ /* update and get brightness */
+ static int lm3630_bank_a_update_status(struct backlight_device *bl)
+ {
+@@ -170,14 +180,8 @@ static int lm3630_bank_a_update_status(s
+ 
+ 	/* pwm control */
+ 	if (pwm_ctrl == PWM_CTRL_BANK_A || pwm_ctrl == PWM_CTRL_BANK_ALL) {
+-		if (pchip->pdata->pwm_set_intensity)
+-			pchip->pdata->pwm_set_intensity(bl->props.brightness -
+-							1,
+-							pchip->pdata->
+-							pwm_period);
+-		else
+-			dev_err(pchip->dev,
+-				"No pwm control func. in plat-data\n");
++		if (!set_intensity(bl, pchip))
++			dev_err(pchip->dev, "No pwm control func. in plat-data\n");
+ 	} else {
+ 
+ 		/* i2c control */
+@@ -242,12 +246,7 @@ static int lm3630_bank_b_update_status(s
+ 	enum lm3630_pwm_ctrl pwm_ctrl = pchip->pdata->pwm_ctrl;
+ 
+ 	if (pwm_ctrl == PWM_CTRL_BANK_B || pwm_ctrl == PWM_CTRL_BANK_ALL) {
+-		if (pchip->pdata->pwm_set_intensity)
+-			pchip->pdata->pwm_set_intensity(bl->props.brightness -
+-							1,
+-							pchip->pdata->
+-							pwm_period);
+-		else
++		if (!set_intensity(bl, pchip))
+ 			dev_err(pchip->dev,
+ 				"no pwm control func. in plat-data\n");
+ 	} else {
+diff -puN include/linux/platform_data/lm3630_bl.h~backlight-add-backlight-driver-for-lm3630-chip-fix include/linux/platform_data/lm3630_bl.h
+_
+
