@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab2HTEBE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:01:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2HTEA6 (ORCPT
+	id S1753841Ab2HTEBR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 00:01:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54493 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab2HTEBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 00:00:58 -0400
+	Mon, 20 Aug 2012 00:01:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Gary E. Miller" <gem@rellim.com>
-Subject: [ 27/46] xhci: Add Etron XHCI_TRUST_TX_LENGTH quirk.
-Date: Sun, 19 Aug 2012 20:59:03 -0700
-Message-Id: <20120820035836.030571798@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 25/46] ext4: fix long mount times on very big file systems
+Date: Sun, 19 Aug 2012 20:59:01 -0700
+Message-Id: <20120820035835.764115184@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
 In-Reply-To: <20120820035832.274275502@linuxfoundation.org>
 References: <20120820035832.274275502@linuxfoundation.org>
@@ -30,46 +29,35 @@ From: Greg KH <gregkh@linuxfoundation.org>
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 5cb7df2b2d3afee7638b3ef23a5bcb89c6f07bd9 upstream.
+commit 0548bbb85337e532ca2ed697c3e9b227ff2ed4b4 upstream.
 
-Gary reports that with recent kernels, he notices more xHCI driver
-warnings:
+Commit 8aeb00ff85a: "ext4: fix overhead calculation used by
+ext4_statfs()" introduced a O(n**2) calculation which makes very large
+file systems take forever to mount.  Fix this with an optimization for
+non-bigalloc file systems.  (For bigalloc file systems the overhead
+needs to be set in the the superblock.)
 
-xhci_hcd 0000:03:00.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-
-We think his Etron xHCI host controller may have the same buggy behavior
-as the Fresco Logic xHCI host.  When a short transfer is received, the
-host will mark the transfer as successfully completed when it should be
-marking it with a short completion.
-
-Fix this by turning on the XHCI_TRUST_TX_LENGTH quirk when the Etron
-host is discovered.  Note that Gary has revision 1, but if Etron fixes
-this bug in future revisions, the quirk will have no effect.
-
-This patch should be backported to kernels as old as 2.6.36, that
-contain a backported version of commit
-1530bbc6272d9da1e39ef8e06190d42c13a02733 "xhci: Add new short TX quirk
-for Fresco Logic host."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Gary E. Miller <gem@rellim.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/super.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -99,6 +99,7 @@ static void xhci_pci_quirks(struct devic
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
- 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
-+		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3110,6 +3110,10 @@ static int count_overhead(struct super_b
+ 	ext4_group_t		i, ngroups = ext4_get_groups_count(sb);
+ 	int			s, j, count = 0;
+ 
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_BIGALLOC))
++		return (ext4_bg_has_super(sb, grp) + ext4_bg_num_gdb(sb, grp) +
++			sbi->s_itb_per_group + 2);
++
+ 	first_block = le32_to_cpu(sbi->s_es->s_first_data_block) +
+ 		(grp * EXT4_BLOCKS_PER_GROUP(sb));
+ 	last_block = first_block + EXT4_BLOCKS_PER_GROUP(sb) - 1;
 
 
