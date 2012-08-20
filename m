@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab2HTGpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 02:45:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57661 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab2HTGpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 02:45:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Subject: Re: [PATCH] leds-lm3530: replace pwm platform functions with generic pwm functions
-Date: Mon, 20 Aug 2012 06:45:37 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Bryan Wu <bryan.wu@canonical.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF0095@DQHE02.ent.ti.com> <201208200537.48993.arnd@arndb.de> <A874F61F95741C4A9BA573A70FE3998F41EF092A@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF092A@DQHE02.ent.ti.com>
+	id S1754907Ab2HTGtY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 02:49:24 -0400
+Received: from bitmer.com ([213.157.87.50]:46135 "EHLO bitmer.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752468Ab2HTGtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 02:49:22 -0400
+X-Greylist: delayed 2376 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Aug 2012 02:49:21 EDT
+Message-ID: <5031D49F.7050301@bitmer.com>
+Date: Mon, 20 Aug 2012 09:09:35 +0300
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, kernel-janitors@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/9] sound/soc/omap/am3517evm.c: fix error return code
+References: <1345359780-18647-1-git-send-email-Julia.Lawall@lip6.fr> <1345359780-18647-10-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1345359780-18647-10-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208200645.38047.arnd@arndb.de>
-X-Provags-ID: V02:K0:jfcwKqF8f7KqdAgj8AdaLwOH8fhMGa1FibPlAu1ghIj
- YTEYVaj6NhPIJ7hpWpF2oVcmctJu5Z2521VcmJgd+HG3RccXpI
- gW7BL3CLN1acg59VSkfCDhkU5yPyEK3rRzFcY6q4DGoYzhfvoZ
- 0g82PmbaelbTEnjm4h02f+bC1OBj29DWccoqWOasDf/lsiqjJT
- yJRirKs6BeBxw5/cDqxd9bbtUamm9ElPz+BU0IaPZCSwdCuq4E
- sKIIWbd9b0OGgkeeJ/fbpag4q8cwNhajKdW67zIQRv+OmOYZNq
- zPzKv2aNfW5n3QetRP9JEYQz/Nss7rHPonGtXhMn2GEPocjidO
- F+qRskvXkUBvuU3eeMno=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 August 2012, Kim, Milo wrote:
-> > * I don't understand why you need the "if (rvdata->pwm) return 0;" case.
-> >   It's normally better to do the initialization exactly once from the
-> >   probe() function. You might want to return -EPROBE_DEFER if the pwm
-> >   source is not yet available though.
+On 08/19/2012 10:03 AM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> This device has 3 control mode. - register access, sensor input and PWM input.
-> One of modes can be selected on-the-fly.
-> So that's why I add code which returning 0 when PWM device exists.
-> Whenever mode change occurs from/to 'PWM input', pwm_request() and pwm_free() should be called.
+> It was forgotten to initialize ret to the result of calling
+> snd_soc_dai_set_sysclk, unlike at the other calls in the same function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> 
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  sound/soc/omap/am3517evm.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/sound/soc/omap/am3517evm.c b/sound/soc/omap/am3517evm.c
+> index 009533a..df65f98 100644
+> --- a/sound/soc/omap/am3517evm.c
+> +++ b/sound/soc/omap/am3517evm.c
+> @@ -59,7 +59,7 @@ static int am3517evm_hw_params(struct snd_pcm_substream *substream,
+>  		return ret;
+>  	}
+>  
+> -	snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_FSR_SRC_FSX, 0,
+> +	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_FSR_SRC_FSX, 0,
+>  				SND_SOC_CLOCK_IN);
+>  	if (ret < 0) {
+>  		printk(KERN_ERR "can't set CPU system clock OMAP_MCBSP_FSR_SRC_FSX\n");
+> 
 
-In that case, I would recommend changing it from
-
-+       /* if the pwm device exists, skip requesting the device */
-+       if (drvdata->pwm)
-+               return 0;
-
-to 
-
-	/* warn if the PWM was not released prior to reneabling it */
-	WARN_ON(drvdata->pwm);
-
-
-	Arnd
+Acked-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
