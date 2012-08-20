@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab2HTQB3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 12:01:29 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37508 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752860Ab2HTQB0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 12:01:26 -0400
-Date: Mon, 20 Aug 2012 17:00:54 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 08/31] arm64: CPU support
-Message-ID: <20120820160053.GB912@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-9-git-send-email-catalin.marinas@arm.com>
- <201208151356.05416.arnd@arndb.de>
+	id S1756110Ab2HTQBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 12:01:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755819Ab2HTQBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 12:01:38 -0400
+Date: Mon, 20 Aug 2012 17:58:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: lockdep trace from posix timers
+Message-ID: <20120820155804.GA21400@redhat.com>
+References: <20120724203613.GA9637@redhat.com> <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com> <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins> <20120820145919.GB18499@redhat.com> <1345475434.23018.48.camel@twins> <1345476436.23018.54.camel@twins> <20120820153225.GA20258@redhat.com> <1345477609.23018.61.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201208151356.05416.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1345477609.23018.61.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 02:56:05PM +0100, Arnd Bergmann wrote:
-> On Tuesday 14 August 2012, Catalin Marinas wrote:
-> > --- /dev/null
-> > +++ b/arch/arm64/include/asm/procinfo.h
-...
-> > +struct proc_info_list {
-> > +	unsigned int		cpu_val;
-> > +	unsigned int		cpu_mask;
-> > +	unsigned long		__cpu_flush;		/* used by head.S */
-> > +	const char		*cpu_name;
-> > +};
-> > +
-> > +#else	/* __KERNEL__ */
-> > +#include <asm/elf.h>
-> > +#warning "Please include asm/elf.h instead"
-> > +#endif	/* __KERNEL__ */
-> > +#endif
-> 
-> I think you forgot to remove this file when you removed MULTI_CPU.
+On 08/20, Peter Zijlstra wrote:
+>
+> On Mon, 2012-08-20 at 17:32 +0200, Oleg Nesterov wrote:
+>
+> > > I guess we could steal the entire list and requeue it afterwards and
+> > > lift TIF_NOTIFY_RESUME along with it..
+> >
+> > We can't. This can race with exit_task_work(). And this can break
+> > fput(), the task can return to the userspace without __fput().
+>
+> So we could put that spinlock back around cancel and run and leave add
+> lockless. That'd solve my immediate problem but its not something I'm
+> proud of.
 
-proc_info_list() structure is still used just for the CPU name and setup
-function (e.g. we need to apply errata workaround on a certain CPU). But
-as Olof suggested, I better move all this to a cputable.c file.
+Which problem?
 
--- 
-Catalin
+We can probably use bit_spin_lock() and avoid ->pi_lock.
+
+Of course, we can add the new lock into task_struct, but this is not nice.
+
+Oleg.
+
