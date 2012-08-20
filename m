@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab2HTEKy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 00:10:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39891 "EHLO
+	id S1755158Ab2HTD7g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Aug 2012 23:59:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38485 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab2HTD7k (ORCPT
+	with ESMTP id S1755076Ab2HTD71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Aug 2012 23:59:40 -0400
+	Sun, 19 Aug 2012 23:59:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg KH <gregkh@linuxfoundation.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [ 00/46] 3.5.3-stable review
-Date: Sun, 19 Aug 2012 20:58:36 -0700
-Message-Id: <20120820035832.274275502@linuxfoundation.org>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mark Ferrell <mferrell@uplogix.com>
+Subject: [ 30/32] usb: serial: mos7840: Fixup mos7840_chars_in_buffer()
+Date: Sun, 19 Aug 2012 20:57:26 -0700
+Message-Id: <20120820035652.053100835@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.10.2.565.gbd578b5
+In-Reply-To: <20120820035647.862247088@linuxfoundation.org>
+References: <20120820035647.862247088@linuxfoundation.org>
 User-Agent: quilt/0.60-20.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,77 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg KH <gregkh@linuxfoundation.org>
 
-This is the start of the stable review cycle for the 3.5.3 release.
-There are 47 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Aug 22 03:58:29 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.5.3-rc1.gz
-and the diffstat can be found below.
+From: Mark Ferrell <mferrell@uplogix.com>
 
-thanks,
+commit 5c263b92f828af6a8cf54041db45ceae5af8f2ab upstream.
 
-greg k-h
+ * Use the buffer content length as opposed to the total buffer size.  This can
+   be a real problem when using the mos7840 as a usb serial-console as all
+   kernel output is truncated during boot.
 
--------------
- Makefile                                    |   4 +-
- arch/s390/kernel/compat_linux.c             |   2 -
- arch/s390/kernel/compat_wrapper.S           |   4 +-
- arch/x86/kvm/emulate.c                      |   4 +-
- arch/x86/kvm/i8259.c                        |  17 ++
- arch/x86/kvm/vmx.c                          |  90 +++++++--
- arch/x86/kvm/x86.c                          |   4 +
- arch/x86/xen/p2m.c                          |   5 +
- drivers/base/core.c                         |   9 +-
- drivers/dma/imx-dma.c                       |  36 ++--
- drivers/gpu/drm/i915/i915_sysfs.c           |  12 ++
- drivers/gpu/drm/i915/intel_display.c        |  11 --
- drivers/gpu/drm/i915/intel_dp.c             |  18 +-
- drivers/gpu/drm/i915/intel_ringbuffer.c     |   7 +-
- drivers/gpu/drm/mgag200/mgag200_mode.c      |  12 +-
- drivers/gpu/drm/nouveau/nvc0_pm.c           |   2 +-
- drivers/gpu/drm/nouveau/nvd0_display.c      |   2 +-
- drivers/gpu/drm/radeon/atombios_crtc.c      |  14 +-
- drivers/gpu/drm/radeon/evergreen.c          |  71 ++-----
- drivers/gpu/drm/radeon/evergreen_cs.c       |   6 +-
- drivers/gpu/drm/radeon/evergreend.h         |   2 +
- drivers/gpu/drm/radeon/ni.c                 |  14 +-
- drivers/gpu/drm/radeon/r600_cs.c            |   6 +-
- drivers/gpu/drm/radeon/radeon_asic.h        |   8 +-
- drivers/gpu/drm/radeon/radeon_drv.c         |   3 +-
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |   4 +
- drivers/gpu/drm/radeon/radeon_mode.h        |   1 +
- drivers/gpu/drm/radeon/rv515.c              |  13 --
- drivers/gpu/drm/radeon/si.c                 |  14 +-
- drivers/infiniband/ulp/srp/ib_srp.c         |  87 ++++++---
- drivers/net/wireless/rt2x00/rt2800usb.c     |   1 +
- drivers/staging/comedi/drivers.c            |   2 +-
- drivers/tty/serial/pmac_zilog.c             |  12 +-
- drivers/usb/gadget/u_ether.c                |   6 +
- drivers/usb/host/pci-quirks.c               |   7 +
- drivers/usb/host/pci-quirks.h               |   1 +
- drivers/usb/host/xhci-pci.c                 |  10 +
- drivers/usb/host/xhci-ring.c                |  36 ++--
- drivers/usb/host/xhci.c                     |   8 +-
- drivers/usb/host/xhci.h                     |   1 +
- drivers/usb/serial/ftdi_sio.c               |   1 +
- drivers/usb/serial/ftdi_sio_ids.h           |   7 +
- drivers/usb/serial/mos7840.c                |   9 +-
- drivers/usb/serial/option.c                 | 281 +++++++++++-----------------
- fs/ext4/balloc.c                            |  62 +++---
- fs/ext4/bitmap.c                            |   1 -
- fs/ext4/extents.c                           |   1 +
- fs/ext4/super.c                             |   6 +
- fs/fuse/file.c                              |   2 +-
- fs/jbd2/journal.c                           |   3 +-
- include/drm/drm_pciids.h                    |   3 +
- include/linux/jbd2.h                        |   1 +
- include/linux/usb.h                         |  21 +++
- security/yama/yama_lsm.c                    |  10 +-
- 54 files changed, 562 insertions(+), 412 deletions(-)
+Signed-off-by: Mark Ferrell <mferrell@uplogix.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/mos7840.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -1189,9 +1189,12 @@ static int mos7840_chars_in_buffer(struc
+ 	}
+ 
+ 	spin_lock_irqsave(&mos7840_port->pool_lock, flags);
+-	for (i = 0; i < NUM_URBS; ++i)
+-		if (mos7840_port->busy[i])
+-			chars += URB_TRANSFER_BUFFER_SIZE;
++	for (i = 0; i < NUM_URBS; ++i) {
++		if (mos7840_port->busy[i]) {
++			struct urb *urb = mos7840_port->write_urb_pool[i];
++			chars += urb->transfer_buffer_length;
++		}
++	}
+ 	spin_unlock_irqrestore(&mos7840_port->pool_lock, flags);
+ 	dbg("%s - returns %d", __func__, chars);
+ 	return chars;
 
 
