@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab2HTMUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 08:20:31 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:16682 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384Ab2HTMU0 (ORCPT
+	id S1754985Ab2HTMUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 08:20:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51558 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754605Ab2HTMUe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 08:20:26 -0400
-X-IronPort-AV: E=Sophos;i="4.77,796,1336348800"; 
-   d="scan'208";a="14084201"
-Date: Mon, 20 Aug 2012 13:19:22 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 06/11] xen/mmu: For 64-bit do not call
- xen_map_identity_early
-In-Reply-To: <20120820120649.GI13755@localhost.localdomain>
-Message-ID: <alpine.DEB.2.02.1208201318240.15568@kaball.uk.xensource.com>
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-7-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1208171839590.15568@kaball.uk.xensource.com> <20120817174549.GA14257@phenom.dumpdata.com>
- <alpine.DEB.2.02.1208201243180.15568@kaball.uk.xensource.com> <1345463624.28762.67.camel@zakaz.uk.xensource.com> <alpine.DEB.2.02.1208201257420.15568@kaball.uk.xensource.com> <20120820120649.GI13755@localhost.localdomain>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Mon, 20 Aug 2012 08:20:34 -0400
+Message-ID: <1345465225.23018.39.camel@twins>
+Subject: Re: lockdep trace from posix timers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, dhowells <dhowells@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Date: Mon, 20 Aug 2012 14:20:25 +0200
+In-Reply-To: <1345465141.5069.0.camel@gandalf.local.home>
+References: <20120724203613.GA9637@redhat.com>
+	 <1345140478.29668.54.camel@twins> <20120817151447.GA7918@redhat.com>
+	 <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins>
+	 <1345463458.23018.37.camel@twins>
+	 <1345465141.5069.0.camel@gandalf.local.home>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> On Mon, Aug 20, 2012 at 12:58:37PM +0100, Stefano Stabellini wrote:
-> > On Mon, 20 Aug 2012, Ian Campbell wrote:
-> > > On Mon, 2012-08-20 at 12:45 +0100, Stefano Stabellini wrote:
-> > > > On Fri, 17 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> > > > > On Fri, Aug 17, 2012 at 06:41:23PM +0100, Stefano Stabellini wrote:
-> > > > > > On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> > > > > > > B/c we do not need it. During the startup the Xen provides
-> > > > > > > us with all the memory mapped that we need to function.
-> > > > > > 
-> > > > > > Shouldn't we check to make sure that is actually true (I am thinking at
-> > > > > > nr_pt_frames)?
-> > > > > 
-> > > > > I was looking at the source code (hypervisor) to figure it out and
-> > > > > that is certainly true.
-> > > > > 
-> > > > > 
-> > > > > > Or is it actually stated somewhere in the Xen headers?
-> > > > > 
-> > > > > Couldn't find it, but after looking so long at the source code
-> > > > > I didn't even bother looking for it.
-> > > > > 
-> > > > > Thought to be honest - I only looked at how the 64-bit pagetables
-> > > > > were set up, so I didn't dare to touch the 32-bit. Hence the #ifdef
-> > > > 
-> > > > I think that we need to involve some Xen maintainers and get this
-> > > > written down somewhere in the public headers, otherwise we have no
-> > > > guarantees that it is going to stay as it is in the next Xen versions.
-> > > > 
-> > > > Maybe we just need to add a couple of lines of comment to
-> > > > xen/include/public/xen.h.
-> > > 
-> > > The start of day memory layout for PV guests is written down in the
-> > > comment just before struct start_info at
-> > > http://xenbits.xen.org/docs/unstable/hypercall/include,public,xen.h.html#Struct_start_info
-> > > 
-> > > (I haven't read this thread to determine if what is documented matches
-> > > what you guys are talking about relying on)
-> > 
-> > but it is not written down how much physical memory is going to be
-> > mapped in the bootstrap page tables.
+On Mon, 2012-08-20 at 08:19 -0400, Steven Rostedt wrote:
 > 
-> Considering that only pvops kernel has this change I think we are ok?
-
-We are OK if we write it down :)
-Otherwise it might change in the future and we won't even know what the
-correct behavior is supposed to be.
+> > > +       for (;;) {
+> > > +               if (entry == &dead)
+> 
+> But your compiler likes "entry == &dead"? ;-)
+> 
+Yes, fancy as GCC is these days, it doesn't quite bother with the
+meta-physical questions just yet.
