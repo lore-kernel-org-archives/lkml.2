@@ -1,131 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab2HUQNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:13:43 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47913 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2HUQNj (ORCPT
+	id S1757922Ab2HUQOB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:14:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60806 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757847Ab2HUQNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:13:39 -0400
-Date: Tue, 21 Aug 2012 17:13:24 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-Message-ID: <20120821161324.GA29665@srcf.ucam.org>
-References: <502BB5A3.5000403@linux.intel.com>
- <1345043096.31459.106.camel@twins>
- <502BE38D.9030405@linux.intel.com>
- <20120820080606.GA6931@gmail.com>
- <20120820181651.GA737@srcf.ucam.org>
- <20120821094203.GB12385@gmail.com>
- <20120821113951.GA22436@srcf.ucam.org>
- <20120821151910.GA5359@gmail.com>
- <20120821152828.GB28241@srcf.ucam.org>
- <20120821155908.GA5499@gmail.com>
+	Tue, 21 Aug 2012 12:13:53 -0400
+Date: Tue, 21 Aug 2012 09:13:32 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-gmq82zp5blin9aml9g5tzokr@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Add missing files to build the python binding
+Git-Commit-ID: a619183672aace2ce3de15728da922d303c0eef9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120821155908.GA5499@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:13:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 05:59:08PM +0200, Ingo Molnar wrote:
-> * Matthew Garrett <mjg@redhat.com> wrote:
-> > The scheduler's behaviour is going to have a minimal impact on 
-> > power consumption on laptops. Other things are much more 
-> > important - backlight level, ASPM state, that kind of thing. 
-> > So why special case the scheduler? [...]
-> 
-> I'm not special casing the scheduler - but we are talking about 
-> scheduler policies here, so *if* it makes sense to handle this 
-> dynamically then obviously the scheduler wants to use system 
-> state information when/if the kernel can get it.
-> 
-> Your argument is as if you said that the shape of a car's side 
-> view mirrors is not important to its top speed, because the 
-> overall shape of the chassis and engine power are much more 
-> important.
-> 
-> But we are desiging side view mirrors here, so we might as well 
-> do a good job there.
+Commit-ID:  a619183672aace2ce3de15728da922d303c0eef9
+Gitweb:     http://git.kernel.org/tip/a619183672aace2ce3de15728da922d303c0eef9
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 14 Aug 2012 14:17:30 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 14 Aug 2012 14:17:30 -0300
 
-If the kernel is going to make power choices automatically then it 
-should do it everywhere, not piecemeal.
+perf tools: Add missing files to build the python binding
 
-> > [...] This is going to be hugely more important on 
-> > multi-socket systems, where your policy is usually going to be 
-> > dictated by the specific workload that you're running at the 
-> > time. [...]
-> 
-> If only we had some kernel subsystem that is intimiately familar 
-> with the workloads running on the system and could act 
-> accordingly and with low latency.
-> 
-> We could name that subsystem it in some intuitive fashion: it 
-> switches and schedules workloads, so how about calling it the 
-> 'scheduler'?
+Changeset 0f6a3015:
+"perf tools: Support user regs and stack in sample parsing"
 
-The scheduler is unaware of whether I care about a process finishing 
-quickly or whether I care about it consuming less power.
+uses hweight_long in evsel.c, so we need to drag util/hweight.c
+to the python binding.
 
-> > [...] The exception is in cases where your rack is 
-> > overcommitted for power and your rack management unit is 
-> > telling you to reduce power consumption since otherwise it's 
-> > going to have to cut the power to one of the machines in the 
-> > rack in the next few seconds.
-> 
-> ( That must be some ACPI middleware driven crap, right? Not 
->   really the Linux kernel's problem. )
+Ditto for ee8dd3c:
+"perf tools: Change strlist to use the new rblist"
 
-It's as much the Linux kernel's problem as AC/battery decisions are - 
-ie, it's not.
+where we need to add util/rblist.c.
 
-> > > The thing is, when I use Linux on a laptop then AC/battery 
-> > > is *the* main policy input.
-> > 
-> > And it's already well handled from userspace, as it has to be.
-> 
-> Not according to the developers switching away from Linux 
-> desktop distros in droves, because MacOSX or Win7 has 30%+ 
-> better battery efficiency.
+Now twatch.py works again:
 
-Ok so what you're actually telling me here is that you don't understand 
-anything about power management and where our problems are.
+ # export PYTHONPATH=~acme/git/build/perf/python/
+ # ~acme/git/linux/tools/perf/python/twatch.py
+ cpu:  4, pid: 23639, tid: 23639 { type: fork, pid: 30659, ppid: 23639, tid: 30659, ptid: 23639, time: 36287872076780}
+ cpu:  5, pid: 30659, tid: 30659 { type: comm, pid: 30659, tid: 30659, comm: ls }
+ cpu:  5, pid: 30659, tid: 30659 { type: exit, pid: 30659, ppid: 30659, tid: 30659, ptid: 30659, time: 36287873681539}
+ cpu:  4, pid: 23639, tid: 23639 { type: fork, pid: 30660, ppid: 23639, tid: 30660, ptid: 23639, time: 36291720420480}
+ cpu:  5, pid: 30659, tid: 30659 { type: exit, pid: 30659, ppid: 30659, tid: 30659, ptid: 30659, time: 36287873685714}
+ cpu:  5, pid: 30660, tid: 30660 { type: comm, pid: 30660, tid: 30660, comm: git }
+ ^C
+ KeyboardInterrupt
 
-> The scheduler might be a small part of the picture, but it's 
-> certainly a part of it.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-gmq82zp5blin9aml9g5tzokr@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/python-ext-sources |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-It's in the drivers, which is where it has been since we went tickless. 
-
-> > No, because sched_mt_powersave usually crippled performance 
-> > more than it saved power and nobody makes multi-socket 
-> > laptops.
-> 
-> That's a user-space policy management fail right there: why 
-> wasn't this fixed? If the default policy is in the kernel we can 
-> at least fix it in one place for the most common cases. If it's 
-> spread out amongst multiple projects then progress only happens 
-> at glacial speed ...
-
-sched_mt_powersave was inherently going to have a huge impact on 
-performance, and with modern chips that would result in the platform 
-consuming more power. It was a feature that was useful for a small 
-number of generations of desktop CPUs - I don't think it would ever skew 
-the power/performance ratio in a useful direction on mobile hardware. 
-But feel free to blame userspace for hardware design.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
+index 2884e67..2133628 100644
+--- a/tools/perf/util/python-ext-sources
++++ b/tools/perf/util/python-ext-sources
+@@ -10,10 +10,12 @@ util/ctype.c
+ util/evlist.c
+ util/evsel.c
+ util/cpumap.c
++util/hweight.c
+ util/thread_map.c
+ util/util.c
+ util/xyarray.c
+ util/cgroup.c
+ util/debugfs.c
++util/rblist.c
+ util/strlist.c
+ ../../lib/rbtree.c
