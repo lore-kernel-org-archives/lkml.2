@@ -1,106 +1,404 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab2HULY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 07:24:58 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:43142 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab2HULYz (ORCPT
+	id S1756943Ab2HULZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 07:25:22 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61694 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab2HULZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 07:24:55 -0400
-Date: Tue, 21 Aug 2012 16:54:34 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v3 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120821112433.GB3519@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120726051902.GA29466@in.ibm.com> <20120726052029.GB29466@in.ibm.com> <20120815165931.GA10059@redhat.com> <1345066913.11751.4.camel@pasglop> <20120816050030.GA12060@in.ibm.com> <20120816152112.GA8874@redhat.com> <20120817051307.GA4782@in.ibm.com> <20120817150031.GA5029@redhat.com>
+	Tue, 21 Aug 2012 07:25:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120817150031.GA5029@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082111-2398-0000-0000-000009A0E64B
+In-Reply-To: <1345060656-32201-2-git-send-email-thomas.abraham@linaro.org>
+References: <1345060656-32201-1-git-send-email-thomas.abraham@linaro.org>
+	<1345060656-32201-2-git-send-email-thomas.abraham@linaro.org>
+Date: Tue, 21 Aug 2012 13:25:18 +0200
+Message-ID: <CACRpkdYqPYesgE-YxPLZqROw1T2fsPWR6R+aDTTz2=XbP7oe9A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] pinctrl: add samsung pinctrl and gpiolib driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, kgene.kim@samsung.com,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 05:00:31PM +0200, Oleg Nesterov wrote:
-> On 08/17, Ananth N Mavinakayanahalli wrote:
-> >
-> > On Thu, Aug 16, 2012 at 05:21:12PM +0200, Oleg Nesterov wrote:
-> >
-> > > Hmm, I am not sure. is_swbp_insn(insn), as it is used in the arch agnostic
-> > > code, should only return true if insn == UPROBE_SWBP_INSN (just in case,
-> > > this logic needs more fixes but this is offtopic).
-> >
-> > I think it does...
-> >
-> > > If powerpc has another insn(s) which can trigger powerpc's do_int3()
-> > > counterpart, they should be rejected by arch_uprobe_analyze_insn().
-> > > I think.
-> >
-> > The insn that gets passed to arch_uprobe_analyze_insn() is copy_insn()'s
-> > version, which is the file copy of the instruction.
-> 
-> Yes, exactly. And we are going to single-step this saved uprobe->arch.insn,
-> even if gdb/whatever replaces the original insn later or already replaced.
-> 
-> So arch_uprobe_analyze_insn() should reject the "unsafe" instructions which
-> we can't step over safely.
+On Wed, Aug 15, 2012 at 9:57 PM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
 
-Agreed.
+> Add a new device tree enabled pinctrl and gpiolib driver for Samsung
+> SoC's.
 
-> > We should also take
-> > care of the in-memory copy, in case gdb had inserted a breakpoint at the
-> > same location, right?
-> 
-> gdb (or even the application itself) and uprobes can obviously confuse
-> each other, in many ways, and we can do nothing at least currently.
-> Just we should ensure that the kernel can't crash/hang/etc.
+Thanks for doing this Thomas, great work!
 
-Absolutely. The proper fix for this at least from a breakpoint insertion
-perspective is to educate gdb (possibly ptrace itself) to fail on a
-breakpoint insertion request on an already existing one.
+> +++ b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
 
-> > Updating is_swbp_insn() per-arch where needed will
-> > take care of both the cases, 'cos it gets called before
-> > arch_analyze_uprobe_insn() too.
-> 
-> For example. set_swbp()->is_swbp_insn() == T means that (for example)
-> uprobe_register() and uprobe_mmap() raced with each other and there is
-> no need for set_swbp().
+I don't understand the rules around bindings very well, I would
+suggest you include
+devicetree-discuss@lists.ozlabs.org on the mails, besides you know
+this stuff way
+better than me anyway :-)
 
-This is true for Intel like architectures that have *one* swbp
-instruction. On Powerpc, gdb for instance, can insert a trap variant at
-the address. Therefore, is_swbp_insn() by definition should return true
-for all trap variants.
+> +  The child node can also optionally specify one or more of the pin
+> +  configuration that should be applied on all the pins listed in the
+> +  "samsung,pins" property of the child node. The following pin configuration
+> +  properties are supported.
+> +
+> +  - samsung,pin-pud: Pull up/down configuration.
+> +  - samsung,pin-drv: Drive strength configuration.
+> +  - samsung,pin-pud-pdn: Pull up/down configuration in power down mode.
+> +  - samsung,pin-drv-pdn: Drive strength configuration in power down mode.
 
-> However, find_active_uprobe()->is_swbp_at_addr()->is_swbp_insn() is
-> different, "true" confirms that this insn has triggered do_int3() and
-> thus we need send_sig(SIGTRAP) (just in case, this is not strictly
-> correct too but offtopic again).
-> 
-> We definitely need more changes/fixes/improvements in this area. And
-> perhaps powerpc requires more changes in the arch-neutral code, I dunno.
+This looks a bit scary, as it seems to be orthogonal to the pin config
+interface. I.e. this will be programmed "behind the back" of the
+pin config system. However as long as the pin config implementation
+reads back these things from the registers it will work, too.
 
-For powerpc, just having is_swbp_insn() (already a weak function) handle
-the trap variants, should suffice.
+In the U300 and Ux500 I explicitly use pin config hogs to set up
+the pin configuration, and when we enter a state such as
+"default" the mux setting and config settings are set from the
+framework separately.
 
-> In particular, I think is_swbp_insn() should have a single caller,
-> is_swbp_at_addr(), and this caller should always play with current->mm.
-> And many, many other changes in the long term.
-> 
-> So far I think that, if powerpc really needs to change is_swbp_insn(),
-> it would be better to make another patch and discuss this change.
-> But of course I can't judge.
+See for example:
+arch/arm/mach-ux500/board-mop500-pins.c
 
-OK. I will separate out the is_swbp_insn() change into a separate patch.
+This example is using platform data but it should be trivial to do with
+device tree.
 
-Ananth
+I think the Tegra also works this way. Can you elaborate on
+why you need this static setup from the device tree instead
+of using default states?
 
+I also think this looks like it could use generic pin config to stash
+the configs, just expand the stuff in <linux/pinctrl/pinconf-generic.h>
+
+(...)
+> +Example 1:
+
+The examples seem to only pertain to the pin controller per se, maybe you
+could include a DT entry for a uart or something showing how the
+uart device binds to a certain pinctrl setting.
+
+> +       pinctrl_0: pinctrl@11400000 {
+> +               compatible = "samsung,pinctrl-exynos4210";
+> +               reg = <0x11400000 0x1000>;
+> +               interrupts = <0 47 0>;
+> +
+> +               uart0_data: uart0-data {
+> +                       samsung,pins = "gpa0-0", "gpa0-1";
+> +                       samsung,pin-function = <2>;
+> +                       samsung,pin-pud = <0>;
+> +                       samsung,pin-drv = <0>;
+> +               };
+
+This setup needs to be associated with a certain state, it's possible to
+do in the code or directly in the device tree.
+
+I.e. these settings for pin-pud and pin-drv needs to belong to a
+certain pin config state, typically the state named "default"
+
+> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+
+> +config PINCTRL_SAMSUNG
+> +       bool "Samsung pinctrl driver"
+> +       depends on OF
+
+I don't understand how this can even compile. Do you need:
+
+select PINMUX
+select PINCONF
+
+to get the framework files you need to compile?
+
+Or are you selecting thes in some platform Kconfig or so?
+In that case please move them here.
+
+> +/* list of all possible config options supported */
+> +struct pin_config {
+> +       char            *prop_cfg;
+> +       unsigned int    cfg_type;
+> +} pcfgs[] = {
+> +       { "samsung,pin-pud", PINCFG_TYPE_PUD },
+> +       { "samsung,pin-drv", PINCFG_TYPE_DRV },
+> +       { "samsung,pin-pud-pdn", PINCFG_TYPE_CON_PND },
+> +       { "samsung,pin-drv-pdn", PINCFG_TYPE_PUD_PND },
+> +};
+
+Hmmmmm it looks very much like this controller could make use of
+the generic pinconf library, but it's not mandatory so just a suggestion.
+
+(...)
+> +/* create pinctrl_map entries by parsing device tree nodes */
+> +static int samsung_dt_node_to_map(struct pinctrl_dev *pctldev,
+> +                       struct device_node *np, struct pinctrl_map **maps,
+> +                       unsigned *nmaps)
+> +{
+(...)
+> +       /* Allocate memory for pin group name. The pin group name is derived
+> +        * from the node name from which these map entries are be created.
+> +        */
+> +       gname = kzalloc(strlen(np->name) + 4, GFP_KERNEL);
+
+Why +4? I would have suspected +1 for the null terminator...
+
+> +       if (!gname) {
+> +               dev_err(dev, "failed to alloc memory for group name\n");
+> +               goto free_map;
+> +       }
+> +       sprintf(gname, "%s-grp", np->name);
+
+The rest of the pinmux implementation looks nice!
+
+(...)
+> +/* set the pull up/down and driver strength settings for a specified pin */
+> +static int samsung_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
+> +                                       unsigned long config)
+> +{
+> +       struct samsung_pinctrl_drv_data *drvdata;
+> +       unsigned long pin_offset;
+> +       struct samsung_pin_bank *bank;
+> +       void __iomem *reg;
+> +
+> +       drvdata = pinctrl_dev_get_drvdata(pctldev);
+> +       pin_to_reg_bank(drvdata->gc, pin - drvdata->ctrl->base, &reg,
+> +                                       &pin_offset, &bank);
+> +
+> +       switch (PINCFG_UNPACK_TYPE(config)) {
+> +       case PINCFG_TYPE_PUD:
+> +               samsung_pinconf_set_pud(drvdata, bank, reg, pin_offset, config);
+> +               break;
+> +       case PINCFG_TYPE_DRV:
+> +               samsung_pinconf_set_drv(drvdata, bank, reg, pin_offset, config);
+> +               break;
+
+
+Hm there are two more types defined in the device tree:
+
++  - samsung,pin-pud: Pull up/down configuration.
++  - samsung,pin-drv: Drive strength configuration.
++  - samsung,pin-pud-pdn: Pull up/down configuration in power down mode.
++  - samsung,pin-drv-pdn: Drive strength configuration in power down mode.
+
+I think you should define these as well, especially if you use the
+states to program these things instead of the hack that I'm quite
+sceptical about...
+
+> +/* reading pin pull up/down and driver strength settings not implemented */
+
+OK why not? It seems very simple and straight-forward.
+Just read the same registers and switch() then return...
+
+(...)
+
+The gpiolib part looks really good, so no comments on that.
+
+(...)
+> +               /* derive function name from the node name */
+> +               fname = devm_kzalloc(dev, strlen(cfg_np->name) + 4, GFP_KERNEL);
+
+This +4 again...
+
+(...)
+> +       drvdata->grange.name = "samsung-pctrl-gpio-range";
+> +       drvdata->grange.id = 0;
+> +       drvdata->grange.base = drvdata->ctrl->base;
+> +       drvdata->grange.npins = drvdata->ctrl->nr_pins;
+> +       drvdata->grange.gc = drvdata->gc;
+> +       pinctrl_add_gpio_range(drvdata->pctl_dev, &drvdata->grange);
+
+Grant didn't like custom ranges at all IIRC and wanted a generic
+way of handling this. But doing so requires turning the range registration
+API:s upside down and let the GPIO controller register the ranges.
+
+If noone else is coding that, I guess we might have to live with
+this kind of custom hacks. (No, I don't have time to fix it, sadly.)
+
+(...)
+> +static int __devinit samsung_pinctrl_probe(struct platform_device *pdev)
+(...)
+> +       if (ctrl->eint_gpio_init)
+> +               ctrl->eint_gpio_init(drvdata);
+> +       if (ctrl->eint_wkup_init)
+> +               ctrl->eint_wkup_init(drvdata);
+
+So this stuff I'm doing in the default states instead.
+
+(...)
+> +++ b/drivers/pinctrl/pinctrl-samsung.h
+(...)
+> +#ifndef __PINCTRL_SAMSUNG_H
+> +#define __PINCTRL_SAMSUNG_H
+> +
+> +#include <linux/module.h>
+> +#include <linux/pinctrl/pinctrl.h>
+> +#include <linux/pinctrl/pinmux.h>
+> +#include <linux/pinctrl/pinconf.h>
+> +#include <linux/pinctrl/consumer.h>
+> +#include <linux/pinctrl/machine.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/io.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/gpio.h>
+
+Usually I prefer to have as many as possible of these in the .c file, but this
+works too, and I haven't seen any rationale about it. Especially since this is
+a local include I can live with it...
+
+
+> +/**
+> + * struct samsung_pin_bank: represent a controller pin-bank.
+> + * @reg_offset: starting offset of the pin-bank registers.
+> + * @pin_base: starting pin number of the bank.
+> + * @nr_pins: number of pins included in this bank.
+> + * @func_width: width of the function selector bit field.
+> + * @pud_width: width of the pin pull up/down selector bit field.
+> + * @drc_width: width of the pin driver strength selector bit field.
+> + * @eint_type: type of the external interrupt supported by the bank.
+> + * @irq_base: starting controller local irq number of the bank.
+> + * @name: name to be prefixed for each pin in this pin bank.
+> + */
+> +struct samsung_pin_bank {
+> +       unsigned int            pctl_offset;
+
+Isn't this a u32?
+
+> +       unsigned int            pin_base;
+> +       unsigned int            nr_pins;
+> +       unsigned int            func_width;
+> +       unsigned int            pud_width;
+> +       unsigned int            drv_width;
+
+Are these "widths" really unsigned (32/64) bits?
+Isn't u8 enough?
+
+> +       unsigned int            eint_type;
+
+Shouldn't this be some kund of enum if it denotes a type?
+
+> +       unsigned int            irq_base;
+
+u32?
+
+> +       char                    *name;
+> +};
+> +
+> +/**
+> + * struct samsung_pin_ctrl: represent a pin controller.
+> + * @pin_banks: list of pin banks included in this controller.
+> + * @nr_banks: number of pin banks.
+> + * @base: starting system wide pin number.
+> + * @nr_pins: number of pins supported by the controller.
+> + * @nr_gint: number of external gpio interrupts supported.
+> + * @nr_wint: number of external wakeup interrupts supported.
+> + * @geint_con: offset of the ext-gpio controller registers.
+
+If it's an offset why not name it geint_con_offset?
+
+> + * @geint_mask: offset of the ext-gpio interrupt mask registers.
+> + * @geint_pend: offset of the ext-gpio interrupt pending registers.
+> + * @weint_con: offset of the ext-wakeup controller registers.
+> + * @weint_mask: offset of the ext-wakeup interrupt mask registers.
+> + * @weint_pend: offset of the ext-wakeup interrupt pending registers.
+
+Dito.
+
+> + * @svc: offset of the interrupt service register.
+> + * @eint_gpio_init: platform specific callback to setup the external gpio
+> + *     interrupts for the controller.
+> + * @eint_wkup_init: platform specific callback to setup the external wakeup
+> + *     interrupts for the controller.
+> + * @label: for debug information.
+
+Could you add some free text here explaining the hardware just a little
+bit? What is a external GPIO? what is an external wakeup? etc.
+
+> + */
+> +struct samsung_pin_ctrl {
+> +       struct samsung_pin_bank *pin_banks;
+> +       unsigned int            nr_banks;
+> +
+> +       unsigned int            base;
+
+u32?
+
+> +       unsigned int            nr_pins;
+> +       unsigned int            nr_gint;
+> +       unsigned int            nr_wint;
+> +
+> +       unsigned long           geint_con;
+> +       unsigned long           geint_mask;
+> +       unsigned long           geint_pend;
+
+All three u32?
+
+> +       unsigned long           weint_con;
+
+u32?
+
+> +       unsigned long           weint_mask;
+> +       unsigned long           weint_pend;
+
+u32?
+
+> +       unsigned long           svc;
+
+u32?
+
+> +
+> +       int                     (*eint_gpio_init)(struct samsung_pinctrl_drv_data *);
+> +       int                     (*eint_wkup_init)(struct samsung_pinctrl_drv_data *);
+
+I guess you need to set up these using auxdata?
+
+> +       char                    *label;
+> +};
+> +
+> +/**
+> + * struct samsung_pinctrl_drv_data: wrapper for holding driver data together.
+> + * @virt_base: register base address of the controller.
+> + * @dev: device instance representing the controller.
+> + * @irq: interrpt number used by the controller to notify gpio interrupts.
+> + * @ctrl: pin controller instance managed by the driver.
+> + * @pctl: pin controller descriptor registered with the pinctrl subsystem.
+
+Maybe name this pctl_desc then?
+
+> + * @pctl_dev: cookie representing pinctrl device instance.
+> + * @pin_groups: list of pin groups available to the driver.
+> + * @nr_groups: number of such pin groups.
+> + * @pmx_functions: list of pin functions available to the driver.
+> + * @nr_function: number of such pin functions.
+> + * @gc: gpio_chip instance registered with gpiolib.
+> + * @grange: linux gpio pin range supported by this controller.
+> + */
+> +struct samsung_pinctrl_drv_data {
+> +       void __iomem                    *virt_base;
+> +       struct device                   *dev;
+> +       int                             irq;
+> +
+> +       struct samsung_pin_ctrl         *ctrl;
+> +       struct pinctrl_desc             pctl;
+> +       struct pinctrl_dev              *pctl_dev;
+> +
+> +       const struct samsung_pin_group  *pin_groups;
+> +       unsigned int                    nr_groups;
+> +       const struct samsung_pmx_func   *pmx_functions;
+> +       unsigned int                    nr_functions;
+> +
+> +       struct irq_domain               *gpio_irqd;
+> +       struct irq_domain               *wkup_irqd;
+> +
+> +       struct gpio_chip                *gc;
+> +       struct pinctrl_gpio_range       grange;
+> +};
+
+This is looking really good.
+
+No further comments! (Atleast not this time, since it's a big
+driver I have probably missed something...)
+
+Linus Walleij
