@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab2HUVWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 17:22:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43375 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758436Ab2HUVWO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 17:22:14 -0400
-Date: Tue, 21 Aug 2012 23:22:03 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Attilio Rao <attilio.rao@citrix.com>
-cc: konrad.wilk@oracle.com, Ian.Campbell@citrix.com,
-        Stefano.Stabellini@eu.citrix.com, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v2 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
- and x86_init.paging.pagetable_setup_done setup functions and document its
- semantic
-In-Reply-To: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
-Message-ID: <alpine.LFD.2.02.1208212315330.2856@ionos>
-References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1758624Ab2HUV3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 17:29:21 -0400
+Received: from fieldses.org ([174.143.236.118]:35401 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758465Ab2HUV3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 17:29:15 -0400
+Date: Tue, 21 Aug 2012 17:29:10 -0400
+To: linux-kernel@vger.kernel.org
+Cc: Jim Rees <rees@umich.edu>
+Subject: [PATCH] strings: helper for maximum decimal encoding of an
+ unsigned integer
+Message-ID: <20120821212910.GD18637@fieldses.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Aug 2012, Attilio Rao wrote:
-> Differences with v1:
-> - The patch serie is re-arranged in a way that it helps reviews, following
->   a plan by Thomas Gleixner
-> - The PVOPS nomenclature is not used as it is not correct
-> - The front-end message is adjusted with feedback by Thomas Gleixner,
->   Stefano Stabellini and Konrad Rzeszutek Wilk 
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-This is much simpler to read and review. Just have a look at the
-diffstats of the two series:
+I've seen a couple examples recently where we've gotten this wrong.
+Maybe something like this would help?  Is there some better way?
 
- 6 files changed,  9 insertions(+),  8 deletions(-)
- 6 files changed, 11 insertions(+),  9 deletions(-)
- 5 files changed, 50 insertions(+),  2 deletions(-)
- 6 files changed,  2 insertions(+), 65 deletions(-)
- 1 files changed,  5 insertions(+),  0 deletions(-)
+(Approximation due to Jim Rees).
 
-versus
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+---
+ include/linux/string.h |    6 ++++++
+ net/sunrpc/cache.c     |    2 +-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
- 6 files changed, 10 insertions(+),  9 deletions(-)
- 6 files changed, 11 insertions(+), 11 deletions(-)
- 5 files changed,  3 insertions(+),  3 deletions(-)
- 6 files changed,  4 insertions(+), 20 deletions(-)
- 1 files changed,  5 insertions(+),  0 deletions(-)
+diff --git a/include/linux/string.h b/include/linux/string.h
+index ffe0442..d4809b7 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -126,6 +126,12 @@ extern void argv_free(char **argv);
+ extern bool sysfs_streq(const char *s1, const char *s2);
+ extern int strtobool(const char *s, bool *res);
+ 
++/*
++ * length of the decimal representation of an unsigned integer.  Just an
++ * approximation, but it's right for types of size 1 to 36 bytes:
++ */
++#define base10len(i) (sizeof(i) * 24 / 10 + 1)
++
+ #ifdef CONFIG_BINARY_PRINTF
+ int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
+ int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 2afd2a8..1dcd2b3 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1409,7 +1409,7 @@ static ssize_t read_flush(struct file *file, char __user *buf,
+ 			  size_t count, loff_t *ppos,
+ 			  struct cache_detail *cd)
+ {
+-	char tbuf[20];
++	char tbuf[base10len(long) + 2];
+ 	unsigned long p = *ppos;
+ 	size_t len;
+ 
+-- 
+1.7.9.5
 
-The overall result is basically the same, but it's way simpler to look
-at obvious and well done patches than checking whether a subtle copy
-and paste bug happened in 3/5 of the first version. Copy and paste is
-the #1 cause for subtle bugs. :)
-
-I'm waiting for the ack of Xen folks before taking it into tip.
-
-Thanks for following up!
-
-	tglx
