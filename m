@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757784Ab2HUP7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:59:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55283 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757742Ab2HUP71 (ORCPT
+	id S1757770Ab2HUQAC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:00:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60518 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab2HUP77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:59:27 -0400
-Message-ID: <5033B052.7010506@gmail.com>
-Date: Tue, 21 Aug 2012 23:59:14 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 21 Aug 2012 11:59:59 -0400
+Date: Tue, 21 Aug 2012 08:59:39 -0700
+From: tip-bot for Cody P Schafer <cody@linux.vnet.ibm.com>
+Message-ID: <tip-261ee821c256dffa02e5608c7df51744a03992a2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, matthltc@us.ibm.com,
+        dave@linux.vnet.ibm.com, namhyung@kernel.org,
+        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
+        a.p.zijlstra@chello.nl, dave@linux.vnet.ibm.com, matthltc@us.ibm.com,
+        namhyung@kernel.org, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
+In-Reply-To: <1344637382-22789-7-git-send-email-cody@linux.vnet.ibm.com>
+References: <1344637382-22789-7-git-send-email-cody@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols:
+  Remove unneeded call to dso__set_long_name()
+Git-Commit-ID: 261ee821c256dffa02e5608c7df51744a03992a2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Hayes Wang <hayeswang@realtek.com>
-CC: Yu Zhao <yu.zhao@intel.com>, Dexuan Cui <dexuan.cui@intel.com>,
-        Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities
- registers
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com> <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com> <50325732.3000700@gmail.com> <CAErSpo4-SGH__kE5tPNzz+VO=V-GKOMdcKCqqy6s3=5sNKgG0w@mail.gmail.com> <50325C18.9030207@gmail.com> <CAErSpo6t9m0xmWkXfmONtbicjqLR_z5dLsjKCLWQfcktzRKkUA@mail.gmail.com> <CAErSpo5=OUM9veX8890USWegTG_Fhh10soxPJbjemd80bAO0qg@mail.gmail.com>
-In-Reply-To: <CAErSpo5=OUM9veX8890USWegTG_Fhh10soxPJbjemd80bAO0qg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:59:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-	Thanks for your help to finalize the patchset.
-	There's another suspicious issue in r8169.c, which directly writes PCI_EXP_DEVCTL_NOSNOOP_EN
-to PCI_EXP_DEVCTL. I feel it should preserve other bits when setting the NOSNOOP flag.
-	Regards!
-	Gerry
+Commit-ID:  261ee821c256dffa02e5608c7df51744a03992a2
+Gitweb:     http://git.kernel.org/tip/261ee821c256dffa02e5608c7df51744a03992a2
+Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
+AuthorDate: Fri, 10 Aug 2012 15:22:52 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 13 Aug 2012 14:04:32 -0300
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index b47d5b3..4104968 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5405,14 +5384,9 @@ static void rtl_hw_start_8101(struct net_device *dev)
-                tp->event_slow &= ~RxFIFOOver;
+perf symbols: Remove unneeded call to dso__set_long_name()
 
-        if (tp->mac_version == RTL_GIGA_MAC_VER_13 ||
--           tp->mac_version == RTL_GIGA_MAC_VER_16) {
--               int cap = pci_pcie_cap(pdev);
--
--               if (cap) {
--                       pci_write_config_word(pdev, cap + PCI_EXP_DEVCTL,
--                                             PCI_EXP_DEVCTL_NOSNOOP_EN);
--               }
--       }
-+           tp->mac_version == RTL_GIGA_MAC_VER_16)
-+               pcie_capability_write_word(pdev, PCI_EXP_DEVCTL,
-+                                          PCI_EXP_DEVCTL_NOSNOOP_EN);
+dso__set_long_name() is already called by dso__load_vmlinux(), avoid
+calling it a second time unnecessarily.
 
-        RTL_W8(Cfg9346, Cfg9346_Unlock);
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: David Hansen <dave@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Matt Hellsley <matthltc@us.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1344637382-22789-7-git-send-email-cody@linux.vnet.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index f02de8a..42c0d94 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1388,10 +1388,8 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 	filename = dso__build_id_filename(dso, NULL, 0);
+ 	if (filename != NULL) {
+ 		err = dso__load_vmlinux(dso, map, filename, filter);
+-		if (err > 0) {
+-			dso__set_long_name(dso, filename);
++		if (err > 0)
+ 			goto out;
+-		}
+ 		free(filename);
+ 	}
+ 
