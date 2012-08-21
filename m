@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab2HUPP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:15:57 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:27814 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab2HUPPx (ORCPT
+	id S1756596Ab2HUPQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:16:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50077 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391Ab2HUPQd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:15:53 -0400
-X-IronPort-AV: E=Sophos;i="4.77,802,1336348800"; 
-   d="scan'208";a="14109700"
-From: Attilio Rao <attilio.rao@citrix.com>
-To: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <tglx@linutronix.de>, <x86@kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>
-CC: <konrad.wilk@oracle.com>, Attilio Rao <attilio.rao@citrix.com>
-Subject: [PATCH v3 0/2] XEN/X86: Document pagetable_reserve PVOPS and enforce a better semantic
-Date: Tue, 21 Aug 2012 16:02:24 +0100
-Message-ID: <1345561346-6781-1-git-send-email-attilio.rao@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 21 Aug 2012 11:16:33 -0400
+Message-ID: <1345562166.23018.109.camel@twins>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Date: Tue, 21 Aug 2012 17:16:06 +0200
+In-Reply-To: <20120821135223.GA7117@redhat.com>
+References: <cover.1345519422.git.aquini@redhat.com>
+	 <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
+	 <20120821135223.GA7117@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When looking for documenting the pagetable_reserve PVOPS, I realized that it
-assumes start == pgt_buf_start. I think this is not semantically right
-(even if with the current code this should not be a problem in practice) and
-what we really want is to extend the logic in order to do the RO -> RW
-convertion also for the range [pgt_buf_start, start).
-This patch then implements this missing conversion, adding some smaller
-cleanups and finally provides documentation for the PVOPS.
-Please look at 2/2 for more details on how the comment is structured.
-If we get this right we will have a reference to be used later on for others
-PVOPS.
+On Tue, 2012-08-21 at 16:52 +0300, Michael S. Tsirkin wrote:
+> > +             rcu_read_lock();
+> > +             mapping = rcu_dereference(page->mapping);
+> > +             if (mapping_balloon(mapping))
+> > +                     ret = true;
+> > +             rcu_read_unlock();
+> 
+> This looks suspicious: you drop rcu_read_unlock
+> so can't page switch from balloon to non balloon? 
 
-The difference with v1 is that sh_start local variable in
-xen_mapping_pagetable_reserve() is renamed as begin. Also, the commit messages
-have been tweaked.
-
-The difference with v2 is that compiling warnings for x86_32 are fixed
-about the usage of wrong format strings for panic() and pr_debug(). Also,
-the range printing format has been unified and PFN_PHYS() members are
-casted to u64 on printing, to remain consistent (which is basically
-what also lib/swiotlb.c does.
-
-Attilio Rao (2):
-  XEN/X86: Improve semantic support for pagetable_reserve PVOPS
-  XEN: Document the semantic of the pagetable_reserve PVOPS
-
- arch/x86/include/asm/x86_init.h |   19 +++++++++++++++++--
- arch/x86/mm/init.c              |    4 ++++
- arch/x86/xen/mmu.c              |   22 ++++++++++++++++++++--
- 3 files changed, 41 insertions(+), 4 deletions(-)
-
--- 
-1.7.2.5
-
+RCU read lock is a non-exclusive lock, it cannot avoid anything like
+that.
