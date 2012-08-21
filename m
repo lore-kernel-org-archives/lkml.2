@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2HUJUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:20:44 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37219 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755491Ab2HUJUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:20:31 -0400
-Message-ID: <5033521A.9050704@parallels.com>
-Date: Tue, 21 Aug 2012 13:17:14 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
- children
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <20120817090005.GC18600@dhcp22.suse.cz> <502E0BC3.8090204@parallels.com> <20120817093504.GE18600@dhcp22.suse.cz> <502E17C4.7060204@parallels.com> <20120817103550.GF18600@dhcp22.suse.cz> <502E1E90.1080805@parallels.com> <20120821075430.GA19797@dhcp22.suse.cz> <20120821083501.GC19797@dhcp22.suse.cz>
-In-Reply-To: <20120821083501.GC19797@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755543Ab2HUJUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:20:38 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:57576 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755481Ab2HUJUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 05:20:30 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: alan@linux.intel.com
+Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [RFC/PATCH 11/13] serial: omap: set dev->drvdata before enabling pm_runtime
+Date: Tue, 21 Aug 2012 12:15:53 +0300
+Message-Id: <1345540555-24359-12-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.12.rc3
+In-Reply-To: <1345540555-24359-1-git-send-email-balbi@ti.com>
+References: <1345540555-24359-1-git-send-email-balbi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 12:35 PM, Michal Hocko wrote:
-> On Tue 21-08-12 09:54:30, Michal Hocko wrote:
->> E.g. how do you handle charges you left behind? Say you charged some
->> pages for stack?
-> 
-> I got to the last patch and see how you do it. You are relying on
-> free_accounted_pages directly which doesn't check kmem_accounted and
-> uses PageUsed bit instead. So this is correct. I guess you are relying
-> on the life cycle of the object in general so other types of objects
-> should be safe as well and there shouldn't be any leaks. It is just that
-> the memcg life time is not bounded now. Will think about that.
-> 
-Unless you have a better way, I believe any kind of transversal in the
-free page path is performance detrimental. So the best way is to be
-explicit and mark a specific callsite as a memcg free.
+by the time we call our first pm_runtme_get_sync()
+after enable pm_runtime, our resume method might
+be called. To avoid problems, we must make sure
+that our dev->drvdata is set correctly before
+our resume method gets called.
 
-As for the unbounded time, you are correct. However, I believe it is
-possible to move a lot of the work we do for free (such as freeing the
-percpu counters and the css_id itself) to an earlier time.
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/tty/serial/omap-serial.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Also, if it ever becomes a problem, it is theoretically possible to
-avoid this, by tracking the kmem pages in a per-memcg list. We would
-then transverse such list as we do for user pages, and reparent them.
-The problem is that this is also a bit space inefficient, since we can't
-reuse any more fields in page_struct for the list_head, so we'd need an
-external structure. There is a list_head + a pointer per tracked page.
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 458d77c..ba9cdf1 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -1298,6 +1298,7 @@ static int serial_omap_probe(struct platform_device *pdev)
+ 	serial_omap_uart_wq = create_singlethread_workqueue(up->name);
+ 	INIT_WORK(&up->qos_work, serial_omap_uart_qos_work);
+ 
++	platform_set_drvdata(pdev, up);
+ 	pm_runtime_use_autosuspend(&pdev->dev);
+ 	pm_runtime_set_autosuspend_delay(&pdev->dev,
+ 			omap_up_info->autosuspend_timeout);
+@@ -1317,7 +1318,6 @@ static int serial_omap_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_mark_last_busy(up->dev);
+ 	pm_runtime_put_autosuspend(up->dev);
+-	platform_set_drvdata(pdev, up);
+ 	return 0;
+ 
+ err_add_port:
+-- 
+1.7.12.rc3
+
