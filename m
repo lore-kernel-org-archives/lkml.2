@@ -1,116 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2HUIXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:23:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58174 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754047Ab2HUIXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:23:02 -0400
-Date: Tue, 21 Aug 2012 10:22:59 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 10/11] memcg: allow a memcg with kmem charges to be
- destructed.
-Message-ID: <20120821082259.GB19797@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-11-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344517279-30646-11-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754309Ab2HUI2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:28:13 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:55879 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754246Ab2HUI2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 04:28:09 -0400
+From: Cong Meng <mc@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Kevin Wolf <kwolf@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com, zwanp@cn.ibm.com,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org, Cong Meng <mc@linux.vnet.ibm.com>
+Subject: [PATCH v1] virtio-scsi: get and set the queue limits for sg device
+Date: Tue, 21 Aug 2012 16:26:49 +0800
+Message-Id: <1345537609-21676-1-git-send-email-mc@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+x-cbid: 12082108-0342-0000-0000-0000029E23A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-08-12 17:01:18, Glauber Costa wrote:
-> Because the ultimate goal of the kmem tracking in memcg is to track slab
-> pages as well, we can't guarantee that we'll always be able to point a
-> page to a particular process, and migrate the charges along with it -
-> since in the common case, a page will contain data belonging to multiple
-> processes.
-> 
-> Because of that, when we destroy a memcg, we only make sure the
-> destruction will succeed by discounting the kmem charges from the user
-> charges when we try to empty the cgroup.
+Each virtio scsi HBA has global request queue limits. But the passthrough
+LUNs (scsi-generic) come from different host HBAs may have different request
+queue limits. If the guest sends commands that exceed the host limits, the
+commands will be rejected by host HAB. 
 
-This changes the semantic of memory.force_empty file because the usage
-should be 0 on success but it will show kmem usage in fact now. I guess
-it is inevitable with u+k accounting so you should be explicit about
-that and also update the documentation. If some tests (I am not 100%
-sure but I guess LTP) rely on that then they could be fixed by checking
-the kmem limit as well.
+This patch addresses this issue by getting the per-LUN queue limits via the the
+newly added virtio control request, then setting them properly.
 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> ---
->  mm/memcontrol.c | 17 ++++++++++++++++-
->  1 file changed, 16 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3d30b79..7c1ea49 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -649,6 +649,11 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
->  {
->  	if (test_bit(KMEM_ACCOUNTED_THIS, &memcg->kmem_accounted))
->  		static_key_slow_dec(&memcg_kmem_enabled_key);
-> +	/*
-> +	 * This check can't live in kmem destruction function,
-> +	 * since the charges will outlive the cgroup
-> +	 */
-> +	WARN_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
->  }
->  #else
->  static void disarm_kmem_keys(struct mem_cgroup *memcg)
-> @@ -4005,6 +4010,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg, bool free_all)
->  	int node, zid, shrink;
->  	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
->  	struct cgroup *cgrp = memcg->css.cgroup;
-> +	u64 usage;
->  
->  	css_get(&memcg->css);
->  
-> @@ -4038,8 +4044,17 @@ move_account:
->  		mem_cgroup_end_move(memcg);
->  		memcg_oom_recover(memcg);
->  		cond_resched();
-> +		/*
-> +		 * Kernel memory may not necessarily be trackable to a specific
-> +		 * process. So they are not migrated, and therefore we can't
-> +		 * expect their value to drop to 0 here.
-> +		 *
-> +		 * having res filled up with kmem only is enough
-> +		 */
-> +		usage = res_counter_read_u64(&memcg->res, RES_USAGE) -
-> +			res_counter_read_u64(&memcg->kmem, RES_USAGE);
->  	/* "ret" should also be checked to ensure all lists are empty. */
-> -	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
-> +	} while (usage > 0 || ret);
->  out:
->  	css_put(&memcg->css);
->  	return ret;
-> -- 
-> 1.7.11.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+---
+ drivers/scsi/virtio_scsi.c  |  113 +++++++++++++++++++++++++++++++++++++------
+ include/linux/virtio_scsi.h |   18 +++++++
+ 2 files changed, 116 insertions(+), 15 deletions(-)
 
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 173cb39..ec5066f 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -35,12 +35,14 @@ struct virtio_scsi_cmd {
+ 		struct virtio_scsi_cmd_req       cmd;
+ 		struct virtio_scsi_ctrl_tmf_req  tmf;
+ 		struct virtio_scsi_ctrl_an_req   an;
++		struct virtio_scsi_ctrl_lq_req   lq;
+ 	} req;
+ 	union {
+ 		struct virtio_scsi_cmd_resp      cmd;
+ 		struct virtio_scsi_ctrl_tmf_resp tmf;
+ 		struct virtio_scsi_ctrl_an_resp  an;
+ 		struct virtio_scsi_event         evt;
++		struct virtio_scsi_ctrl_lq_resp  lq;
+ 	} resp;
+ } ____cacheline_aligned_in_smp;
+ 
+@@ -469,6 +471,46 @@ out:
+ 	return ret;
+ }
+ 
++static u32 virtscsi_lun_query(struct scsi_device *sdev, u32 *value, u32 subtype)
++{
++	struct Scsi_Host *shost = sdev->host;
++	struct virtio_scsi *vscsi = shost_priv(shost);
++	DECLARE_COMPLETION_ONSTACK(comp);
++	struct virtio_scsi_cmd *cmd;
++	struct virtio_scsi_target_state *tgt = vscsi->tgt[sdev->id];
++	unsigned int ret = VIRTIO_SCSI_S_FAILURE;
++
++	cmd = mempool_alloc(virtscsi_cmd_pool, GFP_ATOMIC);
++	if (!cmd)
++		goto out;
++
++	memset(cmd, 0, sizeof(*cmd));
++	cmd->comp = &comp;
++	cmd->req.lq = (struct virtio_scsi_ctrl_lq_req){
++		.type = VIRTIO_SCSI_T_LUN_QUERY,
++		.subtype = subtype,
++		.lun[0] = 1,
++		.lun[1] = sdev->id,
++		.lun[2] = (sdev->lun >> 8) | 0x40,
++		.lun[3] = sdev->lun & 0xff,
++	};
++
++	if (virtscsi_kick_cmd(tgt, &vscsi->ctrl_vq, cmd, sizeof cmd->req.lq,
++				sizeof cmd->resp.lq, GFP_NOIO) < 0) {
++		goto out;
++	}
++
++	wait_for_completion(&comp);
++
++	ret = cmd->resp.lq.response;
++	if (ret == VIRTIO_SCSI_S_OK) {
++		*value = cmd->resp.lq.value;
++	}
++out:
++	mempool_free(cmd, virtscsi_cmd_pool);
++	return ret;
++}
++
+ static int virtscsi_device_reset(struct scsi_cmnd *sc)
+ {
+ 	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
+@@ -516,20 +558,6 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
+ 	return virtscsi_tmf(vscsi, cmd);
+ }
+ 
+-static struct scsi_host_template virtscsi_host_template = {
+-	.module = THIS_MODULE,
+-	.name = "Virtio SCSI HBA",
+-	.proc_name = "virtio_scsi",
+-	.queuecommand = virtscsi_queuecommand,
+-	.this_id = -1,
+-	.eh_abort_handler = virtscsi_abort,
+-	.eh_device_reset_handler = virtscsi_device_reset,
+-
+-	.can_queue = 1024,
+-	.dma_boundary = UINT_MAX,
+-	.use_clustering = ENABLE_CLUSTERING,
+-};
+-
+ #define virtscsi_config_get(vdev, fld) \
+ 	({ \
+ 		typeof(((struct virtio_scsi_config *)0)->fld) __val; \
+@@ -547,6 +575,60 @@ static struct scsi_host_template virtscsi_host_template = {
+ 				  &__val, sizeof(__val)); \
+ 	})
+ 
++static u32 virtscsi_max_sectors(struct scsi_device *sdev, u32 *value)
++{
++	return virtscsi_lun_query(sdev, value, VIRTIO_SCSI_T_LQ_MAX_SECTORS);
++}
++
++static u32 virtscsi_max_segments(struct scsi_device *sdev, u32 *value)
++{
++	return virtscsi_lun_query(sdev, value, VIRTIO_SCSI_T_LQ_MAX_SEGMENTS);
++}
++
++static u32 virtscsi_max_segment_size(struct scsi_device *sdev, u32 *value)
++{
++	return virtscsi_lun_query(sdev, value, VIRTIO_SCSI_T_LQ_MAX_SEGMENT_SIZE);
++}
++
++static int virtscsi_slave_alloc(struct scsi_device *sdev)
++{
++	struct Scsi_Host *shost = sdev->host;
++	struct virtio_scsi *vscsi = shost_priv(shost);
++	struct virtio_device *vdev = vscsi->vdev;
++	struct request_queue *q = sdev->request_queue;
++	unsigned int max_sectors, max_segments, max_segment_size;
++
++	if (!virtio_has_feature(vdev, VIRTIO_SCSI_F_LUN_QUERY))
++		goto out;
++
++	if (virtscsi_max_sectors(sdev, &max_sectors) ||
++	    virtscsi_max_segments(sdev, &max_segments) ||
++	    virtscsi_max_segment_size(sdev, &max_segment_size)) {
++		goto out;
++	}
++
++	blk_queue_max_hw_sectors(q, max_sectors);
++	blk_queue_max_segments(q, max_segments - 2);
++	blk_queue_max_segment_size(q, max_segment_size);
++out:
++	return 0;
++}
++
++static struct scsi_host_template virtscsi_host_template = {
++	.module = THIS_MODULE,
++	.name = "Virtio SCSI HBA",
++	.proc_name = "virtio_scsi",
++	.queuecommand = virtscsi_queuecommand,
++	.slave_alloc = virtscsi_slave_alloc,
++	.this_id = -1,
++	.eh_abort_handler = virtscsi_abort,
++	.eh_device_reset_handler = virtscsi_device_reset,
++
++	.can_queue = 1024,
++	.dma_boundary = UINT_MAX,
++	.use_clustering = ENABLE_CLUSTERING,
++};
++
+ static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
+ 			     struct virtqueue *vq)
+ {
+@@ -728,7 +810,8 @@ static struct virtio_device_id id_table[] = {
+ };
+ 
+ static unsigned int features[] = {
+-	VIRTIO_SCSI_F_HOTPLUG
++	VIRTIO_SCSI_F_HOTPLUG,
++	VIRTIO_SCSI_F_LUN_QUERY
+ };
+ 
+ static struct virtio_driver virtio_scsi_driver = {
+diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+index dc8d305..c14c3ee 100644
+--- a/include/linux/virtio_scsi.h
++++ b/include/linux/virtio_scsi.h
+@@ -50,6 +50,17 @@ struct virtio_scsi_ctrl_an_resp {
+ 	u8 response;
+ } __packed;
+ 
++struct virtio_scsi_ctrl_lq_req {
++	u32 type;
++	u8 lun[8];
++	u32 subtype;
++} __packed;
++
++struct virtio_scsi_ctrl_lq_resp {
++	u32 response;
++	u32 value;
++} __packed;
++
+ struct virtio_scsi_event {
+ 	u32 event;
+ 	u8 lun[8];
+@@ -72,6 +83,7 @@ struct virtio_scsi_config {
+ /* Feature Bits */
+ #define VIRTIO_SCSI_F_INOUT                    0
+ #define VIRTIO_SCSI_F_HOTPLUG                  1
++#define VIRTIO_SCSI_F_LUN_QUERY                3
+ 
+ /* Response codes */
+ #define VIRTIO_SCSI_S_OK                       0
+@@ -92,6 +104,7 @@ struct virtio_scsi_config {
+ #define VIRTIO_SCSI_T_TMF                      0
+ #define VIRTIO_SCSI_T_AN_QUERY                 1
+ #define VIRTIO_SCSI_T_AN_SUBSCRIBE             2
++#define VIRTIO_SCSI_T_LUN_QUERY                3
+ 
+ /* Valid TMF subtypes.  */
+ #define VIRTIO_SCSI_T_TMF_ABORT_TASK           0
+@@ -103,6 +116,11 @@ struct virtio_scsi_config {
+ #define VIRTIO_SCSI_T_TMF_QUERY_TASK           6
+ #define VIRTIO_SCSI_T_TMF_QUERY_TASK_SET       7
+ 
++/* LUN Query */
++#define VIRTIO_SCSI_T_LQ_MAX_SECTORS           0
++#define VIRTIO_SCSI_T_LQ_MAX_SEGMENTS          1
++#define VIRTIO_SCSI_T_LQ_MAX_SEGMENT_SIZE      2
++
+ /* Events.  */
+ #define VIRTIO_SCSI_T_EVENTS_MISSED            0x80000000
+ #define VIRTIO_SCSI_T_NO_EVENT                 0
 -- 
-Michal Hocko
-SUSE Labs
+1.7.7.6
+
