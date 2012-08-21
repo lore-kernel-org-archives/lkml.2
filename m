@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab2HUSW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:22:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22673 "EHLO mx1.redhat.com"
+	id S932285Ab2HUSWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:22:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12746 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196Ab2HUSWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:22:25 -0400
-Date: Tue, 21 Aug 2012 14:55:03 -0300
+	id S932196Ab2HUSWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 14:22:32 -0400
+Date: Tue, 21 Aug 2012 14:42:52 -0300
 From: Rafael Aquini <aquini@redhat.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org,
         Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
@@ -18,36 +19,54 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Minchan Kim <minchan@kernel.org>
 Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
  pages mobility
-Message-ID: <20120821175502.GC12294@t510.redhat.com>
+Message-ID: <20120821174251.GB12294@t510.redhat.com>
 References: <cover.1345519422.git.aquini@redhat.com>
  <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
  <20120821135223.GA7117@redhat.com>
+ <1345562166.23018.109.camel@twins>
+ <20120821154142.GA8268@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120821135223.GA7117@redhat.com>
+In-Reply-To: <20120821154142.GA8268@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 04:52:23PM +0300, Michael S. Tsirkin wrote:
-> > + * address_space_operations utilized methods for ballooned pages:
-> > + *   .migratepage    - used to perform balloon's page migration (as is)
-> > + *   .launder_page   - used to isolate a page from balloon's page list
-> > + *   .freepage       - used to reinsert an isolated page to balloon's page list
-> > + */
+On Tue, Aug 21, 2012 at 06:41:42PM +0300, Michael S. Tsirkin wrote:
+> On Tue, Aug 21, 2012 at 05:16:06PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-08-21 at 16:52 +0300, Michael S. Tsirkin wrote:
+> > > > +             rcu_read_lock();
+> > > > +             mapping = rcu_dereference(page->mapping);
+> > > > +             if (mapping_balloon(mapping))
+> > > > +                     ret = true;
+> > > > +             rcu_read_unlock();
+> > > 
+> > > This looks suspicious: you drop rcu_read_unlock
+> > > so can't page switch from balloon to non balloon? 
+> > 
+> > RCU read lock is a non-exclusive lock, it cannot avoid anything like
+> > that.
 > 
-> It would be a good idea to document the assumptions here.
-> Looks like .launder_page and .freepage are called in rcu critical
-> section.
-> But migratepage isn't - why is that safe?
-> 
+> You are right, of course. So even keeping rcu_read_lock across both test
+> and operation won't be enough - you need to make this function return
+> the mapping and pass it to isolate_page/putback_page so that it is only
+> dereferenced once.
+>
+No, I need to dereference page->mapping to check ->mapping flags here, before
+returning. Remember this function is used at MM's compaction/migration inner
+circles to identify ballooned pages and decide what's the next step. This
+function is doing the right thing, IMHO.
 
-The migratepage callback for virtio_balloon can sleep, and IIUC we cannot sleep
-within a RCU critical section. 
+Also, looking at how compaction/migration work, we verify the only critical path
+for this function is the page isolation step. The other steps (migration and
+putback) perform their work on private lists previouly isolated from a given
+source.
 
-Also, The migratepage callback is called at inner migration's circle function
-move_to_new_page(), and I don't think embedding it in a RCU critical section
-would be a good idea, for the same understanding aforementioned.
+So, we just need to make sure that the isolation part does not screw things up
+by isolating pages that balloon driver is about to release. That's why there are
+so many checkpoints down the page isolation path assuring we really are
+isolating a balloon page. 
+
 
