@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab2HUPc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:32:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59876 "EHLO
+	id S1756936Ab2HUPdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:33:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59898 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756129Ab2HUPcY (ORCPT
+	with ESMTP id S1751248Ab2HUPdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:32:24 -0400
-Date: Tue, 21 Aug 2012 08:31:49 -0700
+	Tue, 21 Aug 2012 11:33:18 -0400
+Date: Tue, 21 Aug 2012 08:32:44 -0700
 From: tip-bot for Feng Tang <feng.tang@intel.com>
-Message-ID: <tip-73994dc158a24df4af77d0a76c9702f120f7a6ad@git.kernel.org>
+Message-ID: <tip-fd6b858a1e110c76e701cd9972a284ed2a7bcc33@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
         peterz@infradead.org, robert.richter@amd.com, dsahern@gmail.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
         peterz@infradead.org, robert.richter@amd.com, dsahern@gmail.com,
         tglx@linutronix.de, feng.tang@intel.com, mingo@elte.hu
-In-Reply-To: <1344419875-21665-3-git-send-email-feng.tang@intel.com>
-References: <1344419875-21665-3-git-send-email-feng.tang@intel.com>
+In-Reply-To: <1344419875-21665-4-git-send-email-feng.tang@intel.com>
+References: <1344419875-21665-4-git-send-email-feng.tang@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script: Replace "struct thread" with "
- struct addr_location" as a parameter for "process_event()"
-Git-Commit-ID: 73994dc158a24df4af77d0a76c9702f120f7a6ad
+Subject: [tip:perf/core] perf scripts python: Pass event/thread/
+ dso name and symbol info to event handler in python
+Git-Commit-ID: fd6b858a1e110c76e701cd9972a284ed2a7bcc33
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,217 +32,102 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:31:55 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:32:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  73994dc158a24df4af77d0a76c9702f120f7a6ad
-Gitweb:     http://git.kernel.org/tip/73994dc158a24df4af77d0a76c9702f120f7a6ad
+Commit-ID:  fd6b858a1e110c76e701cd9972a284ed2a7bcc33
+Gitweb:     http://git.kernel.org/tip/fd6b858a1e110c76e701cd9972a284ed2a7bcc33
 Author:     Feng Tang <feng.tang@intel.com>
-AuthorDate: Wed, 8 Aug 2012 17:57:52 +0800
+AuthorDate: Wed, 8 Aug 2012 17:57:53 +0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 8 Aug 2012 12:46:40 -0300
+CommitDate: Wed, 8 Aug 2012 12:48:02 -0300
 
-perf script: Replace "struct thread" with "struct addr_location" as a parameter for "process_event()"
+perf scripts python: Pass event/thread/dso name and symbol info to event handler in python
 
-Both perl and python script start processing events other than trace
-points, and it's useful to pass the resolved symbol and the dso info to
-the event handler in script for better analysis and statistics.
+Also as suggested by Arnaldo, pack all these parameters to a dictionary,
+which is more expandable for adding new parameters while keeping the
+compatibility for old scripts.
 
-Struct thread is already a member of struct addr_location, using
-addr_location will keep the thread info, while providing additional
-symbol and dso info if exist, so that the script itself doesn't need to
-bother to do the symbol resolving and dso searching work.
-
-Tested-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Feng Tang <feng.tang@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1344419875-21665-3-git-send-email-feng.tang@intel.com
+Link: http://lkml.kernel.org/r/1344419875-21665-4-git-send-email-feng.tang@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c                        |    5 +++--
- .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++-----
- .../util/scripting-engines/trace-event-python.c    |   13 +++++++------
- tools/perf/util/trace-event-scripting.c            |    2 +-
- tools/perf/util/trace-event.h                      |    5 +++--
- 5 files changed, 20 insertions(+), 16 deletions(-)
+ .../util/scripting-engines/trace-event-python.c    |   35 ++++++++++++++++---
+ 1 files changed, 29 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 6425612..30a9cb8 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -396,9 +396,10 @@ static void print_sample_bts(union perf_event *event,
- 
- static void process_event(union perf_event *event, struct perf_sample *sample,
- 			  struct perf_evsel *evsel, struct machine *machine,
--			  struct thread *thread)
-+			  struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
-+	struct thread *thread = al->thread;
- 
- 	if (output[attr->type].fields == 0)
- 		return;
-@@ -511,7 +512,7 @@ static int process_sample_event(struct perf_tool *tool __used,
- 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
- 		return 0;
- 
--	scripting_ops->process_event(event, sample, evsel, machine, thread);
-+	scripting_ops->process_event(event, sample, evsel, machine, &al);
- 
- 	evsel->hists.stats.total_period += sample->period;
- 	return 0;
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index 52580d0..d280010 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -261,7 +261,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 				    struct perf_sample *sample,
- 				    struct perf_evsel *evsel,
- 				    struct machine *machine __unused,
--				    struct thread *thread)
-+				    struct addr_location *al)
- {
- 	struct format_field *field;
- 	static char handler[256];
-@@ -272,6 +272,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __unused,
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
-+	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	dSP;
-@@ -349,7 +350,7 @@ static void perl_process_event_generic(union perf_event *event,
- 				       struct perf_sample *sample,
- 				       struct perf_evsel *evsel,
- 				       struct machine *machine __unused,
--				       struct thread *thread __unused)
-+				       struct addr_location *al __unused)
- {
- 	dSP;
- 
-@@ -375,10 +376,10 @@ static void perl_process_event(union perf_event *event,
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct thread *thread)
-+			       struct addr_location *al)
- {
--	perl_process_tracepoint(event, sample, evsel, machine, thread);
--	perl_process_event_generic(event, sample, evsel, machine, thread);
-+	perl_process_tracepoint(event, sample, evsel, machine, al);
-+	perl_process_event_generic(event, sample, evsel, machine, al);
- }
- 
- static void run_start_sub(void)
 diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index b9010d8..24711b3 100644
+index 24711b3..7e3f576 100644
 --- a/tools/perf/util/scripting-engines/trace-event-python.c
 +++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -225,7 +225,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine __unused,
--				 struct thread *thread)
-+				 struct addr_location *al)
- {
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
-@@ -238,6 +238,7 @@ static void python_process_tracepoint(union perf_event *perf_event __unused,
- 	int cpu = sample->cpu;
- 	void *data = sample->raw_data;
- 	unsigned long long nsecs = sample->time;
-+	struct thread *thread = al->thread;
- 	char *comm = thread->comm;
- 
- 	t = PyTuple_New(MAX_FIELDS);
-@@ -342,7 +343,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
- 					 struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
+@@ -345,15 +345,23 @@ static void python_process_general_event(union perf_event *perf_event __unused,
  					 struct machine *machine __unused,
--					 struct thread *thread __unused)
-+					 struct addr_location *al __unused)
+ 					 struct addr_location *al __unused)
  {
- 	PyObject *handler, *retval, *t;
+-	PyObject *handler, *retval, *t;
++	PyObject *handler, *retval, *t, *dict;
  	static char handler_name[64];
-@@ -361,7 +362,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 	unsigned n = 0;
+-	void *data = sample->raw_data;
++	struct thread *thread = al->thread;
+ 
++	/*
++	 * Use the MAX_FIELDS to make the function expandable, though
++	 * currently there is only one itme for the tuple.
++	 */
+ 	t = PyTuple_New(MAX_FIELDS);
+ 	if (!t)
+ 		Py_FatalError("couldn't create Python tuple");
+ 
++	dict = PyDict_New();
++	if (!dict)
++		Py_FatalError("couldn't create Python dictionary");
++
+ 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
+ 
+ 	handler = PyDict_GetItemString(main_dict, handler_name);
+@@ -362,11 +370,25 @@ static void python_process_general_event(union perf_event *perf_event __unused,
  		goto exit;
  	}
  
--	/* Pass 3 parameters: event_attr, perf_sample, raw data */
-+	/* Pass 4 parameters: event_attr, perf_sample, raw data, thread name */
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
- 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
-@@ -380,17 +381,17 @@ static void python_process_event(union perf_event *perf_event,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
- 				 struct machine *machine,
--				 struct thread *thread)
-+				 struct addr_location *al)
- {
- 	switch (evsel->attr.type) {
- 	case PERF_TYPE_TRACEPOINT:
- 		python_process_tracepoint(perf_event, sample, evsel,
--					  machine, thread);
-+					  machine, al);
- 		break;
- 	/* Reserve for future process_hw/sw/raw APIs */
- 	default:
- 		python_process_general_event(perf_event, sample, evsel,
--					     machine, thread);
-+					     machine, al);
- 	}
+-	/* Pass 4 parameters: event_attr, perf_sample, raw data, thread name */
+-	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)&evsel->attr, sizeof(evsel->attr)));
+-	PyTuple_SetItem(t, n++, PyString_FromStringAndSize((void *)sample, sizeof(*sample)));
+-	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(data, sample->raw_size));
++	PyDict_SetItemString(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
++	PyDict_SetItemString(dict, "attr", PyString_FromStringAndSize(
++			(const char *)&evsel->attr, sizeof(evsel->attr)));
++	PyDict_SetItemString(dict, "sample", PyString_FromStringAndSize(
++			(const char *)sample, sizeof(*sample)));
++	PyDict_SetItemString(dict, "raw_buf", PyString_FromStringAndSize(
++			(const char *)sample->raw_data, sample->raw_size));
++	PyDict_SetItemString(dict, "comm",
++			PyString_FromString(thread->comm));
++	if (al->map) {
++		PyDict_SetItemString(dict, "dso",
++			PyString_FromString(al->map->dso->name));
++	}
++	if (al->sym) {
++		PyDict_SetItemString(dict, "symbol",
++			PyString_FromString(al->sym->name));
++	}
+ 
++	PyTuple_SetItem(t, n++, dict);
+ 	if (_PyTuple_Resize(&t, n) == -1)
+ 		Py_FatalError("error resizing Python tuple");
+ 
+@@ -374,6 +396,7 @@ static void python_process_general_event(union perf_event *perf_event __unused,
+ 	if (retval == NULL)
+ 		handler_call_die(handler_name);
+ exit:
++	Py_DECREF(dict);
+ 	Py_DECREF(t);
  }
- 
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index aceb8ee..302ff26 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -39,7 +39,7 @@ static void process_event_unsupported(union perf_event *event __unused,
- 				      struct perf_sample *sample __unused,
- 				      struct perf_evsel *evsel __unused,
- 				      struct machine *machine __unused,
--				      struct thread *thread __unused)
-+				      struct addr_location *al __unused)
- {
- }
- 
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index cee1635..7575dfd 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -9,7 +9,6 @@ struct machine;
- struct perf_sample;
- union perf_event;
- struct perf_tool;
--struct thread;
- 
- extern int header_page_size_size;
- extern int header_page_ts_size;
-@@ -76,6 +75,8 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- void tracing_data_put(struct tracing_data *tdata);
- 
- 
-+struct addr_location;
-+
- struct scripting_ops {
- 	const char *name;
- 	int (*start_script) (const char *script, int argc, const char **argv);
-@@ -84,7 +85,7 @@ struct scripting_ops {
- 			       struct perf_sample *sample,
- 			       struct perf_evsel *evsel,
- 			       struct machine *machine,
--			       struct thread *thread);
-+			       struct addr_location *al);
- 	int (*generate_script) (struct pevent *pevent, const char *outfile);
- };
  
