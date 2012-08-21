@@ -1,70 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2HUXan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 19:30:43 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62012 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab2HUXal (ORCPT
+	id S1753082Ab2HUXio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 19:38:44 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46134 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab2HUXiY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 19:30:41 -0400
-Date: Tue, 21 Aug 2012 16:29:53 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Lennart Poettering <lpoetter@redhat.com>, aris@redhat.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v6 3/4] cgroup: add xattr support
-In-Reply-To: <20120821214856.GC32596@google.com>
-Message-ID: <alpine.LSU.2.00.1208211606580.2383@eggly.anvils>
-References: <20120816174453.154143248@napanee.usersys.redhat.com> <20120816174454.087507415@napanee.usersys.redhat.com> <20120816200006.GG24861@google.com> <50340110.50607@redhat.com> <20120821214856.GC32596@google.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Aug 2012 19:38:24 -0400
+Date: Tue, 21 Aug 2012 16:38:23 -0700 (PDT)
+Message-Id: <20120821.163823.1448570709635488157.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Aug 2012, Tejun Heo wrote:
-> On Tue, Aug 21, 2012 at 11:43:44PM +0200, Lennart Poettering wrote:
-> > >I'm not against this but unsure whether using kmem is enough for the
-> > >suggested use case.  Lennart, would this suit systemd?  How much
-> > >metadata are we talking about?
-> > 
-> > Just small things, like values, PIDs, i.e. a few 100 bytes or so per
-> > cgroup should be more than sufficient for our needs.
 
-That is reasonable.
+A couple weeks of bug fixing in there.  The largest chunk is all the
+broken crap Amerigo Wang found in the netpoll layer.
 
-> 
-> Alright, then.  I think there's gonna be one more round to address
-> Hugh's comments.  Hugh, how should this be routed?  Is there some git
-> branch that tmpfs changes can go in so that cgroup tree can pull?
+1) netpoll and it's users has several serious bugs:
+   a) uses GFP_KERNEL with locks held
+   b) interfaces requiring interrupts disabled are called with them
+      enabled
+   c) and vice versa
+   d) VLAN tag demuxing, as per all other RX packet input paths, is
+      not applied
 
-No git tree, but we can easily handle it in one of two ways.
+   All from Amerigo Wang.
 
-include/linux/shmem_fs.h and mm/shmem.c usually go to Linus from Andrew
-from his mmotm tree (which includes and is included in linux-next,
-by some magic escaping infinite recursion).
+2) Hopefully cure the ipv4 mapped ipv6 address TCP early demux bugs
+   for good, from Neal Cardwell.
 
-Are we expecting Aristeu+Zefan's simple_xattr patches to go into 3.7?
-I don't have anything planned for shmem.c for 3.7 beyond a bugfix,
-which shouldn't interact with the simple_xattr changes at all
-(I could remove info->lock, but will not do so this time around,
-precisely so as not to interfere with those patches).
+3) Unlike AF_UNIX, AF_PACKET sockets don't set a default credentials
+   when the user doesn't specify one explicitly during sendmsg().
+   Instead we attach an empty (zero) SCM credential block which
+   is definitely not what we want.  Fix from Eric Dumazet.
 
-So it should be perfectly workable for you to take Aristeu+Zefan's
-shmem patches into your cgroup tree, then any further mods from
-mmotm will get layered on top.
+4) IPv6 illegally invokes netdevice notifiers with RCU lock held, fix
+   from Ben Hutchings.
 
-But if you prefer to leave shmem.c changes to Andrew, then it would
-also be perfectly workable for Aristeu to split the 1/4 into two:
-one for you which updates fs/xattr.c and include/linux/xattr.h with
-simple_xattr code stolen from mm/shmem.c and include/linux/shmem_fs.h;
-and one for Andrew which updates mm/shmem.c and include/linux/shmem_fs.h
-to delete its shmem_xattr stuff and use simple_xattr interfaces instead.
+5) inet_csk_route_child_sock() checks wrong inet options pointer, fix
+   from Christoph Paasch.
 
-Either approach is fine with me.
+6) When AF_PACKET is used for transmit, packet loopback doesn't behave
+   properly when a socket fanout is enabled, from Eric Leblond.
 
-Hugh
+7) On bluetooth l2cap channel create failure, we leak the socket, from
+   Jaganath Kanakkassery.
+
+8) Fix all the netprio file handling bugs found by Al Viro, from John
+   Fastabend.
+
+9) Several error return and NULL deref bug fixes in networking drivers
+   from Julia Lawall.
+
+10) A large smattering of struct padding et al. kernel memory leaks
+    to userspace found of Mathias Krause.
+
+11) Conntrack expections in netfilter can access an uninitialized timer,
+    fix from Pablo Neira Ayuso.
+
+12) Several netfilter SIP tracker bug fixes from Patrick McHardy.
+
+13) IPSEC ipv6 routes are not initialized correctly all the time,
+    resulting in an OOPS in inet_putpeer().  Also from Patrick
+    McHardy.
+
+14) Bridging does rcu_dereference() outside of RCU protected area,
+    from Stephen Hemminger.
+
+15) Fix routing cache removal performance regression when looking up
+    output routes that have a local destination.  From Zheng Yan.
+
+Please pull, thanks a lot!
+
+The following changes since commit ddf343f635fe4440cad528e12f96f28bd50aa099:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux (2012-08-14 07:58:59 +0300)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to e0e3cea46d31d23dc40df0a49a7a2c04fe8edfea:
+
+  af_netlink: force credentials passing [CVE-2012-3520] (2012-08-21 14:53:01 -0700)
+
+----------------------------------------------------------------
+Alexey Khoroshilov (1):
+      rndis_wlan: Fix potential memory leak in update_pmkid()
+
+Amerigo Wang (15):
+      netpoll: use GFP_ATOMIC in slave_enable_netpoll() and __netpoll_setup()
+      netpoll: make __netpoll_cleanup non-block
+      netconsole: do not release spin_lock when calling __netpoll_cleanup
+      netpoll: take rcu_read_lock_bh() in netpoll_rx()
+      netpoll: use netpoll_rx_on() in netpoll_rx()
+      netpoll: take rcu_read_lock_bh() in netpoll_send_skb_on_dev()
+      bridge: add some comments for NETDEV_RELEASE
+      bridge: use list_for_each_entry() in netpoll functions
+      netpoll: check netpoll tx status on the right device
+      netpoll: convert several functions to bool
+      vlan: clean up some variable names
+      vlan: clean up vlan_dev_hard_start_xmit()
+      netpoll: handle vlan tags in netpoll tx and rx path
+      netpoll: re-enable irq in poll_napi()
+      netconsole: remove a redundant netconsole_target_put()
+
+Andrei Emeltchenko (1):
+      Bluetooth: smp: Fix possible NULL dereference
+
+Ben Hutchings (4):
+      llc2: Fix silent failure of llc_station_init()
+      llc2: Call llc_station_exit() on llc2_init() failure path
+      llc: Fix races between llc2 handler use and (un)registration
+      ipv6: addrconf: Avoid calling netdevice notifiers with RCU read-side lock
+
+Bjørn Mork (5):
+      net: qmi_wwan: use fixed interface number matching
+      net: qmi_wwan: add Sierra Wireless devices
+      net: qmi_wwan: compress device_id list using macros
+      net: sierra_net: replace whitelist with ifnumber match
+      net: qmi_wwan: new devices: UML290 and K5006-Z
+
+Bob Copeland (1):
+      ath5k: fix spin_lock_irqsave/spin_lock_bh nesting in mesh
+
+Christoph Paasch (1):
+      ipv4: Use newinet->inet_opt in inet_csk_route_child_sock()
+
+Dan Carpenter (1):
+      wireless: at76c50x: signedness bug in at76_dfu_get_state()
+
+David S. Miller (2):
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+      Merge git://1984.lsi.us.es/nf
+
+Dirk Gouders (1):
+      netconsole.txt: revision of examples for the receiver of kernel messages
+
+Eric Dumazet (3):
+      tcp: fix possible socket refcount problem
+      ipv4: fix ip header ident selection in __ip_make_skb()
+      af_netlink: force credentials passing [CVE-2012-3520]
+
+Eric Leblond (1):
+      af_packet: don't emit packet on orig fanout group
+
+Felix Fietkau (1):
+      ath9k: fix interrupt storms on queued hardware reset
+
+Gustavo Padovan (1):
+      Bluetooth: Fix possible deadlock in SCO code
+
+Igor Maravic (1):
+      net: ipv6: proc: Fix error handling
+
+Jaganath Kanakkassery (1):
+      Bluetooth: Fix socket not getting freed if l2cap channel create fails
+
+Jason Wang (1):
+      act_mirred: do not drop packets when fails to mirror it
+
+Jesper Juhl (1):
+      caif: Do not dereference NULL in chnl_recv_cb()
+
+John Fastabend (3):
+      net: netprio: fix files lock and remove useless d_path bits
+      net: netprio: fd passed in SCM_RIGHTS datagram not set correctly
+      net: netprio: fix cgrp create and write priomap race
+
+John W. Linville (2):
+      Merge branch 'master' of git://git.kernel.org/.../bluetooth/bluetooth
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Julia Lawall (6):
+      drivers/net/ethernet/ti/davinci_cpdma.c: Remove potential NULL dereference
+      drivers/net/ethernet/freescale/fs_enet: fix error return code
+      drivers/net/ethernet/mellanox/mlx4/mcg.c: fix error return code
+      drivers/net/wimax/i2400m/fw.c: fix error return code
+      drivers/net/wan/dscc4.c: fix error return code
+      drivers/net/irda: fix error return code
+
+Kelvin Cheung (1):
+      net/stmmac: fix issue of clk_get for Loongson1B.
+
+Lorenzo Bianconi (1):
+      ath9k: fix decrypt_error initialization in ath_rx_tasklet()
+
+Manoj Iyer (1):
+      Bluetooth: btusb: Add vendor specific ID (0a5c:21f4) BCM20702A0
+
+Mathias Krause (14):
+      atm: fix info leak in getsockopt(SO_ATMPVC)
+      atm: fix info leak via getsockname()
+      Bluetooth: HCI - Fix info leak in getsockopt(HCI_FILTER)
+      Bluetooth: HCI - Fix info leak via getsockname()
+      Bluetooth: RFCOMM - Fix info leak in getsockopt(BT_SECURITY)
+      Bluetooth: RFCOMM - Fix info leak in ioctl(RFCOMMGETDEVLIST)
+      Bluetooth: RFCOMM - Fix info leak via getsockname()
+      Bluetooth: L2CAP - Fix info leak via getsockname()
+      l2tp: fix info leak via getsockname()
+      llc: fix info leak via getsockname()
+      dccp: check ccid before dereferencing
+      dccp: fix info leak via getsockopt(DCCP_SOCKOPT_CCID_TX_INFO)
+      ipvs: fix info leak in getsockopt(IP_VS_SO_GET_TIMEOUT)
+      net: fix info leak in compat dev_ifconf()
+
+Neal Cardwell (1):
+      net: tcp: move sk_rx_dst_set call after tcp_create_openreq_child()
+
+Pablo Neira Ayuso (2):
+      netfilter: ctnetlink: fix missing locking while changing conntrack from nfqueue
+      netfilter: nf_ct_expect: fix possible access to uninitialized timer
+
+Patrick McHardy (4):
+      netfilter: nf_ct_sip: fix helper name
+      netfilter: nf_ct_sip: fix IPv6 address parsing
+      netfilter: nf_nat_sip: fix via header translation with multiple parameters
+      net: ipv6: fix oops in inet_putpeer()
+
+Peng Chen (1):
+      Bluetooth: add support for atheros 0489:e057
+
+Phil Edworthy (1):
+      net: sh_eth: Add eth support for R8A7779 device
+
+Rajkumar Manoharan (1):
+      ath9k: stop btcoex on device suspend
+
+Ram Malovany (3):
+      Bluetooth: Fix using NULL inquiry entry
+      Bluetooth: Fix using a NULL inquiry cache entry
+      Bluetooth: Set name_state to unknown when entry name is empty
+
+Randy Dunlap (1):
+      net/core/dev.c: fix kernel-doc warning
+
+Stephen Hemminger (1):
+      bridge: fix rcu dereference outside of rcu_read_lock
+
+Steve Glendinning (1):
+      smsc75xx: add missing entry to MAINTAINERS
+
+Steve Hodgson (1):
+      vmxnet3: Fix race between dev_open() and register_netdev()
+
+Szymon Janc (1):
+      Bluetooth: Fix legacy pairing with some devices
+
+Timur Tabi (2):
+      dt: introduce for_each_available_child_of_node, of_get_next_available_child
+      netdev/phy: skip disabled mdio-mux nodes
+
+Yan, Zheng (1):
+      ipv4: Cache local output routes
+
+ Documentation/networking/netconsole.txt              |  19 +++-
+ MAINTAINERS                                          |   6 ++
+ drivers/bluetooth/ath3k.c                            |   2 +
+ drivers/bluetooth/btusb.c                            |   2 +
+ drivers/net/bonding/bond_main.c                      |  12 ++-
+ drivers/net/ethernet/freescale/fs_enet/mii-bitbang.c |   4 +-
+ drivers/net/ethernet/freescale/fs_enet/mii-fec.c     |   8 +-
+ drivers/net/ethernet/mellanox/mlx4/mcg.c             |   4 +-
+ drivers/net/ethernet/renesas/Kconfig                 |   4 +-
+ drivers/net/ethernet/renesas/sh_eth.c                |  11 ++-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c    |   2 +-
+ drivers/net/ethernet/ti/davinci_cpdma.c              |   3 +-
+ drivers/net/irda/ks959-sir.c                         |   1 +
+ drivers/net/irda/ksdazzle-sir.c                      |   1 +
+ drivers/net/netconsole.c                             |   6 --
+ drivers/net/phy/mdio-mux.c                           |   2 +-
+ drivers/net/team/team.c                              |  16 ++--
+ drivers/net/usb/qmi_wwan.c                           | 251 +++++++++-------------------------------------------
+ drivers/net/usb/sierra_net.c                         |  52 +++--------
+ drivers/net/vmxnet3/vmxnet3_drv.c                    |   2 +-
+ drivers/net/wan/dscc4.c                              |   5 +-
+ drivers/net/wimax/i2400m/fw.c                        |   4 +-
+ drivers/net/wireless/at76c50x-usb.c                  |   2 +-
+ drivers/net/wireless/ath/ath5k/base.c                |   6 +-
+ drivers/net/wireless/ath/ath5k/mac80211-ops.c        |   5 +-
+ drivers/net/wireless/ath/ath9k/mac.c                 |  18 ++--
+ drivers/net/wireless/ath/ath9k/mac.h                 |   1 +
+ drivers/net/wireless/ath/ath9k/main.c                |   4 +-
+ drivers/net/wireless/ath/ath9k/pci.c                 |   1 +
+ drivers/net/wireless/ath/ath9k/recv.c                |   2 +-
+ drivers/net/wireless/rndis_wlan.c                    |   6 +-
+ drivers/of/base.c                                    |  27 ++++++
+ include/linux/if_team.h                              |  30 +++----
+ include/linux/netdevice.h                            |   5 +-
+ include/linux/netfilter/nf_conntrack_sip.h           |   2 +-
+ include/linux/netpoll.h                              |  42 +++++----
+ include/linux/of.h                                   |   7 ++
+ include/net/llc.h                                    |   2 +-
+ include/net/scm.h                                    |   4 +-
+ include/net/xfrm.h                                   |   2 +
+ net/8021q/vlan_dev.c                                 |  52 ++++++-----
+ net/atm/common.c                                     |   1 +
+ net/atm/pvc.c                                        |   1 +
+ net/bluetooth/hci_event.c                            |  28 ++++--
+ net/bluetooth/hci_sock.c                             |   2 +
+ net/bluetooth/l2cap_core.c                           |   1 +
+ net/bluetooth/l2cap_sock.c                           |   3 +-
+ net/bluetooth/rfcomm/sock.c                          |   2 +
+ net/bluetooth/rfcomm/tty.c                           |   2 +-
+ net/bluetooth/sco.c                                  |  19 ++--
+ net/bluetooth/smp.c                                  |   5 +-
+ net/bridge/br_device.c                               |  30 +++----
+ net/bridge/br_forward.c                              |   2 +-
+ net/bridge/br_if.c                                   |   6 +-
+ net/bridge/br_private.h                              |   4 +-
+ net/caif/chnl_net.c                                  |   4 +
+ net/core/dev.c                                       |  17 +++-
+ net/core/netpoll.c                                   | 109 ++++++++++++++++-------
+ net/core/netprio_cgroup.c                            |  30 ++-----
+ net/core/scm.c                                       |   4 +
+ net/dccp/ccid.h                                      |   4 +-
+ net/dccp/ccids/ccid3.c                               |   1 +
+ net/ipv4/inet_connection_sock.c                      |   7 +-
+ net/ipv4/ip_output.c                                 |   2 +-
+ net/ipv4/netfilter/nf_nat_sip.c                      |   9 +-
+ net/ipv4/route.c                                     |   1 -
+ net/ipv4/tcp_ipv4.c                                  |   9 +-
+ net/ipv4/tcp_minisocks.c                             |   2 -
+ net/ipv4/tcp_output.c                                |  14 +--
+ net/ipv4/tcp_timer.c                                 |   6 +-
+ net/ipv6/addrconf.c                                  |   4 +-
+ net/ipv6/proc.c                                      |   4 +-
+ net/ipv6/tcp_ipv6.c                                  |  25 +++---
+ net/ipv6/xfrm6_policy.c                              |   8 ++
+ net/l2tp/l2tp_ip6.c                                  |   1 +
+ net/llc/af_llc.c                                     |   8 +-
+ net/llc/llc_input.c                                  |  21 ++++-
+ net/llc/llc_station.c                                |  23 +----
+ net/netfilter/ipvs/ip_vs_ctl.c                       |   1 +
+ net/netfilter/nf_conntrack_expect.c                  |  29 ++----
+ net/netfilter/nf_conntrack_netlink.c                 |   7 +-
+ net/netfilter/nf_conntrack_sip.c                     |  92 ++++++++++++++-----
+ net/netlink/af_netlink.c                             |   2 +-
+ net/packet/af_packet.c                               |   9 ++
+ net/sched/act_mirred.c                               |  11 ++-
+ net/socket.c                                         |   1 +
+ net/unix/af_unix.c                                   |   4 +-
+ net/xfrm/xfrm_policy.c                               |   2 +
+ 88 files changed, 637 insertions(+), 575 deletions(-)
