@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab2HUTfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 15:35:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19820 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab2HUTfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:35:03 -0400
-Date: Tue, 21 Aug 2012 16:34:39 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120821193438.GE12294@t510.redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <20120821135223.GA7117@redhat.com>
- <20120821175502.GC12294@t510.redhat.com>
- <20120821191612.GA9027@redhat.com>
+	id S1756690Ab2HUTg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:36:56 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56545 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab2HUTgy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 15:36:54 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 21 Aug 2012 12:36:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Sean Young <sean@mess.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: inux-next: Tree for Aug 21 (usb_speed_string)
+Message-ID: <20120821193656.GA10864@roeck-us.net>
+References: <20120821160403.6deca090a9a435d2b1e3d8ba@canb.auug.org.au>
+ <5033CE2F.8000608@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120821191612.GA9027@redhat.com>
+In-Reply-To: <5033CE2F.8000608@xenotime.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 10:16:12PM +0300, Michael S. Tsirkin wrote:
-> On Tue, Aug 21, 2012 at 02:55:03PM -0300, Rafael Aquini wrote:
-> > On Tue, Aug 21, 2012 at 04:52:23PM +0300, Michael S. Tsirkin wrote:
-> > > > + * address_space_operations utilized methods for ballooned pages:
-> > > > + *   .migratepage    - used to perform balloon's page migration (as is)
-> > > > + *   .launder_page   - used to isolate a page from balloon's page list
-> > > > + *   .freepage       - used to reinsert an isolated page to balloon's page list
-> > > > + */
-> > > 
-> > > It would be a good idea to document the assumptions here.
-> > > Looks like .launder_page and .freepage are called in rcu critical
-> > > section.
-> > > But migratepage isn't - why is that safe?
-> > > 
-> > 
-> > The migratepage callback for virtio_balloon can sleep, and IIUC we cannot sleep
-> > within a RCU critical section. 
-> > 
-> > Also, The migratepage callback is called at inner migration's circle function
-> > move_to_new_page(), and I don't think embedding it in a RCU critical section
-> > would be a good idea, for the same understanding aforementioned.
+On Tue, Aug 21, 2012 at 11:06:39AM -0700, Randy Dunlap wrote:
+> On 08/20/2012 11:04 PM, Stephen Rothwell wrote:
 > 
-> Yes but this means it is still exposed to the module unloading
-> races that RCU was supposed to fix.
-> So need to either rework that code so it won't sleep
-> or switch to some other synchronization.
->
-Can you refactor tell_host() to not sleep? Or, can I get rid of calling it at
-virtballoon_migratepage()? If 'no' is the answer for both questions, that's the
-way that code has to remain, even if we find a way around to hack the
-migratepage callback and have it embedded into a RCU crit section.
+> > Hi all,
+> > 
+> > Changes since 20120820:
+> > 
+> 
+> 
+> on x86_64:
+> 
+> ERROR: "usb_speed_string" [drivers/usb/core/usbcore.ko] undefined!
+> 
+> 
+> CONFIG_USB_SUPPORT is not enabled
+> (but many other USB drivers are enabled).
+> 
 
-That's why I believe once the balloon driver is commanded to unload, we must
-flag virtballoon_migratepage to skip it's work. By doing this, the thread
-performing memory compaction will have to recur to the 'putback' path which is
-RCU protected. (IMHO).
+Caused by
 
-As the module will not uload utill it leaks all pages on its list, that unload
-race you pointed before will be covered.
+config IR_TTUSBIR
 
+which selects USB but does not have the necessary dependency on USB_ARCH_HAS_HCD.
+
+Introduced by commit 0938069fa08970f1c898970c1331a029efe9a1ce "[media] rc: Add
+support for the TechnoTrend USB IR Receiver".
+
+Fixing this exposes
+
+ERROR: "usb_kill_urb" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_set_interface" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_free_coherent" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_submit_urb" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_clear_halt" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_ifnum_to_if" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_alloc_coherent" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_free_urb" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+ERROR: "usb_alloc_urb" [drivers/media/usb/gspca/gspca_main.ko] undefined!
+
+which I think is due to CONFIG_USB_GSPCA=m, but I have no idea how that can be
+enabled w/o USB support.
+
+Guenter
