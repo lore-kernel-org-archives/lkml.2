@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab2HUMvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:51:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37900 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab2HUMvU (ORCPT
+	id S1757556Ab2HUMwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:52:11 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:36646 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2HUMwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:51:20 -0400
-Message-ID: <5033843E.8000902@gmail.com>
-Date: Tue, 21 Aug 2012 20:51:10 +0800
-From: qiuxishi <qiuxishi@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 21 Aug 2012 08:52:09 -0400
+Message-ID: <50338458.7090602@panasas.com>
+Date: Tue, 21 Aug 2012 15:51:36 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, liuj97@gmail.com, paul.gortmaker@windriver.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, bessel.wang@huawei.com,
-        wujianguo@huawei.com, qiuxishi@huawei.com, jiang.liu@huawei.com,
-        guohanjun@huawei.com, chenkeping@huawei.com, yinghai@kernel.org,
-        wency@cn.fujitsu.com
-Subject: [PATCH] memory-hotplug: add build zonelists when offline pages
-Content-Type: text/plain; charset=ISO-8859-1
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Pavel Emelyanov <xemul@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org> <50335261.5090504@parallels.com> <87wr0sle4v.fsf@skywalker.in.ibm.com> <503367CB.9080609@parallels.com> <20120821105424.GA7670@moon> <50336C51.60501@parallels.com> <20120821121155.GC9483@fieldses.org> <50337D87.90607@parallels.com> <20120821122908.GE9483@fieldses.org>
+In-Reply-To: <20120821122908.GE9483@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xishi Qiu <qiuxishi@huawei.com>
+On 08/21/2012 03:29 PM, J. Bruce Fields wrote:
+<>
 
-online_pages() does build_all_zonelists() and zone_pcp_update(),
-I think offline_pages() should do it too. The node has no memory
-to allocate, so remove this node's zones form other nodes' zonelists.
+> OK.  So if you don't mind the fact that there are filesystems with
+> inotify support but not filehandle support, then I think generating a
+> filehandle early as you describe would work.  I guess it's a little more
+> memory per watched inode.
+> 
 
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- mm/memory_hotplug.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+For the minority of FSs that do not have a filehandle support it should
+be easy to generate a generic one, that should work 95% of the time.
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index bc7e7a2..5172bd4 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -979,7 +979,11 @@ repeat:
- 	if (!node_present_pages(node)) {
- 		node_clear_state(node, N_HIGH_MEMORY);
- 		kswapd_stop(node);
--	}
-+		mutex_lock(&zonelists_mutex);
-+		build_all_zonelists(NODE_DATA(node), NULL);
-+		mutex_unlock(&zonelists_mutex);
-+	} else
-+		zone_pcp_update(zone);
+Are we guaranteed that after the checkpoint restore the version of
+the Kernel is the same as the one that did the checkpoint? If yes
+then I don't see any problem.
 
- 	vm_total_pages = nr_free_pagecache_pages();
- 	writeback_set_ratelimit();
--- 
-1.7.6.1
+> --b.
+
+
+Cheers
+Boaz
+
