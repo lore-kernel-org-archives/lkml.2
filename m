@@ -1,133 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab2HUNFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:05:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48898 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757314Ab2HUNFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:05:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,802,1336374000"; 
-   d="scan'208";a="207462466"
-Date: Tue, 21 Aug 2012 21:04:58 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 3/3] writeback: add dirty_ratio_time per bdi variable
- (NFS write performance)
-Message-ID: <20120821130458.GD22321@localhost>
-References: <1345283402-7889-1-git-send-email-linkinjeon@gmail.com>
- <20120819025724.GC16796@localhost>
- <CAKYAXd83r3RNi3Rn5s3DAEE=34YYbk_hUWcG6R3Zu3JwUw74aA@mail.gmail.com>
- <20120820145032.GA7469@localhost>
- <CAKYAXd9L5Kwj3SEHO=a60c65OXRt73q+-w-Uux6OJ=6Q-3jvYQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKYAXd9L5Kwj3SEHO=a60c65OXRt73q+-w-Uux6OJ=6Q-3jvYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757621Ab2HUNFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:05:25 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45218 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab2HUNFV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 09:05:21 -0400
+Subject: [PATCH] task_work: add a scheduling point in task_work_run()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+In-Reply-To: <1341240603.2086.1.camel@falcor>
+References: <1341014197.2342.7.camel@falcor.watson.ibm.com>
+	 <20120630050238.GZ14083@ZenIV.linux.org.uk>
+	 <1341172202.2556.13.camel@falcor>
+	 <20120701205722.GD22927@ZenIV.linux.org.uk>
+	 <1341193591.2249.3.camel@falcor>
+	 <20120702034310.GE22927@ZenIV.linux.org.uk>
+	 <20120702051155.GF22927@ZenIV.linux.org.uk>
+	 <1341229790.2350.1.camel@falcor>
+	 <20120702120259.GG22927@ZenIV.linux.org.uk>
+	 <1341234091.2166.5.camel@falcor>
+	 <20120702133329.GH22927@ZenIV.linux.org.uk>
+	 <1341240603.2086.1.camel@falcor>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Aug 2012 15:05:14 +0200
+Message-ID: <1345554314.5158.490.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 03:00:13PM +0900, Namjae Jeon wrote:
-> 2012/8/20, Fengguang Wu <fengguang.wu@intel.com>:
-> > On Mon, Aug 20, 2012 at 09:48:42AM +0900, Namjae Jeon wrote:
-> >> 2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
-> >> > On Sat, Aug 18, 2012 at 05:50:02AM -0400, Namjae Jeon wrote:
-> >> >> From: Namjae Jeon <namjae.jeon@samsung.com>
-> >> >>
-> >> >> This patch is based on suggestion by Wu Fengguang:
-> >> >> https://lkml.org/lkml/2011/8/19/19
-> >> >>
-> >> >> kernel has mechanism to do writeback as per dirty_ratio and
-> >> >> dirty_background
-> >> >> ratio. It also maintains per task dirty rate limit to keep balance of
-> >> >> dirty pages at any given instance by doing bdi bandwidth estimation.
-> >> >>
-> >> >> Kernel also has max_ratio/min_ratio tunables to specify percentage of
-> >> >> writecache
-> >> >> to control per bdi dirty limits and task throtelling.
-> >> >>
-> >> >> However, there might be a usecase where user wants a writeback tuning
-> >> >> parameter to flush dirty data at desired/tuned time interval.
-> >> >>
-> >> >> dirty_background_time provides an interface where user can tune
-> >> >> background
-> >> >> writeback start time using /sys/block/sda/bdi/dirty_background_time
-> >> >>
-> >> >> dirty_background_time is used alongwith average bdi write bandwidth
-> >> >> estimation
-> >> >> to start background writeback.
-> >> >
-> >> > Here lies my major concern about dirty_background_time: the write
-> >> > bandwidth estimation is an _estimation_ and will sure become wildly
-> >> > wrong in some cases. So the dirty_background_time implementation based
-> >> > on it will not always work to the user expectations.
-> >> >
-> >> > One important case is, some users (eg. Dave Chinner) explicitly take
-> >> > advantage of the existing behavior to quickly create & delete a big
-> >> > 1GB temp file without worrying about triggering unnecessary IOs.
-> >> >
-> >> Hi. Wu.
-> >> Okay, I have a question.
-> >>
-> >> If making dirty_writeback_interval per bdi to tune short interval
-> >> instead of background_time, We can get similar performance
-> >> improvement.
-> >> /sys/block/<device>/bdi/dirty_writeback_interval
-> >> /sys/block/<device>/bdi/dirty_expire_interval
-> >>
-> >> NFS write performance improvement is just one usecase.
-> >>
-> >> If we can set interval/time per bdi,  other usecases will be created
-> >> by applying.
-> >
-> > Per-bdi interval/time tunables, if there comes such a need, will in
-> > essential be for data caching and safety. If turning them into some
-> > requirement for better performance, the users will potential be
-> > stretched on choosing the "right" value for balanced data cache,
-> > safety and performance.  Hmm, not a comfortable prospection.
-> Hi Wu.
-> First, Thanks for shared information.
-> 
-> I change writeback interval on NFS server only.
+From: Eric Dumazet <edumazet@google.com>
 
-OK..sorry for missing that part!
+It seems commit 4a9d4b02 (switch fput to task_work_add) reintroduced
+the problem addressed in commit 944be0b2 (close_files(): add scheduling
+point)
 
-> I think that this does not affect data cache/page behaviour(caching)
-> change on NFS client. NFS client will start sending write requests as
-> per default NFS/writeback logic. So, no change in NFS client data
-> caching behaviour.
-> 
-> Also, on NFS server it does not make change in system-wide caching
-> behaviour. It only modifies caching/writeback behaviour of a
-> particular “bdi” on NFS server so that NFS client could see better
-> WRITE speed.
+If a server process with a lot of files (say 2 million tcp sockets)
+is killed, we can spend a lot of time in task_work_run() and trigger
+a soft lockup.
 
-But would you default to dirty_background_time=0, where the special
-value 0 means no change of the original behavior? That will address
-David's very reasonable concern. Otherwise quite a few users are going
-to be surprised by the new behavior after upgrading kernel.
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+---
+ kernel/task_work.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-> I will share several performancetest results as Dave's opinion.
-> 
-> >
-> >> >The numbers are impressive! FYI, I tried another NFS specific approach
-> >> >to avoid big NFS COMMITs, which achieved similar performance gains:
-> >>
-> >> >nfs: writeback pages wait queue
-> >> >https://lkml.org/lkml/2011/10/20/235
-> This patch looks client side optimization to me.(need to check more)
+diff --git a/kernel/task_work.c b/kernel/task_work.c
+index 91d4e17..d320d44 100644
+--- a/kernel/task_work.c
++++ b/kernel/task_work.c
+@@ -75,6 +75,7 @@ void task_work_run(void)
+ 			p = q->next;
+ 			q->func(q);
+ 			q = p;
++			cond_resched();
+ 		}
+ 	}
+ }
 
-Yes.
 
-> Do we need the optimization of server side as Bruce's opinion ?
-
-Sure.
-
-Thanks,
-Fengguang
