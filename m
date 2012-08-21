@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab2HUTM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 15:12:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065Ab2HUTMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:12:51 -0400
-Date: Tue, 21 Aug 2012 22:13:30 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120821191330.GA8324@redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <1345562411.23018.111.camel@twins>
- <20120821162432.GG2456@linux.vnet.ibm.com>
- <20120821172819.GA12294@t510.redhat.com>
+	id S1757054Ab2HUTNH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:13:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36169 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756264Ab2HUTNB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 15:13:01 -0400
+Date: Tue, 21 Aug 2012 20:12:55 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>, Theodore Tso <tedtso@gmail.com>
+Message-ID: <20120821191255.GH29217@decadent.org.uk>
+References: <1344954649.6724.13.camel@gandalf.stny.rr.com>
+ <1345572733.5069.9.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120821172819.GA12294@t510.redhat.com>
+In-Reply-To: <1345572733.5069.9.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: Using random in interrupts for RT
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 02:28:20PM -0300, Rafael Aquini wrote:
-> On Tue, Aug 21, 2012 at 09:24:32AM -0700, Paul E. McKenney wrote:
-> > On Tue, Aug 21, 2012 at 05:20:11PM +0200, Peter Zijlstra wrote:
-> > > On Tue, 2012-08-21 at 09:47 -0300, Rafael Aquini wrote:
-> > > > +       mapping = rcu_access_pointer(page->mapping);
-> > > > +       if (mapping)
-> > > > +               mapping = mapping->assoc_mapping; 
-> > > 
-> > > The comment near rcu_access_pointer() explicitly says:
-> > > 
-> > >  * Return the value of the specified RCU-protected pointer, but omit the
-> > >  * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
-> > >  * when the value of this pointer is accessed, but the pointer is not
-> > >  * dereferenced,
-> > > 
-> > > Yet you dereference the pointer... smells like fail to me.
+On Tue, Aug 21, 2012 at 02:12:13PM -0400, Steven Rostedt wrote:
+> On Tue, 2012-08-14 at 10:30 -0400, Steven Rostedt wrote:
+> > Thomas,
 > > 
-> > Indeed!
-> > 
-> > This will break DEC Alpha.  In addition, if ->mapping can transition
-> > from non-NULL to NULL, and if you used rcu_access_pointer() rather
-> > than rcu_dereference() to avoid lockdep-RCU from yelling at you about
-> > not either being in an RCU read-side critical section or holding an
-> > update-side lock, you can see failures as follows:
-> > 
-> > 1.	CPU 0 runs the above code, picks up mapping, and finds it non-NULL.
-> > 
-> > 2.	CPU 0 is preempted or otherwise delayed.  (Keep in mind that
-> > 	even disabling interrupts in a guest OS does not prevent the
-> > 	host hypervisor from preempting!)
-> > 
-> > 3.	Some other CPU NULLs page->mapping.  Because CPU 0 isn't doing
-> > 	anything to prevent it, this other CPU frees the memory.
-> > 
-> > 4.	CPU 0 resumes, and then accesses what is now the freelist.
-> > 	Arbitrarily bad things start happening.
-> > 
-> > If you are in a read-side critical section, use rcu_dereference() instead
-> > of rcu_access_pointer().  If you are holding an update-side lock, use
-> > rcu_dereference_protected() and say what lock you are holding.  If you
-> > are doing something else, please say what it is.
-> > 
-> > 							Thanx, Paul
-> >
-> Paul & Peter,
+> > Ben Hutchings asked me if we still need "genirq: Disable random call on
+> > preempt-rt" for -rt? With commit 902c098a366 "random: use lockless
+> > techniques in the interrupt path" there is no more locks used. But does
+> > it still produce high latencies?
 > 
-> Thanks for looking into this stuff and providing me such valuable feedback, and
-> RCU usage crashcourse.
+> Ben,
 > 
-> I believe rcu_dereference_protected() is what I want/need here, since this code
-> is always called for pages which we hold locked (PG_locked bit).
+> Looks that the #ifndef can't be removed just yet. The code is not
+> totally lockless...
+> 
+> 
+> add_interrupt_randomness ->
+> 	credit_entropy_bits ->
+> 		kill_fasync ->
+> 			kill_fasync_rcu ->
+> 				spin_lock_irqsave(&fa->fa_lock, flags)
+> 
+> to make things worse, that spinlock turns into a mutex on -rt, so it may
+> crash the box if triggered.
+ 
+Thanks for checking this.
 
-It would only help if we locked the page while updating the mapping,
-as far as I can see we don't.
+Ben.
 
-> So, it brings me
-> to ask you if the following usage looks sane enough to fix the well pointed issue,
-> or if it's another misuse of RCU API:
-> 
-> +       mapping = rcu_dereference_protecetd(page->mapping, PageLocked(page));
-> +       if (mapping)
-> +               mapping = mapping->assoc_mapping; 
-> 
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
