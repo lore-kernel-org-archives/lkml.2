@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab2HUMdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:33:07 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44025 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757225Ab2HUMdC (ORCPT
+	id S1757513Ab2HUMfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:35:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41989 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab2HUMfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:33:02 -0400
-X-AuditID: b753bd60-8ecbeba0000047ca-fc-50337ffbf3a4
-X-AuditID: b753bd60-8ecbeba0000047ca-fc-50337ffbf3a4
-Message-ID: <50338008.6000708@hitachi.com>
-Date: Tue, 21 Aug 2012 21:33:12 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 21 Aug 2012 08:35:18 -0400
+Date: Tue, 21 Aug 2012 13:34:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Subash Patel <subashrp@gmail.com>, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCHv6 2/2] ARM: dma-mapping: remove custom consistent dma
+	region
+Message-ID: <20120821123451.GV18957@n2100.arm.linux.org.uk>
+References: <1343636899-19508-1-git-send-email-m.szyprowski@samsung.com> <1343636899-19508-3-git-send-email-m.szyprowski@samsung.com> <20120821142235.97984abc9ad98d01015a3338@nvidia.com>
 MIME-Version: 1.0
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH V2 0/6] virtio-trace: Support virtio-trace
-References: <20120809123029.8542.38311.stgit@ltc189.sdl.hitachi.co.jp> <20120821051619.GF29197@amit.redhat.com>
-In-Reply-To: <20120821051619.GF29197@amit.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120821142235.97984abc9ad98d01015a3338@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/21 14:16), Amit Shah wrote:
-> On (Thu) 09 Aug 2012 [21:30:29], Yoshihiro YUNOMAE wrote:
->> Hi All,
->>
->> The following patch set provides a low-overhead system for collecting kernel
->> tracing data of guests by a host in a virtualization environment.
-> 
-> ACK this series.
+On Tue, Aug 21, 2012 at 02:22:35PM +0300, Hiroshi Doyu wrote:
+> The following "__get_vm_area_node()" can take gfp_mask, it means that
+> this function is expected to be called from atomic context, but why
+> it's _NOT_ allowed _ONLY_ from interrupt context?
 
-Thank you!
-
-> I ran it through the virtio-serial test suite, and there's no
-> regression in existing functionality.
-> 
-> I encourage you to check out the virtio-serial test suite[1] as well
-> as the virtio-serial unit tests in the autotest[2] code, and
-> contribute to them to add tests for the new functionality you've
-> added.
-
-Ah, OK we'll look into them for adding some tests for
-splice support :)
-
-> 
-> [1]
-> http://fedorapeople.org/cgit/amitshah/public_git/test-virtserial.git/
-> 
-> [2]
-> https://github.com/autotest/autotest/blob/e91cd67b845b291622c8d079a8289c4b0cb1e6ae/client/tests/kvm/tests/virtio_console.py
-> 
-> 
-
-Thank you again,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+One reason is it takes read/write locks without using the IRQ safe
+versions for starters (vmap_area_lock and vmlist_lock).  I don't see
+any other reasons in that bit of code though.
