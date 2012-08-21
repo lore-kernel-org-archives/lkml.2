@@ -1,157 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab2HUJIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:08:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59918 "EHLO mx2.suse.de"
+	id S1755113Ab2HUJJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:09:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56078 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754768Ab2HUJIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:08:46 -0400
-Date: Tue, 21 Aug 2012 11:08:10 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: jack@suse.cz, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>,
-        Bonggil Bak <bgbak@samsung.com>
-Subject: Re: [PATCH RESEND] udf: extent cache implementation for
- manipulating block map
-Message-ID: <20120821090810.GC7537@quack.suse.cz>
-References: <1345283903-7960-1-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345283903-7960-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754979Ab2HUJIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 05:08:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,801,1336374000"; 
+   d="scan'208";a="183342786"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, avi@redhat.com, linux-kernel@vger.kernel.org
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH] perf/x86: Disable uncore on virtualized CPU.
+Date: Tue, 21 Aug 2012 17:08:37 +0800
+Message-Id: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-  first, I'm sorry for a late reply. I was on a long vacation and then it
-took me a while to catch up with stuff.
+Initializing uncore PMU on virtualized CPU may hang the kernel.
+This is because kvm does not emulate the entire hardware. Thers
+are lots of uncore related MSRs, making kvm enumerate them all
+is a non-trival task. So just disable uncore on virtualized CPU.
 
-On Sat 18-08-12 05:58:22, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> While mapping logical blocks of a file to physical blocks on the partition,
-> everytime UDF read file metadata from the begining which decrease preformance.
-> The drawback of this scheme is more prominent while reading large files.
-> For example, while reading a large file of ~5GB, read speed will
-> gradually become less as we near the end of file because of the time
-> taken in calculating the corresponding physical block.
-> 
-> This patch implements caching and remembers the location of the last read
-> extent. Instead of reading file metadata from begining, start from the
-> cached location.
-  I agree this functionality is useful. Thanks for implementing it! I have
-some comments regarding the implementation below:
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> Signed-off-by: Bonggil Bak <bgbak@samsung.com>
-> ---
->  fs/udf/ialloc.c  |    2 ++
->  fs/udf/inode.c   |   83 ++++++++++++++++++++++++++++++++++++++++++++++++++----
->  fs/udf/udf_i.h   |   13 +++++++++
->  fs/udf/udfdecl.h |   13 +++++++++
->  4 files changed, 105 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/udf/ialloc.c b/fs/udf/ialloc.c
-> index 7e5aae4..7dd86a4 100644
-> --- a/fs/udf/ialloc.c
-> +++ b/fs/udf/ialloc.c
-> @@ -117,6 +117,8 @@ struct inode *udf_new_inode(struct inode *dir, umode_t mode, int *err)
->  	iinfo->i_lenAlloc = 0;
->  	iinfo->i_use = 0;
->  	iinfo->i_checkpoint = 1;
-> +	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-> +	mutex_init(&(iinfo->i_extent_cache_lock));
->  	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_AD_IN_ICB))
->  		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
->  	else if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_SHORT_AD))
-> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-> index fafaad7..cf34dec 100644
-> --- a/fs/udf/inode.c
-> +++ b/fs/udf/inode.c
-> @@ -345,7 +345,7 @@ static int udf_get_block(struct inode *inode, sector_t block,
->  		iinfo->i_next_alloc_goal++;
->  	}
->  
-> -
-> +	udf_clear_extent_cache(iinfo);
->  	phys = inode_getblk(inode, block, &err, &new);
->  	if (!phys)
->  		goto abort;
-  This is certainly the easiest thing to do. But it nags me that simple
-appending writes are not able to use the extent cache. It even needn't be
-that complicated if we carefully pick the things to cache - see below.
-
-...
-> diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
-> index bb8309d..ec168a9 100644
-> --- a/fs/udf/udf_i.h
-> +++ b/fs/udf/udf_i.h
-> @@ -1,6 +1,16 @@
->  #ifndef _UDF_I_H
->  #define _UDF_I_H
->  
-> +struct udf_ext_cache {
-> +	struct kernel_lb_addr epos;
-> +	uint32_t offset;
-> +	uint32_t p_block_nr;
-> +	struct kernel_lb_addr eloc;
-> +	uint32_t elen;
-> +	int8_t etype;
-> +	loff_t last_block;
-> +};
-> +
-  Umm, I think caching things slightly differently might make things
-easier. I'd do:
-struct udf_ext_cache {
-	/*
-	 * Buffer head with extent or NULL if the extent is in inode
-	 * (need to have buffer reference via get_bh!)
-	 */
-	struct buffer_head *extent_bh;
-	/*
-	 * Extent position - this is somewhat redundant since we have the
-	 * bh but code in block mapping functions expects to have this
-	 */
-	struct kernel_lb_addr epos;
-	/* Offset of cached extent in the buffer head / inode */
-	uint32_t offset;
-	/* Logical block where cached extent starts */
-	sector_t block;
-};
-
-So you cache extent position, bh, and it's logical position within inode.
-udf_read_extent_cache() would check whether queried logical block is after
-our cached logical block. If yes, we would decode extent from our bh /
-inode and proceed as you did.
-
-The advantage I see in this approach is that we cache a bit less, don't
-have to lookup the buffer head (although that is pinned in memory now so
-total memory consumption might be higher in some cases), and we don't have
-to invalidate the cache when the cached logical block is before the block
-we write to (which nicely catches also extending writes).
-
-What do you think?
-
->  /*
->   * The i_data_sem and i_mutex serve for protection of allocation information
->   * of a regular files and symlinks. This includes all extents belonging to
-> @@ -35,6 +45,9 @@ struct udf_inode_info {
->  		__u8		*i_data;
->  	} i_ext;
->  	struct rw_semaphore	i_data_sem;
-> +	struct udf_ext_cache cached_extent;
-> +	/* Mutex for protecting extent cache */
-> +	struct mutex i_extent_cache_lock;
->  	struct inode vfs_inode;
->  };
-
-								Honza
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 0a55710..2f005ba 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2898,6 +2898,9 @@ static int __init intel_uncore_init(void)
+ 	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+ 		return -ENODEV;
+ 
++	if (cpu_has_hypervisor)
++		return -ENODEV;
++
+ 	ret = uncore_pci_init();
+ 	if (ret)
+ 		goto fail;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.11.2
+
