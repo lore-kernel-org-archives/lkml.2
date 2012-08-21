@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2HUJUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:20:23 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:46160 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755369Ab2HUJUQ (ORCPT
+	id S1755717Ab2HUJWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:22:08 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:33046 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755369Ab2HUJUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:20:16 -0400
+	Tue, 21 Aug 2012 05:20:25 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: alan@linux.intel.com
 Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
@@ -17,9 +17,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Shubhrajyoti Datta <shubhrajyoti@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [RFC/PATCH 06/13] serial: add OMAP-specific defines
-Date: Tue, 21 Aug 2012 12:15:48 +0300
-Message-Id: <1345540555-24359-7-git-send-email-balbi@ti.com>
+Subject: [RFC/PATCH 09/13] serial: omap: move THRE check to transmit_chars()
+Date: Tue, 21 Aug 2012 12:15:51 +0300
+Message-Id: <1345540555-24359-10-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.12.rc3
 In-Reply-To: <1345540555-24359-1-git-send-email-balbi@ti.com>
 References: <1345540555-24359-1-git-send-email-balbi@ti.com>
@@ -27,30 +27,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP has some extra Interrupt types which can
-be really useful for SW. Let's define them
-so we can later use those in OMAP's serial driver.
+since all other IRQ types now do all necessary
+checks inside their handlers, transmit_chars()
+was the only one left expecting serial_omap_irq()
+to check THRE for it. We can move THRE check to
+transmit_chars() in order to make serial_omap_irq()
+more uniform.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- include/linux/serial_reg.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/tty/serial/omap-serial.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/serial_reg.h b/include/linux/serial_reg.h
-index 8ce70d7..5ed325e 100644
---- a/include/linux/serial_reg.h
-+++ b/include/linux/serial_reg.h
-@@ -40,6 +40,10 @@
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 74a4f0a..6ea24c5 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -195,11 +195,14 @@ static void serial_omap_stop_rx(struct uart_port *port)
+ 	pm_runtime_put_autosuspend(up->dev);
+ }
  
- #define UART_IIR_BUSY		0x07 /* DesignWare APB Busy Detect */
+-static void transmit_chars(struct uart_omap_port *up)
++static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
+ {
+ 	struct circ_buf *xmit = &up->port.state->xmit;
+ 	int count;
  
-+#define UART_IIR_RX_TIMEOUT	0x0c /* OMAP RX Timeout interrupt */
-+#define UART_IIR_XOFF		0x10 /* OMAP XOFF/Special Character */
-+#define UART_IIR_CTS_RTS_DSR	0x20 /* OMAP CTS/RTS/DSR Change */
++	if (!(lsr & UART_LSR_THRE))
++		return;
 +
- #define UART_FCR	2	/* Out: FIFO Control Register */
- #define UART_FCR_ENABLE_FIFO	0x01 /* Enable the FIFO */
- #define UART_FCR_CLEAR_RCVR	0x02 /* Clear the RCVR FIFO */
+ 	if (up->port.x_char) {
+ 		serial_out(up, UART_TX, up->port.x_char);
+ 		up->port.icount.tx++;
+@@ -367,8 +370,7 @@ static inline irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 			check_modem_status(up);
+ 			break;
+ 		case UART_IIR_THRI:
+-			if (lsr & UART_LSR_THRE)
+-				transmit_chars(up);
++			transmit_chars(up, lsr);
+ 			break;
+ 		case UART_IIR_RX_TIMEOUT:
+ 			/* FALLTHROUGH */
 -- 
 1.7.12.rc3
 
