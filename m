@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab2HUJUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:20:08 -0400
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:43012 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755230Ab2HUJUA (ORCPT
+	id S1755364Ab2HUJUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:20:14 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:58640 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755245Ab2HUJUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:20:00 -0400
+	Tue, 21 Aug 2012 05:20:07 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: alan@linux.intel.com
 Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
@@ -17,9 +17,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Shubhrajyoti Datta <shubhrajyoti@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [RFC/PATCH 01/13] serial: omap: define and use to_uart_omap_port()
-Date: Tue, 21 Aug 2012 12:15:43 +0300
-Message-Id: <1345540555-24359-2-git-send-email-balbi@ti.com>
+Subject: [RFC/PATCH 03/13] serial: omap: define helpers for pdata function pointers
+Date: Tue, 21 Aug 2012 12:15:45 +0300
+Message-Id: <1345540555-24359-4-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.12.rc3
 In-Reply-To: <1345540555-24359-1-git-send-email-balbi@ti.com>
 References: <1345540555-24359-1-git-send-email-balbi@ti.com>
@@ -27,198 +27,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-current code only works because struct uart_port
-is the first member on the uart_omap_port structure.
+this patch is in preparation to a few other changes
+which will align on the prototype for function
+pointers passed through pdata.
 
-If, for whatever reason, someone puts another
-member as the first of the structure, that cast
-won't work anymore. In order to be safe, let's use
-a container_of() which, for now, gets optimized into
-a cast anyway.
+It also helps cleaning up the driver a little by
+agregating checks for pdata in a single location.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/plat-omap/include/plat/omap-serial.h |  2 ++
- drivers/tty/serial/omap-serial.c              | 36 +++++++++++++--------------
- 2 files changed, 20 insertions(+), 18 deletions(-)
+ drivers/tty/serial/omap-serial.c | 66 ++++++++++++++++++++++++++++------------
+ 1 file changed, 47 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-omap/include/plat/omap-serial.h
-index 1a52725..f3b35d9 100644
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -137,4 +137,6 @@ struct uart_omap_port {
- 	struct work_struct	qos_work;
- };
- 
-+#define to_uart_omap_port(p)	((container_of((p), struct uart_omap_port, port)))
-+
- #endif /* __OMAP_SERIAL_H__ */
 diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index d3cda0c..5c0d0bc 100644
+index b4b95fc..c3e6fa0 100644
 --- a/drivers/tty/serial/omap-serial.c
 +++ b/drivers/tty/serial/omap-serial.c
-@@ -141,7 +141,7 @@ static void serial_omap_stop_rxdma(struct uart_omap_port *up)
+@@ -101,6 +101,40 @@ static inline void serial_omap_clear_fifos(struct uart_omap_port *up)
+ 	serial_out(up, UART_FCR, 0);
+ }
  
- static void serial_omap_enable_ms(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
++static int serial_omap_get_context_loss_count(struct uart_omap_port *up)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (!pdata->get_context_loss_count)
++		return 0;
++
++	return pdata->get_context_loss_count(&up->pdev->dev);
++}
++
++static void serial_omap_set_forceidle(struct uart_omap_port *up)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (pdata->set_forceidle)
++		pdata->set_forceidle(up->pdev);
++}
++
++static void serial_omap_set_noidle(struct uart_omap_port *up)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (pdata->set_noidle)
++		pdata->set_noidle(up->pdev);
++}
++
++static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (pdata->enable_wakeup)
++		pdata->enable_wakeup(up->pdev, enable);
++}
++
+ /*
+  * serial_omap_get_divisor - calculate divisor value
+  * @port: uart port info
+@@ -177,8 +211,8 @@ static void serial_omap_stop_tx(struct uart_port *port)
+ 		serial_out(up, UART_IER, up->ier);
+ 	}
  
- 	dev_dbg(up->port.dev, "serial_omap_enable_ms+%d\n", up->port.line);
+-	if (!up->use_dma && pdata && pdata->set_forceidle)
+-		pdata->set_forceidle(up->pdev);
++	if (!up->use_dma && pdata)
++		serial_omap_set_forceidle(up);
  
-@@ -153,7 +153,7 @@ static void serial_omap_enable_ms(struct uart_port *port)
- 
- static void serial_omap_stop_tx(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
- 
- 	if (up->use_dma &&
-@@ -186,7 +186,7 @@ static void serial_omap_stop_tx(struct uart_port *port)
- 
- static void serial_omap_stop_rx(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 
- 	pm_runtime_get_sync(&up->pdev->dev);
- 	if (up->use_dma)
-@@ -307,7 +307,7 @@ static inline void serial_omap_enable_ier_thri(struct uart_omap_port *up)
- 
+ 	pm_runtime_mark_last_busy(&up->pdev->dev);
+ 	pm_runtime_put_autosuspend(&up->pdev->dev);
+@@ -308,7 +342,6 @@ static inline void serial_omap_enable_ier_thri(struct uart_omap_port *up)
  static void serial_omap_start_tx(struct uart_port *port)
  {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
+ 	struct uart_omap_port *up = to_uart_omap_port(port);
+-	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
  	struct circ_buf *xmit;
  	unsigned int start;
-@@ -449,7 +449,7 @@ static inline irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 	int ret = 0;
+@@ -316,8 +349,7 @@ static void serial_omap_start_tx(struct uart_port *port)
+ 	if (!up->use_dma) {
+ 		pm_runtime_get_sync(&up->pdev->dev);
+ 		serial_omap_enable_ier_thri(up);
+-		if (pdata && pdata->set_noidle)
+-			pdata->set_noidle(up->pdev);
++		serial_omap_set_noidle(up);
+ 		pm_runtime_mark_last_busy(&up->pdev->dev);
+ 		pm_runtime_put_autosuspend(&up->pdev->dev);
+ 		return;
+@@ -1648,28 +1680,26 @@ static int serial_omap_runtime_suspend(struct device *dev)
+ 	if (!up)
+ 		return -EINVAL;
  
- static unsigned int serial_omap_tx_empty(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned long flags = 0;
- 	unsigned int ret = 0;
+-	if (!pdata || !pdata->enable_wakeup)
++	if (!pdata)
+ 		return 0;
  
-@@ -464,7 +464,7 @@ static unsigned int serial_omap_tx_empty(struct uart_port *port)
+-	if (pdata->get_context_loss_count)
+-		up->context_loss_cnt = pdata->get_context_loss_count(dev);
++	up->context_loss_cnt = serial_omap_get_context_loss_count(up);
  
- static unsigned int serial_omap_get_mctrl(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned int status;
- 	unsigned int ret = 0;
+ 	if (device_may_wakeup(dev)) {
+ 		if (!up->wakeups_enabled) {
+-			pdata->enable_wakeup(up->pdev, true);
++			serial_omap_enable_wakeup(up, true);
+ 			up->wakeups_enabled = true;
+ 		}
+ 	} else {
+ 		if (up->wakeups_enabled) {
+-			pdata->enable_wakeup(up->pdev, false);
++			serial_omap_enable_wakeup(up, false);
+ 			up->wakeups_enabled = false;
+ 		}
+ 	}
  
-@@ -487,7 +487,7 @@ static unsigned int serial_omap_get_mctrl(struct uart_port *port)
+ 	/* Errata i291 */
+-	if (up->use_dma && pdata->set_forceidle &&
+-			(up->errata & UART_ERRATA_i291_DMA_FORCEIDLE))
+-		pdata->set_forceidle(up->pdev);
++	if (up->use_dma && (up->errata & UART_ERRATA_i291_DMA_FORCEIDLE))
++		serial_omap_set_forceidle(up);
  
- static void serial_omap_set_mctrl(struct uart_port *port, unsigned int mctrl)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned char mcr = 0;
+ 	up->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
+ 	schedule_work(&up->qos_work);
+@@ -1683,17 +1713,15 @@ static int serial_omap_runtime_resume(struct device *dev)
+ 	struct omap_uart_port_info *pdata = dev->platform_data;
  
- 	dev_dbg(up->port.dev, "serial_omap_set_mctrl+%d\n", up->port.line);
-@@ -511,7 +511,7 @@ static void serial_omap_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ 	if (up && pdata) {
+-		if (pdata->get_context_loss_count) {
+-			u32 loss_cnt = pdata->get_context_loss_count(dev);
++			u32 loss_cnt = serial_omap_get_context_loss_count(up);
  
- static void serial_omap_break_ctl(struct uart_port *port, int break_state)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned long flags = 0;
+ 			if (up->context_loss_cnt != loss_cnt)
+ 				serial_omap_restore_context(up);
+-		}
  
- 	dev_dbg(up->port.dev, "serial_omap_break_ctl+%d\n", up->port.line);
-@@ -528,7 +528,7 @@ static void serial_omap_break_ctl(struct uart_port *port, int break_state)
+ 		/* Errata i291 */
+-		if (up->use_dma && pdata->set_noidle &&
+-				(up->errata & UART_ERRATA_i291_DMA_FORCEIDLE))
+-			pdata->set_noidle(up->pdev);
++		if ((up->errata & UART_ERRATA_i291_DMA_FORCEIDLE) &&
++				up->use_dma)
++			serial_omap_set_noidle(up);
  
- static int serial_omap_startup(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned long flags = 0;
- 	int retval;
- 
-@@ -606,7 +606,7 @@ static int serial_omap_startup(struct uart_port *port)
- 
- static void serial_omap_shutdown(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned long flags = 0;
- 
- 	dev_dbg(up->port.dev, "serial_omap_shutdown+%d\n", up->port.line);
-@@ -721,7 +721,7 @@ static void
- serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
- 			struct ktermios *old)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned char cval = 0;
- 	unsigned char efr = 0;
- 	unsigned long flags = 0;
-@@ -932,7 +932,7 @@ static void
- serial_omap_pm(struct uart_port *port, unsigned int state,
- 	       unsigned int oldstate)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned char efr;
- 
- 	dev_dbg(up->port.dev, "serial_omap_pm+%d\n", up->port.line);
-@@ -971,7 +971,7 @@ static int serial_omap_request_port(struct uart_port *port)
- 
- static void serial_omap_config_port(struct uart_port *port, int flags)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 
- 	dev_dbg(up->port.dev, "serial_omap_config_port+%d\n",
- 							up->port.line);
-@@ -989,7 +989,7 @@ serial_omap_verify_port(struct uart_port *port, struct serial_struct *ser)
- static const char *
- serial_omap_type(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 
- 	dev_dbg(up->port.dev, "serial_omap_type+%d\n", up->port.line);
- 	return up->name;
-@@ -1032,7 +1032,7 @@ static inline void wait_for_xmitr(struct uart_omap_port *up)
- 
- static void serial_omap_poll_put_char(struct uart_port *port, unsigned char ch)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 
- 	pm_runtime_get_sync(&up->pdev->dev);
- 	wait_for_xmitr(up);
-@@ -1042,7 +1042,7 @@ static void serial_omap_poll_put_char(struct uart_port *port, unsigned char ch)
- 
- static int serial_omap_poll_get_char(struct uart_port *port)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 	unsigned int status;
- 
- 	pm_runtime_get_sync(&up->pdev->dev);
-@@ -1065,7 +1065,7 @@ static struct uart_driver serial_omap_reg;
- 
- static void serial_omap_console_putchar(struct uart_port *port, int ch)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	struct uart_omap_port *up = to_uart_omap_port(port);
- 
- 	wait_for_xmitr(up);
- 	serial_out(up, UART_TX, ch);
-@@ -1341,7 +1341,7 @@ static void serial_omap_continue_tx(struct uart_omap_port *up)
- 
- static void uart_tx_dma_callback(int lch, u16 ch_status, void *data)
- {
--	struct uart_omap_port *up = (struct uart_omap_port *)data;
-+	struct uart_omap_port *up = data;
- 	struct circ_buf *xmit = &up->port.state->xmit;
- 
- 	xmit->tail = (xmit->tail + up->uart_dma.tx_buf_size) & \
+ 		up->latency = up->calc_latency;
+ 		schedule_work(&up->qos_work);
 -- 
 1.7.12.rc3
 
