@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab2HULvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 07:51:32 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60809 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988Ab2HULv3 (ORCPT
+	id S1757140Ab2HULxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 07:53:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57837 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988Ab2HULxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 07:51:29 -0400
-Date: Tue, 21 Aug 2012 12:51:24 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCH 1/1] ASoC: codecs: Enable AB8500 CODEC for Device Tree
-Message-ID: <20120821115123.GE26899@gmail.com>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
- <1344527268-5964-9-git-send-email-lee.jones@linaro.org>
- <s5h628lu0q9.wl%tiwai@suse.de>
- <20120820113427.GN8450@gmail.com>
- <20120820143653.GE26991@opensource.wolfsonmicro.com>
+	Tue, 21 Aug 2012 07:53:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120820143653.GE26991@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CA+icZUXD+oWqTKB2b_xu8UEDnX6mSs_aELaGu9UQs_U4fHaKGQ@mail.gmail.com>
+References: <CA+icZUWg7qEFvAsTMb9OFKmdW7XD4op14Ps2y6PLByZRArjeLg@mail.gmail.com>
+	<CA+icZUVjr6aaopVAhGRr13RLDy=epdnU30YTHOhjXmrWb2sAjA@mail.gmail.com>
+	<CA+icZUXD+oWqTKB2b_xu8UEDnX6mSs_aELaGu9UQs_U4fHaKGQ@mail.gmail.com>
+Date: Tue, 21 Aug 2012 13:53:10 +0200
+X-Google-Sender-Auth: sPByCjQ-CVc06OFqMgL24vHXC8c
+Message-ID: <CAKMK7uFr972_aC8+HojLYe+Dsa0Abo0_qkLq8mbgSQs09sXihQ@mail.gmail.com>
+Subject: Re: inux-next: Tree for Aug 21 (call-trace when suspending: PM?)
+From: Daniel Vetter <daniel@ffwll.ch>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ingo Molnar <mingo@elte.hu>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 03:36:53PM +0100, Mark Brown wrote:
-> On Mon, Aug 20, 2012 at 12:34:31PM +0100, Lee Jones wrote:
-> > From: Lee Jones <lee.jones@linaro.org>
-> > Date: Fri, 27 Jul 2012 08:50:05 +0100
-> > Subject: [PATCH 1/1] ASoC: codecs: Enable AB8500 CODEC for Device Tree
-> > 
-> > We continue to allow the AB8500 CODEC to be registered via the AB8500
-> > Multi Functional Device API, only this time we extract its configuration
-> > from the Device Tree binary.
-> 
-> Please resend this series with all the acks you've got rather than
-> mixing incremental updates in like this.
+On Tue, Aug 21, 2012 at 1:14 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Aug 21, 2012 at 1:03 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Tue, Aug 21, 2012 at 1:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> On Tue, Aug 21, 2012 at 8:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>> Hi all,
+>>>>
+>>>> Changes since 20120820:
+>>>>
+>>>> The rr tree gained a conflict against Linus' tree.
+>>>>
+>>>> The tip tree still has its build failure so I used the version from
+>>>> next-20120814.
+>>>>
+>>>> The workqueues tree gained a conflict against the hid tree.
+>>>>
+>>>> The drivers-x86 tree still has its build failure so I used the version
+>>>> from next-20120817.
+>>>>
+>>>> The signal tree gained a conflict against Linus' tree.  I have still
+>>>> reverted 3 commits from the signal tree at the request of the arm
+>>>> maintainer.
+>>>>
+>>>> ----------------------------------------------------------------------------
+>>>>
+>>>
+>>> Hi,
+>>>
+>>> I have compiled linux-next (next-20120821) and see the attached
+>>> call-trace when suspending.
+>>> Suspending did NOT work (Xorg seems to cause it) - machine came back to desktop.
+>>>
+>>> With yesterday's next-20120820 I haven't seen this.
+>>>
+>>> I am not sure what is this causing... PM, x86/sched or even VFS?
+>>> Any help for debugging appreciated.
+>>>
+>>> I am on Ubuntu/precise AMD64 and use systemd-v43 as init-system.
+>>>
+>>> Regards,
+>>> - Sedat -
+>>
+>> Forgot attachment!
+>> If you don't succeed - try try try...
+>>
+>> - Sedat -
+>
+> [ CC danvet ]
+>
+> I have pulled in drm-intel-fixes into my local GIT tree and rebuilt
+> i915 - this seems to fix the problem.
+> Daniel any suggestion which patch in d-i-f did it?
 
-I'm waiting until I have a few more Acks before I resend the entire
-patch-set again. Actually it's you and one other that I'm waiting for
-to review (and Ack as necessary) the ones requested by Linus, then 
-resend with the corrections.
+Without the backtrace it's kinda hard to tell ... Also, if you can
+dump a git log of the commits from -fixes that you don't yet have.
+-Daniel
 
-> Please also send patches in
-> the format documented in SubmittingPatches.
+>
+> [1] http://cgit.freedesktop.org/~danvet/drm-intel/log/?h=drm-intel-fixes
 
-That's a big document, most of which I guess I'm adhering to. Care to
-be a little more specific?
+
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 364 57 48 - http://blog.ffwll.ch
