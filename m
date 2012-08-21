@@ -1,28 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2HUPpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:45:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60130 "EHLO
+	id S1757328Ab2HUPqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:46:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60154 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab2HUPpF (ORCPT
+	with ESMTP id S1753324Ab2HUPqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:45:05 -0400
-Date: Tue, 21 Aug 2012 08:44:38 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-b691f64360ecec49c44d534cf4c1798a438bfccb@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org,
-        jolsa@redhat.com
-In-Reply-To: <1344228082-15569-5-git-send-email-namhyung@kernel.org>
-References: <1344228082-15569-5-git-send-email-namhyung@kernel.org>
+	Tue, 21 Aug 2012 11:46:10 -0400
+Date: Tue, 21 Aug 2012 08:45:38 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-c5e63197db519bae1c33e41ea0342a50f39e7a93@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org, gorcunov@openvz.org,
+        a.p.zijlstra@chello.nl, benjamin.redelings@nescent.org,
+        jolsa@redhat.com, drepper@gmail.com, robert.richter@amd.com,
+        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+        asharma@fb.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        fche@redhat.com, paulus@samba.org, tzanussi@gmail.com,
+        masami.hiramatsu.pt@hitachi.com
+Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
+        gorcunov@openvz.org, a.p.zijlstra@chello.nl,
+        benjamin.redelings@nescent.org, jolsa@redhat.com, fweisbec@gmail.com,
+        robert.richter@amd.com, drepper@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, asharma@fb.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
+        tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <1344345647-11536-2-git-send-email-jolsa@redhat.com>
+References: <1344345647-11536-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Implement poor man's ELF parser
-Git-Commit-ID: b691f64360ecec49c44d534cf4c1798a438bfccb
+Subject: [tip:perf/core] perf:
+  Unified API to record selective sets of arch registers
+Git-Commit-ID: c5e63197db519bae1c33e41ea0342a50f39e7a93
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,306 +38,261 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:44:44 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:45:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b691f64360ecec49c44d534cf4c1798a438bfccb
-Gitweb:     http://git.kernel.org/tip/b691f64360ecec49c44d534cf4c1798a438bfccb
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 6 Aug 2012 13:41:22 +0900
+Commit-ID:  c5e63197db519bae1c33e41ea0342a50f39e7a93
+Gitweb:     http://git.kernel.org/tip/c5e63197db519bae1c33e41ea0342a50f39e7a93
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 7 Aug 2012 15:20:36 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 9 Aug 2012 16:27:04 -0300
+CommitDate: Fri, 10 Aug 2012 11:21:37 -0300
 
-perf symbols: Implement poor man's ELF parser
+perf: Unified API to record selective sets of arch registers
 
-Implement a minimal elf parser for getting build-id.  It assumes that
-required elf.h header is provided by libc header on the system and the
-parser only looks for PT_NOTE program header to check build-id.
+This brings a new API to help the selective dump of registers on event
+sampling, and its implementation for x86 arch.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Added HAVE_PERF_REGS config option to determine if the architecture
+provides perf registers ABI.
+
+The information about desired registers will be passed in u64 mask.
+It's up to the architecture to map the registers into the mask bits.
+
+For the x86 arch implementation, both 32 and 64 bit registers bits are
+defined within single enum to ensure 64 bit system can provide register
+dump for compat task if needed in the future.
+
+Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+[ Added missing linux/errno.h include ]
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344228082-15569-5-git-send-email-namhyung@kernel.org
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/1344345647-11536-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol-minimal.c |  242 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 235 insertions(+), 7 deletions(-)
+ arch/Kconfig                     |    6 +++
+ arch/x86/Kconfig                 |    1 +
+ arch/x86/include/asm/perf_regs.h |   33 ++++++++++++++
+ arch/x86/kernel/Makefile         |    2 +
+ arch/x86/kernel/perf_regs.c      |   90 ++++++++++++++++++++++++++++++++++++++
+ include/linux/perf_regs.h        |   19 ++++++++
+ 6 files changed, 151 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 416ecf3..bd8720b 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -1,15 +1,71 @@
- #include "symbol.h"
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 72f2fa1..68d827b 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -222,6 +222,12 @@ config HAVE_PERF_EVENTS_NMI
+ 	  subsystem.  Also has support for calculating CPU cycle events
+ 	  to determine how many clock cycles in a given period.
  
-+#include <elf.h>
-+#include <stdio.h>
-+#include <fcntl.h>
-+#include <string.h>
-+#include <byteswap.h>
-+#include <sys/stat.h>
++config HAVE_PERF_REGS
++	bool
++	help
++	  Support selective register dumps for perf events. This includes
++	  bit-mapping of each registers and a unique architecture id.
++
+ config HAVE_ARCH_JUMP_LABEL
+ 	bool
  
--int filename__read_build_id(const char *filename __used, void *bf __used,
--			    size_t size __used)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 8ec3a1a..3fab6ec 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -60,6 +60,7 @@ config X86
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+ 	select HAVE_PERF_EVENTS_NMI
++	select HAVE_PERF_REGS
+ 	select ANON_INODES
+ 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
+ 	select HAVE_CMPXCHG_LOCAL if !M386
+diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
+new file mode 100644
+index 0000000..3f2207b
+--- /dev/null
++++ b/arch/x86/include/asm/perf_regs.h
+@@ -0,0 +1,33 @@
++#ifndef _ASM_X86_PERF_REGS_H
++#define _ASM_X86_PERF_REGS_H
 +
-+static bool check_need_swap(int file_endian)
- {
--	return -1;
-+	const int data = 1;
-+	u8 *check = (u8 *)&data;
-+	int host_endian;
++enum perf_event_x86_regs {
++	PERF_REG_X86_AX,
++	PERF_REG_X86_BX,
++	PERF_REG_X86_CX,
++	PERF_REG_X86_DX,
++	PERF_REG_X86_SI,
++	PERF_REG_X86_DI,
++	PERF_REG_X86_BP,
++	PERF_REG_X86_SP,
++	PERF_REG_X86_IP,
++	PERF_REG_X86_FLAGS,
++	PERF_REG_X86_CS,
++	PERF_REG_X86_SS,
++	PERF_REG_X86_DS,
++	PERF_REG_X86_ES,
++	PERF_REG_X86_FS,
++	PERF_REG_X86_GS,
++	PERF_REG_X86_R8,
++	PERF_REG_X86_R9,
++	PERF_REG_X86_R10,
++	PERF_REG_X86_R11,
++	PERF_REG_X86_R12,
++	PERF_REG_X86_R13,
++	PERF_REG_X86_R14,
++	PERF_REG_X86_R15,
 +
-+	if (check[0] == 1)
-+		host_endian = ELFDATA2LSB;
-+	else
-+		host_endian = ELFDATA2MSB;
-+
-+	return host_endian != file_endian;
- }
++	PERF_REG_X86_32_MAX = PERF_REG_X86_GS + 1,
++	PERF_REG_X86_64_MAX = PERF_REG_X86_R15 + 1,
++};
++#endif /* _ASM_X86_PERF_REGS_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..8d7a619 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -100,6 +100,8 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ obj-$(CONFIG_OF)			+= devicetree.o
+ obj-$(CONFIG_UPROBES)			+= uprobes.o
  
--int sysfs__read_build_id(const char *filename __used, void *build_id __used,
--			 size_t size __used)
-+#define NOTE_ALIGN(sz) (((sz) + 3) & ~3)
++obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
 +
-+#define NT_GNU_BUILD_ID	3
+ ###
+ # 64 bit specific files
+ ifeq ($(CONFIG_X86_64),y)
+diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
+new file mode 100644
+index 0000000..3d692352
+--- /dev/null
++++ b/arch/x86/kernel/perf_regs.c
+@@ -0,0 +1,90 @@
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/bug.h>
++#include <linux/stddef.h>
++#include <asm/perf_regs.h>
++#include <asm/ptrace.h>
 +
-+static int read_build_id(void *note_data, size_t note_len, void *bf,
-+			 size_t size, bool need_swap)
- {
-+	struct {
-+		u32 n_namesz;
-+		u32 n_descsz;
-+		u32 n_type;
-+	} *nhdr;
-+	void *ptr;
++#ifdef CONFIG_X86_32
++#define PERF_REG_X86_MAX PERF_REG_X86_32_MAX
++#else
++#define PERF_REG_X86_MAX PERF_REG_X86_64_MAX
++#endif
 +
-+	ptr = note_data;
-+	while (ptr < (note_data + note_len)) {
-+		const char *name;
-+		size_t namesz, descsz;
++#define PT_REGS_OFFSET(id, r) [id] = offsetof(struct pt_regs, r)
 +
-+		nhdr = ptr;
-+		if (need_swap) {
-+			nhdr->n_namesz = bswap_32(nhdr->n_namesz);
-+			nhdr->n_descsz = bswap_32(nhdr->n_descsz);
-+			nhdr->n_type = bswap_32(nhdr->n_type);
-+		}
++static unsigned int pt_regs_offset[PERF_REG_X86_MAX] = {
++	PT_REGS_OFFSET(PERF_REG_X86_AX, ax),
++	PT_REGS_OFFSET(PERF_REG_X86_BX, bx),
++	PT_REGS_OFFSET(PERF_REG_X86_CX, cx),
++	PT_REGS_OFFSET(PERF_REG_X86_DX, dx),
++	PT_REGS_OFFSET(PERF_REG_X86_SI, si),
++	PT_REGS_OFFSET(PERF_REG_X86_DI, di),
++	PT_REGS_OFFSET(PERF_REG_X86_BP, bp),
++	PT_REGS_OFFSET(PERF_REG_X86_SP, sp),
++	PT_REGS_OFFSET(PERF_REG_X86_IP, ip),
++	PT_REGS_OFFSET(PERF_REG_X86_FLAGS, flags),
++	PT_REGS_OFFSET(PERF_REG_X86_CS, cs),
++	PT_REGS_OFFSET(PERF_REG_X86_SS, ss),
++#ifdef CONFIG_X86_32
++	PT_REGS_OFFSET(PERF_REG_X86_DS, ds),
++	PT_REGS_OFFSET(PERF_REG_X86_ES, es),
++	PT_REGS_OFFSET(PERF_REG_X86_FS, fs),
++	PT_REGS_OFFSET(PERF_REG_X86_GS, gs),
++#else
++	/*
++	 * The pt_regs struct does not store
++	 * ds, es, fs, gs in 64 bit mode.
++	 */
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++#endif
++#ifdef CONFIG_X86_64
++	PT_REGS_OFFSET(PERF_REG_X86_R8, r8),
++	PT_REGS_OFFSET(PERF_REG_X86_R9, r9),
++	PT_REGS_OFFSET(PERF_REG_X86_R10, r10),
++	PT_REGS_OFFSET(PERF_REG_X86_R11, r11),
++	PT_REGS_OFFSET(PERF_REG_X86_R12, r12),
++	PT_REGS_OFFSET(PERF_REG_X86_R13, r13),
++	PT_REGS_OFFSET(PERF_REG_X86_R14, r14),
++	PT_REGS_OFFSET(PERF_REG_X86_R15, r15),
++#endif
++};
 +
-+		namesz = NOTE_ALIGN(nhdr->n_namesz);
-+		descsz = NOTE_ALIGN(nhdr->n_descsz);
-+
-+		ptr += sizeof(*nhdr);
-+		name = ptr;
-+		ptr += namesz;
-+		if (nhdr->n_type == NT_GNU_BUILD_ID &&
-+		    nhdr->n_namesz == sizeof("GNU")) {
-+			if (memcmp(name, "GNU", sizeof("GNU")) == 0) {
-+				size_t sz = min(size, descsz);
-+				memcpy(bf, ptr, sz);
-+				memset(bf + sz, 0, size - sz);
-+				return 0;
-+			}
-+		}
-+		ptr += descsz;
-+	}
-+
- 	return -1;
- }
- 
-@@ -19,6 +75,172 @@ int filename__read_debuglink(const char *filename __used,
- 	return -1;
- }
- 
-+/*
-+ * Just try PT_NOTE header otherwise fails
-+ */
-+int filename__read_build_id(const char *filename, void *bf, size_t size)
++u64 perf_reg_value(struct pt_regs *regs, int idx)
 +{
-+	FILE *fp;
-+	int ret = -1;
-+	bool need_swap = false;
-+	u8 e_ident[EI_NIDENT];
-+	size_t buf_size;
-+	void *buf;
-+	int i;
++	if (WARN_ON_ONCE(idx > ARRAY_SIZE(pt_regs_offset)))
++		return 0;
 +
-+	fp = fopen(filename, "r");
-+	if (fp == NULL)
-+		return -1;
-+
-+	if (fread(e_ident, sizeof(e_ident), 1, fp) != 1)
-+		goto out;
-+
-+	if (memcmp(e_ident, ELFMAG, SELFMAG) ||
-+	    e_ident[EI_VERSION] != EV_CURRENT)
-+		goto out;
-+
-+	need_swap = check_need_swap(e_ident[EI_DATA]);
-+
-+	/* for simplicity */
-+	fseek(fp, 0, SEEK_SET);
-+
-+	if (e_ident[EI_CLASS] == ELFCLASS32) {
-+		Elf32_Ehdr ehdr;
-+		Elf32_Phdr *phdr;
-+
-+		if (fread(&ehdr, sizeof(ehdr), 1, fp) != 1)
-+			goto out;
-+
-+		if (need_swap) {
-+			ehdr.e_phoff = bswap_32(ehdr.e_phoff);
-+			ehdr.e_phentsize = bswap_16(ehdr.e_phentsize);
-+			ehdr.e_phnum = bswap_16(ehdr.e_phnum);
-+		}
-+
-+		buf_size = ehdr.e_phentsize * ehdr.e_phnum;
-+		buf = malloc(buf_size);
-+		if (buf == NULL)
-+			goto out;
-+
-+		fseek(fp, ehdr.e_phoff, SEEK_SET);
-+		if (fread(buf, buf_size, 1, fp) != 1)
-+			goto out_free;
-+
-+		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
-+			void *tmp;
-+
-+			if (need_swap) {
-+				phdr->p_type = bswap_32(phdr->p_type);
-+				phdr->p_offset = bswap_32(phdr->p_offset);
-+				phdr->p_filesz = bswap_32(phdr->p_filesz);
-+			}
-+
-+			if (phdr->p_type != PT_NOTE)
-+				continue;
-+
-+			buf_size = phdr->p_filesz;
-+			tmp = realloc(buf, buf_size);
-+			if (tmp == NULL)
-+				goto out_free;
-+
-+			buf = tmp;
-+			fseek(fp, phdr->p_offset, SEEK_SET);
-+			if (fread(buf, buf_size, 1, fp) != 1)
-+				goto out_free;
-+
-+			ret = read_build_id(buf, buf_size, bf, size, need_swap);
-+			if (ret == 0)
-+				ret = size;
-+			break;
-+		}
-+	} else {
-+		Elf64_Ehdr ehdr;
-+		Elf64_Phdr *phdr;
-+
-+		if (fread(&ehdr, sizeof(ehdr), 1, fp) != 1)
-+			goto out;
-+
-+		if (need_swap) {
-+			ehdr.e_phoff = bswap_64(ehdr.e_phoff);
-+			ehdr.e_phentsize = bswap_16(ehdr.e_phentsize);
-+			ehdr.e_phnum = bswap_16(ehdr.e_phnum);
-+		}
-+
-+		buf_size = ehdr.e_phentsize * ehdr.e_phnum;
-+		buf = malloc(buf_size);
-+		if (buf == NULL)
-+			goto out;
-+
-+		fseek(fp, ehdr.e_phoff, SEEK_SET);
-+		if (fread(buf, buf_size, 1, fp) != 1)
-+			goto out_free;
-+
-+		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
-+			void *tmp;
-+
-+			if (need_swap) {
-+				phdr->p_type = bswap_32(phdr->p_type);
-+				phdr->p_offset = bswap_64(phdr->p_offset);
-+				phdr->p_filesz = bswap_64(phdr->p_filesz);
-+			}
-+
-+			if (phdr->p_type != PT_NOTE)
-+				continue;
-+
-+			buf_size = phdr->p_filesz;
-+			tmp = realloc(buf, buf_size);
-+			if (tmp == NULL)
-+				goto out_free;
-+
-+			buf = tmp;
-+			fseek(fp, phdr->p_offset, SEEK_SET);
-+			if (fread(buf, buf_size, 1, fp) != 1)
-+				goto out_free;
-+
-+			ret = read_build_id(buf, buf_size, bf, size, need_swap);
-+			if (ret == 0)
-+				ret = size;
-+			break;
-+		}
-+	}
-+out_free:
-+	free(buf);
-+out:
-+	fclose(fp);
-+	return ret;
++	return regs_get_register(regs, pt_regs_offset[idx]);
 +}
 +
-+int sysfs__read_build_id(const char *filename, void *build_id, size_t size)
++#define REG_RESERVED (~((1ULL << PERF_REG_X86_MAX) - 1ULL))
++
++#ifdef CONFIG_X86_32
++int perf_reg_validate(u64 mask)
 +{
-+	int fd;
-+	int ret = -1;
-+	struct stat stbuf;
-+	size_t buf_size;
-+	void *buf;
++	if (!mask || mask & REG_RESERVED)
++		return -EINVAL;
 +
-+	fd = open(filename, O_RDONLY);
-+	if (fd < 0)
-+		return -1;
++	return 0;
++}
++#else /* CONFIG_X86_64 */
++#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
++		       (1ULL << PERF_REG_X86_ES) | \
++		       (1ULL << PERF_REG_X86_FS) | \
++		       (1ULL << PERF_REG_X86_GS))
 +
-+	if (fstat(fd, &stbuf) < 0)
-+		goto out;
++int perf_reg_validate(u64 mask)
++{
++	if (!mask || mask & REG_RESERVED)
++		return -EINVAL;
 +
-+	buf_size = stbuf.st_size;
-+	buf = malloc(buf_size);
-+	if (buf == NULL)
-+		goto out;
++	if (mask & REG_NOSUPPORT)
++		return -EINVAL;
 +
-+	if (read(fd, buf, buf_size) != (ssize_t) buf_size)
-+		goto out_free;
++	return 0;
++}
++#endif /* CONFIG_X86_32 */
+diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
+new file mode 100644
+index 0000000..a2f1a98
+--- /dev/null
++++ b/include/linux/perf_regs.h
+@@ -0,0 +1,19 @@
++#ifndef _LINUX_PERF_REGS_H
++#define _LINUX_PERF_REGS_H
 +
-+	ret = read_build_id(buf, buf_size, build_id, size, false);
-+out_free:
-+	free(buf);
-+out:
-+	close(fd);
-+	return ret;
++#ifdef CONFIG_HAVE_PERF_REGS
++#include <asm/perf_regs.h>
++u64 perf_reg_value(struct pt_regs *regs, int idx);
++int perf_reg_validate(u64 mask);
++#else
++static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
++{
++	return 0;
 +}
 +
- int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
- 				struct map *map __used,
- 				symbol_filter_t filter __used)
-@@ -26,11 +248,17 @@ int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
- 	return 0;
- }
- 
--int dso__load_sym(struct dso *dso __used, struct map *map __used,
--		  const char *name __used, int fd __used,
-+int dso__load_sym(struct dso *dso, struct map *map __used,
-+		  const char *name, int fd __used,
- 		  symbol_filter_t filter __used, int kmodule __used,
- 		  int want_symtab __used)
- {
-+	unsigned char *build_id[BUILD_ID_SIZE];
-+
-+	if (filename__read_build_id(name, build_id, BUILD_ID_SIZE) > 0) {
-+		dso__set_build_id(dso, build_id);
-+		return 1;
-+	}
- 	return 0;
- }
- 
++static inline int perf_reg_validate(u64 mask)
++{
++	return mask ? -ENOSYS : 0;
++}
++#endif /* CONFIG_HAVE_PERF_REGS */
++#endif /* _LINUX_PERF_REGS_H */
