@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab2HUFJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 01:09:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21124 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab2HUFJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 01:09:42 -0400
-Date: Tue, 21 Aug 2012 10:39:05 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 0/6] virtio-trace: Support virtio-trace
-Message-ID: <20120821050905.GE29197@amit.redhat.com>
-References: <20120724023657.6600.52706.stgit@ltc189.sdl.hitachi.co.jp>
- <20120809101620.GN3280@amit.redhat.com>
- <87393h3s5v.fsf@rustcorp.com.au>
+	id S1752249Ab2HUFN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 01:13:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56778 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab2HUFN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 01:13:27 -0400
+Date: Tue, 21 Aug 2012 02:13:19 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jani Nikula <jani.nikula@intel.com>,
+        Yang Guang <guang.a.yang@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [ 04/16] drm/i915: correctly order the ring init sequence
+Message-ID: <20120821051318.GB3625@herton-Z68MA-D2H-B3>
+References: <20120820035457.653002510@linuxfoundation.org>
+ <20120820035458.292084336@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87393h3s5v.fsf@rustcorp.com.au>
+In-Reply-To: <20120820035458.292084336@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 21 Aug 2012 [11:47:16], Rusty Russell wrote:
-> On Thu, 9 Aug 2012 15:46:20 +0530, Amit Shah <amit.shah@redhat.com> wrote:
-> > Hi,
-> > 
-> > On (Tue) 24 Jul 2012 [11:36:57], Yoshihiro YUNOMAE wrote:
-> > > Hi All,
-> > > 
-> > > The following patch set provides a low-overhead system for collecting kernel
-> > > tracing data of guests by a host in a virtualization environment.
-> > 
-> > So I just have one minor comment, please post a non-RFC version of the
-> > patch.
-> > 
-> > Since you have an ACK from Steven for the ftrace patch, I guess Rusty
-> > can push this in via his virtio tree?
-> > 
-> > I'll ack the virtio-console bits in the next series you send.
+On Sun, Aug 19, 2012 at 08:56:03PM -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
 > 
-> You didn't Ack, BTW.  At least, AFAICT.
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Daniel Vetter <daniel.vetter@ffwll.ch>
+> 
+> commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 upstream.
+> 
+> We may only start to set up the new register values after having
+> confirmed that the ring is truely off. Otherwise the hw might lose the
+> newly written register values. This is caught later on in the init
+> sequence, when we check whether the register writes have stuck.
+> 
+> Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50522
+> Tested-by: Yang Guang <guang.a.yang@intel.com>
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[...]
 
-Ah, sorry.  Will do that now.
+I had the same problem as on 3.2 with this change, i915 stopped working
+unable to initialize render ring, eg. on one of the boots here:
+[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f003 head 00001020 tail 00000000 start 00001000 
 
-		Amit
+But unlike I was expecting as with 3.2 case, picking commit
+f01db988ef6f6c70a6cc36ee71e4a98a68901229 ("drm/i915: Add wait_for in
+init_ring_common") here isn't enough, it continues to fail even if I
+try to increase the delay in the wait_for, I'm not sure why yet... may
+be something else is going on, or 3.0 has something else missing.
+
+Also the same proposed patch for 3.4.10 gives the same problem, but
+picking f01db988ef6f6c70a6cc36ee71e4a98a68901229 there made things work
+again like happend on first 3.2.28 proposed update. Only 3.0
+is misteriously failing either way here.
+
+-- 
+[]'s
+Herton
