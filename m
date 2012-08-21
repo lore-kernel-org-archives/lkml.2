@@ -1,156 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab2HUNS2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:18:28 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55220 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab2HUNSZ (ORCPT
+	id S1755936Ab2HUNTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:19:08 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:42080 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab2HUNTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:18:25 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] tty: move the async flags from the serial code into the tty
- includes
-To: shijie8@gmail.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 Aug 2012 14:35:54 +0100
-Message-ID: <20120821133455.9090.24759.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Tue, 21 Aug 2012 09:19:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1345531207-24926-1-git-send-email-airlied@redhat.com>
+References: <1345531207-24926-1-git-send-email-airlied@redhat.com>
+Date: Tue, 21 Aug 2012 09:19:04 -0400
+Message-ID: <CA+5PVA5sbks_5_G_nWmfjV0Xns93sSr8R+p1jLpQJ8ZBCvOcyA@mail.gmail.com>
+Subject: Re: [PATCH] fbcon: fix race condition between console lock and cursor timer
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.sf.net,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, kernel-team@fedoraproject.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Huang - how about we add this patch first which moves the flags somewhere more sensible
-and then your helper function (and probably a few others) would merge cleanly ?
+On Tue, Aug 21, 2012 at 2:40 AM, Dave Airlie <airlied@redhat.com> wrote:
+> So we've had a fair few reports of fbcon handover breakage between
+> efi/vesafb and i915 surface recently, so I dedicated a couple of
+> days to finding the problem.
+>
+> Essentially the last thing we saw was the conflicting framebuffer
+> message and that was all.
+>
+> So after much tracing with direct netconsole writes (printks
+> under console_lock not so useful), I think I found the race.
+>
+> Thread A (driver load)    Thread B (timer thread)
+>   unbind_con_driver ->              |
+>   bind_con_driver ->                |
+>   vc->vc_sw->con_deinit ->          |
+>   fbcon_deinit ->                   |
+>   console_lock()                    |
+>       |                             |
+>       |                       fbcon_flashcursor timer fires
+>       |                       console_lock() <- blocked for A
+>       |
+>       |
+> fbcon_del_cursor_timer ->
+>   del_timer_sync
+>   (BOOM)
+>
+> Of course because all of this is under the console lock,
+> we never see anything, also since we also just unbound the active
+> console guess what we never see anything.
+>
+> Hopefully this fixes the problem for anyone seeing vesafb->kms
+> driver handoff.
+>
+> Signed-off-by: David Airlie <airlied@redhat.com>
+> ---
+>  drivers/video/console/fbcon.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+> index 2e471c2..f8a79fc 100644
+> --- a/drivers/video/console/fbcon.c
+> +++ b/drivers/video/console/fbcon.c
+> @@ -372,8 +372,12 @@ static void fb_flashcursor(struct work_struct *work)
+>         struct vc_data *vc = NULL;
+>         int c;
+>         int mode;
+> +       int ret;
+> +
+> +       ret = console_trylock();
+> +       if (ret == 0)
+> +               return;
+>
+> -       console_lock();
+>         if (ops && ops->currcon != -1)
+>                 vc = vc_cons[ops->currcon].d;
+>
 
-Alan
---
+I have a Dell XPS 8300 machine with a Radeon card in it that started
+showing this problem yesterday with 3.6-rc2 kernels.  I tested this
+patch on top of v3.6-rc2-206-g10c63c9 this morning and the problem
+seems to have been cleared up for me.  That includes making sure the
+grub2 file has the gfxterm set, etc.
 
+I know we've been seeing this quite a bit more on Fedora 17, so we'll
+want to have some people test a 3.5 build with it but things are
+looking better.
 
-From: Alan Cox <alan@linux.intel.com>
-
-These are used with the tty_port flags which are tty generic so move the
-flags into a more sensible place. This then makes it possible to add
-helpers such as those suggested by Huang Shijie.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- include/linux/serial.h    |    2 +
- include/linux/tty.h       |    1 +
- include/linux/tty_flags.h |   78 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 81 insertions(+)
- create mode 100644 include/linux/tty_flags.h
-
-diff --git a/include/linux/serial.h b/include/linux/serial.h
-index 90e9f98..d63866d 100644
---- a/include/linux/serial.h
-+++ b/include/linux/serial.h
-@@ -15,6 +15,8 @@
- #ifdef __KERNEL__
- #include <asm/page.h>
- 
-+#include <linux/tty_flags.h>
-+
- /*
-  * Counters of the input lines (CTS, DSR, RI, CD) interrupts
-  */
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 69a787f..dbebd1e 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -43,6 +43,7 @@
- #include <linux/tty_driver.h>
- #include <linux/tty_ldisc.h>
- #include <linux/mutex.h>
-+#include <linux/tty_flags.h>
- 
- 
- 
-diff --git a/include/linux/tty_flags.h b/include/linux/tty_flags.h
-new file mode 100644
-index 0000000..eefcb48
---- /dev/null
-+++ b/include/linux/tty_flags.h
-@@ -0,0 +1,78 @@
-+#ifndef _LINUX_TTY_FLAGS_H
-+#define _LINUX_TTY_FLAGS_H
-+
-+/*
-+ * Definitions for async_struct (and serial_struct) flags field also
-+ * shared by the tty_port flags structures.
-+ *
-+ * Define ASYNCB_* for convenient use with {test,set,clear}_bit.
-+ */
-+#define ASYNCB_HUP_NOTIFY	 0 /* Notify getty on hangups and closes
-+				    * on the callout port */
-+#define ASYNCB_FOURPORT		 1 /* Set OU1, OUT2 per AST Fourport settings */
-+#define ASYNCB_SAK		 2 /* Secure Attention Key (Orange book) */
-+#define ASYNCB_SPLIT_TERMIOS	 3 /* Separate termios for dialin/callout */
-+#define ASYNCB_SPD_HI		 4 /* Use 56000 instead of 38400 bps */
-+#define ASYNCB_SPD_VHI		 5 /* Use 115200 instead of 38400 bps */
-+#define ASYNCB_SKIP_TEST	 6 /* Skip UART test during autoconfiguration */
-+#define ASYNCB_AUTO_IRQ		 7 /* Do automatic IRQ during
-+				    * autoconfiguration */
-+#define ASYNCB_SESSION_LOCKOUT	 8 /* Lock out cua opens based on session */
-+#define ASYNCB_PGRP_LOCKOUT	 9 /* Lock out cua opens based on pgrp */
-+#define ASYNCB_CALLOUT_NOHUP	10 /* Don't do hangups for cua device */
-+#define ASYNCB_HARDPPS_CD	11 /* Call hardpps when CD goes high  */
-+#define ASYNCB_SPD_SHI		12 /* Use 230400 instead of 38400 bps */
-+#define ASYNCB_LOW_LATENCY	13 /* Request low latency behaviour */
-+#define ASYNCB_BUGGY_UART	14 /* This is a buggy UART, skip some safety
-+				    * checks.  Note: can be dangerous! */
-+#define ASYNCB_AUTOPROBE	15 /* Port was autoprobed by PCI or PNP code */
-+#define ASYNCB_LAST_USER	15
-+
-+/* Internal flags used only by kernel */
-+#define ASYNCB_INITIALIZED	31 /* Serial port was initialized */
-+#define ASYNCB_SUSPENDED	30 /* Serial port is suspended */
-+#define ASYNCB_NORMAL_ACTIVE	29 /* Normal device is active */
-+#define ASYNCB_BOOT_AUTOCONF	28 /* Autoconfigure port on bootup */
-+#define ASYNCB_CLOSING		27 /* Serial port is closing */
-+#define ASYNCB_CTS_FLOW		26 /* Do CTS flow control */
-+#define ASYNCB_CHECK_CD		25 /* i.e., CLOCAL */
-+#define ASYNCB_SHARE_IRQ	24 /* for multifunction cards, no longer used */
-+#define ASYNCB_CONS_FLOW	23 /* flow control for console  */
-+#define ASYNCB_FIRST_KERNEL	22
-+
-+#define ASYNC_HUP_NOTIFY	(1U << ASYNCB_HUP_NOTIFY)
-+#define ASYNC_SUSPENDED		(1U << ASYNCB_SUSPENDED)
-+#define ASYNC_FOURPORT		(1U << ASYNCB_FOURPORT)
-+#define ASYNC_SAK		(1U << ASYNCB_SAK)
-+#define ASYNC_SPLIT_TERMIOS	(1U << ASYNCB_SPLIT_TERMIOS)
-+#define ASYNC_SPD_HI		(1U << ASYNCB_SPD_HI)
-+#define ASYNC_SPD_VHI		(1U << ASYNCB_SPD_VHI)
-+#define ASYNC_SKIP_TEST		(1U << ASYNCB_SKIP_TEST)
-+#define ASYNC_AUTO_IRQ		(1U << ASYNCB_AUTO_IRQ)
-+#define ASYNC_SESSION_LOCKOUT	(1U << ASYNCB_SESSION_LOCKOUT)
-+#define ASYNC_PGRP_LOCKOUT	(1U << ASYNCB_PGRP_LOCKOUT)
-+#define ASYNC_CALLOUT_NOHUP	(1U << ASYNCB_CALLOUT_NOHUP)
-+#define ASYNC_HARDPPS_CD	(1U << ASYNCB_HARDPPS_CD)
-+#define ASYNC_SPD_SHI		(1U << ASYNCB_SPD_SHI)
-+#define ASYNC_LOW_LATENCY	(1U << ASYNCB_LOW_LATENCY)
-+#define ASYNC_BUGGY_UART	(1U << ASYNCB_BUGGY_UART)
-+#define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
-+
-+#define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
-+#define ASYNC_USR_MASK		(ASYNC_SPD_MASK|ASYNC_CALLOUT_NOHUP| \
-+		ASYNC_LOW_LATENCY)
-+#define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
-+#define ASYNC_SPD_WARP		(ASYNC_SPD_HI|ASYNC_SPD_SHI)
-+#define ASYNC_SPD_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI|ASYNC_SPD_SHI)
-+
-+#define ASYNC_INITIALIZED	(1U << ASYNCB_INITIALIZED)
-+#define ASYNC_NORMAL_ACTIVE	(1U << ASYNCB_NORMAL_ACTIVE)
-+#define ASYNC_BOOT_AUTOCONF	(1U << ASYNCB_BOOT_AUTOCONF)
-+#define ASYNC_CLOSING		(1U << ASYNCB_CLOSING)
-+#define ASYNC_CTS_FLOW		(1U << ASYNCB_CTS_FLOW)
-+#define ASYNC_CHECK_CD		(1U << ASYNCB_CHECK_CD)
-+#define ASYNC_SHARE_IRQ		(1U << ASYNCB_SHARE_IRQ)
-+#define ASYNC_CONS_FLOW		(1U << ASYNCB_CONS_FLOW)
-+#define ASYNC_INTERNAL_FLAGS	(~((1U << ASYNCB_FIRST_KERNEL) - 1))
-+
-+#endif
-
+josh
