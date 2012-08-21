@@ -1,242 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab2HUJwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:52:01 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35476 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755374Ab2HUJv6 (ORCPT
+	id S1756102Ab2HUJy3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:54:29 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:37878 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754245Ab2HUJy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:51:58 -0400
-Message-ID: <50335A27.2070306@linux.vnet.ibm.com>
-Date: Tue, 21 Aug 2012 17:51:35 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: trace the events of mmu_notifier
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082109-5816-0000-0000-00000415C279
+	Tue, 21 Aug 2012 05:54:26 -0400
+Message-ID: <1345542860.4085.40.camel@deskari>
+Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <leelakrishna.a@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Date: Tue, 21 Aug 2012 12:54:20 +0300
+In-Reply-To: <20120821091306.GA4819@avionic-0098.mockup.avionic-design.de>
+References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com>
+	 <1345097337-24170-2-git-send-email-acourbot@nvidia.com>
+	 <1345535069.4085.7.camel@deskari> <1562509.b0FYTUZ1D8@percival>
+	 <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
+	 <1345539465.4085.22.camel@deskari>
+	 <20120821091306.GA4819@avionic-0098.mockup.avionic-design.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-7E61pVNOK8ptK17BGKHa"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmu_notifier is the interface to broadcast the mm events to KVM, the
-tracepoints introduced in this patch can trace all these events, it is
-very helpful for us to notice and fix the bug caused by mm
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- include/trace/events/kvm.h |  121 ++++++++++++++++++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c        |   19 +++++++
- 2 files changed, 140 insertions(+), 0 deletions(-)
+--=-7E61pVNOK8ptK17BGKHa
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
-index 7ef9e75..a855ff9 100644
---- a/include/trace/events/kvm.h
-+++ b/include/trace/events/kvm.h
-@@ -309,6 +309,127 @@ TRACE_EVENT(
+On Tue, 2012-08-21 at 11:13 +0200, Thierry Reding wrote:
+> On Tue, Aug 21, 2012 at 11:57:45AM +0300, Tomi Valkeinen wrote:
 
- #endif
+> > This doesn't mean that we'd have a separate driver for each device. For
+> > example, we have a generic panel driver in OMAP, which contains a kind
+> > of small panel database. The panel database contains the name of the
+> > panel as a key, and panel specific configuration as a value. This
+> > configuration could also contain some kind of generic power sequence.
+>=20
+> I see. I do like the idea of it, because it is more straightforward than
+> representing the whole sequence in DT. Matching could be done using the
+> standard compatible property.
 
-+#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
-+DECLARE_EVENT_CLASS(mmu_notifier_address_class,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long address),
-+
-+	TP_ARGS(kvm, address),
-+
-+	TP_STRUCT__entry(
-+		__field(struct kvm *, kvm)
-+		__field(unsigned long, address)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->kvm = kvm;
-+		__entry->address = address;
-+	),
-+
-+	TP_printk("kvm %p address %lx", __entry->kvm, __entry->address)
-+
-+);
-+
-+DEFINE_EVENT(mmu_notifier_address_class, kvm_mmu_notifier_invalidate_page,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long address),
-+
-+	TP_ARGS(kvm, address)
-+);
-+
-+DEFINE_EVENT(mmu_notifier_address_class, kvm_mmu_notifier_clear_flush_young,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long address),
-+
-+	TP_ARGS(kvm, address)
-+);
-+
-+DEFINE_EVENT(mmu_notifier_address_class, kvm_mmu_notifier_test_young,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long address),
-+
-+	TP_ARGS(kvm, address)
-+);
-+
-+DECLARE_EVENT_CLASS(mmu_notifier_range_class,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long start, unsigned long end),
-+
-+	TP_ARGS(kvm, start, end),
-+
-+	TP_STRUCT__entry(
-+		__field(struct kvm *, kvm)
-+		__field(unsigned long, start)
-+		__field(unsigned long, end)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->kvm = kvm;
-+		__entry->start = start;
-+		__entry->end = end;
-+	),
-+
-+	TP_printk("kvm %p start %lx end %lx", __entry->kvm, __entry->start,
-+		  __entry->end)
-+
-+);
-+
-+DEFINE_EVENT(mmu_notifier_range_class, kvm_mmu_notifier_invalidate_range_start,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long start, unsigned long end),
-+
-+	TP_ARGS(kvm, start, end)
-+);
-+
-+DEFINE_EVENT(mmu_notifier_range_class, kvm_mmu_notifier_invalidate_range_end,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long start, unsigned long end),
-+
-+	TP_ARGS(kvm, start, end)
-+);
-+
-+TRACE_EVENT(kvm_mmu_notifier_change_pte,
-+
-+	TP_PROTO(struct kvm *kvm, unsigned long address, pte_t pte),
-+
-+	TP_ARGS(kvm, address, pte),
-+
-+	TP_STRUCT__entry(
-+		__field(struct kvm *, kvm)
-+		__field(unsigned long, address)
-+		__field(unsigned long, pte)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->kvm = kvm;
-+		__entry->address = address;
-+		__entry->pte = pte.pte;
-+	),
-+
-+	TP_printk("kvm %p address %lx pte %lx", __entry->kvm, __entry->address,
-+		  __entry->pte)
-+
-+);
-+
-+TRACE_EVENT(kvm_mmu_notifier_release,
-+
-+	TP_PROTO(struct kvm *kvm),
-+
-+	TP_ARGS(kvm),
-+
-+	TP_STRUCT__entry(
-+		__field(struct kvm *, kvm)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->kvm = kvm;
-+	),
-+
-+	TP_printk("kvm %p", __entry->kvm)
-+
-+);
-+#endif
-+
- #endif /* _TRACE_KVM_MAIN_H */
+Right.
 
- /* This part must be outside protection */
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index ec970f4..3491865 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -287,6 +287,8 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
- 	idx = srcu_read_lock(&kvm->srcu);
- 	spin_lock(&kvm->mmu_lock);
+> However this also means we'll essentially just be moving the board code.
 
-+	trace_kvm_mmu_notifier_invalidate_page(kvm, address);
-+
- 	kvm->mmu_notifier_seq++;
- 	need_tlb_flush = kvm_unmap_hva(kvm, address) | kvm->tlbs_dirty;
- 	/* we've to flush the tlb before the pages can be freed */
-@@ -307,6 +309,9 @@ static void kvm_mmu_notifier_change_pte(struct mmu_notifier *mn,
+What do you mean "just"? Wasn't the point of the whole "arm board file
+mess" to get rid of the code from the board files? If the code in the
+board file is device specific code, not board specific, then the driver
+of the device is a logical place to place it.
 
- 	idx = srcu_read_lock(&kvm->srcu);
- 	spin_lock(&kvm->mmu_lock);
-+
-+	trace_kvm_mmu_notifier_change_pte(kvm, address, pte);
-+
- 	kvm->mmu_notifier_seq++;
- 	kvm_set_spte_hva(kvm, address, pte);
- 	spin_unlock(&kvm->mmu_lock);
-@@ -323,6 +328,9 @@ static void kvm_mmu_notifier_invalidate_range_start(struct mmu_notifier *mn,
+And as I said, I don't have any problems with some kind of generic power
+sequences. So the code in the board file could be moved and converted to
+use the power sequences, if that is better than just plain c code.
 
- 	idx = srcu_read_lock(&kvm->srcu);
- 	spin_lock(&kvm->mmu_lock);
-+
-+	trace_kvm_mmu_notifier_invalidate_range_start(kvm, start, end);
-+
- 	/*
- 	 * The count increase must become visible at unlock time as no
- 	 * spte can be established without taking the mmu_lock and
-@@ -347,6 +355,9 @@ static void kvm_mmu_notifier_invalidate_range_end(struct mmu_notifier *mn,
- 	struct kvm *kvm = mmu_notifier_to_kvm(mn);
+> Being in a central location it would be easier to refactor commonalities
+> though.
+>=20
+> > I'd like to require the board developer to only fill in to the DT data
+> > what panel he is using, and how it's connected on his board. Not panel'=
+s
+> > internal functionality.
+>=20
+> The amount of work required by the board developer would largely depend
+> on whether support for the panel is already present or not. For new
+> panels this would mean that a new driver needs to be written, while
+> representing the power sequence in DT might be easier to do, and readily
+> available from some datasheet.
 
- 	spin_lock(&kvm->mmu_lock);
-+
-+	trace_kvm_mmu_notifier_invalidate_range_end(kvm, start, end);
-+
- 	/*
- 	 * This sequence increase will notify the kvm page fault that
- 	 * the page that is going to be mapped in the spte could have
-@@ -375,6 +386,8 @@ static int kvm_mmu_notifier_clear_flush_young(struct mmu_notifier *mn,
- 	idx = srcu_read_lock(&kvm->srcu);
- 	spin_lock(&kvm->mmu_lock);
+That's true.
 
-+	trace_kvm_mmu_notifier_clear_flush_young(kvm, address);
-+
- 	young = kvm_age_hva(kvm, address);
- 	if (young)
- 		kvm_flush_remote_tlbs(kvm);
-@@ -394,6 +407,9 @@ static int kvm_mmu_notifier_test_young(struct mmu_notifier *mn,
+However, if we already have a generic driver for that type of panel,
+(which we would need anyway for the DT based approach), the developer
+only needs to add the name of the panel and the data for the power
+sequence to the panel driver's database, which is about the same amount
+of work as with DT.
 
- 	idx = srcu_read_lock(&kvm->srcu);
- 	spin_lock(&kvm->mmu_lock);
-+
-+	trace_kvm_mmu_notifier_test_young(kvm, address);
-+
- 	young = kvm_test_age_hva(kvm, address);
- 	spin_unlock(&kvm->mmu_lock);
- 	srcu_read_unlock(&kvm->srcu, idx);
-@@ -408,6 +424,9 @@ static void kvm_mmu_notifier_release(struct mmu_notifier *mn,
- 	int idx;
+So it's really just a question of where to put the data in question, DT
+or driver. Both contain the same data, and the data structure may also
+be the same. In DT's case it just needs to be parsed first, whereas in
+database case you'll enter the data in structs.
 
- 	idx = srcu_read_lock(&kvm->srcu);
-+
-+	trace_kvm_mmu_notifier_release(kvm);
-+
- 	kvm_arch_flush_shadow(kvm);
- 	srcu_read_unlock(&kvm->srcu, idx);
- }
--- 
-1.7.7.6
+ Tomi
+
+
+--=-7E61pVNOK8ptK17BGKHa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJQM1rMAAoJEPo9qoy8lh71Dz4QAIt9FeQ0fcNavme5qLDfvdxb
+AK/z9/DPBICHd9srOzUZ94EkVClmGDwQ18V18UgVnxBYbengCcaUCgWYH32u1IBf
+h9p3mIeK7wNFimR3fygJCkuzveBvpMu6dFmYpUwOBdLNvS69l9C9TUKSgTmgvgR/
+wWyBSMTWgR+1zM9FWv5muVfIK5K3r0TCL1Ypy0CKsgKQl9hG9akRRxW9Zc8ZtHsz
+GO0xWoSHbSyKcspVIXOcZm3+ZDrvyPrrn3WSgOUQ6Q0ss/crdyTUzgVthr86bU4k
+HE/iuvCv/LnxyZBNzJpFlj35hiATFFvE+R+dP/ZHB9c2OwkhtJ121ZA5PIuK1n6C
+SatzFXHxdeAwnKKWmhZoRqip5jOd3b94sPn+Njbgrp0sWlVu+MB0ULUcMZu+Zg5e
+9SPIsscsG54eY92cASxWAgkR+yTfoyS67oTHvbjgsy/8TxbqF4e+rP2ed9WJj/LY
+ww0PW0E1lL/LQ79QndJ+PNnA6Mcm4Z8gLoNh3jq+URzctRt1QI87BgjC0rA8ZHo/
+nn/0ruLuiFIFHaHQT56JRhub4phy5fpGCKeq1ygkRXBZFAOunPA6NUoZVo4b7ORv
+AiKa9PtnRqF+6q7Aqo8ip6/21PoEHFI6eCem9DjzmHxFOJE3XKCn0HPVJBpbJQje
+YDJ2tGzgU3fI6+pfnPeA
+=NTnp
+-----END PGP SIGNATURE-----
+
+--=-7E61pVNOK8ptK17BGKHa--
 
