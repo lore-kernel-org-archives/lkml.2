@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab2HUSDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:03:47 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:15696
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758257Ab2HUSDn (ORCPT
+	id S1758290Ab2HUSIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:08:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59439 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab2HUSIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:03:43 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah11b5h1155h)
-X-WSS-ID: 0M94A60-02-IPR-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 1/2] perf test: Update event names in test cases
-Date: Tue, 21 Aug 2012 20:03:14 +0200
-Message-ID: <1345572195-23857-1-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <20120820174247.GD1176@krava.brq.redhat.com>
-References: <20120820174247.GD1176@krava.brq.redhat.com>
+	Tue, 21 Aug 2012 14:08:13 -0400
+Message-ID: <5033CE8A.5090705@wwwdotorg.org>
+Date: Tue, 21 Aug 2012 12:08:10 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Will Drewry <wad@chromium.org>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
+        Jens Axboe <axboe@kernel.dk>, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: root=PARTUUID for MBR/NT disk signatures?
+References: <502EC16C.4030007@wwwdotorg.org> <20120820182254.GQ24861@google.com> <50328258.9030800@wwwdotorg.org> <CABqD9hY-Z9uBcYyeCa=8f8eeXkGNjPKxbwpMPi3vs3776vF6iQ@mail.gmail.com>
+In-Reply-To: <CABqD9hY-Z9uBcYyeCa=8f8eeXkGNjPKxbwpMPi3vs3776vF6iQ@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Event names are now generated from the command line specification.
-Update event names in test cases accordingly.
+On 08/20/2012 10:47 PM, Will Drewry wrote:
+> On Mon, Aug 20, 2012 at 1:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 08/20/2012 12:22 PM, Tejun Heo wrote:
+>>> Hello,
+>>>
+>>> On Fri, Aug 17, 2012 at 04:10:52PM -0600, Stephen Warren wrote:
+>>>> I was considering extending the kernel command-line option
+>>>> root=PARTUUID= to also support MBR (NT disk signatures). I was thinking
+>>>> of a syntax along the lines of:
+>>>>
+>>>> root=PARTUUID=UUUUUUUU-PP[/PARTNROFF=%d]
+>>>>
+>>>> ... where UUUUUUUU is the hex representation of the NT disk signature,
+>>>> and PP is the hex representation of the partition number. Like GPT,
+>>>> /PARTNROFF could be used too if desired.
+>>>>
+>>>> Related, I was thinking of changing struct partition_meta_info's uuid
+>>>> field to be a string, so that it could simply be strcmp'd against the
+>>>> UUID value on the kernel command-line. That way, the type of the UUID is
+>>>> irrelevant.
+>>>>
+>>>> Does anyone have any objection to that?
+>>>
+>>> Wouldn't that be able to break setups which work currently?
+>>
+>> I don't believe so:
+>>
+>> Since the newly supported UUID syntax wouldn't ever match any EFI UUID
+>> (the lengths differ in all cases), I don't believe the new syntax would
+>> affect behavior for any existing usage.
+>>
+>> Obviously, part_efi.c would be modified to initialize struct
+>> partition_meta_info's uuid field to the appropriate string
+>> representation of the UUID so that the str(case)cmp would still succeed
+>> for existing command-lines. I ended up coding up that part of the change
+>> late Friday, and the feature was certainly still working OK.
+> 
+> Functionally, I suspect this will work fine, but I am concerned that
+> it is a bad move from an efficiency perspective (not unfixable
+> though).  Right now, the user-supplied value is converted from
+> string-uuid to packed-uuid.  This is then memcmp'd across any and all
+> partitions - be it 2 or 200 - across all attached storage.  If we move
+> to a pure string, then we end up needing to unpack every packed UUID
+> at disk scan time (or search, depending on impl) rather than just the
+> one user supplied value.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/util/parse-events-test.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+The EFI partition code actually does the following already:
 
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index bf055ce..74be1bf 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -301,12 +301,13 @@ static int test__checkevent_breakpoint_modifier(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel = perf_evlist__first(evlist);
- 
-+
- 	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
- 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong name",
--			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:u"));
-+			!strcmp(perf_evsel__name(evsel), "mem:0:u"));
- 
- 	return test__checkevent_breakpoint(evlist);
- }
-@@ -320,7 +321,7 @@ static int test__checkevent_breakpoint_x_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong name",
--			!strcmp(perf_evsel__name(evsel), "mem:0x0:x:k"));
-+			!strcmp(perf_evsel__name(evsel), "mem:0:x:k"));
- 
- 	return test__checkevent_breakpoint_x(evlist);
- }
-@@ -334,7 +335,7 @@ static int test__checkevent_breakpoint_r_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong name",
--			!strcmp(perf_evsel__name(evsel), "mem:0x0:r:hp"));
-+			!strcmp(perf_evsel__name(evsel), "mem:0:r:hp"));
- 
- 	return test__checkevent_breakpoint_r(evlist);
- }
-@@ -348,7 +349,7 @@ static int test__checkevent_breakpoint_w_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong name",
--			!strcmp(perf_evsel__name(evsel), "mem:0x0:w:up"));
-+			!strcmp(perf_evsel__name(evsel), "mem:0:w:up"));
- 
- 	return test__checkevent_breakpoint_w(evlist);
- }
-@@ -362,7 +363,7 @@ static int test__checkevent_breakpoint_rw_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong name",
--			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:kp"));
-+			!strcmp(perf_evsel__name(evsel), "mem:0:rw:kp"));
- 
- 	return test__checkevent_breakpoint_rw(evlist);
- }
-@@ -437,7 +438,7 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
- 	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
- 	TEST_ASSERT_VAL("wrong name",
--			!strcmp(perf_evsel__name(evsel), "raw 0x2:u"));
-+			!strcmp(perf_evsel__name(evsel), "cpu/config=2/u"));
- 
- 	return 0;
- }
--- 
-1.7.8.6
+1) Unpack the UUID from the binary on-disk representation to a temporary
+string.
+2) Repack the temporary string into the internal UUID buffer.
 
+The comments imply this is in order to do endian conversions.
 
+Switching the internal representation to a string avoids step (2) above,
+plus avoids having to pack the string on the kernel command-line into a
+binary UUID before the comparison. I doubt the difference between memcmp
+vs. strcasecmp is worth considering. So, I think it's overall a win.
