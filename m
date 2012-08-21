@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab2HUPuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:50:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60261 "EHLO
+	id S1754815Ab2HUPu4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:50:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60283 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab2HUPuG (ORCPT
+	with ESMTP id S1751356Ab2HUPuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:50:06 -0400
-Date: Tue, 21 Aug 2012 08:49:19 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-c5ebcedb566ef17bda7b02686e0d658a7bb42ee7@git.kernel.org>
+	Tue, 21 Aug 2012 11:50:52 -0400
+Date: Tue, 21 Aug 2012 08:50:14 -0700
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Message-ID: <tip-d077526485d5c9b12fe85d0b2b3b7041e6bc5f91@git.kernel.org>
 Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org, gorcunov@openvz.org,
         a.p.zijlstra@chello.nl, benjamin.redelings@nescent.org,
         jolsa@redhat.com, drepper@gmail.com, robert.richter@amd.com,
@@ -24,12 +24,11 @@ Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
         cjashfor@linux.vnet.ibm.com, asharma@fb.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
         tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com, mingo@elte.hu
-In-Reply-To: <1344345647-11536-6-git-send-email-jolsa@redhat.com>
-References: <1344345647-11536-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1344345647-11536-7-git-send-email-jolsa@redhat.com>
+References: <1344345647-11536-7-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Add ability to attach user stack dump to sample
-Git-Commit-ID: c5ebcedb566ef17bda7b02686e0d658a7bb42ee7
+Subject: [tip:perf/core] perf: Add attribute to filter out callchains
+Git-Commit-ID: d077526485d5c9b12fe85d0b2b3b7041e6bc5f91
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,43 +37,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:49:26 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:50:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c5ebcedb566ef17bda7b02686e0d658a7bb42ee7
-Gitweb:     http://git.kernel.org/tip/c5ebcedb566ef17bda7b02686e0d658a7bb42ee7
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 7 Aug 2012 15:20:40 +0200
+Commit-ID:  d077526485d5c9b12fe85d0b2b3b7041e6bc5f91
+Gitweb:     http://git.kernel.org/tip/d077526485d5c9b12fe85d0b2b3b7041e6bc5f91
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Tue, 7 Aug 2012 15:20:41 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 10 Aug 2012 12:17:58 -0300
+CommitDate: Fri, 10 Aug 2012 12:40:57 -0300
 
-perf: Add ability to attach user stack dump to sample
+perf: Add attribute to filter out callchains
 
-Introducing PERF_SAMPLE_STACK_USER sample type bit to trigger the dump
-of the user level stack on sample. The size of the dump is specified by
-sample_stack_user value.
+Introducing following bits to the the perf_event_attr struct:
 
-Being able to dump parts of the user stack, starting from the stack
-pointer, will be useful to make a post mortem dwarf CFI based stack
-unwinding.
+  - exclude_callchain_kernel to filter out kernel callchain
+    from the sample dump
 
-Added HAVE_PERF_USER_STACK_DUMP config option to determine if the
-architecture provides user stack dump on perf event samples.  This needs
-access to the user stack pointer which is not unified across
-architectures. Enabling this for x86 architecture.
+  - exclude_callchain_user to filter out user callchain
+    from the sample dump
+
+We need to be able to disable standard user callchain dump when we use
+the dwarf cfi callchain mode, because frame pointer based user
+callchains are useless in this mode.
+
+Implementing also exclude_callchain_kernel to have complete set of
+options.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
+[ Added kernel callchains filtering ]
 Cc: "Frank Ch. Eigler" <fche@redhat.com>
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Cyrill Gorcunov <gorcunov@openvz.org>
 Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -82,323 +83,87 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-6-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1344345647-11536-7-git-send-email-jolsa@redhat.com
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/Kconfig               |    7 ++
- arch/x86/Kconfig           |    1 +
- include/linux/perf_event.h |   18 +++++-
- kernel/events/core.c       |  150 +++++++++++++++++++++++++++++++++++++++++++-
- kernel/events/internal.h   |   16 +++++
- 5 files changed, 190 insertions(+), 2 deletions(-)
+ include/linux/perf_event.h |    5 ++++-
+ kernel/events/callchain.c  |   38 ++++++++++++++++++++++++--------------
+ 2 files changed, 28 insertions(+), 15 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 68d827b..2a83a3f 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -228,6 +228,13 @@ config HAVE_PERF_REGS
- 	  Support selective register dumps for perf events. This includes
- 	  bit-mapping of each registers and a unique architecture id.
- 
-+config HAVE_PERF_USER_STACK_DUMP
-+	bool
-+	help
-+	  Support user stack dumps for perf event samples. This needs
-+	  access to the user stack pointer which is not unified across
-+	  architectures.
-+
- config HAVE_ARCH_JUMP_LABEL
- 	bool
- 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 3fab6ec..a2d19ee 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -61,6 +61,7 @@ config X86
- 	select PERF_EVENTS
- 	select HAVE_PERF_EVENTS_NMI
- 	select HAVE_PERF_REGS
-+	select HAVE_PERF_USER_STACK_DUMP
- 	select ANON_INODES
- 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
- 	select HAVE_CMPXCHG_LOCAL if !M386
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8a73f75..d1d25f6 100644
+index d1d25f6..297ca3d 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -131,8 +131,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_RAW				= 1U << 10,
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
-+	PERF_SAMPLE_STACK_USER			= 1U << 13,
+@@ -268,7 +268,10 @@ struct perf_event_attr {
+ 				exclude_host   :  1, /* don't count in host   */
+ 				exclude_guest  :  1, /* don't count in guest  */
  
--	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
- };
+-				__reserved_1   : 43;
++				exclude_callchain_kernel : 1, /* exclude kernel callchains */
++				exclude_callchain_user   : 1, /* exclude user callchains */
++
++				__reserved_1   : 41;
  
- /*
-@@ -205,6 +206,7 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
- #define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
-+#define PERF_ATTR_SIZE_VER4	96	/* add: sample_stack_user */
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index 98d4597..c772061 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -159,6 +159,11 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
  
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-@@ -289,6 +291,14 @@ struct perf_event_attr {
- 	 * See asm/perf_regs.h for details.
- 	 */
- 	__u64	sample_regs_user;
++	int kernel = !event->attr.exclude_callchain_kernel;
++	int user   = !event->attr.exclude_callchain_user;
 +
-+	/*
-+	 * Defines size of the user stack to dump on samples.
-+	 */
-+	__u32	sample_stack_user;
-+
-+	/* Align to u64. */
-+	__u32	__reserved_2;
- };
++	if (!kernel && !user)
++		return NULL;
  
- /*
-@@ -568,6 +578,10 @@ enum perf_event_type {
- 	 *
- 	 * 	{ u64			abi; # enum perf_sample_regs_abi
- 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
-+	 *
-+	 * 	{ u64			size;
-+	 * 	  char			data[size];
-+	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -1160,6 +1174,7 @@ struct perf_sample_data {
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
-+	u64				stack_user_size;
- };
+ 	entry = get_callchain_entry(&rctx);
+ 	if (rctx == -1)
+@@ -169,24 +174,29 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -1172,6 +1187,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->period = period;
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
-+	data->stack_user_size = 0;
- }
+ 	entry->nr = 0;
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d3ce975..2ba8904 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -36,6 +36,7 @@
- #include <linux/perf_event.h>
- #include <linux/ftrace_event.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/mm_types.h>
- 
- #include "internal.h"
- 
-@@ -3787,6 +3788,101 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
- 	}
- }
- 
-+/*
-+ * Get remaining task size from user stack pointer.
-+ *
-+ * It'd be better to take stack vma map and limit this more
-+ * precisly, but there's no way to get it safely under interrupt,
-+ * so using TASK_SIZE as limit.
-+ */
-+static u64 perf_ustack_task_size(struct pt_regs *regs)
-+{
-+	unsigned long addr = perf_user_stack_pointer(regs);
-+
-+	if (!addr || addr >= TASK_SIZE)
-+		return 0;
-+
-+	return TASK_SIZE - addr;
-+}
-+
-+static u16
-+perf_sample_ustack_size(u16 stack_size, u16 header_size,
-+			struct pt_regs *regs)
-+{
-+	u64 task_size;
-+
-+	/* No regs, no stack pointer, no dump. */
-+	if (!regs)
-+		return 0;
-+
-+	/*
-+	 * Check if we fit in with the requested stack size into the:
-+	 * - TASK_SIZE
-+	 *   If we don't, we limit the size to the TASK_SIZE.
-+	 *
-+	 * - remaining sample size
-+	 *   If we don't, we customize the stack size to
-+	 *   fit in to the remaining sample size.
-+	 */
-+
-+	task_size  = min((u64) USHRT_MAX, perf_ustack_task_size(regs));
-+	stack_size = min(stack_size, (u16) task_size);
-+
-+	/* Current header size plus static size and dynamic size. */
-+	header_size += 2 * sizeof(u64);
-+
-+	/* Do we fit in with the current stack dump size? */
-+	if ((u16) (header_size + stack_size) < header_size) {
-+		/*
-+		 * If we overflow the maximum size for the sample,
-+		 * we customize the stack dump size to fit in.
-+		 */
-+		stack_size = USHRT_MAX - header_size - sizeof(u64);
-+		stack_size = round_up(stack_size, sizeof(u64));
-+	}
-+
-+	return stack_size;
-+}
-+
-+static void
-+perf_output_sample_ustack(struct perf_output_handle *handle, u64 dump_size,
-+			  struct pt_regs *regs)
-+{
-+	/* Case of a kernel thread, nothing to dump */
-+	if (!regs) {
-+		u64 size = 0;
-+		perf_output_put(handle, size);
-+	} else {
-+		unsigned long sp;
-+		unsigned int rem;
-+		u64 dyn_size;
-+
-+		/*
-+		 * We dump:
-+		 * static size
-+		 *   - the size requested by user or the best one we can fit
-+		 *     in to the sample max size
-+		 * data
-+		 *   - user stack dump data
-+		 * dynamic size
-+		 *   - the actual dumped size
-+		 */
-+
-+		/* Static size. */
-+		perf_output_put(handle, dump_size);
-+
-+		/* Data. */
-+		sp = perf_user_stack_pointer(regs);
-+		rem = __output_copy_user(handle, (void *) sp, dump_size);
-+		dyn_size = dump_size - rem;
-+
-+		perf_output_skip(handle, rem);
-+
-+		/* Dynamic size. */
-+		perf_output_put(handle, dyn_size);
-+	}
-+}
-+
- static void __perf_event_header__init_id(struct perf_event_header *header,
- 					 struct perf_sample_data *data,
- 					 struct perf_event *event)
-@@ -4064,6 +4160,11 @@ void perf_output_sample(struct perf_output_handle *handle,
- 						mask);
- 		}
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_STACK_USER)
-+		perf_output_sample_ustack(handle,
-+					  data->stack_user_size,
-+					  data->regs_user.regs);
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -4129,6 +4230,35 @@ void perf_prepare_sample(struct perf_event_header *header,
- 
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_STACK_USER) {
-+		/*
-+		 * Either we need PERF_SAMPLE_STACK_USER bit to be allways
-+		 * processed as the last one or have additional check added
-+		 * in case new sample type is added, because we could eat
-+		 * up the rest of the sample size.
-+		 */
-+		struct perf_regs_user *uregs = &data->regs_user;
-+		u16 stack_size = event->attr.sample_stack_user;
-+		u16 size = sizeof(u64);
-+
-+		if (!uregs->abi)
-+			perf_sample_regs_user(uregs, regs);
-+
-+		stack_size = perf_sample_ustack_size(stack_size, header->size,
-+						     uregs->regs);
-+
-+		/*
-+		 * If there is something to dump, add space for the dump
-+		 * itself and for the field that tells the dynamic size,
-+		 * which is how many have been actually dumped.
-+		 */
-+		if (stack_size)
-+			size += sizeof(u64) + stack_size;
-+
-+		data->stack_user_size = stack_size;
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -6205,8 +6335,26 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 		}
+-	if (!user_mode(regs)) {
++	if (kernel && !user_mode(regs)) {
+ 		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 		perf_callchain_kernel(entry, regs);
+-		if (current->mm)
+-			regs = task_pt_regs(current);
+-		else
+-			regs = NULL;
  	}
  
--	if (attr->sample_type & PERF_SAMPLE_REGS_USER)
-+	if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
- 		ret = perf_reg_validate(attr->sample_regs_user);
-+		if (ret)
-+			return ret;
-+	}
+-	if (regs) {
+-		/*
+-		 * Disallow cross-task user callchains.
+-		 */
+-		if (event->ctx->task && event->ctx->task != current)
+-			goto exit_put;
+-
+-		perf_callchain_store(entry, PERF_CONTEXT_USER);
+-		perf_callchain_user(entry, regs);
++	if (user) {
++		if (!user_mode(regs)) {
++			if  (current->mm)
++				regs = task_pt_regs(current);
++			else
++				regs = NULL;
++		}
 +
-+	if (attr->sample_type & PERF_SAMPLE_STACK_USER) {
-+		if (!arch_perf_have_user_stack_dump())
-+			return -ENOSYS;
++		if (regs) {
++			/*
++			 * Disallow cross-task user callchains.
++			 */
++			if (event->ctx->task && event->ctx->task != current)
++				goto exit_put;
 +
-+		/*
-+		 * We have __u32 type for the size, but so far
-+		 * we can only use __u16 as maximum due to the
-+		 * __u16 sample size limit.
-+		 */
-+		if (attr->sample_stack_user >= USHRT_MAX)
-+			ret = -EINVAL;
-+		else if (!IS_ALIGNED(attr->sample_stack_user, sizeof(u64)))
-+			ret = -EINVAL;
-+	}
++			perf_callchain_store(entry, PERF_CONTEXT_USER);
++			perf_callchain_user(entry, regs);
++		}
+ 	}
  
- out:
- 	return ret;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index ce7bdfc..d56a64c 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -158,4 +158,20 @@ static inline void put_recursion_context(int *recursion, int rctx)
- 	recursion[rctx]--;
- }
- 
-+#ifdef CONFIG_HAVE_PERF_USER_STACK_DUMP
-+static inline bool arch_perf_have_user_stack_dump(void)
-+{
-+	return true;
-+}
-+
-+#define perf_user_stack_pointer(regs) user_stack_pointer(regs)
-+#else
-+static inline bool arch_perf_have_user_stack_dump(void)
-+{
-+	return false;
-+}
-+
-+#define perf_user_stack_pointer(regs) 0
-+#endif /* CONFIG_HAVE_PERF_USER_STACK_DUMP */
-+
- #endif /* _KERNEL_EVENTS_INTERNAL_H */
+ exit_put:
