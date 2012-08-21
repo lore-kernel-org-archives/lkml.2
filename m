@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab2HUUgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:36:23 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35462 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757975Ab2HUUgS (ORCPT
+	id S1758317Ab2HUUgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:36:37 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53465 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716Ab2HUUgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:36:18 -0400
-X-IronPort-AV: E=Sophos;i="4.77,804,1336348800"; 
-   d="scan'208";a="14113788"
-From: Attilio Rao <attilio.rao@citrix.com>
-To: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <Stefano.Stabellini@eu.citrix.com>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, <xen-devel@lists.xensource.com>
-CC: Attilio Rao <attilio.rao@citrix.com>
-Subject: [PATCH v2 5/5] X86/XEN: Add few lines explaining simple semantic for x86_init.paging.pagetable_init setup function
-Date: Tue, 21 Aug 2012 21:22:41 +0100
-Message-ID: <1345580561-8506-6-git-send-email-attilio.rao@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
-References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 21 Aug 2012 16:36:31 -0400
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH] PM / Freezer: Fix small typo "regrigerator"
+Date: Tue, 21 Aug 2012 22:36:15 +0200
+Message-Id: <1345581376-7288-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Explain the purpose of the hook
-- Report execution constraints
+Noticed when digging into a suspend issue in linux-next (next-20120821).
 
-Signed-off-by: Attilio Rao <attilio.rao@citrix.com>
+For more details see <http://marc.info/?t=134554708000002&r=1&w=2>.
+
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
 ---
- arch/x86/include/asm/x86_init.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ kernel/power/process.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 995ea5c..7ea4186 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -82,6 +82,11 @@ struct x86_init_mapping {
- /**
-  * struct x86_init_paging - platform specific paging functions
-  * @pagetable_init:		platform specific paging initialization call
-+ *
-+ * It does setup the kernel pagetables and prepares accessors functions to
-+ * manipulate them.
-+ * It must be called once, during the boot sequence and after the direct
-+ * mapping for phys memory is setup.
-  */
- struct x86_init_paging {
- 	void (*pagetable_init)(void);
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index 19db29f..87da817 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -79,7 +79,7 @@ static int try_to_freeze_tasks(bool user_only)
+ 
+ 		/*
+ 		 * We need to retry, but first give the freezing tasks some
+-		 * time to enter the regrigerator.
++		 * time to enter the refrigerator.
+ 		 */
+ 		msleep(10);
+ 	}
 -- 
-1.7.2.5
+1.7.9.5
 
