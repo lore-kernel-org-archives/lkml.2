@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab2HUUPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:15:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34830 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab2HUUOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:14:11 -0400
-Message-ID: <5033EBE6.5080608@zytor.com>
-Date: Tue, 21 Aug 2012 13:13:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753931Ab2HUURO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:17:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65234 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab2HUURL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 16:17:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 16/31] arm64: ELF definitions
+Date: Tue, 21 Aug 2012 20:17:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208161237.53594.arnd@arndb.de> <20120821160653.GH12708@arm.com>
+In-Reply-To: <20120821160653.GH12708@arm.com>
 MIME-Version: 1.0
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: Borislav Petkov <bp@amd64.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH 04/11] x86/microcode_core_early.c: Define interfaces for
- early load ucode
-References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com> <1345277729-8399-5-git-send-email-fenghua.yu@intel.com> <20120818224442.GB32120@khazad-dum.debian.net> <3E5A0FA7E9CA944F9D5414FEC6C71220077879BF@ORSMSX105.amr.corp.intel.com> <503078A2.9030204@zytor.com> <3E5A0FA7E9CA944F9D5414FEC6C7122007787B22@ORSMSX105.amr.corp.intel.com> <20120820140630.GD24149@aftab.osrc.amd.com> <50329951.9030805@zytor.com> <20120820201947.GC15006@aftab.osrc.amd.com> <3E5A0FA7E9CA944F9D5414FEC6C712200778846C@ORSMSX105.amr.corp.intel.com>
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712200778846C@ORSMSX105.amr.corp.intel.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201208212017.08110.arnd@arndb.de>
+X-Provags-ID: V02:K0:anEGhII12ggl1o1VgKNHNPjMAEV+RU//kh4+xGLLMi0
+ wvbD9vGHh1PmXJ3AD3ibbq7WMTHPpjv6QUviiwIm2BY/8z5qIt
+ UjeP/fdaq+UH38pmfsZzNT7X77879SMloIaby2xkHs3DboHvPd
+ P5IKppkfNv+Ym+4yTJd69VBXoJVTpMEbUbWlLSYD+ACMVs/CnB
+ wvnDT71nX2/WRt4CIYZzS1/qxAIDF0oIMFZYVNx7T4UsDlCmg3
+ kszPSGjs7A5OD6f1jlvcIxZ73YXQ/QF4dkmJ5LysP6r83gEjjm
+ 7bdspaq/yyz+6Oa69xuWXBWhffRQSAicaTUacUz/83vlxyfKvd
+ a3IheQRXwS8j13/EDMAg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 01:05 PM, Yu, Fenghua wrote:
+On Tuesday 21 August 2012, Catalin Marinas wrote:
+> On Thu, Aug 16, 2012 at 01:37:53PM +0100, Arnd Bergmann wrote:
+> > On Thursday 16 August 2012, Will Deacon wrote:
+> > > > This looks wrong: PER_LINUX/PER_LINUX32 decides over the output of the
+> > > > uname system call, while TIF_32BIT decides over the instruction set
+> > > > when returning to user space. You definitely should not set the personality
+> > > > to the value you pass from the elf loader. Instead, just do
+> > > > 
+> > > > #define SET_PERSONALITY(ex) clear_thread_flag(TIF_32BIT);
+> > > > #defined COMPAT_SET_PERSONALITY(ex) set_thread_flag(TIF_32BIT);
+> > > 
+> > > In this case, won't uname be incorrect (aarch64l) for aarch32 tasks (which
+> > > expect something like armv8l)?
+> > 
+> > No, the uname output is meant to tell you about the system, not the
+> > instruction set that you are using (you already know that in compiled
+> > code).
 > 
-> We might name the cpio directory as:
-> 
-> kernel/x86/microcode/GenuineIntel.bin
-> kernel/x86/microcode/AuthenticAMD.bin
-> kernel/x86/acpi/...
-> etc.
-> 
-> This is expendable for the future usage.
->  
-> Plus I will add a doc on the cpio directory, supported directory names and how to add new stuffs in the directory.
-> 
+> OK, so we assumed that compat tasks should get a uname as close as
+> possible to a 32-bit system, i.e. armv8l, for full compatibility. This
+> would allow us to run something like 32-bit Debian on an AArch64 kernel
+> without worrying about any scripts failing.
 
-I believe that was exactly my original proposal.  I think it makes
-sense... most things aren't going to be inherently CPU-specific in this way.
+You can still do that, just boot with init="/sbin/setarch armv7 /sbin/init".
 
-I don't know what Borislav was suggesting with "BIOS overrides", is that
-another CPU-specific thing?
+> But I can see on x86 that it always reports x86_64 even if the task is
+> x86_32.
 
-	-hpa
+Not just x86, the same behavior is used on powerpc, s390, mips, sparc and
+parisc. Not sure about tile though.
 
+	Arnd
