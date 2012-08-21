@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab2HUP3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:29:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59803 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab2HUP3S (ORCPT
+	id S1757365Ab2HUP3c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:29:32 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:44284
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757082Ab2HUP3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:29:18 -0400
-Date: Tue, 21 Aug 2012 08:29:04 -0700
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-75bc5ca89827fe3f2399321b2920a30bcf658049@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, robert.richter@amd.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, robert.richter@amd.com, tglx@linutronix.de
-In-Reply-To: <1344361396-7237-6-git-send-email-robert.richter@amd.com>
-References: <1344361396-7237-6-git-send-email-robert.richter@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf list:
-  Update documentation about raw event setup
-Git-Commit-ID: 75bc5ca89827fe3f2399321b2920a30bcf658049
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 21 Aug 2012 11:29:24 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Izz1202hzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h)
+X-WSS-ID: 0M9430V-01-94E-02
+X-M-MSG: 
+Date: Tue, 21 Aug 2012 17:29:18 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg
+ call-back
+Message-ID: <20120821152918.GM2582@amd.com>
+References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+ <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
+ <20120820140843.GA7732@phenom.dumpdata.com>
+ <20120821084007.GL2582@amd.com>
+ <20120821144256.GC20097@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:29:09 -0700 (PDT)
+In-Reply-To: <20120821144256.GC20097@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  75bc5ca89827fe3f2399321b2920a30bcf658049
-Gitweb:     http://git.kernel.org/tip/75bc5ca89827fe3f2399321b2920a30bcf658049
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Tue, 7 Aug 2012 19:43:15 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 8 Aug 2012 12:41:53 -0300
+On Tue, Aug 21, 2012 at 10:42:57AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Tue, Aug 21, 2012 at 10:40:07AM +0200, Joerg Roedel wrote:
+> > The VT-d implementation uses it. This function is used to create the MSI
+> > message for PCI devices and the HPET. When it is called for the HPET the
+> > pdev parameter is NULL and hpet_id is valid.
+> 
+> Perhaps then a more generic term? 'void *platform_priv' ?
 
-perf list: Update documentation about raw event setup
+Doesn't work this way here. The Intel code detects on pdev==NULL that it
+needs to use hpet_id. What could work is to split the code-paths between
+pci_dev msi composition and the one for hpet.
+But that approach has the downside of code duplication to some degree.
 
-It was missing that only certain bit fields are passed to the config
-value which confused users. Updating it.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1344361396-7237-6-git-send-email-robert.richter@amd.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-list.txt |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Regards,
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index ddc2252..232be51 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -15,6 +15,7 @@ DESCRIPTION
- This command displays the symbolic event types which can be selected in the
- various perf commands with the -e option.
- 
-+[[EVENT_MODIFIERS]]
- EVENT MODIFIERS
- ---------------
- 
-@@ -44,6 +45,11 @@ layout of IA32_PERFEVTSELx MSRs (see [Intel® 64 and IA-32 Architectures Softwar
- of IA32_PERFEVTSELx MSRs) or AMD's PerfEvtSeln (see [AMD64 Architecture Programmer’s Manual Volume 2: System Programming], Page 344,
- Figure 13-7 Performance Event-Select Register (PerfEvtSeln)).
- 
-+Note: Only the following bit fields can be set in x86 counter
-+registers: event, umask, edge, inv, cmask. Esp. guest/host only and
-+OS/user mode flags must be setup using <<EVENT_MODIFIERS, EVENT
-+MODIFIERS>>.
-+
- Example:
- 
- If the Intel docs for a QM720 Core i7 describe an event as:
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
