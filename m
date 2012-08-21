@@ -1,240 +1,578 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab2HUQKL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:10:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60742 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab2HUQKJ (ORCPT
+	id S1757875Ab2HUQKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:10:24 -0400
+Received: from fallback3.mail.ru ([94.100.176.58]:38978 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391Ab2HUQKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:10:09 -0400
-Date: Tue, 21 Aug 2012 09:09:47 -0700
-From: tip-bot for Cody P Schafer <cody@linux.vnet.ibm.com>
-Message-ID: <tip-261360b6e90a782f0a63d8f61a67683c376c88cf@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, matthltc@us.ibm.com,
-        dave@linux.vnet.ibm.com, namhyung@kernel.org,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
-        a.p.zijlstra@chello.nl, dave@linux.vnet.ibm.com, matthltc@us.ibm.com,
-        namhyung@kernel.org, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
-In-Reply-To: <1344637382-22789-16-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344637382-22789-16-git-send-email-cody@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols:
-  Convert dso__load_syms to take 2 symsrc's
-Git-Commit-ID: 261360b6e90a782f0a63d8f61a67683c376c88cf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:09:53 -0700 (PDT)
+	Tue, 21 Aug 2012 12:10:18 -0400
+X-Greylist: delayed 1800 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Aug 2012 12:10:17 EDT
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH] serial: Remove orphaned header sc26198.h
+Date: Tue, 21 Aug 2012 19:49:53 +0400
+Message-Id: <1345564193-25994-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.7.8.6
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  261360b6e90a782f0a63d8f61a67683c376c88cf
-Gitweb:     http://git.kernel.org/tip/261360b6e90a782f0a63d8f61a67683c376c88cf
-Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
-AuthorDate: Fri, 10 Aug 2012 15:23:01 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Aug 2012 14:41:33 -0300
+This header was used by the driver "stallion", but the driver has
+been removed as a result of migration 2.4 -> 2.6 and the header is
+still present in the system and is not currently used by any driver.
+We can safely remove it.
 
-perf symbols: Convert dso__load_syms to take 2 symsrc's
-
-To properly handle platforms with an opd section, both a runtime image
-(which contains the opd section but possibly lacks symbols) and a symbol
-image (which probably lacks an opd section but has symbols).
-
-The next patch ("perf symbol: use both runtime and debug images")
-adjusts the callsite in dso__load() to take advantage of being able to
-pass both runtime & debug images.
-
-Assumptions made here:
-
- - The opd section, if it exists in the runtime image, has headers in
-   both the runtime image and the debug/syms image.
-
- - The index of the opd section (again, only if it exists in the runtime
-   image) is the same in both the runtime and debug/symbols image.
-
-Both of these are true on RHEL, but it is unclear how accurate they are
-in general (on platforms with function descriptors in opd sections).
-
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: David Hansen <dave@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Matt Hellsley <matthltc@us.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-16-git-send-email-cody@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 ---
- tools/perf/util/symbol-elf.c     |   47 +++++++++++++++++++------------------
- tools/perf/util/symbol-minimal.c |    1 +
- tools/perf/util/symbol.c         |    4 +-
- tools/perf/util/symbol.h         |    5 ++-
- 4 files changed, 30 insertions(+), 27 deletions(-)
+ include/linux/sc26198.h |  533 -----------------------------------------------
+ 1 files changed, 0 insertions(+), 533 deletions(-)
+ delete mode 100644 include/linux/sc26198.h
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 492ebec..36e4a45 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -619,7 +619,8 @@ out_close:
- 	return err;
- }
- 
--int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
-+int dso__load_sym(struct dso *dso, struct map *map,
-+		  struct symsrc *syms_ss, struct symsrc *runtime_ss,
- 		  symbol_filter_t filter, int kmodule)
- {
- 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
-@@ -630,31 +631,27 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
- 	int err = -1;
- 	uint32_t idx;
- 	GElf_Ehdr ehdr;
--	GElf_Shdr shdr, opdshdr;
-+	GElf_Shdr shdr;
- 	Elf_Data *syms, *opddata = NULL;
- 	GElf_Sym sym;
--	Elf_Scn *sec, *sec_strndx, *opdsec;
-+	Elf_Scn *sec, *sec_strndx;
- 	Elf *elf;
- 	int nr = 0;
--	size_t opdidx = 0;
- 
--	dso->symtab_type = ss->type;
-+	dso->symtab_type = syms_ss->type;
- 
--	if (!ss->symtab) {
--		ss->symtab  = ss->dynsym;
--		ss->symshdr = ss->dynshdr;
-+	if (!syms_ss->symtab) {
-+		syms_ss->symtab  = syms_ss->dynsym;
-+		syms_ss->symshdr = syms_ss->dynshdr;
- 	}
- 
--	elf = ss->elf;
--	ehdr = ss->ehdr;
--	sec = ss->symtab;
--	shdr = ss->symshdr;
-+	elf = syms_ss->elf;
-+	ehdr = syms_ss->ehdr;
-+	sec = syms_ss->symtab;
-+	shdr = syms_ss->symshdr;
- 
--	opdsec = ss->opdsec;
--	opdshdr = ss->opdshdr;
--	opdidx  = ss->opdidx;
--	if (opdsec)
--		opddata = elf_rawdata(opdsec, NULL);
-+	if (runtime_ss->opdsec)
-+		opddata = elf_rawdata(runtime_ss->opdsec, NULL);
- 
- 	syms = elf_getdata(sec, NULL);
- 	if (syms == NULL)
-@@ -679,13 +676,14 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
- 	nr_syms = shdr.sh_size / shdr.sh_entsize;
- 
- 	memset(&sym, 0, sizeof(sym));
--	dso->adjust_symbols = ss->adjust_symbols;
-+	dso->adjust_symbols = runtime_ss->adjust_symbols;
- 	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
- 		struct symbol *f;
- 		const char *elf_name = elf_sym__name(&sym, symstrs);
- 		char *demangled = NULL;
- 		int is_label = elf_sym__is_label(&sym);
- 		const char *section_name;
-+		bool used_opd = false;
- 
- 		if (kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
- 		    strcmp(elf_name, kmap->ref_reloc_sym->name) == 0)
-@@ -704,14 +702,16 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
- 				continue;
- 		}
- 
--		if (opdsec && sym.st_shndx == opdidx) {
--			u32 offset = sym.st_value - opdshdr.sh_addr;
-+		if (runtime_ss->opdsec && sym.st_shndx == runtime_ss->opdidx) {
-+			u32 offset = sym.st_value - syms_ss->opdshdr.sh_addr;
- 			u64 *opd = opddata->d_buf + offset;
- 			sym.st_value = DSO__SWAP(dso, u64, *opd);
--			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
-+			sym.st_shndx = elf_addr_to_index(runtime_ss->elf,
-+					sym.st_value);
-+			used_opd = true;
- 		}
- 
--		sec = elf_getscn(elf, sym.st_shndx);
-+		sec = elf_getscn(runtime_ss->elf, sym.st_shndx);
- 		if (!sec)
- 			goto out_elf_end;
- 
-@@ -777,7 +777,8 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
- 			goto new_symbol;
- 		}
- 
--		if (curr_dso->adjust_symbols && sym.st_value) {
-+		if ((used_opd && runtime_ss->adjust_symbols)
-+				|| (!used_opd && syms_ss->adjust_symbols)) {
- 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
- 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
- 				  (u64)sym.st_value, (u64)shdr.sh_addr,
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 11c2c60..7747ea6 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -280,6 +280,7 @@ int dso__synthesize_plt_symbols(struct dso *dso __used,
- }
- 
- int dso__load_sym(struct dso *dso, struct map *map __used, struct symsrc *ss,
-+		  struct symsrc *runtime_ss __used,
- 		  symbol_filter_t filter __used, int kmodule __used)
- {
- 	unsigned char *build_id[BUILD_ID_SIZE];
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 8e7d74f..739e5a3 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1094,7 +1094,7 @@ restart:
- 			continue;
- 		}
- 
--		ret = dso__load_sym(dso, map, &ss, filter, 0);
-+		ret = dso__load_sym(dso, map, &ss, &ss, filter, 0);
- 
- 		/*
- 		 * Some people seem to have debuginfo files _WITHOUT_ debug
-@@ -1380,7 +1380,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
- 		return -1;
- 
--	err = dso__load_sym(dso, map, &ss, filter, 0);
-+	err = dso__load_sym(dso, map, &ss, &ss, filter, 0);
- 	symsrc__destroy(&ss);
- 
- 	if (err > 0) {
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index fa9f6b1..1f3eed2 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -369,8 +369,9 @@ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
- 			    struct machine *machine, u64 addr,
- 			    u8 *data, ssize_t size);
- int dso__test_data(void);
--int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
--		  symbol_filter_t filter, int kmodule);
-+int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *syms_ss,
-+		  struct symsrc *runtime_ss, symbol_filter_t filter,
-+		  int kmodule);
- int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss,
- 				struct map *map, symbol_filter_t filter);
- 
+diff --git a/include/linux/sc26198.h b/include/linux/sc26198.h
+deleted file mode 100644
+index 7ca35ab..0000000
+--- a/include/linux/sc26198.h
++++ /dev/null
+@@ -1,533 +0,0 @@
+-/*****************************************************************************/
+-
+-/*
+- *	sc26198.h  -- SC26198 UART hardware info.
+- *
+- *	Copyright (C) 1995-1998  Stallion Technologies
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/*****************************************************************************/
+-#ifndef	_SC26198_H
+-#define	_SC26198_H
+-/*****************************************************************************/
+-
+-/*
+- *	Define the number of async ports per sc26198 uart device.
+- */
+-#define	SC26198_PORTS		8
+-
+-/*
+- *	Baud rate timing clocks. All derived from a master 14.7456 MHz clock.
+- */
+-#define	SC26198_MASTERCLOCK	14745600L
+-#define	SC26198_DCLK		(SC26198_MASTERCLOCK)
+-#define	SC26198_CCLK		(SC26198_MASTERCLOCK / 2)
+-#define	SC26198_BCLK		(SC26198_MASTERCLOCK / 4)
+-
+-/*
+- *	Define internal FIFO sizes for the 26198 ports.
+- */
+-#define	SC26198_TXFIFOSIZE	16
+-#define	SC26198_RXFIFOSIZE	16
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global register definitions. These registers are global to each 26198
+- *	device, not specific ports on it.
+- */
+-#define	TSTR		0x0d
+-#define	GCCR		0x0f
+-#define	ICR		0x1b
+-#define	WDTRCR		0x1d
+-#define	IVR		0x1f
+-#define	BRGTRUA		0x84
+-#define	GPOSR		0x87
+-#define	GPOC		0x8b
+-#define	UCIR		0x8c
+-#define	CIR		0x8c
+-#define	BRGTRUB		0x8d
+-#define	GRXFIFO		0x8e
+-#define	GTXFIFO		0x8e
+-#define	GCCR2		0x8f
+-#define	BRGTRLA		0x94
+-#define	GPOR		0x97
+-#define	GPOD		0x9b
+-#define	BRGTCR		0x9c
+-#define	GICR		0x9c
+-#define	BRGTRLB		0x9d
+-#define	GIBCR		0x9d
+-#define	GITR		0x9f
+-
+-/*
+- *	Per port channel registers. These are the register offsets within
+- *	the port address space, so need to have the port address (0 to 7)
+- *	inserted in bit positions 4:6.
+- */
+-#define	MR0		0x00
+-#define	MR1		0x01
+-#define	IOPCR		0x02
+-#define	BCRBRK		0x03
+-#define	BCRCOS		0x04
+-#define	BCRX		0x06
+-#define	BCRA		0x07
+-#define	XONCR		0x08
+-#define	XOFFCR		0x09
+-#define	ARCR		0x0a
+-#define	RXCSR		0x0c
+-#define	TXCSR		0x0e
+-#define	MR2		0x80
+-#define	SR		0x81
+-#define SCCR		0x81
+-#define	ISR		0x82
+-#define	IMR		0x82
+-#define	TXFIFO		0x83
+-#define	RXFIFO		0x83
+-#define	IPR		0x84
+-#define	IOPIOR		0x85
+-#define	XISR		0x86
+-
+-/*
+- *	For any given port calculate the address to use to access a specified
+- *	register. This is only used for unusual access, mostly this is done
+- *	through the assembler access routines.
+- */
+-#define	SC26198_PORTREG(port,reg)	((((port) & 0x07) << 4) | (reg))
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global configuration control register bit definitions.
+- */
+-#define	GCCR_NOACK		0x00
+-#define	GCCR_IVRACK		0x02
+-#define	GCCR_IVRCHANACK		0x04
+-#define	GCCR_IVRTYPCHANACK	0x06
+-#define	GCCR_ASYNCCYCLE		0x00
+-#define	GCCR_SYNCCYCLE		0x40
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Mode register 0 bit definitions.
+- */
+-#define	MR0_ADDRNONE		0x00
+-#define	MR0_AUTOWAKE		0x01
+-#define	MR0_AUTODOZE		0x02
+-#define	MR0_AUTOWAKEDOZE	0x03
+-#define	MR0_SWFNONE		0x00
+-#define	MR0_SWFTX		0x04
+-#define	MR0_SWFRX		0x08
+-#define	MR0_SWFRXTX		0x0c
+-#define	MR0_TXMASK		0x30
+-#define	MR0_TXEMPTY		0x00
+-#define	MR0_TXHIGH		0x10
+-#define	MR0_TXHALF		0x20
+-#define	MR0_TXRDY		0x00
+-#define	MR0_ADDRNT		0x00
+-#define	MR0_ADDRT		0x40
+-#define	MR0_SWFNT		0x00
+-#define	MR0_SWFT		0x80
+-
+-/*
+- *	Mode register 1 bit definitions.
+- */
+-#define	MR1_CS5			0x00
+-#define	MR1_CS6			0x01
+-#define	MR1_CS7			0x02
+-#define	MR1_CS8			0x03
+-#define	MR1_PAREVEN		0x00
+-#define	MR1_PARODD		0x04
+-#define	MR1_PARENB		0x00
+-#define	MR1_PARFORCE		0x08
+-#define	MR1_PARNONE		0x10
+-#define	MR1_PARSPECIAL		0x18
+-#define	MR1_ERRCHAR		0x00
+-#define	MR1_ERRBLOCK		0x20
+-#define	MR1_ISRUNMASKED		0x00
+-#define	MR1_ISRMASKED		0x40
+-#define	MR1_AUTORTS		0x80
+-
+-/*
+- *	Mode register 2 bit definitions.
+- */
+-#define	MR2_STOP1		0x00
+-#define	MR2_STOP15		0x01
+-#define	MR2_STOP2		0x02
+-#define	MR2_STOP916		0x03
+-#define	MR2_RXFIFORDY		0x00
+-#define	MR2_RXFIFOHALF		0x04
+-#define	MR2_RXFIFOHIGH		0x08
+-#define	MR2_RXFIFOFULL		0x0c
+-#define	MR2_AUTOCTS		0x10
+-#define	MR2_TXRTS		0x20
+-#define	MR2_MODENORM		0x00
+-#define	MR2_MODEAUTOECHO	0x40
+-#define	MR2_MODELOOP		0x80
+-#define	MR2_MODEREMECHO		0xc0
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Baud Rate Generator (BRG) selector values.
+- */
+-#define	BRG_50			0x00
+-#define	BRG_75			0x01
+-#define	BRG_150			0x02
+-#define	BRG_200			0x03
+-#define	BRG_300			0x04
+-#define	BRG_450			0x05
+-#define	BRG_600			0x06
+-#define	BRG_900			0x07
+-#define	BRG_1200		0x08
+-#define	BRG_1800		0x09
+-#define	BRG_2400		0x0a
+-#define	BRG_3600		0x0b
+-#define	BRG_4800		0x0c
+-#define	BRG_7200		0x0d
+-#define	BRG_9600		0x0e
+-#define	BRG_14400		0x0f
+-#define	BRG_19200		0x10
+-#define	BRG_28200		0x11
+-#define	BRG_38400		0x12
+-#define	BRG_57600		0x13
+-#define	BRG_115200		0x14
+-#define	BRG_230400		0x15
+-#define	BRG_GIN0		0x16
+-#define	BRG_GIN1		0x17
+-#define	BRG_CT0			0x18
+-#define	BRG_CT1			0x19
+-#define	BRG_RX2TX316		0x1b
+-#define	BRG_RX2TX31		0x1c
+-
+-#define	SC26198_MAXBAUD		921600
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Command register command definitions.
+- */
+-#define	CR_NULL			0x04
+-#define	CR_ADDRNORMAL		0x0c
+-#define	CR_RXRESET		0x14
+-#define	CR_TXRESET		0x1c
+-#define	CR_CLEARRXERR		0x24
+-#define	CR_BREAKRESET		0x2c
+-#define	CR_TXSTARTBREAK		0x34
+-#define	CR_TXSTOPBREAK		0x3c
+-#define	CR_RTSON		0x44
+-#define	CR_RTSOFF		0x4c
+-#define	CR_ADDRINIT		0x5c
+-#define	CR_RXERRBLOCK		0x6c
+-#define	CR_TXSENDXON		0x84
+-#define	CR_TXSENDXOFF		0x8c
+-#define	CR_GANGXONSET		0x94
+-#define	CR_GANGXOFFSET		0x9c
+-#define	CR_GANGXONINIT		0xa4
+-#define	CR_GANGXOFFINIT		0xac
+-#define	CR_HOSTXON		0xb4
+-#define	CR_HOSTXOFF		0xbc
+-#define	CR_CANCELXOFF		0xc4
+-#define	CR_ADDRRESET		0xdc
+-#define	CR_RESETALLPORTS	0xf4
+-#define	CR_RESETALL		0xfc
+-
+-#define	CR_RXENABLE		0x01
+-#define	CR_TXENABLE		0x02
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Channel status register.
+- */
+-#define	SR_RXRDY		0x01
+-#define	SR_RXFULL		0x02
+-#define	SR_TXRDY		0x04
+-#define	SR_TXEMPTY		0x08
+-#define	SR_RXOVERRUN		0x10
+-#define	SR_RXPARITY		0x20
+-#define	SR_RXFRAMING		0x40
+-#define	SR_RXBREAK		0x80
+-
+-#define	SR_RXERRS		(SR_RXPARITY | SR_RXFRAMING | SR_RXOVERRUN)
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Interrupt status register and interrupt mask register bit definitions.
+- */
+-#define	IR_TXRDY		0x01
+-#define	IR_RXRDY		0x02
+-#define	IR_RXBREAK		0x04
+-#define	IR_XONXOFF		0x10
+-#define	IR_ADDRRECOG		0x20
+-#define	IR_RXWATCHDOG		0x40
+-#define	IR_IOPORT		0x80
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Interrupt vector register field definitions.
+- */
+-#define	IVR_CHANMASK		0x07
+-#define	IVR_TYPEMASK		0x18
+-#define	IVR_CONSTMASK		0xc0
+-
+-#define	IVR_RXDATA		0x10
+-#define	IVR_RXBADDATA		0x18
+-#define	IVR_TXDATA		0x08
+-#define	IVR_OTHER		0x00
+-
+-/*****************************************************************************/
+-
+-/*
+- *	BRG timer control register bit definitions.
+- */
+-#define	BRGCTCR_DISABCLK0	0x00
+-#define	BRGCTCR_ENABCLK0	0x08
+-#define	BRGCTCR_DISABCLK1	0x00
+-#define	BRGCTCR_ENABCLK1	0x80
+-
+-#define	BRGCTCR_0SCLK16		0x00
+-#define	BRGCTCR_0SCLK32		0x01
+-#define	BRGCTCR_0SCLK64		0x02
+-#define	BRGCTCR_0SCLK128	0x03
+-#define	BRGCTCR_0X1		0x04
+-#define	BRGCTCR_0X12		0x05
+-#define	BRGCTCR_0IO1A		0x06
+-#define	BRGCTCR_0GIN0		0x07
+-
+-#define	BRGCTCR_1SCLK16		0x00
+-#define	BRGCTCR_1SCLK32		0x10
+-#define	BRGCTCR_1SCLK64		0x20
+-#define	BRGCTCR_1SCLK128	0x30
+-#define	BRGCTCR_1X1		0x40
+-#define	BRGCTCR_1X12		0x50
+-#define	BRGCTCR_1IO1B		0x60
+-#define	BRGCTCR_1GIN1		0x70
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Watch dog timer enable register.
+- */
+-#define	WDTRCR_ENABALL		0xff
+-
+-/*****************************************************************************/
+-
+-/*
+- *	XON/XOFF interrupt status register.
+- */
+-#define	XISR_TXCHARMASK		0x03
+-#define	XISR_TXCHARNORMAL	0x00
+-#define	XISR_TXWAIT		0x01
+-#define	XISR_TXXOFFPEND		0x02
+-#define	XISR_TXXONPEND		0x03
+-
+-#define	XISR_TXFLOWMASK		0x0c
+-#define	XISR_TXNORMAL		0x00
+-#define	XISR_TXSTOPPEND		0x04
+-#define	XISR_TXSTARTED		0x08
+-#define	XISR_TXSTOPPED		0x0c
+-
+-#define	XISR_RXFLOWMASK		0x30
+-#define	XISR_RXFLOWNONE		0x00
+-#define	XISR_RXXONSENT		0x10
+-#define	XISR_RXXOFFSENT		0x20
+-
+-#define	XISR_RXXONGOT		0x40
+-#define	XISR_RXXOFFGOT		0x80
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Current interrupt register.
+- */
+-#define	CIR_TYPEMASK		0xc0
+-#define	CIR_TYPEOTHER		0x00
+-#define	CIR_TYPETX		0x40
+-#define	CIR_TYPERXGOOD		0x80
+-#define	CIR_TYPERXBAD		0xc0
+-
+-#define	CIR_RXDATA		0x80
+-#define	CIR_RXBADDATA		0x40
+-#define	CIR_TXDATA		0x40
+-
+-#define	CIR_CHANMASK		0x07
+-#define	CIR_CNTMASK		0x38
+-
+-#define	CIR_SUBTYPEMASK		0x38
+-#define	CIR_SUBNONE		0x00
+-#define	CIR_SUBCOS		0x08
+-#define	CIR_SUBADDR		0x10
+-#define	CIR_SUBXONXOFF		0x18
+-#define	CIR_SUBBREAK		0x28
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global interrupting channel register.
+- */
+-#define	GICR_CHANMASK		0x07
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global interrupting byte count register.
+- */
+-#define	GICR_COUNTMASK		0x0f
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global interrupting type register.
+- */
+-#define	GITR_RXMASK		0xc0
+-#define	GITR_RXNONE		0x00
+-#define	GITR_RXBADDATA		0x80
+-#define	GITR_RXGOODDATA		0xc0
+-#define	GITR_TXDATA		0x20
+-
+-#define	GITR_SUBTYPEMASK	0x07
+-#define	GITR_SUBNONE		0x00
+-#define	GITR_SUBCOS		0x01
+-#define	GITR_SUBADDR		0x02
+-#define	GITR_SUBXONXOFF		0x03
+-#define	GITR_SUBBREAK		0x05
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Input port change register.
+- */
+-#define	IPR_CTS			0x01
+-#define	IPR_DTR			0x02
+-#define	IPR_RTS			0x04
+-#define	IPR_DCD			0x08
+-#define	IPR_CTSCHANGE		0x10
+-#define	IPR_DTRCHANGE		0x20
+-#define	IPR_RTSCHANGE		0x40
+-#define	IPR_DCDCHANGE		0x80
+-
+-#define	IPR_CHANGEMASK		0xf0
+-
+-/*****************************************************************************/
+-
+-/*
+- *	IO port interrupt and output register.
+- */
+-#define	IOPR_CTS		0x01
+-#define	IOPR_DTR		0x02
+-#define	IOPR_RTS		0x04
+-#define	IOPR_DCD		0x08
+-#define	IOPR_CTSCOS		0x10
+-#define	IOPR_DTRCOS		0x20
+-#define	IOPR_RTSCOS		0x40
+-#define	IOPR_DCDCOS		0x80
+-
+-/*****************************************************************************/
+-
+-/*
+- *	IO port configuration register.
+- */
+-#define	IOPCR_SETCTS		0x00
+-#define	IOPCR_SETDTR		0x04
+-#define	IOPCR_SETRTS		0x10
+-#define	IOPCR_SETDCD		0x00
+-
+-#define	IOPCR_SETSIGS		(IOPCR_SETRTS | IOPCR_SETRTS | IOPCR_SETDTR | IOPCR_SETDCD)
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output select register.
+- */
+-#define	GPORS_TXC1XA		0x08
+-#define	GPORS_TXC16XA		0x09
+-#define	GPORS_RXC16XA		0x0a
+-#define	GPORS_TXC16XB		0x0b
+-#define	GPORS_GPOR3		0x0c
+-#define	GPORS_GPOR2		0x0d
+-#define	GPORS_GPOR1		0x0e
+-#define	GPORS_GPOR0		0x0f
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output register.
+- */
+-#define	GPOR_0			0x01
+-#define	GPOR_1			0x02
+-#define	GPOR_2			0x04
+-#define	GPOR_3			0x08
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output clock register.
+- */
+-#define	GPORC_0NONE		0x00
+-#define	GPORC_0GIN0		0x01
+-#define	GPORC_0GIN1		0x02
+-#define	GPORC_0IO3A		0x02
+-
+-#define	GPORC_1NONE		0x00
+-#define	GPORC_1GIN0		0x04
+-#define	GPORC_1GIN1		0x08
+-#define	GPORC_1IO3C		0x0c
+-
+-#define	GPORC_2NONE		0x00
+-#define	GPORC_2GIN0		0x10
+-#define	GPORC_2GIN1		0x20
+-#define	GPORC_2IO3E		0x20
+-
+-#define	GPORC_3NONE		0x00
+-#define	GPORC_3GIN0		0x40
+-#define	GPORC_3GIN1		0x80
+-#define	GPORC_3IO3G		0xc0
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output data register.
+- */
+-#define	GPOD_0MASK		0x03
+-#define	GPOD_0SET1		0x00
+-#define	GPOD_0SET0		0x01
+-#define	GPOD_0SETR0		0x02
+-#define	GPOD_0SETIO3B		0x03
+-
+-#define	GPOD_1MASK		0x0c
+-#define	GPOD_1SET1		0x00
+-#define	GPOD_1SET0		0x04
+-#define	GPOD_1SETR0		0x08
+-#define	GPOD_1SETIO3D		0x0c
+-
+-#define	GPOD_2MASK		0x30
+-#define	GPOD_2SET1		0x00
+-#define	GPOD_2SET0		0x10
+-#define	GPOD_2SETR0		0x20
+-#define	GPOD_2SETIO3F		0x30
+-
+-#define	GPOD_3MASK		0xc0
+-#define	GPOD_3SET1		0x00
+-#define	GPOD_3SET0		0x40
+-#define	GPOD_3SETR0		0x80
+-#define	GPOD_3SETIO3H		0xc0
+-
+-/*****************************************************************************/
+-#endif
+-- 
+1.7.8.6
+
