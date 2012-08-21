@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab2HUT2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 15:28:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58578 "EHLO mx1.redhat.com"
+	id S1755810Ab2HUT3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:29:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53201 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456Ab2HUT2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:28:04 -0400
-Date: Tue, 21 Aug 2012 22:28:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120821192852.GB9027@redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <20120821135223.GA7117@redhat.com>
- <1345562166.23018.109.camel@twins>
- <20120821154142.GA8268@redhat.com>
- <20120821174251.GB12294@t510.redhat.com>
+	id S1752896Ab2HUT26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 15:28:58 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v9 0/2] kvm: level irqfd support
+To: avi@redhat.com, mst@redhat.com
+Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 21 Aug 2012 13:28:57 -0600
+Message-ID: <20120821190800.24958.74812.stgit@bling.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821174251.GB12294@t510.redhat.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 02:42:52PM -0300, Rafael Aquini wrote:
-> On Tue, Aug 21, 2012 at 06:41:42PM +0300, Michael S. Tsirkin wrote:
-> > On Tue, Aug 21, 2012 at 05:16:06PM +0200, Peter Zijlstra wrote:
-> > > On Tue, 2012-08-21 at 16:52 +0300, Michael S. Tsirkin wrote:
-> > > > > +             rcu_read_lock();
-> > > > > +             mapping = rcu_dereference(page->mapping);
-> > > > > +             if (mapping_balloon(mapping))
-> > > > > +                     ret = true;
-> > > > > +             rcu_read_unlock();
-> > > > 
-> > > > This looks suspicious: you drop rcu_read_unlock
-> > > > so can't page switch from balloon to non balloon? 
-> > > 
-> > > RCU read lock is a non-exclusive lock, it cannot avoid anything like
-> > > that.
-> > 
-> > You are right, of course. So even keeping rcu_read_lock across both test
-> > and operation won't be enough - you need to make this function return
-> > the mapping and pass it to isolate_page/putback_page so that it is only
-> > dereferenced once.
-> >
-> No, I need to dereference page->mapping to check ->mapping flags here, before
-> returning. Remember this function is used at MM's compaction/migration inner
-> circles to identify ballooned pages and decide what's the next step. This
-> function is doing the right thing, IMHO.
+Here's the much anticipated re-write of support for level irqfds.  As
+Michael suggested, I've rolled the eoi/ack notification fd into
+KVM_IRQFD as a new mode.  For lack of a better name, as there seems to
+be objections to associating this specifically with an EOI or an ACK,
+I've name this OADN or "On Ack, De-assert & Notify".
 
-Yes but the calling code is not doing the right thing.
+Patch 1of2 switches current KVM_IRQFDs to use their own IRQ source ID
+since we're potentially stepping on KVM_USERSPACE_IRQ_SOURCE_ID.
+Unfurtunately I was not able to make 2of2 use a single IRQ source ID,
+the reason is it's racy.  Objects to track OADNs are made dynamically,
+we look through existing ones for a match under spinlock and setup a
+new one if there's no match.  On teardown, we can remove the OADN from
+the list under lock, but that same lock prevents us from de-assigning
+the IRQ ACK notifier or waiting for an RCU grace period.  We must make
+sure that any unused GSI is de-asserted, but the above means it's
+possible that another OADN has been created for this source ID/GSI
+and de-asserting the GSI could lead to breakage.  Instead each OADN
+object gets it's own source ID, but these are all shared by users
+of the same GSI.  So for PCI devices, we might have up to 4 IRQ
+source IDs allocated.
 
-What Peter pointed out here is that two calls to rcu dereference pointer
-can return different values: rcu critical section is not a lock.
-So the test for balloon page is not effective: it can change
-after the fact.
+Michael had also suggested avoiding reference counting and using
+list_empty for this OADN object.  Unfortunately, that doesn't work
+for similar reasons.  We want to release the OADN object underlock,
+preventing others from re-using it on the free path, but in order
+to have lock-less de-assert & notify we use RCU, meaning we can't
+trust list_empty until after an RCU grace period, which must be
+done outside of spinlocks.
 
-To fix, get the pointer once and then pass the mapping
-around.
+If there are suggestions how we can handle these better, please
+make them, but I think this compromise is race-free and still
+manages to make allocation of IRQ source IDs mostly a non-issue
+for device assignment limits.  Thanks,
+
+Alex
+
+---
+
+Alex Williamson (2):
+      kvm: On Ack, De-assert & Notify KVM_IRQFD extension
+      kvm: Use a reserved IRQ source ID for irqfd
 
 
-> Also, looking at how compaction/migration work, we verify the only critical path
-> for this function is the page isolation step. The other steps (migration and
-> putback) perform their work on private lists previouly isolated from a given
-> source.
-
-I vaguely understand but it would be nice to document this properly.
-The interaction between page->lru handling in balloon and in mm
-is especially confusing.
-
-> So, we just need to make sure that the isolation part does not screw things up
-> by isolating pages that balloon driver is about to release. That's why there are
-> so many checkpoints down the page isolation path assuring we really are
-> isolating a balloon page. 
-
-Well, testing same thing multiple times is just confusing.  It is very
-hard to make sure there are no races with so much complexity,
-and the requirements from the balloon driver are unclear to me -
-it very much looks like it is poking in mm internals.
-
--- 
-MST
+ Documentation/virtual/kvm/api.txt |   13 ++
+ arch/x86/kvm/x86.c                |    4 +
+ include/linux/kvm.h               |    7 +
+ include/linux/kvm_host.h          |    2 
+ virt/kvm/eventfd.c                |  199 ++++++++++++++++++++++++++++++++++++-
+ 5 files changed, 218 insertions(+), 7 deletions(-)
