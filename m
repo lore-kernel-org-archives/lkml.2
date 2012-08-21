@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab2HUNGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:06:21 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47776 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757638Ab2HUNGP (ORCPT
+	id S1755652Ab2HUNIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:08:43 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:37315 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab2HUNIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:06:15 -0400
-Date: Tue, 21 Aug 2012 14:05:39 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 14/31] arm64: DMA mapping API
-Message-ID: <20120821130539.GD12708@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <1344966752-16102-15-git-send-email-catalin.marinas@arm.com>
- <20120815004006.GG19607@quad.lixom.net>
+	Tue, 21 Aug 2012 09:08:40 -0400
+Message-ID: <5033883C.7050200@panasas.com>
+Date: Tue, 21 Aug 2012 16:08:12 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120815004006.GG19607@quad.lixom.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org> <50335261.5090504@parallels.com> <87wr0sle4v.fsf@skywalker.in.ibm.com> <503367CB.9080609@parallels.com> <20120821105424.GA7670@moon> <50336C51.60501@parallels.com> <20120821121155.GC9483@fieldses.org> <50337D87.90607@parallels.com> <20120821122908.GE9483@fieldses.org> <50338458.7090602@panasas.com> <5033864A.5040809@parallels.com>
+In-Reply-To: <5033864A.5040809@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 15, 2012 at 01:40:06AM +0100, Olof Johansson wrote:
-> On Tue, Aug 14, 2012 at 06:52:15PM +0100, Catalin Marinas wrote:
-> > +static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> > +{
-> > +	if (unlikely(!dev) || !dev->archdata.dma_ops)
-> > +		return dma_ops;
-> > +	else
-> > +		return dev->archdata.dma_ops;
-> > +}
+On 08/21/2012 03:59 PM, Pavel Emelyanov wrote:
+
+> On 08/21/2012 04:51 PM, Boaz Harrosh wrote:
+>> On 08/21/2012 03:29 PM, J. Bruce Fields wrote:
+>> <>
 > 
-> Does it make sense to add the concept of a global dma ops on arm64,
-> instead of requiring the dma ops pointer per device similar to how
-> some other platforms do it (including powerpc)? For devices that lack
-> archdata.dma_ops, dma_supported() should return 0 (and the other ops
-> should return error).
+> Strictly speaking -- no we don't. Migration should to work across kernel
+> versions (from older to newer). Why kernel version matters in this case?
 
-If the device doesn't have archdata.dma_ops we return the default
-implementation which is currently based on swiotlb. Do you mean that
-this shouldn't be the case and just let the device always set
-archdata.dma_ops?
 
--- 
-Catalin
+I was thinking of an FS that used to not implement export_fh but starts
+to in the new version. Or some other such change in fhandles. But it's
+such a far fetch I agree.
+
+Boaz
