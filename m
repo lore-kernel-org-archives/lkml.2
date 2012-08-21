@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab2HULKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 07:10:00 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:6207 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab2HULJ6 (ORCPT
+	id S1755566Ab2HULLY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 07:11:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62078 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab2HULLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 07:09:58 -0400
-X-IronPort-AV: E=Sophos;i="4.77,802,1336348800"; 
-   d="scan'208";a="14103823"
-Date: Tue, 21 Aug 2012 12:09:36 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Attilio Rao <attilio.rao@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
- and x86_init.paging.pagetable_setup_done PVOPS and document the semantic
-In-Reply-To: <1345511646-12427-1-git-send-email-attilio.rao@citrix.com>
-Message-ID: <alpine.DEB.2.02.1208211207550.15568@kaball.uk.xensource.com>
-References: <1345511646-12427-1-git-send-email-attilio.rao@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 21 Aug 2012 07:11:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <CAOTypNS40FOJ=D=sRigQaYJumXpCfH9Lu1c2B3jXy6epQuumVA@mail.gmail.com>
+References: <1345179867-8266-1-git-send-email-yamanetoshi@gmail.com>
+	<1345179920-8303-1-git-send-email-yamanetoshi@gmail.com>
+	<20120817074644.GL4559@mwanda>
+	<CAOTypNS_rbQK2rPDWenFahiz5Z+cufPTjRy-aABqW01c3DWmYQ@mail.gmail.com>
+	<20120817131941.GA25079@kroah.com>
+	<CAOTypNS40FOJ=D=sRigQaYJumXpCfH9Lu1c2B3jXy6epQuumVA@mail.gmail.com>
+Date: Tue, 21 Aug 2012 20:11:20 +0900
+Message-ID: <CAOTypNQUFTVGc64BtB2VGAZ+JD4oVTXtmgdKVdzKF_7Kouttnw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] staging/vme: fix checkpatch warning
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Martyn Welch <martyn.welch@ge.com>,
+        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Aug 2012, Attilio Rao wrote:
-> Currently the definition of x86_init.paging.pagetable_setup_start and
-> x86_init.paging.pagetable_setup_done is twisted and not really well
-> defined (in terms of prototypes desired). More specifically:
-> pagetable_setup_start:
->  * it is a nop on x86_32
->  * it is a nop for the XEN case
->  * cleans up the boot time page table in the x86_64 case
+On Fri, Aug 17, 2012 at 11:30 PM, Toshiaki Yamane <yamanetoshi@gmail.com> wrote:
+> On Fri, Aug 17, 2012 at 10:19 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> On Fri, Aug 17, 2012 at 05:27:53PM +0900, Toshiaki Yamane wrote:
+>>> On Fri, Aug 17, 2012 at 4:46 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>>> > You've got the same subject repeated 5 times.
+>>> >
+>>> > It would be better to merge all the vme_user.c printk fixes into
+>>> > one patch.
+>>> > [patch 1/3] Staging: vme: Fix a white space issue
+>>> > [patch 2/3] Staging: vme: Use pr_ printks in vme_user.c
+>>> > [patch 3/3] Staging: vme: Use pr_ printks in vme_pio2_core.c
+>>> >
+>>> > It's not a huge deal, it just seems like there was some confusion on
+>>> > how to break patches up.
+>>>
+>>>
+>>> Thanks for your reply!
+>>> I will try to fix it.
+>>
+>> Please do, I can't take it as-is.
+>
+> I will stop, if you say so.
 
-the description is wrong: you swapped x86_32 and x86_64 here
+Greg-san,
+
+I have misunderstood your reply. I am sorry...
+I will send a patch from now.
+
+-- 
+
+Regards,
 
 
-> pagetable_setup_done:
->  * it is a nop on x86_32
->  * sets up accessor functions for pagetable manipulation, for the
->    XEN case
->  * it is a nop on x86_64
-> 
-> Most of this logic can be skipped by creating a new PVOPS that can handle
-> pagetable setup and pre/post operations on it.
-> The new PVOPS must be called only once, during boot-time setup and
-> after the direct mapping for physical memory is available.
-> 
-> Attilio Rao (5):
->   XEN: Remove the base argument from
->     x86_init.paging.pagetable_setup_done PVOPS
->   XEN: Remove the base argument from
->     x86_init.paging.pagetable_setup_start PVOPS
->   X86/XEN: Introduce the x86_init.paging.pagetable_init() PVOPS
->   X86/XEN: Retire now unused x86_init.paging.pagetable_setup_start and
->     x86_init.paging.pagetable_setup_done PVOPS
->   X86/XEN: Add few lines explaining simple semantic for
->     x86_init.paging.pagetable_init PVOPS
-> 
->  arch/x86/include/asm/pgtable_types.h |    6 ++----
->  arch/x86/include/asm/x86_init.h      |   11 +++++++----
->  arch/x86/kernel/setup.c              |    4 +---
->  arch/x86/kernel/x86_init.c           |    4 +---
->  arch/x86/mm/init_32.c                |   12 ++++++------
->  arch/x86/xen/mmu.c                   |   18 +++++++-----------
->  6 files changed, 24 insertions(+), 31 deletions(-)
-> 
-> -- 
-> 1.7.2.5
-> 
+ .
+  .
+...
+
+Yamane Toshiaki
+
+yamanetoshi@gmail.com
