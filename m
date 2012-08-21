@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab2HUPSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:18:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59557 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab2HUPSO (ORCPT
+	id S1754955Ab2HUPTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:19:14 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44400 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab2HUPTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:18:14 -0400
-Date: Tue, 21 Aug 2012 08:18:00 -0700
-From: tip-bot for Wang Tianhong <wangthbj@linux.vnet.ibm.com>
-Message-ID: <tip-87abb3b15c62033409f5bf2ffb5620c94f91cf2c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, wangthbj@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de, wangthbj@linux.vnet.ibm.com
-In-Reply-To: <1343887320.2228.9.camel@louis-ThinkPad-T410>
-References: <1343887320.2228.9.camel@louis-ThinkPad-T410>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing/trivial: Fix some typos in kernel/trace
-Git-Commit-ID: 87abb3b15c62033409f5bf2ffb5620c94f91cf2c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 21 Aug 2012 11:19:06 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: davem@davemloft.net
+Subject: [PATCH] ide: fix generic_ide_suspend/resume Oops
+CC: rjw@sisk.pl, stern@rowland.harvard.edu, hdegoede@redhat.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Date: Tue, 21 Aug 2012 17:20:30 +0200
+Message-ID: <87txvwgtkx.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:18:06 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  87abb3b15c62033409f5bf2ffb5620c94f91cf2c
-Gitweb:     http://git.kernel.org/tip/87abb3b15c62033409f5bf2ffb5620c94f91cf2c
-Author:     Wang Tianhong <wangthbj@linux.vnet.ibm.com>
-AuthorDate: Thu, 2 Aug 2012 14:02:00 +0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 7 Aug 2012 09:43:32 -0400
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-tracing/trivial: Fix some typos in kernel/trace
+This patch fixes a regresion introduced by commit 0998d063 (device-core: Ensure
+drvdata = NULL when no driver is bound).
 
-Fix some typos in kernel/trace.
+Suspend oopses in generic_ide_suspend() because dev_get_drvdata()
+returns NULL (dev->p->driver_data == NULL) and this function is not
+prepared for this.
 
-Link: http://lkml.kernel.org/r/1343887320.2228.9.camel@louis-ThinkPad-T410
+Fix is based on Alan Stern's suggestion.
 
-Signed-off-by: Wang Tianhong <wangthbj@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- kernel/trace/ring_buffer.c |    4 ++--
- kernel/trace/trace.c       |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/ide/ide-pm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 49491fa..b32ed0e 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2816,7 +2816,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_enable);
-  * to the buffer after this will fail and return NULL.
-  *
-  * This is different than ring_buffer_record_disable() as
-- * it works like an on/off switch, where as the disable() verison
-+ * it works like an on/off switch, where as the disable() version
-  * must be paired with a enable().
-  */
- void ring_buffer_record_off(struct ring_buffer *buffer)
-@@ -2839,7 +2839,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_record_off);
-  * ring_buffer_record_off().
-  *
-  * This is different than ring_buffer_record_enable() as
-- * it works like an on/off switch, where as the enable() verison
-+ * it works like an on/off switch, where as the enable() version
-  * must be paired with a disable().
-  */
- void ring_buffer_record_on(struct ring_buffer *buffer)
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index a120f98..d1a8d07 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -426,15 +426,15 @@ __setup("trace_buf_size=", set_buf_size);
+diff --git a/drivers/ide/ide-pm.c b/drivers/ide/ide-pm.c
+index 9240609..8d1e32d 100644
+--- a/drivers/ide/ide-pm.c
++++ b/drivers/ide/ide-pm.c
+@@ -4,7 +4,7 @@
  
- static int __init set_tracing_thresh(char *str)
+ int generic_ide_suspend(struct device *dev, pm_message_t mesg)
  {
--	unsigned long threshhold;
-+	unsigned long threshold;
- 	int ret;
+-	ide_drive_t *drive = dev_get_drvdata(dev);
++	ide_drive_t *drive = to_ide_device(dev);
+ 	ide_drive_t *pair = ide_get_pair_dev(drive);
+ 	ide_hwif_t *hwif = drive->hwif;
+ 	struct request *rq;
+@@ -40,7 +40,7 @@ int generic_ide_suspend(struct device *dev, pm_message_t mesg)
  
- 	if (!str)
- 		return 0;
--	ret = strict_strtoul(str, 0, &threshhold);
-+	ret = strict_strtoul(str, 0, &threshold);
- 	if (ret < 0)
- 		return 0;
--	tracing_thresh = threshhold * 1000;
-+	tracing_thresh = threshold * 1000;
- 	return 1;
- }
- __setup("tracing_thresh=", set_tracing_thresh);
+ int generic_ide_resume(struct device *dev)
+ {
+-	ide_drive_t *drive = dev_get_drvdata(dev);
++	ide_drive_t *drive = to_ide_device(dev);
+ 	ide_drive_t *pair = ide_get_pair_dev(drive);
+ 	ide_hwif_t *hwif = drive->hwif;
+ 	struct request *rq;
+-- 
+1.7.7
+
