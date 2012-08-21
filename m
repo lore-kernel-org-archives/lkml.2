@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab2HUShu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:37:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758354Ab2HUShr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:37:47 -0400
-Date: Tue, 21 Aug 2012 20:34:08 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: lockdep trace from posix timers
-Message-ID: <20120821183408.GA11721@redhat.com>
-References: <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins> <20120820150507.GC18499@redhat.com> <1345475530.23018.50.camel@twins> <20120820154154.GB20258@redhat.com> <1345478211.23018.69.camel@twins> <20120820161012.GC21400@redhat.com> <1345479590.23018.75.camel@twins> <20120820162302.GA22354@redhat.com> <20120821182751.GA11243@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821182751.GA11243@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753518Ab2HUSnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:43:15 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:51825 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab2HUSnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 14:43:13 -0400
+From: Matt Porter <mporter@ti.com>
+To: vinod.koul@intel.com, cjb@laptop.org, grant.likely@secretlab.ca
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: [PATCH v2 0/3] DaVinci DMA engine conversion
+Date: Tue, 21 Aug 2012 14:43:06 -0400
+Message-Id: <1345574589-24757-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21, Oleg Nesterov wrote:
->
-> static inline bool cmp_xchg(struct callback_head **ptr, void *old, void *new)
-> {
-> 	return cmpxchg(ptr, old, new) == old;
-> }
->
-> int
-> task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
-> {
-> 	do {
-> 		twork->next = ACCESS_ONCE(task->task_works);
-> 		if (unlikely(twork->next == TWORK_EXITED))
-> 			return -ESRCH;
-> 	} while (cmp_xchg(&task->task_works, twork->next, twork));
-          ^^^^^^^^^^^^^^^
+Changes since v1:
+	- Add virt-dma support. Better error checks
+	  and simplified descriptor handling.
+	- Fix support for multiple EDMA controllers
+	  Tested on AM18x EVM with WL12xx on MMC1
 
-while (!cmp_xchg(...))
+This series begins the conversion of the DaVinci private
+EDMA API implementation to a DMA engine driver and
+converts two of the three in-kernel users of the private
+EDMA API to DMA engine.
 
-Oleg.
+The approach taken is similar to the recent OMAP DMA
+Engine conversion. The EDMA DMA Engine driver is a
+wrapper around the existing private EDMA implementation
+and registers the platform device within the driver.
+This allows the conversion series to stand alone with
+just the drivers and no changes to platform code. It
+also allows peripheral drivers to continue to use the
+private EDMA implementation until they are converted.
+
+The EDMA DMA Engine driver supports slave transfers only
+at this time. It is planned to add cyclic transfers in
+support of audio peripherals.
+
+There are three users of the private EDMA API in the
+kernel now: davinci_mmc, spi-davinci, and davinci-mcasp.
+This series provides DMA Engine conversions for the
+davinci_mmc and spi-davinci drivers which use the
+supported slave transfers.
+
+This series has been tested on an AM18x EVM and
+performance is comparable with the private EDMA
+API implementations. Both MMC0 and MMC1 are tested
+which handles the DA850/OMAP-L138/AM18x specific
+case where MMC1 has DMA channels on a second EDMA
+channel controller. Testing is needed on all DaVinci
+platforms including DM355/365, DM644x/6x,
+DA830/OMAP-L137/AM17x, and DA850/OMAP-L138/AM18x.
+
+In order to ease the testing burden, I've pushed a
+branch for each series release to my github tree
+at https://github.com/ohporter/linux. The current
+branch is edma-dmaengine-v2.
+
+After this series, the current plan is to complete
+the mcasp driver conversion which includes adding
+cyclic dma support. This will then enable the
+removal and refactoring of the private EDMA API
+functionality into the EDMA DMA Engine driver.
+Since EDMA is also used on the AM33xx family of
+parts in mach-omap2/, the plan is to enable this
+driver on that platform as well.
+
+Matt Porter (3):
+  dmaengine: add TI EDMA DMA engine driver
+  mmc: davinci_mmc: convert to DMA engine API
+  spi: spi-davinci: convert to DMA engine API
+
+ drivers/dma/Kconfig            |   10 +
+ drivers/dma/Makefile           |    1 +
+ drivers/dma/edma.c             |  684 ++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/davinci_mmc.c |  271 +++++-----------
+ drivers/spi/spi-davinci.c      |  292 ++++++++---------
+ include/linux/edma.h           |   29 ++
+ 6 files changed, 936 insertions(+), 351 deletions(-)
+ create mode 100644 drivers/dma/edma.c
+ create mode 100644 include/linux/edma.h
+
+-- 
+1.7.9.5
 
