@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758730Ab2HUWEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 18:04:01 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45021 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758697Ab2HUWD5 (ORCPT
+	id S1758742Ab2HUWGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 18:06:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42928 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758465Ab2HUWGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 18:03:57 -0400
-Date: Wed, 22 Aug 2012 01:03:52 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC] Move kfree outside pde_unload_lock
-Message-ID: <20120821220351.GA4463@p183.telecom.by>
-References: <20120821205454.GA7772@gulag1.americas.sgi.com>
+	Tue, 21 Aug 2012 18:06:18 -0400
+Date: Tue, 21 Aug 2012 23:06:13 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jim Rees <rees@umich.edu>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
+ unsigned integer
+Message-ID: <20120821220613.GK23464@ZenIV.linux.org.uk>
+References: <20120821212910.GD18637@fieldses.org>
+ <20120821212227.GA14194@umich.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120821205454.GA7772@gulag1.americas.sgi.com>
+In-Reply-To: <20120821212227.GA14194@umich.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 03:54:54PM -0500, Nathan Zimmer wrote:
-> I am currently tracking a hotlock reported by a customer on a large, 512 cores,
-> system, I am currently running 3.6.0 rc1 but the issue looks like it has been
-> this way for a very long time.
-> The offending lock is proc_dir_entry->pde_unload_lock.  
+On Tue, Aug 21, 2012 at 05:22:27PM -0400, Jim Rees wrote:
+> J. Bruce Fields wrote:
 > 
-> In proc_reg_release we are doing a kfree under the spinlock which is ok but it
-> means we are holding the lock longer then required. Scaling improved when I 
-> moved kfree out.
+>   From: "J. Bruce Fields" <bfields@redhat.com>
+>   
+>   I've seen a couple examples recently where we've gotten this wrong.
+>   Maybe something like this would help?  Is there some better way?
+>   
+>   (Approximation due to Jim Rees).
+> 
+> Please add Suggested-by: Jim Rees <rees@umich.edu>.  I'm thinking of
+> patenting the algorithm.
 
-It's OK to move it out.
-Acked-by: Alexey Dobriyan <adobriyan@gmail.com>
-
-> Also shouldn't the comment on pde_unload_lock also note that pde_openers and 
-> pde_unload_completion are both used under the lock?
-
-Yeah, why not.
-
-> --- a/fs/proc/inode.c
-> +++ b/fs/proc/inode.c
-> @@ -403,9 +403,11 @@ static int proc_reg_release(struct inode *inode, struct file *file)
->  	release = pde->proc_fops->release;
->  	if (pdeo) {
->  		list_del(&pdeo->lh);
-> -		kfree(pdeo);
->  	}
->  	spin_unlock(&pde->pde_unload_lock);
-> +	if (pdeo) {
-> +		kfree(pdeo);
-> +	}
->  
->  	if (release)
->  		rv = release(inode, file);
+Is that a joke?  Patenting the fact that log10(256) is 2.408..., which
+is about 2.4, which is 24/10?  I really hope we are Poe'd...  BTW, NAK
+the comment - s/36/26/ in there; check it yourself -
+$ echo '2^(8*27)' | bc
+105312291668557186697918027683670432318895095400549111254310977536
+which is 66-digit, not 65 as the estimate would be.
