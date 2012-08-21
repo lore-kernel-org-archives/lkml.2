@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2HUQwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:52:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54181 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758133Ab2HUQwJ (ORCPT
+	id S1758188Ab2HUQxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:53:07 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:51447 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab2HUQxE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:52:09 -0400
-Date: Tue, 21 Aug 2012 17:52:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
-Message-ID: <20120821165207.GX7995@opensource.wolfsonmicro.com>
-References: <20120820121055.GA26991@opensource.wolfsonmicro.com>
- <20120820125531.GA20242@gmail.com>
- <20120820162923.GF26991@opensource.wolfsonmicro.com>
- <20120820164949.GB22749@gmail.com>
- <20120820175155.GH26991@opensource.wolfsonmicro.com>
- <20120821085618.GA26899@gmail.com>
- <20120821095026.GU26991@opensource.wolfsonmicro.com>
- <20120821105413.GD26899@gmail.com>
- <20120821110329.GA7995@opensource.wolfsonmicro.com>
- <20120821120243.GF26899@gmail.com>
+	Tue, 21 Aug 2012 12:53:04 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Mike Waychison <mikew@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [RFC][PATCH v3 0/3] make efivars/efi_pstore interrupt-safe
+Thread-Topic: [RFC][PATCH v3 0/3] make efivars/efi_pstore interrupt-safe
+Thread-Index: Ac1/vR0NlbWWM30VRciekaBLFVV62g==
+Date: Tue, 21 Aug 2012 16:52:46 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413806C0B@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IfhPODtivl1BCmut"
-Content-Disposition: inline
-In-Reply-To: <20120821120243.GF26899@gmail.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-08-21_05:2012-08-21,2012-08-21,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changelog
+v2 -> v3
+  - Patch 1/3
+    Replace spin_lock_irqsave/spin_unlock_irqrestore with spin_lock_irq/spin_unlock_irq in efivars_unregister(),
+    efivar_create(), efivar_store_raw() and efivar_delete() which are called in a process context. 
 
---IfhPODtivl1BCmut
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ - Patch 2/3
+    Change a name of delete_sysfs_entry() to delete_all_stale_sysfs_entries().
+    Also, don't release an efivar->lock while searching efivar->list in delete_all_stale_sysfs_entries().
 
-On Tue, Aug 21, 2012 at 01:02:46PM +0100, Lee Jones wrote:
-> On Tue, Aug 21, 2012 at 12:03:29PM +0100, Mark Brown wrote:
+ - Patch 3/3
+    Remove a logic in efi_pstore_erase() which freshly created in patch v2.
 
-> > > another way to get hold of the domain, because the only way to obtain
-> > > it without having direct access is via a device node.
+v1 -> v2
+ - Patch 1/3
+    Add spin_lock_irq/spin_unlock_irq to open/close callbacks of efi_pstore 
+    instead of moving spin_locks to a read callback.    
 
-> > This doesn't actually hold.
+ - Patch 2/3
+    Replace a periodical timer with schedule_work().
 
-> Okay, besides irq_find_host(struct device_node *np), how else can you fet=
-ch
-> a domain from the irqdomain?
+ - Patch 3/3
+    freshly create to kick a workqueue in oops case only.
 
-I'm not sure I can parse the above, sorry - I'm not sure I can
-distinguish "domain" and "irqdomain".
+[Problem]
+ There are following problems related to an interrupt context in efivar/efi_pstore.
 
-> What have you done already?=20
+ Currently, efivars enables interrupt while taking efivars->lock.
+ So, there is a risk to be deadlocking in a write callback of efi_pstore if kernel panics 
+ in interrupt context while taking efi_lock.
 
-Implemented a patch for this which I've now tested a bit and will
-probably post in the next hour or so.
+ Also, efi_pstore creates sysfs entries ,which enable users to access to NVRAM, in a write callback.
+ If a kernel panic happens in interrupt contexts, pstore may fail because it could sleep due to dynamic 
+ memory allocations during creating sysfs entries.
 
-> Why make suggestions if you're just going to do the work yourself?
+To resolve the problems above, a goal of this patchset is making efivars/efi_pstore interrupt-safe.
 
-I made the suggestion then later on realised that this was actively
-going to break things I care about so I actually need it fixing.
+[Patch Description]
+ Patch 1/3 efivars: Disable external interrupt while holding efivars->lock
+   This patch replaces spin_lock/spin_unlock with spin_lock_irqsave/spin_lock_irqrestore to make efivars interrupt safe
 
---IfhPODtivl1BCmut
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ Patch 2/3 efi_pstore: Introducing workqueue updating sysfs entries
+   This patch removes sysfs operations from write callback by introducing a workqueue updating sysfs entries
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ Patch 3/3 efi_pstore: Skiping scheduling a workqueue in cases other than oops
+   This patch restricts a schedule of a workqueue in case where users erase entries or oops happen which is truly needed for users.
 
-iQIcBAEBAgAGBQJQM7xgAAoJEFJkBDiqVpZ4AZ0P/05xqLDm0NdfMtjIM1gEE0lp
-iCVMbB/HzNF7uy+xtbnZ0rotX2BictMgwB6F3/OQUIR5XMnTDxuQoxuwpEk6wstp
-JHufOoKHoD2D5yier5JZIDm0dbkqrVW2qzJjlR6tdW5+S0iFFhZxxBoSVz6vbbug
-Ik3sIOcsa1OJ+LtkqseosYbNliHymObW4qobj3YRLXhB7xG4Xoj0eXxrt9SUzMo0
-rH4q96rE74XuJZW216xdDU+IvaPkzcmMyANb1ipVTeUMoI9gV2F8XhKX1LIg0jVM
-rnrUS3SKvA2kIt3noBI5qcqxE0WWq7gOzCWXp4RJLECg6BRGzxQU0nIYR8pjqpOn
-Pq7k6zBdEKX7c2BYfiZptouya0c2yol3zo95uXZJqkIDsVy+4C6Kmxn6tJKoi3hz
-3D/HgCBc7poPSPqkw62Sj1Nt8ESHsEPg2SjCU+ZbMUaYBD7XxAfZdxsjTKnFwuVU
-hYFbmfl6GY4YiEU/SpAW5czrfypEZpJOoczD59W/Y7mMUNeMrq3KkTyUYfJ7x5ix
-VxV8kJVBbDxeE8BZRPAxym0Y+ivAf0L6Fi8Ar92boKAO9zeEW1NHqPT37KL7iCx7
-1kI57TNb3dmT/4Xpc+SoUH+EnL1EjPg/2N/rK+4qWpRLWK8Alb1RRW6CXd82XPWl
-ttAhxFpxTAqTBJW6xmLL
-=6Gif
------END PGP SIGNATURE-----
+ drivers/firmware/efivars.c |  166 +++++++++++++++++++++++++++++++++++--------
+ include/linux/efi.h        |    3 +-
+ 2 files changed, 137 insertions(+), 32 deletions(-)
 
---IfhPODtivl1BCmut--
+
+
+
