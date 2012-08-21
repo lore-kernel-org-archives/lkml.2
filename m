@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab2HUJGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:06:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53320 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab2HUJF5 (ORCPT
+	id S1754869Ab2HUJGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:06:42 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:52873 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753322Ab2HUJGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:05:57 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
-Date: Tue, 21 Aug 2012 09:05:52 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
-        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org, "spear-devel" <spear-devel@list.st.com>
-References: <502BC31E.4070200@yahoo.es> <201208210847.18700.arnd.bergmann@linaro.org> <CAKohpokoeSLBtLdh8hr4GKv8VOxzK8Vq5SoqLE3yC-TDyjYA9w@mail.gmail.com>
-In-Reply-To: <CAKohpokoeSLBtLdh8hr4GKv8VOxzK8Vq5SoqLE3yC-TDyjYA9w@mail.gmail.com>
+	Tue, 21 Aug 2012 05:06:39 -0400
+X-IronPort-AV: E=Sophos;i="4.77,801,1336341600"; 
+   d="scan'208";a="170394197"
+Date: Tue, 21 Aug 2012 11:06:35 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Lars-Peter Clausen <lars@metafoo.de>
+cc: Julia Lawall <julia@diku.dk>, linux-kernel@vger.kernel.org, cocci@diku.dk,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [Cocci] [PATCH] scripts/coccinelle: ptr_ret: Add ternary operator
+ version
+In-Reply-To: <1345538998-24600-1-git-send-email-lars@metafoo.de>
+Message-ID: <alpine.DEB.2.02.1208211105300.1984@hadrien>
+References: <1345538998-24600-1-git-send-email-lars@metafoo.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208210905.52145.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:sOsSMvnMqM7J7247oe6kUha7TnFGcSZHn4B1nfKRiqG
- 4uuUKWi7T7Q41daQOoOnRE5ox0uLN5IaKE3vBNpPi8sPA0JQYO
- hQfNNk86LFZMh0UZH3trY2XSBlIMJGcP3h4OkkrcBLoriXpS40
- QnN5iqs6axHJhsd8Pdb1Lfaogjs4Ta0rpj6sJyaLXsRMHk3o9v
- Nea8hpHWiHzGcTaeUM9C0qMsZbV8AISr1hjSRB454hgjiAW261
- 7vOsggboCjtrMAyvsaywLKb4eOzt1zNhGzSwd8sZhYgftviLjX
- nXpEOUJylk0BlVnhQUoUKaOO0J9HpoHndFze3pdG+4KDPcRgNi
- J5wLQF93fP/KGzG1wzfQDbrpBAtD1pQR0fGmGQCih
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 August 2012, Viresh Kumar wrote:
-> On 21 August 2012 14:17, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
-> 
-> > On Tuesday 21 August 2012, Viresh Kumar wrote:
-> > > On 21 August 2012 14:04, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
-> > >
-> > > > Yes, this is very strange. Maybe the compiler already splits the
-> > > > access into two 16-byte loads and that confuses the device?
-> > >
-> > > @Arnd: Is compiler allowed to do that even when we have volatile
-> > specified
-> > > for the access? It shouldn't optimize the access at all i believe.
-> >
-> > Yes. The "volatile" keyword implies that the compiler has to do the access
-> > exactly once and that it cannot reorder the access with others on the same
-> > address, or read more data than is specified, but it can (and does) split
-> > the access if there is a reason for that, e.g. when the address might
-> > be misaligned and the architecture cannot do misaligned loads.
-> 
-> 
-> But that can't be the case here. Isn't it? So we shouldn't have got such
-> results.
 
-It should be easy to tell from the object code whether this happened
-or not. If it did, then we can investigate why gcc did that, otherwise
-something else caused the strange byte swap.
 
-The safe way to define the readl() function in asm/io.h is to
-use an inline assembly that prevents the access from getting split,
-but avr32 just uses a pointer dereference here.
+On Tue, 21 Aug 2012, Lars-Peter Clausen wrote:
 
-I think I just found the answer elsewhere in
-arch/avr32/mach-at32ap/include/mach/io.h, which defines
+> Add a ternary operator version of the open-coded PTR_RET().
+>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  scripts/coccinelle/api/ptr_ret.cocci |   26 ++++++++++++++++++++++++++
+>  1 files changed, 26 insertions(+), 0 deletions(-)
+>
+> diff --git a/scripts/coccinelle/api/ptr_ret.cocci b/scripts/coccinelle/api/ptr_ret.cocci
+> index cbfd08c..15f076f 100644
+> --- a/scripts/coccinelle/api/ptr_ret.cocci
+> +++ b/scripts/coccinelle/api/ptr_ret.cocci
+> @@ -30,6 +30,13 @@ expression ptr;
+>  - if (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
+>  + return PTR_RET(ptr);
+>
+> +@depends on patch@
+> +expression ptr;
+> +@@
+> +
+> +- (IS_ERR(ptr) ? PTR_ERR(ptr) : 0)
+> ++ PTR_RET(ptr)
+> +
+>  @r1 depends on !patch@
+>  expression ptr;
+>  position p1;
+> @@ -44,6 +51,13 @@ position p2;
+>
+>  * if@p2 (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
+>
+> +@r3 depends on !patch@
+> +expression ptr;
+> +position p3;
+> +@@
+> +
+> +* IS_ERR@p3(ptr) ? PTR_ERR(ptr) : 0
+> +
+>  @script:python depends on org@
+>  p << r1.p1;
+>  @@
+> @@ -57,6 +71,12 @@ p << r2.p2;
+>
+>  coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
+>
+> +@script:python depends on org@
+> +p << r3.p3;
+> +@@
+> +
+> +coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
+> +
+>  @script:python depends on report@
+>  p << r1.p1;
+>  @@
+> @@ -68,3 +88,9 @@ p << r2.p2;
+>  @@
+>
+>  coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
+> +
+> +@script:python depends on report@
+> +p << r3.p3;
+> +@@
+> +
+> +coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
 
-# define __mem_ioswabl(a, x)    swahb32(x)
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-and that apparently does the halfword swap when CONFIG_AP700X_16_BIT_SMC
-is set. This explains why Havard said it's wrong to use readl on
-internal deviceson avr32, but unfortunately that rule conflicts with how
-we define the accessors on ARM.
-
-	Arnd
+> --
+> 1.7.2.5
+>
+> _______________________________________________
+> Cocci mailing list
+> Cocci@diku.dk
+> http://lists.diku.dk/mailman/listinfo/cocci
+> (Web access from inside DIKUs LAN only)
+>
