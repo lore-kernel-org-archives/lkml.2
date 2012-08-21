@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab2HUDXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 23:23:39 -0400
-Received: from csamuel.org ([74.50.50.137]:44788 "EHLO csamuel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755229Ab2HUDXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 23:23:37 -0400
-Message-ID: <5032FF35.1010407@csamuel.org>
-Date: Tue, 21 Aug 2012 13:23:33 +1000
-From: Chris Samuel <chris@csamuel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1751712Ab2HUDhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 23:37:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59959 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2HUDhD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 23:37:03 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Chris Mason <chris.mason@fusionio.com>,
-        Linux Btrfs List <linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL 1/2] Btrfs fixes
-References: <20120809155029.GA29278@shiny> <5032EA29.2060002@csamuel.org> <CA+55aFxQiV2iHYQ3NVm=9K=9i6mBo1zwMuvXNrpwnLQwpsRx3A@mail.gmail.com>
-In-Reply-To: <CA+55aFxQiV2iHYQ3NVm=9K=9i6mBo1zwMuvXNrpwnLQwpsRx3A@mail.gmail.com>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <50325153.3000305@wwwdotorg.org>
+References: <1345271585.7986.0.camel@phoenix> <50325153.3000305@wwwdotorg.org>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 21 Aug 2012 11:36:42 +0800
+Message-ID: <CAF+7xW=PO_j=CT7o5LPH7L-WF_Vg9D+6YgYcfEsxRy8VT27Ckw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: max8907: Properly set pmic pointer in max8907_regulator_remove()
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/08/12 11:55, Linus Torvalds wrote:
+2012/8/20 Stephen Warren <swarren@wwwdotorg.org>:
+> On 08/18/2012 12:33 AM, Axel Lin wrote:
+>> Add missing platform_get_drvdata() call in max8907_regulator_remove(), this
+>> fixes below build warning:
+>>
+>>   CC [M]  drivers/regulator/max8907-regulator.o
+>> drivers/regulator/max8907-regulator.c: In function 'max8907_regulator_remove':
+>> drivers/regulator/max8907-regulator.c:353:23: warning: 'pmic' is used uninitialized in this function [-Wuninitialized]
+>
+> That's odd; while this warning and the patch are obviously correct, I
+> can't get my compiler to warn about it at all, and it usually is pretty
+> strict about emitting warnings. Oh well.
 
-> Read my -rc2 release notes.
+I got this error message only when I compile it as a module. :-)
 
-Ahh, thanks (I'm not on LKML so didn't see those).
-
-> TL;DR: I rejected big pull requests that didn't convince me. Make a
-> damn good case for it, or send minimal fixes instead.
-
-Can't argue with that!
-
-> I'm tried of these "oops, what we sent you for -rc1 wasn't ready, so
-> here's a thousand lines of changes" crap.
-
-I can understand that with respect to the send/recv stuff, so it's
-really down to Chris Mason to extract just the fixes to problems that
-are in 3.5 and earlier and submit just those instead.
-
-All the best,
-Chris
--- 
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+Axel
