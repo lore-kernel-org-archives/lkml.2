@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab2HUNCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:02:47 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:58047 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757251Ab2HUNCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:02:45 -0400
+	id S1757606Ab2HUNFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:05:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48898 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757314Ab2HUNFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 09:05:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,802,1336374000"; 
+   d="scan'208";a="207462466"
+Date: Tue, 21 Aug 2012 21:04:58 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH 3/3] writeback: add dirty_ratio_time per bdi variable
+ (NFS write performance)
+Message-ID: <20120821130458.GD22321@localhost>
+References: <1345283402-7889-1-git-send-email-linkinjeon@gmail.com>
+ <20120819025724.GC16796@localhost>
+ <CAKYAXd83r3RNi3Rn5s3DAEE=34YYbk_hUWcG6R3Zu3JwUw74aA@mail.gmail.com>
+ <20120820145032.GA7469@localhost>
+ <CAKYAXd9L5Kwj3SEHO=a60c65OXRt73q+-w-Uux6OJ=6Q-3jvYQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50336FA5.7020906@redhat.com>
-References: <1345541833.17239.0.camel@phoenix>
-	<50336FA5.7020906@redhat.com>
-Date: Tue, 21 Aug 2012 15:02:45 +0200
-Message-ID: <CACRpkdYy-PeyOJy32nEuByQ5K88mJfdO4PLDwF8dxj4m8+7Otw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: bt8xx: Fix build error due to missing include file
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Michael Buesch <m@bues.ch>, Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKYAXd9L5Kwj3SEHO=a60c65OXRt73q+-w-Uux6OJ=6Q-3jvYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 1:23 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Hi Axel,
->
-> Em 21-08-2012 06:37, Axel Lin escreveu:
->> This patch fixes below build error:
->>
->>   CC [M]  drivers/gpio/gpio-bt8xx.o
->> drivers/gpio/gpio-bt8xx.c:53:40: fatal error: ../media/video/bt8xx/bt848.h: No such file or directory
->> compilation terminated.
->> make[2]: *** [drivers/gpio/gpio-bt8xx.o] Error 1
->> make[1]: *** [drivers/gpio] Error 2
->> make: *** [drivers] Error 2
->>
->> drivers/media/video/bt8xx/bt848.h is moved to drivers/media/pci/bt8xx/bt848.h
->> by commit 68de959f773a1d49096835c411390bceff5d1549
->> "[media] bt8xx: move analog TV part to be together with DTV one".
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
->
-> Thanks for the patch!
->
-> I'll apply this one on my tree, as it is due to the drivers/media tree
-> reorg. So, it is better to keep it close to the patches there.
+On Tue, Aug 21, 2012 at 03:00:13PM +0900, Namjae Jeon wrote:
+> 2012/8/20, Fengguang Wu <fengguang.wu@intel.com>:
+> > On Mon, Aug 20, 2012 at 09:48:42AM +0900, Namjae Jeon wrote:
+> >> 2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
+> >> > On Sat, Aug 18, 2012 at 05:50:02AM -0400, Namjae Jeon wrote:
+> >> >> From: Namjae Jeon <namjae.jeon@samsung.com>
+> >> >>
+> >> >> This patch is based on suggestion by Wu Fengguang:
+> >> >> https://lkml.org/lkml/2011/8/19/19
+> >> >>
+> >> >> kernel has mechanism to do writeback as per dirty_ratio and
+> >> >> dirty_background
+> >> >> ratio. It also maintains per task dirty rate limit to keep balance of
+> >> >> dirty pages at any given instance by doing bdi bandwidth estimation.
+> >> >>
+> >> >> Kernel also has max_ratio/min_ratio tunables to specify percentage of
+> >> >> writecache
+> >> >> to control per bdi dirty limits and task throtelling.
+> >> >>
+> >> >> However, there might be a usecase where user wants a writeback tuning
+> >> >> parameter to flush dirty data at desired/tuned time interval.
+> >> >>
+> >> >> dirty_background_time provides an interface where user can tune
+> >> >> background
+> >> >> writeback start time using /sys/block/sda/bdi/dirty_background_time
+> >> >>
+> >> >> dirty_background_time is used alongwith average bdi write bandwidth
+> >> >> estimation
+> >> >> to start background writeback.
+> >> >
+> >> > Here lies my major concern about dirty_background_time: the write
+> >> > bandwidth estimation is an _estimation_ and will sure become wildly
+> >> > wrong in some cases. So the dirty_background_time implementation based
+> >> > on it will not always work to the user expectations.
+> >> >
+> >> > One important case is, some users (eg. Dave Chinner) explicitly take
+> >> > advantage of the existing behavior to quickly create & delete a big
+> >> > 1GB temp file without worrying about triggering unnecessary IOs.
+> >> >
+> >> Hi. Wu.
+> >> Okay, I have a question.
+> >>
+> >> If making dirty_writeback_interval per bdi to tune short interval
+> >> instead of background_time, We can get similar performance
+> >> improvement.
+> >> /sys/block/<device>/bdi/dirty_writeback_interval
+> >> /sys/block/<device>/bdi/dirty_expire_interval
+> >>
+> >> NFS write performance improvement is just one usecase.
+> >>
+> >> If we can set interval/time per bdi,  other usecases will be created
+> >> by applying.
+> >
+> > Per-bdi interval/time tunables, if there comes such a need, will in
+> > essential be for data caching and safety. If turning them into some
+> > requirement for better performance, the users will potential be
+> > stretched on choosing the "right" value for balanced data cache,
+> > safety and performance.  Hmm, not a comfortable prospection.
+> Hi Wu.
+> First, Thanks for shared information.
+> 
+> I change writeback interval on NFS server only.
 
-OK you take care of it!
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+OK..sorry for missing that part!
 
-Yours,
-Linus Walleij
+> I think that this does not affect data cache/page behaviour(caching)
+> change on NFS client. NFS client will start sending write requests as
+> per default NFS/writeback logic. So, no change in NFS client data
+> caching behaviour.
+> 
+> Also, on NFS server it does not make change in system-wide caching
+> behaviour. It only modifies caching/writeback behaviour of a
+> particular “bdi” on NFS server so that NFS client could see better
+> WRITE speed.
+
+But would you default to dirty_background_time=0, where the special
+value 0 means no change of the original behavior? That will address
+David's very reasonable concern. Otherwise quite a few users are going
+to be surprised by the new behavior after upgrading kernel.
+
+> I will share several performancetest results as Dave's opinion.
+> 
+> >
+> >> >The numbers are impressive! FYI, I tried another NFS specific approach
+> >> >to avoid big NFS COMMITs, which achieved similar performance gains:
+> >>
+> >> >nfs: writeback pages wait queue
+> >> >https://lkml.org/lkml/2011/10/20/235
+> This patch looks client side optimization to me.(need to check more)
+
+Yes.
+
+> Do we need the optimization of server side as Bruce's opinion ?
+
+Sure.
+
+Thanks,
+Fengguang
