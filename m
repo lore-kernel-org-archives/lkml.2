@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab2HUPTO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:19:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44400 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab2HUPTG (ORCPT
+	id S1755401Ab2HUPTW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:19:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59594 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab2HUPTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:19:06 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: davem@davemloft.net
-Subject: [PATCH] ide: fix generic_ide_suspend/resume Oops
-CC: rjw@sisk.pl, stern@rowland.harvard.edu, hdegoede@redhat.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Date: Tue, 21 Aug 2012 17:20:30 +0200
-Message-ID: <87txvwgtkx.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 21 Aug 2012 11:19:16 -0400
+Date: Tue, 21 Aug 2012 08:18:56 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-6nw2sak21bqy8h1m2syyo816@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Add dump_stack function
+Git-Commit-ID: dc4552bf7176573ccf79af04ab8648b015738f4a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:19:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Commit-ID:  dc4552bf7176573ccf79af04ab8648b015738f4a
+Gitweb:     http://git.kernel.org/tip/dc4552bf7176573ccf79af04ab8648b015738f4a
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 7 Aug 2012 23:32:05 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 7 Aug 2012 23:32:05 -0300
 
-This patch fixes a regresion introduced by commit 0998d063 (device-core: Ensure
-drvdata = NULL when no driver is bound).
+perf tools: Add dump_stack function
 
-Suspend oopses in generic_ide_suspend() because dev_get_drvdata()
-returns NULL (dev->p->driver_data == NULL) and this function is not
-prepared for this.
+To help in debugging the tools, provides functionality roughly similar
+to the function with the same name in the kernel.
 
-Fix is based on Alan Stern's suggestion.
+Copied from glibc backtrace function man page.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-6nw2sak21bqy8h1m2syyo816@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/ide/ide-pm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/util.c |   19 +++++++++++++++++++
+ tools/perf/util/util.h |    2 ++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/ide/ide-pm.c b/drivers/ide/ide-pm.c
-index 9240609..8d1e32d 100644
---- a/drivers/ide/ide-pm.c
-+++ b/drivers/ide/ide-pm.c
-@@ -4,7 +4,7 @@
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index d03599f..1b8775c 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -1,6 +1,9 @@
+ #include "../perf.h"
+ #include "util.h"
+ #include <sys/mman.h>
++#include <execinfo.h>
++#include <stdio.h>
++#include <stdlib.h>
  
- int generic_ide_suspend(struct device *dev, pm_message_t mesg)
- {
--	ide_drive_t *drive = dev_get_drvdata(dev);
-+	ide_drive_t *drive = to_ide_device(dev);
- 	ide_drive_t *pair = ide_get_pair_dev(drive);
- 	ide_hwif_t *hwif = drive->hwif;
- 	struct request *rq;
-@@ -40,7 +40,7 @@ int generic_ide_suspend(struct device *dev, pm_message_t mesg)
+ /*
+  * XXX We need to find a better place for these things...
+@@ -158,3 +161,19 @@ size_t hex_width(u64 v)
  
- int generic_ide_resume(struct device *dev)
- {
--	ide_drive_t *drive = dev_get_drvdata(dev);
-+	ide_drive_t *drive = to_ide_device(dev);
- 	ide_drive_t *pair = ide_get_pair_dev(drive);
- 	ide_hwif_t *hwif = drive->hwif;
- 	struct request *rq;
--- 
-1.7.7
-
+ 	return n;
+ }
++
++/* Obtain a backtrace and print it to stdout. */
++void dump_stack(void)
++{
++	void *array[16];
++	size_t size = backtrace(array, ARRAY_SIZE(array));
++	char **strings = backtrace_symbols(array, size);
++	size_t i;
++
++	printf("Obtained %zd stack frames.\n", size);
++
++	for (i = 0; i < size; i++)
++		printf("%s\n", strings[i]);
++
++	free(strings);
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index b13c733..00a93a9 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -266,4 +266,6 @@ size_t hex_width(u64 v);
+ 
+ char *rtrim(char *s);
+ 
++void dump_stack(void);
++
+ #endif
