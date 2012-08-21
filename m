@@ -1,112 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab2HUI55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:57:57 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:58929 "EHLO
-	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752597Ab2HUI5u (ORCPT
+	id S1754746Ab2HUJDd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:03:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42161 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752903Ab2HUJDa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:57:50 -0400
-Message-ID: <1345539465.4085.22.camel@deskari>
-Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
-        Simon Glass <sjg@chromium.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Leela Krishna Amudala <leelakrishna.a@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Tue, 21 Aug 2012 05:03:30 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+CC: Richard Purdie <rpurdie@rpsys.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Tue, 21 Aug 2012 11:57:45 +0300
-In-Reply-To: <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
-References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com>
-	 <1345097337-24170-2-git-send-email-acourbot@nvidia.com>
-	 <1345535069.4085.7.camel@deskari> <1562509.b0FYTUZ1D8@percival>
-	 <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-wBdSPFNbFs73o+cuydTi"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "mathias.nyman@nokia.com" <mathias.nyman@nokia.com>
+Subject: [PATCH 1/4] leds-lp5523: add channel name in the platform data
+Thread-Topic: [PATCH 1/4] leds-lp5523: add channel name in the platform data
+Thread-Index: Ac1/e8n5oMMAm/XERXqosJtmV9h97A==
+Date: Tue, 21 Aug 2012 09:03:12 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0AD5@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The name of each led channel is configurable.
+If the name is NULL, just use the channel id for making the channel name
 
---=-wBdSPFNbFs73o+cuydTi
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ Documentation/leds/leds-lp5523.txt |    7 +++++--
+ drivers/leds/leds-lp5523.c         |   10 +++++++---
+ include/linux/leds-lp5523.h        |    1 +
+ 3 files changed, 13 insertions(+), 5 deletions(-)
 
-On Tue, 2012-08-21 at 10:33 +0200, Thierry Reding wrote:
+diff --git a/Documentation/leds/leds-lp5523.txt b/Documentation/leds/leds-lp5523.txt
+index fad2feb..e958d9a 100644
+--- a/Documentation/leds/leds-lp5523.txt
++++ b/Documentation/leds/leds-lp5523.txt
+@@ -10,7 +10,9 @@ Contact: Samu Onkalo (samu.p.onkalo-at-nokia.com)
+ Description
+ -----------
+ LP5523 can drive up to 9 channels. Leds can be controlled directly via
+-the led class control interface. Channels have generic names:
++the led class control interface.
++The name of each channel is configurable in the platform data.
++If the name is NULL, channels have generic names:
+ lp5523:channelx where x is 0...8
+ 
+ The chip provides 3 engines. Each engine can control channels without
+@@ -46,12 +48,13 @@ Note - chan_nr can have values between 0 and 8.
+ 
+ static struct lp5523_led_config lp5523_led_config[] = {
+         {
++		.name		= "red",
+                 .chan_nr        = 0,
+                 .led_current    = 50,
+ 		.max_current    = 130,
+         },
+ ...
+-        }, {
++        {
+                 .chan_nr        = 8,
+                 .led_current    = 50,
+ 		.max_current    = 130,
+diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+index fbc12ac..9fd9a92 100644
+--- a/drivers/leds/leds-lp5523.c
++++ b/drivers/leds/leds-lp5523.c
+@@ -846,10 +846,14 @@ static int __devinit lp5523_init_led(struct lp5523_led *led, struct device *dev,
+ 			return -EINVAL;
+ 		}
+ 
+-		snprintf(name, sizeof(name), "%s:channel%d",
+-			pdata->label ?: "lp5523", chan);
++		if (pdata->led_config[chan].name) {
++			led->cdev.name = pdata->led_config[chan].name;
++		} else {
++			snprintf(name, sizeof(name), "%s:channel%d",
++				pdata->label ?: "lp5523", chan);
++			led->cdev.name = name;
++		}
+ 
+-		led->cdev.name = name;
+ 		led->cdev.brightness_set = lp5523_set_brightness;
+ 		res = led_classdev_register(dev, &led->cdev);
+ 		if (res < 0) {
+diff --git a/include/linux/leds-lp5523.h b/include/linux/leds-lp5523.h
+index 2694289..727877f 100644
+--- a/include/linux/leds-lp5523.h
++++ b/include/linux/leds-lp5523.h
+@@ -26,6 +26,7 @@
+ /* See Documentation/leds/leds-lp5523.txt */
+ 
+ struct lp5523_led_config {
++	const char	*name;
+ 	u8		chan_nr;
+ 	u8		led_current; /* mA x10, 0 if led is not connected */
+ 	u8		max_current;
+-- 
+1.7.2.5
 
-> I suppose power sequences aren't needed if you have a specific driver
-> for every panel out there. However that also means that you'd have to
-> write drivers for literally every panel that requires support. In the
-> end this will just result in discussion down the road how the common
-> functionality can be refactored and we may end up with power sequences
-> again.
->=20
-> Also as you mentioned, power sequences are useful for a number of other
-> use-cases. Without power sequences you'll have to potentially create
-> extra frameworks tha reimplement parts of the power sequence code for
-> their specific hardware needs.
 
-Right. I think my main concern is the use of DT data, not power
-sequences as such. I've been going back and forth in my mind with this
-issue with OMAP also.
+Best Regards,
+Milo
 
-The question is: what stuff belongs to DT data and what belongs to the
-kernel? I've been trying to go to the direction where DT is used to
-describe the HW connections of different IP blocks and to pass board
-specific configuration. Everything else is in the driver.
-
-This doesn't mean that we'd have a separate driver for each device. For
-example, we have a generic panel driver in OMAP, which contains a kind
-of small panel database. The panel database contains the name of the
-panel as a key, and panel specific configuration as a value. This
-configuration could also contain some kind of generic power sequence.
-
-I'd like to require the board developer to only fill in to the DT data
-what panel he is using, and how it's connected on his board. Not panel's
-internal functionality.
-
-The one benefit I see with DT based approach is that if we have, say,
-10000 panels, we'd have quite a big database in kernel memory and a
-board may only need one or two of those. But perhaps that could be
-helped with the use of __initdata.
-
- Tomi
-
-
---=-wBdSPFNbFs73o+cuydTi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQM02JAAoJEPo9qoy8lh71WtAQAKX+bcZY0vx9b7uxiJQn2K0B
-QlwpAOLa88qGLWoMYo1ExCWDL19LyTQT4qEHCnJ9a1wr1y0RreHKeyv7PhyozHoj
-XK5Fo29VCLbOp4NtHSih/rHDcvtTvcEgq/TyoEOQwiE0E23kAmnFVMHwVe9zActb
-Q46Zalag4dO9MjND/ncOJ0RiYvnB8plUvq+D0IgDLNOLp52U9MqJ6p5vt73sRgxK
-TS81AhD3C5POK4U+JT2ASmabV+WCKsFEEJ1n/rv23oAZVfxNgKED5PWMqwT8lVfH
-pPZ4oW/GF50kGkjF5dLGBJ+jbGeYRv+mnuY2MG4pCC7N9VBFaMBI2wq1/d9q0idR
-g3NUYF4oU6Mb3jfBb4V8RRxH36k6ucn3ttA/+p+HSizvxXWbB0MKcAH0Q0XvVauJ
-PIZ8d2pIFOSmiCcK/aKNGFiuAMCUIjI0ZFMtEetL5wEcx3iy/y3roZ55q7wUDC12
-JEcAlm8vkVzpvfI9I/ZuMqfewOLzR5RwkpBjHCAgYJNdFobFNPgUvrIsNN8J/gBl
-EXu2Cm7OgfVGMMLUuzpZRrhTPaAwIuMZfe98cSoQgGxG4MJfTfMzgzgLVLYZuyOm
-jusEZJiamTMx/kYQgJOTuVYj9BpzwULJy6lrD21bq9N3It1rp/NJDTuBdpW5cFCH
-sVo/Xc34OYbrh8V6h4pa
-=boI3
------END PGP SIGNATURE-----
-
---=-wBdSPFNbFs73o+cuydTi--
 
