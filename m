@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab2HUSqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:46:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38742 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab2HUSpT (ORCPT
+	id S1756605Ab2HUSqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:46:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62964 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab2HUSpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:45:19 -0400
+	Tue, 21 Aug 2012 14:45:20 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 1/8] MIPS: Octeon: Add octeon_io_clk_delay() function.
-Date: Tue, 21 Aug 2012 11:45:05 -0700
-Message-Id: <1345574712-21444-2-git-send-email-ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Chad Reese <kreese@caviumnetworks.com>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH 3/8] netdev: octeon_mgmt: Add hardware timestamp support.
+Date: Tue, 21 Aug 2012 11:45:07 -0700
+Message-Id: <1345574712-21444-4-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
@@ -21,186 +22,248 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <ddaney@caviumnetworks.com>
+From: Chad Reese <kreese@caviumnetworks.com>
 
-Also cleanup and fix octeon_init_cvmcount()
+Octeon cn6XXX models have timestamp support on the mgmt ports, so hook
+it up.
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Signed-off-by: Chad Reese <kreese@caviumnetworks.com>
+Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- arch/mips/cavium-octeon/csrc-octeon.c | 93 ++++++++++++++++++++++++-----------
- arch/mips/cavium-octeon/setup.c       |  3 +-
- arch/mips/include/asm/octeon/octeon.h |  1 +
- 3 files changed, 66 insertions(+), 31 deletions(-)
+ drivers/net/ethernet/octeon/octeon_mgmt.c | 157 +++++++++++++++++++++++++++++-
+ 1 file changed, 152 insertions(+), 5 deletions(-)
 
-diff --git a/arch/mips/cavium-octeon/csrc-octeon.c b/arch/mips/cavium-octeon/csrc-octeon.c
-index ce6483a..0219395 100644
---- a/arch/mips/cavium-octeon/csrc-octeon.c
-+++ b/arch/mips/cavium-octeon/csrc-octeon.c
-@@ -4,7 +4,7 @@
-  * for more details.
-  *
-  * Copyright (C) 2007 by Ralf Baechle
-- * Copyright (C) 2009, 2010 Cavium Networks, Inc.
-+ * Copyright (C) 2009, 2012 Cavium, Inc.
-  */
- #include <linux/clocksource.h>
- #include <linux/export.h>
-@@ -18,6 +18,33 @@
- #include <asm/octeon/cvmx-ipd-defs.h>
- #include <asm/octeon/cvmx-mio-defs.h>
- 
-+
-+static u64 f;
-+static u64 rdiv;
-+static u64 sdiv;
-+static u64 octeon_udelay_factor;
-+static u64 octeon_ndelay_factor;
-+
-+void __init octeon_setup_delays(void)
-+{
-+	octeon_udelay_factor = octeon_get_clock_rate() / 1000000;
-+	/*
-+	 * For __ndelay we divide by 2^16, so the factor is multiplied
-+	 * by the same amount.
-+	 */
-+	octeon_ndelay_factor = (octeon_udelay_factor * 0x10000ull) / 1000ull;
-+
-+	preset_lpj = octeon_get_clock_rate() / HZ;
-+
-+	if (current_cpu_type() == CPU_CAVIUM_OCTEON2) {
-+		union cvmx_mio_rst_boot rst_boot;
-+		rst_boot.u64 = cvmx_read_csr(CVMX_MIO_RST_BOOT);
-+		rdiv = rst_boot.s.c_mul;	/* CPU clock */
-+		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
-+		f = (0x8000000000000000ull / sdiv) * 2;
-+	}
-+}
-+
- /*
-  * Set the current core's cvmcount counter to the value of the
-  * IPD_CLK_COUNT.  We do this on all cores as they are brought
-@@ -30,17 +57,6 @@ void octeon_init_cvmcount(void)
- {
- 	unsigned long flags;
- 	unsigned loops = 2;
--	u64 f = 0;
--	u64 rdiv = 0;
--	u64 sdiv = 0;
--	if (current_cpu_type() == CPU_CAVIUM_OCTEON2) {
--		union cvmx_mio_rst_boot rst_boot;
--		rst_boot.u64 = cvmx_read_csr(CVMX_MIO_RST_BOOT);
--		rdiv = rst_boot.s.c_mul;	/* CPU clock */
--		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
--		f = (0x8000000000000000ull / sdiv) * 2;
--	}
--
- 
- 	/* Clobber loops so GCC will not unroll the following while loop. */
- 	asm("" : "+r" (loops));
-@@ -57,9 +73,9 @@ void octeon_init_cvmcount(void)
- 			if (f != 0) {
- 				asm("dmultu\t%[cnt],%[f]\n\t"
- 				    "mfhi\t%[cnt]"
--				    : [cnt] "+r" (ipd_clk_count),
--				      [f] "=r" (f)
--				    : : "hi", "lo");
-+				    : [cnt] "+r" (ipd_clk_count)
-+				    : [f] "r" (f)
-+				    : "hi", "lo");
- 			}
- 		}
- 		write_c0_cvmcount(ipd_clk_count);
-@@ -109,21 +125,6 @@ void __init plat_time_init(void)
- 	clocksource_register_hz(&clocksource_mips, octeon_get_clock_rate());
- }
- 
--static u64 octeon_udelay_factor;
--static u64 octeon_ndelay_factor;
--
--void __init octeon_setup_delays(void)
--{
--	octeon_udelay_factor = octeon_get_clock_rate() / 1000000;
--	/*
--	 * For __ndelay we divide by 2^16, so the factor is multiplied
--	 * by the same amount.
--	 */
--	octeon_ndelay_factor = (octeon_udelay_factor * 0x10000ull) / 1000ull;
--
--	preset_lpj = octeon_get_clock_rate() / HZ;
--}
--
- void __udelay(unsigned long us)
- {
- 	u64 cur, end, inc;
-@@ -163,3 +164,35 @@ void __delay(unsigned long loops)
- 		cur = read_c0_cvmcount();
- }
- EXPORT_SYMBOL(__delay);
-+
-+
-+/**
-+ * octeon_io_clk_delay - wait for a given number of io clock cycles to pass.
-+ *
-+ * We scale the wait by the clock ratio, and then wait for the
-+ * corresponding number of core clocks.
-+ *
-+ * @count: The number of clocks to wait.
-+ */
-+void octeon_io_clk_delay(unsigned long count)
-+{
-+	u64 cur, end;
-+
-+	cur = read_c0_cvmcount();
-+	if (rdiv != 0) {
-+		end = count * rdiv;
-+		if (f != 0) {
-+			asm("dmultu\t%[cnt],%[f]\n\t"
-+				"mfhi\t%[cnt]"
-+				: [cnt] "+r" (end)
-+				: [f] "r" (f)
-+				: "hi", "lo");
-+		}
-+		end = cur + end;
-+	} else {
-+		end = cur + count;
-+	}
-+	while (end > cur)
-+		cur = read_c0_cvmcount();
-+}
-+EXPORT_SYMBOL(octeon_io_clk_delay);
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index 919b0fb..04dd8ff 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -548,6 +548,8 @@ void __init prom_init(void)
+diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
+index c4df1ab..687a6a0 100644
+--- a/drivers/net/ethernet/octeon/octeon_mgmt.c
++++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+@@ -10,6 +10,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/etherdevice.h>
+ #include <linux/capability.h>
++#include <linux/net_tstamp.h>
+ #include <linux/interrupt.h>
+ #include <linux/netdevice.h>
+ #include <linux/spinlock.h>
+@@ -114,6 +115,7 @@ struct octeon_mgmt {
+ 	u64 agl_prt_ctl;
+ 	int port;
+ 	int irq;
++	bool has_rx_tstamp;
+ 	u64 *tx_ring;
+ 	dma_addr_t tx_ring_handle;
+ 	unsigned int tx_next;
+@@ -238,6 +240,28 @@ static void octeon_mgmt_rx_fill_ring(struct net_device *netdev)
  	}
- #endif
+ }
  
-+	octeon_setup_delays();
++static ktime_t ptp_to_ktime(u64 ptptime)
++{
++	ktime_t ktimebase;
++	u64 ptpbase;
++	unsigned long flags;
 +
++	local_irq_save(flags);
++	/* Fill the icache with the code */
++	ktime_get_real();
++	/* Flush all pending operations */
++	mb();
++	/* Read the time and PTP clock as close together as
++	 * possible. It is important that this sequence take the same
++	 * amount of time to reduce jitter
++	 */
++	ktimebase = ktime_get_real();
++	ptpbase = cvmx_read_csr(CVMX_MIO_PTP_CLOCK_HI);
++	local_irq_restore(flags);
++
++	return ktime_sub_ns(ktimebase, ptpbase - ptptime);
++}
++
+ static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
+ {
+ 	union cvmx_mixx_orcnt mix_orcnt;
+@@ -277,6 +301,20 @@ static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
+ 
+ 		dma_unmap_single(p->dev, re.s.addr, re.s.len,
+ 				 DMA_TO_DEVICE);
++
++		/* Read the hardware TX timestamp if one was recorded */
++		if (unlikely(re.s.tstamp)) {
++			struct skb_shared_hwtstamps ts;
++			/* Read the timestamp */
++			u64 ns = cvmx_read_csr(CVMX_MIXX_TSTAMP(p->port));
++			/* Remove the timestamp from the FIFO */
++			cvmx_write_csr(CVMX_MIXX_TSCTL(p->port), 0);
++			/* Tell the kernel about the timestamp */
++			ts.syststamp = ptp_to_ktime(ns);
++			ts.hwtstamp = ns_to_ktime(ns);
++			skb_tstamp_tx(skb, &ts);
++		}
++
+ 		dev_kfree_skb_any(skb);
+ 		cleaned++;
+ 
+@@ -377,6 +415,16 @@ static int octeon_mgmt_receive_one(struct octeon_mgmt *p)
+ 		/* A good packet, send it up. */
+ 		skb_put(skb, re.s.len);
+ good:
++		/* Process the RX timestamp if it was recorded */
++		if (p->has_rx_tstamp) {
++			/* The first 8 bytes are the timestamp */
++			u64 ns = *(u64 *)skb->data;
++			struct skb_shared_hwtstamps *ts;
++			ts = skb_hwtstamps(skb);
++			ts->hwtstamp = ns_to_ktime(ns);
++			ts->syststamp = ptp_to_ktime(ns);
++			__skb_pull(skb, 8);
++		}
+ 		skb->protocol = eth_type_trans(skb, netdev);
+ 		netdev->stats.rx_packets++;
+ 		netdev->stats.rx_bytes += skb->len;
+@@ -661,18 +709,114 @@ static irqreturn_t octeon_mgmt_interrupt(int cpl, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int octeon_mgmt_ioctl(struct net_device *netdev,
+-			     struct ifreq *rq, int cmd)
++static int octeon_mgmt_ioctl_hwtstamp(struct net_device *netdev,
++				      struct ifreq *rq, int cmd)
+ {
+ 	struct octeon_mgmt *p = netdev_priv(netdev);
++	struct hwtstamp_config config;
++	union cvmx_mio_ptp_clock_cfg ptp;
++	union cvmx_agl_gmx_rxx_frm_ctl rxx_frm_ctl;
++	bool have_hw_timestamps = false;
++
++	if (copy_from_user(&config, rq->ifr_data, sizeof(config)))
++		return -EFAULT;
+ 
+-	if (!netif_running(netdev))
++	if (config.flags) /* reserved for future extensions */
+ 		return -EINVAL;
+ 
+-	if (!p->phydev)
++	/* Check the status of hardware for tiemstamps */
++	if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
++		/* Get the current state of the PTP clock */
++		ptp.u64 = cvmx_read_csr(CVMX_MIO_PTP_CLOCK_CFG);
++		if (!ptp.s.ext_clk_en) {
++			/* The clock has not been configured to use an
++			 * external source.  Program it to use the main clock
++			 * reference.
++			 */
++			u64 clock_comp = (NSEC_PER_SEC << 32) /	octeon_get_io_clock_rate();
++			if (!ptp.s.ptp_en)
++				cvmx_write_csr(CVMX_MIO_PTP_CLOCK_COMP, clock_comp);
++			pr_info("PTP Clock: Using sclk reference at %lld Hz\n",
++				(NSEC_PER_SEC << 32) / clock_comp);
++		} else {
++			/* The clock is already programmed to use a GPIO */
++			u64 clock_comp = cvmx_read_csr(CVMX_MIO_PTP_CLOCK_COMP);
++			pr_info("PTP Clock: Using GPIO %d at %lld Hz\n",
++				ptp.s.ext_clk_in,
++				(NSEC_PER_SEC << 32) / clock_comp);
++		}
++
++		/* Enable the clock if it wasn't done already */
++		if (!ptp.s.ptp_en) {
++			ptp.s.ptp_en = 1;
++			cvmx_write_csr(CVMX_MIO_PTP_CLOCK_CFG, ptp.u64);
++		}
++		have_hw_timestamps = true;
++	}
++
++	if (!have_hw_timestamps)
+ 		return -EINVAL;
+ 
+-	return phy_mii_ioctl(p->phydev, rq, cmd);
++	switch (config.tx_type) {
++	case HWTSTAMP_TX_OFF:
++	case HWTSTAMP_TX_ON:
++		break;
++	default:
++		return -ERANGE;
++	}
++
++	switch (config.rx_filter) {
++	case HWTSTAMP_FILTER_NONE:
++		p->has_rx_tstamp = false;
++		rxx_frm_ctl.u64 = cvmx_read_csr(p->agl + AGL_GMX_RX_FRM_CTL);
++		rxx_frm_ctl.s.ptp_mode = 0;
++		cvmx_write_csr(p->agl + AGL_GMX_RX_FRM_CTL, rxx_frm_ctl.u64);
++		break;
++	case HWTSTAMP_FILTER_ALL:
++	case HWTSTAMP_FILTER_SOME:
++	case HWTSTAMP_FILTER_PTP_V1_L4_EVENT:
++	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
++	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
++	case HWTSTAMP_FILTER_PTP_V2_L4_EVENT:
++	case HWTSTAMP_FILTER_PTP_V2_L4_SYNC:
++	case HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ:
++	case HWTSTAMP_FILTER_PTP_V2_L2_EVENT:
++	case HWTSTAMP_FILTER_PTP_V2_L2_SYNC:
++	case HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ:
++	case HWTSTAMP_FILTER_PTP_V2_EVENT:
++	case HWTSTAMP_FILTER_PTP_V2_SYNC:
++	case HWTSTAMP_FILTER_PTP_V2_DELAY_REQ:
++		p->has_rx_tstamp = have_hw_timestamps;
++		config.rx_filter = HWTSTAMP_FILTER_ALL;
++		if (p->has_rx_tstamp) {
++			rxx_frm_ctl.u64 = cvmx_read_csr(p->agl + AGL_GMX_RX_FRM_CTL);
++			rxx_frm_ctl.s.ptp_mode = 1;
++			cvmx_write_csr(p->agl + AGL_GMX_RX_FRM_CTL, rxx_frm_ctl.u64);
++		}
++		break;
++	default:
++		return -ERANGE;
++	}
++
++	if (copy_to_user(rq->ifr_data, &config, sizeof(config)))
++		return -EFAULT;
++
++	return 0;
++}
++
++static int octeon_mgmt_ioctl(struct net_device *netdev,
++			     struct ifreq *rq, int cmd)
++{
++	struct octeon_mgmt *p = netdev_priv(netdev);
++
++	switch (cmd) {
++	case SIOCSHWTSTAMP:
++		return octeon_mgmt_ioctl_hwtstamp(netdev, rq, cmd);
++	default:
++		if (p->phydev)
++			return phy_mii_ioctl(p->phydev, rq, cmd);
++		return -EINVAL;
++	}
+ }
+ 
+ static void octeon_mgmt_disable_link(struct octeon_mgmt *p)
+@@ -1052,6 +1196,7 @@ static int octeon_mgmt_open(struct net_device *netdev)
+ 	/* Enable packet I/O. */
+ 
+ 	rxx_frm_ctl.u64 = 0;
++	rxx_frm_ctl.s.ptp_mode = p->has_rx_tstamp ? 1 : 0;
+ 	rxx_frm_ctl.s.pre_align = 1;
  	/*
- 	 * BIST should always be enabled when doing a soft reset. L2
- 	 * Cache locking for instance is not cleared unless BIST is
-@@ -611,7 +613,6 @@ void __init prom_init(void)
- 	mips_hpt_frequency = octeon_get_clock_rate();
+ 	 * When set, disables the length check for non-min sized pkts
+@@ -1155,6 +1300,7 @@ static int octeon_mgmt_xmit(struct sk_buff *skb, struct net_device *netdev)
+ 	int rv = NETDEV_TX_BUSY;
  
- 	octeon_init_cvmcount();
--	octeon_setup_delays();
+ 	re.d64 = 0;
++	re.s.tstamp = ((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) != 0);
+ 	re.s.len = skb->len;
+ 	re.s.addr = dma_map_single(p->dev, skb->data,
+ 				   skb->len,
+@@ -1293,6 +1439,7 @@ static int __devinit octeon_mgmt_probe(struct platform_device *pdev)
  
- 	_machine_restart = octeon_restart;
- 	_machine_halt = octeon_halt;
-diff --git a/arch/mips/include/asm/octeon/octeon.h b/arch/mips/include/asm/octeon/octeon.h
-index a31288e..96e58a5 100644
---- a/arch/mips/include/asm/octeon/octeon.h
-+++ b/arch/mips/include/asm/octeon/octeon.h
-@@ -52,6 +52,7 @@ extern asmlinkage void octeon_cop2_restore(struct octeon_cop2_state *task);
+ 	p->netdev = netdev;
+ 	p->dev = &pdev->dev;
++	p->has_rx_tstamp = false;
  
- extern void octeon_init_cvmcount(void);
- extern void octeon_setup_delays(void);
-+extern void octeon_io_clk_delay(unsigned long);
- 
- #define OCTEON_ARGV_MAX_ARGS	64
- #define OCTOEN_SERIAL_LEN	20
+ 	data = of_get_property(pdev->dev.of_node, "cell-index", &len);
+ 	if (data && len == sizeof(*data)) {
 -- 
 1.7.11.4
 
