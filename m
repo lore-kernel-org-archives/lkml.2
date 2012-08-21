@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab2HUCwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 22:52:08 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:47282 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab2HUCwF (ORCPT
+	id S1755346Ab2HUC5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 22:57:17 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49416 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754898Ab2HUC5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 22:52:05 -0400
+	Mon, 20 Aug 2012 22:57:11 -0400
+Message-ID: <5032F8FD.2020306@linux.vnet.ibm.com>
+Date: Tue, 21 Aug 2012 10:57:01 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120819164658.1737bb74@pyramind.ukuu.org.uk>
-References: <1345400832-23572-1-git-send-email-shijie8@gmail.com>
-	<20120819064429.GA3252@kroah.com>
-	<20120819164658.1737bb74@pyramind.ukuu.org.uk>
-Date: Tue, 21 Aug 2012 10:52:04 +0800
-Message-ID: <CAMiH66GaSg4RHNyLg_9X49c1FbjKr2_ag=oiCSfv2HRSTd4Qiw@mail.gmail.com>
-Subject: Re: [PATCH] serial: add a new helper function
-From: Huang Shijie <shijie8@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
-        jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, netdev@vger.kernel.org
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v6 00/12] KVM: introduce readonly memslot
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082102-5816-0000-0000-000004146435
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 19, 2012 at 11:46 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Sat, 18 Aug 2012 23:44:29 -0700
-> Greg KH <gregkh@linuxfoundation.org> wrote:
->
->> On Sun, Aug 19, 2012 at 02:27:12PM -0400, Huang Shijie wrote:
->> > --- a/include/linux/tty.h
->> > +++ b/include/linux/tty.h
->> > @@ -43,6 +43,7 @@
->> >  #include <linux/tty_driver.h>
->> >  #include <linux/tty_ldisc.h>
->> >  #include <linux/mutex.h>
->> > +#include <linux/serial.h>
->> >
->> >
->> >
->> > @@ -513,6 +514,12 @@ static inline struct tty_port *tty_port_get(struct tty_port *port)
->> >     return port;
->> >  }
->> >
->> > +/* If the cts flow control is enabled, return true. */
->> > +static inline bool tty_port_cts_enabled(struct tty_port *port)
->> > +{
->> > +   return port->flags & ASYNC_CTS_FLOW;
->> > +}
->> > +
->>
->> The fact that you have to add serial.h to this file kind of implies that
->> this function shouldn't be here, right?
->>
->> How about serial.h instead?  Not all tty drivers are serial drivers :)
->
-> tty_port is tty generic so possibly if there is a generic helper the
-> flags and helper should likewise be this way.
->
-> As it stands at the moment ASYNC_CTS_FLOW is a convention a few drivers
-> use. So calling it tty_port_xxx is going to misleading.
+Changelog:
+- fix endless retrying for unhandleable instruction which accesses on readonly
+  host memory
+- divide slot->flags by 16:16, the lower part is visible for userspace, the
+  reset is internally used in kvm, and document this in the code
+- check slot->flags for gfn_to_hva_memslot
 
-this patch makes the header files in a mess.
-Please just ignore this patch if it is not good enough.
+The test case can be found at:
+http://lkml.indiana.edu/hypermail/linux/kernel/1207.2/00819/migrate-perf.tar.bz2
 
-thanks
-Huang Shijie
+In current code, if we map a readonly memory space from host to guest
+and the page is not currently mapped in the host, we will get a fault-pfn
+and async is not allowed, then the vm will crash.
 
->
+As Avi's suggestion, We introduce readonly memory region to map ROM/ROMD
+to the guest, read access is happy for readonly memslot, write access on
+readonly memslot will cause KVM_EXIT_MMIO exit.
 
-
-
-> Alan
