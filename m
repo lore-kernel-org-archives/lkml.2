@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab2HUNAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:00:15 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9444 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756564Ab2HUNAM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:00:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 21 Aug 2012 05:59:51 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "minchan@kernel.org" <minchan@kernel.org>
-Date: Tue, 21 Aug 2012 14:59:45 +0200
-Subject: Re: [PATCHv6 2/2] ARM: dma-mapping: remove custom consistent dma
- region
-Thread-Topic: [PATCHv6 2/2] ARM: dma-mapping: remove custom consistent dma
- region
-Thread-Index: Ac1/nNbl9qDffmnVSIKMD6Aa0McjAg==
-Message-ID: <20120821.155945.1711711797763144039.hdoyu@nvidia.com>
-References: <1343636899-19508-3-git-send-email-m.szyprowski@samsung.com><20120821142235.97984abc9ad98d01015a3338@nvidia.com><20120821123451.GV18957@n2100.arm.linux.org.uk>
-In-Reply-To: <20120821123451.GV18957@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S932131Ab2HUNAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:00:23 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:36639 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932101Ab2HUNAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 09:00:18 -0400
+Message-ID: <5033864A.5040809@parallels.com>
+Date: Tue, 21 Aug 2012 16:59:54 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org> <50335261.5090504@parallels.com> <87wr0sle4v.fsf@skywalker.in.ibm.com> <503367CB.9080609@parallels.com> <20120821105424.GA7670@moon> <50336C51.60501@parallels.com> <20120821121155.GC9483@fieldses.org> <50337D87.90607@parallels.com> <20120821122908.GE9483@fieldses.org> <50338458.7090602@panasas.com>
+In-Reply-To: <50338458.7090602@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote @ Tue, 21 Aug 2012 14:34:51 +0200:
-
-> On Tue, Aug 21, 2012 at 02:22:35PM +0300, Hiroshi Doyu wrote:
-> > The following "__get_vm_area_node()" can take gfp_mask, it means that
-> > this function is expected to be called from atomic context, but why
-> > it's _NOT_ allowed _ONLY_ from interrupt context?
+On 08/21/2012 04:51 PM, Boaz Harrosh wrote:
+> On 08/21/2012 03:29 PM, J. Bruce Fields wrote:
+> <>
 > 
-> One reason is it takes read/write locks without using the IRQ safe
-> versions for starters (vmap_area_lock and vmlist_lock).  I don't see
-> any other reasons in that bit of code though.
+>> OK.  So if you don't mind the fact that there are filesystems with
+>> inotify support but not filehandle support, then I think generating a
+>> filehandle early as you describe would work.  I guess it's a little more
+>> memory per watched inode.
+>>
+> 
+> 
+> For the minority of FSs that do not have a filehandle support it should
+> be easy to generate a generic one, that should work 95% of the time.
 
-IIRC, if *_{irqsave,irqrestore} versions were introduced to protect
-from IRQ context, could we remove this BUG_ON(in_interrupt()) in
-__get_vm_area_node() at least? Or is it not encouraged from
-performance POV?
+Yup, this is how exportfd_encode_fh currently works.
 
-It seems that the solution to allow IOMMU'able device driver to
-allocate from ISR are:
-(1) To provide the pre-allocate area like arm_dma_alloc() does,
-or
-(2) __get_vm_area_node() can be called from ISR.
+> Are we guaranteed that after the checkpoint restore the version of
+> the Kernel is the same as the one that did the checkpoint? If yes
+> then I don't see any problem.
+
+Strictly speaking -- no we don't. Migration should to work across kernel
+versions (from older to newer). Why kernel version matters in this case?
+
+>> --b.
+> 
+> 
+> Cheers
+> Boaz
+> 
+
