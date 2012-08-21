@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab2HUO0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:26:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab2HUO0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:26:31 -0400
-Message-ID: <50339A85.3080206@redhat.com>
-Date: Tue, 21 Aug 2012 17:26:13 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        JBeulich@suse.com, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFC: Link Time Optimization support for the kernel
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <20120820074835.GA6710@gmail.com> <20120820101044.GE16230@one.firstfloor.org> <20120821074921.GA10809@gmail.com>
-In-Reply-To: <20120821074921.GA10809@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754373Ab2HUObY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:31:24 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60338 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753706Ab2HUObV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 10:31:21 -0400
+Date: Tue, 21 Aug 2012 16:31:15 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: a.p.zijlstra@chello.nl, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, avi@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
+Message-ID: <20120821143115.GJ16230@one.firstfloor.org>
+References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 10:49 AM, Ingo Molnar wrote:
+On Tue, Aug 21, 2012 at 05:08:37PM +0800, Yan, Zheng wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 > 
-> Can the current implementation of LTO optimize to the level of 
-> inlining? A lot of our include file hell situation results from 
-> the desire to declare structures publicly so that inlined 
-> functions can use them directly.
-> 
-> If data structures could be encapsulated/internalized to 
-> subsystems and only global functions are exposed to other 
-> subsystems [which are then LTO optimized] then our include
-> file dependencies could become a *lot* simpler.
+> Initializing uncore PMU on virtualized CPU may hang the kernel.
+> This is because kvm does not emulate the entire hardware. Thers
+> are lots of uncore related MSRs, making kvm enumerate them all
+> is a non-trival task. So just disable uncore on virtualized CPU.
 
-I think modules break this (if I understand what you mean correctly).
-If the main kernel exposes symbol x as a global function, then lto will
-not inline it into a module.
+I'm not sure cpu_has_hypervisor is reliable enough for this.
+Better find out why it hangs and fix that.
 
--- 
-error compiling committee.c: too many arguments to function
+Early rdmsrls should be rdmsrl_safe()
+Early writes in the driver should check if anything was written,
+and if not then disable itself.
+
+-Andi
