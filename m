@@ -1,136 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab2HUUGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:06:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab2HUUGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:06:20 -0400
-Message-ID: <1345579579.29292.67.camel@ul30vt.home>
-Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 Aug 2012 14:06:19 -0600
-In-Reply-To: <20120821195813.GD9027@redhat.com>
-References: <20120821190800.24958.74812.stgit@bling.home>
-	 <20120821192903.24958.90138.stgit@bling.home>
-	 <20120821195813.GD9027@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1753620Ab2HUUON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:14:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57799 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab2HUUOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 16:14:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 17/31] arm64: System calls handling
+Date: Tue, 21 Aug 2012 20:14:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151422.16335.arnd@arndb.de> <20120821175122.GI12708@arm.com>
+In-Reply-To: <20120821175122.GI12708@arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201208212014.01837.arnd@arndb.de>
+X-Provags-ID: V02:K0:rbRO7pcLsYNCZVZjsHdIPRuSekleqQK3wmA2M1aZ1bD
+ T8i+I1VZ2sDvVlZW8vlpOYjsVFkIY7NgZHf1lSsFpIfYAG9mzr
+ 7QlitrFvv15WzGdf1gdhwU6emtOzDsvpTkPemfTuOHz9M1aK3H
+ ga3CbLZRmY3jdZeJnxY6/gzzrvXV/uqG4moKGkpR3UD1faxyF6
+ DBK/RV1YmR+6jqFAe2RRDeR9niLP9n3JC9+w0qTmjUvylEaFzJ
+ RXlzF+8Q7NMj9/q/X+C8FI25n7IsjLy4zvJwRC4fMLvSoW6zdJ
+ Raw4SnVOmCTfbhSS+qtr2SKRt2YI0zBEg3oZSIEPmK28xsQhkC
+ SGwibACZtFwVsNXavQh8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-21 at 22:58 +0300, Michael S. Tsirkin wrote:
-> On Tue, Aug 21, 2012 at 01:29:06PM -0600, Alex Williamson wrote:
-> > KVM_IRQFD currently uses the reserved KVM_USERSPACE_IRQ_SOURCE_ID
-> > which is also shared with userspace injection methods like
-> > KVM_IRQ_LINE.  This can cause a conflict if an irqfd triggers on
-> > a GSI asserted through KVM_IRQ_LINE.
+On Tuesday 21 August 2012, Catalin Marinas wrote:
+> > > +asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
+> > > +                    unsigned long prot, unsigned long flags,
+> > > +                    unsigned long fd, off_t off)
+> > > +{
+> > > +   if (offset_in_page(off) != 0)
+> > > +           return -EINVAL;
+> > > +
+> > > +   return sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
+> > > +}
+> > 
+> > I think
+> > 
+> > #define sys_mmap sys_mmap_pgoff 
 > 
-> What kind of conflict do you envision?  Pls note level interrupts are
-> unsupported ATM.
-
-If KVM_IRQ_LINE asserts a level interrupt and KVM_IRQFD triggers on the
-same GSI then the pin is no longer asserted as userspace thinks it is.
-Do we just chalk this up to userspace error?
-
-> > Move irqfd to it's own reserved IRQ source ID.  Add a capability for
-> > userspace to test for this fix.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> >  arch/x86/kvm/x86.c       |    3 +++
-> >  include/linux/kvm.h      |    1 +
-> >  include/linux/kvm_host.h |    1 +
-> >  virt/kvm/eventfd.c       |    6 +++---
-> >  4 files changed, 8 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 42bce48..cd98673 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -2174,6 +2174,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> >  	case KVM_CAP_GET_TSC_KHZ:
-> >  	case KVM_CAP_PCI_2_3:
-> >  	case KVM_CAP_KVMCLOCK_CTRL:
-> > +	case KVM_CAP_IRQFD_IRQ_SOURCE_ID:
-> >  		r = 1;
-> >  		break;
-> >  	case KVM_CAP_COALESCED_MMIO:
-> > @@ -6258,6 +6259,8 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
-> >  
-> >  	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
-> >  	set_bit(KVM_USERSPACE_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
-> > +	/* Reserve bit 1 of irq_sources_bitmap for irqfd irq source */
-> > +	set_bit(KVM_IRQFD_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
-> >  
-> >  	raw_spin_lock_init(&kvm->arch.tsc_write_lock);
-> >  
-> > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> > index 2ce09aa..ae66b9c 100644
-> > --- a/include/linux/kvm.h
-> > +++ b/include/linux/kvm.h
-> > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
-> >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
-> >  #define KVM_CAP_S390_COW 79
-> >  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> > +#define KVM_CAP_IRQFD_IRQ_SOURCE_ID 81
-> >  
-> >  #ifdef KVM_CAP_IRQ_ROUTING
-> >  
-> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > index b70b48b..b763230 100644
-> > --- a/include/linux/kvm_host.h
-> > +++ b/include/linux/kvm_host.h
-> > @@ -71,6 +71,7 @@
-> >  #define KVM_REQ_PMI               17
-> >  
-> >  #define KVM_USERSPACE_IRQ_SOURCE_ID	0
-> > +#define KVM_IRQFD_IRQ_SOURCE_ID		1
-> >  
-> >  struct kvm;
-> >  struct kvm_vcpu;
+> There are slightly different semantics with the last argument of
+> sys_mmap() which takes a byte offset. The sys_mmap_pgoff() function
+> takes the offset shifted by PAGE_SHIFT (which is the same as sys_mmap2).
 > 
-> Above looks fine but I'm not sure why is the below needed.
-> This changes irqfd behaviour for edge GSIs slightly
-> in a userspace-visible way. Maybe make it a separate patch
-> so it can be considered on merits?
+> Looking at the other architectures, it makes sense to use a generic
+> sys_mmap() implementation similar to the one above (or the ia-64, seems
+> to be the most complete).
+> 
 
-Hmm, the above does nothing without the below.  I thought I was just
-implementing your idea that IRQFDs should all share a single IRQ source
-ID... why is that no longer a good idea?  Thanks,
+Why that? The generic sys_mmap_pgoff was specifically added so new architectures
+could just use that instead of having their own wrappers, see f8b72560.
 
-Alex
-
-> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > index 7d7e2aa..2245cfa 100644
-> > --- a/virt/kvm/eventfd.c
-> > +++ b/virt/kvm/eventfd.c
-> > @@ -67,8 +67,8 @@ irqfd_inject(struct work_struct *work)
-> >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> >  	struct kvm *kvm = irqfd->kvm;
-> >  
-> > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > +	kvm_set_irq(kvm, KVM_IRQFD_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > +	kvm_set_irq(kvm, KVM_IRQFD_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> >  }
-> >  
-> >  /*
-> > @@ -138,7 +138,7 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
-> >  		irq = rcu_dereference(irqfd->irq_entry);
-> >  		/* An event has been signaled, inject an interrupt */
-> >  		if (irq)
-> > -			kvm_set_msi(irq, kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
-> > +			kvm_set_msi(irq, kvm, KVM_IRQFD_IRQ_SOURCE_ID, 1);
-> >  		else
-> >  			schedule_work(&irqfd->inject);
-> >  		rcu_read_unlock();
-
-
-
+	Arnd
