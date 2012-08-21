@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab2HUUON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:14:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57799 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab2HUUOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:14:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 17/31] arm64: System calls handling
-Date: Tue, 21 Aug 2012 20:14:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151422.16335.arnd@arndb.de> <20120821175122.GI12708@arm.com>
-In-Reply-To: <20120821175122.GI12708@arm.com>
+	id S1754563Ab2HUUPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:15:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34830 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752911Ab2HUUOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 16:14:11 -0400
+Message-ID: <5033EBE6.5080608@zytor.com>
+Date: Tue, 21 Aug 2012 13:13:26 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: Borislav Petkov <bp@amd64.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH 04/11] x86/microcode_core_early.c: Define interfaces for
+ early load ucode
+References: <1345277729-8399-1-git-send-email-fenghua.yu@intel.com> <1345277729-8399-5-git-send-email-fenghua.yu@intel.com> <20120818224442.GB32120@khazad-dum.debian.net> <3E5A0FA7E9CA944F9D5414FEC6C71220077879BF@ORSMSX105.amr.corp.intel.com> <503078A2.9030204@zytor.com> <3E5A0FA7E9CA944F9D5414FEC6C7122007787B22@ORSMSX105.amr.corp.intel.com> <20120820140630.GD24149@aftab.osrc.amd.com> <50329951.9030805@zytor.com> <20120820201947.GC15006@aftab.osrc.amd.com> <3E5A0FA7E9CA944F9D5414FEC6C712200778846C@ORSMSX105.amr.corp.intel.com>
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712200778846C@ORSMSX105.amr.corp.intel.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208212014.01837.arnd@arndb.de>
-X-Provags-ID: V02:K0:rbRO7pcLsYNCZVZjsHdIPRuSekleqQK3wmA2M1aZ1bD
- T8i+I1VZ2sDvVlZW8vlpOYjsVFkIY7NgZHf1lSsFpIfYAG9mzr
- 7QlitrFvv15WzGdf1gdhwU6emtOzDsvpTkPemfTuOHz9M1aK3H
- ga3CbLZRmY3jdZeJnxY6/gzzrvXV/uqG4moKGkpR3UD1faxyF6
- DBK/RV1YmR+6jqFAe2RRDeR9niLP9n3JC9+w0qTmjUvylEaFzJ
- RXlzF+8Q7NMj9/q/X+C8FI25n7IsjLy4zvJwRC4fMLvSoW6zdJ
- Raw4SnVOmCTfbhSS+qtr2SKRt2YI0zBEg3oZSIEPmK28xsQhkC
- SGwibACZtFwVsNXavQh8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 August 2012, Catalin Marinas wrote:
-> > > +asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
-> > > +                    unsigned long prot, unsigned long flags,
-> > > +                    unsigned long fd, off_t off)
-> > > +{
-> > > +   if (offset_in_page(off) != 0)
-> > > +           return -EINVAL;
-> > > +
-> > > +   return sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
-> > > +}
-> > 
-> > I think
-> > 
-> > #define sys_mmap sys_mmap_pgoff 
+On 08/21/2012 01:05 PM, Yu, Fenghua wrote:
 > 
-> There are slightly different semantics with the last argument of
-> sys_mmap() which takes a byte offset. The sys_mmap_pgoff() function
-> takes the offset shifted by PAGE_SHIFT (which is the same as sys_mmap2).
+> We might name the cpio directory as:
 > 
-> Looking at the other architectures, it makes sense to use a generic
-> sys_mmap() implementation similar to the one above (or the ia-64, seems
-> to be the most complete).
+> kernel/x86/microcode/GenuineIntel.bin
+> kernel/x86/microcode/AuthenticAMD.bin
+> kernel/x86/acpi/...
+> etc.
+> 
+> This is expendable for the future usage.
+>  
+> Plus I will add a doc on the cpio directory, supported directory names and how to add new stuffs in the directory.
 > 
 
-Why that? The generic sys_mmap_pgoff was specifically added so new architectures
-could just use that instead of having their own wrappers, see f8b72560.
+I believe that was exactly my original proposal.  I think it makes
+sense... most things aren't going to be inherently CPU-specific in this way.
 
-	Arnd
+I don't know what Borislav was suggesting with "BIOS overrides", is that
+another CPU-specific thing?
+
+	-hpa
+
