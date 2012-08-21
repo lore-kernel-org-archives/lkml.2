@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab2HUIfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:35:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51181 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab2HUIfS (ORCPT
+	id S1754388Ab2HUIgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:36:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61758 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761Ab2HUIfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:35:18 -0400
-Date: Tue, 21 Aug 2012 10:29:06 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Daniel Kurtz <djkurtz@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-i801: Add device tree support
-Message-ID: <20120821082906.GC28886@pengutronix.de>
-References: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
+	Tue, 21 Aug 2012 04:35:07 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
+Date: Tue, 21 Aug 2012 08:34:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
+        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, "spear-devel" <spear-devel@list.st.com>
+References: <502BC31E.4070200@yahoo.es> <50333982.3020201@yahoo.es> <CAKohpomMPeewDBVxVR=g-op7E53rqt-AZgOdyoib6W+5QsLOOA@mail.gmail.com>
+In-Reply-To: <CAKohpomMPeewDBVxVR=g-op7E53rqt-AZgOdyoib6W+5QsLOOA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7gGkHNMELEOhSGF6"
-Content-Disposition: inline
-In-Reply-To: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208210834.53544.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:gXH2gj78AHZ/EPOo+JQsjgnNSlR13DRf/Sd/nzN6OgL
+ 45MOTqpLaJgPKLqMmYXNT3kMccJGT0q0PeTSCbGQDePWt4cN8Z
+ iQrtvYwdMnlorjew3B3A30jl6799jgzEusqwedooHI+e7L7nb1
+ +IN6JroX+GdpE27rv/MuptE2TGs/H7M1NTZxuV0pgNYHiqBjok
+ /9W+JmS55yG1OsH2Ej3DuqwGhTmh9VxgchRbaMQc2Nb3alMmLo
+ 6U/zwpzZuyJm4uezecpMe6qKA6nFESery9v57RrieviTmHglAN
+ zyfFTYBBeMBSTE4Z+TbzK4ID/NKLgkEdctQp8WGiXUL7hyGSar
+ jtrUBSR4Ov4KKGlK5mG7AV+ojP2pX+M9IKPSqcWIQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 21 August 2012, Viresh Kumar wrote:
+> On 21 August 2012 13:02, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
+> 
+> > On 8/21/2012 2:35 PM, Viresh Kumar wrote:
+> >
+> > It got swapped as 0xAABB.CCDD => 0xCCDD.AABB
+> >
+> 
+> @Arnd: How do we explain this? shouldn't it be DD CC BB AA??
 
---7gGkHNMELEOhSGF6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, this is very strange. Maybe the compiler already splits the
+access into two 16-byte loads and that confuses the device?
 
-On Wed, Aug 08, 2012 at 09:06:47AM +0200, Thierry Reding wrote:
-> This commit adds support for probing slave devices parsed from the
-> device tree.
->=20
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> > Memory barriers: within the AVR32 code, one often sees explicit ways to
+> > introduce memory barriers, e.g.:
+> >
+> >     hsmc_readl(hsmc, MODE0); /* I/O barrier */
+> >
+> 
+> For ARM it has become a bit complex about using barriers. That's why they
+> are added in readl/writel to remove any confusion.
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+To be more exact: the reason why readl/writel have the barriers is that
+device drivers written for x86 expect the barrier semantics to be implied.
+ARM also has readl_relaxed/writel_relaxed, which don't have a barrier
+against DMA but still enforce ordering between the readl calls (implied
+by the CPU architecture).
 
-Jean, this one is for you, I guess?
-
-> ---
->  drivers/i2c/busses/i2c-i801.c | 2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-> index 6f00785..b5311cf 100644
-> --- a/drivers/i2c/busses/i2c-i801.c
-> +++ b/drivers/i2c/busses/i2c-i801.c
-> @@ -80,6 +80,7 @@
->  #include <linux/slab.h>
->  #include <linux/wait.h>
->  #include <linux/err.h>
-> +#include <linux/of_i2c.h>
-> =20
->  #if defined CONFIG_I2C_MUX || defined CONFIG_I2C_MUX_MODULE
->  #include <linux/gpio.h>
-> @@ -1238,6 +1239,7 @@ static int __devinit i801_probe(struct pci_dev *dev,
->  		goto exit_free_irq;
->  	}
-> =20
-> +	of_i2c_register_devices(&priv->adapter);
->  	i801_probe_optional_slaves(priv);
->  	/* We ignore errors - multiplexing is optional */
->  	i801_add_mux(priv);
-> --=20
-> 1.7.11.4
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---7gGkHNMELEOhSGF6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlAzRtIACgkQD27XaX1/VRuMKgCgv7WNAHl90AUOSP3UPu2pVD1C
-SE4AoLDSi/Q0C2LFxHLTMvPIXD9B6hdJ
-=SE4V
------END PGP SIGNATURE-----
-
---7gGkHNMELEOhSGF6--
+	Arnd
