@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab2HUJDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:03:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42161 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab2HUJDa convert rfc822-to-8bit (ORCPT
+	id S1754786Ab2HUJDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:03:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39051 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753472Ab2HUJDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Aug 2012 05:03:30 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-CC: Richard Purdie <rpurdie@rpsys.net>,
+Date: Tue, 21 Aug 2012 09:58:19 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "mathias.nyman@nokia.com" <mathias.nyman@nokia.com>
-Subject: [PATCH 1/4] leds-lp5523: add channel name in the platform data
-Thread-Topic: [PATCH 1/4] leds-lp5523: add channel name in the platform data
-Thread-Index: Ac1/e8n5oMMAm/XERXqosJtmV9h97A==
-Date: Tue, 21 Aug 2012 09:03:12 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0AD5@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "ulrich.weigand@linaro.org" <ulrich.weigand@linaro.org>
+Subject: Re: [PATCH v2 23/31] arm64: Debugging support
+Message-ID: <20120821085819.GD28660@mudshark.cambridge.arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <20120820090754.GB25864@mudshark.cambridge.arm.com>
+ <20120820092744.GD25864@mudshark.cambridge.arm.com>
+ <201208202010.59985.arnd@arndb.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208202010.59985.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The name of each led channel is configurable.
-If the name is NULL, just use the channel id for making the channel name
+On Mon, Aug 20, 2012 at 09:10:59PM +0100, Arnd Bergmann wrote:
+> On Monday 20 August 2012, Will Deacon wrote:
+> > On Mon, Aug 20, 2012 at 10:07:54AM +0100, Will Deacon wrote:
+> > > On Fri, Aug 17, 2012 at 08:06:07AM +0100, Arnd Bergmann wrote:
+> > > > Sorry for the dumb question, but why do you even need PTRACE_GET_THREAD_AREA
+> > > > for 64 bit tasks? I thought the thread pointer is a GPR, or is this just
+> > > > for compat tasks?
+> > > 
+> > > The TLS is stored in a co-processor register which is read-only for
+> > > userspace.
+> > 
+> > I should elaborate: the register is RW for AArch64 tasks, RO for aarch32
+> > tasks (although that doesn't affect the need for the ptrace request).
+> 
+> So can't you just /add/ that register to the GPR regset?
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- Documentation/leds/leds-lp5523.txt |    7 +++++--
- drivers/leds/leds-lp5523.c         |   10 +++++++---
- include/linux/leds-lp5523.h        |    1 +
- 3 files changed, 13 insertions(+), 5 deletions(-)
+We *could*, but it doesn't feel right to me. The TLS register:
 
-diff --git a/Documentation/leds/leds-lp5523.txt b/Documentation/leds/leds-lp5523.txt
-index fad2feb..e958d9a 100644
---- a/Documentation/leds/leds-lp5523.txt
-+++ b/Documentation/leds/leds-lp5523.txt
-@@ -10,7 +10,9 @@ Contact: Samu Onkalo (samu.p.onkalo-at-nokia.com)
- Description
- -----------
- LP5523 can drive up to 9 channels. Leds can be controlled directly via
--the led class control interface. Channels have generic names:
-+the led class control interface.
-+The name of each channel is configurable in the platform data.
-+If the name is NULL, channels have generic names:
- lp5523:channelx where x is 0...8
- 
- The chip provides 3 engines. Each engine can control channels without
-@@ -46,12 +48,13 @@ Note - chan_nr can have values between 0 and 8.
- 
- static struct lp5523_led_config lp5523_led_config[] = {
-         {
-+		.name		= "red",
-                 .chan_nr        = 0,
-                 .led_current    = 50,
- 		.max_current    = 130,
-         },
- ...
--        }, {
-+        {
-                 .chan_nr        = 8,
-                 .led_current    = 50,
- 		.max_current    = 130,
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index fbc12ac..9fd9a92 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -846,10 +846,14 @@ static int __devinit lp5523_init_led(struct lp5523_led *led, struct device *dev,
- 			return -EINVAL;
- 		}
- 
--		snprintf(name, sizeof(name), "%s:channel%d",
--			pdata->label ?: "lp5523", chan);
-+		if (pdata->led_config[chan].name) {
-+			led->cdev.name = pdata->led_config[chan].name;
-+		} else {
-+			snprintf(name, sizeof(name), "%s:channel%d",
-+				pdata->label ?: "lp5523", chan);
-+			led->cdev.name = name;
-+		}
- 
--		led->cdev.name = name;
- 		led->cdev.brightness_set = lp5523_set_brightness;
- 		res = led_classdev_register(dev, &led->cdev);
- 		if (res < 0) {
-diff --git a/include/linux/leds-lp5523.h b/include/linux/leds-lp5523.h
-index 2694289..727877f 100644
---- a/include/linux/leds-lp5523.h
-+++ b/include/linux/leds-lp5523.h
-@@ -26,6 +26,7 @@
- /* See Documentation/leds/leds-lp5523.txt */
- 
- struct lp5523_led_config {
-+	const char	*name;
- 	u8		chan_nr;
- 	u8		led_current; /* mA x10, 0 if led is not connected */
- 	u8		max_current;
--- 
-1.7.2.5
+	- Can only be manipulated by msr/mrs instructions
+	- Is not part of the PCS
+	- Is not accessed explicitly by user applications
+	- Can not be written via ptrace
 
+so I think it sticks out like a sore thumb if we bundle it up with the GPRs.
 
-Best Regards,
-Milo
-
-
+Will
