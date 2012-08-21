@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab2HURSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 13:18:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45950 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758022Ab2HURSC convert rfc822-to-8bit (ORCPT
+	id S1758244Ab2HURhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 13:37:46 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38091 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758045Ab2HURhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 13:18:02 -0400
+	Tue, 21 Aug 2012 13:37:43 -0400
+Date: Tue, 21 Aug 2012 13:27:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>, JBeulich@suse.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Q:pt_base in COMPAT mode offset by two pages. Was:Re: [Xen-devel]
+ [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive areas.
+Message-ID: <20120821172732.GA23715@phenom.dumpdata.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+ <20120820141305.GA2713@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <5033B199.6080305@parallels.com>
-References: <20120809124436.5156.26944.stgit@localhost.localdomain>
-	<20120809.161639.1789560369123168415.davem@davemloft.net>
-	<5033B199.6080305@parallels.com>
-Date: Tue, 21 Aug 2012 13:18:01 -0400
-Message-ID: <CADVnQy=HGxFiczXGxb4iMumKUAXt77UzTWFqFwGzpLoQjvUR7Q@mail.gmail.com>
-Subject: Re: [PATCH] tun: don't zeroize sock->file on detach
-From: Neal Cardwell <ncardwell@google.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: David Miller <davem@davemloft.net>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "rick.jones2@hp.com" <rick.jones2@hp.com>,
-        "ycheng@google.com" <ycheng@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mikulas@artax.karlin.mff.cuni.cz
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120820141305.GA2713@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 12:04 PM, Stanislav Kinsbursky
-<skinsbursky@parallels.com> wrote:
-> 10.08.2012 03:16, David Miller пишет:
->
->> From: Stanislav Kinsbursky <skinsbursky@parallels.com>
->> Date: Thu, 09 Aug 2012 16:50:40 +0400
->>
->>> This is a fix for bug, introduced in 3.4 kernel by commit
->>> 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d, which, among other things,
->>> replaced
->>> simple sock_put() by sk_release_kernel(). Below is sequence, which leads
->>> to
->>> oops for non-persistent devices:
->>>
->>> tun_chr_close()
->>> tun_detach()                            <== tun->socket.file = NULL
->>> tun_free_netdev()
->>> sk_release_sock()
->>> sock_release(sock->file == NULL)
->>> iput(SOCK_INODE(sock))                  <== dereference on NULL pointer
->>>
->>> This patch just removes zeroing of socket's file from __tun_detach().
->>> sock_release() will do this.
->>>
->>> Cc: stable@vger.kernel.org
->>> Reported-by: Ruan Zhijie <ruanzhijie@hotmail.com>
->>> Tested-by: Ruan Zhijie <ruanzhijie@hotmail.com>
->>> Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
->>> Acked-by: Eric Dumazet <edumazet@google.com>
->>> Acked-by: Yuchung Cheng <ycheng@google.com>
->>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>
->>
->> Applied, thanks.
->>
->
-> Hi, David.
-> I found out, that this commit: b09e786bd1dd66418b69348cb110f3a64764626a
-> was previous attempt to fix the problem.
-> I believe this commit have to be dropped.
+On Mon, Aug 20, 2012 at 10:13:05AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Aug 17, 2012 at 06:35:12PM +0100, Stefano Stabellini wrote:
+> > On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> > > instead of a big memblock_reserve. This way we can be more
+> > > selective in freeing regions (and it also makes it easier
+> > > to understand where is what).
+> > > 
+> > > [v1: Move the auto_translate_physmap to proper line]
+> > > [v2: Per Stefano suggestion add more comments]
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > 
+> > much better now!
+> 
+> Thought interestingly enough it breaks 32-bit dom0s (and only dom0s).
+> Will have a revised patch posted shortly.
 
-Have you tried testing with that commit reverted? AFAICT from reading
-the code, if you revert b09e786bd1dd66418b69348cb110f3a64764626a then
-the sockets_in_use count becomes incorrect, because sock_release()
-will be calling this_cpu_sub() for each tun socket teardown when there
-was no corresponding this_cpu_add() for the tun socket (because the
-tun socket is not allocated with sock_alloc()).
+Jan, I thought something odd. Part of this code replaces this:
 
-Can you sketch in more detail why that commit should be dropped?
+	memblock_reserve(__pa(xen_start_info->mfn_list),
+		xen_start_info->pt_base - xen_start_info->mfn_list);
 
-neal
+with a more region-by-region area. What I found out that if I boot this
+as 32-bit guest with a 64-bit hypervisor the xen_start_info->pt_base is
+actually wrong.
+
+Specifically this is what bootup says:
+
+(good working case - 32bit hypervisor with 32-bit dom0):
+(XEN)  Loaded kernel: c1000000->c1a23000
+(XEN)  Init. ramdisk: c1a23000->cf730e00
+(XEN)  Phys-Mach map: cf731000->cf831000
+(XEN)  Start info:    cf831000->cf83147c
+(XEN)  Page tables:   cf832000->cf8b5000
+(XEN)  Boot stack:    cf8b5000->cf8b6000
+(XEN)  TOTAL:         c0000000->cfc00000
+
+[    0.000000] PT: cf832000 (f832000)
+[    0.000000] Reserving PT: f832000->f8b5000
+
+And with a 64-bit hypervisor:
+
+XEN) VIRTUAL MEMORY ARRANGEMENT:
+(XEN)  Loaded kernel: 00000000c1000000->00000000c1a23000
+(XEN)  Init. ramdisk: 00000000c1a23000->00000000cf730e00
+(XEN)  Phys-Mach map: 00000000cf731000->00000000cf831000
+(XEN)  Start info:    00000000cf831000->00000000cf8314b4
+(XEN)  Page tables:   00000000cf832000->00000000cf8b6000
+(XEN)  Boot stack:    00000000cf8b6000->00000000cf8b7000
+(XEN)  TOTAL:         00000000c0000000->00000000cfc00000
+(XEN)  ENTRY ADDRESS: 00000000c16bb22c
+
+[    0.000000] PT: cf834000 (f834000)
+[    0.000000] Reserving PT: f834000->f8b8000
+
+So the pt_base is offset by two pages. And looking at c/s 13257
+its not clear to me why this two page offset was added?
+
+The toolstack works fine - so launching 32-bit guests either
+under a 32-bit hypervisor or 64-bit works fine:
+] domainbuilder: detail: xc_dom_alloc_segment:   page tables  : 0xcf805000 -> 0xcf885000  (pfn 0xf805 + 0x80 pages)
+[    0.000000] PT: cf805000 (f805000)
+
