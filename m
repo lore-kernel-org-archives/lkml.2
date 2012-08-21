@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab2HUJQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:16:53 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:57265 "EHLO mail.x86-64.org"
+	id S1755167Ab2HUJSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:18:47 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16932 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752350Ab2HUJQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:16:50 -0400
-Date: Tue, 21 Aug 2012 11:16:39 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] x86, microcode, AMD: Per-family patches cache
-Message-ID: <20120821091639.GA20468@aftab.osrc.amd.com>
-References: <20120817143035.GA25700@aftab.osrc.amd.com>
- <5032C6DD.7060506@zytor.com>
+	id S1752200Ab2HUJSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 05:18:45 -0400
+Message-ID: <50335261.5090504@parallels.com>
+Date: Tue, 21 Aug 2012 13:18:25 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5032C6DD.7060506@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120815092116.700948346@openvz.org> <20120815092409.591460800@openvz.org> <87fw7habo4.fsf@skywalker.in.ibm.com> <20120820163338.GN23596@moon> <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org>
+In-Reply-To: <20120820193204.GD5779@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 04:23:09PM -0700, H. Peter Anvin wrote:
->> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode-updates-for-3.7
+On 08/20/2012 11:32 PM, J. Bruce Fields wrote:
+> On Mon, Aug 20, 2012 at 11:06:06PM +0400, Cyrill Gorcunov wrote:
+>> On Mon, Aug 20, 2012 at 02:32:25PM -0400, J. Bruce Fields wrote:
+>>> On Mon, Aug 20, 2012 at 08:33:38PM +0400, Cyrill Gorcunov wrote:
+>>>> On Mon, Aug 20, 2012 at 07:49:23PM +0530, Aneesh Kumar K.V wrote:
+>>>>> Cyrill Gorcunov <gorcunov@openvz.org> writes:
+>>>>>
+>>>>>> To provide fsnotify object inodes being watched without
+>>>>>> binding to alphabetical path we need to encode them with
+>>>>>> exportfs help. This patch adds a helper which operates
+>>>>>> with plain inodes directly.
+>>>>>
+>>>>> doesn't name_to_handle_at()  work for you ? It also allows to get a file
+>>>>> handle using file descriptor.
+>>>>
+>>>> Hi, sorry for dealy. Well, the last idea is to get rid of this helper,
+>>>> I've sent out an updated version where ino+dev is only printed.
+>>>
+>>> I don't understand how ino and dev are useful to you, though, if you're
+>>> still hoping to be able to look up inodes using this information later
+>>> on.
 >>
-> Hmmm... this isn't actually present on git.kernel.org, and 01/12
-> is missing from your "v0" patchset on LKML (nevermind that a "v0"
-> designator screams "don't apply"...)
+>> Hi Bruce, I believe having ino+dev is better than nothing. Otherwise we
+>> simply have no clue which targets are bound to inotify mark. Sometime
+>> (!) we can try to generate fhandle in userspace from this ino+dev bundle
+>> and then open the target file.
+> 
+> That's insufficient to generate a filehandle in general.
 
-Hmm, that's actually the tag and it is there:
+Yes, sure, but for live migration having inode and device is enough and that's why.
+We can use two ways of having a filesystem on the target machine in the same
+state (from paths points of view) as it was on destination one:
 
-http://git.kernel.org/?p=linux/kernel/git/bp/bp.git;a=tag;h=334a50f04aab22cb03c59e3ff333fe81a531a85c
+1. copy file tree in a rsync manner
+2. copy a virtual disk image file
 
-I tried this locally, here's what I did:
+In the 1st case we can map inode number to path easily, since we iterate over a filesystem
+anyway. I agree, that rsync is not perfect for migration but still.
 
-$ git remote add bp git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git
+In the 2nd case we can generate filehandle out of an inode number only since we _do_ know
+that inode will not get reused.
 
-$ git fetch bp
-remote: Counting objects: 3, done.
-remote: Compressing objects: 100% (3/3), done.
-remote: Total 3 (delta 0), reused 0 (delta 0)
-Unpacking objects: 100% (3/3), done.
->From git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp
- * [new branch]                for-next   -> bp/for-next
- * [new branch]                master     -> bp/master
- * [new tag]                   l3-fix-for-3.5 -> l3-fix-for-3.5
- * [new tag]                   mce-fix-for-3.4 -> mce-fix-for-3.4
- * [new tag]                   microcode-fix-for-3.4 -> microcode-fix-for-3.4
 
-$ git fetch --tags bp
-remote: Counting objects: 155, done.
-remote: Compressing objects: 100% (99/99), done.
-remote: Total 118 (delta 92), reused 17 (delta 15)
-Receiving objects: 100% (118/118), 22.42 KiB, done.
-Resolving deltas: 100% (92/92), completed with 20 local objects.
->From git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp
- * [new tag]                   amd-rdmsr-cleanups-for-3.6 -> amd-rdmsr-cleanups-for-3.6
- * [new tag]                   microcode-updates-for-3.7 -> microcode-updates-for-3.7
+However, if you have some better ideas on what information about inode should be exported
+to the userspace please share.
 
-$ git checkout -b test-merge tip/master
-Checking out files: 100% (108/108), done.
-Branch test-merge set up to track remote branch master from tip.
-Switched to a new branch 'test-merge'
+> (Also: there's the usual inode-number aliasing problem: the inode number
+> could get reused by another file.  Unless you know the file is being
+> held open the whole time.)
+> 
+> --b.
+> .
+> 
 
-$ git merge microcode-updates-for-3.7
-Auto-merging arch/x86/Kconfig
-Merge made by the 'recursive' strategy.
- arch/x86/Kconfig                  |  20 +++---
- arch/x86/include/asm/microcode.h  |  10 +--
- arch/x86/kernel/microcode_amd.c   | 356 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------------------
- arch/x86/kernel/microcode_core.c  |  67 ++++++++++----------
- arch/x86/kernel/microcode_intel.c |   3 +-
- 5 files changed, 273 insertions(+), 183 deletions(-)
-
-So I think you need to fetch the tags with "git fetch --tags" - this is
-why I had to fetch a second time above... I seem to remember this being
-the case in other pull requests, btw.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Pavel
