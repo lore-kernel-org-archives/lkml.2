@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab2HUCLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 22:11:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44744 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab2HUCLg (ORCPT
+	id S1755301Ab2HUCwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 22:52:08 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:47282 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab2HUCwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 22:11:36 -0400
-Date: Tue, 21 Aug 2012 12:11:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Michael Cree <mcree@orcon.net.nz>
-Subject: linux-next: manual merge of the rr tree with Linus' tree
-Message-Id: <20120821121126.f26a74eeeb19093b6d33d7ee@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__21_Aug_2012_12_11_26_+1000_zRev/kkQXRj=fQJt"
+	Mon, 20 Aug 2012 22:52:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120819164658.1737bb74@pyramind.ukuu.org.uk>
+References: <1345400832-23572-1-git-send-email-shijie8@gmail.com>
+	<20120819064429.GA3252@kroah.com>
+	<20120819164658.1737bb74@pyramind.ukuu.org.uk>
+Date: Tue, 21 Aug 2012 10:52:04 +0800
+Message-ID: <CAMiH66GaSg4RHNyLg_9X49c1FbjKr2_ag=oiCSfv2HRSTd4Qiw@mail.gmail.com>
+Subject: Re: [PATCH] serial: add a new helper function
+From: Huang Shijie <shijie8@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>, alan@linux.intel.com,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__21_Aug_2012_12_11_26_+1000_zRev/kkQXRj=fQJt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Aug 19, 2012 at 11:46 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Sat, 18 Aug 2012 23:44:29 -0700
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+>> On Sun, Aug 19, 2012 at 02:27:12PM -0400, Huang Shijie wrote:
+>> > --- a/include/linux/tty.h
+>> > +++ b/include/linux/tty.h
+>> > @@ -43,6 +43,7 @@
+>> >  #include <linux/tty_driver.h>
+>> >  #include <linux/tty_ldisc.h>
+>> >  #include <linux/mutex.h>
+>> > +#include <linux/serial.h>
+>> >
+>> >
+>> >
+>> > @@ -513,6 +514,12 @@ static inline struct tty_port *tty_port_get(struct tty_port *port)
+>> >     return port;
+>> >  }
+>> >
+>> > +/* If the cts flow control is enabled, return true. */
+>> > +static inline bool tty_port_cts_enabled(struct tty_port *port)
+>> > +{
+>> > +   return port->flags & ASYNC_CTS_FLOW;
+>> > +}
+>> > +
+>>
+>> The fact that you have to add serial.h to this file kind of implies that
+>> this function shouldn't be here, right?
+>>
+>> How about serial.h instead?  Not all tty drivers are serial drivers :)
+>
+> tty_port is tty generic so possibly if there is a generic helper the
+> flags and helper should likewise be this way.
+>
+> As it stands at the moment ASYNC_CTS_FLOW is a convention a few drivers
+> use. So calling it tty_port_xxx is going to misleading.
 
-Hi Rusty,
+this patch makes the header files in a mess.
+Please just ignore this patch if it is not good enough.
 
-Today's linux-next merge of the rr tree got a conflict in
-arch/alpha/Kconfig between commit f2db633d301b ("alpha: Use new generic
-strncpy_from_user() and strnlen_user()") from Linus' tree and commit
-d673c23ca730 ("Make most arch asm/module.h files use
-asm-generic/module.h") from the rr tree.
+thanks
+Huang Shijie
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>
 
-diff --cc arch/alpha/Kconfig
-index 9944ded,e73a1a7..0000000
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@@ -18,8 -18,8 +18,10 @@@ config ALPH
-  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-  	select GENERIC_SMP_IDLE_THREAD
-  	select GENERIC_CMOS_UPDATE
- +	select GENERIC_STRNCPY_FROM_USER
- +	select GENERIC_STRNLEN_USER
-+ 	select HAVE_MOD_ARCH_SPECIFIC
-+ 	select MODULES_USE_ELF_RELA
-  	help
-  	  The Alpha is a 64-bit general-purpose processor designed and
-  	  marketed by the Digital Equipment Corporation of blessed memory,
 
---Signature=_Tue__21_Aug_2012_12_11_26_+1000_zRev/kkQXRj=fQJt
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQMu5OAAoJEECxmPOUX5FEXIUP/Ry8Y43w74Ww89HcHAah6ar+
-5yQh60cC7xCb/H5gncHUYr+bYP/Mx5p92DHQF15KJtiZ4X/UKewm2a1iPJLbxvhP
-F3+ZyAIA9eCh98wDv2LM7iO0glftdOehslydRy/Bq4y6kPOnIEKUBm8JYHdTgwID
-7gMXkQCYbh8F0zlC5p5qYXFb+TFCghYr1F1mlF7qfTUb3GSVcS1u78YmuZUwlDzu
-ac5W5rPivzv8rXwez7i5/oGQ73oKTM71Jh7CzX9e/+CQLN3bD5eV8EUK2M8ddBVo
-tfRVwPm4YjhgOFDai7MHHTxBet07L+L15zodPv5v5ceFDEXAwjlmcfg8bmiyDWnk
-HguHO2kFx/7uYJy5lh9q3y6otDojZ6D5IxnurvtBsPcwBv8zKYWvGwQD/LFK8gm1
-W0bQE4lBNUH1zmSIgd7ONS/pTuBvKNKE7GJbVL35SMOL56skySg11glLxoudf3rP
-VIXFJpF17g6pXPYTsVW+pE9gRHyFBVAXXPxU2Js9nPsKM+mT+wr3nE5P9XQmItsG
-Ko6JokiGXlRYvjexKI4BkgxerTDnh7p0CGcUdShGo1aqCBLCuNfz3RIEi7IJebp8
-2wA4AzVkIOAcrpWCnJGTmPOMvthdbeIfYRWMF1dTvIv2ry59yc/zeoZmIsX1A+r7
-uVSknJVOl9ynH/RdG3LF
-=PfZi
------END PGP SIGNATURE-----
-
---Signature=_Tue__21_Aug_2012_12_11_26_+1000_zRev/kkQXRj=fQJt--
+> Alan
