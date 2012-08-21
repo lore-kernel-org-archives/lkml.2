@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab2HUT1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 15:27:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47554 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab2HUT04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:26:56 -0400
-Date: Tue, 21 Aug 2012 12:26:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de
-Subject: Re: [tip:timers/core] timer: Implement TIMER_IRQSAFE
-Message-ID: <20120821192651.GA7701@google.com>
-References: <1344449428-24962-5-git-send-email-tj@kernel.org>
- <tip-c5f66e99b7cb091e3d51ae8e8156892e8feb7fa3@git.kernel.org>
+	id S1754772Ab2HUT2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:28:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752456Ab2HUT2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 15:28:04 -0400
+Date: Tue, 21 Aug 2012 22:28:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120821192852.GB9027@redhat.com>
+References: <cover.1345519422.git.aquini@redhat.com>
+ <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
+ <20120821135223.GA7117@redhat.com>
+ <1345562166.23018.109.camel@twins>
+ <20120821154142.GA8268@redhat.com>
+ <20120821174251.GB12294@t510.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-c5f66e99b7cb091e3d51ae8e8156892e8feb7fa3@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120821174251.GB12294@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 09:43:07AM -0700, tip-bot for Tejun Heo wrote:
-> Commit-ID:  c5f66e99b7cb091e3d51ae8e8156892e8feb7fa3
-> Gitweb:     http://git.kernel.org/tip/c5f66e99b7cb091e3d51ae8e8156892e8feb7fa3
-> Author:     Tejun Heo <tj@kernel.org>
-> AuthorDate: Wed, 8 Aug 2012 11:10:28 -0700
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Tue, 21 Aug 2012 16:28:31 +0200
-> 
-> timer: Implement TIMER_IRQSAFE
-> 
-> Timer internals are protected with irq-safe locks but timer execution
-> isn't, so a timer being dequeued for execution and its execution
-> aren't atomic against IRQs.  This makes it impossible to wait for its
-> completion from IRQ handlers and difficult to shoot down a timer from
-> IRQ handlers.
-> 
-> This issue caused some issues for delayed_work interface.  Because
-> there's no way to reliably shoot down delayed_work->timer from IRQ
-> handlers, __cancel_delayed_work() can't share the logic to steal the
-> target delayed_work with cancel_delayed_work_sync(), and can only
-> steal delayed_works which are on queued on timer.  Similarly, the
-> pending mod_delayed_work() can't be used from IRQ handlers.
-> 
-> This patch adds a new timer flag TIMER_IRQSAFE, which makes the timer
-> to be executed without enabling IRQ after dequeueing such that its
-> dequeueing and execution are atomic against IRQ handlers.
-> 
-> This makes it safe to wait for the timer's completion from IRQ
-> handlers, for example, using del_timer_sync().  It can never be
-> executing on the local CPU and if executing on other CPUs it won't be
-> interrupted until done.
-> 
-> This will enable simplifying delayed_work cancel/mod interface.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: torvalds@linux-foundation.org
-> Cc: peterz@infradead.org
-> Link: http://lkml.kernel.org/r/1344449428-24962-5-git-send-email-tj@kernel.org
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+On Tue, Aug 21, 2012 at 02:42:52PM -0300, Rafael Aquini wrote:
+> On Tue, Aug 21, 2012 at 06:41:42PM +0300, Michael S. Tsirkin wrote:
+> > On Tue, Aug 21, 2012 at 05:16:06PM +0200, Peter Zijlstra wrote:
+> > > On Tue, 2012-08-21 at 16:52 +0300, Michael S. Tsirkin wrote:
+> > > > > +             rcu_read_lock();
+> > > > > +             mapping = rcu_dereference(page->mapping);
+> > > > > +             if (mapping_balloon(mapping))
+> > > > > +                     ret = true;
+> > > > > +             rcu_read_unlock();
+> > > > 
+> > > > This looks suspicious: you drop rcu_read_unlock
+> > > > so can't page switch from balloon to non balloon? 
+> > > 
+> > > RCU read lock is a non-exclusive lock, it cannot avoid anything like
+> > > that.
+> > 
+> > You are right, of course. So even keeping rcu_read_lock across both test
+> > and operation won't be enough - you need to make this function return
+> > the mapping and pass it to isolate_page/putback_page so that it is only
+> > dereferenced once.
+> >
+> No, I need to dereference page->mapping to check ->mapping flags here, before
+> returning. Remember this function is used at MM's compaction/migration inner
+> circles to identify ballooned pages and decide what's the next step. This
+> function is doing the right thing, IMHO.
 
-Will pull into wq/for-3.7 and put delay_work changes on top.  If
-there's any objection, please scream.
+Yes but the calling code is not doing the right thing.
 
-Thanks a lot.
+What Peter pointed out here is that two calls to rcu dereference pointer
+can return different values: rcu critical section is not a lock.
+So the test for balloon page is not effective: it can change
+after the fact.
+
+To fix, get the pointer once and then pass the mapping
+around.
+
+
+> Also, looking at how compaction/migration work, we verify the only critical path
+> for this function is the page isolation step. The other steps (migration and
+> putback) perform their work on private lists previouly isolated from a given
+> source.
+
+I vaguely understand but it would be nice to document this properly.
+The interaction between page->lru handling in balloon and in mm
+is especially confusing.
+
+> So, we just need to make sure that the isolation part does not screw things up
+> by isolating pages that balloon driver is about to release. That's why there are
+> so many checkpoints down the page isolation path assuring we really are
+> isolating a balloon page. 
+
+Well, testing same thing multiple times is just confusing.  It is very
+hard to make sure there are no races with so much complexity,
+and the requirements from the balloon driver are unclear to me -
+it very much looks like it is poking in mm internals.
 
 -- 
-tejun
+MST
