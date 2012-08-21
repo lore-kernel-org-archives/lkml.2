@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab2HUSaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:30:39 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35147 "EHLO e9.ny.us.ibm.com"
+	id S932314Ab2HUSbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:31:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33042 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932274Ab2HUSae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:30:34 -0400
-Date: Tue, 21 Aug 2012 09:24:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S932274Ab2HUSbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 14:31:32 -0400
+Date: Tue, 21 Aug 2012 20:27:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120821162432.GG2456@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <1345562411.23018.111.camel@twins>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
+        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: lockdep trace from posix timers
+Message-ID: <20120821182751.GA11243@redhat.com>
+References: <20120817151447.GA7918@redhat.com> <1345446957.23018.14.camel@twins> <1345463081.23018.34.camel@twins> <20120820150507.GC18499@redhat.com> <1345475530.23018.50.camel@twins> <20120820154154.GB20258@redhat.com> <1345478211.23018.69.camel@twins> <20120820161012.GC21400@redhat.com> <1345479590.23018.75.camel@twins> <20120820162302.GA22354@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345562411.23018.111.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082118-7182-0000-0000-000002581D65
+In-Reply-To: <20120820162302.GA22354@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 05:20:11PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-08-21 at 09:47 -0300, Rafael Aquini wrote:
-> > +       mapping = rcu_access_pointer(page->mapping);
-> > +       if (mapping)
-> > +               mapping = mapping->assoc_mapping; 
-> 
-> The comment near rcu_access_pointer() explicitly says:
-> 
->  * Return the value of the specified RCU-protected pointer, but omit the
->  * smp_read_barrier_depends() and keep the ACCESS_ONCE().  This is useful
->  * when the value of this pointer is accessed, but the pointer is not
->  * dereferenced,
-> 
-> Yet you dereference the pointer... smells like fail to me.
+On 08/20, Oleg Nesterov wrote:
+>
+> On 08/20, Peter Zijlstra wrote:
+> >
+> > Anyway, would taking ->pi_lock over _cancel and _run suffice?
+>
+> I thinks yes... But I can't think properly today.
 
-Indeed!
+OK, how about the code below?
 
-This will break DEC Alpha.  In addition, if ->mapping can transition
-from non-NULL to NULL, and if you used rcu_access_pointer() rather
-than rcu_dereference() to avoid lockdep-RCU from yelling at you about
-not either being in an RCU read-side critical section or holding an
-update-side lock, you can see failures as follows:
+Oleg.
 
-1.	CPU 0 runs the above code, picks up mapping, and finds it non-NULL.
 
-2.	CPU 0 is preempted or otherwise delayed.  (Keep in mind that
-	even disabling interrupts in a guest OS does not prevent the
-	host hypervisor from preempting!)
+#define TWORK_EXITED	((struct callback_head*)1)
 
-3.	Some other CPU NULLs page->mapping.  Because CPU 0 isn't doing
-	anything to prevent it, this other CPU frees the memory.
+static inline bool cmp_xchg(struct callback_head **ptr, void *old, void *new)
+{
+	return cmpxchg(ptr, old, new) == old;
+}
 
-4.	CPU 0 resumes, and then accesses what is now the freelist.
-	Arbitrarily bad things start happening.
+int
+task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
+{
+	do {
+		twork->next = ACCESS_ONCE(task->task_works);
+		if (unlikely(twork->next == TWORK_EXITED))
+			return -ESRCH;
+	} while (cmp_xchg(&task->task_works, twork->next, twork));
 
-If you are in a read-side critical section, use rcu_dereference() instead
-of rcu_access_pointer().  If you are holding an update-side lock, use
-rcu_dereference_protected() and say what lock you are holding.  If you
-are doing something else, please say what it is.
+	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
+	if (notify)
+		set_notify_resume(task);
+	return 0;
+}
 
-							Thanx, Paul
+struct callback_head *
+task_work_cancel(struct task_struct *task, task_work_func_t func)
+{
+	struct callback_head *twork = NULL, **pprev = &task->task_works;
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&task->pi_lock, flags);
+	if (likely(*pprev != TWORK_EXITED)) {
+		for (; (twork = *pprev); pprev = &twork) {
+			read_barrier_depends();
+			if (twork->func != func)
+				continue;
+
+			while (!cmp_xchg(pprev, twork, twork->next))
+				// COMMENT ABOUT THE RACE WITH _add()
+				pprev = &(*pprev)->next;
+			break;
+		}
+	}
+	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+
+	return twork;
+}
+
+void task_work_run(void)
+{
+	struct task_struct *task = current;
+	struct callback_head *twork, *marker;
+
+	for (;;) {
+		raw_spin_lock_irq(&task->pi_lock);
+		do {
+			twork = ACCESS_ONCE(task->task_works);
+			marker = (!twork && (task->flags & PF_EXITING)) ?
+				TWORK_EXITED : NULL;
+		} while (cmp_xchg(&task->task_works, twork, marker));
+		raw_spin_unlock_irq(&task->pi_lock);
+
+		if (!twork)
+			break;
+
+		...run works...
+	}
+}
 
