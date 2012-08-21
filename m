@@ -1,139 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab2HUUiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:38:46 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:48117 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756188Ab2HUUgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:36:15 -0400
-X-IronPort-AV: E=Sophos;i="4.77,804,1336348800"; 
-   d="scan'208";a="14113784"
-From: Attilio Rao <attilio.rao@citrix.com>
-To: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <Stefano.Stabellini@eu.citrix.com>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, <xen-devel@lists.xensource.com>
-CC: Attilio Rao <attilio.rao@citrix.com>
-Subject: [PATCH v2 1/5] X86/XEN: Remove the base argument from x86_init.paging.pagetable_setup_start
-Date: Tue, 21 Aug 2012 21:22:37 +0100
-Message-ID: <1345580561-8506-2-git-send-email-attilio.rao@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
-References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756805Ab2HUUja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:39:30 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:60194 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851Ab2HUUj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 16:39:28 -0400
+Message-ID: <1345581470.2815.14.camel@falcor.watson.ibm.com>
+Subject: Re: [PATCH] task_work: add a scheduling point in task_work_run()
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Date: Tue, 21 Aug 2012 16:37:50 -0400
+In-Reply-To: <1345554314.5158.490.camel@edumazet-glaptop>
+References: <1341014197.2342.7.camel@falcor.watson.ibm.com>
+	 <20120630050238.GZ14083@ZenIV.linux.org.uk>
+	 <1341172202.2556.13.camel@falcor>
+	 <20120701205722.GD22927@ZenIV.linux.org.uk>
+		 <1341193591.2249.3.camel@falcor>
+	 <20120702034310.GE22927@ZenIV.linux.org.uk>
+	 <20120702051155.GF22927@ZenIV.linux.org.uk>
+		 <1341229790.2350.1.camel@falcor>
+	 <20120702120259.GG22927@ZenIV.linux.org.uk>
+		 <1341234091.2166.5.camel@falcor>
+	 <20120702133329.GH22927@ZenIV.linux.org.uk>
+		 <1341240603.2086.1.camel@falcor>
+	 <1345554314.5158.490.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082120-1976-0000-0000-0000106DF32B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_init.paging.pagetable_setup_start for native will however use
-swapper_pg_dir in the single place where it is used and for native the
-argument is simply unused. Aditionally, the comments already point to
-swapper_pg_dir as the sole base touched.
-Finally, this will help with further merging of
-x86_init.paging.pagetable_setup_start with
-x86_init.paging.pagetable_setup_done.
+On Tue, 2012-08-21 at 15:05 +0200, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> It seems commit 4a9d4b02 (switch fput to task_work_add) reintroduced
+> the problem addressed in commit 944be0b2 (close_files(): add scheduling
+> point)
+> 
+> If a server process with a lot of files (say 2 million tcp sockets)
+> is killed, we can spend a lot of time in task_work_run() and trigger
+> a soft lockup.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> ---
+>  kernel/task_work.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/kernel/task_work.c b/kernel/task_work.c
+> index 91d4e17..d320d44 100644
+> --- a/kernel/task_work.c
+> +++ b/kernel/task_work.c
+> @@ -75,6 +75,7 @@ void task_work_run(void)
+>  			p = q->next;
+>  			q->func(q);
+>  			q = p;
+> +			cond_resched();
+>  		}
+>  	}
+>  }
 
-Signed-off-by: Attilio Rao <attilio.rao@citrix.com>
----
- arch/x86/include/asm/pgtable_types.h |    6 +++---
- arch/x86/include/asm/x86_init.h      |    2 +-
- arch/x86/kernel/setup.c              |    2 +-
- arch/x86/kernel/x86_init.c           |    3 ++-
- arch/x86/mm/init_32.c                |    4 ++--
- arch/x86/xen/mmu.c                   |    2 +-
- 6 files changed, 10 insertions(+), 9 deletions(-)
+We're here, because fput() called schedule_work() to delay the last
+fput().  The execution needs to take place before the syscall returns to
+userspace.  Need to read __schedule()...  Do you know if cond_resched()
+can guarantee that it will be executed before the return to userspace? 
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 013286a..e02b875 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -303,11 +303,11 @@ void set_pte_vaddr(unsigned long vaddr, pte_t pte);
- 
- extern void native_pagetable_reserve(u64 start, u64 end);
- #ifdef CONFIG_X86_32
--extern void native_pagetable_setup_start(pgd_t *base);
-+extern void native_pagetable_setup_start(void);
- extern void native_pagetable_setup_done(pgd_t *base);
- #else
--#define native_pagetable_setup_start x86_init_pgd_noop
--#define native_pagetable_setup_done  x86_init_pgd_noop
-+#define native_pagetable_setup_start x86_init_pgd_start_noop
-+#define native_pagetable_setup_done  x86_init_pgd_done_noop
- #endif
- 
- struct seq_file;
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 38155f6..782ba0c 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -85,7 +85,7 @@ struct x86_init_mapping {
-  * @pagetable_setup_done:	platform specific post paging_init() call
-  */
- struct x86_init_paging {
--	void (*pagetable_setup_start)(pgd_t *base);
-+	void (*pagetable_setup_start)(void);
- 	void (*pagetable_setup_done)(pgd_t *base);
- };
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f4b9b80..90cbbe0 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -961,7 +961,7 @@ void __init setup_arch(char **cmdline_p)
- 	kvmclock_init();
- #endif
- 
--	x86_init.paging.pagetable_setup_start(swapper_pg_dir);
-+	x86_init.paging.pagetable_setup_start();
- 	paging_init();
- 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 9f3167e..3b88493 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -26,7 +26,8 @@
- 
- void __cpuinit x86_init_noop(void) { }
- void __init x86_init_uint_noop(unsigned int unused) { }
--void __init x86_init_pgd_noop(pgd_t *unused) { }
-+void __init x86_init_pgd_start_noop(void) { }
-+void __init x86_init_pgd_done_noop(pgd_t *unused) { }
- int __init iommu_init_noop(void) { return 0; }
- void iommu_shutdown_noop(void) { }
- 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 575d86f..c4aa1b2 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -445,10 +445,10 @@ static inline void permanent_kmaps_init(pgd_t *pgd_base)
- }
- #endif /* CONFIG_HIGHMEM */
- 
--void __init native_pagetable_setup_start(pgd_t *base)
-+void __init native_pagetable_setup_start(void)
- {
- 	unsigned long pfn, va;
--	pgd_t *pgd;
-+	pgd_t *pgd, *base = swapper_pg_dir;
- 	pud_t *pud;
- 	pmd_t *pmd;
- 	pte_t *pte;
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index b65a761..d89ea5c 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1174,7 +1174,7 @@ static void xen_exit_mmap(struct mm_struct *mm)
- 	spin_unlock(&mm->page_table_lock);
- }
- 
--static void __init xen_pagetable_setup_start(pgd_t *base)
-+static void __init xen_pagetable_setup_start(void)
- {
- }
- 
--- 
-1.7.2.5
+thanks,
+
+Mimi
 
