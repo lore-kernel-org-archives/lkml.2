@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab2HUPNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:13:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59453 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227Ab2HUPMw (ORCPT
+	id S1756227Ab2HUPNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:13:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32458 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755878Ab2HUPNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:12:52 -0400
-Date: Tue, 21 Aug 2012 08:12:38 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-4dc936769e8a6382a4cc12375e8a4daa2b829fda@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120612225426.961092717@goodmis.org>
-References: <20120612225426.961092717@goodmis.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace: Make ftrace_location()
-  a nop on !DYNAMIC_FTRACE
-Git-Commit-ID: 4dc936769e8a6382a4cc12375e8a4daa2b829fda
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:12:43 -0700 (PDT)
+	Tue, 21 Aug 2012 11:13:24 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DUTXwliuHKEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pgRtvyofEwQA:10 a=meVymXHHAAAA:8 a=QyXUC8HyAAAA:8 a=zEOwz6LGedLIKXxCoz0A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1345562001.5069.5.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2] perf: Enable function tracing for perf core
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Date: Tue, 21 Aug 2012 11:13:21 -0400
+In-Reply-To: <1345306530-25665-2-git-send-email-andi@firstfloor.org>
+References: <1345306530-25665-1-git-send-email-andi@firstfloor.org>
+	 <1345306530-25665-2-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4dc936769e8a6382a4cc12375e8a4daa2b829fda
-Gitweb:     http://git.kernel.org/tip/4dc936769e8a6382a4cc12375e8a4daa2b829fda
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 6 Jun 2012 13:45:31 -0400
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 31 Jul 2012 10:29:57 -0400
+On Sat, 2012-08-18 at 09:15 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> According to Steven R. there is no reason left to not support
+> function tracing for the perf core. This makes it easier to debug
+> perf.
+> 
+> Don't remove -pg for the x86 and generic perf core.
 
-ftrace: Make ftrace_location() a nop on !DYNAMIC_FTRACE
+There's some new patches queued for 3.7 that has better function tracing
+recursion protection. This should go after those.
 
-When CONFIG_DYNAMIC_FTRACE is not set, ftrace_location() is not defined.
-If a user (like kprobes) references this function, it will break
-the compile when CONFIG_DYNAMIC_FTRACE is not set.
+Thanks,
 
-Add ftrace_location() as a nop (return 0) when DYNAMIC_FTRACE
-is not defined.
+-- Steve
 
-Link: http://lkml.kernel.org/r/20120612225426.961092717@goodmis.org
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace.h |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 3e71112..a52f2f4 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -520,7 +520,7 @@ extern int skip_trace(unsigned long ip);
- 
- extern void ftrace_disable_daemon(void);
- extern void ftrace_enable_daemon(void);
--#else
-+#else /* CONFIG_DYNAMIC_FTRACE */
- static inline int skip_trace(unsigned long ip) { return 0; }
- static inline int ftrace_force_update(void) { return 0; }
- static inline void ftrace_disable_daemon(void) { }
-@@ -538,6 +538,10 @@ static inline int ftrace_text_reserved(void *start, void *end)
- {
- 	return 0;
- }
-+static inline unsigned long ftrace_location(unsigned long ip)
-+{
-+	return 0;
-+}
- 
- /*
-  * Again users of functions that have ftrace_ops may not
