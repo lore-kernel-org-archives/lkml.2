@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab2HUIuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:50:20 -0400
-Received: from smtp-out-188.synserver.de ([212.40.185.188]:1086 "EHLO
-	smtp-out-188.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab2HUIuO (ORCPT
+	id S1754644Ab2HUIvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:51:39 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11373 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab2HUIve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:50:14 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 6848
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Julia Lawall <julia@diku.dk>
-Cc: cocci@diku.dk, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] scripts/coccinelle: ptr_ret: Add ternary operator version
-Date: Tue, 21 Aug 2012 10:49:58 +0200
-Message-Id: <1345538998-24600-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 21 Aug 2012 04:51:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 21 Aug 2012 01:51:32 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <leelakrishna.a@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
+Date: Tue, 21 Aug 2012 17:53:27 +0900
+Message-ID: <1860040.h1S5hbLDAH@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9 (Linux/3.4.9-1-ARCH; KDE/4.9.0; x86_64; ; )
+In-Reply-To: <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
+References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com> <1562509.b0FYTUZ1D8@percival> <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a ternary operator version of the open-coded PTR_RET().
+On Tuesday 21 August 2012 16:33:30 Thierry Reding wrote:
+> I suppose power sequences aren't needed if you have a specific driver
+> for every panel out there. However that also means that you'd have to
+> write drivers for literally every panel that requires support. In the
+> end this will just result in discussion down the road how the common
+> functionality can be refactored and we may end up with power sequences
+> again.
+> 
+> Also as you mentioned, power sequences are useful for a number of other
+> use-cases. Without power sequences you'll have to potentially create
+> extra frameworks tha reimplement parts of the power sequence code for
+> their specific hardware needs.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- scripts/coccinelle/api/ptr_ret.cocci |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+Yes, I can imagine what a mess it would become it we had one driver for every 
+panel out there which sole purpose would be to define power sequences over more 
+generic drivers. That reassures me about the usefulness of this work.
 
-diff --git a/scripts/coccinelle/api/ptr_ret.cocci b/scripts/coccinelle/api/ptr_ret.cocci
-index cbfd08c..15f076f 100644
---- a/scripts/coccinelle/api/ptr_ret.cocci
-+++ b/scripts/coccinelle/api/ptr_ret.cocci
-@@ -30,6 +30,13 @@ expression ptr;
- - if (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
- + return PTR_RET(ptr);
- 
-+@depends on patch@
-+expression ptr;
-+@@
-+
-+- (IS_ERR(ptr) ? PTR_ERR(ptr) : 0)
-++ PTR_RET(ptr)
-+
- @r1 depends on !patch@
- expression ptr;
- position p1;
-@@ -44,6 +51,13 @@ position p2;
- 
- * if@p2 (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
- 
-+@r3 depends on !patch@
-+expression ptr;
-+position p3;
-+@@
-+
-+* IS_ERR@p3(ptr) ? PTR_ERR(ptr) : 0
-+
- @script:python depends on org@
- p << r1.p1;
- @@
-@@ -57,6 +71,12 @@ p << r2.p2;
- 
- coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
- 
-+@script:python depends on org@
-+p << r3.p3;
-+@@
-+
-+coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
-+
- @script:python depends on report@
- p << r1.p1;
- @@
-@@ -68,3 +88,9 @@ p << r2.p2;
- @@
- 
- coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
-+
-+@script:python depends on report@
-+p << r3.p3;
-+@@
-+
-+coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
--- 
-1.7.2.5
+Another (small) benefit of power sequences over specific drivers is that being 
+defined in the DT, they would allow an old kernel to operate a newer device if 
+the base driver is the same.
+
+Alex.
 
