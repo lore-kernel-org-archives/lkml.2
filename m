@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab2HUOFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:05:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48914 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752011Ab2HUOFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:05:38 -0400
-Date: Tue, 21 Aug 2012 10:05:00 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        JBeulich@suse.com, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        jmario@redhat.com
-Subject: Re: RFC: Link Time Optimization support for the kernel
-Message-ID: <20120821140500.GB705@redhat.com>
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
- <20120820074835.GA6710@gmail.com>
- <20120820101044.GE16230@one.firstfloor.org>
- <20120821074921.GA10809@gmail.com>
+	id S1755312Ab2HUOIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:08:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59986 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753858Ab2HUOIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 10:08:15 -0400
+Date: Tue, 21 Aug 2012 15:08:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
+Message-ID: <20120821140803.GK7995@opensource.wolfsonmicro.com>
+References: <1345545940-2232-1-git-send-email-sourav.poddar@ti.com>
+ <1345545940-2232-2-git-send-email-sourav.poddar@ti.com>
+ <20120821124146.GA21557@sirena.org.uk>
+ <20120821124243.GG10347@arwen.pp.htv.fi>
+ <20120821132222.GF7995@opensource.wolfsonmicro.com>
+ <20120821132741.GI10347@arwen.pp.htv.fi>
+ <20120821134936.GH7995@opensource.wolfsonmicro.com>
+ <20120821135240.GJ10347@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NhBACjNc9vV+/oop"
 Content-Disposition: inline
-In-Reply-To: <20120821074921.GA10809@gmail.com>
+In-Reply-To: <20120821135240.GJ10347@arwen.pp.htv.fi>
+X-Cookie: If you can read this, you're too close.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 09:49:21AM +0200, Ingo Molnar wrote:
-> > A lot of the overhead on the larger builds is also some 
-> > specific gcc code that I'm working with the gcc developers on 
-> > to improve. So the 4x extreme case will hopefully go down.
-> > 
-> > The large builds also currently suffer from too much memory 
-> > consumption. That will hopefully improve too, as gcc improves.
-> 
-> Are there any LTO build files left around, blowing up the size 
-> of the build tree?
 
-Hi Ingo,
+--NhBACjNc9vV+/oop
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Joe Mario from Red Hat has been assisting Andi with his LTO work.  One of
-the ideas he had which may help here is to push the LTO granularity down
-to the directory level.  This would allow subsystem maintainers to opt-in
-and keep the compile overhead consistent across randconfigs as the linker
-would have a smaller pool of files to deal with.
+On Tue, Aug 21, 2012 at 04:52:41PM +0300, Felipe Balbi wrote:
 
-Joe was wondering if he hacked something up for the scheduler directory
-only, if there was some preferred benchmark tools he could run to verify a
-performance increase or not?
+> Fair enough, we have "quiet", but I'm not sure that's enough argument to
+> allow any simple driver to start poluting dmesg with whatever random
+> messages.
 
-Cheers,
-Don
+I think if the driver is just logging to say "I'm running" that's noise
+and I do push back on that routinely myself; if the driver is providing
+information it's discovered from the running system then that seems much
+more useful and we should have a sensible way of getting that out in a
+place where users are likely to find.
+
+--NhBACjNc9vV+/oop
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQM5YUAAoJEFJkBDiqVpZ4SrUP/j8p46LYoFa/yNQip8AKzcGk
+e+Z111D79xMraAgsrFbNuHd+GOyr8y5n2L4e1RVwepJVWxTA1VOBCfKdHZdBWx4A
+Y7iaBRVqCBdeEFiSAaYB6kTpt2tiInMi8EEXppRAnwwRYkYuJGUxg/y8iT8yFuma
+dTcqmn2Bp4DFl/FttS6juzGPzdJj2PqJ1mo8ZTzsQ642nsuuL+74V65+V3qP8s8B
++cxDH4JxfJhTcKaZ8cyUBFhQrHxjcJzjr2ncpRcQLo5ehwX0dCL20SdTnq9/WJGl
+xrXsR6SLFJ5sG19BW+0rXEB288CtodKJFu1iNm+D+D57xjFM3WrvSA9LE1LNeRvD
+kUfYEOHmS43Fcou5X5KUAzu8gBWkMczoaLLIkbuPmeNm1WZKd8AYKRSoY6cUgCnq
+5s6fpK0BKpwe5MZqqdPYSRp9IoRCWTQNQzumVoEA4KjA753WA42A+CQyUGKPxTK2
+T+6ZFkpYTcVLClCZ5/YYiyUCRfN7aeVkDhlkhnkrw9+d19vAwcrKaeJ2eAIJgOts
+RmAljvytI7Vrz3Xw+cDtRiSeUsspgJ1e3HdyUEZ7Lm/1Epaw8xW4yAk4LZqKHHi2
+/aKpAAvaObZeDgO1HvSsSx9s42CaRoBe6Li4VIwzPL1DusJT5l+V+ERe8CHT8WIa
+afA3sUoP6hfLj1XzoRL/
+=4LvX
+-----END PGP SIGNATURE-----
+
+--NhBACjNc9vV+/oop--
