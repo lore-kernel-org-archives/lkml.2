@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab2HUQa3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:30:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32960 "EHLO
+	id S1758083Ab2HUQbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:31:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32974 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757954Ab2HUQa1 (ORCPT
+	with ESMTP id S1756147Ab2HUQbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:30:27 -0400
-Date: Tue, 21 Aug 2012 09:30:15 -0700
+	Tue, 21 Aug 2012 12:31:22 -0400
+Date: Tue, 21 Aug 2012 09:31:10 -0700
 From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-e8d0f400ee3247ad22faa6afabfa7022260ef7a5@git.kernel.org>
+Message-ID: <tip-1c09bf4a79e808c13c02d4ca8221fb2957bf3ccb@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
+        mingo@kernel.org, penberg@kernel.org, namhyung@kernel.org,
+        dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1345391182-71825-1-git-send-email-dsahern@gmail.com>
-References: <1345391182-71825-1-git-send-email-dsahern@gmail.com>
+        acme@redhat.com, penberg@kernel.org, dsahern@gmail.com,
+        tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1345391202-71865-1-git-send-email-dsahern@gmail.com>
+References: <1345391202-71865-1-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script perl/python:
-  Fix libexec scripts path in Documentation
-Git-Commit-ID: e8d0f400ee3247ad22faa6afabfa7022260ef7a5
+Subject: [tip:perf/core] perf: silence GTK2 probing errors
+Git-Commit-ID: 1c09bf4a79e808c13c02d4ca8221fb2957bf3ccb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,92 +29,82 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:30:20 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:31:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8d0f400ee3247ad22faa6afabfa7022260ef7a5
-Gitweb:     http://git.kernel.org/tip/e8d0f400ee3247ad22faa6afabfa7022260ef7a5
+Commit-ID:  1c09bf4a79e808c13c02d4ca8221fb2957bf3ccb
+Gitweb:     http://git.kernel.org/tip/1c09bf4a79e808c13c02d4ca8221fb2957bf3ccb
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sun, 19 Aug 2012 09:46:22 -0600
+AuthorDate: Sun, 19 Aug 2012 09:46:42 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 20 Aug 2012 09:30:36 -0300
+CommitDate: Mon, 20 Aug 2012 09:33:29 -0300
 
-perf script perl/python: Fix libexec scripts path in Documentation
+perf: silence GTK2 probing errors
 
-The libexec path is /libexec/perf-core/scripts/*/Perf-Trace-Util.
+If GTK2 development packages are not installed, make is rather noisy:
+
+  $ make -C tools/perf O=/tmp/pbuild
+  Package gtk+-2.0 was not found in the pkg-config search path.
+  Perhaps you should add the directory containing `gtk+-2.0.pc'
+  to the PKG_CONFIG_PATH environment variable
+  No package 'gtk+-2.0' found
+  make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
+  Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
+  PERF_VERSION = 3.6.rc1.205.gdb146f.dirty
+  make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
+  Package gtk+-2.0 was not found in the pkg-config search path.
+  Perhaps you should add the directory containing `gtk+-2.0.pc'
+  to the PKG_CONFIG_PATH environment variable
+  No package 'gtk+-2.0' found
+  make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
+  Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
+  ...
+
+Silence the pkg-config errors. Aftewards:
+
+  $ make -C tools/perf O=/tmp/pbuild
+  make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
+  Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
+  PERF_VERSION = 3.6.rc1.206.gd43ff9.dirty
+  make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
+  make: Entering directory `/opt/sw/ahern/perf.git/tools/perf'
+  Makefile:593: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
+  ...
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/1345391182-71825-1-git-send-email-dsahern@gmail.com
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Link: http://lkml.kernel.org/r/1345391202-71865-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-script-perl.txt   |    4 ++--
- tools/perf/Documentation/perf-script-python.txt |   10 +++++-----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ tools/perf/Makefile |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-script-perl.txt b/tools/perf/Documentation/perf-script-perl.txt
-index 3152cca..d00bef2 100644
---- a/tools/perf/Documentation/perf-script-perl.txt
-+++ b/tools/perf/Documentation/perf-script-perl.txt
-@@ -116,8 +116,8 @@ search path and 'use'ing a few support modules (see module
- descriptions below):
- 
- ----
-- use lib "$ENV{'PERF_EXEC_PATH'}/scripts/perl/perf-script-Util/lib";
-- use lib "./perf-script-Util/lib";
-+ use lib "$ENV{'PERF_EXEC_PATH'}/scripts/perl/Perf-Trace-Util/lib";
-+ use lib "./Perf-Trace-Util/lib";
-  use Perf::Trace::Core;
-  use Perf::Trace::Context;
-  use Perf::Trace::Util;
-diff --git a/tools/perf/Documentation/perf-script-python.txt b/tools/perf/Documentation/perf-script-python.txt
-index 4710220..a4027f2 100644
---- a/tools/perf/Documentation/perf-script-python.txt
-+++ b/tools/perf/Documentation/perf-script-python.txt
-@@ -129,7 +129,7 @@ import os
- import sys
- 
- sys.path.append(os.environ['PERF_EXEC_PATH'] + \
--	'/scripts/python/perf-script-Util/lib/Perf/Trace')
-+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
- 
- from perf_trace_context import *
- from Core import *
-@@ -216,7 +216,7 @@ import os
- import sys
- 
- sys.path.append(os.environ['PERF_EXEC_PATH'] + \
--	'/scripts/python/perf-script-Util/lib/Perf/Trace')
-+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
- 
- from perf_trace_context import *
- from Core import *
-@@ -279,7 +279,7 @@ import os
- import sys
- 
- sys.path.append(os.environ['PERF_EXEC_PATH'] + \
--	'/scripts/python/perf-script-Util/lib/Perf/Trace')
-+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
- 
- from perf_trace_context import *
- from Core import *
-@@ -391,7 +391,7 @@ drwxr-xr-x 4 trz trz 4096 2010-01-26 22:30 .
- drwxr-xr-x 4 trz trz 4096 2010-01-26 22:29 ..
- drwxr-xr-x 2 trz trz 4096 2010-01-26 22:29 bin
- -rw-r--r-- 1 trz trz 2548 2010-01-26 22:29 check-perf-script.py
--drwxr-xr-x 3 trz trz 4096 2010-01-26 22:49 perf-script-Util
-+drwxr-xr-x 3 trz trz 4096 2010-01-26 22:49 Perf-Trace-Util
- -rw-r--r-- 1 trz trz 1462 2010-01-26 22:30 syscall-counts.py
- ----
- 
-@@ -518,7 +518,7 @@ descriptions below):
-  import sys
- 
-  sys.path.append(os.environ['PERF_EXEC_PATH'] + \
--	      '/scripts/python/perf-script-Util/lib/Perf/Trace')
-+	      '/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
- 
-  from perf_trace_context import *
-  from Core import *
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 75af93d..8beff99 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -587,7 +587,7 @@ endif
+ ifdef NO_GTK2
+ 	BASIC_CFLAGS += -DNO_GTK2_SUPPORT
+ else
+-	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0)
++	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+ 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
+ 		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+ 		BASIC_CFLAGS += -DNO_GTK2_SUPPORT
+@@ -595,8 +595,8 @@ else
+ 		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2)),y)
+ 			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
+ 		endif
+-		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
+-		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
++		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
++		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
