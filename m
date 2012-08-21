@@ -1,93 +1,511 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab2HUU6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:58:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3062 "EHLO mga11.intel.com"
+	id S1758489Ab2HUVLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 17:11:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50271 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab2HUU6M convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:58:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,804,1336374000"; 
-   d="scan'208";a="211879475"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Borislav Petkov <bp@amd64.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH 04/11] x86/microcode_core_early.c: Define interfaces for
- early load ucode
-Thread-Topic: [PATCH 04/11] x86/microcode_core_early.c: Define interfaces
- for early load ucode
-Thread-Index: AQHNfRunwqP95+1vaUy4HYughHZSRZdgoT4A//+XQYCAANiLAIAARpuAgAHdegCAAGU7gIAAAxCAgAEVvBCAAHrTAIAACe0A//+K0CCAAHZ9gP//i9gw
-Date: Tue, 21 Aug 2012 20:58:09 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220077884B0@ORSMSX105.amr.corp.intel.com>
-References: <1345277729-8399-5-git-send-email-fenghua.yu@intel.com>
- <20120818224442.GB32120@khazad-dum.debian.net>
- <3E5A0FA7E9CA944F9D5414FEC6C71220077879BF@ORSMSX105.amr.corp.intel.com>
- <503078A2.9030204@zytor.com>
- <3E5A0FA7E9CA944F9D5414FEC6C7122007787B22@ORSMSX105.amr.corp.intel.com>
- <20120820140630.GD24149@aftab.osrc.amd.com> <50329951.9030805@zytor.com>
- <20120820201947.GC15006@aftab.osrc.amd.com>
- <3E5A0FA7E9CA944F9D5414FEC6C712200778846C@ORSMSX105.amr.corp.intel.com>
- <5033EBE6.5080608@zytor.com> <20120821204858.GA30472@aftab.osrc.amd.com>
- <3E5A0FA7E9CA944F9D5414FEC6C7122007788491@ORSMSX105.amr.corp.intel.com>
- <5033F551.8040402@zytor.com>
-In-Reply-To: <5033F551.8040402@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754041Ab2HUVLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 17:11:43 -0400
+Message-ID: <1345583501.29292.89.camel@ul30vt.home>
+Subject: Re: [PATCH v9 2/2] kvm: On Ack, De-assert & Notify KVM_IRQFD
+ extension
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 21 Aug 2012 15:11:41 -0600
+In-Reply-To: <20120821203739.GE9027@redhat.com>
+References: <20120821190800.24958.74812.stgit@bling.home>
+	 <20120821192911.24958.38609.stgit@bling.home>
+	 <20120821203739.GE9027@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Tuesday, August 21, 2012 1:54 PM
-> To: Yu, Fenghua
-> Cc: Borislav Petkov; Henrique de Moraes Holschuh; Ingo Molnar; Thomas
-> Gleixner; Mallick, Asit K; Tigran Aivazian; Andreas Herrmann; Borislav
-> Petkov; linux-kernel; x86
-> Subject: Re: [PATCH 04/11] x86/microcode_core_early.c: Define
-> interfaces for early load ucode
+On Tue, 2012-08-21 at 23:37 +0300, Michael S. Tsirkin wrote:
+> On Tue, Aug 21, 2012 at 01:29:14PM -0600, Alex Williamson wrote:
+> > For VFIO based device assignment we'd like a mechanism to allow level
+> > triggered interrutps to be directly injected into KVM.  KVM_IRQFD
+> > already allows this for edge triggered interrupts, but for level, we
+> > need to watch for acknowledgement of the interrupt from the guest to
+> > provide us a hint when to test the device and allow it to re-assert
+> > if necessary.  To do this, we create a new KVM_IRQFD mode called
+> > "On Ack, De-assert & Notify", or OADN.  In this mode, an interrupt
+> > injection provides only a gsi assertion.  We then hook into the IRQ
+> > ACK notifier, which when triggered de-asserts the gsi and notifies
+> > via another eventfd.  It's then the responsibility of the user to
+> > re-assert the interrupt is service is still required.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 > 
-> On 08/21/2012 01:52 PM, Yu, Fenghua wrote:
-> >> -----Original Message-----
-> >> From: Borislav Petkov [mailto:bp@amd64.org]
-> >> Sent: Tuesday, August 21, 2012 1:49 PM
-> >> To: H. Peter Anvin
-> >> Cc: Yu, Fenghua; Henrique de Moraes Holschuh; Ingo Molnar; Thomas
-> >> Gleixner; Mallick, Asit K; Tigran Aivazian; Andreas Herrmann;
-> Borislav
-> >> Petkov; linux-kernel; x86
-> >> Subject: Re: [PATCH 04/11] x86/microcode_core_early.c: Define
-> >> interfaces for early load ucode
-> >>
-> >> On Tue, Aug 21, 2012 at 01:13:26PM -0700, H. Peter Anvin wrote:
-> >>> I don't know what Borislav was suggesting with "BIOS overrides", is
-> >>> that another CPU-specific thing?
-> >>
-> >> Not CPU- but rather platform-specific. It is Thomas Renninger's
-> >> mechanism to override BIOS tables.
-> >
-> > That's ACPI override. I think the ACPI tables could be put in
-> kernel/x86/acpi/.
-> >
+> Naming aside, looks good.
+> I think I see some minor bugs, and I added some improvement
+> suggestions below.
 > 
-> kernel/acpi... ACPI is not x86-specific.
+> Thanks!
+> 
+> > ---
+> > 
+> >  Documentation/virtual/kvm/api.txt |   13 ++
+> >  arch/x86/kvm/x86.c                |    1 
+> >  include/linux/kvm.h               |    6 +
+> >  include/linux/kvm_host.h          |    1 
+> >  virt/kvm/eventfd.c                |  193 ++++++++++++++++++++++++++++++++++++-
+> >  5 files changed, 210 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > index bf33aaa..87d7321 100644
+> > --- a/Documentation/virtual/kvm/api.txt
+> > +++ b/Documentation/virtual/kvm/api.txt
+> > @@ -1946,6 +1946,19 @@ the guest using the specified gsi pin.  The irqfd is removed using
+> >  the KVM_IRQFD_FLAG_DEASSIGN flag, specifying both kvm_irqfd.fd
+> >  and kvm_irqfd.gsi.
+> >  
+> > +With KVM_CAP_IRQFD_OADN, KVM_IRQFD supports an "On Ack, De-assert &
+> > +Notify" option that allows emulation of level-triggered interrupts.
+> > +When kvm_irqfd.fd is triggered, the requested gsi is asserted and
+> > +remains asserted until interaction with the irqchip indicates the
+> > +VM has acknowledged the interrupt, such as an EOI.  On acknoledgement
+> > +the gsi is automatically de-asserted and the user is notified via
+> > +kvm_irqfd.notifyfd.  The user is then required to re-assert the
+> > +interrupt if the associated device still requires service.  To enable
+> > +this mode, configure the KVM_IRQFD using the KVM_IRQFD_FLAG_OADN flag
+> > +and specify kvm_irqfd.notifyfd.  Note that closing kvm_irqfd.notifyfd
+> > +while configured in this mode does not disable the irqfd.  The
+> > +KVM_IRQFD_FLAG_OADN flag is only necessary on assignment.
+> > +
+> >  4.76 KVM_PPC_ALLOCATE_HTAB
+> >  
+> >  Capability: KVM_CAP_PPC_ALLOC_HTAB
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index cd98673..fde7b66 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -2175,6 +2175,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> >  	case KVM_CAP_PCI_2_3:
+> >  	case KVM_CAP_KVMCLOCK_CTRL:
+> >  	case KVM_CAP_IRQFD_IRQ_SOURCE_ID:
+> > +	case KVM_CAP_IRQFD_OADN:
+> >  		r = 1;
+> >  		break;
+> >  	case KVM_CAP_COALESCED_MMIO:
+> > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > index ae66b9c..ec0f1d8 100644
+> > --- a/include/linux/kvm.h
+> > +++ b/include/linux/kvm.h
+> > @@ -619,6 +619,7 @@ struct kvm_ppc_smmu_info {
+> >  #define KVM_CAP_S390_COW 79
+> >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> >  #define KVM_CAP_IRQFD_IRQ_SOURCE_ID 81
+> > +#define KVM_CAP_IRQFD_OADN 82
+> >  
+> >  #ifdef KVM_CAP_IRQ_ROUTING
+> >  
+> > @@ -684,12 +685,15 @@ struct kvm_xen_hvm_config {
+> >  #endif
+> >  
+> >  #define KVM_IRQFD_FLAG_DEASSIGN (1 << 0)
+> > +/* Availabie with KVM_CAP_IRQFD_OADN */
+> 
+> Need to also explain what it is.
 
-That's right.
+Beyond Documentation/virtual/kvm/api.txt?  I don't see much else getting
+documented here.  Or maybe you mean
 
-Thanks.
+/* On Ack, De-assert & Notify */
 
--Fenghua
+> > +#define KVM_IRQFD_FLAG_OADN (1 << 1)
+> >  
+> >  struct kvm_irqfd {
+> >  	__u32 fd;
+> >  	__u32 gsi;
+> >  	__u32 flags;
+> > -	__u8  pad[20];
+> > +	__u32 notifyfd;
+> 
+> Document that this is only valid with OADN flag.  Might be a good idea
+> to rename this to deassert_on_ack_notifyfd or oadn_notifyfd
+> to avoid confusion.
+
+I'll add a /* only valid with KVM_IRQFD_FLAG_OADN */
+
+I can change the name if you prefer, but it seems pretty clear to me how
+a notifyfd might relate to a "On Ack, De-assert & Notify" irqfd without
+pulling longer names into userspace.
+
+> > +	__u8  pad[16];
+> >  };
+> >  
+> >  struct kvm_clock_data {
+> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > index b763230..d502d08 100644
+> > --- a/include/linux/kvm_host.h
+> > +++ b/include/linux/kvm_host.h
+> > @@ -284,6 +284,7 @@ struct kvm {
+> >  	struct {
+> >  		spinlock_t        lock;
+> >  		struct list_head  items;
+> > +		struct list_head  oadns;
+> >  	} irqfds;
+> >  	struct list_head ioeventfds;
+> >  #endif
+> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > index 2245cfa..dfdb5b2 100644
+> > --- a/virt/kvm/eventfd.c
+> > +++ b/virt/kvm/eventfd.c
+> > @@ -43,6 +43,23 @@
+> >   * --------------------------------------------------------------------
+> >   */
+> >  
+> > +/*
+> > + * OADN irqfds (On Ack, De-assert & Notify) are a special variety of
+> > + * irqfds that assert an interrupt to the irqchip on eventfd trigger,
+> > + * receieve notification when userspace acknowledges the interrupt,
+> > + * automatically de-asserts the irqchip level, and notifies userspace
+> > + * via the oadn_eventfd.  This object helps to provide one-to-many
+> > + * deassert-to-notify so we can share a single irq source ID per OADN.
+> > + */
+> > +struct _irqfd_oadn {
+> > +	struct kvm *kvm;
+> > +	int irq_source_id; /* IRQ source ID shared by these irqfds */
+> > +	struct list_head irqfds; /* list of irqfds using this object */
+> > +	struct kvm_irq_ack_notifier notifier; /* IRQ ACK notification */
+> > +	struct kref kref; /* Race-free removal */
+> > +	struct list_head list;
+> > +};
+> > +
+> >  struct _irqfd {
+> >  	/* Used for MSI fast-path */
+> >  	struct kvm *kvm;
+> > @@ -52,6 +69,10 @@ struct _irqfd {
+> >  	/* Used for level IRQ fast-path */
+> >  	int gsi;
+> >  	struct work_struct inject;
+> > +	/* Used for OADN (On Ack, De-assert & Notify) path */
+> > +	struct eventfd_ctx *oadn_eventfd;
+> > +	struct list_head oadn_list;
+> 
+> Could you document RCU and locking rules for this field please?
+
+Sure
+
+> > +	struct _irqfd_oadn *oadn;
+> >  	/* Used for setup/shutdown */
+> >  	struct eventfd_ctx *eventfd;
+> >  	struct list_head list;
+> > @@ -71,6 +92,51 @@ irqfd_inject(struct work_struct *work)
+> >  	kvm_set_irq(kvm, KVM_IRQFD_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> >  }
+> >  
+> > +static void
+> > +irqfd_oadn_inject(struct work_struct *work)
+> > +{
+> > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > +
+> > +	kvm_set_irq(irqfd->kvm, irqfd->oadn->irq_source_id, irqfd->gsi, 1);
+> > +}
+> > +
+> > +/*
+> > + * Since OADN irqfds share an IRQ source ID, we de-assert once then
+> > + * notify all of the OADN irqfds using this GSI.  We can't do multiple
+> > + * de-asserts or we risk racing with incoming re-asserts.
+> > + */
+> > +static void
+> > +irqfd_oadn_notify(struct kvm_irq_ack_notifier *kian)
+> > +{
+> > +	struct _irqfd_oadn *oadn;
+> > +	struct _irqfd *irqfd;
+> > +
+> > +	oadn = container_of(kian, struct _irqfd_oadn, notifier);
+> > +
+> > +	rcu_read_lock();
+> > +
+> > +	kvm_set_irq(oadn->kvm, oadn->irq_source_id,
+> > +		    oadn->notifier.gsi, 0);
+> > +
+> > +	list_for_each_entry_rcu(irqfd, &oadn->irqfds, oadn_list)
+> > +		eventfd_signal(irqfd->oadn_eventfd, 1);
+> > +
+> > +	rcu_read_unlock();
+> > +}
+> > +
+> > +/*
+> > + * Assumes kvm->irqfds.lock is held.  Remove from the list of OADNs, new
+> > + * users will allocate their own, letting us de-assert this GSI on free,
+> > + * after the RCU grace period.
+> > + */
+> > +static void
+> > +irqfd_oadn_release(struct kref *kref)
+> > +{
+> > +	struct _irqfd_oadn *oadn = container_of(kref, struct _irqfd_oadn, kref);
+> > +
+> > +	list_del(&oadn->list);
+> > +}
+> > +
+> >  /*
+> >   * Race-free decouple logic (ordering is critical)
+> >   */
+> > @@ -93,6 +159,35 @@ irqfd_shutdown(struct work_struct *work)
+> >  	flush_work_sync(&irqfd->inject);
+> >  
+> >  	/*
+> > +	 * OADN irqfds use an RCU list for lockless de-assert and user
+> > +	 * notification.  Modify the list using RCU under lock and release
+> > +	 * the OADN object.  Since we later free this irqfd, we must wait
+> > +	 * for an RCU grace period.  If the OADN was released, we can then
+> > +	 * unregister the irq ack notifier, free the irq source ID (assuring
+> > +	 * that the GSI is de-asserted), and free the object.
+> > +	 */
+> > +	if (irqfd->oadn) {
+> > +		struct _irqfd_oadn *oadn = irqfd->oadn;
+> > +		struct kvm *kvm = oadn->kvm;
+> > +		bool released;
+> > +
+> > +		spin_lock_irq(&irqfd->kvm->irqfds.lock);
+> > +		list_del_rcu(&irqfd->oadn_list);
+> > +		released = kref_put(&oadn->kref, irqfd_oadn_release);
+> > +		spin_unlock_irq(&irqfd->kvm->irqfds.lock);
+> > +
+> > +		synchronize_rcu();
+> > +
+> > +		if (released) {
+> > +			kvm_unregister_irq_ack_notifier(kvm, &oadn->notifier);
+> > +			kvm_free_irq_source_id(kvm, oadn->irq_source_id);
+> > +			kfree(oadn);
+> > +		}
+> > +
+> > +		eventfd_ctx_put(irqfd->oadn_eventfd);
+> > +	}
+> > +
+> > +	/*
+> >  	 * It is now safe to release the object's resources
+> >  	 */
+> >  	eventfd_ctx_put(irqfd->eventfd);
+> > @@ -202,8 +297,9 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  {
+> >  	struct kvm_irq_routing_table *irq_rt;
+> >  	struct _irqfd *irqfd, *tmp;
+> > +	struct _irqfd_oadn *oadn = NULL;
+> >  	struct file *file = NULL;
+> > -	struct eventfd_ctx *eventfd = NULL;
+> > +	struct eventfd_ctx *eventfd = NULL, *oadn_eventfd = NULL;
+> >  	int ret;
+> >  	unsigned int events;
+> >  
+> > @@ -214,7 +310,49 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  	irqfd->kvm = kvm;
+> >  	irqfd->gsi = args->gsi;
+> >  	INIT_LIST_HEAD(&irqfd->list);
+> > -	INIT_WORK(&irqfd->inject, irqfd_inject);
+> > +	INIT_LIST_HEAD(&irqfd->oadn_list);
+> > +
+> > +	if (args->flags & KVM_IRQFD_FLAG_OADN) {
+> > +		oadn_eventfd = eventfd_ctx_fdget(args->notifyfd);
+> > +		if (IS_ERR(oadn_eventfd)) {
+> > +			ret = PTR_ERR(oadn_eventfd);
+> > +			goto fail;
+> > +		}
+> > +
+> > +		irqfd->oadn_eventfd = oadn_eventfd;
+> > +
+> > +		/*
+> > +		 * We may be able to share an existing OADN, but we won't
+> > +		 * know that until we search under spinlock.  We can't get
+> > +		 * an irq_source_id under spinlock, and we'd prefer not to
+> > +		 * do an atomic allocation, so prep an object here and free
+> > +		 * it if we don't need it.
+> > +		 */
+> 
+> So if everyone uses same source ID this code will be simpler too?
+
+No, everyone using the same source ID results in racy cleanup that I
+can't figure out how to avoid while maintaining a lockless
+de-assert/notify path.  See patch 0/2 for details of the race.
+
+> > +		oadn = kzalloc(sizeof(*oadn), GFP_KERNEL);
+> > +		if (!oadn) {
+> > +			ret = -ENOMEM;
+> > +			goto fail;
+> > +		}
+> > +
+> > +		oadn->kvm = kvm;
+> > +		INIT_LIST_HEAD(&oadn->irqfds);
+> > +		oadn->notifier.gsi = irqfd->gsi;
+> > +		oadn->notifier.irq_acked = irqfd_oadn_notify;
+> > +		kref_init(&oadn->kref);
+> > +		INIT_LIST_HEAD(&oadn->list);
+> > +
+> > +		oadn->irq_source_id = kvm_request_irq_source_id(kvm);
+> > +		if (oadn->irq_source_id < 0) {
+> > +			ret = oadn->irq_source_id;
+> > +			goto fail;
+> > +		}
+> > +
+> 
+> This still has the problem that by allocating these
+> OADN irqfds you can run out of source IDs for other uses.
+> Why don't OADNs just use KVM_IRQFD_IRQ_SOURCE_ID?
+> I thought this is why it was introduced in this patchset ...
+
+See patch 0/2, it's racy.  We have 64 IRQ source IDs and 24 GSIs
+currently.  This let's all users on the same GSI share an IRQ source ID.
+Yes, we hold onto one we may not need during setup, but locking doesn't
+allow us to allocate it at the point where we'd need it.
+
+> > +		irqfd->oadn = oadn;
+> > +
+> > +		INIT_WORK(&irqfd->inject, irqfd_oadn_inject);
+> > +	} else
+> > +		INIT_WORK(&irqfd->inject, irqfd_inject);
+> > +
+> >  	INIT_WORK(&irqfd->shutdown, irqfd_shutdown);
+> >  
+> >  	file = eventfd_fget(args->fd);
+> > @@ -250,6 +388,27 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  		goto fail;
+> >  	}
+> >  
+> > +	/*
+> > +	 * When configuring an OADN irqfd, try to re-use an existing OADN.
+> > +	 */
+> > +	if (oadn) {
+> > +		struct _irqfd_oadn *oadn_tmp;
+> > +
+> > +		list_for_each_entry(oadn_tmp, &kvm->irqfds.oadns, list) {
+> > +			if (oadn_tmp->notifier.gsi == irqfd->gsi) {
+> > +				irqfd->oadn = oadn_tmp;
+> > +				break;
+> > +			}
+> > +		}
+> > +
+> > +		if (irqfd->oadn != oadn)
+> > +			kref_get(&irqfd->oadn->kref);
+> > +		else
+> > +			list_add(&oadn->list, &kvm->irqfds.oadns);
+> > +
+> > +		list_add_rcu(&irqfd->oadn_list, &irqfd->oadn->irqfds);
+> 
+> Hang on, don't we need irqfds_lock here? 
+
+We're in kvm->irqfds.lock.
+
+> > +	}
+> > +
+> >  	irq_rt = rcu_dereference_protected(kvm->irq_routing,
+> >  					   lockdep_is_held(&kvm->irqfds.lock));
+> >  	irqfd_update(kvm, irqfd, irq_rt);
+> > @@ -267,6 +426,26 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  
+> >  	spin_unlock_irq(&kvm->irqfds.lock);
+> >  
+> > +	if (oadn) {
+> > +		synchronize_rcu();
+> 
+> Seems unexpected on assign.
+> What does this synchronize_rcu do?
+
+Because we force the notify below and we need the irqfd we just added to
+the list to be visible on the list for that.
+
+> > +
+> > +		/*
+> > +		 * If we weren't able to re-use an OADN, setup the irq ack
+> > +		 * notifier outside of spinlock.  Our interface requires
+> > +		 * users to be able to handle spurious de-assert & notifies,
+> > +		 * so trigger one here to make sure we didn't miss anything.
+> > +		 * Cleanup unused OADN if we share.
+> > +		 */
+> > +		if (irqfd->oadn == oadn)
+> > +			kvm_register_irq_ack_notifier(kvm, &oadn->notifier);
+> > +		else {
+> > +			kvm_free_irq_source_id(kvm, oadn->irq_source_id);
+> 
+> This is unfortunate - so we need a spare source ID for internal use.
+> Thus if 1 source ID is available, then it is possible that
+> 
+> - allocate irqfd for A
+> - allocate irqfd for B
+> 
+> succeeds because A uses a shared source id so it is freed here.
+> 
+> While
+> 
+> - allocate irqfd for B
+> - allocate irqfd for A
+> 
+> fails because B used the last ID and now temporary allocation
+> above fails.
+
+Yep, suggestions?  How many KVM_IRQFDs can we expect in-flight at one
+time vs how many IRQ source IDs will be used long term.  VFIO assigned
+PCI device can only make use of up to 4 GSIs per root bridge, we only
+have 24 IOAPIC pins.
+
+> > +			kfree(oadn);
+> > +		}
+> > +
+> > +		irqfd_oadn_notify(&irqfd->oadn->notifier);
+> > +	}
+> > +
+> >  	/*
+> >  	 * do not drop the file until the irqfd is fully initialized, otherwise
+> >  	 * we might race against the POLLHUP
+> > @@ -276,12 +455,19 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  	return 0;
+> >  
+> >  fail:
+> > +	if (oadn_eventfd && !IS_ERR(oadn_eventfd))
+> > +		eventfd_ctx_put(oadn_eventfd);
+> > +
+> > +	if (oadn && oadn->irq_source_id >= 0)
+> > +		kvm_free_irq_source_id(kvm, oadn->irq_source_id);
+> > +
+> 
+> A bit cleaner to have distinct labels for failures
+> at different stages of the setup.
+> I know it's not written this way ATM so it's not a must
+> to address this.
+
+I often find myself getting lost trying to use distinct labels.  I'm
+just following along what this function already does, but find it to be
+a nice simplification to handle everything this way.  Thanks,
+
+Alex
+
+> >  	if (eventfd && !IS_ERR(eventfd))
+> >  		eventfd_ctx_put(eventfd);
+> >  
+> >  	if (!IS_ERR(file))
+> >  		fput(file);
+> >  
+> > +	kfree(oadn);
+> >  	kfree(irqfd);
+> >  	return ret;
+> >  }
+> > @@ -291,6 +477,7 @@ kvm_eventfd_init(struct kvm *kvm)
+> >  {
+> >  	spin_lock_init(&kvm->irqfds.lock);
+> >  	INIT_LIST_HEAD(&kvm->irqfds.items);
+> > +	INIT_LIST_HEAD(&kvm->irqfds.oadns);
+> >  	INIT_LIST_HEAD(&kvm->ioeventfds);
+> >  }
+> >  
+> > @@ -340,7 +527,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+> >  int
+> >  kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
+> >  {
+> > -	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
+> > +	if (args->flags & ~(KVM_IRQFD_FLAG_DEASSIGN | KVM_IRQFD_FLAG_OADN))
+> >  		return -EINVAL;
+> >  
+> >  	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
