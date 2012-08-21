@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab2HUQBG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:01:06 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:49781 "EHLO
+	id S1757763Ab2HUQBC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:01:02 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:31350 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755098Ab2HUQA7 (ORCPT
+	with ESMTP id S1752549Ab2HUQA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Aug 2012 12:00:59 -0400
 From: Roland Stigge <stigge@antcom.de>
@@ -17,11 +17,9 @@ To: linus.walleij@linaro.org, aletes.xgr@gmail.com,
         viresh.kumar@linaro.org, sachin.verma@st.co
 Cc: Roland Stigge <stigge@antcom.de>
 Subject: [PATCH v5 1/2] spi/pl022: Add chip select handling via GPIO
-Date: Tue, 21 Aug 2012 18:00:13 +0200
-Message-Id: <1345564813-11895-2-git-send-email-stigge@antcom.de>
+Date: Tue, 21 Aug 2012 18:00:12 +0200
+Message-Id: <1345564813-11895-1-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345564813-11895-1-git-send-email-stigge@antcom.de>
-References: <1345564813-11895-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
