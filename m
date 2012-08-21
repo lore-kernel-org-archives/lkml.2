@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757745Ab2HUP7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:59:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60492 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab2HUP7D (ORCPT
+	id S1757760Ab2HUP7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:59:22 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41434 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab2HUP7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:59:03 -0400
-Date: Tue, 21 Aug 2012 08:58:44 -0700
-From: tip-bot for Cody P Schafer <cody@linux.vnet.ibm.com>
-Message-ID: <tip-52f9ddba516214a59fdd8eb155b2583ab314dc31@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, matthltc@us.ibm.com,
-        dave@linux.vnet.ibm.com, namhyung@kernel.org,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
-        a.p.zijlstra@chello.nl, dave@linux.vnet.ibm.com, matthltc@us.ibm.com,
-        namhyung@kernel.org, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
-In-Reply-To: <1344637382-22789-6-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344637382-22789-6-git-send-email-cody@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Don'
- t try to synthesize plt without dynstr
-Git-Commit-ID: 52f9ddba516214a59fdd8eb155b2583ab314dc31
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 21 Aug 2012 11:59:17 -0400
+Date: Tue, 21 Aug 2012 17:59:08 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+Message-ID: <20120821155908.GA5499@gmail.com>
+References: <1345041548.31459.90.camel@twins>
+ <502BB5A3.5000403@linux.intel.com>
+ <1345043096.31459.106.camel@twins>
+ <502BE38D.9030405@linux.intel.com>
+ <20120820080606.GA6931@gmail.com>
+ <20120820181651.GA737@srcf.ucam.org>
+ <20120821094203.GB12385@gmail.com>
+ <20120821113951.GA22436@srcf.ucam.org>
+ <20120821151910.GA5359@gmail.com>
+ <20120821152828.GB28241@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:58:49 -0700 (PDT)
+In-Reply-To: <20120821152828.GB28241@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  52f9ddba516214a59fdd8eb155b2583ab314dc31
-Gitweb:     http://git.kernel.org/tip/52f9ddba516214a59fdd8eb155b2583ab314dc31
-Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
-AuthorDate: Fri, 10 Aug 2012 15:22:51 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Aug 2012 12:56:45 -0300
 
-perf symbols: Don't try to synthesize plt without dynstr
+* Matthew Garrett <mjg@redhat.com> wrote:
 
-If .dynsym exists but .dynstr is empty (NO_BITS or size==0), a segfault
-occurs.  Avoid this by checking that .dynstr is not empty.
+> On Tue, Aug 21, 2012 at 05:19:10PM +0200, Ingo Molnar wrote:
+> > * Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > > [...] AC/battery is just not an important power management 
+> > > policy input when compared to various other things.
+> > 
+> > Such as?
+> 
+> The scheduler's behaviour is going to have a minimal impact on 
+> power consumption on laptops. Other things are much more 
+> important - backlight level, ASPM state, that kind of thing. 
+> So why special case the scheduler? [...]
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: David Hansen <dave@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Matt Hellsley <matthltc@us.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-6-git-send-email-cody@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/symbol-elf.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+I'm not special casing the scheduler - but we are talking about 
+scheduler policies here, so *if* it makes sense to handle this 
+dynamically then obviously the scheduler wants to use system 
+state information when/if the kernel can get it.
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index e037609..a2e994e 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -232,6 +232,9 @@ int dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
- 	if (symstrs == NULL)
- 		goto out_elf_end;
- 
-+	if (symstrs->d_size == 0)
-+		goto out_elf_end;
-+
- 	nr_rel_entries = shdr_rel_plt.sh_size / shdr_rel_plt.sh_entsize;
- 	plt_offset = shdr_plt.sh_offset;
- 
+Your argument is as if you said that the shape of a car's side 
+view mirrors is not important to its top speed, because the 
+overall shape of the chassis and engine power are much more 
+important.
+
+But we are desiging side view mirrors here, so we might as well 
+do a good job there.
+
+> [...] This is going to be hugely more important on 
+> multi-socket systems, where your policy is usually going to be 
+> dictated by the specific workload that you're running at the 
+> time. [...]
+
+If only we had some kernel subsystem that is intimiately familar 
+with the workloads running on the system and could act 
+accordingly and with low latency.
+
+We could name that subsystem it in some intuitive fashion: it 
+switches and schedules workloads, so how about calling it the 
+'scheduler'?
+
+> [...] The exception is in cases where your rack is 
+> overcommitted for power and your rack management unit is 
+> telling you to reduce power consumption since otherwise it's 
+> going to have to cut the power to one of the machines in the 
+> rack in the next few seconds.
+
+( That must be some ACPI middleware driven crap, right? Not 
+  really the Linux kernel's problem. )
+
+> > The thing is, when I use Linux on a laptop then AC/battery 
+> > is *the* main policy input.
+> 
+> And it's already well handled from userspace, as it has to be.
+
+Not according to the developers switching away from Linux 
+desktop distros in droves, because MacOSX or Win7 has 30%+ 
+better battery efficiency.
+
+The scheduler might be a small part of the picture, but it's 
+certainly a part of it.
+
+> > > Userspace has been doing a perfectly reasonable job of 
+> > > determining policy here.
+> > 
+> > Has it properly switched the scheduler's balancing between 
+> > power-effient and performance-maximizing strategies when for 
+> > example a laptop's AC got unplugged/replugged?
+> 
+> No, because sched_mt_powersave usually crippled performance 
+> more than it saved power and nobody makes multi-socket 
+> laptops.
+
+That's a user-space policy management fail right there: why 
+wasn't this fixed? If the default policy is in the kernel we can 
+at least fix it in one place for the most common cases. If it's 
+spread out amongst multiple projects then progress only happens 
+at glacial speed ...
+
+Thanks,
+
+	Ingo
