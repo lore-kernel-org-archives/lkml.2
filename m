@@ -1,86 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab2HUUiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:38:15 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:9386
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757294Ab2HUUiI (ORCPT
+	id S1758355Ab2HUUib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:38:31 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35462 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756282Ab2HUUgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:38:08 -0400
-X-Forefront-Antispam-Report: CIP:157.56.245.5;KIP:(null);UIP:(null);IPV:NLI;H:CH1PRD0710HT001.namprd07.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: PS-4(zzbb2dI98dI9371I1432Izz1202hzz8275bhz2dh2a8h668h839hd25he5bhf0ah107ah1155h)
-Message-ID: <5033F1AA.4080308@caviumnetworks.com>
-Date: Tue, 21 Aug 2012 13:38:02 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 21 Aug 2012 16:36:16 -0400
+X-IronPort-AV: E=Sophos;i="4.77,804,1336348800"; 
+   d="scan'208";a="14113785"
+From: Attilio Rao <attilio.rao@citrix.com>
+To: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <Stefano.Stabellini@eu.citrix.com>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <xen-devel@lists.xensource.com>
+CC: Attilio Rao <attilio.rao@citrix.com>
+Subject: [PATCH v2 2/5] X86/XEN: Rename pagetable_setup_start() setup functions into pagetable_init()
+Date: Tue, 21 Aug 2012 21:22:38 +0100
+Message-ID: <1345580561-8506-3-git-send-email-attilio.rao@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
+References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: David Daney <ddaney.cavm@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        <linux-doc@vger.kernel.org>, David Daney <david.daney@cavium.com>
-Subject: Re: [2/2] spi: Add SPI master controller for OCTEON SOCs.
-References: <1336772086-17248-3-git-send-email-ddaney.cavm@gmail.com> <20120821194936.GA7145@roeck-us.net>
-In-Reply-To: <20120821194936.GA7145@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-OriginatorOrg: caviumnetworks.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 12:49 PM, Guenter Roeck wrote:
-> On Fri, May 11, 2012 at 08:34:46PM -0000, David Daney wrote:
->> From: David Daney <david.daney@cavium.com>
->>
->> Add the driver, link it into the kbuild system and provide device tree
->> binding documentation.
->>
->> Signed-off-by: David Daney <david.daney@cavium.com>
->> Acked-by: Grant Likely <grant.likely@secretlab.ca>
->>
-> [ ... ]
->
->> +
->> +static int __devexit octeon_spi_remove(struct platform_device *pdev)
->> +{
->> +	struct octeon_spi *p = platform_get_drvdata(pdev);
->> +	struct spi_master *master = p->my_master;
->> +
->> +	spi_unregister_master(master);
->> +
->
-> I know it is a bit late, but ...
+In preparation for unifying the pagetable_setup_start() and
+pagetable_setup_done() setup functions, rename appropriately all the
+infrastructure related to pagetable_setup_start().
 
-In this case, just in time.  I am now finally getting back to fixing the 
-issues with this driver, and looking to merging it in the near future.
+Signed-off-by: Attilio Rao <attilio.rao@citrix.com>
+---
+ arch/x86/include/asm/pgtable_types.h |    4 ++--
+ arch/x86/include/asm/x86_init.h      |    4 ++--
+ arch/x86/kernel/setup.c              |    2 +-
+ arch/x86/kernel/x86_init.c           |    4 ++--
+ arch/x86/mm/init_32.c                |    4 ++--
+ arch/x86/xen/mmu.c                   |    4 ++--
+ 6 files changed, 11 insertions(+), 11 deletions(-)
 
-David Daney
-
->
-> The call to spi_unregister_master() frees the memory associated with master,
-> ie 'p', and the spi_master_put() below without matching spi_master_get() is
-> unnecessary/wrong. One possible fix would be to use
->
-> 	struct spi_master *master = spi_master_get(p->my_master);
->
-> above. That protects master and p while it is still being used, and makes use
-> of the call to spi_master_put() below. Another option might be to move
-> cvmx_write_csr() ahead of the call to spi_unregister_master() and drop the
-> call to spi_master_put().
->
-> Guenter
->
->> +	/* Clear the CSENA* and put everything in a known state. */
->> +	cvmx_write_csr(p->register_base + OCTEON_SPI_CFG, 0);
->> +	spi_master_put(master);
->> +	return 0;
->> +}
->> +
->
-
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index e02b875..0c01e07 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -303,10 +303,10 @@ void set_pte_vaddr(unsigned long vaddr, pte_t pte);
+ 
+ extern void native_pagetable_reserve(u64 start, u64 end);
+ #ifdef CONFIG_X86_32
+-extern void native_pagetable_setup_start(void);
++extern void native_pagetable_init(void);
+ extern void native_pagetable_setup_done(pgd_t *base);
+ #else
+-#define native_pagetable_setup_start x86_init_pgd_start_noop
++#define native_pagetable_init        x86_init_pgd_init_noop
+ #define native_pagetable_setup_done  x86_init_pgd_done_noop
+ #endif
+ 
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 782ba0c..24084b2 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -81,11 +81,11 @@ struct x86_init_mapping {
+ 
+ /**
+  * struct x86_init_paging - platform specific paging functions
+- * @pagetable_setup_start:	platform specific pre paging_init() call
++ * @pagetable_init:		platform specific paging initialization call
+  * @pagetable_setup_done:	platform specific post paging_init() call
+  */
+ struct x86_init_paging {
+-	void (*pagetable_setup_start)(void);
++	void (*pagetable_init)(void);
+ 	void (*pagetable_setup_done)(pgd_t *base);
+ };
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 90cbbe0..61b7d98 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -961,7 +961,7 @@ void __init setup_arch(char **cmdline_p)
+ 	kvmclock_init();
+ #endif
+ 
+-	x86_init.paging.pagetable_setup_start();
++	x86_init.paging.pagetable_init();
+ 	paging_init();
+ 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
+ 
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 3b88493..0e1e950 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -26,7 +26,7 @@
+ 
+ void __cpuinit x86_init_noop(void) { }
+ void __init x86_init_uint_noop(unsigned int unused) { }
+-void __init x86_init_pgd_start_noop(void) { }
++void __init x86_init_pgd_init_noop(void) { }
+ void __init x86_init_pgd_done_noop(pgd_t *unused) { }
+ int __init iommu_init_noop(void) { return 0; }
+ void iommu_shutdown_noop(void) { }
+@@ -69,7 +69,7 @@ struct x86_init_ops x86_init __initdata = {
+ 	},
+ 
+ 	.paging = {
+-		.pagetable_setup_start	= native_pagetable_setup_start,
++		.pagetable_init		= native_pagetable_init,
+ 		.pagetable_setup_done	= native_pagetable_setup_done,
+ 	},
+ 
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index c4aa1b2..0e38e0e 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -445,7 +445,7 @@ static inline void permanent_kmaps_init(pgd_t *pgd_base)
+ }
+ #endif /* CONFIG_HIGHMEM */
+ 
+-void __init native_pagetable_setup_start(void)
++void __init native_pagetable_init(void)
+ {
+ 	unsigned long pfn, va;
+ 	pgd_t *pgd, *base = swapper_pg_dir;
+@@ -493,7 +493,7 @@ void __init native_pagetable_setup_done(pgd_t *base)
+  * If we're booting paravirtualized under a hypervisor, then there are
+  * more options: we may already be running PAE, and the pagetable may
+  * or may not be based in swapper_pg_dir.  In any case,
+- * paravirt_pagetable_setup_start() will set up swapper_pg_dir
++ * paravirt_pagetable_init() will set up swapper_pg_dir
+  * appropriately for the rest of the initialization to work.
+  *
+  * In general, pagetable_init() assumes that the pagetable may already
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index d89ea5c..ff1af97 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1174,7 +1174,7 @@ static void xen_exit_mmap(struct mm_struct *mm)
+ 	spin_unlock(&mm->page_table_lock);
+ }
+ 
+-static void __init xen_pagetable_setup_start(void)
++static void __init xen_pagetable_init(void)
+ {
+ }
+ 
+@@ -2068,7 +2068,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+ void __init xen_init_mmu_ops(void)
+ {
+ 	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
+-	x86_init.paging.pagetable_setup_start = xen_pagetable_setup_start;
++	x86_init.paging.pagetable_init = xen_pagetable_init;
+ 	x86_init.paging.pagetable_setup_done = xen_pagetable_setup_done;
+ 	pv_mmu_ops = xen_mmu_ops;
+ 
+-- 
+1.7.2.5
 
