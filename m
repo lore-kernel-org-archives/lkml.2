@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758629Ab2HUVcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 17:32:14 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:62859 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab2HUVcK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 17:32:10 -0400
-Subject: Re: [PATCH] task_work: add a scheduling point in task_work_run()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-In-Reply-To: <1345581470.2815.14.camel@falcor.watson.ibm.com>
-References: <1341014197.2342.7.camel@falcor.watson.ibm.com>
-	 <20120630050238.GZ14083@ZenIV.linux.org.uk>
-	 <1341172202.2556.13.camel@falcor>
-	 <20120701205722.GD22927@ZenIV.linux.org.uk>
-	 <1341193591.2249.3.camel@falcor>
-	 <20120702034310.GE22927@ZenIV.linux.org.uk>
-	 <20120702051155.GF22927@ZenIV.linux.org.uk>
-	 <1341229790.2350.1.camel@falcor>
-	 <20120702120259.GG22927@ZenIV.linux.org.uk>
-	 <1341234091.2166.5.camel@falcor>
-	 <20120702133329.GH22927@ZenIV.linux.org.uk>
-	 <1341240603.2086.1.camel@falcor>
-	 <1345554314.5158.490.camel@edumazet-glaptop>
-	 <1345581470.2815.14.camel@falcor.watson.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Aug 2012 23:32:05 +0200
-Message-ID: <1345584725.5158.550.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758642Ab2HUVgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 17:36:41 -0400
+Received: from mout.perfora.net ([74.208.4.194]:50240 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758448Ab2HUVgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 17:36:39 -0400
+Date: Tue, 21 Aug 2012 17:22:27 -0400
+From: Jim Rees <rees@umich.edu>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
+ unsigned integer
+Message-ID: <20120821212227.GA14194@umich.edu>
+References: <20120821212910.GD18637@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120821212910.GD18637@fieldses.org>
+X-Provags-ID: V02:K0:IPR7h/3v7t1kmVTCOrGhguC82mNJXoQESzwxkeviRpe
+ 2VpJc/CaZzt1meLNLfcnrsQOjuR6mqWrAhnYhZo5DIdnPr2E/+
+ uM5MvIdDjtvaij3cRVsNnXP2N+cALWmRlqCnM6F9N8tvIeWt7c
+ eS0WORzDJigOrLvn9h2sv291VtjdRze4ST03tMgsjNV3WcdYML
+ dnQ5tdgDi55crg6ikK4TssVN+2XxI9KiGPlPT297HY2pivGGpc
+ 4k3K9cHTuekE6XCU146Idif3zpDlfkaFOsBcHZqJE9G9mWenFX
+ 2B6Hr20N2yyQERckGvSiitpm0gZqfgDtD/YeM72k+43mC7JlA=
+ =
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-21 at 16:37 -0400, Mimi Zohar wrote:
+J. Bruce Fields wrote:
 
-> We're here, because fput() called schedule_work() to delay the last
-> fput().  The execution needs to take place before the syscall returns to
-> userspace.  Need to read __schedule()...  Do you know if cond_resched()
-> can guarantee that it will be executed before the return to userspace? 
+  From: "J. Bruce Fields" <bfields@redhat.com>
+  
+  I've seen a couple examples recently where we've gotten this wrong.
+  Maybe something like this would help?  Is there some better way?
+  
+  (Approximation due to Jim Rees).
 
-Some clarifications : 
-
-- fput() does not call schedule_work() in this case but task_work_add()
-
-- cond_resched() wont return to userspace.
-
-
+Please add Suggested-by: Jim Rees <rees@umich.edu>.  I'm thinking of
+patenting the algorithm.
