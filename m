@@ -1,57 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab2HUOlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:41:23 -0400
-Received: from mga06.intel.com ([134.134.136.21]:43525 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754898Ab2HUOlU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:41:20 -0400
-Subject: Re: [PATCH] x86: efi: Turn off efi_enabled after setup on mixed
- fw/kernel
-From: Matt Fleming <matt.fleming@intel.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, mk@dee.su,
-        Marko Kohtala <marko.kohtala@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, Peter Jones <pjones@redhat.com>
-In-Reply-To: <CAOesGMiUOfg9aNjtsah-n_k-Uqbp4veppxgU=dDUOxBGyB5PxQ@mail.gmail.com>
-References: <1345412920-10906-1-git-send-email-olof@lixom.net>
-	 <50320DBD.5080507@canonical.com>
-	 <CAOesGMiUOfg9aNjtsah-n_k-Uqbp4veppxgU=dDUOxBGyB5PxQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Tue, 21 Aug 2012 15:39:00 +0100
-Message-ID: <1345559940.3088.56.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755449Ab2HUOl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:41:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755238Ab2HUOlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 10:41:25 -0400
+Date: Tue, 21 Aug 2012 17:42:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 4/5] mm: introduce putback_movable_pages()
+Message-ID: <20120821144213.GB7784@redhat.com>
+References: <cover.1345519422.git.aquini@redhat.com>
+ <16a7bbe6c1d4df624679646ef13566798a82798f.1345519422.git.aquini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <16a7bbe6c1d4df624679646ef13566798a82798f.1345519422.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-20 at 14:59 -0700, Olof Johansson wrote:
-> > From a quick glance with some grepping, efi reboot and efifb will
-> > also no longer work, is that intentional?
+On Tue, Aug 21, 2012 at 09:47:47AM -0300, Rafael Aquini wrote:
+> The PATCH "mm: introduce compaction and migration for virtio ballooned pages"
+> hacks around putback_lru_pages() in order to allow ballooned pages to be
+> re-inserted on balloon page list as if a ballooned page was like a LRU page.
 > 
-> That's the very point of this patch, the EFI services won't work since
-> there are no runtime services in this state, just boot time setup. If
-> efi_enabled is left on, the reboot will panic.
+> As ballooned pages are not legitimate LRU pages, this patch introduces
+> putback_movable_pages() to properly cope with cases where the isolated
+> pageset contains ballooned pages and LRU pages, thus fixing the mentioned
+> inelegant hack around putback_lru_pages().
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  include/linux/migrate.h |  2 ++
+>  mm/compaction.c         |  4 ++--
+>  mm/migrate.c            | 20 ++++++++++++++++++++
+>  mm/page_alloc.c         |  2 +-
+>  4 files changed, 25 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+> index ce7e667..ff103a1 100644
+> --- a/include/linux/migrate.h
+> +++ b/include/linux/migrate.h
+> @@ -10,6 +10,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+>  #ifdef CONFIG_MIGRATION
+>  
+>  extern void putback_lru_pages(struct list_head *l);
+> +extern void putback_movable_pages(struct list_head *l);
+>  extern int migrate_page(struct address_space *,
+>  			struct page *, struct page *, enum migrate_mode);
+>  extern int migrate_pages(struct list_head *l, new_page_t x,
+> @@ -33,6 +34,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+>  #else
+>  
+>  static inline void putback_lru_pages(struct list_head *l) {}
+> +static inline void putback_movable_pages(struct list_head *l) {}
+>  static inline int migrate_pages(struct list_head *l, new_page_t x,
+>  		unsigned long private, bool offlining,
+>  		enum migrate_mode mode) { return -ENOSYS; }
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index ce43dc2..782ed32 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -759,9 +759,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
+>  						nr_remaining);
+>  
+> -		/* Release LRU pages not migrated */
+> +		/* Release isolated pages not migrated */
+>  		if (err) {
+> -			putback_lru_pages(&cc->migratepages);
+> +			putback_movable_pages(&cc->migratepages);
+>  			cc->nr_migratepages = 0;
+>  			if (err == -ENOMEM) {
+>  				ret = COMPACT_PARTIAL;
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 6392da258..0bf2caf 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -80,6 +80,26 @@ void putback_lru_pages(struct list_head *l)
+>  		list_del(&page->lru);
+>  		dec_zone_page_state(page, NR_ISOLATED_ANON +
+>  				page_is_file_cache(page));
+> +			putback_lru_page(page);
+> +	}
+> +}
+> +
+> +/*
+> + * Put previously isolated pages back onto the appropriated lists
 
-But efifb should still work without EFI runtime services, no? I see this
-in setup_arch(),
+Do you mean appropriate lists?
 
-#ifdef CONFIG_VT                                                                
-#if defined(CONFIG_VGA_CONSOLE)                                                 
-        if (!efi_enabled || (efi_mem_type(0xa0000) != EFI_CONVENTIONAL_MEMORY)) 
-                conswitchp = &vga_con;                                          
-#elif defined(CONFIG_DUMMY_CONSOLE)                                             
-        conswitchp = &dummy_con;                                                
-#endif                                                                          
-#endif                                   
-
-but efi_enabled check looks bogus now that efi_enabled has come to mean
-"EFI services available?". If we've been passed the dimensions of the
-EFI framebuffer I'm unaware of a reason we can't use it.
-
+> + * from where they were once taken off for compaction/migration.
+> + *
+> + * This function shall be used instead of putback_lru_pages(),
+> + * whenever the isolated pageset has been built by isolate_migratepages_range()
+> + */
+> +void putback_movable_pages(struct list_head *l)
+> +{
+> +	struct page *page;
+> +	struct page *page2;
+> +
+> +	list_for_each_entry_safe(page, page2, l, lru) {
+> +		list_del(&page->lru);
+> +		dec_zone_page_state(page, NR_ISOLATED_ANON +
+> +				page_is_file_cache(page));
+>  		if (unlikely(movable_balloon_page(page)))
+>  			putback_balloon_page(page);
+>  		else
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 009ac28..78b7663 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5669,7 +5669,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+>  				    0, false, MIGRATE_SYNC);
+>  	}
+>  
+> -	putback_lru_pages(&cc.migratepages);
+> +	putback_movable_pages(&cc.migratepages);
+>  	return ret > 0 ? 0 : ret;
+>  }
+>  
+> -- 
+> 1.7.11.4
