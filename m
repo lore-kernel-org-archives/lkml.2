@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab2HUKZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 06:25:50 -0400
-Received: from skyrme.org ([193.175.80.135]:33389 "EHLO skyrme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754436Ab2HUKZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 06:25:48 -0400
-X-Greylist: delayed 1895 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Aug 2012 06:25:48 EDT
-Date: 21 Aug 2012 09:54:09 +0000
-Message-Id: <1345542849-13621-1-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: trivial@kernel.org
-Cc: "Andrew Morton" <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        "Oskar Schirmer" <oskar@scara.com>,
-        "John Anthony Kazos Jr" <jakj@j-a-k-j.com>,
-        "Rob Landley" <rob@landley.net>
-Subject: [PATCH] Documentation: fix broken utf8 encoding
-X-Mailer: git-send-email 1.6.0.3
+	id S1756289Ab2HUK2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 06:28:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60354 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756231Ab2HUK2M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 06:28:12 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: irq: Allow users to retrieve the irq_domain
+Date: Tue, 21 Aug 2012 11:28:09 +0100
+Message-Id: <1345544889-7720-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-conversion to utf8 left some extra control character here,
-remove it.
+This is useful for integration with other subsystems, especially MFD,
+and provides an alternative API for users that request their own IRQs.
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
-Cc: John Anthony Kazos Jr <jakj@j-a-k-j.com>
-Cc: Rob Landley <rob@landley.net>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- Documentation/power/swsusp.txt |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/regmap/regmap-irq.c |   19 +++++++++++++++++++
+ include/linux/regmap.h           |    2 ++
+ 2 files changed, 21 insertions(+)
 
-diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
-index 92341b8..0b4b63e 100644
---- a/Documentation/power/swsusp.txt
-+++ b/Documentation/power/swsusp.txt
-@@ -53,7 +53,7 @@ before suspend (it is limited to 500 MB by default).
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index bb5e103..78b833f 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -450,3 +450,22 @@ int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq)
+ 	return irq_create_mapping(data->domain, irq);
+ }
+ EXPORT_SYMBOL_GPL(regmap_irq_get_virq);
++
++/**
++ * regmap_irq_get_domain(): Retrieve the irq_domain for the chip
++ *
++ * Useful for drivers to request their own IRQs and for integration
++ * with subsystems.  For ease of integration NULL is accepted as a
++ * domain, allowing devices to just call this even if no domain is
++ * allocated.
++ *
++ * @data: regmap_irq controller to operate on.
++ */
++struct irq_domain *regmap_irq_get_domain(struct regmap_irq_chip_data *data)
++{
++	if (data)
++		return data->domain;
++	else
++		return NULL;
++}
++EXPORT_SYMBOL_GPL(regmap_irq_get_domain);
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 9c4c9c67..a0f76c1 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -19,6 +19,7 @@
+ struct module;
+ struct device;
+ struct i2c_client;
++struct irq_domain;
+ struct spi_device;
+ struct regmap;
+ struct regmap_range_cfg;
+@@ -316,6 +317,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
+ int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data);
+ int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq);
++struct irq_domain *regmap_irq_get_domain(struct regmap_irq_chip_data *data);
  
- Article about goals and implementation of Software Suspend for Linux
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--Author: Gábor Kuti
-+Author: Gábor Kuti
- Last revised: 2003-10-20 by Pavel Machek
+ #else
  
- Idea and goals to achieve
 -- 
-1.7.9.5
+1.7.10.4
 
