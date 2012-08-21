@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757863Ab2HUQEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:04:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60619 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757839Ab2HUQEp (ORCPT
+	id S1757885Ab2HUQEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:04:54 -0400
+Received: from relay.parallels.com ([195.214.232.42]:52428 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757864Ab2HUQEt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:04:45 -0400
-Date: Tue, 21 Aug 2012 09:04:16 -0700
-From: tip-bot for Cody P Schafer <cody@linux.vnet.ibm.com>
-Message-ID: <tip-492746546fe380da768c8496213e26aa91b9b3aa@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, matthltc@us.ibm.com,
-        dave@linux.vnet.ibm.com, namhyung@kernel.org,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
-        a.p.zijlstra@chello.nl, dave@linux.vnet.ibm.com, matthltc@us.ibm.com,
-        namhyung@kernel.org, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
-In-Reply-To: <1344637382-22789-10-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344637382-22789-10-git-send-email-cody@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Avoid segfault in elf_strptr
-Git-Commit-ID: 492746546fe380da768c8496213e26aa91b9b3aa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 21 Aug 2012 12:04:49 -0400
+Message-ID: <5033B199.6080305@parallels.com>
+Date: Tue, 21 Aug 2012 20:04:41 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:04:23 -0700 (PDT)
+To: David Miller <davem@davemloft.net>
+CC: "dhowells@redhat.com" <dhowells@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "rick.jones2@hp.com" <rick.jones2@hp.com>,
+        "ycheng@google.com" <ycheng@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <mikulas@artax.karlin.mff.cuni.cz>
+Subject: Re: [PATCH] tun: don't zeroize sock->file on detach
+References: <20120809124436.5156.26944.stgit@localhost.localdomain> <20120809.161639.1789560369123168415.davem@davemloft.net>
+In-Reply-To: <20120809.161639.1789560369123168415.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  492746546fe380da768c8496213e26aa91b9b3aa
-Gitweb:     http://git.kernel.org/tip/492746546fe380da768c8496213e26aa91b9b3aa
-Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
-AuthorDate: Fri, 10 Aug 2012 15:22:55 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Aug 2012 14:25:23 -0300
+10.08.2012 03:16, David Miller пишет:
+> From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Date: Thu, 09 Aug 2012 16:50:40 +0400
+>
+>> This is a fix for bug, introduced in 3.4 kernel by commit
+>> 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d, which, among other things, replaced
+>> simple sock_put() by sk_release_kernel(). Below is sequence, which leads to
+>> oops for non-persistent devices:
+>>
+>> tun_chr_close()
+>> tun_detach()				<== tun->socket.file = NULL
+>> tun_free_netdev()
+>> sk_release_sock()
+>> sock_release(sock->file == NULL)
+>> iput(SOCK_INODE(sock))			<== dereference on NULL pointer
+>>
+>> This patch just removes zeroing of socket's file from __tun_detach().
+>> sock_release() will do this.
+>>
+>> Cc: stable@vger.kernel.org
+>> Reported-by: Ruan Zhijie <ruanzhijie@hotmail.com>
+>> Tested-by: Ruan Zhijie <ruanzhijie@hotmail.com>
+>> Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+>> Acked-by: Eric Dumazet <edumazet@google.com>
+>> Acked-by: Yuchung Cheng <ycheng@google.com>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>
+> Applied, thanks.
+>
 
-perf symbols: Avoid segfault in elf_strptr
+Hi, David.
+I found out, that this commit: b09e786bd1dd66418b69348cb110f3a64764626a
+was previous attempt to fix the problem.
+I believe this commit have to be dropped.
 
-If we call elf_section_by_name() with a truncated elf image (ie: the
-file header indicates that the section headers are placed past the end
-of the file), elf_strptr() causes a segfault within libelf.
 
-Avoid this by checking that we can access the section string table
-properly.
-
-Should really be fixed in libelf/elfutils.
-
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: David Hansen <dave@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Matt Hellsley <matthltc@us.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-10-git-send-email-cody@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/symbol-elf.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index a2e994e..a9a194d 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -129,6 +129,10 @@ static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
- 	Elf_Scn *sec = NULL;
- 	size_t cnt = 1;
- 
-+	/* Elf is corrupted/truncated, avoid calling elf_strptr. */
-+	if (!elf_rawdata(elf_getscn(elf, ep->e_shstrndx), NULL))
-+		return NULL;
-+
- 	while ((sec = elf_nextscn(elf, sec)) != NULL) {
- 		char *str;
- 
+-- 
+Best regards,
+Stanislav Kinsbursky
