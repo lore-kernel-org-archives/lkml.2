@@ -1,73 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab2HUMqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:46:48 -0400
-Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:52079 "EHLO
-	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757163Ab2HUMqo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:46:44 -0400
-Date: Tue, 21 Aug 2012 15:42:45 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
-Message-ID: <20120821124243.GG10347@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1345545940-2232-1-git-send-email-sourav.poddar@ti.com>
- <1345545940-2232-2-git-send-email-sourav.poddar@ti.com>
- <20120821124146.GA21557@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J1ldk4ymECC/Y9sn"
-Content-Disposition: inline
-In-Reply-To: <20120821124146.GA21557@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757534Ab2HUMsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:48:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013Ab2HUMsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 08:48:13 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@redhat.com>
+Subject: [PATCH v8 0/5] make balloon pages movable by compaction
+Date: Tue, 21 Aug 2012 09:47:43 -0300
+Message-Id: <cover.1345519422.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Memory fragmentation introduced by ballooning might reduce significantly
+the number of 2MB contiguous memory blocks that can be used within a guest,
+thus imposing performance penalties associated with the reduced number of
+transparent huge pages that could be used by the guest workload.
 
---J1ldk4ymECC/Y9sn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch-set follows the main idea discussed at 2012 LSFMMS session:
+"Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
+to introduce the required changes to the virtio_balloon driver, as well as
+the changes to the core compaction & migration bits, in order to make those
+subsystems aware of ballooned pages and allow memory balloon pages become
+movable within a guest, thus avoiding the aforementioned fragmentation issue
 
-On Tue, Aug 21, 2012 at 01:41:46PM +0100, Mark Brown wrote:
-> > +	regmap_read(smsc->regmap, SMSC_DEV_ID, &ret);
-> > +	dev_dbg(&i2c->dev, "SMSC Device ID: %d\n", ret);
->=20
-> I'd make these log messages dev_info() or something.
+Rafael Aquini (5):
+  mm: introduce a common interface for balloon pages mobility
+  mm: introduce compaction and migration for ballooned pages
+  virtio_balloon: introduce migration primitives to balloon pages
+  mm: introduce putback_movable_pages()
+  mm: add vm event counters for balloon pages compaction
 
-dev_info() ? It'lll just make boot noisier for no good reason. Which
-user wants to see this during boot up ? That's a debugging feature for
-develop IMHO.
+ drivers/virtio/virtio_balloon.c    | 212 +++++++++++++++++++++++++++++++++++--
+ include/linux/balloon_compaction.h | 113 ++++++++++++++++++++
+ include/linux/migrate.h            |   2 +
+ include/linux/pagemap.h            |  18 ++++
+ include/linux/vm_event_item.h      |   8 +-
+ mm/Kconfig                         |  15 +++
+ mm/Makefile                        |   2 +-
+ mm/balloon_compaction.c            | 147 +++++++++++++++++++++++++
+ mm/compaction.c                    |  51 +++++----
+ mm/migrate.c                       |  52 ++++++++-
+ mm/page_alloc.c                    |   2 +-
+ mm/vmstat.c                        |  10 +-
+ 12 files changed, 595 insertions(+), 37 deletions(-)
+ create mode 100644 include/linux/balloon_compaction.h
+ create mode 100644 mm/balloon_compaction.c
 
---=20
-balbi
 
---J1ldk4ymECC/Y9sn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Change log:
+v8:
+ * introduce a common MM interface for balloon driver page compaction (Michael);
+ * remove the global state preventing multiple balloon device support (Michael);
+ * introduce RCU protection/syncrhonization to balloon page->mapping (Michael);
+v7:
+ * fix a potential page leak case at 'putback_balloon_page' (Mel);
+ * adjust vm-events-counter patch and remove its drop-on-merge message (Rik);
+ * add 'putback_movable_pages' to avoid hacks on 'putback_lru_pages' (Minchan);
+v6:
+ * rename 'is_balloon_page()' to 'movable_balloon_page()' (Rik);
+v5:
+ * address Andrew Morton's review comments on the patch series;
+ * address a couple extra nitpick suggestions on PATCH 01 (Minchan);
+v4: 
+ * address Rusty Russel's review comments on PATCH 02;
+ * re-base virtio_balloon patch on 9c378abc5c0c6fc8e3acf5968924d274503819b3;
+V3: 
+ * address reviewers nitpick suggestions on PATCH 01 (Mel, Minchan);
+V2: 
+ * address Mel Gorman's review comments on PATCH 01;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQM4JDAAoJEIaOsuA1yqREyHgP/2209InzsuTouGTtyopqRUTI
-8KAx2RzoVLNcP0qwGyEDd8jNyYXpcp5x4uwNsSRn3tL8zMC6RWuDl7LtWGTs7pBC
-hn4x2sEOw0IP1jVYjDucX6FICxpXO3sxG3THFU4f6Yu4LvNFZI30mDL1qkd9Dvzj
-71v33lfamXo9QIZJJqUBjNvHy5I4LX8R22kP/0x9DyrBHNcOSq0GWQ0KGqiwEY9V
-OVwsMk5zXnntU1cbj803MIgCQNsVDyJZnFpng6G8/rgcnzQHd7X2tFG/NyMbVpfz
-IrdDLeKpomui8zO7L3nVRdoofauekL4s61gNWb6Zc8Q4FrSfn/qyNZtO9xXHwdJ9
-pBl+Fit18uSWjpG5TLj5NxehpbBe6Gr3+V9wpGb8v8TGdOLn2M+mkKWplnl1yOaB
-ohKeSyrCH1W8szrDp8xQK60h61LPS1hcY8wfQIMQTPkqxtZ5lQ1ipaD1bIllGbDf
-V97Xy0peYc9Oz9PTvT5ktPQAQ6YOZkJPAoZ8FnOD9qlevQ4W2IQBjulY8FSvIV1l
-bRBayJYEfjF/wcrB9bBTqfMCKc4Q8MgbP9nHxuHvokNEbd2/QJDCpn3DnPNu+7iK
-jSjPPqKW99Kp9OIvgDPDD9k8erK1a3xASf+ZAJ3GsLMgnYo1Qf/AuB1gX8ueX6Wy
-UVrH7jQNDoVUY5S/J8LE
-=oLTt
------END PGP SIGNATURE-----
+Preliminary test results:
+(2 VCPU 2048mB RAM KVM guest running 3.6.0_rc2+ -- after a reboot)
 
---J1ldk4ymECC/Y9sn--
+* 64mB balloon:
+[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
+compact_blocks_moved 0
+compact_pages_moved 0
+compact_pagemigrate_failed 0
+compact_stall 0
+compact_fail 0
+compact_success 0
+compact_balloon_isolated 0
+compact_balloon_migrated 0
+compact_balloon_returned 0
+compact_balloon_released 0
+[root@localhost ~]# 
+[root@localhost ~]# for i in $(seq 1 6); do echo 1 > /proc/sys/vm/compact_memory & done &>/dev/null 
+[1]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[2]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[3]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[4]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[5]-  Done                    echo 1 > /proc/sys/vm/compact_memory
+[6]+  Done                    echo 1 > /proc/sys/vm/compact_memory
+[root@localhost ~]# 
+[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
+compact_blocks_moved 3108
+compact_pages_moved 43169
+compact_pagemigrate_failed 95
+compact_stall 0
+compact_fail 0
+compact_success 0
+compact_balloon_isolated 16384
+compact_balloon_migrated 16384
+compact_balloon_returned 0
+compact_balloon_released 16384
+
+
+* 128 mB balloon:
+[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
+compact_blocks_moved 0
+compact_pages_moved 0
+compact_pagemigrate_failed 0
+compact_stall 0
+compact_fail 0
+compact_success 0
+compact_balloon_isolated 0
+compact_balloon_migrated 0
+compact_balloon_returned 0
+compact_balloon_released 0
+[root@localhost ~]# 
+[root@localhost ~]# for i in $(seq 1 6); do echo 1 > /proc/sys/vm/compact_memory & done &>/dev/null  
+[1]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[2]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[3]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[4]   Done                    echo 1 > /proc/sys/vm/compact_memory
+[5]-  Done                    echo 1 > /proc/sys/vm/compact_memory
+[6]+  Done                    echo 1 > /proc/sys/vm/compact_memory
+[root@localhost ~]# 
+[root@localhost ~]# awk '/compact/ {print}' /proc/vmstat
+compact_blocks_moved 3062
+compact_pages_moved 49774
+compact_pagemigrate_failed 129
+compact_stall 0
+compact_fail 0
+compact_success 0
+compact_balloon_isolated 26076
+compact_balloon_migrated 25957
+compact_balloon_returned 119
+compact_balloon_released 25957
+
+-- 
+1.7.11.4
