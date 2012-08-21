@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab2HUQSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:18:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60909 "EHLO
+	id S1757961Ab2HUQSe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:18:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60919 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab2HUQSQ (ORCPT
+	with ESMTP id S1757938Ab2HUQSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:18:16 -0400
-Date: Tue, 21 Aug 2012 09:17:14 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-dmhsv8mpoksx2wp97balqiem@git.kernel.org>
-Cc: acme@redhat.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, peterz@infradead.org, jolsa@redhat.com,
-        drepper@gmail.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, namhyung@kernel.org,
-        mingo@elte.hu
-Reply-To: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, acme@redhat.com, andi@firstfloor.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, acme@ghostprotocols.net,
-        namhyung@kernel.org, jolsa@redhat.com, drepper@gmail.com,
-        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
+	Tue, 21 Aug 2012 12:18:31 -0400
+Date: Tue, 21 Aug 2012 09:18:09 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-0hk9dazg9pora9jylkqngovm@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf test:
-  Add automated tests for event group parsing
-Git-Commit-ID: 905f5ee2f769c85eb6f0b6ee38f803829efd68a3
+Subject: [tip:perf/core] perf evlist: Rename __group method to __set_leader
+Git-Commit-ID: 63dab225f334e0e21f7106aed8d888b500b53ce6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,366 +29,254 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:17:21 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:18:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  905f5ee2f769c85eb6f0b6ee38f803829efd68a3
-Gitweb:     http://git.kernel.org/tip/905f5ee2f769c85eb6f0b6ee38f803829efd68a3
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 8 Aug 2012 12:23:52 +0200
+Commit-ID:  63dab225f334e0e21f7106aed8d888b500b53ce6
+Gitweb:     http://git.kernel.org/tip/63dab225f334e0e21f7106aed8d888b500b53ce6
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 14 Aug 2012 16:35:48 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 14 Aug 2012 17:04:06 -0300
+CommitDate: Wed, 15 Aug 2012 10:13:56 -0300
 
-perf test: Add automated tests for event group parsing
+perf evlist: Rename __group method to __set_leader
 
-Adding 5 more tests for new event group syntax. Tests are executed
-within the 'perf test parse' test suite.
+Just like was done for parse_events__set_leader.
 
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Also we need to have the list_entry set_leader method in evlist.c so that we
+don't grow another dep in the python binding:
+
+ # ~acme/git/linux/tools/perf/python/twatch.py
+ Traceback (most recent call last):
+   File "/home/acme/git/linux/tools/perf/python/twatch.py", line 16, in <module>
+     import perf
+ ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: parse_events__set_leader
+
+And also remove a pr_debug from evsel.c so that we avoid this one too:
+
+ # ~acme/git/linux/tools/perf/python/twatch.py
+ Traceback (most recent call last):
+   File "/home/acme/git/linux/tools/perf/python/twatch.py", line 16, in <module>
+     import perf
+ ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: eprintf
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/n/tip-dmhsv8mpoksx2wp97balqiem@git.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-0hk9dazg9pora9jylkqngovm@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events-test.c |  302 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 299 insertions(+), 3 deletions(-)
+ tools/perf/builtin-record.c    |    2 +-
+ tools/perf/builtin-stat.c      |    2 +-
+ tools/perf/builtin-top.c       |    2 +-
+ tools/perf/util/evlist.c       |   17 +++++++++++++++--
+ tools/perf/util/evlist.h       |    5 +++--
+ tools/perf/util/evsel.c        |    4 ----
+ tools/perf/util/parse-events.c |   19 +++----------------
+ tools/perf/util/parse-events.h |    3 +--
+ tools/perf/util/parse-events.y |    4 ++--
+ tools/perf/util/python.c       |    2 +-
+ 10 files changed, 28 insertions(+), 32 deletions(-)
 
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index 127d648..429dd68 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -513,6 +513,285 @@ static int test__checkterms_simple(struct list_head *terms)
- 	return 0;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f5b6137..c4e3b68 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -193,7 +193,7 @@ static void perf_record__open(struct perf_record *rec)
+ 	perf_evlist__config_attrs(evlist, opts);
+ 
+ 	if (opts->group)
+-		perf_evlist__group(evlist);
++		perf_evlist__set_leader(evlist);
+ 
+ 	list_for_each_entry(pos, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &pos->attr;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 23908a8..7b9c463 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -478,7 +478,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 	}
+ 
+ 	if (group)
+-		perf_evlist__group(evsel_list);
++		perf_evlist__set_leader(evsel_list);
+ 
+ 	first = list_entry(evsel_list->entries.next, struct perf_evsel, node);
+ 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 392d219..5a097be 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -890,7 +890,7 @@ static void perf_top__start_counters(struct perf_top *top)
+ 	struct perf_evlist *evlist = top->evlist;
+ 
+ 	if (top->group)
+-		perf_evlist__group(evlist);
++		perf_evlist__set_leader(evlist);
+ 
+ 	list_for_each_entry(counter, &evlist->entries, node) {
+ 		struct perf_event_attr *attr = &counter->attr;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index feffee3..6d09451 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -108,10 +108,23 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+ 	evlist->nr_entries += nr_entries;
  }
  
-+static int test__group1(struct perf_evlist *evlist)
+-void perf_evlist__group(struct perf_evlist *evlist)
++void __perf_evlist__set_leader(struct list_head *list)
 +{
 +	struct perf_evsel *evsel, *leader;
 +
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
++	leader = list_entry(list->next, struct perf_evsel, node);
++	leader->leader = NULL;
 +
-+	/* instructions:k */
-+	evsel = leader = list_entry(evlist->entries.next,
-+				    struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	/* cycles:upp */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+
-+	return 0;
++	list_for_each_entry(evsel, list, node) {
++		if (evsel != leader)
++			evsel->leader = leader;
++	}
 +}
 +
-+static int test__group2(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
-+
-+	/* faults + :ku modifier */
-+	evsel = leader = list_entry(evlist->entries.next,
-+				    struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_SOFTWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_SW_PAGE_FAULTS == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	/* cache-references + :u modifier */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CACHE_REFERENCES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+
-+	/* cycles:k */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	return 0;
-+}
-+
-+static int test__group3(struct perf_evlist *evlist __used)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
-+
-+	/* group1 syscalls:sys_enter_open:H */
-+	evsel = leader = list_entry(evlist->entries.next,
-+				    struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_TRACEPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong sample_type",
-+		PERF_TP_SAMPLE_TYPE == evsel->attr.sample_type);
-+	TEST_ASSERT_VAL("wrong sample_period", 1 == evsel->attr.sample_period);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+	TEST_ASSERT_VAL("wrong group name",
-+		!strcmp(leader->group_name, "group1"));
-+
-+	/* group1 cycles:kppp */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 3);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+
-+	/* group2 cycles + G modifier */
-+	evsel = leader = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+	TEST_ASSERT_VAL("wrong group name",
-+		!strcmp(leader->group_name, "group2"));
-+
-+	/* group2 1:3 + G modifier */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", 1 == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 3 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+
-+	/* instructions:u */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	return 0;
-+}
-+
-+static int test__group4(struct perf_evlist *evlist __used)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+
-+	/* cycles:u + p */
-+	evsel = leader = list_entry(evlist->entries.next,
-+				    struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 1);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	/* instructions:kp + p */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 2);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+
-+	return 0;
-+}
-+
-+static int test__group5(struct perf_evlist *evlist __used)
-+{
-+	struct perf_evsel *evsel, *leader;
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 5 == evlist->nr_entries);
-+
-+	/* cycles + G */
-+	evsel = leader = list_entry(evlist->entries.next,
-+				    struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	/* instructions + G */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+
-+	/* cycles:G */
-+	evsel = leader = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	/* instructions:G */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_INSTRUCTIONS == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
-+
-+	/* cycles */
-+	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config",
-+			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
-+	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong leader", evsel->leader == NULL);
-+
-+	return 0;
-+}
-+
- struct test__event_st {
- 	const char *name;
- 	__u32 type;
-@@ -632,6 +911,26 @@ static struct test__event_st test__events[] = {
- 		.name  = "mem:0:rw:kp",
- 		.check = test__checkevent_breakpoint_rw_modifier,
- 	},
-+	[28] = {
-+		.name  = "{instructions:k,cycles:upp}",
-+		.check = test__group1,
-+	},
-+	[29] = {
-+		.name  = "{faults:k,cache-references}:u,cycles:k",
-+		.check = test__group2,
-+	},
-+	[30] = {
-+		.name  = "group1{syscalls:sys_enter_open:H,cycles:kppp},group2{cycles,1:3}:G,instructions:u",
-+		.check = test__group3,
-+	},
-+	[31] = {
-+		.name  = "{cycles:u,instructions:kp}:p",
-+		.check = test__group4,
-+	},
-+	[32] = {
-+		.name  = "{cycles,instructions}:G,{cycles:G,instructions:G},cycles",
-+		.check = test__group5,
-+	},
- };
- 
- static struct test__event_st test__events_pmu[] = {
-@@ -658,9 +957,6 @@ static struct test__term test__terms[] = {
- 	},
- };
- 
--#define TEST__TERMS_CNT (sizeof(test__terms) / \
--			 sizeof(struct test__term))
--
- static int test_event(struct test__event_st *e)
++void perf_evlist__set_leader(struct perf_evlist *evlist)
  {
- 	struct perf_evlist *evlist;
+ 	if (evlist->nr_entries)
+-		parse_events__set_leader(&evlist->entries);
++		__perf_evlist__set_leader(&evlist->entries);
+ }
+ 
+ int perf_evlist__add_default(struct perf_evlist *evlist)
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index a19ccd7..7fe677e 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -118,6 +118,9 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
+ void perf_evlist__delete_maps(struct perf_evlist *evlist);
+ int perf_evlist__set_filters(struct perf_evlist *evlist);
+ 
++void __perf_evlist__set_leader(struct list_head *list);
++void perf_evlist__set_leader(struct perf_evlist *evlist);
++
+ u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
+ bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
+ u16 perf_evlist__id_hdr_size(const struct perf_evlist *evlist);
+@@ -131,6 +134,4 @@ bool perf_evlist__valid_sample_id_all(const struct perf_evlist *evlist);
+ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+ 				   struct list_head *list,
+ 				   int nr_entries);
+-
+-void perf_evlist__group(struct perf_evlist *evlist);
+ #endif /* __PERF_EVLIST_H */
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index f5b68e7..6c7dcc1 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -622,10 +622,6 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 				err = -errno;
+ 				goto out_close;
+ 			}
+-
+-			pr_debug("event cpu %d, thread %d, fd %d, group %d\n",
+-				 cpu, pid, FD(evsel, cpu, thread),
+-				 group_fd);
+ 		}
+ 	}
+ 
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index f6453cd..4393a6b 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -611,31 +611,18 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 			 pmu_event_name(head_config));
+ }
+ 
+-struct perf_evsel *parse_events__set_leader(struct list_head *list)
+-{
+-	struct perf_evsel *evsel, *leader;
+-
+-	leader = list_entry(list->next, struct perf_evsel, node);
+-	leader->leader = NULL;
+-
+-	list_for_each_entry(evsel, list, node)
+-		if (evsel != leader)
+-			evsel->leader = leader;
+-
+-	return leader;
+-}
+-
+ int parse_events__modifier_group(struct list_head *list,
+ 				 char *event_mod)
+ {
+ 	return parse_events__modifier_event(list, event_mod, true);
+ }
+ 
+-void parse_events__group(char *name, struct list_head *list)
++void parse_events__set_leader(char *name, struct list_head *list)
+ {
+ 	struct perf_evsel *leader;
+ 
+-	leader = parse_events__set_leader(list);
++	__perf_evlist__set_leader(list);
++	leader = list_entry(list->next, struct perf_evsel, node);
+ 	leader->group_name = name ? strdup(name) : NULL;
+ }
+ 
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index e1a184c..0b9782d 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -92,8 +92,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
+ 				void *ptr, char *type);
+ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 			 char *pmu , struct list_head *head_config);
+-struct perf_evsel *parse_events__set_leader(struct list_head *list);
+-void parse_events__group(char *name, struct list_head *list);
++void parse_events__set_leader(char *name, struct list_head *list);
+ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all);
+ void parse_events_error(void *data, void *scanner, char const *msg);
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 084c35f..66850f8 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -119,7 +119,7 @@ PE_NAME '{' events '}'
+ {
+ 	struct list_head *list = $3;
+ 
+-	parse_events__group($1, list);
++	parse_events__set_leader($1, list);
+ 	$$ = list;
+ }
+ |
+@@ -127,7 +127,7 @@ PE_NAME '{' events '}'
+ {
+ 	struct list_head *list = $2;
+ 
+-	parse_events__group(NULL, list);
++	parse_events__set_leader(NULL, list);
+ 	$$ = list;
+ }
+ 
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index f5bba4b..27187f0 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -825,7 +825,7 @@ static PyObject *pyrf_evlist__open(struct pyrf_evlist *pevlist,
+ 		return NULL;
+ 
+ 	if (group)
+-		perf_evlist__group(evlist);
++		perf_evlist__set_leader(evlist);
+ 
+ 	if (perf_evlist__open(evlist) < 0) {
+ 		PyErr_SetFromErrno(PyExc_OSError);
