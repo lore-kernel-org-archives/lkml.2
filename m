@@ -1,55 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758389Ab2HUUlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:41:36 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:47849 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab2HUUle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:41:34 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -next] HID: picoLCD: Add missing #include <linux/uaccess.h>
-Date: Tue, 21 Aug 2012 22:41:23 +0200
-Message-Id: <1345581683-2099-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758413Ab2HUUqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:46:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851Ab2HUUq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 16:46:28 -0400
+Date: Tue, 21 Aug 2012 17:45:56 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120821204556.GF12294@t510.redhat.com>
+References: <cover.1345519422.git.aquini@redhat.com>
+ <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
+ <1345562411.23018.111.camel@twins>
+ <20120821162432.GG2456@linux.vnet.ibm.com>
+ <20120821172819.GA12294@t510.redhat.com>
+ <20120821191330.GA8324@redhat.com>
+ <20120821192357.GD12294@t510.redhat.com>
+ <20120821193031.GC9027@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120821193031.GC9027@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-m68k/allmodconfig:
+On Tue, Aug 21, 2012 at 10:30:31PM +0300, Michael S. Tsirkin wrote:
+> On Tue, Aug 21, 2012 at 04:23:58PM -0300, Rafael Aquini wrote:
+> > On Tue, Aug 21, 2012 at 10:13:30PM +0300, Michael S. Tsirkin wrote:
+> > > > 
+> > > > I believe rcu_dereference_protected() is what I want/need here, since this code
+> > > > is always called for pages which we hold locked (PG_locked bit).
+> > > 
+> > > It would only help if we locked the page while updating the mapping,
+> > > as far as I can see we don't.
+> > >
+> > 
+> > But we can do it. In fact, by doing it (locking the page) we can easily avoid
+> > the nasty race balloon_isolate_page / leak_balloon, in a much simpler way, IMHO.
+> 
+> Absolutely. Further, we should look hard at whether most RCU uses
+> in this patchset can be replaced with page lock.
+>
 
-drivers/hid/hid-picolcd_debugfs.c: In function ‘picolcd_debug_reset_write’:
-drivers/hid/hid-picolcd_debugfs.c:54: error: implicit declaration of function ‘copy_from_user’
-drivers/hid/hid-picolcd_debugfs.c: In function ‘picolcd_debug_eeprom_read’:
-drivers/hid/hid-picolcd_debugfs.c:112: error: implicit declaration of function ‘copy_to_user’
+Yeah, In fact, by testing/grabbing the page lock at leak_balloon() even the
+module unload X migration / putback race seems to fade away, since migration
+code holds the page locked all the way.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-http://kisskb.ellerman.id.au/kisskb/buildresult/6990818/
+And that seems a quite easy task to be accomplished:
 
- drivers/hid/hid-picolcd_debugfs.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+....
+@@ -169,21 +197,61 @@ static void leak_balloon(struct virtio_balloon *vb, size_t
+num)
+        /* We can only do one array worth at a time. */
+        num = min(num, ARRAY_SIZE(vb->pfns));
 
-diff --git a/drivers/hid/hid-picolcd_debugfs.c b/drivers/hid/hid-picolcd_debugfs.c
-index f2491fa..15c22f2 100644
---- a/drivers/hid/hid-picolcd_debugfs.c
-+++ b/drivers/hid/hid-picolcd_debugfs.c
-@@ -27,6 +27,7 @@
- #include <linux/debugfs.h>
- 
- #include <linux/module.h>
-+#include <linux/uaccess.h>
- 
- #include "hid-picolcd.h"
- 
--- 
-1.7.0.4
++       mutex_lock(&vb->balloon_lock);
+        for (vb->num_pfns = 0; vb->num_pfns < num;
+             vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
++               spin_lock(&vb->pages_lock);
++               /*
++                * 'virtballoon_isolatepage()' can drain vb->pages list
++                * making us to stumble across a _temporarily_ empty list.
++                *
++                * Release the spinlock and resume from here in order to
++                * give page migration a shot to refill vb->pages list.
++                */
++               if (unlikely(list_empty(&vb->pages))) {
++                       spin_unlock(&vb->pages_lock);
++                       break;
++               }
++
+                page = list_first_entry(&vb->pages, struct page, lru);
++
++               /*
++                * Grab the page lock to avoid racing against threads isolating
++                * pages from vb->pages list (it's done under page lock).
++                *
++                * Failing to grab the page lock here means this page has been
++                * selected for isolation already.
++                */
++               if (!trylock_page(page)) {
++                       spin_unlock(&vb->pages_lock);
++                       break;
++               }
++
++               clear_balloon_mapping(page);
+                list_del(&page->lru);
+                set_page_pfns(vb->pfns + vb->num_pfns, page);
+                vb->num_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
++               unlock_page(page);
++               spin_unlock(&vb->pages_lock);
+        }
 
+.....
