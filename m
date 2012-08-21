@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab2HUMT1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:19:27 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55588 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163Ab2HUMTU (ORCPT
+	id S1755613Ab2HUMTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:19:41 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57976 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757320Ab2HUMTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:19:20 -0400
+	Tue, 21 Aug 2012 08:19:23 -0400
 From: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
 To: linux-m68k@vger.kernel.org
 Cc: geert@linux-m68k.org, linux-kernel@vger.kernel.org,
         Stany MARCEL <stany.marcel@novasys-ingenierie.com>
-Subject: [PATCH 2/3] Add support to Freescale M54xx Multi Channel DMA engine
-Date: Tue, 21 Aug 2012 14:18:50 +0200
-Message-Id: <1345551531-15348-2-git-send-email-stany.marcel@novasys-ingenierie.com>
+Subject: [PATCH 3/3] Add support to M54xx DMA FEC Driver
+Date: Tue, 21 Aug 2012 14:18:51 +0200
+Message-Id: <1345551531-15348-3-git-send-email-stany.marcel@novasys-ingenierie.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com>
 References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com>
@@ -29,5610 +29,1909 @@ Signed-off-by: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
  Tested with kernel 3.4.8 with arch/m68k backported from linux-m68k head
  2 FEC configured with shared phy
 
- arch/m68k/Kconfig.devices                   |    6 +
- arch/m68k/include/asm/MCD_dma.h             |  432 +++++
- arch/m68k/include/asm/dma.h                 |   76 +-
- arch/m68k/include/asm/m54xxdma.h            |   97 ++
- arch/m68k/include/asm/m54xxsram.h           |   11 +
- arch/m68k/platform/coldfire/MCD_dma.h       |  431 +++++
- arch/m68k/platform/coldfire/MCD_dmaApi.c    | 1045 ++++++++++++
- arch/m68k/platform/coldfire/MCD_progCheck.h |   29 +
- arch/m68k/platform/coldfire/MCD_tasks.c     | 2466 +++++++++++++++++++++++++++
- arch/m68k/platform/coldfire/MCD_tasksInit.c |  275 +++
- arch/m68k/platform/coldfire/MCD_tasksInit.h |   84 +
- arch/m68k/platform/coldfire/Makefile        |    3 +
- arch/m68k/platform/coldfire/dma-54xx.c      |  515 ++++++
- 13 files changed, 5469 insertions(+), 1 deletion(-)
- create mode 100644 arch/m68k/include/asm/MCD_dma.h
- create mode 100644 arch/m68k/include/asm/m54xxdma.h
- create mode 100644 arch/m68k/include/asm/m54xxsram.h
- create mode 100644 arch/m68k/platform/coldfire/MCD_dma.h
- create mode 100644 arch/m68k/platform/coldfire/MCD_dmaApi.c
- create mode 100644 arch/m68k/platform/coldfire/MCD_progCheck.h
- create mode 100644 arch/m68k/platform/coldfire/MCD_tasks.c
- create mode 100644 arch/m68k/platform/coldfire/MCD_tasksInit.c
- create mode 100644 arch/m68k/platform/coldfire/MCD_tasksInit.h
- create mode 100644 arch/m68k/platform/coldfire/dma-54xx.c
+ drivers/net/ethernet/freescale/Kconfig     |   27 +-
+ drivers/net/ethernet/freescale/Makefile    |    1 +
+ drivers/net/ethernet/freescale/fec_m54xx.c | 1589 ++++++++++++++++++++++++++++
+ drivers/net/ethernet/freescale/fec_m54xx.h |  237 +++++
+ 4 files changed, 1853 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/net/ethernet/freescale/fec_m54xx.c
+ create mode 100644 drivers/net/ethernet/freescale/fec_m54xx.h
 
-diff --git a/arch/m68k/Kconfig.devices b/arch/m68k/Kconfig.devices
-index 04a3d9b..5616933 100644
---- a/arch/m68k/Kconfig.devices
-+++ b/arch/m68k/Kconfig.devices
-@@ -55,6 +55,12 @@ config NFETH
- 	  which will emulate a regular ethernet device while presenting an
- 	  ethertap device to the host system.
+diff --git a/drivers/net/ethernet/freescale/Kconfig b/drivers/net/ethernet/freescale/Kconfig
+index 3574e14..cef3c62 100644
+--- a/drivers/net/ethernet/freescale/Kconfig
++++ b/drivers/net/ethernet/freescale/Kconfig
+@@ -7,7 +7,8 @@ config NET_VENDOR_FREESCALE
+ 	default y
+ 	depends on FSL_SOC || QUICC_ENGINE || CPM1 || CPM2 || PPC_MPC512x || \
+ 		   M523x || M527x || M5272 || M528x || M520x || M532x || \
+-		   ARCH_MXC || ARCH_MXS || (PPC_MPC52xx && PPC_BESTCOMM)
++		   M54xx || ARCH_MXC || ARCH_MXS || \
++		   (PPC_MPC52xx && PPC_BESTCOMM)
+ 	---help---
+ 	  If you have a network (Ethernet) card belonging to this class, say Y
+ 	  and read the Ethernet-HOWTO, available from
+@@ -53,6 +54,30 @@ config FEC_MPC52xx_MDIO
+ 	  If not sure, enable.
+ 	  If compiled as module, it will be called fec_mpc52xx_phy.
 
-+config MCD_DMA
-+	tristate "Freescale M54xx Multi Channel DMA engine support"
++config FEC_M54xx
++	tristate "MCF547x/MCF548x Fast Ethernet Controller support"
 +	depends on M54xx
-+	---help---
-+	  Enable support for the Freescale M547x and M548x Multi Channel DMA engine.
++	select MCD_DMA
++	help
++	  The MCF547x and MCF548x have a built-in Fast Ethernet Controller.
++	  Saying Y here will include support for this device in the kernel.
 +
- endmenu
++	  To compile this driver as a module, choose M here: the module
++	  will be called fecm.
++
++config FEC_M54xx_ENABLE_FEC2
++	bool "Enable the second FEC"
++	depends on FEC_M54xx
++	help
++	  This enables the second FEC on the 547x/548x. If you want to use
++	  it, say Y.
++
++config FEC_M54xx_SHARED_PHY
++	bool "Shared PHY interface(on some ColdFire designs)"
++	depends on FEC_M54xx_ENABLE_FEC2
++	help
++	  Say Y here if both PHYs are controlled via a single channel.
++
+ source "drivers/net/ethernet/freescale/fs_enet/Kconfig"
 
- menu "Character devices"
-diff --git a/arch/m68k/include/asm/MCD_dma.h b/arch/m68k/include/asm/MCD_dma.h
+ config FSL_PQ_MDIO
+diff --git a/drivers/net/ethernet/freescale/Makefile b/drivers/net/ethernet/freescale/Makefile
+index 1752488..64dba64 100644
+--- a/drivers/net/ethernet/freescale/Makefile
++++ b/drivers/net/ethernet/freescale/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_FEC_MPC52xx) += fec_mpc52xx.o
+ ifeq ($(CONFIG_FEC_MPC52xx_MDIO),y)
+ 	obj-$(CONFIG_FEC_MPC52xx) += fec_mpc52xx_phy.o
+ endif
++obj-$(CONFIG_FEC_M54xx) += fec_m54xx.o
+ obj-$(CONFIG_FS_ENET) += fs_enet/
+ obj-$(CONFIG_FSL_PQ_MDIO) += fsl_pq_mdio.o
+ obj-$(CONFIG_GIANFAR) += gianfar_driver.o
+diff --git a/drivers/net/ethernet/freescale/fec_m54xx.c b/drivers/net/ethernet/freescale/fec_m54xx.c
 new file mode 100644
-index 0000000..700adf2
+index 0000000..dba1526
 --- /dev/null
-+++ b/arch/m68k/include/asm/MCD_dma.h
-@@ -0,0 +1,432 @@
-+/*********************************************************************
-+ *
-+ * Copyright (C) 2004  Motorola, Inc.
-+ *  MOTOROLA, INC. All Rights Reserved.
-+ *  Copyright 2009 Freescale Semiconductor, Inc.
-+ *  Shrek Wu b16972@freescale.com
-+ *
-+ *  You are hereby granted a copyright license to use
-+ *  the SOFTWARE so long as this entire notice is
-+ *  retained without alteration in any modified and/or redistributed
-+ *  versions, and that such modified versions are clearly identified
-+ *  as such. No licenses are granted by implication, estoppel or
-+ *  otherwise under any patents or trademarks of Motorola, Inc. This
-+ *  software is provided on an "AS IS" basis and without warranty.
-+ *
-+ *  To the maximum extent permitted by applicable law, MOTOROLA
-+ *  DISCLAIMS ALL WARRANTIES WHETHER EXPRESS OR IMPLIED, INCLUDING
-+ *  IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR
-+ *  PURPOSE AND ANY WARRANTY AGAINST INFRINGEMENT WITH REGARD TO THE
-+ *  SOFTWARE (INCLUDING ANY MODIFIED VERSIONS THEREOF) AND ANY
-+ *  ACCOMPANYING WRITTEN MATERIALS.
-+ *
-+ *  To the maximum extent permitted by applicable law, IN NO EVENT
-+ *  SHALL MOTOROLA BE LIABLE FOR ANY DAMAGES WHATSOEVER (INCLUDING
-+ *  WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS
-+ *  INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR OTHER PECUNIARY
-+ *  LOSS) ARISING OF THE USE OR INABILITY TO USE THE SOFTWARE.
-+ *
-+ *  Motorola assumes no responsibility for the maintenance and support
-+ *  of this software
-+ ********************************************************************/
-+
++++ b/drivers/net/ethernet/freescale/fec_m54xx.c
+@@ -0,0 +1,1589 @@
 +/*
-+ * File:        MCD_dma.h
-+ * Purpose:     Main header file for multi-channel DMA API.
-+ *
-+ * Notes:
-+ *
-+ * Modifications:
-+ */
-+#ifndef _MCD_API_H
-+#define _MCD_API_H
-+
-+#include <asm/types.h>
-+
-+/*
-+ * Turn Execution Unit tasks ON (#define) or OFF (#undef)
-+ */
-+#undef MCD_INCLUDE_EU
-+
-+/*
-+ * Number of DMA channels
-+ */
-+#define NCHANNELS 16
-+
-+/*
-+ * Total number of variants
-+ */
-+#ifdef MCD_INCLUDE_EU
-+#define NUMOFVARIANTS   6
-+#else
-+#define NUMOFVARIANTS   4
-+#endif
-+
-+/*
-+ * Define sizes of the various tables
-+ */
-+#define TASK_TABLE_SIZE     (NCHANNELS*32)
-+#define VAR_TAB_SIZE        (128)
-+#define CONTEXT_SAVE_SIZE   (128)
-+#define FUNCDESC_TAB_SIZE   (256)
-+
-+#ifdef MCD_INCLUDE_EU
-+#define FUNCDESC_TAB_NUM    16
-+#else
-+#define FUNCDESC_TAB_NUM    1
-+#endif
-+
-+
-+#ifndef DEFINESONLY
-+
-+/*
-+ * Portability typedefs
-+ */
-+ /*
-+#ifndef s32
-+typedef int s32;
-+#endif
-+#ifndef u32
-+typedef unsigned int u32;
-+#endif
-+#ifndef s16
-+typedef short s16;
-+#endif
-+#ifndef u16
-+typedef unsigned short u16;
-+#endif
-+#ifndef s8
-+typedef char s8;
-+#endif
-+#ifndef u8
-+typedef unsigned char u8;
-+#endif
-+*/
-+/*
-+ * These structures represent the internal registers of the
-+ * multi-channel DMA
-+ */
-+struct dmaRegs_s {
-+   u32 taskbar;         /* task table base address register */
-+   u32 currPtr;
-+   u32 endPtr;
-+   u32 varTablePtr;
-+   u16 dma_rsvd0;
-+   u16 ptdControl;      /* ptd control */
-+   u32 intPending;      /* interrupt pending register */
-+   u32 intMask;         /* interrupt mask register */
-+   u16 taskControl[16]; /* task control registers */
-+   u8  priority[32];    /* priority registers */
-+   u32 initiatorMux;    /* initiator mux control */
-+   u32 taskSize0;       /* task size control register 0. */
-+   u32 taskSize1;       /* task size control register 1. */
-+   u32 dma_rsvd1;       /* reserved */
-+   u32 dma_rsvd2;       /* reserved */
-+   u32 debugComp1;      /* debug comparator 1 */
-+   u32 debugComp2;      /* debug comparator 2 */
-+   u32 debugControl;    /* debug control */
-+   u32 debugStatus;     /* debug status */
-+   u32 ptdDebug;        /* priority task decode debug */
-+   u32 dma_rsvd3[31];   /* reserved */
-+};
-+typedef volatile struct dmaRegs_s dmaRegs;
-+
-+#endif
-+
-+/*
-+ * PTD contrl reg bits
-+ */
-+#define PTD_CTL_TSK_PRI         0x8000
-+#define PTD_CTL_COMM_PREFETCH   0x0001
-+
-+/*
-+ * Task Control reg bits and field masks
-+ */
-+#define TASK_CTL_EN             0x8000
-+#define TASK_CTL_VALID          0x4000
-+#define TASK_CTL_ALWAYS         0x2000
-+#define TASK_CTL_INIT_MASK      0x1f00
-+#define TASK_CTL_ASTRT          0x0080
-+#define TASK_CTL_HIPRITSKEN     0x0040
-+#define TASK_CTL_HLDINITNUM     0x0020
-+#define TASK_CTL_ASTSKNUM_MASK  0x000f
-+
-+/*
-+ * Priority reg bits and field masks
-+ */
-+#define PRIORITY_HLD            0x80
-+#define PRIORITY_PRI_MASK       0x07
-+
-+/*
-+ * Debug Control reg bits and field masks
-+ */
-+#define DBG_CTL_BLOCK_TASKS_MASK    0xffff0000
-+#define DBG_CTL_AUTO_ARM            0x00008000
-+#define DBG_CTL_BREAK               0x00004000
-+#define DBG_CTL_COMP1_TYP_MASK      0x00003800
-+#define DBG_CTL_COMP2_TYP_MASK      0x00000070
-+#define DBG_CTL_EXT_BREAK           0x00000004
-+#define DBG_CTL_INT_BREAK           0x00000002
-+
-+/*
-+ * PTD Debug reg selector addresses
-+ * This reg must be written with a value to show the contents of
-+ * one of the desired internal register.
-+ */
-+#define PTD_DBG_REQ             0x00 /* shows the state of 31 initiators */
-+#define PTD_DBG_TSK_VLD_INIT    0x01 /* shows which 16 tasks are valid and
-+					have initiators asserted */
-+
-+
-+/*
-+ * General return values
-+ */
-+#define MCD_OK                   0
-+#define MCD_ERROR               -1
-+#define MCD_TABLE_UNALIGNED     -2
-+#define MCD_CHANNEL_INVALID     -3
-+
-+/*
-+ * MCD_initDma input flags
-+ */
-+#define MCD_RELOC_TASKS         0x00000001
-+#define MCD_NO_RELOC_TASKS      0x00000000
-+#define MCD_COMM_PREFETCH_EN    0x00000002
-+/* Commbus Prefetching - MCF547x/548x ONLY */
-+
-+/*
-+ * MCD_dmaStatus Status Values for each channel
-+ */
-+#define MCD_NO_DMA  1 /* No DMA has been requested since reset */
-+#define MCD_IDLE    2 /* DMA active, but the initiator is currently inactive */
-+#define MCD_RUNNING 3 /* DMA active, and the initiator is currently active */
-+#define MCD_PAUSED  4 /* DMA active but it is currently paused */
-+#define MCD_HALTED  5
-+/* the most recent DMA has been killed with MCD_killTask() */
-+#define MCD_DONE    6 /* the most recent DMA has completed. */
-+
-+
-+/*
-+ * MCD_startDma parameter defines
-+ */
-+
-+/*
-+ * Constants for the funcDesc parameter
-+ */
-+/* Byte swapping: */
-+#define MCD_NO_BYTE_SWAP    0x00045670  /* to disable byte swapping. */
-+#define MCD_BYTE_REVERSE    0x00076540
-+/* to reverse the bytes of each u32 of the DMAed data. */
-+#define MCD_U16_REVERSE     0x00067450  /* to reverse the 16-bit halves of
-+			each 32-bit data value being DMAed.*/
-+#define MCD_U16_BYTE_REVERSE    0x00054760 /* to reverse the byte halves of each
-+			16-bit half of each 32-bit data value DMAed */
-+#define MCD_NO_BIT_REV  0x00000000
-+/* do not reverse the bits of each byte DMAed. */
-+#define MCD_BIT_REV     0x00088880  /* reverse the bits of each byte DMAed */
-+/* CRCing: */
-+#define MCD_CRC16       0xc0100000  /* to perform CRC-16 on DMAed data. */
-+#define MCD_CRCCCITT    0xc0200000  /* to perform CRC-CCITT on DMAed data. */
-+#define MCD_CRC32       0xc0300000  /* to perform CRC-32 on DMAed data. */
-+#define MCD_CSUMINET    0xc0400000
-+/* to perform internet checksums on DMAed data.*/
-+#define MCD_NO_CSUM     0xa0000000  /* to perform no checksumming. */
-+
-+#define MCD_FUNC_NOEU1 (MCD_NO_BYTE_SWAP | MCD_NO_BIT_REV | MCD_NO_CSUM)
-+#define MCD_FUNC_NOEU2 (MCD_NO_BYTE_SWAP | MCD_NO_CSUM)
-+
-+/*
-+ * Constants for the flags parameter
-+ */
-+#define MCD_TT_FLAGS_RL   0x00000001 /* Read line */
-+#define MCD_TT_FLAGS_CW   0x00000002 /* Combine Writes */
-+#define MCD_TT_FLAGS_SP   0x00000004
-+/* Speculative prefetch(XLB) MCF547x/548x ONLY  */
-+#define MCD_TT_FLAGS_MASK 0x000000ff
-+#define MCD_TT_FLAGS_DEF  (MCD_TT_FLAGS_RL | MCD_TT_FLAGS_CW)
-+
-+#define MCD_SINGLE_DMA  0x00000100 /* Unchained DMA */
-+#define MCD_CHAIN_DMA              /* TBD */
-+#define MCD_EU_DMA                 /* TBD */
-+#define MCD_FECTX_DMA   0x00001000 /* FEC TX ring DMA */
-+#define MCD_FECRX_DMA   0x00002000 /* FEC RX ring DMA */
-+
-+
-+/* these flags are valid for MCD_startDma and the chained buffer descriptors */
-+#define MCD_BUF_READY   0x80000000
-+/* indicates that this buffer is now under the DMA's control */
-+#define MCD_WRAP        0x20000000
-+/* to tell the FEC Dmas to wrap to the first BD */
-+#define MCD_INTERRUPT   0x10000000
-+/* to generate an interrupt after completion of the DMA. */
-+#define MCD_END_FRAME   0x08000000
-+/* tell the DMA to end the frame when transferring
-+	last byte of data in buffer */
-+#define MCD_CRC_RESTART 0x40000000 /* to empty out the accumulated checksum
-+	prior to performing the DMA. */
-+
-+/* Defines for the FEC buffer descriptor control/status word*/
-+#define MCD_FEC_BUF_READY   0x8000
-+#define MCD_FEC_WRAP        0x2000
-+#define MCD_FEC_INTERRUPT   0x1000
-+#define MCD_FEC_END_FRAME   0x0800
-+
-+
-+/*
-+ * Defines for general intuitiveness
-+ */
-+
-+#define MCD_TRUE  1
-+#define MCD_FALSE 0
-+
-+/*
-+ * Three different cases for destination and source.
-+ */
-+#define MINUS1          -1
-+#define ZERO            0
-+#define PLUS1           1
-+
-+#ifndef DEFINESONLY
-+
-+/* Task Table Entry struct*/
-+typedef struct {
-+    u32 TDTstart;   /* task descriptor table start */
-+    u32 TDTend;     /* task descriptor table end */
-+    u32 varTab;     /* variable table start */
-+    u32 FDTandFlags;    /* function descriptor table start and flags */
-+    volatile u32 descAddrAndStatus;
-+    volatile u32 modifiedVarTab;
-+    u32 contextSaveSpace;   /* context save space start */
-+    u32 literalBases;
-+} TaskTableEntry;
-+
-+
-+/* Chained buffer descriptor */
-+typedef volatile struct MCD_bufDesc_struct MCD_bufDesc;
-+struct MCD_bufDesc_struct {
-+   u32 flags;         /* flags describing the DMA */
-+   u32 csumResult;
-+	/* checksum from checksumming performed since last checksum reset */
-+   s8  *srcAddr;      /* the address to move data from */
-+   s8  *destAddr;     /* the address to move data to */
-+   s8  *lastDestAddr; /* the last address written to */
-+   u32 dmaSize;
-+	/* the number of bytes to transfer independent of the transfer size */
-+   MCD_bufDesc *next; /* next buffer descriptor in chain */
-+   u32 info;
-+	/* private information about this descriptor;  DMA does not affect it */
-+};
-+
-+/* Progress Query struct */
-+typedef volatile struct MCD_XferProg_struct {
-+   s8 *lastSrcAddr;
-+	/* the most-recent or last, post-increment source address */
-+   s8 *lastDestAddr;
-+	/* the most-recent or last, post-increment destination address */
-+   u32  dmaSize;
-+	/* the amount of data transferred for the current buffer */
-+   MCD_bufDesc *currBufDesc;
-+	/* pointer to the current buffer descriptor being DMAed */
-+} MCD_XferProg;
-+
-+
-+/* FEC buffer descriptor */
-+typedef volatile struct MCD_bufDescFec_struct {
-+    u16 statCtrl;
-+    u16 length;
-+    u32 dataPointer;
-+} MCD_bufDescFec;
-+
-+
-+/*************************************************************************/
-+/*
-+ * API function Prototypes  - see MCD_dmaApi.c for further notes
-+ */
-+
-+/*
-+ * MCD_startDma starts a particular kind of DMA .
-+ */
-+int MCD_startDma(
-+   int channel,   /* the channel on which to run the DMA */
-+   s8  *srcAddr,
-+	/* the address to move data from, or buffer-descriptor address */
-+   s16 srcIncr,   /* the amount to increment the source address per transfer */
-+   s8  *destAddr, /* the address to move data to */
-+   s16 destIncr,
-+	/* the amount to increment the destination address per transfer */
-+   u32 dmaSize,
-+	/* the number of bytes to transfer independent of the transfer size */
-+   u32 xferSize,  /* the number bytes in of each data movement (1, 2, or 4) */
-+   u32 initiator, /* what device initiates the DMA */
-+   int priority,  /* priority of the DMA */
-+   u32 flags,     /* flags describing the DMA */
-+   u32 funcDesc
-+/* a description of byte swapping, bit swapping, and CRC actions */
-+);
-+
-+/*
-+ * MCD_initDma() initializes the DMA API by setting up a pointer to the DMA
-+ * registers, relocating and creating the appropriate task structures, and
-+ * setting up some global settings
-+ */
-+int MCD_initDma(dmaRegs *sDmaBarAddr, void *taskTableDest, u32 flags);
-+
-+/*
-+ * MCD_dmaStatus() returns the status of the DMA on the requested channel.
-+ */
-+int MCD_dmaStatus(int channel);
-+
-+/*
-+ * MCD_XferProgrQuery() returns progress of DMA on requested channel
-+ */
-+int MCD_XferProgrQuery(int channel, MCD_XferProg *progRep);
-+
-+/*
-+ * MCD_killDma() halts the DMA on the requested channel, without any
-+ * intention of resuming the DMA.
-+ */
-+int MCD_killDma(int channel);
-+
-+/*
-+ * MCD_continDma() continues a DMA which as stopped due to encountering an
-+ * unready buffer descriptor.
-+ */
-+int MCD_continDma(int channel);
-+
-+/*
-+ * MCD_pauseDma() pauses the DMA on the given channel ( if any DMA is
-+ * running on that channel).
-+ */
-+int MCD_pauseDma(int channel);
-+
-+/*
-+ * MCD_resumeDma() resumes the DMA on a given channel (if any DMA is
-+ * running on that channel).
-+ */
-+int MCD_resumeDma(int channel);
-+
-+/*
-+ * MCD_csumQuery provides the checksum/CRC after performing a non-chained DMA
-+ */
-+int MCD_csumQuery(int channel, u32 *csum);
-+
-+/*
-+ * MCD_getCodeSize provides the packed size required by the microcoded task
-+ * and structures.
-+ */
-+int MCD_getCodeSize(void);
-+
-+/*
-+ * MCD_getVersion provides a pointer to a version string and returns a
-+ * version number.
-+ */
-+int MCD_getVersion(char **longVersion);
-+
-+/* macro for setting a location in the variable table */
-+#define MCD_SET_VAR(taskTab, idx, value) ((u32 *)(taskTab)->varTab)[idx] = value
-+   /* Note that MCD_SET_VAR() is invoked many times in firing up a DMA function,
-+      so I'm avoiding surrounding it with "do {} while(0)" */
-+
-+#endif  /* DEFINESONLY */
-+
-+#endif /* _MCD_API_H */
-diff --git a/arch/m68k/include/asm/dma.h b/arch/m68k/include/asm/dma.h
-index 0ff3fc6..ab46249 100644
---- a/arch/m68k/include/asm/dma.h
-+++ b/arch/m68k/include/asm/dma.h
-@@ -23,6 +23,9 @@
-  *
-  * APR/18/2002 : added proper support for MCF5272 DMA controller.
-  *               Arthur Shipkowski (art@videon-central.com)
-+ *
-+ * AUG/17/2012 : added support for MCD DMA (M54xx) from freescale drivers
-+ *               Stany MARCEL (smarcel@novasys-ingenierie.com)
-  */
-
- #include <asm/coldfire.h>
-@@ -477,17 +480,88 @@ static __inline__ int get_dma_residue(unsigned int dmanr)
- }
-
- #endif /* !defined(CONFIG_M5272) */
-+
- #endif /* CONFIG_COLDFIRE */
-
- /* it's useless on the m68k, but unfortunately needed by the new
-    bootmem allocator (but this should do it for this) */
-+#ifndef CONFIG_M54xx
- #define MAX_DMA_ADDRESS PAGE_OFFSET
--
- #define MAX_DMA_CHANNELS 8
-
- extern int request_dma(unsigned int dmanr, const char * device_id);	/* reserve a DMA channel */
- extern void free_dma(unsigned int dmanr);	/* release it again */
-
-+#else
-+#define MAX_DMA_ADDRESS 0xefffffff
-+
-+#ifdef CONFIG_MCD_DMA
-+
-+#include <asm/coldfire.h>
-+#include <asm/MCD_dma.h>
-+#include <asm/m54xxdma.h>
-+#include <asm/m54xxsram.h>
-+
-+struct scatterlist;
-+
-+#define MAX_DMA_CHANNELS NCHANNELS
-+/*
-+ *  identifiers for each initiator/requestor
-+ */
-+#define DMA_ALWAYS      (0)
-+#define DMA_DSPI_RX     (1)
-+#define DMA_DSPI_TX     (2)
-+#define DMA_DREQ0       (3)
-+#define DMA_PSC0_RX     (4)
-+#define DMA_PSC0_TX     (5)
-+#define DMA_USBEP0      (6)
-+#define DMA_USBEP1      (7)
-+#define DMA_USBEP2      (8)
-+#define DMA_USBEP3      (9)
-+#define DMA_PCI_TX      (10)
-+#define DMA_PCI_RX      (11)
-+#define DMA_PSC1_RX     (12)
-+#define DMA_PSC1_TX     (13)
-+#define DMA_I2C_RX      (14)
-+#define DMA_I2C_TX      (15)
-+#define DMA_FEC0_RX     (16)
-+#define DMA_FEC0_TX     (17)
-+#define DMA_FEC1_RX     (18)
-+#define DMA_FEC1_TX     (19)
-+#define DMA_DREQ1       (20)
-+#define DMA_CTM0        (21)
-+#define DMA_CTM1        (22)
-+#define DMA_CTM2        (23)
-+#define DMA_CTM3        (24)
-+#define DMA_CTM4        (25)
-+#define DMA_CTM5        (26)
-+#define DMA_CTM6        (27)
-+#define DMA_CTM7        (28)
-+#define DMA_USBEP4      (29)
-+#define DMA_USBEP5      (30)
-+#define DMA_USBEP6      (31)
-+#define DMA_PSC2_RX     (32)
-+#define DMA_PSC2_TX     (33)
-+#define DMA_PSC3_RX     (34)
-+#define DMA_PSC3_TX     (35)
-+#define DMA_FEC_RX(x)   ((x == 0) ? DMA_FEC0_RX : DMA_FEC1_RX)
-+#define DMA_FEC_TX(x)   ((x == 0) ? DMA_FEC0_TX : DMA_FEC1_TX)
-+
-+int dma_set_initiator(int);
-+unsigned int dma_get_initiator(int);
-+void dma_remove_initiator(int);
-+int dma_set_channel(int);
-+int dma_get_channel(int);
-+void dma_remove_channel(int);
-+int dma_set_channel_fec(int requestor);
-+int dma_connect(int channel, int address);
-+int dma_disconnect(int channel);
-+void dma_remove_channel_by_number(int channel);
-+int dma_init(void);
-+#endif /* CONFIG_MCD_DMA */
-+
-+#endif
-+
- #ifdef CONFIG_PCI
- extern int isa_dma_bridge_buggy;
- #else
-diff --git a/arch/m68k/include/asm/m54xxdma.h b/arch/m68k/include/asm/m54xxdma.h
-new file mode 100644
-index 0000000..9f0fd57
---- /dev/null
-+++ b/arch/m68k/include/asm/m54xxdma.h
-@@ -0,0 +1,97 @@
-+/*
-+ * m54xxdma.h -- ColdFire 547x/548x DMA controller support.
 + * Copyright 2007-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+#ifndef __M54XXDMA_H__
-+#define __M54XXDMA_H__
-+
-+/* Register read/write macros */
-+#define MCF_DMA_DIPR    (*(volatile unsigned long *)(CONFIG_MBAR + 0x008014))
-+#define MCF_DMA_DIMR    (*(volatile unsigned long *)(CONFIG_MBAR + 0x008018))
-+#define MCF_DMA_IMCR    (*(volatile unsigned long *)(CONFIG_MBAR + 0x00805C))
-+
-+/* Bit definitions and macros for MCF_DMA_DIPR */
-+#define MCF_DMA_DIPR_TASK0           (0x00000001)
-+#define MCF_DMA_DIPR_TASK1           (0x00000002)
-+#define MCF_DMA_DIPR_TASK2           (0x00000004)
-+#define MCF_DMA_DIPR_TASK3           (0x00000008)
-+#define MCF_DMA_DIPR_TASK4           (0x00000010)
-+#define MCF_DMA_DIPR_TASK5           (0x00000020)
-+#define MCF_DMA_DIPR_TASK6           (0x00000040)
-+#define MCF_DMA_DIPR_TASK7           (0x00000080)
-+#define MCF_DMA_DIPR_TASK8           (0x00000100)
-+#define MCF_DMA_DIPR_TASK9           (0x00000200)
-+#define MCF_DMA_DIPR_TASK10          (0x00000400)
-+#define MCF_DMA_DIPR_TASK11          (0x00000800)
-+#define MCF_DMA_DIPR_TASK12          (0x00001000)
-+#define MCF_DMA_DIPR_TASK13          (0x00002000)
-+#define MCF_DMA_DIPR_TASK14          (0x00004000)
-+#define MCF_DMA_DIPR_TASK15          (0x00008000)
-+
-+/* Bit definitions and macros for MCF_DMA_DIMR */
-+#define MCF_DMA_DIMR_TASK0           (0x00000001)
-+#define MCF_DMA_DIMR_TASK1           (0x00000002)
-+#define MCF_DMA_DIMR_TASK2           (0x00000004)
-+#define MCF_DMA_DIMR_TASK3           (0x00000008)
-+#define MCF_DMA_DIMR_TASK4           (0x00000010)
-+#define MCF_DMA_DIMR_TASK5           (0x00000020)
-+#define MCF_DMA_DIMR_TASK6           (0x00000040)
-+#define MCF_DMA_DIMR_TASK7           (0x00000080)
-+#define MCF_DMA_DIMR_TASK8           (0x00000100)
-+#define MCF_DMA_DIMR_TASK9           (0x00000200)
-+#define MCF_DMA_DIMR_TASK10          (0x00000400)
-+#define MCF_DMA_DIMR_TASK11          (0x00000800)
-+#define MCF_DMA_DIMR_TASK12          (0x00001000)
-+#define MCF_DMA_DIMR_TASK13          (0x00002000)
-+#define MCF_DMA_DIMR_TASK14          (0x00004000)
-+#define MCF_DMA_DIMR_TASK15          (0x00008000)
-+
-+/* Bit definitions and macros for MCF_DMA_IMCR */
-+#define MCF_DMA_IMCR_SRC16(x)        (((x)&0x00000003)<<0)
-+#define MCF_DMA_IMCR_SRC17(x)        (((x)&0x00000003)<<2)
-+#define MCF_DMA_IMCR_SRC18(x)        (((x)&0x00000003)<<4)
-+#define MCF_DMA_IMCR_SRC19(x)        (((x)&0x00000003)<<6)
-+#define MCF_DMA_IMCR_SRC20(x)        (((x)&0x00000003)<<8)
-+#define MCF_DMA_IMCR_SRC21(x)        (((x)&0x00000003)<<10)
-+#define MCF_DMA_IMCR_SRC22(x)        (((x)&0x00000003)<<12)
-+#define MCF_DMA_IMCR_SRC23(x)        (((x)&0x00000003)<<14)
-+#define MCF_DMA_IMCR_SRC24(x)        (((x)&0x00000003)<<16)
-+#define MCF_DMA_IMCR_SRC25(x)        (((x)&0x00000003)<<18)
-+#define MCF_DMA_IMCR_SRC26(x)        (((x)&0x00000003)<<20)
-+#define MCF_DMA_IMCR_SRC27(x)        (((x)&0x00000003)<<22)
-+#define MCF_DMA_IMCR_SRC28(x)        (((x)&0x00000003)<<24)
-+#define MCF_DMA_IMCR_SRC29(x)        (((x)&0x00000003)<<26)
-+#define MCF_DMA_IMCR_SRC30(x)        (((x)&0x00000003)<<28)
-+#define MCF_DMA_IMCR_SRC31(x)        (((x)&0x00000003)<<30)
-+#define MCF_DMA_IMCR_SRC16_FEC0RX    (0x00000000)
-+#define MCF_DMA_IMCR_SRC17_FEC0TX    (0x00000000)
-+#define MCF_DMA_IMCR_SRC18_FEC0RX    (0x00000020)
-+#define MCF_DMA_IMCR_SRC19_FEC0TX    (0x00000080)
-+#define MCF_DMA_IMCR_SRC20_FEC1RX    (0x00000100)
-+#define MCF_DMA_IMCR_SRC21_DREQ1     (0x00000000)
-+#define MCF_DMA_IMCR_SRC21_FEC1TX    (0x00000400)
-+#define MCF_DMA_IMCR_SRC22_FEC0RX    (0x00001000)
-+#define MCF_DMA_IMCR_SRC23_FEC0TX    (0x00004000)
-+#define MCF_DMA_IMCR_SRC24_CTM0      (0x00010000)
-+#define MCF_DMA_IMCR_SRC24_FEC1RX    (0x00020000)
-+#define MCF_DMA_IMCR_SRC25_CTM1      (0x00040000)
-+#define MCF_DMA_IMCR_SRC25_FEC1TX    (0x00080000)
-+#define MCF_DMA_IMCR_SRC26_USBEP4    (0x00000000)
-+#define MCF_DMA_IMCR_SRC26_CTM2      (0x00200000)
-+#define MCF_DMA_IMCR_SRC27_USBEP5    (0x00000000)
-+#define MCF_DMA_IMCR_SRC27_CTM3      (0x00800000)
-+#define MCF_DMA_IMCR_SRC28_USBEP6    (0x00000000)
-+#define MCF_DMA_IMCR_SRC28_CTM4      (0x01000000)
-+#define MCF_DMA_IMCR_SRC28_DREQ1     (0x02000000)
-+#define MCF_DMA_IMCR_SRC28_PSC2RX    (0x03000000)
-+#define MCF_DMA_IMCR_SRC29_DREQ1     (0x04000000)
-+#define MCF_DMA_IMCR_SRC29_CTM5      (0x08000000)
-+#define MCF_DMA_IMCR_SRC29_PSC2TX    (0x0C000000)
-+#define MCF_DMA_IMCR_SRC30_FEC1RX    (0x00000000)
-+#define MCF_DMA_IMCR_SRC30_CTM6      (0x10000000)
-+#define MCF_DMA_IMCR_SRC30_PSC3RX    (0x30000000)
-+#define MCF_DMA_IMCR_SRC31_FEC1TX    (0x00000000)
-+#define MCF_DMA_IMCR_SRC31_CTM7      (0x80000000)
-+#define MCF_DMA_IMCR_SRC31_PSC3TX    (0xC0000000)
-+
-+#endif /* __M54XXDMA_H__ */
-diff --git a/arch/m68k/include/asm/m54xxsram.h b/arch/m68k/include/asm/m54xxsram.h
-new file mode 100644
-index 0000000..5bd3de3
---- /dev/null
-+++ b/arch/m68k/include/asm/m54xxsram.h
-@@ -0,0 +1,11 @@
-+#ifndef _M54XXSRAM_H_
-+#define _M54XXSRAM_H_
-+
-+#define SYS_SRAM_DMA_START   (MCF_MBAR + 0x10000)
-+#define SYS_SRAM_DMA_SIZE    8192
-+#define SYS_SRAM_FEC_START   (SYS_SRAM_DMA_START + SYS_SRAM_DMA_SIZE)
-+#define SYS_SRAM_FEC_SIZE    2048
-+#define SYS_SRAM_SEC_START   (SYS_SRAM_FEC_START + SYS_SRAM_FEC_SIZE)
-+#define SYS_SRAM_SEC_SIZE    1280
-+
-+#endif /* _M54XXSRAM_H_ */
-diff --git a/arch/m68k/platform/coldfire/MCD_dma.h b/arch/m68k/platform/coldfire/MCD_dma.h
-new file mode 100644
-index 0000000..e3e9ac9
---- /dev/null
-+++ b/arch/m68k/platform/coldfire/MCD_dma.h
-@@ -0,0 +1,431 @@
-+/*
-+ * drivers/dma/MCD_dma.h
++ * Author: Kurt Mahan, kmahan@freescale.com
 + *
-+ * Copyright 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Kurt Mahan <kmahan@freescale.com>
-+ * Shrek Wu b16972@freescale.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ */
-+#ifndef _MCD_API_H
-+#define _MCD_API_H
-+
-+/*
-+ * Turn Execution Unit tasks ON (#define) or OFF (#undef)
-+ */
-+#undef MCD_INCLUDE_EU
-+
-+/*
-+ * Number of DMA channels
-+ */
-+#define NCHANNELS 16
-+
-+/*
-+ * Total number of variants
-+ */
-+#ifdef MCD_INCLUDE_EU
-+#define NUMOFVARIANTS   6
-+#else
-+#define NUMOFVARIANTS   4
-+#endif
-+
-+/*
-+ * Define sizes of the various tables
-+ */
-+#define TASK_TABLE_SIZE     (NCHANNELS*32)
-+#define VAR_TAB_SIZE        (128)
-+#define CONTEXT_SAVE_SIZE   (128)
-+#define FUNCDESC_TAB_SIZE   (256)
-+
-+#ifdef MCD_INCLUDE_EU
-+#define FUNCDESC_TAB_NUM    16
-+#else
-+#define FUNCDESC_TAB_NUM    1
-+#endif
-+
-+
-+#ifndef DEFINESONLY
-+
-+/*
-+ * Portability typedefs
-+ */
-+typedef int s32;
-+typedef unsigned int u32;
-+typedef short s16;
-+typedef unsigned short u16;
-+typedef char s8;
-+typedef unsigned char u8;
-+
-+/*
-+ * These structures represent the internal registers of the
-+ * multi-channel DMA
-+ */
-+struct dmaRegs_s {
-+   u32 taskbar;         /* task table base address register */
-+   u32 currPtr;
-+   u32 endPtr;
-+   u32 varTablePtr;
-+   u16 dma_rsvd0;
-+   u16 ptdControl;      /* ptd control */
-+   u32 intPending;      /* interrupt pending register */
-+   u32 intMask;         /* interrupt mask register */
-+   u16 taskControl[16]; /* task control registers */
-+   u8  priority[32];    /* priority registers */
-+   u32 initiatorMux;    /* initiator mux control */
-+   u32 taskSize0;       /* task size control register 0. */
-+   u32 taskSize1;       /* task size control register 1. */
-+   u32 dma_rsvd1;       /* reserved */
-+   u32 dma_rsvd2;       /* reserved */
-+   u32 debugComp1;      /* debug comparator 1 */
-+   u32 debugComp2;      /* debug comparator 2 */
-+   u32 debugControl;    /* debug control */
-+   u32 debugStatus;     /* debug status */
-+   u32 ptdDebug;        /* priority task decode debug */
-+   u32 dma_rsvd3[31];   /* reserved */
-+};
-+typedef volatile struct dmaRegs_s dmaRegs;
-+
-+#endif
-+
-+/*
-+ * PTD contrl reg bits
-+ */
-+#define PTD_CTL_TSK_PRI         0x8000
-+#define PTD_CTL_COMM_PREFETCH   0x0001
-+
-+/*
-+ * Task Control reg bits and field masks
-+ */
-+#define TASK_CTL_EN             0x8000
-+#define TASK_CTL_VALID          0x4000
-+#define TASK_CTL_ALWAYS         0x2000
-+#define TASK_CTL_INIT_MASK      0x1f00
-+#define TASK_CTL_ASTRT          0x0080
-+#define TASK_CTL_HIPRITSKEN     0x0040
-+#define TASK_CTL_HLDINITNUM     0x0020
-+#define TASK_CTL_ASTSKNUM_MASK  0x000f
-+
-+/*
-+ * Priority reg bits and field masks
-+ */
-+#define PRIORITY_HLD            0x80
-+#define PRIORITY_PRI_MASK       0x07
-+
-+/*
-+ * Debug Control reg bits and field masks
-+ */
-+#define DBG_CTL_BLOCK_TASKS_MASK    0xffff0000
-+#define DBG_CTL_AUTO_ARM            0x00008000
-+#define DBG_CTL_BREAK               0x00004000
-+#define DBG_CTL_COMP1_TYP_MASK      0x00003800
-+#define DBG_CTL_COMP2_TYP_MASK      0x00000070
-+#define DBG_CTL_EXT_BREAK           0x00000004
-+#define DBG_CTL_INT_BREAK           0x00000002
-+
-+/*
-+ * PTD Debug reg selector addresses
-+ * This reg must be written with a value to show the contents of
-+ * one of the desired internal register.
-+ */
-+#define PTD_DBG_REQ             0x00
-+/* shows the state of 31 initiators */
-+#define PTD_DBG_TSK_VLD_INIT    0x01
-+/* shows which 16 tasks are valid and
-+ * have initiators asserted */
-+
-+
-+/*
-+ * General return values
-+ */
-+#define MCD_OK                   0
-+#define MCD_ERROR               -1
-+#define MCD_TABLE_UNALIGNED     -2
-+#define MCD_CHANNEL_INVALID     -3
-+
-+/*
-+ * MCD_initDma input flags
-+ */
-+#define MCD_RELOC_TASKS         0x00000001
-+#define MCD_NO_RELOC_TASKS      0x00000000
-+#define MCD_COMM_PREFETCH_EN    0x00000002
-+/* Commbus Prefetching - MCF547x/548x ONLY */
-+
-+/*
-+ * MCD_dmaStatus Status Values for each channel
-+ */
-+#define MCD_NO_DMA  1
-+/* No DMA has been requested since reset */
-+#define MCD_IDLE    2
-+/* DMA active, but the initiator is currently inactive */
-+#define MCD_RUNNING 3
-+/* DMA active, and the initiator is currently active */
-+#define MCD_PAUSED  4
-+/* DMA active but it is currently paused */
-+#define MCD_HALTED  5
-+/* the most recent DMA has been killed with MCD_killTask() */
-+#define MCD_DONE    6
-+/* the most recent DMA has completed. */
-+
-+
-+/*
-+ * MCD_startDma parameter defines
-+ */
-+
-+/*
-+ * Constants for the funcDesc parameter
-+ */
-+/* Byte swapping: */
-+#define MCD_NO_BYTE_SWAP    0x00045670
-+/* to disable byte swapping. */
-+#define MCD_BYTE_REVERSE    0x00076540
-+/* to reverse the bytes of each u32 of the DMAed data. */
-+#define MCD_U16_REVERSE     0x00067450
-+/* to reverse the 16-bit halves of
-+ * each 32-bit data value being DMAed.*/
-+#define MCD_U16_BYTE_REVERSE    0x00054760
-+/* to reverse the byte halves of each
-+ * 16-bit half of each 32-bit data value DMAed */
-+#define MCD_NO_BIT_REV  0x00000000
-+/* do not reverse the bits of each byte DMAed. */
-+#define MCD_BIT_REV     0x00088880
-+/* reverse the bits of each byte DMAed */
-+/* CRCing: */
-+#define MCD_CRC16       0xc0100000
-+/* to perform CRC-16 on DMAed data. */
-+#define MCD_CRCCCITT    0xc0200000
-+/* to perform CRC-CCITT on DMAed data. */
-+#define MCD_CRC32       0xc0300000
-+/* to perform CRC-32 on DMAed data. */
-+#define MCD_CSUMINET    0xc0400000
-+/* to perform internet checksums on DMAed data.*/
-+#define MCD_NO_CSUM     0xa0000000
-+/* to perform no checksumming. */
-+
-+#define MCD_FUNC_NOEU1 (MCD_NO_BYTE_SWAP | MCD_NO_BIT_REV | MCD_NO_CSUM)
-+#define MCD_FUNC_NOEU2 (MCD_NO_BYTE_SWAP | MCD_NO_CSUM)
-+
-+/*
-+ * Constants for the flags parameter
-+ */
-+#define MCD_TT_FLAGS_RL   0x00000001 /* Read line */
-+#define MCD_TT_FLAGS_CW   0x00000002 /* Combine Writes */
-+#define MCD_TT_FLAGS_SP   0x00000004
-+/* Speculative prefetch(XLB) MCF547x/548x ONLY  */
-+#define MCD_TT_FLAGS_PI   0x00000040 /* Precise Increment */
-+#define MCD_TT_FLAGS_MASK 0x000000ff
-+#define MCD_TT_FLAGS_DEF  (MCD_TT_FLAGS_RL | MCD_TT_FLAGS_CW)
-+
-+#define MCD_SINGLE_DMA  0x00000100 /* Unchained DMA */
-+#define MCD_CHAIN_DMA              /* TBD */
-+#define MCD_EU_DMA                 /* TBD */
-+#define MCD_FECTX_DMA   0x00001000 /* FEC TX ring DMA */
-+#define MCD_FECRX_DMA   0x00002000 /* FEC RX ring DMA */
-+
-+
-+/* these flags are valid for MCD_startDma
-+ * and the chained buffer descriptors */
-+#define MCD_BUF_READY   0x80000000
-+/* indicates that this buffer is now
-+ * under the DMA's control */
-+#define MCD_WRAP        0x20000000
-+/* to tell the FEC Dmas to wrap to the first BD */
-+#define MCD_INTERRUPT   0x10000000
-+/* to generate an interrupt after completion of the DMA. */
-+#define MCD_END_FRAME   0x08000000
-+/* tell the DMA to end the frame when transferring
-+ * last byte of data in buffer */
-+#define MCD_CRC_RESTART 0x40000000
-+/* to empty out the accumulated checksum
-+ prior to performing the DMA. */
-+
-+/* Defines for the FEC buffer descriptor control/status word*/
-+#define MCD_FEC_BUF_READY   0x8000
-+#define MCD_FEC_WRAP        0x2000
-+#define MCD_FEC_INTERRUPT   0x1000
-+#define MCD_FEC_END_FRAME   0x0800
-+
-+
-+/*
-+ * Defines for general intuitiveness
-+ */
-+
-+#define MCD_TRUE  1
-+#define MCD_FALSE 0
-+
-+/*
-+ * Three different cases for destination and source.
-+ */
-+#define MINUS1          -1
-+#define ZERO            0
-+#define PLUS1           1
-+
-+#ifndef DEFINESONLY
-+
-+/* Task Table Entry struct*/
-+typedef struct {
-+    u32 TDTstart;   /* task descriptor table start */
-+    u32 TDTend;     /* task descriptor table end */
-+    u32 varTab;     /* variable table start */
-+    u32 FDTandFlags;    /* function descriptor table start and flags */
-+    volatile u32 descAddrAndStatus;
-+    volatile u32 modifiedVarTab;
-+    u32 contextSaveSpace;   /* context save space start */
-+    u32 literalBases;
-+} TaskTableEntry;
-+
-+
-+/* Chained buffer descriptor */
-+typedef volatile struct MCD_bufDesc_struct MCD_bufDesc;
-+struct MCD_bufDesc_struct {
-+   u32 flags;
-+/* flags describing the DMA */
-+   u32 csumResult;
-+/* checksum from checksumming performed since last checksum reset */
-+   s8  *srcAddr;
-+/* the address to move data from */
-+   s8  *destAddr;
-+/* the address to move data to */
-+   s8  *lastDestAddr;
-+/* the last address written to */
-+   u32 dmaSize;
-+/* the number of bytes to transfer independent of the transfer size */
-+   MCD_bufDesc *next;
-+/* next buffer descriptor in chain */
-+   u32 info;
-+/* private information about this descriptor;  DMA does not affect it */
-+};
-+
-+/* Progress Query struct */
-+typedef volatile struct MCD_XferProg_struct {
-+   s8 *lastSrcAddr;
-+/* the most-recent or last, post-increment source address */
-+   s8 *lastDestAddr;
-+/* the most-recent or last, post-increment destination address */
-+   u32  dmaSize;
-+/* the amount of data transferred for the current buffer */
-+   MCD_bufDesc *currBufDesc;
-+/* pointer to the current buffer descriptor being DMAed */
-+} MCD_XferProg;
-+
-+
-+/* FEC buffer descriptor */
-+typedef volatile struct MCD_bufDescFec_struct {
-+    u16 statCtrl;
-+    u16 length;
-+    u32 dataPointer;
-+} MCD_bufDescFec;
-+
-+
-+/*************************************************************************/
-+/*
-+ * API function Prototypes  - see MCD_dmaApi.c for further notes
-+ */
-+
-+/*
-+ * MCD_startDma starts a particular kind of DMA .
-+ */
-+int MCD_startDma(
-+	int channel,
-+/* the channel on which to run the DMA */
-+	s8  *srcAddr,
-+/* the address to move data from, or buffer-descriptor address */
-+	s16 srcIncr,
-+/* the amount to increment the source address per transfer */
-+	s8  *destAddr,
-+/* the address to move data to */
-+	s16 destIncr,
-+/* the amount to increment the destination address per transfer */
-+	u32 dmaSize,
-+/* the number of bytes to transfer independent of the transfer size */
-+	u32 xferSize,
-+/* the number bytes in of each data movement (1, 2, or 4) */
-+	u32 initiator,
-+/* what device initiates the DMA */
-+	int priority,
-+/* priority of the DMA */
-+	u32 flags,
-+/* flags describing the DMA */
-+	u32 funcDesc
-+/* a description of byte swapping, bit swapping, and CRC actions */
-+);
-+
-+/*
-+ * MCD_initDma() initializes the DMA API by setting up a pointer to the DMA
-+ * registers, relocating and creating the appropriate task structures, and
-+ * setting up some global settings
-+ */
-+int MCD_initDma(dmaRegs *sDmaBarAddr, void *taskTableDest, u32 flags);
-+
-+/*
-+ * MCD_dmaStatus() returns the status of the DMA on the requested channel.
-+ */
-+int MCD_dmaStatus(int channel);
-+
-+/*
-+ * MCD_XferProgrQuery() returns progress of DMA on requested channel
-+ */
-+int MCD_XferProgrQuery(int channel, MCD_XferProg *progRep);
-+
-+/*
-+ * MCD_killDma() halts the DMA on the requested channel, without any
-+ * intention of resuming the DMA.
-+ */
-+int MCD_killDma(int channel);
-+
-+/*
-+ * MCD_continDma() continues a DMA which as stopped due to encountering an
-+ * unready buffer descriptor.
-+ */
-+int MCD_continDma(int channel);
-+
-+/*
-+ * MCD_pauseDma() pauses the DMA on the given channel ( if any DMA is
-+ * running on that channel).
-+ */
-+int MCD_pauseDma(int channel);
-+
-+/*
-+ * MCD_resumeDma() resumes the DMA on a given channel (if any DMA is
-+ * running on that channel).
-+ */
-+int MCD_resumeDma(int channel);
-+
-+/*
-+ * MCD_csumQuery provides the checksum/CRC after performing a non-chained DMA
-+ */
-+int MCD_csumQuery(int channel, u32 *csum);
-+
-+/*
-+ * MCD_getCodeSize provides the packed size required by the microcoded task
-+ * and structures.
-+ */
-+int MCD_getCodeSize(void);
-+
-+/*
-+ * MCD_getVersion provides a pointer to a version string and returns a
-+ * version number.
-+ */
-+int MCD_getVersion(char **longVersion);
-+
-+/* macro for setting a location in the variable table */
-+#define MCD_SET_VAR(taskTab, idx, value) \
-+	((u32 *)(taskTab)->varTab)[idx] = value
-+   /* Note that MCD_SET_VAR() is invoked many times in firing up a DMA function,
-+      so I'm avoiding surrounding it with "do {} while(0)" */
-+
-+#endif  /* DEFINESONLY */
-+
-+#endif /* _MCD_API_H */
-diff --git a/arch/m68k/platform/coldfire/MCD_dmaApi.c b/arch/m68k/platform/coldfire/MCD_dmaApi.c
-new file mode 100644
-index 0000000..9609d0c
---- /dev/null
-+++ b/arch/m68k/platform/coldfire/MCD_dmaApi.c
-@@ -0,0 +1,1045 @@
-+/*
-+ * drivers/dma/MCD_dmaApi.c
-+ *
-+ * Copyright 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Kurt Mahan <kmahan@freescale.com>
-+ * Shrek Wu b16972@freescale.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ */
-+
-+#include "MCD_dma.h"
-+#include "MCD_tasksInit.h"
-+#include "MCD_progCheck.h"
-+
-+/********************************************************************/
-+/*
-+ * This is an API-internal pointer to the DMA's registers
-+ */
-+dmaRegs *MCD_dmaBar;
-+
-+/*
-+ * These are the real and model task tables as generated by the
-+ * build process
-+ */
-+extern TaskTableEntry MCD_realTaskTableSrc[NCHANNELS];
-+extern TaskTableEntry MCD_modelTaskTableSrc[NUMOFVARIANTS];
-+
-+/*
-+ * However, this (usually) gets relocated to on-chip SRAM, at which
-+ * point we access them as these tables
-+ */
-+volatile TaskTableEntry *MCD_taskTable;
-+TaskTableEntry *MCD_modelTaskTable;
-+
-+
-+/*
-+ * MCD_chStatus[] is an array of status indicators for remembering
-+ * whether a DMA has ever been attempted on each channel, pausing
-+ * status, etc.
-+ */
-+static int MCD_chStatus[NCHANNELS] =
-+{
-+    MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA,
-+    MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA,
-+    MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA,
-+    MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA, MCD_NO_DMA
-+};
-+
-+/*
-+ * Prototypes for local functions
-+ */
-+static void MCD_memcpy(int *dest, int *src, u32 size);
-+static void MCD_resmActions(int channel);
-+
-+/*
-+ * Buffer descriptors used for storage of progress info for single Dmas
-+ * Also used as storage for the DMA for CRCs for single DMAs
-+ * Otherwise, the DMA does not parse these buffer descriptors
-+ */
-+#ifdef MCD_INCLUDE_EU
-+extern MCD_bufDesc MCD_singleBufDescs[NCHANNELS];
-+#else
-+MCD_bufDesc MCD_singleBufDescs[NCHANNELS];
-+#endif
-+MCD_bufDesc *MCD_relocBuffDesc;
-+
-+
-+/*
-+ * Defines for the debug control register's functions
-+ */
-+#define DBG_CTL_COMP1_TASK  (0x00002000)
-+/* have comparator 1 look for a task # */
-+#define DBG_CTL_ENABLE  (DBG_CTL_AUTO_ARM    | \
-+			DBG_CTL_BREAK       | \
-+			DBG_CTL_INT_BREAK   | \
-+			DBG_CTL_COMP1_TASK)
-+#define DBG_CTL_DISABLE	(DBG_CTL_AUTO_ARM    | \
-+			DBG_CTL_INT_BREAK   | \
-+			DBG_CTL_COMP1_TASK)
-+#define DBG_KILL_ALL_STAT   (0xFFFFFFFF)
-+
-+/*
-+ * Offset to context save area where progress info is stored
-+ */
-+#define CSAVE_OFFSET        10
-+
-+/*
-+ * Defines for Byte Swapping
-+ */
-+#define MCD_BYTE_SWAP_KILLER    0xFFF8888F
-+#define MCD_NO_BYTE_SWAP_ATALL  0x00040000
-+
-+/*
-+ * Execution Unit Identifiers
-+ */
-+#define MAC  0  /* legacy - not used */
-+#define LUAC 1  /* legacy - not used */
-+#define CRC  2  /* legacy - not used */
-+#define LURC 3  /* Logic Unit with CRC */
-+
-+/*
-+ * Task Identifiers
-+ */
-+#define TASK_CHAINNOEU  0
-+#define TASK_SINGLENOEU 1
-+#ifdef MCD_INCLUDE_EU
-+#define TASK_CHAINEU    2
-+#define TASK_SINGLEEU   3
-+#define TASK_FECRX      4
-+#define TASK_FECTX      5
-+#else
-+#define TASK_CHAINEU    0
-+#define TASK_SINGLEEU   1
-+#define TASK_FECRX      2
-+#define TASK_FECTX      3
-+#endif
-+
-+/*
-+ * Structure to remember which variant is on which channel
-+ */
-+typedef struct MCD_remVariants_struct MCD_remVariant;
-+struct MCD_remVariants_struct {
-+   int remDestRsdIncr[NCHANNELS];  /* -1,0,1 */
-+   int remSrcRsdIncr[NCHANNELS];   /* -1,0,1 */
-+   s16 remDestIncr[NCHANNELS];     /* DestIncr */
-+   s16 remSrcIncr[NCHANNELS];      /* srcIncr */
-+   u32 remXferSize[NCHANNELS];     /* xferSize */
-+};
-+
-+/*
-+ * Structure to remember the startDma parameters for each channel
-+ */
-+MCD_remVariant MCD_remVariants;
-+
-+/********************************************************************/
-+/*
-+ * Function: MCD_initDma
-+ * Purpose:  Initializes the DMA API by setting up a pointer to the DMA
-+ *           registers, relocating and creating the appropriate task
-+ *           structures, and setting up some global settings
-+ * Arguments:
-+ *  dmaBarAddr    - pointer to the multichannel DMA registers
-+ *  taskTableDest - location to move DMA task code and structs to
-+ *  flags         - operational parameters
-+ * Return Value:
-+ *  MCD_TABLE_UNALIGNED if taskTableDest is not 512-byte aligned
-+ *  MCD_OK otherwise
-+ */
-+extern u32 MCD_funcDescTab0[];
-+
-+int MCD_initDma(dmaRegs *dmaBarAddr, void *taskTableDest, u32 flags)
-+{
-+	int i;
-+	TaskTableEntry *entryPtr;
-+
-+	/* Setup the local pointer to register set */
-+	MCD_dmaBar = dmaBarAddr;
-+
-+	/* Do we need to move/create a task table */
-+	if ((flags & MCD_RELOC_TASKS) != 0) {
-+		int fixedSize;
-+		u32 *fixedPtr;
-+		int varTabsOffset, funcDescTabsOffset;
-+		int contextSavesOffset;
-+		int taskDescTabsOffset;
-+		int taskTableSize, varTabsSize;
-+		int funcDescTabsSize, contextSavesSize;
-+		int taskDescTabSize;
-+		int i;
-+
-+		/* Check if physical address is
-+		 * aligned on 512 byte boundary */
-+		if (((u32)taskTableDest & 0x000001ff) != 0)
-+			return MCD_TABLE_UNALIGNED;
-+
-+		MCD_taskTable = taskTableDest;
-+		/* set up local pointer to task Table */
-+
-+		/*
-+		* Create a task table:
-+		* compute aligned base offsets for variable tables and
-+		* function descriptor tables, then
-+		* loop through the task table and setup the pointers
-+		*copy over model task table with the the actual
-+		*task descriptor tables
-+		*/
-+		taskTableSize = NCHANNELS * sizeof(TaskTableEntry);
-+		/* Align variable tables to size */
-+		varTabsOffset = taskTableSize + (u32)taskTableDest;
-+		if ((varTabsOffset & (VAR_TAB_SIZE - 1)) != 0)
-+			varTabsOffset = (varTabsOffset + VAR_TAB_SIZE)
-+				& (~VAR_TAB_SIZE);
-+		/* Align function descriptor tables */
-+		varTabsSize = NCHANNELS * VAR_TAB_SIZE;
-+		funcDescTabsOffset = varTabsOffset + varTabsSize;
-+
-+		if ((funcDescTabsOffset & (FUNCDESC_TAB_SIZE - 1)) != 0)
-+			funcDescTabsOffset = (funcDescTabsOffset
-+				+ FUNCDESC_TAB_SIZE) &
-+				(~FUNCDESC_TAB_SIZE);
-+
-+		funcDescTabsSize = FUNCDESC_TAB_NUM * FUNCDESC_TAB_SIZE;
-+		contextSavesOffset = funcDescTabsOffset
-+			+ funcDescTabsSize;
-+		contextSavesSize = (NCHANNELS * CONTEXT_SAVE_SIZE);
-+		fixedSize = taskTableSize + varTabsSize +
-+			funcDescTabsSize + contextSavesSize;
-+
-+		/* Zero the thing out */
-+		fixedPtr = (u32 *)taskTableDest;
-+		for (i = 0; i < (fixedSize/4); i++)
-+			fixedPtr[i] = 0;
-+
-+		entryPtr = (TaskTableEntry *)MCD_taskTable;
-+		/* Set up fixed pointers */
-+		for (i = 0; i < NCHANNELS; i++) {
-+			entryPtr[i].varTab = (u32)varTabsOffset;
-+			/* update ptr to local value */
-+			entryPtr[i].FDTandFlags =
-+			(u32)funcDescTabsOffset | MCD_TT_FLAGS_DEF;
-+			entryPtr[i].contextSaveSpace =
-+				(u32)contextSavesOffset;
-+			varTabsOffset += VAR_TAB_SIZE;
-+#ifdef MCD_INCLUDE_EU
-+			/* if not there is only one,
-+			* just point to the same one */
-+			funcDescTabsOffset += FUNCDESC_TAB_SIZE;
-+#endif
-+			contextSavesOffset += CONTEXT_SAVE_SIZE;
-+		}
-+		/* Copy over the function descriptor table */
-+		for (i = 0; i < FUNCDESC_TAB_NUM; i++) {
-+			MCD_memcpy((void *)(entryPtr[i].FDTandFlags
-+				& ~MCD_TT_FLAGS_MASK),
-+				(void *)MCD_funcDescTab0,
-+				FUNCDESC_TAB_SIZE);
-+		}
-+
-+		/* Copy model task table to where the
-+		 * context save stuff leaves off */
-+		MCD_modelTaskTable =
-+			(TaskTableEntry *)contextSavesOffset;
-+
-+		MCD_memcpy((void *)MCD_modelTaskTable,
-+			(void *)MCD_modelTaskTableSrc,
-+			NUMOFVARIANTS * sizeof(TaskTableEntry));
-+
-+		/* Point to local version of model task table */
-+		entryPtr = MCD_modelTaskTable;
-+		taskDescTabsOffset = (u32)MCD_modelTaskTable +
-+			(NUMOFVARIANTS * sizeof(TaskTableEntry));
-+
-+		/* Copy actual task code and update TDT ptrs
-+		 * in local model task table */
-+		for (i = 0; i < NUMOFVARIANTS; i++) {
-+			taskDescTabSize = entryPtr[i].TDTend
-+				- entryPtr[i].TDTstart + 4;
-+			MCD_memcpy((void *)taskDescTabsOffset,
-+				(void *)entryPtr[i].TDTstart,
-+				taskDescTabSize);
-+			entryPtr[i].TDTstart =
-+				(u32)taskDescTabsOffset;
-+			taskDescTabsOffset += taskDescTabSize;
-+			entryPtr[i].TDTend =
-+				(u32)taskDescTabsOffset - 4;
-+		}
-+#ifdef MCD_INCLUDE_EU
-+		/*
-+		 * Tack single DMA BDs onto end of
-+		 * code so API controls where
-+		 * they are since DMA might write to them
-+		 */
-+		MCD_relocBuffDesc = (MCD_bufDesc *)
-+			(entryPtr[NUMOFVARIANTS - 1].TDTend + 4);
-+#else
-+		/*
-+		 * DMA does not touch them so they
-+		 * can be wherever and we don't need to
-+		 * waste SRAM on them
-+		 */
-+		MCD_relocBuffDesc = MCD_singleBufDescs;
-+#endif
-+	} else {
-+		/*
-+		 * Point the would-be relocated task tables and
-+		 * the buffer descriptors
-+		 * to the ones the linker generated
-+		 */
-+		if (((u32)MCD_realTaskTableSrc & 0x000001ff) != 0)
-+			return MCD_TABLE_UNALIGNED;
-+
-+		entryPtr = MCD_realTaskTableSrc;
-+		for (i = 0; i < NCHANNELS; i++) {
-+			if (((entryPtr[i].varTab
-+				& (VAR_TAB_SIZE - 1)) != 0) ||
-+				((entryPtr[i].FDTandFlags &
-+				(FUNCDESC_TAB_SIZE - 1)) != 0))
-+				return MCD_TABLE_UNALIGNED;
-+		}
-+
-+		MCD_taskTable = MCD_realTaskTableSrc;
-+		MCD_modelTaskTable = MCD_modelTaskTableSrc;
-+		MCD_relocBuffDesc = MCD_singleBufDescs;
-+	}
-+
-+	/* Make all channels inactive,
-+	 * and remember them as such: */
-+	MCD_dmaBar->taskbar = (u32) MCD_taskTable;
-+	for (i = 0;  i < NCHANNELS;  i++) {
-+		MCD_dmaBar->taskControl[i] = 0x0;
-+		MCD_chStatus[i] = MCD_NO_DMA;
-+	}
-+
-+	/* Set up pausing mechanism to inactive state: */
-+	MCD_dmaBar->debugComp1 = 0;
-+	MCD_dmaBar->debugComp2 = 0;
-+	MCD_dmaBar->debugControl = DBG_CTL_DISABLE;
-+	MCD_dmaBar->debugStatus = DBG_KILL_ALL_STAT;
-+
-+	/* Enable or disable commbus prefetch */
-+	if ((flags & MCD_COMM_PREFETCH_EN) != 0)
-+		MCD_dmaBar->ptdControl &= ~PTD_CTL_COMM_PREFETCH;
-+	else
-+		MCD_dmaBar->ptdControl |= PTD_CTL_COMM_PREFETCH;
-+
-+	return MCD_OK;
-+}
-+/*********************** End of MCD_initDma() ***********************/
-+
-+/********************************************************************/
-+/* Function:   MCD_dmaStatus
-+ * Purpose:    Returns the status of the DMA on the requested channel
-+ * Arguments:  channel - channel number
-+ * Returns:    Predefined status indicators
-+ */
-+int MCD_dmaStatus(int channel)
-+{
-+	u16 tcrValue;
-+
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+	tcrValue = MCD_dmaBar->taskControl[channel];
-+	if ((tcrValue & TASK_CTL_EN) == 0) {
-+		/* Nothing running if last reported
-+		 * with task enabled */
-+		if (MCD_chStatus[channel] == MCD_RUNNING
-+			|| MCD_chStatus[channel] == MCD_IDLE)
-+			MCD_chStatus[channel] = MCD_DONE;
-+	} else /* something is running */{
-+		/* There are three possibilities:
-+		 * paused, running or idle. */
-+		if (MCD_chStatus[channel] == MCD_RUNNING
-+			|| MCD_chStatus[channel] == MCD_IDLE) {
-+			MCD_dmaBar->ptdDebug = PTD_DBG_TSK_VLD_INIT;
-+			/* Determine which initiator
-+			 * is asserted. */
-+			if ((MCD_dmaBar->ptdDebug >> channel) & 0x1)
-+				MCD_chStatus[channel] = MCD_RUNNING;
-+			else
-+				MCD_chStatus[channel] = MCD_IDLE;
-+		/* Do not change the status if it is already paused */
-+		}
-+	}
-+	return MCD_chStatus[channel];
-+}
-+/******************** End of MCD_dmaStatus() ************************/
-+
-+/********************************************************************/
-+/* Function:    MCD_startDma
-+ * Ppurpose:    Starts a particular kind of DMA
-+ * Arguments:   see below
-+ * Returns:     MCD_CHANNEL_INVALID if channel is invalid, else MCD_OK
-+ */
-+
-+int MCD_startDma(
-+	int  channel,
-+/* the channel on which to run the DMA */
-+	s8   *srcAddr,
-+/* the address to move data from,
-+ * or physical buffer-descriptor address */
-+	s16  srcIncr,
-+/* the amount to increment the source
-+ * address per transfer */
-+	s8   *destAddr,
-+/* the address to move data to */
-+	s16  destIncr,
-+/* the amount to increment the
-+ * destination address per transfer */
-+	u32  dmaSize,
-+/* the number of bytes to transfer
-+ * independent of the transfer size */
-+	u32  xferSize,
-+/* the number bytes in of each data
-+ * movement (1, 2, or 4) */
-+	u32  initiator,
-+/* what device initiates the DMA */
-+	int  priority,
-+/* priority of the DMA */
-+	u32  flags,
-+/* flags describing the DMA */
-+	u32  funcDesc
-+/* a description of byte swapping,
-+ * bit swapping, and CRC actions */
-+#ifdef MCD_NEED_ADDR_TRANS
-+	s8   *srcAddrVirt
-+/* virtual buffer descriptor address TBD*/
-+#endif
-+)
-+{
-+	int srcRsdIncr, destRsdIncr;
-+	int *cSave;
-+	short xferSizeIncr;
-+	int tcrCount = 0;
-+#ifdef MCD_INCLUDE_EU
-+	u32 *realFuncArray;
-+#endif
-+
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+#ifndef MCD_INCLUDE_EU
-+	funcDesc = MCD_FUNC_NOEU1;
-+#endif
-+
-+#ifdef MCD_DEBUG
-+	printf("startDma:Setting up params\n");
-+#endif
-+
-+	/* Enable task-wise priority */
-+	MCD_dmaBar->ptdControl |= (u16) 0x8000;
-+
-+	/* Calculate additional parameters
-+	 * to the regular DMA calls. */
-+	srcRsdIncr = srcIncr < 0 ? -1 : (srcIncr > 0 ? 1 : 0);
-+	destRsdIncr = destIncr < 0 ? -1 : (destIncr > 0 ? 1 : 0);
-+	xferSizeIncr = (xferSize & 0xffff) | 0x20000000;
-+
-+	/* Remember which variant is running for each channel */
-+	MCD_remVariants.remSrcRsdIncr[channel] = srcRsdIncr;
-+	MCD_remVariants.remDestRsdIncr[channel] = destRsdIncr;
-+	MCD_remVariants.remDestIncr[channel] = destIncr;
-+	MCD_remVariants.remSrcIncr[channel] = srcIncr;
-+	MCD_remVariants.remXferSize[channel] = xferSize;
-+
-+	cSave = (int *)(MCD_taskTable[channel].contextSaveSpace)
-+		+ CSAVE_OFFSET
-+		+ CURRBD;
-+
-+#ifdef MCD_INCLUDE_EU
-+	realFuncArray = (u32 *)(MCD_taskTable[channel].FDTandFlags
-+			& 0xffffff00);
-+
-+	/*
-+	* Modify the LURC's normal and byte-residue-loop functions
-+	* according to parameter.
-+	*/
-+	switch (xferSize) {
-+	case 4:
-+		realFuncArray[(LURC*16)] = funcDesc;
-+		break;
-+	case 2:
-+		realFuncArray[(LURC*16)] = funcDesc & 0xfffff00f;
-+		break;
-+	case 1:
-+	default:
-+		realFuncArray[(LURC*16)] = funcDesc & 0xffff000f;
-+		break;
-+	}
-+
-+	realFuncArray[(LURC*16 + 1)] = 0
-+		| (funcDesc & MCD_BYTE_SWAP_KILLER)
-+		| MCD_NO_BYTE_SWAP_ATALL;
-+#endif
-+
-+	/* Write the initiator field in the TCR and
-+	 * set the initiator-hold bit*/
-+	MCD_dmaBar->taskControl[channel] = 0
-+		| (initiator << 8)
-+		| TASK_CTL_HIPRITSKEN
-+		| TASK_CTL_HLDINITNUM;
-+
-+	/*
-+	* Current versions of the MPC8220 MCD have a hardware quirk that could
-+	* cause the write to the TCR to collide with an MDE access to the
-+	* initiator-register file, so we have to verify that the write occurred
-+	* correctly by reading back the value.  On MCF547x/8x devices and any
-+	* future revisions of the MPC8220, this loop will not be entered.
-+	*/
-+	while (((MCD_dmaBar->taskControl[channel] & 0x1fff) !=
-+		((initiator << 8) | TASK_CTL_HIPRITSKEN
-+		 | TASK_CTL_HLDINITNUM)) && (tcrCount < 1000))  {
-+		tcrCount++;
-+		MCD_dmaBar->taskControl[channel] = 0
-+			| (initiator << 8)
-+			| TASK_CTL_HIPRITSKEN
-+			| TASK_CTL_HLDINITNUM;
-+	}
-+
-+	MCD_dmaBar->priority[channel] = (u8)priority & PRIORITY_PRI_MASK;
-+
-+	if (channel < 8 && channel >= 0) {
-+		MCD_dmaBar->taskSize0 &= ~(0xf << (7-channel)*4);
-+		MCD_dmaBar->taskSize0
-+			|= (xferSize & 3) << (((7 - channel)*4) + 2);
-+		MCD_dmaBar->taskSize0
-+			|= (xferSize & 3) << ((7 - channel)*4);
-+	} else {
-+		MCD_dmaBar->taskSize1 &= ~(0xf << (15-channel)*4);
-+		MCD_dmaBar->taskSize1
-+			|= (xferSize & 3) << (((15 - channel)*4) + 2);
-+		MCD_dmaBar->taskSize1
-+			|= (xferSize & 3) << ((15 - channel)*4);
-+	}
-+
-+	/* Setup task table flags/options */
-+	MCD_taskTable[channel].FDTandFlags &= ~MCD_TT_FLAGS_MASK;
-+	MCD_taskTable[channel].FDTandFlags |= (MCD_TT_FLAGS_MASK & flags);
-+
-+	if (flags & MCD_FECTX_DMA) {
-+		/* TDTStart and TDTEnd */
-+		MCD_taskTable[channel].TDTstart =
-+			MCD_modelTaskTable[TASK_FECTX].TDTstart;
-+		MCD_taskTable[channel].TDTend =
-+			MCD_modelTaskTable[TASK_FECTX].TDTend;
-+		MCD_startDmaENetXmit(srcAddr, srcAddr, destAddr,
-+				MCD_taskTable, channel);
-+	} else if (flags & MCD_FECRX_DMA) {
-+		/* TDTStart and TDTEnd */
-+		MCD_taskTable[channel].TDTstart =
-+			MCD_modelTaskTable[TASK_FECRX].TDTstart;
-+		MCD_taskTable[channel].TDTend =
-+			MCD_modelTaskTable[TASK_FECRX].TDTend;
-+		MCD_startDmaENetRcv(srcAddr, srcAddr, destAddr,
-+			MCD_taskTable, channel);
-+	} else if (flags & MCD_SINGLE_DMA) {
-+		/*
-+		* This buffer descriptor is used for storing off
-+		* initial parameters for later progress query
-+		* calculation and for the DMA to write the resulting
-+		* checksum. The DMA does not use this to determine how
-+		* to operate, that info is passed with the init routine
-+		*/
-+		MCD_relocBuffDesc[channel].srcAddr = srcAddr;
-+		MCD_relocBuffDesc[channel].destAddr = destAddr;
-+		MCD_relocBuffDesc[channel].lastDestAddr = destAddr;
-+		MCD_relocBuffDesc[channel].dmaSize = dmaSize;
-+		MCD_relocBuffDesc[channel].flags = 0;
-+		/* not used */
-+		MCD_relocBuffDesc[channel].csumResult = 0;
-+		/* not used */
-+		MCD_relocBuffDesc[channel].next = 0;
-+		/* not used */
-+
-+		/* Initialize the progress-querying stuff
-+		 * to show no progress:*/
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			SRCPTR + CSAVE_OFFSET] = (int)srcAddr;
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			DESTPTR + CSAVE_OFFSET] = (int)destAddr;
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			DCOUNT + CSAVE_OFFSET] = 0;
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			CURRBD + CSAVE_OFFSET] =
-+			(u32) &(MCD_relocBuffDesc[channel]);
-+
-+		if ((funcDesc == MCD_FUNC_NOEU1)
-+			|| (funcDesc == MCD_FUNC_NOEU2)) {
-+			/* TDTStart and TDTEnd */
-+			MCD_taskTable[channel].TDTstart =
-+				MCD_modelTaskTable[TASK_SINGLENOEU].TDTstart;
-+			MCD_taskTable[channel].TDTend =
-+				MCD_modelTaskTable[TASK_SINGLENOEU].TDTend;
-+			MCD_startDmaSingleNoEu(srcAddr, srcIncr, destAddr,
-+				destIncr, dmaSize, xferSizeIncr, flags,
-+				(int *)&(MCD_relocBuffDesc[channel]),
-+				cSave, MCD_taskTable, channel);
-+		} else {
-+			/* TDTStart and TDTEnd */
-+			MCD_taskTable[channel].TDTstart =
-+				MCD_modelTaskTable[TASK_SINGLEEU].TDTstart;
-+			MCD_taskTable[channel].TDTend =
-+				MCD_modelTaskTable[TASK_SINGLEEU].TDTend;
-+			MCD_startDmaSingleEu(srcAddr, srcIncr, destAddr,
-+				destIncr, dmaSize, xferSizeIncr, flags,
-+				(int *)&(MCD_relocBuffDesc[channel]),
-+				cSave, MCD_taskTable, channel);
-+		}
-+	} else /* Chained DMA */ {
-+		/* Initialize the progress-querying
-+		 * stuff to show no progress:*/
-+#if 1 /* (!defined(MCD_NEED_ADDR_TRANS)) */
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			SRCPTR + CSAVE_OFFSET]
-+			= (int)((MCD_bufDesc *) srcAddr)->srcAddr;
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			DESTPTR + CSAVE_OFFSET]
-+			= (int)((MCD_bufDesc *) srcAddr)->destAddr;
-+#else
-+	/* if using address translation, need the
-+	 * virtual addr of the first buffdesc */
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			SRCPTR + CSAVE_OFFSET]
-+			= (int)((MCD_bufDesc *) srcAddrVirt)->srcAddr;
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			DESTPTR + CSAVE_OFFSET]
-+			= (int)((MCD_bufDesc *) srcAddrVirt)->destAddr;
-+#endif
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			DCOUNT + CSAVE_OFFSET] = 0;
-+		((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+			CURRBD + CSAVE_OFFSET] = (u32) srcAddr;
-+
-+		if (funcDesc == MCD_FUNC_NOEU1
-+			|| funcDesc == MCD_FUNC_NOEU2) {
-+			/* TDTStart and TDTEnd */
-+			MCD_taskTable[channel].TDTstart =
-+				MCD_modelTaskTable[TASK_CHAINNOEU].TDTstart;
-+			MCD_taskTable[channel].TDTend =
-+				MCD_modelTaskTable[TASK_CHAINNOEU].TDTend;
-+			MCD_startDmaChainNoEu((int *)srcAddr, srcIncr,
-+				destIncr, xferSize, xferSizeIncr, cSave,
-+				MCD_taskTable, channel);
-+		} else {
-+			/* TDTStart and TDTEnd */
-+			MCD_taskTable[channel].TDTstart =
-+				MCD_modelTaskTable[TASK_CHAINEU].TDTstart;
-+			MCD_taskTable[channel].TDTend =
-+				MCD_modelTaskTable[TASK_CHAINEU].TDTend;
-+			MCD_startDmaChainEu((int *)srcAddr, srcIncr, destIncr,
-+				xferSize, xferSizeIncr, cSave,
-+				MCD_taskTable, channel);
-+		}
-+	}
-+
-+	MCD_chStatus[channel] = MCD_IDLE;
-+	return MCD_OK;
-+}
-+
-+/************************ End of MCD_startDma() *********************/
-+
-+/********************************************************************/
-+/* Function:    MCD_XferProgrQuery
-+ * Purpose:     Returns progress of DMA on requested channel
-+ * Arguments:   channel - channel to retrieve progress for
-+ *              progRep - pointer to user supplied MCD_XferProg struct
-+ * Returns:     MCD_CHANNEL_INVALID if channel is invalid, else MCD_OK
-+ *
-+ * Notes:
-+ *  MCD_XferProgrQuery() upon completing or after aborting a DMA, or
-+ *  while the DMA is in progress, this function returns the first
-+ *  DMA-destination address not (or not yet) used in the DMA. When
-+ *  encountering a non-ready buffer descriptor, the information for
-+ *  the last completed descriptor is returned.
-+ *
-+ *  MCD_XferProgQuery() has to avoid the possibility of getting
-+ *  partially-updated information in the event that we should happen
-+ *  to query DMA progress just as the DMA is updating it. It does that
-+ *  by taking advantage of the fact context is not saved frequently for
-+ *  the most part. We therefore read it at least twice until we get the
-+ *  same information twice in a row.
-+ *
-+ *  Because a small, but not insignificant, amount of time is required
-+ *  to write out the progress-query information, especially upon
-+ *  completion of the DMA, it would be wise to guarantee some time lag
-+ *  between successive readings of the progress-query information.
-+ */
-+
-+/*
-+ * How many iterations of the loop below to execute to stabilize values
-+ */
-+#define STABTIME 0
-+
-+int MCD_XferProgrQuery(int channel, MCD_XferProg *progRep)
-+{
-+	MCD_XferProg prevRep;
-+	int again;
-+	/* true if we are to try again to get consistent results */
-+	int i;  /* used as a time-waste counter */
-+	int destDiffBytes;
-+	/* Total number of bytes that we think actually got xfered. */
-+	int numIterations; /* number of iterations */
-+	int bytesNotXfered; /* bytes that did not get xfered. */
-+	s8 *LWAlignedInitDestAddr, *LWAlignedCurrDestAddr;
-+	int subModVal, addModVal;
-+	/* Mode values to added and subtracted from the final destAddr */
-+
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+	/* Read a trial value for the progress-reporting values*/
-+	prevRep.lastSrcAddr =
-+	(s8 *)((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+		SRCPTR + CSAVE_OFFSET];
-+	prevRep.lastDestAddr =
-+	(s8 *)((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+		DESTPTR + CSAVE_OFFSET];
-+	prevRep.dmaSize =
-+	((volatile int *)MCD_taskTable[channel].contextSaveSpace)[
-+		DCOUNT + CSAVE_OFFSET];
-+	prevRep.currBufDesc =
-+		(MCD_bufDesc *)((volatile int *)MCD_taskTable[
-+		channel].contextSaveSpace)[CURRBD + CSAVE_OFFSET];
-+
-+	/* Repeatedly reread those values until
-+	 * they match previous values: */
-+	do {
-+		/* Take a little bit of time to ensure stability: */
-+		for (i = 0;  i < STABTIME;  i++)
-+			i += i >> 2;
-+		/* make sure this loop does something so that it
-+		 doesn't get optimized out */
-+		/* Check them again: */
-+		progRep->lastSrcAddr =
-+			(s8 *)((volatile int *)MCD_taskTable[
-+			channel].contextSaveSpace)[SRCPTR + CSAVE_OFFSET];
-+		progRep->lastDestAddr =
-+			(s8 *)((volatile int *)MCD_taskTable[
-+			channel].contextSaveSpace)[DESTPTR + CSAVE_OFFSET];
-+		progRep->dmaSize = ((volatile int *)MCD_taskTable[
-+			channel].contextSaveSpace)[DCOUNT + CSAVE_OFFSET];
-+		progRep->currBufDesc =
-+		(MCD_bufDesc *)((volatile int *)MCD_taskTable[
-+			channel].contextSaveSpace)[CURRBD + CSAVE_OFFSET];
-+
-+		/* See if they match: */
-+		if (prevRep.lastSrcAddr  != progRep->lastSrcAddr
-+			|| prevRep.lastDestAddr != progRep->lastDestAddr
-+			|| prevRep.dmaSize      != progRep->dmaSize
-+			|| prevRep.currBufDesc  != progRep->currBufDesc) {
-+			/* If they don't match, remember previous
-+			values and try again:*/
-+			prevRep.lastSrcAddr = progRep->lastSrcAddr;
-+			prevRep.lastDestAddr = progRep->lastDestAddr;
-+			prevRep.dmaSize = progRep->dmaSize;
-+			prevRep.currBufDesc = progRep->currBufDesc;
-+			again = MCD_TRUE;
-+		} else
-+			again = MCD_FALSE;
-+	} while (again == MCD_TRUE);
-+
-+
-+	/* Update dmaSize and lastDestAddr */
-+	switch (MCD_remVariants.remDestRsdIncr[channel]) {
-+	case MINUS1:
-+		subModVal = ((int)progRep->lastDestAddr)
-+			& ((MCD_remVariants.remXferSize[channel]) - 1);
-+		addModVal = ((int)progRep->currBufDesc->destAddr)
-+			& ((MCD_remVariants.remXferSize[channel]) - 1);
-+		LWAlignedInitDestAddr = (progRep->currBufDesc->destAddr)
-+			- addModVal;
-+		LWAlignedCurrDestAddr = (progRep->lastDestAddr) - subModVal;
-+		destDiffBytes = LWAlignedInitDestAddr - LWAlignedCurrDestAddr;
-+		bytesNotXfered =
-+			(destDiffBytes/MCD_remVariants.remDestIncr[channel]) *
-+			(MCD_remVariants.remDestIncr[channel]
-+			  + MCD_remVariants.remXferSize[channel]);
-+		progRep->dmaSize = destDiffBytes - bytesNotXfered
-+			+ addModVal - subModVal;
-+		break;
-+	case ZERO:
-+		progRep->lastDestAddr = progRep->currBufDesc->destAddr;
-+		break;
-+	case PLUS1:
-+		/* This value has to be subtracted
-+		 from the final calculated dmaSize. */
-+		subModVal = ((int)progRep->currBufDesc->destAddr)
-+			& ((MCD_remVariants.remXferSize[channel]) - 1);
-+		/* These bytes are already in lastDestAddr. */
-+		addModVal = ((int)progRep->lastDestAddr)
-+			& ((MCD_remVariants.remXferSize[channel]) - 1);
-+		LWAlignedInitDestAddr = (progRep->currBufDesc->destAddr)
-+			- subModVal;
-+		LWAlignedCurrDestAddr = (progRep->lastDestAddr) - addModVal;
-+		destDiffBytes = (progRep->lastDestAddr - LWAlignedInitDestAddr);
-+		numIterations = (LWAlignedCurrDestAddr -
-+		LWAlignedInitDestAddr)/MCD_remVariants.remDestIncr[channel];
-+		bytesNotXfered =  numIterations *
-+			(MCD_remVariants.remDestIncr[channel]
-+			 - MCD_remVariants.remXferSize[channel]);
-+		progRep->dmaSize = destDiffBytes - bytesNotXfered - subModVal;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	/* This covers M1,P1,Z for source */
-+	switch (MCD_remVariants.remSrcRsdIncr[channel]) {
-+	case MINUS1:
-+		progRep->lastSrcAddr =
-+			progRep->currBufDesc->srcAddr +
-+			(MCD_remVariants.remSrcIncr[channel] *
-+		 (progRep->dmaSize/MCD_remVariants.remXferSize[channel]));
-+		break;
-+	case ZERO:
-+		progRep->lastSrcAddr = progRep->currBufDesc->srcAddr;
-+		break;
-+	case PLUS1:
-+		progRep->lastSrcAddr =
-+			progRep->currBufDesc->srcAddr +
-+			(MCD_remVariants.remSrcIncr[channel] *
-+		 (progRep->dmaSize/MCD_remVariants.remXferSize[channel]));
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return MCD_OK;
-+}
-+/******************* End of MCD_XferProgrQuery() ********************/
-+
-+/********************************************************************/
-+/* MCD_resmActions() does the majority of the actions of a DMA resume.
-+ * It is called from MCD_killDma() and MCD_resumeDma().  It has to be
-+ * a separate function because the kill function has to negate the task
-+ * enable before resuming it, but the resume function has to do nothing
-+ * if there is no DMA on that channel (i.e., if the enable bit is 0).
-+ */
-+static void MCD_resmActions(int channel)
-+{
-+	MCD_dmaBar->debugControl = DBG_CTL_DISABLE;
-+	MCD_dmaBar->debugStatus = MCD_dmaBar->debugStatus;
-+
-+	/* Determine which initiators are asserted */
-+	MCD_dmaBar->ptdDebug = PTD_DBG_TSK_VLD_INIT;
-+
-+	if ((MCD_dmaBar->ptdDebug >> channel) & 0x1)
-+		MCD_chStatus[channel] = MCD_RUNNING;
-+	else
-+		MCD_chStatus[channel] = MCD_IDLE;
-+}
-+/********************* End of MCD_resmActions() *********************/
-+
-+/********************************************************************/
-+/* Function:    MCD_killDma
-+ * Purpose:     Halt the DMA on the requested channel, without any
-+ *              intention of resuming the DMA.
-+ * Arguments:   channel - requested channel
-+ * Returns:     MCD_CHANNEL_INVALID if channel is invalid, else MCD_OK
-+ *
-+ * Notes:
-+ *  A DMA may be killed from any state, including paused state, and it
-+ *  always goes to the MCD_HALTED state even if it is killed while in
-+ *  the MCD_NO_DMA or MCD_IDLE states.
-+ */
-+int MCD_killDma(int channel)
-+{
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+	MCD_dmaBar->taskControl[channel] = 0x0;
-+
-+	/* Clean up after a paused task */
-+	if (MCD_chStatus[channel] == MCD_PAUSED) {
-+		MCD_dmaBar->debugControl = DBG_CTL_DISABLE;
-+		MCD_dmaBar->debugStatus = MCD_dmaBar->debugStatus;
-+	}
-+
-+	MCD_chStatus[channel] = MCD_HALTED;
-+
-+	return MCD_OK;
-+}
-+/************************ End of MCD_killDma() **********************/
-+
-+/********************************************************************/
-+/* Function:    MCD_continDma
-+ * Purpose:     Continue a DMA which as stopped due to encountering an
-+ *              unready buffer descriptor.
-+ * Arguments:   channel - channel to continue the DMA on
-+ * Returns:     MCD_CHANNEL_INVALID if channel is invalid, else MCD_OK
-+ *
-+ * Notes:
-+ *  This routine does not check to see if there is a task which can
-+ *  be continued. Also this routine should not be used with single DMAs.
-+ */
-+int MCD_continDma(int channel)
-+{
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+	MCD_dmaBar->taskControl[channel] |= TASK_CTL_EN;
-+	MCD_chStatus[channel] = MCD_RUNNING;
-+
-+	return MCD_OK;
-+}
-+/********************** End of MCD_continDma() **********************/
-+
-+/*********************************************************************
-+ * MCD_pauseDma() and MCD_resumeDma() below use the DMA's debug unit
-+ * to freeze a task and resume it.  We freeze a task by breakpointing
-+ * on the stated task.  That is, not any specific place in the task,
-+ * but any time that task executes.  In particular, when that task
-+ * executes, we want to freeze that task and only that task.
-+ *
-+ * The bits of the debug control register influence interrupts vs.
-+ * breakpoints as follows:
-+ * - Bits 14 and 0 enable or disable debug functions.  If enabled, you
-+ *   will get the interrupt but you may or may not get a breakpoint.
-+ * - Bits 2 and 1 decide whether you also get a breakpoint in addition
-+ *   to an interrupt.
-+ *
-+ * The debug unit can do these actions in response to either internally
-+ * detected breakpoint conditions from the comparators, or in response
-+ * to the external breakpoint pin, or both.
-+ * - Bits 14 and 1 perform the above-described functions for
-+ *   internally-generated conditions, i.e., the debug comparators.
-+ * - Bits 0 and 2 perform the above-described functions for external
-+ *   conditions, i.e., the breakpoint external pin.
-+ *
-+ * Note that, although you "always" get the interrupt when you turn
-+ * the debug functions, the interrupt can nevertheless, if desired, be
-+ * masked by the corresponding bit in the PTD's IMR. Note also that
-+ * this means that bits 14 and 0 must enable debug functions before
-+ * bits 1 and 2, respectively, have any effect.
-+ *
-+ * NOTE: It's extremely important to not pause more than one DMA channel
-+ *  at a time.
-+ ********************************************************************/
-+
-+/********************************************************************/
-+/* Function:    MCD_pauseDma
-+ * Purpose:     Pauses the DMA on a given channel (if any DMA is running
-+ *              on that channel).
-+ * Arguments:   channel
-+ * Returns:     MCD_CHANNEL_INVALID if channel is invalid, else MCD_OK
-+ */
-+int MCD_pauseDma(int channel)
-+{
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+	if (MCD_dmaBar->taskControl[channel] & TASK_CTL_EN) {
-+		MCD_dmaBar->debugComp1 = channel;
-+		MCD_dmaBar->debugControl =
-+			DBG_CTL_ENABLE | (1 << (channel + 16));
-+		MCD_chStatus[channel] = MCD_PAUSED;
-+	}
-+
-+	return MCD_OK;
-+}
-+/************************* End of MCD_pauseDma() ********************/
-+
-+/********************************************************************/
-+/* Function:    MCD_resumeDma
-+ * Purpose:     Resumes the DMA on a given channel (if any DMA is
-+ *              running on that channel).
-+ * Arguments:   channel - channel on which to resume DMA
-+ * Returns:     MCD_CHANNEL_INVALID if channel is invalid, else MCD_OK
-+ */
-+int MCD_resumeDma(int channel)
-+{
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+	if (MCD_dmaBar->taskControl[channel] & TASK_CTL_EN)
-+		MCD_resmActions(channel);
-+
-+    return MCD_OK;
-+}
-+/************************ End of MCD_resumeDma() ********************/
-+
-+/********************************************************************/
-+/* Function:    MCD_csumQuery
-+ * Purpose:     Provide the checksum after performing a non-chained DMA
-+ * Arguments:   channel - channel to report on
-+ *              csum - pointer to where to write the checksum/CRC
-+ * Returns:     MCD_ERROR if the channel is invalid, else MCD_OK
-+ *
-+ * Notes:
-+ *
-+ */
-+int MCD_csumQuery(int channel, u32 *csum)
-+{
-+#ifdef MCD_INCLUDE_EU
-+	if ((channel < 0) || (channel >= NCHANNELS))
-+		return MCD_CHANNEL_INVALID;
-+
-+	*csum = MCD_relocBuffDesc[channel].csumResult;
-+	return MCD_OK;
-+#else
-+	return MCD_ERROR;
-+#endif
-+}
-+/*********************** End of MCD_resumeDma() *********************/
-+
-+/********************************************************************/
-+/* Function:    MCD_getCodeSize
-+ * Purpose:     Provide the size requirements of the microcoded tasks
-+ * Returns:     Size in bytes
-+ */
-+int MCD_getCodeSize(void)
-+{
-+#ifdef MCD_INCLUDE_EU
-+	return 0x2b64;
-+#else
-+	return 0x1744;
-+#endif
-+}
-+/********************** End of MCD_getCodeSize() ********************/
-+
-+/********************************************************************/
-+/* Function:    MCD_getVersion
-+ * Purpose:     Provide the version string and number
-+ * Arguments:   longVersion - user supplied pointer to a pointer to a char
-+ *                    which points to the version string
-+ * Returns:     Version number and version string (by reference)
-+ */
-+char MCD_versionString[] = "Multi-channel DMA API v1.0";
-+#define MCD_REV_MAJOR   0x01
-+#define MCD_REV_MINOR   0x00
-+
-+int MCD_getVersion(char **longVersion)
-+{
-+	int ret = 0;
-+	*longVersion = MCD_versionString;
-+	ret = (MCD_REV_MAJOR << 8) | MCD_REV_MINOR;
-+	return ret;
-+}
-+/********************** End of MCD_getVersion() *********************/
-+
-+/********************************************************************/
-+/* Private version of memcpy()
-+ * Note that everything this is used for is longword-aligned.
-+ */
-+static void MCD_memcpy(int *dest, int *src, u32 size)
-+{
-+	u32 i;
-+
-+	for (i = 0;  i < size;  i += sizeof(int), dest++, src++)
-+		*dest = *src;
-+}
-+/********************************************************************/
-diff --git a/arch/m68k/platform/coldfire/MCD_progCheck.h b/arch/m68k/platform/coldfire/MCD_progCheck.h
-new file mode 100644
-index 0000000..136f4df
---- /dev/null
-+++ b/arch/m68k/platform/coldfire/MCD_progCheck.h
-@@ -0,0 +1,29 @@
-+/*
-+ * drivers/dma/MCD_progCheck.h
-+ *
-+ * Copyright (C) 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Kurt Mahan <kmahan@freescale.com>
-+ * Shrek Wu b16972@freescale.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ */
-+
-+/* This file is autogenerated. Do not change */
-+
-+#define CURRBD 4
-+#define DCOUNT 6
-+#define DESTPTR 5
-+#define SRCPTR 7
-diff --git a/arch/m68k/platform/coldfire/MCD_tasks.c b/arch/m68k/platform/coldfire/MCD_tasks.c
-new file mode 100644
-index 0000000..00b4b35
---- /dev/null
-+++ b/arch/m68k/platform/coldfire/MCD_tasks.c
-@@ -0,0 +1,2466 @@
-+/*
-+ * drivers/dma/MCD_tasks.c
-+ *
-+ * Copyright (C) 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Kurt Mahan <kmahan@freescale.com>
-+ * Shrek Wu b16972@freescale.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ */
-+
-+#include "MCD_dma.h"
-+
-+u32 MCD_varTab0[];
-+u32 MCD_varTab1[];
-+u32 MCD_varTab2[];
-+u32 MCD_varTab3[];
-+u32 MCD_varTab4[];
-+u32 MCD_varTab5[];
-+u32 MCD_varTab6[];
-+u32 MCD_varTab7[];
-+u32 MCD_varTab8[];
-+u32 MCD_varTab9[];
-+u32 MCD_varTab10[];
-+u32 MCD_varTab11[];
-+u32 MCD_varTab12[];
-+u32 MCD_varTab13[];
-+u32 MCD_varTab14[];
-+u32 MCD_varTab15[];
-+
-+u32 MCD_funcDescTab0[];
-+#ifdef MCD_INCLUDE_EU
-+u32 MCD_funcDescTab1[];
-+u32 MCD_funcDescTab2[];
-+u32 MCD_funcDescTab3[];
-+u32 MCD_funcDescTab4[];
-+u32 MCD_funcDescTab5[];
-+u32 MCD_funcDescTab6[];
-+u32 MCD_funcDescTab7[];
-+u32 MCD_funcDescTab8[];
-+u32 MCD_funcDescTab9[];
-+u32 MCD_funcDescTab10[];
-+u32 MCD_funcDescTab11[];
-+u32 MCD_funcDescTab12[];
-+u32 MCD_funcDescTab13[];
-+u32 MCD_funcDescTab14[];
-+u32 MCD_funcDescTab15[];
-+#endif
-+
-+u32 MCD_contextSave0[];
-+u32 MCD_contextSave1[];
-+u32 MCD_contextSave2[];
-+u32 MCD_contextSave3[];
-+u32 MCD_contextSave4[];
-+u32 MCD_contextSave5[];
-+u32 MCD_contextSave6[];
-+u32 MCD_contextSave7[];
-+u32 MCD_contextSave8[];
-+u32 MCD_contextSave9[];
-+u32 MCD_contextSave10[];
-+u32 MCD_contextSave11[];
-+u32 MCD_contextSave12[];
-+u32 MCD_contextSave13[];
-+u32 MCD_contextSave14[];
-+u32 MCD_contextSave15[];
-+
-+u32 MCD_realTaskTableSrc[] =
-+{
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab0,   /* Task 0 Variable Table */
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave0,  /* Task 0 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab1,   /* Task 1 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab1,  /* Task 1 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave1,  /* Task 1 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab2,   /* Task 2 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab2,  /* Task 2 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave2,  /* Task 2 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab3,   /* Task 3 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab3,  /* Task 3 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave3,  /* Task 3 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab4,   /* Task 4 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab4,  /* Task 4 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave4,  /* Task 4 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab5,   /* Task 5 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab5,  /* Task 5 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave5,  /* Task 5 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab6,   /* Task 6 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab6,  /* Task 6 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave6,  /* Task 6 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab7,   /* Task 7 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab7,  /* Task 7 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave7,  /* Task 7 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab8,   /* Task 8 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab8,  /* Task 8 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave8,  /* Task 8 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab9,   /* Task 9 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab9,  /* Task 9 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave9,  /* Task 9 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab10,  /* Task 10 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab10, /* Task 10 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave10, /* Task 10 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab11,  /* Task 11 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab11, /* Task 11 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave11, /* Task 11 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab12,  /* Task 12 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab12, /* Task 12 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave12, /* Task 12 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab13,  /* Task 13 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab13, /* Task 13 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave13, /* Task 13 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab14,  /* Task 14 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab14, /* Task 14 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave14, /* Task 14 context save space */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_varTab15,  /* Task 15 Variable Table */
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_funcDescTab15, /* Task 15 Function Descriptor Table & Flags */
-+#else
-+    (u32)MCD_funcDescTab0,  /* Task 0 Function Descriptor Table & Flags */
-+#endif
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_contextSave15, /* Task 15 context save space */
-+    0x00000000,
-+};
-+
-+
-+u32 MCD_varTab0[] =
-+{   /* Task 0 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+
-+u32 MCD_varTab1[] =
-+{   /* Task 1 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab2[] =
-+{   /* Task 2 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab3[] =
-+{   /* Task 3 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab4[] =
-+{   /* Task 4 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab5[] =
-+{   /* Task 5 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab6[] =
-+{   /* Task 6 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab7[] =
-+{   /* Task 7 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab8[] =
-+{   /* Task 8 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab9[] =
-+{   /* Task 9 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab10[] =
-+{   /* Task 10 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab11[] =
-+{   /* Task 11 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab12[] =
-+{   /* Task 12 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab13[] =
-+{   /* Task 13 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab14[] =
-+{   /* Task 14 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_varTab15[] =
-+{   /* Task 15 Variable Table */
-+    0x00000000, /* var[0] */
-+    0x00000000, /* var[1] */
-+    0x00000000, /* var[2] */
-+    0x00000000, /* var[3] */
-+    0x00000000, /* var[4] */
-+    0x00000000, /* var[5] */
-+    0x00000000, /* var[6] */
-+    0x00000000, /* var[7] */
-+    0x00000000, /* var[8] */
-+    0x00000000, /* var[9] */
-+    0x00000000, /* var[10] */
-+    0x00000000, /* var[11] */
-+    0x00000000, /* var[12] */
-+    0x00000000, /* var[13] */
-+    0x00000000, /* var[14] */
-+    0x00000000, /* var[15] */
-+    0x00000000, /* var[16] */
-+    0x00000000, /* var[17] */
-+    0x00000000, /* var[18] */
-+    0x00000000, /* var[19] */
-+    0x00000000, /* var[20] */
-+    0x00000000, /* var[21] */
-+    0x00000000, /* var[22] */
-+    0x00000000, /* var[23] */
-+    0xe0000000, /* inc[0] */
-+    0x20000000, /* inc[1] */
-+    0x2000ffff, /* inc[2] */
-+    0x00000000, /* inc[3] */
-+    0x00000000, /* inc[4] */
-+    0x00000000, /* inc[5] */
-+    0x00000000, /* inc[6] */
-+    0x00000000, /* inc[7] */
-+};
-+
-+u32 MCD_funcDescTab0[] =
-+{   /* Task 0 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+#ifdef MCD_INCLUDE_EU
-+u32 MCD_funcDescTab1[] =
-+{   /* Task 1 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab2[] =
-+{   /* Task 2 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab3[] =
-+{   /* Task 3 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab4[] =
-+{   /* Task 4 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab5[] =
-+{   /* Task 5 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab6[] =
-+{   /* Task 6 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab7[] =
-+{   /* Task 7 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab8[] =
-+{   /* Task 8 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab9[] =
-+{   /* Task 9 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab10[] =
-+{   /* Task 10 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab11[] =
-+{   /* Task 11 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab12[] =
-+{   /* Task 12 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab13[] =
-+{   /* Task 13 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab14[] =
-+{   /* Task 14 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+
-+u32 MCD_funcDescTab15[] =
-+{   /* Task 15 Function Descriptor Table */
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0xa0045670, /* mainFunc(), EU# 3 */
-+    0xa0000000, /* rsduFunc(), EU# 3 */
-+    0xa0000000, /* crcAccumVal(), EU# 3 */
-+    0x20000000, /* setCrcAccum(), EU# 3 */
-+    0x21800000, /* and(), EU# 3 */
-+    0x21e00000, /* or(), EU# 3 */
-+    0x20400000, /* add(), EU# 3 */
-+    0x20500000, /* sub(), EU# 3 */
-+    0x205a0000, /* andNot(), EU# 3 */
-+    0x20a00000, /* shiftR(), EU# 3 */
-+    0x202fa000, /* andReadyBit(), EU# 3 */
-+    0x202f9000, /* andNotReadyBit(), EU# 3 */
-+    0x202ea000, /* andWrapBit(), EU# 3 */
-+    0x202da000, /* andLastBit(), EU# 3 */
-+    0x202e2000, /* andInterruptBit(), EU# 3 */
-+    0x202f2000, /* andCrcRestartBit(), EU# 3 */
-+};
-+#endif /*MCD_INCLUDE_EU*/
-+
-+u32 MCD_contextSave0[128];  /* Task 0 context save space */
-+u32 MCD_contextSave1[128];  /* Task 1 context save space */
-+u32 MCD_contextSave2[128];  /* Task 2 context save space */
-+u32 MCD_contextSave3[128];  /* Task 3 context save space */
-+u32 MCD_contextSave4[128];  /* Task 4 context save space */
-+u32 MCD_contextSave5[128];  /* Task 5 context save space */
-+u32 MCD_contextSave6[128];  /* Task 6 context save space */
-+u32 MCD_contextSave7[128];  /* Task 7 context save space */
-+u32 MCD_contextSave8[128];  /* Task 8 context save space */
-+u32 MCD_contextSave9[128];  /* Task 9 context save space */
-+u32 MCD_contextSave10[128]; /* Task 10 context save space */
-+u32 MCD_contextSave11[128]; /* Task 11 context save space */
-+u32 MCD_contextSave12[128]; /* Task 12 context save space */
-+u32 MCD_contextSave13[128]; /* Task 13 context save space */
-+u32 MCD_contextSave14[128]; /* Task 14 context save space */
-+u32 MCD_contextSave15[128]; /* Task 15 context save space */
-+
-+u32 MCD_ChainNoEu_TDT[];
-+u32 MCD_SingleNoEu_TDT[];
-+#ifdef MCD_INCLUDE_EU
-+u32 MCD_ChainEu_TDT[];
-+u32 MCD_SingleEu_TDT[];
-+#endif
-+u32 MCD_ENetRcv_TDT[];
-+u32 MCD_ENetXmit_TDT[];
-+
-+u32 MCD_modelTaskTableSrc[] =
-+{
-+    (u32)MCD_ChainNoEu_TDT,
-+    (u32)&((u8 *)MCD_ChainNoEu_TDT)[0x0000016c],
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_SingleNoEu_TDT,
-+    (u32)&((u8 *)MCD_SingleNoEu_TDT)[0x000000d4],
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+#ifdef MCD_INCLUDE_EU
-+    (u32)MCD_ChainEu_TDT,
-+    (u32)&((u8 *)MCD_ChainEu_TDT)[0x000001b4],
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_SingleEu_TDT,
-+    (u32)&((u8 *)MCD_SingleEu_TDT)[0x00000124],
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+#endif
-+    (u32)MCD_ENetRcv_TDT,
-+    (u32)&((u8 *)MCD_ENetRcv_TDT)[0x000000a4],
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    (u32)MCD_ENetXmit_TDT,
-+    (u32)&((u8 *)MCD_ENetXmit_TDT)[0x000000d0],
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+    0x00000000,
-+};
-+u32 MCD_ChainNoEu_TDT[] =
-+{
-+    0x80004000,
-+    0x8118801b,
-+    0xb8c60018,
-+    0x10002b10,
-+    0x7000000d,
-+    0x018cf89f,
-+    0x6000000a,
-+    0x080cf89f,
-+    0x000001f8,
-+    0x98180364,
-+    0x8118801b,
-+    0xf8c6001a,
-+    0xb8c6601b,
-+    0x10002710,
-+    0x00000f18,
-+    0xb8c6001d,
-+    0x10001310,
-+    0x60000007,
-+    0x014cf88b,
-+    0x98c6001c,
-+    0x00000710,
-+    0x98c70018,
-+    0x10001f10,
-+    0x0000c818,
-+    0x000001f8, /* 0060(:0):      NOP */
-+    0xc1476018,
-+    0xc003231d,
-+    0x811a601b,
-+    0xc1862102,
-+    0x849be009,
-+    0x03fed7b8,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x1000cb20,
-+    0x70000006,
-+    0x088cf88f,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf88f,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf88f,
-+    0x1000cb38,
-+    0x0000c728,
-+    0x000001f8, /* 00B0(:0):      NOP */
-+    0xc1476018,
-+    0xc003241d,
-+    0x811a601b,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x0000d3a0,
-+    0xc1862102,
-+    0x849be009,
-+    0x0bfed7b8,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x1000cb20,
-+    0x70000006,
-+    0x088cf88f,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf88f,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf88f,
-+    0x1000cb38,
-+    0x0000c728,
-+    0x000001f8, /* 010C(:0):      NOP */
-+    0x8118801b,
-+    0xd8c60018,
-+    0x98c6601c,
-+    0x6000000b,
-+    0x0c8cfc9f,
-+    0x000001f8, /* 0124(:0):      NOP */
-+    0xa146001e,
-+    0x10000b08,
-+    0x10002050,
-+    0xb8c60018,
-+    0x10002b10,
-+    0x7000000a,
-+    0x080cf89f,
-+    0x6000000d,
-+    0x018cf89f,
-+    0x000001f8, /* 014C(:0):      NOP */
-+    0x8618801b,
-+    0x7000000e,
-+    0x084cf21f,
-+    0xd8990336,
-+    0x8019801b,
-+    0x040001f8,
-+    0x000001f8, /* 0168(:0):      NOP */
-+    0x000001f8, /* 016C(:0):    NOP */
-+};
-+u32 MCD_SingleNoEu_TDT[] =
-+{
-+    0x8198001b,
-+    0x7000000d,
-+    0x080cf81f,
-+    0x8198801b,
-+    0x6000000e,
-+    0x084cf85f,
-+    0x000001f8, /* 0018(:0):    NOP */
-+    0x8298001b,
-+    0x7000000d,
-+    0x010cf81f,
-+    0x6000000e,
-+    0x018cf81f,
-+    0xc202601b,
-+    0xc002221c,
-+    0x809a601b,
-+    0xc10420c2,
-+    0x839be009,
-+    0x03fed7b8,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x70000006,
-+    0x088cf889,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf889,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf889,
-+    0x0000cb38,
-+    0x000001f8, /* 0074(:0):    NOP */
-+    0xc202601b,
-+    0xc002229c,
-+    0x809a601b,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x0000d3a0,
-+    0xc10420c2,
-+    0x839be009,
-+    0x0bfed7b8,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x70000006,
-+    0x088cf889,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf889,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf889,
-+    0x0000cb38,
-+    0x000001f8, /* 00C8(:0):    NOP */
-+    0xc318022d,
-+    0x8018801b,
-+    0x040001f8,
-+};
-+#ifdef MCD_INCLUDE_EU
-+u32 MCD_ChainEu_TDT[] =
-+{
-+    0x80004000,
-+    0x8198801b,
-+    0xb8c68018,
-+    0x10002f10,
-+    0x7000000d,
-+    0x01ccf89f,
-+    0x6000000a,
-+    0x080cf89f,
-+    0x000001f8,
-+    0x981803a4,
-+    0x8198801b,
-+    0xf8c6801a,
-+    0xb8c6e01b,
-+    0x10002b10,
-+    0x00001318,
-+    0xb8c6801d,
-+    0x10001710,
-+    0x60000007,
-+    0x018cf88c,
-+    0x98c6801c,
-+    0x00000b10,
-+    0x98c78018,
-+    0x10002310,
-+    0x0000c820,
-+    0x000001f8, /* 0060(:0):      NOP */
-+    0x8698801b,
-+    0x7000000f,
-+    0x084cf2df,
-+    0xd899042d,
-+    0x8019801b,
-+    0x60000003,
-+    0x2cd7c7df, /* 007C(:979):        DRD2B2: EU3(var13)  */
-+    0xd8990364,
-+    0x8019801b,
-+    0x60000003,
-+    0x2c17c7df, /* 008C(:981):        DRD2B2: EU3(var1)  */
-+    0x000001f8, /* 0090(:0):      NOP */
-+    0xc1c7e018,
-+    0xc003a35e,
-+    0x819a601b,
-+    0xc206a142,
-+    0x851be009,
-+    0x63fe0000,
-+    0x0d4cfddf,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x70000002,
-+    0x004cf81f,
-+    0x1000cb20,
-+    0x70000006,
-+    0x088cf891,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf891,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf891,
-+    0x1000cb38,
-+    0x0000c728,
-+    0x000001f8, /* 00EC(:0):      NOP */
-+    0xc1c7e018,
-+    0xc003a49e,
-+    0x819a601b,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x0000d3a0,
-+    0xc206a142,
-+    0x851be009,
-+    0x6bfe0000,
-+    0x0d4cfddf,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x70000002,
-+    0x004cf81f,
-+    0x1000cb20,
-+    0x70000006,
-+    0x088cf891,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf891,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf891,
-+    0x1000cb38,
-+    0x0000c728,
-+    0x000001f8, /* 0154(:0):      NOP */
-+    0x8198801b,
-+    0xd8c68018,
-+    0x98c6e01c,
-+    0x6000000b,
-+    0x0c8cfc9f,
-+    0x0000cc08,
-+    0xa1c6801e,
-+    0x10000f08,
-+    0x10002458,
-+    0xb8c68018,
-+    0x10002f10,
-+    0x7000000a,
-+    0x080cf89f,
-+    0x6000000d,
-+    0x01ccf89f,
-+    0x000001f8, /* 0194(:0):      NOP */
-+    0x8698801b,
-+    0x7000000e,
-+    0x084cf25f,
-+    0xd899037f,
-+    0x8019801b,
-+    0x040001f8,
-+    0x000001f8, /* 01B0(:0):      NOP */
-+    0x000001f8, /* 01B4(:0):    NOP */
-+};
-+u32 MCD_SingleEu_TDT[] =
-+{
-+    0x8218001b,
-+    0x7000000d,
-+    0x080cf81f,
-+    0x8218801b,
-+    0x6000000e,
-+    0x084cf85f,
-+    0x000001f8, /* 0018(:0):    NOP */
-+    0x8318001b,
-+    0x7000000d,
-+    0x014cf81f,
-+    0x6000000e,
-+    0x01ccf81f,
-+    0x8498001b,
-+    0x7000000f,
-+    0x080cf19f,
-+    0xd81882a4,
-+    0x8019001b,
-+    0x60000003,
-+    0x2c97c7df,
-+    0xd818826d,
-+    0x8019001b,
-+    0x60000003,
-+    0x2c17c7df,
-+    0x000001f8, /* 005C(:0):    NOP */
-+    0xc282e01b,
-+    0xc002a25e,
-+    0x811a601b,
-+    0xc184a102,
-+    0x841be009,
-+    0x63fe0000,
-+    0x0d4cfddf,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x70000002,
-+    0x004cf99f,
-+    0x70000006,
-+    0x088cf88b,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf88b,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf88b,
-+    0x0000cb38,
-+    0x000001f8, /* 00B0(:0):    NOP */
-+    0xc282e01b,
-+    0xc002a31e,
-+    0x811a601b,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x0000d3a0,
-+    0xc184a102,
-+    0x841be009,
-+    0x6bfe0000,
-+    0x0d4cfddf,
-+    0xda9b001b,
-+    0x9b9be01b,
-+    0x70000002,
-+    0x004cf99f,
-+    0x70000006,
-+    0x088cf88b,
-+    0x1000cb28,
-+    0x70000006,
-+    0x088cf88b,
-+    0x1000cb30,
-+    0x70000006,
-+    0x088cf88b,
-+    0x0000cb38,
-+    0x000001f8, /* 0110(:0):    NOP */
-+    0x8144801c,
-+    0x0000c008,
-+    0xc398027f,
-+    0x8018801b,
-+    0x040001f8,
-+};
-+#endif
-+u32 MCD_ENetRcv_TDT[] =
-+{
-+    0x80004000,
-+    0x81988000,
-+    0x10000788,
-+    0x6000000a,
-+    0x080cf05f,
-+    0x98180209,
-+    0x81c40004,
-+    0x7000000e,
-+    0x010cf05f,
-+    0x7000000c,
-+    0x01ccf05f,
-+    0x70000004,
-+    0x014cf049,
-+    0x70000004,
-+    0x004cf04a,
-+    0x00000b88,
-+    0xc4030150,
-+    0x8119e012,
-+    0x03e0cf90,
-+    0x81188000,
-+    0x000ac788,
-+    0xc4030000,
-+    0x8199e000,
-+    0x63e00004,
-+    0x084cfc8b,
-+    0xd8990000,
-+    0x9999e000,
-+    0x60000005,
-+    0x0cccf841,
-+    0x81c60000,
-+    0xc399021b,
-+    0x80198000,
-+    0x00008400,
-+    0x00000f08,
-+    0x81988000,
-+    0x10000788,
-+    0x6000000a,
-+    0x080cf05f,
-+    0xc2188209,
-+    0x80190000,
-+    0x040001f8,
-+    0x000001f8,
-+};
-+u32 MCD_ENetXmit_TDT[] =
-+{
-+    0x80004000,
-+    0x81988000,
-+    0x10000788,
-+    0x6000000a,
-+    0x080cf05f,
-+    0x98180309,
-+    0x80004003,
-+    0x81c60004,
-+    0x7000000e,
-+    0x014cf05f,
-+    0x7000000c,
-+    0x028cf05f,
-+    0x7000000d,
-+    0x018cf05f,
-+    0x70000004,
-+    0x01ccf04d,
-+    0x10000b90,
-+    0x60000004,
-+    0x020cf0a1,
-+    0xc3188312,
-+    0x83c70000,
-+    0x00001f10,
-+    0xc583a3c3,
-+    0x81042325,
-+    0x03e0c798,
-+    0xd8990000,
-+    0x9999e000,
-+    0x000acf98,
-+    0xd8992306,
-+    0x9999e03f,
-+    0x03eac798,
-+    0xd8990000,
-+    0x9999e000,
-+    0x000acf98,
-+    0xd8990000,
-+    0x99832302,
-+    0x0beac798,
-+    0x81988000,
-+    0x6000000b,
-+    0x0c4cfc5f,
-+    0x81c80000,
-+    0xc5190312,
-+    0x80198000,
-+    0x00008400,
-+    0x00000f08,
-+    0x81988000,
-+    0x10000788,
-+    0x6000000a,
-+    0x080cf05f,
-+    0xc2988309,
-+    0x80190000,
-+    0x040001f8,
-+    0x000001f8,
-+};
-+
-+#ifdef MCD_INCLUDE_EU
-+MCD_bufDesc MCD_singleBufDescs[NCHANNELS];
-+#endif
-diff --git a/arch/m68k/platform/coldfire/MCD_tasksInit.c b/arch/m68k/platform/coldfire/MCD_tasksInit.c
-new file mode 100644
-index 0000000..f9b46bc
---- /dev/null
-+++ b/arch/m68k/platform/coldfire/MCD_tasksInit.c
-@@ -0,0 +1,275 @@
-+/*
-+ * drivers/dma/MCD_tasksInit.c
-+ *
-+ * Copyright 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Kurt Mahan <kmahan@freescale.com>
-+ * Shrek Wu b16972@freescale.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ */
-+
-+/*
-+ * Autogenerated - Do not edit!
-+ */
-+
-+#include "MCD_dma.h"
-+
-+extern dmaRegs *MCD_dmaBar;
-+
-+
-+/*
-+ * Task 0
-+ */
-+
-+void  MCD_startDmaChainNoEu(int *currBD, short srcIncr,
-+	short destIncr, int xferSize, short xferSizeIncr,
-+	int *cSave, volatile TaskTableEntry *taskTable,
-+	int channel)
-+{
-+
-+    MCD_SET_VAR(taskTable+channel, 2, (u32)currBD); /* var[2] */
-+	MCD_SET_VAR(taskTable+channel, 25,
-+		(u32)(0xe000 << 16) | (0xffff & srcIncr));
-+	/* inc[1] */
-+	MCD_SET_VAR(taskTable+channel, 24,
-+		(u32)(0xe000 << 16) | (0xffff & destIncr));
-+	/* inc[0] */
-+    MCD_SET_VAR(taskTable+channel, 11, (u32)xferSize);  /* var[11] */
-+	MCD_SET_VAR(taskTable+channel, 26,
-+		(u32)(0x2000 << 16) | (0xffff & xferSizeIncr));
-+	/* inc[2] */
-+    MCD_SET_VAR(taskTable+channel, 0, (u32)cSave);  /* var[0] */
-+    MCD_SET_VAR(taskTable+channel, 1, (u32)0x00000000); /* var[1] */
-+    MCD_SET_VAR(taskTable+channel, 3, (u32)0x00000000); /* var[3] */
-+    MCD_SET_VAR(taskTable+channel, 4, (u32)0x00000000); /* var[4] */
-+    MCD_SET_VAR(taskTable+channel, 5, (u32)0x00000000); /* var[5] */
-+    MCD_SET_VAR(taskTable+channel, 6, (u32)0x00000000); /* var[6] */
-+    MCD_SET_VAR(taskTable+channel, 7, (u32)0x00000000); /* var[7] */
-+    MCD_SET_VAR(taskTable+channel, 8, (u32)0x00000000); /* var[8] */
-+    MCD_SET_VAR(taskTable+channel, 9, (u32)0x00000000); /* var[9] */
-+    MCD_SET_VAR(taskTable+channel, 10, (u32)0x00000000);    /* var[10] */
-+    MCD_SET_VAR(taskTable+channel, 12, (u32)0x00000000);    /* var[12] */
-+    MCD_SET_VAR(taskTable+channel, 13, (u32)0x80000000);    /* var[13] */
-+    MCD_SET_VAR(taskTable+channel, 14, (u32)0x00000010);    /* var[14] */
-+    MCD_SET_VAR(taskTable+channel, 15, (u32)0x00000004);    /* var[15] */
-+    MCD_SET_VAR(taskTable+channel, 16, (u32)0x08000000);    /* var[16] */
-+    MCD_SET_VAR(taskTable+channel, 27, (u32)0x00000000);    /* inc[3] */
-+    MCD_SET_VAR(taskTable+channel, 28, (u32)0x80000000);    /* inc[4] */
-+    MCD_SET_VAR(taskTable+channel, 29, (u32)0x80000001);    /* inc[5] */
-+    MCD_SET_VAR(taskTable+channel, 30, (u32)0x40000000);    /* inc[6] */
-+
-+    /* Set the task's Enable bit in its Task Control Register */
-+    MCD_dmaBar->taskControl[channel] |= (u16)0x8000;
-+}
-+
-+
-+/*
-+ * Task 1
-+ */
-+
-+void  MCD_startDmaSingleNoEu(char *srcAddr, short srcIncr,
-+	char *destAddr, short destIncr, int dmaSize,
-+	short xferSizeIncr, int flags, int *currBD, int *cSave,
-+	volatile TaskTableEntry *taskTable, int channel)
-+{
-+
-+    MCD_SET_VAR(taskTable+channel, 7, (u32)srcAddr);    /* var[7] */
-+	MCD_SET_VAR(taskTable+channel, 25,
-+		(u32)(0xe000 << 16) | (0xffff & srcIncr));
-+	/* inc[1] */
-+    MCD_SET_VAR(taskTable+channel, 2, (u32)destAddr);   /* var[2] */
-+	MCD_SET_VAR(taskTable+channel, 24,
-+		(u32)(0xe000 << 16) | (0xffff & destIncr));
-+	/* inc[0] */
-+    MCD_SET_VAR(taskTable+channel, 3, (u32)dmaSize);    /* var[3] */
-+	MCD_SET_VAR(taskTable+channel, 26,
-+		(u32)(0x2000 << 16) | (0xffff & xferSizeIncr));
-+	/* inc[2] */
-+    MCD_SET_VAR(taskTable+channel, 5, (u32)flags);  /* var[5] */
-+    MCD_SET_VAR(taskTable+channel, 1, (u32)currBD); /* var[1] */
-+    MCD_SET_VAR(taskTable+channel, 0, (u32)cSave);  /* var[0] */
-+    MCD_SET_VAR(taskTable+channel, 4, (u32)0x00000000); /* var[4] */
-+    MCD_SET_VAR(taskTable+channel, 6, (u32)0x00000000); /* var[6] */
-+    MCD_SET_VAR(taskTable+channel, 8, (u32)0x00000000); /* var[8] */
-+    MCD_SET_VAR(taskTable+channel, 9, (u32)0x00000004); /* var[9] */
-+    MCD_SET_VAR(taskTable+channel, 10, (u32)0x08000000);    /* var[10] */
-+    MCD_SET_VAR(taskTable+channel, 27, (u32)0x00000000);    /* inc[3] */
-+    MCD_SET_VAR(taskTable+channel, 28, (u32)0x80000001);    /* inc[4] */
-+    MCD_SET_VAR(taskTable+channel, 29, (u32)0x40000000);    /* inc[5] */
-+
-+    /* Set the task's Enable bit in its Task Control Register */
-+    MCD_dmaBar->taskControl[channel] |= (u16)0x8000;
-+}
-+
-+
-+/*
-+ * Task 2
-+ */
-+
-+void  MCD_startDmaChainEu(int *currBD, short srcIncr, short destIncr,
-+	int xferSize, short xferSizeIncr, int *cSave,
-+	volatile TaskTableEntry *taskTable, int channel)
-+{
-+
-+	MCD_SET_VAR(taskTable+channel, 3, (u32)currBD); /* var[3] */
-+	MCD_SET_VAR(taskTable+channel, 25,
-+		(u32)(0xe000 << 16) | (0xffff & srcIncr));
-+	/* inc[1] */
-+	MCD_SET_VAR(taskTable+channel, 24,
-+		(u32)(0xe000 << 16) | (0xffff & destIncr));
-+	/* inc[0] */
-+	MCD_SET_VAR(taskTable+channel, 12, (u32)xferSize);
-+	/* var[12] */
-+	MCD_SET_VAR(taskTable+channel, 26,
-+		(u32)(0x2000 << 16) | (0xffff & xferSizeIncr));
-+	/* inc[2] */
-+    MCD_SET_VAR(taskTable+channel, 0, (u32)cSave);  /* var[0] */
-+    MCD_SET_VAR(taskTable+channel, 1, (u32)0x00000000); /* var[1] */
-+    MCD_SET_VAR(taskTable+channel, 2, (u32)0x00000000); /* var[2] */
-+    MCD_SET_VAR(taskTable+channel, 4, (u32)0x00000000); /* var[4] */
-+    MCD_SET_VAR(taskTable+channel, 5, (u32)0x00000000); /* var[5] */
-+    MCD_SET_VAR(taskTable+channel, 6, (u32)0x00000000); /* var[6] */
-+    MCD_SET_VAR(taskTable+channel, 7, (u32)0x00000000); /* var[7] */
-+    MCD_SET_VAR(taskTable+channel, 8, (u32)0x00000000); /* var[8] */
-+    MCD_SET_VAR(taskTable+channel, 9, (u32)0x00000000); /* var[9] */
-+    MCD_SET_VAR(taskTable+channel, 10, (u32)0x00000000);    /* var[10] */
-+    MCD_SET_VAR(taskTable+channel, 11, (u32)0x00000000);    /* var[11] */
-+    MCD_SET_VAR(taskTable+channel, 13, (u32)0x00000000);    /* var[13] */
-+    MCD_SET_VAR(taskTable+channel, 14, (u32)0x80000000);    /* var[14] */
-+    MCD_SET_VAR(taskTable+channel, 15, (u32)0x00000010);    /* var[15] */
-+    MCD_SET_VAR(taskTable+channel, 16, (u32)0x00000001);    /* var[16] */
-+    MCD_SET_VAR(taskTable+channel, 17, (u32)0x00000004);    /* var[17] */
-+    MCD_SET_VAR(taskTable+channel, 18, (u32)0x08000000);    /* var[18] */
-+    MCD_SET_VAR(taskTable+channel, 27, (u32)0x00000000);    /* inc[3] */
-+    MCD_SET_VAR(taskTable+channel, 28, (u32)0x80000000);    /* inc[4] */
-+    MCD_SET_VAR(taskTable+channel, 29, (u32)0xc0000000);    /* inc[5] */
-+    MCD_SET_VAR(taskTable+channel, 30, (u32)0x80000001);    /* inc[6] */
-+    MCD_SET_VAR(taskTable+channel, 31, (u32)0x40000000);    /* inc[7] */
-+
-+    /* Set the task's Enable bit in its Task Control Register */
-+    MCD_dmaBar->taskControl[channel] |= (u16)0x8000;
-+}
-+
-+
-+/*
-+ * Task 3
-+ */
-+
-+void  MCD_startDmaSingleEu(char *srcAddr, short srcIncr,
-+	char *destAddr, short destIncr, int dmaSize,
-+	short xferSizeIncr, int flags, int *currBD, int *cSave,
-+	volatile TaskTableEntry *taskTable, int channel)
-+{
-+
-+    MCD_SET_VAR(taskTable+channel, 8, (u32)srcAddr);    /* var[8] */
-+    MCD_SET_VAR(taskTable+channel, 25,
-+	(u32)(0xe000 << 16) | (0xffff & srcIncr));   /* inc[1] */
-+    MCD_SET_VAR(taskTable+channel, 3, (u32)destAddr);   /* var[3] */
-+    MCD_SET_VAR(taskTable+channel, 24,
-+	(u32)(0xe000 << 16) | (0xffff & destIncr));  /* inc[0] */
-+    MCD_SET_VAR(taskTable+channel, 4, (u32)dmaSize);    /* var[4] */
-+    MCD_SET_VAR(taskTable+channel, 26,
-+	(u32)(0x2000 << 16) | (0xffff & xferSizeIncr)); /* inc[2] */
-+    MCD_SET_VAR(taskTable+channel, 6, (u32)flags);  /* var[6] */
-+    MCD_SET_VAR(taskTable+channel, 2, (u32)currBD); /* var[2] */
-+    MCD_SET_VAR(taskTable+channel, 0, (u32)cSave);  /* var[0] */
-+    MCD_SET_VAR(taskTable+channel, 1, (u32)0x00000000); /* var[1] */
-+    MCD_SET_VAR(taskTable+channel, 5, (u32)0x00000000); /* var[5] */
-+    MCD_SET_VAR(taskTable+channel, 7, (u32)0x00000000); /* var[7] */
-+    MCD_SET_VAR(taskTable+channel, 9, (u32)0x00000000); /* var[9] */
-+    MCD_SET_VAR(taskTable+channel, 10, (u32)0x00000001);    /* var[10] */
-+    MCD_SET_VAR(taskTable+channel, 11, (u32)0x00000004);    /* var[11] */
-+    MCD_SET_VAR(taskTable+channel, 12, (u32)0x08000000);    /* var[12] */
-+    MCD_SET_VAR(taskTable+channel, 27, (u32)0x00000000);    /* inc[3] */
-+    MCD_SET_VAR(taskTable+channel, 28, (u32)0xc0000000);    /* inc[4] */
-+    MCD_SET_VAR(taskTable+channel, 29, (u32)0x80000000);    /* inc[5] */
-+    MCD_SET_VAR(taskTable+channel, 30, (u32)0x80000001);    /* inc[6] */
-+    MCD_SET_VAR(taskTable+channel, 31, (u32)0x40000000);    /* inc[7] */
-+
-+    /* Set the task's Enable bit in its Task Control Register */
-+    MCD_dmaBar->taskControl[channel] |= (u16)0x8000;
-+}
-+
-+
-+/*
-+ * Task 4
-+ */
-+
-+void  MCD_startDmaENetRcv(char *bDBase, char *currBD, char *rcvFifoPtr,
-+	volatile TaskTableEntry *taskTable, int channel)
-+{
-+
-+    MCD_SET_VAR(taskTable+channel, 0, (u32)bDBase); /* var[0] */
-+    MCD_SET_VAR(taskTable+channel, 3, (u32)currBD); /* var[3] */
-+    MCD_SET_VAR(taskTable+channel, 6, (u32)rcvFifoPtr); /* var[6] */
-+    MCD_SET_VAR(taskTable+channel, 1, (u32)0x00000000); /* var[1] */
-+    MCD_SET_VAR(taskTable+channel, 2, (u32)0x00000000); /* var[2] */
-+    MCD_SET_VAR(taskTable+channel, 4, (u32)0x00000000); /* var[4] */
-+    MCD_SET_VAR(taskTable+channel, 5, (u32)0x00000000); /* var[5] */
-+    MCD_SET_VAR(taskTable+channel, 7, (u32)0x00000000); /* var[7] */
-+    MCD_SET_VAR(taskTable+channel, 8, (u32)0x00000000); /* var[8] */
-+    MCD_SET_VAR(taskTable+channel, 9, (u32)0x0000ffff); /* var[9] */
-+    MCD_SET_VAR(taskTable+channel, 10, (u32)0x30000000);    /* var[10] */
-+    MCD_SET_VAR(taskTable+channel, 11, (u32)0x0fffffff);    /* var[11] */
-+    MCD_SET_VAR(taskTable+channel, 12, (u32)0x00000008);    /* var[12] */
-+    MCD_SET_VAR(taskTable+channel, 24, (u32)0x00000000);    /* inc[0] */
-+    MCD_SET_VAR(taskTable+channel, 25, (u32)0x60000000);    /* inc[1] */
-+    MCD_SET_VAR(taskTable+channel, 26, (u32)0x20000004);    /* inc[2] */
-+    MCD_SET_VAR(taskTable+channel, 27, (u32)0x40000000);    /* inc[3] */
-+
-+    /* Set the task's Enable bit in its Task Control Register */
-+    MCD_dmaBar->taskControl[channel] |= (u16)0x8000;
-+}
-+
-+
-+/*
-+ * Task 5
-+ */
-+
-+void  MCD_startDmaENetXmit(char *bDBase, char *currBD,
-+	char *xmitFifoPtr, volatile TaskTableEntry *taskTable,
-+	int channel)
-+{
-+
-+    MCD_SET_VAR(taskTable+channel, 0, (u32)bDBase); /* var[0] */
-+    MCD_SET_VAR(taskTable+channel, 3, (u32)currBD); /* var[3] */
-+    MCD_SET_VAR(taskTable+channel, 11, (u32)xmitFifoPtr);   /* var[11] */
-+    MCD_SET_VAR(taskTable+channel, 1, (u32)0x00000000); /* var[1] */
-+    MCD_SET_VAR(taskTable+channel, 2, (u32)0x00000000); /* var[2] */
-+    MCD_SET_VAR(taskTable+channel, 4, (u32)0x00000000); /* var[4] */
-+    MCD_SET_VAR(taskTable+channel, 5, (u32)0x00000000); /* var[5] */
-+    MCD_SET_VAR(taskTable+channel, 6, (u32)0x00000000); /* var[6] */
-+    MCD_SET_VAR(taskTable+channel, 7, (u32)0x00000000); /* var[7] */
-+    MCD_SET_VAR(taskTable+channel, 8, (u32)0x00000000); /* var[8] */
-+    MCD_SET_VAR(taskTable+channel, 9, (u32)0x00000000); /* var[9] */
-+    MCD_SET_VAR(taskTable+channel, 10, (u32)0x00000000);    /* var[10] */
-+    MCD_SET_VAR(taskTable+channel, 12, (u32)0x00000000);    /* var[12] */
-+    MCD_SET_VAR(taskTable+channel, 13, (u32)0x0000ffff);    /* var[13] */
-+    MCD_SET_VAR(taskTable+channel, 14, (u32)0xffffffff);    /* var[14] */
-+    MCD_SET_VAR(taskTable+channel, 15, (u32)0x00000004);    /* var[15] */
-+    MCD_SET_VAR(taskTable+channel, 16, (u32)0x00000008);    /* var[16] */
-+    MCD_SET_VAR(taskTable+channel, 24, (u32)0x00000000);    /* inc[0] */
-+    MCD_SET_VAR(taskTable+channel, 25, (u32)0x60000000);    /* inc[1] */
-+    MCD_SET_VAR(taskTable+channel, 26, (u32)0x40000000);    /* inc[2] */
-+    MCD_SET_VAR(taskTable+channel, 27, (u32)0xc000fffc);    /* inc[3] */
-+    MCD_SET_VAR(taskTable+channel, 28, (u32)0xe0000004);    /* inc[4] */
-+    MCD_SET_VAR(taskTable+channel, 29, (u32)0x80000000);    /* inc[5] */
-+    MCD_SET_VAR(taskTable+channel, 30, (u32)0x4000ffff);    /* inc[6] */
-+    MCD_SET_VAR(taskTable+channel, 31, (u32)0xe0000001);    /* inc[7] */
-+
-+    /* Set the task's Enable bit in its Task Control Register */
-+    MCD_dmaBar->taskControl[channel] |= (u16)0x8000;
-+}
-diff --git a/arch/m68k/platform/coldfire/MCD_tasksInit.h b/arch/m68k/platform/coldfire/MCD_tasksInit.h
-new file mode 100644
-index 0000000..14fac25
---- /dev/null
-+++ b/arch/m68k/platform/coldfire/MCD_tasksInit.h
-@@ -0,0 +1,84 @@
-+/*
-+ * drivers/dma/MCD_tasksInit.h
-+ *
-+ * Copyright 2004-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Kurt Mahan <kmahan@freescale.com>
-+ * Shrek Wu b16972@freescale.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ */
-+#ifndef MCD_TSK_INIT_H
-+#define MCD_TSK_INIT_H 1
-+
-+/*
-+ * Autogenerated - Do not edit!
-+ */
-+
-+/*
-+ * Task 0
-+ */
-+void  MCD_startDmaChainNoEu(int *currBD, short srcIncr,
-+		short destIncr, int xferSize,
-+		short xferSizeIncr, int *cSave,
-+		volatile TaskTableEntry *taskTable,
-+		int channel);
-+
-+
-+/*
-+ * Task 1
-+ */
-+void  MCD_startDmaSingleNoEu(char *srcAddr, short srcIncr,
-+		char *destAddr, short destIncr, int dmaSize,
-+		short xferSizeIncr, int flags, int *currBD,
-+		int *cSave, volatile TaskTableEntry *taskTable,
-+		int channel);
-+
-+
-+/*
-+ * Task 2
-+ */
-+void  MCD_startDmaChainEu(int *currBD, short srcIncr, short destIncr,
-+		int xferSize, short xferSizeIncr, int *cSave,
-+		volatile TaskTableEntry *taskTable,
-+		int channel);
-+
-+
-+/*
-+ * Task 3
-+ */
-+void  MCD_startDmaSingleEu(char *srcAddr, short srcIncr,
-+		char *destAddr, short destIncr, int dmaSize,
-+		short xferSizeIncr, int flags, int *currBD,
-+		int *cSave, volatile TaskTableEntry *taskTable,
-+		int channel);
-+
-+
-+/*
-+ * Task 4
-+ */
-+void  MCD_startDmaENetRcv(char *bDBase, char *currBD,
-+		char *rcvFifoPtr,
-+		volatile TaskTableEntry *taskTable, int channel);
-+
-+
-+/*
-+ * Task 5
-+ */
-+void  MCD_startDmaENetXmit(char *bDBase, char *currBD,
-+		char *xmitFifoPtr,
-+		volatile TaskTableEntry *taskTable, int channel);
-+
-+#endif  /* MCD_TSK_INIT_H */
-diff --git a/arch/m68k/platform/coldfire/Makefile b/arch/m68k/platform/coldfire/Makefile
-index 02591a10..909b8b5 100644
---- a/arch/m68k/platform/coldfire/Makefile
-+++ b/arch/m68k/platform/coldfire/Makefile
-@@ -37,5 +37,8 @@ obj-$(CONFIG_MCF8390)	+= mcf8390.o
-
- obj-$(CONFIG_PCI)	+= pci.o
-
-+obj-$(CONFIG_MCD_DMA) += mcddma.o dma-54xx.o
-+mcddma-objs := MCD_dmaApi.o MCD_tasks.o MCD_tasksInit.o
-+
- obj-y			+= gpio.o
- extra-y := head.o
-diff --git a/arch/m68k/platform/coldfire/dma-54xx.c b/arch/m68k/platform/coldfire/dma-54xx.c
-new file mode 100644
-index 0000000..da5a62b
---- /dev/null
-+++ b/arch/m68k/platform/coldfire/dma-54xx.c
-@@ -0,0 +1,515 @@
-+/*
-+ * arch/m68k/platform/coldfire/dma-54xx.c
-+ *
-+ * Coldfire M547x/M548x DMA
-+ *
-+ * Copyright 2008-2009 Freescale Semiconductor, Inc. All Rights Reserved.
-+ * Kurt Mahan <kmahan@freescale.com>
-+ * Shrek Wu b16972@freescale.com
-+ *
-+ * This code is based on patches from the Freescale M547x_8x BSP
-+ * release mcf547x_8x-20070107-ltib.iso
++ * Copyright 2012 Stany MARCEL <smarcel@novasys-ingenierie.com> Linux
++ * 3.4 port
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
 + * the Free Software Foundation; either version 2 of the License, or
 + * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
++#include <linux/module.h>
 +#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/init.h>
++#include <linux/string.h>
++#include <linux/ptrace.h>
++#include <linux/errno.h>
++#include <linux/ioport.h>
++#include <linux/slab.h>
 +#include <linux/interrupt.h>
-+#include <asm/io.h>
-+#include <asm/irq.h>
-+#include <asm/dma.h>
++#include <linux/pci.h>
++#include <linux/init.h>
++#include <linux/phy.h>
++#include <linux/delay.h>
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
++#include <linux/ethtool.h>
++#include <linux/skbuff.h>
++#include <linux/spinlock.h>
++#include <linux/workqueue.h>
++#include <linux/bitops.h>
++
 +#include <asm/coldfire.h>
++#include <asm/mcfsim.h>
 +
-+#define ISC_DMA 48
++#include <asm/dma.h>
++#include <asm/MCD_dma.h>
++#include <asm/m54xxsram.h>
++#include <asm/virtconvert.h>
++#include <asm/irq.h>
 +
-+/*
-+ * This global keeps track of which initiators have been
-+ * used of the available assignments.  Initiators 0-15 are
-+ * hardwired.  Initiators 16-31 are multiplexed and controlled
-+ * via the Initiatior Mux Control Registe (IMCR).  The
-+ * assigned requestor is stored with the associated initiator
-+ * number.
-+ */
-+static int used_reqs[32] = {
-+	DMA_ALWAYS, DMA_DSPI_RX, DMA_DSPI_TX, DMA_DREQ0,
-+	DMA_PSC0_RX, DMA_PSC0_TX, DMA_USBEP0, DMA_USBEP1,
-+	DMA_USBEP2, DMA_USBEP3, DMA_PCI_TX, DMA_PCI_RX,
-+	DMA_PSC1_RX, DMA_PSC1_TX, DMA_I2C_RX, DMA_I2C_TX,
-+	0, 0, 0, 0,
-+	0, 0, 0, 0,
-+	0, 0, 0, 0,
-+	0, 0, 0, 0
-+};
++#include "fec_m54xx.h"
 +
-+/*
-+ * This global keeps track of which channels have been assigned
-+ * to tasks.  This methology assumes that no single initiator
-+ * will be tied to more than one task/channel
-+ */
-+static char used_channel[16] = {
-+	-1, -1, -1, -1, -1, -1, -1, -1,
-+	-1, -1, -1, -1, -1, -1, -1, -1
-+};
-+
-+unsigned int connected_channel[16] = {
-+	0, 0, 0, 0, 0, 0, 0, 0,
-+	0, 0, 0, 0, 0, 0, 0, 0
-+};
-+
-+/**
-+ * dma_set_initiator - enable initiator
-+ * @initiator: initiator identifier
-+ *
-+ * Returns 0 of successful, non-zero otherwise
-+ *
-+ * Attempt to enable the provided Initiator in the Initiator
-+ * Mux Control Register.
-+ */
-+int dma_set_initiator(int initiator)
-+{
-+	switch (initiator) {
-+	case DMA_ALWAYS:
-+	case DMA_DSPI_RX:
-+	case DMA_DSPI_TX:
-+	case DMA_DREQ0:
-+	case DMA_PSC0_RX:
-+	case DMA_PSC0_TX:
-+	case DMA_USBEP0:
-+	case DMA_USBEP1:
-+	case DMA_USBEP2:
-+	case DMA_USBEP3:
-+	case DMA_PCI_TX:
-+	case DMA_PCI_RX:
-+	case DMA_PSC1_RX:
-+	case DMA_PSC1_TX:
-+	case DMA_I2C_RX:
-+	case DMA_I2C_TX:
-+		/*
-+		 * These initiators are always active
-+		 */
-+		break;
-+
-+	case DMA_FEC0_RX:
-+		MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC16(3))
-+		    | MCF_DMA_IMCR_SRC16_FEC0RX;
-+		used_reqs[16] = DMA_FEC0_RX;
-+		break;
-+
-+	case DMA_FEC0_TX:
-+		MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC17(3))
-+		    | MCF_DMA_IMCR_SRC17_FEC0TX;
-+		used_reqs[17] = DMA_FEC0_TX;
-+		break;
-+
-+	case DMA_FEC1_RX:
-+		MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC20(3))
-+		    | MCF_DMA_IMCR_SRC20_FEC1RX;
-+		used_reqs[20] = DMA_FEC1_RX;
-+		break;
-+
-+	case DMA_FEC1_TX:
-+		if (used_reqs[21] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC21(3))
-+			    | MCF_DMA_IMCR_SRC21_FEC1TX;
-+			used_reqs[21] = DMA_FEC1_TX;
-+		} else if (used_reqs[25] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC25(3))
-+			    | MCF_DMA_IMCR_SRC25_FEC1TX;
-+			used_reqs[25] = DMA_FEC1_TX;
-+		} else if (used_reqs[31] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC31(3))
-+			    | MCF_DMA_IMCR_SRC31_FEC1TX;
-+			used_reqs[31] = DMA_FEC1_TX;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_DREQ1:
-+		if (used_reqs[29] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC29(3))
-+			    | MCF_DMA_IMCR_SRC29_DREQ1;
-+			used_reqs[29] = DMA_DREQ1;
-+		} else if (used_reqs[21] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC21(3))
-+			    | MCF_DMA_IMCR_SRC21_DREQ1;
-+			used_reqs[21] = DMA_DREQ1;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM0:
-+		if (used_reqs[24] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC24(3))
-+			    | MCF_DMA_IMCR_SRC24_CTM0;
-+			used_reqs[24] = DMA_CTM0;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM1:
-+		if (used_reqs[25] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC25(3))
-+			    | MCF_DMA_IMCR_SRC25_CTM1;
-+			used_reqs[25] = DMA_CTM1;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM2:
-+		if (used_reqs[26] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC26(3))
-+			    | MCF_DMA_IMCR_SRC26_CTM2;
-+			used_reqs[26] = DMA_CTM2;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM3:
-+		if (used_reqs[27] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC27(3))
-+			    | MCF_DMA_IMCR_SRC27_CTM3;
-+			used_reqs[27] = DMA_CTM3;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM4:
-+		if (used_reqs[28] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC28(3))
-+			    | MCF_DMA_IMCR_SRC28_CTM4;
-+			used_reqs[28] = DMA_CTM4;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM5:
-+		if (used_reqs[29] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC29(3))
-+			    | MCF_DMA_IMCR_SRC29_CTM5;
-+			used_reqs[29] = DMA_CTM5;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM6:
-+		if (used_reqs[30] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC30(3))
-+			    | MCF_DMA_IMCR_SRC30_CTM6;
-+			used_reqs[30] = DMA_CTM6;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_CTM7:
-+		if (used_reqs[31] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC31(3))
-+			    | MCF_DMA_IMCR_SRC31_CTM7;
-+			used_reqs[31] = DMA_CTM7;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_USBEP4:
-+		if (used_reqs[26] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC26(3))
-+			    | MCF_DMA_IMCR_SRC26_USBEP4;
-+			used_reqs[26] = DMA_USBEP4;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_USBEP5:
-+		if (used_reqs[27] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC27(3))
-+			    | MCF_DMA_IMCR_SRC27_USBEP5;
-+			used_reqs[27] = DMA_USBEP5;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_USBEP6:
-+		if (used_reqs[28] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC28(3))
-+			    | MCF_DMA_IMCR_SRC28_USBEP6;
-+			used_reqs[28] = DMA_USBEP6;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_PSC2_RX:
-+		if (used_reqs[28] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC28(3))
-+			    | MCF_DMA_IMCR_SRC28_PSC2RX;
-+			used_reqs[28] = DMA_PSC2_RX;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_PSC2_TX:
-+		if (used_reqs[29] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC29(3))
-+			    | MCF_DMA_IMCR_SRC29_PSC2TX;
-+			used_reqs[29] = DMA_PSC2_TX;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_PSC3_RX:
-+		if (used_reqs[30] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC30(3))
-+			    | MCF_DMA_IMCR_SRC30_PSC3RX;
-+			used_reqs[30] = DMA_PSC3_RX;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	case DMA_PSC3_TX:
-+		if (used_reqs[31] == 0) {
-+			MCF_DMA_IMCR = (MCF_DMA_IMCR & ~MCF_DMA_IMCR_SRC31(3))
-+			    | MCF_DMA_IMCR_SRC31_PSC3TX;
-+			used_reqs[31] = DMA_PSC3_TX;
-+		} else		/* No empty slots */
-+			return 1;
-+		break;
-+
-+	default:
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * dma_get_initiator - get the initiator for the given requestor
-+ * @requestor: initiator identifier
-+ *
-+ * Returns initiator number (0-31) if assigned or just 0
-+ */
-+unsigned int dma_get_initiator(int requestor)
-+{
-+	u32 i;
-+
-+	for (i = 0; i < sizeof(used_reqs); ++i) {
-+		if (used_reqs[i] == requestor)
-+			return i;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * dma_remove_initiator - remove the given initiator from active list
-+ * @requestor: requestor to remove
-+ */
-+void dma_remove_initiator(int requestor)
-+{
-+	u32 i;
-+
-+	for (i = 0; i < sizeof(used_reqs); ++i) {
-+		if (used_reqs[i] == requestor) {
-+			used_reqs[i] = -1;
-+			break;
-+		}
-+	}
-+}
-+
-+/**
-+ * dma_set_channel_fec: find available channel for fec and mark
-+ * @requestor: initiator/requestor identifier
-+ *
-+ * Returns first avaialble channel (0-5) or -1 if all occupied
-+ */
-+int dma_set_channel_fec(int requestor)
-+{
-+	u32 i, t;
-+
-+#ifdef CONFIG_FEC_M54xx_ENABLE_FEC2
-+	t = 4;
++#ifdef	CONFIG_FEC_M54xx_ENABLE_FEC2
++#define	M54XX_FEC_MAX_PORTS	2
++#define	M54XX_FEC2
 +#else
-+	t = 2;
++#define	M54XX_FEC_MAX_PORTS	1
++#undef	M54XX_FEC2
 +#endif
 +
-+	for (i = 0; i < t ; ++i) {
-+		if (used_channel[i] == -1) {
-+			used_channel[i] = requestor;
-+			return i;
-+		}
-+	}
-+	/* All channels taken */
-+	return -1;
-+}
++#define VERSION "0.20"
++MODULE_DESCRIPTION("DMA Fast Ethernet Controller driver ver " VERSION);
 +
-+/**
-+ * dma_set_channel - find an available channel and mark as used
-+ * @requestor: initiator/requestor identifier
-+ *
-+ * Returns first available channel (6-15) or -1 if all occupied
-+ */
-+int dma_set_channel(int requestor)
-+{
-+	u32 i;
-+#ifdef CONFIG_NET_FEC2
-+	i = 4;
-+#else
-+	i = 2;
++/* fec private */
++struct m54xx_fec_priv {
++	struct net_device *netdev;				/* owning net device */
++	void *txbuf[M54XX_FEC_TX_BUF_NUMBER];			/* tx buffer ptrs */
++	MCD_bufDescFec *txdesc;					/* tx descriptor ptrs */
++	volatile unsigned int current_tx;			/* current tx desc index */
++	volatile unsigned int next_tx;				/* next tx desc index */
++	unsigned int current_rx;				/* current rx desc index */
++	MCD_bufDescFec *rxdesc;					/* rx descriptor ptrs */
++	struct sk_buff *askb_rx[M54XX_FEC_RX_BUF_NUMBER];	/* rx SKB ptrs */
++	unsigned int initiator_rx;				/* rx dma initiator */
++	unsigned int initiator_tx;				/* tx dma initiator */
++	int fec_rx_channel;					/* rx dma channel */
++	int fec_tx_channel;					/* tx dma channel */
++	int rx_requestor;					/* rx dma requestor */
++	int tx_requestor;					/* tx dma requestor */
++	void *interrupt_fec_rx_handler;				/* dma rx handler */
++	void *interrupt_fec_tx_handler;				/* dma tx handler */
++	unsigned char *mac_addr;				/* private fec mac addr */
++	struct net_device_stats stat;				/* stats ptr */
++	spinlock_t lock;
++	int rxflag;
++	struct tasklet_struct tasklet_reinit;
++	int index;						/* fec hw number */
++	struct phy_device *phydev;
++	struct mii_bus *mdio_bus;
++	int  duplex;
++	int  link;
++	int  speed;
++};
++
++struct net_device *m54xx_fec_dev[M54XX_FEC_MAX_PORTS];
++
++/* FEC functions */
++static int __init m54xx_fec_init(void);
++static struct net_device_stats *m54xx_fec_get_stat(struct net_device *dev);
++static int m54xx_fec_open(struct net_device *dev);
++static int m54xx_fec_close(struct net_device *nd);
++static int m54xx_fec_tx(struct sk_buff *skb, struct net_device *dev);
++static void m54xx_fec_set_multicast_list(struct net_device *nd);
++static int m54xx_fec_set_mac_address(struct net_device *dev, void *p);
++static void m54xx_fec_tx_timeout(struct net_device *dev);
++static void m54xx_fec_interrupt_fec_tx_handler(struct net_device *dev);
++static void m54xx_fec_interrupt_fec_rx_handler(struct net_device *dev);
++static irqreturn_t m54xx_fec_interrupt_handler(int irq, void *dev_id);
++static void m54xx_fec_interrupt_fec_tx_handler_fec0(void);
++static void m54xx_fec_interrupt_fec_rx_handler_fec0(void);
++static void m54xx_fec_interrupt_fec_reinit(unsigned long data);
++
++/* default fec0 address */
++unsigned char m54xx_fec_mac_addr_fec0[6] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x50 };
++
++#ifdef M54XX_FEC2
++/* default fec1 address */
++unsigned char m54xx_fec_mac_addr_fec1[6] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x51 };
 +#endif
 +
-+	for (; i < 16; ++i)
-+		if (used_channel[i] == -1) {
-+			used_channel[i] = requestor;
-+			return i;
++extern unsigned char uboot_enet0[];
++extern unsigned char uboot_enet1[];
++
++#ifndef MODULE
++int m54xx_fec_str_to_mac(char *str_mac, unsigned char* addr);
++int __init m54xx_fec_mac_setup0(char *s);
++#endif
++
++
++#ifdef M54XX_FEC2
++void m54xx_fec_interrupt_fec_tx_handler_fec1(void);
++void m54xx_fec_interrupt_fec_rx_handler_fec1(void);
++#endif
++
++#ifndef MODULE
++int __init m54xx_fec_mac_setup1(char *s);
++#endif
++
++module_init(m54xx_fec_init);
++/* module_exit(m54xx_fec_cleanup); */
++
++__setup("mac0=", m54xx_fec_mac_setup0);
++
++#ifdef M54XX_FEC2
++__setup("mac1=", m54xx_fec_mac_setup1);
++#endif
++
++#define mk_mii_read(REG)	(0x60020000 | ((REG & 0x1f) << 18))
++#define mk_mii_write(REG, VAL)	(0x50020000 | ((REG & 0x1f) << 18) |	\
++				 (VAL & 0xffff))
++
++
++static int m54xx_fec_mdio_read(struct mii_bus *bus,
++				  int phy_id, int reg)
++{
++	int ret;
++#ifdef CONFIG_FEC_M54xx_SHARED_PHY
++	unsigned long base_addr = (unsigned long)M54XX_FEC_BASE_ADDR_FEC0;
++#else
++	struct net_device *dev = bus->priv;
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++#endif
++	int tries = 100;
++
++	/* Clear the MII interrupt bit */
++	M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_MII;
++
++	/* Write to the MII management frame register */
++	M54XX_FEC_MMFR(base_addr) = mk_mii_read(reg) | (phy_id << 23);
++
++	/* Wait for the reading */
++	while (!(M54XX_FEC_EIR(base_addr) & M54XX_FEC_EIR_MII)) {
++		udelay(10);
++
++		if (!tries) {
++			printk(KERN_ERR "%s timeout\n", __func__);
++			return -ETIMEDOUT;
++		}
++		tries--;
++	}
++
++	/* Clear the MII interrupt bit */
++	M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_MII;
++	ret = M54XX_FEC_MMFR(base_addr) & 0x0000FFFF;
++	return ret;
++}
++
++static int m54xx_fec_mdio_write(struct mii_bus *bus,
++				   int phy_id, int reg, u16 data)
++{
++	int ret;
++#ifdef CONFIG_FEC_M54xx_SHARED_PHY
++	unsigned long base_addr = (unsigned long)M54XX_FEC_BASE_ADDR_FEC0;
++#else
++	struct net_device *dev = bus->priv;
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++#endif
++	int tries = 100;
++
++	printk(KERN_ERR "%s base_addr %lx, phy_id %x, reg %x, data %x\n",
++	       __func__, base_addr, phy_id, reg, data);
++	/* Clear the MII interrupt bit */
++	M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_MII;
++
++	/*  Write to the MII management frame register */
++	M54XX_FEC_MMFR(base_addr) = mk_mii_write(reg, data) | (phy_id << 23);
++
++	/* Wait for the writing */
++	while (!(M54XX_FEC_EIR(base_addr) & M54XX_FEC_EIR_MII)) {
++		udelay(10);
++		if (!tries) {
++			printk(KERN_ERR "%s timeout\n", __func__);
++			return -ETIMEDOUT;
++		}
++		tries--;
++	}
++	/* Clear the MII interrupt bit */
++	M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_MII;
++	ret = M54XX_FEC_MMFR(base_addr) & 0x0000FFFF;
++
++	return ret;
++}
++
++static void m54xx_fec_adjust_link(struct net_device *dev)
++{
++	struct m54xx_fec_priv *priv = netdev_priv(dev);
++	struct phy_device *phydev = priv->phydev;
++	int new_state = 0;
++
++	if (phydev->link != PHY_DOWN) {
++		if (phydev->duplex != priv->duplex) {
++			new_state = 1;
++			priv->duplex = phydev->duplex;
 +		}
 +
-+	/* All channels taken */
-+	return -1;
-+}
++		if (phydev->speed != priv->speed) {
++			new_state = 1;
++			priv->speed = phydev->speed;
++		}
 +
-+/**
-+ * dma_get_channel - get the channel being initiated by the requestor
-+ * @requestor: initiator/requestor identifier
-+ *
-+ * Returns Initiator for requestor or -1 if not found
-+ */
-+int dma_get_channel(int requestor)
-+{
-+	u32 i;
-+
-+	for (i = 0; i < sizeof(used_channel); ++i) {
-+		if (used_channel[i] == requestor)
-+			return i;
++		if (priv->link == PHY_DOWN) {
++			new_state = 1;
++			priv->link = phydev->link;
++		}
++	} else if (priv->link) {
++		new_state = 1;
++		priv->link = PHY_DOWN;
++		priv->speed = 0;
++		priv->duplex = -1;
 +	}
-+	return -1;
++
++	if (new_state)
++		phy_print_status(phydev);
 +}
 +
-+/**
-+ * dma_connect - connect a channel with reference on data
-+ * @channel: channel number
-+ * @address: reference address of data
-+ *
-+ * Returns 0 if success or -1 if invalid channel
-+ */
-+int dma_connect(int channel, int address)
++static int m54xx_fec_init_phy(struct net_device *dev)
 +{
-+	if ((channel < 16) && (channel >= 0)) {
-+		connected_channel[channel] = address;
-+		return 0;
++	struct m54xx_fec_priv *priv = netdev_priv(dev);
++	struct phy_device *phydev = NULL;
++	int i;
++	int startnode;
++
++#ifdef CONFIG_FEC_M54xx_SHARED_PHY
++	if (priv->index == 0)
++		startnode = 0;
++	else if (priv->index == 1) {
++		struct m54xx_fec_priv *priv0 = netdev_priv(m54xx_fec_dev[0]);
++		startnode = priv0->phydev->addr + 1;
++	} else
++		startnode = 0;
++#else
++	startnode = 0;
++#endif
++#ifdef M54XX_FEC_DEBUG
++	printk(KERN_ERR "%s priv->index %x, startnode %x\n",
++	       __func__, priv->index, startnode);
++#endif
++	/* search for connect PHY device */
++	for (i = startnode; i < PHY_MAX_ADDR; i++) {
++		struct phy_device *const tmp_phydev =
++			priv->mdio_bus->phy_map[i];
++
++		if (!tmp_phydev) {
++#ifdef M54XX_FEC_DEBUG
++			printk(KERN_INFO "%s no PHY here at"
++			       "mii_bus->phy_map[%d]\n",
++			       __func__, i);
++#endif
++			continue; /* no PHY here... */
++		}
++		phydev = tmp_phydev;
++#ifdef M54XX_FEC_DEBUG
++		printk(KERN_INFO "%s find PHY here at"
++		       "mii_bus->phy_map[%d]\n",
++		       __func__, i);
++#endif
++		break; /* found it */
 +	}
-+	return -1;
-+}
 +
-+/**
-+ * dma_disconnect - disconnect a channel
-+ * @channel: channel number
-+ *
-+ * Returns 0 if success or -1 if invalid channel
-+ */
-+int dma_disconnect(int channel)
-+{
-+	if ((channel < 16) && (channel >= 0)) {
-+		connected_channel[channel] = 0;
-+		return 0;
++	/* now we are supposed to have a proper phydev, to attach to... */
++	if (!phydev) {
++		printk(KERN_INFO "%s: Don't found any phy device at all\n",
++		       dev->name);
++		return -ENODEV;
 +	}
-+	return -1;
++
++	priv->link = 0;
++	priv->speed = 0;
++	priv->duplex = 0;
++#ifdef M54XX_FEC_DEBUG
++	printk(KERN_INFO "%s phydev_busid %s\n", __func__, dev_name(&phydev->dev));
++#endif
++
++	phydev = phy_connect(dev, dev_name(&phydev->dev),
++			     &m54xx_fec_adjust_link,
++			     0,
++			     PHY_INTERFACE_MODE_MII);
++
++	phydev->supported &= (SUPPORTED_10baseT_Half |
++			      SUPPORTED_10baseT_Full |
++			      SUPPORTED_100baseT_Half |
++			      SUPPORTED_100baseT_Full |
++			      SUPPORTED_Autoneg |
++			      SUPPORTED_Pause |
++			      SUPPORTED_MII);
++	phydev->advertising = phydev->supported;
++
++
++
++	if (IS_ERR(phydev)) {
++		printk(KERN_ERR " %s phy_connect failed\n", __func__);
++		return PTR_ERR(phydev);
++	}
++
++	printk(KERN_INFO "M54xx FEC attached phy %i to driver %s %s\n",
++	       phydev->addr,
++	       phydev->drv->name,
++	       dev_name(&phydev->dev));
++	priv->phydev = phydev;
++	return 0;
++}
++
++static int m54xx_fec_mdio_register(struct net_device *dev,
++				   int slot)
++{
++	int err = 0;
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++
++	fp->mdio_bus = mdiobus_alloc();
++	if (!fp->mdio_bus) {
++		printk(KERN_ERR "ethernet mdiobus_alloc fail\n");
++		return -ENOMEM;
++	}
++
++	if (slot == 0) {
++		fp->mdio_bus->name = "Coldfire FEC MII 0 Bus";
++		strcpy(fp->mdio_bus->id, "0");
++	} else if (slot == 1) {
++		fp->mdio_bus->name = "Coldfire FEC MII 1 Bus";
++		strcpy(fp->mdio_bus->id, "1");
++	} else {
++		printk(KERN_ERR "Now coldfire can not"
++		       "support more than 2 mii bus\n");
++	}
++
++	fp->mdio_bus->read = &m54xx_fec_mdio_read;
++	fp->mdio_bus->write = &m54xx_fec_mdio_write;
++	fp->mdio_bus->priv = dev;
++	err = mdiobus_register(fp->mdio_bus);
++	if (err) {
++		mdiobus_free(fp->mdio_bus);
++		printk(KERN_ERR "%s: ethernet mdiobus_register fail %d\n",
++		       dev->name, err);
++		return -EIO;
++	}
++
++	printk(KERN_INFO "mdiobus_register %s ok\n",
++	       fp->mdio_bus->name);
++	return err;
++}
++
++static const struct net_device_ops m547x_fec_netdev_ops = {
++	.ndo_open = m54xx_fec_open,
++	.ndo_stop = m54xx_fec_close,
++	.ndo_start_xmit = m54xx_fec_tx,
++	.ndo_set_rx_mode = m54xx_fec_set_multicast_list,
++	.ndo_set_mac_address = m54xx_fec_set_mac_address,
++	.ndo_tx_timeout = m54xx_fec_tx_timeout,
++	.ndo_get_stats = m54xx_fec_get_stat,
++};
++
++/**
++ * Initialize a FEC device
++ */
++int m54xx_fec_enet_init(struct net_device *dev, int slot)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	int i;
++
++	fp->index = slot;
++	fp->netdev = dev;
++	m54xx_fec_dev[slot] = dev;
++
++	if (slot == 0) {
++		/* disable fec0 */
++		M54XX_FEC_ECR(M54XX_FEC_BASE_ADDR_FEC0) = M54XX_FEC_ECR_DISABLE;
++
++		/* setup the interrupt handler */
++		dev->irq = 64 + M54XX_ISC_FEC0;
++
++		if (request_irq(dev->irq, m54xx_fec_interrupt_handler,
++				IRQF_DISABLED, "ColdFire FEC 0", dev)) {
++			dev->irq = 0;
++			printk(KERN_ERR "Cannot allocate FEC0 IRQ\n");
++		}
++
++		/* fec base address */
++		dev->base_addr = M54XX_FEC_BASE_ADDR_FEC0;
++
++		/* requestor numbers */
++		fp->rx_requestor = DMA_FEC0_RX;
++		fp->tx_requestor = DMA_FEC0_TX;
++
++		/* m54xx_fec0 handlers */
++		fp->interrupt_fec_rx_handler =
++			m54xx_fec_interrupt_fec_rx_handler_fec0;
++		fp->interrupt_fec_tx_handler =
++			m54xx_fec_interrupt_fec_tx_handler_fec0;
++
++		/* tx descriptors */
++		fp->txdesc = (void *)M54XX_FEC_TX_DESC_FEC0;
++
++		/* rx descriptors */
++		fp->rxdesc = (void *)M54XX_FEC_RX_DESC_FEC0;
++
++		/* mac addr
++		   if (uboot_enet0[0] || uboot_enet0[1] || uboot_enet0[2] ||
++		   uboot_enet0[3] || uboot_enet0[4] || uboot_enet0[5]) {
++		   use uboot enet 0 addr
++		   memcpy(m54xx_fec_mac_addr_fec0, uboot_enet0, 6);
++		   }*/
++		m54xx_fec_mac_addr_fec0[0] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC0) >> 24) & 0xFF;
++		m54xx_fec_mac_addr_fec0[1] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC0) >> 16) & 0xFF;
++		m54xx_fec_mac_addr_fec0[2] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC0) >> 8) & 0xFF;
++		m54xx_fec_mac_addr_fec0[3] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC0)) & 0xFF;
++		m54xx_fec_mac_addr_fec0[4] =
++			(M54XX_FEC_PAUR(M54XX_FEC_BASE_ADDR_FEC0) >> 24) & 0xFF;
++		m54xx_fec_mac_addr_fec0[5] =
++			(M54XX_FEC_PAUR(M54XX_FEC_BASE_ADDR_FEC0) >> 16) & 0xFF;
++
++		fp->mac_addr = m54xx_fec_mac_addr_fec0;
++	} else {
++		/* disable fec1 */
++		M54XX_FEC_ECR(M54XX_FEC_BASE_ADDR_FEC1) = M54XX_FEC_ECR_DISABLE;
++#ifdef M54XX_FEC2
++		/* setup the interrupt handler */
++		dev->irq = 64 + M54XX_ISC_FEC1;
++
++		if (request_irq(dev->irq, m54xx_fec_interrupt_handler,
++				IRQF_DISABLED, "ColdFire FEC 1", dev)) {
++			dev->irq = 0;
++			printk(KERN_ERR "Cannot allocate FEC1 IRQ\n");
++		}
++
++		/* fec base address */
++		dev->base_addr = M54XX_FEC_BASE_ADDR_FEC1;
++
++		/* requestor numbers */
++		fp->rx_requestor = DMA_FEC1_RX;
++		fp->tx_requestor = DMA_FEC1_TX;
++
++		/* fec1 handlers */
++		fp->interrupt_fec_rx_handler =
++			m54xx_fec_interrupt_fec_rx_handler_fec1;
++		fp->interrupt_fec_tx_handler =
++			m54xx_fec_interrupt_fec_tx_handler_fec1;
++
++		/* tx descriptors */
++		fp->txdesc = (void *)M54XX_FEC_TX_DESC_FEC1;
++
++		/* rx descriptors */
++		fp->rxdesc = (void *)M54XX_FEC_RX_DESC_FEC1;
++
++		/* mac addr
++		   if (uboot_enet1[0] || uboot_enet1[1] || uboot_enet1[2] ||
++		   uboot_enet1[3] || uboot_enet1[4] || uboot_enet1[5]) {
++		   use uboot enet 1 addr
++		   memcpy(m54xx_fec_mac_addr_fec1, uboot_enet1, 6);
++		   }*/
++		m54xx_fec_mac_addr_fec1[0] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC1) >> 24) & 0xFF;
++		m54xx_fec_mac_addr_fec1[1] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC1) >> 16) & 0xFF;
++		m54xx_fec_mac_addr_fec1[2] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC1) >> 8) & 0xFF;
++		m54xx_fec_mac_addr_fec1[3] =
++			(M54XX_FEC_PALR(M54XX_FEC_BASE_ADDR_FEC1)) & 0xFF;
++		m54xx_fec_mac_addr_fec1[4] =
++			(M54XX_FEC_PAUR(M54XX_FEC_BASE_ADDR_FEC1) >> 24) & 0xFF;
++		m54xx_fec_mac_addr_fec1[5] =
++			(M54XX_FEC_PAUR(M54XX_FEC_BASE_ADDR_FEC1) >> 16) & 0xFF;
++
++		fp->mac_addr = m54xx_fec_mac_addr_fec1;
++#endif
++	}
++
++	/* clear MIB */
++	memset((void *) (dev->base_addr + 0x200), 0, M54XX_FEC_MIB_LEN);
++
++	/* clear the statistics structure */
++	memset((void *) &(fp->stat), 0,
++	       sizeof(struct net_device_stats));
++
++	/* grab the FEC initiators */
++	dma_set_initiator(fp->tx_requestor);
++	fp->initiator_tx = dma_get_initiator(fp->tx_requestor);
++	dma_set_initiator(fp->rx_requestor);
++	fp->initiator_rx = dma_get_initiator(fp->rx_requestor);
++
++	/* reset the DMA channels */
++	fp->fec_rx_channel = -1;
++	fp->fec_tx_channel = -1;
++
++	for (i = 0; i < M54XX_FEC_RX_BUF_NUMBER; i++)
++		fp->askb_rx[i] = NULL;
++
++	/* initialize the pointers to the socket buffers */
++	for (i = 0; i < M54XX_FEC_TX_BUF_NUMBER; i++)
++		fp->txbuf[i] = NULL;
++
++	ether_setup(dev);
++
++
++	dev->netdev_ops	= &m547x_fec_netdev_ops;
++	dev->watchdog_timeo = M54XX_FEC_TX_TIMEOUT * HZ;
++
++	memcpy(dev->dev_addr, fp->mac_addr, ETH_ALEN);
++
++	spin_lock_init(&fp->lock);
++
++	/* Initialize FEC/I2C/IRQ Pin Assignment Register*/
++	M54XX_FEC_GPIO_PAR_FECI2CIRQ &= 0xF;
++	M54XX_FEC_GPIO_PAR_FECI2CIRQ |= M54XX_FEC_FECI2CIRQ;
++
++	return 0;
++}
++
++
++/**
++ * Module Initialization
++ */
++int __init m54xx_fec_init(void)
++{
++	struct net_device *dev;
++	int i;
++	int err;
++	struct m54xx_fec_priv *fep;
++
++	printk(KERN_INFO "M54xx FEC ENET (DMA) Version %s\n", VERSION);
++	if (M54XX_FEC_MAX_PORTS > 1)
++	{
++		printk(KERN_INFO "M54xx FEC %d ports\n", M54XX_FEC_MAX_PORTS);
++#ifdef CONFIG_FEC_M54xx_SHARED_PHY
++		printk(KERN_INFO "M54xx FEC Shared PHY\n");
++#endif
++	}
++	else
++	{
++		printk(KERN_INFO "M54xx FEC 1 port\n");
++	}
++
++	for (i = 0; i < M54XX_FEC_MAX_PORTS; i++) {
++		dev = alloc_etherdev(sizeof(struct m54xx_fec_priv));
++		if (!dev)
++			return -ENOMEM;
++		err = m54xx_fec_enet_init(dev, i);
++		if (err) {
++			free_netdev(dev);
++			continue;
++		}
++
++		fep = netdev_priv(dev);
++		M54XX_FEC_MSCR(dev->base_addr) = M54XX_FEC_MII_SPEED;
++#ifdef CONFIG_FEC_M54xx_SHARED_PHY
++		if (i == 0)
++			err = m54xx_fec_mdio_register(dev, i);
++		else {
++			struct m54xx_fec_priv *priv0 = netdev_priv(m54xx_fec_dev[0]);
++			fep->mdio_bus = priv0->mdio_bus;
++			printk(KERN_INFO "FEC%d SHARED the %s ok\n",
++			       i, fep->mdio_bus->name);
++		}
++#else
++		err = m54xx_fec_mdio_register(dev, i);
++#endif
++		if (err) {
++			printk(KERN_ERR "%s: ethernet fec_mdio_register\n",
++			       dev->name);
++			free_netdev(dev);
++			return -ENOMEM;
++		}
++
++		if (register_netdev(dev) != 0) {
++			free_netdev(dev);
++			return -EIO;
++		}
++
++		printk(KERN_INFO "%s: ethernet %pM\n",
++		       dev->name, dev->dev_addr);
++	}
++	return 0;
 +}
 +
 +/**
-+ * dma_remove_channel - remove channel from the active list
-+ * @requestor: initiator/requestor identifier
++ * Stop a device
 + */
-+void dma_remove_channel(int requestor)
++void m54xx_fec_stop(struct net_device *dev)
 +{
-+	u32 i;
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
 +
-+	for (i = 0; i < sizeof(used_channel); ++i) {
-+		if (used_channel[i] == requestor) {
-+			used_channel[i] = -1;
-+			break;
++	dma_remove_initiator(fp->initiator_tx);
++	dma_remove_initiator(fp->initiator_rx);
++
++	if (dev->irq)
++		free_irq(dev->irq, dev);
++}
++
++/**
++ * m54xx_fec_open
++ *
++ * @brief This function performs the initialization of
++ *				of FEC and corresponding KS8721 transiver
++ *
++ * RETURNS: If no error occurs, this function returns zero.
++ */
++int m54xx_fec_open(struct net_device *dev)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++	int fduplex;
++	int i;
++	int channel;
++	int error_code = -EBUSY;
++
++	fp->link = 0;
++	fp->duplex = 0;
++	fp->speed = 0;
++	m54xx_fec_init_phy(dev);
++	phy_start(fp->phydev);
++
++	/* Receive the DMA channels */
++	channel = dma_set_channel_fec(fp->rx_requestor);
++
++	if (channel == -1) {
++		printk(KERN_ERR "M54xx FEC DMA RX channel cannot be reserved\n");
++		goto ERRORS;
++	}
++
++	fp->fec_rx_channel = channel;
++
++	dma_connect(channel, (int) fp->interrupt_fec_rx_handler);
++
++	channel = dma_set_channel_fec(fp->tx_requestor);
++
++	if (channel == -1) {
++		printk(KERN_ERR "M54xx FEC DMA RX channel cannot be reserved\n");
++		goto ERRORS;
++	}
++
++	fp->fec_tx_channel = channel;
++
++	dma_connect(channel, (int) fp->interrupt_fec_tx_handler);
++
++	/* init tasklet for controller reinitialization */
++	tasklet_init(&fp->tasklet_reinit,
++		     m54xx_fec_interrupt_fec_reinit, (unsigned long) dev);
++
++	/* Reset FIFOs */
++	M54XX_FEC_FECFRST(base_addr) |= M54XX_FEC_SW_RST | M54XX_FEC_RST_CTL;
++	M54XX_FEC_FECFRST(base_addr) &= ~M54XX_FEC_SW_RST;
++
++	/* Reset and disable FEC */
++	M54XX_FEC_ECR(base_addr) = M54XX_FEC_ECR_RESET;
++
++	udelay(10);
++
++	/* Clear all events */
++	M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_CLEAR;
++
++	/* Reset FIFO status */
++	M54XX_FEC_FECTFSR(base_addr) = M54XX_FEC_FECTFSR_MSK;
++	M54XX_FEC_FECRFSR(base_addr) = M54XX_FEC_FECRFSR_MSK;
++
++	/* Set the default address */
++	M54XX_FEC_PALR(base_addr) = (fp->mac_addr[0] << 24) |
++		(fp->mac_addr[1] << 16) |
++		(fp->mac_addr[2] << 8) |
++		fp->mac_addr[3];
++	M54XX_FEC_PAUR(base_addr) = (fp->mac_addr[4] << 24) |
++		(fp->mac_addr[5] << 16) | 0x8808;
++
++	/* Reset the group address descriptor */
++	M54XX_FEC_GALR(base_addr) = 0x00000000;
++	M54XX_FEC_GAUR(base_addr) = 0x00000000;
++
++	/* Reset the individual address descriptor */
++	M54XX_FEC_IALR(base_addr) = 0x00000000;
++	M54XX_FEC_IAUR(base_addr) = 0x00000000;
++
++	/* Set the receive control register */
++	M54XX_FEC_RCR(base_addr) = M54XX_FEC_RCR_MAX_FRM_SIZE | M54XX_FEC_RCR_MII;
++
++	/* Set the receive FIFO control register */
++	/*M54XX_FEC_FECRFCR(base_addr) =
++	 * M54XX_FEC_FECRFCR_FRM | M54XX_FEC_FECRFCR_GR | M54XX_FEC_FECRFCR_MSK;*/
++	M54XX_FEC_FECRFCR(base_addr) = M54XX_FEC_FECRFCR_FRM | M54XX_FEC_FECRFCR_GR
++		| (M54XX_FEC_FECRFCR_MSK
++		   /* disable all but ...*/
++		   & ~M54XX_FEC_FECRFCR_FAE
++		   /* enable frame accept error*/
++		   & ~M54XX_FEC_FECRFCR_RXW
++		   /* enable receive wait condition*/
++		   /*& ~M54XX_FEC_FECRFCR_UF*/
++		   /* enable FIFO underflow*/
++			);
++
++	/* Set the receive FIFO alarm register */
++	M54XX_FEC_FECRFAR(base_addr) = M54XX_FEC_FECRFAR_ALARM;
++
++	/* Set the transmit FIFO control register */
++	/*M54XX_FEC_FECTFCR(base_addr) =
++	  M54XX_FEC_FECTFCR_FRM | M54XX_FEC_FECTFCR_GR | M54XX_FEC_FECTFCR_MSK;*/
++	M54XX_FEC_FECTFCR(base_addr) = M54XX_FEC_FECTFCR_FRM | M54XX_FEC_FECTFCR_GR
++		| (M54XX_FEC_FECTFCR_MSK
++		   /* disable all but ... */
++		   & ~M54XX_FEC_FECTFCR_FAE
++		   /* enable frame accept error */
++		   /* & ~M54XX_FEC_FECTFCR_TXW */
++		   /*enable transmit wait condition*/
++		   /*& ~M54XX_FEC_FECTFCR_UF*/
++		   /*enable FIFO underflow*/
++		   & ~M54XX_FEC_FECTFCR_OF);
++	/* enable FIFO overflow */
++
++	/* Set the transmit FIFO alarm register */
++	M54XX_FEC_FECTFAR(base_addr) = M54XX_FEC_FECTFAR_ALARM;
++
++	/* Set the Tx FIFO watermark */
++	M54XX_FEC_FECTFWR(base_addr) = M54XX_FEC_FECTFWR_XWMRK;
++
++	/* Enable the transmitter to append the CRC */
++	M54XX_FEC_CTCWR(base_addr) = M54XX_FEC_CTCWR_TFCW_CRC;
++
++	/* Enable the ethernet interrupts */
++	/*M54XX_FEC_EIMR(base_addr) = M54XX_FEC_EIMR_MASK;*/
++	M54XX_FEC_EIMR(base_addr) = M54XX_FEC_EIMR_DISABLE
++		| M54XX_FEC_EIR_LC
++		| M54XX_FEC_EIR_RL
++		| M54XX_FEC_EIR_HBERR
++		| M54XX_FEC_EIR_XFUN
++		| M54XX_FEC_EIR_XFERR
++		| M54XX_FEC_EIR_RFERR;
++
++#if 0
++	error_code = init_transceiver(base_addr, &fduplex);
++	if (error_code != 0) {
++		printk(KERN_ERR "Initialization of the "
++		       "transceiver is failed\n");
++		goto ERRORS;
++	}
++#else
++	fduplex = 1;
++#endif
++	if (fduplex)
++		/* Enable the full duplex mode */
++		M54XX_FEC_TCR(base_addr) = M54XX_FEC_TCR_FDEN | M54XX_FEC_TCR_HBC;
++	else
++		/* Disable reception of frames while transmitting */
++		M54XX_FEC_RCR(base_addr) |= M54XX_FEC_RCR_DRT;
++
++	/* Enable MIB */
++	M54XX_FEC_MIBC(base_addr) = M54XX_FEC_MIBC_ENABLE;
++
++	/* Enable M54XX_FEC */
++	M54XX_FEC_ECR(base_addr) |= M54XX_FEC_ECR_ETHEREN;
++	M54XX_FEC_MSCR(dev->base_addr) = M54XX_FEC_MII_SPEED;
++	/* Initialize tx descriptors and start DMA for the transmission */
++	for (i = 0; i < M54XX_FEC_TX_BUF_NUMBER; i++)
++		fp->txdesc[i].statCtrl = MCD_FEC_INTERRUPT;
++
++	fp->txdesc[i - 1].statCtrl |= MCD_FEC_WRAP;
++
++	fp->current_tx = fp->next_tx = 0;
++
++	MCD_startDma(fp->fec_tx_channel, (char *) fp->txdesc, 0,
++		     (unsigned char *) &(M54XX_FEC_FECTFDR(base_addr)), 0,
++		     M54XX_FEC_MAX_FRM_SIZE, 0, fp->initiator_tx,
++		     M54XX_FEC_TX_DMA_PRI, MCD_FECTX_DMA | MCD_INTERRUPT,
++		     MCD_NO_CSUM | MCD_NO_BYTE_SWAP);
++
++	/* Initialize rx descriptors and start DMA for the reception */
++	for (i = 0; i < M54XX_FEC_RX_BUF_NUMBER; i++) {
++		fp->askb_rx[i] = alloc_skb(M54XX_FEC_MAXBUF_SIZE + 16, GFP_DMA);
++		if (!fp->askb_rx[i]) {
++			fp->rxdesc[i].dataPointer = 0;
++			fp->rxdesc[i].statCtrl = 0;
++			fp->rxdesc[i].length = 0;
++		} else {
++			skb_reserve(fp->askb_rx[i], 16);
++			fp->askb_rx[i]->dev = dev;
++			fp->rxdesc[i].dataPointer =
++				(unsigned int)virt_to_phys(fp->askb_rx[i]->tail);
++			fp->rxdesc[i].statCtrl =
++				MCD_FEC_BUF_READY | MCD_FEC_INTERRUPT;
++			fp->rxdesc[i].length = M54XX_FEC_MAXBUF_SIZE;
 +		}
 +	}
-+}
 +
-+/**
-+ * dma_interrupt_handler - dma interrupt handler
-+ * @irq: interrupt number
-+ * @dev_id: data
-+ *
-+ * Returns IRQ_HANDLED
-+ */
-+irqreturn_t dma_interrupt_handler(int irq, void *dev_id)
-+{
-+	u32 i, interrupts;
++	fp->rxdesc[i - 1].statCtrl |= MCD_FEC_WRAP;
++	fp->current_rx = 0;
 +
-+	/*
-+	 * Determine which interrupt(s) triggered by AND'ing the
-+	 * pending interrupts with those that aren't masked.
-+	 */
-+	interrupts = MCF_DMA_DIPR;
-+	MCF_DMA_DIPR = interrupts;
++	MCD_startDma(fp->fec_rx_channel, (char *) fp->rxdesc, 0,
++		     (unsigned char *) &(M54XX_FEC_FECRFDR(base_addr)), 0,
++		     M54XX_FEC_MAX_FRM_SIZE, 0, fp->initiator_rx,
++		     M54XX_FEC_RX_DMA_PRI, MCD_FECRX_DMA | MCD_INTERRUPT,
++		     MCD_NO_CSUM | MCD_NO_BYTE_SWAP);
 +
-+	for (i = 0; i < 16; ++i, interrupts >>= 1) {
-+		if (interrupts & 0x1)
-+			if (connected_channel[i] != 0)
-+				((void (*)(void)) (connected_channel[i])) ();
++	netif_start_queue(dev);
++	return 0;
++
++ERRORS:
++
++	/* Remove the channels and return with the error code */
++	if (fp->fec_rx_channel != -1) {
++		dma_disconnect(fp->fec_rx_channel);
++		dma_remove_channel_by_number(fp->fec_rx_channel);
++		fp->fec_rx_channel = -1;
 +	}
 +
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * dma_remove_channel_by_number - clear dma channel
-+ * @channel: channel number to clear
-+ */
-+void dma_remove_channel_by_number(int channel)
-+{
-+	if ((channel < sizeof(used_channel)) && (channel >= 0))
-+		used_channel[channel] = -1;
-+}
-+
-+/**
-+ * dma_init - initialize the dma subsystem
-+ *
-+ * Returns 0 if success non-zero if failure
-+ *
-+ * Handles the DMA initialization during device setup.
-+ */
-+int __devinit dma_init()
-+{
-+	int result;
-+	char *dma_version_str;
-+
-+	MCD_getVersion(&dma_version_str);
-+	printk(KERN_INFO "m54xx DMA: Initialize %s\n", dma_version_str);
-+
-+	/* attempt to setup dma interrupt handler */
-+	if (request_irq(64 + ISC_DMA, dma_interrupt_handler, IRQF_DISABLED,
-+			"MCD-DMA", NULL)) {
-+		printk(KERN_ERR "MCD-DMA: Cannot allocate the DMA IRQ(48)\n");
-+		return 1;
++	if (fp->fec_tx_channel != -1) {
++		dma_disconnect(fp->fec_tx_channel);
++		dma_remove_channel_by_number(fp->fec_tx_channel);
++		fp->fec_tx_channel = -1;
 +	}
 +
-+	MCF_DMA_DIMR = 0;
-+	MCF_DMA_DIPR = 0xFFFFFFFF;
++	return error_code;
++}
 +
-+	result = MCD_initDma((dmaRegs *) (MCF_MBAR + 0x8000),
-+			(void *) SYS_SRAM_DMA_START, MCD_RELOC_TASKS);
-+	if (result != MCD_OK) {
-+		printk(KERN_ERR "MCD-DMA: Cannot perform DMA initialization\n");
-+		free_irq(64 + ISC_DMA, NULL);
-+		return 1;
++/**
++ * m54xx_fec_close
++ *
++ * @brief This function performs the graceful stop of the
++ *				transmission and disables FEC
++ *
++ * RETURNS: This function always returns zero.
++ */
++int m54xx_fec_close(struct net_device *dev)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++	unsigned long time;
++	int i;
++
++	netif_stop_queue(dev);
++	phy_disconnect(fp->phydev);
++	phy_stop(fp->phydev);
++	/* Perform the graceful stop */
++	M54XX_FEC_TCR(base_addr) |= M54XX_FEC_TCR_GTS;
++
++	time = jiffies;
++
++	/* Wait for the graceful stop */
++	while (!(M54XX_FEC_EIR(base_addr) & M54XX_FEC_EIR_GRA) && jiffies - time <
++	       (M54XX_FEC_GR_TIMEOUT * HZ))
++		schedule();
++
++	/* Disable M54XX_FEC */
++	M54XX_FEC_ECR(base_addr) = M54XX_FEC_ECR_DISABLE;
++
++	/* Reset the DMA channels */
++	spin_lock_irq(&fp->lock);
++	MCD_killDma(fp->fec_tx_channel);
++	spin_unlock_irq(&fp->lock);
++	dma_remove_channel_by_number(fp->fec_tx_channel);
++	dma_disconnect(fp->fec_tx_channel);
++	fp->fec_tx_channel = -1;
++
++	for (i = 0; i < M54XX_FEC_TX_BUF_NUMBER; i++) {
++		if (fp->txbuf[i]) {
++			kfree(fp->txbuf[i]);
++			fp->txbuf[i] = NULL;
++		}
++	}
++
++	spin_lock_irq(&fp->lock);
++	MCD_killDma(fp->fec_rx_channel);
++	spin_unlock_irq(&fp->lock);
++
++	dma_remove_channel_by_number(fp->fec_rx_channel);
++	dma_disconnect(fp->fec_rx_channel);
++	fp->fec_rx_channel = -1;
++
++	for (i = 0; i < M54XX_FEC_RX_BUF_NUMBER; i++) {
++		if (fp->askb_rx[i]) {
++			kfree_skb(fp->askb_rx[i]);
++			fp->askb_rx[i] = NULL;
++		}
 +	}
 +
 +	return 0;
 +}
-+device_initcall(dma_init);
++
++/**
++ * +m54xx_fec_get_stat
++ *
++ * RETURNS: This function returns the statistical information.
++ */
++struct net_device_stats *m54xx_fec_get_stat(struct net_device *dev)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	unsigned long base_addr = dev->base_addr;
++
++	/* Receive the statistical information */
++	fp->stat.rx_packets = M54XX_FECSTAT_RMON_R_PACKETS(base_addr);
++	fp->stat.tx_packets = M54XX_FECSTAT_RMON_T_PACKETS(base_addr);
++	fp->stat.rx_bytes = M54XX_FECSTAT_RMON_R_OCTETS(base_addr);
++	fp->stat.tx_bytes = M54XX_FECSTAT_RMON_T_OCTETS(base_addr);
++
++	fp->stat.multicast = M54XX_FECSTAT_RMON_R_MC_PKT(base_addr);
++	fp->stat.collisions = M54XX_FECSTAT_RMON_T_COL(base_addr);
++
++	fp->stat.rx_length_errors =
++		M54XX_FECSTAT_RMON_R_UNDERSIZE(base_addr) +
++		M54XX_FECSTAT_RMON_R_OVERSIZE(base_addr) +
++		M54XX_FECSTAT_RMON_R_FRAG(base_addr) +
++		M54XX_FECSTAT_RMON_R_JAB(base_addr);
++	fp->stat.rx_crc_errors = M54XX_FECSTAT_IEEE_R_CRC(base_addr);
++	fp->stat.rx_frame_errors = M54XX_FECSTAT_IEEE_R_ALIGN(base_addr);
++	fp->stat.rx_over_errors = M54XX_FECSTAT_IEEE_R_MACERR(base_addr);
++
++	fp->stat.tx_carrier_errors = M54XX_FECSTAT_IEEE_T_CSERR(base_addr);
++	fp->stat.tx_fifo_errors = M54XX_FECSTAT_IEEE_T_MACERR(base_addr);
++	fp->stat.tx_window_errors = M54XX_FECSTAT_IEEE_T_LCOL(base_addr);
++
++	/* I hope that one frame doesn't have more than one error */
++	fp->stat.rx_errors = fp->stat.rx_length_errors +
++		fp->stat.rx_crc_errors +
++		fp->stat.rx_frame_errors +
++		fp->stat.rx_over_errors +
++		fp->stat.rx_dropped;
++	fp->stat.tx_errors = fp->stat.tx_carrier_errors +
++		fp->stat.tx_fifo_errors +
++		fp->stat.tx_window_errors +
++		fp->stat.tx_aborted_errors +
++		fp->stat.tx_heartbeat_errors +
++		fp->stat.tx_dropped;
++
++	return &fp->stat;
++}
++
++/**
++ * m54xx_fec_set_multicast_list
++ *
++ * @brief This function sets the frame filtering parameters
++ */
++void m54xx_fec_set_multicast_list(struct net_device *dev)
++{
++	unsigned int crc, data;
++	int i, j;
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++
++	if (dev->flags & IFF_PROMISC || dev->flags & IFF_ALLMULTI) {
++		/* Allow all incoming frames */
++		M54XX_FEC_GALR(base_addr) = 0xFFFFFFFF;
++		M54XX_FEC_GAUR(base_addr) = 0xFFFFFFFF;
++		return ;
++	}
++
++	/* Reset the group address register */
++	M54XX_FEC_GALR(base_addr) = 0x00000000;
++	M54XX_FEC_GAUR(base_addr) = 0x00000000;
++
++	if (!netdev_mc_empty(dev)) {
++		struct netdev_hw_addr *ha;
++
++		netdev_for_each_mc_addr(ha, dev) {
++			/* Processing must be only for the group addresses */
++			if (!(ha->addr[0] & 1))
++				continue;
++
++			/* Calculate crc value for the current address */
++			crc = 0xFFFFFFFF;
++			for (i = 0; i < 6; i++) {
++				for (j = 0, data = ha->addr[i];
++				     j < 8;  j++, data >>= 1) {
++					if ((crc ^ data) & 1)
++						crc = (crc >> 1) ^ M54XX_FEC_CRCPOL;
++					else
++						crc >>= 1;
++				}
++			}
++
++			/* Add this value */
++			crc >>= 26;
++			crc &= 0x3F;
++			if (crc > 31)
++				M54XX_FEC_GAUR(base_addr) |= 0x1 << (crc - 32);
++			else
++				M54XX_FEC_GALR(base_addr) |= 0x1 << crc;
++		}
++	}
++}
++
++/**
++ * m54xx_fec_set_mac_address
++ *
++ * @brief This function sets the MAC address
++ */
++int m54xx_fec_set_mac_address(struct net_device *dev, void *p)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++	struct sockaddr *addr = p;
++
++	if (netif_running(dev))
++		return -EBUSY;
++
++	/* Copy a new address to the device structure */
++	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
++
++	/* Copy a new address to the private structure */
++	memcpy(fp->mac_addr, addr->sa_data, 6);
++
++	/* Set the address to the registers */
++	M54XX_FEC_PALR(base_addr) = (fp->mac_addr[0] << 24) |
++		(fp->mac_addr[1] << 16) |
++		(fp->mac_addr[2] << 8) |
++		fp->mac_addr[3];
++	M54XX_FEC_PAUR(base_addr) = (fp->mac_addr[4] << 24) |
++		(fp->mac_addr[5] << 16) |
++		0x8808;
++
++	return 0;
++}
++
++/**
++ * m54xx_fec_tx
++ *
++ * @brief This function starts transmission of the frame using DMA
++ *
++ * RETURNS: This function always returns zero.
++ */
++int m54xx_fec_tx(struct sk_buff *skb, struct net_device *dev)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	void *data, *data_aligned;
++	int offset;
++
++	data = kmalloc(skb->len + 15, GFP_DMA | GFP_ATOMIC);
++
++	if (!data) {
++		fp->stat.tx_dropped++;
++		dev_kfree_skb(skb);
++		return 0;
++	}
++
++	offset = (((unsigned long)virt_to_phys(data) + 15) & 0xFFFFFFF0) -
++		(unsigned long)virt_to_phys(data);
++	data_aligned = (void *)((unsigned long)data + offset);
++	memcpy(data_aligned, skb->data, skb->len);
++
++	/* flush data cache before initializing
++	 * the descriptor and starting DMA */
++
++	spin_lock_irq(&fp->lock);
++
++	/* Initialize the descriptor */
++	fp->txbuf[fp->next_tx] = data;
++	fp->txdesc[fp->next_tx].dataPointer
++		= (unsigned int) virt_to_phys(data_aligned);
++	fp->txdesc[fp->next_tx].length = skb->len;
++	fp->txdesc[fp->next_tx].statCtrl
++		|= (MCD_FEC_END_FRAME | MCD_FEC_BUF_READY);
++	fp->next_tx = (fp->next_tx + 1) & M54XX_FEC_TX_INDEX_MASK;
++
++	if (fp->txbuf[fp->current_tx]
++	    && fp->current_tx == fp->next_tx)
++		netif_stop_queue(dev);
++
++	spin_unlock_irq(&fp->lock);
++
++	/* Tell the DMA to continue the transmission */
++	MCD_continDma(fp->fec_tx_channel);
++
++	dev_kfree_skb(skb);
++
++	dev->trans_start = jiffies;
++
++	return 0;
++}
++
++/**
++ * m54xx_fec_tx_timeout
++ *
++ * @brief If the interrupt processing of received frames was lost
++ *		and DMA stopped the reception, this function clears
++ *		the transmission descriptors and starts DMA
++ *
++ */
++void m54xx_fec_tx_timeout(struct net_device *dev)
++{
++	int i;
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++
++	spin_lock_irq(&fp->lock);
++	MCD_killDma(fp->fec_tx_channel);
++	for (i = 0; i < M54XX_FEC_TX_BUF_NUMBER; i++) {
++		if (fp->txbuf[i]) {
++			kfree(fp->txbuf[i]);
++			fp->txbuf[i] = NULL;
++		}
++		fp->txdesc[i].statCtrl = MCD_FEC_INTERRUPT;
++	}
++	fp->txdesc[i - 1].statCtrl |= MCD_FEC_WRAP;
++
++	fp->current_tx = fp->next_tx = 0;
++
++	/* Reset FIFOs */
++	M54XX_FEC_FECFRST(base_addr) |= M54XX_FEC_SW_RST;
++	M54XX_FEC_FECFRST(base_addr) &= ~M54XX_FEC_SW_RST;
++
++	/* Reset and disable M54XX_FEC */
++	/* M54XX_FEC_ECR(base_addr) = M54XX_FEC_ECR_RESET; */
++
++	/* Enable M54XX_FEC */
++	M54XX_FEC_ECR(base_addr) |= M54XX_FEC_ECR_ETHEREN;
++
++	MCD_startDma(fp->fec_tx_channel, (char *) fp->txdesc, 0,
++		     (unsigned char *) &(M54XX_FEC_FECTFDR(base_addr)), 0,
++		     M54XX_FEC_MAX_FRM_SIZE, 0, fp->initiator_tx,
++		     M54XX_FEC_TX_DMA_PRI, MCD_FECTX_DMA | MCD_INTERRUPT,
++		     MCD_NO_CSUM | MCD_NO_BYTE_SWAP);
++
++	spin_unlock_irq(&fp->lock);
++
++	netif_wake_queue(dev);
++
++}
++
++/**
++ * m54xx_fec_interrupt_tx_handler
++ *
++ * @brief This function is called when the data
++ *		transmission from the buffer to the FEC is completed.
++ *
++ */
++void m54xx_fec_interrupt_fec_tx_handler(struct net_device *dev)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++
++	/* Release the socket buffer */
++	if (fp->txbuf[fp->current_tx]) {
++		kfree(fp->txbuf[fp->current_tx]);
++		fp->txbuf[fp->current_tx] = NULL;
++	}
++	fp->current_tx =
++		(fp->current_tx + 1) & M54XX_FEC_TX_INDEX_MASK;
++
++	if (MCD_dmaStatus(fp->fec_tx_channel) == MCD_DONE) {
++		for (; fp->current_tx != fp->next_tx;
++		     fp->current_tx =
++			     (fp->current_tx + 1)
++			     & M54XX_FEC_TX_INDEX_MASK) {
++			if (fp->txbuf[fp->current_tx]) {
++				kfree(fp->txbuf[
++					      fp->current_tx]);
++				fp->txbuf[fp->current_tx]
++					= NULL;
++			}
++		}
++	}
++
++	if (netif_queue_stopped(dev))
++		netif_wake_queue(dev);
++}
++
++/**
++ * m54xx_fec_interrupt_rx_handler
++ *
++ * @brief This function is called when the data
++ *		reception from the FEC to the reception buffer is completed.
++ *
++ */
++void m54xx_fec_interrupt_fec_rx_handler(struct net_device *dev)
++{
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	struct sk_buff *skb;
++	int i;
++
++	fp->rxflag = 1;
++	/* Some buffers can be missed */
++	if (!(fp->rxdesc[fp->current_rx].statCtrl
++	      & MCD_FEC_END_FRAME)) {
++		/* Find a valid index */
++		for (i = 0; ((i < M54XX_FEC_RX_BUF_NUMBER) &&
++			     !(fp->rxdesc[
++				       fp->current_rx].statCtrl
++			       & MCD_FEC_END_FRAME)); i++,
++			     (fp->current_rx =
++			      (fp->current_rx + 1)
++			      & M54XX_FEC_RX_INDEX_MASK))
++			/* NOP */;
++
++		if (i == M54XX_FEC_RX_BUF_NUMBER) {
++			/* There are no data to process */
++			/* Tell the DMA to continue the reception */
++			MCD_continDma(fp->fec_rx_channel);
++
++			fp->rxflag = 0;
++
++			return;
++		}
++	}
++
++	for (; fp->rxdesc[fp->current_rx].statCtrl
++		     & MCD_FEC_END_FRAME;
++	     fp->current_rx = (fp->current_rx + 1)
++		     & M54XX_FEC_RX_INDEX_MASK) {
++		if ((fp->rxdesc[fp->current_rx].length
++		     <= M54XX_FEC_MAXBUF_SIZE) &&
++		    (fp->rxdesc[fp->current_rx].length
++		     > 4)) {
++			/* --tym-- */
++			skb = fp->askb_rx[fp->current_rx];
++			if (!skb)
++				fp->stat.rx_dropped++;
++			else {
++				/*
++				 * flush data cache before initializing
++				 * the descriptor and starting DMA
++				 */
++				skb_put(skb,
++					(fp->rxdesc[
++						fp->current_rx].length - 4));
++				skb->protocol = eth_type_trans(skb, dev);
++				netif_rx(skb);
++			}
++			fp->rxdesc[fp->current_rx].statCtrl &=
++				~MCD_FEC_END_FRAME;
++			/* allocate new skbuff */
++			fp->askb_rx[fp->current_rx] =
++				alloc_skb(M54XX_FEC_MAXBUF_SIZE + 16,
++					  /*GFP_ATOMIC |*/ GFP_DMA);
++			if (!fp->askb_rx[fp->current_rx]) {
++				fp->rxdesc[
++					fp->current_rx].dataPointer
++					= 0;
++				fp->rxdesc[
++					fp->current_rx].length = 0;
++				fp->stat.rx_dropped++;
++			} else {
++				skb_reserve(
++					fp->askb_rx[fp->current_rx], 16);
++				fp->askb_rx[fp->current_rx]->dev = dev;
++
++				/*
++				 * flush data cache before initializing
++				 * the descriptor and starting DMA
++				 */
++
++				fp->rxdesc[
++					fp->current_rx].dataPointer =
++					(unsigned int) virt_to_phys(
++						fp->askb_rx[
++							fp->current_rx]->tail);
++				fp->rxdesc[
++					fp->current_rx].length =
++					M54XX_FEC_MAXBUF_SIZE;
++				fp->rxdesc[
++					fp->current_rx].statCtrl |=
++					MCD_FEC_BUF_READY;
++
++				/*
++				 * flush data cache before initializing
++				 * the descriptor and starting DMA
++				 */
++			}
++		}
++
++	}
++
++	/* Tell the DMA to continue the reception */
++	MCD_continDma(fp->fec_rx_channel);
++
++	fp->rxflag = 0;
++}
++
++/**
++ * m54xx_fec_interrupt_handler
++ *
++ * @brief This function is called when some special errors occur
++ *
++ */
++irqreturn_t m54xx_fec_interrupt_handler(int irq, void *dev_id)
++{
++
++	struct net_device *dev = (struct net_device *)dev_id;
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++	unsigned long events;
++
++	/* Read and clear the events */
++	events = M54XX_FEC_EIR(base_addr) & M54XX_FEC_EIMR(base_addr);
++
++	if (events & M54XX_FEC_EIR_HBERR) {
++		fp->stat.tx_heartbeat_errors++;
++		M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_HBERR;
++	}
++
++	/* receive/transmit FIFO error */
++	if (((events & M54XX_FEC_EIR_RFERR) != 0)
++	    || ((events & M54XX_FEC_EIR_XFERR) != 0)) {
++		/* kill DMA receive channel */
++		MCD_killDma(fp->fec_rx_channel);
++
++		/* kill running transmission by DMA */
++		MCD_killDma(fp->fec_tx_channel);
++
++		/* Reset FIFOs */
++		M54XX_FEC_FECFRST(base_addr) |= M54XX_FEC_SW_RST;
++		M54XX_FEC_FECFRST(base_addr) &= ~M54XX_FEC_SW_RST;
++
++		/* reset receive FIFO status register */
++		M54XX_FEC_FECRFSR(base_addr) = M54XX_FEC_FECRFSR_FAE |
++			M54XX_FEC_FECRFSR_RXW |
++			M54XX_FEC_FECRFSR_UF;
++
++		/* reset transmit FIFO status register */
++		M54XX_FEC_FECTFSR(base_addr) = M54XX_FEC_FECTFSR_FAE |
++			M54XX_FEC_FECTFSR_TXW |
++			M54XX_FEC_FECTFSR_UF |
++			M54XX_FEC_FECTFSR_OF;
++
++		/* reset RFERR and XFERR event */
++		M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_RFERR | M54XX_FEC_EIR_XFERR;
++
++		/* stop queue */
++		netif_stop_queue(dev);
++
++		/* execute reinitialization as tasklet */
++		tasklet_schedule(&fp->tasklet_reinit);
++
++		fp->stat.rx_dropped++;
++	}
++
++	/* transmit FIFO underrun */
++	if ((events & M54XX_FEC_EIR_XFUN) != 0) {
++		/* reset XFUN event */
++		M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_XFUN;
++		fp->stat.tx_aborted_errors++;
++	}
++
++	/* late collision */
++	if ((events & M54XX_FEC_EIR_LC) != 0) {
++		/* reset LC event */
++		M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_LC;
++		fp->stat.tx_aborted_errors++;
++	}
++
++	/* collision retry limit */
++	if ((events & M54XX_FEC_EIR_RL) != 0) {
++		/* reset RL event */
++		M54XX_FEC_EIR(base_addr) = M54XX_FEC_EIR_RL;
++		fp->stat.tx_aborted_errors++;
++	}
++	return 0;
++}
++
++/**
++ * m54xx_fec_interrupt_reinit
++ *
++ * @brief This function is called from interrupt handler
++ *		when controller must be reinitialized.
++ *
++ */
++void m54xx_fec_interrupt_fec_reinit(unsigned long data)
++{
++	int i;
++	struct net_device *dev = (struct net_device *)data;
++	struct m54xx_fec_priv *fp = netdev_priv(dev);
++	unsigned long base_addr = (unsigned long) dev->base_addr;
++
++	/* Initialize reception descriptors and start DMA for the reception */
++	for (i = 0; i < M54XX_FEC_RX_BUF_NUMBER; i++) {
++		if (!fp->askb_rx[i]) {
++			fp->askb_rx[i] = alloc_skb(M54XX_FEC_MAXBUF_SIZE + 16,
++						   GFP_ATOMIC | GFP_DMA);
++			if (!fp->askb_rx[i]) {
++				fp->rxdesc[i].dataPointer = 0;
++				fp->rxdesc[i].statCtrl = 0;
++				fp->rxdesc[i].length = 0;
++				continue;
++			}
++			fp->askb_rx[i]->dev = dev;
++			skb_reserve(fp->askb_rx[i], 16);
++		}
++		fp->rxdesc[i].dataPointer =
++			(unsigned int) virt_to_phys(fp->askb_rx[i]->tail);
++		fp->rxdesc[i].statCtrl =
++			MCD_FEC_BUF_READY | MCD_FEC_INTERRUPT;
++		fp->rxdesc[i].length = M54XX_FEC_MAXBUF_SIZE;
++	}
++
++	fp->rxdesc[i - 1].statCtrl |= MCD_FEC_WRAP;
++	fp->current_rx = 0;
++
++	/* restart frame transmission */
++	for (i = 0; i < M54XX_FEC_TX_BUF_NUMBER; i++) {
++		if (fp->txbuf[i]) {
++			kfree(fp->txbuf[i]);
++			fp->txbuf[i] = NULL;
++			fp->stat.tx_dropped++;
++		}
++		fp->txdesc[i].statCtrl = MCD_FEC_INTERRUPT;
++	}
++	fp->txdesc[i - 1].statCtrl |= MCD_FEC_WRAP;
++	fp->current_tx = fp->next_tx = 0;
++
++	/* flush entire data cache before restarting the DMA */
++
++	/* restart DMA from beginning */
++	MCD_startDma(fp->fec_rx_channel,
++		     (char *) fp->rxdesc, 0,
++		     (unsigned char *) &(M54XX_FEC_FECRFDR(base_addr)), 0,
++		     M54XX_FEC_MAX_FRM_SIZE, 0, fp->initiator_rx,
++		     M54XX_FEC_RX_DMA_PRI, MCD_FECRX_DMA | MCD_INTERRUPT,
++		     MCD_NO_CSUM | MCD_NO_BYTE_SWAP);
++
++	MCD_startDma(fp->fec_tx_channel, (char *) fp->txdesc, 0,
++		     (unsigned char *) &(M54XX_FEC_FECTFDR(base_addr)), 0,
++		     M54XX_FEC_MAX_FRM_SIZE, 0, fp->initiator_tx,
++		     M54XX_FEC_TX_DMA_PRI, MCD_FECTX_DMA | MCD_INTERRUPT,
++		     MCD_NO_CSUM | MCD_NO_BYTE_SWAP);
++
++	/* Enable M54XX_FEC */
++	M54XX_FEC_ECR(base_addr) |= M54XX_FEC_ECR_ETHEREN;
++
++	netif_wake_queue(dev);
++}
++
++/**
++ * m54xx_fec_interrupt_tx_handler_fec0
++ *
++ * @brief This is the DMA interrupt handler using	 for FEC0
++ *		transmission.
++ *
++ */
++void m54xx_fec_interrupt_fec_tx_handler_fec0(void)
++{
++	m54xx_fec_interrupt_fec_tx_handler(m54xx_fec_dev[0]);
++}
++
++#ifdef M54XX_FEC2
++/**
++ * m54xx_fec_interrupt_tx_handler_fec1
++ *
++ * @brief This is the DMA interrupt handler using for the FEC1
++ *		transmission.
++ *
++ */
++void m54xx_fec_interrupt_fec_tx_handler_fec1(void)
++{
++	m54xx_fec_interrupt_fec_tx_handler(m54xx_fec_dev[1]);
++}
++#endif
++
++/**
++ * m54xx_fec_interrupt_rx_handler_fec0
++ *
++ * @brief This is the DMA interrupt handler using for the FEC0
++ *		reception.
++ *
++ */
++void m54xx_fec_interrupt_fec_rx_handler_fec0(void)
++{
++	m54xx_fec_interrupt_fec_rx_handler(m54xx_fec_dev[0]);
++}
++
++#ifdef M54XX_FEC2
++/**
++ * m54xx_fec_interrupt_rx_handler_fec1
++ *
++ * @brief This is the DMA interrupt handler using for the FEC1
++ *		reception.
++ *
++ */
++void m54xx_fec_interrupt_fec_rx_handler_fec1(void)
++{
++	m54xx_fec_interrupt_fec_rx_handler(m54xx_fec_dev[1]);
++}
++
++#endif
++
++#ifndef MODULE
++/**
++ * m54xx_fec_mac_setup0
++ *
++ * @brief This function sets the MAC address of FEC0 from command line
++ *
++ */
++int __init m54xx_fec_mac_setup0(char *s)
++{
++	if (!s || !*s)
++		return 1;
++
++	if (m54xx_fec_str_to_mac(s, m54xx_fec_mac_addr_fec0))
++		printk(KERN_ERR "The MAC address of FEC0 "
++		       "cannot be set from command line");
++	return 1;
++}
++
++#ifdef M54XX_FEC2
++
++/**
++ * m54xx_fec_mac_setup1
++ *
++ * @brief This function sets the MAC address of FEC1 from command line
++ *
++ */
++int __init m54xx_fec_mac_setup1(char *s)
++{
++	if (!s || !*s)
++		return 1;
++
++	if (m54xx_fec_str_to_mac(s, m54xx_fec_mac_addr_fec1))
++		printk(KERN_ERR "The MAC address of FEC1 "
++		       "cannot be set from command line\n");
++	return 1;
++}
++#endif
++
++/**
++ * m54xx_fec_str_to_mac
++ *
++ * @brief This function interprets the character string into MAC addr
++ *
++ */
++int m54xx_fec_str_to_mac(char *str_mac, unsigned char* addr)
++{
++	unsigned long val;
++	char c;
++	unsigned long octet[6], *octetptr = octet;
++	int i;
++
++again:
++	val = 0;
++	while ((c = *str_mac) != '\0') {
++		if ((c >= '0') && (c <= '9')) {
++			val = (val * 16) + (c - '0');
++			str_mac++;
++			continue;
++		} else if (((c >= 'a') && (c <= 'f'))
++			   || ((c >= 'A') && (c <= 'F'))) {
++			val = (val << 4) +
++				(c + 10 -
++				 (((c >= 'a') && (c <= 'f')) ? 'a' : 'A'));
++			str_mac++;
++			continue;
++		}
++		break;
++	}
++	if (*str_mac == ':') {
++		*octetptr++ = val, str_mac++;
++		if (octetptr >= octet + 6)
++			return 1;
++		goto again;
++	}
++
++	/* Check for trailing characters */
++	if (*str_mac && !(*str_mac == ' '))
++		return 1;
++
++	*octetptr++ = val;
++
++	if ((octetptr - octet) == 6) {
++		for (i = 0; i <= 6; i++)
++			addr[i] = octet[i];
++	} else
++		return 1;
++
++	return 0;
++}
++#endif
+diff --git a/drivers/net/ethernet/freescale/fec_m54xx.h b/drivers/net/ethernet/freescale/fec_m54xx.h
+new file mode 100644
+index 0000000..8a1455f
+--- /dev/null
++++ b/drivers/net/ethernet/freescale/fec_m54xx.h
+@@ -0,0 +1,237 @@
++#ifndef _FEC_M54XX_H_
++#define _FEC_M54XX_H_
++
++#define M54XX_FEC_BASE_ADDR_FEC0	((unsigned int)MCF_MBAR + 0x9000)
++#define M54XX_FEC_BASE_ADDR_FEC1	((unsigned int)MCF_MBAR + 0x9800)
++
++#define M54XX_ISC_FEC1			(38)
++#define M54XX_ISC_FEC0			(39)
++
++#define M54XX_FEC_FECI2CIRQ		(0xFFC0)
++#define M54XX_FEC_GPIO_PAR_FECI2CIRQ					\
++	(*(volatile unsigned short *)((unsigned int)MCF_MBAR + 0xA44))
++
++#define M54XX_FEC_ECR_DISABLE		(0x00000000)
++
++#define M54XX_FEC_ECR(x)			\
++	(*(volatile unsigned int *)(x + 0x024))
++#define M54XX_FEC_EIR(x)			\
++	(*(volatile unsigned int *)(x + 0x004))
++#define M54XX_FEC_PALR(x)			\
++	(*(volatile unsigned int *)(x + 0x0E4))
++#define M54XX_FEC_PAUR(x)			\
++	(*(volatile unsigned int *)(x + 0x0E8))
++#define M54XX_FEC_IALR(x)			\
++	(*(volatile unsigned int *)(x + 0x11C))
++#define M54XX_FEC_IAUR(x)			\
++	(*(volatile unsigned int *)(x + 0x118))
++#define M54XX_FEC_GALR(x)			\
++	(*(volatile unsigned int *)(x + 0x124))
++#define M54XX_FEC_GAUR(x)			\
++	(*(volatile unsigned int *)(x + 0x120))
++#define M54XX_FEC_RCR(x)			\
++	(*(volatile unsigned int *)(x + 0x084))
++#define M54XX_FEC_FECRFCR(x)			\
++	(*(volatile unsigned int *)(x + 0x18C))
++#define M54XX_FEC_FECRFAR(x)			\
++	(*(volatile unsigned int *)(x + 0x198))
++#define M54XX_FEC_FECTFCR(x)			\
++	(*(volatile unsigned int *)(x + 0x1AC))
++#define M54XX_FEC_FECTFAR(x)			\
++	(*(volatile unsigned int *)(x + 0x1B8))
++#define M54XX_FEC_FECTFWR(x)			\
++	(*(volatile unsigned int *)(x + 0x144))
++#define M54XX_FEC_CTCWR(x)			\
++	(*(volatile unsigned int *)(x + 0x1C8))
++#define M54XX_FEC_EIMR(x)			\
++	(*(volatile unsigned int *)(x + 0x008))
++#define M54XX_FEC_TCR(x)			\
++	(*(volatile unsigned int *)(x + 0x0C4))
++#define M54XX_FEC_MIBC(x)			\
++	(*(volatile unsigned int *)(x + 0x064))
++#define M54XX_FEC_MSCR(x)			\
++	(*(volatile unsigned int *)(x + 0x044))
++#define M54XX_FEC_FECTFDR(x)			\
++	(*(volatile unsigned int *)(x + 0x1A4))
++#define M54XX_FEC_FECRFDR(x)			\
++	(*(volatile unsigned int *)(x + 0x184))
++#define M54XX_FEC_FECTFSR(x)			\
++	(*(volatile unsigned int *)(x + 0x1A8))
++#define M54XX_FEC_FECRFSR(x)			\
++	(*(volatile unsigned int *)(x + 0x188))
++#define M54XX_FECSTAT_RMON_R_PACKETS(x)		\
++	(*(volatile unsigned int *)(x + 0x284))
++#define M54XX_FECSTAT_RMON_T_PACKETS(x)		\
++	(*(volatile unsigned int *)(x + 0x204))
++#define M54XX_FECSTAT_RMON_R_OCTETS(x)		\
++	(*(volatile unsigned int *)(x + 0x2C4))
++#define M54XX_FECSTAT_RMON_T_OCTETS(x)		\
++	(*(volatile unsigned int *)(x + 0x244))
++#define M54XX_FECSTAT_RMON_R_UNDERSIZE(x)	\
++	(*(volatile unsigned int *)(x + 0x294))
++#define M54XX_FECSTAT_RMON_R_OVERSIZE(x)	\
++	(*(volatile unsigned int *)(x + 0x298))
++#define M54XX_FECSTAT_RMON_R_FRAG(x)		\
++	(*(volatile unsigned int *)(x + 0x29C))
++#define M54XX_FECSTAT_RMON_R_JAB(x)		\
++	(*(volatile unsigned int *)(x + 0x2A0))
++#define M54XX_FECSTAT_RMON_R_MC_PKT(x)		\
++	(*(volatile unsigned int *)(x + 0x28C))
++#define M54XX_FECSTAT_RMON_T_COL(x)		\
++	(*(volatile unsigned int *)(x + 0x224))
++#define M54XX_FECSTAT_IEEE_R_ALIGN(x)		\
++	(*(volatile unsigned int *)(x + 0x2D4))
++#define M54XX_FECSTAT_IEEE_R_CRC(x)		\
++	(*(volatile unsigned int *)(x + 0x2D0))
++#define M54XX_FECSTAT_IEEE_R_MACERR(x)		\
++	(*(volatile unsigned int *)(x + 0x2D8))
++#define M54XX_FECSTAT_IEEE_T_CSERR(x)		\
++	(*(volatile unsigned int *)(x + 0x268))
++#define M54XX_FECSTAT_IEEE_T_MACERR(x)		\
++	(*(volatile unsigned int *)(x + 0x264))
++#define M54XX_FECSTAT_IEEE_T_LCOL(x)		\
++	(*(volatile unsigned int *)(x + 0x25C))
++#define M54XX_FECSTAT_IEEE_R_OCTETS_OK(x)	\
++	(*(volatile unsigned int *)(x + 0x2E0))
++#define M54XX_FECSTAT_IEEE_T_OCTETS_OK(x)	\
++	(*(volatile unsigned int *)(x + 0x274))
++#define M54XX_FECSTAT_IEEE_R_DROP(x)		\
++	(*(volatile unsigned int *)(x + 0x2C8))
++#define M54XX_FECSTAT_IEEE_T_DROP(x)		\
++	(*(volatile unsigned int *)(x + 0x248))
++#define M54XX_FECSTAT_IEEE_R_FRAME_OK(x)	\
++	(*(volatile unsigned int *)(x + 0x2CC))
++#define M54XX_FECSTAT_IEEE_T_FRAME_OK(x)	\
++	(*(volatile unsigned int *)(x + 0x24C))
++#define M54XX_FEC_MMFR(x)			\
++	(*(volatile unsigned int *)(x + 0x040))
++#define M54XX_FEC_FECFRST(x)			\
++	(*(volatile unsigned int *)(x + 0x1C4))
++
++#define M54XX_FEC_MAX_FRM_SIZE			(1518)
++#define M54XX_FEC_MAXBUF_SIZE			(1520)
++
++/* Register values */
++#define M54XX_FEC_ECR_RESET			(0x00000001)
++#define M54XX_FEC_EIR_CLEAR			(0xFFFFFFFF)
++#define M54XX_FEC_EIR_RL			(0x00100000)
++#define M54XX_FEC_EIR_HBERR			(0x80000000)
++#define M54XX_FEC_EIR_BABR			(0x40000000)
++/* babbling receive error */
++#define M54XX_FEC_EIR_BABT			(0x20000000)
++/* babbling transmit error */
++#define M54XX_FEC_EIR_TXF			(0x08000000)
++/* transmit frame interrupt */
++#define M54XX_FEC_EIR_MII			(0x00800000)
++/* MII interrupt */
++#define M54XX_FEC_EIR_LC			(0x00200000)
++/* late collision */
++#define M54XX_FEC_EIR_XFUN			(0x00080000)
++/* transmit FIFO underrun */
++#define M54XX_FEC_EIR_XFERR			(0x00040000)
++/* transmit FIFO error */
++#define M54XX_FEC_EIR_RFERR			(0x00020000)
++/* receive FIFO error */
++#define M54XX_FEC_RCR_MAX_FRM_SIZE		(M54XX_FEC_MAX_FRM_SIZE << 16)
++#define M54XX_FEC_RCR_MII			(0x00000004)
++#define M54XX_FEC_FECRFCR_FAE			(0x00400000)
++/* frame accept error */
++#define M54XX_FEC_FECRFCR_RXW			(0x00200000)
++/* receive wait condition */
++#define M54XX_FEC_FECRFCR_UF			(0x00100000)
++/* receive FIFO underflow */
++#define M54XX_FEC_FECRFCR_FRM			(0x08000000)
++#define M54XX_FEC_FECRFCR_GR			(0x7 << 24)
++
++#define M54XX_FEC_EIMR_DISABLE			(0x00000000)
++
++#define M54XX_FEC_FECRFAR_ALARM			(0x300)
++#define M54XX_FEC_FECTFCR_FRM			(0x08000000)
++#define M54XX_FEC_FECTFCR_GR			(0x7 << 24)
++#define M54XX_FEC_FECTFCR_FAE			(0x00400000)
++/* frame accept error */
++#define M54XX_FEC_FECTFCR_TXW			(0x00040000)
++/* transmit wait condition */
++#define M54XX_FEC_FECTFCR_UF			(0x00100000)
++/* transmit FIFO underflow */
++#define M54XX_FEC_FECTFCR_OF			(0x00080000)
++/* transmit FIFO overflow */
++
++#define M54XX_FEC_FECTFAR_ALARM			(0x100)
++#define M54XX_FEC_FECTFWR_XWMRK			(0x00000000)
++
++#define M54XX_FEC_FECTFSR_MSK			(0xC0B00000)
++#define M54XX_FEC_FECTFSR_TXW			(0x40000000)
++/* transmit wait condition */
++#define M54XX_FEC_FECTFSR_FAE			(0x00800000)
++/* frame accept error */
++#define M54XX_FEC_FECTFSR_UF			(0x00200000)
++/* transmit FIFO underflow */
++#define M54XX_FEC_FECTFSR_OF			(0x00100000)
++/* transmit FIFO overflow */
++
++#define M54XX_FEC_FECRFSR_MSK			(0x80F00000)
++#define M54XX_FEC_FECRFSR_FAE			(0x00800000)
++/* frame accept error */
++#define M54XX_FEC_FECRFSR_RXW			(0x00400000)
++/* receive wait condition */
++#define M54XX_FEC_FECRFSR_UF			(0x00200000)
++/* receive FIFO underflow */
++
++#define M54XX_FEC_CTCWR_TFCW_CRC		(0x03000000)
++#define M54XX_FEC_TCR_FDEN			(0x00000004)
++#define M54XX_FEC_TCR_HBC			(0x00000002)
++#define M54XX_FEC_RCR_DRT			(0x00000002)
++#define M54XX_FEC_EIMR_MASK			(M54XX_FEC_EIR_RL | M54XX_FEC_EIR_HBERR)
++#define M54XX_FEC_ECR_ETHEREN			(0x00000002)
++#define M54XX_FEC_FECTFCR_MSK			(0x00FC0000)
++#define M54XX_FEC_FECRFCR_MSK			(0x00F80000)
++#define M54XX_FEC_EIR_GRA			(0x10000000)
++#define M54XX_FEC_TCR_GTS			(0x00000001)
++#define M54XX_FEC_MIBC_ENABLE			(0x00000000)
++#define M54XX_FEC_MIB_LEN			(228)
++#define M54XX_FEC_PHY_ADDR			(0x01)
++
++#define M54XX_FEC_RX_DMA_PRI			(6)
++#define M54XX_FEC_TX_DMA_PRI			(6)
++
++#define M54XX_FEC_TX_BUF_NUMBER			(8)
++#define M54XX_FEC_RX_BUF_NUMBER			(64)
++
++#define M54XX_FEC_TX_INDEX_MASK			(0x7)
++#define M54XX_FEC_RX_INDEX_MASK			(0x3f)
++
++#define M54XX_FEC_RX_DESC_FEC0			SYS_SRAM_FEC_START
++#define M54XX_FEC_TX_DESC_FEC0						\
++	(M54XX_FEC_RX_DESC_FEC0 + M54XX_FEC_RX_BUF_NUMBER * sizeof(MCD_bufDescFec))
++
++#define M54XX_FEC_RX_DESC_FEC1				\
++	(SYS_SRAM_FEC_START + SYS_SRAM_FEC_SIZE/2)
++#define M54XX_FEC_TX_DESC_FEC1						\
++	(M54XX_FEC_RX_DESC_FEC1 + M54XX_FEC_RX_BUF_NUMBER * sizeof(MCD_bufDescFec))
++
++#define M54XX_FEC_EIR_MII			(0x00800000)
++#define M54XX_FEC_MMFR_READ			(0x60020000)
++#define M54XX_FEC_MMFR_WRITE			(0x50020000)
++
++#define M54XX_FEC_FLAGS_RX			(0x00000001)
++
++#define M54XX_FEC_CRCPOL			(0xEDB88320)
++
++#define M54XX_FEC_MII_TIMEOUT			(2)
++#define M54XX_FEC_GR_TIMEOUT			(1)
++#define M54XX_FEC_TX_TIMEOUT			(1)
++#define M54XX_FEC_RX_TIMEOUT			(1)
++
++#define M54XX_FEC_SW_RST			0x2000000
++#define M54XX_FEC_RST_CTL			0x1000000
++
++int m54xx_fec_read_mii(unsigned int base_addr, unsigned int pa, unsigned int ra,
++		       unsigned int *data);
++int m54xx_fec_write_mii(unsigned int base_addr, unsigned int pa, unsigned int ra,
++			unsigned int data);
++
++#define M54XX_FEC_MII_SPEED			\
++	((MCF_CLK / 2) / ((2500000 / 2) * 2))
++
++#endif
 --
 1.7.9.5
 
