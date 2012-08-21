@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab2HUOuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:50:16 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54512 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab2HUOuN (ORCPT
+	id S1755812Ab2HUOv5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:51:57 -0400
+Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:2008 "EHLO
+	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672Ab2HUOvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:50:13 -0400
-Date: Tue, 21 Aug 2012 15:50:09 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Poddar, Sourav" <sourav.poddar@ti.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [RFC/PATCH 4/4] gpio: smscece: Add support for gpio IO
- expander feature
-Message-ID: <20120821145009.GE21557@sirena.org.uk>
-References: <1345545940-2232-1-git-send-email-sourav.poddar@ti.com>
- <1345545940-2232-5-git-send-email-sourav.poddar@ti.com>
- <20120821105333.GW10347@arwen.pp.htv.fi>
- <CAKdam56DiFpnoQwrHe1tjQWLMy5vP9ynstNj_n=OyMxkJJAUOA@mail.gmail.com>
- <20120821120052.GD10347@arwen.pp.htv.fi>
- <CAKdam55SqXiCGv766yxoY1GdDjxNCYNaDdNZPaeLTAXc+3+c6g@mail.gmail.com>
- <20120821122217.GF10347@arwen.pp.htv.fi>
+	Tue, 21 Aug 2012 10:51:54 -0400
+Message-ID: <5033A06B.30508@xs4all.net>
+Date: Tue, 21 Aug 2012 16:51:23 +0200
+From: Miquel van Smoorenburg <mikevs@xs4all.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821122217.GF10347@arwen.pp.htv.fi>
-X-Cookie: Those who can't write, write manuals.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: stan@hardwarefreak.com
+CC: David Brown <david.brown@hesbynett.no>, Michael Tokarev <mjt@tls.msk.ru>,
+        Linux RAID <linux-raid@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: O_DIRECT to md raid 6 is slow
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com> <502D6B0A.6090508@xs4all.net> <502DF357.8090205@hardwarefreak.com> <502E2817.8040306@xs4all.net> <502F237D.6060806@hardwarefreak.com> <502F698C.9010507@msgid.tls.msk.ru> <50305AB9.5080302@hardwarefreak.com> <5030F1C6.90205@hesbynett.no> <50317804.9010701@hardwarefreak.com>
+In-Reply-To: <50317804.9010701@hardwarefreak.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 03:22:18PM +0300, Felipe Balbi wrote:
-> On Tue, Aug 21, 2012 at 05:50:28PM +0530, Poddar, Sourav wrote:
+On 08/20/2012 01:34 AM, Stan Hoeppner wrote:
+> I'm glad you jumped in David.  You made a critical statement of fact
+> below which clears some things up.  If you had stated it early on,
+> before Miquel stole the thread and moved it to LKML proper, it would
+> have short circuited a lot of this discussion.  Which is:
 
-> > If I am understanding correctly, if they both uses the same bit we cannot
-> > use both for a particular user. ?
+I'm sorry about that, that's because of the software that I use to 
+follow most mailinglist. I didn't notice that the discussion was cc'ed 
+to both lkml and l-r. I should fix that.
 
-> we can, it's just a bit more complex. If a user request both LOW and
-> HIGH, then you start with HIGH, once it triggers, before calling the
-> nested IRQ handler, you need to change it LOW. When low triggers, before
-> calling the nested IRQ handler, you need to change it to HIGH again. And
-> so on. I'm just not sure if that's valid on linux IRQ subsystem.
+> Thus my original statement was correct, or at least half correct[1], as
+> it pertained to md/RAID6.  Then Miquel switched the discussion to
+> md/RAID5 and stated I was all wet.  I wasn't, and neither was Dave
+> Chinner.  I was simply unaware of this md/RAID5 single block write RMW
+> shortcut
 
-The given example was for keypress - usually a system would use edge
-triggered interrupts in combination with reading the GPIO state rather
-than level triggered interrupts.
+Well, all I tried to say is that a small write of, say, 4K, to a 
+raid5/raid6 array does not need to re-write the whole stripe (i.e. 
+chunksize * nr_disks) but just 4K * nr_disks, or the RMW variant of that.
+
+Mike.
