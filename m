@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab2HUTYd (ORCPT <rfc822;w@1wt.eu>);
+	id S1754355Ab2HUTYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:24:37 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:35285 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab2HUTYd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Aug 2012 15:24:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13438 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547Ab2HUTY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:24:29 -0400
-Date: Tue, 21 Aug 2012 16:23:58 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120821192357.GD12294@t510.redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <1345562411.23018.111.camel@twins>
- <20120821162432.GG2456@linux.vnet.ibm.com>
- <20120821172819.GA12294@t510.redhat.com>
- <20120821191330.GA8324@redhat.com>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Mike Waychison <mikew@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH v3 2/3] efi_pstore: Introducing workqueue updating
+ sysfs entries
+Thread-Topic: [RFC][PATCH v3 2/3] efi_pstore: Introducing workqueue updating
+ sysfs entries
+Thread-Index: Ac1/vZVDYYfkanc/Qlykdf5sw5DJBQAKtjUAAAWHeDA=
+Date: Tue, 21 Aug 2012 19:24:09 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413806E4C@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D413806C31@USINDEM103.corp.hds.com>
+ <CAGTjWtA99e2n6ufCZfMOVTXiv1G01H-pP0VbcxqWma=soY9hHA@mail.gmail.com>
+In-Reply-To: <CAGTjWtA99e2n6ufCZfMOVTXiv1G01H-pP0VbcxqWma=soY9hHA@mail.gmail.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821191330.GA8324@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-08-21_05:2012-08-21,2012-08-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1208210194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 10:13:30PM +0300, Michael S. Tsirkin wrote:
-> > 
-> > I believe rcu_dereference_protected() is what I want/need here, since this code
-> > is always called for pages which we hold locked (PG_locked bit).
+> >  efivars_exit(void)
+> >  {
+> >         if (efi_enabled) {
+> > +               cancel_work_sync(&efivar_work);
 > 
-> It would only help if we locked the page while updating the mapping,
-> as far as I can see we don't.
->
+> Please move this cancel_work_sync() to be before the efi_enabled test.
+>  efi_enabled here means that we registered __efivars.  There may be another driver (gsmi) using the efivars code, so we should
+> always be cancelling this work.
+> 
 
-But we can do it. In fact, by doing it (locking the page) we can easily avoid
-the nasty race balloon_isolate_page / leak_balloon, in a much simpler way, IMHO.
+OK. I will fix it.
+I confirmed that gsmi accually called register_efivars().
+Thank you for letting me know about this.
 
-
+Seiji
