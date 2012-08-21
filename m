@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab2HUTPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 15:15:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33109 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab2HUTPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:15:22 -0400
-Date: Tue, 21 Aug 2012 22:16:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120821191612.GA9027@redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <20120821135223.GA7117@redhat.com>
- <20120821175502.GC12294@t510.redhat.com>
+	id S1753206Ab2HUTU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:20:29 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:10223 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab2HUTU0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 15:20:26 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6809"; a="227870086"
+Message-ID: <5033DF72.70609@codeaurora.org>
+Date: Tue, 21 Aug 2012 15:20:18 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821175502.GC12294@t510.redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+CC: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 28/31] arm64: Generic timers support
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <1344966752-16102-29-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1344966752-16102-29-git-send-email-catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 02:55:03PM -0300, Rafael Aquini wrote:
-> On Tue, Aug 21, 2012 at 04:52:23PM +0300, Michael S. Tsirkin wrote:
-> > > + * address_space_operations utilized methods for ballooned pages:
-> > > + *   .migratepage    - used to perform balloon's page migration (as is)
-> > > + *   .launder_page   - used to isolate a page from balloon's page list
-> > > + *   .freepage       - used to reinsert an isolated page to balloon's page list
-> > > + */
-> > 
-> > It would be a good idea to document the assumptions here.
-> > Looks like .launder_page and .freepage are called in rcu critical
-> > section.
-> > But migratepage isn't - why is that safe?
-> > 
+On 08/14/2012 01:52 PM, Catalin Marinas wrote:
+> From: Marc Zyngier <marc.zyngier@arm.com>
 > 
-> The migratepage callback for virtio_balloon can sleep, and IIUC we cannot sleep
-> within a RCU critical section. 
+> This patch adds support for the ARM generic timers with A64 instructions
+> for accessing the timer registers. It uses the physical counter as the
+> clock source and the virtual counter as sched_clock.
 > 
-> Also, The migratepage callback is called at inner migration's circle function
-> move_to_new_page(), and I don't think embedding it in a RCU critical section
-> would be a good idea, for the same understanding aforementioned.
+> The timer frequency can be specified via DT or read from the CNTFRQ_EL0
+> register. The physical counter is also accessible from user space
+> allowing fast gettimeofday() implementation.
 
-Yes but this means it is still exposed to the module unloading
-races that RCU was supposed to fix.
-So need to either rework that code so it won't sleep
-or switch to some other synchronization.
+[...]
+
+> +++ b/drivers/clocksource/arm_generic.c
+
+[...]
+
+> +static void arch_timer_reg_write(int reg, u32 val)
+> +{
+> +	switch (reg) {
+> +	case ARCH_TIMER_REG_CTRL:
+> +		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
+> +		break;
+> +	case ARCH_TIMER_REG_TVAL:
+> +		asm volatile("msr cntp_tval_el0, %0" : : "r" (val));
+> +		break;
+> +	default:
+> +		BUG();
+> +	}
+> +
+> +	isb();
+> +}
+
+Doesn't architecture-specific assembly need to go in the arch directory rather
+than the drivers directory?
+
+Christopher
 
 -- 
-MST
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
