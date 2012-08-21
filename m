@@ -1,124 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab2HULnE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 07:43:04 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:42407 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572Ab2HULnC (ORCPT
+	id S1757073Ab2HULnS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 07:43:18 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33552 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab2HULnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 07:43:02 -0400
+	Tue, 21 Aug 2012 07:43:14 -0400
 From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Subject: [PATCH v2 1/2] [powerpc] Change memory_limit from phys_addr_t to
- unsigned long long
+Subject: [PATCH v2 2/2] [powerpc] Export memory limit via device tree
 To: linuxppc-dev@lists.ozlabs.org
 Cc: mahesh@linux.vnet.ibm.com, benh@kernel.crashing.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 21 Aug 2012 17:12:33 +0530
-Message-ID: <20120821114225.29282.87841.stgit@suzukikp.in.ibm.com>
+Date: Tue, 21 Aug 2012 17:12:43 +0530
+Message-ID: <20120821114240.29282.44213.stgit@suzukikp.in.ibm.com>
 In-Reply-To: <20120821113815.29282.4000.stgit@suzukikp.in.ibm.com>
 References: <20120821113815.29282.4000.stgit@suzukikp.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12082111-9264-0000-0000-0000022B9D51
+x-cbid: 12082111-2674-0000-0000-000005AD466B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some device-tree nodes, whose values are of type phys_addr_t.
-The phys_addr_t is variable sized based on the CONFIG_PHSY_T_64BIT.
+The powerpc kernel doesn't export the memory limit enforced by 'mem='
+kernel parameter. This is required for building the ELF header in
+kexec-tools to limit the vmcore to capture only the used memory. On
+powerpc the kexec-tools depends on the device-tree for memory related
+information, unlike /proc/iomem on the x86.
 
-Change these to a fixed unsigned long long for consistency.
+Without this information, the kexec-tools assumes the entire System
+RAM and vmcore creates an unnecessarily larger dump.
 
-This patch does the change only for memory_limit.
+This patch exports the memory limit, if present, via
+chosen/linux,memory-limit
+property, so that the vmcore can be limited to the memory limit.
 
-The following is a list of such variables which need the change:
+The prom_init seems to export this value in the same node. But doesn't
+really
+appear there.  Also the memory_limit gets adjusted with the processing of
+crashkernel= parameter. This patch makes sure we get the actual limit.
 
- 1) kernel_end, crashk_size - in arch/powerpc/kernel/machine_kexec.c
+The kexec-tools will use the value to limit the 'end' of the memory
+regions.
 
- 2) (struct resource *)crashk_res.start - We could export a local static
-    variable from machine_kexec.c.
+Tested this patch on ppc64 and ppc32(ppc440) with a kexec-tools
+patch by Mahesh.
 
-Changing the above values might break the kexec-tools. So, I will
-fix kexec-tools first to handle the different sized values and then change
- the above.
-
-Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+Tested-by: Mahesh J. Salgaonkar <mahesh@linux.vnet.ibm.com>
 ---
 
- arch/powerpc/include/asm/setup.h    |    2 +-
- arch/powerpc/kernel/fadump.c        |    3 +--
- arch/powerpc/kernel/machine_kexec.c |    2 +-
- arch/powerpc/kernel/prom.c          |    2 +-
- arch/powerpc/mm/mem.c               |    2 +-
- 5 files changed, 5 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/machine_kexec.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/setup.h b/arch/powerpc/include/asm/setup.h
-index d084ce1..8b9a306 100644
---- a/arch/powerpc/include/asm/setup.h
-+++ b/arch/powerpc/include/asm/setup.h
-@@ -9,7 +9,7 @@ extern void ppc_printk_progress(char *s, unsigned short hex);
- extern unsigned int rtas_data;
- extern int mem_init_done;	/* set on boot once kmalloc can be called */
- extern int init_bootmem_done;	/* set once bootmem is available */
--extern phys_addr_t memory_limit;
-+extern unsigned long long memory_limit;
- extern unsigned long klimit;
- extern void *zalloc_maybe_bootmem(size_t size, gfp_t mask);
- 
-diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
-index 18bdf74..06c8202 100644
---- a/arch/powerpc/kernel/fadump.c
-+++ b/arch/powerpc/kernel/fadump.c
-@@ -289,8 +289,7 @@ int __init fadump_reserve_mem(void)
- 		else
- 			memory_limit = memblock_end_of_DRAM();
- 		printk(KERN_INFO "Adjusted memory_limit for firmware-assisted"
--				" dump, now %#016llx\n",
--				(unsigned long long)memory_limit);
-+				" dump, now %#016llx\n", memory_limit);
- 	}
- 	if (memory_limit)
- 		memory_boundary = memory_limit;
 diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
-index 5df7777..4074eff 100644
+index 4074eff..fa9f6c7 100644
 --- a/arch/powerpc/kernel/machine_kexec.c
 +++ b/arch/powerpc/kernel/machine_kexec.c
-@@ -165,7 +165,7 @@ void __init reserve_crashkernel(void)
- 	if (memory_limit && memory_limit <= crashk_res.end) {
- 		memory_limit = crashk_res.end + 1;
- 		printk("Adjusted memory limit for crashkernel, now 0x%llx\n",
--		       (unsigned long long)memory_limit);
-+		       memory_limit);
+@@ -204,6 +204,12 @@ static struct property crashk_size_prop = {
+ 	.value = &crashk_size,
+ };
+ 
++static struct property memory_limit_prop = {
++	.name = "linux,memory-limit",
++	.length = sizeof(unsigned long long),
++	.value = &memory_limit,
++};
++
+ static void __init export_crashk_values(struct device_node *node)
+ {
+ 	struct property *prop;
+@@ -223,6 +229,12 @@ static void __init export_crashk_values(struct device_node *node)
+ 		crashk_size = resource_size(&crashk_res);
+ 		prom_add_property(node, &crashk_size_prop);
  	}
- 
- 	printk(KERN_INFO "Reserving %ldMB of memory at %ldMB "
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index f191bf0..c82c77d 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -78,7 +78,7 @@ static int __init early_parse_mem(char *p)
- 		return 1;
- 
- 	memory_limit = PAGE_ALIGN(memparse(p, &p));
--	DBG("memory limit = 0x%llx\n", (unsigned long long)memory_limit);
-+	DBG("memory limit = 0x%llx\n", memory_limit);
- 
- 	return 0;
++
++	/*
++	 * memory_limit is required by the kexec-tools to limit the
++	 * crash regions to the actual memory used.
++	 */
++	prom_update_property(node, &memory_limit_prop);
  }
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index baaafde..0a8f353 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -62,7 +62,7 @@
  
- int init_bootmem_done;
- int mem_init_done;
--phys_addr_t memory_limit;
-+unsigned long long memory_limit;
- 
- #ifdef CONFIG_HIGHMEM
- pte_t *kmap_pte;
+ static int __init kexec_setup(void)
 
