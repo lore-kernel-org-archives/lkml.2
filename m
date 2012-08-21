@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2HUHVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 03:21:01 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:52446 "EHLO smtp5-g21.free.fr"
+	id S1753236Ab2HUHWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 03:22:09 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:52620 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab2HUHU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 03:20:57 -0400
-From: Jim Meyering <jim@meyering.net>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        v9fs-developer@lists.sourceforge.net
-Subject: [PATCHv2] fs/9p: avoid debug OOPS when reading a long symlink
-In-Reply-To: <1345481724-30108-3-git-send-email-jim@meyering.net> (Jim
-	Meyering's message of "Mon, 20 Aug 2012 18:55:21 +0200")
-References: <1345481724-30108-1-git-send-email-jim@meyering.net>
-	<1345481724-30108-3-git-send-email-jim@meyering.net>
-Date: Tue, 21 Aug 2012 09:20:49 +0200
-Message-ID: <87mx1ok8xa.fsf_-_@rho.meyering.net>
+	id S1751206Ab2HUHWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 03:22:07 -0400
+Message-ID: <5033371C.9040703@msgid.tls.msk.ru>
+Date: Tue, 21 Aug 2012 11:22:04 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tomas Racek <tracek@redhat.com>
+CC: Borislav Petkov <borislav.petkov@amd.com>, kvm-devel <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>
+Subject: Re: [Qemu-devel] x86, nops settings result in kernel crash
+References: <1466897901.2256382.1345482795440.JavaMail.root@redhat.com>
+In-Reply-To: <1466897901.2256382.1345482795440.JavaMail.root@redhat.com>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20.08.2012 21:13, Tomas Racek wrote:
+[]
+Can we trim the old, large and now not-so-relevant discussion please? ;)
 
-Reading a symlink longer than the given buffer, a p9_debug use would
-try to print the link name (not NUL-terminated) using a %s format.
-Use %.*s instead, and replace the strncpy+strnlen with functionally
-equivalent strlen+memcpy.
+> I can provide you with more different traces if it can help. But I thought that maybe it will be more useful for you to try it on your own. So I've prepared some minimal debian installation which you could download here (apx 163M bzipped):
+> 
+> http://fi.muni.cz/~xracek/debian.img.bz2
+> 
+> Password:
+> root/asdfgh
+> 
+> Here is my config for guest kernel:
+> 
+> http://fi.muni.cz/~xracek/config
+> 
+> I use
+> 
+> qemu-kvm -m 1500 -hda debian.img -kernel linux/arch/x86/boot/bzImage -append "root=/dev/sda1"
 
-Signed-off-by: Jim Meyering <meyering@redhat.com>
----
-V1 provoked a warning due to strlen/buflen type differences (size_t/int)
-and the "min" macro's type equality requirement.  This adds a cast to
-avoid that warning:
+Um.  I'd expect the image to be self-contained, no external kernel.
+I wanted to do a quick test to see if it fails on my machine too,
+d/loaded debian.img.bz2 but there's no kernel.  So.. no quick test
+for you ;)
 
--	retval = min(strlen(st->extension)+1, buflen);
-+	retval = min(strlen(st->extension)+1, (size_t)buflen);
+> After logging in just run "sh runtest.sh". This leads to crash in my case (host: Intel Core i5-2540M, kernel 3.5.2-1.fc17.x86_64, qemu 1.0.1).
 
- fs/9p/vfs_inode.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+With all the above, this "runtest.sh" is informationally equal to
+your disk image.
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index cbf9dbb..890bed5 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -1276,12 +1276,12 @@ static int v9fs_readlink(struct dentry *dentry, char *buffer, int buflen)
- 	}
-
- 	/* copy extension buffer into buffer */
--	strncpy(buffer, st->extension, buflen);
-+	retval = min(strlen(st->extension)+1, (size_t)buflen);
-+	memcpy(buffer, st->extension, retval);
-
--	p9_debug(P9_DEBUG_VFS, "%s -> %s (%s)\n",
--		 dentry->d_name.name, st->extension, buffer);
-+	p9_debug(P9_DEBUG_VFS, "%s -> %s (%.*s)\n",
-+		 dentry->d_name.name, st->extension, buflen, buffer);
-
--	retval = strnlen(buffer, buflen);
- done:
- 	p9stat_free(st);
- 	kfree(st);
---
-1.7.12
+/mjt
