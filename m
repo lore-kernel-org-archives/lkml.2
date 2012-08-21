@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab2HUIfP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:35:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58644 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663Ab2HUIfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:35:05 -0400
-Date: Tue, 21 Aug 2012 10:35:01 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
- children
-Message-ID: <20120821083501.GC19797@dhcp22.suse.cz>
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
- <1344517279-30646-10-git-send-email-glommer@parallels.com>
- <20120817090005.GC18600@dhcp22.suse.cz>
- <502E0BC3.8090204@parallels.com>
- <20120817093504.GE18600@dhcp22.suse.cz>
- <502E17C4.7060204@parallels.com>
- <20120817103550.GF18600@dhcp22.suse.cz>
- <502E1E90.1080805@parallels.com>
- <20120821075430.GA19797@dhcp22.suse.cz>
+	id S1754420Ab2HUIfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:35:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51181 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754359Ab2HUIfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 04:35:18 -0400
+Date: Tue, 21 Aug 2012 10:29:06 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Daniel Kurtz <djkurtz@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-i801: Add device tree support
+Message-ID: <20120821082906.GC28886@pengutronix.de>
+References: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7gGkHNMELEOhSGF6"
 Content-Disposition: inline
-In-Reply-To: <20120821075430.GA19797@dhcp22.suse.cz>
+In-Reply-To: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-08-12 09:54:30, Michal Hocko wrote:
-> E.g. how do you handle charges you left behind? Say you charged some
-> pages for stack?
 
-I got to the last patch and see how you do it. You are relying on
-free_accounted_pages directly which doesn't check kmem_accounted and
-uses PageUsed bit instead. So this is correct. I guess you are relying
-on the life cycle of the object in general so other types of objects
-should be safe as well and there shouldn't be any leaks. It is just that
-the memcg life time is not bounded now. Will think about that.
--- 
-Michal Hocko
-SUSE Labs
+--7gGkHNMELEOhSGF6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Aug 08, 2012 at 09:06:47AM +0200, Thierry Reding wrote:
+> This commit adds support for probing slave devices parsed from the
+> device tree.
+>=20
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+Jean, this one is for you, I guess?
+
+> ---
+>  drivers/i2c/busses/i2c-i801.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+> index 6f00785..b5311cf 100644
+> --- a/drivers/i2c/busses/i2c-i801.c
+> +++ b/drivers/i2c/busses/i2c-i801.c
+> @@ -80,6 +80,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/wait.h>
+>  #include <linux/err.h>
+> +#include <linux/of_i2c.h>
+> =20
+>  #if defined CONFIG_I2C_MUX || defined CONFIG_I2C_MUX_MODULE
+>  #include <linux/gpio.h>
+> @@ -1238,6 +1239,7 @@ static int __devinit i801_probe(struct pci_dev *dev,
+>  		goto exit_free_irq;
+>  	}
+> =20
+> +	of_i2c_register_devices(&priv->adapter);
+>  	i801_probe_optional_slaves(priv);
+>  	/* We ignore errors - multiplexing is optional */
+>  	i801_add_mux(priv);
+> --=20
+> 1.7.11.4
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--7gGkHNMELEOhSGF6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlAzRtIACgkQD27XaX1/VRuMKgCgv7WNAHl90AUOSP3UPu2pVD1C
+SE4AoLDSi/Q0C2LFxHLTMvPIXD9B6hdJ
+=SE4V
+-----END PGP SIGNATURE-----
+
+--7gGkHNMELEOhSGF6--
