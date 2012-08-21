@@ -1,128 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab2HULl6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 07:41:58 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:45720 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751647Ab2HULl4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 07:41:56 -0400
-From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-To: Hanjun Guo <guohanjun@huawei.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Yijing Wang <wangyijing@huawei.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "DL-MPT Fusion Linux" <DL-MPTFusionLinux@lsi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, "Moore, Eric" <Eric.Moore@lsi.com>
-Date: Tue, 21 Aug 2012 17:11:42 +0530
-Subject: RE: [RFC PATCH][RESEND] Fusion MPT: disable pci device when mpt map
- resoures failed
-Thread-Topic: [RFC PATCH][RESEND] Fusion MPT: disable pci device when mpt
- map resoures failed
-Thread-Index: Ac13beou4995lv/dSTmH996u7duk1wII9Xbg
-Message-ID: <A6888A6805518E4EA4AF7072A28264A60A503360D4@inbmail02.lsi.com>
-References: <1344653916-7832-1-git-send-email-guohanjun@huawei.com>
-In-Reply-To: <1344653916-7832-1-git-send-email-guohanjun@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755643Ab2HULmt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 07:42:49 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:60706 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab2HULms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 07:42:48 -0400
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Subject: [PATCH v2 0/2][powerpc] Export memory_limit via device tree 
+To: linuxppc-dev@lists.ozlabs.org
+Cc: mahesh@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 21 Aug 2012 17:12:16 +0530
+Message-ID: <20120821113815.29282.4000.stgit@suzukikp.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082111-1396-0000-0000-000001BD9680
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch seem to be fine. Please consider this patch as Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com> 
+The following series exports the linux memory_limit set by
+the mem= parameter via device-tree, so that kexec-tools
+can limit the crash regions to the actual memory used by
+the kernel.
 
-Regards,
-Nagalakshmi
+Change since V1:
 
+ * Added a patch to change the type of memory_limit to a
+   fixed size(unsigned long long) from 'phys_addr_t' (which
+   is 32bit on some ppc32 and 64 bit on ppc64 and some ppc32)
 
------Original Message-----
-From: Hanjun Guo [mailto:guohanjun@huawei.com] 
-Sent: Saturday, August 11, 2012 8:29 AM
-To: Moore, Eric
-Cc: Yinghai Lu; Yijing Wang; linux-scsi@vger.kernel.org; DL-MPT Fusion Linux; linux-kernel@vger.kernel.org; Hanjun Guo; Jiang Liu
-Subject: [RFC PATCH][RESEND] Fusion MPT: disable pci device when mpt map resoures failed
+ * Rebased the patch to use recently fixed prom_update_property()
+   which would add the property if it didn't exist.
 
-
-when probe a pci device, first we enable it, and disable it when
-some error happened in the following process, because the power
-state of the device is set to D0, and if MSI is disabled,
-we will allocate irq and register gsi for this device in the enable process.
-
-In function mpt_mapresources(MPT_ADAPTER *ioc), it forgot disable the
-pci device when error happened, the irq and gsi will never be released.
-this patch will fix it.
-
-Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/message/fusion/mptbase.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-index d99db56..fb69baa 100644
---- a/drivers/message/fusion/mptbase.c
-+++ b/drivers/message/fusion/mptbase.c
-@@ -1666,7 +1666,7 @@ mpt_mapresources(MPT_ADAPTER *ioc)
- 	if (pci_request_selected_regions(pdev, ioc->bars, "mpt")) {
- 		printk(MYIOC_s_ERR_FMT "pci_request_selected_regions() with "
- 		    "MEM failed\n", ioc->name);
--		return r;
-+		goto out_pci_disable_device;
- 	}
- 
- 	if (sizeof(dma_addr_t) > 4) {
-@@ -1690,8 +1690,7 @@ mpt_mapresources(MPT_ADAPTER *ioc)
- 		} else {
- 			printk(MYIOC_s_WARN_FMT "no suitable DMA mask for %s\n",
- 			    ioc->name, pci_name(pdev));
--			pci_release_selected_regions(pdev, ioc->bars);
--			return r;
-+			goto out_pci_release_region;
- 		}
- 	} else {
- 		if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(32))
-@@ -1704,8 +1703,7 @@ mpt_mapresources(MPT_ADAPTER *ioc)
- 		} else {
- 			printk(MYIOC_s_WARN_FMT "no suitable DMA mask for %s\n",
- 			    ioc->name, pci_name(pdev));
--			pci_release_selected_regions(pdev, ioc->bars);
--			return r;
-+			goto out_pci_release_region;
- 		}
- 	}
- 
-@@ -1735,8 +1733,8 @@ mpt_mapresources(MPT_ADAPTER *ioc)
- 	if (mem == NULL) {
- 		printk(MYIOC_s_ERR_FMT ": ERROR - Unable to map adapter"
- 			" memory!\n", ioc->name);
--		pci_release_selected_regions(pdev, ioc->bars);
--		return -EINVAL;
-+		r = -EINVAL;
-+		goto out_pci_release_region;
- 	}
- 	ioc->memmap = mem;
- 	dinitprintk(ioc, printk(MYIOC_s_INFO_FMT "mem = %p, mem_phys = %llx\n",
-@@ -1750,6 +1748,12 @@ mpt_mapresources(MPT_ADAPTER *ioc)
- 	ioc->pio_chip = (SYSIF_REGS __iomem *)port;
- 
- 	return 0;
-+
-+out_pci_release_region:
-+	pci_release_selected_regions(pdev, ioc->bars);
-+out_pci_disable_device:
-+	pci_disable_device(pdev);
-+	return r;
- }
- 
- /*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+Suzuki K. Poulose (2):
+      [powerpc] Change memory_limit from phys_addr_t to unsigned long long
+      [powerpc] Export memory limit via device tree
+
+
+ arch/powerpc/include/asm/setup.h    |    2 +-
+ arch/powerpc/kernel/fadump.c        |    3 +--
+ arch/powerpc/kernel/machine_kexec.c |   14 +++++++++++++-
+ arch/powerpc/kernel/prom.c          |    2 +-
+ arch/powerpc/mm/mem.c               |    2 +-
+ 5 files changed, 17 insertions(+), 6 deletions(-)
+
 -- 
-1.7.6.1
-
+Suzuki
 
