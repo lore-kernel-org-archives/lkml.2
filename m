@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab2HUNO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:14:58 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62073 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2HUNO4 (ORCPT
+	id S1754101Ab2HUNQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:16:18 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55215 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab2HUNQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:14:56 -0400
-Date: Tue, 21 Aug 2012 10:14:51 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Vagin <avagin@openvz.org>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] perf: create a helper structure perf_event_context
-Message-ID: <20120821131451.GA7162@infradead.org>
-References: <1344957803-2635317-1-git-send-email-avagin@openvz.org>
- <20120821095920.GA3241@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821095920.GA3241@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 21 Aug 2012 09:16:15 -0400
+Date: Tue, 21 Aug 2012 14:20:47 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Joe Millenbach <jmillenbach@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        team-fjord@googlegroups.com
+Subject: Re: [PATCH] tty: Added a CONFIG_TTY option to allow removal of TTY
+Message-ID: <20120821142047.777e4bb0@pyramind.ukuu.org.uk>
+In-Reply-To: <1345499431-21658-1-git-send-email-jmillenbach@gmail.com>
+References: <1345499431-21658-1-git-send-email-jmillenbach@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 21, 2012 at 11:59:20AM +0200, Ingo Molnar escreveu:
-> * Andrew Vagin <avagin@openvz.org> wrote:
-> >  18 files changed, 222 insertions(+), 255 deletions(-)
-> > -static int process_sample_event(struct perf_tool *tool,
-> > -				union perf_event *event,
-> > -				struct perf_sample *sample,
-> > -				struct perf_evsel *evsel,
-> > -				struct machine *machine)
-> > +static int process_sample_event(struct perf_event_context *ectx)
-> >  {
-> > -	struct perf_annotate *ann = container_of(tool, struct perf_annotate, tool);
-> > +	struct perf_sample *sample = ectx->sample;
-> > +	struct perf_annotate *ann = container_of(ectx->tool, struct perf_annotate, tool);
-> >  	struct addr_location al;
-> 
-> that looks like a nice cleanliness win.
-> 
-> Acked-by: Ingo Molnar <mingo@kernel.org>
+> --- a/drivers/char/Kconfig
+> +++ b/drivers/char/Kconfig
+> @@ -53,7 +53,7 @@ source "drivers/tty/serial/Kconfig"
+>  
+>  config TTY_PRINTK
+>  	bool "TTY driver to output user messages via printk"
+> -	depends on EXPERT
+> +	depends on EXPERT && TTY
 
-I don't like it, in most cases it just moves variables from the function
-signature to the start of the function.
 
-I do agree tho that we should reduce the number of parameters as much as
-we can, as I did removing that pevent one that we used to look up
-event_format from the sample ID, that just was not natural as we already
-had the evsel and did the lookup when reading the perf.data headers, so
-it was just a matter of linking evsel to event_format at that point and
-remove the pevent parameter and eliminate the needless relookups, see:
+A lot of these could be done better with an if I think - notably the
+serial one and perhaps some of the input ones if the tty users were
+bunched together.
 
- "perf evsel: Cache associated event_format"
- fcf65bf149afa91b875ffde4455967cb63ee0be9
 
-In the above function signature there is already room for tool specific
-state in perf_tool/container_of, the other parameters are per event
-natural objects.
+>  config MOUSE_PS2
+>  	tristate "PS/2 mouse"
+> +	depends on TTY
 
-- Arnaldo
+It shouldn't. It would be good to understand why this occurs.
+
+
+> diff --git a/include/linux/tty.h b/include/linux/tty.h
+> index 5dbb3cb..c1406e3 100644
+> --- a/include/linux/tty.h
+> +++ b/include/linux/tty.h
+> @@ -377,7 +377,12 @@ extern void tty_write_flush(struct tty_struct *);
+>  
+>  extern struct ktermios tty_std_termios;
+>  
+> +#ifdef CONFIG_TTY
+>  extern void console_init(void);
+> +#else
+> +static inline void console_init(void)
+> +{ }
+> +#endif
+
+Please can you bunch the whole lot up into one #if defined() / #else /
+#endif
+
+rather than lots.
+
+
+Otherwise this looks very sensible to me.
