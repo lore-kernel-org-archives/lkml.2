@@ -1,140 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab2HUHui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 03:50:38 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:35895 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab2HUHud (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 03:50:33 -0400
-Subject: Re: [PATCH 1/3] drivers-platform-x86: remove useless #ifdef
- CONFIG_ACPI_VIDEO
-From: joeyli <jlee@suse.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, Joey Lee <jlee@novell.com>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        acpi4asus-user@lists.sourceforge.net
-In-Reply-To: <1345496512-11780-2-git-send-email-corentin.chary@gmail.com>
-References: <1345496512-11780-1-git-send-email-corentin.chary@gmail.com>
-	 <1345496512-11780-2-git-send-email-corentin.chary@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Aug 2012 15:46:35 +0800
-Message-ID: <1345535195.26857.46.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1752640Ab2HUHwc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 03:52:32 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:33597 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751900Ab2HUHw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 03:52:29 -0400
+From: Marina Makienko <makienko@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Marina Makienko <makienko@ispras.ru>, David Daney <david.daney@cavium.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "Roy.Li" <rongqing.li@windriver.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] staging: octeon: Add prevent NAPI from scheduling IN-REPLY-TO:
+Date: Tue, 21 Aug 2012 11:48:13 +0400
+Message-Id: <1345535293-12800-1-git-send-email-makienko@ispras.ru>
+X-Mailer: git-send-email 1.7.7
+In-reply-to: <5032653A.9090403@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2012-08-20 於 23:01 +0200，Corentin Chary 提到：
-> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
-> ---
->  drivers/platform/x86/acer-wmi.c       |    2 --
->  drivers/platform/x86/apple-gmux.c     |    4 ----
->  drivers/platform/x86/asus-wmi.c       |    4 ----
->  drivers/platform/x86/samsung-laptop.c |    4 ----
->  4 files changed, 14 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index 3782e1c..934d861 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -2196,10 +2196,8 @@ static int __init acer_wmi_init(void)
->  		interface->capability &= ~ACER_CAP_BRIGHTNESS;
->  		pr_info("Brightness must be controlled by acpi video driver\n");
->  	} else {
-> -#ifdef CONFIG_ACPI_VIDEO
->  		pr_info("Disabling ACPI video driver\n");
->  		acpi_video_unregister();
-> -#endif
->  	}
->  
+There are netif_napi_add() and napi_enable() in for_each_possible_cpu
+loop in function cvm_oct_rx_initialize(). So it's logical to add
+napi_disable() in for_each_possible_cpu loop in function
+cvm_oct_rx_shutdown().
 
-Yes, we need this patch otherwise the acpi/video will not unregister if
-acpi/video build to module. It will cause regression on v3.6 kernel for
-some machines backlight control need use 'acpi_backlight=vendor'.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Acked-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Marina Makienko <makienko@ispras.ru>
+---
+ drivers/staging/octeon/ethernet-rx.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-
-Thanks a lot!
-Joey Lee
-
->  	if (wmi_has_guid(WMID_GUID3)) {
-> diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
-> index dfb1a92..dca31ce 100644
-> --- a/drivers/platform/x86/apple-gmux.c
-> +++ b/drivers/platform/x86/apple-gmux.c
-> @@ -505,9 +505,7 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
->  	 * Disable the other backlight choices.
->  	 */
->  	acpi_video_dmi_promote_vendor();
-> -#if defined (CONFIG_ACPI_VIDEO) || defined (CONFIG_ACPI_VIDEO_MODULE)
->  	acpi_video_unregister();
-> -#endif
->  	apple_bl_unregister();
->  
->  	gmux_data->power_state = VGA_SWITCHEROO_ON;
-> @@ -593,9 +591,7 @@ static void __devexit gmux_remove(struct pnp_dev *pnp)
->  	kfree(gmux_data);
->  
->  	acpi_video_dmi_demote_vendor();
-> -#if defined (CONFIG_ACPI_VIDEO) || defined (CONFIG_ACPI_VIDEO_MODULE)
->  	acpi_video_register();
-> -#endif
->  	apple_bl_register();
->  }
->  
-> diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-> index 6a91a0c..912ec7d 100644
-> --- a/drivers/platform/x86/asus-wmi.c
-> +++ b/drivers/platform/x86/asus-wmi.c
-> @@ -47,9 +47,7 @@
->  #include <linux/thermal.h>
->  #include <acpi/acpi_bus.h>
->  #include <acpi/acpi_drivers.h>
-> -#ifdef CONFIG_ACPI_VIDEO
->  #include <acpi/video.h>
-> -#endif
->  
->  #include "asus-wmi.h"
->  
-> @@ -1780,10 +1778,8 @@ static int asus_wmi_add(struct platform_device *pdev)
->  	if (asus->driver->quirks->wmi_backlight_power)
->  		acpi_video_dmi_promote_vendor();
->  	if (!acpi_video_backlight_support()) {
-> -#ifdef CONFIG_ACPI_VIDEO
->  		pr_info("Disabling ACPI video driver\n");
->  		acpi_video_unregister();
-> -#endif
->  		err = asus_wmi_backlight_init(asus);
->  		if (err && err != -ENODEV)
->  			goto fail_backlight;
-> diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-> index c1ca7bc..dd90d15 100644
-> --- a/drivers/platform/x86/samsung-laptop.c
-> +++ b/drivers/platform/x86/samsung-laptop.c
-> @@ -26,9 +26,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/debugfs.h>
->  #include <linux/ctype.h>
-> -#ifdef CONFIG_ACPI_VIDEO
->  #include <acpi/video.h>
-> -#endif
->  
->  /*
->   * This driver is needed because a number of Samsung laptops do not hook
-> @@ -1558,9 +1556,7 @@ static int __init samsung_init(void)
->  		samsung->handle_backlight = false;
->  	} else if (samsung->quirks->broken_acpi_video) {
->  		pr_info("Disabling ACPI video driver\n");
-> -#ifdef CONFIG_ACPI_VIDEO
->  		acpi_video_unregister();
-> -#endif
->  	}
->  #endif
->  
-
+diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+index 34afc16..e5b62fc 100644
+--- a/drivers/staging/octeon/ethernet-rx.c
++++ b/drivers/staging/octeon/ethernet-rx.c
+@@ -558,6 +558,8 @@ void cvm_oct_rx_shutdown(void)
+ {
+ 	int i;
+ 	/* Shutdown all of the NAPIs */
+-	for_each_possible_cpu(i)
++	for_each_possible_cpu(i) {
+ 		netif_napi_del(&cvm_oct_napi[i].napi);
++		napi_disable(&cvm_oct_napi[i].napi);
++	}
+ }
+-- 
+1.7.7
 
