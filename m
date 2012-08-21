@@ -1,194 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab2HUPLX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:11:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59425 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab2HUPLS (ORCPT
+	id S1754994Ab2HUPLq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:11:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49690 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab2HUPLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:11:18 -0400
-Date: Tue, 21 Aug 2012 08:10:51 -0700
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-f7fa6ef0ded995aad68650a877198f70e44b7621@git.kernel.org>
-Cc: fche@redhat.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@kernel.org, ananth@in.ibm.com, fweisbec@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, fche@redhat.com, ananth@in.ibm.com,
-        fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        akpm@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <20120605102820.27845.90133.stgit@localhost.localdomain>
-References: <20120605102820.27845.90133.stgit@localhost.localdomain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] kprobes: cleanup to separate probe-able check
-Git-Commit-ID: f7fa6ef0ded995aad68650a877198f70e44b7621
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:10:57 -0700 (PDT)
+	Tue, 21 Aug 2012 11:11:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC 1/4] ARM: autogenerate mach-foo/* and plat-foo/* header redirects
+Date: Tue, 21 Aug 2012 17:11:17 +0200
+Message-Id: <1345561880-13231-2-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1345561880-13231-1-git-send-email-arnd@arndb.de>
+References: <1345561880-13231-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:aZpJp1OZ8m60xgXX/z02iYB9qjekIiO0vcaD+zY3Quu
+ DTVLC8Wef+0myqMQLOTu5ubn1w3hDLahboyNMfBcOIhdu9cWQV
+ Ashg/x/pxmL3snaeRcUJl081PtOWQBTVyLaLukkDLLK+HuzOTZ
+ YuWcXwgxBqqAiF8fPdaswQe5DPsU3ZsJSomwFYRHt7lplP7+CE
+ 5tg9pr/BOMdHFFKc8oVP1pxOhq2naLc+HkKTrKJLiOsL65mtHF
+ ceRZZ1YCapvViIZZcGh0EaaG7l0A6p71fl/lQ0m2TPaB1M2qb3
+ /ohmtndkkyUAwdys2N57GXTUuuzegeOBJV6gvLVOkDI77pAwNo
+ xXmxCOdUm9iM0ctBSdfV0zHgy1ILtaO7KLtkrPU1bjvhNBv2Ai
+ 3xhKZS4yOQhHA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f7fa6ef0ded995aad68650a877198f70e44b7621
-Gitweb:     http://git.kernel.org/tip/f7fa6ef0ded995aad68650a877198f70e44b7621
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Tue, 5 Jun 2012 19:28:20 +0900
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 31 Jul 2012 10:29:56 -0400
+This is an attempt to simplify the duplicate header problem for
+multiplatform kernels, in multiple steps:
 
-kprobes: cleanup to separate probe-able check
+1. (this patch)
+   for each arch/arm/mach-${MACHINE}/include/mach-${MACHINE}/*.h file,
+   generate a arch/arm/include/generated/mach/*.h file at build time,
+   same for plat-*.
 
-Separate probe-able address checking code from
-register_kprobe().
+2. rename all arch/arm/mach-${MACHINE}/include/mach/*.h to
+   arch/arm/mach-${MACHINE}/include/mach-${MACHINE}/*.h and
+   arch/arm/plat-${PLAT}/include/plat/*.h to
+   arch/arm/plat-${PLAT}/include/plat-${PLAT}/*.h
 
-Link: http://lkml.kernel.org/r/20120605102820.27845.90133.stgit@localhost.localdomain
+3. change all includes of <mach/*.h> to <mach-${MACHINE}/*.h>
+   in all files where ${MACHINE} is known.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+4. ...
+
+5. Revert this patch again.
+
+We can apply this patch at any time, and do step 2 at the end
+of the next merge window to minimize the potential for conflicts.
+We will also still need to deal with any inclusion of a mach/*
+file, but out of the 6355 ones we have today, I expect only a
+few hundred to remain after step 3 and they will be much easier
+to spot.
+
+I've picked the format <mach-foo/bar.h> to get a unique name because
+it matches the directory name under arch/arm, but other names
+would work with the same script, <mach/foo-bar.h> and <foo/bar.h>
+have been suggested previously.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- kernel/kprobes.c |   82 +++++++++++++++++++++++++++++------------------------
- 1 files changed, 45 insertions(+), 37 deletions(-)
+ arch/arm/Makefile          |    1 +
+ arch/arm/tools/Makefile    |    5 ++++
+ arch/arm/tools/gen-headers |   57 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 63 insertions(+)
+ create mode 100755 arch/arm/tools/gen-headers
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 7a8a122..6137fe3 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1313,67 +1313,80 @@ static inline int check_kprobe_rereg(struct kprobe *p)
- 	return ret;
- }
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 30eae87..761b077 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -274,6 +274,7 @@ boot := arch/arm/boot
  
--int __kprobes register_kprobe(struct kprobe *p)
-+static __kprobes int check_kprobe_address_safe(struct kprobe *p,
-+					       struct module **probed_mod)
- {
- 	int ret = 0;
--	struct kprobe *old_p;
--	struct module *probed_mod;
--	kprobe_opcode_t *addr;
--
--	addr = kprobe_addr(p);
--	if (IS_ERR(addr))
--		return PTR_ERR(addr);
--	p->addr = addr;
--
--	ret = check_kprobe_rereg(p);
--	if (ret)
--		return ret;
+ archprepare:
+ 	$(Q)$(MAKE) $(build)=arch/arm/tools include/generated/mach-types.h
++	$(Q)$(MAKE) $(build)=arch/arm/tools plat="$(plat-y)" machine="$(machine-y)" gen_headers
  
- 	jump_label_lock();
- 	preempt_disable();
+ # Convert bzImage to zImage
+ bzImage: zImage
+diff --git a/arch/arm/tools/Makefile b/arch/arm/tools/Makefile
+index 635cb18..6e18ca9 100644
+--- a/arch/arm/tools/Makefile
++++ b/arch/arm/tools/Makefile
+@@ -8,3 +8,8 @@ include/generated/mach-types.h: $(src)/gen-mach-types $(src)/mach-types
+ 	@echo '  Generating $@'
+ 	@mkdir -p $(dir $@)
+ 	$(Q)$(AWK) -f $^ > $@ || { rm -f $@; /bin/false; }
 +
-+	/* Ensure it is not in reserved area nor out of text */
- 	if (!kernel_text_address((unsigned long) p->addr) ||
- 	    in_kprobes_functions((unsigned long) p->addr) ||
- 	    ftrace_text_reserved(p->addr, p->addr) ||
- 	    jump_label_text_reserved(p->addr, p->addr)) {
- 		ret = -EINVAL;
--		goto cannot_probe;
-+		goto out;
- 	}
- 
--	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
--	p->flags &= KPROBE_FLAG_DISABLED;
--
--	/*
--	 * Check if are we probing a module.
--	 */
--	probed_mod = __module_text_address((unsigned long) p->addr);
--	if (probed_mod) {
--		/* Return -ENOENT if fail. */
--		ret = -ENOENT;
-+	/* Check if are we probing a module */
-+	*probed_mod = __module_text_address((unsigned long) p->addr);
-+	if (*probed_mod) {
- 		/*
- 		 * We must hold a refcount of the probed module while updating
- 		 * its code to prohibit unexpected unloading.
- 		 */
--		if (unlikely(!try_module_get(probed_mod)))
--			goto cannot_probe;
-+		if (unlikely(!try_module_get(*probed_mod))) {
-+			ret = -ENOENT;
-+			goto out;
-+		}
- 
- 		/*
- 		 * If the module freed .init.text, we couldn't insert
- 		 * kprobes in there.
- 		 */
--		if (within_module_init((unsigned long)p->addr, probed_mod) &&
--		    probed_mod->state != MODULE_STATE_COMING) {
--			module_put(probed_mod);
--			goto cannot_probe;
-+		if (within_module_init((unsigned long)p->addr, *probed_mod) &&
-+		    (*probed_mod)->state != MODULE_STATE_COMING) {
-+			module_put(*probed_mod);
-+			*probed_mod = NULL;
-+			ret = -ENOENT;
- 		}
--		/* ret will be updated by following code */
- 	}
-+out:
- 	preempt_enable();
- 	jump_label_unlock();
- 
-+	return ret;
++gen_headers:
++	$(Q)bash $(srctree)/$(src)/gen-headers $(srctree) $(objtree) $(machine) $(plat)
++
++.PHONY: gen_headers
+diff --git a/arch/arm/tools/gen-headers b/arch/arm/tools/gen-headers
+new file mode 100755
+index 0000000..caa6a9a
+--- /dev/null
++++ b/arch/arm/tools/gen-headers
+@@ -0,0 +1,57 @@
++#!/bin/bash
++
++SRC=$1
++OBJ=$2
++MACH=$3
++PLAT1=$4
++PLAT2=$5
++
++# create $3 to include $2 if it doesn't already have the correct
++# contents, or remove it if it's no longer needed.
++mkfile()
++{
++	if [ -e $1/$2 ] ; then
++		if [ ! -e $3 ] ; then
++			mkdir -p ${3%/*}
++			echo "#include <${2}>" > $3
++		elif [ "`cat $3`" != "#include <${2#./}>" ] ; then
++			echo "#include <${2}>" > $3
++		fi
++	elif [ ! -e $1/$2 -a -e $3 ] ; then
++		rm -f $3
++	fi
 +}
 +
-+int __kprobes register_kprobe(struct kprobe *p)
++# list any header files that are present in the source or
++# destination directories
++find_files()
 +{
-+	int ret;
-+	struct kprobe *old_p;
-+	struct module *probed_mod;
-+	kprobe_opcode_t *addr;
++	pushd ${SRC}/arch/arm/$1-$2/include/$1-$2 >/dev/null 2>&1 &&
++	find . -type f -name \*.h -o -name \*.S &&
++	popd > /dev/null 2>&1
++	pushd ${OBJ}/arch/arm/include/generated/$1 >/dev/null 2>&1 &&
++	find . -type f -name \*.h -o -name \*.S &&
++	popd > /dev/null 2>&1
++}
 +
-+	/* Adjust probe address from symbol */
-+	addr = kprobe_addr(p);
-+	if (IS_ERR(addr))
-+		return PTR_ERR(addr);
-+	p->addr = addr;
++# process files in either mach-{MACH} or plat-${PLAT}
++mkfiles()
++{
++	mkdir -p ${OBJ}/arch/arm/include/generated/$1
 +
-+	ret = check_kprobe_rereg(p);
-+	if (ret)
-+		return ret;
++	FILES=`find_files $1 $2 | sort -u`
++	for i in ${FILES} ; do
++		mkfile "${SRC}/arch/arm/$1-$2/include/" "$1-$2/${i#./}" \
++			"${OBJ}/arch/arm/include/generated/$1/$i"
++	done
++}
 +
-+	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
-+	p->flags &= KPROBE_FLAG_DISABLED;
- 	p->nmissed = 0;
- 	INIT_LIST_HEAD(&p->list);
--	mutex_lock(&kprobe_mutex);
- 
-+	ret = check_kprobe_address_safe(p, &probed_mod);
-+	if (ret)
-+		return ret;
-+
-+	mutex_lock(&kprobe_mutex);
- 	jump_label_lock(); /* needed to call jump_label_text_reserved() */
- 
- 	get_online_cpus();	/* For avoiding text_mutex deadlock. */
-@@ -1410,11 +1423,6 @@ out:
- 		module_put(probed_mod);
- 
- 	return ret;
--
--cannot_probe:
--	preempt_enable();
--	jump_label_unlock();
--	return ret;
- }
- EXPORT_SYMBOL_GPL(register_kprobe);
- 
++# always process mach-*
++mkfiles mach ${MACH}
++# process plat-* if applicable
++if [ -d ${SRC}/arch/arm/plat-${PLAT1} ]; then
++	mkfiles plat ${PLAT1}
++fi
++if [ -d ${SRC}/arch/arm/plat-${PLAT2} ]; then
++	mkfiles plat ${PLAT2}
++fi
+-- 
+1.7.10
+
