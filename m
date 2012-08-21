@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab2HUEot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 00:44:49 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:50702 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2HUEop (ORCPT
+	id S1752028Ab2HUEro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 00:47:44 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47777 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab2HUErk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 00:44:45 -0400
-Date: Tue, 21 Aug 2012 10:14:36 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, JBeulich@suse.com,
-        akpm@linux-foundation.org, Joe Mario <jmario@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 71/74] lto, kprobes: Use KSYM_NAME_LEN to size
-	identifier buffers
-Message-ID: <20120821044436.GA3519@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-72-git-send-email-andi@firstfloor.org>
+	Tue, 21 Aug 2012 00:47:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345345030-22211-72-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082104-6148-0000-0000-000008CF1B40
+In-Reply-To: <50328258.9030800@wwwdotorg.org>
+References: <502EC16C.4030007@wwwdotorg.org>
+	<20120820182254.GQ24861@google.com>
+	<50328258.9030800@wwwdotorg.org>
+Date: Mon, 20 Aug 2012 23:47:39 -0500
+Message-ID: <CABqD9hY-Z9uBcYyeCa=8f8eeXkGNjPKxbwpMPi3vs3776vF6iQ@mail.gmail.com>
+Subject: Re: root=PARTUUID for MBR/NT disk signatures?
+From: Will Drewry <wad@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
+        Jens Axboe <axboe@kernel.dk>, Kay Sievers <kay.sievers@vrfy.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 18, 2012 at 07:57:07PM -0700, Andi Kleen wrote:
-> From: Joe Mario <jmario@redhat.com>
-> 
-> Use KSYM_NAME_LEN to size identifier buffers, so that it can
-> be easier increased.
-> 
-> Cc: ananth@in.ibm.com
-> Signed-off-by: Joe Mario <jmario@redhat.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On Mon, Aug 20, 2012 at 1:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/20/2012 12:22 PM, Tejun Heo wrote:
+>> Hello,
+>>
+>> On Fri, Aug 17, 2012 at 04:10:52PM -0600, Stephen Warren wrote:
+>>> I was considering extending the kernel command-line option
+>>> root=PARTUUID= to also support MBR (NT disk signatures). I was thinking
+>>> of a syntax along the lines of:
+>>>
+>>> root=PARTUUID=UUUUUUUU-PP[/PARTNROFF=%d]
+>>>
+>>> ... where UUUUUUUU is the hex representation of the NT disk signature,
+>>> and PP is the hex representation of the partition number. Like GPT,
+>>> /PARTNROFF could be used too if desired.
+>>>
+>>> Related, I was thinking of changing struct partition_meta_info's uuid
+>>> field to be a string, so that it could simply be strcmp'd against the
+>>> UUID value on the kernel command-line. That way, the type of the UUID is
+>>> irrelevant.
+>>>
+>>> Does anyone have any objection to that?
+>>
+>> Wouldn't that be able to break setups which work currently?
+>
+> I don't believe so:
+>
+> Since the newly supported UUID syntax wouldn't ever match any EFI UUID
+> (the lengths differ in all cases), I don't believe the new syntax would
+> affect behavior for any existing usage.
+>
+> Obviously, part_efi.c would be modified to initialize struct
+> partition_meta_info's uuid field to the appropriate string
+> representation of the UUID so that the str(case)cmp would still succeed
+> for existing command-lines. I ended up coding up that part of the change
+> late Friday, and the feature was certainly still working OK.
 
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Functionally, I suspect this will work fine, but I am concerned that
+it is a bad move from an efficiency perspective (not unfixable
+though).  Right now, the user-supplied value is converted from
+string-uuid to packed-uuid.  This is then memcmp'd across any and all
+partitions - be it 2 or 200 - across all attached storage.  If we move
+to a pure string, then we end up needing to unpack every packed UUID
+at disk scan time (or search, depending on impl) rather than just the
+one user supplied value.
 
-> ---
->  kernel/kprobes.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index c62b854..b9bd2a8 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1955,7 +1955,7 @@ static int __init init_kprobes(void)
->  {
->  	int i, err = 0;
->  	unsigned long offset = 0, size = 0;
-> -	char *modname, namebuf[128];
-> +	char *modname, namebuf[KSYM_NAME_LEN];
->  	const char *symbol_name;
->  	void *addr;
->  	struct kprobe_blackpoint *kb;
-> @@ -2081,7 +2081,7 @@ static int __kprobes show_kprobe_addr(struct seq_file *pi, void *v)
->  	const char *sym = NULL;
->  	unsigned int i = *(loff_t *) v;
->  	unsigned long offset = 0;
-> -	char *modname, namebuf[128];
-> +	char *modname, namebuf[KSYM_NAME_LEN];
-> 
->  	head = &kprobe_table[i];
->  	preempt_disable();
-> -- 
-> 1.7.7.6
+Perhaps the cost is negligible on modern machines, but it seems like
+the wrong place to put the cost (per entry rather than per search
+value).
 
+I'd be happy to test out any proposed patch to see if I can measure
+any differences in my specific environments, but I don't know if it
+will slow down partition scanning for other EFI UUID users out there.
+Maybe the NT disk sigs could be massaged to be memcmp friendly instead
+of the opposite?
+
+thanks!
+will
