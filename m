@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab2HUITo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:19:44 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:48513 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2HUITl (ORCPT
+	id S1754205Ab2HUIUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:20:25 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2361 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab2HUIUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:19:41 -0400
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
- <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
- <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
- <20120815081331.GL31083@dhcp-172-17-9-228.mtv.corp.google.com>
- <000101cd7bb1$73f36050$5bda20f0$%p@samsung.com>
- <502CF9E3.2010608@linutronix.de>
- <20120817014609.GB2949@dhcp-172-17-9-228.mtv.corp.google.com>
- <502E0D3B.10006@linutronix.de> <000201cd7c63$60186370$20492a50$%p@samsung.com>
- <502E1E23.60201@linutronix.de>
- <20120820055958.GD2102@dhcp-172-17-9-228.mtv.corp.google.com>
- <503218EF.7080906@linutronix.de>
-In-reply-to: <503218EF.7080906@linutronix.de>
-Subject: RE: [RFC 0/2] USB gadget - configfs
-Date: Tue, 21 Aug 2012 10:19:32 +0200
-Message-id: <000001cd7f75$b21d7ab0$16587010$%p@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1+yKH+61TWsR8zSAWLyxykf705fwAqo9AA
-Content-language: pl
-X-TM-AS-MML: No
+	Tue, 21 Aug 2012 04:20:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 21 Aug 2012 01:14:29 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <leelakrishna.a@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
+Date: Tue, 21 Aug 2012 17:22:12 +0900
+Message-ID: <1562509.b0FYTUZ1D8@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9 (Linux/3.4.9-1-ARCH; KDE/4.9.0; x86_64; ; )
+In-Reply-To: <1345535069.4085.7.camel@deskari>
+References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com> <1345097337-24170-2-git-send-email-acourbot@nvidia.com> <1345535069.4085.7.camel@deskari>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sebastian,
+Hi Tomi,
 
-On Monday, August 20, 2012 1:01 PM Sebastian Andrzej Siewior wrote
-
-<snip>
-
+On Tuesday 21 August 2012 15:44:29 Tomi Valkeinen wrote:
+> > +Problem
+> > +-------
+> > +One very common board-dependent code is the out-of-driver code that is
+> > used to +turn a device on or off. For instance, SoC boards very commonly
+> > use a GPIO +(abstracted to a regulator or not) to control the power
+> > supply of a backlight, +disabling it when the backlight is not used in
+> > order to save power. The GPIO +that should be used, however, as well as
+> > the exact power sequence that may +also involve other resources, is
+> > board-dependent and thus unknown of the driver. +
+> > +This was previously addressed by having hooks in the device's platform
+> > data that +are called whenever the state of the device might reflect a
+> > power change. This +approach, however, introduces board-dependant code
+> > into the kernel and is not +compatible with the device tree.
 > 
-> That would be something like
+> I've been having the same problems on OMAP display related code, but the
+> problem has always been fixable by just having the driver to use a
+> common framework to do the job (a framework which may not have existed
+> at the time). The problems have never been board specific in the end,
+> but device specific.
 > 
->    $ ln -s /cfg/usb-function-gadget/G1 \
->          /cfg/usb-function-gadget/udcs/udc1/
-> 
-> Where we "bind" the complete gadget (G1) including the mass storage
-> configuration to the UDC (udc1 in this example).
-> 
+> Can you describe your particular HW problem a bit more? In the backlight
+> case, what exactly requires the delays and the sequence you show in the
+> example to enable/disable the backlight?
 
-As far as I understand it, Joel's intention was only to show how it is
-possible to prohibit removing some items with rmdir; in this case
-if a "lun0" is linked to from somewhere else it is not possible to
-do "rmdir lun0"; this was the purpose of my original question.
+In the example, the sequence (including delays) is clearly stated by the 
+backlight specification, which is part of the panel specification. The backlight 
+uses a PWM, which makes it suitable to use the generic PWM backlight driver, 
+but how to turn the backlight on and off is very backlight specific. The power 
+sequences allow to replace the board-specific backlight callbacks by sequences 
+in the DT.
 
-@Joel:
-However, I am wondering if it would make sense to get rid of the "connect"
-(or "ready", if you will) attribute altogether and instead use symlinks:
-when a user wants to make the gadget ready, they do an ln -s, when they want
-to unbind the gadget they remove the link. What do you think?
+On the other hand, I saw your discussion with Laurent about the panel 
+framework, and I wonder how this would fit into it. Backlights are typically 
+embedded within panels. Power sequences are a good way to deal with the 
+absence of specific drivers for every panels, since they allow to tailor the 
+behavior of generic drivers to fit particular needs. But if every panel comes 
+with its own driver (which would define the backlight device using the most 
+appropriate driver), then it could just as well perform its backlight's 
+sequences via regular callbacks. In this particular case, there would be no 
+need for power sequences.
 
-There is one more thing to it, I believe; it is how to associate udc's
-with gadgets. Perhaps the most convenient way is not needing to do it
-explicitly at all: either some udc is found and the gadget is bound to it,
-or not. However, I am wondering if something in the spirit of "1984" can
-happen: all udcs are equal but some udcs are more equal than others?
-So sometimes the user might be interested in binding their gadget to
-a particular udc, or at least to a particular kind of udc (no matter
-which one if there are more than one of its kind). And the question
-is, whether we want only explicit association with udc, only implicit
-association with udc, or both?
+Power sequences are supposed to go beyond backlight drivers and support all 
+sort of devices (I have heard that it could be useful for modems as well), but 
+I wonder how relevant they are when there is a proper driver for a device. I 
+hate to question my own work but now I cannot help but think that a proper 
+driver could do the same job. So what are we trying to achieve with power 
+sequences? Are we trying to avoid a drivers' explosion by keeping some of the 
+specifics out of them? Which approach would be preferable? Are there cases 
+where a dedicated driver could not replace power sequences?
 
-Andrzej
-
-
+Alex.
 
