@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab2HURvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 13:51:46 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:52168 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755894Ab2HURvm (ORCPT
+	id S932202Ab2HURv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 13:51:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57900 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755894Ab2HURv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 13:51:42 -0400
-Message-ID: <5033CAA9.9000101@xenotime.net>
-Date: Tue, 21 Aug 2012 10:51:37 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 21 Aug 2012 13:51:56 -0400
+Date: Tue, 21 Aug 2012 18:51:22 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 17/31] arm64: System calls handling
+Message-ID: <20120821175122.GI12708@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-18-git-send-email-catalin.marinas@arm.com>
+ <201208151422.16335.arnd@arndb.de>
 MIME-Version: 1.0
-To: "AnilKumar, Chimata" <anilkumar@ti.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: linux-next: Tree for July 17 (mfd/tps65217.c)
-References: <20120717154153.b10774cb005add05e4c4e5f6@canb.auug.org.au> <5005DDA7.6050401@xenotime.net> <501C0A21.2010905@xenotime.net> <331ABD5ECB02734CA317220B2BBEABC13EA0B471@DBDE01.ent.ti.com>
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13EA0B471@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151422.16335.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2012 11:38 PM, AnilKumar, Chimata wrote:
-
-> On Fri, Aug 03, 2012 at 22:58:01, Randy Dunlap wrote:
->> On 07/17/2012 02:48 PM, Randy Dunlap wrote:
->>
->>> On 07/16/2012 10:41 PM, Stephen Rothwell wrote:
->>>
->>>> Hi all,
->>>>
->>>> Changes since 20120716:
->>>>
->>>
->>>
->>> on i386:
->>>
->>> drivers/built-in.o: In function `tps65217_probe':
->>> tps65217.c:(.devinit.text+0x13e37): undefined reference to `of_regulator_match'
->>>
->>>
->>> Full randconfig file is attached.
->>> CONFIG_REGULATOR is not enabled.
->>>
->>
->>
->> This build error is still present in linux-next of 20120803.
->>
+On Wed, Aug 15, 2012 at 03:22:16PM +0100, Arnd Bergmann wrote:
+> On Tuesday 14 August 2012, Catalin Marinas wrote:
 > 
-> This will be fixed with this patch
-> https://patchwork.kernel.org/patch/1220151/
+> > +
+> > +/* This matches struct stat64 in glibc2.1, hence the absolutely
+> > + * insane amounts of padding around dev_t's.
+> > + * Note: The kernel zero's the padded region because glibc might read them
+> > + * in the hope that the kernel has stretched to using larger sizes.
+> > + */
+> > +struct stat64 {
+> > +	compat_u64	st_dev;
+> > +	unsigned char   __pad0[4];
 > 
-> Today, I will submit v2 for this
+> The comment above struct stat64 is completely irrelevant here. I would instead
+> explain why you need your own stat64 in the first place.
 
+OK, I added a comment. It's only needed for compat.
 
-This build still fails in linux-next 20120821.
+> > +int kernel_execve(const char *filename,
+> > +		  const char *const argv[],
+> > +		  const char *const envp[])
+> 
+> Al Viro was recently talking about a generic implementation of execve.
+> I can't find that now, but I think you should use that.
+
+I've seen these but I'm waiting for the generic sys_execve and
+kernel_execve to get into mainline before switch arch/arm64 to them.
+
+> > +asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
+> > +			 unsigned long prot, unsigned long flags,
+> > +			 unsigned long fd, off_t off)
+> > +{
+> > +	if (offset_in_page(off) != 0)
+> > +		return -EINVAL;
+> > +
+> > +	return sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
+> > +}
+> 
+> I think
+> 
+> #define sys_mmap sys_mmap_pgoff 
+
+There are slightly different semantics with the last argument of
+sys_mmap() which takes a byte offset. The sys_mmap_pgoff() function
+takes the offset shifted by PAGE_SHIFT (which is the same as sys_mmap2).
+
+Looking at the other architectures, it makes sense to use a generic
+sys_mmap() implementation similar to the one above (or the ia-64, seems
+to be the most complete).
 
 -- 
-~Randy
+Catalin
