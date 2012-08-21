@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab2HULFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 07:05:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55350 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754501Ab2HULFF (ORCPT
+	id S1756883Ab2HULFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 07:05:51 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:58154 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756838Ab2HULFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 07:05:05 -0400
+	Tue, 21 Aug 2012 07:05:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <5032DD22.4000909@intel.com>
-References: <5028F12C.7080405@intel.com>
-	<1345028738.31459.82.camel@twins>
-	<CAKfTPtDst+DEW=E=+cMcGL39oKODMfx3gh+x04siSC_5jt-6dg@mail.gmail.com>
-	<5032DD22.4000909@intel.com>
-Date: Tue, 21 Aug 2012 13:05:04 +0200
-Message-ID: <CAKfTPtBJJcLmT_FVVRM_gB-KNHYYKYTmRdow7JzTnnrUfH+HXA@mail.gmail.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in scheduler
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, svaidy@linux.vnet.ibm.com,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+In-Reply-To: <20120821105702.GX10347@arwen.pp.htv.fi>
+References: <1345540555-24359-1-git-send-email-balbi@ti.com>
+ <1345540555-24359-11-git-send-email-balbi@ti.com> <CAMQu2gzm4z8DbCiz4hOS2nKa2HzNofmp=SPORYEu2Z_H3+JN9Q@mail.gmail.com>
+ <20120821105702.GX10347@arwen.pp.htv.fi>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 21 Aug 2012 16:35:26 +0530
+Message-ID: <CAMQu2gzJ2YksrJKPLNZ9pBoBoSih2Up=isca=X9Wsd5MsnNrTQ@mail.gmail.com>
+Subject: Re: [RFC/PATCH 10/13] serial: omap: stick to put_autosuspend
+To: balbi@ti.com
+Cc: alan@linux.intel.com, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 August 2012 02:58, Alex Shi <alex.shi@intel.com> wrote:
-> On 08/20/2012 11:36 PM, Vincent Guittot wrote:
+On Tue, Aug 21, 2012 at 4:27 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Tue, Aug 21, 2012 at 04:12:11PM +0530, Shilimkar, Santosh wrote:
+>> On Tue, Aug 21, 2012 at 2:45 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> > Everytime we're done using our TTY, we want
+>> > the pm timer to be reinitilized. By sticking
+>> > to pm_runtime_pm_autosuspend() we make sure
+>> > that this will always be the case.
+>> >
+>> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+>> > ---
+>> >  drivers/tty/serial/omap-serial.c | 33 ++++++++++++++++++++++-----------
+>> >  1 file changed, 22 insertions(+), 11 deletions(-)
+>> >
+>> > diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+>> > index 6ea24c5..458d77c 100644
+>> > --- a/drivers/tty/serial/omap-serial.c
+>> > +++ b/drivers/tty/serial/omap-serial.c
+>> > @@ -164,7 +164,8 @@ static void serial_omap_enable_ms(struct uart_port *port)
+>> >         pm_runtime_get_sync(up->dev);
+>> >         up->ier |= UART_IER_MSI;
+>> >         serial_out(up, UART_IER, up->ier);
+>> > -       pm_runtime_put(up->dev);
+>> > +       pm_runtime_mark_last_busy(up->dev);
+>> > +       pm_runtime_put_autosuspend(up->dev);
+>> >  }
+>> >
+>> Can you please expand the change-log a bit ?
+>> Didn't follow the time re-init part completely.
 >
->>> > What you want it to keep track of a per-cpu utilization level (inverse
->>> > of idle-time) and using PJTs per-task runnable avg see if placing the
->>> > new task on will exceed the utilization limit.
->>> >
->>> > I think some of the Linaro people actually played around with this,
->>> > Vincent?
->> Sorry for the late reply but I had almost no network access during last weeks.
->>
->> So Linaro also works on a power aware scheduler as Peter mentioned.
->>
->> Based on previous tests, we have concluded that main drawback of the
->> (now removed) old power scheduler was that we had no way to make
->> difference between short and long running tasks whereas it's a key
->> input (at least for phone) for deciding to pack tasks and for
->> selecting the core on an asymmetric system.
+> It's really just a micro-optimization. The thing is:
 >
+> if I call pm_runtime_put(), I will not reinitialize the pm timer to
+> whatever timeout value I used. This means that pm_runtime_put() could
+> actually execute right away (if timer was about to expire when I called
+> pm_runtime_put()). While this wouldn't cause any issues, it's better to
+> reinitialize the timer and make sure if there's another
+> read/write/set_termios/whatever coming right after this, UART is still
+> powered up.
 >
-> It is hard to estimate future in general view point. but from hack
-> point, maybe you can add something to hint this from task_struct. :)
+> I mean, it's really just trying to avoid context save & restore when
+> UART is still under heavy usage.
 >
+> Does it make sense ?
 
-per-task load tracking patchsets give you a good view of the last dozen of ms
+It does. Would be good to add the above description in the change-log.
+Thanks for clarification.
 
->> One additional key information is the power distribution in the system
->> which can have a finer granularity than current sched_domain
->> description. Peter's proposal was to use a SHARE_POWERLINE flag
->> similarly to flags that already describe if a sched_domain share
->> resources or cpu capacity.
->
->
-> Seems I missed this. what's difference with current SD_SHARE_CPUPOWER
-> and SD_SHARE_PKG_RESOURCES.
-
-SD_SHARE_CPUPOWER is set in a sched domain at SMT level (sharing some
-part of the physical core)
-SD_SHARE_PKG_RESOURCES is set at MC level (sharing some resources like
-cache and memory access)
-
->
->>
->> With these 2 new information, we can have a 1st power saving scheduler
->> which spread or packed tasks across core and package
->
->
-> Fine, I like to test them on X86, plus SMT and NUMA :)
->
->>
->> Vincent
->
->
+Regars
+Santosh
