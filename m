@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab2HUPT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:19:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54181 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755243Ab2HUPTV (ORCPT
+	id S1755519Ab2HUPUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:20:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59620 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab2HUPUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:19:21 -0400
-Date: Tue, 21 Aug 2012 17:19:10 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-Message-ID: <20120821151910.GA5359@gmail.com>
-References: <1345028738.31459.82.camel@twins>
- <502BA7DC.7060907@linux.intel.com>
- <1345041548.31459.90.camel@twins>
- <502BB5A3.5000403@linux.intel.com>
- <1345043096.31459.106.camel@twins>
- <502BE38D.9030405@linux.intel.com>
- <20120820080606.GA6931@gmail.com>
- <20120820181651.GA737@srcf.ucam.org>
- <20120821094203.GB12385@gmail.com>
- <20120821113951.GA22436@srcf.ucam.org>
+	Tue, 21 Aug 2012 11:20:15 -0400
+Date: Tue, 21 Aug 2012 08:19:51 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-tzb7srmsl7a6o3icw592iv2o@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf header:
+  Set the tracepoint names on PERF_RECORD_HEADER_TRACING_DATA
+Git-Commit-ID: 8b6ee4c5d48d93527dcf6e36c51cbb7703d7fffb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120821113951.GA22436@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:19:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  8b6ee4c5d48d93527dcf6e36c51cbb7703d7fffb
+Gitweb:     http://git.kernel.org/tip/8b6ee4c5d48d93527dcf6e36c51cbb7703d7fffb
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 7 Aug 2012 23:36:16 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 7 Aug 2012 23:36:16 -0300
 
-* Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+perf header: Set the tracepoint names on PERF_RECORD_HEADER_TRACING_DATA
 
-> On Tue, Aug 21, 2012 at 11:42:04AM +0200, Ingo Molnar wrote:
-> > * Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > > [...] Putting this kind of policy in the kernel is an awful 
-> > > idea. [...]
-> > 
-> > A modern kernel better know what state the system is in: on 
-> > battery or on AC power.
-> 
-> That's a fundamentally uninteresting thing for the kernel to 
-> know about. [...]
+We only have access to pevent after processing that event, so set the
+tracepoint names there.
 
-I disagree.
+Right now this isn't a problem as we're deferring resolving the
+tracepoint names to when we process samples, but in the next patches we
+will be doing it in advance, to avoid relookups, so do it earlier, as
+soon as we process the tracing data event.
 
-> [...] AC/battery is just not an important power management 
-> policy input when compared to various other things.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-tzb7srmsl7a6o3icw592iv2o@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/header.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Such as?
-
-The thing is, when I use Linux on a laptop then AC/battery is 
-*the* main policy input.
-
-> > > [...] It should never be altering policy itself, [...]
-> > 
-> > The kernel/scheduler simply offers sensible defaults where 
-> > it can. User-space can augment/modify/override that in any 
-> > which way it wishes to.
-> >
-> > This stuff has not been properly sorted out in the last 10+ 
-> > years since we have battery driven devices, so we might as 
-> > well start with the kernel offering sane default behavior 
-> > where it can ...
-> 
-> Userspace has been doing a perfectly reasonable job of 
-> determining policy here.
-
-Has it properly switched the scheduler's balancing between 
-power-effient and performance-maximizing strategies when for 
-example a laptop's AC got unplugged/replugged?
-
-> > > [...] because it'll get it wrong and people will file bugs 
-> > > complaining that it got it wrong and the biggest case 
-> > > where you *need* to be able to handle switching between 
-> > > performance and power optimisations (your rack management 
-> > > unit just told you that you're going to have to drop power 
-> > > consumption by 20W) is one where the kernel doesn't have 
-> > > all the information it needs to do this. So why bother at 
-> > > all?
-> > 
-> > The point is to have a working default mechanism.
-> 
-> Your suggestions aren't a working default mechanism.
-
-In what way?
-
-Thanks,
-
-	Ingo
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 74ea3c2..e2b4864 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2452,6 +2452,8 @@ int perf_event__process_tracing_data(union perf_event *event,
+ 	if (size_read + padding != size)
+ 		die("tracing data size mismatch");
+ 
++	perf_evlist__set_tracepoint_names(session->evlist, session->pevent);
++
+ 	return size_read + padding;
+ }
+ 
