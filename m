@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab2HUM0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:26:20 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:33377 "EHLO relay.sw.ru"
+	id S1757499Ab2HUM3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:29:15 -0400
+Received: from fieldses.org ([174.143.236.118]:46254 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757414Ab2HUM0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:26:17 -0400
-Message-ID: <50337E56.20808@parallels.com>
-Date: Tue, 21 Aug 2012 16:25:58 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	id S1755721Ab2HUM3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 08:29:12 -0400
+Date: Tue, 21 Aug 2012 08:29:08 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         James Bottomley <jbottomley@parallels.com>,
         Matthew Helsley <matt.helsley@gmail.com>
 Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-References: <20120815092116.700948346@openvz.org> <20120815092409.591460800@openvz.org> <87fw7habo4.fsf@skywalker.in.ibm.com> <20120820163338.GN23596@moon> <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org> <50335261.5090504@parallels.com> <87wr0sle4v.fsf@skywalker.in.ibm.com> <503367CB.9080609@parallels.com> <20120821120908.GB9483@fieldses.org>
-In-Reply-To: <20120821120908.GB9483@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <20120821122908.GE9483@fieldses.org>
+References: <20120820183225.GB4911@fieldses.org>
+ <20120820190606.GE27443@moon>
+ <20120820193204.GD5779@fieldses.org>
+ <50335261.5090504@parallels.com>
+ <87wr0sle4v.fsf@skywalker.in.ibm.com>
+ <503367CB.9080609@parallels.com>
+ <20120821105424.GA7670@moon>
+ <50336C51.60501@parallels.com>
+ <20120821121155.GC9483@fieldses.org>
+ <50337D87.90607@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50337D87.90607@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 04:09 PM, J. Bruce Fields wrote:
-> On Tue, Aug 21, 2012 at 02:49:47PM +0400, Pavel Emelyanov wrote:
->> On 08/21/2012 02:42 PM, Aneesh Kumar K.V wrote:
->>> Pavel Emelyanov <xemul@parallels.com> writes:
->>>
->>>> On 08/20/2012 11:32 PM, J. Bruce Fields wrote:
->>>>> On Mon, Aug 20, 2012 at 11:06:06PM +0400, Cyrill Gorcunov wrote:
->>>>>> On Mon, Aug 20, 2012 at 02:32:25PM -0400, J. Bruce Fields wrote:
->>>>>>> On Mon, Aug 20, 2012 at 08:33:38PM +0400, Cyrill Gorcunov wrote:
->>>>>>>> On Mon, Aug 20, 2012 at 07:49:23PM +0530, Aneesh Kumar K.V wrote:
->>>>>>>>> Cyrill Gorcunov <gorcunov@openvz.org> writes:
->>>>>>>>>
->>>>>>>>>> To provide fsnotify object inodes being watched without
->>>>>>>>>> binding to alphabetical path we need to encode them with
->>>>>>>>>> exportfs help. This patch adds a helper which operates
->>>>>>>>>> with plain inodes directly.
->>>>>>>>>
->>>>>>>>> doesn't name_to_handle_at()  work for you ? It also allows to get a file
->>>>>>>>> handle using file descriptor.
->>>>>>>>
->>>>>>>> Hi, sorry for dealy. Well, the last idea is to get rid of this helper,
->>>>>>>> I've sent out an updated version where ino+dev is only printed.
->>>>>>>
->>>>>>> I don't understand how ino and dev are useful to you, though, if you're
->>>>>>> still hoping to be able to look up inodes using this information later
->>>>>>> on.
->>>>>>
->>>>>> Hi Bruce, I believe having ino+dev is better than nothing. Otherwise we
->>>>>> simply have no clue which targets are bound to inotify mark. Sometime
->>>>>> (!) we can try to generate fhandle in userspace from this ino+dev bundle
->>>>>> and then open the target file.
->>>>>
->>>>> That's insufficient to generate a filehandle in general.
->>>>
->>>> Yes, sure, but for live migration having inode and device is enough and that's why.
->>>> We can use two ways of having a filesystem on the target machine in the same
->>>> state (from paths points of view) as it was on destination one:
->>>>
->>>> 1. copy file tree in a rsync manner
->>>> 2. copy a virtual disk image file
->>>>
->>>> In the 1st case we can map inode number to path easily, since we iterate over a filesystem
+On Tue, Aug 21, 2012 at 04:22:31PM +0400, Pavel Emelyanov wrote:
+> On 08/21/2012 04:11 PM, J. Bruce Fields wrote:
+> > On Tue, Aug 21, 2012 at 03:09:05PM +0400, Pavel Emelyanov wrote:
+> >> On 08/21/2012 02:54 PM, Cyrill Gorcunov wrote:
+> >>> On Tue, Aug 21, 2012 at 02:49:47PM +0400, Pavel Emelyanov wrote:
+> >>>>>>
+> >>>>>> However, if you have some better ideas on what information about inode should be exported
+> >>>>>> to the userspace please share.
+> >>>>>>
+> >>>>>
+> >>>>> Why not use name_to_handle(fd,...) and open_by_handle(handle,..) ?
+> >>>>
+> >>>> Because we don't have an fd at hands by the time we need to know the handle.
+> >>>
+> >>> Yeah, this might be not clear from patchset itself but inotify marks carry
+> >>> inodes inside kernel thus it's inodes what we can use when we fetch information
+> >>> about targets and put it into fdinfo output.
+> >>
+> >> Al, Bruce, Aneesh,
+> >>
+> >> What if we calculate the handle at the time we do have struct path at hands (i.e.
+> >> when we create the inotify) and store it on the inotify structure purely to be 
+> >> shown later in proc. Would that be acceptable?
+> > 
+> > Was it the lack of a dentry that was really the problem?  I thought it
+> > was just the fact that not all filesystems support filehandles.
 > 
-> OK.  Then you don't care about unlinked files?
-
-Yes. If it's unlinked file, we can emulate this on restore with opening any path,
-then unlinking it. The inode number will change, yes, but in many cases this is
-acceptable trade-off.
-
-> If the filesystem's frozen by the time you get here, I suppose you could
-> also just use paths?
-
-Sure, but where can we get the path from? This is what we're trying to resolve.
-
->>>> anyway. I agree, that rsync is not perfect for migration but still.
->>>>
->>>> In the 2nd case we can generate filehandle out of an inode number only since we _do_ know
->>>> that inode will not get reused.
->>>
->>> If you are going to to use open_by_handle, then that handle is not
->>> sufficient right ? Or do you have open_by_inode ? as part of c/r ?
->>
->> Why? For e.g. ext4 you can construct a handle in userspace and open by it.
+> Initial problem -- we don't know what is being watched by an inotify fd.
 > 
-> If it's a real filehandle you want, in general you don't want to
-> construct it in userspace--depending on the filesystem it may require
-> filesystem-specific knowledge.
+> Having a dentry somewhere was the 1st attempt to solve this -- keep a path
+> in inotify and show it when required. It doesn't work since holding a ref on
+> path changes the behavior of watched inode (we cannot rename/unlink/remount
+> it the same way as we could before patching the kernel).
 
-I see.
+OK.  So if you don't mind the fact that there are filesystems with
+inotify support but not filehandle support, then I think generating a
+filehandle early as you describe would work.  I guess it's a little more
+memory per watched inode.
 
-> --b.
-
-Thanks,
-Pavel
+--b.
