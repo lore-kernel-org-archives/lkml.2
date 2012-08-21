@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab2HURhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 13:37:46 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38091 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758045Ab2HURhn (ORCPT
+	id S932175Ab2HURoL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 13:44:11 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:48973 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932139Ab2HURoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 13:37:43 -0400
-Date: Tue, 21 Aug 2012 13:27:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>, JBeulich@suse.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Q:pt_base in COMPAT mode offset by two pages. Was:Re: [Xen-devel]
- [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive areas.
-Message-ID: <20120821172732.GA23715@phenom.dumpdata.com>
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
- <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
- <20120820141305.GA2713@phenom.dumpdata.com>
+	Tue, 21 Aug 2012 13:44:07 -0400
+Message-ID: <5033C8DF.2080403@xenotime.net>
+Date: Tue, 21 Aug 2012 10:43:59 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120820141305.GA2713@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Richard Weinberger <richard@nod.at>, David Howells <dhowells@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: linux-next: Tree for July 26 (uml)
+References: <502A69FA.8040805@nod.at> <502A6759.3090802@nod.at> <15981.1344955883@warthog.procyon.org.uk> <502A613F.1090600@nod.at> <87a9xys53h.fsf@rustcorp.com.au> <20120726150419.0de645e8750e3a15fa0f1aaa@canb.auug.org.au> <50115FCF.4060708@xenotime.net> <502932A0.3060001@xenotime.net> <15532.1344954413@warthog.procyon.org.uk> <18600.1344956051@warthog.procyon.org.uk> <18933.1344956788@warthog.procyon.org.uk> <30102.1344957328@warthog.procyon.org.uk> <502A6BF8.6040804@nod.at> <502A8DD6.90807@xenotime.net> <878vda5l8s.fsf@rustcorp.com.au>
+In-Reply-To: <878vda5l8s.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 10:13:05AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Aug 17, 2012 at 06:35:12PM +0100, Stefano Stabellini wrote:
-> > On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> > > instead of a big memblock_reserve. This way we can be more
-> > > selective in freeing regions (and it also makes it easier
-> > > to understand where is what).
-> > > 
-> > > [v1: Move the auto_translate_physmap to proper line]
-> > > [v2: Per Stefano suggestion add more comments]
-> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > 
-> > much better now!
+On 08/19/2012 07:51 PM, Rusty Russell wrote:
+
+> On Tue, 14 Aug 2012 10:41:42 -0700, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> On 08/14/2012 08:17 AM, Richard Weinberger wrote:
+>>
+>>> Am 14.08.2012 17:15, schrieb David Howells:
+>>>> How about this then?
+>>>>
+>>>> David
+>>>> ---
+>>>> diff --git a/arch/x86/um/Kconfig b/arch/x86/um/Kconfig
+>>>> index 9926e11..a4b0c10 100644
+>>>> --- a/arch/x86/um/Kconfig
+>>>> +++ b/arch/x86/um/Kconfig
+>>>> @@ -21,9 +21,11 @@ config 64BIT
+>>>>  config X86_32
+>>>>  	def_bool !64BIT
+>>>>  	select HAVE_AOUT
+>>>> +	select MODULES_USE_ELF_REL
+>>>>  
+>>>>  config X86_64
+>>>>  	def_bool 64BIT
+>>>> +	select MODULES_USE_ELF_RELA
+>>>>  
+>>>>  config RWSEM_XCHGADD_ALGORITHM
+>>>>  	def_bool X86_XADD && 64BIT
+>>>
+>>> Looks sane.
+>>>
+>>> Acked-by: Richard Weinberger <richard@nod.at>
+>>
+>>
+>> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> Thought interestingly enough it breaks 32-bit dom0s (and only dom0s).
-> Will have a revised patch posted shortly.
+> Thanks, folded into David's original patch.
 
-Jan, I thought something odd. Part of this code replaces this:
 
-	memblock_reserve(__pa(xen_start_info->mfn_list),
-		xen_start_info->pt_base - xen_start_info->mfn_list);
+When will this be fixed in linux-next?
 
-with a more region-by-region area. What I found out that if I boot this
-as 32-bit guest with a 64-bit hypervisor the xen_start_info->pt_base is
-actually wrong.
+linux-next of 20120821 still fails.
 
-Specifically this is what bootup says:
-
-(good working case - 32bit hypervisor with 32-bit dom0):
-(XEN)  Loaded kernel: c1000000->c1a23000
-(XEN)  Init. ramdisk: c1a23000->cf730e00
-(XEN)  Phys-Mach map: cf731000->cf831000
-(XEN)  Start info:    cf831000->cf83147c
-(XEN)  Page tables:   cf832000->cf8b5000
-(XEN)  Boot stack:    cf8b5000->cf8b6000
-(XEN)  TOTAL:         c0000000->cfc00000
-
-[    0.000000] PT: cf832000 (f832000)
-[    0.000000] Reserving PT: f832000->f8b5000
-
-And with a 64-bit hypervisor:
-
-XEN) VIRTUAL MEMORY ARRANGEMENT:
-(XEN)  Loaded kernel: 00000000c1000000->00000000c1a23000
-(XEN)  Init. ramdisk: 00000000c1a23000->00000000cf730e00
-(XEN)  Phys-Mach map: 00000000cf731000->00000000cf831000
-(XEN)  Start info:    00000000cf831000->00000000cf8314b4
-(XEN)  Page tables:   00000000cf832000->00000000cf8b6000
-(XEN)  Boot stack:    00000000cf8b6000->00000000cf8b7000
-(XEN)  TOTAL:         00000000c0000000->00000000cfc00000
-(XEN)  ENTRY ADDRESS: 00000000c16bb22c
-
-[    0.000000] PT: cf834000 (f834000)
-[    0.000000] Reserving PT: f834000->f8b8000
-
-So the pt_base is offset by two pages. And looking at c/s 13257
-its not clear to me why this two page offset was added?
-
-The toolstack works fine - so launching 32-bit guests either
-under a 32-bit hypervisor or 64-bit works fine:
-] domainbuilder: detail: xc_dom_alloc_segment:   page tables  : 0xcf805000 -> 0xcf885000  (pfn 0xf805 + 0x80 pages)
-[    0.000000] PT: cf805000 (f805000)
-
+thanks,
+-- 
+~Randy
