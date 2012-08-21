@@ -1,128 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568Ab2HUMs6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:48:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757539Ab2HUMsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:48:24 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@redhat.com>
-Subject: [PATCH v8 4/5] mm: introduce putback_movable_pages()
-Date: Tue, 21 Aug 2012 09:47:47 -0300
-Message-Id: <16a7bbe6c1d4df624679646ef13566798a82798f.1345519422.git.aquini@redhat.com>
-In-Reply-To: <cover.1345519422.git.aquini@redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
-In-Reply-To: <cover.1345519422.git.aquini@redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
+	id S1757542Ab2HUMvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:51:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37900 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab2HUMvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 08:51:20 -0400
+Message-ID: <5033843E.8000902@gmail.com>
+Date: Tue, 21 Aug 2012 20:51:10 +0800
+From: qiuxishi <qiuxishi@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: akpm@linux-foundation.org, liuj97@gmail.com, paul.gortmaker@windriver.com
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, bessel.wang@huawei.com,
+        wujianguo@huawei.com, qiuxishi@huawei.com, jiang.liu@huawei.com,
+        guohanjun@huawei.com, chenkeping@huawei.com, yinghai@kernel.org,
+        wency@cn.fujitsu.com
+Subject: [PATCH] memory-hotplug: add build zonelists when offline pages
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PATCH "mm: introduce compaction and migration for virtio ballooned pages"
-hacks around putback_lru_pages() in order to allow ballooned pages to be
-re-inserted on balloon page list as if a ballooned page was like a LRU page.
+From: Xishi Qiu <qiuxishi@huawei.com>
 
-As ballooned pages are not legitimate LRU pages, this patch introduces
-putback_movable_pages() to properly cope with cases where the isolated
-pageset contains ballooned pages and LRU pages, thus fixing the mentioned
-inelegant hack around putback_lru_pages().
+online_pages() does build_all_zonelists() and zone_pcp_update(),
+I think offline_pages() should do it too. The node has no memory
+to allocate, so remove this node's zones form other nodes' zonelists.
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
 ---
- include/linux/migrate.h |  2 ++
- mm/compaction.c         |  4 ++--
- mm/migrate.c            | 20 ++++++++++++++++++++
- mm/page_alloc.c         |  2 +-
- 4 files changed, 25 insertions(+), 3 deletions(-)
+ mm/memory_hotplug.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index ce7e667..ff103a1 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -10,6 +10,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
- #ifdef CONFIG_MIGRATION
- 
- extern void putback_lru_pages(struct list_head *l);
-+extern void putback_movable_pages(struct list_head *l);
- extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
- extern int migrate_pages(struct list_head *l, new_page_t x,
-@@ -33,6 +34,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- #else
- 
- static inline void putback_lru_pages(struct list_head *l) {}
-+static inline void putback_movable_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
-diff --git a/mm/compaction.c b/mm/compaction.c
-index ce43dc2..782ed32 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -759,9 +759,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
- 						nr_remaining);
- 
--		/* Release LRU pages not migrated */
-+		/* Release isolated pages not migrated */
- 		if (err) {
--			putback_lru_pages(&cc->migratepages);
-+			putback_movable_pages(&cc->migratepages);
- 			cc->nr_migratepages = 0;
- 			if (err == -ENOMEM) {
- 				ret = COMPACT_PARTIAL;
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 6392da258..0bf2caf 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -80,6 +80,26 @@ void putback_lru_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
-+			putback_lru_page(page);
-+	}
-+}
-+
-+/*
-+ * Put previously isolated pages back onto the appropriated lists
-+ * from where they were once taken off for compaction/migration.
-+ *
-+ * This function shall be used instead of putback_lru_pages(),
-+ * whenever the isolated pageset has been built by isolate_migratepages_range()
-+ */
-+void putback_movable_pages(struct list_head *l)
-+{
-+	struct page *page;
-+	struct page *page2;
-+
-+	list_for_each_entry_safe(page, page2, l, lru) {
-+		list_del(&page->lru);
-+		dec_zone_page_state(page, NR_ISOLATED_ANON +
-+				page_is_file_cache(page));
- 		if (unlikely(movable_balloon_page(page)))
- 			putback_balloon_page(page);
- 		else
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 009ac28..78b7663 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5669,7 +5669,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 				    0, false, MIGRATE_SYNC);
- 	}
- 
--	putback_lru_pages(&cc.migratepages);
-+	putback_movable_pages(&cc.migratepages);
- 	return ret > 0 ? 0 : ret;
- }
- 
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index bc7e7a2..5172bd4 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -979,7 +979,11 @@ repeat:
+ 	if (!node_present_pages(node)) {
+ 		node_clear_state(node, N_HIGH_MEMORY);
+ 		kswapd_stop(node);
+-	}
++		mutex_lock(&zonelists_mutex);
++		build_all_zonelists(NODE_DATA(node), NULL);
++		mutex_unlock(&zonelists_mutex);
++	} else
++		zone_pcp_update(zone);
+
+ 	vm_total_pages = nr_free_pagecache_pages();
+ 	writeback_set_ratelimit();
 -- 
-1.7.11.4
-
+1.7.6.1
