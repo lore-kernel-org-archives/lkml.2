@@ -1,133 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2HUOl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:41:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14632 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755238Ab2HUOlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:41:25 -0400
-Date: Tue, 21 Aug 2012 17:42:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 4/5] mm: introduce putback_movable_pages()
-Message-ID: <20120821144213.GB7784@redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <16a7bbe6c1d4df624679646ef13566798a82798f.1345519422.git.aquini@redhat.com>
+	id S1755590Ab2HUOmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:42:11 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51529 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab2HUOmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 10:42:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <16a7bbe6c1d4df624679646ef13566798a82798f.1345519422.git.aquini@redhat.com>
+In-Reply-To: <20120821143115.GJ16230@one.firstfloor.org>
+References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
+	<20120821143115.GJ16230@one.firstfloor.org>
+Date: Tue, 21 Aug 2012 17:42:08 +0300
+X-Google-Sender-Auth: UJlDTst60WE7gYBelCeW431USes
+Message-ID: <CAOJsxLE8Cn=GRSdeCoeTPKCOB5-gaodnC3W8g93r8mHigC23LA@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
+From: Pekka Enberg <penberg@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, a.p.zijlstra@chello.nl,
+        eranian@google.com, mingo@elte.hu, avi@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 09:47:47AM -0300, Rafael Aquini wrote:
-> The PATCH "mm: introduce compaction and migration for virtio ballooned pages"
-> hacks around putback_lru_pages() in order to allow ballooned pages to be
-> re-inserted on balloon page list as if a ballooned page was like a LRU page.
-> 
-> As ballooned pages are not legitimate LRU pages, this patch introduces
-> putback_movable_pages() to properly cope with cases where the isolated
-> pageset contains ballooned pages and LRU pages, thus fixing the mentioned
-> inelegant hack around putback_lru_pages().
-> 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> ---
->  include/linux/migrate.h |  2 ++
->  mm/compaction.c         |  4 ++--
->  mm/migrate.c            | 20 ++++++++++++++++++++
->  mm/page_alloc.c         |  2 +-
->  4 files changed, 25 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-> index ce7e667..ff103a1 100644
-> --- a/include/linux/migrate.h
-> +++ b/include/linux/migrate.h
-> @@ -10,6 +10,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
->  #ifdef CONFIG_MIGRATION
->  
->  extern void putback_lru_pages(struct list_head *l);
-> +extern void putback_movable_pages(struct list_head *l);
->  extern int migrate_page(struct address_space *,
->  			struct page *, struct page *, enum migrate_mode);
->  extern int migrate_pages(struct list_head *l, new_page_t x,
-> @@ -33,6 +34,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
->  #else
->  
->  static inline void putback_lru_pages(struct list_head *l) {}
-> +static inline void putback_movable_pages(struct list_head *l) {}
->  static inline int migrate_pages(struct list_head *l, new_page_t x,
->  		unsigned long private, bool offlining,
->  		enum migrate_mode mode) { return -ENOSYS; }
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index ce43dc2..782ed32 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -759,9 +759,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->  		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
->  						nr_remaining);
->  
-> -		/* Release LRU pages not migrated */
-> +		/* Release isolated pages not migrated */
->  		if (err) {
-> -			putback_lru_pages(&cc->migratepages);
-> +			putback_movable_pages(&cc->migratepages);
->  			cc->nr_migratepages = 0;
->  			if (err == -ENOMEM) {
->  				ret = COMPACT_PARTIAL;
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 6392da258..0bf2caf 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -80,6 +80,26 @@ void putback_lru_pages(struct list_head *l)
->  		list_del(&page->lru);
->  		dec_zone_page_state(page, NR_ISOLATED_ANON +
->  				page_is_file_cache(page));
-> +			putback_lru_page(page);
-> +	}
-> +}
-> +
-> +/*
-> + * Put previously isolated pages back onto the appropriated lists
+On Tue, Aug 21, 2012 at 05:08:37PM +0800, Yan, Zheng wrote:
+>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>
+>> Initializing uncore PMU on virtualized CPU may hang the kernel.
+>> This is because kvm does not emulate the entire hardware. Thers
+>> are lots of uncore related MSRs, making kvm enumerate them all
+>> is a non-trival task. So just disable uncore on virtualized CPU.
 
-Do you mean appropriate lists?
+On Tue, Aug 21, 2012 at 5:31 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> I'm not sure cpu_has_hypervisor is reliable enough for this.
+> Better find out why it hangs and fix that.
+>
+> Early rdmsrls should be rdmsrl_safe()
+> Early writes in the driver should check if anything was written,
+> and if not then disable itself.
 
-> + * from where they were once taken off for compaction/migration.
-> + *
-> + * This function shall be used instead of putback_lru_pages(),
-> + * whenever the isolated pageset has been built by isolate_migratepages_range()
-> + */
-> +void putback_movable_pages(struct list_head *l)
-> +{
-> +	struct page *page;
-> +	struct page *page2;
-> +
-> +	list_for_each_entry_safe(page, page2, l, lru) {
-> +		list_del(&page->lru);
-> +		dec_zone_page_state(page, NR_ISOLATED_ANON +
-> +				page_is_file_cache(page));
->  		if (unlikely(movable_balloon_page(page)))
->  			putback_balloon_page(page);
->  		else
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 009ac28..78b7663 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5669,7 +5669,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
->  				    0, false, MIGRATE_SYNC);
->  	}
->  
-> -	putback_lru_pages(&cc.migratepages);
-> +	putback_movable_pages(&cc.migratepages);
->  	return ret > 0 ? 0 : ret;
->  }
->  
-> -- 
-> 1.7.11.4
+It's unfortunate that the changelog does not include any reference to
+the actual thread this was discussed in:
+
+http://www.mail-archive.com/kvm@vger.kernel.org/msg77524.html
