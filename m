@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2HUMj4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:39:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40085 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754350Ab2HUMjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:39:54 -0400
-Date: Tue, 21 Aug 2012 13:39:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCH 1/1] ASoC: codecs: Enable AB8500 CODEC for Device Tree
-Message-ID: <20120821123951.GC7995@opensource.wolfsonmicro.com>
-References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
- <1344527268-5964-9-git-send-email-lee.jones@linaro.org>
- <s5h628lu0q9.wl%tiwai@suse.de>
- <20120820113427.GN8450@gmail.com>
- <20120820143653.GE26991@opensource.wolfsonmicro.com>
- <20120821115123.GE26899@gmail.com>
+	id S1757515Ab2HUMkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:40:35 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:2347 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754350Ab2HUMkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 08:40:33 -0400
+Message-ID: <503381B0.7040705@parallels.com>
+Date: Tue, 21 Aug 2012 16:40:16 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
-Content-Disposition: inline
-In-Reply-To: <20120821115123.GE26899@gmail.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org> <50335261.5090504@parallels.com> <87wr0sle4v.fsf@skywalker.in.ibm.com> <503367CB.9080609@parallels.com> <20120821105424.GA7670@moon> <50336C51.60501@parallels.com> <20120821121155.GC9483@fieldses.org> <50337D87.90607@parallels.com> <20120821122908.GE9483@fieldses.org>
+In-Reply-To: <20120821122908.GE9483@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>> Al, Bruce, Aneesh,
+>>>>
+>>>> What if we calculate the handle at the time we do have struct path at hands (i.e.
+>>>> when we create the inotify) and store it on the inotify structure purely to be 
+>>>> shown later in proc. Would that be acceptable?
+>>>
+>>> Was it the lack of a dentry that was really the problem?  I thought it
+>>> was just the fact that not all filesystems support filehandles.
+>>
+>> Initial problem -- we don't know what is being watched by an inotify fd.
+>>
+>> Having a dentry somewhere was the 1st attempt to solve this -- keep a path
+>> in inotify and show it when required. It doesn't work since holding a ref on
+>> path changes the behavior of watched inode (we cannot rename/unlink/remount
+>> it the same way as we could before patching the kernel).
+> 
+> OK.  So if you don't mind the fact that there are filesystems with
+> inotify support but not filehandle support, then I think generating a
+> filehandle early as you describe would work.  I guess it's a little more
+> memory per watched inode.
 
---FsscpQKzF/jJk6ya
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Great! Thanks, Bruce, we'll rework the patch accordingly :)
 
-On Tue, Aug 21, 2012 at 12:51:24PM +0100, Lee Jones wrote:
-> On Mon, Aug 20, 2012 at 03:36:53PM +0100, Mark Brown wrote:
+> --b.
+> .
+> 
 
-> > > From: Lee Jones <lee.jones@linaro.org>
-> > > Date: Fri, 27 Jul 2012 08:50:05 +0100
-
-> > Please resend this series with all the acks you've got rather than
-> > mixing incremental updates in like this.
-
-> I'm waiting until I have a few more Acks before I resend the entire
-> patch-set again. Actually it's you and one other that I'm waiting for
-> to review (and Ack as necessary) the ones requested by Linus, then=20
-> resend with the corrections.
-
-Well, I'm the person who's going to apply the patches so I'm unlikely
-to ack them...  I was waiting for arch/arm review before I looked at
-them due to the number of resends.
-
-> > Please also send patches in
-> > the format documented in SubmittingPatches.
-
-> That's a big document, most of which I guess I'm adhering to. Care to
-> be a little more specific?
-
-The bit I quoted is the main example, you're including random mail
-headers in the body of the mail.
-
---FsscpQKzF/jJk6ya
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQM4FEAAoJEFJkBDiqVpZ4ZbwP/3Rrw6cfLXtYAQRAOcQSyPrz
-8VTcx+RAof1yWzgwx4wYArNN4XWicdlktJLP3cc0fA7wAwTAPR9gu2fuSraU5NnQ
-GSi5X7F0KbdPrJt6UeMdFEW/xSjTFq6yEltutW8NGJfcbsBarF/xXclrnJdhA00r
-5WP6mcUIDkZUsmLnMXPKH60uTbHmttejy5l5NL0t1XuE9BwFwr8+Ms0rmxPLNhDL
-RLFvmXRVBoO2Z7+2d4xsVCpO1DT5xnbmTfiWOHwEg5UH8k7YpqixYNBSQ4odQnlt
-cKlp0a8ctwZLpt8Aw9HWyj9mf5yoHHpdpKR8g0xYfqW0V1THqkdyUiRKBoJBcca0
-9Nko1eDF+H80ajC8rMHGOiwTDQ+6oqoe/j1UKM/DaF5WLC4ThQqOBytgccEEw2p/
-tlj/3SCjMSWFQut/0G9I61r6NDrCILpRwTCVny/dNXkzQtZtkBQR6eHunlqAEUvH
-Q3gXaY/5t5Nd6MEwawORvS17Syou4nYNE7jYn8ZsEuIvs/PoLIN3PHc5PK1a3P9x
-JwpOu8FIHLMZ/UZAaKI+G6v1Hf2l/QhVL1MByIa9M+sA8IzQthOOrM2wEcqTv8H8
-Q8FTxCPD8RAJiBVHWDiA81zO7avq5YW29vrFyIvL8ZtZUeE9rEsfN/PI1P0I9Bu0
-+8T0p5SjC9SkiTmGt1JZ
-=oWck
------END PGP SIGNATURE-----
-
---FsscpQKzF/jJk6ya--
+Thanks,
+Pavel
