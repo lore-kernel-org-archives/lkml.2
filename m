@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab2HUIka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:40:30 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:42805 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753165Ab2HUIkT (ORCPT
+	id S1754553Ab2HUIrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:47:36 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64982 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab2HUIre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:40:19 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI1432Izz1202hzz15d4Iz2dh668h839h944hd25he5bhf0ah11b5h)
-X-WSS-ID: 0M93K2V-02-7WG-02
-X-M-MSG: 
-Date: Tue, 21 Aug 2012 10:40:07 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg
- call-back
-Message-ID: <20120821084007.GL2582@amd.com>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
- <20120820140843.GA7732@phenom.dumpdata.com>
+	Tue, 21 Aug 2012 04:47:34 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
+Date: Tue, 21 Aug 2012 08:47:18 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
+        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, "spear-devel" <spear-devel@list.st.com>
+References: <502BC31E.4070200@yahoo.es> <201208210834.53544.arnd.bergmann@linaro.org> <CAKohpokhM5WkUK6ww8Neu+fx554+-4uBCsNzBxB9q5rcqSf6cw@mail.gmail.com>
+In-Reply-To: <CAKohpokhM5WkUK6ww8Neu+fx554+-4uBCsNzBxB9q5rcqSf6cw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120820140843.GA7732@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208210847.18700.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:Z0giR3l2R/bw2OkEp/eu1tJvYgbtRJSvRO9a5ZP2/85
+ q/ufHSN/85zXns0Bm2OAGb0bjjuL4cUb92wQdb0Caq//ZTkwrW
+ 6f5wg8gTYKXRRW8LJnpRKauphuYLNcK0Yx/UgegMaz7LgAN2zp
+ FwVeF9iBvtDOTvje1KzjLDOjdA6v/va4kQANcfiTe2Czjf78eR
+ myaDmUUbkPdI9y8KqxEo3FDUNEMiSx04zklY0QeFHKVewGXXr+
+ +tBvd0QgW094DEQg90hF2vjI8j4rgOODnr4ZPaxRTJUmnWwGRC
+ lJ4SyKdtBkBtj4oDCfuMX+Kt6Rl98St7tpZ6lkoDPI0P77ao45
+ BJxweNXk6SQpdE8G7qePpwGky63c1899I24LzVbXp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 10:08:44AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Mon, Aug 20, 2012 at 03:56:03PM +0200, Joerg Roedel wrote:
-> > This call-back points to the right function for initializing
-> > the msi_msg structure.
-> 
-> What is the 'hpet_id' purpose in this?
+On Tuesday 21 August 2012, Viresh Kumar wrote:
+> On 21 August 2012 14:04, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
+>
+> > Yes, this is very strange. Maybe the compiler already splits the
+> > access into two 16-byte loads and that confuses the device?
+>
+> @Arnd: Is compiler allowed to do that even when we have volatile specified
+> for the access? It shouldn't optimize the access at all i believe.
 
-The VT-d implementation uses it. This function is used to create the MSI
-message for PCI devices and the HPET. When it is called for the HPET the
-pdev parameter is NULL and hpet_id is valid.
-
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Yes. The "volatile" keyword implies that the compiler has to do the access
+exactly once and that it cannot reorder the access with others on the same
+address, or read more data than is specified, but it can (and does) split
+the access if there is a reason for that, e.g. when the address might
+be misaligned and the architecture cannot do misaligned loads.
+	
+	Arnd
