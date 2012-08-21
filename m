@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab2HUKuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 06:50:09 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20621 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756585Ab2HUKuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 06:50:07 -0400
-Message-ID: <503367CB.9080609@parallels.com>
-Date: Tue, 21 Aug 2012 14:49:47 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1756757Ab2HUKuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 06:50:51 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:60980 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756418Ab2HUKur (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 06:50:47 -0400
+Date: Tue, 21 Aug 2012 13:46:48 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 2/4] Input: keypad: Add smsc ece1099 keypad driver
+Message-ID: <20120821104647.GU10347@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1345545940-2232-1-git-send-email-sourav.poddar@ti.com>
+ <1345545940-2232-3-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-References: <20120815092116.700948346@openvz.org> <20120815092409.591460800@openvz.org> <87fw7habo4.fsf@skywalker.in.ibm.com> <20120820163338.GN23596@moon> <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org> <50335261.5090504@parallels.com> <87wr0sle4v.fsf@skywalker.in.ibm.com>
-In-Reply-To: <87wr0sle4v.fsf@skywalker.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CYcXvPfqKSDi0QhV"
+Content-Disposition: inline
+In-Reply-To: <1345545940-2232-3-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 02:42 PM, Aneesh Kumar K.V wrote:
-> Pavel Emelyanov <xemul@parallels.com> writes:
-> 
->> On 08/20/2012 11:32 PM, J. Bruce Fields wrote:
->>> On Mon, Aug 20, 2012 at 11:06:06PM +0400, Cyrill Gorcunov wrote:
->>>> On Mon, Aug 20, 2012 at 02:32:25PM -0400, J. Bruce Fields wrote:
->>>>> On Mon, Aug 20, 2012 at 08:33:38PM +0400, Cyrill Gorcunov wrote:
->>>>>> On Mon, Aug 20, 2012 at 07:49:23PM +0530, Aneesh Kumar K.V wrote:
->>>>>>> Cyrill Gorcunov <gorcunov@openvz.org> writes:
->>>>>>>
->>>>>>>> To provide fsnotify object inodes being watched without
->>>>>>>> binding to alphabetical path we need to encode them with
->>>>>>>> exportfs help. This patch adds a helper which operates
->>>>>>>> with plain inodes directly.
->>>>>>>
->>>>>>> doesn't name_to_handle_at()  work for you ? It also allows to get a file
->>>>>>> handle using file descriptor.
->>>>>>
->>>>>> Hi, sorry for dealy. Well, the last idea is to get rid of this helper,
->>>>>> I've sent out an updated version where ino+dev is only printed.
->>>>>
->>>>> I don't understand how ino and dev are useful to you, though, if you're
->>>>> still hoping to be able to look up inodes using this information later
->>>>> on.
->>>>
->>>> Hi Bruce, I believe having ino+dev is better than nothing. Otherwise we
->>>> simply have no clue which targets are bound to inotify mark. Sometime
->>>> (!) we can try to generate fhandle in userspace from this ino+dev bundle
->>>> and then open the target file.
->>>
->>> That's insufficient to generate a filehandle in general.
->>
->> Yes, sure, but for live migration having inode and device is enough and that's why.
->> We can use two ways of having a filesystem on the target machine in the same
->> state (from paths points of view) as it was on destination one:
->>
->> 1. copy file tree in a rsync manner
->> 2. copy a virtual disk image file
->>
->> In the 1st case we can map inode number to path easily, since we iterate over a filesystem
->> anyway. I agree, that rsync is not perfect for migration but still.
->>
->> In the 2nd case we can generate filehandle out of an inode number only since we _do_ know
->> that inode will not get reused.
-> 
-> If you are going to to use open_by_handle, then that handle is not
-> sufficient right ? Or do you have open_by_inode ? as part of c/r ?
 
-Why? For e.g. ext4 you can construct a handle in userspace and open by it.
+--CYcXvPfqKSDi0QhV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>
->> However, if you have some better ideas on what information about inode should be exported
->> to the userspace please share.
->>
-> 
-> Why not use name_to_handle(fd,...) and open_by_handle(handle,..) ?
+Hi,
 
-Because we don't have an fd at hands by the time we need to know the handle.
+On Tue, Aug 21, 2012 at 04:15:38PM +0530, Sourav Poddar wrote:
+> +static struct platform_driver smsc_driver =3D {
+> +	.driver =3D {
+> +		.name	=3D "smsc-keypad",
+> +		.of_match_table =3D of_match_ptr(smsc_keypad_dt_match),
+> +		.owner  =3D THIS_MODULE,
+> +	},
+> +	.probe		=3D smsc_probe,
+> +	.remove		=3D smsc_remove,
 
-> 
->>> (Also: there's the usual inode-number aliasing problem: the inode number
->>> could get reused by another file.  Unless you know the file is being
->>> held open the whole time.)
->>>
-> 
-> -aneesh
-> 
-> .
-> 
+one extra comment which I forgot. You probably should put your remove on
+__devexit and add __devexit_p(smsc_remove) here.
 
-Thanks,
-Pavel
+--=20
+balbi
+
+--CYcXvPfqKSDi0QhV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQM2cXAAoJEIaOsuA1yqREPmUP/AvfScXSgoi2kWD4jh7ksRu+
+RdNDVUDRgngMphOkYn5xIqGsVXPauweofTJqGl+8XRAnotS9WxnmHPww4sB7lbA3
+n4HlfLKw8j6PDeWO9JslvyN6HLI3IJIHIVLOv97XUsra7cPHrHyuwivjp8pLx7I2
+agIEbqpe+Cm9yzdm39J+qmF7+qrgRO8krRIEAwwiad6GWlDblBSjh0hSN2mzkDNy
+Zr+OjXc69gxCXpzaFCi/W+XNL+/h4eVNtCF6AsIKRaq44iE2LunF2mJdZsE6NbC0
+p0AKuQ4ZoqDZegZmnTTHWOS9JXfWrYaiPiVtqRFl9og3tDHTPJXUKd01cbeN6WSy
+E45GJaEMh/+JDcBJFyc6tJbQjvaM5hMVWISsnqWS545h1G3Y5IX9k380+7sffQ5j
++NA5YRYXxZ8106Yl/WqLHWI92vvcuP2FwBDd9uFEAtNxb+5GOHX7L1Sg9f3qskYX
++GiaYFzgrLcMAfeRP5RkMCrO4j577bIgkPu5/zIWKeUWhxFmmLQQLVvr9RyVGFX0
+QrSinE9Vg2RuXwW6EvWRa57f89u0En0EGU2bzV6oEA8oPTf8vNEwbgHdo1bK8brz
+VZ3YoHS1byeE+u1IYyUeGomOM8BdTY0on5LxcMrvrlG/2Ia7DQk+YJJvY/OFCzX5
+OCu1V+LGo9eM7E7Glyw3
+=Swyd
+-----END PGP SIGNATURE-----
+
+--CYcXvPfqKSDi0QhV--
