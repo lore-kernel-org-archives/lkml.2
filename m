@@ -1,169 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab2HUPOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:14:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59483 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab2HUPOq (ORCPT
+	id S1756287Ab2HUPP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:15:59 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:27814 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639Ab2HUPPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:14:46 -0400
-Date: Tue, 21 Aug 2012 08:14:24 -0700
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-e52538965119319447c0800c534da73142c27be2@git.kernel.org>
-Cc: fche@redhat.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@kernel.org, ananth@in.ibm.com, fweisbec@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, fche@redhat.com, ananth@in.ibm.com,
-        fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        akpm@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <20120605102838.27845.26317.stgit@localhost.localdomain>
-References: <20120605102838.27845.26317.stgit@localhost.localdomain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] kprobes/x86: ftrace based optimization for x86
-Git-Commit-ID: e52538965119319447c0800c534da73142c27be2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 21 Aug 2012 11:15:54 -0400
+X-IronPort-AV: E=Sophos;i="4.77,802,1336348800"; 
+   d="scan'208";a="14109702"
+From: Attilio Rao <attilio.rao@citrix.com>
+To: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <tglx@linutronix.de>, <x86@kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>
+CC: <konrad.wilk@oracle.com>, Attilio Rao <attilio.rao@citrix.com>
+Subject: [PATCH v3 1/2] XEN/X86: Improve semantic support for pagetable_reserve PVOPS
+Date: Tue, 21 Aug 2012 16:02:25 +0100
+Message-ID: <1345561346-6781-2-git-send-email-attilio.rao@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1345561346-6781-1-git-send-email-attilio.rao@citrix.com>
+References: <1345561346-6781-1-git-send-email-attilio.rao@citrix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:14:30 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e52538965119319447c0800c534da73142c27be2
-Gitweb:     http://git.kernel.org/tip/e52538965119319447c0800c534da73142c27be2
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Tue, 5 Jun 2012 19:28:38 +0900
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 31 Jul 2012 10:29:59 -0400
+- Allow xen_mapping_pagetable_reserve() to handle a start different from
+  pgt_buf_start, but still bigger than it.
+- Add checks to xen_mapping_pagetable_reserve() and native_pagetable_reserve()
+  for verifying start and end are contained in the range
+  [pgt_buf_start, pgt_buf_top].
+- In xen_mapping_pagetable_reserve(), change printk into pr_debug.
+- In xen_mapping_pagetable_reserve(), print out diagnostic only if there is
+  an actual need to do that (or, in other words, if there are actually some
+  pages going to switch from RO to RW).
 
-kprobes/x86: ftrace based optimization for x86
-
-Add function tracer based kprobe optimization support
-handlers on x86. This allows kprobes to use function
-tracer for probing on mcount call.
-
-Link: http://lkml.kernel.org/r/20120605102838.27845.26317.stgit@localhost.localdomain
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-[ Updated to new port of ftrace save regs functions ]
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Attilio Rao <attilio.rao@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/include/asm/kprobes.h |    1 +
- arch/x86/kernel/kprobes.c      |   48 ++++++++++++++++++++++++++++++++++++++++
- include/linux/kprobes.h        |    2 +-
- kernel/kprobes.c               |    2 +-
- 4 files changed, 51 insertions(+), 2 deletions(-)
+ arch/x86/mm/init.c |    4 ++++
+ arch/x86/xen/mmu.c |   22 ++++++++++++++++++++--
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
-index 5478825..d3ddd17 100644
---- a/arch/x86/include/asm/kprobes.h
-+++ b/arch/x86/include/asm/kprobes.h
-@@ -27,6 +27,7 @@
- #include <asm/insn.h>
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index e0e6990..f4b750d 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -92,6 +92,10 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
  
- #define  __ARCH_WANT_KPROBES_INSN_SLOT
-+#define  ARCH_SUPPORTS_KPROBES_ON_FTRACE
- 
- struct pt_regs;
- struct kprobe;
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index e2f751e..47ae102 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1052,6 +1052,54 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	return 0;
+ void __init native_pagetable_reserve(u64 start, u64 end)
+ {
++	if (start < PFN_PHYS(pgt_buf_start) || end > PFN_PHYS(pgt_buf_top))
++		panic("Invalid address range: [%#llx-%#llx] should be a subset of [%#llx-%#llx]\n",
++			start, end, (u64)PFN_PHYS(pgt_buf_start),
++			(u64)PFN_PHYS(pgt_buf_top));
+ 	memblock_reserve(start, end - start);
  }
  
-+#ifdef KPROBES_CAN_USE_FTRACE
-+/* Ftrace callback handler for kprobes */
-+void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
-+				     struct ftrace_ops *ops, struct pt_regs *regs)
-+{
-+	struct kprobe *p;
-+	struct kprobe_ctlblk *kcb;
-+	unsigned long flags;
-+
-+	/* Disable irq for emulating a breakpoint and avoiding preempt */
-+	local_irq_save(flags);
-+
-+	p = get_kprobe((kprobe_opcode_t *)ip);
-+	if (unlikely(!p) || kprobe_disabled(p))
-+		goto end;
-+
-+	kcb = get_kprobe_ctlblk();
-+	if (kprobe_running()) {
-+		kprobes_inc_nmissed_count(p);
-+	} else {
-+		regs->ip += sizeof(kprobe_opcode_t);
-+
-+		__this_cpu_write(current_kprobe, p);
-+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-+		if (p->pre_handler)
-+			p->pre_handler(p, regs);
-+
-+		if (unlikely(p->post_handler)) {
-+			/* Emulate singlestep as if there is a 5byte nop */
-+			regs->ip = ip + MCOUNT_INSN_SIZE;
-+			kcb->kprobe_status = KPROBE_HIT_SSDONE;
-+			p->post_handler(p, regs, 0);
-+		}
-+		__this_cpu_write(current_kprobe, NULL);
-+		regs->ip = ip;	/* Recover for next callback */
-+	}
-+end:
-+	local_irq_restore(flags);
-+}
-+
-+int __kprobes arch_prepare_kprobe_ftrace(struct kprobe *p)
-+{
-+	p->ainsn.insn = NULL;
-+	p->ainsn.boostable = -1;
-+	return 0;
-+}
-+#endif
-+
- int __init arch_init_kprobes(void)
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index b65a761..dfae43a 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1180,12 +1180,30 @@ static void __init xen_pagetable_setup_start(pgd_t *base)
+ 
+ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
  {
- 	return arch_init_optprobes();
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index aa0d05e..23755ba 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -318,7 +318,7 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
- #endif /* CONFIG_OPTPROBES */
- #ifdef KPROBES_CAN_USE_FTRACE
- extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
--				  struct pt_regs *regs);
-+				  struct ftrace_ops *ops, struct pt_regs *regs);
- extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
- #endif
++	u64 begin;
++
++	begin = PFN_PHYS(pgt_buf_start);
++
++	if (start < begin || end > PFN_PHYS(pgt_buf_top))
++		panic("Invalid address range: [%#llx-%#llx] should be a subset of [%#llx-%#llx]\n",
++			start, end, begin, (u64)PFN_PHYS(pgt_buf_top));
++
++	/* set RW the initial range */
++	if  (start != begin)
++		pr_debug("xen: setting RW the range [%#llx-%#llx]\n",
++			begin, start);
++	while (begin < start) {
++		make_lowmem_page_readwrite(__va(begin));
++		begin += PAGE_SIZE;
++	}
++
+ 	/* reserve the range used */
+ 	native_pagetable_reserve(start, end);
  
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 69c16ef..35b4315 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -921,7 +921,7 @@ static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- 
- #ifdef KPROBES_CAN_USE_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
--	.regs_func = kprobe_ftrace_handler,
-+	.func = kprobe_ftrace_handler,
- 	.flags = FTRACE_OPS_FL_SAVE_REGS,
- };
- static int kprobe_ftrace_enabled;
+ 	/* set as RW the rest */
+-	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
+-			PFN_PHYS(pgt_buf_top));
++	if (end != PFN_PHYS(pgt_buf_top))
++		pr_debug("xen: setting RW the range [%#llx-%#llx]\n",
++			end, (u64)PFN_PHYS(pgt_buf_top));
+ 	while (end < PFN_PHYS(pgt_buf_top)) {
+ 		make_lowmem_page_readwrite(__va(end));
+ 		end += PAGE_SIZE;
+-- 
+1.7.2.5
+
