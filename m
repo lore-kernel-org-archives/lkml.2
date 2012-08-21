@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab2HUQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:28:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32922 "EHLO
+	id S1758070Ab2HUQ3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:29:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32934 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab2HUQ2q (ORCPT
+	with ESMTP id S1757954Ab2HUQ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:28:46 -0400
-Date: Tue, 21 Aug 2012 09:28:22 -0700
-From: tip-bot for Will Deacon <will.deacon@arm.com>
-Message-ID: <tip-60916a9382e88fbf5e54fd36a3e658efd7ab7bed@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, wade_farnsworth@mentor.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de, jbaron@redhat.com
+	Tue, 21 Aug 2012 12:29:39 -0400
+Date: Tue, 21 Aug 2012 09:29:18 -0700
+From: tip-bot for Namhyung Kim <namhyung@kernel.org>
+Message-ID: <tip-2708bf3a30b7bfa02d60a3f03603b6b92d093f1a@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, penberg@kernel.org,
+        namhyung@kernel.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        will.deacon@arm.com, wade_farnsworth@mentor.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, jbaron@redhat.com, tglx@linutronix.de
-In-Reply-To: <1345137254-7377-1-git-send-email-will.deacon@arm.com>
-References: <1345137254-7377-1-git-send-email-will.deacon@arm.com>
+        acme@redhat.com, penberg@kernel.org, peterz@infradead.org,
+        tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1345222583-3964-1-git-send-email-namhyung@kernel.org>
+References: <1345222583-3964-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tracing/syscalls:
-  Fix perf syscall tracing when syscall_nr == -1
-Git-Commit-ID: 60916a9382e88fbf5e54fd36a3e658efd7ab7bed
+Subject: [tip:perf/core] perf ui gtk: Ensure not to call gtk_main_quit()
+  twice
+Git-Commit-ID: 2708bf3a30b7bfa02d60a3f03603b6b92d093f1a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,56 +30,52 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:28:29 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:29:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60916a9382e88fbf5e54fd36a3e658efd7ab7bed
-Gitweb:     http://git.kernel.org/tip/60916a9382e88fbf5e54fd36a3e658efd7ab7bed
-Author:     Will Deacon <will.deacon@arm.com>
-AuthorDate: Thu, 16 Aug 2012 18:14:14 +0100
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 17 Aug 2012 15:19:46 -0400
+Commit-ID:  2708bf3a30b7bfa02d60a3f03603b6b92d093f1a
+Gitweb:     http://git.kernel.org/tip/2708bf3a30b7bfa02d60a3f03603b6b92d093f1a
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Sat, 18 Aug 2012 01:56:23 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 20 Aug 2012 09:29:12 -0300
 
-tracing/syscalls: Fix perf syscall tracing when syscall_nr == -1
+perf ui gtk: Ensure not to call gtk_main_quit() twice
 
-syscall_get_nr can return -1 in the case that the task is not executing
-a system call.
+Currently the gtk_main_quit() is called twice when perf exits so the
+following warning is emitted:
 
-This patch fixes perf_syscall_{enter,exit} to check that the syscall
-number is valid before using it as an index into a bitmap.
+  [penberg@tux perf]$ ./perf report --gtk
+  ^Cperf: Interrupt
 
-Link: http://lkml.kernel.org/r/1345137254-7377-1-git-send-email-will.deacon@arm.com
+  (perf:4048): Gtk-CRITICAL **: IA__gtk_main_quit: assertion `main_loops != NULL' failed
 
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Wade Farnsworth <wade_farnsworth@mentor.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Fix it by not to call it unnecessarily.
+
+Reported-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1345222583-3964-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/trace/trace_syscalls.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ tools/perf/ui/gtk/setup.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 60e4d78..6b245f64 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -506,6 +506,8 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	int size;
+diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
+index ad40b36..ec1ee26 100644
+--- a/tools/perf/ui/gtk/setup.c
++++ b/tools/perf/ui/gtk/setup.c
+@@ -13,6 +13,8 @@ int perf_gtk__init(void)
  
- 	syscall_nr = syscall_get_nr(current, regs);
-+	if (syscall_nr < 0)
+ void perf_gtk__exit(bool wait_for_ok __used)
+ {
++	if (!perf_gtk__is_active_context(pgctx))
 +		return;
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
- 		return;
- 
-@@ -580,6 +582,8 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	int size;
- 
- 	syscall_nr = syscall_get_nr(current, regs);
-+	if (syscall_nr < 0)
-+		return;
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
- 		return;
- 
+ 	perf_error__unregister(&perf_gtk_eops);
+ 	gtk_main_quit();
+ }
