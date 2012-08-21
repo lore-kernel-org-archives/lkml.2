@@ -1,269 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab2HUSqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:46:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62964 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab2HUSpU (ORCPT
+	id S1756783Ab2HUSrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:47:09 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56227 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab2HUSrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:45:20 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Chad Reese <kreese@caviumnetworks.com>,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH 3/8] netdev: octeon_mgmt: Add hardware timestamp support.
-Date: Tue, 21 Aug 2012 11:45:07 -0700
-Message-Id: <1345574712-21444-4-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
+	Tue, 21 Aug 2012 14:47:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <5033CE8A.5090705@wwwdotorg.org>
+References: <502EC16C.4030007@wwwdotorg.org>
+	<20120820182254.GQ24861@google.com>
+	<50328258.9030800@wwwdotorg.org>
+	<CABqD9hY-Z9uBcYyeCa=8f8eeXkGNjPKxbwpMPi3vs3776vF6iQ@mail.gmail.com>
+	<5033CE8A.5090705@wwwdotorg.org>
+Date: Tue, 21 Aug 2012 13:47:02 -0500
+Message-ID: <CABqD9hZ=2M5Xf5AsbinAEB35mEwdbd7uOz852QCs_2sf_OUZvw@mail.gmail.com>
+Subject: Re: root=PARTUUID for MBR/NT disk signatures?
+From: Will Drewry <wad@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
+        Jens Axboe <axboe@kernel.dk>, Kay Sievers <kay.sievers@vrfy.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chad Reese <kreese@caviumnetworks.com>
+On Tue, Aug 21, 2012 at 1:08 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/20/2012 10:47 PM, Will Drewry wrote:
+>> On Mon, Aug 20, 2012 at 1:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> On 08/20/2012 12:22 PM, Tejun Heo wrote:
+>>>> Hello,
+>>>>
+>>>> On Fri, Aug 17, 2012 at 04:10:52PM -0600, Stephen Warren wrote:
+>>>>> I was considering extending the kernel command-line option
+>>>>> root=PARTUUID= to also support MBR (NT disk signatures). I was thinking
+>>>>> of a syntax along the lines of:
+>>>>>
+>>>>> root=PARTUUID=UUUUUUUU-PP[/PARTNROFF=%d]
+>>>>>
+>>>>> ... where UUUUUUUU is the hex representation of the NT disk signature,
+>>>>> and PP is the hex representation of the partition number. Like GPT,
+>>>>> /PARTNROFF could be used too if desired.
+>>>>>
+>>>>> Related, I was thinking of changing struct partition_meta_info's uuid
+>>>>> field to be a string, so that it could simply be strcmp'd against the
+>>>>> UUID value on the kernel command-line. That way, the type of the UUID is
+>>>>> irrelevant.
+>>>>>
+>>>>> Does anyone have any objection to that?
+>>>>
+>>>> Wouldn't that be able to break setups which work currently?
+>>>
+>>> I don't believe so:
+>>>
+>>> Since the newly supported UUID syntax wouldn't ever match any EFI UUID
+>>> (the lengths differ in all cases), I don't believe the new syntax would
+>>> affect behavior for any existing usage.
+>>>
+>>> Obviously, part_efi.c would be modified to initialize struct
+>>> partition_meta_info's uuid field to the appropriate string
+>>> representation of the UUID so that the str(case)cmp would still succeed
+>>> for existing command-lines. I ended up coding up that part of the change
+>>> late Friday, and the feature was certainly still working OK.
+>>
+>> Functionally, I suspect this will work fine, but I am concerned that
+>> it is a bad move from an efficiency perspective (not unfixable
+>> though).  Right now, the user-supplied value is converted from
+>> string-uuid to packed-uuid.  This is then memcmp'd across any and all
+>> partitions - be it 2 or 200 - across all attached storage.  If we move
+>> to a pure string, then we end up needing to unpack every packed UUID
+>> at disk scan time (or search, depending on impl) rather than just the
+>> one user supplied value.
+>
+> The EFI partition code actually does the following already:
+>
+> 1) Unpack the UUID from the binary on-disk representation to a temporary
+> string.
+> 2) Repack the temporary string into the internal UUID buffer.
+>
+> The comments imply this is in order to do endian conversions.
+>
+> Switching the internal representation to a string avoids step (2) above,
+> plus avoids having to pack the string on the kernel command-line into a
+> binary UUID before the comparison. I doubt the difference between memcmp
+> vs. strcasecmp is worth considering. So, I think it's overall a win.
 
-Octeon cn6XXX models have timestamp support on the mgmt ports, so hook
-it up.
+Sounds reasonable to me then.
 
-Signed-off-by: Chad Reese <kreese@caviumnetworks.com>
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/net/ethernet/octeon/octeon_mgmt.c | 157 +++++++++++++++++++++++++++++-
- 1 file changed, 152 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
-index c4df1ab..687a6a0 100644
---- a/drivers/net/ethernet/octeon/octeon_mgmt.c
-+++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
-@@ -10,6 +10,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/etherdevice.h>
- #include <linux/capability.h>
-+#include <linux/net_tstamp.h>
- #include <linux/interrupt.h>
- #include <linux/netdevice.h>
- #include <linux/spinlock.h>
-@@ -114,6 +115,7 @@ struct octeon_mgmt {
- 	u64 agl_prt_ctl;
- 	int port;
- 	int irq;
-+	bool has_rx_tstamp;
- 	u64 *tx_ring;
- 	dma_addr_t tx_ring_handle;
- 	unsigned int tx_next;
-@@ -238,6 +240,28 @@ static void octeon_mgmt_rx_fill_ring(struct net_device *netdev)
- 	}
- }
- 
-+static ktime_t ptp_to_ktime(u64 ptptime)
-+{
-+	ktime_t ktimebase;
-+	u64 ptpbase;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	/* Fill the icache with the code */
-+	ktime_get_real();
-+	/* Flush all pending operations */
-+	mb();
-+	/* Read the time and PTP clock as close together as
-+	 * possible. It is important that this sequence take the same
-+	 * amount of time to reduce jitter
-+	 */
-+	ktimebase = ktime_get_real();
-+	ptpbase = cvmx_read_csr(CVMX_MIO_PTP_CLOCK_HI);
-+	local_irq_restore(flags);
-+
-+	return ktime_sub_ns(ktimebase, ptpbase - ptptime);
-+}
-+
- static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
- {
- 	union cvmx_mixx_orcnt mix_orcnt;
-@@ -277,6 +301,20 @@ static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
- 
- 		dma_unmap_single(p->dev, re.s.addr, re.s.len,
- 				 DMA_TO_DEVICE);
-+
-+		/* Read the hardware TX timestamp if one was recorded */
-+		if (unlikely(re.s.tstamp)) {
-+			struct skb_shared_hwtstamps ts;
-+			/* Read the timestamp */
-+			u64 ns = cvmx_read_csr(CVMX_MIXX_TSTAMP(p->port));
-+			/* Remove the timestamp from the FIFO */
-+			cvmx_write_csr(CVMX_MIXX_TSCTL(p->port), 0);
-+			/* Tell the kernel about the timestamp */
-+			ts.syststamp = ptp_to_ktime(ns);
-+			ts.hwtstamp = ns_to_ktime(ns);
-+			skb_tstamp_tx(skb, &ts);
-+		}
-+
- 		dev_kfree_skb_any(skb);
- 		cleaned++;
- 
-@@ -377,6 +415,16 @@ static int octeon_mgmt_receive_one(struct octeon_mgmt *p)
- 		/* A good packet, send it up. */
- 		skb_put(skb, re.s.len);
- good:
-+		/* Process the RX timestamp if it was recorded */
-+		if (p->has_rx_tstamp) {
-+			/* The first 8 bytes are the timestamp */
-+			u64 ns = *(u64 *)skb->data;
-+			struct skb_shared_hwtstamps *ts;
-+			ts = skb_hwtstamps(skb);
-+			ts->hwtstamp = ns_to_ktime(ns);
-+			ts->syststamp = ptp_to_ktime(ns);
-+			__skb_pull(skb, 8);
-+		}
- 		skb->protocol = eth_type_trans(skb, netdev);
- 		netdev->stats.rx_packets++;
- 		netdev->stats.rx_bytes += skb->len;
-@@ -661,18 +709,114 @@ static irqreturn_t octeon_mgmt_interrupt(int cpl, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--static int octeon_mgmt_ioctl(struct net_device *netdev,
--			     struct ifreq *rq, int cmd)
-+static int octeon_mgmt_ioctl_hwtstamp(struct net_device *netdev,
-+				      struct ifreq *rq, int cmd)
- {
- 	struct octeon_mgmt *p = netdev_priv(netdev);
-+	struct hwtstamp_config config;
-+	union cvmx_mio_ptp_clock_cfg ptp;
-+	union cvmx_agl_gmx_rxx_frm_ctl rxx_frm_ctl;
-+	bool have_hw_timestamps = false;
-+
-+	if (copy_from_user(&config, rq->ifr_data, sizeof(config)))
-+		return -EFAULT;
- 
--	if (!netif_running(netdev))
-+	if (config.flags) /* reserved for future extensions */
- 		return -EINVAL;
- 
--	if (!p->phydev)
-+	/* Check the status of hardware for tiemstamps */
-+	if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
-+		/* Get the current state of the PTP clock */
-+		ptp.u64 = cvmx_read_csr(CVMX_MIO_PTP_CLOCK_CFG);
-+		if (!ptp.s.ext_clk_en) {
-+			/* The clock has not been configured to use an
-+			 * external source.  Program it to use the main clock
-+			 * reference.
-+			 */
-+			u64 clock_comp = (NSEC_PER_SEC << 32) /	octeon_get_io_clock_rate();
-+			if (!ptp.s.ptp_en)
-+				cvmx_write_csr(CVMX_MIO_PTP_CLOCK_COMP, clock_comp);
-+			pr_info("PTP Clock: Using sclk reference at %lld Hz\n",
-+				(NSEC_PER_SEC << 32) / clock_comp);
-+		} else {
-+			/* The clock is already programmed to use a GPIO */
-+			u64 clock_comp = cvmx_read_csr(CVMX_MIO_PTP_CLOCK_COMP);
-+			pr_info("PTP Clock: Using GPIO %d at %lld Hz\n",
-+				ptp.s.ext_clk_in,
-+				(NSEC_PER_SEC << 32) / clock_comp);
-+		}
-+
-+		/* Enable the clock if it wasn't done already */
-+		if (!ptp.s.ptp_en) {
-+			ptp.s.ptp_en = 1;
-+			cvmx_write_csr(CVMX_MIO_PTP_CLOCK_CFG, ptp.u64);
-+		}
-+		have_hw_timestamps = true;
-+	}
-+
-+	if (!have_hw_timestamps)
- 		return -EINVAL;
- 
--	return phy_mii_ioctl(p->phydev, rq, cmd);
-+	switch (config.tx_type) {
-+	case HWTSTAMP_TX_OFF:
-+	case HWTSTAMP_TX_ON:
-+		break;
-+	default:
-+		return -ERANGE;
-+	}
-+
-+	switch (config.rx_filter) {
-+	case HWTSTAMP_FILTER_NONE:
-+		p->has_rx_tstamp = false;
-+		rxx_frm_ctl.u64 = cvmx_read_csr(p->agl + AGL_GMX_RX_FRM_CTL);
-+		rxx_frm_ctl.s.ptp_mode = 0;
-+		cvmx_write_csr(p->agl + AGL_GMX_RX_FRM_CTL, rxx_frm_ctl.u64);
-+		break;
-+	case HWTSTAMP_FILTER_ALL:
-+	case HWTSTAMP_FILTER_SOME:
-+	case HWTSTAMP_FILTER_PTP_V1_L4_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
-+	case HWTSTAMP_FILTER_PTP_V2_L4_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V2_L4_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ:
-+	case HWTSTAMP_FILTER_PTP_V2_L2_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V2_L2_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ:
-+	case HWTSTAMP_FILTER_PTP_V2_EVENT:
-+	case HWTSTAMP_FILTER_PTP_V2_SYNC:
-+	case HWTSTAMP_FILTER_PTP_V2_DELAY_REQ:
-+		p->has_rx_tstamp = have_hw_timestamps;
-+		config.rx_filter = HWTSTAMP_FILTER_ALL;
-+		if (p->has_rx_tstamp) {
-+			rxx_frm_ctl.u64 = cvmx_read_csr(p->agl + AGL_GMX_RX_FRM_CTL);
-+			rxx_frm_ctl.s.ptp_mode = 1;
-+			cvmx_write_csr(p->agl + AGL_GMX_RX_FRM_CTL, rxx_frm_ctl.u64);
-+		}
-+		break;
-+	default:
-+		return -ERANGE;
-+	}
-+
-+	if (copy_to_user(rq->ifr_data, &config, sizeof(config)))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
-+static int octeon_mgmt_ioctl(struct net_device *netdev,
-+			     struct ifreq *rq, int cmd)
-+{
-+	struct octeon_mgmt *p = netdev_priv(netdev);
-+
-+	switch (cmd) {
-+	case SIOCSHWTSTAMP:
-+		return octeon_mgmt_ioctl_hwtstamp(netdev, rq, cmd);
-+	default:
-+		if (p->phydev)
-+			return phy_mii_ioctl(p->phydev, rq, cmd);
-+		return -EINVAL;
-+	}
- }
- 
- static void octeon_mgmt_disable_link(struct octeon_mgmt *p)
-@@ -1052,6 +1196,7 @@ static int octeon_mgmt_open(struct net_device *netdev)
- 	/* Enable packet I/O. */
- 
- 	rxx_frm_ctl.u64 = 0;
-+	rxx_frm_ctl.s.ptp_mode = p->has_rx_tstamp ? 1 : 0;
- 	rxx_frm_ctl.s.pre_align = 1;
- 	/*
- 	 * When set, disables the length check for non-min sized pkts
-@@ -1155,6 +1300,7 @@ static int octeon_mgmt_xmit(struct sk_buff *skb, struct net_device *netdev)
- 	int rv = NETDEV_TX_BUSY;
- 
- 	re.d64 = 0;
-+	re.s.tstamp = ((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) != 0);
- 	re.s.len = skb->len;
- 	re.s.addr = dma_map_single(p->dev, skb->data,
- 				   skb->len,
-@@ -1293,6 +1439,7 @@ static int __devinit octeon_mgmt_probe(struct platform_device *pdev)
- 
- 	p->netdev = netdev;
- 	p->dev = &pdev->dev;
-+	p->has_rx_tstamp = false;
- 
- 	data = of_get_property(pdev->dev.of_node, "cell-index", &len);
- 	if (data && len == sizeof(*data)) {
--- 
-1.7.11.4
-
+Thanks!
+will
