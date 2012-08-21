@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab2HUI43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:56:29 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34935 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab2HUI4Y (ORCPT
+	id S1754700Ab2HUI55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:57:57 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:58929 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752597Ab2HUI5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:56:24 -0400
-Date: Tue, 21 Aug 2012 09:56:19 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
-Message-ID: <20120821085618.GA26899@gmail.com>
-References: <1344527635-6163-6-git-send-email-lee.jones@linaro.org>
- <CACRpkdZ7bMBytyDppV2sB1d1sUbDpPRqAQVOq8k4UOYdmg+Mkw@mail.gmail.com>
- <201208140942.54773.arnd@arndb.de>
- <CACRpkdYbOBEPNbCdfi+=gupdqS8_7t7MpOgXs7VCVTs8Y3j_mQ@mail.gmail.com>
- <20120820083640.GH8450@gmail.com>
- <20120820121055.GA26991@opensource.wolfsonmicro.com>
- <20120820125531.GA20242@gmail.com>
- <20120820162923.GF26991@opensource.wolfsonmicro.com>
- <20120820164949.GB22749@gmail.com>
- <20120820175155.GH26991@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120820175155.GH26991@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 21 Aug 2012 04:57:50 -0400
+Message-ID: <1345539465.4085.22.camel@deskari>
+Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Alex Courbot <acourbot@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <leelakrishna.a@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Date: Tue, 21 Aug 2012 11:57:45 +0300
+In-Reply-To: <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
+References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com>
+	 <1345097337-24170-2-git-send-email-acourbot@nvidia.com>
+	 <1345535069.4085.7.camel@deskari> <1562509.b0FYTUZ1D8@percival>
+	 <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-wBdSPFNbFs73o+cuydTi"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > If they don't have linear domains there's no point, if they support DT
-> > then they can use it as it is.
-> 
-> All this stuff just works for any IRQ domain type, there's no
-> requirement for a particular one.  It's not urgently exciting for legacy
-> domains but it's not harmful either and pushes all the handling of this
-> stuff out of the MFD core and into the irqdomain code which is
-> definitely an abstraction win.
 
-Wherever we do this from to be able to obtain the IRQ domain pointer, 
-which is where I'm currently struggling. Our options are:
+--=-wBdSPFNbFs73o+cuydTi
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-- Call into a helper function based in the IRQ controller from each 
-child device. In turn the IRQ controller will be responsible for creating
-the mapping necessary to obtain a virq. Using this method the child
-device doesn't need to know if we're using an IRQ domain or not, or
-whether we're using Device Tree or not. The drawback is that each child
-device will be required to call the helper function prior to requesting
-an IRQ. 
+On Tue, 2012-08-21 at 10:33 +0200, Thierry Reding wrote:
 
-- If we're only talking MFD here, we can handle this stuff in the MFD
-core, but we need more information. The IRQ domain subsystem only allows
-domain look-up via a Device Tree node, so we need to get our hands on
-the domain another way in the case of non-DT enabled devices. Either we
-add another parameter to mfd_add_device(irq_domain, ...), or we
-standardise the 'irq_domain' variable name and use:
-        irq_domain = container_of(parent, struct irq_domain, irq_domain);
+> I suppose power sequences aren't needed if you have a specific driver
+> for every panel out there. However that also means that you'd have to
+> write drivers for literally every panel that requires support. In the
+> end this will just result in discussion down the road how the common
+> functionality can be refactored and we may end up with power sequences
+> again.
+>=20
+> Also as you mentioned, power sequences are useful for a number of other
+> use-cases. Without power sequences you'll have to potentially create
+> extra frameworks tha reimplement parts of the power sequence code for
+> their specific hardware needs.
 
-- I know that you have interest in pushing the functionality into the
-IRQ domain subsystem, but I'm struggling to see how. It's calling into
-the IRQ domain where we're seeing issues in the first place, specifically
-irq_create_mapping(). How about if we passed 'irq_domain' as a parameter
-when requesting the IRQ? That way we can pass the correct IRQ without
-worry of conversion. If 'irq_domain' is !NULL the IRQ management subsystem
-can do the necessary conversions. If 'irq_domain' is NULL it continues to
-use the requested IRQ as a virq.
+Right. I think my main concern is the use of DT data, not power
+sequences as such. I've been going back and forth in my mind with this
+issue with OMAP also.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+The question is: what stuff belongs to DT data and what belongs to the
+kernel? I've been trying to go to the direction where DT is used to
+describe the HW connections of different IP blocks and to pass board
+specific configuration. Everything else is in the driver.
+
+This doesn't mean that we'd have a separate driver for each device. For
+example, we have a generic panel driver in OMAP, which contains a kind
+of small panel database. The panel database contains the name of the
+panel as a key, and panel specific configuration as a value. This
+configuration could also contain some kind of generic power sequence.
+
+I'd like to require the board developer to only fill in to the DT data
+what panel he is using, and how it's connected on his board. Not panel's
+internal functionality.
+
+The one benefit I see with DT based approach is that if we have, say,
+10000 panels, we'd have quite a big database in kernel memory and a
+board may only need one or two of those. But perhaps that could be
+helped with the use of __initdata.
+
+ Tomi
+
+
+--=-wBdSPFNbFs73o+cuydTi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJQM02JAAoJEPo9qoy8lh71WtAQAKX+bcZY0vx9b7uxiJQn2K0B
+QlwpAOLa88qGLWoMYo1ExCWDL19LyTQT4qEHCnJ9a1wr1y0RreHKeyv7PhyozHoj
+XK5Fo29VCLbOp4NtHSih/rHDcvtTvcEgq/TyoEOQwiE0E23kAmnFVMHwVe9zActb
+Q46Zalag4dO9MjND/ncOJ0RiYvnB8plUvq+D0IgDLNOLp52U9MqJ6p5vt73sRgxK
+TS81AhD3C5POK4U+JT2ASmabV+WCKsFEEJ1n/rv23oAZVfxNgKED5PWMqwT8lVfH
+pPZ4oW/GF50kGkjF5dLGBJ+jbGeYRv+mnuY2MG4pCC7N9VBFaMBI2wq1/d9q0idR
+g3NUYF4oU6Mb3jfBb4V8RRxH36k6ucn3ttA/+p+HSizvxXWbB0MKcAH0Q0XvVauJ
+PIZ8d2pIFOSmiCcK/aKNGFiuAMCUIjI0ZFMtEetL5wEcx3iy/y3roZ55q7wUDC12
+JEcAlm8vkVzpvfI9I/ZuMqfewOLzR5RwkpBjHCAgYJNdFobFNPgUvrIsNN8J/gBl
+EXu2Cm7OgfVGMMLUuzpZRrhTPaAwIuMZfe98cSoQgGxG4MJfTfMzgzgLVLYZuyOm
+jusEZJiamTMx/kYQgJOTuVYj9BpzwULJy6lrD21bq9N3It1rp/NJDTuBdpW5cFCH
+sVo/Xc34OYbrh8V6h4pa
+=boI3
+-----END PGP SIGNATURE-----
+
+--=-wBdSPFNbFs73o+cuydTi--
+
