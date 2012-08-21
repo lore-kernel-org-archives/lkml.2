@@ -1,58 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab2HUJet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:34:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39126 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab2HUJeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:34:46 -0400
-Date: Tue, 21 Aug 2012 11:34:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2][resend] genirq: export patches
-In-Reply-To: <87wr0t5amw.wl%kuninori.morimoto.gx@renesas.com>
-Message-ID: <alpine.LFD.2.02.1208211133430.2856@ionos>
-References: <20120706161455.dd899154fbc8a79ee530572f@canb.auug.org.au> <CACRpkdbZddOBf0PXFJjr_aRD3TEa9hSvXjAjf3--8Ko_W0zZcg@mail.gmail.com> <w3psjd55kwl.wl%kuninori.morimoto.gx@renesas.com> <CACRpkdb=bg7fc1HEW5U2PBjs_hLDRgGUNP=O6BEJRmYfCiSWpA@mail.gmail.com>
- <87r4slg063.wl%kuninori.morimoto.gx@renesas.com> <CACRpkdYSLRiAQd3kGGv8xktAvi+YbBSe1hGqMX2y7fFXQOHPXQ@mail.gmail.com> <87fw8h4xtb.wl%kuninori.morimoto.gx@renesas.com> <874nootrqo.wl%kuninori.morimoto.gx@renesas.com>
- <87wr0t5amw.wl%kuninori.morimoto.gx@renesas.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755831Ab2HUJfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:35:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33287 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab2HUJfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 05:35:18 -0400
+Date: Tue, 21 Aug 2012 11:35:13 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        devel@openvz.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 11/11] protect architectures where THREAD_SIZE >=
+ PAGE_SIZE against fork bombs
+Message-ID: <20120821093513.GD19797@dhcp22.suse.cz>
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
+ <1344517279-30646-12-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344517279-30646-12-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012, Kuninori Morimoto wrote:
+On Thu 09-08-12 17:01:19, Glauber Costa wrote:
+> Because those architectures will draw their stacks directly from the
+> page allocator, rather than the slab cache, we can directly pass
+> __GFP_KMEMCG flag, and issue the corresponding free_pages.
 > 
-> Hi all
-> 
-> > These are "resend" of genirq export patches.
-> > 
-> > Kuninori Morimoto (2):
-> >       genirq: export irq_set_chip_and_handler_name()
-> >       genirq: export dummy_irq_chip
-> 
-> get_maintainer.pl showed me that Thomas is the maintainer
-> of ${LINUX}/kernel/irq/,
-> but am I wrong ?
-> I think there is no response for these patches.
-> 
-> Who can care these patches ?
-> Should I resend again ?
+> This code path is taken when the architecture doesn't define
+> CONFIG_ARCH_THREAD_INFO_ALLOCATOR (only ia64 seems to), and has
+> THREAD_SIZE >= PAGE_SIZE. Luckily, most - if not all - of the remaining
+> architectures fall in this category.
 
-I'll have a look. Was on vacation and travelling. Still fighting with
-the mail backlog.
+quick git grep "define *THREAD_SIZE\>" arch says that there is no such
+architecture.
 
-Thanks,
+> This will guarantee that every stack page is accounted to the memcg the
+> process currently lives on, and will have the allocations to fail if
+> they go over limit.
+> 
+> For the time being, I am defining a new variant of THREADINFO_GFP, not
+> to mess with the other path. Once the slab is also tracked by memcg, we
+> can get rid of that flag.
+> 
+> Tested to successfully protect against :(){ :|:& };:
 
-	tglx
+I guess there were no other tasks in the same group (except for the
+parent shell), right? I am asking because this should trigger memcg-oom
+but that one will usually pick up something else than the fork bomb
+which would have a small memory footprint. But that needs to be handled
+on the oom level obviously.
+
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Acked-by: Frederic Weisbecker <fweisbec@redhat.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  include/linux/thread_info.h | 2 ++
+>  kernel/fork.c               | 4 ++--
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+> index ccc1899..e7e0473 100644
+> --- a/include/linux/thread_info.h
+> +++ b/include/linux/thread_info.h
+> @@ -61,6 +61,8 @@ extern long do_no_restart_syscall(struct restart_block *parm);
+>  # define THREADINFO_GFP		(GFP_KERNEL | __GFP_NOTRACK)
+>  #endif
+>  
+> +#define THREADINFO_GFP_ACCOUNTED (THREADINFO_GFP | __GFP_KMEMCG)
+> +
+>  /*
+>   * flag set/clear/test wrappers
+>   * - pass TIF_xxxx constants to these functions
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index dc3ff16..b0b90c3 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -142,7 +142,7 @@ void __weak arch_release_thread_info(struct thread_info *ti) { }
+>  static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+>  						  int node)
+>  {
+> -	struct page *page = alloc_pages_node(node, THREADINFO_GFP,
+> +	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
+>  					     THREAD_SIZE_ORDER);
+>  
+>  	return page ? page_address(page) : NULL;
+> @@ -151,7 +151,7 @@ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+>  static inline void free_thread_info(struct thread_info *ti)
+>  {
+>  	arch_release_thread_info(ti);
+> -	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
+> +	free_accounted_pages((unsigned long)ti, THREAD_SIZE_ORDER);
+>  }
+>  # else
+>  static struct kmem_cache *thread_info_cache;
+> -- 
+> 1.7.11.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Michal Hocko
+SUSE Labs
