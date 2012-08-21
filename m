@@ -1,194 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab2HUM5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:57:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61276 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755721Ab2HUM5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:57:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,802,1336374000"; 
-   d="scan'208";a="207456986"
-Date: Tue, 21 Aug 2012 20:57:36 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Dave Chinner <david@fromorbit.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 3/3] writeback: add dirty_ratio_time per bdi variable
- (NFS write performance)
-Message-ID: <20120821125736.GC22321@localhost>
-References: <1345283402-7889-1-git-send-email-linkinjeon@gmail.com>
- <20120819025724.GC16796@localhost>
- <20120820020004.GB19235@dastard>
- <20120820180143.GA4911@fieldses.org>
- <CAKYAXd_AhA6E+KDsSLr2RtyTjSezMY6WH4SOcTc45L9KoEwYoQ@mail.gmail.com>
+	id S1757596Ab2HUM6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:58:19 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38785 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab2HUM6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 08:58:16 -0400
+Date: Tue, 21 Aug 2012 13:58:12 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        STEricsson_nomadik_linux@list.st.com
+Subject: Re: [PATCH 1/1] ASoC: codecs: Enable AB8500 CODEC for Device Tree
+Message-ID: <20120821125811.GA931@gmail.com>
+References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
+ <1344527268-5964-9-git-send-email-lee.jones@linaro.org>
+ <s5h628lu0q9.wl%tiwai@suse.de>
+ <20120820113427.GN8450@gmail.com>
+ <20120820143653.GE26991@opensource.wolfsonmicro.com>
+ <20120821115123.GE26899@gmail.com>
+ <20120821123951.GC7995@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAKYAXd_AhA6E+KDsSLr2RtyTjSezMY6WH4SOcTc45L9KoEwYoQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120821123951.GC7995@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 02:48:35PM +0900, Namjae Jeon wrote:
-> 2012/8/21, J. Bruce Fields <bfields@fieldses.org>:
-> > On Mon, Aug 20, 2012 at 12:00:04PM +1000, Dave Chinner wrote:
-> >> On Sun, Aug 19, 2012 at 10:57:24AM +0800, Fengguang Wu wrote:
-> >> > On Sat, Aug 18, 2012 at 05:50:02AM -0400, Namjae Jeon wrote:
-> >> > > From: Namjae Jeon <namjae.jeon@samsung.com>
-> >> > >
-> >> > > This patch is based on suggestion by Wu Fengguang:
-> >> > > https://lkml.org/lkml/2011/8/19/19
-> >> > >
-> >> > > kernel has mechanism to do writeback as per dirty_ratio and
-> >> > > dirty_background
-> >> > > ratio. It also maintains per task dirty rate limit to keep balance of
-> >> > > dirty pages at any given instance by doing bdi bandwidth estimation.
-> >> > >
-> >> > > Kernel also has max_ratio/min_ratio tunables to specify percentage of
-> >> > > writecache
-> >> > > to control per bdi dirty limits and task throtelling.
-> >> > >
-> >> > > However, there might be a usecase where user wants a writeback tuning
-> >> > > parameter to flush dirty data at desired/tuned time interval.
-> >> > >
-> >> > > dirty_background_time provides an interface where user can tune
-> >> > > background
-> >> > > writeback start time using /sys/block/sda/bdi/dirty_background_time
-> >> > >
-> >> > > dirty_background_time is used alongwith average bdi write bandwidth
-> >> > > estimation
-> >> > > to start background writeback.
-> >> >
-> >> > Here lies my major concern about dirty_background_time: the write
-> >> > bandwidth estimation is an _estimation_ and will sure become wildly
-> >> > wrong in some cases. So the dirty_background_time implementation based
-> >> > on it will not always work to the user expectations.
-> >> >
-> >> > One important case is, some users (eg. Dave Chinner) explicitly take
-> >> > advantage of the existing behavior to quickly create & delete a big
-> >> > 1GB temp file without worrying about triggering unnecessary IOs.
-> >>
-> >> It's a fairly common use case - short term temp files are used by
-> >> lots of applications and avoiding writing them - especially on NFS -
-> >> is a big performance win. Forcing immediate writeback will
-> >> definitely cause unprdictable changes in performance for many
-> >> people...
-> >>
-> >> > > Results are:-
-> >> > > ==========================================================
-> >> > > Case:1 - Normal setup without any changes
-> >> > > ./performancetest_arm ./100MB write
-> >> > >
-> >> > >  RecSize  WriteSpeed   RanWriteSpeed
-> >> > >
-> >> > >  10485760  7.93MB/sec   8.11MB/sec
-> >> > >   1048576  8.21MB/sec   7.80MB/sec
-> >> > >    524288  8.71MB/sec   8.39MB/sec
-> >> > >    262144  8.91MB/sec   7.83MB/sec
-> >> > >    131072  8.91MB/sec   8.95MB/sec
-> >> > >     65536  8.95MB/sec   8.90MB/sec
-> >> > >     32768  8.76MB/sec   8.93MB/sec
-> >> > >     16384  8.78MB/sec   8.67MB/sec
-> >> > >      8192  8.90MB/sec   8.52MB/sec
-> >> > >      4096  8.89MB/sec   8.28MB/sec
-> >> > >
-> >> > > Average speed is near 8MB/seconds.
-> >> > >
-> >> > > Case:2 - Modified the dirty_background_time
-> >> > > ./performancetest_arm ./100MB write
-> >> > >
-> >> > >  RecSize  WriteSpeed   RanWriteSpeed
-> >> > >
-> >> > >  10485760  10.56MB/sec  10.37MB/sec
-> >> > >   1048576  10.43MB/sec  10.33MB/sec
-> >> > >    524288  10.32MB/sec  10.02MB/sec
-> >> > >    262144  10.52MB/sec  10.19MB/sec
-> >> > >    131072  10.34MB/sec  10.07MB/sec
-> >> > >     65536  10.31MB/sec  10.06MB/sec
-> >> > >     32768  10.27MB/sec  10.24MB/sec
-> >> > >     16384  10.54MB/sec  10.03MB/sec
-> >> > >      8192  10.41MB/sec  10.38MB/sec
-> >> > >      4096  10.34MB/sec  10.12MB/sec
-> >> > >
-> >> > > we can see, average write speed is increased to ~10-11MB/sec.
-> >> > > ============================================================
-> >> >
-> >> > The numbers are impressive!
-> >>
-> >> All it shows is that avoiding the writeback delay writes a file a
-> >> bit faster. i.e. 5s delay + 10s @ 10MB/s vs no delay and 10s
-> >> @10MB/s. That's pretty obvious, really, and people have been trying
-> >> to make this "optimisation" for NFS clients for years in the
-> >> misguided belief that short-cutting writeback caching is beneficial
-> >> to application performance.
-> >>
-> >> What these numbers don't show that is whether over-the-wire
-> >> writeback speed has improved at all. Or what happens when you have a
-> >> network that is faster than the server disk, or even faster than the
-> >> client can write into memory? What about when there are multiple
-> >> threads, or the network is congested, or the server overloaded? In
-> >> those cases the performance differential will disappear and
-> >> there's a good chance that the existing code will be significantly
-> >> faster because it places less imediate load on the server and
-> >> network.D...
-> >>
-> >> If you need immediate dispatch of your data for single threaded
-> >> performance then sync_file_range() is your friend.
-> >>
-> >> > FYI, I tried another NFS specific approach
-> >> > to avoid big NFS COMMITs, which achieved similar performance gains:
-> >> >
-> >> > nfs: writeback pages wait queue
-> >> > https://lkml.org/lkml/2011/10/20/235
-> >>
-> >> Which is basically controlling the server IO latency when commits
-> >> occur - smaller ranges mean the commit (fsync) is faster, and more
-> >> frequent commits mean the data goes to disk sooner. This is
-> >> something that will have a positive impact on writeback speeds
-> >> because it modifies the NFs client writeback behaviour to be more
-> >> server friendly and not stall over the wire. i.e. improving NFS
-> >> writeback performance is all about keeping the wire full and the
-> >> server happy, not about reducing the writeback delay before we start
-> >> writing over the wire.
-> >
-> > Wait, aren't we confusing client and server side here?
-> >
-> > If I read Namjae Jeon's post correctly, I understood that it was the
-> > *server* side he was modifying to start writeout sooner, to improve
-> > response time to eventual expected commits from the client.  The
-> > responses above all seem to be about the client.
-> >
-> > Maybe it's all the same at some level, but: naively, starting writeout
-> > early would seem a better bet on the server side.  By the time we get
-> > writes, the client has already decided they're worth sending to disk.
-> Hi Bruce.
+On Tue, Aug 21, 2012 at 01:39:51PM +0100, Mark Brown wrote:
+> On Tue, Aug 21, 2012 at 12:51:24PM +0100, Lee Jones wrote:
+> > On Mon, Aug 20, 2012 at 03:36:53PM +0100, Mark Brown wrote:
 > 
-> Yes, right, I have not changed writeback setting on NFS client, It was
-> changed on NFS Server.
+> > > > From: Lee Jones <lee.jones@linaro.org>
+> > > > Date: Fri, 27 Jul 2012 08:50:05 +0100
+> 
+> > > Please resend this series with all the acks you've got rather than
+> > > mixing incremental updates in like this.
+> 
+> > I'm waiting until I have a few more Acks before I resend the entire
+> > patch-set again. Actually it's you and one other that I'm waiting for
+> > to review (and Ack as necessary) the ones requested by Linus, then 
+> > resend with the corrections.
+> 
+> Well, I'm the person who's going to apply the patches so I'm unlikely
+> to ack them...  I was waiting for arch/arm review before I looked at
 
-Ah OK, I'm very supportive to lower the NFS server's background
-writeback threshold. This will obviously help reduce disk idle time as
-well as turning a good amount of SYNC writes to ASYNC ones.
+I have all of Linus' Acks. The only ones missing are yours and Ola's,
+but I think Ola is on vacation still, so he's asked Roger to do it.
+I don't know if you saw, but Linus has placed lots of Acked-by's which
+are dependent on your say-so, hence why I was waiting for your response.
 
-> So writeback behaviour on NFS client will work at default. So There
-> will be no change in data caching behaviour
-> at NFS client. It will reduce server side wait time for NFS COMMIT by
-> starting early writeback.
+> them due to the number of resends.
 
-Agreed.
+Bingo, thus why I was dubious about resending the entire patch-set too
+prematurely.
 
-> >
-> > And changes to make clients and applications friendlier to the server
-> > are great, but we don't always have that option--there are more clients
-> > out there than servers and the latter may be easier to upgrade than the
-> > former.
-> I agree about your opinion..
+> > > Please also send patches in
+> > > the format documented in SubmittingPatches.
+> 
+> > That's a big document, most of which I guess I'm adhering to. Care to
+> > be a little more specific?
+> 
+> The bit I quoted is the main example, you're including random mail
+> headers in the body of the mail.
 
-Agreed.
+They're not mail headers per-say, they're `git format-patch` headers.
+I thought this was acceptable for single patches, hence why I've done
+it lots of times and had no complaints (until now).
 
-Thanks,
-Fengguang
+If there are some changes required in a single patch, I usually fix
+it up, create a patch with `git format-patch` and send it as a reply
+to either the original patch in the series or the mail containing the
+suggestion. If this is wrong please educate me as I thought this was
+acceptable, as I thought it would be less pain than sending the
+entire patch-set again for just one change?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
