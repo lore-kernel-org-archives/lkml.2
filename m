@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2HUGJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 02:09:57 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:37865 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752663Ab2HUGJx (ORCPT
+	id S1753611Ab2HUGPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 02:15:38 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:36164 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab2HUGPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 02:09:53 -0400
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-To: Dan Luedtke <mail@danrl.de>
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, chaosman@ontika.net, muthur@gmail.com,
-        kerolasa@iki.fi, linux-kernel@vger.kernel.org
-In-Reply-To: <1345333117-2826-1-git-send-email-mail@danrl.de>
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 Aug 2012 10:09:42 +0400
-Message-ID: <1345529382.2457.39.camel@slavad-ubuntu-11>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 178.176.67.51 authed with slava@dubeyko.com}
+	Tue, 21 Aug 2012 02:15:36 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-4f-50332786e35b
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: sameo@linux.intel.com
+Cc: gregkh@linuxfoundation.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 0/2] mfd: MAX77693: Fix bug
+Date: Tue, 21 Aug 2012 15:15:47 +0900
+Message-id: <1345529747-24808-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jAd02deMAg5sbtC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG44//WAtWslZcntzG3MC4lKWLkZNDQsBE4tzuE2wQtpjEhXvr
+	wWwhgUWMEls+GnYxcgHZS5kkTv6/zASSYBPQktj/4gZYkYiApMSzx+sYQYqYBWYzSlx70MQM
+	khAW0Ja40f8erIFFQFXi87OVjCA2r4CrxKH3/xkhtilItC47xD6BkXsBI8MqRtHUguSC4qT0
+	XEO94sTc4tK8dL3k/NxNjGAfPpPawbiyweIQowAHoxIP749FRgFCrIllxZW5hxglOJiVRHgb
+	GYwDhHhTEiurUovy44tKc1KLDzFKc7AoifPy9xkGCAmkJ5akZqemFqQWwWSZODilGhiLC+7f
+	jK6fvzIrL/OWQdf/uerCOdV7/A0/96gcnDQvdFZ+06OrDuFyNXWuS2fHMS6MfJeyxvIq//t6
+	2Vfi0Y/vqZpc36GTcE1U3E3nt9TfGDnThF3Hzpx9WlG2/tSvytRt9VUH7M5fWh54J2LdyvtP
+	Rc9Pll69XN1aMvSksM73joZk25SNDKJKLMUZiYZazEXFiQAwQ9O83QEAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patchset fix bug of Maxim MAX77693 chip. First patch unmask interrupt
+masking bit for charger/flas/muic device of Maxim MAX77693 and second patch
+remove NULL pointer error when mfd-max77693 driver initialize irqs of Maxim
+MAX77693 devices.
 
-On Sun, 2012-08-19 at 01:38 +0200, Dan Luedtke wrote:
-> This patch introduces the Lanyard Filesystem (LanyFS), a filesystem
-> for highly mobile and removable storage devices.
-> 
+Chanwoo Choi (2):
+  mfd: MAX77693: Fix bug of interrupt handlding for MAX77693 devices
+  mfd: MAX77693: Fix NULL pointer error when initialize irqs of Maxim
+    MAX77693
 
-Did you have any performance comparison of your file system with others?
-Have you any benchmark results? I think that simplicity can be a
-valuable thing but performance is a key factor, especially for business
-guys.
-
-I think that maybe compression or/and encryption support can be a
-valuable feature for such niche of file system that you declared.
-Efficient compression support is very important feature for embedded
-solutions. Moreover, using of hardware opportunity in the field of
-compression or encryption can keep driver code simple.
-
-By the way, what about fault-tolerance of your file system? I don't dive
-deeply in documentation of your file systems. But, I think that for USB
-sticks or removable storages it is very common situation of sudden
-switch off. So, it is very important for your file system to be a very
-tolerant to such use-cases. How can you estimate tolerance of your file
-system architecture for failure as normal situation?
-
-Moreover, I think that simplicity and strong tolerance to file system
-corruption can be a feature. I mean that if you have simple on-disk
-layout then, maybe, it is possible to try working in very corrupted
-environment also. For the end user, from my point of view, possibility
-to work in the case of file system corruption can be very precious
-feature.
-
-I think that also for your file system such feature as easy
-recoverability of user information in the case of complete corruption of
-file system can be very useful thing for an end user. Such easy
-recoverability can be achieved by means of on-disk layout and file
-system driver's techniques, I think. So, simplicity and easy
-recoverability of user data can be a valuable feature also.
-
-With the best regards,
-Vyacheslav Dubeyko.
+ drivers/extcon/extcon-max77693.c |   20 +++++++++++++-------
+ drivers/mfd/max77693-irq.c       |   36 +++++++++++++++++++++++++++++++-----
+ drivers/mfd/max77693.c           |   14 ++++++++++++++
+ 3 files changed, 58 insertions(+), 12 deletions(-)
 
