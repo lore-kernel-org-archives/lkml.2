@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab2HUEsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 00:48:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43618 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2HUEsB (ORCPT
+	id S1752332Ab2HUE55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 00:57:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60743 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab2HUE5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 00:48:01 -0400
-Date: Mon, 20 Aug 2012 21:47:15 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Aristeu Rozanski <aris@redhat.com>
-cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        Lennart Poettering <lpoetter@redhat.com>
-Subject: Re: [PATCH v6 1/4] xattr: extract simple_xattr code from tmpfs
-In-Reply-To: <20120820190039.GR25353@redhat.com>
-Message-ID: <alpine.LSU.2.00.1208202122470.1286@eggly.anvils>
-References: <20120816174453.154143248@napanee.usersys.redhat.com> <20120816174453.507922179@napanee.usersys.redhat.com> <20120816195831.GF24861@google.com> <alpine.LSU.2.00.1208192356580.24824@eggly.anvils> <20120820190039.GR25353@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Aug 2012 00:57:54 -0400
+Date: Tue, 21 Aug 2012 14:57:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>
+Subject: linux-next: manual merge of the signal tree with Linus' tree
+Message-Id: <20120821145742.8f4640e49ef079d83dfe0ba4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__21_Aug_2012_14_57_42_+1000_S4X1_.F84otUHhpv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Aug 2012, Aristeu Rozanski wrote:
-> On Mon, Aug 20, 2012 at 12:10:09AM -0700, Hugh Dickins wrote:
-> > Yes, it looks nice to me.  I might have preferred more as inlines in
-> > the header file to lower the slight init/evict overhead, and I don't
-> > see why __simple_xattr_set() isn't using simple_xattr_alloc() in the
-> > same way that shmem_xattr_set() used shmem_xattr_alloc().  But none
-> > of that matters:
-> > 
-> > Acked-by: Hugh Dickins <hughd@google.com>
-> 
-> I can submit additional patches to fix these. What functions you want
-> inlined?
+--Signature=_Tue__21_Aug_2012_14_57_42_+1000_S4X1_.F84otUHhpv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh, thank you.  I was thinking that it's uncommon for tmpfs files to
-have xattrs (and the same probably true of other filesystems), so it's
-best to minimize xattrs impact on shared paths.  If simple_xattrs_init()
-and simple_xattrs_free() can be static inline functions in linux/xattr.h,
-that would be nice.
+Hi Al,
 
-Probably more important would be to remove spin_lock() and spin_unlock()
-(and INIT_LIST_HEAD) from simple_xattrs_free() - those are unnecessary
-in shmem_evict_inode(), and wouldn't they be unnecessary whenever
-simple_xattrs_free() gets called?
+Today's linux-next merge of the signal tree got a conflict in
+arch/alpha/kernel/process.c between commit 28d353d9891c ("alpha: take
+kernel_execve() out of entry.S") from Linus' tree and commit 68f596a7a045
+("alpha: rewrite kernel_execve in C") from the signal tree.
 
-Hugh
+These appear to be the same patch with a slight difference in this file.
+I just used the version from Linus' tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> On why __simple_xattr_set() is not using simple_xattr_alloc(), there's
-> no reason to be that way, I missed it.
-> 
-> Thanks for reviewing!
-> 
-> -- 
-> Aristeu
-> 
-> 
+--Signature=_Tue__21_Aug_2012_14_57_42_+1000_S4X1_.F84otUHhpv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQMxVGAAoJEECxmPOUX5FEwMQQAIfTvDDTJfkAn+A2eO0JE4VT
+n9Q3mnxZPK8k16YPEiyBzuwUljvkzvy0B7G3UJUjjGAZWcpZG54mvr5xyoXPyiy9
+C/RXHWMc51vgxVGod3C/3j6hC6enWTpT6J8PKD6T/L4D4m4pgLC1Hm+b7Qng6IIF
+z2rFWq4giZ53n3g5Fwr7tFCJIUFJLuSp0LEpBM+oSLNoO+sAq14hatuM1aGq62jK
+vS6mKtYr/9/TXvpS6rSvBSuamaw+A03gDEs9F2A4Onqc3sK8+uU0qWhz+9e/pKQu
+MSmgYqo2XZdyDCbbK06A0RMZhD93e+6KpmiOA5gaV75Xx4kdLGSPGQUolnaoKd7W
+GCKhBfGbwFH1EzlIg9uFFIo2sJSlDFBX4k0PH6fMJt0b2dyJrdf/bl7xL0HQ5yof
+6af2jB1dAXUfMndTH53aljzkhWl9ROkgGBcrbkiyg+Y0jqc49BaZeeNuS7QbuNy4
++ybKxYexngGNGjQ772hbJsTw2s8s7PiZf4j7Rnbpx44w35Y9Dw8vddMqcpr477Tp
+6L/a38chEEMQbx4g4G8seMcttUENX5M0j+uUX05BGwib2z9KkssTbFMd+RB93+JD
+0mIe7WMUaMNBNsNarPeVy5oaJFVrMvMuvtjUTzawkBc6hpadWRCrsY0cpLs8vfCA
+nWoAQD6bAppZSrcBc4ZV
+=AKu+
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Aug_2012_14_57_42_+1000_S4X1_.F84otUHhpv--
