@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2HUC7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 22:59:25 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47114 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269Ab2HUC7W (ORCPT
+	id S1755918Ab2HUDAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 23:00:07 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57310 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2HUDAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 22:59:22 -0400
-Message-ID: <5032F980.8050102@linux.vnet.ibm.com>
-Date: Tue, 21 Aug 2012 10:59:12 +0800
+	Mon, 20 Aug 2012 23:00:02 -0400
+Message-ID: <5032F9A9.50700@linux.vnet.ibm.com>
+Date: Tue, 21 Aug 2012 10:59:53 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v6 04/12] KVM: introduce gfn_to_pfn_memslot_atomic
+Subject: [PATCH v6 05/12] KVM: introduce gfn_to_hva_read/kvm_read_hva/kvm_read_hva_atomic
 References: <5032F8FD.2020306@linux.vnet.ibm.com>
 In-Reply-To: <5032F8FD.2020306@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12082102-5564-0000-0000-0000041C1BC6
+x-cbid: 12082102-3864-0000-0000-00000442912A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It can instead of hva_to_pfn_atomic
+This set of functions is only used to read data from host space, in the
+later patch, we will only get a readonly hva in gfn_to_hva_read, and
+the function name is a good hint to let gfn_to_hva_read to pair with
+kvm_read_hva()/kvm_read_hva_atomic()
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c       |    5 +----
- include/linux/kvm_host.h |    3 ++-
- virt/kvm/kvm_main.c      |   14 ++++++++------
- 3 files changed, 11 insertions(+), 11 deletions(-)
+ virt/kvm/kvm_main.c |   27 +++++++++++++++++++++++----
+ 1 files changed, 23 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 9651c2c..5548971 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2510,15 +2510,12 @@ static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
- 				     bool no_dirty_log)
- {
- 	struct kvm_memory_slot *slot;
--	unsigned long hva;
-
- 	slot = gfn_to_memslot_dirty_bitmap(vcpu, gfn, no_dirty_log);
- 	if (!slot)
- 		return KVM_PFN_ERR_FAULT;
-
--	hva = gfn_to_hva_memslot(slot, gfn);
--
--	return hva_to_pfn_atomic(hva);
-+	return gfn_to_pfn_memslot_atomic(slot, gfn);
- }
-
- static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index d4bd4d4..52c86e4 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -462,7 +462,6 @@ void kvm_release_page_dirty(struct page *page);
- void kvm_set_page_dirty(struct page *page);
- void kvm_set_page_accessed(struct page *page);
-
--pfn_t hva_to_pfn_atomic(unsigned long addr);
- pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn);
- pfn_t gfn_to_pfn_async(struct kvm *kvm, gfn_t gfn, bool *async,
- 		       bool write_fault, bool *writable);
-@@ -470,6 +469,8 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
- pfn_t gfn_to_pfn_prot(struct kvm *kvm, gfn_t gfn, bool write_fault,
- 		      bool *writable);
- pfn_t gfn_to_pfn_memslot(struct kvm_memory_slot *slot, gfn_t gfn);
-+pfn_t gfn_to_pfn_memslot_atomic(struct kvm_memory_slot *slot, gfn_t gfn);
-+
- void kvm_release_pfn_dirty(pfn_t pfn);
- void kvm_release_pfn_clean(pfn_t pfn);
- void kvm_set_pfn_dirty(pfn_t pfn);
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 7b94d70..543f9b7 100644
+index 543f9b7..6e3ea15 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -1102,12 +1102,6 @@ static pfn_t hva_to_pfn(unsigned long addr, bool atomic, bool *async,
- 	return pfn;
+@@ -1002,6 +1002,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
  }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
 
--pfn_t hva_to_pfn_atomic(unsigned long addr)
--{
--	return hva_to_pfn(addr, true, NULL, true, NULL);
--}
--EXPORT_SYMBOL_GPL(hva_to_pfn_atomic);
--
- static pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic, bool *async,
- 			  bool write_fault, bool *writable)
- {
-@@ -1155,6 +1149,14 @@ pfn_t gfn_to_pfn_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
- 	return hva_to_pfn(addr, false, NULL, true, NULL);
- }
-
-+pfn_t gfn_to_pfn_memslot_atomic(struct kvm_memory_slot *slot, gfn_t gfn)
++/*
++ * The hva returned by this function is only allowed to be read.
++ * It should pair with kvm_read_hva() or kvm_read_hva_atomic().
++ */
++static unsigned long gfn_to_hva_read(struct kvm *kvm, gfn_t gfn)
 +{
-+	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
-+
-+	return hva_to_pfn(addr, true, NULL, true, NULL);
++	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
 +}
-+EXPORT_SYMBOL_GPL(gfn_to_pfn_memslot_atomic);
 +
- int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
- 								  int nr_pages)
++static int kvm_read_hva(void *data, void __user *hva, int len)
++{
++	return __copy_from_user(data, hva, len);
++}
++
++static int kvm_read_hva_atomic(void *data, void __user *hva, int len)
++{
++	return __copy_from_user_inatomic(data, hva, len);
++}
++
+ int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
+ 	unsigned long start, int write, struct page **page)
  {
+@@ -1274,10 +1293,10 @@ int kvm_read_guest_page(struct kvm *kvm, gfn_t gfn, void *data, int offset,
+ 	int r;
+ 	unsigned long addr;
+
+-	addr = gfn_to_hva(kvm, gfn);
++	addr = gfn_to_hva_read(kvm, gfn);
+ 	if (kvm_is_error_hva(addr))
+ 		return -EFAULT;
+-	r = __copy_from_user(data, (void __user *)addr + offset, len);
++	r = kvm_read_hva(data, (void __user *)addr + offset, len);
+ 	if (r)
+ 		return -EFAULT;
+ 	return 0;
+@@ -1312,11 +1331,11 @@ int kvm_read_guest_atomic(struct kvm *kvm, gpa_t gpa, void *data,
+ 	gfn_t gfn = gpa >> PAGE_SHIFT;
+ 	int offset = offset_in_page(gpa);
+
+-	addr = gfn_to_hva(kvm, gfn);
++	addr = gfn_to_hva_read(kvm, gfn);
+ 	if (kvm_is_error_hva(addr))
+ 		return -EFAULT;
+ 	pagefault_disable();
+-	r = __copy_from_user_inatomic(data, (void __user *)addr + offset, len);
++	r = kvm_read_hva_atomic(data, (void __user *)addr + offset, len);
+ 	pagefault_enable();
+ 	if (r)
+ 		return -EFAULT;
 -- 
 1.7.7.6
 
