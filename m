@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab2HUJhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:37:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33636 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817Ab2HUJhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:37:37 -0400
-Date: Tue, 21 Aug 2012 11:36:28 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/24] perf/core improvements and fixes
-Message-ID: <20120821093628.GA981@krava.brq.redhat.com>
-References: <1345479985-18669-1-git-send-email-acme@infradead.org>
- <20120821093231.GA12385@gmail.com>
+	id S1755844Ab2HUJmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:42:13 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57808 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab2HUJmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 05:42:10 -0400
+Date: Tue, 21 Aug 2012 11:42:04 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+Message-ID: <20120821094203.GB12385@gmail.com>
+References: <5028F12C.7080405@intel.com>
+ <1345028738.31459.82.camel@twins>
+ <502BA7DC.7060907@linux.intel.com>
+ <1345041548.31459.90.camel@twins>
+ <502BB5A3.5000403@linux.intel.com>
+ <1345043096.31459.106.camel@twins>
+ <502BE38D.9030405@linux.intel.com>
+ <20120820080606.GA6931@gmail.com>
+ <20120820181651.GA737@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120821093231.GA12385@gmail.com>
+In-Reply-To: <20120820181651.GA737@srcf.ucam.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 11:32:31AM +0200, Ingo Molnar wrote:
-> 
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> 
 
-SNIP
+* Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 
+> On Mon, Aug 20, 2012 at 10:06:06AM +0200, Ingo Molnar wrote:
 > 
-> One minor observation, the Makefile tells us:
+> > If the answer is 'yes' then there's clear cases where the kernel 
+> > (should) automatically know the events where we switch from 
+> > balancing for performance to balancing for power:
 > 
-> Makefile:496: No libunwind found. Please install libunwind >= 0.99
-> 
-> I guess that should be libunwind-dev[el], right? Plain libunwind 
-> is not enough.
+> No. We can't identify all of these cases and we can't identify 
+> corner cases. [...]
 
-right, will fix it
+There's no need to identify 'all' of these cases - but if the 
+kernel knows then it can have intelligent default behavior.
 
-thanks,
-jirka
+> [...] Putting this kind of policy in the kernel is an awful 
+> idea. [...]
+
+A modern kernel better know what state the system is in: on 
+battery or on AC power.
+
+> [...] It should never be altering policy itself, [...]
+
+The kernel/scheduler simply offers sensible defaults where it 
+can. User-space can augment/modify/override that in any which 
+way it wishes to.
+
+This stuff has not been properly sorted out in the last 10+ 
+years since we have battery driven devices, so we might as well 
+start with the kernel offering sane default behavior where it 
+can ...
+
+> [...] because it'll get it wrong and people will file bugs 
+> complaining that it got it wrong and the biggest case where 
+> you *need* to be able to handle switching between performance 
+> and power optimisations (your rack management unit just told 
+> you that you're going to have to drop power consumption by 
+> 20W) is one where the kernel doesn't have all the information 
+> it needs to do this. So why bother at all?
+
+The point is to have a working default mechanism.
+
+Thanks,
+
+	Ingo
