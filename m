@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab2HUQcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:32:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32988 "EHLO
+	id S1758094Ab2HUQda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:33:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33009 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758043Ab2HUQcR (ORCPT
+	with ESMTP id S1758043Ab2HUQdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:32:17 -0400
-Date: Tue, 21 Aug 2012 09:32:05 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-f47b58b75f5e2a424834eb15f7565a7458a12f44@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1345391234-71906-1-git-send-email-dsahern@gmail.com>
-References: <1345391234-71906-1-git-send-email-dsahern@gmail.com>
+	Tue, 21 Aug 2012 12:33:25 -0400
+Date: Tue, 21 Aug 2012 09:33:00 -0700
+From: tip-bot for Ben Hutchings <ben@decadent.org.uk>
+Message-ID: <tip-ed7e2c2ec59422b68b643c479a5816197620016e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, ben@decadent.org.uk, tglx@linutronix.de,
+        sedat.dilek@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        ben@decadent.org.uk, tglx@linutronix.de, sedat.dilek@gmail.com
+In-Reply-To: <1345420039.22400.80.camel@deadeye.wl.decadent.org.uk>
+References: <1345420039.22400.80.camel@deadeye.wl.decadent.org.uk>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Fix builds with NO_LIBELF set
-Git-Commit-ID: f47b58b75f5e2a424834eb15f7565a7458a12f44
+Subject: [tip:perf/core] perf tools: Fix include order for bison/
+ flex-generated C files
+Git-Commit-ID: ed7e2c2ec59422b68b643c479a5816197620016e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,100 +31,55 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:32:11 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:33:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f47b58b75f5e2a424834eb15f7565a7458a12f44
-Gitweb:     http://git.kernel.org/tip/f47b58b75f5e2a424834eb15f7565a7458a12f44
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Sun, 19 Aug 2012 09:47:14 -0600
+Commit-ID:  ed7e2c2ec59422b68b643c479a5816197620016e
+Gitweb:     http://git.kernel.org/tip/ed7e2c2ec59422b68b643c479a5816197620016e
+Author:     Ben Hutchings <ben@decadent.org.uk>
+AuthorDate: Mon, 20 Aug 2012 00:47:19 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 20 Aug 2012 09:35:22 -0300
+CommitDate: Mon, 20 Aug 2012 09:36:41 -0300
 
-perf symbols: Fix builds with NO_LIBELF set
+perf tools: Fix include order for bison/flex-generated C files
 
-Build currently fails:
-  $ make -C tools/perf O=/tmp/pbuild NO_LIBELF=1
+When we use a separate output directory, we add util/ to the include
+path for the generated C files.  However, this is currently added to the
+end of the path, behind /usr/include/slang and /usr/include/gtk-2.0 if
+use of the respective libraries is enabled.  Thus the '#include
+"../perf.h"' in util/parse-events.l can actually include
+/usr/include/perf.h if it exists.
 
-  util/symbol.c: In function ‘dso__load’:
-  util/symbol.c:1128:27: error: ‘struct symsrc’ has no member named ‘dynsym’
-      CC /tmp/pbuild/util/pager.o
-  make: *** [/tmp/pbuild/util/symbol.o] Error 1
-  make: *** Waiting for unfinished jobs....
+Move '-Iutil/' ahead of all the other preprocessor options.
 
-Moving the dynsym reference to symbol-elf.c reveals that NO_LIBELF requires
-NO_LIBUNWIND:
-
-  $ make -C tools/perf O=/tmp/pbuild NO_LIBELF=1
-
-      LINK /tmp/pbuild/perf
-  /tmp/pbuild/libperf.a(unwind.o): In function `elf_section_offset':
-  /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:176: undefined reference to `elf_begin'
-  /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:181: undefined reference to `gelf_getehdr'
-  /tmp/pbuild/libperf.a(unwind.o): In function `elf_section_by_name':
-  /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:157: undefined reference to `elf_nextscn'
-  /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:160: undefined reference to `gelf_getshdr'
-  /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:161: undefined reference to `elf_strptr'
-  /tmp/pbuild/libperf.a(unwind.o): In function `elf_section_offset':
-  /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:190: undefined reference to `elf_end'
-  /tmp/pbuild/libperf.a(unwind.o): In function `read_unwind_spec':
-  /opt/sw/ahern/perf.git/tools/perf/util/unwind.c:190: undefined reference to `elf_end'
-  collect2: ld returned 1 exit status
-  make: *** [/tmp/pbuild/perf] Error 1
-  make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
-
-This patch fixes both.
-
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1345391234-71906-1-git-send-email-dsahern@gmail.com
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Link: http://lkml.kernel.org/r/1345420039.22400.80.camel@deadeye.wl.decadent.org.uk
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile          |    1 +
- tools/perf/util/symbol-elf.c |    3 +++
- tools/perf/util/symbol.c     |    2 +-
- 3 files changed, 5 insertions(+), 1 deletions(-)
+ tools/perf/Makefile |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8beff99..90cfecf 100644
+index 90cfecf..77e7ae3e 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -469,6 +469,7 @@ PYRF_OBJS += $(OUTPUT)util/xyarray.o
- ifdef NO_LIBELF
- 	NO_DWARF := 1
- 	NO_DEMANGLE := 1
-+	NO_LIBUNWIND := 1
- else
- FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
- ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 5b37e13..db0cc92 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -183,6 +183,9 @@ int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss, struct map *
- 	Elf *elf;
- 	int nr = 0, symidx, err = 0;
+@@ -841,10 +841,10 @@ $(OUTPUT)perf.o perf.spec \
+ # over the general rule for .o
  
-+	if (!ss->dynsym)
-+		return 0;
-+
- 	elf = ss->elf;
- 	ehdr = ss->ehdr;
+ $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -w $<
++	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -w $<
  
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 2293a4a..753699a 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1125,7 +1125,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	else
- 		ret = -1;
+ $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -w $<
++	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -w $<
  
--	if (ret > 0 && runtime_ss->dynsym) {
-+	if (ret > 0) {
- 		int nr_plt;
- 
- 		nr_plt = dso__synthesize_plt_symbols(dso, runtime_ss, map, filter);
+ $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
