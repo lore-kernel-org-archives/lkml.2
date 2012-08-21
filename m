@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2HUPxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:53:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60361 "EHLO
+	id S1755621Ab2HUPyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:54:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60388 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab2HUPxq (ORCPT
+	with ESMTP id S1752988Ab2HUPyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:53:46 -0400
-Date: Tue, 21 Aug 2012 08:53:05 -0700
+	Tue, 21 Aug 2012 11:54:31 -0400
+Date: Tue, 21 Aug 2012 08:54:00 -0700
 From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-6a40cd90f5deb6dec322eeb54587ae55a934db2c@git.kernel.org>
+Message-ID: <tip-0f6a30150ca2e0cf4f893e7173d61434a3c02e0e@git.kernel.org>
 Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org, gorcunov@openvz.org,
         a.p.zijlstra@chello.nl, benjamin.redelings@nescent.org,
         jolsa@redhat.com, drepper@gmail.com, robert.richter@amd.com,
@@ -24,12 +24,12 @@ Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
         cjashfor@linux.vnet.ibm.com, asharma@fb.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
         tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com, mingo@elte.hu
-In-Reply-To: <1344345647-11536-10-git-send-email-jolsa@redhat.com>
-References: <1344345647-11536-10-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1344345647-11536-11-git-send-email-jolsa@redhat.com>
+References: <1344345647-11536-11-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf tools:
-  Add libunwind dependency for DWARF CFI unwinding
-Git-Commit-ID: 6a40cd90f5deb6dec322eeb54587ae55a934db2c
+  Support user regs and stack in sample parsing
+Git-Commit-ID: 0f6a30150ca2e0cf4f893e7173d61434a3c02e0e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,29 +38,29 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:53:11 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:54:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6a40cd90f5deb6dec322eeb54587ae55a934db2c
-Gitweb:     http://git.kernel.org/tip/6a40cd90f5deb6dec322eeb54587ae55a934db2c
+Commit-ID:  0f6a30150ca2e0cf4f893e7173d61434a3c02e0e
+Gitweb:     http://git.kernel.org/tip/0f6a30150ca2e0cf4f893e7173d61434a3c02e0e
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 7 Aug 2012 15:20:44 +0200
+AuthorDate: Tue, 7 Aug 2012 15:20:45 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 10 Aug 2012 16:46:07 -0300
+CommitDate: Fri, 10 Aug 2012 16:47:02 -0300
 
-perf tools: Add libunwind dependency for DWARF CFI unwinding
+perf tools: Support user regs and stack in sample parsing
 
-Adding libunwind to be linked with perf if available. It's required
-for the to get dwarf cfi unwinding support.
+Adding following info to be parsed out of the event sample:
+ - user register set
+ - user stack dump
 
-Also building perf with the dwarf call frame informations by default,
-so that we can unwind callchains in perf itself.
+Both are global and specific to all events within the session.
+This info will be used in the unwind patches coming in shortly.
 
-Adding LIBUNWIND_DIR Makefile variable allowing user to specify
-the directory with libunwind to be linked. This is used for
-debug purposes.
+Adding simple output printout (report -D) for both register and
+stack dumps.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
@@ -79,118 +79,195 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-10-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1344345647-11536-11-git-send-email-jolsa@redhat.com
+[ Use evsel->attr.sample_regs_user ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                 |   29 ++++++++++++++++++++++++++++-
- tools/perf/config/feature-tests.mak |   25 +++++++++++++++++++++++++
- 2 files changed, 53 insertions(+), 1 deletions(-)
+ tools/perf/util/event.h   |   12 ++++++++++++
+ tools/perf/util/evsel.c   |   28 ++++++++++++++++++++++++++++
+ tools/perf/util/header.c  |    2 ++
+ tools/perf/util/session.c |   41 ++++++++++++++++++++++++++++++++++++++---
+ 4 files changed, 80 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 27ae84b..0aee6a9 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -43,6 +43,8 @@ include config/utilities.mak
- #
- # Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
- #
-+# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
-+# backtrace post unwind.
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index d84870b..0e088d0 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -69,6 +69,16 @@ struct sample_event {
+ 	u64 array[];
+ };
  
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -64,6 +66,7 @@ AR = $(CROSS_COMPILE)ar
- ifeq ($(ARCH),i386)
- 	ARCH := x86
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -77,6 +80,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
- 	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
- endif
- 
- # Treat warnings as errors unless directed not to
-@@ -97,7 +101,7 @@ ifdef PARSER_DEBUG
- 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
- endif
- 
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
-@@ -476,6 +480,21 @@ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
- endif
- endif # NO_LIBELF
- 
-+ifndef NO_LIBUNWIND
-+# for linking with debug library, run like:
-+# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+ifdef LIBUNWIND_DIR
-+	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
-+	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
-+endif
++struct regs_dump {
++	u64 *regs;
++};
 +
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-+	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-+	NO_LIBUNWIND := 1
-+endif # Libunwind support
-+endif # NO_LIBUNWIND
++struct stack_dump {
++	u16 offset;
++	u64 size;
++	char *data;
++};
 +
- -include arch/$(ARCH)/Makefile
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+@@ -82,6 +92,8 @@ struct perf_sample {
+ 	void *raw_data;
+ 	struct ip_callchain *callchain;
+ 	struct branch_stack *branch_stack;
++	struct regs_dump  user_regs;
++	struct stack_dump user_stack;
+ };
  
- ifneq ($(OUTPUT),)
-@@ -522,6 +541,14 @@ endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
- endif # NO_LIBELF
+ #define BUILD_ID_SIZE 20
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 2eaae14..a2da682 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -8,6 +8,7 @@
+  */
  
-+ifdef NO_LIBUNWIND
-+	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
-+else
-+	EXTLIBS += $(LIBUNWIND_LIBS)
-+	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
-+endif
+ #include <byteswap.h>
++#include <linux/bitops.h>
+ #include "asm/bug.h"
+ #include "evsel.h"
+ #include "evlist.h"
+@@ -733,6 +734,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *data, bool swapped)
+ {
+ 	u64 type = evsel->attr.sample_type;
++	u64 regs_user = evsel->attr.sample_regs_user;
+ 	const u64 *array;
+ 
+ 	/*
+@@ -869,6 +871,32 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		sz /= sizeof(u64);
+ 		array += sz;
+ 	}
 +
- ifdef NO_NEWT
- 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
- else
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 6c18785..2f1156a 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -154,3 +154,28 @@ int main(void)
++	if (type & PERF_SAMPLE_REGS_USER) {
++		/* First u64 tells us if we have any regs in sample. */
++		u64 avail = *array++;
++
++		if (avail) {
++			data->user_regs.regs = (u64 *)array;
++			array += hweight_long(regs_user);
++		}
++	}
++
++	if (type & PERF_SAMPLE_STACK_USER) {
++		u64 size = *array++;
++
++		data->user_stack.offset = ((char *)(array - 1)
++					  - (char *) event);
++
++		if (!size) {
++			data->user_stack.size = 0;
++		} else {
++			data->user_stack.data = (char *)array;
++			array += size / sizeof(*array);
++			data->user_stack.size = *array;
++		}
++	}
++
  	return 0;
  }
- endef
-+
-+ifndef NO_LIBUNWIND
-+define SOURCE_LIBUNWIND
-+#include <libunwind.h>
-+#include <stdlib.h>
-+
-+extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-+                                      unw_word_t ip,
-+                                      unw_dyn_info_t *di,
-+                                      unw_proc_info_t *pi,
-+                                      int need_unwind_info, void *arg);
-+
-+
-+#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
-+
-+int main(void)
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index dd5a53c..7e7d34f 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1830,6 +1830,8 @@ static const int attr_file_abi_sizes[] = {
+ 	[0] = PERF_ATTR_SIZE_VER0,
+ 	[1] = PERF_ATTR_SIZE_VER1,
+ 	[2] = PERF_ATTR_SIZE_VER2,
++	[3] = PERF_ATTR_SIZE_VER3,
++	[4] = PERF_ATTR_SIZE_VER4,
+ 	0,
+ };
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 2437fb0..c9ed7e3 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -15,6 +15,7 @@
+ #include "util.h"
+ #include "cpumap.h"
+ #include "event-parse.h"
++#include "perf_regs.h"
+ 
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+@@ -860,6 +861,34 @@ static void branch_stack__printf(struct perf_sample *sample)
+ 			sample->branch_stack->entries[i].to);
+ }
+ 
++static void regs_dump__printf(u64 mask, u64 *regs)
 +{
-+	unw_addr_space_t addr_space;
-+	addr_space = unw_create_addr_space(NULL, 0);
-+	unw_init_remote(NULL, addr_space, NULL);
-+	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
-+	return 0;
++	unsigned rid, i = 0;
++
++	for_each_set_bit(rid, (unsigned long *) &mask, sizeof(mask) * 8) {
++		u64 val = regs[i++];
++
++		printf(".... %-5s 0x%" PRIx64 "\n",
++		       perf_reg_name(rid), val);
++	}
 +}
-+endef
-+endif
++
++static void regs_user__printf(struct perf_sample *sample, u64 mask)
++{
++	struct regs_dump *user_regs = &sample->user_regs;
++
++	if (user_regs->regs) {
++		printf("... user regs: mask 0x%" PRIx64 "\n", mask);
++		regs_dump__printf(mask, user_regs->regs);
++	}
++}
++
++static void stack_user__printf(struct stack_dump *dump)
++{
++	printf("... ustack: size %" PRIu64 ", offset 0x%x\n",
++	       dump->size, dump->offset);
++}
++
+ static void perf_session__print_tstamp(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_sample *sample)
+@@ -897,7 +926,7 @@ static void dump_event(struct perf_session *session, union perf_event *event,
+ 	       event->header.size, perf_event__name(event->header.type));
+ }
+ 
+-static void dump_sample(struct perf_session *session, union perf_event *event,
++static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			struct perf_sample *sample)
+ {
+ 	u64 sample_type;
+@@ -909,13 +938,19 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 	       event->header.misc, sample->pid, sample->tid, sample->ip,
+ 	       sample->period, sample->addr);
+ 
+-	sample_type = perf_evlist__sample_type(session->evlist);
++	sample_type = evsel->attr.sample_type;
+ 
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN)
+ 		callchain__printf(sample);
+ 
+ 	if (sample_type & PERF_SAMPLE_BRANCH_STACK)
+ 		branch_stack__printf(sample);
++
++	if (sample_type & PERF_SAMPLE_REGS_USER)
++		regs_user__printf(sample, evsel->attr.sample_regs_user);
++
++	if (sample_type & PERF_SAMPLE_STACK_USER)
++		stack_user__printf(&sample->user_stack);
+ }
+ 
+ static struct machine *
+@@ -973,7 +1008,7 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 
+ 	switch (event->header.type) {
+ 	case PERF_RECORD_SAMPLE:
+-		dump_sample(session, event, sample);
++		dump_sample(evsel, event, sample);
+ 		if (evsel == NULL) {
+ 			++session->hists.stats.nr_unknown_id;
+ 			return 0;
