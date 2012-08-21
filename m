@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab2HUK2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 06:28:15 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60354 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756231Ab2HUK2M (ORCPT
+	id S1756338Ab2HUK20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 06:28:26 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49155 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756253Ab2HUK2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 06:28:12 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: irq: Allow users to retrieve the irq_domain
-Date: Tue, 21 Aug 2012 11:28:09 +0100
-Message-Id: <1345544889-7720-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 21 Aug 2012 06:28:13 -0400
+Date: Tue, 21 Aug 2012 12:28:11 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 21/31] arm64: 32-bit (compat) applications support
+Message-ID: <20120821102811.GA22126@elf.ucw.cz>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-22-git-send-email-catalin.marinas@arm.com>
+ <20120820105308.GA906@elf.ucw.cz>
+ <201208202034.55135.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208202034.55135.arnd@arndb.de>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is useful for integration with other subsystems, especially MFD,
-and provides an alternative API for users that request their own IRQs.
+On Mon 2012-08-20 20:34:54, Arnd Bergmann wrote:
+> On Monday 20 August 2012, Pavel Machek wrote:
+> > > This patch adds support for 32-bit applications. The vectors page is a
+> > > binary blob mapped into the application user space at 0xffff0000 (the
+> > > AArch64 toolchain does not support compilation of AArch32 code). Full
+> > > compatibility with ARMv7 user space is supported. The use of deprecated
+> > > ARMv7 functionality (SWP, CP15 barriers) has been disabled by default on
+> > > AArch64 kernels and unaligned LDM/STM is not supported.
+> > > 
+> > > Please note that only the ARM 32-bit EABI is supported, so no OABI
+> > > compatibility.
+> > 
+> > > +struct compat_statfs {
+> > > +     int             f_type;
+> > > +     int             f_bsize;
+> > > +     int             f_blocks;
+> > > +     int             f_bfree;
+> > > +     int             f_bavail;
+> > > +     int             f_files;
+> > > +     int             f_ffree;
+> > > +     compat_fsid_t   f_fsid;
+> > > +     int             f_namelen;      /* SunOS ignores this field. */
+> > 
+> > I'm sure it does. But is it good comment?
+> 
+> Good catch. It seems that some of the other compat platforms (x86,
+> sparc, powerpc) have the same thing. I guess the real solution would
+> be to introduce an asm-generic/compat.h file that contains a bunch
+> of those definitions, like
+> 
+> #ifndef compat_timespec
+> struct compat_timespec {
+>         compat_time_t   tv_sec;
+>         s32             tv_nsec;
+> };
+> #endif
+> 
+> #ifndef compat_timeval
+> struct compat_timeval {
+>         compat_time_t   tv_sec;
+>         s32             tv_usec;
+> };
+> #endif
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap-irq.c |   19 +++++++++++++++++++
- include/linux/regmap.h           |    2 ++
- 2 files changed, 21 insertions(+)
-
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index bb5e103..78b833f 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -450,3 +450,22 @@ int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq)
- 	return irq_create_mapping(data->domain, irq);
- }
- EXPORT_SYMBOL_GPL(regmap_irq_get_virq);
-+
-+/**
-+ * regmap_irq_get_domain(): Retrieve the irq_domain for the chip
-+ *
-+ * Useful for drivers to request their own IRQs and for integration
-+ * with subsystems.  For ease of integration NULL is accepted as a
-+ * domain, allowing devices to just call this even if no domain is
-+ * allocated.
-+ *
-+ * @data: regmap_irq controller to operate on.
-+ */
-+struct irq_domain *regmap_irq_get_domain(struct regmap_irq_chip_data *data)
-+{
-+	if (data)
-+		return data->domain;
-+	else
-+		return NULL;
-+}
-+EXPORT_SYMBOL_GPL(regmap_irq_get_domain);
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 9c4c9c67..a0f76c1 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -19,6 +19,7 @@
- struct module;
- struct device;
- struct i2c_client;
-+struct irq_domain;
- struct spi_device;
- struct regmap;
- struct regmap_range_cfg;
-@@ -316,6 +317,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
- int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data);
- int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq);
-+struct irq_domain *regmap_irq_get_domain(struct regmap_irq_chip_data *data);
- 
- #else
- 
+Yes, I guess that would be very good.
+									Pavel
 -- 
-1.7.10.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
