@@ -1,124 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab2HUJ2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:28:10 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47558 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab2HUJ2G convert rfc822-to-8bit (ORCPT
+	id S1755828Ab2HUJ3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:29:24 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:40029 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab2HUJ3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:28:06 -0400
-Message-ID: <503354A0.5010707@parallels.com>
-Date: Tue, 21 Aug 2012 13:28:00 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 21 Aug 2012 05:29:21 -0400
+Date: Tue, 21 Aug 2012 05:28:54 -0400 (EDT)
+From: Tomas Racek <tracek@redhat.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Borislav Petkov <borislav.petkov@amd.com>, kvm-devel <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>
+Message-ID: <592618508.2357204.1345541334852.JavaMail.root@redhat.com>
+In-Reply-To: <5033371C.9040703@msgid.tls.msk.ru>
+Subject: Re: [Qemu-devel] x86, nops settings result in kernel crash
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>, "neilb@suse.de" <neilb@suse.de>
-Subject: Re: [PATCH v3] SUNRPC: protect service sockets lists during per-net
- shutdown
-References: <20120703125851.3850.86782.stgit@localhost.localdomain> <20120724194036.GK8570@fieldses.org> <20120816192902.GB4385@fieldses.org> <50321A0D.1020904@parallels.com> <20120820145656.GB1411@fieldses.org> <50325384.9070506@parallels.com> <20120820165852.GF1411@fieldses.org>
-In-Reply-To: <20120820165852.GF1411@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.34.27.4]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC20 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.08.2012 20:58, J. Bruce Fields пишет:
-> On Mon, Aug 20, 2012 at 07:11:00PM +0400, Stanislav Kinsbursky wrote:
->> 20.08.2012 18:56, J. Bruce Fields пишет:
->>> On Mon, Aug 20, 2012 at 03:05:49PM +0400, Stanislav Kinsbursky wrote:
->>>> 16.08.2012 23:29, J. Bruce Fields пишет:
->>>>> Looking back at this:
->>>>>
->>>>> 	- adding the sv_lock looks like the right thing to do anyway
->>>>> 	  independent of containers, because svc_age_temp_xprts may
->>>>> 	  still be running.
->>>>>
->>>>> 	- I'm increasingly unhappy about sharing rpc servers between
->>>>> 	  network namespaces.  Everything would be easier to understand
->>>>> 	  if they were independent.  Can we figure out how to do that?
->>>>>
->>>>
->>>> Could you, please, elaborate on your your unhappiness?
->>>
->>> It seems like you're having to do a lot of work on each individual rpc
->>> server (callback server, lockd, etc.) to make per-net startup/shutdown
->>> work.  And then we still don't have it quite right (see the shutdown
->>> races).)
->>>
->>> In general whenever we have the opportunity to have entirely separate
->>> data structures, I'd expect that to simplify things: it should eliminate
->>> some locking and reference-counting issues.
->>>
->>
->> Agreed. But current solution still looks like the easies way to me
->> to implement desired functionality.
->>
->>>> I.e. I don't like it too. But the problem here, is that rpc server
->>>> is tied with kernel threads creation and destruction. And these
->>>> threads can be only a part of initial pid namespace (because we have
->>>> only one kthreadd). And we decided do not create new kernel thread
->>>> per container when were discussing the problem last time.
->>>
->>> There really should be some way to create a kernel thread in a specific
->>> namespace, shouldn't there?
->>>
->>
->>
->> Kthreads support in a container is rather a "political" problem,
->> than an implementation problem.
->
-> Is there a mail thread somewhere with a summary of the objections?
->
+> On 20.08.2012 21:13, Tomas Racek wrote:
+> []
+> Can we trim the old, large and now not-so-relevant discussion please?
+> ;)
+> 
+> > I can provide you with more different traces if it can help. But I
+> > thought that maybe it will be more useful for you to try it on
+> > your own. So I've prepared some minimal debian installation which
+> > you could download here (apx 163M bzipped):
+> > 
+> > http://fi.muni.cz/~xracek/debian.img.bz2
+> > 
+> > Password:
+> > root/asdfgh
+> > 
+> > Here is my config for guest kernel:
+> > 
+> > http://fi.muni.cz/~xracek/config
+> > 
+> > I use
+> > 
+> > qemu-kvm -m 1500 -hda debian.img -kernel
+> > linux/arch/x86/boot/bzImage -append "root=/dev/sda1"
+> 
+> Um.  I'd expect the image to be self-contained, no external kernel.
+> I wanted to do a quick test to see if it fails on my machine too,
+> d/loaded debian.img.bz2 but there's no kernel.  So.. no quick test
+> for you ;)
 
-I can't specify right now. Need to search over lkml history.
-That's all what I've found for now:
-http://us.generation-nt.com/patch-cgroups-disallow-attaching-kthreadd-help-207003852.html
+Well, the point was to use the latest sources instead of some image which can be obsolete tomorrow. However I created a new image with today's kernel which you can use:
 
->> Currently, when you call kthread_create(), you add new job to
->> kthreadd queue. Kthreadd is unique, starts right after init and
->> lives in global initial environment. So, any kthread inherits
->> namespaces from it.
->> Of course, we can start one kthread per environment and change it's
->> root or even network namespace in kthread function. But pid
->> namespace of this kthread will remain global.
->
-> OK.  But the current implementation will leave all the server threads in
-> the initial pid namespace, too.
->
->> It looks like not a big problem, when we shutdown kthread by some
->> variable. But what about killable nfsd kthreads?
->
-> And we're stuck with that problem either way too, aren't we?
->
+http://fi.muni.cz/~xracek/debian2.img.bz2
 
-Yes, we are. But at least we are avoiding patching of task subsystem.
+Other things are the same.
 
->> 1) We can't kill them from nested pid namespace.
->> 2) How we will differ nfsd kthreads in initial pid namespace?
->
-> I have to admit for my purposes I don't care too much about pid
-> namespaces or about signalling server threads.  It'd be nice to get
-> those things right but it wouldn't bother me that much not to.
->
-> Another stupid idea: can we do our own implementation of something like
-> kthreadd just for the purpose of starting rpc server threads?  It
-> doesn't seem that complicated.
->
+The runtest.sh sets environment for xfstests and runs test 285 which I wrote and and which should test if FS sends discard requests only on free sectors:
+285:
+1. Create loop device and FS on it.
+2. Populate it with some garbage.
+3. Get free sectors from FS.
+4. Run fstrim and look for discard requests via blk tracer.
+5. Compare free sectors to discard requests.
 
-Gm...
-This idea is not stupid. If I understand you right, you suggest to implement a 
-service per network namespace (i.e. not only data, but also threads)?
+The test itself can have some issues but I'm pretty sure it shouldn't crash the system. ;-)
 
-> --b.
->
->> In OpenVZ we have kthreadd per pid hamespace and it allows us to
->> create kthreads (and thus services) per pid namespace.
+Regards,
+Tom
 
-
--- 
-Best regards,
-Stanislav Kinsbursky
+> 
+> > After logging in just run "sh runtest.sh". This leads to crash in
+> > my case (host: Intel Core i5-2540M, kernel 3.5.2-1.fc17.x86_64,
+> > qemu 1.0.1).
+> 
+> With all the above, this "runtest.sh" is informationally equal to
+> your disk image.
+> 
+> /mjt
+> 
