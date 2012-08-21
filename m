@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758642Ab2HUVgl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 17:36:41 -0400
-Received: from mout.perfora.net ([74.208.4.194]:50240 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758448Ab2HUVgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 17:36:39 -0400
-Date: Tue, 21 Aug 2012 17:22:27 -0400
-From: Jim Rees <rees@umich.edu>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] strings: helper for maximum decimal encoding of an
- unsigned integer
-Message-ID: <20120821212227.GA14194@umich.edu>
-References: <20120821212910.GD18637@fieldses.org>
+	id S1758657Ab2HUVis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 17:38:48 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46568 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758482Ab2HUVin (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 17:38:43 -0400
+Message-ID: <5033FFE0.5070209@wwwdotorg.org>
+Date: Tue, 21 Aug 2012 15:38:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821212910.GD18637@fieldses.org>
-X-Provags-ID: V02:K0:IPR7h/3v7t1kmVTCOrGhguC82mNJXoQESzwxkeviRpe
- 2VpJc/CaZzt1meLNLfcnrsQOjuR6mqWrAhnYhZo5DIdnPr2E/+
- uM5MvIdDjtvaij3cRVsNnXP2N+cALWmRlqCnM6F9N8tvIeWt7c
- eS0WORzDJigOrLvn9h2sv291VtjdRze4ST03tMgsjNV3WcdYML
- dnQ5tdgDi55crg6ikK4TssVN+2XxI9KiGPlPT297HY2pivGGpc
- 4k3K9cHTuekE6XCU146Idif3zpDlfkaFOsBcHZqJE9G9mWenFX
- 2B6Hr20N2yyQERckGvSiitpm0gZqfgDtD/YeM72k+43mC7JlA=
- =
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, kgene.kim@samsung.com,
+        Dong Aisheng <dong.aisheng@linaro.org>
+Subject: Re: [PATCH v2 1/4] pinctrl: add samsung pinctrl and gpiolib driver
+References: <1345060656-32201-1-git-send-email-thomas.abraham@linaro.org> <1345060656-32201-2-git-send-email-thomas.abraham@linaro.org> <CACRpkdYqPYesgE-YxPLZqROw1T2fsPWR6R+aDTTz2=XbP7oe9A@mail.gmail.com>
+In-Reply-To: <CACRpkdYqPYesgE-YxPLZqROw1T2fsPWR6R+aDTTz2=XbP7oe9A@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-J. Bruce Fields wrote:
+On 08/21/2012 05:25 AM, Linus Walleij wrote:
+> On Wed, Aug 15, 2012 at 9:57 PM, Thomas Abraham
+> <thomas.abraham@linaro.org> wrote:
+> 
+>> Add a new device tree enabled pinctrl and gpiolib driver for Samsung
+>> SoC's.
+...
+>> +  The child node can also optionally specify one or more of the pin
+>> +  configuration that should be applied on all the pins listed in the
+>> +  "samsung,pins" property of the child node. The following pin configuration
+>> +  properties are supported.
+>> +
+>> +  - samsung,pin-pud: Pull up/down configuration.
+>> +  - samsung,pin-drv: Drive strength configuration.
+>> +  - samsung,pin-pud-pdn: Pull up/down configuration in power down mode.
+>> +  - samsung,pin-drv-pdn: Drive strength configuration in power down mode.
+> 
+> This looks a bit scary, as it seems to be orthogonal to the pin config
+> interface. I.e. this will be programmed "behind the back" of the
+> pin config system. However as long as the pin config implementation
+> reads back these things from the registers it will work, too.
+> 
+> In the U300 and Ux500 I explicitly use pin config hogs to set up
+> the pin configuration, and when we enter a state such as
+> "default" the mux setting and config settings are set from the
+> framework separately.
 
-  From: "J. Bruce Fields" <bfields@redhat.com>
-  
-  I've seen a couple examples recently where we've gotten this wrong.
-  Maybe something like this would help?  Is there some better way?
-  
-  (Approximation due to Jim Rees).
+I know that some HW has a separate set of registers (or fields) for the
+"awake" and "sleep" configuration, and the HW switches between the two
+automatically when sleeping. I have no idea if the Samsung SoCs do this,
+but I think if this were the case, it'd be quite legitimate to define
+both these HW states as separate sets of properties within a single
+pinctrl SW state. So, that might be the explanation here?
 
-Please add Suggested-by: Jim Rees <rees@umich.edu>.  I'm thinking of
-patenting the algorithm.
