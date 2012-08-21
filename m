@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2HUIrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:47:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64982 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab2HUIre (ORCPT
+	id S1754598Ab2HUIuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:50:20 -0400
+Received: from smtp-out-188.synserver.de ([212.40.185.188]:1086 "EHLO
+	smtp-out-188.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab2HUIuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:47:34 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
-Date: Tue, 21 Aug 2012 08:47:18 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Hein Tibosch <hein_tibosch@yahoo.es>,
-        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org, "spear-devel" <spear-devel@list.st.com>
-References: <502BC31E.4070200@yahoo.es> <201208210834.53544.arnd.bergmann@linaro.org> <CAKohpokhM5WkUK6ww8Neu+fx554+-4uBCsNzBxB9q5rcqSf6cw@mail.gmail.com>
-In-Reply-To: <CAKohpokhM5WkUK6ww8Neu+fx554+-4uBCsNzBxB9q5rcqSf6cw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208210847.18700.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:Z0giR3l2R/bw2OkEp/eu1tJvYgbtRJSvRO9a5ZP2/85
- q/ufHSN/85zXns0Bm2OAGb0bjjuL4cUb92wQdb0Caq//ZTkwrW
- 6f5wg8gTYKXRRW8LJnpRKauphuYLNcK0Yx/UgegMaz7LgAN2zp
- FwVeF9iBvtDOTvje1KzjLDOjdA6v/va4kQANcfiTe2Czjf78eR
- myaDmUUbkPdI9y8KqxEo3FDUNEMiSx04zklY0QeFHKVewGXXr+
- +tBvd0QgW094DEQg90hF2vjI8j4rgOODnr4ZPaxRTJUmnWwGRC
- lJ4SyKdtBkBtj4oDCfuMX+Kt6Rl98St7tpZ6lkoDPI0P77ao45
- BJxweNXk6SQpdE8G7qePpwGky63c1899I24LzVbXp
+	Tue, 21 Aug 2012 04:50:14 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 6848
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Julia Lawall <julia@diku.dk>
+Cc: cocci@diku.dk, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] scripts/coccinelle: ptr_ret: Add ternary operator version
+Date: Tue, 21 Aug 2012 10:49:58 +0200
+Message-Id: <1345538998-24600-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 August 2012, Viresh Kumar wrote:
-> On 21 August 2012 14:04, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
->
-> > Yes, this is very strange. Maybe the compiler already splits the
-> > access into two 16-byte loads and that confuses the device?
->
-> @Arnd: Is compiler allowed to do that even when we have volatile specified
-> for the access? It shouldn't optimize the access at all i believe.
+Add a ternary operator version of the open-coded PTR_RET().
 
-Yes. The "volatile" keyword implies that the compiler has to do the access
-exactly once and that it cannot reorder the access with others on the same
-address, or read more data than is specified, but it can (and does) split
-the access if there is a reason for that, e.g. when the address might
-be misaligned and the architecture cannot do misaligned loads.
-	
-	Arnd
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ scripts/coccinelle/api/ptr_ret.cocci |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/coccinelle/api/ptr_ret.cocci b/scripts/coccinelle/api/ptr_ret.cocci
+index cbfd08c..15f076f 100644
+--- a/scripts/coccinelle/api/ptr_ret.cocci
++++ b/scripts/coccinelle/api/ptr_ret.cocci
+@@ -30,6 +30,13 @@ expression ptr;
+ - if (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
+ + return PTR_RET(ptr);
+ 
++@depends on patch@
++expression ptr;
++@@
++
++- (IS_ERR(ptr) ? PTR_ERR(ptr) : 0)
+++ PTR_RET(ptr)
++
+ @r1 depends on !patch@
+ expression ptr;
+ position p1;
+@@ -44,6 +51,13 @@ position p2;
+ 
+ * if@p2 (IS_ERR(ptr)) return PTR_ERR(ptr); return 0;
+ 
++@r3 depends on !patch@
++expression ptr;
++position p3;
++@@
++
++* IS_ERR@p3(ptr) ? PTR_ERR(ptr) : 0
++
+ @script:python depends on org@
+ p << r1.p1;
+ @@
+@@ -57,6 +71,12 @@ p << r2.p2;
+ 
+ coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
+ 
++@script:python depends on org@
++p << r3.p3;
++@@
++
++coccilib.org.print_todo(p[0], "WARNING: PTR_RET can be used")
++
+ @script:python depends on report@
+ p << r1.p1;
+ @@
+@@ -68,3 +88,9 @@ p << r2.p2;
+ @@
+ 
+ coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
++
++@script:python depends on report@
++p << r3.p3;
++@@
++
++coccilib.report.print_report(p[0], "WARNING: PTR_RET can be used")
+-- 
+1.7.2.5
+
