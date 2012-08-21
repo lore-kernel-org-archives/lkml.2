@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab2HUL62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 07:58:28 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:46322 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754650Ab2HUL60 (ORCPT
+	id S1753636Ab2HUMCX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:02:23 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53623 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab2HUMCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 07:58:26 -0400
-Date: Tue, 21 Aug 2012 14:54:27 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>
-Subject: Re: [RFC/PATCH 02/13] serial: omap: always return IRQ_HANDLED
-Message-ID: <20120821115426.GC10347@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1345540555-24359-1-git-send-email-balbi@ti.com>
- <1345540555-24359-3-git-send-email-balbi@ti.com>
- <20120821125005.235926e0@bob.linux.org.uk>
+	Tue, 21 Aug 2012 08:02:19 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9uNR01GrImESOVvg"
-Content-Disposition: inline
-In-Reply-To: <20120821125005.235926e0@bob.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1345060656-32201-3-git-send-email-thomas.abraham@linaro.org>
+References: <1345060656-32201-1-git-send-email-thomas.abraham@linaro.org>
+	<1345060656-32201-3-git-send-email-thomas.abraham@linaro.org>
+Date: Tue, 21 Aug 2012 14:02:18 +0200
+Message-ID: <CACRpkdYiJOkHrjZ22_0onRHc0ApmBLj+tXPa4SrPo2h0d=fJHA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] pinctrl: add exynos4210 specific extensions for
+ samsung pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, kgene.kim@samsung.com, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 15, 2012 at 9:57 PM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
 
---9uNR01GrImESOVvg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Add information about the Exynos4210 pin banks and driver data which is
+> used by the Samsung pinctrl driver. In addition to this, the support for
+> external gpio and wakeup interrupt support is included and hooked up with
+> the Samsung pinctrl driver.
 
-On Tue, Aug 21, 2012 at 12:50:05PM +0100, Alan Cox wrote:
-> On Tue, 21 Aug 2012 12:15:44 +0300
-> Felipe Balbi <balbi@ti.com> wrote:
->=20
-> > Even if we enter our IRQ handler just to notice
-> > that the our device didn't generate the IRQ,
-> > that still means "handling" and IRQ, so let's
-> > return IRQ_HANDLED.
->=20
-> That looks wrong - you'll defeat the stuck IRQ protection. If we didn't
-> cause the IRQ then we are IRQ_NONE ?
+OK...
 
-that's true. I'll drop this patch from the list. My bad.
+> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+> +config PINCTRL_EXYNOS4
+> +       bool "Pinctrl driver data for Exynos4 SoC"
+> +       depends on ARCH_EXYNOS4 && OF
 
---=20
-balbi
+Since you depend on PINCTRL_SAMSUNG which depends
+on OF you don't need to depend on OF here.
 
---9uNR01GrImESOVvg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +       depends on PINCTRL_SAMSUNG
+> +       select PINMUX
+> +       select PINCONF
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+So as noted in the main driver, let PINCTRL_SAMSUNG
+select PINMUX and PINCONF and you need only select
+PINCTRL_SAMSUNG here.
 
-iQIcBAEBAgAGBQJQM3byAAoJEIaOsuA1yqREUO0P/AtKnPqH9TaUDrx6vMjdGugP
-0SsYwJTMErf9Ipt5bBvTzwLBixOnPu8yVJBayjoxQ/lvlSdeTLNQoo/oLYTG6oVI
-v5Fxi7sAG+FJQ9Kwiw6PC4sWUSLhA5wVmvIABqYVmYfIi1OewM5oOT1m/ER4QGnw
-2H4Hn1b7v7nsIagpsMkKkBJ1SqCoyQbq8S9VAC80IhVUwpglSTX7SiimxTiPKqwY
-MJ/5c/0KgD3GwXYvZ1iFeuNYnvO1E9XBpFVb8kGUc5PtUl4HRsaFiEd5uCsfxxzL
-13k0CnQR/vap1lzThBdzAvS6P3ZvekovMGB0mrZzalfJFU2P3reUDjI3jcF8uf/C
-sVyxEzymzQXV/BtIKmg0hPAzUBJd6CPoJqZ2j1TjszREPKDAe9qJ77pwKu+C+Tmt
-ZmOe/DOiXJuxFjcSsHEO3Fz4l5Q5tZDg3rCrlhjhIaW4pNCKYf9ChC4ABIQA30ES
-uJfRKNzwa0hGa8FqmWXaDBllgsNLGZ7tFJLxpY9kQROnZXmadSOxKzr5XRUhEntS
-ttkQjAqh8bKSMRr60PrLe1xEl+3g3fQX97vtYuJTdclnlaBZo6brkQLANaTJtzTn
-gYcpG1rbkOt563SORWOoQphgIbWGyreyaimzdIjhe4QjOQhkKFA9ojGBLufspqEi
-zbtNiNMCyFGdHrDnXDM8
-=ezih
------END PGP SIGNATURE-----
+> diff --git a/drivers/pinctrl/pinctrl-exynos.c b/drivers/pinctrl/pinctrl-exynos.c
+(...)
+> +#include <linux/interrupt.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/irq.h>
+> +#include <linux/of_irq.h>
 
---9uNR01GrImESOVvg--
+Do you need these includes? Didn't you put them
+all in "pinctrl-samsung.h"?
+
+Overall this looks good and straight-forward, but I cannot figure
+out how the samsung_pinctrl_soc_data is passed to the main
+driver, it seems to be through some DT node but I cannot figure
+this out. Can you explain this?
+
+Yours,
+Linus Walleij
