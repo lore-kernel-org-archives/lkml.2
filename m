@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab2HUJX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:23:57 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:33445 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752200Ab2HUJUC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:20:02 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: alan@linux.intel.com
-Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [RFC/PATCH 02/13] serial: omap: always return IRQ_HANDLED
-Date: Tue, 21 Aug 2012 12:15:44 +0300
-Message-Id: <1345540555-24359-3-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.12.rc3
-In-Reply-To: <1345540555-24359-1-git-send-email-balbi@ti.com>
-References: <1345540555-24359-1-git-send-email-balbi@ti.com>
+	id S1755385Ab2HUJZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:25:25 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:39261 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200Ab2HUJZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 05:25:22 -0400
+Message-ID: <50335341.6010400@parallels.com>
+Date: Tue, 21 Aug 2012 13:22:09 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
+ children
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <20120817090005.GC18600@dhcp22.suse.cz> <502E0BC3.8090204@parallels.com> <20120817093504.GE18600@dhcp22.suse.cz> <502E17C4.7060204@parallels.com> <20120817103550.GF18600@dhcp22.suse.cz> <502E1E90.1080805@parallels.com> <20120821075430.GA19797@dhcp22.suse.cz>
+In-Reply-To: <20120821075430.GA19797@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if we enter our IRQ handler just to notice
-that the our device didn't generate the IRQ,
-that still means "handling" and IRQ, so let's
-return IRQ_HANDLED.
+On 08/21/2012 11:54 AM, Michal Hocko wrote:
+> On Fri 17-08-12 14:36:00, Glauber Costa wrote:
+>> On 08/17/2012 02:35 PM, Michal Hocko wrote:
+>>>>> But I never said that can't happen. I said (ok, I meant) the static
+>>>>> branches can't be disabled.
+>>> Ok, then I misunderstood that because the comment was there even before
+>>> static branches were introduced and it made sense to me. This is
+>>> inconsistent with what we do for user accounting because even if we set
+>>> limit to unlimitted we still account. Why should we differ here?
+>>
+>> Well, we account even without a limit for user accounting. This is a
+>> fundamental difference, no ?
+> 
+> Yes, user memory accounting is either on or off all the time (switchable
+> at boot time). 
+> My understanding of kmem is that the feature is off by default because
+> it brings an overhead that is worth only special use cases. And that
+> sounds good to me. I do not see a good reason to have runtime switch
+> off. It makes the code more complicated for no good reason. E.g. how do
+> you handle charges you left behind? Say you charged some pages for
+> stack?
+> 
+Answered in your other e-mail. About the code complication, yes, it does
+make the code more complicated. See below.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/tty/serial/omap-serial.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> But maybe you have a good use case for that?
+> 
+Honestly, I don't. For my particular use case, this would be always on,
+and end of story. I was operating under the belief that being able to
+say "Oh, I regret", and then turning it off would be beneficial, even at
+the expense of the - self contained - complication.
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index 5c0d0bc..b4b95fc 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -417,7 +417,7 @@ static inline irqreturn_t serial_omap_irq(int irq, void *dev_id)
- 	if (iir & UART_IIR_NO_INT) {
- 		pm_runtime_mark_last_busy(&up->pdev->dev);
- 		pm_runtime_put_autosuspend(&up->pdev->dev);
--		return IRQ_NONE;
-+		return IRQ_HANDLED;
- 	}
- 
- 	spin_lock_irqsave(&up->port.lock, flags);
--- 
-1.7.12.rc3
+For the general sanity of the interface, it is also a bit simpler to say
+"if kmem is unlimited, x happens", which is a verifiable statement, than
+to have a statement that is dependent on past history. But all of those
+need of course, as you pointed out, to be traded off by the code complexity.
+
+I am fine with either, I just need a clear sign from you guys so I don't
+keep deimplementing and reimplementing this forever.
+
 
