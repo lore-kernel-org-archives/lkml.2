@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab2HUSqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:46:20 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33367 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab2HUSpU (ORCPT
+	id S1754799Ab2HUSsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:48:52 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55773 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab2HUSst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:45:20 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 5/8] netdev: octeon_mgmt: Set the parent device.
-Date: Tue, 21 Aug 2012 11:45:09 -0700
-Message-Id: <1345574712-21444-6-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
+	Tue, 21 Aug 2012 14:48:49 -0400
+Date: Tue, 21 Aug 2012 19:52:34 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+Message-ID: <20120821195234.20c173bc@pyramind.ukuu.org.uk>
+In-Reply-To: <20120821182346.GA7325@gmail.com>
+References: <1345043096.31459.106.camel@twins>
+	<502BE38D.9030405@linux.intel.com>
+	<20120820080606.GA6931@gmail.com>
+	<20120820181651.GA737@srcf.ucam.org>
+	<20120821094203.GB12385@gmail.com>
+	<20120821113951.GA22436@srcf.ucam.org>
+	<20120821151910.GA5359@gmail.com>
+	<20120821152828.GB28241@srcf.ucam.org>
+	<20120821155908.GA5499@gmail.com>
+	<20120821161324.GA29665@srcf.ucam.org>
+	<20120821182346.GA7325@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+> Why? Good scheduling is useful even in isolation.
 
-This establishes useful links in sysfs.
+For power - I suspect it's damn near irrelevant except on a big big
+machine.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/net/ethernet/octeon/octeon_mgmt.c | 2 ++
- 1 file changed, 2 insertions(+)
+Unless you've sorted out your SATA, fixed your phy handling, optimised
+your desktop for wakeups and worked down the big wakeup causes one by one
+it's turd polishing.
 
-diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
-index cf06cf2..3bae01f 100644
---- a/drivers/net/ethernet/octeon/octeon_mgmt.c
-+++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
-@@ -1446,6 +1446,8 @@ static int __devinit octeon_mgmt_probe(struct platform_device *pdev)
- 	if (netdev == NULL)
- 		return -ENOMEM;
- 
-+	SET_NETDEV_DEV(netdev, &pdev->dev);
-+
- 	dev_set_drvdata(&pdev->dev, netdev);
- 	p = netdev_priv(netdev);
- 	netif_napi_add(netdev, &p->napi, octeon_mgmt_napi_poll,
--- 
-1.7.11.4
+PM means fixing the stack top to bottom, and its a whackamole game, each
+one you fix you find the next. You have to sort the entire stack from
+desktop apps to kernel.
 
+However benchmarks talk - so lets have some benchmarks ... on a laptop.
+
+Alan
