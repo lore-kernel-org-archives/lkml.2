@@ -1,108 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab2HUJ0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:26:17 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45972 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab2HUJ0M (ORCPT
+	id S1755563Ab2HUJ2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:28:10 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47558 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab2HUJ2G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:26:12 -0400
-Date: Tue, 21 Aug 2012 11:26:06 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 00/19] [GIT PULL][v3.6] ftrace: Allow kprobes to work
- with ftace
-Message-ID: <20120821092606.GA12202@gmail.com>
-References: <20120721021943.274162381@goodmis.org>
+	Tue, 21 Aug 2012 05:28:06 -0400
+Message-ID: <503354A0.5010707@parallels.com>
+Date: Tue, 21 Aug 2012 13:28:00 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120721021943.274162381@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>, "neilb@suse.de" <neilb@suse.de>
+Subject: Re: [PATCH v3] SUNRPC: protect service sockets lists during per-net
+ shutdown
+References: <20120703125851.3850.86782.stgit@localhost.localdomain> <20120724194036.GK8570@fieldses.org> <20120816192902.GB4385@fieldses.org> <50321A0D.1020904@parallels.com> <20120820145656.GB1411@fieldses.org> <50325384.9070506@parallels.com> <20120820165852.GF1411@fieldses.org>
+In-Reply-To: <20120820165852.GF1411@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+20.08.2012 20:58, J. Bruce Fields пишет:
+> On Mon, Aug 20, 2012 at 07:11:00PM +0400, Stanislav Kinsbursky wrote:
+>> 20.08.2012 18:56, J. Bruce Fields пишет:
+>>> On Mon, Aug 20, 2012 at 03:05:49PM +0400, Stanislav Kinsbursky wrote:
+>>>> 16.08.2012 23:29, J. Bruce Fields пишет:
+>>>>> Looking back at this:
+>>>>>
+>>>>> 	- adding the sv_lock looks like the right thing to do anyway
+>>>>> 	  independent of containers, because svc_age_temp_xprts may
+>>>>> 	  still be running.
+>>>>>
+>>>>> 	- I'm increasingly unhappy about sharing rpc servers between
+>>>>> 	  network namespaces.  Everything would be easier to understand
+>>>>> 	  if they were independent.  Can we figure out how to do that?
+>>>>>
+>>>>
+>>>> Could you, please, elaborate on your your unhappiness?
+>>>
+>>> It seems like you're having to do a lot of work on each individual rpc
+>>> server (callback server, lockd, etc.) to make per-net startup/shutdown
+>>> work.  And then we still don't have it quite right (see the shutdown
+>>> races).)
+>>>
+>>> In general whenever we have the opportunity to have entirely separate
+>>> data structures, I'd expect that to simplify things: it should eliminate
+>>> some locking and reference-counting issues.
+>>>
+>>
+>> Agreed. But current solution still looks like the easies way to me
+>> to implement desired functionality.
+>>
+>>>> I.e. I don't like it too. But the problem here, is that rpc server
+>>>> is tied with kernel threads creation and destruction. And these
+>>>> threads can be only a part of initial pid namespace (because we have
+>>>> only one kthreadd). And we decided do not create new kernel thread
+>>>> per container when were discussing the problem last time.
+>>>
+>>> There really should be some way to create a kernel thread in a specific
+>>> namespace, shouldn't there?
+>>>
+>>
+>>
+>> Kthreads support in a container is rather a "political" problem,
+>> than an implementation problem.
+>
+> Is there a mail thread somewhere with a summary of the objections?
+>
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+I can't specify right now. Need to search over lkml history.
+That's all what I've found for now:
+http://us.generation-nt.com/patch-cgroups-disallow-attaching-kthreadd-help-207003852.html
 
-> 
-> Ingo,
-> 
-> This patch series extends ftrace function tracing utility to be
-> more dynamic for its users. It allows for data passing to the callback
-> functions, as well as reading regs as if a breakpoint were to trigger
-> at function entry.
-> 
-> The main goal of this patch series was to allow kprobes to use ftrace
-> as an optimized probe point when a probe is placed on an ftrace nop.
-> With lots of help from Masami Hiramatsu, and going through lots of
-> iterations, we finally came up with a good solution.
-> 
-> I've tested it vigorously (although, like always, there may be some
-> subtle bug), but I feel it is ready for inclussion for the 3.6 merge
-> window.
-> 
-> Please pull the latest tip/perf/core tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/perf/core
-> 
-> Head SHA1: aa5e57294ac5614ac395a9733d3e050eace4764e
-> 
-> 
-> Masami Hiramatsu (5):
->       ftrace: add ftrace_set_filter_ip() for address based filter
->       kprobes: cleanup to separate probe-able check
->       kprobes: Move locks into appropriate functions
->       kprobes: introduce ftrace based optimization
->       kprobes/x86: ftrace based optimization for x86
-> 
-> Steven Rostedt (13):
->       ftrace: Pass ftrace_ops as third parameter to function trace callback
->       ftrace: Consolidate arch dependent functions with 'list' function
->       ftrace: Return pt_regs to function trace callback
->       ftrace/x86_32: Push ftrace_ops in as 3rd parameter to function tracer
->       ftrace/x86: Add separate function to save regs
->       ftrace/x86: Add save_regs for i386 function calls
->       ftrace/x86: Remove function_trace_stop check from graph caller
->       ftrace: Add default recursion protection for function tracing
->       ftrace: Only compile ftrace selftest if selftests are enabled
->       ftrace: Add selftest to test function trace recursion protection
->       ftrace: Add selftest to test function save-regs support
->       kprobes: Inverse taking of module_mutex with kprobe_mutex
->       ftrace: Make ftrace_location() a nop on !DYNAMIC_FTRACE
-> 
-> Uros Bizjak (1):
->       ftrace/x86_32: Simplify parameter setup for ftrace_regs_caller
-> 
-> ----
->  arch/x86/include/asm/ftrace.h     |   49 +++---
->  arch/x86/include/asm/kprobes.h    |    1 +
->  arch/x86/kernel/entry_32.S        |   75 ++++++++-
->  arch/x86/kernel/entry_64.S        |   96 +++++++++--
->  arch/x86/kernel/ftrace.c          |   73 ++++++++-
->  arch/x86/kernel/kprobes.c         |   48 ++++++
->  include/linux/ftrace.h            |  158 ++++++++++++++++--
->  include/linux/kprobes.h           |   27 ++++
->  kernel/kprobes.c                  |  250 ++++++++++++++++++++--------
->  kernel/trace/Makefile             |    2 +
->  kernel/trace/ftrace.c             |  322 ++++++++++++++++++++++++++++---------
->  kernel/trace/trace.h              |    2 +-
->  kernel/trace/trace_event_perf.c   |    3 +-
->  kernel/trace/trace_events.c       |    4 +-
->  kernel/trace/trace_functions.c    |   14 +-
->  kernel/trace/trace_irqsoff.c      |    5 +-
->  kernel/trace/trace_sched_wakeup.c |    5 +-
->  kernel/trace/trace_selftest.c     |  277 ++++++++++++++++++++++++++++++-
->  kernel/trace/trace_stack.c        |    4 +-
->  19 files changed, 1199 insertions(+), 216 deletions(-)
+>> Currently, when you call kthread_create(), you add new job to
+>> kthreadd queue. Kthreadd is unique, starts right after init and
+>> lives in global initial environment. So, any kthread inherits
+>> namespaces from it.
+>> Of course, we can start one kthread per environment and change it's
+>> root or even network namespace in kthread function. But pid
+>> namespace of this kthread will remain global.
+>
+> OK.  But the current implementation will leave all the server threads in
+> the initial pid namespace, too.
+>
+>> It looks like not a big problem, when we shutdown kthread by some
+>> variable. But what about killable nfsd kthreads?
+>
+> And we're stuck with that problem either way too, aren't we?
+>
 
-Pulled, thanks a lot Steve!
+Yes, we are. But at least we are avoiding patching of task subsystem.
 
-	Ingo
+>> 1) We can't kill them from nested pid namespace.
+>> 2) How we will differ nfsd kthreads in initial pid namespace?
+>
+> I have to admit for my purposes I don't care too much about pid
+> namespaces or about signalling server threads.  It'd be nice to get
+> those things right but it wouldn't bother me that much not to.
+>
+> Another stupid idea: can we do our own implementation of something like
+> kthreadd just for the purpose of starting rpc server threads?  It
+> doesn't seem that complicated.
+>
+
+Gm...
+This idea is not stupid. If I understand you right, you suggest to implement a 
+service per network namespace (i.e. not only data, but also threads)?
+
+> --b.
+>
+>> In OpenVZ we have kthreadd per pid hamespace and it allows us to
+>> create kthreads (and thus services) per pid namespace.
+
+
+-- 
+Best regards,
+Stanislav Kinsbursky
