@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab2HUNlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:41:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6195 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2HUNlS (ORCPT
+	id S1753025Ab2HUNq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:46:58 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56711 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab2HUNqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:41:18 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=07ZCQtT27sEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZRzJ3tYFNvQA:10 a=meVymXHHAAAA:8 a=KpnN13Z4PWoOmvqJTicA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1345556475.5069.3.camel@gandalf.local.home>
-Subject: Re: [RFC PATCH -v2 0/4] Persistent events
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Aug 2012 09:41:15 -0400
-In-Reply-To: <20120821131136.GC21432@aftab.osrc.amd.com>
-References: <1345139123-15212-1-git-send-email-bp@amd64.org>
-	 <1345545050.23018.95.camel@twins>
-	 <20120821131136.GC21432@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Aug 2012 09:46:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <5032D0C0.4080908@oak.selfip.net>
+References: <502ECC74.9030605@oak.selfip.net>
+	<20120819042543.GA14461@digium.com>
+	<20120819082117.GA4634@thinkpad.lan>
+	<5032D0C0.4080908@oak.selfip.net>
+Date: Tue, 21 Aug 2012 09:46:53 -0400
+Message-ID: <CADVnQykZv-VfScHSDkNXau1Pn765+fhyZOJce_R5uTbvmUCUpA@mail.gmail.com>
+Subject: Re: BUG: unable to handle kernel paging request at 00010016
+From: Neal Cardwell <ncardwell@google.com>
+To: Dave Haywood <tla@oak.selfip.net>
+Cc: Artem Savkov <artem.savkov@gmail.com>, Shaun Ruffell <sruffell@digium.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-net@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-21 at 15:11 +0200, Borislav Petkov wrote:
-> On Tue, Aug 21, 2012 at 12:30:50PM +0200, Peter Zijlstra wrote:
-> > Good progress there, there's still a few things though:
-> > 
-> >  - the point also raised by Steven, I'm pretty sure that the placing of
-> >    the debugfs files unfortunate. I would much rather see something
-> >    like /debug/perf/persistent/$foo, also dropping your
-> >    perf_event_desc::dir_name.
-> 
-> Ok, how do we want to do the per-CPU layout there? Like this:
-> 
-> /debug/perf/persistent/mce_record0
-> /debug/perf/persistent/mce_record1
-> ...
-> 
-> or rather
-> 
-> /debug/perf/persistent/cpu0/mce_record
-> /debug/perf/persistent/cpu1/mce_record
-> 
-> ?
+On Mon, Aug 20, 2012 at 8:05 PM, Dave Haywood <tla@oak.selfip.net> wrote:
+> Bisected to:
+>
+> 5d299f3d3c8a2fbc732b1bf03af36333ccec3130 is the first bad commit
+>
+> commit 5d299f3d3c8a2fbc732b1bf03af36333ccec3130
+>
+> Author: Eric Dumazet <edumazet@google.com>
+>
+> Date:   Mon Aug 6 05:09:33 2012 +0000
+>
+>     net: ipv6: fix TCP early demux
 
-Definitely the second one. The first one is just ugly. The second is
-more in line to the tracing directories too:
+Yes, this is expected. There was a fix checked into the "net" tree yesterday:
 
-/debug/tracing/per_cpu/cpu0/...
+http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=commitdiff;h=fae6ef87faeb8853896920c68ee703d715799d28
 
--- Steve
+Please let us know if that doesn't fix the crashes for you.
 
-
+thanks,
+neal
