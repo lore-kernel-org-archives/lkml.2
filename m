@@ -1,63 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab2HUTNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 15:13:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36169 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756264Ab2HUTNB (ORCPT
+	id S1756996Ab2HUTN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:13:57 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36024 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753156Ab2HUTNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:13:01 -0400
-Date: Tue, 21 Aug 2012 20:12:55 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>, Theodore Tso <tedtso@gmail.com>
-Message-ID: <20120821191255.GH29217@decadent.org.uk>
-References: <1344954649.6724.13.camel@gandalf.stny.rr.com>
- <1345572733.5069.9.camel@gandalf.local.home>
+	Tue, 21 Aug 2012 15:13:54 -0400
+Date: Tue, 21 Aug 2012 15:03:17 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>, JBeulich@suse.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: Q:pt_base in COMPAT mode offset by two pages. Was:Re:
+ [Xen-devel] [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive areas.
+Message-ID: <20120821190317.GA13035@phenom.dumpdata.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+ <20120820141305.GA2713@phenom.dumpdata.com>
+ <20120821172732.GA23715@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345572733.5069.9.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: Using random in interrupts for RT
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <20120821172732.GA23715@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 02:12:13PM -0400, Steven Rostedt wrote:
-> On Tue, 2012-08-14 at 10:30 -0400, Steven Rostedt wrote:
-> > Thomas,
+On Tue, Aug 21, 2012 at 01:27:32PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Aug 20, 2012 at 10:13:05AM -0400, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Aug 17, 2012 at 06:35:12PM +0100, Stefano Stabellini wrote:
+> > > On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> > > > instead of a big memblock_reserve. This way we can be more
+> > > > selective in freeing regions (and it also makes it easier
+> > > > to understand where is what).
+> > > > 
+> > > > [v1: Move the auto_translate_physmap to proper line]
+> > > > [v2: Per Stefano suggestion add more comments]
+> > > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > 
+> > > much better now!
 > > 
-> > Ben Hutchings asked me if we still need "genirq: Disable random call on
-> > preempt-rt" for -rt? With commit 902c098a366 "random: use lockless
-> > techniques in the interrupt path" there is no more locks used. But does
-> > it still produce high latencies?
+> > Thought interestingly enough it breaks 32-bit dom0s (and only dom0s).
+> > Will have a revised patch posted shortly.
 > 
-> Ben,
+> Jan, I thought something odd. Part of this code replaces this:
 > 
-> Looks that the #ifndef can't be removed just yet. The code is not
-> totally lockless...
+> 	memblock_reserve(__pa(xen_start_info->mfn_list),
+> 		xen_start_info->pt_base - xen_start_info->mfn_list);
 > 
+> with a more region-by-region area. What I found out that if I boot this
+> as 32-bit guest with a 64-bit hypervisor the xen_start_info->pt_base is
+> actually wrong.
 > 
-> add_interrupt_randomness ->
-> 	credit_entropy_bits ->
-> 		kill_fasync ->
-> 			kill_fasync_rcu ->
-> 				spin_lock_irqsave(&fa->fa_lock, flags)
+> Specifically this is what bootup says:
 > 
-> to make things worse, that spinlock turns into a mutex on -rt, so it may
-> crash the box if triggered.
+> (good working case - 32bit hypervisor with 32-bit dom0):
+> (XEN)  Loaded kernel: c1000000->c1a23000
+> (XEN)  Init. ramdisk: c1a23000->cf730e00
+> (XEN)  Phys-Mach map: cf731000->cf831000
+> (XEN)  Start info:    cf831000->cf83147c
+> (XEN)  Page tables:   cf832000->cf8b5000
+> (XEN)  Boot stack:    cf8b5000->cf8b6000
+> (XEN)  TOTAL:         c0000000->cfc00000
+> 
+> [    0.000000] PT: cf832000 (f832000)
+> [    0.000000] Reserving PT: f832000->f8b5000
+> 
+> And with a 64-bit hypervisor:
+> 
+> XEN) VIRTUAL MEMORY ARRANGEMENT:
+> (XEN)  Loaded kernel: 00000000c1000000->00000000c1a23000
+> (XEN)  Init. ramdisk: 00000000c1a23000->00000000cf730e00
+> (XEN)  Phys-Mach map: 00000000cf731000->00000000cf831000
+> (XEN)  Start info:    00000000cf831000->00000000cf8314b4
+> (XEN)  Page tables:   00000000cf832000->00000000cf8b6000
+> (XEN)  Boot stack:    00000000cf8b6000->00000000cf8b7000
+> (XEN)  TOTAL:         00000000c0000000->00000000cfc00000
+> (XEN)  ENTRY ADDRESS: 00000000c16bb22c
+> 
+> [    0.000000] PT: cf834000 (f834000)
+> [    0.000000] Reserving PT: f834000->f8b8000
+> 
+> So the pt_base is offset by two pages. And looking at c/s 13257
+> its not clear to me why this two page offset was added?
+> 
+> The toolstack works fine - so launching 32-bit guests either
+> under a 32-bit hypervisor or 64-bit works fine:
+> ] domainbuilder: detail: xc_dom_alloc_segment:   page tables  : 0xcf805000 -> 0xcf885000  (pfn 0xf805 + 0x80 pages)
+> [    0.000000] PT: cf805000 (f805000)
+> 
+
+And this patch on top of the others fixes this..
+
+
+>From 806c312e50f122c47913145cf884f53dd09d9199 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Tue, 21 Aug 2012 14:31:24 -0400
+Subject: [PATCH] xen/x86: Workaround 64-bit hypervisor and 32-bit initial
+ domain.
+
+If a 64-bit hypervisor is booted with a 32-bit initial domain,
+the hypervisor deals with the initial domain as "compat" and
+does some extra adjustments (like pagetables are 4 bytes instead
+of 8). It also adjusts the xen_start_info->pt_base incorrectly.
+
+When booted with a 32-bit hypervisor (32-bit initial domain):
+..
+(XEN)  Start info:    cf831000->cf83147c
+(XEN)  Page tables:   cf832000->cf8b5000
+..
+[    0.000000] PT: cf832000 (f832000)
+[    0.000000] Reserving PT: f832000->f8b5000
+
+And with a 64-bit hypervisor:
+(XEN)  Start info:    00000000cf831000->00000000cf8314b4
+(XEN)  Page tables:   00000000cf832000->00000000cf8b6000
+
+[    0.000000] PT: cf834000 (f834000)
+[    0.000000] Reserving PT: f834000->f8b8000
+
+To deal with this, we keep keep track of the highest physical
+address we have reserved via memblock_reserve. If that address
+does not overlap with pt_base, we have a gap which we reserve.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c |   30 +++++++++++++++++++++---------
+ 1 files changed, 21 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index e532eb5..511f92d 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1002,19 +1002,24 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+  * If the MFN is not in the m2p (provided to us by the hypervisor) this
+  * function won't do anything. In practice this means that the XenBus
+  * MFN won't be available for the initial domain. */
+-static void __init xen_reserve_mfn(unsigned long mfn)
++static unsigned long __init xen_reserve_mfn(unsigned long mfn)
+ {
+-	unsigned long pfn;
++	unsigned long pfn, end_pfn = 0;
  
-Thanks for checking this.
-
-Ben.
-
+ 	if (!mfn)
+-		return;
++		return end_pfn;
++
+ 	pfn = mfn_to_pfn(mfn);
+-	if (phys_to_machine_mapping_valid(pfn))
+-		memblock_reserve(PFN_PHYS(pfn), PAGE_SIZE);
++	if (phys_to_machine_mapping_valid(pfn)) {
++		end_pfn = PFN_PHYS(pfn) + PAGE_SIZE;
++		memblock_reserve(PFN_PHYS(pfn), end_pfn);
++	}
++	return end_pfn;
+ }
+ static void __init xen_reserve_internals(void)
+ {
+ 	unsigned long size;
++	unsigned long last_phys = 0;
+ 
+ 	if (!xen_pv_domain())
+ 		return;
+@@ -1022,12 +1027,13 @@ static void __init xen_reserve_internals(void)
+ 	/* xen_start_info does not exist in the M2P, hence can't use
+ 	 * xen_reserve_mfn. */
+ 	memblock_reserve(__pa(xen_start_info), PAGE_SIZE);
++	last_phys = __pa(xen_start_info) + PAGE_SIZE;
+ 
+-	xen_reserve_mfn(PFN_DOWN(xen_start_info->shared_info));
+-	xen_reserve_mfn(xen_start_info->store_mfn);
++	last_phys = max(xen_reserve_mfn(PFN_DOWN(xen_start_info->shared_info)), last_phys);
++	last_phys = max(xen_reserve_mfn(xen_start_info->store_mfn), last_phys);
+ 
+ 	if (!xen_initial_domain())
+-		xen_reserve_mfn(xen_start_info->console.domU.mfn);
++		last_phys = max(xen_reserve_mfn(xen_start_info->console.domU.mfn), last_phys);
+ 
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return;
+@@ -1043,8 +1049,14 @@ static void __init xen_reserve_internals(void)
+ 	 * a lot (and call memblock_reserve for each PAGE), so lets just use
+ 	 * the easy way and reserve it wholesale. */
+ 	memblock_reserve(__pa(xen_start_info->mfn_list), size);
+-
++	last_phys = max(__pa(xen_start_info->mfn_list) + size, last_phys);
+ 	/* The pagetables are reserved in mmu.c */
++
++	/* Under 64-bit hypervisor with a 32-bit domain, the hypervisor
++	 * offsets the pt_base by two pages. Hence the reservation that is done
++	 * in mmu.c misses two pages. We correct it here if we detect this. */
++	if (last_phys < __pa(xen_start_info->pt_base))
++		memblock_reserve(last_phys, __pa(xen_start_info->pt_base) - last_phys);
+ }
+ void xen_setup_shared_info(void)
+ {
 -- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+1.7.7.6
+
