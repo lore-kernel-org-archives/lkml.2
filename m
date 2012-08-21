@@ -1,259 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2HUQLK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:11:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60759 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754358Ab2HUQLE (ORCPT
+	id S1757752Ab2HUQMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:12:08 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:51335 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab2HUQMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:11:04 -0400
-Date: Tue, 21 Aug 2012 09:10:44 -0700
-From: tip-bot for Cody P Schafer <cody@linux.vnet.ibm.com>
-Message-ID: <tip-3aafe5ae08f2aed378e06d78b207883879d25cbe@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, matthltc@us.ibm.com,
-        dave@linux.vnet.ibm.com, namhyung@kernel.org,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
-        a.p.zijlstra@chello.nl, dave@linux.vnet.ibm.com, matthltc@us.ibm.com,
-        namhyung@kernel.org, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
-In-Reply-To: <1344637382-22789-17-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344637382-22789-17-git-send-email-cody@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Use both runtime and debug images
-Git-Commit-ID: 3aafe5ae08f2aed378e06d78b207883879d25cbe
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 21 Aug 2012 12:12:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:10:50 -0700 (PDT)
+In-Reply-To: <1345564813-11895-2-git-send-email-stigge@antcom.de>
+References: <1345564813-11895-1-git-send-email-stigge@antcom.de>
+	<1345564813-11895-2-git-send-email-stigge@antcom.de>
+Date: Tue, 21 Aug 2012 13:12:04 -0300
+Message-ID: <CAAAP30HEXcsNxDTeaeiiMh4ya3t0riPvmpycmCgArWF5ajz1+A@mail.gmail.com>
+Subject: Re: [PATCH v5 1/2] spi/pl022: Add chip select handling via GPIO
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linus.walleij@linaro.org, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        gabriel.fernandez@stericsson.com, lee.jones@linaro.org,
+        viresh.kumar@linaro.org, sachin.verma@st.co
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3aafe5ae08f2aed378e06d78b207883879d25cbe
-Gitweb:     http://git.kernel.org/tip/3aafe5ae08f2aed378e06d78b207883879d25cbe
-Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
-AuthorDate: Fri, 10 Aug 2012 15:23:02 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Aug 2012 14:46:55 -0300
+On Tue, Aug 21, 2012 at 1:00 PM, Roland Stigge <stigge@antcom.de> wrote:
+> This patch adds the ability for the driver to control the chip select directly.
+> This enables independence from cs_control callbacks.  Configurable via
+> platform_data, to be extended as DT in the following patch.
+>
+> Based on the initial patch by Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-perf symbols: Use both runtime and debug images
+Acked-By: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-We keep both a 'runtime' elf image as well as a 'debug' elf image around
-and generate symbols by looking at both of these.
-
-This eliminates the need for the want_symtab/goto restart mechanism
-combined with iterating over and reopening the elf images a second time.
-
-Also give dso__synthsize_plt_symbols() the runtime image (which has
-dynsyms) instead of the symbol image (which may only have a symtab and
-no dynsyms).
-
-Previously if a debug image was found all runtime images were ignored.
-
-This fixes 2 issues:
-
- - Symbol resolution to failure on PowerPC systems with debug symbols
-   installed, as the debug images lack a '.opd' section which contains
-   function descriptors.
-
- - On all archs, plt synthesis failed when a debug image was loaded and
-   that debug image lacks a dynsym section while a runtime image has a
-   dynsym section.
-
-Assumptions:
-
- - If a .opd section exists, it is contained in the highest priority
-   image with a dynsym section.
-
- - This generally implies that the debug image lacks a dynsym section
-   (ie: it is marked as NO_BITS).
-
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: David Hansen <dave@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Matt Hellsley <matthltc@us.ibm.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-17-git-send-email-cody@linux.vnet.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/symbol-elf.c     |    5 ++
- tools/perf/util/symbol-minimal.c |    6 +++
- tools/perf/util/symbol.c         |   77 +++++++++++++++++++++----------------
- tools/perf/util/symbol.h         |    1 +
- 4 files changed, 56 insertions(+), 33 deletions(-)
-
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 36e4a45..5b37e13 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -525,6 +525,11 @@ static int dso__swap_init(struct dso *dso, unsigned char eidata)
- 	return 0;
- }
- 
-+bool symsrc__possibly_runtime(struct symsrc *ss)
-+{
-+	return ss->dynsym || ss->opdsec;
-+}
-+
- bool symsrc__has_symtab(struct symsrc *ss)
- {
- 	return ss->symtab != NULL;
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 7747ea6..6738ea1 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -260,6 +260,12 @@ out_close:
- 	return -1;
- }
- 
-+bool symsrc__possibly_runtime(struct symsrc *ss __used)
-+{
-+	/* Assume all sym sources could be a runtime image. */
-+	return true;
-+}
-+
- bool symsrc__has_symtab(struct symsrc *ss __used)
- {
- 	return false;
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 739e5a3..2293a4a 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1026,11 +1026,12 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- {
- 	char *name;
- 	int ret = -1;
--	struct symsrc ss;
- 	u_int i;
- 	struct machine *machine;
- 	char *root_dir = (char *) "";
--	int want_symtab;
-+	int ss_pos = 0;
-+	struct symsrc ss_[2];
-+	struct symsrc *syms_ss = NULL, *runtime_ss = NULL;
- 
- 	dso__set_loaded(dso, map->type);
- 
-@@ -1072,12 +1073,12 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		root_dir = machine->root_dir;
- 
- 	/* Iterate over candidate debug images.
--	 * On the first pass, only load images if they have a full symtab.
--	 * Failing that, do a second pass where we accept .dynsym also
-+	 * Keep track of "interesting" ones (those which have a symtab, dynsym,
-+	 * and/or opd section) for processing.
- 	 */
--	want_symtab = 1;
--restart:
- 	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
-+		struct symsrc *ss = &ss_[ss_pos];
-+		bool next_slot = false;
- 
- 		enum dso_binary_type symtab_type = binary_type_symtab[i];
- 
-@@ -1086,45 +1087,55 @@ restart:
- 			continue;
- 
- 		/* Name is now the name of the next image to try */
--		if (symsrc__init(&ss, dso, name, symtab_type) < 0)
-+		if (symsrc__init(ss, dso, name, symtab_type) < 0)
- 			continue;
- 
--		if (want_symtab && !symsrc__has_symtab(&ss)) {
--			symsrc__destroy(&ss);
--			continue;
-+		if (!syms_ss && symsrc__has_symtab(ss)) {
-+			syms_ss = ss;
-+			next_slot = true;
- 		}
- 
--		ret = dso__load_sym(dso, map, &ss, &ss, filter, 0);
--
--		/*
--		 * Some people seem to have debuginfo files _WITHOUT_ debug
--		 * info!?!?
--		 */
--		if (!ret) {
--			symsrc__destroy(&ss);
--			continue;
-+		if (!runtime_ss && symsrc__possibly_runtime(ss)) {
-+			runtime_ss = ss;
-+			next_slot = true;
- 		}
- 
--		if (ret > 0) {
--			int nr_plt;
-+		if (next_slot) {
-+			ss_pos++;
- 
--			nr_plt = dso__synthesize_plt_symbols(dso, &ss, map, filter);
--			if (nr_plt > 0)
--				ret += nr_plt;
--			symsrc__destroy(&ss);
--			break;
-+			if (syms_ss && runtime_ss)
-+				break;
- 		}
-+
- 	}
- 
--	/*
--	 * If we wanted a full symtab but no image had one,
--	 * relax our requirements and repeat the search.
--	 */
--	if (ret <= 0 && want_symtab) {
--		want_symtab = 0;
--		goto restart;
-+	if (!runtime_ss && !syms_ss)
-+		goto out_free;
-+
-+	if (runtime_ss && !syms_ss) {
-+		syms_ss = runtime_ss;
-+	}
-+
-+	/* We'll have to hope for the best */
-+	if (!runtime_ss && syms_ss)
-+		runtime_ss = syms_ss;
-+
-+	if (syms_ss)
-+		ret = dso__load_sym(dso, map, syms_ss, runtime_ss, filter, 0);
-+	else
-+		ret = -1;
-+
-+	if (ret > 0 && runtime_ss->dynsym) {
-+		int nr_plt;
-+
-+		nr_plt = dso__synthesize_plt_symbols(dso, runtime_ss, map, filter);
-+		if (nr_plt > 0)
-+			ret += nr_plt;
- 	}
- 
-+	for (; ss_pos > 0; ss_pos--)
-+		symsrc__destroy(&ss_[ss_pos - 1]);
-+out_free:
- 	free(name);
- 	if (ret < 0 && strstr(dso->name, " (deleted)") != NULL)
- 		return 0;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 1f3eed2..fc4b1e6 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -253,6 +253,7 @@ void symsrc__destroy(struct symsrc *ss);
- int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 		 enum dso_binary_type type);
- bool symsrc__has_symtab(struct symsrc *ss);
-+bool symsrc__possibly_runtime(struct symsrc *ss);
- 
- #define DSO__SWAP(dso, type, val)			\
- ({							\
+> ---
+> Applies to v3.6-rc2
+>
+> Patch set changes since v4:
+> * Rename DT property: "pl022,num-chipselects" -> "num-cs"
+> * Removed reference to Linux code in DT binding documentation
+> * Removed property "pl022,hierarchy" - only support SPI master for now
+> * Documented DT property pl022,interface
+> * Removed property "pl022,slave-tx-disable" - not relevant in master mode
+> * Added kerneldoc for cur_cs and chipselect list
+> * Reorganized struct pl022 (int *chipselect)
+> * Introduced int *chipselects to struct pl022_ssp_controller
+> * Let platform data override DT data
+> * Split patches into CS handling vs. DT support
+>
+> Changes since v3:
+> * Proper use of IS_ENABLED
+>
+> Changes since v2:
+> * Use IS_ENABLED instead of #ifdef
+> * Remove bogus const change
+>
+> Changes since v1:
+> * return EPROBE_DEFFER if gpios are not initialized yet
+>
+> Thanks Thierry Reding, Rob Herring and Linus Walleij for reviewing!
+>
+>  drivers/spi/spi-pl022.c    |   47 +++++++++++++++++++++++++++++++--------------
+>  include/linux/amba/pl022.h |    2 +
+>  2 files changed, 35 insertions(+), 14 deletions(-)
+>
+> --- linux-2.6.orig/drivers/spi/spi-pl022.c
+> +++ linux-2.6/drivers/spi/spi-pl022.c
+> @@ -40,6 +40,7 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/scatterlist.h>
+>  #include <linux/pm_runtime.h>
+> +#include <linux/gpio.h>
+>
+>  /*
+>   * This macro is used to define some register default values.
+> @@ -356,6 +357,8 @@ struct vendor_data {
+>   * @sgt_rx: scattertable for the RX transfer
+>   * @sgt_tx: scattertable for the TX transfer
+>   * @dummypage: a dummy page used for driving data on the bus with DMA
+> + * @cur_cs: current chip select (gpio)
+> + * @chipselect: list of chipselects (gpios)
+>   */
+>  struct pl022 {
+>         struct amba_device              *adev;
+> @@ -389,6 +392,8 @@ struct pl022 {
+>         char                            *dummypage;
+>         bool                            dma_running;
+>  #endif
+> +       int cur_cs;
+> +       int *chipselect;
+>  };
+>
+>  /**
+> @@ -433,6 +438,14 @@ static void null_cs_control(u32 command)
+>         pr_debug("pl022: dummy chip select control, CS=0x%x\n", command);
+>  }
+>
+> +static void pl022_cs_control(struct pl022 *pl022, u32 command)
+> +{
+> +       if (gpio_is_valid(pl022->cur_cs))
+> +               gpio_set_value(pl022->cur_cs, command);
+> +       else
+> +               pl022->cur_chip->cs_control(command);
+> +}
+> +
+>  /**
+>   * giveback - current spi_message is over, schedule next message and call
+>   * callback of this message. Assumes that caller already
+> @@ -479,7 +492,7 @@ static void giveback(struct pl022 *pl022
+>                 if (next_msg && next_msg->spi != pl022->cur_msg->spi)
+>                         next_msg = NULL;
+>                 if (!next_msg || pl022->cur_msg->state == STATE_ERROR)
+> -                       pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
+> +                       pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+>                 else
+>                         pl022->next_msg_cs_active = true;
+>
+> @@ -818,8 +831,7 @@ static void dma_callback(void *data)
+>         /* Update total bytes transferred */
+>         msg->actual_length += pl022->cur_transfer->len;
+>         if (pl022->cur_transfer->cs_change)
+> -               pl022->cur_chip->
+> -                       cs_control(SSP_CHIP_DESELECT);
+> +               pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+>
+>         /* Move to next transfer */
+>         msg->state = next_transfer(pl022);
+> @@ -1252,8 +1264,7 @@ static irqreturn_t pl022_interrupt_handl
+>                 /* Update total bytes transferred */
+>                 msg->actual_length += pl022->cur_transfer->len;
+>                 if (pl022->cur_transfer->cs_change)
+> -                       pl022->cur_chip->
+> -                               cs_control(SSP_CHIP_DESELECT);
+> +                       pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+>                 /* Move to next transfer */
+>                 msg->state = next_transfer(pl022);
+>                 tasklet_schedule(&pl022->pump_transfers);
+> @@ -1338,7 +1349,7 @@ static void pump_transfers(unsigned long
+>
+>                 /* Reselect chip select only if cs_change was requested */
+>                 if (previous->cs_change)
+> -                       pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +                       pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>         } else {
+>                 /* STATE_START */
+>                 message->state = STATE_RUNNING;
+> @@ -1377,7 +1388,7 @@ static void do_interrupt_dma_transfer(st
+>
+>         /* Enable target chip, if not already active */
+>         if (!pl022->next_msg_cs_active)
+> -               pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +               pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>
+>         if (set_up_next_transfer(pl022, pl022->cur_transfer)) {
+>                 /* Error path */
+> @@ -1429,12 +1440,12 @@ static void do_polling_transfer(struct p
+>                         if (previous->delay_usecs)
+>                                 udelay(previous->delay_usecs);
+>                         if (previous->cs_change)
+> -                               pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +                               pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>                 } else {
+>                         /* STATE_START */
+>                         message->state = STATE_RUNNING;
+>                         if (!pl022->next_msg_cs_active)
+> -                               pl022->cur_chip->cs_control(SSP_CHIP_SELECT);
+> +                               pl022_cs_control(pl022, SSP_CHIP_SELECT);
+>                 }
+>
+>                 /* Configuration Changing Per Transfer */
+> @@ -1466,7 +1477,7 @@ static void do_polling_transfer(struct p
+>                 /* Update total byte transferred */
+>                 message->actual_length += pl022->cur_transfer->len;
+>                 if (pl022->cur_transfer->cs_change)
+> -                       pl022->cur_chip->cs_control(SSP_CHIP_DESELECT);
+> +                       pl022_cs_control(pl022, SSP_CHIP_DESELECT);
+>                 /* Move to next transfer */
+>                 message->state = next_transfer(pl022);
+>         }
+> @@ -1495,6 +1506,7 @@ static int pl022_transfer_one_message(st
+>
+>         /* Setup the SPI using the per chip configuration */
+>         pl022->cur_chip = spi_get_ctldata(msg->spi);
+> +       pl022->cur_cs = pl022->chipselect[msg->spi->chip_select];
+>
+>         restore_state(pl022);
+>         flush(pl022);
+> @@ -1840,8 +1852,9 @@ static int pl022_setup(struct spi_device
+>         chip->xfer_type = chip_info->com_mode;
+>         if (!chip_info->cs_control) {
+>                 chip->cs_control = null_cs_control;
+> -               dev_warn(&spi->dev,
+> -                        "chip select function is NULL for this chip\n");
+> +               if (!gpio_is_valid(pl022->chipselect[spi->chip_select]))
+> +                       dev_warn(&spi->dev,
+> +                                "chip select function is NULL for this chip\n");
+>         } else
+>                 chip->cs_control = chip_info->cs_control;
+>
+> @@ -1993,7 +2006,7 @@ pl022_probe(struct amba_device *adev, co
+>         struct pl022_ssp_controller *platform_info = adev->dev.platform_data;
+>         struct spi_master *master;
+>         struct pl022 *pl022 = NULL;     /*Data for this driver */
+> -       int status = 0;
+> +       int status = 0, i;
+>
+>         dev_info(&adev->dev,
+>                  "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
+> @@ -2004,7 +2017,8 @@ pl022_probe(struct amba_device *adev, co
+>         }
+>
+>         /* Allocate master with space for data */
+> -       master = spi_alloc_master(dev, sizeof(struct pl022));
+> +       master = spi_alloc_master(dev, sizeof(struct pl022) + sizeof(int) *
+> +                                 platform_info->num_chipselect);
+>         if (master == NULL) {
+>                 dev_err(&adev->dev, "probe - cannot alloc SPI master\n");
+>                 status = -ENOMEM;
+> @@ -2016,6 +2030,7 @@ pl022_probe(struct amba_device *adev, co
+>         pl022->master_info = platform_info;
+>         pl022->adev = adev;
+>         pl022->vendor = id->data;
+> +       pl022->chipselect = (int *)&master[1];
+>
+>         /*
+>          * Bus Number Which has been Assigned to this SSP controller
+> @@ -2030,6 +2045,10 @@ pl022_probe(struct amba_device *adev, co
+>         master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
+>         master->rt = platform_info->rt;
+>
+> +       if (platform_info->num_chipselect && platform_info->chipselects)
+> +               for (i = 0; i < platform_info->num_chipselect; i++)
+> +                       pl022->chipselect[i] = platform_info->chipselects[i];
+> +
+>         /*
+>          * Supports mode 0-3, loopback, and active low CS. Transfers are
+>          * always MS bit first on the original pl022.
+> --- linux-2.6.orig/include/linux/amba/pl022.h
+> +++ linux-2.6/include/linux/amba/pl022.h
+> @@ -244,6 +244,7 @@ struct dma_chan;
+>   *     indicates no delay and the device will be suspended immediately.
+>   * @rt: indicates the controller should run the message pump with realtime
+>   *     priority to minimise the transfer latency on the bus.
+> + * @chipselects: list of <num_chipselects> chip select gpios
+>   */
+>  struct pl022_ssp_controller {
+>         u16 bus_id;
+> @@ -254,6 +255,7 @@ struct pl022_ssp_controller {
+>         void *dma_tx_param;
+>         int autosuspend_delay;
+>         bool rt;
+> +       int *chipselects;
+>  };
+>
+>  /**
