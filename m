@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2HUAFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 20:05:37 -0400
-Received: from host86-151-170-244.range86-151.btcentralplus.com ([86.151.170.244]:54478
-	"EHLO oak.selfip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab2HUAFf (ORCPT
+	id S1753441Ab2HUAXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 20:23:45 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61820 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab2HUAXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 20:05:35 -0400
-Message-ID: <5032D0C0.4080908@oak.selfip.net>
-Date: Tue, 21 Aug 2012 01:05:20 +0100
-From: Dave Haywood <tla@oak.selfip.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120815 Thunderbird/15.0
+	Mon, 20 Aug 2012 20:23:43 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-61-5032d50d02ad
+From: Namhyung Kim <namhyung@kernel.org>
+To: Xin Tong <xerox.time.tech@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: changing timeslice in linux
+References: <CALKntY0G6WBYT-MGbzQ-e6X_XyRENzeJww7FiLGAgiHtrfwQiA@mail.gmail.com>
+	<1345442050.25011.38.camel@marge.simpson.net>
+	<CALKntY0dQFxmSz+61Bia-zxpvsQg7kySG1mfk1GVc90YCc27qw@mail.gmail.com>
+Date: Tue, 21 Aug 2012 09:16:50 +0900
+In-Reply-To: <CALKntY0dQFxmSz+61Bia-zxpvsQg7kySG1mfk1GVc90YCc27qw@mail.gmail.com>
+	(Xin Tong's message of "Mon, 20 Aug 2012 07:51:52 -0700")
+Message-ID: <87mx1phzf1.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Artem Savkov <artem.savkov@gmail.com>
-CC: Shaun Ruffell <sruffell@digium.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-net@vger.kernel.org
-Subject: Re: BUG: unable to handle kernel paging request at 00010016
-References: <502ECC74.9030605@oak.selfip.net> <20120819042543.GA14461@digium.com> <20120819082117.GA4634@thinkpad.lan>
-In-Reply-To: <20120819082117.GA4634@thinkpad.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/08/2012 09:21, Artem Savkov wrote:
-> On Sat, Aug 18, 2012 at 11:25:43PM -0500, Shaun Ruffell wrote:
->> Adding linux-net to the CC list.
->>
->> On Fri, Aug 17, 2012 at 11:57:56PM +0100, Dave Haywood wrote:
->>> [1.] One line summary of the problem:
->>> BUG: unable to handle kernel paging request at 00010016
+On Mon, 20 Aug 2012 07:51:52 -0700, Xin Tong wrote:
+> On Sun, Aug 19, 2012 at 10:54 PM, Mike Galbraith <efault@gmx.de> wrote:
+>> On Sun, 2012-08-19 at 11:58 -0700, Xin Tong wrote:
+>>> I have 2 questions about linux 2.6 x86_64 scheduler.
 >>>
->>> 	System boots then crashes a 5-10 or so seconds after getting to the login prompt
->>> 	Booting without the network cable attached prevents the crash (no evidence beyond 10 minutes after boot)
->>>
->>>    Diagnostics:
->>> 	Captured the boot and managed a login + dmesg before the crash
->>> 	Some of the log looks corrupted. Probably my crappy usb dongle serial flow control but left it in anyway
->> [snip]
+>>> 1. is the default scheduling algorithm SCHED_NORMAL in linux ?
 >>
->> Just a note that I see this as well. It happens reliably for me after trying to
->> login to the machine via ssh.
+>> Yes.
+> Is there any document describing what the sched_normal is ? it is more
+> difficult than SCHED_RR to infer its meaning just based on its name ?
 >>
->> Here is the back trace I collected on the serial port.
-> There is a patch posted on netdev that fixes this for me:
-> http://patchwork.ozlabs.org/patch/178525/
->
-Bisected to:
+>>> 2. how do i change the time slice in linux source code ?
+>>
+>> You shouldn't need to.  You can tune "slice" by adjusting
+>> sched_latency_ns and sched_min_granularity_ns, but note that "slice" is
+>> not a fixed quantum.  Also note that CFS preemption decisions are based
+>> upon instantaneous state.  A task may have received a full (variable)
+>> "slice" of CPU time, but preemption will be triggered only if a more
+>> deserving task is available, so a "slice" is not the "max uninterrupted
+>> CPU time" that you may expect it to be.. but it is somewhat similar.
+>>
+>> -Mike
+>>
+> This can be done without recompiling and reinstalling the kernel ?
+> maybe one simply needs to write to a device file under /dev ?
 
-5d299f3d3c8a2fbc732b1bf03af36333ccec3130 is the first bad commit
+You can find those files under /proc/sys/kernel/.
 
-commit 5d299f3d3c8a2fbc732b1bf03af36333ccec3130
-
-Author: Eric Dumazet <edumazet@google.com>
-
-Date:   Mon Aug 6 05:09:33 2012 +0000
-
-     net: ipv6: fix TCP early demux
-
-     IPv6 needs a cookie in dst_check() call.
-
-     We need to add rx_dst_cookie and provide a family independent
-
-     sk_rx_dst_set(sk, skb) method to properly support IPv6 TCP early demux.
-
-     Signed-off-by: Eric Dumazet <edumazet@google.com>
-
-     Signed-off-by: David S. Miller <davem@davemloft.net>
-
-:040000 040000 96ade77f304a89c1886fbaa125b03d1f5699e418 485a021044b8f52ae8562e4e90d8f6536863f5e7 M      include
-
-:040000 040000 1ebd6792af2014ad11979216b9a56504a28d5782 7a53fc9e7fb219c4cacb1bbb3b6867f30790dfd1 M      net
-
-
-
-
+Thanks,
+Namhyung
