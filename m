@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab2HUXmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 19:42:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:35050 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588Ab2HUXmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 19:42:43 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Mel Gorman <mel@csn.ul.ie>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to balloon pages
-In-Reply-To: <20120815112851.GA2707@redhat.com>
-References: <f19b63dfa026fe2f8f11ec017771161775744781.1344619987.git.aquini@redhat.com> <20120813084123.GF14081@redhat.com> <20120814182244.GB13338@t510.redhat.com> <20120814195139.GA28870@redhat.com> <20120814201113.GE22133@t510.redhat.com> <20120815090528.GH4052@csn.ul.ie> <20120815092528.GA29214@redhat.com> <20120815094839.GJ4052@csn.ul.ie> <20120815100108.GA1999@redhat.com> <20120815111651.GL4052@csn.ul.ie> <20120815112851.GA2707@redhat.com>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 21 Aug 2012 15:01:37 +0930
-Message-ID: <87mx1o3j5y.fsf@rustcorp.com.au>
+	id S1753360Ab2HUXsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 19:48:08 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37778 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab2HUXsE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 19:48:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAC=cRTPQTtn4y8pNh2hN6tRk7OPJQ7mjcsiGkcK0pR0TE=KWkA@mail.gmail.com>
+References: <1343975435-25469-1-git-send-email-ying.huang@intel.com>
+ <87393jmanq.fsf@nemi.mork.no> <CAC=cRTPQTtn4y8pNh2hN6tRk7OPJQ7mjcsiGkcK0pR0TE=KWkA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 21 Aug 2012 16:47:41 -0700
+Message-ID: <CAErSpo6nxOarX83iKky-WdKqE5TNLHWoSB7STcAR4TDXKZxD6A@mail.gmail.com>
+Subject: Re: [PATCH 0/4] PCI/PM: PCI D3cold support fixes for 3.6-rc1
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Aug 2012 14:28:51 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Wed, Aug 15, 2012 at 12:16:51PM +0100, Mel Gorman wrote:
-> > I was thinking of exactly that page->mapping == balloon_mapping check. As I
-> > do not know how many active balloon drivers there might be I cannot guess
-> > in advance how much of a scalability problem it will be.
-> 
-> Not at all sure multiple drivers are worth supporting, but multiple
-> *devices* is I think worth supporting, if for no other reason than that
-> they can work today. For that, we need a device pointer which Rafael
-> wants to put into the mapping, this means multiple balloon mappings.
+On Sun, Aug 19, 2012 at 6:09 PM, huang ying
+<huang.ying.caritas@gmail.com> wrote:
+> Hi, Bjorn,
+>
+> Could you please merge this patchset?  They fix real bugs.
 
-Rafael, please make sure that the balloon driver fails on the second and
-subsequent balloon devices.
+I assume you wanted the updated "[PATCH 3/4] PCI/PM:  Fix config reg
+access ..." patch posted Aug 15.
 
-Michael, we only allow multiple balloon devices because it fell out of
-the implementation.  If it causes us even the slightest issue, we should
-not support it.  It's not a sensible setup.
+I merged these (with the updated 3/4 patch) to my "for-linus" branch.
+After it's in linux-next for a couple days, I'll ask Linus to pull it.
 
-Cheers,
-Rusty.
-
+> On Sun, Aug 19, 2012 at 6:35 PM, Bjørn Mork <bjorn@mork.no> wrote:
+>> Huang Ying <ying.huang@intel.com> writes:
+>>
+>>> [BUGFIX 1/4] PCI/PM: enable D3/D3cold by default for most devices
+>>> [BUGFIX 2/4] PCI/PM: Keep parent bridge active when probing device
+>>> [BUGFIX 3/4] PCI/PM: Fix config reg access for D3cold and bridge suspending
+>>> [PATCH 4/4] PCI/PM: Add ABI document for sysfs file d3cold_allowed
+>>
+>> Hello,
+>>
+>> I am hoping these patches will appear in 3.6?  They fix real problems in
+>> 3.6-rc1 for me. If it helps in any way, feel free to add
+>>
+>> Tested-by: Bjørn Mork <bjorn@mork.no>
+>>
+>> to the 3 bugfix patches, including version 2 of patch #3.
+>>
+>>
+>> Bjørn
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
