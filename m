@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab2HUK6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 06:58:39 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64080 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756253Ab2HUK6g (ORCPT
+	id S1756834Ab2HULBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 07:01:05 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:51690 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756253Ab2HULBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 06:58:36 -0400
+	Tue, 21 Aug 2012 07:01:01 -0400
+Date: Tue, 21 Aug 2012 13:57:03 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>, alan@linux.intel.com,
+        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>
+Subject: Re: [RFC/PATCH 10/13] serial: omap: stick to put_autosuspend
+Message-ID: <20120821105702.GX10347@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1345540555-24359-1-git-send-email-balbi@ti.com>
+ <1345540555-24359-11-git-send-email-balbi@ti.com>
+ <CAMQu2gzm4z8DbCiz4hOS2nKa2HzNofmp=SPORYEu2Z_H3+JN9Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <874nnwiw67.fsf@devron.myhome.or.jp>
-References: <1345282899-7534-1-git-send-email-linkinjeon@gmail.com>
-	<20120818132524.GW23464@ZenIV.linux.org.uk>
-	<87pq6op9zz.fsf@devron.myhome.or.jp>
-	<CAKYAXd_VyRg5PYjcYb_JtDeXHeMSRtwwT665hcMcf4WCer7a_Q@mail.gmail.com>
-	<20120820205231.GG5779@fieldses.org>
-	<CAKYAXd8fkV5x454vtXvwM6LN3Hb2dLgemhJdNFKyxnwweNq75A@mail.gmail.com>
-	<874nnwiw67.fsf@devron.myhome.or.jp>
-Date: Tue, 21 Aug 2012 19:58:35 +0900
-Message-ID: <CAKYAXd_kJtK85iabM=-ObJSC2qo36mkVsQ1VhaYk3WBNKn9uhg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] fat: fix ESTALE errors
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aSOv3uy5xJSQbCk1"
+Content-Disposition: inline
+In-Reply-To: <CAMQu2gzm4z8DbCiz4hOS2nKa2HzNofmp=SPORYEu2Z_H3+JN9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/21, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> And.. Hi Ogawa.
->> I checked other filesystem about unlink - inode issue. but I found
->> Ext4 have same issue.
->> Although other filesysm is having this issue, Can we think It could be
->> only FAT issue ?
->
-> (I assume this issue == orphaned inode issue).
->
-> ext* doesn't have this issue. If ext* made orphaned inode, ext* doesn't
-> delete inode from inode table until calling iput() from last referencer.
->
-> In FAT case, FAT inode is embedded into dir entry. So, if unlinked inode
-> (then orphaned inode is detached (fat_detach())), FAT deletes inode (dir
-> entry) from dir.
-Sorry for my mistake. You're right.
-I am looking up other solution.
-Thanks
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+
+--aSOv3uy5xJSQbCk1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Aug 21, 2012 at 04:12:11PM +0530, Shilimkar, Santosh wrote:
+> On Tue, Aug 21, 2012 at 2:45 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > Everytime we're done using our TTY, we want
+> > the pm timer to be reinitilized. By sticking
+> > to pm_runtime_pm_autosuspend() we make sure
+> > that this will always be the case.
+> >
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > ---
+> >  drivers/tty/serial/omap-serial.c | 33 ++++++++++++++++++++++-----------
+> >  1 file changed, 22 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap=
+-serial.c
+> > index 6ea24c5..458d77c 100644
+> > --- a/drivers/tty/serial/omap-serial.c
+> > +++ b/drivers/tty/serial/omap-serial.c
+> > @@ -164,7 +164,8 @@ static void serial_omap_enable_ms(struct uart_port =
+*port)
+> >         pm_runtime_get_sync(up->dev);
+> >         up->ier |=3D UART_IER_MSI;
+> >         serial_out(up, UART_IER, up->ier);
+> > -       pm_runtime_put(up->dev);
+> > +       pm_runtime_mark_last_busy(up->dev);
+> > +       pm_runtime_put_autosuspend(up->dev);
+> >  }
+> >
+> Can you please expand the change-log a bit ?
+> Didn't follow the time re-init part completely.
+
+It's really just a micro-optimization. The thing is:
+
+if I call pm_runtime_put(), I will not reinitialize the pm timer to
+whatever timeout value I used. This means that pm_runtime_put() could
+actually execute right away (if timer was about to expire when I called
+pm_runtime_put()). While this wouldn't cause any issues, it's better to
+reinitialize the timer and make sure if there's another
+read/write/set_termios/whatever coming right after this, UART is still
+powered up.
+
+I mean, it's really just trying to avoid context save & restore when
+UART is still under heavy usage.
+
+Does it make sense ?
+
+--=20
+balbi
+
+--aSOv3uy5xJSQbCk1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQM2l9AAoJEIaOsuA1yqREOREP/ivk3823JJxSK6DjQzENC1JY
+qa3/jyWz4Qw1QF8byNz/vnj8qh8OWPeszjguPSc6jA1z3HuphM1f6uyFULPWthec
+ENms6I8KgmY9rjfc7VFuYRZduT8jkqzuPHuDDmTQOsF+hclhEqtsZjhcC4orgzMo
+UhUWXAZvR84i++3PbZO4gRLmhq8gDRUEzRhrJhmSXrpphL8buzoomjxkM4/aY4mv
+APQMUjJTP4NwjsKk/Iur/O3EI5qpvwIX4T0tRt8vygazhBX6NSBUlQI+we9ZZoZR
+/xMRLcN8XSLhvi6kC9B7cWbe5jJTpHcTqxxmOxv09fS/+gjm+JyHiu7wnNfapw1r
+cN3x8/khAc8mCbFTBnQzW2v/aRCAr1dUZSmICNjvXo9T0LhjGiSfFQvnPymvjyDH
+GIBmni0lng4FZPhBSmxKSVCHjP+P1jHRfAKsZVM1vhQbFLhS2S9jR7rhNCwlV5qh
+GlWct2qzbfxyFf3eNQFEoKN1e4XZbUERGHBCZAdM5vVKZJ3B3QEsUMKzP1EEwgfU
+NIPAWq3kG6Pc5K70T6MFncyQ7pNrpAlZJTTVJ5ibb3SVxImYrEksbBD5nsDtQybK
+1IEC46fgG7/TMVDKLZX30boUuZsCWPbOz/LVufDS8kfsPg48IbYXDVSEbhB3ozvf
+/a9DOxgw9sp3Pp3gJI6S
+=gqc5
+-----END PGP SIGNATURE-----
+
+--aSOv3uy5xJSQbCk1--
