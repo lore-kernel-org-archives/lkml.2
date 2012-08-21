@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab2HUOPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:15:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36320 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2HUOPI (ORCPT
+	id S1753233Ab2HUOQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:16:54 -0400
+Received: from mga10.intel.com ([192.55.52.92]:28706 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751813Ab2HUOQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:15:08 -0400
-MIME-Version: 1.0
-X-Originating-IP: [24.23.139.102]
-In-Reply-To: <201208210831.32771.arnd.bergmann@linaro.org>
-References: <502BC31E.4070200@yahoo.es>
-	<201208210744.53370.arnd.bergmann@linaro.org>
-	<CAKohpo=DyQajiE-DmpMiv=gVOVOep1OEECVuw83D2u4VJisEsw@mail.gmail.com>
-	<201208210831.32771.arnd.bergmann@linaro.org>
-Date: Tue, 21 Aug 2012 07:15:07 -0700
-Message-ID: <CACiLriQPs5torFCG8PuwY5nZmw86SzJTNT4-Vt2tSLJHnF8iuw@mail.gmail.com>
-Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
-From: Havard Skinnemoen <havard@skinnemoen.net>
-To: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Hein Tibosch <hein_tibosch@yahoo.es>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Aug 2012 10:16:52 -0400
+Subject: Re: [Regression] "x86-64/efi: Use EFI to deal with platform wall
+ clock" prevents my machine from booting
+From: Matt Fleming <matt.fleming@intel.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cJ-ko@zougloub.eu,
+        "H. PeterAnvin" <hpa@zytor.com>
+In-Reply-To: <20120810192653.GA11641@srcf.ucam.org>
+References: <20120806125216.GA11863@srcf.ucam.org>
+	 <501FDDD30200007800092DDE@nat28.tlf.novell.com>
+	 <20120806091627.2ad5ed2e@zougloub.eu> <20120806223208.5301be0d@zougloub.eu>
+	 <20120806230629.153d33bd@zougloub.eu>
+	 <5020DC5F02000078000931C2@nat28.tlf.novell.com>
+	 <1344331830.7208.6.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <50210F0702000078000932EB@nat28.tlf.novell.com>
+	 <1344502295.9195.7.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <CAE9FiQUuQAEzin2uXRXWhMXAviu8MXLDkfjFbFJMWB4xkKimFA@mail.gmail.com>
+	 <20120810192653.GA11641@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Tue, 21 Aug 2012 15:16:44 +0100
+Message-ID: <1345558604.3088.47.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 1:31 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
-> On Tuesday 21 August 2012, Viresh Kumar wrote:
->> > Is AVR32 a big-endian system? Probably big-endian, that's why values are
->> > > getting
->> > > swapped. And dw_dmac is the standard one, can call it little endian for
->> > the
->> > > time being.
->> > >
->> > > @Arnd: What should we do here?
->> >
->> > Yes, AVR32 is big-endian. I assume that dw_dmac can be either configured
->> > as little-endian or big-endian and that it is configured as big-endian
->> > on AVR32.
->> >
->>
->> Just to understand a bit more on this always confusing endianess concept:
->> - For AVR32, readl is calling swab everytime. So whatever we write will get
->> swapped.
->> - What are the implications of dw_dmac configured in little/big endian?
->>
->> When we write something to register of a peripheral, whose endianess
->> property decides how it will get written. Processor or Peripheral?
->
-> The device decides which accessor we need to use (readl, ioread, ioread_be,
-> in_be, in_le, ...). The architecture code must ensure that this is
-> implemented properly based on the CPU endianess. We don't have a proper
-> accessor function that implements "device has same endianess as CPU".
-> Using __raw_* is not a replacement for that.
->
-> I don't mind adding such an accessor at all, and a number people have
-> complained about the lack of this for some time, but you should be
-> aware that a lot of peripherals that are intended to be used in
-> "CPU-endian" mode eventually end up getting used in "wrong-endian"
-> mode, e.g. when someone decides to put that peripheral on a PCI
-> card and someone else sticks it into a machine that has a CPU
-> with the opposed (or configurable) endianess. It would be nice if
-> the likes of designware could at least pick one endianess per
-> device they do, but the reality is that we have to deal with both
-> variants and only the device driver can find out what it is.
+On Fri, 2012-08-10 at 20:26 +0100, Matthew Garrett wrote:
+> On Fri, Aug 10, 2012 at 12:22:12PM -0700, Yinghai Lu wrote:
+> 
+> > What is solution for this regression?
+> 
+> Revert the patch for now, we'll add it back once we've got the UEFI 
+> pagetable set up.
 
-A native-endian accessor would really help in this case. Back in 2006
-when I did the AVR32 port, that's what I thought __raw_ was, but I
-suspect I was both wrong, and the semantics of the I/O accessors have
-changed slightly over time. But since __raw_ did exactly what was
-needed on both AVR32 (big endian) and AT91 ARM (little endian)
-devices, I ended up using it for all on-chip devices.
+FYI I've got a proof of concept patch that seems to work on my ASUS
+machine.
 
-read[bwl] on the other hand was implemented for external device
-access. Since the SMC controller on AP7000 is really bizarre
-(basically big endian data with little endian addressing), these
-accessors became pretty weird too.
+I'll try and get it sent out before the end of the week, but failing
+that it'll probably be after Plumbers.
 
-Anyway, if we want to purge all those inappropriate __raw accesses
-from the Atmel drivers, we're going to need a replacement for internal
-native-endian access. Right now, we don't have any.
-
-Havard
