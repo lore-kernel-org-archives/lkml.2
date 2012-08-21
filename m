@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab2HUQ0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:26:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32867 "EHLO
+	id S1758062Ab2HUQ1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:27:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32907 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757999Ab2HUQ0u (ORCPT
+	with ESMTP id S1754453Ab2HUQ1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:26:50 -0400
-Date: Tue, 21 Aug 2012 09:26:32 -0700
+	Tue, 21 Aug 2012 12:27:45 -0400
+Date: Tue, 21 Aug 2012 09:27:27 -0700
 From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-6606f8733d7b635e09e2dc3a391a5e1f0feb218f@git.kernel.org>
+Message-ID: <tip-db146f06ac0bbea63271b6c78f4341ee46843e10@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, jolsa@redhat.com,
         robert.richter@amd.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, robert.richter@amd.com, peterz@infradead.org,
         tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <1345144224-27280-4-git-send-email-robert.richter@amd.com>
-References: <1345144224-27280-4-git-send-email-robert.richter@amd.com>
+In-Reply-To: <1345144224-27280-5-git-send-email-robert.richter@amd.com>
+References: <1345144224-27280-5-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Rename some variables for better understanding
-Git-Commit-ID: 6606f8733d7b635e09e2dc3a391a5e1f0feb218f
+Subject: [tip:perf/core] perf tools: Rename global variable 'events'
+  in util/header.c
+Git-Commit-ID: db146f06ac0bbea63271b6c78f4341ee46843e10
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,157 +30,123 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:26:37 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:27:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6606f8733d7b635e09e2dc3a391a5e1f0feb218f
-Gitweb:     http://git.kernel.org/tip/6606f8733d7b635e09e2dc3a391a5e1f0feb218f
+Commit-ID:  db146f06ac0bbea63271b6c78f4341ee46843e10
+Gitweb:     http://git.kernel.org/tip/db146f06ac0bbea63271b6c78f4341ee46843e10
 Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Thu, 16 Aug 2012 21:10:19 +0200
+AuthorDate: Thu, 16 Aug 2012 21:10:20 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 17 Aug 2012 13:11:58 -0300
+CommitDate: Fri, 17 Aug 2012 13:13:08 -0300
 
-perf tools: Rename some variables for better understanding
+perf tools: Rename global variable 'events' in util/header.c
 
-Trivial patch to improve understanding of code.
+Trivial patch that renames global variable 'events' in util/header.c.
 
-Varible attr is usually used for struct perf_event_attr. Using it in a
-different context is irritating. Thus, renaming it.
+Use a more specific naming to avoid conflicts. Same for variable
+'event_count'.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1345144224-27280-4-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1345144224-27280-5-git-send-email-robert.richter@amd.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |   42 +++++++++++++++++++++---------------------
- 1 files changed, 21 insertions(+), 21 deletions(-)
+ tools/perf/util/header.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 471b0c4..e2e5129 100644
+index e2e5129..1e5b6aa 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -608,11 +608,11 @@ static int write_nrcpus(int fd, struct perf_header *h __used,
- static int write_event_desc(int fd, struct perf_header *h __used,
- 			    struct perf_evlist *evlist)
+@@ -23,8 +23,8 @@
+ 
+ static bool no_buildid_cache = false;
+ 
+-static int event_count;
+-static struct perf_trace_event_type *events;
++static int trace_event_count;
++static struct perf_trace_event_type *trace_events;
+ 
+ static u32 header_argc;
+ static const char **header_argv;
+@@ -36,24 +36,24 @@ int perf_header__push_event(u64 id, const char *name)
+ 	if (strlen(name) > MAX_EVENT_NAME)
+ 		pr_warning("Event %s will be truncated\n", name);
+ 
+-	nevents = realloc(events, (event_count + 1) * sizeof(*events));
++	nevents = realloc(trace_events, (trace_event_count + 1) * sizeof(*trace_events));
+ 	if (nevents == NULL)
+ 		return -ENOMEM;
+-	events = nevents;
++	trace_events = nevents;
+ 
+-	memset(&events[event_count], 0, sizeof(struct perf_trace_event_type));
+-	events[event_count].event_id = id;
+-	strncpy(events[event_count].name, name, MAX_EVENT_NAME - 1);
+-	event_count++;
++	memset(&trace_events[trace_event_count], 0, sizeof(struct perf_trace_event_type));
++	trace_events[trace_event_count].event_id = id;
++	strncpy(trace_events[trace_event_count].name, name, MAX_EVENT_NAME - 1);
++	trace_event_count++;
+ 	return 0;
+ }
+ 
+ char *perf_header__find_event(u64 id)
  {
--	struct perf_evsel *attr;
-+	struct perf_evsel *evsel;
- 	u32 nre = 0, nri, sz;
- 	int ret;
- 
--	list_for_each_entry(attr, &evlist->entries, node)
-+	list_for_each_entry(evsel, &evlist->entries, node)
- 		nre++;
- 
- 	/*
-@@ -625,14 +625,14 @@ static int write_event_desc(int fd, struct perf_header *h __used,
- 	/*
- 	 * size of perf_event_attr struct
- 	 */
--	sz = (u32)sizeof(attr->attr);
-+	sz = (u32)sizeof(evsel->attr);
- 	ret = do_write(fd, &sz, sizeof(sz));
- 	if (ret < 0)
- 		return ret;
- 
--	list_for_each_entry(attr, &evlist->entries, node) {
-+	list_for_each_entry(evsel, &evlist->entries, node) {
- 
--		ret = do_write(fd, &attr->attr, sz);
-+		ret = do_write(fd, &evsel->attr, sz);
- 		if (ret < 0)
- 			return ret;
- 		/*
-@@ -642,7 +642,7 @@ static int write_event_desc(int fd, struct perf_header *h __used,
- 		 * copy into an nri to be independent of the
- 		 * type of ids,
- 		 */
--		nri = attr->ids;
-+		nri = evsel->ids;
- 		ret = do_write(fd, &nri, sizeof(nri));
- 		if (ret < 0)
- 			return ret;
-@@ -650,13 +650,13 @@ static int write_event_desc(int fd, struct perf_header *h __used,
- 		/*
- 		 * write event string as passed on cmdline
- 		 */
--		ret = do_write_string(fd, perf_evsel__name(attr));
-+		ret = do_write_string(fd, perf_evsel__name(evsel));
- 		if (ret < 0)
- 			return ret;
- 		/*
- 		 * write unique ids for this event
- 		 */
--		ret = do_write(fd, attr->id, attr->ids * sizeof(u64));
-+		ret = do_write(fd, evsel->id, evsel->ids * sizeof(u64));
- 		if (ret < 0)
- 			return ret;
+ 	int i;
+-	for (i = 0 ; i < event_count; i++) {
+-		if (events[i].event_id == id)
+-			return events[i].name;
++	for (i = 0 ; i < trace_event_count; i++) {
++		if (trace_events[i].event_id == id)
++			return trace_events[i].name;
  	}
-@@ -1683,7 +1683,7 @@ int perf_session__write_header(struct perf_session *session,
- 	struct perf_file_header f_header;
- 	struct perf_file_attr   f_attr;
- 	struct perf_header *header = &session->header;
--	struct perf_evsel *attr, *pair = NULL;
-+	struct perf_evsel *evsel, *pair = NULL;
- 	int err;
+ 	return NULL;
+ }
+@@ -1726,9 +1726,9 @@ out_err_write:
+ 	}
  
- 	lseek(fd, sizeof(f_header), SEEK_SET);
-@@ -1691,9 +1691,9 @@ int perf_session__write_header(struct perf_session *session,
- 	if (session->evlist != evlist)
- 		pair = perf_evlist__first(session->evlist);
- 
--	list_for_each_entry(attr, &evlist->entries, node) {
--		attr->id_offset = lseek(fd, 0, SEEK_CUR);
--		err = do_write(fd, attr->id, attr->ids * sizeof(u64));
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		evsel->id_offset = lseek(fd, 0, SEEK_CUR);
-+		err = do_write(fd, evsel->id, evsel->ids * sizeof(u64));
+ 	header->event_offset = lseek(fd, 0, SEEK_CUR);
+-	header->event_size = event_count * sizeof(struct perf_trace_event_type);
+-	if (events) {
+-		err = do_write(fd, events, header->event_size);
++	header->event_size = trace_event_count * sizeof(struct perf_trace_event_type);
++	if (trace_events) {
++		err = do_write(fd, trace_events, header->event_size);
  		if (err < 0) {
- out_err_write:
- 			pr_debug("failed to write perf header\n");
-@@ -1703,19 +1703,19 @@ out_err_write:
- 			err = do_write(fd, pair->id, pair->ids * sizeof(u64));
- 			if (err < 0)
- 				goto out_err_write;
--			attr->ids += pair->ids;
-+			evsel->ids += pair->ids;
- 			pair = perf_evsel__next(pair);
- 		}
+ 			pr_debug("failed to write perf header events\n");
+ 			return err;
+@@ -2211,13 +2211,13 @@ int perf_session__read_header(struct perf_session *session, int fd)
+ 
+ 	if (f_header.event_types.size) {
+ 		lseek(fd, f_header.event_types.offset, SEEK_SET);
+-		events = malloc(f_header.event_types.size);
+-		if (events == NULL)
++		trace_events = malloc(f_header.event_types.size);
++		if (trace_events == NULL)
+ 			return -ENOMEM;
+-		if (perf_header__getbuffer64(header, fd, events,
++		if (perf_header__getbuffer64(header, fd, trace_events,
+ 					     f_header.event_types.size))
+ 			goto out_errno;
+-		event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
++		trace_event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
  	}
  
- 	header->attr_offset = lseek(fd, 0, SEEK_CUR);
+ 	perf_header__process_sections(header, fd, &session->pevent,
+@@ -2362,8 +2362,8 @@ int perf_event__synthesize_event_types(struct perf_tool *tool,
+ 	struct perf_trace_event_type *type;
+ 	int i, err = 0;
  
--	list_for_each_entry(attr, &evlist->entries, node) {
-+	list_for_each_entry(evsel, &evlist->entries, node) {
- 		f_attr = (struct perf_file_attr){
--			.attr = attr->attr,
-+			.attr = evsel->attr,
- 			.ids  = {
--				.offset = attr->id_offset,
--				.size   = attr->ids * sizeof(u64),
-+				.offset = evsel->id_offset,
-+				.size   = evsel->ids * sizeof(u64),
- 			}
- 		};
- 		err = do_write(fd, &f_attr, sizeof(f_attr));
-@@ -2277,12 +2277,12 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
- 				   struct perf_session *session,
- 				   perf_event__handler_t process)
- {
--	struct perf_evsel *attr;
-+	struct perf_evsel *evsel;
- 	int err = 0;
+-	for (i = 0; i < event_count; i++) {
+-		type = &events[i];
++	for (i = 0; i < trace_event_count; i++) {
++		type = &trace_events[i];
  
--	list_for_each_entry(attr, &session->evlist->entries, node) {
--		err = perf_event__synthesize_attr(tool, &attr->attr, attr->ids,
--						  attr->id, process);
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		err = perf_event__synthesize_attr(tool, &evsel->attr, evsel->ids,
-+						  evsel->id, process);
- 		if (err) {
- 			pr_debug("failed to create perf header attribute\n");
- 			return err;
+ 		err = perf_event__synthesize_event_type(tool, type->event_id,
+ 							type->name, process,
