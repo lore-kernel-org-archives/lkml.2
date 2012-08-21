@@ -1,88 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab2HUJ3Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:29:24 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:40029 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab2HUJ3V (ORCPT
+	id S1755580Ab2HUJcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:32:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61413 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab2HUJci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:29:21 -0400
-Date: Tue, 21 Aug 2012 05:28:54 -0400 (EDT)
-From: Tomas Racek <tracek@redhat.com>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Borislav Petkov <borislav.petkov@amd.com>, kvm-devel <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>
-Message-ID: <592618508.2357204.1345541334852.JavaMail.root@redhat.com>
-In-Reply-To: <5033371C.9040703@msgid.tls.msk.ru>
-Subject: Re: [Qemu-devel] x86, nops settings result in kernel crash
+	Tue, 21 Aug 2012 05:32:38 -0400
+Date: Tue, 21 Aug 2012 11:32:31 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/24] perf/core improvements and fixes
+Message-ID: <20120821093231.GA12385@gmail.com>
+References: <1345479985-18669-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.34.27.4]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC20 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345479985-18669-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 20.08.2012 21:13, Tomas Racek wrote:
-> []
-> Can we trim the old, large and now not-so-relevant discussion please?
-> ;)
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> > I can provide you with more different traces if it can help. But I
-> > thought that maybe it will be more useful for you to try it on
-> > your own. So I've prepared some minimal debian installation which
-> > you could download here (apx 163M bzipped):
-> > 
-> > http://fi.muni.cz/~xracek/debian.img.bz2
-> > 
-> > Password:
-> > root/asdfgh
-> > 
-> > Here is my config for guest kernel:
-> > 
-> > http://fi.muni.cz/~xracek/config
-> > 
-> > I use
-> > 
-> > qemu-kvm -m 1500 -hda debian.img -kernel
-> > linux/arch/x86/boot/bzImage -append "root=/dev/sda1"
+> 	Please consider pulling, this is on top of my previous pull requests,
 > 
-> Um.  I'd expect the image to be self-contained, no external kernel.
-> I wanted to do a quick test to see if it fails on my machine too,
-> d/loaded debian.img.bz2 but there's no kernel.  So.. no quick test
-> for you ;)
-
-Well, the point was to use the latest sources instead of some image which can be obsolete tomorrow. However I created a new image with today's kernel which you can use:
-
-http://fi.muni.cz/~xracek/debian2.img.bz2
-
-Other things are the same.
-
-The runtest.sh sets environment for xfstests and runs test 285 which I wrote and and which should test if FS sends discard requests only on free sectors:
-285:
-1. Create loop device and FS on it.
-2. Populate it with some garbage.
-3. Get free sectors from FS.
-4. Run fstrim and look for discard requests via blk tracer.
-5. Compare free sectors to discard requests.
-
-The test itself can have some issues but I'm pretty sure it shouldn't crash the system. ;-)
-
-Regards,
-Tom
-
+> - Arnaldo
 > 
-> > After logging in just run "sh runtest.sh". This leads to crash in
-> > my case (host: Intel Core i5-2540M, kernel 3.5.2-1.fc17.x86_64,
-> > qemu 1.0.1).
+> The following changes since commit 0fe7d7e9761ec7e23350b5543ddac470bb3cde1e:
 > 
-> With all the above, this "runtest.sh" is informationally equal to
-> your disk image.
+>   perf symbols: Add description of JIT interface (2012-08-13 14:55:02 -0300)
 > 
-> /mjt
+> are available in the git repository at:
 > 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 000078bc3ee69efb1124b8478c7527389a826074:
+> 
+>   perf hists: Rename and move some functions (2012-08-20 09:47:31 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+>  . Fix include order for bison/flex-generated C files, from Ben Hutchings
+> 
+>  . Build fixes and documentation corrections from David Ahern
+> 
+>  . Group parsing support, from Jiri Olsa
+> 
+>  . UI/gtk refactorings and improvements from Namhyung Kim
+> 
+>  . NULL deref fix for perf script, from Namhyung Kim
+> 
+>  . Assorted cleanups from Robert Richter
+> 
+>  . Let O= makes handle relative paths, from Steven Rostedt
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (3):
+>       perf tools: Add missing files to build the python binding
+>       perf evlist: Rename __group method to __set_leader
+>       perf evlist: Introduce evsel list accessors
+> 
+> Ben Hutchings (1):
+>       perf tools: Fix include order for bison/flex-generated C files
+> 
+> David Ahern (3):
+>       perf script perl/python: Fix libexec scripts path in Documentation
+>       perf: silence GTK2 probing errors
+>       perf symbols: Fix builds with NO_LIBELF set
+> 
+> Jiri Olsa (4):
+>       perf tools: Add support to parse event group syntax
+>       perf tools: Add support to update event modifier
+>       perf tools: Enable grouping logic for parsed events
+>       perf test: Add automated tests for event group parsing
+> 
+> Namhyung Kim (8):
+>       perf script: Fix a NULL pointer dereference
+>       perf ui: Introduce struct ui_helpline
+>       perf ui gtk: Implement helpline_fns
+>       perf ui/gtk: Use helpline API in browser
+>       perf ui gtk: Add perf_gtk__show_helpline() for pr_*
+>       perf ui gtk: Ensure not to call gtk_main_quit() twice
+>       perf hists: Separate out hist print functions
+>       perf hists: Rename and move some functions
+> 
+> Robert Richter (4):
+>       perf tools: Fix type for evsel->ids and add size check for ids
+>       perf tools: Report number of pmu type of unknown events
+>       perf tools: Rename some variables for better understanding
+>       perf tools: Rename global variable 'events' in util/header.c
+> 
+> Steven Rostedt (1):
+>       perf tools: Let O= makes handle relative paths
+> 
+>  tools/perf/Documentation/perf-script-perl.txt   |    4 +-
+>  tools/perf/Documentation/perf-script-python.txt |   10 +-
+>  tools/perf/Makefile                             |   20 +-
+>  tools/perf/builtin-record.c                     |   17 +-
+>  tools/perf/builtin-stat.c                       |   15 +-
+>  tools/perf/builtin-test.c                       |   10 +-
+>  tools/perf/builtin-top.c                        |   18 +-
+>  tools/perf/ui/browsers/hists.c                  |    4 +-
+>  tools/perf/ui/gtk/browser.c                     |    5 +-
+>  tools/perf/ui/gtk/gtk.h                         |    2 +
+>  tools/perf/ui/gtk/helpline.c                    |   56 ++
+>  tools/perf/ui/gtk/setup.c                       |    3 +
+>  tools/perf/ui/gtk/util.c                        |    5 -
+>  tools/perf/ui/helpline.c                        |   56 +-
+>  tools/perf/ui/helpline.h                        |   33 +-
+>  tools/perf/ui/setup.c                           |    4 +
+>  tools/perf/ui/stdio/hist.c                      |  653 ++++++++++++++++++++++
+>  tools/perf/ui/tui/helpline.c                    |   57 ++
+>  tools/perf/ui/tui/setup.c                       |    2 -
+>  tools/perf/util/debug.c                         |    4 +-
+>  tools/perf/util/debug.h                         |    8 +-
+>  tools/perf/util/evlist.c                        |   73 +--
+>  tools/perf/util/evlist.h                        |   27 +-
+>  tools/perf/util/evsel.c                         |   52 +-
+>  tools/perf/util/evsel.h                         |   20 +-
+>  tools/perf/util/header.c                        |   97 ++--
+>  tools/perf/util/header.h                        |    2 +-
+>  tools/perf/util/hist.c                          |  677 +----------------------
+>  tools/perf/util/hist.h                          |    6 +-
+>  tools/perf/util/parse-events-test.c             |  387 ++++++++++---
+>  tools/perf/util/parse-events.c                  |   93 +++-
+>  tools/perf/util/parse-events.h                  |    4 +-
+>  tools/perf/util/parse-events.l                  |    2 +
+>  tools/perf/util/parse-events.y                  |   93 +++-
+>  tools/perf/util/python-ext-sources              |    2 +
+>  tools/perf/util/python.c                        |    7 +-
+>  tools/perf/util/symbol-elf.c                    |    3 +
+>  tools/perf/util/symbol.c                        |    2 +-
+>  tools/perf/util/top.c                           |    3 +-
+>  tools/perf/util/trace-event-parse.c             |    2 +-
+>  tools/scripts/Makefile.include                  |    6 +-
+>  41 files changed, 1560 insertions(+), 984 deletions(-)
+>  create mode 100644 tools/perf/ui/gtk/helpline.c
+>  create mode 100644 tools/perf/ui/stdio/hist.c
+>  create mode 100644 tools/perf/ui/tui/helpline.c
+
+Pulled this and the previous two pull requests, thanks a lot 
+Arnaldo!
+
+One minor observation, the Makefile tells us:
+
+Makefile:496: No libunwind found. Please install libunwind >= 0.99
+
+I guess that should be libunwind-dev[el], right? Plain libunwind 
+is not enough.
+
+Thanks,
+
+	Ingo
