@@ -1,202 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2HUPEE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:04:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59207 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab2HUPEA (ORCPT
+	id S1753172Ab2HUPFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:05:44 -0400
+Received: from bosmailout04.eigbox.net ([66.96.189.4]:42377 "EHLO
+	bosmailout04.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab2HUPFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:04:00 -0400
-Date: Tue, 21 Aug 2012 07:59:17 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-ccf3672d530170c98c734dfc5db07d64bcbad2ad@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        srostedt@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        srostedt@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120612225424.495625483@goodmis.org>
-References: <20120612225424.495625483@goodmis.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace: Consolidate arch dependent functions with 
- 'list' function
-Git-Commit-ID: ccf3672d530170c98c734dfc5db07d64bcbad2ad
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 21 Aug 2012 11:05:42 -0400
+X-Greylist: delayed 2398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Aug 2012 11:05:41 EDT
+X-Authority-Analysis: v=2.0 cv=XvJNzy59 c=1 sm=1
+ a=lghRLfjGutYZE2O92ubooA==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
+ a=TNaJx8l5llIA:10 a=Q9fys5e9bTEA:10 a=ZbotsqAEwLAA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=5qXBsl0AVB-Z9rD9sl8A:9 a=PUjeQqilurYA:10
+ a=eBvjjtMVdWwtQGedh7GyLg==:117
+X-EN-OrigOutIP: 10.20.18.5
+X-EN-IMPSID: pSRf1j00D06Zqne01SRfVQ
+Message-ID: <50339A0B.6080803@yahoo.es>
+Date: Tue, 21 Aug 2012 22:24:11 +0800
+From: Hein Tibosch <hein_tibosch@yahoo.es>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 07:59:22 -0700 (PDT)
+To: Arnd Bergmann <arnd.bergmann@linaro.org>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
+References: <502BC31E.4070200@yahoo.es> <201208210847.18700.arnd.bergmann@linaro.org> <CAKohpokoeSLBtLdh8hr4GKv8VOxzK8Vq5SoqLE3yC-TDyjYA9w@mail.gmail.com> <201208210905.52145.arnd.bergmann@linaro.org>
+In-Reply-To: <201208210905.52145.arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
+X-EN-AuthUser: hein@htibosch.net
+X-EN-OrigIP: 114.79.56.110
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ccf3672d530170c98c734dfc5db07d64bcbad2ad
-Gitweb:     http://git.kernel.org/tip/ccf3672d530170c98c734dfc5db07d64bcbad2ad
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Tue, 5 Jun 2012 09:44:25 -0400
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 19 Jul 2012 13:18:22 -0400
+On 8/21/2012 5:05 PM, Arnd Bergmann wrote:
+> It should be easy to tell from the object code whether this happened
+> or not. If it did, then we can investigate why gcc did that, otherwise
+> something else caused the strange byte swap.
+>
+> The safe way to define the readl() function in asm/io.h is to
+> use an inline assembly that prevents the access from getting split,
+> but avr32 just uses a pointer dereference here.
+>
+> I think I just found the answer elsewhere in
+> arch/avr32/mach-at32ap/include/mach/io.h, which defines
+>
+> # define __mem_ioswabl(a, x)    swahb32(x)
+>
+> and that apparently does the halfword swap when CONFIG_AP700X_16_BIT_SMC
+> is set. This explains why Havard said it's wrong to use readl on
+> internal deviceson avr32, but unfortunately that rule conflicts with how
+> we define the accessors on ARM.
 
-ftrace: Consolidate arch dependent functions with 'list' function
+I already thought the 16-bit swap might be related to the 16-bit SMC
+configuration. SMC will fetch each u32 word in 2 different 16-bit banks
+of SDRAM.
 
-As the function tracer starts to get more features, the support for
-theses features will spread out throughout the different architectures
-over time. These features boil down to what each arch does in the
-mcount trampoline (the ftrace_caller).
+In a meanwhile I tried dw_dmac using iowrite32be/ioread32be, and it worked
+equally well! Which isn't surprising because for AVR32 they were defined as:
 
-Currently there's two features that are not the same throughout the
-archs.
+#define iowrite32be(v,p)    __raw_writel(v, p)
+#define ioread32be(p)        ((unsigned int)__raw_readl(p))
 
- 1) Support to stop function tracing before the callback
- 2) passing of the ftrace ops
+The 'relaxed' versions won't work because:
 
-Both of these require placing an indirect function to support the
-features if the mcount trampoline does not.
+#define readl_relaxed            readl
 
-On a side note, for all architectures, when more than one callback
-is registered to the function tracer, an intermediate 'list' function
-is called by the mcount trampoline to iterate through the callbacks
-that are registered.
+The object code confirms what was expected:
 
-Instead of making a separate function for each of these features,
-and requiring several indirect calls, just use the single 'list' function
-as the intermediate, to handle all cases. If an arch does not support
-the 'stop function tracing' or the passing of ftrace ops, just force
-it to use the list function that will handle the features required.
+    u32 val = ioread32be (((unsigned*)0x100)); /* Same as __raw_readl */
+    ld.w  r8,pc[256]
 
-This makes the code cleaner and simpler and removes a lot of
- #ifdefs in the code.
+    iowrite32be (val, ((unsigned*)0x104)); /* same as __raw_writel */
+    st.w  pc[260],r8
 
-Link: http://lkml.kernel.org/r/20120612225424.495625483@goodmis.org
+    val = readl (((unsigned*)0x108)); /* __raw_readl + swahb32 */
+    ld.w  r8,pc[264]
+    lsl   r9,r8,0x10  /* 16-bit swap */
+    or    r9,r9,r8>>0x10
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace.h |   13 +++++++++++++
- kernel/trace/ftrace.c  |   45 ++++-----------------------------------------
- 2 files changed, 17 insertions(+), 41 deletions(-)
+    writel (val, ((unsigned*)0x10C)); /* swahb32 + __raw_writel */
+    lsl   r8,r9,0x10  /* 16-bit swap */
+    or    r8,r8,r9>>0x10
+    st.w  pc[268],r8
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 2d59641..3651fdc 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -27,6 +27,19 @@
- #define ARCH_SUPPORTS_FTRACE_OPS 0
- #endif
- 
-+/*
-+ * If the arch's mcount caller does not support all of ftrace's
-+ * features, then it must call an indirect function that
-+ * does. Or at least does enough to prevent any unwelcomed side effects.
-+ */
-+#if !defined(CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST) || \
-+	!ARCH_SUPPORTS_FTRACE_OPS
-+# define FTRACE_FORCE_LIST_FUNC 1
-+#else
-+# define FTRACE_FORCE_LIST_FUNC 0
-+#endif
-+
-+
- struct module;
- struct ftrace_hash;
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4f2ab93..4cbca2e 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -97,8 +97,6 @@ static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
--static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
--ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
- static struct ftrace_ops control_ops;
-@@ -162,26 +160,9 @@ static void set_ftrace_pid_function(ftrace_func_t func)
- void clear_ftrace_function(void)
- {
- 	ftrace_trace_function = ftrace_stub;
--	__ftrace_trace_function = ftrace_stub;
--	__ftrace_trace_function_delay = ftrace_stub;
- 	ftrace_pid_function = ftrace_stub;
- }
- 
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--/*
-- * For those archs that do not test ftrace_trace_stop in their
-- * mcount call site, we need to do it from C.
-- */
--static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip,
--				  struct ftrace_ops *op)
--{
--	if (function_trace_stop)
--		return;
--
--	__ftrace_trace_function(ip, parent_ip, op);
--}
--#endif
--
- static void control_ops_disable_all(struct ftrace_ops *ops)
- {
- 	int cpu;
-@@ -246,7 +227,7 @@ static void update_ftrace_function(void)
- 	if (ftrace_ops_list == &ftrace_list_end ||
- 	    (ftrace_ops_list->next == &ftrace_list_end &&
- 	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
--	     ARCH_SUPPORTS_FTRACE_OPS)) {
-+	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		if (ftrace_ops_list == &global_ops)
- 			function_trace_op = ftrace_global_list;
-@@ -259,18 +240,7 @@ static void update_ftrace_function(void)
- 		func = ftrace_ops_list_func;
- 	}
- 
--#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function = func;
--#else
--#ifdef CONFIG_DYNAMIC_FTRACE
--	/* do not update till all functions have been modified */
--	__ftrace_trace_function_delay = func;
--#else
--	__ftrace_trace_function = func;
--#endif
--	ftrace_trace_function =
--		(func == ftrace_stub) ? func : ftrace_test_stop_func;
--#endif
- }
- 
- static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
-@@ -1902,16 +1872,6 @@ static void ftrace_run_update_code(int command)
- 	 */
- 	arch_ftrace_update_code(command);
- 
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--	/*
--	 * For archs that call ftrace_test_stop_func(), we must
--	 * wait till after we update all the function callers
--	 * before we update the callback. This keeps different
--	 * ops that record different functions from corrupting
--	 * each other.
--	 */
--	__ftrace_trace_function = __ftrace_trace_function_delay;
--#endif
- 	function_trace_stop--;
- 
- 	ret = ftrace_arch_code_modify_post_process();
-@@ -3996,6 +3956,9 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- {
- 	struct ftrace_ops *op;
- 
-+	if (function_trace_stop)
-+		return;
-+
- 	if (unlikely(trace_recursion_test(TRACE_INTERNAL_BIT)))
- 		return;
- 
+
+Hein
