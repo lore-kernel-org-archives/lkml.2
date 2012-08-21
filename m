@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab2HUTEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 15:04:14 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49832 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab2HUTEI (ORCPT
+	id S1756673Ab2HUTEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 15:04:22 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60118 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756084Ab2HUTEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 15:04:08 -0400
+	Tue, 21 Aug 2012 15:04:13 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: torvalds@linux-foundation.org
 Cc: eparis@redhat.com, viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz, stable@vger.kernel.org
-Subject: [PATCH 2/3] audit: fix refcounting in audit-tree
-Date: Tue, 21 Aug 2012 21:03:58 +0200
-Message-Id: <1345575839-9389-3-git-send-email-miklos@szeredi.hu>
+        mszeredi@suse.cz
+Subject: [PATCH 3/3] audit: clean up refcounting in audit-tree
+Date: Tue, 21 Aug 2012 21:03:59 +0200
+Message-Id: <1345575839-9389-4-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1345575839-9389-1-git-send-email-miklos@szeredi.hu>
 References: <1345575839-9389-1-git-send-email-miklos@szeredi.hu>
@@ -23,85 +23,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Refcounting of fsnotify_mark in audit tree is broken.  E.g:
+Drop the initial reference by fsnotify_init_mark early instead of
+audit_tree_freeing_mark() at destroy time.
 
-                              refcount
-create_chunk
-  alloc_chunk                 1
-  fsnotify_add_mark           2
-
-untag_chunk
-  fsnotify_get_mark           3
-  fsnotify_destroy_mark
-    audit_tree_freeing_mark   2
-  fsnotify_put_mark           1
-  fsnotify_put_mark           0
-  via destroy_list
-    fsnotify_mark_destroy    -1
-
-This was reported by various people as triggering Oops when stopping auditd.
-
-We could just remove the put_mark from audit_tree_freeing_mark() but that would
-break freeing via inode destruction.  So this patch simply omits a put_mark
-after calling destroy_mark or adds a get_mark before.
-
-The additional get_mark is necessary where there's no other put_mark after
-fsnotify_destroy_mark() since it assumes that the caller is holding a reference
-(or the inode is keeping the mark pinned, not the case here AFAICS).
+In the cases we destroy the mark before we drop the initial reference we need to
+get rid of the get_mark that balances the put_mark in audit_tree_freeing_mark().
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Reported-by: Valentin Avram <aval13@gmail.com>
-Reported-by: Peter Moody <pmoody@google.com>
-Acked-by: Eric Paris <eparis@redhat.com>
-CC: stable@vger.kernel.org
 ---
- kernel/audit_tree.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ kernel/audit_tree.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index 69a5851..2b2ffff 100644
+index 2b2ffff..ed206fd 100644
 --- a/kernel/audit_tree.c
 +++ b/kernel/audit_tree.c
-@@ -250,7 +250,6 @@ static void untag_chunk(struct node *p)
- 		spin_unlock(&hash_lock);
- 		spin_unlock(&entry->lock);
- 		fsnotify_destroy_mark(entry);
--		fsnotify_put_mark(entry);
- 		goto out;
- 	}
- 
-@@ -293,7 +292,6 @@ static void untag_chunk(struct node *p)
+@@ -292,6 +292,7 @@ static void untag_chunk(struct node *p)
  	spin_unlock(&hash_lock);
  	spin_unlock(&entry->lock);
  	fsnotify_destroy_mark(entry);
--	fsnotify_put_mark(entry);
++	fsnotify_put_mark(&new->mark);	/* drop initial reference */
  	goto out;
  
  Fallback:
-@@ -332,6 +330,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
+@@ -330,7 +331,6 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
  		spin_unlock(&hash_lock);
  		chunk->dead = 1;
  		spin_unlock(&entry->lock);
-+		fsnotify_get_mark(entry);
+-		fsnotify_get_mark(entry);
  		fsnotify_destroy_mark(entry);
  		fsnotify_put_mark(entry);
  		return 0;
-@@ -412,6 +411,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
- 		spin_unlock(&chunk_entry->lock);
- 		spin_unlock(&old_entry->lock);
- 
-+		fsnotify_get_mark(chunk_entry);
- 		fsnotify_destroy_mark(chunk_entry);
- 
- 		fsnotify_put_mark(chunk_entry);
-@@ -445,7 +445,6 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
- 	spin_unlock(&old_entry->lock);
- 	fsnotify_destroy_mark(old_entry);
- 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
--	fsnotify_put_mark(old_entry); /* and kill it */
+@@ -346,6 +346,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
+ 	insert_hash(chunk);
+ 	spin_unlock(&hash_lock);
+ 	spin_unlock(&entry->lock);
++	fsnotify_put_mark(entry);	/* drop initial reference */
  	return 0;
  }
  
+@@ -411,7 +412,6 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+ 		spin_unlock(&chunk_entry->lock);
+ 		spin_unlock(&old_entry->lock);
+ 
+-		fsnotify_get_mark(chunk_entry);
+ 		fsnotify_destroy_mark(chunk_entry);
+ 
+ 		fsnotify_put_mark(chunk_entry);
+@@ -444,6 +444,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+ 	spin_unlock(&chunk_entry->lock);
+ 	spin_unlock(&old_entry->lock);
+ 	fsnotify_destroy_mark(old_entry);
++	fsnotify_put_mark(chunk_entry);	/* drop initial reference */
+ 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
+ 	return 0;
+ }
+@@ -915,7 +916,12 @@ static void audit_tree_freeing_mark(struct fsnotify_mark *entry, struct fsnotify
+ 	struct audit_chunk *chunk = container_of(entry, struct audit_chunk, mark);
+ 
+ 	evict_chunk(chunk);
+-	fsnotify_put_mark(entry);
++
++	/*
++	 * We are guaranteed to have at least one reference to the mark from
++	 * either the inode or the caller of fsnotify_destroy_mark().
++	 */
++	BUG_ON(atomic_read(&entry->refcnt) < 1);
+ }
+ 
+ static bool audit_tree_send_event(struct fsnotify_group *group, struct inode *inode,
 -- 
 1.7.7
 
