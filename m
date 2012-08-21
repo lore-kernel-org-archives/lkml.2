@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab2HUQzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:55:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48083 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099Ab2HUQzb (ORCPT
+	id S1758206Ab2HUQ5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:57:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48157 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756555Ab2HUQ5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:55:31 -0400
+	Tue, 21 Aug 2012 12:57:40 -0400
+Date: Tue, 21 Aug 2012 17:57:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Alex Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <leelakrishna.a@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
+Message-ID: <20120821165738.GY7995@opensource.wolfsonmicro.com>
+References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com>
+ <1345097337-24170-2-git-send-email-acourbot@nvidia.com>
+ <1345535069.4085.7.camel@deskari>
+ <1562509.b0FYTUZ1D8@percival>
+ <20120821083329.GA28992@avionic-0098.adnet.avionic-design.de>
+ <1345539465.4085.22.camel@deskari>
+ <20120821091306.GA4819@avionic-0098.mockup.avionic-design.de>
+ <1345542860.4085.40.camel@deskari>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20120821131115.GA3132@herton-Z68MA-D2H-B3>
-References: <20120820035457.653002510@linuxfoundation.org>
-	<20120820035458.292084336@linuxfoundation.org>
-	<20120821051318.GB3625@herton-Z68MA-D2H-B3>
-	<CAKMK7uFpj+qctqKOk6PJqRn_7XAiDbE7Bv2r2VseGyUHUTD2mA@mail.gmail.com>
-	<20120821131115.GA3132@herton-Z68MA-D2H-B3>
-Date: Tue, 21 Aug 2012 18:55:30 +0200
-Message-ID: <CAKMK7uFjxQZYXLrs14RydnSKp6_ghwUL-1xGQm5C5dXao60Fhg@mail.gmail.com>
-Subject: Re: [ 04/16] drm/i915: correctly order the ring init sequence
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jani Nikula <jani.nikula@intel.com>,
-        Yang Guang <guang.a.yang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ubca5Sl/zyRO+Ah+"
+Content-Disposition: inline
+In-Reply-To: <1345542860.4085.40.camel@deskari>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 3:11 PM, Herton Ronaldo Krzesinski
-<herton.krzesinski@canonical.com> wrote:
-> On Tue, Aug 21, 2012 at 08:42:35AM +0200, Daniel Vetter wrote:
->> On Tue, Aug 21, 2012 at 7:13 AM, Herton Ronaldo Krzesinski
->> <herton.krzesinski@canonical.com> wrote:
->> > I had the same problem as on 3.2 with this change, i915 stopped working
->> > unable to initialize render ring, eg. on one of the boots here:
->> > [drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f003 head 00001020 tail 00000000 start 00001000
->> >
->> > But unlike I was expecting as with 3.2 case, picking commit
->> > f01db988ef6f6c70a6cc36ee71e4a98a68901229 ("drm/i915: Add wait_for in
->> > init_ring_common") here isn't enough, it continues to fail even if I
->> > try to increase the delay in the wait_for, I'm not sure why yet... may
->> > be something else is going on, or 3.0 has something else missing.
->> >
->> > Also the same proposed patch for 3.4.10 gives the same problem, but
->> > picking f01db988ef6f6c70a6cc36ee71e4a98a68901229 there made things work
->> > again like happend on first 3.2.28 proposed update. Only 3.0
->> > is misteriously failing either way here.
->>
->> I guess we're missing something then still in the stable backports for
->> 3.0. Herton, what machine do you have exaclty (lspci -nn)?
->
-> It's a G41 based board:
 
-Hm, I've reviewed git log and bug reports and I have no idea what's
-missing on 3.0. I guess the best course of action is to not apply this
-patch to 3.0 stable - it fixes an ivb issue anyway, and 3.0 is a
-rather old kernel for ivb support anyway (we generally recommend 3.2.x
-for ivb).
--Daniel
+--Ubca5Sl/zyRO+Ah+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> 00:00.0 Host bridge [0600]: Intel Corporation 4 Series Chipset DRAM Controller [8086:2e30] (rev 03)
-> 00:02.0 VGA compatible controller [0300]: Intel Corporation 4 Series Chipset Integrated Graphics Controller [8086:2e32] (rev 03)
-> 00:1b.0 Audio device [0403]: Intel Corporation N10/ICH 7 Family High Definition Audio Controller [8086:27d8] (rev 01)
-> 00:1c.0 PCI bridge [0604]: Intel Corporation N10/ICH 7 Family PCI Express Port 1 [8086:27d0] (rev 01)
-> 00:1c.2 PCI bridge [0604]: Intel Corporation N10/ICH 7 Family PCI Express Port 3 [8086:27d4] (rev 01)
-> 00:1d.0 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #1 [8086:27c8] (rev 01)
-> 00:1d.1 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #2 [8086:27c9] (rev 01)
-> 00:1d.2 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #3 [8086:27ca] (rev 01)
-> 00:1d.3 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #4 [8086:27cb] (rev 01)
-> 00:1d.7 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller [8086:27cc] (rev 01)
-> 00:1e.0 PCI bridge [0604]: Intel Corporation 82801 PCI Bridge [8086:244e] (rev e1)
-> 00:1f.0 ISA bridge [0601]: Intel Corporation 82801GB/GR (ICH7 Family) LPC Interface Bridge [8086:27b8] (rev 01)
-> 00:1f.2 IDE interface [0101]: Intel Corporation N10/ICH7 Family SATA IDE Controller [8086:27c0] (rev 01)
-> 00:1f.3 SMBus [0c05]: Intel Corporation N10/ICH 7 Family SMBus Controller [8086:27da] (rev 01)
-> 02:00.0 Ethernet controller [0200]: Atheros Communications AR8151 v1.0 Gigabit Ethernet [1969:1073] (rev c0)
->
->>
->> Greg, I think for now it's better if you hold off on merging this
->> patch to 3.0 until this is sorted out.
->>
->> Thanks, Daniel
->> --
->> Daniel Vetter
->> daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
->>
->
-> --
-> []'s
-> Herton
+On Tue, Aug 21, 2012 at 12:54:20PM +0300, Tomi Valkeinen wrote:
 
+> However, if we already have a generic driver for that type of panel,
+> (which we would need anyway for the DT based approach), the developer
+> only needs to add the name of the panel and the data for the power
+> sequence to the panel driver's database, which is about the same amount
+> of work as with DT.
 
+> So it's really just a question of where to put the data in question, DT
+> or driver. Both contain the same data, and the data structure may also
+> be the same. In DT's case it just needs to be parsed first, whereas in
+> database case you'll enter the data in structs.
 
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I think the device tree idiomatic way of doing this is to have a bunch
+of .dtsi files for the panels which then get included by reference in
+the board files.  This isn't helpful to people working on non-DT
+architectures though.
+
+--Ubca5Sl/zyRO+Ah+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQM734AAoJEFJkBDiqVpZ4h28P/iblWU1WkmSB3gX1ANEaTXg2
+MiYoBQNiUON4KY+6nOse+vEGsWlhsNaCmsxxp1zp/yNeG5zzPUhcosh6qK00IxMI
+dlu1zMJ5Ng4KNq7xAVf2OisX8UAfUNK4PxdzwClGhmy7/oSN+/ojajhRDRAWlODw
+4V5diV6t6USWZocfTrsIHBMJju1vMgm9H6T6JoND7azvt+mk65PQFh6IIQyMJWRx
+Q4EDivYkcrLLR2cmLlPq9SAqCy0Jhym0HkL8tYNgQafu4/SjlkRTc3heLiQzMmDB
+cnaPjrEkIjn3ONqBsueBismBQR6I7Q4lt3u+XVwVu8i1Cc4aOIpAelhh40ZE7DM/
++vgsQsulybCO9c+WxxK+6ZGnEsHOPIoAyJ3V4Dk4zG0+22W/JQPRl9DPfd2i96CN
+W6TXAoqXhsAawCVjt/MLCzzmuxk9qX6R9+aBLQF4d2MygVLKeOm6MM9Jm/XOxf0b
+BWfHADatomudMD8Ewxij+uB+4sgp+O9pzWnERASqERO06yvUWM9QO2uuNYMNNfGV
+ZMtV+LPspwnZxvOtSKgG7DENcVScMq1KNJQMjrp5X6bEhaaKwyO6F0MHMYAnJmAl
+nNVjct/Rbio/XYcySv2bcUln81iNu5qJCeyGVhirJNHeWFt2EnbJc5RUSZa5K7eC
++uTonIehAvqSzbGlma7H
+=FIV2
+-----END PGP SIGNATURE-----
+
+--Ubca5Sl/zyRO+Ah+--
