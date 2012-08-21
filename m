@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab2HUOZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:25:12 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:39376 "EHLO mxout1.idt.com"
+	id S1754008Ab2HUO0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:26:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51098 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752919Ab2HUOZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:25:01 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>
-Subject: [PATCH] rapidio: apply RX/TX enable to active switch ports only
-Date: Tue, 21 Aug 2012 10:23:55 -0400
-Message-Id: <1345559035-25879-2-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1345559035-25879-1-git-send-email-alexandre.bounine@idt.com>
-References: <1345559035-25879-1-git-send-email-alexandre.bounine@idt.com>
+	id S1751303Ab2HUO0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 10:26:31 -0400
+Message-ID: <50339A85.3080206@redhat.com>
+Date: Tue, 21 Aug 2012 17:26:13 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
+        JBeulich@suse.com, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC: Link Time Optimization support for the kernel
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <20120820074835.GA6710@gmail.com> <20120820101044.GE16230@one.firstfloor.org> <20120821074921.GA10809@gmail.com>
+In-Reply-To: <20120821074921.GA10809@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify RIO enumeration to apply RX/TX enable operations only to active
-switch ports. This will leave inactive ports in condition consistent with
-their state.
+On 08/21/2012 10:49 AM, Ingo Molnar wrote:
+> 
+> Can the current implementation of LTO optimize to the level of 
+> inlining? A lot of our include file hell situation results from 
+> the desire to declare structures publicly so that inlined 
+> functions can use them directly.
+> 
+> If data structures could be encapsulated/internalized to 
+> subsystems and only global functions are exposed to other 
+> subsystems [which are then LTO optimized] then our include
+> file dependencies could become a *lot* simpler.
 
-This patch is applicable to kernel versions starting from v2.6.35.
+I think modules break this (if I understand what you mean correctly).
+If the main kernel exposes symbol x as a global function, then lto will
+not inline it into a module.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
----
- drivers/rapidio/rio-scan.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
-index 2bebd79..02e686b 100644
---- a/drivers/rapidio/rio-scan.c
-+++ b/drivers/rapidio/rio-scan.c
-@@ -839,12 +839,10 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
- 		for (port_num = 0;
- 		     port_num < RIO_GET_TOTAL_PORTS(rdev->swpinfo);
- 		     port_num++) {
--			/*Enable Input Output Port (transmitter reviever)*/
--			rio_enable_rx_tx_port(port, 0,
-+			if (sw_inport == port_num) {
-+				rio_enable_rx_tx_port(port, 0,
- 					      RIO_ANY_DESTID(port->sys_size),
- 					      hopcount, port_num);
--
--			if (sw_inport == port_num) {
- 				rdev->rswitch->port_ok |= (1 << port_num);
- 				continue;
- 			}
-@@ -857,6 +855,9 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
- 				pr_debug(
- 				    "RIO: scanning device on port %d\n",
- 				    port_num);
-+				rio_enable_rx_tx_port(port, 0,
-+					      RIO_ANY_DESTID(port->sys_size),
-+					      hopcount, port_num);
- 				rdev->rswitch->port_ok |= (1 << port_num);
- 				rio_route_add_entry(rdev, RIO_GLOBAL_TABLE,
- 						RIO_ANY_DESTID(port->sys_size),
 -- 
-1.7.8.4
-
+error compiling committee.c: too many arguments to function
