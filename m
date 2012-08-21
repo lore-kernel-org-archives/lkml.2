@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab2HUGkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 02:40:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18278 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab2HUGkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 02:40:41 -0400
-From: Dave Airlie <airlied@redhat.com>
-To: linux-fbdev@vger.kernel.org
-Cc: dri-devel@lists.sf.net, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Randy Dunlap <rdunlap@xenotime.net>, Josh Boyer <jwboyer@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH] fbcon: fix race condition between console lock and cursor timer
-Date: Tue, 21 Aug 2012 16:40:07 +1000
-Message-Id: <1345531207-24926-1-git-send-email-airlied@redhat.com>
+	id S1753070Ab2HUGlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 02:41:45 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:58733 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab2HUGll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 02:41:41 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 0/4] fat: fix ESTALE errors
+References: <1345282899-7534-1-git-send-email-linkinjeon@gmail.com>
+	<20120818132524.GW23464@ZenIV.linux.org.uk>
+	<87pq6op9zz.fsf@devron.myhome.or.jp>
+	<CAKYAXd_VyRg5PYjcYb_JtDeXHeMSRtwwT665hcMcf4WCer7a_Q@mail.gmail.com>
+	<20120820205231.GG5779@fieldses.org>
+	<CAKYAXd8fkV5x454vtXvwM6LN3Hb2dLgemhJdNFKyxnwweNq75A@mail.gmail.com>
+Date: Tue, 21 Aug 2012 15:41:36 +0900
+In-Reply-To: <CAKYAXd8fkV5x454vtXvwM6LN3Hb2dLgemhJdNFKyxnwweNq75A@mail.gmail.com>
+	(Namjae Jeon's message of "Tue, 21 Aug 2012 14:19:46 +0900")
+Message-ID: <874nnwiw67.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we've had a fair few reports of fbcon handover breakage between
-efi/vesafb and i915 surface recently, so I dedicated a couple of
-days to finding the problem.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Essentially the last thing we saw was the conflicting framebuffer
-message and that was all.
+> And.. Hi Ogawa.
+> I checked other filesystem about unlink - inode issue. but I found
+> Ext4 have same issue.
+> Although other filesysm is having this issue, Can we think It could be
+> only FAT issue ?
 
-So after much tracing with direct netconsole writes (printks
-under console_lock not so useful), I think I found the race.
+(I assume this issue == orphaned inode issue).
 
-Thread A (driver load)    Thread B (timer thread)
-  unbind_con_driver ->              |
-  bind_con_driver ->                |
-  vc->vc_sw->con_deinit ->          |
-  fbcon_deinit ->                   |
-  console_lock()                    |
-      |                             |
-      |                       fbcon_flashcursor timer fires
-      |                       console_lock() <- blocked for A
-      |
-      |
-fbcon_del_cursor_timer ->
-  del_timer_sync
-  (BOOM)
+ext* doesn't have this issue. If ext* made orphaned inode, ext* doesn't
+delete inode from inode table until calling iput() from last referencer.
 
-Of course because all of this is under the console lock,
-we never see anything, also since we also just unbound the active
-console guess what we never see anything.
-
-Hopefully this fixes the problem for anyone seeing vesafb->kms
-driver handoff.
-
-Signed-off-by: David Airlie <airlied@redhat.com>
----
- drivers/video/console/fbcon.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-index 2e471c2..f8a79fc 100644
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -372,8 +372,12 @@ static void fb_flashcursor(struct work_struct *work)
- 	struct vc_data *vc = NULL;
- 	int c;
- 	int mode;
-+	int ret;
-+
-+	ret = console_trylock();
-+	if (ret == 0)
-+		return;
- 
--	console_lock();
- 	if (ops && ops->currcon != -1)
- 		vc = vc_cons[ops->currcon].d;
- 
+In FAT case, FAT inode is embedded into dir entry. So, if unlinked inode
+(then orphaned inode is detached (fat_detach())), FAT deletes inode (dir
+entry) from dir.
 -- 
-1.7.10.2
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
