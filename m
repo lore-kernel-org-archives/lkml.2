@@ -1,173 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab2HUJIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:08:38 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:38800 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753472Ab2HUJIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:08:35 -0400
-Date: Tue, 21 Aug 2012 12:04:36 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] spi: omap2-mcspi: Call pm_runtime_* functions
- directly
-Message-ID: <20120821090435.GB10347@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1345529864-7937-1-git-send-email-shubhrajyoti@ti.com>
- <1345529864-7937-2-git-send-email-shubhrajyoti@ti.com>
+	id S1755028Ab2HUJIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:08:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59918 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754768Ab2HUJIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 05:08:46 -0400
+Date: Tue, 21 Aug 2012 11:08:10 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: jack@suse.cz, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Bonggil Bak <bgbak@samsung.com>
+Subject: Re: [PATCH RESEND] udf: extent cache implementation for
+ manipulating block map
+Message-ID: <20120821090810.GC7537@quack.suse.cz>
+References: <1345283903-7960-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345529864-7937-2-git-send-email-shubhrajyoti@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1345283903-7960-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  Hello,
 
---+g7M9IMkV8truYOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  first, I'm sorry for a late reply. I was on a long vacation and then it
+took me a while to catch up with stuff.
 
-On Tue, Aug 21, 2012 at 11:47:42AM +0530, Shubhrajyoti D wrote:
-> Call the pm_runtime functions directly making room for possible
-> pm optimisations. Also the runtime functions aren't just about
-> enabling and disabling of clocks though it does enable clocks also.
->=20
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+On Sat 18-08-12 05:58:22, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> While mapping logical blocks of a file to physical blocks on the partition,
+> everytime UDF read file metadata from the begining which decrease preformance.
+> The drawback of this scheme is more prominent while reading large files.
+> For example, while reading a large file of ~5GB, read speed will
+> gradually become less as we near the end of file because of the time
+> taken in calculating the corresponding physical block.
+> 
+> This patch implements caching and remembers the location of the last read
+> extent. Instead of reading file metadata from begining, start from the
+> cached location.
+  I agree this functionality is useful. Thanks for implementing it! I have
+some comments regarding the implementation below:
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> Signed-off-by: Bonggil Bak <bgbak@samsung.com>
 > ---
->  drivers/spi/spi-omap2-mcspi.c |   28 +++++++++++-----------------
->  1 files changed, 11 insertions(+), 17 deletions(-)
->=20
-> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-> index 259f601..dd887eb 100644
-> --- a/drivers/spi/spi-omap2-mcspi.c
-> +++ b/drivers/spi/spi-omap2-mcspi.c
-> @@ -260,16 +260,6 @@ static void omap2_mcspi_restore_ctx(struct omap2_mcs=
-pi *mcspi)
->  	list_for_each_entry(cs, &ctx->cs, node)
->  		__raw_writel(cs->chconf0, cs->base + OMAP2_MCSPI_CHCONF0);
->  }
-> -static void omap2_mcspi_disable_clocks(struct omap2_mcspi *mcspi)
-> -{
-> -	pm_runtime_mark_last_busy(mcspi->dev);
-> -	pm_runtime_put_autosuspend(mcspi->dev);
-> -}
+>  fs/udf/ialloc.c  |    2 ++
+>  fs/udf/inode.c   |   83 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  fs/udf/udf_i.h   |   13 +++++++++
+>  fs/udf/udfdecl.h |   13 +++++++++
+>  4 files changed, 105 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/udf/ialloc.c b/fs/udf/ialloc.c
+> index 7e5aae4..7dd86a4 100644
+> --- a/fs/udf/ialloc.c
+> +++ b/fs/udf/ialloc.c
+> @@ -117,6 +117,8 @@ struct inode *udf_new_inode(struct inode *dir, umode_t mode, int *err)
+>  	iinfo->i_lenAlloc = 0;
+>  	iinfo->i_use = 0;
+>  	iinfo->i_checkpoint = 1;
+> +	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
+> +	mutex_init(&(iinfo->i_extent_cache_lock));
+>  	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_AD_IN_ICB))
+>  		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
+>  	else if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_SHORT_AD))
+> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+> index fafaad7..cf34dec 100644
+> --- a/fs/udf/inode.c
+> +++ b/fs/udf/inode.c
+> @@ -345,7 +345,7 @@ static int udf_get_block(struct inode *inode, sector_t block,
+>  		iinfo->i_next_alloc_goal++;
+>  	}
+>  
 > -
-> -static int omap2_mcspi_enable_clocks(struct omap2_mcspi *mcspi)
-> -{
-> -	return pm_runtime_get_sync(mcspi->dev);
-> -}
-> =20
->  static int omap2_prepare_transfer(struct spi_master *master)
->  {
-> @@ -848,12 +838,13 @@ static int omap2_mcspi_setup(struct spi_device *spi)
->  			return ret;
->  	}
-> =20
-> -	ret =3D omap2_mcspi_enable_clocks(mcspi);
-> +	ret =3D pm_runtime_get_sync(mcspi->dev);
->  	if (ret < 0)
->  		return ret;
-> =20
->  	ret =3D omap2_mcspi_setup_transfer(spi, NULL);
-> -	omap2_mcspi_disable_clocks(mcspi);
-> +	pm_runtime_mark_last_busy(mcspi->dev);
-> +	pm_runtime_put_autosuspend(mcspi->dev);
-> =20
->  	return ret;
->  }
-> @@ -1067,7 +1058,7 @@ static int __devinit omap2_mcspi_master_setup(struc=
-t omap2_mcspi *mcspi)
->  	struct omap2_mcspi_regs	*ctx =3D &mcspi->ctx;
->  	int			ret =3D 0;
-> =20
-> -	ret =3D omap2_mcspi_enable_clocks(mcspi);
-> +	ret =3D pm_runtime_get_sync(mcspi->dev);
->  	if (ret < 0)
->  		return ret;
-> =20
-> @@ -1076,7 +1067,8 @@ static int __devinit omap2_mcspi_master_setup(struc=
-t omap2_mcspi *mcspi)
->  	ctx->wakeupenable =3D OMAP2_MCSPI_WAKEUPENABLE_WKEN;
-> =20
->  	omap2_mcspi_set_master_mode(master);
-> -	omap2_mcspi_disable_clocks(mcspi);
-> +	pm_runtime_mark_last_busy(mcspi->dev);
-> +	pm_runtime_put_autosuspend(mcspi->dev);
->  	return 0;
->  }
-> =20
-> @@ -1251,7 +1243,8 @@ static int __devexit omap2_mcspi_remove(struct plat=
-form_device *pdev)
->  	mcspi =3D spi_master_get_devdata(master);
->  	dma_channels =3D mcspi->dma_channels;
-> =20
-> -	omap2_mcspi_disable_clocks(mcspi);
-> +	pm_runtime_mark_last_busy(mcspi->dev);
-> +	pm_runtime_put_autosuspend(mcspi->dev);
->  	pm_runtime_disable(&pdev->dev);
-> =20
->  	spi_unregister_master(master);
-> @@ -1276,7 +1269,7 @@ static int omap2_mcspi_resume(struct device *dev)
->  	struct omap2_mcspi_regs	*ctx =3D &mcspi->ctx;
->  	struct omap2_mcspi_cs	*cs;
-> =20
-> -	omap2_mcspi_enable_clocks(mcspi);
-> +	pm_runtime_get_sync(mcspi->dev);
->  	list_for_each_entry(cs, &ctx->cs, node) {
->  		if ((cs->chconf0 & OMAP2_MCSPI_CHCONF_FORCE) =3D=3D 0) {
->  			/*
-> @@ -1289,7 +1282,8 @@ static int omap2_mcspi_resume(struct device *dev)
->  			__raw_writel(cs->chconf0, cs->base + OMAP2_MCSPI_CHCONF0);
->  		}
->  	}
-> -	omap2_mcspi_disable_clocks(mcspi);
-> +	pm_runtime_mark_last_busy(mcspi->dev);
-> +	pm_runtime_put_autosuspend(mcspi->dev);
->  	return 0;
->  }
->  #else
-> --=20
-> 1.7.5.4
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +	udf_clear_extent_cache(iinfo);
+>  	phys = inode_getblk(inode, block, &err, &new);
+>  	if (!phys)
+>  		goto abort;
+  This is certainly the easiest thing to do. But it nags me that simple
+appending writes are not able to use the extent cache. It even needn't be
+that complicated if we carefully pick the things to cache - see below.
 
---=20
-balbi
+...
+> diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
+> index bb8309d..ec168a9 100644
+> --- a/fs/udf/udf_i.h
+> +++ b/fs/udf/udf_i.h
+> @@ -1,6 +1,16 @@
+>  #ifndef _UDF_I_H
+>  #define _UDF_I_H
+>  
+> +struct udf_ext_cache {
+> +	struct kernel_lb_addr epos;
+> +	uint32_t offset;
+> +	uint32_t p_block_nr;
+> +	struct kernel_lb_addr eloc;
+> +	uint32_t elen;
+> +	int8_t etype;
+> +	loff_t last_block;
+> +};
+> +
+  Umm, I think caching things slightly differently might make things
+easier. I'd do:
+struct udf_ext_cache {
+	/*
+	 * Buffer head with extent or NULL if the extent is in inode
+	 * (need to have buffer reference via get_bh!)
+	 */
+	struct buffer_head *extent_bh;
+	/*
+	 * Extent position - this is somewhat redundant since we have the
+	 * bh but code in block mapping functions expects to have this
+	 */
+	struct kernel_lb_addr epos;
+	/* Offset of cached extent in the buffer head / inode */
+	uint32_t offset;
+	/* Logical block where cached extent starts */
+	sector_t block;
+};
 
---+g7M9IMkV8truYOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So you cache extent position, bh, and it's logical position within inode.
+udf_read_extent_cache() would check whether queried logical block is after
+our cached logical block. If yes, we would decode extent from our bh /
+inode and proceed as you did.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The advantage I see in this approach is that we cache a bit less, don't
+have to lookup the buffer head (although that is pinned in memory now so
+total memory consumption might be higher in some cases), and we don't have
+to invalidate the cache when the cached logical block is before the block
+we write to (which nicely catches also extending writes).
 
-iQIcBAEBAgAGBQJQM08jAAoJEIaOsuA1yqREqWgP/03mYC5ZMwlTG3bKvsieZYGy
-CLeYXZDXo6aVQpyJBjdDWLPQfhFRw4AUI0glQTEoQHwyEwqh25te+TxlRq597qDH
-mnt38R3bx/g20L7LTdYKLMwsnCUMO2CV82F5UtRDdx2woNOFIeiBJZbsoZkqzrpP
-ZjuaZhjtB1saR3VoREcXjqnGERt7q9jRQW4R7zoNpKVT6n7Ti5eXE3k2H6pV7nGb
-WzBMdks0Do4LxMWCSBRfnZcQKuNxJ5RZy/wghDz+3aXpAzHwUa1LQShp4qIj3+yi
-9HG+h9W+65Qk71wuei5rGi7fYMbVLbFowaQ42HfaBjSgThvKLtpDPFXDol/Ty1Wg
-Ej1EpScZAekiVqDh9n3O1b6lWm7Ru5IszftyuiaBcpuz7nFwA2W5NbmIoPv6NgUu
-4yk1XELf6spzfj+rAshUncEfuwzhn1mwacEJjwV7AXXZt/f+F8rL6EgDB+TWrT8N
-9Lc/wD5L+7xhkGs0kvUSCTrfpDyCFWK/Ie/sQTwmqT6cI9ZlcUn4wJepuG9X4PdB
-mOZdkiVwQknLl9r68SQZ3srjsbMG3uo61cCHUgTWSmhcnwB43Ugr3IBQ4cpDFN/T
-vKJUnfv7+FMC0n9AWQZACzun+2IaZgh+89lLKez/G0m7/Us5lOCpLvtA/EY1q5s5
-TWMHkxQntIEwftUWw1RR
-=wPVi
------END PGP SIGNATURE-----
+What do you think?
 
---+g7M9IMkV8truYOl--
+>  /*
+>   * The i_data_sem and i_mutex serve for protection of allocation information
+>   * of a regular files and symlinks. This includes all extents belonging to
+> @@ -35,6 +45,9 @@ struct udf_inode_info {
+>  		__u8		*i_data;
+>  	} i_ext;
+>  	struct rw_semaphore	i_data_sem;
+> +	struct udf_ext_cache cached_extent;
+> +	/* Mutex for protecting extent cache */
+> +	struct mutex i_extent_cache_lock;
+>  	struct inode vfs_inode;
+>  };
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
