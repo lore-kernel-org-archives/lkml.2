@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab2HUPIg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:08:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59352 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab2HUPIe (ORCPT
+	id S1753863Ab2HUPIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:08:47 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:4416 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751636Ab2HUPIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:08:34 -0400
-Date: Tue, 21 Aug 2012 08:03:43 -0700
-From: tip-bot for Uros Bizjak <ubizjak@gmail.com>
-Message-ID: <tip-e4ea3f6b1bf3d489674a3660db652636e50186f9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        tglx@linutronix.de, ubizjak@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        tglx@linutronix.de, ubizjak@gmail.com
-In-Reply-To: <1342702344.12353.16.camel@gandalf.stny.rr.com>
-References: <1342702344.12353.16.camel@gandalf.stny.rr.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/x86_32:
-  Simplify parameter setup for ftrace_regs_caller
-Git-Commit-ID: e4ea3f6b1bf3d489674a3660db652636e50186f9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:03:49 -0700 (PDT)
+	Tue, 21 Aug 2012 11:08:46 -0400
+Message-ID: <1345561720.4564.22.camel@x61.thuisdomein>
+Subject: [PATCH 1/2] drb: remove note about "ramdisk" kernel parameter
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 21 Aug 2012 17:08:40 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 21 Aug 2012 15:08:40.0902 (UTC) FILETIME=[D938AE60:01CD7FAE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e4ea3f6b1bf3d489674a3660db652636e50186f9
-Gitweb:     http://git.kernel.org/tip/e4ea3f6b1bf3d489674a3660db652636e50186f9
-Author:     Uros Bizjak <ubizjak@gmail.com>
-AuthorDate: Thu, 19 Jul 2012 13:04:47 -0400
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 31 Jul 2012 10:29:34 -0400
+The ramdisk kernel parameter was finally removed in commit
+1adbee50fd6fce5af4feb34d2db93cfe4d2066a4 ("ramdisk: remove
+long-deprecated "ramdisk=" boot-time parameter"). It had been marked as
+deprecated since v1.3.96! Remove this note from its Kconfig entry.
 
-ftrace/x86_32: Simplify parameter setup for ftrace_regs_caller
-
-The final position of the stack after saving regs and setting up
-the parameters for ftrace_regs_call, is the position of the pt_regs
-needed for the 4th parameter. Instead of saving it into a temporary
-reg and pushing the reg, simply push the stack pointer.
-
-Link: http://lkml.kernel.org/r/1342702344.12353.16.camel@gandalf.stny.rr.com
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Uros Bizjak <ubizjak@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/x86/kernel/entry_32.S |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+0) The ramdisk kernel parameter was rather stubborn. It had to be
+removed from the tree three times:
+- in release v1.3.48 - re-added in v1.3.96;
+- in v2.6.24, with commit fac8b209b1084bc85748bd54e13d00c1262b220f
+("Remove final traces of long-deprecated "ramdisk" kernel parm") -
+re-added in v2.6.25, with commit
+9db5579be4bb5320c3248f6acf807aedf05ae143 ("rewrite rd);
+- in v2.6.31, with commit 1adbee50fd6fce5af4feb34d2db93cfe4d2066a4 (see
+above).
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 46caa56..4dc3017 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1169,10 +1169,9 @@ ENTRY(ftrace_regs_caller)
- 	movl $__KERNEL_CS,13*4(%esp)
+1) But references to it still get added to command lines in defconfig
+files and device tree sources, all in arch/arm. As recently as v3.6-rc1!
+I guess it is now (silently?) ignored if used in one of those command
+lines. Or does arm use some obscure trick to still handle this kernel
+parameter?
+
+ drivers/block/Kconfig |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index a796407..2fd52ef 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -375,9 +375,6 @@ config BLK_DEV_RAM
+ 	  store a copy of a minimal root file system off of a floppy into RAM
+ 	  during the initial install of Linux.
  
- 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
--	movl 0x4(%ebp), %edx	/* Load parent ip (2cd parameter) */
--	lea  (%esp), %ecx
--	pushl %ecx		/* Save pt_regs as 4th parameter */
-+	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
- 	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
-+	pushl %esp		/* Save pt_regs as 4th parameter */
+-	  Note that the kernel command line option "ramdisk=XX" is now obsolete.
+-	  For details, read <file:Documentation/blockdev/ramdisk.txt>.
+-
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called rd.
  
- GLOBAL(ftrace_regs_call)
- 	call ftrace_stub
+-- 
+1.7.7.6
+
