@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab2HUMMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:12:01 -0400
-Received: from fieldses.org ([174.143.236.118]:59889 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757229Ab2HUML7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:11:59 -0400
-Date: Tue, 21 Aug 2012 08:11:55 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120821121155.GC9483@fieldses.org>
-References: <87fw7habo4.fsf@skywalker.in.ibm.com>
- <20120820163338.GN23596@moon>
- <20120820183225.GB4911@fieldses.org>
- <20120820190606.GE27443@moon>
- <20120820193204.GD5779@fieldses.org>
- <50335261.5090504@parallels.com>
- <87wr0sle4v.fsf@skywalker.in.ibm.com>
- <503367CB.9080609@parallels.com>
- <20120821105424.GA7670@moon>
- <50336C51.60501@parallels.com>
+	id S1757300Ab2HUMMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:12:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40643 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757196Ab2HUMMO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 08:12:14 -0400
+Message-ID: <50337B15.2090701@gmail.com>
+Date: Tue, 21 Aug 2012 20:12:05 +0800
+From: qiuxishi <qiuxishi@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50336C51.60501@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: akpm@linux-foundation.org, minchan@kernel.org, lliubbo@gmail.com,
+        jiang.liu@huawei.com
+CC: mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, qiuxishi@huawei.com,
+        wujianguo@huawei.com, bessel.wang@huawei.com, guohanjun@huawei.com,
+        chenkeping@huawei.com, yinghai@kernel.org, wency@cn.fujitsu.com
+Subject: [PATCH] memory-hotplug: fix a drain pcp bug when offline pages
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 03:09:05PM +0400, Pavel Emelyanov wrote:
-> On 08/21/2012 02:54 PM, Cyrill Gorcunov wrote:
-> > On Tue, Aug 21, 2012 at 02:49:47PM +0400, Pavel Emelyanov wrote:
-> >>>>
-> >>>> However, if you have some better ideas on what information about inode should be exported
-> >>>> to the userspace please share.
-> >>>>
-> >>>
-> >>> Why not use name_to_handle(fd,...) and open_by_handle(handle,..) ?
-> >>
-> >> Because we don't have an fd at hands by the time we need to know the handle.
-> > 
-> > Yeah, this might be not clear from patchset itself but inotify marks carry
-> > inodes inside kernel thus it's inodes what we can use when we fetch information
-> > about targets and put it into fdinfo output.
-> 
-> Al, Bruce, Aneesh,
-> 
-> What if we calculate the handle at the time we do have struct path at hands (i.e.
-> when we create the inotify) and store it on the inotify structure purely to be 
-> shown later in proc. Would that be acceptable?
+From: Xishi Qiu <qiuxishi@huawei.com>
 
-Was it the lack of a dentry that was really the problem?  I thought it
-was just the fact that not all filesystems support filehandles.
+When offline a section, we move all the free pages and pcp into MIGRATE_ISOLATE list first.
+start_isolate_page_range()
+	set_migratetype_isolate()
+		drain_all_pages(),
 
---b.
+Here is a problem, it is not sure that pcp will be moved into MIGRATE_ISOLATE list. They may
+be moved into MIGRATE_MOVABLE list because page_private() maybe 2. So when finish migrating
+pages, the free pages from pcp may be allocated again, and faild in check_pages_isolated().
+drain_all_pages()
+	drain_local_pages()
+		drain_pages()
+			free_pcppages_bulk()
+				__free_one_page(page, zone, 0, page_private(page));
+
+If we add move_freepages_block() after drain_all_pages(), it can not sure that all the pcp
+will be moved into MIGRATE_ISOLATE list when the system works on high load. The free pages
+which from pcp may immediately be allocated again.
+
+I think the similar bug described in http://marc.info/?t=134250882300003&r=1&w=2
+
+
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ mm/page_alloc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d0723b2..501f6de 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -673,7 +673,8 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 			/* must delete as __free_one_page list manipulates */
+ 			list_del(&page->lru);
+ 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+-			__free_one_page(page, zone, 0, page_private(page));
++			__free_one_page(page, zone, 0,
++					get_pageblock_migratetype(page));
+ 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+ 		} while (--to_free && --batch_free && !list_empty(list));
+ 	}
+-- 1.7.6.1 .
+
+
+
+.
