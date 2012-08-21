@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2HUJER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 05:04:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40131 "EHLO arroyo.ext.ti.com"
+	id S1754942Ab2HUJEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 05:04:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37965 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab2HUJEM convert rfc822-to-8bit (ORCPT
+	id S1753472Ab2HUJES convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 05:04:12 -0400
+	Tue, 21 Aug 2012 05:04:18 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <bryan.wu@canonical.com>
 CC: Richard Purdie <rpurdie@rpsys.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
-Subject: [PATCH 3/4] leds-lp5523: change the return type of lp5523_set_mode()
-Thread-Topic: [PATCH 3/4] leds-lp5523: change the return type of
- lp5523_set_mode()
-Thread-Index: Ac1/e+VYLTKSXlVkR0GVS48po3txqw==
-Date: Tue, 21 Aug 2012 09:03:58 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0AF3@DQHE02.ent.ti.com>
+Subject: [PATCH 4/4] leds-lp5523: minor code style fixes
+Thread-Topic: [PATCH 4/4] leds-lp5523: minor code style fixes
+Thread-Index: Ac1/e+hY+x58zKHsRg607HRYQRJlJQ==
+Date: Tue, 21 Aug 2012 09:04:02 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0AFE@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -30,68 +29,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return value of this function is not handled any place, so
-make it as void type.
-
-And three if-statements are replaced with switch-statements.
+(a) use LP5523_ENABLE rather than magic number 0x40
+(b) use min_t() in lp5523_mux_parse()
+(c) skip while loop and just return if invalid command
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5523.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
+ drivers/leds/leds-lp5523.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index f090819..f8231f1 100644
+index f8231f1..64ba8b2 100644
 --- a/drivers/leds/leds-lp5523.c
 +++ b/drivers/leds/leds-lp5523.c
-@@ -150,7 +150,7 @@ static inline struct lp5523_chip *led_to_lp5523(struct lp5523_led *led)
- 			    leds[led->id]);
- }
+@@ -177,7 +177,7 @@ static int lp5523_detect(struct i2c_client *client)
+ 	int ret;
+ 	u8 buf;
  
--static int lp5523_set_mode(struct lp5523_engine *engine, u8 mode);
-+static void lp5523_set_mode(struct lp5523_engine *engine, u8 mode);
- static int lp5523_set_engine_mode(struct lp5523_engine *engine, u8 mode);
- static int lp5523_load_program(struct lp5523_engine *engine, const u8 *pattern);
- 
-@@ -789,26 +789,28 @@ static void lp5523_unregister_sysfs(struct i2c_client *client)
- /*--------------------------------------------------------------*/
- /*			Set chip operating mode			*/
- /*--------------------------------------------------------------*/
--static int lp5523_set_mode(struct lp5523_engine *engine, u8 mode)
-+static void lp5523_set_mode(struct lp5523_engine *engine, u8 mode)
+-	ret = lp5523_write(client, LP5523_REG_ENABLE, 0x40);
++	ret = lp5523_write(client, LP5523_REG_ENABLE, LP5523_ENABLE);
+ 	if (ret)
+ 		return ret;
+ 	ret = lp5523_read(client, LP5523_REG_ENABLE, &buf);
+@@ -338,7 +338,8 @@ static int lp5523_mux_parse(const char *buf, u16 *mux, size_t len)
  {
--	int ret = 0;
+ 	int i;
+ 	u16 tmp_mux = 0;
+-	len = len < LP5523_LEDS ? len : LP5523_LEDS;
++
++	len = min_t(int, len, LP5523_LEDS);
+ 	for (i = 0; i < len; i++) {
+ 		switch (buf[i]) {
+ 		case '1':
+@@ -546,6 +547,9 @@ static int lp5523_do_store_load(struct lp5523_engine *engine,
+ 	unsigned cmd;
+ 	u8 pattern[LP5523_PROGRAM_LENGTH] = {0};
+ 
++	if (engine->mode != LP5523_CMD_LOAD)
++		return -EINVAL;
++
+ 	while ((offset < len - 1) && (i < LP5523_PROGRAM_LENGTH)) {
+ 		/* separate sscanfs because length is working only for %s */
+ 		ret = sscanf(buf + offset, "%2s%n ", c, &nrchars);
+@@ -563,12 +567,7 @@ static int lp5523_do_store_load(struct lp5523_engine *engine,
+ 		goto fail;
+ 
+ 	mutex_lock(&chip->lock);
 -
- 	/* if in that mode already do nothing, except for run */
- 	if (mode == engine->mode && mode != LP5523_CMD_RUN)
--		return 0;
-+		return;
- 
--	if (mode == LP5523_CMD_RUN) {
--		ret = lp5523_run_program(engine);
--	} else if (mode == LP5523_CMD_LOAD) {
-+	switch (mode) {
-+	case LP5523_CMD_RUN:
-+		lp5523_run_program(engine);
-+		break;
-+	case LP5523_CMD_LOAD:
- 		lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
- 		lp5523_set_engine_mode(engine, LP5523_CMD_LOAD);
--	} else if (mode == LP5523_CMD_DISABLED) {
-+		break;
-+	case LP5523_CMD_DISABLED:
- 		lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
-+		break;
-+	default:
-+		return;
- 	}
- 
- 	engine->mode = mode;
+-	if (engine->mode == LP5523_CMD_LOAD)
+-		ret = lp5523_load_program(engine, pattern);
+-	else
+-		ret = -EINVAL;
 -
--	return ret;
- }
++	ret = lp5523_load_program(engine, pattern);
+ 	mutex_unlock(&chip->lock);
  
- /*--------------------------------------------------------------*/
+ 	if (ret) {
 -- 
 1.7.2.5
 
