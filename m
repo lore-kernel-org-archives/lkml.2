@@ -1,214 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887Ab2HUQNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:13:01 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35126 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab2HUQM4 (ORCPT
+	id S1757900Ab2HUQNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:13:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60784 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757847Ab2HUQM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:12:56 -0400
+	Tue, 21 Aug 2012 12:12:59 -0400
+Date: Tue, 21 Aug 2012 09:12:36 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-d0d3913895e5b50623bd4dafd876e41c1169031d@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de,
+        feng.tang@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de,
+        feng.tang@intel.com
+In-Reply-To: <1344909423-26384-1-git-send-email-namhyung@kernel.org>
+References: <1344909423-26384-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf script: Fix a NULL pointer dereference
+Git-Commit-ID: d0d3913895e5b50623bd4dafd876e41c1169031d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1345564885-11970-1-git-send-email-stigge@antcom.de>
-References: <1345564885-11970-1-git-send-email-stigge@antcom.de>
-Date: Tue, 21 Aug 2012 13:12:54 -0300
-Message-ID: <CAAAP30FxjUzwuifRJW_NP5Y=o9DXHD5TcX_AOd_BSt25_TxV6g@mail.gmail.com>
-Subject: Re: [PATCH v5 2/2] spi/pl022: Add devicetree support
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: linus.walleij@linaro.org, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        gabriel.fernandez@stericsson.com, lee.jones@linaro.org,
-        viresh.kumar@linaro.org, sachin.verma@st.co
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:12:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 1:01 PM, Roland Stigge <stigge@antcom.de> wrote:
-> This patch adds device tree support to the spi-pl022 driver.
->
-> Based on the initial patch by Alexandre Pereira da Silva <aletes.xgr@gmail.com>
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+Commit-ID:  d0d3913895e5b50623bd4dafd876e41c1169031d
+Gitweb:     http://git.kernel.org/tip/d0d3913895e5b50623bd4dafd876e41c1169031d
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 14 Aug 2012 10:57:03 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 14 Aug 2012 10:36:30 -0300
 
-Acked-By: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+perf script: Fix a NULL pointer dereference
 
-> ---
->
->  Documentation/devicetree/bindings/spi/spi_pl022.txt |   15 +++
->  drivers/spi/spi-pl022.c                             |   79 +++++++++++++++++---
->  2 files changed, 85 insertions(+), 9 deletions(-)
->
-> --- linux-2.6.orig/Documentation/devicetree/bindings/spi/spi_pl022.txt
-> +++ linux-2.6/Documentation/devicetree/bindings/spi/spi_pl022.txt
-> @@ -6,7 +6,22 @@ Required properties:
->  - interrupts : Should contain SPI controller interrupt
->
->  Optional properties:
-> +- num-cs : total number of chipselects
->  - cs-gpios : should specify GPIOs used for chipselects.
->    The gpios will be referred to as reg = <index> in the SPI child nodes.
->    If unspecified, a single SPI device without a chip select can be used.
->
-> +SPI slave nodes must be children of the SPI master node and can
-> +contain the following properties.
-> +
-> +- pl022,interface : interface type:
-> +       0: SPI
-> +       1: Texas Instruments Synchronous Serial Frame Format
-> +       2: Microwire (Half Duplex)
-> +- pl022,com-mode : polling, interrupt or dma
-> +- pl022,rx-level-trig : Rx FIFO watermark level
-> +- pl022,tx-level-trig : Tx FIFO watermark level
-> +- pl022,ctrl-len : Microwire interface: Control length
-> +- pl022,wait-state : Microwire interface: Wait state
-> +- pl022,duplex : Microwire interface: Full/Half duplex
-> +
-> --- linux-2.6.orig/drivers/spi/spi-pl022.c
-> +++ linux-2.6/drivers/spi/spi-pl022.c
-> @@ -41,6 +41,7 @@
->  #include <linux/scatterlist.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
->
->  /*
->   * This macro is used to define some register default values.
-> @@ -1778,12 +1779,14 @@ static const struct pl022_config_chip pl
->  static int pl022_setup(struct spi_device *spi)
->  {
->         struct pl022_config_chip const *chip_info;
-> +       struct pl022_config_chip chip_info_dt;
->         struct chip_data *chip;
->         struct ssp_clock_params clk_freq = { .cpsdvsr = 0, .scr = 0};
->         int status = 0;
->         struct pl022 *pl022 = spi_master_get_devdata(spi->master);
->         unsigned int bits = spi->bits_per_word;
->         u32 tmp;
-> +       struct device_node *np = spi->dev.of_node;
->
->         if (!spi->max_speed_hz)
->                 return -EINVAL;
-> @@ -1806,10 +1809,32 @@ static int pl022_setup(struct spi_device
->         chip_info = spi->controller_data;
->
->         if (chip_info == NULL) {
-> -               chip_info = &pl022_default_chip_info;
-> -               /* spi_board_info.controller_data not is supplied */
-> -               dev_dbg(&spi->dev,
-> -                       "using default controller_data settings\n");
-> +               if (np) {
-> +                       chip_info_dt = pl022_default_chip_info;
-> +
-> +                       chip_info_dt.hierarchy = SSP_MASTER;
-> +                       of_property_read_u32(np, "pl022,interface",
-> +                               &chip_info_dt.iface);
-> +                       of_property_read_u32(np, "pl022,com-mode",
-> +                               &chip_info_dt.com_mode);
-> +                       of_property_read_u32(np, "pl022,rx-level-trig",
-> +                               &chip_info_dt.rx_lev_trig);
-> +                       of_property_read_u32(np, "pl022,tx-level-trig",
-> +                               &chip_info_dt.tx_lev_trig);
-> +                       of_property_read_u32(np, "pl022,ctrl-len",
-> +                               &chip_info_dt.ctrl_len);
-> +                       of_property_read_u32(np, "pl022,wait-state",
-> +                               &chip_info_dt.wait_state);
-> +                       of_property_read_u32(np, "pl022,duplex",
-> +                               &chip_info_dt.duplex);
-> +
-> +                       chip_info = &chip_info_dt;
-> +               } else {
-> +                       chip_info = &pl022_default_chip_info;
-> +                       /* spi_board_info.controller_data not is supplied */
-> +                       dev_dbg(&spi->dev,
-> +                               "using default controller_data settings\n");
-> +               }
->         } else
->                 dev_dbg(&spi->dev,
->                         "using user supplied controller_data settings\n");
-> @@ -2006,7 +2031,8 @@ pl022_probe(struct amba_device *adev, co
->         struct pl022_ssp_controller *platform_info = adev->dev.platform_data;
->         struct spi_master *master;
->         struct pl022 *pl022 = NULL;     /*Data for this driver */
-> -       int status = 0, i;
-> +       struct device_node *np = adev->dev.of_node;
-> +       int status = 0, i, num_cs;
->
->         dev_info(&adev->dev,
->                  "ARM PL022 driver, device ID: 0x%08x\n", adev->periphid);
-> @@ -2016,9 +2042,19 @@ pl022_probe(struct amba_device *adev, co
->                 goto err_no_pdata;
->         }
->
-> +       if (platform_info->num_chipselect) {
-> +               num_cs = platform_info->num_chipselect;
-> +       } else if (IS_ENABLED(CONFIG_OF)) {
-> +               of_property_read_u32(np, "num-cs", &num_cs);
-> +       } else {
-> +               dev_err(&adev->dev, "probe: no chip select defined\n");
-> +               status = -ENODEV;
-> +               goto err_no_pdata;
-> +       }
-> +
->         /* Allocate master with space for data */
->         master = spi_alloc_master(dev, sizeof(struct pl022) + sizeof(int) *
-> -                                 platform_info->num_chipselect);
-> +                                 num_cs);
->         if (master == NULL) {
->                 dev_err(&adev->dev, "probe - cannot alloc SPI master\n");
->                 status = -ENOMEM;
-> @@ -2037,17 +2073,41 @@ pl022_probe(struct amba_device *adev, co
->          * on this board
->          */
->         master->bus_num = platform_info->bus_id;
-> -       master->num_chipselect = platform_info->num_chipselect;
-> +       master->num_chipselect = num_cs;
->         master->cleanup = pl022_cleanup;
->         master->setup = pl022_setup;
->         master->prepare_transfer_hardware = pl022_prepare_transfer_hardware;
->         master->transfer_one_message = pl022_transfer_one_message;
->         master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
->         master->rt = platform_info->rt;
-> +       master->dev.of_node = dev->of_node;
->
-> -       if (platform_info->num_chipselect && platform_info->chipselects)
-> -               for (i = 0; i < platform_info->num_chipselect; i++)
-> +       if (platform_info->num_chipselect && platform_info->chipselects) {
-> +               for (i = 0; i < num_cs; i++)
->                         pl022->chipselect[i] = platform_info->chipselects[i];
-> +       } else if (IS_ENABLED(CONFIG_OF)) {
-> +               for (i = 0; i < num_cs; i++) {
-> +                       int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
-> +
-> +                       if (cs_gpio == -EPROBE_DEFER) {
-> +                               status = -EPROBE_DEFER;
-> +                               goto err_no_gpio;
-> +                       }
-> +
-> +                       pl022->chipselect[i] = cs_gpio;
-> +
-> +                       if (gpio_is_valid(cs_gpio)) {
-> +                               if (gpio_request(cs_gpio, "ssp-pl022"))
-> +                                       dev_err(&adev->dev,
-> +                                               "could not request %d gpio\n",
-> +                                               cs_gpio);
-> +                               else if (gpio_direction_output(cs_gpio, 1))
-> +                                       dev_err(&adev->dev,
-> +                                               "could set gpio %d as output\n",
-> +                                               cs_gpio);
-> +                       }
-> +               }
-> +       }
->
->         /*
->          * Supports mode 0-3, loopback, and active low CS. Transfers are
-> @@ -2157,6 +2217,7 @@ pl022_probe(struct amba_device *adev, co
->   err_no_ioremap:
->         amba_release_regions(adev);
->   err_no_ioregion:
-> + err_no_gpio:
->         spi_master_put(master);
->   err_no_master:
->   err_no_pdata:
+If 'perf script --gen-script' was called with a perf.data which contains
+no tracepoint event, it'd segfault due to NULL pevent pointer. Fix it.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Feng Tang <feng.tang@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344909423-26384-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/trace-event-parse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 4cb7f38..a5a554e 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -293,7 +293,7 @@ struct event_format *trace_find_next_event(struct pevent *pevent,
+ {
+ 	static int idx;
+ 
+-	if (!pevent->events)
++	if (!pevent || !pevent->events)
+ 		return NULL;
+ 
+ 	if (!event) {
