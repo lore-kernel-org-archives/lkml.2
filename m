@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab2HUA4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 20:56:03 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46529 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab2HUA4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 20:56:01 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-ac-5032dc9e7ead
-Date: Tue, 21 Aug 2012 09:56:17 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>, Andrew Morton <akpm@linux-foundation.org>,
-        axboe@kernel.dk
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH 0/7] zram/zsmalloc promotion
-Message-ID: <20120821005617.GA14280@bbox>
-References: <1344406340-14128-1-git-send-email-minchan@kernel.org>
- <20120814023530.GA9787@kroah.com>
- <20120814062246.GB31621@bbox>
- <502DDB0E.8070001@vflare.org>
+	id S1754693Ab2HUA63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 20:58:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22358 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753530Ab2HUA61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Aug 2012 20:58:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,799,1336374000"; 
+   d="scan'208";a="183203583"
+Message-ID: <5032DD22.4000909@intel.com>
+Date: Tue, 21 Aug 2012 08:58:10 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <502DDB0E.8070001@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, svaidy@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <5028F12C.7080405@intel.com> <1345028738.31459.82.camel@twins> <CAKfTPtDst+DEW=E=+cMcGL39oKODMfx3gh+x04siSC_5jt-6dg@mail.gmail.com>
+In-Reply-To: <CAKfTPtDst+DEW=E=+cMcGL39oKODMfx3gh+x04siSC_5jt-6dg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 16, 2012 at 10:47:58PM -0700, Nitin Gupta wrote:
-> On 08/13/2012 11:22 PM, Minchan Kim wrote:
-> > Hi Greg,
-> > 
-> > On Mon, Aug 13, 2012 at 07:35:30PM -0700, Greg Kroah-Hartman wrote:
-> >> On Wed, Aug 08, 2012 at 03:12:13PM +0900, Minchan Kim wrote:
-> >>> This patchset promotes zram/zsmalloc from staging.
-> >>> Both are very clean and zram is used by many embedded product
-> >>> for a long time.
-> >>>
-> >>> [1-3] are patches not merged into linux-next yet but needed
-> >>> it as base for [4-5] which promotes zsmalloc.
-> >>> Greg, if you merged [1-3] already, skip them.
-> >>
-> >> I've applied 1-3 and now 4, but that's it, I can't apply the rest
-> > 
-> > Thanks!
-> > 
-> >> without getting acks from the -mm maintainers, sorry.  Please work with
-> > 
-> > Nitin suggested zsmalloc could be in /lib or /zram out of /mm but I want
-> > to confirm it from akpm so let's wait his opinion.
-> > 
+On 08/20/2012 11:36 PM, Vincent Guittot wrote:
+
+>> > What you want it to keep track of a per-cpu utilization level (inverse
+>> > of idle-time) and using PJTs per-task runnable avg see if placing the
+>> > new task on will exceed the utilization limit.
+>> >
+>> > I think some of the Linaro people actually played around with this,
+>> > Vincent?
+> Sorry for the late reply but I had almost no network access during last weeks.
 > 
-> akpm, please?
+> So Linaro also works on a power aware scheduler as Peter mentioned.
+> 
+> Based on previous tests, we have concluded that main drawback of the
+> (now removed) old power scheduler was that we had no way to make
+> difference between short and long running tasks whereas it's a key
+> input (at least for phone) for deciding to pack tasks and for
+> selecting the core on an asymmetric system.
 
-To Nitin
-Now both zram/zcache uses zsmalloc so I think second place is under /lib than
-/zram if we really want to put it out of /mm but my preference is still
-under /mm. If akpm don't oppose, I will do.
-(Let's not consider removal of zsmalloc in zcache at the moment because
-it's just Dan's trial and it's not realized yet. It's very twisted problem
-and I don't expect it will finish soon :( )
 
-To akpm,
+It is hard to estimate future in general view point. but from hack
+point, maybe you can add something to hint this from task_struct. :)
 
-I would like to put zsmalloc under /mm because it uses a few field of struct
-page freely. IIRC, you pointed out, too. What do you think about it?
-If you don't want, I will put zsmalloc under /lib.
+> One additional key information is the power distribution in the system
+> which can have a finer granularity than current sched_domain
+> description. Peter's proposal was to use a SHARE_POWERLINE flag
+> similarly to flags that already describe if a sched_domain share
+> resources or cpu capacity.
 
-To Jens,
 
-I would like to put zram under driver/blocks.
-Can I get your Ack?
+Seems I missed this. what's difference with current SD_SHARE_CPUPOWER
+and SD_SHARE_PKG_RESOURCES.
 
 > 
-> > Anyway, another question. zram would be under driver/blocks.
-> > Do I need ACK from Jens for that?
-> > 
-> 
-> Added Jens to CC list.
-> 
-> Thanks,
-> Nitin
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> With these 2 new information, we can have a 1st power saving scheduler
+> which spread or packed tasks across core and package
 
--- 
-Kind regards,
-Minchan Kim
+
+Fine, I like to test them on X86, plus SMT and NUMA :)
+
+> 
+> Vincent
+
+
