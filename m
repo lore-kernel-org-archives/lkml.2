@@ -1,232 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab2HUUgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:36:21 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:41490 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756963Ab2HUUgS convert rfc822-to-8bit (ORCPT
+	id S1756385Ab2HUUhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:37:45 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:52115 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756970Ab2HUUgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Aug 2012 16:36:18 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Mike Waychison <mikew@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: [RFC][PATCH v4 2/3] efi_pstore: Introducing workqueue updating
- sysfs entries
-Thread-Topic: [RFC][PATCH v4 2/3] efi_pstore: Introducing workqueue updating
- sysfs entries
-Thread-Index: Ac1/3JIYA0LtVOObTJy8ZYWCmRUM3w==
-Date: Tue, 21 Aug 2012 20:36:04 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413806F39@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+X-IronPort-AV: E=Sophos;i="4.77,804,1336348800"; 
+   d="scan'208";a="14113787"
+From: Attilio Rao <attilio.rao@citrix.com>
+To: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <Stefano.Stabellini@eu.citrix.com>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <xen-devel@lists.xensource.com>
+CC: Attilio Rao <attilio.rao@citrix.com>
+Subject: [PATCH v2 4/5] X86/XEN: Move content of xen_pagetable_setup_done() into xen_pagetable_init() and retire now unused x86_init.paging.pagetable_setup_done
+Date: Tue, 21 Aug 2012 21:22:40 +0100
+Message-ID: <1345580561-8506-5-git-send-email-attilio.rao@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
+References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-08-21_05:2012-08-21,2012-08-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1208210212
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Problem]
-  efi_pstore creates sysfs entries ,which enable users to access to NVRAM,
-  in a write callback. If a kernel panic happens in interrupt contexts, pstore may
-  fail because it could sleep due to dynamic memory allocations during creating sysfs entries.
+At this stage x86_init.paging.pagetable_setup_done is only used in the
+XEN case. Move its content in the x86_init.paging.pagetable_init setup
+function and remove the now unused x86_init.paging.pagetable_setup_done
+remaining infrastructure.
 
-[Patch Description]
- This patch removes sysfs operations from a write callback by introducing a workqueue
- updating sysfs entries which is scheduled after the write callback is called.
- efi_pstore will be robust against a kernel panic in an interrupt context with it.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Signed-off-by: Attilio Rao <attilio.rao@citrix.com>
 ---
- drivers/firmware/efivars.c |  119 +++++++++++++++++++++++++++++++++++++++----
- include/linux/efi.h        |    3 +-
- 2 files changed, 110 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |    2 --
+ arch/x86/include/asm/x86_init.h      |    2 --
+ arch/x86/kernel/setup.c              |    1 -
+ arch/x86/kernel/x86_init.c           |    2 --
+ arch/x86/mm/init_32.c                |    4 ----
+ arch/x86/xen/mmu.c                   |   13 ++++---------
+ 6 files changed, 4 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index bd1df01..cd16ea6 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -146,6 +146,13 @@ efivar_create_sysfs_entry(struct efivars *efivars,
- 			  efi_char16_t *variable_name,
- 			  efi_guid_t *vendor_guid);
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index c93cb8e..db8fec6 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -304,10 +304,8 @@ void set_pte_vaddr(unsigned long vaddr, pte_t pte);
+ extern void native_pagetable_reserve(u64 start, u64 end);
+ #ifdef CONFIG_X86_32
+ extern void native_pagetable_init(void);
+-extern void native_pagetable_setup_done(pgd_t *base);
+ #else
+ #define native_pagetable_init        paging_init
+-#define native_pagetable_setup_done  x86_init_pgd_done_noop
+ #endif
  
-+/*
-+ * Prototype for workqueue functions updating sysfs entry
-+ */
-+
-+static void efivar_update_sysfs_entry(struct work_struct *);
-+static DECLARE_WORK(efivar_work, efivar_update_sysfs_entry);
-+
- /* Return the number of unicode characters in data */
- static unsigned long
- utf16_strnlen(efi_char16_t *s, size_t maxlength)
-@@ -731,9 +738,6 @@ static int efi_pstore_write(enum pstore_type_id type,
- 					   0, NULL);
- 	}
+ struct seq_file;
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 24084b2..995ea5c 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -82,11 +82,9 @@ struct x86_init_mapping {
+ /**
+  * struct x86_init_paging - platform specific paging functions
+  * @pagetable_init:		platform specific paging initialization call
+- * @pagetable_setup_done:	platform specific post paging_init() call
+  */
+ struct x86_init_paging {
+ 	void (*pagetable_init)(void);
+-	void (*pagetable_setup_done)(pgd_t *base);
+ };
  
--	if (found)
--		list_del(&found->list);
+ /**
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 315fd24..4f16547 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -962,7 +962,6 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 
+ 	x86_init.paging.pagetable_init();
+-	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
+ 
+ 	if (boot_cpu_data.cpuid_level >= 0) {
+ 		/* A CPU has %cr4 if and only if it has CPUID */
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 5f2478f..7a3d075 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -26,7 +26,6 @@
+ 
+ void __cpuinit x86_init_noop(void) { }
+ void __init x86_init_uint_noop(unsigned int unused) { }
+-void __init x86_init_pgd_done_noop(pgd_t *unused) { }
+ int __init iommu_init_noop(void) { return 0; }
+ void iommu_shutdown_noop(void) { }
+ 
+@@ -69,7 +68,6 @@ struct x86_init_ops x86_init __initdata = {
+ 
+ 	.paging = {
+ 		.pagetable_init		= native_pagetable_init,
+-		.pagetable_setup_done	= native_pagetable_setup_done,
+ 	},
+ 
+ 	.timers = {
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index e35b4b1..4f04db1 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -478,10 +478,6 @@ void __init native_pagetable_init(void)
+ 	paging_init();
+ }
+ 
+-void __init native_pagetable_setup_done(pgd_t *base)
+-{
+-}
 -
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = name[i];
- 
-@@ -742,14 +746,7 @@ static int efi_pstore_write(enum pstore_type_id type,
- 
- 	spin_unlock_irqrestore(&efivars->lock, flags);
- 
--	if (found)
--		efivar_unregister(found);
--
--	if (size)
--		ret = efivar_create_sysfs_entry(efivars,
--					  utf16_strsize(efi_name,
--							DUMP_NAME_LEN * 2),
--					  efi_name, &vendor);
-+	schedule_work(&efivar_work);
- 
- 	*id = part;
- 	return ret;
-@@ -1200,6 +1197,104 @@ EXPORT_SYMBOL_GPL(register_efivars);
- static struct efivars __efivars;
- static struct efivar_operations ops;
- 
-+static void delete_all_stale_sysfs_entries(void)
-+{
-+	struct efivars *efivars = &__efivars;
-+	struct efivar_entry *entry, *n, *found;
-+	efi_status_t status;
-+	unsigned long flags;
-+
-+	while (1) {
-+		found = NULL;
-+		spin_lock_irqsave(&efivars->lock, flags);
-+		list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+			status = get_var_data_locked(efivars, &entry->var);
-+			if (status != EFI_SUCCESS) {
-+				found = entry;
-+				list_del(&entry->list);
-+				break;
-+			}
-+		}
-+		spin_unlock_irqrestore(&efivars->lock, flags);
-+		if (found)
-+			efivar_unregister(entry);
-+		else
-+			break;
-+	}
-+}
-+
-+static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
-+{
-+	struct efivar_entry *entry, *n;
-+	struct efivars *efivars = &__efivars;
-+	unsigned long strsize1, strsize2;
-+	bool found = false;
-+
-+	strsize1 = utf16_strsize(variable_name, 1024);
-+	list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+		strsize2 = utf16_strsize(entry->var.VariableName, 1024);
-+		if (strsize1 == strsize2 &&
-+			!memcmp(variable_name, &(entry->var.VariableName),
-+				strsize2) &&
-+			!efi_guidcmp(entry->var.VendorGuid,
-+				*vendor)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	return found;
-+}
-+
-+static void efivar_update_sysfs_entry(struct work_struct *work)
-+{
-+	struct efivars *efivars = &__efivars;
-+	efi_guid_t vendor;
-+	efi_char16_t *variable_name;
-+	unsigned long variable_name_size = 1024, flags;
-+	efi_status_t status = EFI_NOT_FOUND;
-+	bool found;
-+
-+	/* Delete stale sysfs entries */
-+	delete_all_stale_sysfs_entries();
-+
-+	/* Add new sysfs entries */
-+	while (1) {
-+		variable_name = kzalloc(variable_name_size, GFP_KERNEL);
-+		if (!variable_name) {
-+			pr_err("efivars: Memory allocation failed.\n");
-+			return;
-+		}
-+
-+		spin_lock_irqsave(&efivars->lock, flags);
-+		found = false;
-+		while (1) {
-+			variable_name_size = 1024;
-+			status = efivars->ops->get_next_variable(
-+							&variable_name_size,
-+							variable_name,
-+							&vendor);
-+			if (status != EFI_SUCCESS) {
-+				break;
-+			} else {
-+				if (!variable_is_present(variable_name,
-+				    &vendor)) {
-+					found = true;
-+					break;
-+				}
-+			}
-+		}
-+		spin_unlock_irqrestore(&efivars->lock, flags);
-+
-+		if (!found) {
-+			kfree(variable_name);
-+			break;
-+		} else
-+			efivar_create_sysfs_entry(efivars,
-+						  variable_name_size,
-+						  variable_name, &vendor);
-+	}
-+}
-+
  /*
-  * For now we register the efi subsystem with the firmware subsystem
-  * and the vars subsystem with the efi subsystem.  In the future, it
-@@ -1254,6 +1349,8 @@ err_put:
- static void __exit
- efivars_exit(void)
- {
-+	cancel_work_sync(&efivar_work);
+  * Build a proper pagetable for the kernel mappings.  Up until this
+  * point, we've been running on some set of pagetables constructed by
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 4f47b87..4290d83 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1174,9 +1174,13 @@ static void xen_exit_mmap(struct mm_struct *mm)
+ 	spin_unlock(&mm->page_table_lock);
+ }
+ 
++static void xen_post_allocator_init(void);
 +
- 	if (efi_enabled) {
- 		unregister_efivars(&__efivars);
- 		kobject_put(efi_kobj);
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 103adc6..cecdf58 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -641,7 +641,8 @@ struct efivars {
- 	 * 1) ->list - adds, removals, reads, writes
- 	 * 2) ops.[gs]et_variable() calls.
- 	 * It must not be held when creating sysfs entries or calling kmalloc.
--	 * ops.get_next_variable() is only called from register_efivars(),
-+	 * ops.get_next_variable() is only called from register_efivars()
-+	 * or efivar_update_sysfs_entry(),
- 	 * which is protected by the BKL, so that path is safe.
- 	 */
- 	spinlock_t lock;
--- 1.7.1
+ static void __init xen_pagetable_init(void)
+ {
+ 	paging_init();
++	xen_setup_shared_info();
++	xen_post_allocator_init();
+ }
+ 
+ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+@@ -1193,14 +1197,6 @@ static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+ 	}
+ }
+ 
+-static void xen_post_allocator_init(void);
+-
+-static void __init xen_pagetable_setup_done(pgd_t *base)
+-{
+-	xen_setup_shared_info();
+-	xen_post_allocator_init();
+-}
+-
+ static void xen_write_cr2(unsigned long cr2)
+ {
+ 	this_cpu_read(xen_vcpu)->arch.cr2 = cr2;
+@@ -2070,7 +2066,6 @@ void __init xen_init_mmu_ops(void)
+ {
+ 	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
+ 	x86_init.paging.pagetable_init = xen_pagetable_init;
+-	x86_init.paging.pagetable_setup_done = xen_pagetable_setup_done;
+ 	pv_mmu_ops = xen_mmu_ops;
+ 
+ 	memset(dummy_mapping, 0xff, PAGE_SIZE);
+-- 
+1.7.2.5
+
