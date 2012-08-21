@@ -1,74 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab2HUMM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 08:12:58 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:62373 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757196Ab2HUMM4 (ORCPT
+	id S1757288Ab2HUMPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 08:15:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47519 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756936Ab2HUMPA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 08:12:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345522015-13740-1-git-send-email-manoj.iyer@canonical.com>
-References: <1345521975-13708-1-git-send-email-manoj.iyer@canonical.com>
-	<1345522015-13740-1-git-send-email-manoj.iyer@canonical.com>
-Date: Tue, 21 Aug 2012 20:12:55 +0800
-Message-ID: <CAOvWMLaAJrmOKiq=ESXq3wCvFHxWAXMBaeLsK6MUaWBZG+i4Aw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] xhci: Unconditionally switch ports to xHCI on powerup
-From: Andiry Xu <andiry@gmail.com>
-To: manoj.iyer@canonical.com
-Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Aug 2012 08:15:00 -0400
+Message-ID: <1345551283.23018.106.camel@twins>
+Subject: Re: [PATCH] fbcon: fix race condition between console lock and
+ cursor timer
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Airlie <airlied@redhat.com>
+Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.sf.net,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Josh Boyer <jwboyer@gmail.com>
+Date: Tue, 21 Aug 2012 14:14:43 +0200
+In-Reply-To: <1345531207-24926-1-git-send-email-airlied@redhat.com>
+References: <1345531207-24926-1-git-send-email-airlied@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 12:06 PM,  <manoj.iyer@canonical.com> wrote:
-> From: Manoj Iyer <manoj.iyer@canonical.com>
->
-> USB 3.0 devices show up as high-speed devices on powerup, after an
-> s3 cycle they are correctly recognized as SuperSpeed. At powerup
-> unconditionally switch the port to xHCI like we do when we resume
-> from suspend.
->
-> BugLink: http://bugs.launchpad.net/bugs/1000424
->
-> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-> ---
->  drivers/usb/host/xhci-pci.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
->
-> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-> index 9bfd4ca11..5c8dbea 100644
-> --- a/drivers/usb/host/xhci-pci.c
-> +++ b/drivers/usb/host/xhci-pci.c
-> @@ -48,6 +48,14 @@ static int xhci_pci_reinit(struct xhci_hcd *xhci, struct pci_dev *pdev)
->         if (!pci_set_mwi(pdev))
->                 xhci_dbg(xhci, "MWI active\n");
->
-> +       /*
-> +        * USB SuperSpeed ports are recognized as HighSpeed ports on powerup
-> +        * unconditionally switch the ports to xHCI like we do when resume
-> +        * from suspend.
-> +        */
-> +       if (usb_is_intel_switchable_xhci(pdev))
-> +               usb_enable_xhci_ports(pdev);
-> +
+On Tue, 2012-08-21 at 16:40 +1000, Dave Airlie wrote:
+> So after much tracing with direct netconsole writes (printks
+> under console_lock not so useful) 
 
-Strange. This should have been called during system power up, in
-quirk_usb_handoff_xhci() of pci_quirks.c. Do you see that routine get
-called during power up?
-
-Thanks,
-Andiry
-
->         xhci_dbg(xhci, "Finished xhci_pci_reinit\n");
->         return 0;
->  }
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I always use earlyprintk on serial.. 
