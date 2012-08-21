@@ -1,70 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2HUURO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 16:17:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65234 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab2HUURL (ORCPT
+	id S1754654Ab2HUU0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 16:26:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34910 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab2HUU0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 16:17:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 16/31] arm64: ELF definitions
-Date: Tue, 21 Aug 2012 20:17:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208161237.53594.arnd@arndb.de> <20120821160653.GH12708@arm.com>
-In-Reply-To: <20120821160653.GH12708@arm.com>
+	Tue, 21 Aug 2012 16:26:14 -0400
+Date: Tue, 21 Aug 2012 13:25:34 -0700
+From: tip-bot for Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Message-ID: <tip-ece3234a77ebcd5bbeea6b829c9798328d290cae@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, sebastian@breakpoint.cc,
+        bigeasy@linutronix.de, thierry.reding@avionic-design.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
+        sebastian@breakpoint.cc, tglx@linutronix.de,
+        thierry.reding@avionic-design.de
+In-Reply-To: <20120813202304.GA3529@breakpoint.cc>
+References: <20120813202304.GA3529@breakpoint.cc>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86: dt: Use linear irq domain for ioapic(s)
+Git-Commit-ID: ece3234a77ebcd5bbeea6b829c9798328d290cae
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208212017.08110.arnd@arndb.de>
-X-Provags-ID: V02:K0:anEGhII12ggl1o1VgKNHNPjMAEV+RU//kh4+xGLLMi0
- wvbD9vGHh1PmXJ3AD3ibbq7WMTHPpjv6QUviiwIm2BY/8z5qIt
- UjeP/fdaq+UH38pmfsZzNT7X77879SMloIaby2xkHs3DboHvPd
- P5IKppkfNv+Ym+4yTJd69VBXoJVTpMEbUbWlLSYD+ACMVs/CnB
- wvnDT71nX2/WRt4CIYZzS1/qxAIDF0oIMFZYVNx7T4UsDlCmg3
- kszPSGjs7A5OD6f1jlvcIxZ73YXQ/QF4dkmJ5LysP6r83gEjjm
- 7bdspaq/yyz+6Oa69xuWXBWhffRQSAicaTUacUz/83vlxyfKvd
- a3IheQRXwS8j13/EDMAg=
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 13:25:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 August 2012, Catalin Marinas wrote:
-> On Thu, Aug 16, 2012 at 01:37:53PM +0100, Arnd Bergmann wrote:
-> > On Thursday 16 August 2012, Will Deacon wrote:
-> > > > This looks wrong: PER_LINUX/PER_LINUX32 decides over the output of the
-> > > > uname system call, while TIF_32BIT decides over the instruction set
-> > > > when returning to user space. You definitely should not set the personality
-> > > > to the value you pass from the elf loader. Instead, just do
-> > > > 
-> > > > #define SET_PERSONALITY(ex) clear_thread_flag(TIF_32BIT);
-> > > > #defined COMPAT_SET_PERSONALITY(ex) set_thread_flag(TIF_32BIT);
-> > > 
-> > > In this case, won't uname be incorrect (aarch64l) for aarch32 tasks (which
-> > > expect something like armv8l)?
-> > 
-> > No, the uname output is meant to tell you about the system, not the
-> > instruction set that you are using (you already know that in compiled
-> > code).
-> 
-> OK, so we assumed that compat tasks should get a uname as close as
-> possible to a 32-bit system, i.e. armv8l, for full compatibility. This
-> would allow us to run something like 32-bit Debian on an AArch64 kernel
-> without worrying about any scripts failing.
+Commit-ID:  ece3234a77ebcd5bbeea6b829c9798328d290cae
+Gitweb:     http://git.kernel.org/tip/ece3234a77ebcd5bbeea6b829c9798328d290cae
+Author:     Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+AuthorDate: Mon, 13 Aug 2012 22:23:33 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 21 Aug 2012 22:16:57 +0200
 
-You can still do that, just boot with init="/sbin/setarch armv7 /sbin/init".
+x86: dt: Use linear irq domain for ioapic(s)
 
-> But I can see on x86 that it always reports x86_64 even if the task is
-> x86_32.
+The former conversion to irq_domain_add_legacy() did not fully work
+since we miss the irq decs for NR_IRQS_LEGACY+.
 
-Not just x86, the same behavior is used on powerpc, s390, mips, sparc and
-parisc. Not sure about tile though.
+Ideally we could use irq_domain_add_simple() or the no-map variant (and
+program the virq <-> line mapping directly into ioapic) but this would
+require a different irq lookup in "do_IRQ()" and won't work with ACPI
+without changes. So this is probably easiest for everyone.
 
-	Arnd
+Tested-by: Thierry Reding <thierry.reding@avionic-design.de>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Link: http://lkml.kernel.org/r/20120813202304.GA3529@breakpoint.cc
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/devicetree.c |   51 ++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 42 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index 3ae2ced..b158152 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -342,6 +342,47 @@ const struct irq_domain_ops ioapic_irq_domain_ops = {
+ 	.xlate = ioapic_xlate,
+ };
+ 
++static void dt_add_ioapic_domain(unsigned int ioapic_num,
++		struct device_node *np)
++{
++	struct irq_domain *id;
++	struct mp_ioapic_gsi *gsi_cfg;
++	int ret;
++	int num;
++
++	gsi_cfg = mp_ioapic_gsi_routing(ioapic_num);
++	num = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
++
++	id = irq_domain_add_linear(np, num, &ioapic_irq_domain_ops,
++			(void *)ioapic_num);
++	BUG_ON(!id);
++	if (gsi_cfg->gsi_base == 0) {
++		/*
++		 * The first NR_IRQS_LEGACY irq descs are allocated in
++		 * early_irq_init() and need just a mapping. The
++		 * remaining irqs need both. All of them are preallocated
++		 * and assigned so we can keep the 1:1 mapping which the ioapic
++		 * is having.
++		 */
++		ret = irq_domain_associate_many(id, 0, 0, NR_IRQS_LEGACY);
++		if (ret)
++			pr_err("Error mapping legacy IRQs: %d\n", ret);
++
++		if (num > NR_IRQS_LEGACY) {
++			ret = irq_create_strict_mappings(id, NR_IRQS_LEGACY,
++					NR_IRQS_LEGACY, num - NR_IRQS_LEGACY);
++			if (ret)
++				pr_err("Error creating mapping for the "
++						"remaining IRQs: %d\n", ret);
++		}
++		irq_set_default_host(id);
++	} else {
++		ret = irq_create_strict_mappings(id, gsi_cfg->gsi_base, 0, num);
++		if (ret)
++			pr_err("Error creating IRQ mapping: %d\n", ret);
++	}
++}
++
+ static void __init ioapic_add_ofnode(struct device_node *np)
+ {
+ 	struct resource r;
+@@ -356,15 +397,7 @@ static void __init ioapic_add_ofnode(struct device_node *np)
+ 
+ 	for (i = 0; i < nr_ioapics; i++) {
+ 		if (r.start == mpc_ioapic_addr(i)) {
+-			struct irq_domain *id;
+-			struct mp_ioapic_gsi *gsi_cfg;
+-
+-			gsi_cfg = mp_ioapic_gsi_routing(i);
+-
+-			id = irq_domain_add_legacy(np, 32, gsi_cfg->gsi_base, 0,
+-						   &ioapic_irq_domain_ops,
+-						   (void*)i);
+-			BUG_ON(!id);
++			dt_add_ioapic_domain(i, np);
+ 			return;
+ 		}
+ 	}
