@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab2HUIit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:38:49 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49664 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab2HUIiq (ORCPT
+	id S1754673Ab2HUIjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:39:09 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50760 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab2HUIjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:38:46 -0400
+	Tue, 21 Aug 2012 04:39:05 -0400
 MIME-Version: 1.0
-Date: Tue, 21 Aug 2012 16:38:45 +0800
-Message-ID: <CAPgLHd-05800cTo8f3mZA1nD47oer=rv0S-qYfQdj1VnApFWdw@mail.gmail.com>
-Subject: [PATCH] staging: rtl8192e: using random_ether_addr() to generate
+Date: Tue, 21 Aug 2012 16:39:04 +0800
+Message-ID: <CAPgLHd-v4Ny8a=y+oqw2GCTai4teb6=vcKn9Arts-1AM2Wa3OQ@mail.gmail.com>
+Subject: [PATCH] Staging: rtl8192u: using random_ether_addr() to generate
  random MAC
 From: Wei Yongjun <weiyj.lk@gmail.com>
 To: gregkh@linuxfoundation.org
@@ -32,23 +32,23 @@ spatch with a semantic match is used to found this problem.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/staging/rtl8192e/rtllib_softmac.c | 9 ++-------
+ drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c | 9 ++-------
  1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
-index a21b4d9..49aecda 100644
---- a/drivers/staging/rtl8192e/rtllib_softmac.c
-+++ b/drivers/staging/rtl8192e/rtllib_softmac.c
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+index f6ff8cf..a9dc4a2 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
 @@ -19,6 +19,7 @@
  #include <linux/random.h>
  #include <linux/delay.h>
- #include <linux/uaccess.h>
+ #include <linux/slab.h>
 +#include <linux/etherdevice.h>
+ #include <asm/uaccess.h>
  #include "dot11d.h"
  
- short rtllib_is_54g(struct rtllib_network *net)
-@@ -2619,13 +2620,7 @@ void rtllib_wake_all_queues(struct rtllib_device *ieee)
- inline void rtllib_randomize_cell(struct rtllib_device *ieee)
+@@ -2286,13 +2287,7 @@ void ieee80211_stop_queue(struct ieee80211_device *ieee)
+ inline void ieee80211_randomize_cell(struct ieee80211_device *ieee)
  {
  
 -	get_random_bytes(ieee->current_network.bssid, ETH_ALEN);
