@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab2HUQJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 12:09:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60708 "EHLO
+	id S1757864Ab2HUQJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 12:09:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60717 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab2HUQJC (ORCPT
+	with ESMTP id S1756391Ab2HUQJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 12:09:02 -0400
-Date: Tue, 21 Aug 2012 09:07:57 -0700
+	Tue, 21 Aug 2012 12:09:17 -0400
+Date: Tue, 21 Aug 2012 09:08:52 -0700
 From: tip-bot for Cody P Schafer <cody@linux.vnet.ibm.com>
-Message-ID: <tip-a44f605b2f6eadb771a052aa3a5eefb342b38a39@git.kernel.org>
+Message-ID: <tip-d26cd12b46cb6b5595143804b43ba5aa7968551e@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, matthltc@us.ibm.com,
@@ -19,12 +19,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
         a.p.zijlstra@chello.nl, dave@linux.vnet.ibm.com, matthltc@us.ibm.com,
         namhyung@kernel.org, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
-In-Reply-To: <1344637382-22789-14-git-send-email-cody@linux.vnet.ibm.com>
-References: <1344637382-22789-14-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1344637382-22789-15-git-send-email-cody@linux.vnet.ibm.com>
+References: <1344637382-22789-15-git-send-email-cody@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Switch dso__synthesize_plt_symbols()
-  to use symsrc
-Git-Commit-ID: a44f605b2f6eadb771a052aa3a5eefb342b38a39
+Subject: [tip:perf/core] perf symbols:
+  Factor want_symtab out of dso__load_sym()
+Git-Commit-ID: d26cd12b46cb6b5595143804b43ba5aa7968551e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,23 +33,25 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:08:03 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 09:08:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a44f605b2f6eadb771a052aa3a5eefb342b38a39
-Gitweb:     http://git.kernel.org/tip/a44f605b2f6eadb771a052aa3a5eefb342b38a39
+Commit-ID:  d26cd12b46cb6b5595143804b43ba5aa7968551e
+Gitweb:     http://git.kernel.org/tip/d26cd12b46cb6b5595143804b43ba5aa7968551e
 Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
-AuthorDate: Fri, 10 Aug 2012 15:22:59 -0700
+AuthorDate: Fri, 10 Aug 2012 15:23:00 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Aug 2012 14:34:36 -0300
+CommitDate: Mon, 13 Aug 2012 14:37:37 -0300
 
-perf symbols: Switch dso__synthesize_plt_symbols() to use symsrc
+perf symbols: Factor want_symtab out of dso__load_sym()
 
-Previously dso__synthesize_plt_symbols() was reopening the elf file to
-obtain dynsyms from it. Rather than reopen the file, use the already
-opened reference within the symsrc to access it.
+Only one callsite of dso__load_sym() uses the want_symtab functionality,
+so place the logic at the callsite instead of within dso__load_sym().
+
+This sets us up for removal of want_symtab completely once we keep
+multiple elf handles (within symsrc's) around.
 
 Setup for the later patch
 
@@ -63,127 +65,138 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1344637382-22789-14-git-send-email-cody@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1344637382-22789-15-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol-elf.c     |   25 +++++++------------------
- tools/perf/util/symbol-minimal.c |    3 ++-
- tools/perf/util/symbol.c         |    8 +++++---
- tools/perf/util/symbol.h         |    4 ++--
- 4 files changed, 16 insertions(+), 24 deletions(-)
+ tools/perf/util/symbol-elf.c     |   21 ++++++++++-----------
+ tools/perf/util/symbol-minimal.c |    8 ++++++--
+ tools/perf/util/symbol.c         |   10 +++++++---
+ tools/perf/util/symbol.h         |    3 ++-
+ 4 files changed, 25 insertions(+), 17 deletions(-)
 
 diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 3a9c38a..5915947 100644
+index 5915947..492ebec 100644
 --- a/tools/perf/util/symbol-elf.c
 +++ b/tools/perf/util/symbol-elf.c
-@@ -166,7 +166,7 @@ static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
-  * And always look at the original dso, not at debuginfo packages, that
-  * have the PLT data stripped out (shdr_rel_plt.sh_type == SHT_NOBITS).
-  */
--int dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
-+int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss, struct map *map,
- 				symbol_filter_t filter)
- {
- 	uint32_t nr_rel_entries, idx;
-@@ -181,21 +181,15 @@ int dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
- 	GElf_Ehdr ehdr;
- 	char sympltname[1024];
- 	Elf *elf;
--	int nr = 0, symidx, fd, err = 0;
-+	int nr = 0, symidx, err = 0;
- 
--	fd = open(name, O_RDONLY);
--	if (fd < 0)
--		goto out;
--
--	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
--	if (elf == NULL)
--		goto out_close;
-+	elf = ss->elf;
-+	ehdr = ss->ehdr;
- 
--	if (gelf_getehdr(elf, &ehdr) == NULL)
--		goto out_elf_end;
-+	scn_dynsym = ss->dynsym;
-+	shdr_dynsym = ss->dynshdr;
-+	dynsym_idx = ss->dynsym_idx;
- 
--	scn_dynsym = elf_section_by_name(elf, &ehdr, &shdr_dynsym,
--					 ".dynsym", &dynsym_idx);
- 	if (scn_dynsym == NULL)
- 		goto out_elf_end;
- 
-@@ -291,13 +285,8 @@ int dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
- 
- 	err = 0;
- out_elf_end:
--	elf_end(elf);
--out_close:
--	close(fd);
--
- 	if (err == 0)
- 		return nr;
--out:
- 	pr_debug("%s: problems reading %s PLT info.\n",
- 		 __func__, dso->long_name);
+@@ -525,6 +525,10 @@ static int dso__swap_init(struct dso *dso, unsigned char eidata)
  	return 0;
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 1b16c27..cc580c0 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -266,7 +266,8 @@ void symsrc__destroy(struct symsrc *ss)
- 	close(ss->fd);
  }
  
--int dso__synthesize_plt_symbols(struct dso *dso __used, char *name __used,
-+int dso__synthesize_plt_symbols(struct dso *dso __used,
-+				struct symsrc *ss __used,
- 				struct map *map __used,
- 				symbol_filter_t filter __used)
++bool symsrc__has_symtab(struct symsrc *ss)
++{
++	return ss->symtab != NULL;
++}
+ 
+ void symsrc__destroy(struct symsrc *ss)
  {
+@@ -616,7 +620,7 @@ out_close:
+ }
+ 
+ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+-		  symbol_filter_t filter, int kmodule, int want_symtab)
++		  symbol_filter_t filter, int kmodule)
+ {
+ 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
+ 	struct map *curr_map = map;
+@@ -636,21 +640,16 @@ int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
+ 
+ 	dso->symtab_type = ss->type;
+ 
++	if (!ss->symtab) {
++		ss->symtab  = ss->dynsym;
++		ss->symshdr = ss->dynshdr;
++	}
++
+ 	elf = ss->elf;
+ 	ehdr = ss->ehdr;
+ 	sec = ss->symtab;
+ 	shdr = ss->symshdr;
+ 
+-	if (sec == NULL) {
+-		if (want_symtab)
+-			goto out_elf_end;
+-
+-		sec  = ss->dynsym;
+-		shdr = ss->dynshdr;
+-		if (sec == NULL)
+-			goto out_elf_end;
+-	}
+-
+ 	opdsec = ss->opdsec;
+ 	opdshdr = ss->opdshdr;
+ 	opdidx  = ss->opdidx;
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index cc580c0..11c2c60 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -260,6 +260,11 @@ out_close:
+ 	return -1;
+ }
+ 
++bool symsrc__has_symtab(struct symsrc *ss __used)
++{
++	return false;
++}
++
+ void symsrc__destroy(struct symsrc *ss)
+ {
+ 	free(ss->name);
+@@ -275,8 +280,7 @@ int dso__synthesize_plt_symbols(struct dso *dso __used,
+ }
+ 
+ int dso__load_sym(struct dso *dso, struct map *map __used, struct symsrc *ss,
+-		  symbol_filter_t filter __used, int kmodule __used,
+-		  int want_symtab __used)
++		  symbol_filter_t filter __used, int kmodule __used)
+ {
+ 	unsigned char *build_id[BUILD_ID_SIZE];
+ 
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 2b3495a..f8a3068 100644
+index f8a3068..8e7d74f 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -1091,21 +1091,23 @@ restart:
+@@ -1089,8 +1089,12 @@ restart:
+ 		if (symsrc__init(&ss, dso, name, symtab_type) < 0)
+ 			continue;
  
- 		ret = dso__load_sym(dso, map, &ss, filter, 0,
- 				    want_symtab);
--		symsrc__destroy(&ss);
+-		ret = dso__load_sym(dso, map, &ss, filter, 0,
+-				    want_symtab);
++		if (want_symtab && !symsrc__has_symtab(&ss)) {
++			symsrc__destroy(&ss);
++			continue;
++		}
++
++		ret = dso__load_sym(dso, map, &ss, filter, 0);
  
  		/*
  		 * Some people seem to have debuginfo files _WITHOUT_ debug
- 		 * info!?!?
- 		 */
--		if (!ret)
-+		if (!ret) {
-+			symsrc__destroy(&ss);
- 			continue;
-+		}
+@@ -1376,7 +1380,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 	if (symsrc__init(&ss, dso, symfs_vmlinux, symtab_type))
+ 		return -1;
  
- 		if (ret > 0) {
- 			int nr_plt;
+-	err = dso__load_sym(dso, map, &ss, filter, 0, 0);
++	err = dso__load_sym(dso, map, &ss, filter, 0);
+ 	symsrc__destroy(&ss);
  
--			nr_plt = dso__synthesize_plt_symbols(dso, name, map, filter);
-+			nr_plt = dso__synthesize_plt_symbols(dso, &ss, map, filter);
- 			if (nr_plt > 0)
- 				ret += nr_plt;
-+			symsrc__destroy(&ss);
- 			break;
- 		}
- 	}
+ 	if (err > 0) {
 diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index dd9e867..2981513 100644
+index 2981513..fa9f6b1 100644
 --- a/tools/perf/util/symbol.h
 +++ b/tools/perf/util/symbol.h
-@@ -370,8 +370,8 @@ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+@@ -252,6 +252,7 @@ struct symsrc {
+ void symsrc__destroy(struct symsrc *ss);
+ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+ 		 enum dso_binary_type type);
++bool symsrc__has_symtab(struct symsrc *ss);
+ 
+ #define DSO__SWAP(dso, type, val)			\
+ ({							\
+@@ -369,7 +370,7 @@ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    u8 *data, ssize_t size);
  int dso__test_data(void);
  int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *ss,
- 		  symbol_filter_t filter, int kmodule, int want_symtab);
--int dso__synthesize_plt_symbols(struct dso *dso, char *name, struct map *map,
--				symbol_filter_t filter);
-+int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss,
-+				struct map *map, symbol_filter_t filter);
+-		  symbol_filter_t filter, int kmodule, int want_symtab);
++		  symbol_filter_t filter, int kmodule);
+ int dso__synthesize_plt_symbols(struct dso *dso, struct symsrc *ss,
+ 				struct map *map, symbol_filter_t filter);
  
- void symbols__insert(struct rb_root *symbols, struct symbol *sym);
- void symbols__fixup_duplicate(struct rb_root *symbols);
