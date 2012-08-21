@@ -1,34 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab2HUP4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:56:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60444 "EHLO
+	id S1757690Ab2HUP5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:57:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60462 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab2HUP4h (ORCPT
+	with ESMTP id S1752549Ab2HUP5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:56:37 -0400
-Date: Tue, 21 Aug 2012 08:55:57 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-26d330226b9cf6208daae9b0b3697980c8fb51d8@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org, gorcunov@openvz.org,
-        a.p.zijlstra@chello.nl, benjamin.redelings@nescent.org,
-        jolsa@redhat.com, drepper@gmail.com, robert.richter@amd.com,
-        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        asharma@fb.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        fche@redhat.com, paulus@samba.org, tzanussi@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
-        gorcunov@openvz.org, a.p.zijlstra@chello.nl,
-        benjamin.redelings@nescent.org, jolsa@redhat.com, fweisbec@gmail.com,
-        robert.richter@amd.com, drepper@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, asharma@fb.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
-        tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com, mingo@elte.hu
-In-Reply-To: <1344345647-11536-13-git-send-email-jolsa@redhat.com>
-References: <1344345647-11536-13-git-send-email-jolsa@redhat.com>
+	Tue, 21 Aug 2012 11:57:36 -0400
+Date: Tue, 21 Aug 2012 08:56:52 -0700
+From: tip-bot for Cody P Schafer <cody@linux.vnet.ibm.com>
+Message-ID: <tip-8db24c70ab43a4dd38c39b0b0cb4d4874257de55@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, matthltc@us.ibm.com,
+        dave@linux.vnet.ibm.com, namhyung@kernel.org,
+        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, cody@linux.vnet.ibm.com,
+        a.p.zijlstra@chello.nl, dave@linux.vnet.ibm.com, matthltc@us.ibm.com,
+        namhyung@kernel.org, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
+In-Reply-To: <1344637382-22789-4-git-send-email-cody@linux.vnet.ibm.com>
+References: <1344637382-22789-4-git-send-email-cody@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Support for DWARF mode callchain
-Git-Commit-ID: 26d330226b9cf6208daae9b0b3697980c8fb51d8
+Subject: [tip:perf/core] perf symbols: Only un-prelink non-zero symbols
+Git-Commit-ID: 8db24c70ab43a4dd38c39b0b0cb4d4874257de55
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,268 +32,47 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:56:03 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:56:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26d330226b9cf6208daae9b0b3697980c8fb51d8
-Gitweb:     http://git.kernel.org/tip/26d330226b9cf6208daae9b0b3697980c8fb51d8
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 7 Aug 2012 15:20:47 +0200
+Commit-ID:  8db24c70ab43a4dd38c39b0b0cb4d4874257de55
+Gitweb:     http://git.kernel.org/tip/8db24c70ab43a4dd38c39b0b0cb4d4874257de55
+Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
+AuthorDate: Fri, 10 Aug 2012 15:22:49 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 11 Aug 2012 15:07:18 -0300
+CommitDate: Mon, 13 Aug 2012 12:54:06 -0300
 
-perf tools: Support for DWARF mode callchain
+perf symbols: Only un-prelink non-zero symbols
 
-This patch enables perf to use the DWARF unwind code.
+Prelink only adjusts the addresses of non-zero symbols. Do the same when we
+reverse the adjustments.
 
-It extends the perf record '-g' option with following arguments:
-  'fp'           - provides framepointer based user
-                   stack backtrace
-  'dwarf[,size]' - provides DWARF (libunwind) based user stack
-                   backtrace. The size specifies the size of the
-                   user stack dump. If omitted it is 8192 by default.
-
-If libunwind is found during the perf build, then the 'dwarf' argument
-becomes available for record command. The 'fp' stays as default option
-in any case.
-
-Examples: (perf compiled with libunwind)
-
-   perf record -g dwarf ls
-      - provides dwarf unwind with 8192 as stack dump size
-
-   perf record -g dwarf,4096 ls
-      - provides dwarf unwind with 4096 as stack dump size
-
-   perf record -g -- ls
-   perf record -g fp ls
-      - provides frame pointer unwind
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Original-patch-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: David Hansen <dave@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Matt Hellsley <matthltc@us.ibm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1344345647-11536-13-git-send-email-jolsa@redhat.com
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1344637382-22789-4-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |  114 ++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/perf.h           |    9 +++-
- tools/perf/util/evsel.c     |   13 +++++-
- 3 files changed, 132 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol-elf.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4db6e1b..22dd05d 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -31,6 +31,15 @@
- #include <sched.h>
- #include <sys/mman.h>
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 9ca89f8..e037609 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -717,7 +717,7 @@ int dso__load_sym(struct dso *dso, struct map *map, const char *name, int fd,
+ 			goto new_symbol;
+ 		}
  
-+#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
-+
-+#ifdef NO_LIBUNWIND_SUPPORT
-+static char callchain_help[] = CALLCHAIN_HELP "[fp]";
-+#else
-+static unsigned long default_stack_dump_size = 8192;
-+static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
-+#endif
-+
- enum write_mode_t {
- 	WRITE_FORCE,
- 	WRITE_APPEND
-@@ -732,6 +741,106 @@ error:
- 	return ret;
- }
- 
-+#ifndef NO_LIBUNWIND_SUPPORT
-+static int get_stack_size(char *str, unsigned long *_size)
-+{
-+	char *endptr;
-+	unsigned long size;
-+	unsigned long max_size = round_down(USHRT_MAX, sizeof(u64));
-+
-+	size = strtoul(str, &endptr, 0);
-+
-+	do {
-+		if (*endptr)
-+			break;
-+
-+		size = round_up(size, sizeof(u64));
-+		if (!size || size > max_size)
-+			break;
-+
-+		*_size = size;
-+		return 0;
-+
-+	} while (0);
-+
-+	pr_err("callchain: Incorrect stack dump size (max %ld): %s\n",
-+	       max_size, str);
-+	return -1;
-+}
-+#endif /* !NO_LIBUNWIND_SUPPORT */
-+
-+static int
-+parse_callchain_opt(const struct option *opt __used, const char *arg,
-+		    int unset)
-+{
-+	struct perf_record *rec = (struct perf_record *)opt->value;
-+	char *tok, *name, *saveptr = NULL;
-+	char *buf;
-+	int ret = -1;
-+
-+	/* --no-call-graph */
-+	if (unset)
-+		return 0;
-+
-+	/* We specified default option if none is provided. */
-+	BUG_ON(!arg);
-+
-+	/* We need buffer that we know we can write to. */
-+	buf = malloc(strlen(arg) + 1);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	strcpy(buf, arg);
-+
-+	tok = strtok_r((char *)buf, ",", &saveptr);
-+	name = tok ? : (char *)buf;
-+
-+	do {
-+		/* Framepointer style */
-+		if (!strncmp(name, "fp", sizeof("fp"))) {
-+			if (!strtok_r(NULL, ",", &saveptr)) {
-+				rec->opts.call_graph = CALLCHAIN_FP;
-+				ret = 0;
-+			} else
-+				pr_err("callchain: No more arguments "
-+				       "needed for -g fp\n");
-+			break;
-+
-+#ifndef NO_LIBUNWIND_SUPPORT
-+		/* Dwarf style */
-+		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
-+			ret = 0;
-+			rec->opts.call_graph = CALLCHAIN_DWARF;
-+			rec->opts.stack_dump_size = default_stack_dump_size;
-+
-+			tok = strtok_r(NULL, ",", &saveptr);
-+			if (tok) {
-+				unsigned long size = 0;
-+
-+				ret = get_stack_size(tok, &size);
-+				rec->opts.stack_dump_size = size;
-+			}
-+
-+			if (!ret)
-+				pr_debug("callchain: stack dump size %d\n",
-+					 rec->opts.stack_dump_size);
-+#endif /* !NO_LIBUNWIND_SUPPORT */
-+		} else {
-+			pr_err("callchain: Unknown -g option "
-+			       "value: %s\n", arg);
-+			break;
-+		}
-+
-+	} while (0);
-+
-+	free(buf);
-+
-+	if (!ret)
-+		pr_debug("callchain: type %d\n", rec->opts.call_graph);
-+
-+	return ret;
-+}
-+
- static const char * const record_usage[] = {
- 	"perf record [<options>] [<command>]",
- 	"perf record [<options>] -- <command> [<options>]",
-@@ -803,8 +912,9 @@ const struct option record_options[] = {
- 		     "number of mmap data pages"),
- 	OPT_BOOLEAN(0, "group", &record.opts.group,
- 		    "put the counters into a counter group"),
--	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
--		    "do call-graph (stack chain/backtrace) recording"),
-+	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode[,dump_size]",
-+			     callchain_help, &parse_callchain_opt,
-+			     "fp"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index f960ccb..87f4ec6 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -209,9 +209,15 @@ void pthread__unblock_sigwinch(void);
- 
- #include "util/target.h"
- 
-+enum perf_call_graph_mode {
-+	CALLCHAIN_NONE,
-+	CALLCHAIN_FP,
-+	CALLCHAIN_DWARF
-+};
-+
- struct perf_record_opts {
- 	struct perf_target target;
--	bool	     call_graph;
-+	int	     call_graph;
- 	bool	     group;
- 	bool	     inherit_stat;
- 	bool	     no_delay;
-@@ -230,6 +236,7 @@ struct perf_record_opts {
- 	u64          branch_stack;
- 	u64	     default_interval;
- 	u64	     user_interval;
-+	u16	     stack_dump_size;
- };
- 
- #endif
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index a2da682..9c54e8f 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -17,6 +17,8 @@
- #include "thread_map.h"
- #include "target.h"
- #include "../../../include/linux/hw_breakpoint.h"
-+#include "../../include/linux/perf_event.h"
-+#include "perf_regs.h"
- 
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
-@@ -368,9 +370,18 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 		attr->mmap_data = track;
- 	}
- 
--	if (opts->call_graph)
-+	if (opts->call_graph) {
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
- 
-+		if (opts->call_graph == CALLCHAIN_DWARF) {
-+			attr->sample_type |= PERF_SAMPLE_REGS_USER |
-+					     PERF_SAMPLE_STACK_USER;
-+			attr->sample_regs_user = PERF_REGS_MASK;
-+			attr->sample_stack_user = opts->stack_dump_size;
-+			attr->exclude_callchain_user = 1;
-+		}
-+	}
-+
- 	if (perf_target__has_cpu(&opts->target))
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 
+-		if (curr_dso->adjust_symbols) {
++		if (curr_dso->adjust_symbols && sym.st_value) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
+ 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
