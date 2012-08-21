@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab2HUEro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 00:47:44 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47777 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2HUErk (ORCPT
+	id S1752281Ab2HUEsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 00:48:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43618 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab2HUEsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 00:47:40 -0400
+	Tue, 21 Aug 2012 00:48:01 -0400
+Date: Mon, 20 Aug 2012 21:47:15 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Aristeu Rozanski <aris@redhat.com>
+cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Lennart Poettering <lpoetter@redhat.com>
+Subject: Re: [PATCH v6 1/4] xattr: extract simple_xattr code from tmpfs
+In-Reply-To: <20120820190039.GR25353@redhat.com>
+Message-ID: <alpine.LSU.2.00.1208202122470.1286@eggly.anvils>
+References: <20120816174453.154143248@napanee.usersys.redhat.com> <20120816174453.507922179@napanee.usersys.redhat.com> <20120816195831.GF24861@google.com> <alpine.LSU.2.00.1208192356580.24824@eggly.anvils> <20120820190039.GR25353@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <50328258.9030800@wwwdotorg.org>
-References: <502EC16C.4030007@wwwdotorg.org>
-	<20120820182254.GQ24861@google.com>
-	<50328258.9030800@wwwdotorg.org>
-Date: Mon, 20 Aug 2012 23:47:39 -0500
-Message-ID: <CABqD9hY-Z9uBcYyeCa=8f8eeXkGNjPKxbwpMPi3vs3776vF6iQ@mail.gmail.com>
-Subject: Re: root=PARTUUID for MBR/NT disk signatures?
-From: Will Drewry <wad@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
-        Jens Axboe <axboe@kernel.dk>, Kay Sievers <kay.sievers@vrfy.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 1:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/20/2012 12:22 PM, Tejun Heo wrote:
->> Hello,
->>
->> On Fri, Aug 17, 2012 at 04:10:52PM -0600, Stephen Warren wrote:
->>> I was considering extending the kernel command-line option
->>> root=PARTUUID= to also support MBR (NT disk signatures). I was thinking
->>> of a syntax along the lines of:
->>>
->>> root=PARTUUID=UUUUUUUU-PP[/PARTNROFF=%d]
->>>
->>> ... where UUUUUUUU is the hex representation of the NT disk signature,
->>> and PP is the hex representation of the partition number. Like GPT,
->>> /PARTNROFF could be used too if desired.
->>>
->>> Related, I was thinking of changing struct partition_meta_info's uuid
->>> field to be a string, so that it could simply be strcmp'd against the
->>> UUID value on the kernel command-line. That way, the type of the UUID is
->>> irrelevant.
->>>
->>> Does anyone have any objection to that?
->>
->> Wouldn't that be able to break setups which work currently?
->
-> I don't believe so:
->
-> Since the newly supported UUID syntax wouldn't ever match any EFI UUID
-> (the lengths differ in all cases), I don't believe the new syntax would
-> affect behavior for any existing usage.
->
-> Obviously, part_efi.c would be modified to initialize struct
-> partition_meta_info's uuid field to the appropriate string
-> representation of the UUID so that the str(case)cmp would still succeed
-> for existing command-lines. I ended up coding up that part of the change
-> late Friday, and the feature was certainly still working OK.
+On Mon, 20 Aug 2012, Aristeu Rozanski wrote:
+> On Mon, Aug 20, 2012 at 12:10:09AM -0700, Hugh Dickins wrote:
+> > Yes, it looks nice to me.  I might have preferred more as inlines in
+> > the header file to lower the slight init/evict overhead, and I don't
+> > see why __simple_xattr_set() isn't using simple_xattr_alloc() in the
+> > same way that shmem_xattr_set() used shmem_xattr_alloc().  But none
+> > of that matters:
+> > 
+> > Acked-by: Hugh Dickins <hughd@google.com>
+> 
+> I can submit additional patches to fix these. What functions you want
+> inlined?
 
-Functionally, I suspect this will work fine, but I am concerned that
-it is a bad move from an efficiency perspective (not unfixable
-though).  Right now, the user-supplied value is converted from
-string-uuid to packed-uuid.  This is then memcmp'd across any and all
-partitions - be it 2 or 200 - across all attached storage.  If we move
-to a pure string, then we end up needing to unpack every packed UUID
-at disk scan time (or search, depending on impl) rather than just the
-one user supplied value.
+Oh, thank you.  I was thinking that it's uncommon for tmpfs files to
+have xattrs (and the same probably true of other filesystems), so it's
+best to minimize xattrs impact on shared paths.  If simple_xattrs_init()
+and simple_xattrs_free() can be static inline functions in linux/xattr.h,
+that would be nice.
 
-Perhaps the cost is negligible on modern machines, but it seems like
-the wrong place to put the cost (per entry rather than per search
-value).
+Probably more important would be to remove spin_lock() and spin_unlock()
+(and INIT_LIST_HEAD) from simple_xattrs_free() - those are unnecessary
+in shmem_evict_inode(), and wouldn't they be unnecessary whenever
+simple_xattrs_free() gets called?
 
-I'd be happy to test out any proposed patch to see if I can measure
-any differences in my specific environments, but I don't know if it
-will slow down partition scanning for other EFI UUID users out there.
-Maybe the NT disk sigs could be massaged to be memcmp friendly instead
-of the opposite?
+Hugh
 
-thanks!
-will
+> 
+> On why __simple_xattr_set() is not using simple_xattr_alloc(), there's
+> no reason to be that way, I missed it.
+> 
+> Thanks for reviewing!
+> 
+> -- 
+> Aristeu
+> 
+> 
