@@ -1,116 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2HUIGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:06:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:11469 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab2HUIGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:06:01 -0400
-X-IronPort-AV: E=Sophos;i="4.77,801,1336320000"; 
-   d="scan'208";a="5682164"
-Message-ID: <503342A3.3060902@cn.fujitsu.com>
-Date: Tue, 21 Aug 2012 16:11:15 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: rob@landley.net, tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bhelgaas@google.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH v2 2/2] x86: reimplement mem boot option
-References: <4FD99C88.2010002@cn.fujitsu.com> <4FD99CFA.6060801@cn.fujitsu.com>
-In-Reply-To: <4FD99CFA.6060801@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/21 16:06:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/21 16:06:01,
-	Serialize complete at 2012/08/21 16:06:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753955Ab2HUIGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:06:38 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:33826 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab2HUIGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 04:06:22 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-de-5033417b3565
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: anton.vorontsov@linaro.org
+Cc: cbouatmailru@gmail.com, jenny.tc@intel.com, ramakrishna.pallala@intel.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 0/5] charger-manager: Update charger-manager to support various
+ charging conditions
+Date: Tue, 21 Aug 2012 17:05:59 +0900
+Message-id: <1345536359-25778-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jQd1qR+MAgweXrC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGvZlPWAp28lZcfHuNrYFxAncXIyeHhICJxOE7v5ghbDGJC/fW
+	s3UxcnEICUxnlLjSe4cFwlnKJLHq0UYWkCo2AS2J/S9usIHYIgJyEq/X/mUCKWIWOMUo8eji
+	CbBRwgKpEps+NbOD2CwCqhLTjsxh7WLk4OAVcJXovJ4DsU1BonXZIfYJjNwLGBlWMYqmFiQX
+	FCel5xrqFSfmFpfmpesl5+duYgT78JnUDsaVDRaHGAU4GJV4eH8sMgoQYk0sK67MPcQowcGs
+	JMJbrW8cIMSbklhZlVqUH19UmpNafIhRmoNFSZyXv88wQEggPbEkNTs1tSC1CCbLxMEp1cB4
+	3ED8zxKhtheFJ8RdM9PWdsTerLwQW7I5+NeO03qXpSKyNjef/bO8oOnmrcO8lgJ+8ovsHonf
+	22x0Pznd/o7Kxu3RF5d9nV6+fcGRuA0NnN9OdBWmf9xh/MXRWnbLmojjgvdTymUO9a+4fKrL
+	4tOpU1HuvUef5KpePmRyZ5+w69aPV2TkFoRtVmIpzkg01GIuKk4EAMt+GordAQAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current mem boot option only can work for non efi environment. If the user
-specifies add_efi_memmap, it cannot work for efi environment. In
-the efi environment, we call e820_add_region() to add the memory map. So
-we can modify __e820_add_region() and the mem boot option can work for
-efi environment.
+This patchset add new feature related to charging battery to complement
+necessary feature for charging. This patchset include following new feature
+for charging battery.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- arch/x86/kernel/e820.c |   29 +++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 4 deletions(-)
+Explain implemented feature of this patchset:
+- Code clean on first and second patch.
+- Add support sysfs entry for charger(regulator) to control charger from user-space.
+  If some development board use one more chargers(regulator) for charging but
+  only need one charger on specific case which is dependent on user scenario
+  or hardware restrictions, the user enter 1 or 0(zero) to "/sys/class/power_supply
+  /battery/charger.[index]/externally_control". For example, if user enter 1 to
+  "/sys/.../charger.[index]/externally_control", this charger isn't controlled
+  from charger-manager and always stay off state of regulator.
+- Check fully charged state of battery periodically to prevent overcharging.
+- Limit maximum possible duration of charging to prevent overcharging,
+  also check discharging duration to maintain fully charged state of battery
+  and to prevent much drop voltage than given data through platform data of
+  charger_desc.
 
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 4185797..20bc467 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -47,6 +47,7 @@ unsigned long pci_mem_start = 0xaeedbabe;
- #ifdef CONFIG_PCI
- EXPORT_SYMBOL(pci_mem_start);
- #endif
-+static u64 mem_limit = ~0ULL;
- 
- /*
-  * This function checks if any part of the range <start,end> is mapped
-@@ -119,6 +120,20 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
- 		return;
- 	}
- 
-+	if (start >= mem_limit) {
-+		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
-+		       (unsigned long long)start,
-+		       (unsigned long long)(start + size - 1));
-+		return;
-+	}
-+
-+	if (mem_limit - start < size) {
-+		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
-+		       (unsigned long long)mem_limit,
-+		       (unsigned long long)(start + size - 1));
-+		size = mem_limit - start;
-+	}
-+
- 	e820x->map[x].addr = start;
- 	e820x->map[x].size = size;
- 	e820x->map[x].type = type;
-@@ -809,7 +824,7 @@ static int userdef __initdata;
- /* "mem=nopentium" disables the 4MB page tables. */
- static int __init parse_memopt(char *p)
- {
--	u64 mem_size;
-+	char *oldp;
- 
- 	if (!p)
- 		return -EINVAL;
-@@ -825,11 +840,11 @@ static int __init parse_memopt(char *p)
- 	}
- 
- 	userdef = 1;
--	mem_size = memparse(p, &p);
-+	oldp = p;
-+	mem_limit = memparse(p, &p);
- 	/* don't remove all of memory when handling "mem={invalid}" param */
--	if (mem_size == 0)
-+	if (mem_limit == 0 || p == oldp)
- 		return -EINVAL;
--	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
- 
- 	return 0;
- }
-@@ -881,6 +896,12 @@ early_param("memmap", parse_memmap_opt);
- 
- void __init finish_e820_parsing(void)
- {
-+	if (mem_limit != ~0ULL) {
-+		userdef = 1;
-+		e820_remove_range(mem_limit, ULLONG_MAX - mem_limit,
-+				  E820_RAM, 1);
-+	}
-+
- 	if (userdef) {
- 		u32 nr = e820.nr_map;
- 
--- 
-1.7.1
+Chanwoo Choi (5):
+  charger-manager: Disable battery charging when charger cable is
+    detached
+  charger-manager: Use replacement variable to check state of battery
+  charger-manager: Add support sysfs entry for charger
+  charger-manager: Check fully charged state of battery periodically
+  charger-manager: Support limit of maximum possible duration for
+    charging/discharging
+
+ drivers/power/charger-manager.c       |  437 +++++++++++++++++++++++++++++----
+ include/linux/power/charger-manager.h |   45 +++-
+ 2 files changed, 429 insertions(+), 53 deletions(-)
+
