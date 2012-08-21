@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab2HUSqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:46:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55821 "EHLO
+	id S1756724Ab2HUSqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:46:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38742 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab2HUSpT (ORCPT
+	with ESMTP id S1751549Ab2HUSpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Aug 2012 14:45:19 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/8] netdev: octeon_mgmt: Add support for 1Gig ports.
-Date: Tue, 21 Aug 2012 11:45:06 -0700
-Message-Id: <1345574712-21444-3-git-send-email-ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH 1/8] MIPS: Octeon: Add octeon_io_clk_delay() function.
+Date: Tue, 21 Aug 2012 11:45:05 -0700
+Message-Id: <1345574712-21444-2-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1345574712-21444-1-git-send-email-ddaney.cavm@gmail.com>
@@ -21,541 +21,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+From: David Daney <ddaney@caviumnetworks.com>
 
-The original hardware only supported 10M and 100M.  Later versions
-added 1G support.  Here we update the driver to make use of this.
+Also cleanup and fix octeon_init_cvmcount()
 
-Also minor logic clean-ups for testing PHY registration error codes
-and TX complete high water marks.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 ---
- drivers/net/ethernet/octeon/octeon_mgmt.c | 328 +++++++++++++++++++++++-------
- 1 file changed, 255 insertions(+), 73 deletions(-)
+ arch/mips/cavium-octeon/csrc-octeon.c | 93 ++++++++++++++++++++++++-----------
+ arch/mips/cavium-octeon/setup.c       |  3 +-
+ arch/mips/include/asm/octeon/octeon.h |  1 +
+ 3 files changed, 66 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
-index c42bbb1..c4df1ab 100644
---- a/drivers/net/ethernet/octeon/octeon_mgmt.c
-+++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
-@@ -3,7 +3,7 @@
-  * License.  See the file "COPYING" in the main directory of this archive
+diff --git a/arch/mips/cavium-octeon/csrc-octeon.c b/arch/mips/cavium-octeon/csrc-octeon.c
+index ce6483a..0219395 100644
+--- a/arch/mips/cavium-octeon/csrc-octeon.c
++++ b/arch/mips/cavium-octeon/csrc-octeon.c
+@@ -4,7 +4,7 @@
   * for more details.
   *
-- * Copyright (C) 2009 Cavium Networks
-+ * Copyright (C) 2009-2012 Cavium, Inc
+  * Copyright (C) 2007 by Ralf Baechle
+- * Copyright (C) 2009, 2010 Cavium Networks, Inc.
++ * Copyright (C) 2009, 2012 Cavium, Inc.
   */
+ #include <linux/clocksource.h>
+ #include <linux/export.h>
+@@ -18,6 +18,33 @@
+ #include <asm/octeon/cvmx-ipd-defs.h>
+ #include <asm/octeon/cvmx-mio-defs.h>
  
- #include <linux/platform_device.h>
-@@ -93,6 +93,7 @@ union mgmt_port_ring_entry {
- #define AGL_GMX_RX_ADR_CAM4		0x1a0
- #define AGL_GMX_RX_ADR_CAM5		0x1a8
- 
-+#define AGL_GMX_TX_CLK			0x208
- #define AGL_GMX_TX_STATS_CTL		0x268
- #define AGL_GMX_TX_CTL			0x270
- #define AGL_GMX_TX_STAT0		0x280
-@@ -110,6 +111,7 @@ struct octeon_mgmt {
- 	struct net_device *netdev;
- 	u64 mix;
- 	u64 agl;
-+	u64 agl_prt_ctl;
- 	int port;
- 	int irq;
- 	u64 *tx_ring;
-@@ -131,6 +133,7 @@ struct octeon_mgmt {
- 	spinlock_t lock;
- 	unsigned int last_duplex;
- 	unsigned int last_link;
-+	unsigned int last_speed;
- 	struct device *dev;
- 	struct napi_struct napi;
- 	struct tasklet_struct tx_clean_tasklet;
-@@ -140,6 +143,8 @@ struct octeon_mgmt {
- 	resource_size_t mix_size;
- 	resource_size_t agl_phys;
- 	resource_size_t agl_size;
-+	resource_size_t agl_prt_ctl_phys;
-+	resource_size_t agl_prt_ctl_size;
- };
- 
- static void octeon_mgmt_set_rx_irq(struct octeon_mgmt *p, int enable)
-@@ -488,7 +493,7 @@ static void octeon_mgmt_reset_hw(struct octeon_mgmt *p)
- 	mix_ctl.s.reset = 1;
- 	cvmx_write_csr(p->mix + MIX_CTL, mix_ctl.u64);
- 	cvmx_read_csr(p->mix + MIX_CTL);
--	cvmx_wait(64);
-+	octeon_io_clk_delay(64);
- 
- 	mix_bist.u64 = cvmx_read_csr(p->mix + MIX_BIST);
- 	if (mix_bist.u64)
-@@ -670,39 +675,148 @@ static int octeon_mgmt_ioctl(struct net_device *netdev,
- 	return phy_mii_ioctl(p->phydev, rq, cmd);
- }
- 
-+static void octeon_mgmt_disable_link(struct octeon_mgmt *p)
++
++static u64 f;
++static u64 rdiv;
++static u64 sdiv;
++static u64 octeon_udelay_factor;
++static u64 octeon_ndelay_factor;
++
++void __init octeon_setup_delays(void)
 +{
-+	union cvmx_agl_gmx_prtx_cfg prtx_cfg;
++	octeon_udelay_factor = octeon_get_clock_rate() / 1000000;
++	/*
++	 * For __ndelay we divide by 2^16, so the factor is multiplied
++	 * by the same amount.
++	 */
++	octeon_ndelay_factor = (octeon_udelay_factor * 0x10000ull) / 1000ull;
 +
-+	/* Disable GMX before we make any changes. */
-+	prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
-+	prtx_cfg.s.en = 0;
-+	prtx_cfg.s.tx_en = 0;
-+	prtx_cfg.s.rx_en = 0;
-+	cvmx_write_csr(p->agl + AGL_GMX_PRT_CFG, prtx_cfg.u64);
++	preset_lpj = octeon_get_clock_rate() / HZ;
 +
-+	if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
-+		int i;
-+		for (i = 0; i < 10; i++) {
-+			prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
-+			if (prtx_cfg.s.tx_idle == 1 || prtx_cfg.s.rx_idle == 1)
-+				break;
-+			mdelay(1);
-+			i++;
-+		}
++	if (current_cpu_type() == CPU_CAVIUM_OCTEON2) {
++		union cvmx_mio_rst_boot rst_boot;
++		rst_boot.u64 = cvmx_read_csr(CVMX_MIO_RST_BOOT);
++		rdiv = rst_boot.s.c_mul;	/* CPU clock */
++		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
++		f = (0x8000000000000000ull / sdiv) * 2;
 +	}
 +}
 +
-+static void octeon_mgmt_enable_link(struct octeon_mgmt *p)
-+{
-+	union cvmx_agl_gmx_prtx_cfg prtx_cfg;
-+
-+	/* Restore the GMX enable state only if link is set */
-+	prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
-+	prtx_cfg.s.tx_en = 1;
-+	prtx_cfg.s.rx_en = 1;
-+	prtx_cfg.s.en = 1;
-+	cvmx_write_csr(p->agl + AGL_GMX_PRT_CFG, prtx_cfg.u64);
-+}
-+
-+static void octeon_mgmt_update_link(struct octeon_mgmt *p)
-+{
-+	union cvmx_agl_gmx_prtx_cfg prtx_cfg;
-+
-+	prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
-+
-+	if (!p->phydev->link)
-+		prtx_cfg.s.duplex = 1;
-+	else
-+		prtx_cfg.s.duplex = p->phydev->duplex;
-+
-+	switch (p->phydev->speed) {
-+	case 10:
-+		prtx_cfg.s.speed = 0;
-+		prtx_cfg.s.slottime = 0;
-+
-+		if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
-+			prtx_cfg.s.burst = 1;
-+			prtx_cfg.s.speed_msb = 1;
-+		}
-+		break;
-+	case 100:
-+		prtx_cfg.s.speed = 0;
-+		prtx_cfg.s.slottime = 0;
-+
-+		if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
-+			prtx_cfg.s.burst = 1;
-+			prtx_cfg.s.speed_msb = 0;
-+		}
-+		break;
-+	case 1000:
-+		/* 1000 MBits is only supported on 6XXX chips */
-+		if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
-+			prtx_cfg.s.speed = 1;
-+			prtx_cfg.s.speed_msb = 0;
-+			/* Only matters for half-duplex */
-+			prtx_cfg.s.slottime = 1;
-+			prtx_cfg.s.burst = p->phydev->duplex;
-+		}
-+		break;
-+	case 0:  /* No link */
-+	default:
-+		break;
-+	}
-+
-+	/* Write the new GMX setting with the port still disabled. */
-+	cvmx_write_csr(p->agl + AGL_GMX_PRT_CFG, prtx_cfg.u64);
-+
-+	/* Read GMX CFG again to make sure the config is completed. */
-+	prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
-+
-+	if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
-+		union cvmx_agl_gmx_txx_clk agl_clk;
-+		union cvmx_agl_prtx_ctl prtx_ctl;
-+
-+		prtx_ctl.u64 = cvmx_read_csr(p->agl_prt_ctl);
-+		agl_clk.u64 = cvmx_read_csr(p->agl + AGL_GMX_TX_CLK);
-+		/* MII (both speeds) and RGMII 1000 speed. */
-+		agl_clk.s.clk_cnt = 1;
-+		if (prtx_ctl.s.mode == 0) { /* RGMII mode */
-+			if (p->phydev->speed == 10)
-+				agl_clk.s.clk_cnt = 50;
-+			else if (p->phydev->speed == 100)
-+				agl_clk.s.clk_cnt = 5;
-+		}
-+		cvmx_write_csr(p->agl + AGL_GMX_TX_CLK, agl_clk.u64);
-+	}
-+}
-+
- static void octeon_mgmt_adjust_link(struct net_device *netdev)
+ /*
+  * Set the current core's cvmcount counter to the value of the
+  * IPD_CLK_COUNT.  We do this on all cores as they are brought
+@@ -30,17 +57,6 @@ void octeon_init_cvmcount(void)
  {
- 	struct octeon_mgmt *p = netdev_priv(netdev);
--	union cvmx_agl_gmx_prtx_cfg prtx_cfg;
  	unsigned long flags;
- 	int link_changed = 0;
- 
-+	if (!p->phydev)
-+		return;
-+
- 	spin_lock_irqsave(&p->lock, flags);
--	if (p->phydev->link) {
--		if (!p->last_link)
--			link_changed = 1;
--		if (p->last_duplex != p->phydev->duplex) {
--			p->last_duplex = p->phydev->duplex;
--			prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
--			prtx_cfg.s.duplex = p->phydev->duplex;
--			cvmx_write_csr(p->agl + AGL_GMX_PRT_CFG, prtx_cfg.u64);
--		}
--	} else {
--		if (p->last_link)
--			link_changed = -1;
-+
-+
-+	if (!p->phydev->link && p->last_link)
-+		link_changed = -1;
-+
-+	if (p->phydev->link
-+	    && (p->last_duplex != p->phydev->duplex
-+		|| p->last_link != p->phydev->link
-+		|| p->last_speed != p->phydev->speed)) {
-+		octeon_mgmt_disable_link(p);
-+		link_changed = 1;
-+		octeon_mgmt_update_link(p);
-+		octeon_mgmt_enable_link(p);
- 	}
-+
- 	p->last_link = p->phydev->link;
-+	p->last_speed = p->phydev->speed;
-+	p->last_duplex = p->phydev->duplex;
-+
- 	spin_unlock_irqrestore(&p->lock, flags);
- 
- 	if (link_changed != 0) {
- 		if (link_changed > 0) {
--			netif_carrier_on(netdev);
- 			pr_info("%s: Link is up - %d/%s\n", netdev->name,
- 				p->phydev->speed,
- 				DUPLEX_FULL == p->phydev->duplex ?
- 				"Full" : "Half");
- 		} else {
--			netif_carrier_off(netdev);
- 			pr_info("%s: Link is down\n", netdev->name);
- 		}
- 	}
-@@ -722,12 +836,8 @@ static int octeon_mgmt_init_phy(struct net_device *netdev)
- 				   octeon_mgmt_adjust_link, 0,
- 				   PHY_INTERFACE_MODE_MII);
- 
--	if (IS_ERR(p->phydev)) {
--		p->phydev = NULL;
--		return -1;
+ 	unsigned loops = 2;
+-	u64 f = 0;
+-	u64 rdiv = 0;
+-	u64 sdiv = 0;
+-	if (current_cpu_type() == CPU_CAVIUM_OCTEON2) {
+-		union cvmx_mio_rst_boot rst_boot;
+-		rst_boot.u64 = cvmx_read_csr(CVMX_MIO_RST_BOOT);
+-		rdiv = rst_boot.s.c_mul;	/* CPU clock */
+-		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
+-		f = (0x8000000000000000ull / sdiv) * 2;
 -	}
 -
--	phy_start_aneg(p->phydev);
-+	if (p->phydev == NULL)
-+		return -ENODEV;
  
- 	return 0;
- }
-@@ -735,12 +845,10 @@ static int octeon_mgmt_init_phy(struct net_device *netdev)
- static int octeon_mgmt_open(struct net_device *netdev)
- {
- 	struct octeon_mgmt *p = netdev_priv(netdev);
--	int port = p->port;
- 	union cvmx_mixx_ctl mix_ctl;
- 	union cvmx_agl_gmx_inf_mode agl_gmx_inf_mode;
- 	union cvmx_mixx_oring1 oring1;
- 	union cvmx_mixx_iring1 iring1;
--	union cvmx_agl_gmx_prtx_cfg prtx_cfg;
- 	union cvmx_agl_gmx_rxx_frm_ctl rxx_frm_ctl;
- 	union cvmx_mixx_irhwm mix_irhwm;
- 	union cvmx_mixx_orhwm mix_orhwm;
-@@ -787,9 +895,31 @@ static int octeon_mgmt_open(struct net_device *netdev)
- 		} while (mix_ctl.s.reset);
- 	}
- 
--	agl_gmx_inf_mode.u64 = 0;
--	agl_gmx_inf_mode.s.en = 1;
--	cvmx_write_csr(CVMX_AGL_GMX_INF_MODE, agl_gmx_inf_mode.u64);
-+	if (OCTEON_IS_MODEL(OCTEON_CN5XXX)) {
-+		agl_gmx_inf_mode.u64 = 0;
-+		agl_gmx_inf_mode.s.en = 1;
-+		cvmx_write_csr(CVMX_AGL_GMX_INF_MODE, agl_gmx_inf_mode.u64);
-+	}
-+	if (OCTEON_IS_MODEL(OCTEON_CN56XX_PASS1_X)
-+		|| OCTEON_IS_MODEL(OCTEON_CN52XX_PASS1_X)) {
-+		/*
-+		 * Force compensation values, as they are not
-+		 * determined properly by HW
-+		 */
-+		union cvmx_agl_gmx_drv_ctl drv_ctl;
-+
-+		drv_ctl.u64 = cvmx_read_csr(CVMX_AGL_GMX_DRV_CTL);
-+		if (p->port) {
-+			drv_ctl.s.byp_en1 = 1;
-+			drv_ctl.s.nctl1 = 6;
-+			drv_ctl.s.pctl1 = 6;
-+		} else {
-+			drv_ctl.s.byp_en = 1;
-+			drv_ctl.s.nctl = 6;
-+			drv_ctl.s.pctl = 6;
-+		}
-+		cvmx_write_csr(CVMX_AGL_GMX_DRV_CTL, drv_ctl.u64);
-+	}
- 
- 	oring1.u64 = 0;
- 	oring1.s.obase = p->tx_ring_handle >> 3;
-@@ -801,11 +931,6 @@ static int octeon_mgmt_open(struct net_device *netdev)
- 	iring1.s.isize = OCTEON_MGMT_RX_RING_SIZE;
- 	cvmx_write_csr(p->mix + MIX_IRING1, iring1.u64);
- 
--	/* Disable packet I/O. */
--	prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
--	prtx_cfg.s.en = 0;
--	cvmx_write_csr(p->agl + AGL_GMX_PRT_CFG, prtx_cfg.u64);
--
- 	memcpy(sa.sa_data, netdev->dev_addr, ETH_ALEN);
- 	octeon_mgmt_set_mac_address(netdev, &sa);
- 
-@@ -821,27 +946,70 @@ static int octeon_mgmt_open(struct net_device *netdev)
- 	mix_ctl.s.nbtarb = 0;       /* Arbitration mode */
- 	/* MII CB-request FIFO programmable high watermark */
- 	mix_ctl.s.mrq_hwm = 1;
-+#ifdef __LITTLE_ENDIAN
-+	mix_ctl.s.lendian = 1;
-+#endif
- 	cvmx_write_csr(p->mix + MIX_CTL, mix_ctl.u64);
- 
--	if (OCTEON_IS_MODEL(OCTEON_CN56XX_PASS1_X)
--	    || OCTEON_IS_MODEL(OCTEON_CN52XX_PASS1_X)) {
--		/*
--		 * Force compensation values, as they are not
--		 * determined properly by HW
--		 */
--		union cvmx_agl_gmx_drv_ctl drv_ctl;
-+	/* Read the PHY to find the mode of the interface. */
-+	if (octeon_mgmt_init_phy(netdev)) {
-+		dev_err(p->dev, "Cannot initialize PHY on MIX%d.\n", p->port);
-+		goto err_noirq;
-+	}
- 
--		drv_ctl.u64 = cvmx_read_csr(CVMX_AGL_GMX_DRV_CTL);
--		if (port) {
--			drv_ctl.s.byp_en1 = 1;
--			drv_ctl.s.nctl1 = 6;
--			drv_ctl.s.pctl1 = 6;
--		} else {
--			drv_ctl.s.byp_en = 1;
--			drv_ctl.s.nctl = 6;
--			drv_ctl.s.pctl = 6;
-+	/* Set the mode of the interface, RGMII/MII. */
-+	if (OCTEON_IS_MODEL(OCTEON_CN6XXX) && p->phydev) {
-+		union cvmx_agl_prtx_ctl agl_prtx_ctl;
-+		int rgmii_mode = (p->phydev->supported &
-+				  (SUPPORTED_1000baseT_Half | SUPPORTED_1000baseT_Full)) != 0;
-+
-+		agl_prtx_ctl.u64 = cvmx_read_csr(p->agl_prt_ctl);
-+		agl_prtx_ctl.s.mode = rgmii_mode ? 0 : 1;
-+		cvmx_write_csr(p->agl_prt_ctl,	agl_prtx_ctl.u64);
-+
-+		/* MII clocks counts are based on the 125Mhz
-+		 * reference, which has an 8nS period. So our delays
-+		 * need to be multiplied by this factor.
-+		 */
-+#define NS_PER_PHY_CLK 8
-+
-+		/* Take the DLL and clock tree out of reset */
-+		agl_prtx_ctl.u64 = cvmx_read_csr(p->agl_prt_ctl);
-+		agl_prtx_ctl.s.clkrst = 0;
-+		if (rgmii_mode) {
-+			agl_prtx_ctl.s.dllrst = 0;
-+			agl_prtx_ctl.s.clktx_byp = 0;
+ 	/* Clobber loops so GCC will not unroll the following while loop. */
+ 	asm("" : "+r" (loops));
+@@ -57,9 +73,9 @@ void octeon_init_cvmcount(void)
+ 			if (f != 0) {
+ 				asm("dmultu\t%[cnt],%[f]\n\t"
+ 				    "mfhi\t%[cnt]"
+-				    : [cnt] "+r" (ipd_clk_count),
+-				      [f] "=r" (f)
+-				    : : "hi", "lo");
++				    : [cnt] "+r" (ipd_clk_count)
++				    : [f] "r" (f)
++				    : "hi", "lo");
+ 			}
  		}
--		cvmx_write_csr(CVMX_AGL_GMX_DRV_CTL, drv_ctl.u64);
-+		cvmx_write_csr(p->agl_prt_ctl,	agl_prtx_ctl.u64);
-+		cvmx_read_csr(p->agl_prt_ctl); /* Force write out before wait */
-+
-+		/* Wait for the DLL to lock. External 125 MHz
-+		 * reference clock must be stable at this point.
-+		 */
-+		ndelay(256 * NS_PER_PHY_CLK);
-+
-+		/* Enable the interface */
-+		agl_prtx_ctl.u64 = cvmx_read_csr(p->agl_prt_ctl);
-+		agl_prtx_ctl.s.enable = 1;
-+		cvmx_write_csr(p->agl_prt_ctl, agl_prtx_ctl.u64);
-+
-+		/* Read the value back to force the previous write */
-+		agl_prtx_ctl.u64 = cvmx_read_csr(p->agl_prt_ctl);
-+
-+		/* Enable the compensation controller */
-+		agl_prtx_ctl.s.comp = 1;
-+		agl_prtx_ctl.s.drv_byp = 0;
-+		cvmx_write_csr(p->agl_prt_ctl,	agl_prtx_ctl.u64);
-+		/* Force write out before wait. */
-+		cvmx_read_csr(p->agl_prt_ctl);
-+
-+		/* For compensation state to lock. */
-+		ndelay(1040 * NS_PER_PHY_CLK);
-+
-+		/* Some Ethernet switches cannot handle standard
-+		 * Interframe Gap, increase to 16 bytes.
-+		 */
-+		cvmx_write_csr(CVMX_AGL_GMX_TX_IFG, 0x88);
- 	}
+ 		write_c0_cvmcount(ipd_clk_count);
+@@ -109,21 +125,6 @@ void __init plat_time_init(void)
+ 	clocksource_register_hz(&clocksource_mips, octeon_get_clock_rate());
+ }
  
- 	octeon_mgmt_rx_fill_ring(netdev);
-@@ -872,7 +1040,7 @@ static int octeon_mgmt_open(struct net_device *netdev)
- 
- 	/* Interrupt when we have 1 or more packets to clean.  */
- 	mix_orhwm.u64 = 0;
--	mix_orhwm.s.orhwm = 1;
-+	mix_orhwm.s.orhwm = 0;
- 	cvmx_write_csr(p->mix + MIX_ORHWM, mix_orhwm.u64);
- 
- 	/* Enable receive and transmit interrupts */
-@@ -881,7 +1049,6 @@ static int octeon_mgmt_open(struct net_device *netdev)
- 	mix_intena.s.othena = 1;
- 	cvmx_write_csr(p->mix + MIX_INTENA, mix_intena.u64);
- 
+-static u64 octeon_udelay_factor;
+-static u64 octeon_ndelay_factor;
 -
- 	/* Enable packet I/O. */
- 
- 	rxx_frm_ctl.u64 = 0;
-@@ -912,26 +1079,20 @@ static int octeon_mgmt_open(struct net_device *netdev)
- 	rxx_frm_ctl.s.pre_chk = 1;
- 	cvmx_write_csr(p->agl + AGL_GMX_RX_FRM_CTL, rxx_frm_ctl.u64);
- 
--	/* Enable the AGL block */
--	agl_gmx_inf_mode.u64 = 0;
--	agl_gmx_inf_mode.s.en = 1;
--	cvmx_write_csr(CVMX_AGL_GMX_INF_MODE, agl_gmx_inf_mode.u64);
+-void __init octeon_setup_delays(void)
+-{
+-	octeon_udelay_factor = octeon_get_clock_rate() / 1000000;
+-	/*
+-	 * For __ndelay we divide by 2^16, so the factor is multiplied
+-	 * by the same amount.
+-	 */
+-	octeon_ndelay_factor = (octeon_udelay_factor * 0x10000ull) / 1000ull;
 -
--	/* Configure the port duplex and enables */
--	prtx_cfg.u64 = cvmx_read_csr(p->agl + AGL_GMX_PRT_CFG);
--	prtx_cfg.s.tx_en = 1;
--	prtx_cfg.s.rx_en = 1;
--	prtx_cfg.s.en = 1;
--	p->last_duplex = 1;
--	prtx_cfg.s.duplex = p->last_duplex;
--	cvmx_write_csr(p->agl + AGL_GMX_PRT_CFG, prtx_cfg.u64);
-+	/* Configure the port duplex, speed and enables */
-+	octeon_mgmt_disable_link(p);
-+	if (p->phydev)
-+		octeon_mgmt_update_link(p);
-+	octeon_mgmt_enable_link(p);
- 
- 	p->last_link = 0;
--	netif_carrier_off(netdev);
+-	preset_lpj = octeon_get_clock_rate() / HZ;
+-}
 -
--	if (octeon_mgmt_init_phy(netdev)) {
--		dev_err(p->dev, "Cannot initialize PHY.\n");
--		goto err_noirq;
-+	p->last_speed = 0;
-+	/* PHY is not present in simulator. The carrier is enabled
-+	 * while initializing the phy for simulator, leave it enabled.
-+	 */
-+	if (p->phydev) {
-+		netif_carrier_off(netdev);
-+		phy_start_aneg(p->phydev);
- 	}
- 
- 	netif_wake_queue(netdev);
-@@ -961,6 +1122,7 @@ static int octeon_mgmt_stop(struct net_device *netdev)
- 
- 	if (p->phydev)
- 		phy_disconnect(p->phydev);
-+	p->phydev = NULL;
- 
- 	netif_carrier_off(netdev);
- 
-@@ -1033,6 +1195,7 @@ static int octeon_mgmt_xmit(struct sk_buff *skb, struct net_device *netdev)
- 	/* Ring the bell.  */
- 	cvmx_write_csr(p->mix + MIX_ORING2, 1);
- 
-+	netdev->trans_start = jiffies;
- 	rv = NETDEV_TX_OK;
- out:
- 	octeon_mgmt_update_tx_stats(netdev);
-@@ -1098,9 +1261,9 @@ static const struct net_device_ops octeon_mgmt_ops = {
- 	.ndo_open =			octeon_mgmt_open,
- 	.ndo_stop =			octeon_mgmt_stop,
- 	.ndo_start_xmit =		octeon_mgmt_xmit,
--	.ndo_set_rx_mode = 		octeon_mgmt_set_rx_filtering,
-+	.ndo_set_rx_mode =		octeon_mgmt_set_rx_filtering,
- 	.ndo_set_mac_address =		octeon_mgmt_set_mac_address,
--	.ndo_do_ioctl = 		octeon_mgmt_ioctl,
-+	.ndo_do_ioctl =			octeon_mgmt_ioctl,
- 	.ndo_change_mtu =		octeon_mgmt_change_mtu,
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller =		octeon_mgmt_poll_controller,
-@@ -1115,6 +1278,7 @@ static int __devinit octeon_mgmt_probe(struct platform_device *pdev)
- 	const u8 *mac;
- 	struct resource *res_mix;
- 	struct resource *res_agl;
-+	struct resource *res_agl_prt_ctl;
- 	int len;
- 	int result;
- 
-@@ -1161,10 +1325,19 @@ static int __devinit octeon_mgmt_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
-+	res_agl_prt_ctl = platform_get_resource(pdev, IORESOURCE_MEM, 3);
-+	if (res_agl_prt_ctl == NULL) {
-+		dev_err(&pdev->dev, "no 'reg' resource\n");
-+		result = -ENXIO;
-+		goto err;
+ void __udelay(unsigned long us)
+ {
+ 	u64 cur, end, inc;
+@@ -163,3 +164,35 @@ void __delay(unsigned long loops)
+ 		cur = read_c0_cvmcount();
+ }
+ EXPORT_SYMBOL(__delay);
++
++
++/**
++ * octeon_io_clk_delay - wait for a given number of io clock cycles to pass.
++ *
++ * We scale the wait by the clock ratio, and then wait for the
++ * corresponding number of core clocks.
++ *
++ * @count: The number of clocks to wait.
++ */
++void octeon_io_clk_delay(unsigned long count)
++{
++	u64 cur, end;
++
++	cur = read_c0_cvmcount();
++	if (rdiv != 0) {
++		end = count * rdiv;
++		if (f != 0) {
++			asm("dmultu\t%[cnt],%[f]\n\t"
++				"mfhi\t%[cnt]"
++				: [cnt] "+r" (end)
++				: [f] "r" (f)
++				: "hi", "lo");
++		}
++		end = cur + end;
++	} else {
++		end = cur + count;
 +	}
-+
- 	p->mix_phys = res_mix->start;
- 	p->mix_size = resource_size(res_mix);
- 	p->agl_phys = res_agl->start;
- 	p->agl_size = resource_size(res_agl);
-+	p->agl_prt_ctl_phys = res_agl_prt_ctl->start;
-+	p->agl_prt_ctl_size = resource_size(res_agl_prt_ctl);
- 
- 
- 	if (!devm_request_mem_region(&pdev->dev, p->mix_phys, p->mix_size,
-@@ -1183,10 +1356,18 @@ static int __devinit octeon_mgmt_probe(struct platform_device *pdev)
- 		goto err;
++	while (end > cur)
++		cur = read_c0_cvmcount();
++}
++EXPORT_SYMBOL(octeon_io_clk_delay);
+diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
+index 919b0fb..04dd8ff 100644
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -548,6 +548,8 @@ void __init prom_init(void)
  	}
+ #endif
  
-+	if (!devm_request_mem_region(&pdev->dev, p->agl_prt_ctl_phys,
-+				     p->agl_prt_ctl_size, res_agl_prt_ctl->name)) {
-+		result = -ENXIO;
-+		dev_err(&pdev->dev, "request_mem_region (%s) failed\n",
-+			res_agl_prt_ctl->name);
-+		goto err;
-+	}
++	octeon_setup_delays();
++
+ 	/*
+ 	 * BIST should always be enabled when doing a soft reset. L2
+ 	 * Cache locking for instance is not cleared unless BIST is
+@@ -611,7 +613,6 @@ void __init prom_init(void)
+ 	mips_hpt_frequency = octeon_get_clock_rate();
  
- 	p->mix = (u64)devm_ioremap(&pdev->dev, p->mix_phys, p->mix_size);
- 	p->agl = (u64)devm_ioremap(&pdev->dev, p->agl_phys, p->agl_size);
--
-+	p->agl_prt_ctl = (u64)devm_ioremap(&pdev->dev, p->agl_prt_ctl_phys,
-+					   p->agl_prt_ctl_size);
- 	spin_lock_init(&p->lock);
+ 	octeon_init_cvmcount();
+-	octeon_setup_delays();
  
- 	skb_queue_head_init(&p->tx_list);
-@@ -1209,6 +1390,7 @@ static int __devinit octeon_mgmt_probe(struct platform_device *pdev)
- 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
- 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+ 	_machine_restart = octeon_restart;
+ 	_machine_halt = octeon_halt;
+diff --git a/arch/mips/include/asm/octeon/octeon.h b/arch/mips/include/asm/octeon/octeon.h
+index a31288e..96e58a5 100644
+--- a/arch/mips/include/asm/octeon/octeon.h
++++ b/arch/mips/include/asm/octeon/octeon.h
+@@ -52,6 +52,7 @@ extern asmlinkage void octeon_cop2_restore(struct octeon_cop2_state *task);
  
-+	netif_carrier_off(netdev);
- 	result = register_netdev(netdev);
- 	if (result)
- 		goto err;
+ extern void octeon_init_cvmcount(void);
+ extern void octeon_setup_delays(void);
++extern void octeon_io_clk_delay(unsigned long);
+ 
+ #define OCTEON_ARGV_MAX_ARGS	64
+ #define OCTOEN_SERIAL_LEN	20
 -- 
 1.7.11.4
 
