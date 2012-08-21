@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2HUHOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 03:14:17 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:42214 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab2HUHOO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 03:14:14 -0400
-X-Auth-Info: ia2tC+3Xs5rq/rq3UbQ0+8EpbzeTPTDPh0SENgS6n7A=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 4/8] time: Condense timekeeper.xtime into xtime_sec
-References: <1342156917-25092-1-git-send-email-john.stultz@linaro.org>
-	<1342156917-25092-5-git-send-email-john.stultz@linaro.org>
-	<m2fw7ilhnm.fsf@igel.home> <503288ED.10306@linaro.org>
-	<m2fw7h4ab5.fsf@igel.home> <503296C1.4070906@linaro.org>
-	<m2boi549ed.fsf@igel.home> <5033029A.2030201@linaro.org>
-X-Yow: I wish I was on a Cincinnati street corner holding a clean dog!
-Date: Tue, 21 Aug 2012 09:14:06 +0200
-In-Reply-To: <5033029A.2030201@linaro.org> (John Stultz's message of "Mon, 20
-	Aug 2012 20:38:02 -0700")
-Message-ID: <m2d32kemyp.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754021Ab2HUHVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 03:21:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54608 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753985Ab2HUHV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 03:21:28 -0400
+Date: Tue, 21 Aug 2012 08:15:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/5] mempolicy: fix refcount leak in
+ mpol_set_shared_policy()
+Message-ID: <20120821071532.GB1657@suse.de>
+References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
+ <1345480594-27032-5-git-send-email-mgorman@suse.de>
+ <00000139459223d7-93a9c53f-6724-4a4b-b675-cd25d8d53c71-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <00000139459223d7-93a9c53f-6724-4a4b-b675-cd25d8d53c71-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John Stultz <john.stultz@linaro.org> writes:
+On Mon, Aug 20, 2012 at 07:46:09PM +0000, Christoph Lameter wrote:
+> On Mon, 20 Aug 2012, Mel Gorman wrote:
+> 
+> > @@ -2318,9 +2323,7 @@ void mpol_free_shared_policy(struct shared_policy *p)
+> >  	while (next) {
+> >  		n = rb_entry(next, struct sp_node, nd);
+> >  		next = rb_next(&n->nd);
+> > -		rb_erase(&n->nd, &p->root);
+> 
+> Looks like we need to keep the above line? sp_delete does not remove the
+> tree entry.
+> 
+> > -		mpol_put(n->policy);
+> > -		kmem_cache_free(sn_cache, n);
+> > +		sp_delete(p, n);
 
-> @@ -115,6 +115,7 @@ static void tk_xtime_add(struct timekeeper *tk, const struct timespec *ts)
->  {
->  	tk->xtime_sec += ts->tv_sec;
->  	tk->xtime_nsec += (u64)ts->tv_nsec << tk->shift;
-> +	tk_normalize_xtime(tk);
->  }
+Yes it does, could you have accidentally mixed up sp_free (which does not
+remove the tree entry) and sp_delete (which does)? The altered code ends
+up looking like this;
 
-Yes, that does it.  Failure to normalize is always bad.
+static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+{
+        pr_debug("deleting %lx-l%lx\n", n->start, n->end);
+        rb_erase(&n->nd, &sp->root);				<----- frees node here
+        sp_free(n);
+}
 
-Andreas.
+void mpol_free_shared_policy(struct shared_policy *p)
+{
+        struct sp_node *n;
+        struct rb_node *next;
+
+        if (!p->root.rb_node)
+                return;
+        mutex_lock(&p->mutex);
+        next = rb_first(&p->root);
+        while (next) {
+                n = rb_entry(next, struct sp_node, nd);
+                next = rb_next(&n->nd);
+                sp_delete(p, n);				<---- equivalent to rb_erase(&n->nd, &p->root); sp_free(n);
+        }
+        mutex_unlock(&p->mutex);
+}
+
+Thanks Christoph for looking at this.
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Mel Gorman
+SUSE Labs
