@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab2HUSWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:22:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12746 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196Ab2HUSWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:22:32 -0400
-Date: Tue, 21 Aug 2012 14:42:52 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120821174251.GB12294@t510.redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <20120821135223.GA7117@redhat.com>
- <1345562166.23018.109.camel@twins>
- <20120821154142.GA8268@redhat.com>
+	id S932299Ab2HUSXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:23:01 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43772 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab2HUSW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 14:22:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821154142.GA8268@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120821160653.GH12708@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+	<201208151415.39570.arnd@arndb.de>
+	<20120816102300.GG31784@mudshark.cambridge.arm.com>
+	<201208161237.53594.arnd@arndb.de>
+	<20120821160653.GH12708@arm.com>
+Date: Tue, 21 Aug 2012 20:17:19 +0200
+X-Google-Sender-Auth: zYJtvsFpoFCKTEBX9Br4Do3T7HQ
+Message-ID: <CAMuHMdVEX0egzFETMJ=LA_PB+7Qc=Ph-7uxofVr__wOE-0cvLQ@mail.gmail.com>
+Subject: Re: [PATCH v2 16/31] arm64: ELF definitions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 06:41:42PM +0300, Michael S. Tsirkin wrote:
-> On Tue, Aug 21, 2012 at 05:16:06PM +0200, Peter Zijlstra wrote:
-> > On Tue, 2012-08-21 at 16:52 +0300, Michael S. Tsirkin wrote:
-> > > > +             rcu_read_lock();
-> > > > +             mapping = rcu_dereference(page->mapping);
-> > > > +             if (mapping_balloon(mapping))
-> > > > +                     ret = true;
-> > > > +             rcu_read_unlock();
-> > > 
-> > > This looks suspicious: you drop rcu_read_unlock
-> > > so can't page switch from balloon to non balloon? 
-> > 
-> > RCU read lock is a non-exclusive lock, it cannot avoid anything like
-> > that.
-> 
-> You are right, of course. So even keeping rcu_read_lock across both test
-> and operation won't be enough - you need to make this function return
-> the mapping and pass it to isolate_page/putback_page so that it is only
-> dereferenced once.
->
-No, I need to dereference page->mapping to check ->mapping flags here, before
-returning. Remember this function is used at MM's compaction/migration inner
-circles to identify ballooned pages and decide what's the next step. This
-function is doing the right thing, IMHO.
+On Tue, Aug 21, 2012 at 6:06 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> But I can see on x86 that it always reports x86_64 even if the task is
+> x86_32.
 
-Also, looking at how compaction/migration work, we verify the only critical path
-for this function is the page isolation step. The other steps (migration and
-putback) perform their work on private lists previouly isolated from a given
-source.
+Really?
 
-So, we just need to make sure that the isolation part does not screw things up
-by isolating pages that balloon driver is about to release. That's why there are
-so many checkpoints down the page isolation path assuring we really are
-isolating a balloon page. 
+$ uname -m
+x86_64
+$ linux32 uname -m
+i686
+$
 
+On Ubuntu 2.6.32-42-generic
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
