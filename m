@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab2HUIyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 04:54:06 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50998 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab2HUIyA (ORCPT
+	id S1754605Ab2HUI43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 04:56:29 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34935 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab2HUI4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 04:54:00 -0400
+	Tue, 21 Aug 2012 04:56:24 -0400
+Date: Tue, 21 Aug 2012 09:56:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
+Message-ID: <20120821085618.GA26899@gmail.com>
+References: <1344527635-6163-6-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZ7bMBytyDppV2sB1d1sUbDpPRqAQVOq8k4UOYdmg+Mkw@mail.gmail.com>
+ <201208140942.54773.arnd@arndb.de>
+ <CACRpkdYbOBEPNbCdfi+=gupdqS8_7t7MpOgXs7VCVTs8Y3j_mQ@mail.gmail.com>
+ <20120820083640.GH8450@gmail.com>
+ <20120820121055.GA26991@opensource.wolfsonmicro.com>
+ <20120820125531.GA20242@gmail.com>
+ <20120820162923.GF26991@opensource.wolfsonmicro.com>
+ <20120820164949.GB22749@gmail.com>
+ <20120820175155.GH26991@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1345537609-21676-1-git-send-email-mc@linux.vnet.ibm.com>
-References: <1345537609-21676-1-git-send-email-mc@linux.vnet.ibm.com>
-Date: Tue, 21 Aug 2012 09:53:59 +0100
-Message-ID: <CAJSP0QXwFZdoDsizTozmXa2P=iRT7RQ_yQcVRC4FemiSpKG_bA@mail.gmail.com>
-Subject: Re: [PATCH v1] virtio-scsi: get and set the queue limits for sg device
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Cong Meng <mc@linux.vnet.ibm.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, stefanha@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, zwanp@cn.ibm.com, linuxram@us.ibm.com,
-        qemu-devel@nongnu.org, virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120820175155.GH26991@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 9:26 AM, Cong Meng <mc@linux.vnet.ibm.com> wrote:
-> Each virtio scsi HBA has global request queue limits. But the passthrough
-> LUNs (scsi-generic) come from different host HBAs may have different request
-> queue limits. If the guest sends commands that exceed the host limits, the
-> commands will be rejected by host HAB.
->
-> This patch addresses this issue by getting the per-LUN queue limits via the the
-> newly added virtio control request, then setting them properly.
->
-> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
-> ---
->  drivers/scsi/virtio_scsi.c  |  113 +++++++++++++++++++++++++++++++++++++------
->  include/linux/virtio_scsi.h |   18 +++++++
->  2 files changed, 116 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index 173cb39..ec5066f 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -35,12 +35,14 @@ struct virtio_scsi_cmd {
->                 struct virtio_scsi_cmd_req       cmd;
->                 struct virtio_scsi_ctrl_tmf_req  tmf;
->                 struct virtio_scsi_ctrl_an_req   an;
-> +               struct virtio_scsi_ctrl_lq_req   lq;
->         } req;
->         union {
->                 struct virtio_scsi_cmd_resp      cmd;
->                 struct virtio_scsi_ctrl_tmf_resp tmf;
->                 struct virtio_scsi_ctrl_an_resp  an;
->                 struct virtio_scsi_event         evt;
-> +               struct virtio_scsi_ctrl_lq_resp  lq;
->         } resp;
->  } ____cacheline_aligned_in_smp;
->
-> @@ -469,6 +471,46 @@ out:
->         return ret;
->  }
->
-> +static u32 virtscsi_lun_query(struct scsi_device *sdev, u32 *value, u32 subtype)
-> +{
-> +       struct Scsi_Host *shost = sdev->host;
-> +       struct virtio_scsi *vscsi = shost_priv(shost);
-> +       DECLARE_COMPLETION_ONSTACK(comp);
-> +       struct virtio_scsi_cmd *cmd;
-> +       struct virtio_scsi_target_state *tgt = vscsi->tgt[sdev->id];
-> +       unsigned int ret = VIRTIO_SCSI_S_FAILURE;
-> +
-> +       cmd = mempool_alloc(virtscsi_cmd_pool, GFP_ATOMIC);
-> +       if (!cmd)
-> +               goto out;
-> +
-> +       memset(cmd, 0, sizeof(*cmd));
-> +       cmd->comp = &comp;
-> +       cmd->req.lq = (struct virtio_scsi_ctrl_lq_req){
-> +               .type = VIRTIO_SCSI_T_LUN_QUERY,
-> +               .subtype = subtype,
-> +               .lun[0] = 1,
-> +               .lun[1] = sdev->id,
-> +               .lun[2] = (sdev->lun >> 8) | 0x40,
-> +               .lun[3] = sdev->lun & 0xff,
+> > If they don't have linear domains there's no point, if they support DT
+> > then they can use it as it is.
+> 
+> All this stuff just works for any IRQ domain type, there's no
+> requirement for a particular one.  It's not urgently exciting for legacy
+> domains but it's not harmful either and pushes all the handling of this
+> stuff out of the MFD core and into the irqdomain code which is
+> definitely an abstraction win.
 
-The LUN addressing code has been duplicated several times now.  How
-about replacing it with something like
+Wherever we do this from to be able to obtain the IRQ domain pointer, 
+which is where I'm currently struggling. Our options are:
 
-static void virtio_scsi_set_lun(u8 *lun, struct scsi_device *sdev)
-{
-    lun[0] = 1;
-    lun[1] = sdev->id;
-    lun[2] = (sdev->lun >> 8) | 0x40;
-    lun[3] = sdev->lun & 0xff;
-    lun[4] = lun[5] = lun[6] = lun[7] = 0;
-}
+- Call into a helper function based in the IRQ controller from each 
+child device. In turn the IRQ controller will be responsible for creating
+the mapping necessary to obtain a virq. Using this method the child
+device doesn't need to know if we're using an IRQ domain or not, or
+whether we're using Device Tree or not. The drawback is that each child
+device will be required to call the helper function prior to requesting
+an IRQ. 
+
+- If we're only talking MFD here, we can handle this stuff in the MFD
+core, but we need more information. The IRQ domain subsystem only allows
+domain look-up via a Device Tree node, so we need to get our hands on
+the domain another way in the case of non-DT enabled devices. Either we
+add another parameter to mfd_add_device(irq_domain, ...), or we
+standardise the 'irq_domain' variable name and use:
+        irq_domain = container_of(parent, struct irq_domain, irq_domain);
+
+- I know that you have interest in pushing the functionality into the
+IRQ domain subsystem, but I'm struggling to see how. It's calling into
+the IRQ domain where we're seeing issues in the first place, specifically
+irq_create_mapping(). How about if we passed 'irq_domain' as a parameter
+when requesting the IRQ? That way we can pass the correct IRQ without
+worry of conversion. If 'irq_domain' is !NULL the IRQ management subsystem
+can do the necessary conversions. If 'irq_domain' is NULL it continues to
+use the requested IRQ as a virq.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
