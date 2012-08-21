@@ -1,135 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab2HUHcI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 03:32:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55440 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab2HUHcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 03:32:05 -0400
-Date: Tue, 21 Aug 2012 08:26:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Jones <davej@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 5/5] mempolicy: fix a memory corruption by refcount
- imbalance in alloc_pages_vma()
-Message-ID: <20120821072611.GC1657@suse.de>
-References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
- <1345480594-27032-6-git-send-email-mgorman@suse.de>
- <000001394596bd69-2c16d7fb-71b5-4009-95cc-7068103b2bfd-000000@email.amazonses.com>
+	id S1751882Ab2HUHds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 03:33:48 -0400
+Received: from bosmailout02.eigbox.net ([66.96.185.2]:45756 "EHLO
+	bosmailout02.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab2HUHdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 03:33:45 -0400
+X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
+ a=lghRLfjGutYZE2O92ubooA==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
+ a=TNaJx8l5llIA:10 a=8nJEP1OIZ-IA:10 a=ZbotsqAEwLAA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=hogF9BWPwK3KbxMoqZkA:9 a=wPNLvfGTeEIA:10
+ a=9UqFsMnAB6EOkiq4MrOclQ==:117
+X-EN-OrigOutIP: 10.20.18.19
+X-EN-IMPSID: pKZi1j0030QhFXN01KZi7S
+Message-ID: <50333982.3020201@yahoo.es>
+Date: Tue, 21 Aug 2012 15:32:18 +0800
+From: Hein Tibosch <hein_tibosch@yahoo.es>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <000001394596bd69-2c16d7fb-71b5-4009-95cc-7068103b2bfd-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
+References: <502BC31E.4070200@yahoo.es> <502BDD0E.4030106@yahoo.es> <502CA8FC.7090705@atmel.com> <502CB89B.4070302@yahoo.es> <502CC326.8020605@atmel.com> <502CC6A0.3050603@atmel.com> <502F52E7.9050804@yahoo.es> <CACiLriS-GZg24TJqJGQ=P04n-Zk3FdHtGgh5VeqGcCMHG6TnMw@mail.gmail.com> <50310F10.2080701@yahoo.es> <CAOh2x=kOxninn=o1i2-HE1is-G8vfi1ER_JjUQY=N0wTYwAotw@mail.gmail.com> <503326CE.40301@yahoo.es> <CAKohponN16krs-WWw6Abh1fLPO3+iYndTaxsPDfeXCoS9OHufQ@mail.gmail.com>
+In-Reply-To: <CAKohponN16krs-WWw6Abh1fLPO3+iYndTaxsPDfeXCoS9OHufQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
+X-EN-AuthUser: hein@htibosch.net
+X-EN-OrigIP: 114.79.56.110
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 07:51:10PM +0000, Christoph Lameter wrote:
-> On Mon, 20 Aug 2012, Mel Gorman wrote:
-> 
-> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> > index 45f9825..82e872f 100644
-> > --- a/mm/mempolicy.c
-> > +++ b/mm/mempolicy.c
-> > @@ -1545,15 +1545,28 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
-> >  		struct vm_area_struct *vma, unsigned long addr)
-> >  {
-> >  	struct mempolicy *pol = task->mempolicy;
-> > +	int got_ref;
-> 
-> New variable. Need to set it to zero?
-> 
+On 8/21/2012 2:35 PM, Viresh Kumar wrote:
+> On 21 August 2012 11:42, Hein Tibosch <hein_tibosch@yahoo.es <mailto:hein_tibosch@yahoo.es>> wrote:
+>
+>     On 8/21/2012 12:42 PM, viresh kumar wrote:
+>     > Ahhhh!! Firstly we can't use __raw* for architectures >= ARMv6. It is not
+>     > only for endianess but for memory barriers. Why are they getting swapped
+>     > for your case? Does your processor and dw_dmac have different endianess?
+>
+>     If I'm not wrong: the __raw_* functions will access the i/o memory in native endianess.
+>     As far as I know, all AVR32 drivers are currently using the __raw* functions. I never
+>     encountered  a problem with that.
+>
+>
+> I don't have the best knowledge in this area :( and so cc-ing Arnd who can help us here.
+> So my perception of these routines is:
+>
+> readl is defined generically as:
+>
+> #define readl(addr) __le32_to_cpu(__raw_readl(addr))
+>
+> Which converts to a simple __raw_readl() for little endian systems and
+> swapped bytes for a big endian system.
+>
+> You wrote in the beginning
+> >> - After 2.6.39, the registers were accessed using readl/writel
+> >>   in stead of the __raw_readl and __raw_writel causing a 16-bit
+> >>   swap of all values (little endian access)
 
-Not needed at all, I was meant to get rid of it. Ben had pointed out this
-exact problem with the initialisation.
+It got swapped as 0xAABB.CCDD => 0xCCDD.AABB
 
-> >
-> >  	if (vma) {
-> >  		if (vma->vm_ops && vma->vm_ops->get_policy) {
-> >  			struct mempolicy *vpol = vma->vm_ops->get_policy(vma,
-> >  									addr);
-> > -			if (vpol)
-> > +			if (vpol) {
-> >  				pol = vpol;
-> > -		} else if (vma->vm_policy)
-> > +				got_ref = 1;
-> 
-> Set the new variable. But it was not initialzed before. So now its 1 or
-> undefined?
-> 
+> What's this 16-bit swap here? It should be a 8 bit swap by __swab32() routine.
+>  
+> Is AVR32 a big-endian system? Probably big-endian, that's why values are getting
+> swapped. And dw_dmac is the standard one, can call it little endian for the time being.
+>
+AVR32 (AP700x) is a big-endian system.
 
-It's not even needed because the next block is the code that originally
-cared about the value of got_ref.
+It took me many hours to figure out why the DMA controller didn't do
+anything at all.
 
-> > +			}
-> > +		} else if (vma->vm_policy) {
-> >  			pol = vma->vm_policy;
-> > +
-> > +			/*
-> > +			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
-> > +			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
-> > +			 * count on these policies which will be dropped by
-> > +			 * mpol_cond_put() later
-> > +			 */
-> > +			if (mpol_needs_cond_ref(pol))
-> > +				mpol_get(pol);
-> > +		}
-> >  	}
-> >  	if (!pol)
-> >  		pol = &default_policy;
-> >
-> 
-> I do not see any use of got_ref. Can we get rid of the variable?
-> 
+Then I decided to access the i/o memory in different way:
 
-Yes, here is a correct version of the patch. Thanks Christoph.
+    #include "dmaca_206a.h" // from the AVR32-tools library
 
----8<---
-mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
+    const struct __iomem avr32_dmaca_t *regs =
+        (const struct __iomem avr32_dmaca_t *)0xFF200000;
 
-[cc9a6c87: cpuset: mm: reduce large amounts of memory barrier related damage
-v3] introduced a potential memory corruption. shmem_alloc_page() uses a
-pseudo vma and it has one significant unique combination, vma->vm_ops=NULL
-and vma->policy->flags & MPOL_F_SHARED.
+and printk all register values. Each and every u32 field was swapped as
+0xAABBCCDD => 0xCCDDAABB
 
-get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL and
-mpol_cond_put() DOES decrease a policy ref when a policy has MPOL_F_SHARED.
-Therefore, when a cpuset update race occurs, alloc_pages_vma() falls in 'goto
-retry_cpuset' path, decrements the reference count and frees the policy
-prematurely.
+Håvard's comment was: "it's always wrong to use little endian accessors
+(i.e. readl/writel) in drivers for chip-internal devices"
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/mempolicy.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+Memory barriers: within the AVR32 code, one often sees explicit ways to
+introduce memory barriers, e.g.:
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 45f9825..9842ef5 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1552,8 +1552,18 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 									addr);
- 			if (vpol)
- 				pol = vpol;
--		} else if (vma->vm_policy)
-+		} else if (vma->vm_policy) {
- 			pol = vma->vm_policy;
-+
-+			/*
-+			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
-+			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
-+			 * count on these policies which will be dropped by
-+			 * mpol_cond_put() later
-+			 */
-+			if (mpol_needs_cond_ref(pol))
-+				mpol_get(pol);
-+		}
- 	}
- 	if (!pol)
- 		pol = &default_policy;
+    hsmc_readl(hsmc, MODE0); /* I/O barrier */
+
+which means: reading back (just any) register (from the same peripheral)
+to assure that the write was successful, especially from within
+interrupt handlers.
+
+But as I said, within avr32-linux I never encountered problems
+with the __raw* approach, including dw_dmac.c
+
+> @Arnd: What should we do here?
+
+I'm curious too
+
+Hein
