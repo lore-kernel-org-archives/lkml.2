@@ -1,163 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab2HUPOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 11:14:00 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:53375 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab2HUPNR (ORCPT
+	id S1756328Ab2HUPOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 11:14:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59470 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab2HUPN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 11:13:17 -0400
+	Tue, 21 Aug 2012 11:13:59 -0400
+Date: Tue, 21 Aug 2012 08:13:31 -0700
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Message-ID: <tip-ae6aa16fdc163afe6b04b6c073ad4ddd4663c03b@git.kernel.org>
+Cc: fche@redhat.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@kernel.org, ananth@in.ibm.com, fweisbec@gmail.com,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, fche@redhat.com, ananth@in.ibm.com,
+        fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com,
+        akpm@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <20120605102832.27845.63461.stgit@localhost.localdomain>
+References: <20120605102832.27845.63461.stgit@localhost.localdomain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] kprobes: introduce ftrace based optimization
+Git-Commit-ID: ae6aa16fdc163afe6b04b6c073ad4ddd4663c03b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120821133455.9090.24759.stgit@localhost.localdomain>
-References: <20120821133455.9090.24759.stgit@localhost.localdomain>
-Date: Tue, 21 Aug 2012 23:13:16 +0800
-Message-ID: <CAMiH66FiPLKHMkwsUMfrmE-vxdFFzL_R4NRNMP4VxSo3_wMaxA@mail.gmail.com>
-Subject: Re: [PATCH] tty: move the async flags from the serial code into the
- tty includes
-From: Huang Shijie <shijie8@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Aug 2012 08:13:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 9:35 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> Huang - how about we add this patch first which moves the flags somewhere more sensible
-thanks.
+Commit-ID:  ae6aa16fdc163afe6b04b6c073ad4ddd4663c03b
+Gitweb:     http://git.kernel.org/tip/ae6aa16fdc163afe6b04b6c073ad4ddd4663c03b
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Tue, 5 Jun 2012 19:28:32 +0900
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 31 Jul 2012 10:29:58 -0400
 
-I am really happy with this patch.
+kprobes: introduce ftrace based optimization
 
-Huang Shijie
+Introduce function trace based kprobes optimization.
 
-> and then your helper function (and probably a few others) would merge cleanly ?
->
-> Alan
-> --
->
->
-> From: Alan Cox <alan@linux.intel.com>
->
-> These are used with the tty_port flags which are tty generic so move the
-> flags into a more sensible place. This then makes it possible to add
-> helpers such as those suggested by Huang Shijie.
->
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
->
->  include/linux/serial.h    |    2 +
->  include/linux/tty.h       |    1 +
->  include/linux/tty_flags.h |   78 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 81 insertions(+)
->  create mode 100644 include/linux/tty_flags.h
->
-> diff --git a/include/linux/serial.h b/include/linux/serial.h
-> index 90e9f98..d63866d 100644
-> --- a/include/linux/serial.h
-> +++ b/include/linux/serial.h
-> @@ -15,6 +15,8 @@
->  #ifdef __KERNEL__
->  #include <asm/page.h>
->
-> +#include <linux/tty_flags.h>
-> +
->  /*
->   * Counters of the input lines (CTS, DSR, RI, CD) interrupts
->   */
-> diff --git a/include/linux/tty.h b/include/linux/tty.h
-> index 69a787f..dbebd1e 100644
-> --- a/include/linux/tty.h
-> +++ b/include/linux/tty.h
-> @@ -43,6 +43,7 @@
->  #include <linux/tty_driver.h>
->  #include <linux/tty_ldisc.h>
->  #include <linux/mutex.h>
-> +#include <linux/tty_flags.h>
->
->
->
-> diff --git a/include/linux/tty_flags.h b/include/linux/tty_flags.h
-> new file mode 100644
-> index 0000000..eefcb48
-> --- /dev/null
-> +++ b/include/linux/tty_flags.h
-> @@ -0,0 +1,78 @@
-> +#ifndef _LINUX_TTY_FLAGS_H
-> +#define _LINUX_TTY_FLAGS_H
-> +
-> +/*
-> + * Definitions for async_struct (and serial_struct) flags field also
-> + * shared by the tty_port flags structures.
-> + *
-> + * Define ASYNCB_* for convenient use with {test,set,clear}_bit.
-> + */
-> +#define ASYNCB_HUP_NOTIFY       0 /* Notify getty on hangups and closes
-> +                                   * on the callout port */
-> +#define ASYNCB_FOURPORT                 1 /* Set OU1, OUT2 per AST Fourport settings */
-> +#define ASYNCB_SAK              2 /* Secure Attention Key (Orange book) */
-> +#define ASYNCB_SPLIT_TERMIOS    3 /* Separate termios for dialin/callout */
-> +#define ASYNCB_SPD_HI           4 /* Use 56000 instead of 38400 bps */
-> +#define ASYNCB_SPD_VHI          5 /* Use 115200 instead of 38400 bps */
-> +#define ASYNCB_SKIP_TEST        6 /* Skip UART test during autoconfiguration */
-> +#define ASYNCB_AUTO_IRQ                 7 /* Do automatic IRQ during
-> +                                   * autoconfiguration */
-> +#define ASYNCB_SESSION_LOCKOUT  8 /* Lock out cua opens based on session */
-> +#define ASYNCB_PGRP_LOCKOUT     9 /* Lock out cua opens based on pgrp */
-> +#define ASYNCB_CALLOUT_NOHUP   10 /* Don't do hangups for cua device */
-> +#define ASYNCB_HARDPPS_CD      11 /* Call hardpps when CD goes high  */
-> +#define ASYNCB_SPD_SHI         12 /* Use 230400 instead of 38400 bps */
-> +#define ASYNCB_LOW_LATENCY     13 /* Request low latency behaviour */
-> +#define ASYNCB_BUGGY_UART      14 /* This is a buggy UART, skip some safety
-> +                                   * checks.  Note: can be dangerous! */
-> +#define ASYNCB_AUTOPROBE       15 /* Port was autoprobed by PCI or PNP code */
-> +#define ASYNCB_LAST_USER       15
-> +
-> +/* Internal flags used only by kernel */
-> +#define ASYNCB_INITIALIZED     31 /* Serial port was initialized */
-> +#define ASYNCB_SUSPENDED       30 /* Serial port is suspended */
-> +#define ASYNCB_NORMAL_ACTIVE   29 /* Normal device is active */
-> +#define ASYNCB_BOOT_AUTOCONF   28 /* Autoconfigure port on bootup */
-> +#define ASYNCB_CLOSING         27 /* Serial port is closing */
-> +#define ASYNCB_CTS_FLOW                26 /* Do CTS flow control */
-> +#define ASYNCB_CHECK_CD                25 /* i.e., CLOCAL */
-> +#define ASYNCB_SHARE_IRQ       24 /* for multifunction cards, no longer used */
-> +#define ASYNCB_CONS_FLOW       23 /* flow control for console  */
-> +#define ASYNCB_FIRST_KERNEL    22
-> +
-> +#define ASYNC_HUP_NOTIFY       (1U << ASYNCB_HUP_NOTIFY)
-> +#define ASYNC_SUSPENDED                (1U << ASYNCB_SUSPENDED)
-> +#define ASYNC_FOURPORT         (1U << ASYNCB_FOURPORT)
-> +#define ASYNC_SAK              (1U << ASYNCB_SAK)
-> +#define ASYNC_SPLIT_TERMIOS    (1U << ASYNCB_SPLIT_TERMIOS)
-> +#define ASYNC_SPD_HI           (1U << ASYNCB_SPD_HI)
-> +#define ASYNC_SPD_VHI          (1U << ASYNCB_SPD_VHI)
-> +#define ASYNC_SKIP_TEST                (1U << ASYNCB_SKIP_TEST)
-> +#define ASYNC_AUTO_IRQ         (1U << ASYNCB_AUTO_IRQ)
-> +#define ASYNC_SESSION_LOCKOUT  (1U << ASYNCB_SESSION_LOCKOUT)
-> +#define ASYNC_PGRP_LOCKOUT     (1U << ASYNCB_PGRP_LOCKOUT)
-> +#define ASYNC_CALLOUT_NOHUP    (1U << ASYNCB_CALLOUT_NOHUP)
-> +#define ASYNC_HARDPPS_CD       (1U << ASYNCB_HARDPPS_CD)
-> +#define ASYNC_SPD_SHI          (1U << ASYNCB_SPD_SHI)
-> +#define ASYNC_LOW_LATENCY      (1U << ASYNCB_LOW_LATENCY)
-> +#define ASYNC_BUGGY_UART       (1U << ASYNCB_BUGGY_UART)
-> +#define ASYNC_AUTOPROBE                (1U << ASYNCB_AUTOPROBE)
-> +
-> +#define ASYNC_FLAGS            ((1U << (ASYNCB_LAST_USER + 1)) - 1)
-> +#define ASYNC_USR_MASK         (ASYNC_SPD_MASK|ASYNC_CALLOUT_NOHUP| \
-> +               ASYNC_LOW_LATENCY)
-> +#define ASYNC_SPD_CUST         (ASYNC_SPD_HI|ASYNC_SPD_VHI)
-> +#define ASYNC_SPD_WARP         (ASYNC_SPD_HI|ASYNC_SPD_SHI)
-> +#define ASYNC_SPD_MASK         (ASYNC_SPD_HI|ASYNC_SPD_VHI|ASYNC_SPD_SHI)
-> +
-> +#define ASYNC_INITIALIZED      (1U << ASYNCB_INITIALIZED)
-> +#define ASYNC_NORMAL_ACTIVE    (1U << ASYNCB_NORMAL_ACTIVE)
-> +#define ASYNC_BOOT_AUTOCONF    (1U << ASYNCB_BOOT_AUTOCONF)
-> +#define ASYNC_CLOSING          (1U << ASYNCB_CLOSING)
-> +#define ASYNC_CTS_FLOW         (1U << ASYNCB_CTS_FLOW)
-> +#define ASYNC_CHECK_CD         (1U << ASYNCB_CHECK_CD)
-> +#define ASYNC_SHARE_IRQ                (1U << ASYNCB_SHARE_IRQ)
-> +#define ASYNC_CONS_FLOW                (1U << ASYNCB_CONS_FLOW)
-> +#define ASYNC_INTERNAL_FLAGS   (~((1U << ASYNCB_FIRST_KERNEL) - 1))
-> +
-> +#endif
->
+With using ftrace optimization, kprobes on the mcount calling
+address, use ftrace's mcount call instead of breakpoint.
+Furthermore, this optimization works with preemptive kernel
+not like as current jump-based optimization. Of cource,
+this feature works only if the probe is on mcount call.
+
+Only if kprobe.break_handler is set, that probe is not
+optimized with ftrace (nor put on ftrace). The reason why this
+limitation comes is that this break_handler may be used only
+from jprobes which changes ip address (for fetching the function
+arguments), but function tracer ignores modified ip address.
+
+Changes in v2:
+ - Fix ftrace_ops registering right after setting its filter.
+ - Unregister ftrace_ops if there is no kprobe using.
+ - Remove notrace dependency from __kprobes macro.
+
+Link: http://lkml.kernel.org/r/20120605102832.27845.63461.stgit@localhost.localdomain
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/kprobes.h |   27 ++++++++++++
+ kernel/kprobes.c        |  105 +++++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 119 insertions(+), 13 deletions(-)
+
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index b6e1f8c..aa0d05e 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -38,6 +38,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/rcupdate.h>
+ #include <linux/mutex.h>
++#include <linux/ftrace.h>
+ 
+ #ifdef CONFIG_KPROBES
+ #include <asm/kprobes.h>
+@@ -48,14 +49,26 @@
+ #define KPROBE_REENTER		0x00000004
+ #define KPROBE_HIT_SSDONE	0x00000008
+ 
++/*
++ * If function tracer is enabled and the arch supports full
++ * passing of pt_regs to function tracing, then kprobes can
++ * optimize on top of function tracing.
++ */
++#if defined(CONFIG_FUNCTION_TRACER) && defined(ARCH_SUPPORTS_FTRACE_SAVE_REGS) \
++	&& defined(ARCH_SUPPORTS_KPROBES_ON_FTRACE)
++# define KPROBES_CAN_USE_FTRACE
++#endif
++
+ /* Attach to insert probes on any functions which should be ignored*/
+ #define __kprobes	__attribute__((__section__(".kprobes.text")))
++
+ #else /* CONFIG_KPROBES */
+ typedef int kprobe_opcode_t;
+ struct arch_specific_insn {
+ 	int dummy;
+ };
+ #define __kprobes
++
+ #endif /* CONFIG_KPROBES */
+ 
+ struct kprobe;
+@@ -128,6 +141,7 @@ struct kprobe {
+ 				   * NOTE:
+ 				   * this flag is only for optimized_kprobe.
+ 				   */
++#define KPROBE_FLAG_FTRACE	8 /* probe is using ftrace */
+ 
+ /* Has this kprobe gone ? */
+ static inline int kprobe_gone(struct kprobe *p)
+@@ -146,6 +160,13 @@ static inline int kprobe_optimized(struct kprobe *p)
+ {
+ 	return p->flags & KPROBE_FLAG_OPTIMIZED;
+ }
++
++/* Is this kprobe uses ftrace ? */
++static inline int kprobe_ftrace(struct kprobe *p)
++{
++	return p->flags & KPROBE_FLAG_FTRACE;
++}
++
+ /*
+  * Special probe type that uses setjmp-longjmp type tricks to resume
+  * execution at a specified entry with a matching prototype corresponding
+@@ -295,6 +316,12 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
+ #endif
+ 
+ #endif /* CONFIG_OPTPROBES */
++#ifdef KPROBES_CAN_USE_FTRACE
++extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
++				  struct pt_regs *regs);
++extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
++#endif
++
+ 
+ /* Get the kprobe at this addr (if any) - called with preemption disabled */
+ struct kprobe *get_kprobe(void *addr);
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 9e47f44..69c16ef 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -759,6 +759,10 @@ static __kprobes void try_to_optimize_kprobe(struct kprobe *p)
+ 	struct kprobe *ap;
+ 	struct optimized_kprobe *op;
+ 
++	/* Impossible to optimize ftrace-based kprobe */
++	if (kprobe_ftrace(p))
++		return;
++
+ 	/* For preparing optimization, jump_label_text_reserved() is called */
+ 	jump_label_lock();
+ 	mutex_lock(&text_mutex);
+@@ -915,9 +919,64 @@ static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+ }
+ #endif /* CONFIG_OPTPROBES */
+ 
++#ifdef KPROBES_CAN_USE_FTRACE
++static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
++	.regs_func = kprobe_ftrace_handler,
++	.flags = FTRACE_OPS_FL_SAVE_REGS,
++};
++static int kprobe_ftrace_enabled;
++
++/* Must ensure p->addr is really on ftrace */
++static int __kprobes prepare_kprobe(struct kprobe *p)
++{
++	if (!kprobe_ftrace(p))
++		return arch_prepare_kprobe(p);
++
++	return arch_prepare_kprobe_ftrace(p);
++}
++
++/* Caller must lock kprobe_mutex */
++static void __kprobes arm_kprobe_ftrace(struct kprobe *p)
++{
++	int ret;
++
++	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
++				   (unsigned long)p->addr, 0, 0);
++	WARN(ret < 0, "Failed to arm kprobe-ftrace at %p (%d)\n", p->addr, ret);
++	kprobe_ftrace_enabled++;
++	if (kprobe_ftrace_enabled == 1) {
++		ret = register_ftrace_function(&kprobe_ftrace_ops);
++		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
++	}
++}
++
++/* Caller must lock kprobe_mutex */
++static void __kprobes disarm_kprobe_ftrace(struct kprobe *p)
++{
++	int ret;
++
++	kprobe_ftrace_enabled--;
++	if (kprobe_ftrace_enabled == 0) {
++		ret = unregister_ftrace_function(&kprobe_ftrace_ops);
++		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
++	}
++	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
++			   (unsigned long)p->addr, 1, 0);
++	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n", p->addr, ret);
++}
++#else	/* !KPROBES_CAN_USE_FTRACE */
++#define prepare_kprobe(p)	arch_prepare_kprobe(p)
++#define arm_kprobe_ftrace(p)	do {} while (0)
++#define disarm_kprobe_ftrace(p)	do {} while (0)
++#endif
++
+ /* Arm a kprobe with text_mutex */
+ static void __kprobes arm_kprobe(struct kprobe *kp)
+ {
++	if (unlikely(kprobe_ftrace(kp))) {
++		arm_kprobe_ftrace(kp);
++		return;
++	}
+ 	/*
+ 	 * Here, since __arm_kprobe() doesn't use stop_machine(),
+ 	 * this doesn't cause deadlock on text_mutex. So, we don't
+@@ -929,11 +988,15 @@ static void __kprobes arm_kprobe(struct kprobe *kp)
+ }
+ 
+ /* Disarm a kprobe with text_mutex */
+-static void __kprobes disarm_kprobe(struct kprobe *kp)
++static void __kprobes disarm_kprobe(struct kprobe *kp, bool reopt)
+ {
++	if (unlikely(kprobe_ftrace(kp))) {
++		disarm_kprobe_ftrace(kp);
++		return;
++	}
+ 	/* Ditto */
+ 	mutex_lock(&text_mutex);
+-	__disarm_kprobe(kp, true);
++	__disarm_kprobe(kp, reopt);
+ 	mutex_unlock(&text_mutex);
+ }
+ 
+@@ -1343,6 +1406,26 @@ static __kprobes int check_kprobe_address_safe(struct kprobe *p,
+ 					       struct module **probed_mod)
+ {
+ 	int ret = 0;
++	unsigned long ftrace_addr;
++
++	/*
++	 * If the address is located on a ftrace nop, set the
++	 * breakpoint to the following instruction.
++	 */
++	ftrace_addr = ftrace_location((unsigned long)p->addr);
++	if (ftrace_addr) {
++#ifdef KPROBES_CAN_USE_FTRACE
++		/* Given address is not on the instruction boundary */
++		if ((unsigned long)p->addr != ftrace_addr)
++			return -EILSEQ;
++		/* break_handler (jprobe) can not work with ftrace */
++		if (p->break_handler)
++			return -EINVAL;
++		p->flags |= KPROBE_FLAG_FTRACE;
++#else	/* !KPROBES_CAN_USE_FTRACE */
++		return -EINVAL;
++#endif
++	}
+ 
+ 	jump_label_lock();
+ 	preempt_disable();
+@@ -1350,7 +1433,6 @@ static __kprobes int check_kprobe_address_safe(struct kprobe *p,
+ 	/* Ensure it is not in reserved area nor out of text */
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+-	    ftrace_text_reserved(p->addr, p->addr) ||
+ 	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		ret = -EINVAL;
+ 		goto out;
+@@ -1422,7 +1504,7 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 	}
+ 
+ 	mutex_lock(&text_mutex);	/* Avoiding text modification */
+-	ret = arch_prepare_kprobe(p);
++	ret = prepare_kprobe(p);
+ 	mutex_unlock(&text_mutex);
+ 	if (ret)
+ 		goto out;
+@@ -1480,7 +1562,7 @@ static struct kprobe *__kprobes __disable_kprobe(struct kprobe *p)
+ 
+ 		/* Try to disarm and disable this/parent probe */
+ 		if (p == orig_p || aggr_kprobe_disabled(orig_p)) {
+-			disarm_kprobe(orig_p);
++			disarm_kprobe(orig_p, true);
+ 			orig_p->flags |= KPROBE_FLAG_DISABLED;
+ 		}
+ 	}
+@@ -2078,10 +2160,11 @@ static void __kprobes report_probe(struct seq_file *pi, struct kprobe *p,
+ 
+ 	if (!pp)
+ 		pp = p;
+-	seq_printf(pi, "%s%s%s\n",
++	seq_printf(pi, "%s%s%s%s\n",
+ 		(kprobe_gone(p) ? "[GONE]" : ""),
+ 		((kprobe_disabled(p) && !kprobe_gone(p)) ?  "[DISABLED]" : ""),
+-		(kprobe_optimized(pp) ? "[OPTIMIZED]" : ""));
++		(kprobe_optimized(pp) ? "[OPTIMIZED]" : ""),
++		(kprobe_ftrace(pp) ? "[FTRACE]" : ""));
+ }
+ 
+ static void __kprobes *kprobe_seq_start(struct seq_file *f, loff_t *pos)
+@@ -2160,14 +2243,12 @@ static void __kprobes arm_all_kprobes(void)
+ 		goto already_enabled;
+ 
+ 	/* Arming kprobes doesn't optimize kprobe itself */
+-	mutex_lock(&text_mutex);
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		head = &kprobe_table[i];
+ 		hlist_for_each_entry_rcu(p, node, head, hlist)
+ 			if (!kprobe_disabled(p))
+-				__arm_kprobe(p);
++				arm_kprobe(p);
+ 	}
+-	mutex_unlock(&text_mutex);
+ 
+ 	kprobes_all_disarmed = false;
+ 	printk(KERN_INFO "Kprobes globally enabled\n");
+@@ -2195,15 +2276,13 @@ static void __kprobes disarm_all_kprobes(void)
+ 	kprobes_all_disarmed = true;
+ 	printk(KERN_INFO "Kprobes globally disabled\n");
+ 
+-	mutex_lock(&text_mutex);
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		head = &kprobe_table[i];
+ 		hlist_for_each_entry_rcu(p, node, head, hlist) {
+ 			if (!arch_trampoline_kprobe(p) && !kprobe_disabled(p))
+-				__disarm_kprobe(p, false);
++				disarm_kprobe(p, false);
+ 		}
+ 	}
+-	mutex_unlock(&text_mutex);
+ 	mutex_unlock(&kprobe_mutex);
+ 
+ 	/* Wait for disarming all kprobes by optimizer */
