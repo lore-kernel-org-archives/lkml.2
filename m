@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab2HUSIQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:08:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59439 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab2HUSIN (ORCPT
+	id S1758328Ab2HUSMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:12:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14643 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab2HUSMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:08:13 -0400
-Message-ID: <5033CE8A.5090705@wwwdotorg.org>
-Date: Tue, 21 Aug 2012 12:08:10 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
-        Jens Axboe <axboe@kernel.dk>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: root=PARTUUID for MBR/NT disk signatures?
-References: <502EC16C.4030007@wwwdotorg.org> <20120820182254.GQ24861@google.com> <50328258.9030800@wwwdotorg.org> <CABqD9hY-Z9uBcYyeCa=8f8eeXkGNjPKxbwpMPi3vs3776vF6iQ@mail.gmail.com>
-In-Reply-To: <CABqD9hY-Z9uBcYyeCa=8f8eeXkGNjPKxbwpMPi3vs3776vF6iQ@mail.gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Aug 2012 14:12:16 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=qkHp1cYU9ngA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=A_osGyS-vk0A:10 a=meVymXHHAAAA:8 a=KNaezN3EGSPTaKAtNlcA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1345572733.5069.9.camel@gandalf.local.home>
+Subject: Re: Using random in interrupts for RT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
+        RT <linux-rt-users@vger.kernel.org>, Theodore Tso <tedtso@gmail.com>
+Date: Tue, 21 Aug 2012 14:12:13 -0400
+In-Reply-To: <1344954649.6724.13.camel@gandalf.stny.rr.com>
+References: <1344954649.6724.13.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 10:47 PM, Will Drewry wrote:
-> On Mon, Aug 20, 2012 at 1:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 08/20/2012 12:22 PM, Tejun Heo wrote:
->>> Hello,
->>>
->>> On Fri, Aug 17, 2012 at 04:10:52PM -0600, Stephen Warren wrote:
->>>> I was considering extending the kernel command-line option
->>>> root=PARTUUID= to also support MBR (NT disk signatures). I was thinking
->>>> of a syntax along the lines of:
->>>>
->>>> root=PARTUUID=UUUUUUUU-PP[/PARTNROFF=%d]
->>>>
->>>> ... where UUUUUUUU is the hex representation of the NT disk signature,
->>>> and PP is the hex representation of the partition number. Like GPT,
->>>> /PARTNROFF could be used too if desired.
->>>>
->>>> Related, I was thinking of changing struct partition_meta_info's uuid
->>>> field to be a string, so that it could simply be strcmp'd against the
->>>> UUID value on the kernel command-line. That way, the type of the UUID is
->>>> irrelevant.
->>>>
->>>> Does anyone have any objection to that?
->>>
->>> Wouldn't that be able to break setups which work currently?
->>
->> I don't believe so:
->>
->> Since the newly supported UUID syntax wouldn't ever match any EFI UUID
->> (the lengths differ in all cases), I don't believe the new syntax would
->> affect behavior for any existing usage.
->>
->> Obviously, part_efi.c would be modified to initialize struct
->> partition_meta_info's uuid field to the appropriate string
->> representation of the UUID so that the str(case)cmp would still succeed
->> for existing command-lines. I ended up coding up that part of the change
->> late Friday, and the feature was certainly still working OK.
+On Tue, 2012-08-14 at 10:30 -0400, Steven Rostedt wrote:
+> Thomas,
 > 
-> Functionally, I suspect this will work fine, but I am concerned that
-> it is a bad move from an efficiency perspective (not unfixable
-> though).  Right now, the user-supplied value is converted from
-> string-uuid to packed-uuid.  This is then memcmp'd across any and all
-> partitions - be it 2 or 200 - across all attached storage.  If we move
-> to a pure string, then we end up needing to unpack every packed UUID
-> at disk scan time (or search, depending on impl) rather than just the
-> one user supplied value.
+> Ben Hutchings asked me if we still need "genirq: Disable random call on
+> preempt-rt" for -rt? With commit 902c098a366 "random: use lockless
+> techniques in the interrupt path" there is no more locks used. But does
+> it still produce high latencies?
 
-The EFI partition code actually does the following already:
+Ben,
 
-1) Unpack the UUID from the binary on-disk representation to a temporary
-string.
-2) Repack the temporary string into the internal UUID buffer.
+Looks that the #ifndef can't be removed just yet. The code is not
+totally lockless...
 
-The comments imply this is in order to do endian conversions.
 
-Switching the internal representation to a string avoids step (2) above,
-plus avoids having to pack the string on the kernel command-line into a
-binary UUID before the comparison. I doubt the difference between memcmp
-vs. strcasecmp is worth considering. So, I think it's overall a win.
+add_interrupt_randomness ->
+	credit_entropy_bits ->
+		kill_fasync ->
+			kill_fasync_rcu ->
+				spin_lock_irqsave(&fa->fa_lock, flags)
+
+to make things worse, that spinlock turns into a mutex on -rt, so it may
+crash the box if triggered.
+
+-- Steve
+
+
