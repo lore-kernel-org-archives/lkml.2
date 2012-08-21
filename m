@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab2HUBqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 21:46:19 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:57598 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab2HUBqP (ORCPT
+	id S1754699Ab2HUBrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 21:47:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41647 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab2HUBrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 21:46:15 -0400
-Message-ID: <5032E85D.8020404@linaro.org>
-Date: Mon, 20 Aug 2012 18:46:05 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org
-Subject: Re: BUG: NULL pointer dereference in shmem_evict_inode()
-References: <20120821010403.GA12018@localhost> <5032E021.2030400@linaro.org> <20120821013123.GA12104@localhost>
-In-Reply-To: <20120821013123.GA12104@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082101-2398-0000-0000-0000099EEF58
+	Mon, 20 Aug 2012 21:47:33 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] Fix typo "endianess" in printk
+Date: Tue, 21 Aug 2012 10:47:27 +0900
+Message-Id: <1345513647-21810-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc3.4.g91e4bfe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 06:31 PM, Fengguang Wu wrote:
-> On Mon, Aug 20, 2012 at 06:10:57PM -0700, John Stultz wrote:
->> On 08/20/2012 06:04 PM, Fengguang Wu wrote:
->>> Hi John,
->>>
->>> The below oops happens in v3.5..v3.6-rc2 and it's bisected down to commit
->>> 2a8c0883c ("time: Move xtime_nsec adjustment underflow handling timekeeping_adjust").
->>>
->>> However linux-next is working fine. Do you have any fixes not yet sent to Linus?
->> Yea, there's a fix pending in tip/timers/urgent
->> (4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b) to catch crazy values
->> from settimeofday or the cmos clock that might overflow a ktime_t.
-> That's great!
->
->> Out of curiosity, how are you triggering/reproducing this?
-> I boot test lots of randconfig kernels in kvm, and this oops shows up
-> several times in one ranconfig and some of the test boxes. I find it
-> pretty hard to reproduce, but managed to bisect it down by counting
-> 1000 good boots as bisect success and running dozens of KVM instances
-> in parallel in several test boxes to speed up the progress. Here is one step:
+Correct spelling typo "endianess" in various printk
 
-Oof.  That's an really impressive setup!
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/firewire/ohci.c                    | 2 +-
+ drivers/remoteproc/remoteproc_elf_loader.c | 4 ++--
+ fs/qnx6/inode.c                            | 2 +-
+ fs/qnx6/qnx6.h                             | 2 +-
+ scripts/basic/fixdep.c                     | 2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-That said, if this happens only at boot up, and you don't have systems 
-with crazy cmos values, I'm not sure I see how commit 
-4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b might fix this.  So that's not 
-very reassuring.
-
-As a tangent, I think this sort of big-data style testing is a really 
-great contribution, so thank you for setting up and doing all this work.
--john
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index c788dbd..86d3d10 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -329,7 +329,7 @@ module_param_named(quirks, param_quirks, int, 0644);
+ MODULE_PARM_DESC(quirks, "Chip quirks (default = 0"
+ 	", nonatomic cycle timer = "	__stringify(QUIRK_CYCLE_TIMER)
+ 	", reset packet generation = "	__stringify(QUIRK_RESET_PACKET)
+-	", AR/selfID endianess = "	__stringify(QUIRK_BE_HEADERS)
++	", AR/selfID endianness = "	__stringify(QUIRK_BE_HEADERS)
+ 	", no 1394a enhancements = "	__stringify(QUIRK_NO_1394A)
+ 	", disable MSI = "		__stringify(QUIRK_NO_MSI)
+ 	", TI SLLZ059 erratum = "	__stringify(QUIRK_TI_SLLZ059)
+diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
+index e1f89d6..0d36f94 100644
+--- a/drivers/remoteproc/remoteproc_elf_loader.c
++++ b/drivers/remoteproc/remoteproc_elf_loader.c
+@@ -66,13 +66,13 @@ rproc_elf_sanity_check(struct rproc *rproc, const struct firmware *fw)
+ 		return -EINVAL;
+ 	}
+ 
+-	/* We assume the firmware has the same endianess as the host */
++	/* We assume the firmware has the same endianness as the host */
+ # ifdef __LITTLE_ENDIAN
+ 	if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
+ # else /* BIG ENDIAN */
+ 	if (ehdr->e_ident[EI_DATA] != ELFDATA2MSB) {
+ # endif
+-		dev_err(dev, "Unsupported firmware endianess\n");
++		dev_err(dev, "Unsupported firmware endianness\n");
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/fs/qnx6/inode.c b/fs/qnx6/inode.c
+index 1b37fff..9bdfd71 100644
+--- a/fs/qnx6/inode.c
++++ b/fs/qnx6/inode.c
+@@ -285,7 +285,7 @@ static struct buffer_head *qnx6_check_first_superblock(struct super_block *s,
+ 		if (fs32_to_cpu(sbi, sb->sb_magic) == QNX6_SUPER_MAGIC) {
+ 			/* we got a big endian fs */
+ 			QNX6DEBUG((KERN_INFO "qnx6: fs got different"
+-					" endianess.\n"));
++					" endianness.\n"));
+ 			return bh;
+ 		} else
+ 			sbi->s_bytesex = BYTESEX_LE;
+diff --git a/fs/qnx6/qnx6.h b/fs/qnx6/qnx6.h
+index b00fcc9..81b7224 100644
+--- a/fs/qnx6/qnx6.h
++++ b/fs/qnx6/qnx6.h
+@@ -31,7 +31,7 @@ struct qnx6_sb_info {
+ 	int			s_blks_off;	/* blkoffset fs-startpoint */
+ 	int			s_ptrbits;	/* indirect pointer bitfield */
+ 	unsigned long		s_mount_opt;	/* all mount options */
+-	int			s_bytesex;	/* holds endianess info */
++	int			s_bytesex;	/* holds endianness info */
+ 	struct inode *		inodes;
+ 	struct inode *		longfile;
+ };
+diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
+index cb1f50c..7f6425e 100644
+--- a/scripts/basic/fixdep.c
++++ b/scripts/basic/fixdep.c
+@@ -409,7 +409,7 @@ static void traps(void)
+ 	int *p = (int *)test;
+ 
+ 	if (*p != INT_CONF) {
+-		fprintf(stderr, "fixdep: sizeof(int) != 4 or wrong endianess? %#x\n",
++		fprintf(stderr, "fixdep: sizeof(int) != 4 or wrong endianness? %#x\n",
+ 			*p);
+ 		exit(2);
+ 	}
+-- 
+1.7.12.rc3.4.g91e4bfe
 
