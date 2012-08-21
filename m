@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab2HUFQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 01:16:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab2HUFQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 01:16:51 -0400
-Date: Tue, 21 Aug 2012 10:46:19 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Anthony Liguori <anthony@codemonkey.ws>,
-        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
-        "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH V2 0/6] virtio-trace: Support virtio-trace
-Message-ID: <20120821051619.GF29197@amit.redhat.com>
-References: <20120809123029.8542.38311.stgit@ltc189.sdl.hitachi.co.jp>
+	id S1752571Ab2HUFTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 01:19:51 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44541 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab2HUFTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 01:19:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120809123029.8542.38311.stgit@ltc189.sdl.hitachi.co.jp>
+In-Reply-To: <20120820205231.GG5779@fieldses.org>
+References: <1345282899-7534-1-git-send-email-linkinjeon@gmail.com>
+	<20120818132524.GW23464@ZenIV.linux.org.uk>
+	<87pq6op9zz.fsf@devron.myhome.or.jp>
+	<CAKYAXd_VyRg5PYjcYb_JtDeXHeMSRtwwT665hcMcf4WCer7a_Q@mail.gmail.com>
+	<20120820205231.GG5779@fieldses.org>
+Date: Tue, 21 Aug 2012 14:19:46 +0900
+Message-ID: <CAKYAXd8fkV5x454vtXvwM6LN3Hb2dLgemhJdNFKyxnwweNq75A@mail.gmail.com>
+Subject: Re: [PATCH 0/4] fat: fix ESTALE errors
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) 09 Aug 2012 [21:30:29], Yoshihiro YUNOMAE wrote:
-> Hi All,
-> 
-> The following patch set provides a low-overhead system for collecting kernel
-> tracing data of guests by a host in a virtualization environment.
+2012/8/21, J. Bruce Fields <bfields@fieldses.org>:
+> On Mon, Aug 20, 2012 at 01:19:51PM +0900, Namjae Jeon wrote:
+>> 2012/8/18, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>> > Al Viro <viro@ZenIV.linux.org.uk> writes:
+>> >
+>> >> On Sat, Aug 18, 2012 at 05:41:39AM -0400, Namjae Jeon wrote:
+>> >>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>> >>>
+>> >>> This patch-set eliminates the client side ESTALE errors when
+>> >>> a FAT partition exported over NFS has its dentries evicted
+>> >>> from the cache.
+>> >>>
+>> >>> One of the reasons for this error is lack of permanent inode
+>> >>> numbers on FAT which makes it difficult to construct persistent
+>> >>> file handles.This can be overcome by using the on-disk location
+>> >>> of the directory entries (i_pos) as the inode number.
+>> >>
+>> >> The hell it can.  You've just made them unstable on rename(2).
+>> >
+>> > As more hint. We can't use i_pos as the inode number.
+>> >
+>> > E.g. inode is unlinked but is still opened (orphaned inode), the dir
+>> > entry is free and you can create the inode on same i_pos. After that,
+>> > both inodes have same i_pos (so inode number).
+>> >
+>> > Thanks.
+>> Hi. Ogawa.
+>> Thanks for specific explanation. I will check it.
+>
+Hi Bruce.
+> Fo somebody that knows more about fat than me--is there really any hope
+> of making it play well with nfs?
 
-ACK this series.
+I think that this patch is only solution to fix estale issue from
+inode cache eviction.
+In case FAT - it makes use of iunique() to get unique inode number
+-which is just based upon getting an incremented value from unique
+counter variable. So, there is no way to reconstruct the inode based
+upon inode numbers - like in case of other filesystems
 
-I ran it through the virtio-serial test suite, and there's no
-regression in existing functionality.
+We can check it easily like this.
 
-I encourage you to check out the virtio-serial test suite[1] as well
-as the virtio-serial unit tests in the autotest[2] code, and
-contribute to them to add tests for the new functionality you've
-added.
+1. ls -al /directory on nfs client.
+2. echo 3 > /proc/sys/vm/drop_caches
+3. ls -al /directory on nfs client again. estale error will be occurred.
 
-[1]
-http://fedorapeople.org/cgit/amitshah/public_git/test-virtserial.git/
+There is no estale issue from reclaim with this patch.
 
-[2]
-https://github.com/autotest/autotest/blob/e91cd67b845b291622c8d079a8289c4b0cb1e6ae/client/tests/kvm/tests/virtio_console.py
-
-
-Thanks,
-
-		Amit
+And.. Hi Ogawa.
+I checked other filesystem about unlink - inode issue. but I found
+Ext4 have same issue.
+Although other filesysm is having this issue, Can we think It could be
+only FAT issue ?
+>
+> --b.
+>
