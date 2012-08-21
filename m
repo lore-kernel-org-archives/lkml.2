@@ -1,88 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab2HUDiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 23:38:14 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35241 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab2HUDiL (ORCPT
+	id S1751480Ab2HUDxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 23:53:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40355 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab2HUDxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 23:38:11 -0400
-Message-ID: <5033029A.2030201@linaro.org>
-Date: Mon, 20 Aug 2012 20:38:02 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Mon, 20 Aug 2012 23:53:48 -0400
+Message-ID: <50330482.4070204@gmail.com>
+Date: Tue, 21 Aug 2012 11:46:10 +0800
+From: wujianguo <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Andreas Schwab <schwab@linux-m68k.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 4/8] time: Condense timekeeper.xtime into xtime_sec
-References: <1342156917-25092-1-git-send-email-john.stultz@linaro.org> <1342156917-25092-5-git-send-email-john.stultz@linaro.org> <m2fw7ilhnm.fsf@igel.home> <503288ED.10306@linaro.org> <m2fw7h4ab5.fsf@igel.home> <503296C1.4070906@linaro.org> <m2boi549ed.fsf@igel.home>
-In-Reply-To: <m2boi549ed.fsf@igel.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: tony.luck@intel.com, gregkh@suse.de, kay.sievers@vrfy.org,
+        minchan.kim@gmail.com, mgorman@suse.de,
+        Christoph Lameter <cl@linux.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-ia64@vger.kernel.org, wency@cn.fujitsu.com,
+        akpm@linux-foundation.org, yinghai@kernel.org, liuj97@gmail.com,
+        jiang.liu@huawei.com, qiuxishi@huawei.com, wujianguo@huawei.com,
+        guohanjun@huawei.com
+Subject: [PATCH] mm/ia64: fix a memory block size bug
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082103-2356-0000-0000-00000173D4E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 01:04 PM, Andreas Schwab wrote:
-> John Stultz <john.stultz@linaro.org> writes:
->
->> Huh.  Yea, that looks fine.  And without the
->> __timekeeping_inject_sleeptime() call, the system resumed ok?
-> Yes, it does.
+From: Jianguo Wu <wujianguo@huawei.com>
 
-So I'm mostly still stumped on this. But I did find one possible related 
-bugfix that maybe you can try?
+Hi all,
+	I found following definition in include/linux/memory.h, in my IA64
+platform, SECTION_SIZE_BITS is equal to 32, and MIN_MEMORY_BLOCK_SIZE will be 0.
+	#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
 
-Let me know if the patch below dodges the problem, and if not, please 
-send me the JDB printk output.
-(if the resume hangs without any output, add a "return;" before the 
-tk_xtime_add() call between the JDB printks).
+	Because MIN_MEMORY_BLOCK_SIZE is 32bits, so MIN_MEMORY_BLOCK_SIZE(1 << 32)
+will equal to 0. This will cause wrong system memory infomation in sysfs. I think
+it should be:
+	#define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
 
-thanks
--john
+linux-drf:/sys/devices/system/memory # ll
+total 0
+-r--r--r-- 1 root root 65536 Aug 20 02:35 block_size_bytes
+drwxr-xr-x 3 root root     0 Aug 20 02:19 memory0
+drwxr-xr-x 2 root root     0 Aug 20 02:35 power
+-rw-r--r-- 1 root root 65536 Aug 20 02:35 uevent
+
+linux-drf:/sys/devices/system/memory # cat block_size_bytes
+0
+
+linux-drf:/sys/devices/system/memory/memory0 # cat *
+8000000000000000
+cat: node0: Is a directory
+cat: node1: Is a directory
+cat: node2: Is a directory
+cat: node3: Is a directory
+0
+8000000000000000
+cat: power: Is a directory
+1
+online
+cat: subsystem: Is a directory
+
+	And "echo offline > memory0/state" will cause following call trace:
+
+kernel BUG at mm/memory_hotplug.c:885!
+sh[6455]: bugcheck! 0 [1]
+
+Pid: 6455, CPU 0, comm:                   sh
+psr : 0000101008526030 ifs : 8000000000000fa4 ip  : [<a0000001008c40f0>]    Not tainted (3.6.0-rc1)
+ip is at offline_pages+0x210/0xee0
+unat: 0000000000000000 pfs : 0000000000000fa4 rsc : 0000000000000003
+rnat: a0000001008f2d50 bsps: 0000000000000000 pr  : 65519a96659a9565
+ldrs: 0000000000000000 ccv : 0000010b9263f310 fpsr: 0009804c0270033f
+csd : 0000000000000000 ssd : 0000000000000000
+b0  : a0000001008c40f0 b6  : a000000100473980 b7  : a0000001000106d0
+f6  : 000000000000000000000 f7  : 1003e0000000085c9354c
+f8  : 1003e0044b82fa09b5a53 f9  : 1003e000000d65cd62abf
+f10 : 1003efd02efdec682803d f11 : 1003e0000000000000042
+r1  : a00000010152c2e0 r2  : 0000000000006ada r3  : 000000000000fffe
+r8  : 0000000000000026 r9  : a00000010121cc18 r10 : a0000001013309f0
+r11 : 65519a96659a19e9 r12 : e00000070a91fdf0 r13 : e00000070a910000
+r14 : 0000000000006ada r15 : 0000000000004000 r16 : 000000006ad8356c
+r17 : a0000001019a525e r18 : 0000000000007fff r19 : 0000000000000000
+r20 : 0000000000006ad6 r21 : 0000000000006ad6 r22 : a00000010133bec8
+r23 : 0000000000006ad4 r24 : 0000000000000002 r25 : 8200000000260038
+r26 : 00000000000004f9 r27 : 00000000000004f8 r28 : 000000000001cf98
+r29 : 0000000000000038 r30 : a0000001019a5ae0 r31 : 000000000001cf60
+
+Call Trace:
+ [<a0000001000163e0>] show_stack+0x80/0xa0
+                                sp=e00000070a91f9b0 bsp=e00000070a9115e0
+ [<a000000100016a40>] show_regs+0x640/0x920
+                                sp=e00000070a91fb80 bsp=e00000070a911588
+ [<a000000100040590>] die+0x190/0x2c0
+                                sp=e00000070a91fb90 bsp=e00000070a911548
+ [<a000000100040710>] die_if_kernel+0x50/0x80
+                                sp=e00000070a91fb90 bsp=e00000070a911518
+ [<a0000001008f8030>] ia64_bad_break+0x3d0/0x6e0
+                                sp=e00000070a91fb90 bsp=e00000070a9114f0
+ [<a00000010000c0c0>] ia64_native_leave_kernel+0x0/0x270
+                                sp=e00000070a91fc20 bsp=e00000070a9114f0
+ [<a0000001008c40f0>] offline_pages+0x210/0xee0
+                                sp=e00000070a91fdf0 bsp=e00000070a9113c8
+ [<a00000010022d580>] alloc_pages_current+0x180/0x2a0
+                                sp=e00000070a91fe20 bsp=e00000070a9113a
+
+This patch is trying to fix the bug.
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+---
+ include/linux/memory.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/memory.h b/include/linux/memory.h
+index 1ac7f6e..ff9a9f8 100644
+--- a/include/linux/memory.h
++++ b/include/linux/memory.h
+@@ -19,7 +19,7 @@
+ #include <linux/compiler.h>
+ #include <linux/mutex.h>
+
+-#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
++#define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
+
+ struct memory_block {
+ 	unsigned long start_section_nr;
+-- 
+1.7.6.1
 
 
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index e16af19..1a9b9c5 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -115,6 +115,7 @@ static void tk_xtime_add(struct timekeeper *tk, const struct timespec *ts)
-  {
-  	tk->xtime_sec += ts->tv_sec;
-  	tk->xtime_nsec += (u64)ts->tv_nsec << tk->shift;
-+	tk_normalize_xtime(tk);
-  }
-  
-  static void tk_set_wall_to_mono(struct timekeeper *tk, struct timespec wtm)
-@@ -695,9 +696,22 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
-  					"sleep delta value!\n");
-  		return;
-  	}
-+
-+	printk("JDB: pre xt %ld:%ld  wtm: %ld:%ld st: %ld:%ld\n",
-+		tk_xtime(tk).tv_sec, tk_xtime(tk).tv_nsec,
-+		tk->wall_to_monotonic.tv_sec,tk->wall_to_monotonic.tv_nsec,
-+		tk->total_sleep_time.tv_sec, tk->total_sleep_time.tv_nsec);
-+	printk("JDB: Adding %ld:%ld\n", delta->tv_sec, delta->tv_nsec);
-+
-  	tk_xtime_add(tk, delta);
-  	tk_set_wall_to_mono(tk, timespec_sub(tk->wall_to_monotonic, *delta));
-  	tk_set_sleep_time(tk, timespec_add(tk->total_sleep_time, *delta));
-+
-+	printk("JDB: post xt %ld:%ld  wtm: %ld:%ld st: %ld:%ld\n",
-+		tk_xtime(tk).tv_sec, tk_xtime(tk).tv_nsec,
-+		tk->wall_to_monotonic.tv_sec,tk->wall_to_monotonic.tv_nsec,
-+		tk->total_sleep_time.tv_sec, tk->total_sleep_time.tv_nsec);
-+
-  }
-  
-  /**
+
+.
+
+
 
