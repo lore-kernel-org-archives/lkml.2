@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab2HUBV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Aug 2012 21:21:27 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54952 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab2HUBVY (ORCPT
+	id S1752203Ab2HUB1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Aug 2012 21:27:31 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:42065 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2HUB12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Aug 2012 21:21:24 -0400
+	Mon, 20 Aug 2012 21:27:28 -0400
+X-IronPort-AV: E=Sophos;i="4.77,799,1336348800"; 
+   d="scan'208";a="14095093"
+From: Attilio Rao <attilio.rao@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <xen-devel@lists.xensource.com>
+CC: Attilio Rao <attilio.rao@citrix.com>
+Subject: [PATCH 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start and x86_init.paging.pagetable_setup_done PVOPS and document the semantic
+Date: Tue, 21 Aug 2012 02:14:01 +0100
+Message-ID: <1345511646-12427-1-git-send-email-attilio.rao@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1345477150-25933-1-git-send-email-swarren@wwwdotorg.org>
-References: <1345477150-25933-1-git-send-email-swarren@wwwdotorg.org>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 21 Aug 2012 09:21:03 +0800
-Message-ID: <CAF+7xWkbB3N5BA=mJNxfLLuZhgtLWG2ugdbF5a+WoBiWa9mwQQ@mail.gmail.com>
-Subject: Re: [PATCH] regulator: max8907: fix compile error when !CONFIG_OF
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Gyungoh Yoo <jack.yoo@maxim-ic.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +
-> +static inline struct regulator_init_data *match_init_data(int index)
-> +{
-> +       return NULL;
-> +}
-> +
+Currently the definition of x86_init.paging.pagetable_setup_start and
+x86_init.paging.pagetable_setup_done is twisted and not really well
+defined (in terms of prototypes desired). More specifically:
+pagetable_setup_start:
+ * it is a nop on x86_32
+ * it is a nop for the XEN case
+ * cleans up the boot time page table in the x86_64 case
 
-Now match_init_data() returns NULL if !CONFIG_OF, so idata may be NULL.
+pagetable_setup_done:
+ * it is a nop on x86_32
+ * sets up accessor functions for pagetable manipulation, for the
+   XEN case
+ * it is a nop on x86_64
 
-Then I think we may hit NULL pointer dereference here:
+Most of this logic can be skipped by creating a new PVOPS that can handle
+pagetable setup and pre/post operations on it.
+The new PVOPS must be called only once, during boot-time setup and
+after the direct mapping for physical memory is available.
 
-                switch (pmic->desc[i].id) {
-                case MAX8907_MBATT:
-                        mbatt_rail_name = idata->constraints.name;
-                        break;
+Attilio Rao (5):
+  XEN: Remove the base argument from
+    x86_init.paging.pagetable_setup_done PVOPS
+  XEN: Remove the base argument from
+    x86_init.paging.pagetable_setup_start PVOPS
+  X86/XEN: Introduce the x86_init.paging.pagetable_init() PVOPS
+  X86/XEN: Retire now unused x86_init.paging.pagetable_setup_start and
+    x86_init.paging.pagetable_setup_done PVOPS
+  X86/XEN: Add few lines explaining simple semantic for
+    x86_init.paging.pagetable_init PVOPS
 
-Regards,
-Axel
+ arch/x86/include/asm/pgtable_types.h |    6 ++----
+ arch/x86/include/asm/x86_init.h      |   11 +++++++----
+ arch/x86/kernel/setup.c              |    4 +---
+ arch/x86/kernel/x86_init.c           |    4 +---
+ arch/x86/mm/init_32.c                |   12 ++++++------
+ arch/x86/xen/mmu.c                   |   18 +++++++-----------
+ 6 files changed, 24 insertions(+), 31 deletions(-)
+
+-- 
+1.7.2.5
+
