@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab2HUNLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 09:11:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58739 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab2HUNLW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 09:11:22 -0400
-Date: Tue, 21 Aug 2012 10:11:16 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jani Nikula <jani.nikula@intel.com>,
-        Yang Guang <guang.a.yang@intel.com>
-Subject: Re: [ 04/16] drm/i915: correctly order the ring init sequence
-Message-ID: <20120821131115.GA3132@herton-Z68MA-D2H-B3>
-References: <20120820035457.653002510@linuxfoundation.org>
- <20120820035458.292084336@linuxfoundation.org>
- <20120821051318.GB3625@herton-Z68MA-D2H-B3>
- <CAKMK7uFpj+qctqKOk6PJqRn_7XAiDbE7Bv2r2VseGyUHUTD2mA@mail.gmail.com>
+	id S1752658Ab2HUNLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 09:11:49 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:58748 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470Ab2HUNLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 09:11:46 -0400
+Date: Tue, 21 Aug 2012 15:11:36 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH -v2 0/4] Persistent events
+Message-ID: <20120821131136.GC21432@aftab.osrc.amd.com>
+References: <1345139123-15212-1-git-send-email-bp@amd64.org>
+ <1345545050.23018.95.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uFpj+qctqKOk6PJqRn_7XAiDbE7Bv2r2VseGyUHUTD2mA@mail.gmail.com>
+In-Reply-To: <1345545050.23018.95.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 08:42:35AM +0200, Daniel Vetter wrote:
-> On Tue, Aug 21, 2012 at 7:13 AM, Herton Ronaldo Krzesinski
-> <herton.krzesinski@canonical.com> wrote:
-> > I had the same problem as on 3.2 with this change, i915 stopped working
-> > unable to initialize render ring, eg. on one of the boots here:
-> > [drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f003 head 00001020 tail 00000000 start 00001000
-> >
-> > But unlike I was expecting as with 3.2 case, picking commit
-> > f01db988ef6f6c70a6cc36ee71e4a98a68901229 ("drm/i915: Add wait_for in
-> > init_ring_common") here isn't enough, it continues to fail even if I
-> > try to increase the delay in the wait_for, I'm not sure why yet... may
-> > be something else is going on, or 3.0 has something else missing.
-> >
-> > Also the same proposed patch for 3.4.10 gives the same problem, but
-> > picking f01db988ef6f6c70a6cc36ee71e4a98a68901229 there made things work
-> > again like happend on first 3.2.28 proposed update. Only 3.0
-> > is misteriously failing either way here.
+On Tue, Aug 21, 2012 at 12:30:50PM +0200, Peter Zijlstra wrote:
+> Good progress there, there's still a few things though:
 > 
-> I guess we're missing something then still in the stable backports for
-> 3.0. Herton, what machine do you have exaclty (lspci -nn)?
+>  - the point also raised by Steven, I'm pretty sure that the placing of
+>    the debugfs files unfortunate. I would much rather see something
+>    like /debug/perf/persistent/$foo, also dropping your
+>    perf_event_desc::dir_name.
 
-It's a G41 based board:
+Ok, how do we want to do the per-CPU layout there? Like this:
 
-00:00.0 Host bridge [0600]: Intel Corporation 4 Series Chipset DRAM Controller [8086:2e30] (rev 03)
-00:02.0 VGA compatible controller [0300]: Intel Corporation 4 Series Chipset Integrated Graphics Controller [8086:2e32] (rev 03)
-00:1b.0 Audio device [0403]: Intel Corporation N10/ICH 7 Family High Definition Audio Controller [8086:27d8] (rev 01)
-00:1c.0 PCI bridge [0604]: Intel Corporation N10/ICH 7 Family PCI Express Port 1 [8086:27d0] (rev 01)
-00:1c.2 PCI bridge [0604]: Intel Corporation N10/ICH 7 Family PCI Express Port 3 [8086:27d4] (rev 01)
-00:1d.0 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #1 [8086:27c8] (rev 01)
-00:1d.1 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #2 [8086:27c9] (rev 01)
-00:1d.2 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #3 [8086:27ca] (rev 01)
-00:1d.3 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB UHCI Controller #4 [8086:27cb] (rev 01)
-00:1d.7 USB Controller [0c03]: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller [8086:27cc] (rev 01)
-00:1e.0 PCI bridge [0604]: Intel Corporation 82801 PCI Bridge [8086:244e] (rev e1)
-00:1f.0 ISA bridge [0601]: Intel Corporation 82801GB/GR (ICH7 Family) LPC Interface Bridge [8086:27b8] (rev 01)
-00:1f.2 IDE interface [0101]: Intel Corporation N10/ICH7 Family SATA IDE Controller [8086:27c0] (rev 01)
-00:1f.3 SMBus [0c05]: Intel Corporation N10/ICH 7 Family SMBus Controller [8086:27da] (rev 01)
-02:00.0 Ethernet controller [0200]: Atheros Communications AR8151 v1.0 Gigabit Ethernet [1969:1073] (rev c0)
+/debug/perf/persistent/mce_record0
+/debug/perf/persistent/mce_record1
+...
 
-> 
-> Greg, I think for now it's better if you hold off on merging this
-> patch to 3.0 until this is sorted out.
-> 
-> Thanks, Daniel
-> -- 
-> Daniel Vetter
-> daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
-> 
+or rather
+
+/debug/perf/persistent/cpu0/mce_record
+/debug/perf/persistent/cpu1/mce_record
+
+?
+
+The thing is, I'm not sure we want to make persistent events per-CPU
+implicitly. If yes, then the second layout would fit better. Hmm.
+
+>  - I would make perf_add_persistent_on_cpu() static and create
+>  something like perf_add_persistent() which iterates all CPUs and
+>  creates: "%s-%04d", perf_event_desc::fname, cpu.
+
+Ok.
+
+> This needs a little extra for cpu-hotplug, not sure what to do there.
+
+get/put_online_cpus()?
+
+and then maybe check whether some of the CPUs are offline and warn if
+so?
+
+>  - related to the first point, by not tying them to actual events
+>  you can create a persistent 'event' that contains multiple events.
+>  Its quite possible to create multiple kernel events and use the
+>  equivalent of PERF_EVENT_IOC_SET_OUTPUT on them to the exposed FD.
+
+Hm, interesting.
+
+So, in that case, the persistent thing would have a per-CPU buffer and
+a file descriptor connected to it and one would be able to add events
+which would log into the per-CPU buffer. Ok.
+
+>  - It might be good to provide means of changing the persistent
+>  event's buffer size, or maybe even 'destroy' persistent buffers.
+
+ioctl? Or something else?
+
+Thanks.
 
 -- 
-[]'s
-Herton
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
