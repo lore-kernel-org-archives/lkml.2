@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab2HUXN0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 19:13:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32527 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab2HUXNX (ORCPT
+	id S1752891Ab2HUXan (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 19:30:43 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62012 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab2HUXal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 19:13:23 -0400
-X-Authority-Analysis: v=2.0 cv=cpwZYiEi c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=9Ov11F4PKAkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=6q7HoQCPHIYA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=v9sqg8J54hmLim10IC8A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1345590800.5069.17.camel@gandalf.local.home>
-Subject: [PATCH] tools lib traceevent: Modify header to work in C++ programs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Date: Tue, 21 Aug 2012 19:13:20 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Aug 2012 19:30:41 -0400
+Date: Tue, 21 Aug 2012 16:29:53 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Tejun Heo <tj@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Lennart Poettering <lpoetter@redhat.com>, aris@redhat.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v6 3/4] cgroup: add xattr support
+In-Reply-To: <20120821214856.GC32596@google.com>
+Message-ID: <alpine.LSU.2.00.1208211606580.2383@eggly.anvils>
+References: <20120816174453.154143248@napanee.usersys.redhat.com> <20120816174454.087507415@napanee.usersys.redhat.com> <20120816200006.GG24861@google.com> <50340110.50607@redhat.com> <20120821214856.GC32596@google.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 21 Aug 2012, Tejun Heo wrote:
+> On Tue, Aug 21, 2012 at 11:43:44PM +0200, Lennart Poettering wrote:
+> > >I'm not against this but unsure whether using kmem is enough for the
+> > >suggested use case.  Lennart, would this suit systemd?  How much
+> > >metadata are we talking about?
+> > 
+> > Just small things, like values, PIDs, i.e. a few 100 bytes or so per
+> > cgroup should be more than sufficient for our needs.
 
-Arnaldo,
+That is reasonable.
 
-As the libtraceevent library is also used by powertop, and that is
-written in *cough* C++ *cough*, we need to make sure that the headers do
-not have any C++ reserved words. Please apply this patch. Thanks.
+> 
+> Alright, then.  I think there's gonna be one more round to address
+> Hugh's comments.  Hugh, how should this be routed?  Is there some git
+> branch that tmpfs changes can go in so that cgroup tree can pull?
 
--- Steve
+No git tree, but we can easily handle it in one of two ways.
 
+include/linux/shmem_fs.h and mm/shmem.c usually go to Linus from Andrew
+from his mmotm tree (which includes and is included in linux-next,
+by some magic escaping infinite recursion).
 
-Steven Rostedt (1):
-      tools lib traceevent: Modify header to work in C++ programs
+Are we expecting Aristeu+Zefan's simple_xattr patches to go into 3.7?
+I don't have anything planned for shmem.c for 3.7 beyond a bugfix,
+which shouldn't interact with the simple_xattr changes at all
+(I could remove info->lock, but will not do so this time around,
+precisely so as not to interfere with those patches).
 
-----
- tools/lib/traceevent/event-parse.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
----------------------------
-commit 79f481dbd7cb14e33113180b74e09e742cd839f9
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Sat May 7 19:04:01 2011 -0400
+So it should be perfectly workable for you to take Aristeu+Zefan's
+shmem patches into your cgroup tree, then any further mods from
+mmotm will get layered on top.
 
-tools lib traceevent: Modify header to work in C++ programs
+But if you prefer to leave shmem.c changes to Andrew, then it would
+also be perfectly workable for Aristeu to split the 1/4 into two:
+one for you which updates fs/xattr.c and include/linux/xattr.h with
+simple_xattr code stolen from mm/shmem.c and include/linux/shmem_fs.h;
+and one for Andrew which updates mm/shmem.c and include/linux/shmem_fs.h
+to delete its shmem_xattr stuff and use simple_xattr interfaces instead.
 
-Replace keyword "private" from event-parse.h to allow it to be
-used in C++ programs.
+Either approach is fine with me.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 5772ad8..c28713b 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -49,7 +49,7 @@ struct pevent_record {
- 	int			cpu;
- 	int			ref_count;
- 	int			locked;		/* Do not free, even if ref_count is zero */
--	void			*private;
-+	void			*r_private;
- #if DEBUG_RECORD
- 	struct pevent_record	*prev;
- 	struct pevent_record	*next;
-@@ -106,7 +106,7 @@ struct plugin_option {
- 	char				*plugin_alias;
- 	char				*description;
- 	char				*value;
--	void				*private;
-+	void				*p_private;
- 	int				set;
- };
- 
-
-
+Hugh
