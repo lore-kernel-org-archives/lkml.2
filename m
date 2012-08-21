@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab2HUOmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 10:42:11 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51529 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab2HUOmJ (ORCPT
+	id S1755473Ab2HUOuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 10:50:16 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54512 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947Ab2HUOuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 10:42:09 -0400
+	Tue, 21 Aug 2012 10:50:13 -0400
+Date: Tue, 21 Aug 2012 15:50:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Poddar, Sourav" <sourav.poddar@ti.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [RFC/PATCH 4/4] gpio: smscece: Add support for gpio IO
+ expander feature
+Message-ID: <20120821145009.GE21557@sirena.org.uk>
+References: <1345545940-2232-1-git-send-email-sourav.poddar@ti.com>
+ <1345545940-2232-5-git-send-email-sourav.poddar@ti.com>
+ <20120821105333.GW10347@arwen.pp.htv.fi>
+ <CAKdam56DiFpnoQwrHe1tjQWLMy5vP9ynstNj_n=OyMxkJJAUOA@mail.gmail.com>
+ <20120821120052.GD10347@arwen.pp.htv.fi>
+ <CAKdam55SqXiCGv766yxoY1GdDjxNCYNaDdNZPaeLTAXc+3+c6g@mail.gmail.com>
+ <20120821122217.GF10347@arwen.pp.htv.fi>
 MIME-Version: 1.0
-In-Reply-To: <20120821143115.GJ16230@one.firstfloor.org>
-References: <1345540117-14164-1-git-send-email-zheng.z.yan@intel.com>
-	<20120821143115.GJ16230@one.firstfloor.org>
-Date: Tue, 21 Aug 2012 17:42:08 +0300
-X-Google-Sender-Auth: UJlDTst60WE7gYBelCeW431USes
-Message-ID: <CAOJsxLE8Cn=GRSdeCoeTPKCOB5-gaodnC3W8g93r8mHigC23LA@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86: Disable uncore on virtualized CPU.
-From: Pekka Enberg <penberg@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, a.p.zijlstra@chello.nl,
-        eranian@google.com, mingo@elte.hu, avi@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120821122217.GF10347@arwen.pp.htv.fi>
+X-Cookie: Those who can't write, write manuals.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 05:08:37PM +0800, Yan, Zheng wrote:
->> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->>
->> Initializing uncore PMU on virtualized CPU may hang the kernel.
->> This is because kvm does not emulate the entire hardware. Thers
->> are lots of uncore related MSRs, making kvm enumerate them all
->> is a non-trival task. So just disable uncore on virtualized CPU.
+On Tue, Aug 21, 2012 at 03:22:18PM +0300, Felipe Balbi wrote:
+> On Tue, Aug 21, 2012 at 05:50:28PM +0530, Poddar, Sourav wrote:
 
-On Tue, Aug 21, 2012 at 5:31 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> I'm not sure cpu_has_hypervisor is reliable enough for this.
-> Better find out why it hangs and fix that.
->
-> Early rdmsrls should be rdmsrl_safe()
-> Early writes in the driver should check if anything was written,
-> and if not then disable itself.
+> > If I am understanding correctly, if they both uses the same bit we cannot
+> > use both for a particular user. ?
 
-It's unfortunate that the changelog does not include any reference to
-the actual thread this was discussed in:
+> we can, it's just a bit more complex. If a user request both LOW and
+> HIGH, then you start with HIGH, once it triggers, before calling the
+> nested IRQ handler, you need to change it LOW. When low triggers, before
+> calling the nested IRQ handler, you need to change it to HIGH again. And
+> so on. I'm just not sure if that's valid on linux IRQ subsystem.
 
-http://www.mail-archive.com/kvm@vger.kernel.org/msg77524.html
+The given example was for keypress - usually a system would use edge
+triggered interrupts in combination with reading the GPIO state rather
+than level triggered interrupts.
