@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233Ab2HUSSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 14:18:12 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:52749 "EHLO csmtp3.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196Ab2HUSSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 14:18:08 -0400
-From: "Henrik Rydberg" <rydberg@bitmath.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] HID: hid-debug: Show rdesc for unclaimed devices
-Date: Tue, 21 Aug 2012 20:22:44 +0200
-Message-Id: <1345573364-341-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.11.5
+	id S932244Ab2HUSUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 14:20:10 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33023 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196Ab2HUSUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 14:20:06 -0400
+Date: Tue, 21 Aug 2012 14:20:04 -0400
+From: Matt Porter <mporter@ti.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com, cjb@laptop.org,
+        grant.likely@secretlab.ca
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 1/3] dmaengine: add TI EDMA DMA engine driver
+Message-ID: <20120821182004.GA32420@beef>
+References: <1345153471-22757-1-git-send-email-mporter@ti.com>
+ <1345153471-22757-2-git-send-email-mporter@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345153471-22757-2-git-send-email-mporter@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit a7197c2e, the raw report descriptor is available also for
-unclaimed devices. This patchs make it show in the rdesc debugfs node.
+On Thu, Aug 16, 2012 at 05:44:29PM -0400, Matt Porter wrote:
+> Add a DMA engine driver for the TI EDMA controller. This driver
+> is implemented as a wrapper around the existing DaVinci private
+> DMA implementation. This approach allows for incremental conversion
+> of each peripheral driver to the DMA engine API. The EDMA driver
+> supports slave transfers but does not yet support cyclic transfers.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hid/hid-debug.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+I got my hands on a AM18x WL12xx module so I could test MMC1 and this
+exposed some bugs in the driver's handling of the second EDMA controller
+case. DA850/OMAP-L138/AM1x have this second EDMA controller. I've
+addressed this in v2 which will be posted shortly.
 
-diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
-index 01dd9a7..933fff0 100644
---- a/drivers/hid/hid-debug.c
-+++ b/drivers/hid/hid-debug.c
-@@ -911,15 +911,21 @@ static void hid_dump_input_mapping(struct hid_device *hid, struct seq_file *f)
- 
- }
- 
--
- static int hid_debug_rdesc_show(struct seq_file *f, void *p)
- {
- 	struct hid_device *hdev = f->private;
-+	const __u8 *rdesc = hdev->rdesc;
-+	unsigned rsize = hdev->rsize;
- 	int i;
- 
-+	if (!rdesc) {
-+		rdesc = hdev->dev_rdesc;
-+		rsize = hdev->dev_rsize;
-+	}
-+
- 	/* dump HID report descriptor */
--	for (i = 0; i < hdev->rsize; i++)
--		seq_printf(f, "%02x ", hdev->rdesc[i]);
-+	for (i = 0; i < rsize; i++)
-+		seq_printf(f, "%02x ", rdesc[i]);
- 	seq_printf(f, "\n\n");
- 
- 	/* dump parsed data and input mappings */
--- 
-1.7.11.5
+I'm expecting to receive a DM646x EVM RSN so I can cover testing that
+part as well.
 
+-Matt
