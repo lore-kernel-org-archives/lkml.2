@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758707Ab2HVJDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:03:15 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63343 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195Ab2HVJDK (ORCPT
+	id S1758798Ab2HVJDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:03:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40165 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab2HVJDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:03:10 -0400
-Date: Wed, 22 Aug 2012 11:03:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-Message-ID: <20120822090304.GA23336@gmail.com>
-References: <20120820080606.GA6931@gmail.com>
- <20120820181651.GA737@srcf.ucam.org>
- <20120821094203.GB12385@gmail.com>
- <20120821113951.GA22436@srcf.ucam.org>
- <20120821151910.GA5359@gmail.com>
- <20120821152828.GB28241@srcf.ucam.org>
- <20120821155908.GA5499@gmail.com>
- <20120821161324.GA29665@srcf.ucam.org>
- <20120821182346.GA7325@gmail.com>
- <20120821195234.20c173bc@pyramind.ukuu.org.uk>
+	Wed, 22 Aug 2012 05:03:50 -0400
+Date: Wed, 22 Aug 2012 02:03:24 -0700
+From: "tip-bot for Liu, Chuansheng" <chuansheng.liu@intel.com>
+Message-ID: <tip-2530cd4f448935c74eeb49f29559589928e4b2f0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yanmin_zhang@linux.intel.com, tglx@linutronix.de,
+        chuansheng.liu@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yanmin_zhang@linux.intel.com, tglx@linutronix.de,
+        chuansheng.liu@intel.com
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A137286@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A137286@SHSMSX101.ccr.corp.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/fixup_irq:
+  Use cpu_online_mask instead of cpu_all_mask
+Git-Commit-ID: 2530cd4f448935c74eeb49f29559589928e4b2f0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120821195234.20c173bc@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Aug 2012 02:03:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  2530cd4f448935c74eeb49f29559589928e4b2f0
+Gitweb:     http://git.kernel.org/tip/2530cd4f448935c74eeb49f29559589928e4b2f0
+Author:     Liu, Chuansheng <chuansheng.liu@intel.com>
+AuthorDate: Tue, 14 Aug 2012 06:55:01 +0000
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 22 Aug 2012 10:36:08 +0200
 
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+x86/fixup_irq: Use cpu_online_mask instead of cpu_all_mask
 
-> > Why? Good scheduling is useful even in isolation.
-> 
-> For power - I suspect it's damn near irrelevant except on a 
-> big big machine.
+When one CPU is going down and this CPU is the last one in irq
+affinity, current code is setting cpu_all_mask as the new
+affinity for that irq.
 
-With deep enough C states it's rather relevant whether we 
-continue to burn +50W for a couple of more milliseconds or not, 
-and whether we have the right information from the scheduler and 
-timer subsystem about how long the next idle period is expected 
-to be and how bursty a given task is.
+But for some systems (such as in Medfield Android mobile) the
+firmware sends the interrupt to each CPU in the irq affinity
+mask, averaged, and cpu_all_mask includes all potential CPUs,
+i.e. offline ones as well.
 
-'Balance for energy efficiency' obviously ties into the C state 
-and frequency selection logic, which is rather detached right 
-now, running its own (imperfect) scheduling metrics logic and 
-doing pretty much the worst possible C state and frequency 
-decisions in typical everyday desktop workloads.
+So replace cpu_all_mask with cpu_online_mask.
 
-> Unless you've sorted out your SATA, fixed your phy handling, 
-> optimised your desktop for wakeups and worked down the big 
-> wakeup causes one by one it's turd polishing.
-> 
-> PM means fixing the stack top to bottom, and its a whackamole 
-> game, each one you fix you find the next. You have to sort the 
-> entire stack from desktop apps to kernel.
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Acked-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/27240C0AC20F114CBF8149A2696CBE4A137286@SHSMSX101.ccr.corp.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/irq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Moving 'policy' into user-space has been an utter failure, 
-mostly because there's not a single project/subsystem 
-responsible for getting a good result to users. This is why
-I resist "policy should not be in the kernel" meme here.
-
-> However benchmarks talk - so lets have some benchmarks ... on 
-> a laptop.
-
-Agreed.
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 7ad683d..d44f782 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -270,7 +270,7 @@ void fixup_irqs(void)
+ 
+ 		if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
+ 			break_affinity = 1;
+-			affinity = cpu_all_mask;
++			affinity = cpu_online_mask;
+ 		}
+ 
+ 		chip = irq_data_get_irq_chip(data);
