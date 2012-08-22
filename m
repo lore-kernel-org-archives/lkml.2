@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab2HVGyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 02:54:46 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44075 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902Ab2HVGyi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 02:54:38 -0400
-X-AuditID: 9c930197-b7bb2ae0000011d9-6c-5034822c1d25
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] tools lib traceevent: Modify header to work in C++ programs
-References: <1345590800.5069.17.camel@gandalf.local.home>
-Date: Wed, 22 Aug 2012 15:47:50 +0900
-In-Reply-To: <1345590800.5069.17.camel@gandalf.local.home> (Steven Rostedt's
-	message of "Tue, 21 Aug 2012 19:13:20 -0400")
-Message-ID: <87boi3ifs9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1754852Ab2HVHHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 03:07:00 -0400
+Received: from mail.telros.ru ([83.136.244.21]:55296 "EHLO mail.telros.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225Ab2HVHGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 03:06:55 -0400
+From: Volokh Konstantin <volokh84@gmail.com>
+To: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, volokh@telros.ru
+Cc: Volokh Konstantin <volokh84@gmail.com>
+Subject: [PATCH 09/10] staging: media: go7007: Adlink_MPG24 board initialization fix.
+Date: Wed, 22 Aug 2012 14:45:18 +0400
+Message-Id: <1345632319-23224-9-git-send-email-volokh84@gmail.com>
+In-Reply-To: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
+References: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Steve
+setting via gpio i2c bus support at every time then init encoder.
 
-On Tue, 21 Aug 2012 19:13:20 -0400, Steven Rostedt wrote:
-> tools lib traceevent: Modify header to work in C++ programs
->
-> Replace keyword "private" from event-parse.h to allow it to be
-> used in C++ programs.
->
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->
-> diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-> index 5772ad8..c28713b 100644
-> --- a/tools/lib/traceevent/event-parse.h
-> +++ b/tools/lib/traceevent/event-parse.h
-> @@ -49,7 +49,7 @@ struct pevent_record {
->  	int			cpu;
->  	int			ref_count;
->  	int			locked;		/* Do not free, even if ref_count is zero */
-> -	void			*private;
-> +	void			*r_private;
+Signed-off-by: Volokh Konstantin <volokh84@gmail.com>
+---
+ drivers/staging/media/go7007/go7007-driver.c |    5 +++++
+ drivers/staging/media/go7007/go7007-usb.c    |    3 ---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-This r_ (and p_) prefix make it inconsistent with others. How about
-simply using 'priv' instead?
+diff --git a/drivers/staging/media/go7007/go7007-driver.c b/drivers/staging/media/go7007/go7007-driver.c
+index a66e339..c0ea312 100644
+--- a/drivers/staging/media/go7007/go7007-driver.c
++++ b/drivers/staging/media/go7007/go7007-driver.c
+@@ -173,6 +173,11 @@ static int go7007_init_encoder(struct go7007 *go)
+ 		go7007_write_addr(go, 0x3c82, 0x0001);
+ 		go7007_write_addr(go, 0x3c80, 0x00fe);
+ 	}
++	if (go->board_id == GO7007_BOARDID_ADLINK_MPG24) {
++		/* set GPIO5 to be an output, currently low */
++		go7007_write_addr(go, 0x3c82, 0x0000);
++		go7007_write_addr(go, 0x3c80, 0x00df);
++	}
+ 	return 0;
+ }
+ 
+diff --git a/drivers/staging/media/go7007/go7007-usb.c b/drivers/staging/media/go7007/go7007-usb.c
+index a6cad15..9dbf5ec 100644
+--- a/drivers/staging/media/go7007/go7007-usb.c
++++ b/drivers/staging/media/go7007/go7007-usb.c
+@@ -1110,9 +1110,6 @@ static int go7007_usb_probe(struct usb_interface *intf,
+ 			} else {
+ 				u16 channel;
+ 
+-				/* set GPIO5 to be an output, currently low */
+-				go7007_write_addr(go, 0x3c82, 0x0000);
+-				go7007_write_addr(go, 0x3c80, 0x00df);
+ 				/* read channel number from GPIO[1:0] */
+ 				go7007_read_addr(go, 0x3c81, &channel);
+ 				channel &= 0x3;
+-- 
+1.7.7.6
 
-Thanks,
-Namhyung
-
-
->  #if DEBUG_RECORD
->  	struct pevent_record	*prev;
->  	struct pevent_record	*next;
-> @@ -106,7 +106,7 @@ struct plugin_option {
->  	char				*plugin_alias;
->  	char				*description;
->  	char				*value;
-> -	void				*private;
-> +	void				*p_private;
->  	int				set;
->  };
->  
