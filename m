@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab2HVPFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:05:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53723 "EHLO mx1.redhat.com"
+	id S932813Ab2HVPFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:05:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65221 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932719Ab2HVPAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:00:50 -0400
+	id S932718Ab2HVPFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:05:42 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,157 +26,148 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 08/36] autonuma: define the autonuma flags
-Date: Wed, 22 Aug 2012 16:58:52 +0200
-Message-Id: <1345647560-30387-9-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 33/36] autonuma: powerpc port
+Date: Wed, 22 Aug 2012 16:59:17 +0200
+Message-Id: <1345647560-30387-34-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These flags are the ones tweaked through sysfs, they control the
-behavior of autonuma, from enabling disabling it, to selecting various
-runtime options.
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
+    * PMD flaging is not required in powerpc since large pages
+      are tracked in ptes.
+    * Yet to be tested with large pages
+    * This is an initial patch that partially works
+    * knuma_scand and numa hinting page faults works
+    * Page migration is yet to be observed/verified
+
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/autonuma_flags.h |  129 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 129 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/autonuma_flags.h
+ arch/powerpc/include/asm/pgtable.h        |   48 ++++++++++++++++++++++++++++-
+ arch/powerpc/include/asm/pte-hash64-64k.h |    4 ++-
+ arch/powerpc/mm/numa.c                    |    3 +-
+ mm/autonuma.c                             |    2 +-
+ 4 files changed, 53 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/autonuma_flags.h b/include/linux/autonuma_flags.h
-new file mode 100644
-index 0000000..f53203a
---- /dev/null
-+++ b/include/linux/autonuma_flags.h
-@@ -0,0 +1,129 @@
-+#ifndef _LINUX_AUTONUMA_FLAGS_H
-+#define _LINUX_AUTONUMA_FLAGS_H
+diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
+index 2e0e411..5f03079 100644
+--- a/arch/powerpc/include/asm/pgtable.h
++++ b/arch/powerpc/include/asm/pgtable.h
+@@ -33,10 +33,56 @@ static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & _PAGE_DIRTY; }
+ static inline int pte_young(pte_t pte)		{ return pte_val(pte) & _PAGE_ACCESSED; }
+ static inline int pte_file(pte_t pte)		{ return pte_val(pte) & _PAGE_FILE; }
+ static inline int pte_special(pte_t pte)	{ return pte_val(pte) & _PAGE_SPECIAL; }
+-static inline int pte_present(pte_t pte)	{ return pte_val(pte) & _PAGE_PRESENT; }
++static inline int pte_present(pte_t pte)	{ return pte_val(pte) &
++							(_PAGE_PRESENT|_PAGE_NUMA_PTE); }
+ static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK) == 0; }
+ static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
+ 
++#ifdef CONFIG_AUTONUMA
++static inline int pte_numa(pte_t pte)
++{
++       return (pte_val(pte) &
++               (_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
++}
 +
-+/*
-+ * If CONFIG_AUTONUMA=n this file isn't included and only
-+ * autonuma_possible() is defined (as false) in autonuma.h to allow
-+ * optimizing away at compile time blocks of common code without using
-+ * #ifdefs.
-+ */
-+#ifndef CONFIG_AUTONUMA
-+#error "autonuma flags included by mistake"
 +#endif
 +
-+enum autonuma_flag {
-+	/*
-+	 * Set if the kernel wasn't passed the "noautonuma" boot
-+	 * parameter and the hardware is NUMA. If AutoNUMA is not
-+	 * possible the value of all other flags becomes irrelevant
-+	 * (they will never be checked) and AutoNUMA can't be enabled.
-+	 *
-+	 * No defaults: depends on hardware discovery and "noautonuma"
-+	 * early param.
-+	 */
-+	AUTONUMA_POSSIBLE_FLAG,
-+	/*
-+	 * If AutoNUMA is possible, this defines if AutoNUMA is
-+	 * currently enabled or disabled. It can be toggled at runtime
-+	 * through sysfs.
-+	 *
-+	 * The default depends on CONFIG_AUTONUMA_DEFAULT_ENABLED.
-+	 */
-+	AUTONUMA_ENABLED_FLAG,
-+	/*
-+	 * If set through sysfs this will print lots of debug info
-+	 * about the AutoNUMA activities in the kernel logs.
-+	 *
-+	 * Default not set.
-+	 */
-+	AUTONUMA_DEBUG_FLAG,
-+	/*
-+	 * This defines if CFS should prioritize between load
-+	 * balancing fairness or NUMA affinity, if there are no idle
-+	 * CPUs available. If this flag is set AutoNUMA will
-+	 * prioritize on NUMA affinity and it will disregard
-+	 * inter-node fairness.
-+	 *
-+	 * Default not set.
-+	 */
-+	AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
-+	/*
-+	 * This flag defines if the task/mm_autonuma statistics should
-+	 * be inherithed from the parent task/process or instead if
-+	 * they should be cleared at every fork/clone. The
-+	 * task/mm_autonuma statistics are always cleared across
-+	 * execve and there's no way to disable that.
-+	 *
-+	 * Default set.
-+	 */
-+	AUTONUMA_SCHED_RESET_FLAG,
-+	/*
-+	 * If set, this tells knuma_scand to trigger NUMA hinting page
-+	 * faults at the pmd level instead of the pte level. This
-+	 * reduces the number of NUMA hinting faults potentially
-+	 * saving CPU time. It reduces the accuracy of the
-+	 * task_autonuma statistics (but does not change the accuracy
-+	 * of the mm_autonuma statistics). This flag can be toggled
-+	 * through sysfs as runtime.
-+	 *
-+	 * This flag does not affect AutoNUMA with transparent
-+	 * hugepages (THP). With THP the NUMA hinting page faults
-+	 * always happen at the pmd level, regardless of the setting
-+	 * of this flag. Note: there is no reduction in accuracy of
-+	 * task_autonuma statistics with THP.
-+	 *
-+	 * Default set.
-+	 */
-+	AUTONUMA_SCAN_PMD_FLAG,
-+	/*
-+	 * If set, knuma_migrated will wake up in the middle of each
-+	 * knuma_scand pass, regardless of how many pages have been
-+	 * already queued. If not set knuma_migrated will wake up as
-+	 * soon as the number of pages in the migration LRU reached a
-+	 * certain threshold.
-+	 *
-+	 * Default not set.
-+	 */
-+	AUTONUMA_MIGRATE_DEFER_FLAG,
-+};
-+
-+extern unsigned long autonuma_flags;
-+
-+static inline bool autonuma_possible(void)
++static inline pte_t pte_mknonnuma(pte_t pte)
 +{
-+	return test_bit(AUTONUMA_POSSIBLE_FLAG, &autonuma_flags);
++       pte_val(pte) &= ~_PAGE_NUMA_PTE;
++       pte_val(pte) |= (_PAGE_PRESENT|_PAGE_ACCESSED);
++
++       return pte;
 +}
 +
-+static inline bool autonuma_enabled(void)
++static inline pte_t pte_mknuma(pte_t pte)
 +{
-+	return test_bit(AUTONUMA_ENABLED_FLAG, &autonuma_flags);
++       pte_val(pte) |= _PAGE_NUMA_PTE;
++       pte_val(pte) &= ~_PAGE_PRESENT;
++       return pte;
 +}
 +
-+static inline bool autonuma_debug(void)
++static inline int pmd_numa(pmd_t pmd)
 +{
-+	return test_bit(AUTONUMA_DEBUG_FLAG, &autonuma_flags);
++       /* PMD tracking not implemented */
++       return 0;
 +}
 +
-+static inline bool autonuma_sched_load_balance_strict(void)
++static inline pmd_t pmd_mknonnuma(pmd_t pmd)
 +{
-+	return test_bit(AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
-+			&autonuma_flags);
++	BUG();
++	return pmd;
 +}
 +
-+static inline bool autonuma_sched_reset(void)
++static inline pmd_t pmd_mknuma(pmd_t pmd)
 +{
-+	return test_bit(AUTONUMA_SCHED_RESET_FLAG,
-+			&autonuma_flags);
++	BUG();
++	return pmd;
 +}
 +
-+static inline bool autonuma_scan_pmd(void)
-+{
-+	return test_bit(AUTONUMA_SCAN_PMD_FLAG, &autonuma_flags);
-+}
++/* No pmd flags on powerpc */
++#define set_pmd_at(mm, addr, pmdp, pmd)  do { } while (0)
 +
-+static inline bool autonuma_migrate_defer(void)
-+{
-+	return test_bit(AUTONUMA_MIGRATE_DEFER_FLAG, &autonuma_flags);
-+}
+ /* Conversion functions: convert a page and protection to a page entry,
+  * and a page entry and page directory to the page they refer to.
+  *
+diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/include/asm/pte-hash64-64k.h
+index 59247e8..f7e1468 100644
+--- a/arch/powerpc/include/asm/pte-hash64-64k.h
++++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+@@ -7,6 +7,8 @@
+ #define _PAGE_COMBO	0x10000000 /* this is a combo 4k page */
+ #define _PAGE_4K_PFN	0x20000000 /* PFN is for a single 4k page */
+ 
++#define _PAGE_NUMA_PTE 0x40000000 /* Adjust PTE_RPN_SHIFT below */
 +
-+#endif /* _LINUX_AUTONUMA_FLAGS_H */
+ /* For 64K page, we don't have a separate _PAGE_HASHPTE bit. Instead,
+  * we set that to be the whole sub-bits mask. The C code will only
+  * test this, so a multi-bit mask will work. For combo pages, this
+@@ -36,7 +38,7 @@
+  * That gives us a max RPN of 34 bits, which means a max of 50 bits
+  * of addressable physical space, or 46 bits for the special 4k PFNs.
+  */
+-#define PTE_RPN_SHIFT	(30)
++#define PTE_RPN_SHIFT	(31)
+ 
+ #ifndef __ASSEMBLY__
+ 
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 39b1597..80af41e 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -22,6 +22,7 @@
+ #include <linux/pfn.h>
+ #include <linux/cpuset.h>
+ #include <linux/node.h>
++#include <linux/page_autonuma.h>
+ #include <asm/sparsemem.h>
+ #include <asm/prom.h>
+ #include <asm/smp.h>
+@@ -1045,7 +1046,7 @@ void __init do_init_bootmem(void)
+ 		 * all reserved areas marked.
+ 		 */
+ 		NODE_DATA(nid) = careful_zallocation(nid,
+-					sizeof(struct pglist_data),
++					autonuma_pglist_data_size(),
+ 					SMP_CACHE_BYTES, end_pfn);
+ 
+   		dbg("node %d\n", nid);
+diff --git a/mm/autonuma.c b/mm/autonuma.c
+index ada6c57..a4da3f3 100644
+--- a/mm/autonuma.c
++++ b/mm/autonuma.c
+@@ -25,7 +25,7 @@ unsigned long autonuma_flags __read_mostly =
+ #ifdef CONFIG_AUTONUMA_DEFAULT_ENABLED
+ 	|(1<<AUTONUMA_ENABLED_FLAG)
+ #endif
+-	|(1<<AUTONUMA_SCAN_PMD_FLAG);
++	|(0<<AUTONUMA_SCAN_PMD_FLAG);
+ 
+ static DEFINE_MUTEX(knumad_mm_mutex);
+ 
