@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab2HVNWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 09:22:52 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:33625 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751972Ab2HVNWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 09:22:50 -0400
-Date: Wed, 22 Aug 2012 09:22:43 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, torvalds@linux-foundation.org,
-        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 13/17] lockd: use new hashtable implementation
-Message-ID: <20120822132243.GA2844@Krystal>
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-14-git-send-email-levinsasha928@gmail.com> <20120822114752.GC20158@fieldses.org> <5034CD02.2010103@gmail.com>
+	id S932592Ab2HVNXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 09:23:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34252 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab2HVNXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 09:23:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,808,1336374000"; 
+   d="scan'208";a="208485835"
+Message-ID: <5034DD35.9090504@linux.intel.com>
+Date: Wed, 22 Aug 2012 06:23:01 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5034CD02.2010103@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Mike Galbraith <efault@gmx.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <1345043096.31459.106.camel@twins> <502BE38D.9030405@linux.intel.com> <20120820080606.GA6931@gmail.com> <20120820181651.GA737@srcf.ucam.org> <20120821094203.GB12385@gmail.com> <20120821113951.GA22436@srcf.ucam.org> <20120821151910.GA5359@gmail.com> <20120821170254.0b10ece6@pyramind.ukuu.org.uk> <1345614110.4374.65.camel@marge.simpson.net> <5034D878.1000305@linux.intel.com> <20120822132105.GA21852@srcf.ucam.org>
+In-Reply-To: <20120822132105.GA21852@srcf.ucam.org>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> On 08/22/2012 01:47 PM, J. Bruce Fields wrote:
-> > On Wed, Aug 22, 2012 at 04:27:08AM +0200, Sasha Levin wrote:
-> >> +static int __init nlm_init(void)
-> >> +{
-> >> +	hash_init(nlm_files);
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +module_init(nlm_init);
-> > 
-> > That's giving me:
-> > 
-> > fs/lockd/svcsubs.o: In function `nlm_init':
-> > /home/bfields/linux-2.6/fs/lockd/svcsubs.c:454: multiple definition of `init_module'
-> > fs/lockd/svc.o:/home/bfields/linux-2.6/fs/lockd/svc.c:606: first defined here
-> > make[2]: *** [fs/lockd/lockd.o] Error 1
-> > make[1]: *** [fs/lockd] Error 2
-> > make[1]: *** Waiting for unfinished jobs....
+On 8/22/2012 6:21 AM, Matthew Garrett wrote:
+> On Wed, Aug 22, 2012 at 06:02:48AM -0700, Arjan van de Ven wrote:
+>> On 8/21/2012 10:41 PM, Mike Galbraith wrote:
+>>> For my dinky dual core laptop, I suspect you're right, but for a more
+>>> powerful laptop, I'd expect spread/don't to be noticeable.
+>>
+>> yeah if you don't spread, you will waste some power.
+>> but.. current linux behavior is to spread.
+>> so we can only make it worse.
 > 
-> I tested this entire patch set both with linux-next and Linus' latest master,
-> and it worked fine in both places.
-> 
-> Is it possible that lockd has a -next tree which isn't pulled into linux-next?
-> (there's nothing listed in MAINTAINERS that I could see).
+> Right. For a single socket system the only thing you can do is use two 
+> threads in preference to using two cores. That'll keep an extra core in 
+> a deep C state for longer, at the cost of keeping the package out of a 
+> deep C state for longer. There might be a win if the two processes 
+> benefit from improved L1 cache locality, or if you're talking about 
 
-fs/lockd/Makefile:
+basically "if HT sharing would be good for performance" ;-)
 
-obj-$(CONFIG_LOCKD) += lockd.o
+(btw this is good news, it means this is not an actual power/performance tradeoff, but a "get it right" tradeoff)
 
-lockd-objs-y := clntlock.o clntproc.o clntxdr.o host.o svc.o svclock.o \
-                svcshare.o svcproc.o svcsubs.o mon.o xdr.o grace.o
-
-your patch adds a module_init to svcsubs.c.
-However, there is already one in svc.c, pulled into the same module.
-
-in your test build, is CONFIG_LOCKD defined as "m" or "y" ? You should
-always test both.
-
-One solution here is to create a "local" init function in svcsubs.c and
-expose it to svc.c, so the latter can call it from its module init
-function.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
