@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab2HVPHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:07:17 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:30581
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932678Ab2HVPHH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:07:07 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VS4(zz98dI9371I78fbmzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3hd25hf0ah107ahbe9i1155h)
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Tiejun Chen <tiejun.chen@windriver.com>
-CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] powerpc: Bail out of KGDB when we've been triggered
-Thread-Topic: [PATCH 2/3] powerpc: Bail out of KGDB when we've been triggered
-Thread-Index: AQHNgHfHPfqz5vKODkm0m2GxH8E0Ew==
-Date: Wed, 22 Aug 2012 15:07:00 +0000
-Message-ID: <6AE080B68D46FC4BA2D2769E68D765B7059AE7E7@039-SN2MPN1-022.039d.mgd.msft.net>
-References: <1345632192-19810-1-git-send-email-tiejun.chen@windriver.com>
-	<1345632192-19810-2-git-send-email-tiejun.chen@windriver.com>
-In-Reply-To: <1345632192-19810-2-git-send-email-tiejun.chen@windriver.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [70.112.118.223]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <6AAA1B076287954CAAD6A9E7C7F49D88@mgd.freescale.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S932690Ab2HVPAj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:00:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757085Ab2HVPAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:00:36 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 02/36] autonuma: export is_vma_temporary_stack() even if CONFIG_TRANSPARENT_HUGEPAGE=n
+Date: Wed, 22 Aug 2012 16:58:46 +0200
+Message-Id: <1345647560-30387-3-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 5:43 AM, Tiejun Chen <tiejun.chen@windriver.com> wrote:
+is_vma_temporary_stack() is needed by mm/autonuma.c too, and without
+this the build breaks with CONFIG_TRANSPARENT_HUGEPAGE=n.
 
-> +int kgdb_skipexception(int exception, struct pt_regs *regs)
-> +{
-> +       if (kgdb_isremovedbreak(regs->nip))
-> +               return 1;
-> +
-> +       return 0;
-> +}
+Reported-by: Petr Holasek <pholasek@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/huge_mm.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-int kgdb_skipexception(int exception, struct pt_regs *regs)
-{
-        return !!kgdb_isremovedbreak(regs->nip));
-}
-
-If the caller only cares about zero vs. non-zero, you can drop the !!.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 4c59b11..ad4e2e0 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -54,13 +54,13 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+ #define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
+ #define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
+ 
++extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
++
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ #define HPAGE_PMD_SHIFT HPAGE_SHIFT
+ #define HPAGE_PMD_MASK HPAGE_MASK
+ #define HPAGE_PMD_SIZE HPAGE_SIZE
+ 
+-extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+-
+ #define transparent_hugepage_enabled(__vma)				\
+ 	((transparent_hugepage_flags &					\
+ 	  (1<<TRANSPARENT_HUGEPAGE_FLAG) ||				\
