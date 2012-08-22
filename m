@@ -1,66 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab2HVAgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 20:36:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59446 "EHLO mx1.redhat.com"
+	id S1752277Ab2HVAkj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 20:40:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56115 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290Ab2HVAgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 20:36:40 -0400
-Date: Wed, 22 Aug 2012 03:37:24 +0300
+	id S1751365Ab2HVAkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 20:40:35 -0400
+Date: Wed, 22 Aug 2012 03:41:38 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Mel Gorman <mel@csn.ul.ie>, Rafael Aquini <aquini@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
- balloon pages
-Message-ID: <20120822003723.GL9027@redhat.com>
-References: <20120814182244.GB13338@t510.redhat.com>
- <20120814195139.GA28870@redhat.com>
- <20120814201113.GE22133@t510.redhat.com>
- <20120815090528.GH4052@csn.ul.ie>
- <20120815092528.GA29214@redhat.com>
- <20120815094839.GJ4052@csn.ul.ie>
- <20120815100108.GA1999@redhat.com>
- <20120815111651.GL4052@csn.ul.ie>
- <20120815112851.GA2707@redhat.com>
- <87mx1o3j5y.fsf@rustcorp.com.au>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
+Message-ID: <20120822004138.GM9027@redhat.com>
+References: <20120821190800.24958.74812.stgit@bling.home>
+ <20120821192903.24958.90138.stgit@bling.home>
+ <20120821195813.GD9027@redhat.com>
+ <1345579579.29292.67.camel@ul30vt.home>
+ <20120821204125.GF9027@redhat.com>
+ <1345583694.29292.91.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87mx1o3j5y.fsf@rustcorp.com.au>
+In-Reply-To: <1345583694.29292.91.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 03:01:37PM +0930, Rusty Russell wrote:
-> On Wed, 15 Aug 2012 14:28:51 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Wed, Aug 15, 2012 at 12:16:51PM +0100, Mel Gorman wrote:
-> > > I was thinking of exactly that page->mapping == balloon_mapping check. As I
-> > > do not know how many active balloon drivers there might be I cannot guess
-> > > in advance how much of a scalability problem it will be.
+On Tue, Aug 21, 2012 at 03:14:54PM -0600, Alex Williamson wrote:
+> On Tue, 2012-08-21 at 23:41 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Aug 21, 2012 at 02:06:19PM -0600, Alex Williamson wrote:
+> > > On Tue, 2012-08-21 at 22:58 +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Aug 21, 2012 at 01:29:06PM -0600, Alex Williamson wrote:
+> > > > > KVM_IRQFD currently uses the reserved KVM_USERSPACE_IRQ_SOURCE_ID
+> > > > > which is also shared with userspace injection methods like
+> > > > > KVM_IRQ_LINE.  This can cause a conflict if an irqfd triggers on
+> > > > > a GSI asserted through KVM_IRQ_LINE.
+> > > > 
+> > > > What kind of conflict do you envision?  Pls note level interrupts are
+> > > > unsupported ATM.
+> > > 
+> > > If KVM_IRQ_LINE asserts a level interrupt and KVM_IRQFD triggers on the
+> > > same GSI then the pin is no longer asserted as userspace thinks it is.
+> > > Do we just chalk this up to userspace error?
 > > 
-> > Not at all sure multiple drivers are worth supporting, but multiple
-> > *devices* is I think worth supporting, if for no other reason than that
-> > they can work today. For that, we need a device pointer which Rafael
-> > wants to put into the mapping, this means multiple balloon mappings.
+> > Yes: using a level GSI with current irqfd is a userspace error
+> > because you can lose interrupts anyway.
+> > 
+> > Are edge GSIs affected?
 > 
-> Rafael, please make sure that the balloon driver fails on the second and
-> subsequent balloon devices.
-> 
-> Michael, we only allow multiple balloon devices because it fell out of
-> the implementation.  If it causes us even the slightest issue, we should
-> not support it.  It's not a sensible setup.
-> 
-> Cheers,
-> Rusty.
+> I wouldn't think so.
 
-Looks like latest revision does it using a flag which seems cleaner,
-so I think the point is moot.
+No? If userspace does
 
--- 
-MST
+. set line to 1
+. trigger irqfd
+. set line to 1
+. trigger irqfd
+. set line to 1
+. trigger irqfd
+. set line to 1
+
+it gets 4 interrupts now
+
+With your patch it will get 1, right?
+
+> > > > > Move irqfd to it's own reserved IRQ source ID.  Add a capability for
+> > > > > userspace to test for this fix.
+> > > > > 
+> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > ---
+> > > > > 
+> > > > >  arch/x86/kvm/x86.c       |    3 +++
+> > > > >  include/linux/kvm.h      |    1 +
+> > > > >  include/linux/kvm_host.h |    1 +
+> > > > >  virt/kvm/eventfd.c       |    6 +++---
+> > > > >  4 files changed, 8 insertions(+), 3 deletions(-)
+> > > > > 
+> > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > > > index 42bce48..cd98673 100644
+> > > > > --- a/arch/x86/kvm/x86.c
+> > > > > +++ b/arch/x86/kvm/x86.c
+> > > > > @@ -2174,6 +2174,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> > > > >  	case KVM_CAP_GET_TSC_KHZ:
+> > > > >  	case KVM_CAP_PCI_2_3:
+> > > > >  	case KVM_CAP_KVMCLOCK_CTRL:
+> > > > > +	case KVM_CAP_IRQFD_IRQ_SOURCE_ID:
+> > > > >  		r = 1;
+> > > > >  		break;
+> > > > >  	case KVM_CAP_COALESCED_MMIO:
+> > > > > @@ -6258,6 +6259,8 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
+> > > > >  
+> > > > >  	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
+> > > > >  	set_bit(KVM_USERSPACE_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
+> > > > > +	/* Reserve bit 1 of irq_sources_bitmap for irqfd irq source */
+> > > > > +	set_bit(KVM_IRQFD_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
+> > > > >  
+> > > > >  	raw_spin_lock_init(&kvm->arch.tsc_write_lock);
+> > > > >  
+> > > > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > > > > index 2ce09aa..ae66b9c 100644
+> > > > > --- a/include/linux/kvm.h
+> > > > > +++ b/include/linux/kvm.h
+> > > > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> > > > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> > > > >  #define KVM_CAP_S390_COW 79
+> > > > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > > > > +#define KVM_CAP_IRQFD_IRQ_SOURCE_ID 81
+> > > > >  
+> > > > >  #ifdef KVM_CAP_IRQ_ROUTING
+> > > > >  
+> > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > > > index b70b48b..b763230 100644
+> > > > > --- a/include/linux/kvm_host.h
+> > > > > +++ b/include/linux/kvm_host.h
+> > > > > @@ -71,6 +71,7 @@
+> > > > >  #define KVM_REQ_PMI               17
+> > > > >  
+> > > > >  #define KVM_USERSPACE_IRQ_SOURCE_ID	0
+> > > > > +#define KVM_IRQFD_IRQ_SOURCE_ID		1
+> > > > >  
+> > > > >  struct kvm;
+> > > > >  struct kvm_vcpu;
+> > > > 
+> > > > Above looks fine but I'm not sure why is the below needed.
+> > > > This changes irqfd behaviour for edge GSIs slightly
+> > > > in a userspace-visible way. Maybe make it a separate patch
+> > > > so it can be considered on merits?
+> > > 
+> > > Hmm, the above does nothing without the below.
+> > 
+> > Yes. But you can use the above with the new irqfds you are adding.
+> 
+> Nope, racy.
+> 
+> > > I thought I was just
+> > > implementing your idea that IRQFDs should all share a single IRQ source
+> > > ID...
+> > 
+> > Sorry I only meant for level irqfds. You are changing edge here.
+> 
+> Ok, I misunderstood then.
+> 
+> > > why is that no longer a good idea?  Thanks,
+> > > 
+> > > Alex
+> > 
+> > Maybe it is a good idea. I am just asking for the motivation.
+> 
+> I assumed you were pointing out the level vs edge interaction.  If we
+> call that a userspace bug, I can just drop this.  Thanks,
+> 
+> Alex
+
+level is userspace bug I think :)
+
+> > > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> > > > > index 7d7e2aa..2245cfa 100644
+> > > > > --- a/virt/kvm/eventfd.c
+> > > > > +++ b/virt/kvm/eventfd.c
+> > > > > @@ -67,8 +67,8 @@ irqfd_inject(struct work_struct *work)
+> > > > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > >  	struct kvm *kvm = irqfd->kvm;
+> > > > >  
+> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > +	kvm_set_irq(kvm, KVM_IRQFD_IRQ_SOURCE_ID, irqfd->gsi, 1);
+> > > > > +	kvm_set_irq(kvm, KVM_IRQFD_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > >  }
+> > > > >  
+> > > > >  /*
+> > > > > @@ -138,7 +138,7 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
+> > > > >  		irq = rcu_dereference(irqfd->irq_entry);
+> > > > >  		/* An event has been signaled, inject an interrupt */
+> > > > >  		if (irq)
+> > > > > -			kvm_set_msi(irq, kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
+> > > > > +			kvm_set_msi(irq, kvm, KVM_IRQFD_IRQ_SOURCE_ID, 1);
+> > > > >  		else
+> > > > >  			schedule_work(&irqfd->inject);
+> > > > >  		rcu_read_unlock();
+> > > 
+> > > 
+> 
+> 
