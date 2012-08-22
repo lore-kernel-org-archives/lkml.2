@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758429Ab2HVJBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:01:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56286 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab2HVJBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:01:00 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Chinmay V S <cvs268@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "greg@kroah.com" <greg@kroah.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
- accelerometer
-Thread-Topic: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
- accelerometer
-Thread-Index: AQHNgC+0NDpTyonaHU+HVTncuJ8wyZdlGIEAgAAPuoCAAFzA0A==
-Date: Wed, 22 Aug 2012 09:00:40 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA1B975@DBDE01.ent.ti.com>
-References: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
- <201208220748.39106.arnd@arndb.de>
- <CAK-9PRBy0PCQ4XAVZzQpWv5rnT8A9f6F=qxT=pJEaioN7RN_5w@mail.gmail.com>
-In-Reply-To: <CAK-9PRBy0PCQ4XAVZzQpWv5rnT8A9f6F=qxT=pJEaioN7RN_5w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	id S1758707Ab2HVJDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:03:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63343 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab2HVJDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 05:03:10 -0400
+Date: Wed, 22 Aug 2012 11:03:04 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+Message-ID: <20120822090304.GA23336@gmail.com>
+References: <20120820080606.GA6931@gmail.com>
+ <20120820181651.GA737@srcf.ucam.org>
+ <20120821094203.GB12385@gmail.com>
+ <20120821113951.GA22436@srcf.ucam.org>
+ <20120821151910.GA5359@gmail.com>
+ <20120821152828.GB28241@srcf.ucam.org>
+ <20120821155908.GA5499@gmail.com>
+ <20120821161324.GA29665@srcf.ucam.org>
+ <20120821182346.GA7325@gmail.com>
+ <20120821195234.20c173bc@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120821195234.20c173bc@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7M91BCf024004
 
-Hi Chinmay,
 
-Thanks for the comments
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-On Wed, Aug 22, 2012 at 14:14:55, Chinmay V S wrote:
-> Hi All,
+> > Why? Good scheduling is useful even in isolation.
 > 
-> A few nitpicks.
+> For power - I suspect it's damn near irrelevant except on a 
+> big big machine.
+
+With deep enough C states it's rather relevant whether we 
+continue to burn +50W for a couple of more milliseconds or not, 
+and whether we have the right information from the scheduler and 
+timer subsystem about how long the next idle period is expected 
+to be and how bursty a given task is.
+
+'Balance for energy efficiency' obviously ties into the C state 
+and frequency selection logic, which is rather detached right 
+now, running its own (imperfect) scheduling metrics logic and 
+doing pretty much the worst possible C state and frequency 
+decisions in typical everyday desktop workloads.
+
+> Unless you've sorted out your SATA, fixed your phy handling, 
+> optimised your desktop for wakeups and worked down the big 
+> wakeup causes one by one it's turd polishing.
 > 
-> > + * LIS3331DLH spec says 1LSBs corresponds 4G/1024 -> 1LSB is 1000/1024 mG.
-> > + * Sensitivity values for +/-2G, outdata in 12 bits for +/-2G scale. so 4
-> > + * bits adjustment is required
-> Shouldn't it be "1LSB is 4000/1024 mG" ?
+> PM means fixing the stack top to bottom, and its a whackamole 
+> game, each one you fix you find the next. You have to sort the 
+> entire stack from desktop apps to kernel.
 
-Typo mistake this should be 4G/4096
+Moving 'policy' into user-space has been an utter failure, 
+mostly because there's not a single project/subsystem 
+responsible for getting a good result to users. This is why
+I resist "policy should not be in the kernel" meme here.
 
-> Also "outdata in 12bits" (typo. in->is?)
-> 
+> However benchmarks talk - so lets have some benchmarks ... on 
+> a laptop.
 
-If we look at the lis331dlh datasheet 12 bits outdata for +/- 2G resolution
-range and 13 bits for +/- 4G range and 14 bits for +/- 8G range. So output
-data is only 12 bits.
+Agreed.
 
-> On a more technical note, now that LIS3331DLH has 16bit resolution,
-> why don't we simply return the entire 16-bit value in
-> lis3lv02d_read_16(). The fact that lis3lv02d_read_16() has 16-bit
-> resolution can be indicated by
+Thanks,
 
-Depending on the range 2 or 4 or 8 we have to pass the outdata that is
-handled by using the shift_adj member to shift the outdata to corresponding
-bits 12/13/14.
-
-> 
-> @@ -954,6 +984,16 @@ int lis3lv02d_init_device(struct lis3lv02d *lis3)
->                 lis3->odr_mask = CTRL1_ODR0|CTRL1_ODR1|CTRL1_ODR2|CTRL1_ODR3;
->                 lis3->scale = LIS3_SENSITIVITY_8B;
->                 break;
-> +       case WAI_3DLH:
-> +               pr_info("16 bits 3DLH sensor found\n");
-> +               lis3->read_data = lis3lv02d_read_16;
-> +               lis3->mdps_max_val = 32768; /* 16 bits for +/-2G */
-
-This driver supports only +/-2G range of values so it is limited to 2048.
-With this we do not have the runtime change of G range so by default 2G
-is added.
-
-Regards
-AnilKumar
- 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Ingo
