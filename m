@@ -1,91 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab2HVIgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:36:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab2HVIgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:36:35 -0400
-Date: Wed, 22 Aug 2012 10:35:40 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, eranian@google.com, acme@redhat.com, gorcunov@openvz.org,
-        benjamin.redelings@nescent.org, fweisbec@gmail.com,
-        robert.richter@amd.com, drepper@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, asharma@fb.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
-        tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com, mingo@elte.hu
-Subject: [PATCH] perf: Keep the perf_event_attr on version 3
-Message-ID: <20120822083540.GB1003@krava.brq.redhat.com>
-References: <1344345647-11536-6-git-send-email-jolsa@redhat.com>
- <tip-c5ebcedb566ef17bda7b02686e0d658a7bb42ee7@git.kernel.org>
- <1345569116.26596.4.camel@twins>
+	id S1751547Ab2HVIh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:37:28 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49599 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2HVIhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:37:22 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-b9-50349a40faf2
+Date: Wed, 22 Aug 2012 17:37:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: qiuxishi <qiuxishi@gmail.com>, akpm@linux-foundation.org,
+        lliubbo@gmail.com, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        mhocko@suse.cz, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        qiuxishi@huawei.com, wujianguo@huawei.com, bessel.wang@huawei.com,
+        guohanjun@huawei.com, chenkeping@huawei.com, yinghai@kernel.org,
+        wency@cn.fujitsu.com
+Subject: Re: [PATCH] memory-hotplug: fix a drain pcp bug when offline pages
+Message-ID: <20120822083745.GB5369@bbox>
+References: <50337B15.2090701@gmail.com>
+ <20120822033441.GB24667@bbox>
+ <503490F9.2050805@gmail.com>
+ <20120822081410.GA5369@bbox>
+ <50349891.7020809@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345569116.26596.4.camel@twins>
+In-Reply-To: <50349891.7020809@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 07:11:56PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-08-21 at 08:49 -0700, tip-bot for Jiri Olsa wrote:
-> >  #define PERF_ATTR_SIZE_VER3    88      /* add: sample_regs_user */
-> > +#define PERF_ATTR_SIZE_VER4    96      /* add: sample_stack_user */
+Hi Jiang,
+
+On Wed, Aug 22, 2012 at 04:30:09PM +0800, Jiang Liu wrote:
+> On 2012-8-22 16:14, Minchan Kim wrote:
+> > On Wed, Aug 22, 2012 at 03:57:45PM +0800, qiuxishi wrote:
+> >> On 2012-8-22 11:34, Minchan Kim wrote:
+> >>> Hello Xishi,
+> >>>
+> >>> On Tue, Aug 21, 2012 at 08:12:05PM +0800, qiuxishi wrote:
+> >>>> From: Xishi Qiu <qiuxishi@huawei.com>
+> >>>>
+> >>>> When offline a section, we move all the free pages and pcp into MIGRATE_ISOLATE list first.
+> >>>> start_isolate_page_range()
+> >>>> 	set_migratetype_isolate()
+> >>>> 		drain_all_pages(),
+> >>>>
+> >>>> Here is a problem, it is not sure that pcp will be moved into MIGRATE_ISOLATE list. They may
+> >>>> be moved into MIGRATE_MOVABLE list because page_private() maybe 2. So when finish migrating
+> >>>> pages, the free pages from pcp may be allocated again, and faild in check_pages_isolated().
+> >>>> drain_all_pages()
+> >>>> 	drain_local_pages()
+> >>>> 		drain_pages()
+> >>>> 			free_pcppages_bulk()
+> >>>> 				__free_one_page(page, zone, 0, page_private(page));
+> >>>>
+> >>>> If we add move_freepages_block() after drain_all_pages(), it can not sure that all the pcp
+> >>>> will be moved into MIGRATE_ISOLATE list when the system works on high load. The free pages
+> >>>> which from pcp may immediately be allocated again.
+> >>>>
+> >>>> I think the similar bug described in http://marc.info/?t=134250882300003&r=1&w=2
+> >>>
+> >>> Yes. I reported the problem a few month ago but it's not real bug in practice
+> >>> but found by my eyes during looking the code so I wanted to confirm the problem.
+> >>>
+> >>> Do you find that problem in real practice? or just code review?
+> >>>
+> >>
+> >> I use /sys/devices/system/memory/soft_offline_page to offline a lot of pages when the
+> >> system works on high load, then I find some unknown zero refcount pages, such as
+> >> get_any_page: 0x650422: unknown zero refcount page type 19400c00000000
+> >> get_any_page: 0x650867: unknown zero refcount page type 19400c00000000
+> >>
+> >> soft_offline_page()
+> >> 	get_any_page()
+> >> 		set_migratetype_isolate()
+> >> 			drain_all_pages()
+> >>
+> >> I think after drain_all_pages(), pcp are moved into MIGRATE_MOVABLE list which managed by
+> >> buddy allocator, but they are allocated and becaome pcp again as the system works on high
+> >> load. There will be no this problem by applying this patch.
+> >>
+> >>> Anyway, I don't like your approach which I already considered because it hurts hotpath
+> >>> while the race is really unlikely. Get_pageblock_migratetype is never trivial.
+> >>> We should avoid the overhead in hotpath and move into memory-hotplug itself.
+> >>> Do you see my patch in https://patchwork.kernel.org/patch/1225081/ ?
+> >>
+> >> Yes, you are right, I will try to find another way to fix this problem.
+> >> How about doing this work in set_migratetype_isolate(), find the pcp and change the value
+> >> of private to get_pageblock_migratetype(page)?
+> >>
+> > 
+> > Allocator doesn't have any lock when he allocates the page from pcp.
+> > How could you prevent race between allocator and memory-hotplug
+> > routine(ie, set_migratetype_isolate) without hurting hotpath?
+> Hi Minchan,
+> 	I have thought about using a jump label in the hot path, which won't cause big
+> performance drop, but it seems a little dirty. What's your thoughts?
+
+I don't know static_key_false internal well.
+Questions.
+
+1. Is it implemented by all archs?
+2. How is it work? It's almost zero on all archs?
+3. Don't we really have any solution other than hacking the hotpath
+   (ie, order-0 page allocation)?
+4. Please see my solution on above URL. Does it has any problem?
+
 > 
-> Both are introduced in this patch set, there's no release in between,
-> why are we doing two version increments? Seems like pointless version
-> space inflation to me.
+> 	migrate_type = page_private(page);
+> 	if (static_key_false(&memory_hotplug_inprogress))
+> 		migrate_type = get_pageblock_migratetype(page);
+> 	__free_one_page(page, zone, 0, migrate_type);
+> 
+> 	Regards!
+> 	Gerry
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-not sure why I did that, attached patch returns that to version3
-
-jirka
-
----
-Stashing version 4 under version 3 and removing version 4,
-because both version changes were within single patchset.
-
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- include/linux/perf_event.h | 4 ++--
- tools/perf/util/header.c   | 1 -
- 2 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 297ca3d..28f9cee 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -205,8 +205,8 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
- #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
--#define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
--#define PERF_ATTR_SIZE_VER4	96	/* add: sample_stack_user */
-+#define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
-+					/* add: sample_stack_user */
- 
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 1e5b6aa..5ed4812 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1831,7 +1831,6 @@ static const int attr_file_abi_sizes[] = {
- 	[1] = PERF_ATTR_SIZE_VER1,
- 	[2] = PERF_ATTR_SIZE_VER2,
- 	[3] = PERF_ATTR_SIZE_VER3,
--	[4] = PERF_ATTR_SIZE_VER4,
- 	0,
- };
- 
 -- 
-1.7.11.4
-
+Kind regards,
+Minchan Kim
