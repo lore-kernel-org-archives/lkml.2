@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab2HVQYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:24:14 -0400
+	id S964778Ab2HVQYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:24:23 -0400
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:48199 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933045Ab2HVQYK (ORCPT
+	with ESMTP id S933045Ab2HVQYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:24:10 -0400
+	Wed, 22 Aug 2012 12:24:16 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        "3.2.x.." <stable@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>, "3.2.x.." <stable@kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 04/10] h8300: Add missing RCU idle APIs on idle loop
-Date: Wed, 22 Aug 2012 18:23:42 +0200
-Message-Id: <1345652628-15060-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 06/10] m68k: Add missing RCU idle APIs on idle loop
+Date: Wed, 22 Aug 2012 18:23:44 +0200
+Message-Id: <1345652628-15060-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
 References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
@@ -38,32 +38,33 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the h8300's idle loop.
+Add this missing pair of calls in the m68k's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: m68k <linux-m68k@lists.linux-m68k.org>
 Cc: 3.2.x.. <stable@kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/h8300/kernel/process.c |    3 +++
+ arch/m68k/kernel/process.c |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/h8300/kernel/process.c b/arch/h8300/kernel/process.c
-index 0e9c315..f153ed1 100644
---- a/arch/h8300/kernel/process.c
-+++ b/arch/h8300/kernel/process.c
-@@ -36,6 +36,7 @@
+diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
+index c488e3c..ac2892e 100644
+--- a/arch/m68k/kernel/process.c
++++ b/arch/m68k/kernel/process.c
+@@ -25,6 +25,7 @@
  #include <linux/reboot.h>
- #include <linux/fs.h>
- #include <linux/slab.h>
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
 +#include <linux/rcupdate.h>
  
  #include <asm/uaccess.h>
  #include <asm/traps.h>
-@@ -78,8 +79,10 @@ void (*idle)(void) = default_idle;
- void cpu_idle(void)
+@@ -75,8 +76,10 @@ void cpu_idle(void)
  {
+ 	/* endless idle loop with no priority at all */
  	while (1) {
 +		rcu_idle_enter();
  		while (!need_resched())
