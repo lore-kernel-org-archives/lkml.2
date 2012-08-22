@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab2HVIpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:45:47 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:39658 "EHLO
+	id S1754708Ab2HVIpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:45:42 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:43096 "EHLO
 	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754960Ab2HVIoZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751880Ab2HVIoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:44:25 -0400
+	Wed, 22 Aug 2012 04:44:30 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Samuel Ortiz <sameo@linux.intel.com>
 Cc: Etienne Carriere <etienne.carriere@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/7] gpio/ab8500: MASK_ON_SUSPEND
-Date: Wed, 22 Aug 2012 10:44:02 +0200
-Message-ID: <1345625042-5678-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 2/7] mfd/ab8500: MASK_ON_SUSPEND
+Date: Wed, 22 Aug 2012 10:43:56 +0200
+Message-ID: <1345625036-5643-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -39,25 +38,25 @@ the system only because the system attempt to enter the suspended mode.
 To prevent such IRQs to trig, all irq chips embedded in ux500 platform
 should enable their IRQCHIP_MASK_ON_SUSPEND flag.
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Etienne Carriere <etienne.carriere@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/gpio/gpio-ab8500.c | 1 +
+ drivers/mfd/ab8500-core.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpio/gpio-ab8500.c b/drivers/gpio/gpio-ab8500.c
-index 050c05d..3d2cd66 100644
---- a/drivers/gpio/gpio-ab8500.c
-+++ b/drivers/gpio/gpio-ab8500.c
-@@ -203,6 +203,7 @@ static struct gpio_chip ab8500gpio_chip = {
- 	.direction_output	= ab8500_gpio_direction_output,
- 	.set			= ab8500_gpio_set,
- 	.to_irq			= ab8500_gpio_to_irq,
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index 626b4ec..b25a0b0 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -386,6 +386,7 @@ static struct irq_chip ab8500_irq_chip = {
+ 	.irq_mask		= ab8500_irq_mask,
+ 	.irq_disable		= ab8500_irq_mask,
+ 	.irq_unmask		= ab8500_irq_unmask,
 +	.flags			= IRQCHIP_MASK_ON_SUSPEND,
  };
  
- static unsigned int irq_to_rising(unsigned int irq)
+ static int ab8500_handle_hierarchical_line(struct ab8500 *ab8500,
 -- 
 1.7.11.3
 
