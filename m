@@ -1,118 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab2HVSDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:03:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38329 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755571Ab2HVSDO (ORCPT
+	id S1758395Ab2HVSFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 14:05:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65004 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191Ab2HVSFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:03:14 -0400
+	Wed, 22 Aug 2012 14:05:06 -0400
+Date: Wed, 22 Aug 2012 11:05:00 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 04/17] workqueue: use new hashtable implementation
+Message-ID: <20120822180500.GB19212@google.com>
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
+ <1345602432-27673-5-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120822154908.2e6ef3c0@feng-i7>
-References: <5017D19B.5080806@redhat.com> <1343738627.27983.30.camel@gandalf.stny.rr.com>
- <5017D4AB.3090107@redhat.com> <1343740419.27983.33.camel@gandalf.stny.rr.com>
- <20120731234336.GA5526@localhost> <1343778699.27983.70.camel@gandalf.stny.rr.com>
- <20120731235705.GW2422@linux.vnet.ibm.com> <1343779778.27983.73.camel@gandalf.stny.rr.com>
- <20120801001811.GX2422@linux.vnet.ibm.com> <20120801004319.GA7043@localhost>
- <20120822025008.GA8066@localhost> <20120822154908.2e6ef3c0@feng-i7>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 22 Aug 2012 11:02:52 -0700
-Message-ID: <CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
-Subject: Re: pci_get_subsys: GFP_KERNEL allocations with IRQs disabled
-To: Feng Tang <feng.tang@intel.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345602432-27673-5-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 12:49 AM, Feng Tang <feng.tang@intel.com> wrote:
-> Hi Fengguang,
->
->
-> On Wed, 22 Aug 2012 10:50:08 +0800
-> Fengguang Wu <fengguang.wu@intel.com> wrote:
->
->> Feng,
->>
->> > I think it's pci_get_subsys() triggered this assert:
->> >
->> >         /*
->> >          * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
->> >          */
->> >         if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
->> >                 return;
->>
->> It's bisected down to this commit:
->>
->> commit 55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
->> Author:     Feng Tang <feng.tang@intel.com>
->> AuthorDate: Wed May 30 23:15:41 2012 +0800
->> Commit:     Ingo Molnar <mingo@kernel.org>
->> CommitDate: Wed Jun 6 12:03:23 2012 +0200
->>
->>     x86/reboot: Fix a warning message triggered by stop_other_cpus()
->>
->> Thanks,
->> Fengguang
->
-> Thanks for the bisection.
->
-> Revert my commit should be a solution, but can we simply make the pci_device_id
-> a local on stack one instead of using sleepable kmalloc for it, as this
-> sounds fragile when pci_get_subsys get called in a late system reboot stage?
+On Wed, Aug 22, 2012 at 04:26:59AM +0200, Sasha Levin wrote:
+> Switch workqueues to use the new hashtable implementation. This reduces the amount of
+> generic unrelated code in the workqueues.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
-I think this is a great idea.  Can you make this a real patch, with a
-changelog and Signed-off-by?
+Acked-by: Tejun Heo <tj@kernel.org>
 
-We should also remove the obsolete comment about early boot.  I'm not
-sure the no_pci_devices() check is needed, either.  And we can make
-the same simplification in pci_get_class().
+Thanks.
 
-> ------------
-> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
-> index 993d4a0..e5ccede 100644
-> --- a/drivers/pci/search.c
-> +++ b/drivers/pci/search.c
-> @@ -246,7 +246,7 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
->                                struct pci_dev *from)
->  {
->         struct pci_dev *pdev;
-> -       struct pci_device_id *id;
-> +       struct pci_device_id id;
->
->         /*
->          * pci_find_subsys() can be called on the ide_setup() path,
-> @@ -257,17 +257,12 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
->         if (unlikely(no_pci_devices()))
->                 return NULL;
->
-> -       id = kzalloc(sizeof(*id), GFP_KERNEL);
-> -       if (!id)
-> -               return NULL;
-> -       id->vendor = vendor;
-> -       id->device = device;
-> -       id->subvendor = ss_vendor;
-> -       id->subdevice = ss_device;
-> -
-> -       pdev = pci_get_dev_by_id(id, from);
-> -       kfree(id);
-> +       id.vendor = vendor;
-> +       id.device = device;
-> +       id.subvendor = ss_vendor;
-> +       id.subdevice = ss_device;
->
-> +       pdev = pci_get_dev_by_id(&id, from);
-
-No need for "pdev" here, since we don't have to free anything.
-
->         return pdev;
->  }
+-- 
+tejun
