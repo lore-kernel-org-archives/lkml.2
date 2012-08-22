@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab2HVNhW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 09:37:22 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4005 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427Ab2HVNhU convert rfc822-to-8bit (ORCPT
+	id S932619Ab2HVNhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 09:37:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31549 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467Ab2HVNhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 09:37:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 22 Aug 2012 06:36:55 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "pullip.cho@samsung.com" <pullip.cho@samsung.com>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "minchan@kernel.org" <minchan@kernel.org>
-Date: Wed, 22 Aug 2012 15:36:48 +0200
-Subject: Re: [RFC 2/4] ARM: dma-mapping: IOMMU allocates pages from pool
- with GFP_ATOMIC
-Thread-Topic: [RFC 2/4] ARM: dma-mapping: IOMMU allocates pages from pool
- with GFP_ATOMIC
-Thread-Index: Ac2Aay6W1IqltmFFRWaC/1lscM4zfg==
-Message-ID: <20120822.163648.3800987367886904.hdoyu@nvidia.com>
-References: <1345630830-9586-1-git-send-email-hdoyu@nvidia.com><1345630830-9586-3-git-send-email-hdoyu@nvidia.com><CAHQjnOOF7Ca-Dz8K_zcS=gxQsJvKYaWA3tqUeK1RSd-wLYZ44w@mail.gmail.com>
-In-Reply-To: <CAHQjnOOF7Ca-Dz8K_zcS=gxQsJvKYaWA3tqUeK1RSd-wLYZ44w@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Wed, 22 Aug 2012 09:37:45 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=RMExtYoXNVsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=QJxaPmtj2xwA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=GB8cqOoQ4109WcGNhpwA:9 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1345642662.5069.28.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/5] trace-cmd: Use TRACE_DIR envrionment variable if
+ defined
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+        Arnd Bergmann <arnd@arndb.de>, Borislav Petkov <bp@amd64.org>,
+        "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com
+Date: Wed, 22 Aug 2012 09:37:42 -0400
+In-Reply-To: <20120822084301.17293.90649.stgit@ltc189.sdl.hitachi.co.jp>
+References: <20120822084251.17293.69086.stgit@ltc189.sdl.hitachi.co.jp>
+	 <20120822084301.17293.90649.stgit@ltc189.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2012-08-22 at 17:43 +0900, Yoshihiro YUNOMAE wrote:
+> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> 
+> Use TRACE_DIR environment variable for setting
 
-KyongHo Cho <pullip.cho@samsung.com> wrote @ Wed, 22 Aug 2012 14:47:00 +0200:
+TRACING_DIR would be better, as we are searching for /debug/tracing and
+not /debug/trace. Perhaps DEBUG_TRACING_DIR would be even better as to
+be less of a generic term.
 
-> vzalloc() call in __iommu_alloc_buffer() also causes BUG() in atomic context.
+-- Steve
 
-Right.
+> debugfs/tracing directory if defined. This is
+> for controlling guest(or remote) ftrace.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> ---
+> 
+>  trace-util.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/trace-util.c b/trace-util.c
+> index e128188..d5a3eb4 100644
+> --- a/trace-util.c
+> +++ b/trace-util.c
+> @@ -311,6 +311,15 @@ char *tracecmd_find_tracing_dir(void)
+>  	char type[100];
+>  	FILE *fp;
+>  	
+> +	tracing_dir = getenv("TRACE_DIR");
+> +	if (tracing_dir) {
+> +		tracing_dir = strdup(tracing_dir);
+> +		if (!tracing_dir)
+> +			die("malloc");
+> +		warning("Use environmental tracing directory: %s\n", tracing_dir);
+> +		return tracing_dir;
+> +	}
+> +
+>  	if ((fp = fopen("/proc/mounts","r")) == NULL) {
+>  		warning("Can't open /proc/mounts for read");
+>  		return NULL;
+> 
 
-I've been thinking that kzalloc() may be enough here, since
-vzalloc() was introduced to avoid allocation failure for big chunk of
-memory, but I think that it's unlikely that the number of page array
-can be so big. So I propose to drop vzalloc() here, and just simply to
-use kzalloc only as below(*1).
 
-For example, 
-
-1920(H) x 1080(W) x 4(bytes) ~= 8MiB
-
-For 8 MiB buffer,
-  8(MiB) * 1024 = 8192(KiB)
-  8192(KiB) / 4(KiB/page) = 2048 pages
-  sizeof(struct page *) = 4 bytes
-  2048(pages) * 4(bytes/page) = 8192(bytes) = 8(KiB)
-  8(KiB) / 4(KiB/page) = 2 pages
-
-If the above estimation is right(I hope;)), the necessary pages are
-_at most_ 2 pages. If the system gets into the situation to fail to
-allocate 2 contiguous pages, that's real the problem. I guess that
-that kind of fragmentation problem would be solved with page migration
-or something, especially nowadays devices are getting larger memories.
-
-*1:
->From a613c40d1b3d4fb1577cdb0807a74e8dbd08a3e6 Mon Sep 17 00:00:00 2001
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-Date: Wed, 22 Aug 2012 16:25:54 +0300
-Subject: [PATCH 1/1] ARM: dma-mapping: Use only kzalloc without vzalloc
-
-Use only kzalloc for atomic allocation.
-
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mm/dma-mapping.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 4656c0f..d4f1cf2 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -1083,10 +1083,7 @@ static struct page **__iommu_alloc_buffer(struct device *dev, size_t size,
- 	int count = size >> PAGE_SHIFT;
- 	int array_size = count * sizeof(struct page *);
- 
--	if (array_size <= PAGE_SIZE)
--		pages = kzalloc(array_size, gfp);
--	else
--		pages = vzalloc(array_size);
-+	pages = kzalloc(array_size, gfp);
- 	if (!pages)
- 		return NULL;
- 
-@@ -1107,10 +1104,7 @@ static struct page **__iommu_alloc_buffer(struct device *dev, size_t size,
- 
- 	return pages;
- error:
--	if (array_size <= PAGE_SIZE)
--		kfree(pages);
--	else
--		vfree(pages);
-+	kfree(pages);
- 	return NULL;
- }
- 
--- 
-1.7.5.4
