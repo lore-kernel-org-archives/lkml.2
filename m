@@ -1,66 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab2HVHIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:08:07 -0400
-Received: from mail.telros.ru ([83.136.244.21]:53156 "EHLO mail.telros.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab2HVHG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:06:57 -0400
-From: Volokh Konstantin <volokh84@gmail.com>
-To: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, volokh@telros.ru
-Cc: Volokh Konstantin <volokh84@gmail.com>
-Subject: [PATCH 07/10] staging: media: go7007: README TODO
-Date: Wed, 22 Aug 2012 14:45:16 +0400
-Message-Id: <1345632319-23224-7-git-send-email-volokh84@gmail.com>
-In-Reply-To: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
-References: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
+	id S1757134Ab2HVHIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 03:08:01 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56465 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755856Ab2HVHHX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 03:07:23 -0400
+X-AuditID: 9c930197-b7bb2ae0000011d9-00-503485273e45
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 3/4] tools lib traceevent: Introduce pevent_strerror
+Date: Wed, 22 Aug 2012 16:00:30 +0900
+Message-Id: <1345618831-9148-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1345618831-9148-1-git-send-email-namhyung@kernel.org>
+References: <1345618831-9148-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Volokh Konstantin <volokh84@gmail.com>
----
- drivers/staging/media/go7007/README |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-diff --git a/drivers/staging/media/go7007/README b/drivers/staging/media/go7007/README
-index aeba132..237f45d 100644
---- a/drivers/staging/media/go7007/README
-+++ b/drivers/staging/media/go7007/README
-@@ -5,6 +5,32 @@ Todo:
- 	  and added to the build.
- 	- testing?
- 	- handle churn in v4l layer.
-+	- Some features for wis-tw2804 subdev control (comb filter,coring,IF comp,peak,more over...)
-+	- Cropping&Scaling on tw2804
-+	- Motion detector on tw2804, spatial&temporal sensitivity & masks control,velocity
-+	- Control Output Format on tw2804
-+	- go7007-v4l2.c need rewrite with new v4l2 style without nonstandard IO controls (set detector & bitrate)
-+
-+13/05/2012 3.4.0-rc+:
-+Changes:
-+	- Convert to V4L2 control framework
-+
-+05/05/2012 3.4.0-rc+:
-+Changes:
-+	- When go7007 reset device, i2c was not working (need rewrite GPIO5)
-+	- As wis2804 has i2c_addr=0x00/*really*/, so need to set I2C_CLIENT_TEN flag for validity
-+	- Some main nonzero initialization, rewrites with kzalloc instead kmalloc
-+	- STATUS_SHUTDOWN was placed in incorrect place, so if firmware wasn`t loaded, we
-+		failed v4l2_device_unregister with kernel panic (OOPS)
-+	- Some new v4l2 style features as call_all(...s_stream...) for using subdev calls
-+	- wis-tw2804.ko module code was incompatible with 3.4.x branch in initialization v4l2_subdev parts.
-+		now i2c_get_clientdata(...) contains v4l2_subdev struct instead non standard wis_tw2804 struct
-+
-+Adds:
-+	- Switch between 2 composite video inputs on channel: VIN[1,2,3,4]A and VIN[1,2,3,4]B
-+	- Additional chipset wis2804 controls with: gain,auto gain,inputs[0,1],color kill,chroma gain,gain balances,
-+		for all 4 channels (from tw2804.pdf)
-+	- Power control for each 4 ADC up when s_stream(...,1), down otherwise in wis-tw2804 module
+The pevent_strerror() sets @buf to a string that describes the
+(libtraceevent-specific) error condition that is passed via @errnum.
+
+This is similar to strerror_r() and does same thing if @errnum has a
+standard errno value.
+
+To sync error string with its code, define PEVENT_ERRORS with _PE()
+macro and use it as suggested by Steven.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-hlenk1kvu9igyqowtm2okpz6@git.kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/event-parse.c | 43 ++++++++++++++++++++++++++++++++++++++
+ tools/lib/traceevent/event-parse.h | 20 ++++++++++++------
+ 2 files changed, 57 insertions(+), 6 deletions(-)
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index a46cae701db7..1373e4cf109e 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -4795,6 +4795,49 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 	return ret;
+ }
  
- Please send patches to Greg Kroah-Hartman <greg@linuxfoundation.org> and Cc: Ross
- Cohen <rcohen@snurgle.org> as well.
++#undef _PE
++#define _PE(code, str) str
++static const char * const pevent_error_str[] = {
++	PEVENT_ERRORS
++};
++#undef _PE
++
++int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
++		    char *buf, size_t buflen)
++{
++	int idx;
++	const char *msg;
++
++	if (errnum >= 0) {
++		strerror_r(errnum, buf, buflen);
++		return 0;
++	}
++
++	if (errnum <= __PEVENT_ERRNO__START ||
++	    errnum >= __PEVENT_ERRNO__END)
++		return -1;
++
++	idx = errnum - __PEVENT_ERRNO__START;
++	msg = pevent_error_str[idx];
++
++	switch (errnum) {
++	case PEVENT_ERRNO__MEM_ALLOC_FAILED:
++	case PEVENT_ERRNO__PARSE_EVENT_FAILED:
++	case PEVENT_ERRNO__READ_ID_FAILED:
++	case PEVENT_ERRNO__READ_FORMAT_FAILED:
++	case PEVENT_ERRNO__READ_PRINT_FAILED:
++	case PEVENT_ERRNO__OLD_FTRACE_ARG_FAILED:
++		snprintf(buf, buflen, "%s", msg);
++		break;
++
++	default:
++		/* cannot reach here */
++		break;
++	}
++
++	return 0;
++}
++
+ int get_field_val(struct trace_seq *s, struct format_field *field,
+ 		  const char *name, struct pevent_record *record,
+ 		  unsigned long long *val, int err)
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 3c48229a7bce..527df038a25f 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -345,6 +345,16 @@ enum pevent_flag {
+ 	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
+ };
+ 
++#define PEVENT_ERRORS 							      \
++	_PE(MEM_ALLOC_FAILED,	"failed to allocate memory"),		      \
++	_PE(PARSE_EVENT_FAILED,	"failed to parse event"),		      \
++	_PE(READ_ID_FAILED,	"failed to read event id"),		      \
++	_PE(READ_FORMAT_FAILED,	"failed to read event format"),		      \
++	_PE(READ_PRINT_FAILED,	"failed to read event print fmt"), 	      \
++	_PE(OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace")
++
++#undef _PE
++#define _PE(__code, __str) PEVENT_ERRNO__ ## __code
+ enum pevent_errno {
+ 	PEVENT_ERRNO__SUCCESS			= 0,
+ 
+@@ -357,15 +367,11 @@ enum pevent_errno {
+ 	 */
+ 	__PEVENT_ERRNO__START			= -100000,
+ 
+-	PEVENT_ERRNO__MEM_ALLOC_FAILED		= __PEVENT_ERRNO__START,
+-	PEVENT_ERRNO__PARSE_EVENT_FAILED,
+-	PEVENT_ERRNO__READ_ID_FAILED,
+-	PEVENT_ERRNO__READ_FORMAT_FAILED,
+-	PEVENT_ERRNO__READ_PRINT_FAILED,
+-	PEVENT_ERRNO__OLD_FTRACE_ARG_FAILED,
++	PEVENT_ERRORS,
+ 
+ 	__PEVENT_ERRNO__END,
+ };
++#undef _PE
+ 
+ struct cmdline;
+ struct cmdline_list;
+@@ -583,6 +589,8 @@ int pevent_data_pid(struct pevent *pevent, struct pevent_record *rec);
+ const char *pevent_data_comm_from_pid(struct pevent *pevent, int pid);
+ void pevent_event_info(struct trace_seq *s, struct event_format *event,
+ 		       struct pevent_record *record);
++int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
++		    char *buf, size_t buflen);
+ 
+ struct event_format **pevent_list_events(struct pevent *pevent, enum event_sort_type);
+ struct format_field **pevent_event_common_fields(struct event_format *event);
 -- 
-1.7.7.6
+1.7.11.4
 
