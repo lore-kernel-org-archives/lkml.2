@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933223Ab2HVTKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:10:54 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1284 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757739Ab2HVTKw (ORCPT
+	id S965007Ab2HVTPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:15:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33446 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964917Ab2HVTPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:10:52 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6811"; a="225991222"
-Message-ID: <50352EB9.4000402@codeaurora.org>
-Date: Wed, 22 Aug 2012 12:10:49 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Fix XIP build due to PHYS_OFFSET definition moving
-References: <1343956994-27513-1-git-send-email-sboyd@codeaurora.org> <5024AE2D.5050506@codeaurora.org>
-In-Reply-To: <5024AE2D.5050506@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 22 Aug 2012 15:15:37 -0400
+Date: Wed, 22 Aug 2012 12:15:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between
+ secondary MMU and host
+Message-Id: <20120822121535.8be38858.akpm@linux-foundation.org>
+In-Reply-To: <20120822162955.GT29978@redhat.com>
+References: <503358FF.3030009@linux.vnet.ibm.com>
+	<20120821150618.GJ27696@redhat.com>
+	<5034763D.60508@linux.vnet.ibm.com>
+	<20120822162955.GT29978@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/12 23:46, Stephen Boyd wrote:
-> On 8/2/2012 6:23 PM, Stephen Boyd wrote:
->> During the p2v changes, the PHYS_OFFSET #define moved into a
->> !__ASSEMBLY__ section. This causes a XIP build to fail with
->>
->>  arch/arm/kernel/head.o: In function 'stext':
->>  arch/arm/kernel/head.S:146: undefined reference to 'PHYS_OFFSET'
->>
->> Momentarily leave the #ifndef __ASSEMBLY__ section so we can
->> define PHYS_OFFSET for all compilation units.
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>
->> I don't know if it's worth stable, seems that nobody has compiled XIP for
->> a year (back to 2.6.39 days?).
-> Is this approach acceptable? Shall I put this in the patch tracker?
+On Wed, 22 Aug 2012 18:29:55 +0200
+Andrea Arcangeli <aarcange@redhat.com> wrote:
+
+> On Wed, Aug 22, 2012 at 02:03:41PM +0800, Xiao Guangrong wrote:
+> > On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
+> > > CPU0  		    	    	CPU1
+> > > 				oldpage[1] == 0 (both guest & host)
+> > > oldpage[0] = 1
+> > > trigger do_wp_page
+> > 
+> > We always do ptep_clear_flush before set_pte_at_notify(),
+> > at this point, we have done:
+> >   pte = 0 and flush all tlbs
+> > > mmu_notifier_change_pte
+> > > spte = newpage + writable
+> > > 				guest does newpage[1] = 1
+> > > 				vmexit
+> > > 				host read oldpage[1] == 0
+> > 
+> >                   It can not happen, at this point pte = 0, host can not
+> > 		  access oldpage anymore, host read can generate #PF, it
+> >                   will be blocked on page table lock until CPU 0 release the lock.
+> 
+> Agreed, this is why your fix is safe.
+> 
+> ...
 >
+> Thanks a lot for fixing this subtle race!
 
-I'll take silence to mean "yes", so I'll put this in the patch tracker
-unless someone objects.
+I'll take that as an ack.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Unfortunately we weren't told the user-visible effects of the bug,
+which often makes it hard to determine which kernel versions should be
+patched.  Please do always provide this information when fixing a bug.
+
 
