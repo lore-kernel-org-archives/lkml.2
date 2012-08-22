@@ -1,676 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab2HVIYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:24:22 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48138 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab2HVIWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:22:52 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 5/9] pinctrl: mvebu: add pinctrl driver for Armada XP
-Date: Wed, 22 Aug 2012 10:22:26 +0200
-Message-Id: <1345623750-10645-6-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1753988Ab2HVIYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:24:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57066 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab2HVIYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:24:33 -0400
+Date: Wed, 22 Aug 2012 11:25:35 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 0/2] kvm: level irqfd support
+Message-ID: <20120822082535.GA10680@redhat.com>
+References: <20120821190800.24958.74812.stgit@bling.home>
+ <20120822003129.GK9027@redhat.com>
+ <1345598895.29292.115.camel@ul30vt.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345598895.29292.115.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+On Tue, Aug 21, 2012 at 07:28:15PM -0600, Alex Williamson wrote:
+> On Wed, 2012-08-22 at 03:31 +0300, Michael S. Tsirkin wrote:
+> > On Tue, Aug 21, 2012 at 01:28:57PM -0600, Alex Williamson wrote:
+> > > Here's the much anticipated re-write of support for level irqfds.  As
+> > > Michael suggested, I've rolled the eoi/ack notification fd into
+> > > KVM_IRQFD as a new mode.  For lack of a better name, as there seems to
+> > > be objections to associating this specifically with an EOI or an ACK,
+> > > I've name this OADN or "On Ack, De-assert & Notify".
+> > > 
+> > > Patch 1of2 switches current KVM_IRQFDs to use their own IRQ source ID
+> > > since we're potentially stepping on KVM_USERSPACE_IRQ_SOURCE_ID.
+> > > Unfurtunately I was not able to make 2of2 use a single IRQ source ID,
+> > > the reason is it's racy.  Objects to track OADNs are made dynamically,
+> > > we look through existing ones for a match under spinlock and setup a
+> > > new one if there's no match.  On teardown, we can remove the OADN from
+> > > the list under lock, but that same lock prevents us from de-assigning
+> > > the IRQ ACK notifier or waiting for an RCU grace period.  We must make
+> > > sure that any unused GSI is de-asserted, but the above means it's
+> > > possible that another OADN has been created for this source ID/GSI
+> > > and de-asserting the GSI could lead to breakage.
+> > 
+> > I do not see it. What breakage? Could you give an example please?
+> > 
+> > 
+> > I think what you are saying is last deassign must clear
+> > since otherwise we never will clear.
+> > I agree it is either that or delay deassign until ack.
+> > 
+> > Can it be as simple as this (after all rcu etc dances)?
+> > 	lock irqfds
+> > 	if no oadns
+> > 		set level to 0
+> > 	unlock irqfds
+> > ?
+> 
+> lock irqfds
+> remove irqfd from oadn list
+> if no oadns
+>     remove oadn
+>     set gsi 0
+> unlock
+>                                     lock irqfds
+>                                     new oadn
+>                                     unlock irqfds
+> 
+> >> EOI 
+>                                                           ack notify new oadn
+>                                                           de-assert gsi
+>                                                           notify new oadn
+> >> re-assert irqfd
+>                                                           ack notify old oadn
+>                                                           de-assert gsi
+>                                                           notify old oadn
+> 
+> synchronize_rcu
+> 
+> kvm_unregister_irq_ack_notifier
+>
+> So, because the unregister is removed from the final clear and because
+> we share an IRQ source ID there's a window where we can have two oadns
+> registered for the same GSI.  The new one will de-assert and notify
+> while the old one has an empty list to notify, but still de-asserts.  We
+> can therefore de-assert w/o notify.
+> 
+> By using a new source ID, we separate the two so users of the new oadn
+> can't race the old and we can cleanly free the old source ID,
+> de-asserting it.
 
-This pinctrl driver is not a full-blown pinctrl driver from scratch:
-it relies on the common pinctrl-mvebu driver, which is used for all
-Marvell EBU SoCs.
+Need to think about it some more but is the problem two
+ack notifiers for the same gsi?
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
----
-v2: replaced variant with enum and used bitops.h
+In that case, how about we add __kvm_unregister_irq_ack_notifier
+with no locking, and do most of the above under
+kvm->irq_lock?
 
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Lior Amsalem <alior@marvell.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
----
- .../bindings/pinctrl/marvell,armada-xp-pinctrl.txt |  100 +++++
- drivers/pinctrl/Kconfig                            |    4 +
- drivers/pinctrl/Makefile                           |    1 +
- drivers/pinctrl/pinctrl-armada-xp.c                |  468 ++++++++++++++++++++
- 4 files changed, 573 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
- create mode 100644 drivers/pinctrl/pinctrl-armada-xp.c
+With one change: it is better not to call synchronize_rcu
+under irq lock, I think we can safely move it to after
+__kvm_unregister_irq_ack_notifier.
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
-new file mode 100644
-index 0000000..bfa0a2e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
-@@ -0,0 +1,100 @@
-+* Marvell Armada XP SoC pinctrl driver for mpp
-+
-+Please refer to marvell,mvebu-pinctrl.txt in this directory for common binding
-+part and usage.
-+
-+Required properties:
-+- compatible: "marvell,mv78230-pinctrl", "marvell,mv78260-pinctrl",
-+              "marvell,mv78460-pinctrl"
-+
-+This driver supports all Armada XP variants, i.e. mv78230, mv78260, and mv78460.
-+
-+Available mpp pins/groups and functions:
-+Note: brackets (x) are not part of the mpp name for marvell,function and given
-+only for more detailed description in this document.
-+
-+* Marvell Armada XP (all variants)
-+
-+name          pins     functions
-+================================================================================
-+mpp0          0        gpio, ge0(txclko), lcd(d0)
-+mpp1          1        gpio, ge0(txd0), lcd(d1)
-+mpp2          2        gpio, ge0(txd1), lcd(d2)
-+mpp3          3        gpio, ge0(txd2), lcd(d3)
-+mpp4          4        gpio, ge0(txd3), lcd(d4)
-+mpp5          5        gpio, ge0(txctl), lcd(d5)
-+mpp6          6        gpio, ge0(rxd0), lcd(d6)
-+mpp7          7        gpio, ge0(rxd1), lcd(d7)
-+mpp8          8        gpio, ge0(rxd2), lcd(d8)
-+mpp9          9        gpio, ge0(rxd3), lcd(d9)
-+mpp10         10       gpio, ge0(rxctl), lcd(d10)
-+mpp11         11       gpio, ge0(rxclk), lcd(d11)
-+mpp12         12       gpio, ge0(txd4), ge1(txd0), lcd(d12)
-+mpp13         13       gpio, ge0(txd5), ge1(txd1), lcd(d13)
-+mpp14         14       gpio, ge0(txd6), ge1(txd2), lcd(d15)
-+mpp15         15       gpio, ge0(txd7), ge1(txd3), lcd(d16)
-+mpp16         16       gpio, ge0(txd7), ge1(txd3), lcd(d16)
-+mpp17         17       gpio, ge0(col), ge1(txctl), lcd(d17)
-+mpp18         18       gpio, ge0(rxerr), ge1(rxd0), lcd(d18), ptp(trig)
-+mpp19         19       gpio, ge0(crs), ge1(rxd1), lcd(d19), ptp(evreq)
-+mpp20         20       gpio, ge0(rxd4), ge1(rxd2), lcd(d20), ptp(clk)
-+mpp21         21       gpio, ge0(rxd5), ge1(rxd3), lcd(d21), mem(bat)
-+mpp22         22       gpio, ge0(rxd6), ge1(rxctl), lcd(d22), sata0(prsnt)
-+mpp23         23       gpio, ge0(rxd7), ge1(rxclk), lcd(d23), sata1(prsnt)
-+mpp24         24       gpio, lcd(hsync), sata1(prsnt), nf(bootcs-re), tdm(rst)
-+mpp25         25       gpio, lcd(vsync), sata0(prsnt), nf(bootcs-we), tdm(pclk)
-+mpp26         26       gpio, lcd(clk), tdm(fsync), vdd(cpu1-pd)
-+mpp27         27       gpio, lcd(e), tdm(dtx), ptp(trig)
-+mpp28         28       gpio, lcd(pwm), tdm(drx), ptp(evreq)
-+mpp29         29       gpio, lcd(ref-clk), tdm(int0), ptp(clk), vdd(cpu0-pd)
-+mpp30         30       gpio, tdm(int1), sd0(clk)
-+mpp31         31       gpio, tdm(int2), sd0(cmd), vdd(cpu0-pd)
-+mpp32         32       gpio, tdm(int3), sd0(d0), vdd(cpu1-pd)
-+mpp33         33       gpio, tdm(int4), sd0(d1), mem(bat)
-+mpp34         34       gpio, tdm(int5), sd0(d2), sata0(prsnt)
-+mpp35         35       gpio, tdm(int6), sd0(d3), sata1(prsnt)
-+mpp36         36       gpio, spi(mosi)
-+mpp37         37       gpio, spi(miso)
-+mpp38         38       gpio, spi(sck)
-+mpp39         39       gpio, spi(cs0)
-+mpp40         40       gpio, spi(cs1), uart2(cts), lcd(vga-hsync), vdd(cpu1-pd),
-+                       pcie(clkreq0)
-+mpp41         41       gpio, spi(cs2), uart2(rts), lcd(vga-vsync), sata1(prsnt),
-+                       pcie(clkreq1)
-+mpp42         42       gpio, uart2(rxd), uart0(cts), tdm(int7), tdm-1(timer),
-+                       vdd(cpu0-pd)
-+mpp43         43       gpio, uart2(txd), uart0(rts), spi(cs3), pcie(rstout),
-+                       vdd(cpu2-3-pd){1}
-+mpp44         44       gpio, uart2(cts), uart3(rxd), spi(cs4), pcie(clkreq2),
-+                       mem(bat)
-+mpp45         45       gpio, uart2(rts), uart3(txd), spi(cs5), sata1(prsnt)
-+mpp46         46       gpio, uart3(rts), uart1(rts), spi(cs6), sata0(prsnt)
-+mpp47         47       gpio, uart3(cts), uart1(cts), spi(cs7), pcie(clkreq3),
-+                       ref(clkout)
-+mpp48         48       gpio, tclk, dev(burst/last)
-+
-+* Marvell Armada XP (mv78260 and mv78460 only)
-+
-+name          pins     functions
-+================================================================================
-+mpp49         49       gpio, dev(we3)
-+mpp50         50       gpio, dev(we2)
-+mpp51         51       gpio, dev(ad16)
-+mpp52         52       gpio, dev(ad17)
-+mpp53         53       gpio, dev(ad18)
-+mpp54         54       gpio, dev(ad19)
-+mpp55         55       gpio, dev(ad20), vdd(cpu0-pd)
-+mpp56         56       gpio, dev(ad21), vdd(cpu1-pd)
-+mpp57         57       gpio, dev(ad22), vdd(cpu2-3-pd){1}
-+mpp58         58       gpio, dev(ad23)
-+mpp59         59       gpio, dev(ad24)
-+mpp60         60       gpio, dev(ad25)
-+mpp61         61       gpio, dev(ad26)
-+mpp62         62       gpio, dev(ad27)
-+mpp63         63       gpio, dev(ad28)
-+mpp64         64       gpio, dev(ad29)
-+mpp65         65       gpio, dev(ad30)
-+mpp66         66       gpio, dev(ad31)
-+
-+Notes:
-+* {1} vdd(cpu2-3-pd) only available on mv78460.
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index e16b8b0..a754144 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -163,6 +163,10 @@ config PINCTRL_ARMADA_370
- 	bool
- 	select PINCTRL_MVEBU
- 
-+config PINCTRL_ARMADA_XP
-+	bool
-+	select PINCTRL_MVEBU
-+
- source "drivers/pinctrl/spear/Kconfig"
- 
- endmenu
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index e6d6667..f2ea050 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -33,5 +33,6 @@ obj-$(CONFIG_PINCTRL_MVEBU)	+= pinctrl-mvebu.o
- obj-$(CONFIG_PINCTRL_DOVE)	+= pinctrl-dove.o
- obj-$(CONFIG_PINCTRL_KIRKWOOD)	+= pinctrl-kirkwood.o
- obj-$(CONFIG_PINCTRL_ARMADA_370) += pinctrl-armada-370.o
-+obj-$(CONFIG_PINCTRL_ARMADA_XP)  += pinctrl-armada-xp.o
- 
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
-diff --git a/drivers/pinctrl/pinctrl-armada-xp.c b/drivers/pinctrl/pinctrl-armada-xp.c
-new file mode 100644
-index 0000000..40bd52a
---- /dev/null
-+++ b/drivers/pinctrl/pinctrl-armada-xp.c
-@@ -0,0 +1,468 @@
-+/*
-+ * Marvell Armada XP pinctrl driver based on mvebu pinctrl core
-+ *
-+ * Copyright (C) 2012 Marvell
-+ *
-+ * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This file supports the three variants of Armada XP SoCs that are
-+ * available: mv78230, mv78260 and mv78460. From a pin muxing
-+ * perspective, the mv78230 has 49 MPP pins. The mv78260 and mv78460
-+ * both have 67 MPP pins (more GPIOs and address lines for the memory
-+ * bus mainly). The only difference between the mv78260 and the
-+ * mv78460 in terms of pin muxing is the addition of two functions on
-+ * pins 43 and 56 to access the VDD of the CPU2 and 3 (mv78260 has two
-+ * cores, mv78460 has four cores).
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/bitops.h>
-+
-+#include "pinctrl-mvebu.h"
-+
-+enum armada_xp_variant {
-+	V_MV78230	= BIT(0),
-+	V_MV78260	= BIT(1),
-+	V_MV78460	= BIT(2),
-+	V_MV78230_PLUS	= (V_MV78230 | V_MV78260 | V_MV78460),
-+	V_MV78260_PLUS	= (V_MV78260 | V_MV78460),
-+};
-+
-+static struct mvebu_mpp_mode armada_xp_mpp_modes[] = {
-+	MPP_MODE(0,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txclko",     V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d0",         V_MV78230_PLUS)),
-+	MPP_MODE(1,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd0",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d1",         V_MV78230_PLUS)),
-+	MPP_MODE(2,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd1",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d2",         V_MV78230_PLUS)),
-+	MPP_MODE(3,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd2",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d3",         V_MV78230_PLUS)),
-+	MPP_MODE(4,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd3",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d4",         V_MV78230_PLUS)),
-+	MPP_MODE(5,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txctl",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d5",         V_MV78230_PLUS)),
-+	MPP_MODE(6,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd0",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d6",         V_MV78230_PLUS)),
-+	MPP_MODE(7,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd1",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d7",         V_MV78230_PLUS)),
-+	MPP_MODE(8,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd2",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d8",         V_MV78230_PLUS)),
-+	MPP_MODE(9,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd3",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d9",         V_MV78230_PLUS)),
-+	MPP_MODE(10,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxctl",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d10",        V_MV78230_PLUS)),
-+	MPP_MODE(11,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxclk",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d11",        V_MV78230_PLUS)),
-+	MPP_MODE(12,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd4",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "clkout",     V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d12",        V_MV78230_PLUS)),
-+	MPP_MODE(13,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd5",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "txd0",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d13",        V_MV78230_PLUS)),
-+	MPP_MODE(14,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd6",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "txd1",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d14",        V_MV78230_PLUS)),
-+	MPP_MODE(15,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txd7",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "txd2",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d15",        V_MV78230_PLUS)),
-+	MPP_MODE(16,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "txclk",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "txd3",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d16",        V_MV78230_PLUS)),
-+	MPP_MODE(17,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "col",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "txctl",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d17",        V_MV78230_PLUS)),
-+	MPP_MODE(18,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxerr",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "rxd0",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "ptp", "trig",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d18",        V_MV78230_PLUS)),
-+	MPP_MODE(19,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "crs",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "rxd1",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "ptp", "evreq",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d19",        V_MV78230_PLUS)),
-+	MPP_MODE(20,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd4",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "rxd2",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "ptp", "clk",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d20",        V_MV78230_PLUS)),
-+	MPP_MODE(21,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd5",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "rxd3",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "mem", "bat",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d21",        V_MV78230_PLUS)),
-+	MPP_MODE(22,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd6",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "rxctl",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "sata0", "prsnt",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d22",        V_MV78230_PLUS)),
-+	MPP_MODE(23,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ge0", "rxd7",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "ge1", "rxclk",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "sata1", "prsnt",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "d23",        V_MV78230_PLUS)),
-+	MPP_MODE(24,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sata1", "prsnt",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "nf", "bootcs-re",   V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "rst",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "hsync",      V_MV78230_PLUS)),
-+	MPP_MODE(25,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sata0", "prsnt",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "nf", "bootcs-we",   V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "pclk",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "vsync",      V_MV78230_PLUS)),
-+	MPP_MODE(26,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "fsync",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "clk",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "vdd", "cpu1-pd",    V_MV78230_PLUS)),
-+	MPP_MODE(27,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ptp", "trig",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "dtx",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "e",          V_MV78230_PLUS)),
-+	MPP_MODE(28,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ptp", "evreq",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "drx",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "pwm",        V_MV78230_PLUS)),
-+	MPP_MODE(29,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "ptp", "clk",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int0",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "ref-clk",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "vdd", "cpu0-pd",    V_MV78230_PLUS)),
-+	MPP_MODE(30,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sd0", "clk",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int1",       V_MV78230_PLUS)),
-+	MPP_MODE(31,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sd0", "cmd",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int2",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "vdd", "cpu0-pd",    V_MV78230_PLUS)),
-+	MPP_MODE(32,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sd0", "d0",         V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int3",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "vdd", "cpu1-pd",    V_MV78230_PLUS)),
-+	MPP_MODE(33,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sd0", "d1",         V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int4",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "mem", "bat",        V_MV78230_PLUS)),
-+	MPP_MODE(34,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sd0", "d2",         V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "sata0", "prsnt",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int5",       V_MV78230_PLUS)),
-+	MPP_MODE(35,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "sd0", "d3",         V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "sata1", "prsnt",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int6",       V_MV78230_PLUS)),
-+	MPP_MODE(36,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "spi", "mosi",       V_MV78230_PLUS)),
-+	MPP_MODE(37,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "spi", "miso",       V_MV78230_PLUS)),
-+	MPP_MODE(38,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "spi", "sck",        V_MV78230_PLUS)),
-+	MPP_MODE(39,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "spi", "cs0",        V_MV78230_PLUS)),
-+	MPP_MODE(40,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "spi", "cs1",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart2", "cts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "vdd", "cpu1-pd",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "vga-hsync",  V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "pcie", "clkreq0",   V_MV78230_PLUS)),
-+	MPP_MODE(41,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "spi", "cs2",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart2", "rts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "sata1", "prsnt",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "lcd", "vga-vsync",  V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "pcie", "clkreq1",   V_MV78230_PLUS)),
-+	MPP_MODE(42,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "uart2", "rxd",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart0", "cts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "tdm", "int7",       V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "tdm-1", "timer",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "vdd", "cpu0-pd",    V_MV78230_PLUS)),
-+	MPP_MODE(43,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "uart2", "txd",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart0", "rts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "spi", "cs3",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "pcie", "rstout",    V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "vdd", "cpu2-3-pd",  V_MV78460)),
-+	MPP_MODE(44,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "uart2", "cts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart3", "rxd",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "spi", "cs4",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "mem", "bat",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "pcie", "clkreq2",   V_MV78230_PLUS)),
-+	MPP_MODE(45,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "uart2", "rts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart3", "txd",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "spi", "cs5",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "sata1", "prsnt",    V_MV78230_PLUS)),
-+	MPP_MODE(46,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "uart3", "rts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart1", "rts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "spi", "cs6",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "sata0", "prsnt",    V_MV78230_PLUS)),
-+	MPP_MODE(47,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "uart3", "cts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "uart1", "cts",      V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x3, "spi", "cs7",        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x4, "ref", "clkout",     V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x5, "pcie", "clkreq3",   V_MV78230_PLUS)),
-+	MPP_MODE(48,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "tclk", NULL,        V_MV78230_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "dev", "burst/last", V_MV78230_PLUS)),
-+	MPP_MODE(49,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "we3",        V_MV78260_PLUS)),
-+	MPP_MODE(50,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "we2",        V_MV78260_PLUS)),
-+	MPP_MODE(51,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad16",       V_MV78260_PLUS)),
-+	MPP_MODE(52,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad17",       V_MV78260_PLUS)),
-+	MPP_MODE(53,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad18",       V_MV78260_PLUS)),
-+	MPP_MODE(54,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad19",       V_MV78260_PLUS)),
-+	MPP_MODE(55,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad20",       V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "vdd", "cpu0-pd",    V_MV78260_PLUS)),
-+	MPP_MODE(56,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad21",       V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "vdd", "cpu1-pd",    V_MV78260_PLUS)),
-+	MPP_MODE(57,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad22",       V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x2, "vdd", "cpu2-3-pd",  V_MV78460)),
-+	MPP_MODE(58,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad23",       V_MV78260_PLUS)),
-+	MPP_MODE(59,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad24",       V_MV78260_PLUS)),
-+	MPP_MODE(60,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad25",       V_MV78260_PLUS)),
-+	MPP_MODE(61,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad26",       V_MV78260_PLUS)),
-+	MPP_MODE(62,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad27",       V_MV78260_PLUS)),
-+	MPP_MODE(63,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad28",       V_MV78260_PLUS)),
-+	MPP_MODE(64,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad29",       V_MV78260_PLUS)),
-+	MPP_MODE(65,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad30",       V_MV78260_PLUS)),
-+	MPP_MODE(66,
-+		 MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_MV78260_PLUS),
-+		 MPP_VAR_FUNCTION(0x1, "dev", "ad31",       V_MV78260_PLUS)),
-+};
-+
-+static struct mvebu_pinctrl_soc_info armada_xp_pinctrl_info;
-+
-+static struct of_device_id armada_xp_pinctrl_of_match[] __devinitdata = {
-+	{
-+		.compatible = "marvell,mv78230-pinctrl",
-+		.data       = (void *) V_MV78230,
-+	},
-+	{
-+		.compatible = "marvell,mv78260-pinctrl",
-+		.data       = (void *) V_MV78260,
-+	},
-+	{
-+		.compatible = "marvell,mv78460-pinctrl",
-+		.data       = (void *) V_MV78460,
-+	},
-+	{ },
-+};
-+
-+static struct mvebu_mpp_ctrl mv78230_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 48),
-+};
-+
-+static struct pinctrl_gpio_range mv78230_mpp_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0,   0,  0, 32),
-+	MPP_GPIO_RANGE(1,  32, 32, 17),
-+};
-+
-+static struct mvebu_mpp_ctrl mv78260_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 66),
-+};
-+
-+static struct pinctrl_gpio_range mv78260_mpp_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0,   0,  0, 32),
-+	MPP_GPIO_RANGE(1,  32, 32, 32),
-+	MPP_GPIO_RANGE(2,  64, 64,  3),
-+};
-+
-+static struct mvebu_mpp_ctrl mv78460_mpp_controls[] = {
-+	MPP_REG_CTRL(0, 66),
-+};
-+
-+static struct pinctrl_gpio_range mv78460_mpp_gpio_ranges[] = {
-+	MPP_GPIO_RANGE(0,   0,  0, 32),
-+	MPP_GPIO_RANGE(1,  32, 32, 32),
-+	MPP_GPIO_RANGE(2,  64, 64,  3),
-+};
-+
-+static int __devinit armada_xp_pinctrl_probe(struct platform_device *pdev)
-+{
-+	struct mvebu_pinctrl_soc_info *soc = &armada_xp_pinctrl_info;
-+	const struct of_device_id *match =
-+		of_match_device(armada_xp_pinctrl_of_match, &pdev->dev);
-+
-+	if (!match)
-+		return -ENODEV;
-+
-+	soc->variant = (unsigned) match->data & 0xff;
-+
-+	switch (soc->variant) {
-+	case V_MV78230:
-+		soc->controls = mv78230_mpp_controls;
-+		soc->ncontrols = ARRAY_SIZE(mv78230_mpp_controls);
-+		soc->modes = armada_xp_mpp_modes;
-+		/* We don't necessarily want the full list of the
-+		 * armada_xp_mpp_modes, but only the first 'n' ones
-+		 * that are available on this SoC */
-+		soc->nmodes = mv78230_mpp_controls[0].npins;
-+		soc->gpioranges = mv78230_mpp_gpio_ranges;
-+		soc->ngpioranges = ARRAY_SIZE(mv78230_mpp_gpio_ranges);
-+		break;
-+	case V_MV78260:
-+		soc->controls = mv78260_mpp_controls;
-+		soc->ncontrols = ARRAY_SIZE(mv78260_mpp_controls);
-+		soc->modes = armada_xp_mpp_modes;
-+		/* We don't necessarily want the full list of the
-+		 * armada_xp_mpp_modes, but only the first 'n' ones
-+		 * that are available on this SoC */
-+		soc->nmodes = mv78260_mpp_controls[0].npins;
-+		soc->gpioranges = mv78260_mpp_gpio_ranges;
-+		soc->ngpioranges = ARRAY_SIZE(mv78260_mpp_gpio_ranges);
-+		break;
-+	case V_MV78460:
-+		soc->controls = mv78460_mpp_controls;
-+		soc->ncontrols = ARRAY_SIZE(mv78460_mpp_controls);
-+		soc->modes = armada_xp_mpp_modes;
-+		/* We don't necessarily want the full list of the
-+		 * armada_xp_mpp_modes, but only the first 'n' ones
-+		 * that are available on this SoC */
-+		soc->nmodes = mv78460_mpp_controls[0].npins;
-+		soc->gpioranges = mv78460_mpp_gpio_ranges;
-+		soc->ngpioranges = ARRAY_SIZE(mv78460_mpp_gpio_ranges);
-+		break;
-+	}
-+
-+	pdev->dev.platform_data = soc;
-+
-+	return mvebu_pinctrl_probe(pdev);
-+}
-+
-+static int __devexit armada_xp_pinctrl_remove(struct platform_device *pdev)
-+{
-+	return mvebu_pinctrl_remove(pdev);
-+}
-+
-+static struct platform_driver armada_xp_pinctrl_driver = {
-+	.driver = {
-+		.name = "armada-xp-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(armada_xp_pinctrl_of_match),
-+	},
-+	.probe = armada_xp_pinctrl_probe,
-+	.remove = __devexit_p(armada_xp_pinctrl_remove),
-+};
-+
-+module_platform_driver(armada_xp_pinctrl_driver);
-+
-+MODULE_AUTHOR("Thomas Petazzoni <thomas.petazzoni@free-electrons.com>");
-+MODULE_DESCRIPTION("Marvell Armada XP pinctrl driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.10.4
 
+> > >  Instead each OADN
+> > > object gets it's own source ID, but these are all shared by users
+> > > of the same GSI.  So for PCI devices, we might have up to 4 IRQ
+> > > source IDs allocated.
+> > > 
+> > > Michael had also suggested avoiding reference counting and using
+> > > list_empty for this OADN object.  Unfortunately, that doesn't work
+> > > for similar reasons.  We want to release the OADN object underlock,
+> > > preventing others from re-using it on the free path, but in order
+> > > to have lock-less de-assert & notify we use RCU, meaning we can't
+> > > trust list_empty until after an RCU grace period, which must be
+> > > done outside of spinlocks.
+> > 
+> > confused. list empty on assign/deassing would be under lock
+> > so no need for grace periods to trust it.
+> > what am I missing?
+> > 
+> > But if you like kref more that is OK too.
+> 
+> Maybe I'm misinterpreting this:
+> 
+> include/linux/rculist.h:
+> /**
+>  * list_del_rcu - deletes entry from list without re-initialization
+>  * @entry: the element to delete from the list.
+>  *
+>  * Note: list_empty() on entry does not return true after this,
+>  * the entry is in an undefined state. It is useful for RCU based
+>  * lockfree traversal.
+> 
+> If I can trust list_empty on oadn->irqfds, which maybe I can re-reading
+> it again, then we can drop the kref.  Thanks,
+> 
+> Alex
+
+I think you are - *the entry you deleted* is not empty.
+The list itself naturally is, or so it seems from code.
+
+static inline void list_del_rcu(struct list_head *entry)
+{
+        __list_del_entry(entry);
+        entry->prev = LIST_POISON2;
+}
+
+No?
+
+> 
+> > > If there are suggestions how we can handle these better, please
+> > > make them, but I think this compromise is race-free and still
+> > > manages to make allocation of IRQ source IDs mostly a non-issue
+> > > for device assignment limits.  Thanks,
+> > > 
+> > > Alex
+> > > 
+> > > ---
+> > > 
+> > > Alex Williamson (2):
+> > >       kvm: On Ack, De-assert & Notify KVM_IRQFD extension
+> > >       kvm: Use a reserved IRQ source ID for irqfd
+> > > 
+> > > 
+> > >  Documentation/virtual/kvm/api.txt |   13 ++
+> > >  arch/x86/kvm/x86.c                |    4 +
+> > >  include/linux/kvm.h               |    7 +
+> > >  include/linux/kvm_host.h          |    2 
+> > >  virt/kvm/eventfd.c                |  199 ++++++++++++++++++++++++++++++++++++-
+> > >  5 files changed, 218 insertions(+), 7 deletions(-)
+> 
+> 
