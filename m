@@ -1,91 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030206Ab2HVWdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 18:33:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34552 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030193Ab2HVWcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 18:32:42 -0400
-Date: Wed, 22 Aug 2012 15:32:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Julian Andres Klode <jak@jak-linux.org>, Marc Dietrich <marvin24@gmx.de>
-Cc: ac100@lists.launchpad.net, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH staging] nvec: use system_nrt_wq instead of custom one
-Message-ID: <20120822223238.GO19212@google.com>
+	id S933460Ab2HVWge (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 18:36:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60840 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932187Ab2HVWgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 18:36:31 -0400
+Date: Thu, 23 Aug 2012 00:35:42 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>
+Subject: Re: [PATCH 33/36] autonuma: powerpc port
+Message-ID: <20120822223542.GG8107@redhat.com>
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+ <1345647560-30387-34-git-send-email-aarcange@redhat.com>
+ <1345672907.2617.44.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1345672907.2617.44.camel@pasglop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There isn't much reason to use custom workqueue in nvec.  It can use
-system_nrt_wq instead and cancel the two work items on removal.
+On Thu, Aug 23, 2012 at 08:01:47AM +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2012-08-22 at 16:59 +0200, Andrea Arcangeli wrote:
+> > diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
+> > index 2e0e411..5f03079 100644
+> > --- a/arch/powerpc/include/asm/pgtable.h
+> > +++ b/arch/powerpc/include/asm/pgtable.h
+> > @@ -33,10 +33,56 @@ static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & _PAGE_DIRTY; }
+> >  static inline int pte_young(pte_t pte)		{ return pte_val(pte) & _PAGE_ACCESSED; }
+> >  static inline int pte_file(pte_t pte)		{ return pte_val(pte) & _PAGE_FILE; }
+> >  static inline int pte_special(pte_t pte)	{ return pte_val(pte) & _PAGE_SPECIAL; }
+> > -static inline int pte_present(pte_t pte)	{ return pte_val(pte) & _PAGE_PRESENT; }
+> > +static inline int pte_present(pte_t pte)	{ return pte_val(pte) &
+> > +							(_PAGE_PRESENT|_PAGE_NUMA_PTE); }
+> 
+> Is this absolutely necessary ? (testing two bits). It somewhat changes
+> the semantics of "pte_present" which I don't really like.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Marc, I think I'll do this conversion in two steps.  system_nrt_wq ->
-system_wq conversion should be trivial after 3.7 merge window.
+I'm actually surprised you don't already check for PROTNONE
+there. Anyway yes this is necessary, the whole concept of NUMA hinting
+page faults is to make the pte not present, and to set another bit (be
+it a reserved bit or PROTNONE doesn't change anything in that
+respect). But another bit replacing _PAGE_PRESENT must exist.
 
-Thanks.
+This change is zero cost at runtime, and 0x1 or 0x3 won't change a
+thing for the CPU.
 
- drivers/staging/nvec/nvec.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+> >  static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK) == 0; }
+> >  static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
+> >  
+> > +#ifdef CONFIG_AUTONUMA
+> > +static inline int pte_numa(pte_t pte)
+> > +{
+> > +       return (pte_val(pte) &
+> > +               (_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
+> > +}
+> > +
+> > +#endif
+> 
+> Why the ifdef and not anywhere else ?
 
-diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-index 695ea35..daaef24 100644
---- a/drivers/staging/nvec/nvec.c
-+++ b/drivers/staging/nvec/nvec.c
-@@ -264,7 +264,7 @@ int nvec_write_async(struct nvec_chip *nvec, const unsigned char *data,
- 	list_add_tail(&msg->node, &nvec->tx_data);
- 	spin_unlock_irqrestore(&nvec->tx_lock, flags);
- 
--	queue_work(nvec->wq, &nvec->tx_work);
-+	queue_work(system_nrt_wq, &nvec->tx_work);
- 
- 	return 0;
- }
-@@ -470,7 +470,7 @@ static void nvec_rx_completed(struct nvec_chip *nvec)
- 	if (!nvec_msg_is_event(nvec->rx))
- 		complete(&nvec->ec_transfer);
- 
--	queue_work(nvec->wq, &nvec->rx_work);
-+	queue_work(system_nrt_wq, &nvec->rx_work);
- }
- 
- /**
-@@ -791,13 +791,11 @@ static int __devinit tegra_nvec_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&nvec->tx_data);
- 	INIT_WORK(&nvec->rx_work, nvec_dispatch);
- 	INIT_WORK(&nvec->tx_work, nvec_request_master);
--	nvec->wq = alloc_workqueue("nvec", WQ_NON_REENTRANT, 2);
- 
- 	err = devm_gpio_request_one(&pdev->dev, nvec->gpio, GPIOF_OUT_INIT_HIGH,
- 					"nvec gpio");
- 	if (err < 0) {
- 		dev_err(nvec->dev, "couldn't request gpio\n");
--		destroy_workqueue(nvec->wq);
- 		return -ENODEV;
- 	}
- 
-@@ -805,7 +803,6 @@ static int __devinit tegra_nvec_probe(struct platform_device *pdev)
- 				"nvec", nvec);
- 	if (err) {
- 		dev_err(nvec->dev, "couldn't request irq\n");
--		destroy_workqueue(nvec->wq);
- 		return -ENODEV;
- 	}
- 	disable_irq(nvec->irq);
-@@ -859,7 +856,8 @@ static int __devexit tegra_nvec_remove(struct platform_device *pdev)
- 
- 	nvec_write_async(nvec, EC_DISABLE_EVENT_REPORTING, 3);
- 	mfd_remove_devices(nvec->dev);
--	destroy_workqueue(nvec->wq);
-+	cancel_work_sync(&nvec->rx_work);
-+	cancel_work_sync(&nvec->tx_work);
- 
- 	return 0;
- }
+The generic version is implemented in asm-generic/pgtable.h to avoid dups.
+
+> > diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/include/asm/pte-hash64-64k.h
+> > index 59247e8..f7e1468 100644
+> > --- a/arch/powerpc/include/asm/pte-hash64-64k.h
+> > +++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+> > @@ -7,6 +7,8 @@
+> >  #define _PAGE_COMBO	0x10000000 /* this is a combo 4k page */
+> >  #define _PAGE_4K_PFN	0x20000000 /* PFN is for a single 4k page */
+> >  
+> > +#define _PAGE_NUMA_PTE 0x40000000 /* Adjust PTE_RPN_SHIFT below */
+> > +
+> >  /* For 64K page, we don't have a separate _PAGE_HASHPTE bit. Instead,
+> >   * we set that to be the whole sub-bits mask. The C code will only
+> >   * test this, so a multi-bit mask will work. For combo pages, this
+> > @@ -36,7 +38,7 @@
+> >   * That gives us a max RPN of 34 bits, which means a max of 50 bits
+> >   * of addressable physical space, or 46 bits for the special 4k PFNs.
+> >   */
+> > -#define PTE_RPN_SHIFT	(30)
+> > +#define PTE_RPN_SHIFT	(31)
+> 
+> I'm concerned. We are already running short on RPN bits. We can't spare
+> more. If you absolutely need a PTE bit, we'll need to explore ways to
+> free some, but just reducing the RPN isn't an option.
+
+No way to do it without a spare bit.
+
+Note that this is now true for sched-numa rewrite as well because it
+also introduced the NUMA hinting page faults of AutoNUMA (except what
+it does during the fault is different there, but the mechanism of
+firing them and the need of a spare pte bit is identical).
+
+But you must have a bit for protnone, don't you? You can implement it
+with prot none, I can add the vma as parameter to some function to
+achieve it if you need. It may be good idea to do anyway even if
+there's no need on x86 at this point.
+
+> Think of what happens if PTE_4K_PFN is set...
+
+It may very well broken with PTE_4K_PFN is set, I'm not familiar with
+that. If that's the case we'll just add an option to prevent
+AUTONUMA=y to be set if PTE_4K_PFN is set thanks for the info.
+
+> Also you conveniently avoided all the other pte-*.h variants meaning you
+> broke the build for everything except ppc64 with 64k pages.
+
+This can only be enabled on PPC64 in KConfig so no problem about
+ppc32.
+
+> > diff --git a/mm/autonuma.c b/mm/autonuma.c
+> > index ada6c57..a4da3f3 100644
+> > --- a/mm/autonuma.c
+> > +++ b/mm/autonuma.c
+> > @@ -25,7 +25,7 @@ unsigned long autonuma_flags __read_mostly =
+> >  #ifdef CONFIG_AUTONUMA_DEFAULT_ENABLED
+> >  	|(1<<AUTONUMA_ENABLED_FLAG)
+> >  #endif
+> > -	|(1<<AUTONUMA_SCAN_PMD_FLAG);
+> > +	|(0<<AUTONUMA_SCAN_PMD_FLAG);
+> 
+> That changes the default accross all architectures, is that ok vs.
+> Andrea ?
+
+:) Indeed! But the next patch (34) undoes this hack. I just merged the
+patch with "git am" and then introduced a proper way for the arch to
+specify if the PMD scan is supported or not in an incremental
+patch. Adding ppc64 support, and making the PMD scan mode arch
+conditional are two separate things so I thought it was cleaner
+keeping those in two separate patches but I can fold them if you
+prefer.
