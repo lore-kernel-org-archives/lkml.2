@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964927Ab2HVRNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 13:13:53 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39989 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964824Ab2HVRNq (ORCPT
+	id S964948Ab2HVROG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 13:14:06 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55476 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964824Ab2HVROB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 13:13:46 -0400
-Date: Wed, 22 Aug 2012 18:13:10 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 17/31] arm64: System calls handling
-Message-ID: <20120822171309.GC2582@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <201208220756.31149.arnd@arndb.de>
- <20120822102953.GA24136@arm.com>
- <201208221227.14274.arnd@arndb.de>
+	Wed, 22 Aug 2012 13:14:01 -0400
+Date: Wed, 22 Aug 2012 18:13:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+Cc: Shubhrajyoti D <shubhrajyoti@ti.com>,
+        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/3] spi: omap2-mcspi: spi cleanups
+Message-ID: <20120822171358.GW7995@opensource.wolfsonmicro.com>
+References: <1345615515-26745-1-git-send-email-shubhrajyoti@ti.com>
+ <20120822165933.GU7995@opensource.wolfsonmicro.com>
+ <CAM=Q2cvEyas6r8pb-edQ7UUJOE1YSxns9j5hA8Cz5pJnd4mPYA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="adlATi0AGRzVk0TM"
 Content-Disposition: inline
-In-Reply-To: <201208221227.14274.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAM=Q2cvEyas6r8pb-edQ7UUJOE1YSxns9j5hA8Cz5pJnd4mPYA@mail.gmail.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 01:27:14PM +0100, Arnd Bergmann wrote:
-> On Wednesday 22 August 2012, Catalin Marinas wrote:
-> > But what's more important - moving this wrapper to glibc causes issues
-> > with the page size. We support both 4KB and 64KB pages on 64-bit systems
-> > (the latter without compat support). The kernel is in a better position
-> > to do the shift by a compile-time constant. Glibc would need to enquire
-> > the actual page size to do the shift before calling sys_mmap_pgoff. If
-> > we assume in glibc that the shift is always 12, we need another wrapper
-> > in the kernel anyway for 64KB page configuration. So passing the offset
-> > in bytes worked best for us.
-> 
-> Right, the kernel interface should really be independent of the page
-> size, as sys_mmap2 normally is, and sys_mmap2 is not provided here.
 
-sys_mmap2 is indeed independent of the page size on most architectures
-assuming that the last argument represents the offset in units of 4096.
-The cris and ia64 seem to differ (one being 8K, the other variable).
+--adlATi0AGRzVk0TM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-sys_mmap is also independent of the page size.
+On Wed, Aug 22, 2012 at 10:33:55PM +0530, Shubhrajyoti Datta wrote:
 
-But using sys_mmap2 for a 64-bit architecture, especially when the page
-size is not always 4K, does not bring any advantages. We end up doing a
-shift by 12 in glibc and another shift by (PAGE_SHIFT - 12) in the
-kernel wrapper. Unless I missed your point, I don't see the reason for
-using sys_mmap2 on a 64-bit architecture, apart from it being newer (and
-compat support should not have any relevance, we have different syscall
-tables anyway).
+> Actually there was a patch in your tree that I sent which is not yet
+> in linus tree so I rebased
+> it to linux-next to avoid any merge conflicts.
 
--- 
-Catalin
+> Henceforth I will rebase it to your tree.
+
+That's also a good option, though for simple conflcits it's OK if the
+person applying the patch has to resolve them especially if you give
+some warning.
+
+--adlATi0AGRzVk0TM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQNRNEAAoJEFJkBDiqVpZ4Zo8P/iYF5yuA9YIHUrnZesP9vmx7
+yLloUIacKuQLON0N5YdSdXQsjRh0gfPJjAemcATjRracq19iV3XnFJA5qV9Jn3HW
+h7XmV92O/HaRifcqQ65EMIT1PDAxU7seGinKsh4dFH4dS9u6fQBc20rL6O4DLZ6Z
+RpKTgM75aoPgTGx4lzqQqKcPykNQJhs4ajzeiXMqssM+zDpcqX9Kj4RlrnKDO2zt
+FSZgmXkZCB/MTzEvIg9bxBUqkEzRBb9CS8Kp2YIsRdLmyUorPHI8JGIKGRAaTjAa
+uQiPzttiu+Kn0PD+CurDMwdtvNwu5W+PG1huB/mV6ugm7uhlJcdC/j/NwkrIFa3l
+r3hni/VoMc68MUAA4cNQEFzqhdWwgeARCLTxF8NBuMJvog2Q0ESl76PDzelok2cr
+WoOexHXBjuU/ndWsgTW1wdQIAuu9Y/w4nr/v6gYtjrE1XWmEp091gcQsHR5a6DtJ
+y7/SRkSsOgfxR9OvDjsSdNqjTNFhObakj0zeJTLjs0UeIrPMHA8UuBugbu0twxqX
+Xt4ALmyP3yLDKUVOXqVep7iqMZBhFFr7uoHjT38PEw//sIzGTgzMp5xH2UOXMJbR
+G2ncwBjZBLoT1VNNmmM+K8pFVvDLw2i/QVDHpk/7i7JvIUcd5vutSzU4NZa/JtVG
+zISatgFkDiYso04xSz17
+=62sG
+-----END PGP SIGNATURE-----
+
+--adlATi0AGRzVk0TM--
