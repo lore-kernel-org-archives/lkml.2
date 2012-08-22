@@ -1,105 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2HVXXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 19:23:19 -0400
-Received: from mail-we0-f202.google.com ([74.125.82.202]:38256 "EHLO
-	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab2HVXXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 19:23:16 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to children
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com>
-	<1344517279-30646-10-git-send-email-glommer@parallels.com>
-	<20120817090005.GC18600@dhcp22.suse.cz>
-	<502E0BC3.8090204@parallels.com>
-	<20120817093504.GE18600@dhcp22.suse.cz>
-	<502E17C4.7060204@parallels.com>
-	<20120817103550.GF18600@dhcp22.suse.cz>
-	<502E1E90.1080805@parallels.com>
-	<20120821075430.GA19797@dhcp22.suse.cz>
-	<50335341.6010400@parallels.com>
-	<20120821100007.GE19797@dhcp22.suse.cz>
-	<xr93fw7fbumo.fsf@gthelen.mtv.corp.google.com>
-	<503496D9.3020806@parallels.com>
-Date: Wed, 22 Aug 2012 16:23:12 -0700
-In-Reply-To: <503496D9.3020806@parallels.com> (Glauber Costa's message of
-	"Wed, 22 Aug 2012 12:22:49 +0400")
-Message-ID: <xr93a9xmwly7.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753787Ab2HVX0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 19:26:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47375 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036Ab2HVX0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 19:26:50 -0400
+Message-ID: <50356AA1.1030503@zytor.com>
+Date: Wed, 22 Aug 2012 16:26:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86, microcode, AMD: Per-family patches cache
+References: <20120817143035.GA25700@aftab.osrc.amd.com> <5032C6DD.7060506@zytor.com> <20120821091639.GA20468@aftab.osrc.amd.com> <503561A1.2040007@zytor.com>
+In-Reply-To: <503561A1.2040007@zytor.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22 2012, Glauber Costa wrote:
+On 08/22/2012 03:48 PM, H. Peter Anvin wrote:
+> 
+> Weird.  I have never had to git fetch --tags before...
+> 
 
->>>>
->>>> I am fine with either, I just need a clear sign from you guys so I don't
->>>> keep deimplementing and reimplementing this forever.
->>>
->>> I would be for make it simple now and go with additional features later
->>> when there is a demand for them. Maybe we will have runtimg switch for
->>> user memory accounting as well one day.
->>>
->>> But let's see what others think?
->> 
->> In my use case memcg will either be disable or (enabled and kmem
->> limiting enabled).
->> 
->> I'm not sure I follow the discussion about history.  Are we saying that
->> once a kmem limit is set then kmem will be accounted/charged to memcg.
->> Is this discussion about the static branches/etc that are autotuned the
->> first time is enabled?  
->
-> No, the question is about when you unlimit a former kmem-limited memcg.
->
->> The first time its set there parts of the system
->> will be adjusted in such a way that may impose a performance overhead
->> (static branches, etc).  Thereafter the performance cannot be regained
->> without a reboot.  This makes sense to me.  Are we saying that
->> kmem.limit_in_bytes will have three states?
->
-> It is not about performance, about interface.
->
-> Michal says that once a particular memcg was kmem-limited, it will keep
-> accounting pages, even if you make it unlimited. The limits won't be
-> enforced, for sure - there is no limit, but pages will still be accounted.
->
-> This simplifies the code galore, but I worry about the interface: A
-> person looking at the current status of the files only, without
-> knowledge of past history, can't tell if allocations will be tracked or not.
+OK, sorted.  Next complaint... please don't mix urgent (for the current
+version) and non-urgent (for next) in the same pull request.
 
-In the current patch set we've conflating enabling kmem accounting with
-the kmem limit value (RESOURCE_MAX=disabled, all_other_values=enabled).
+I have sorted it out, but it made things take a lot longer on my part.
 
-I see no problem with simpling the kernel code with the requirement that
-once a particular memcg enables kmem accounting that it cannot be
-disabled for that memcg.
+	-hpa
 
-The only question is the user space interface.  Two options spring to
-mind:
-a) Close to current code.  Once kmem.limit_in_bytes is set to
-   non-RESOURCE_MAX, then kmem accounting is enabled and cannot be
-   disabled.  Therefore the limit cannot be set to RESOURCE_MAX
-   thereafter.  The largest value would be something like
-   RESOURCE_MAX-PAGE_SIZE.  An admin wondering if kmem is enabled only
-   has to cat kmem.limit_in_bytes - if it's less than RESOURCE_MAX, then
-   kmem is enabled.
-
-b) Or, if we could introduce a separate sticky kmem.enabled file.  Once
-   set it could not be unset.  Kmem accounting would only be enabled if
-   kmem.enabled=1.
-
-I think (b) is clearer.
