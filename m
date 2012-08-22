@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab2HVKIC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 06:08:02 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54143 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab2HVKIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 06:08:00 -0400
-Date: Wed, 22 Aug 2012 12:07:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Ido Yariv <ido@wizery.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH v2 2/2] x86/pat: Avoid contention on cpa_lock if possible
-Message-ID: <20120822100755.GA26323@gmail.com>
-References: <1344445299-22142-1-git-send-email-ido@wizery.com>
- <1344445299-22142-2-git-send-email-ido@wizery.com>
- <20120822084702.GA21764@gmail.com>
- <20120822095316.GA16110@WorkStation.localnet>
+	id S1754048Ab2HVKIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 06:08:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45680 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752575Ab2HVKIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 06:08:32 -0400
+Date: Wed, 22 Aug 2012 12:08:26 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Bonggil Bak <bgbak@samsung.com>
+Subject: Re: [PATCH RESEND] udf: extent cache implementation for
+ manipulating block map
+Message-ID: <20120822100826.GB20640@quack.suse.cz>
+References: <1345283903-7960-1-git-send-email-linkinjeon@gmail.com>
+ <20120821090810.GC7537@quack.suse.cz>
+ <CAKYAXd_odZxzXqn91Q517BuRRFHP3O4pkVgN8uK6QTeFEqaEdg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120822095316.GA16110@WorkStation.localnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKYAXd_odZxzXqn91Q517BuRRFHP3O4pkVgN8uK6QTeFEqaEdg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ido Yariv <ido@wizery.com> wrote:
-
-> Hi Ingo,
+On Wed 22-08-12 19:02:26, Namjae Jeon wrote:
+> 2012/8/21, Jan Kara <jack@suse.cz>:
+> Hi. Jan.
+> Okay, We are trying to do it from your comment.
+> 1. Change udf_ext_cache structure to following which would also include *bh.
+> struct udf_ext_cache {
 > 
-> On Wed, Aug 22, 2012 at 10:47:02AM +0200, Ingo Molnar wrote:
-> > 
-> > * Ido Yariv <ido@wizery.com> wrote:
-> > 
-> > > vSMP Foundation does not require to serialize CPA by guaranteeing that
-> > > the most recent TLB entry will always be used.
-> > > 
-> > > To avoid needless contention on cpa_lock, do not lock/unlock it if it
-> > > isn't necessary.
-> > > 
-> > > Based on work by Shai Fultheim <shai@scalemp.com>.
-> > > 
-> > > Signed-off-by: Ido Yariv <ido@wizery.com>
-> > > Acked-by: Shai Fultheim <shai@scalemp.com>
-> > > ---
-> > > Changes from v1:
-> > > - Use a synthetic CPUID bit and a use static_cpu_has() as suggested by
-> > >   H. Peter Avnin
-> > > 
-> > >  arch/x86/include/asm/cpufeature.h |    1 +
-> > >  arch/x86/kernel/vsmp_64.c         |   10 ++++++++++
-> > >  arch/x86/mm/pageattr.c            |   30 +++++++++++++++++++++---------
-> > >  3 files changed, 32 insertions(+), 9 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> > > index 6b7ee5f..92303a0 100644
-> > > --- a/arch/x86/include/asm/cpufeature.h
-> > > +++ b/arch/x86/include/asm/cpufeature.h
-> > > @@ -97,6 +97,7 @@
-> > >  #define X86_FEATURE_EXTD_APICID	(3*32+26) /* has extended APICID (8 bits) */
-> > >  #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
-> > >  #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
-> > > +#define X86_FEATURE_NO_CPA_LOCK	(3*32+29) /* Serializing cpa is not required */
-> > 
-> > Patch looks mostly good, but could we please use some more 
-> > hardware-ish name, instead of referring to a kernel lock?
+> /* Position of the cached extent */
+> struct extent_position epos;
 > 
-> Sure thing. How about X86_FEATURE_TLB_RELIABLE?
+> /* Logical block where cached extent starts */
+> sector_t block;
+> };
+  OK.
 
-Yeah, something like that. Maybe hpa can think of something 
-better?
+> 2. Remove call to brelse(epos.bh) from all the callers of inode_bmap()
+> and move it to udf_evict_inode()
+  It might be easier to keep brelse() where it is and add get_bh() to
+udf_add_extent_cache() and brelse() to udf_clear_extent_cache(). It is then
+easier to audit we don't leak bh references...
 
-Thanks,
+> 3. As now we are not caching elen, etype and eloc, we have to change
+> the cache_hit logic in inode_bmap.
+> The call to function udf_next_aext is now necessary from inode_bmap.
+  Yes.
 
-	Ingo
+> 4. Remove call to udf_clear_extent_cache() from udf_get_block as with
+> new scheme, it is not required.
+  You still need this when you write before the cached location (e.g. when
+the file has holes, and you write into them, extents will shift).
+
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
