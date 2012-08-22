@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964783Ab2HVQh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:37:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138Ab2HVQhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:37:52 -0400
-Date: Wed, 22 Aug 2012 18:37:46 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between
- secondary MMU and host
-Message-ID: <20120822163746.GU29978@redhat.com>
-References: <503358FF.3030009@linux.vnet.ibm.com>
- <20120821150618.GJ27696@redhat.com>
- <50345735.2000807@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50345735.2000807@linux.vnet.ibm.com>
+	id S1758261Ab2HVQig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:38:36 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:40676 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757411Ab2HVQic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:38:32 -0400
+From: Nathan Zimmer <nzimmer@sgi.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adobriyan@gmail.com, Nathan Zimmer <nzimmer@sgi.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH] fs/proc: Move kfree outside pde_unload_lock
+Date: Wed, 22 Aug 2012 11:38:29 -0500
+Message-Id: <1345653510-22000-1-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <n>
+References: <n>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 11:51:17AM +0800, Xiao Guangrong wrote:
-> Hmm, in KSM code, i found this code in replace_page:
-> 
-> set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-> 
-> It is possible to establish a writable pte, no?
+This moves a kfree outside a spinlock to help scaling on larger (512 core)
+systems.
 
-Hugh already answered this thanks. Further details on the vm_page_prot
-are in top of mmap.c, and KSM never scans MAP_SHARED vmas.
+I ran a simple test which just reads from /proc/cpuinfo.
+Lower is better, as you can see the worst case scenario is improved.
 
-> Unfortunately, all these bugs are triggered by test cases.
+	baseline	moved kfree
+tasks	read-sec	read-sec
+1	0.0141		0.0141
+2	0.0140		0.0140
+4	0.0140		0.0141
+8	0.0145		0.0145
+16	0.0553		0.0548
+32	0.1688		0.1622
+64	0.5017		0.3856
+128	1.7005		0.9710
+256	5.2513		2.6519
+512	8.0529		6.2976
 
-Sure, I've seen the very Oops for the other one, and this one also can
-trigger if unlucky.
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Acked-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+---
+ fs/proc/inode.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This one can trigger with KVM but only if KSM is enabled or with live
-migration or with device hotplug or some other event that triggers a
-fork in qemu.
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 7ac817b..bf36266 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -403,9 +403,9 @@ static int proc_reg_release(struct inode *inode, struct file *file)
+ 	release = pde->proc_fops->release;
+ 	if (pdeo) {
+ 		list_del(&pdeo->lh);
+-		kfree(pdeo);
+ 	}
+ 	spin_unlock(&pde->pde_unload_lock);
++	kfree(pdeo);
+ 
+ 	if (release)
+ 		rv = release(inode, file);
+-- 
+1.6.0.2
 
-My curiosity about the other one in the exit/unregister/release paths
-is if it really ever triggered with KVM. Because I can't easily see
-how it could trigger. By the time kvm_destroy_vm or exit_mmap() runs,
-no vcpu can be in guest mode anymore, so it cannot matter whatever the
-status of any leftover spte at that time.
-
-The process in the oops certainly wasn't qemu*. This is what I meant
-in the previous email about this. Of course the fix was certainly good
-and needed for other mmu notifier users, great fix.
-
-Thanks,
-Andrea
