@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077Ab2HVQUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:20:43 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:43987 "EHLO SMTP.CITRIX.COM"
+	id S933064Ab2HVQUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:20:40 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:35720 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932665Ab2HVQUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:20:33 -0400
+	id S933010Ab2HVQUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:20:32 -0400
 X-IronPort-AV: E=Sophos;i="4.77,808,1336363200"; 
-   d="scan'208";a="35465047"
+   d="scan'208";a="35465045"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: xen-devel@lists.xensource.com
 CC: linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
         Stefano.Stabellini@eu.citrix.com,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 4/6] xen: Introduce xen_pfn_t for pfn and mfn types
-Date: Wed, 22 Aug 2012 17:20:14 +0100
-Message-ID: <1345652416-27181-4-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 6/6] xen: allow privcmd for HVM guests
+Date: Wed, 22 Aug 2012 17:20:16 +0100
+Message-ID: <1345652416-27181-6-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1208221635020.15568@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1208221635020.15568@kaball.uk.xensource.com>
@@ -25,185 +25,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the original Xen headers have xen_pfn_t as mfn and pfn type, however
-when they have been imported in Linux, xen_pfn_t has been replaced with
-unsigned long. That might work for x86 and ia64 but it does not for arm.
-Bring back xen_pfn_t and let each architecture define xen_pfn_t as they
-see fit.
+This patch removes the "return -ENOSYS" for auto_translated_physmap
+guests from privcmd_mmap, thus it allows ARM guests to issue privcmd
+mmap calls. However privcmd mmap calls are still going to fail for HVM
+and hybrid guests on x86 because the xen_remap_domain_mfn_range
+implementation is currently PV only.
+
+Changes in v2:
+
+- better commit message;
+- return -EINVAL from xen_remap_domain_mfn_range if
+  auto_translated_physmap.
+
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/ia64/include/asm/xen/interface.h |    5 ++++-
- arch/x86/include/asm/xen/interface.h  |    5 +++++
- include/xen/interface/grant_table.h   |    4 ++--
- include/xen/interface/memory.h        |    6 +++---
- include/xen/interface/platform.h      |    4 ++--
- include/xen/interface/xen.h           |    6 +++---
- include/xen/privcmd.h                 |    2 --
- 7 files changed, 19 insertions(+), 13 deletions(-)
+ arch/x86/xen/mmu.c    |    3 +++
+ drivers/xen/privcmd.c |    4 ----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/ia64/include/asm/xen/interface.h b/arch/ia64/include/asm/xen/interface.h
-index ee9cad6..3d52a5b 100644
---- a/arch/ia64/include/asm/xen/interface.h
-+++ b/arch/ia64/include/asm/xen/interface.h
-@@ -67,6 +67,10 @@
- #define set_xen_guest_handle(hnd, val)	do { (hnd).p = val; } while (0)
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index b65a761..2a1ee7b 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2337,6 +2337,9 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 	unsigned long range;
+ 	int err = 0;
  
- #ifndef __ASSEMBLY__
-+/* Explicitly size integers that represent pfns in the public interface
-+ * with Xen so that we could have one ABI that works for 32 and 64 bit
-+ * guests. */
-+typedef unsigned long xen_pfn_t;
- /* Guest handles for primitive C types. */
- __DEFINE_GUEST_HANDLE(uchar, unsigned char);
- __DEFINE_GUEST_HANDLE(uint, unsigned int);
-@@ -79,7 +83,6 @@ DEFINE_GUEST_HANDLE(void);
- DEFINE_GUEST_HANDLE(uint64_t);
- DEFINE_GUEST_HANDLE(uint32_t);
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return -EINVAL;
++
+ 	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
  
--typedef unsigned long xen_pfn_t;
- DEFINE_GUEST_HANDLE(xen_pfn_t);
- #define PRI_xen_pfn	"lx"
- #endif
-diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
-index a93db16..555f94d 100644
---- a/arch/x86/include/asm/xen/interface.h
-+++ b/arch/x86/include/asm/xen/interface.h
-@@ -47,6 +47,10 @@
- #endif
+ 	BUG_ON(!((vma->vm_flags & (VM_PFNMAP | VM_RESERVED | VM_IO)) ==
+diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+index ccee0f1..85226cb 100644
+--- a/drivers/xen/privcmd.c
++++ b/drivers/xen/privcmd.c
+@@ -380,10 +380,6 @@ static struct vm_operations_struct privcmd_vm_ops = {
  
- #ifndef __ASSEMBLY__
-+/* Explicitly size integers that represent pfns in the public interface
-+ * with Xen so that on ARM we can have one ABI that works for 32 and 64
-+ * bit guests. */
-+typedef unsigned long xen_pfn_t;
- /* Guest handles for primitive C types. */
- __DEFINE_GUEST_HANDLE(uchar, unsigned char);
- __DEFINE_GUEST_HANDLE(uint,  unsigned int);
-@@ -57,6 +61,7 @@ DEFINE_GUEST_HANDLE(long);
- DEFINE_GUEST_HANDLE(void);
- DEFINE_GUEST_HANDLE(uint64_t);
- DEFINE_GUEST_HANDLE(uint32_t);
-+DEFINE_GUEST_HANDLE(xen_pfn_t);
- #endif
- 
- #ifndef HYPERVISOR_VIRT_START
-diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
-index a17d844..7da811b 100644
---- a/include/xen/interface/grant_table.h
-+++ b/include/xen/interface/grant_table.h
-@@ -338,7 +338,7 @@ DEFINE_GUEST_HANDLE_STRUCT(gnttab_dump_table);
- #define GNTTABOP_transfer                4
- struct gnttab_transfer {
-     /* IN parameters. */
--    unsigned long mfn;
-+    xen_pfn_t mfn;
-     domid_t       domid;
-     grant_ref_t   ref;
-     /* OUT parameters. */
-@@ -375,7 +375,7 @@ struct gnttab_copy {
- 	struct {
- 		union {
- 			grant_ref_t ref;
--			unsigned long   gmfn;
-+			xen_pfn_t   gmfn;
- 		} u;
- 		domid_t  domid;
- 		uint16_t offset;
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index 8d4efc1..d8e33a9 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -31,7 +31,7 @@ struct xen_memory_reservation {
-      *   OUT: GMFN bases of extents that were allocated
-      *   (NB. This command also updates the mach_to_phys translation table)
-      */
--    GUEST_HANDLE(ulong) extent_start;
-+    GUEST_HANDLE(xen_pfn_t) extent_start;
- 
-     /* Number of extents, and size/alignment of each (2^extent_order pages). */
-     unsigned long  nr_extents;
-@@ -130,7 +130,7 @@ struct xen_machphys_mfn_list {
-      * any large discontiguities in the machine address space, 2MB gaps in
-      * the machphys table will be represented by an MFN base of zero.
-      */
--    GUEST_HANDLE(ulong) extent_start;
-+    GUEST_HANDLE(xen_pfn_t) extent_start;
- 
-     /*
-      * Number of extents written to the above array. This will be smaller
-@@ -175,7 +175,7 @@ struct xen_add_to_physmap {
-     unsigned long idx;
- 
-     /* GPFN where the source mapping page should appear. */
--    unsigned long gpfn;
-+    xen_pfn_t gpfn;
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap);
- 
-diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
-index 61fa661..a3275a8 100644
---- a/include/xen/interface/platform.h
-+++ b/include/xen/interface/platform.h
-@@ -54,7 +54,7 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_settime_t);
- #define XENPF_add_memtype         31
- struct xenpf_add_memtype {
- 	/* IN variables. */
--	unsigned long mfn;
-+	xen_pfn_t mfn;
- 	uint64_t nr_mfns;
- 	uint32_t type;
- 	/* OUT variables. */
-@@ -84,7 +84,7 @@ struct xenpf_read_memtype {
- 	/* IN variables. */
- 	uint32_t reg;
- 	/* OUT variables. */
--	unsigned long mfn;
-+	xen_pfn_t mfn;
- 	uint64_t nr_mfns;
- 	uint32_t type;
- };
-diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-index 6e75dea..1e0df6b 100644
---- a/include/xen/interface/xen.h
-+++ b/include/xen/interface/xen.h
-@@ -189,7 +189,7 @@ struct mmuext_op {
- 	unsigned int cmd;
- 	union {
- 		/* [UN]PIN_TABLE, NEW_BASEPTR, NEW_USER_BASEPTR */
--		unsigned long mfn;
-+		xen_pfn_t mfn;
- 		/* INVLPG_LOCAL, INVLPG_ALL, SET_LDT */
- 		unsigned long linear_addr;
- 	} arg1;
-@@ -429,11 +429,11 @@ struct start_info {
- 	unsigned long nr_pages;     /* Total pages allocated to this domain.  */
- 	unsigned long shared_info;  /* MACHINE address of shared info struct. */
- 	uint32_t flags;             /* SIF_xxx flags.                         */
--	unsigned long store_mfn;    /* MACHINE page number of shared page.    */
-+	xen_pfn_t store_mfn;        /* MACHINE page number of shared page.    */
- 	uint32_t store_evtchn;      /* Event channel for store communication. */
- 	union {
- 		struct {
--			unsigned long mfn;  /* MACHINE page number of console page.   */
-+			xen_pfn_t mfn;      /* MACHINE page number of console page.   */
- 			uint32_t  evtchn;   /* Event channel for console page.        */
- 		} domU;
- 		struct {
-diff --git a/include/xen/privcmd.h b/include/xen/privcmd.h
-index 4d58881..45c1aa1 100644
---- a/include/xen/privcmd.h
-+++ b/include/xen/privcmd.h
-@@ -37,8 +37,6 @@
- #include <linux/compiler.h>
- #include <xen/interface/xen.h>
- 
--typedef unsigned long xen_pfn_t;
+ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+-	/* Unsupported for auto-translate guests. */
+-	if (xen_feature(XENFEAT_auto_translated_physmap))
+-		return -ENOSYS;
 -
- struct privcmd_hypercall {
- 	__u64 op;
- 	__u64 arg[5];
+ 	/* DONTCOPY is essential for Xen because copy_page_range doesn't know
+ 	 * how to recreate these mappings */
+ 	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY | VM_PFNMAP;
 -- 
 1.7.2.5
 
