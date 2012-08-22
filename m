@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471Ab2HVIq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:46:56 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:42116 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756963Ab2HVIpw (ORCPT
+	id S932066Ab2HVIrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:47:20 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56661 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2HVIrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:45:52 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: Etienne Carriere <etienne.carriere@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 5/7] pinctrl/nomdik: MASK_ON_SUSPEND
-Date: Wed, 22 Aug 2012 10:44:16 +0200
-Message-ID: <1345625056-5749-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Wed, 22 Aug 2012 04:47:08 -0400
+Date: Wed, 22 Aug 2012 10:47:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Ido Yariv <ido@wizery.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Shai Fultheim <shai@scalemp.com>
+Subject: Re: [PATCH v2 2/2] x86/pat: Avoid contention on cpa_lock if possible
+Message-ID: <20120822084702.GA21764@gmail.com>
+References: <1344445299-22142-1-git-send-email-ido@wizery.com>
+ <1344445299-22142-2-git-send-email-ido@wizery.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1344445299-22142-2-git-send-email-ido@wizery.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Etienne Carriere <etienne.carriere@stericsson.com>
 
-ux500 machines performs pins (GPIO) reconfiguration when entering
-in the suspended mode. This reconfiguration aims at reaching an ultra
-low power HW configuration.
+* Ido Yariv <ido@wizery.com> wrote:
 
-Due to this HW reconfiguration, some HW devices can change of HW state
-and have their output signals at level that could generate IRQs.
+> vSMP Foundation does not require to serialize CPA by guaranteeing that
+> the most recent TLB entry will always be used.
+> 
+> To avoid needless contention on cpa_lock, do not lock/unlock it if it
+> isn't necessary.
+> 
+> Based on work by Shai Fultheim <shai@scalemp.com>.
+> 
+> Signed-off-by: Ido Yariv <ido@wizery.com>
+> Acked-by: Shai Fultheim <shai@scalemp.com>
+> ---
+> Changes from v1:
+> - Use a synthetic CPUID bit and a use static_cpu_has() as suggested by
+>   H. Peter Avnin
+> 
+>  arch/x86/include/asm/cpufeature.h |    1 +
+>  arch/x86/kernel/vsmp_64.c         |   10 ++++++++++
+>  arch/x86/mm/pageattr.c            |   30 +++++++++++++++++++++---------
+>  3 files changed, 32 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index 6b7ee5f..92303a0 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -97,6 +97,7 @@
+>  #define X86_FEATURE_EXTD_APICID	(3*32+26) /* has extended APICID (8 bits) */
+>  #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
+>  #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
+> +#define X86_FEATURE_NO_CPA_LOCK	(3*32+29) /* Serializing cpa is not required */
 
-If the non-wakeup IRQs are disabled but not yet masked (delayed interrupt
-disable feature from the generic irq layer), effective interrupts reach
-the system only because the system attempt to enter the suspended mode.
+Patch looks mostly good, but could we please use some more 
+hardware-ish name, instead of referring to a kernel lock?
 
-To prevent such IRQs to trig, all irq chips embedded in ux500 platform
-should enable their IRQCHIP_MASK_ON_SUSPEND flag.
+I.e. how would you name it if this was a real hardware feature? 
+Certainly not 'No CPA Lock'.
 
-Signed-off-by: Etienne Carriere <etienne.carriere@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-nomadik.c | 1 +
- 1 file changed, 1 insertion(+)
+Thanks,
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index ec6ac50..41f1a3d 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -819,6 +819,7 @@ static struct irq_chip nmk_gpio_irq_chip = {
- 	.irq_set_wake	= nmk_gpio_irq_set_wake,
- 	.irq_startup	= nmk_gpio_irq_startup,
- 	.irq_shutdown	= nmk_gpio_irq_shutdown,
-+	.flags		= IRQCHIP_MASK_ON_SUSPEND,
- };
- 
- static void __nmk_gpio_irq_handler(unsigned int irq, struct irq_desc *desc,
--- 
-1.7.11.3
-
+	Ingo
