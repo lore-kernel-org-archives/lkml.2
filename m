@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab2HVHNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:13:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33998 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab2HVHNO (ORCPT
+	id S1755532Ab2HVHOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 03:14:52 -0400
+Received: from smtp-out-04.shaw.ca ([64.59.134.12]:10831 "EHLO
+	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab2HVHOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:13:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF0BF4@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF0AD5@DQHE02.ent.ti.com>
- <CAK5ve-+LWG=YzEy=qWnGvqzw6+tX=7su5NH5V=5g+fjHA6gJrg@mail.gmail.com> <A874F61F95741C4A9BA573A70FE3998F41EF0BF4@DQHE02.ent.ti.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Wed, 22 Aug 2012 15:12:52 +0800
-X-Google-Sender-Auth: le6Z1F4jD0hKcfQdZbSi-yH5kXA
-Message-ID: <CAK5ve-Lr1nhw9Mpam_LR6s+1z8-pw+DW6JKnojMQwqOzt-+k1A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] leds-lp5523: add channel name in the platform data
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 22 Aug 2012 03:14:48 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=aDUJ/pRHNXkohnfhaDKKve0FfU8uPxX8npdo6G126bI= c=1 sm=1
+ a=M1j8YbFVnEoA:10 a=BLceEmwcHowA:10 a=WvdZ44He1QAA:10
+ a=sQcIUxX0G8DGr1HsvJ29bQ==:17 a=QyXUC8HyAAAA:8 a=ySfo2T4IAAAA:8
+ a=2UkASJ5G1MoEXep2ZAkA:9 a=CjuIK1q_8ugA:10 a=wcwyecJwAnrTbuc_:21
+ a=oxZp5YP5HTs3EkUh:21 a=j4nzMFrpAAAA:8 a=CTqgaCOKGsTkfkrjCWAA:9
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg=pgp-sha1; boundary="Apple-Mail-22-92778657"
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20120822160025.272188d1@notabene.brown>
+Date: Wed, 22 Aug 2012 01:14:42 -0600
+Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Li Shaohua <shli@fusionio.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
+        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux RAID <linux-raid@vger.kernel.org>
+Content-Transfer-Encoding: 7bit
+Message-Id: <1B78C9B4-CC2B-43B3-8513-2221925D25A0@dilger.ca>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com> <20120816024654.GB3781@thunk.org> <20120816111051.GA16036@localhost> <20120816152513.GA31346@thunk.org> <20120817060915.GB28786@localhost> <20120817134039.GB11439@thunk.org> <20120817142526.GA1059@localhost> <20120822035702.GF2570@yliu-dev.sh.intel.com> <20120822160025.272188d1@notabene.brown>
+To: NeilBrown <neilb@suse.de>
+X-Pgp-Agent: GPGMail 1.3.3
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 1:43 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
->> >  LP5523 can drive up to 9 channels. Leds can be controlled directly
->> via
->> > -the led class control interface. Channels have generic names:
->> > +the led class control interface.
->> > +The name of each channel is configurable in the platform data.
->> > +If the name is NULL, channels have generic names:
->> >  lp5523:channelx where x is 0...8
->
->> Why we need a test here "pdata->label ?:"? From the document, looks
->> like we use lp5523:channel%d as default.
->
-> To define the channel name, we have three options.
-> a) using 'name' field for each channel
-> b) using 'label' field without 'name'
-> c) default : neither data is defined
->
-> So I would change the description as below.
->
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--Apple-Mail-22-92778657
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=us-ascii
 
-Thanks for this clarification. I'm fine with this, please resubmit patches.
+On 2012-08-22, at 12:00 AM, NeilBrown wrote:
+> On Wed, 22 Aug 2012 11:57:02 +0800 Yuanhan Liu =
+<yuanhan.liu@linux.intel.com>
+> wrote:
+>>=20
+>> -#define NR_STRIPES		256
+>> +#define NR_STRIPES		1024
+>=20
+> Changing one magic number into another magic number might help your =
+case, but
+> it not really a general solution.
 
--Bryan
+We've actually been carrying a patch for a few years in Lustre to
+increase the NR_STRIPES to 2048, and made it a configurable module
+parameter.  This made a noticeable improvement to the performance
+for fast systems.
 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  Documentation/leds/leds-lp5523.txt |   18 ++++++++++++++++--
->  1 files changed, 16 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/leds/leds-lp5523.txt b/Documentation/leds/leds-lp5523.txt
-> index fad2feb..120fdfe 100644
-> --- a/Documentation/leds/leds-lp5523.txt
-> +++ b/Documentation/leds/leds-lp5523.txt
-> @@ -10,8 +10,22 @@ Contact: Samu Onkalo (samu.p.onkalo-at-nokia.com)
->  Description
->  -----------
->  LP5523 can drive up to 9 channels. Leds can be controlled directly via
-> -the led class control interface. Channels have generic names:
-> -lp5523:channelx where x is 0...8
-> +the led class control interface.
-> +The name of each channel is configurable in the platform data - name and label.
-> +There are three options to make the channel name.
-> +
-> +a) Define the 'name' in the platform data
-> +To make specific channel name, then use 'name' platform data.
-> +/sys/class/leds/R1               (name: 'R1')
-> +/sys/class/leds/B1               (name: 'B1')
-> +
-> +b) Use the 'label' with no 'name' field
-> +For one device name with channel number, then use 'label'.
-> +/sys/class/leds/RGB:channelN     (label: 'RGB', N: 0 ~ 8)
-> +
-> +c) Default
-> +If both fields are NULL, 'lp5523' is used by default.
-> +/sys/class/leds/lp5523:channelN  (N: 0 ~ 8)
->
->  The chip provides 3 engines. Each engine can control channels without
->  interaction from the main CPU. Details of the micro engine code can be found
-> --
-> 1.7.2.5
->
->
-> Best Regards,
-> Milo
->
->
->
+> Possibly making sure that max_nr_stripes is at least some multiple of =
+the
+> chunk size might make sense, but I wouldn't want to see a very large =
+multiple.
+>=20
+> I thing the problems with RAID5 are deeper than that.  Hopefully I'll =
+figure
+> out exactly what the best fix is soon - I'm trying to look into it.
+
+The other MD RAID-5/6 patches that we have change the page submission
+order to avoid the need to merge pages in the elevator so much, and a
+patch to allow zero-copy IO submission if the caller marks the page for
+direct IO (indicating it will not be modified until after IO completes).
+This avoids a lot of overhead on fast systems.
+
+This isn't really my area of expertise, but patches against RHEL6
+could be seen at http://review.whamcloud.com/1142 if you want to
+take a look.  I don't know if that code is at all relevant to what
+is in 3.x today.
+
+> I don't think the size of the cache is a big part of the solution.  I =
+think
+> correct scheduling of IO is the real answer.
+
+My experience is that on fast systems the IO scheduler just gets in the
+way.  Submitting larger contiguous IOs to each disk in the first place
+is far better than trying to merge small IOs again at the back end.
+
+Cheers, Andreas
 
 
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+
+
+
+--Apple-Mail-22-92778657
+content-type: application/pgp-signature; x-mac-type=70674453;
+	name=PGP.sig
+content-description: This is a digitally signed message part
+content-disposition: inline; filename=PGP.sig
+content-transfer-encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.17 (Darwin)
+Comment: GPGTools - http://gpgtools.org
+
+iD8DBQFQNIbipIg59Q01vtYRAkAcAKCGtJsylLo4ETG37VAdEClYoaIN3gCfbuCf
+Hnhc3up3Pzt4rcJP0PRnNJQ=
+=Q66g
+-----END PGP SIGNATURE-----
+
+--Apple-Mail-22-92778657--
