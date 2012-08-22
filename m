@@ -1,106 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab2HVPp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:45:56 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:21023
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752732Ab2HVPpv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:45:51 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275dhz2fh2a8h683h839h944hd25hf0ah107ah1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "Thomas Graf (tgraf@redhat.com)" <tgraf@redhat.com>
-Subject: RE: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Thread-Topic: [PATCH V3 08/14] Tools: hv: Gather DNS information
-Thread-Index: AQHNfBXfRZ51oH5JRU6o6Q09JaeVqJdeONSAgAfDkAA=
-Date: Wed, 22 Aug 2012 15:45:31 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9236C3FF4@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-1-git-send-email-kys@microsoft.com>
- <1345167145-5513-8-git-send-email-kys@microsoft.com>
- <20120817165109.GA11323@kroah.com>
-In-Reply-To: <20120817165109.GA11323@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.55.165]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757735Ab2HVPsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:48:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41986 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753475Ab2HVPsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:48:15 -0400
+Date: Wed, 22 Aug 2012 16:48:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
+Message-ID: <20120822154812.GK7995@opensource.wolfsonmicro.com>
+References: <20120820175155.GH26991@opensource.wolfsonmicro.com>
+ <20120821085618.GA26899@gmail.com>
+ <20120821095026.GU26991@opensource.wolfsonmicro.com>
+ <20120821105413.GD26899@gmail.com>
+ <20120821110329.GA7995@opensource.wolfsonmicro.com>
+ <20120821120243.GF26899@gmail.com>
+ <20120821165207.GX7995@opensource.wolfsonmicro.com>
+ <20120822081746.GA4089@gmail.com>
+ <20120822111913.GG7995@opensource.wolfsonmicro.com>
+ <20120822115524.GA18545@gmail.com>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC104.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IdGNrZu1oYcejyEu"
+Content-Disposition: inline
+In-Reply-To: <20120822115524.GA18545@gmail.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--IdGNrZu1oYcejyEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, August 17, 2012 12:51 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; olaf@aepfle.de; apw@canonical.com;
-> ben@decadent.org.uk
-> Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
-> 
-> On Thu, Aug 16, 2012 at 06:32:19PM -0700, K. Y. Srinivasan wrote:
-> > Now, gather DNS information. Invoke an external script (that can be
-> > distro dependent) to gather the DNS information.
-> 
-> Where is that script? 
+On Wed, Aug 22, 2012 at 12:55:25PM +0100, Lee Jones wrote:
 
-If you think it is useful, I could send you the scripts that I have used to test this
-functionality as example scripts. 
-  
-> Why a script, this really isn't in a standard
-> method for all Linux distros?  If not, why not work to do that like the
-> freedesktop.org people have done for other system configuration items?
+> > I *have* asked you to communicate more clearly about what you're doing
+> > but that doesn't mean to stop sending code, it means to have clearer
+> > words around what you're sending.=20
 
-When discussing this while preparing the patches it was clear that there
-really is no single way to obtain the network information, if you are
-using network manager you need to use dbus, basic debian networking as
-on a server you need to look in /etc/resolv.conf, if you have dnsmasq
-installed you need to look in a third place.  On the SLES side that I am somewhat 
-familiar with, if I recall correctly, none of the appliance images have Network Manager installed.
-The consensus was that  we should avoid pulling a vast pile of distro smarts into the source which
-lead to the hook API proposed in these patches.
+> That's not how I interpreted your words:
 
-The approach chosen here does not preclude using Network Manager in the external scripts
-if a particular distro chooses to go that route. The current implementation supports maximum
-flexibility without sacrificing anything. While the current scripts I have do not use NM APIs, we could
-work on external scripts using DBUS APIs.
+> "What you can do here is to commmunicate about what you're doing more.
+> Don't just think about the code, think about the communication
+> surrounding the code - this is the core of the issue."
 
-If it is ok with you, I could send you the remaining 7 patches along with the scripts I am
-currently using to test this code. These scripts should be viewed just example code. 
+Just to be clear I'd include things like commit messages, cover letters
+and so on in the general area of communication.
 
-Regards,
+> I think it's great that you like the idea and want to extend that
+> functionality to other MFDs which perhaps don't support DT, or the
+> ones that do but don't want to provide compatible strings or device
+> nodes for all the MFD's child devices. But that is all we're doing
+> here. There was no breakage. It served a purpose and it worked well.
+> So well in fact that you've now provided the intended functionality
+> to other devices.
 
-K. Y
+I'm looking at this from the point of view of adding the compatible
+strings and then finding that the core starts remapping things in the
+case where you're probing from DT - and this behaviour will vary
+depending on the device tree that the user is using so the driver can't
+even make a decision based on if device tree is being used by the
+system.
 
- 
+> You only noticed it 2 days ago and I had a patch ready to go yesterday.
+> I'm confused because I don't understand why would you even complain about
+> it if you intended to work on it yourself? Surely, "Ah, I see an issue wi=
+th
+> xyz, patch to follow." Would have been more appropriate, instead of=20
+> complaining about it, then I go and waste my time trying to fix something
+> you intend on fixing yourself.
 
+I didn't originally intend to do anything, if I had done I'd just have
+sent a patch as you say.  Originally I'd just noticed it as being an
+awkwardly designed interface at the wrong abstraction layer, it was only
+later on that I realised how it could blow up.
 
+--IdGNrZu1oYcejyEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQNP81AAoJEFJkBDiqVpZ43FgP/0h+Ke0tOqodTDXZ+VXBM0yB
+Abfa6sTbjCfGL3DGhf4TvngPoUy/3Hsj4AA8SOV66oFZ+0mw6GcfMYv7dg0ixiZh
+a7RSInapNy4voYOHeRsF2lT3Uw7ZHHiT8K4Mq3ZmKQ0GPltfLF/g73lR49/7TdLC
+Rx8MhNvm4uViPLzz7txQwG77tqVyINY8foJkm3nlFSyef4iyqG2OtuxfurQcEmSv
+GgA8Y2tvWeCmnWnf7vBDZ+TYgkER1xV/1XrC1Z2pTzVMBMHt8deFY048SegjfHtW
+oeYUxTPDkLKqQ1lfVDcvUHurK3jrQIeo+hN2c8qypCc41WoJEwS3Xte/hFR4nkk/
+PiY0CHs3f2+u64inWlEthEc+fPIA68XvxlYkxdXsviixV6taTIjUs5p+ZW+YDAIZ
+W6ZbMIrN0Vjuh3Z07zBx8hX2HQstLjl+msPvSEnjAEuf2dLjkJ2yA9lzV0aOd9yu
+1w/woHiSx1dVaXkYJyDBIZEsHhRT6JVRYBNq5+H2GpwuzI1Ajf60QuJF26bGvoMN
+/Mt+CzVSb145zY5boMSyBZyO/hrVn+yH69ES2zzwPRh10buOppPE74kxI5gkhrBn
+zjBK7vnJw03Rdmx5OlDgH70c5NSZD9RoouzgduvKBy4H/AB9KOBHUh74hapBLSz7
+2FcYoaJdwSMN3WMx7v1X
+=eNsF
+-----END PGP SIGNATURE-----
+
+--IdGNrZu1oYcejyEu--
