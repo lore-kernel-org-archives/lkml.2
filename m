@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab2HVCvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 22:51:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61066 "EHLO
+	id S1755607Ab2HVCxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 22:53:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37995 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab2HVCu5 (ORCPT
+	with ESMTP id S1753250Ab2HVCxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 22:50:57 -0400
-Date: Tue, 21 Aug 2012 19:48:29 -0700
+	Tue, 21 Aug 2012 22:53:02 -0400
+Date: Tue, 21 Aug 2012 19:50:37 -0700
 From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Jovi Zhang <bookjovi@gmail.com>, tony.luck@intel.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] pstore: add missed platform_device_unregister
-Message-ID: <20120822024829.GA20787@lizard>
-References: <CACV3sbKA6pjcjc+Wr-w+JNtzJfrJS=6tcMKgDzWMaZ_AV1NQ3A@mail.gmail.com>
- <20120821013958.GA27381@lizard>
- <CAGXu5j+KvkQV94D+kT4b5+UcCX1wZz_04STb3H4CmB1Em-fB3g@mail.gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>
+Subject: linux-next: New tree -- linux-pstore.git
+Message-ID: <20120822025037.GA18807@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAGXu5j+KvkQV94D+kT4b5+UcCX1wZz_04STb3H4CmB1Em-fB3g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 09:19:15AM -0700, Kees Cook wrote:
-[...]
-> >>  static void __exit ramoops_exit(void)
-> >>  {
-> >>       platform_driver_unregister(&ramoops_driver);
-> >> +     platform_device_unregister(dummy);
-> >>       kfree(dummy_data);
-> >>  }
-> >>  module_exit(ramoops_exit);
-> >
-> > It looks OK to me. Unless there are objections I'll apply it to
-> > linux-pstore.git.
-> 
-> Yup, looks right.
-> 
-> Acked-by: Kees Cook <keescook@chromium.org>
+Hello Stephen,
 
-Applied, thanks!
+Can you please add linux-pstore.git tree to the linux-next,
+the repository address is as follows:
+
+  git://git.infradead.org/users/cbou/linux-pstore.git master
+
+This tree is dedicated to track pstore infrastructure fixes and
+enhancements, currently it holds these commits:
+
+Anton Vorontsov (3):
+      pstore/ram: Fix possible NULL dereference
+      pstore/ram: Mark ramoops_pstore_write_buf() as notrace
+      MAINTAINERS: Add pstore maintainers
+
+Jovi Zhang (1):
+      pstore/ram: Add missing platform_device_unregister
+
+Randy Dunlap (1):
+      pstore/ram: Fix printk format warning
+
+
+Thanks!
+
+Anton.
