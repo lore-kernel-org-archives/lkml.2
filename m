@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758859Ab2HVJR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:17:57 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:59759 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753195Ab2HVJRx (ORCPT
+	id S1758883Ab2HVJVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:21:38 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53298 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758863Ab2HVJVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:17:53 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
-Date: Wed, 22 Aug 2012 11:17:51 +0200
-Message-ID: <24029861.U7thTLuEmC@ws-stein>
-User-Agent: KMail/4.8.5 (Linux/3.3.8-gentoo; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20120822160439.62c619bf@feng-i7>
-References: <4401854.hVfHzgeqjT@ws-stein> <3514180.RWySLZuOJm@ws-stein> <20120822160439.62c619bf@feng-i7>
+	Wed, 22 Aug 2012 05:21:33 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1345582058-2291-9-git-send-email-linux@prisktech.co.nz>
+References: <1345582058-2291-1-git-send-email-linux@prisktech.co.nz>
+	<1345582058-2291-9-git-send-email-linux@prisktech.co.nz>
+Date: Wed, 22 Aug 2012 11:21:32 +0200
+Message-ID: <CACRpkdZnQyLSRQ6cRpFBurAv2cv44einGAsT86FLCqsj1euDMA@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCHv3 8/9] arm: vt8500: gpio: Devicetree support
+ for arch-vt8500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: vt8500-wm8505-linux-kernel@googlegroup.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Aug 21, 2012 at 10:47 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
 
-Am Mittwoch, 22. August 2012, 16:04:39 schrieb Feng Tang:
-> > Why use a fixed one? Give the driver (and maybe every i2c bus driver) a parameter which sets the base bus number it should use.
-> > E.g. i2c-eg20t.base-bus-num=2 so it will register the bus numbers starting from 2. If this parameter is unset. It would use the first free one, thus simply using i2c_add_adapter.
-> 
-> The reason we need a fixed number is it is easier for platform code
-> which needs to register dozens of i2c devices to different controllers
-> with i2c_register_board_info, and they need provide a bus number for
-> each i2c device, this _binding_ info is not detectable but have to
-> be fixed.
+> Converted the existing arch-vt8500 gpio to a platform_device.
+> Added support for WM8505 and WM8650 GPIO controllers.
+(...)
+> +       unsigned val;
 
-Yes, I'm aware of that. With "Why use a fixed one?" I meant why hard-code it into the driver. I should be changeable.
-Because this is/was not possible in general to use i2c_register_board_info, so we used an echo to /sys/bus/i2c/devices/i2c-0/new_device or /sys/bus/i2c/devices/i2c-1/new_device.
+I asked about the datatype for this "val", it sure isn't "unsigned".
 
-> Yes, your module parameter "base-bus-num" sounds like a plan too,
-> at the cost of some extra setting in the kernel cmdline. And I'm fine
-> with all solutions as long as I can get a _fixed_ bus number so that
-> I can easily write the platform config code (I guess this is same
-> for device tree, and even ACPI 5.0)
+I suspected the registers were only 8bit and so it should be u8.
+But atleast use u32 if you must use all these bits.
 
-i2c_add_numbered_adapter only works reliably if only using a single driver. If you are using several, especially if one uses dynamic bus numbers, you're kinda screwed.
-So, not very driver can add busses starting at bus number 0.
-I guess using an Intel Atom (i2c-isch) with an eg20t is not that uncommon, so you'll end up using 2 drivers where each one should have a fixed number.
-Some mechanism like udev for renaming ethernet or block devices is needed here.
+(...)
+> +       val = readl(vt8500_chip->base + vt8500_chip->regs->en);
+> +       val |= BIT(offset);
+> +       writel(val, vt8500_chip->base + vt8500_chip->regs->en);
 
-Regards,
-Alexander
+BTW: have you considered [readl|writel]_relaxed?
 
+Yours,
+Linus Walleij
