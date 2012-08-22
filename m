@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206Ab2HVSRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:17:04 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52353 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758439Ab2HVSRB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:17:01 -0400
-Date: Wed, 22 Aug 2012 15:16:53 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Luigi Semenzato <semenzato@chromium.org>, Ingo Molnar <mingo@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
-        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
-Subject: Re: [PATCH] perf: do not flush maps on COMM for perf report
-Message-ID: <20120822181653.GB13623@infradead.org>
-References: <1345585940-6497-1-git-send-email-semenzato@chromium.org>
- <20120822072822.GA11042@gmail.com>
- <CAA25o9RJOre2mw4z7Mh94iRKcHVdby9RjLfP91far16me8_94Q@mail.gmail.com>
- <20120822162958.GA13623@infradead.org>
- <50350F2D.6030408@gmail.com>
+	id S933233Ab2HVST1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 14:19:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49112 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933100Ab2HVSTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 14:19:23 -0400
+Date: Wed, 22 Aug 2012 15:18:34 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, mingo@kernel.org, eranian@google.com,
+        gorcunov@openvz.org, benjamin.redelings@nescent.org,
+        fweisbec@gmail.com, robert.richter@amd.com, drepper@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, asharma@fb.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        fche@redhat.com, tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com,
+        mingo@elte.hu
+Subject: Re: [PATCH] perf: Keep the perf_event_attr on version 3
+Message-ID: <20120822181834.GG7764@infradead.org>
+References: <1344345647-11536-6-git-send-email-jolsa@redhat.com>
+ <tip-c5ebcedb566ef17bda7b02686e0d658a7bb42ee7@git.kernel.org>
+ <1345569116.26596.4.camel@twins>
+ <20120822083540.GB1003@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50350F2D.6030408@gmail.com>
+In-Reply-To: <20120822083540.GB1003@krava.brq.redhat.com>
 X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 22, 2012 at 10:56:13AM -0600, David Ahern escreveu:
-> On 8/22/12 10:29 AM, Arnaldo Carvalho de Melo wrote:
-> >Adding the EXEC event, ditto. And I agree that while adding it we want
-> >to do 1/2 as pre-requisite.
+Em Wed, Aug 22, 2012 at 10:35:40AM +0200, Jiri Olsa escreveu:
+> On Tue, Aug 21, 2012 at 07:11:56PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-08-21 at 08:49 -0700, tip-bot for Jiri Olsa wrote:
+> > >  #define PERF_ATTR_SIZE_VER3    88      /* add: sample_regs_user */
+> > > +#define PERF_ATTR_SIZE_VER4    96      /* add: sample_stack_user */
+> > 
+> > Both are introduced in this patch set, there's no release in between,
+> > why are we doing two version increments? Seems like pointless version
+> > space inflation to me.
 > 
-> maps should not be flushed on a COMM event, so that was a mistake.
-> Given that what new information does an EXEC event provide? Same
-> process id. A COMM event is generated on an exec, so the name change
-> happens. Mappings are dropped prior to that - and there is no unmap
-> event. That seems to be a missing piece. Maps are added which is
-> handled by MMAP events. After that why is an exec event relevant?
+> not sure why I did that, attached patch returns that to version3
 
-Please read the original discussion about it:
+I'm lazy so couldn't quickly find any problem in applying this patch,
+Peter, can you see any problem?
 
-https://lkml.org/lkml/2012/2/13/545
+Will add your Acked-by if you can't.
 
 - Arnaldo
+ 
+> jirka
+> 
+> ---
+> Stashing version 4 under version 3 and removing version 4,
+> because both version changes were within single patchset.
+> 
+> Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  include/linux/perf_event.h | 4 ++--
+>  tools/perf/util/header.c   | 1 -
+>  2 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 297ca3d..28f9cee 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -205,8 +205,8 @@ enum perf_event_read_format {
+>  #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
+>  #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
+>  #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
+> -#define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
+> -#define PERF_ATTR_SIZE_VER4	96	/* add: sample_stack_user */
+> +#define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
+> +					/* add: sample_stack_user */
+>  
+>  /*
+>   * Hardware event_id to monitor via a performance monitoring event:
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 1e5b6aa..5ed4812 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -1831,7 +1831,6 @@ static const int attr_file_abi_sizes[] = {
+>  	[1] = PERF_ATTR_SIZE_VER1,
+>  	[2] = PERF_ATTR_SIZE_VER2,
+>  	[3] = PERF_ATTR_SIZE_VER3,
+> -	[4] = PERF_ATTR_SIZE_VER4,
+>  	0,
+>  };
+>  
+> -- 
+> 1.7.11.4
