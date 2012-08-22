@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab2HVQoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:44:15 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59611 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab2HVQoM (ORCPT
+	id S933143Ab2HVQo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:44:58 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:48274 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933012Ab2HVQo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:44:12 -0400
+	Wed, 22 Aug 2012 12:44:56 -0400
+Date: Wed, 22 Aug 2012 09:44:56 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: torvalds@linux-foundation.org
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 3.6-rc3
+Message-ID: <alpine.DEB.2.00.1208220938560.26910@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <503419D3.1080700@linlab.net>
-References: <503419D3.1080700@linlab.net>
-Date: Wed, 22 Aug 2012 09:44:10 -0700
-Message-ID: <CAFbMe2NVbjGyEF9VRj9p_ejx3mGKTPT2urnguLtfRZEMShsO4g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-To: Alex Bergmann <alex@linlab.net>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 4:29 PM, Alex Bergmann <alex@linlab.net> wrote:
-> Hi David,
->
-> I'm not 100% sure, but it looks like I found an RFC mismatch with the
-> current default values of the TCP implementation.
->
-> Alex
->
-> From 8b854a525eb45f64ad29dfab16f9d9f681e84495 Mon Sep 17 00:00:00 2001
-> From: Alexander Bergmann <alex@linlab.net>
-> Date: Wed, 22 Aug 2012 00:29:08 +0200
-> Subject: [PATCH 1/1] tcp: Wrong timeout for SYN segments
->
-> Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
-> RFC6298 (former RFC2988bis). This introduced a gap with RFC1122 that
-> defines a minimum retransmission window for SYN segments of at least
-> 180secs.
->
-> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
-> a timeout of 63secs.
->
->         ((2 << 5) - 1) * 3 secs = 189 secs
->         ((2 << 5) - 1) * 1 secs = 63 secs
->
-> To fulfill the MUST constraint in RFC1122 section 4.2.3.5 about R2 for
-> SYN segments, the values of TCP_SYN_RETRIES and TCP_SYNACK_RETRIES must
-> be changed to 7 reties.
->
->         ((2 << 7) - 1) * 1 secs = 255 secs
->
-> This would result in an ETIMEDOUT of 4 minutes 15 seconds.
+Hi Linus,
 
-This issue occurred to me right after I submitted the patch for RFC6298.
-I did not commit any more change because RFC compliance aside, 180secs
-just seem like eternity in the Internet age.
+Please pull the following Ceph fixes for -rc3 from
 
-(See my past post on this at
-http://marc.info/?l=linux-netdev&m=130759078118866&w=2)
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-Jerry
+Jim's fix closes a narrow race introduced with the msgr changes.  One fix 
+resolves problems with debugfs initialization that Yan found when multiple 
+client instances are created (e.g., two clusters mounted, or rbd + 
+cephfs), another one fixes problems with mounting a nonexistent server 
+subdirectory, and the last one fixes a divide by zero error from 
+unsanitized ioctl input that Dan Carpenter found.
 
->
-> Signed-off-by: Alexander Bergmann <alex@linlab.net>
-> ---
->  include/net/tcp.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/include/net/tcp.h b/include/net/tcp.h
-> index 1f000ff..7eaae19 100644
-> --- a/include/net/tcp.h
-> +++ b/include/net/tcp.h
-> @@ -98,10 +98,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
->                                  * 15 is ~13-30min depending on RTO.
->                                  */
->
-> -#define TCP_SYN_RETRIES         5      /* number of times to retry active opening a
-> +#define TCP_SYN_RETRIES         7      /* number of times to retry active opening a
->                                  * connection: ~180sec is RFC minimum   */
->
-> -#define TCP_SYNACK_RETRIES 5   /* number of times to retry passive opening a
-> +#define TCP_SYNACK_RETRIES 7   /* number of times to retry passive opening a
->                                  * connection: ~180sec is RFC minimum   */
->
->  #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
-> --
-> 1.7.8.6
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks!
+sage
+
+
+----------------------------------------------------------------
+Jim Schutt (1):
+      libceph: avoid truncation due to racing banners
+
+Sage Weil (3):
+      libceph: delay debugfs initialization until we learn global_id
+      ceph: tolerate (and warn on) extraneous dentry from mds
+      ceph: avoid divide by zero in __validate_layout()
+
+ fs/ceph/debugfs.c      |    1 +
+ fs/ceph/inode.c        |   15 +++++++++----
+ fs/ceph/ioctl.c        |    3 +-
+ net/ceph/ceph_common.c |    1 -
+ net/ceph/debugfs.c     |    4 +++
+ net/ceph/messenger.c   |   11 ++++++++-
+ net/ceph/mon_client.c  |   51 +++++++++++++++++++++++++++++++++++++++++++----
+ 7 files changed, 72 insertions(+), 14 deletions(-)
