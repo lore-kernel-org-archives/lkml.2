@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab2HVOli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:41:38 -0400
-Received: from 8bytes.org ([85.214.48.195]:58693 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932429Ab2HVOlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:41:36 -0400
-Date: Wed, 22 Aug 2012 16:41:33 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg
- call-back
-Message-ID: <20120822144133.GE16283@8bytes.org>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
- <20120820140843.GA7732@phenom.dumpdata.com>
- <20120821084007.GL2582@amd.com>
- <20120821144256.GC20097@phenom.dumpdata.com>
+	id S932645Ab2HVOmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:42:21 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:2463 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756756Ab2HVOmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 10:42:19 -0400
+X-IronPort-AV: E=Sophos;i="4.77,808,1336348800"; 
+   d="scan'208";a="14128934"
+Date: Wed, 22 Aug 2012 15:41:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Jan Beulich <JBeulich@suse.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Q:pt_base in COMPAT mode offset by two pages. Was:Re: [Xen-devel]
+ [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive areas.
+In-Reply-To: <503504FE0200007800096F08@nat28.tlf.novell.com>
+Message-ID: <alpine.DEB.2.02.1208221540570.15568@kaball.uk.xensource.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com> <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com> <20120820141305.GA2713@phenom.dumpdata.com>
+ <20120821172732.GA23715@phenom.dumpdata.com> <20120821190317.GA13035@phenom.dumpdata.com> <503504FE0200007800096F08@nat28.tlf.novell.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821144256.GC20097@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Aug 22 16:41:34 2012
-X-DSPAM-Confidence: 0.9993
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5034ef9e22975917413078
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 10:42:57AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Tue, Aug 21, 2012 at 10:40:07AM +0200, Joerg Roedel wrote:
-> > On Mon, Aug 20, 2012 at 10:08:44AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > On Mon, Aug 20, 2012 at 03:56:03PM +0200, Joerg Roedel wrote:
-> > > > This call-back points to the right function for initializing
-> > > > the msi_msg structure.
-> > > 
-> > > What is the 'hpet_id' purpose in this?
+On Wed, 22 Aug 2012, Jan Beulich wrote:
+> >> The toolstack works fine - so launching 32-bit guests either
+> >> under a 32-bit hypervisor or 64-bit works fine:
+> >> ] domainbuilder: detail: xc_dom_alloc_segment:   page tables  : 0xcf805000 -> 
+> > 0xcf885000  (pfn 0xf805 + 0x80 pages)
+> >> [    0.000000] PT: cf805000 (f805000)
+> >> 
 > > 
-> > The VT-d implementation uses it. This function is used to create the MSI
-> > message for PCI devices and the HPET. When it is called for the HPET the
-> > pdev parameter is NULL and hpet_id is valid.
+> > And this patch on top of the others fixes this..
 > 
-> Perhaps then a more generic term? 'void *platform_priv' ?
+> I didn't look at this in too close detail, but I started to get
+> afraid that you might be making the code dependent on
+> many hypervisor implementation details. And should the
+> above turn out to be a bug in the hypervisor, I hope your
+> kernel side changes won't make it impossible to fix that bug.
 
-Okay, I looked into the code a bit more and the best solution is to
-remove the pdev and hpet_id parameters completly from the
-msi_compose_msg path. The only user of these parameters is the Intel
-interrupt remapping code which can also set the source-ids in the
-irq-alloc path. But this is a larger effort which is best done in a
-seperate patch-set.
-
-
-	Joerg
-
-
+I agree
