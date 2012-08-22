@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649Ab2HVH4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:56:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60912 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757490Ab2HVH4h (ORCPT
+	id S1758743Ab2HVH5M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 03:57:12 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:57346 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757490Ab2HVH5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:56:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v2 17/31] arm64: System calls handling
-Date: Wed, 22 Aug 2012 07:56:30 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208212014.01837.arnd@arndb.de> <20120821220145.GA27934@arm.com>
-In-Reply-To: <20120821220145.GA27934@arm.com>
+	Wed, 22 Aug 2012 03:57:10 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
+Date: Wed, 22 Aug 2012 09:57:07 +0200
+Message-ID: <3514180.RWySLZuOJm@ws-stein>
+User-Agent: KMail/4.8.5 (Linux/3.3.8-gentoo; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20120822152918.3e59616e@feng-i7>
+References: <4401854.hVfHzgeqjT@ws-stein> <20120822152918.3e59616e@feng-i7>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208220756.31149.arnd@arndb.de>
-X-Provags-ID: V02:K0:ju/4ZPxY5uB8Kn7yV7LB2SYD0t5yVTOrOsqCCidpJg7
- PrwtMKcOf3MfRgUbrZeuoxyHfI5jch+n4Ypu3lz4ogAMNia/v1
- wyW7llHIXH8LX573+5NQXryO+lbQHkI0LUhGz2oO6RCcuXhj6j
- 8NqT/1v6ipxHonmA+5c0jzILRIRJKrez4FCM0oy9JcHheqbe3I
- IwKTlSDGILpdhNz8DKJUJLEcRz1N9DOgG5fPWqrxGBRtldLada
- jI/g8rmOsv1PlpeIwCWTWuWbIeBbujIoNe3V97/pBDY1XCmw0X
- 80BHUWaoU3+gYsM8CGCnLZ7MeQhboX06lJ3Yg5uuRKT678KiK+
- x+8kO0y1z/GiKpfVqgCU=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 August 2012, Catalin Marinas wrote:
-> As I understand, sys_mmap_pgoff can be used instead of sys_mmap2 on new
-> 32-bit architectures. But on 64-bit architectures we don't have
-> sys_mmap2, only sys_mmap with the difference that the last argument is
-> the offset in bytes (and multiple of PAGE_SIZE) rather than in pages. So
-> unless we change the meaning of this last argument for sys_mmap, we
-> cannot just define it to sys_mmap_pgoff.
-> 
-> Since the other 64-bit architectures seem to have a sys_mmap wrapper
-> that does this:
-> 
->         sys_mmap_pgoff(..., off >> PAGE_SHIFT);
-> 
-> I think AArch64 should also use the same sys_mmap convention. We can
-> make this wrapper generic.
+Hello,
 
-But the wrapper can just as well be part of glibc, which already has
-one. There is no reason for the kernel to export two generic interfaces
-for mmap when one of them only works on 64 bit and the other one is
-good for both 32 and 64 bit.
+On Wednesday 22 August 2012 15:29:18, Feng Tang wrote:
+> On Wed, 22 Aug 2012 08:30:35 +0200
+> Alexander Stein <alexander.stein@systec-electronic.com> wrote:
+> 
+> > Hello,
+> > 
+> > I just noticed the 3.4 linux kernel fails to sucessfully probe the i2c-eg20t 
+> > driver. I returns with EBUSY error. It worked on the 3.0 kernel. To my view it 
+> > is caused the commit 07e8a51ff68353e01d795cceafbac9f54c49132b ( i2c-eg20t: use 
+> > i2c_add_numbered_adapter to get a fixed bus number).
+> > The reason it actually fails is that the i2c-isch driver is registered 
+> > beforehand which gets bus number 0. But this one is the bus number the eg20t 
+> > driver wants to register.
+> 
+> Make sense.
+> 
+> > A possibility is that if i2c_add_numbered_adapter failed with EBUSY just use 
+> > i2c_add_adapter to get at least the driver working, but with a non-fixed bus 
+> > number. Opinions?
+> 
+> Or can we give it a fixed offset, like let the i2c_eg20t controller bus number
+> start with 4? I don't expect there will be more than 4 other i2c controllers 
+> on EG20T compatible platforms.
 
-All the other 64 bit architectures (besides tile) were added to the
-kernel before we had sys_mmap_pgoff.
+Why use a fixed one? Give the driver (and maybe every i2c bus driver) a parameter which sets the base bus number it should use.
+E.g. i2c-eg20t.base-bus-num=2 so it will register the bus numbers starting from 2. If this parameter is unset. It would use the first free one, thus simply using i2c_add_adapter.
 
-	Arnd
+Regards,
+Alexander
