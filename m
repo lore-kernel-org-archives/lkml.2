@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab2HVAa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 20:30:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45102 "EHLO mx1.redhat.com"
+	id S1754154Ab2HVAbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 20:31:24 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:35764 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab2HVAa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 20:30:26 -0400
-Date: Wed, 22 Aug 2012 03:31:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 0/2] kvm: level irqfd support
-Message-ID: <20120822003129.GK9027@redhat.com>
-References: <20120821190800.24958.74812.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821190800.24958.74812.stgit@bling.home>
+	id S1753191Ab2HVAbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 20:31:02 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Schwab <schwab@linux-m68k.org>
+Subject: [PATCH 0/4] Time fixes for 3.6
+Date: Tue, 21 Aug 2012 20:30:45 -0400
+Message-Id: <1345595449-34965-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082200-5930-0000-0000-00000B1E2249
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 01:28:57PM -0600, Alex Williamson wrote:
-> Here's the much anticipated re-write of support for level irqfds.  As
-> Michael suggested, I've rolled the eoi/ack notification fd into
-> KVM_IRQFD as a new mode.  For lack of a better name, as there seems to
-> be objections to associating this specifically with an EOI or an ACK,
-> I've name this OADN or "On Ack, De-assert & Notify".
-> 
-> Patch 1of2 switches current KVM_IRQFDs to use their own IRQ source ID
-> since we're potentially stepping on KVM_USERSPACE_IRQ_SOURCE_ID.
-> Unfurtunately I was not able to make 2of2 use a single IRQ source ID,
-> the reason is it's racy.  Objects to track OADNs are made dynamically,
-> we look through existing ones for a match under spinlock and setup a
-> new one if there's no match.  On teardown, we can remove the OADN from
-> the list under lock, but that same lock prevents us from de-assigning
-> the IRQ ACK notifier or waiting for an RCU grace period.  We must make
-> sure that any unused GSI is de-asserted, but the above means it's
-> possible that another OADN has been created for this source ID/GSI
-> and de-asserting the GSI could lead to breakage.
+Thomas, Ingo,
+	Here are four small time fixes for 3.6
+that apply against tip/timers/urgent.
 
-I do not see it. What breakage? Could you give an example please?
+One patch resolves the suspend issue Andreas saw.
 
+The next two are casting fixes for potential overflows
+on 32bits, that Andreas found, but haven't been observed
+in the wild.
 
-I think what you are saying is last deassign must clear
-since otherwise we never will clear.
-I agree it is either that or delay deassign until ack.
+Finally the last one fixes an issue I found in my own
+testing w/ the _COARSE clocksources.
 
-Can it be as simple as this (after all rcu etc dances)?
-	lock irqfds
-	if no oadns
-		set level to 0
-	unlock irqfds
-?
+Please take a look at them and let me know if you have
+any thoughts or objections.
 
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andreas Schwab <schwab@linux-m68k.org>
 
+Andreas Schwab (1):
+  time: Fix casting issue in timekeeping_forward_now
 
->  Instead each OADN
-> object gets it's own source ID, but these are all shared by users
-> of the same GSI.  So for PCI devices, we might have up to 4 IRQ
-> source IDs allocated.
-> 
-> Michael had also suggested avoiding reference counting and using
-> list_empty for this OADN object.  Unfortunately, that doesn't work
-> for similar reasons.  We want to release the OADN object underlock,
-> preventing others from re-using it on the free path, but in order
-> to have lock-less de-assert & notify we use RCU, meaning we can't
-> trust list_empty until after an RCU grace period, which must be
-> done outside of spinlocks.
+John Stultz (3):
+  time: Ensure we normalize the timekeeper in tk_xtime_add
+  time: Avoid potential shift-overflow with large shift values
+  time: Avoid making adjustments if we havne't accumulated anything
 
-confused. list empty on assign/deassing would be under lock
-so no need for grace periods to trust it.
-what am I missing?
+ kernel/time/timekeeping.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-But if you like kref more that is OK too.
+-- 
+1.7.9.5
 
-> If there are suggestions how we can handle these better, please
-> make them, but I think this compromise is race-free and still
-> manages to make allocation of IRQ source IDs mostly a non-issue
-> for device assignment limits.  Thanks,
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (2):
->       kvm: On Ack, De-assert & Notify KVM_IRQFD extension
->       kvm: Use a reserved IRQ source ID for irqfd
-> 
-> 
->  Documentation/virtual/kvm/api.txt |   13 ++
->  arch/x86/kvm/x86.c                |    4 +
->  include/linux/kvm.h               |    7 +
->  include/linux/kvm_host.h          |    2 
->  virt/kvm/eventfd.c                |  199 ++++++++++++++++++++++++++++++++++++-
->  5 files changed, 218 insertions(+), 7 deletions(-)
