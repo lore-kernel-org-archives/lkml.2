@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab2HVGiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 02:38:50 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:29500 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752894Ab2HVGis (ORCPT
+	id S1754009Ab2HVGk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 02:40:58 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:33421 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752385Ab2HVGkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 02:38:48 -0400
-X-IronPort-AV: E=Sophos;i="4.77,808,1336341600"; 
-   d="scan'208";a="170476844"
-Date: Wed, 22 Aug 2012 08:38:45 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Vinod Koul <vinod.koul@linux.intel.com>
-cc: Barry Song <21cnbao@gmail.com>, Julia Lawall <julia.lawall@lip6.fr>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Barry Song <baohua.song@csr.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] drivers/dma/sirf-dma.c: fix usage of devm functions
-In-Reply-To: <1345617275.1895.83.camel@vkoul-udesk3>
-Message-ID: <alpine.DEB.2.02.1208220837480.1966@localhost6.localdomain6>
-References: <1344069330-29569-1-git-send-email-Julia.Lawall@lip6.fr>  <1345608994.1895.73.camel@vkoul-udesk3>  <CAGsJ_4yjzE3eNGz=AA7gGxGNkjBH8bKRAUsYXcG+A1p8PtOQPw@mail.gmail.com>  <alpine.DEB.2.02.1208220729440.1966@localhost6.localdomain6> 
- <CAGsJ_4wkyY7VkrgMwGwmFF4kpGiGEtU8Ox46G-yOspAi27Lqgg@mail.gmail.com> <1345617275.1895.83.camel@vkoul-udesk3>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 22 Aug 2012 02:40:55 -0400
+X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Aug 2012 02:40:55 EDT
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: i2c-eg20t: regression since i2c_add_numbered_adapter change
+Date: Wed, 22 Aug 2012 08:30:35 +0200
+Message-ID: <4401854.hVfHzgeqjT@ws-stein>
+User-Agent: KMail/4.8.5 (Linux/3.3.8-gentoo; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> dmaengine: sirf: .............
-> That is the usual way, it helps if you see the notation used by
-> subsystem by checking patches being sent to subsystem, but it is not a
-> really big deal, pls take care of this in future.
+Hello,
 
-OK.
+I just noticed the 3.4 linux kernel fails to sucessfully probe the i2c-eg20t 
+driver. I returns with EBUSY error. It worked on the 3.0 kernel. To my view it 
+is caused the commit 07e8a51ff68353e01d795cceafbac9f54c49132b ( i2c-eg20t: use 
+i2c_add_numbered_adapter to get a fixed bus number).
+The reason it actually fails is that the i2c-isch driver is registered 
+beforehand which gets bus number 0. But this one is the bus number the eg20t 
+driver wants to register.
+A possibility is that if i2c_add_numbered_adapter failed with EBUSY just use 
+i2c_add_adapter to get at least the driver working, but with a non-fixed bus 
+number. Opinions?
 
-julia
+Best regards,
+Alexander
+
