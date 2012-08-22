@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab2HVQEC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:04:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab2HVQEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:04:00 -0400
-Date: Wed, 22 Aug 2012 17:59:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Roland McGrath <roland@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, stan_shebs@mentor.com
-Subject: Re: [PATCH v3] x86/uprobes: implement x86 specific
-	arch_uprobe_*_step
-Message-ID: <20120822155943.GA4237@redhat.com>
-References: <50226700.9000606@linutronix.de> <20120808145345.GA8171@redhat.com> <20120809044356.GA3163@in.ibm.com> <20120809170953.GA27835@linutronix.de> <20120813132443.GB5269@redhat.com> <502A0C43.2000906@linutronix.de> <20120814142736.GA8123@redhat.com> <20120820104734.GA17034@linutronix.de> <20120822140337.GB28878@redhat.com> <5034E8A5.2060701@linutronix.de>
+	id S932869Ab2HVQEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:04:24 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57104 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391Ab2HVQEU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:04:20 -0400
+Date: Wed, 22 Aug 2012 12:04:17 -0400
+From: Matt Porter <mporter@ti.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: cjb@laptop.org, grant.likely@secretlab.ca,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/3] spi: spi-davinci: convert to DMA engine API
+Message-ID: <20120822160417.GA27758@beef>
+References: <1345574589-24757-1-git-send-email-mporter@ti.com>
+ <1345574589-24757-4-git-send-email-mporter@ti.com>
+ <1345607122.1895.44.camel@vkoul-udesk3>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5034E8A5.2060701@linutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1345607122.1895.44.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22, Sebastian Andrzej Siewior wrote:
->
-> On 08/22/2012 04:03 PM, Oleg Nesterov wrote:
->>
->> Sebastian, we have other uprobes patches in flight, I'll returns to
->> this after we push them.
->>
->> As I said, personally I mostly agree with this change... but may be
->> I'll try to convince you to make v4 ;)
->
-> Ehm. Is there anything I missed to do? Or are you speculating on
-> changes which will clash with these here?
+On Wed, Aug 22, 2012 at 09:15:22AM +0530, Vinod Koul wrote:
+> On Tue, 2012-08-21 at 14:43 -0400, Matt Porter wrote:
+> > Removes use of the DaVinci EDMA private DMA API and replaces
+> > it with use of the DMA engine API.
+> > 
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> > ---
+> 
+> > +		struct dma_slave_config dma_rx_conf = {
+> > +			.direction = DMA_DEV_TO_MEM,
+> > +			.src_addr = (unsigned long)dspi->pbase + SPIBUF,
+> > +			.src_addr_width = data_type,
+> > +			.src_maxburst = 1,
+> what does 1 mean in this context? We define as number of units that
+> needs to be transfered, so are you sure that you want only one unit to
+> be dma'ed in a single burst. that seems like killing your dmac,
+> shouldn't you be using larger bursts for a better dma performance?
 
-If we have task_set_blockstep(), then perhaps it mmakes sense to
-avoid user_enable_singlestep()/TIF_SINGLESTEP from the start.
-We will see.
+This device can't handle bursts, it's a simple shift register based
+SPI master that always asserts a DMA req for each SPI word transfer.
 
-Oleg.
+The other important thing to note is that the EDMA driver itself
+is able to handle a maxburst of 1 as a special case. That is, the
+EDMA has some limitations in transfer sizes it can handle if you
+need burst support. So, on the EDMA end of things you'll see that
+if maxburst if 1, it's able to handle setting up an A-synchronized
+transfer to handle any sized segment coming in with a single transfer
+slot. However, is maxburst is >1, EDMA requires up to set up an
+AB-synchronized transfer. This type of transfer limits allows for
+a DMA req per burst, but the maximum segment size we can handle is
+SZ_64K-1. An annoying hardware design limitation, indeed.
 
+It works out ok because in this spi driver conversion we always
+map a SPI transfer into a single segment (similar to the
+spi-omap2-mcspi conversion). Since the SPI master can't handle
+bursts, the EDMA driver is able to handle any sized transfer
+without any performance penalty. If this SPI master could
+handle bursts, we'd be in trouble because we quickly run
+into our AB-synced max segment limitation.
+
+In the mmc driver, we have a device that can handle bursts for
+performance reasons. It sets maxburst appropriately and the
+EDMA driver does the required AB-synced transfer at the h/w
+level. However, this is subject to our limitation of SZ_64K-1
+per segment. Luckily we aren't the first to need to limit the
+segment size coming into an mmc host driver. The mmc
+subsystem already handles this case and the existing driver
+using the private EDMA API was already advertising a maximum
+number of segments and segments size to the mmc subsystem.
+Ideally, we should have a dmaengine interface that allows
+for querying of these types of limitations. Right now, the
+mmc driver implicitly knows that EDMA needs this restriction
+but it's something that should be queried before calling
+prep_slave().
+
+-Matt
