@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab2HVPAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:00:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25657 "EHLO mx1.redhat.com"
+	id S932714Ab2HVPAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:00:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37759 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932676Ab2HVPAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:00:37 -0400
+	id S932678Ab2HVPAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:00:39 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,107 +26,42 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 22/36] autonuma: make khugepaged pte_numa aware
-Date: Wed, 22 Aug 2012 16:59:06 +0200
-Message-Id: <1345647560-30387-23-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 21/36] autonuma: call autonuma_split_huge_page()
+Date: Wed, 22 Aug 2012 16:59:05 +0200
+Message-Id: <1345647560-30387-22-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If any of the ptes that khugepaged is collapsing was a pte_numa, the
-resulting trans huge pmd will be a pmd_numa too.
+This is needed to make sure the tail pages are also queued into the
+migration queues of knuma_migrated across a transparent hugepage
+split.
 
-See the comment inline for why we require just one pte_numa pte to
-make a pmd_numa pmd. If needed later we could change the number of
-pte_numa ptes required to create a pmd_numa and make it tunable with
-sysfs too.
-
+Acked-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/huge_memory.c |   33 +++++++++++++++++++++++++++++++--
- 1 files changed, 31 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 08fd33c..a65590f 100644
+index 5cdf668..08fd33c 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1816,12 +1816,19 @@ out:
- 	return isolated;
- }
+@@ -17,6 +17,7 @@
+ #include <linux/khugepaged.h>
+ #include <linux/freezer.h>
+ #include <linux/mman.h>
++#include <linux/autonuma.h>
+ #include <asm/tlb.h>
+ #include <asm/pgalloc.h>
+ #include "internal.h"
+@@ -1316,6 +1317,7 @@ static void __split_huge_page_refcount(struct page *page)
+ 		BUG_ON(!PageSwapBacked(page_tail));
  
--static void __collapse_huge_page_copy(pte_t *pte, struct page *page,
-+/*
-+ * Do the actual data copy for mapped ptes and release the mapped
-+ * pages, or alternatively zero out the transparent hugepage in the
-+ * mapping holes. Transfer the page_autonuma information in the
-+ * process. Return true if any of the mapped ptes was of numa type.
-+ */
-+static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
- 				      struct vm_area_struct *vma,
- 				      unsigned long address,
- 				      spinlock_t *ptl)
- {
- 	pte_t *_pte;
-+	bool mknuma = false;
- 	for (_pte = pte; _pte < pte+HPAGE_PMD_NR; _pte++) {
- 		pte_t pteval = *_pte;
- 		struct page *src_page;
-@@ -1849,11 +1856,29 @@ static void __collapse_huge_page_copy(pte_t *pte, struct page *page,
- 			page_remove_rmap(src_page);
- 			spin_unlock(ptl);
- 			free_page_and_swap_cache(src_page);
-+
-+			/*
-+			 * Only require one pte_numa mapped by a pmd
-+			 * to make it a pmd_numa, too. To avoid the
-+			 * risk of losing NUMA hinting page faults, it
-+			 * is better to overestimate the NUMA node
-+			 * affinity with a node where we just
-+			 * collapsed a hugepage, rather than
-+			 * underestimate it.
-+			 *
-+			 * Note: if AUTONUMA_SCAN_PMD_FLAG is set, we
-+			 * won't find any pte_numa ptes since we're
-+			 * only setting NUMA hinting at the pmd
-+			 * level.
-+			 */
-+			mknuma |= pte_numa(pteval);
- 		}
- 
- 		address += PAGE_SIZE;
- 		page++;
+ 		lru_add_page_tail(page, page_tail, lruvec);
++		autonuma_migrate_split_huge_page(page, page_tail);
  	}
-+
-+	return mknuma;
- }
- 
- static void collapse_huge_page(struct mm_struct *mm,
-@@ -1871,6 +1896,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	spinlock_t *ptl;
- 	int isolated;
- 	unsigned long hstart, hend;
-+	bool mknuma = false;
- 
- 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
- #ifndef CONFIG_NUMA
-@@ -1989,7 +2015,8 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	 */
- 	anon_vma_unlock(vma->anon_vma);
- 
--	__collapse_huge_page_copy(pte, new_page, vma, address, ptl);
-+	mknuma = pmd_numa(_pmd);
-+	mknuma |= __collapse_huge_page_copy(pte, new_page, vma, address, ptl);
- 	pte_unmap(pte);
- 	__SetPageUptodate(new_page);
- 	pgtable = pmd_pgtable(_pmd);
-@@ -1999,6 +2026,8 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	_pmd = mk_pmd(new_page, vma->vm_page_prot);
- 	_pmd = maybe_pmd_mkwrite(pmd_mkdirty(_pmd), vma);
- 	_pmd = pmd_mkhuge(_pmd);
-+	if (mknuma)
-+		_pmd = pmd_mknuma(_pmd);
- 
- 	/*
- 	 * spin_lock() below is not the equivalent of smp_wmb(), so
+ 	atomic_sub(tail_count, &page->_count);
+ 	BUG_ON(__page_count(page) <= 0);
