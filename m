@@ -1,157 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab2HVK0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 06:26:53 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:20214 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2HVK0v (ORCPT
+	id S932328Ab2HVK1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 06:27:45 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:59288 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363Ab2HVK1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 06:26:51 -0400
-X-IronPort-AV: E=Sophos;i="4.77,808,1336348800"; 
-   d="scan'208";a="14122351"
-Message-ID: <1345631207.6821.140.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] netvm: check for page == NULL when propogating the
- skb->pfmemalloc flag
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Miller <davem@davemloft.net>
-CC: "mgorman@suse.de" <mgorman@suse.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad@darnok.org" <konrad@darnok.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Wed, 22 Aug 2012 11:26:47 +0100
-In-Reply-To: <20120808.155046.820543563969484712.davem@davemloft.net>
-References: <20120807085554.GF29814@suse.de>
-	 <20120808.155046.820543563969484712.davem@davemloft.net>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 22 Aug 2012 06:27:41 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120822100826.GB20640@quack.suse.cz>
+References: <1345283903-7960-1-git-send-email-linkinjeon@gmail.com>
+	<20120821090810.GC7537@quack.suse.cz>
+	<CAKYAXd_odZxzXqn91Q517BuRRFHP3O4pkVgN8uK6QTeFEqaEdg@mail.gmail.com>
+	<20120822100826.GB20640@quack.suse.cz>
+Date: Wed, 22 Aug 2012 19:27:40 +0900
+Message-ID: <CAKYAXd8EWxS7WVZ3sOpspDrRVkqT18yz0U+_xvfQPidSQBE9ag@mail.gmail.com>
+Subject: Re: [PATCH RESEND] udf: extent cache implementation for manipulating
+ block map
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Bonggil Bak <bgbak@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-08 at 23:50 +0100, David Miller wrote:
-> Just use something like a call to __pskb_pull_tail(skb, len) and all
-> that other crap around that area can simply be deleted.
-
-I think you mean something like this, which works for me, although I've
-only lightly tested it.
-
-Ian.
-
-8<----------------------------------------
-
->From 9e47e3e87a33b45974448649a97859a479183041 Mon Sep 17 00:00:00 2001
-From: Ian Campbell <ian.campbell@citrix.com>
-Date: Wed, 22 Aug 2012 10:15:29 +0100
-Subject: [PATCH] xen-netfront: use __pskb_pull_tail to ensure linear area is big enough on RX
-
-I'm slightly concerned by the "only in exceptional circumstances"
-comment on __pskb_pull_tail but the structure of an skb just created
-by netfront shouldn't hit any of the especially slow cases.
-
-This approach still does slightly more work than the old way, since if
-we pull up the entire first frag we now have to shuffle everything
-down where before we just received into the right place in the first
-place.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: xen-devel@lists.xensource.com
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/xen-netfront.c |   39 ++++++++++-----------------------------
- 1 files changed, 10 insertions(+), 29 deletions(-)
-
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 3089990..650f79a 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -57,8 +57,7 @@
- static const struct ethtool_ops xennet_ethtool_ops;
- 
- struct netfront_cb {
--	struct page *page;
--	unsigned offset;
-+	int pull_to;
- };
- 
- #define NETFRONT_SKB_CB(skb)	((struct netfront_cb *)((skb)->cb))
-@@ -867,15 +866,9 @@ static int handle_incoming_queue(struct net_device *dev,
- 	struct sk_buff *skb;
- 
- 	while ((skb = __skb_dequeue(rxq)) != NULL) {
--		struct page *page = NETFRONT_SKB_CB(skb)->page;
--		void *vaddr = page_address(page);
--		unsigned offset = NETFRONT_SKB_CB(skb)->offset;
--
--		memcpy(skb->data, vaddr + offset,
--		       skb_headlen(skb));
-+		int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
- 
--		if (page != skb_frag_page(&skb_shinfo(skb)->frags[0]))
--			__free_page(page);
-+		__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
- 
- 		/* Ethernet work: Delayed to here as it peeks the header. */
- 		skb->protocol = eth_type_trans(skb, dev);
-@@ -913,7 +906,6 @@ static int xennet_poll(struct napi_struct *napi, int budget)
- 	struct sk_buff_head errq;
- 	struct sk_buff_head tmpq;
- 	unsigned long flags;
--	unsigned int len;
- 	int err;
- 
- 	spin_lock(&np->rx_lock);
-@@ -955,24 +947,13 @@ err:
- 			}
- 		}
- 
--		NETFRONT_SKB_CB(skb)->page =
--			skb_frag_page(&skb_shinfo(skb)->frags[0]);
--		NETFRONT_SKB_CB(skb)->offset = rx->offset;
--
--		len = rx->status;
--		if (len > RX_COPY_THRESHOLD)
--			len = RX_COPY_THRESHOLD;
--		skb_put(skb, len);
-+		NETFRONT_SKB_CB(skb)->pull_to = rx->status;
-+		if (NETFRONT_SKB_CB(skb)->pull_to > RX_COPY_THRESHOLD)
-+			NETFRONT_SKB_CB(skb)->pull_to = RX_COPY_THRESHOLD;
- 
--		if (rx->status > len) {
--			skb_shinfo(skb)->frags[0].page_offset =
--				rx->offset + len;
--			skb_frag_size_set(&skb_shinfo(skb)->frags[0], rx->status - len);
--			skb->data_len = rx->status - len;
--		} else {
--			__skb_fill_page_desc(skb, 0, NULL, 0, 0);
--			skb_shinfo(skb)->nr_frags = 0;
--		}
-+		skb_shinfo(skb)->frags[0].page_offset = rx->offset;
-+		skb_frag_size_set(&skb_shinfo(skb)->frags[0], rx->status);
-+		skb->data_len = rx->status;
- 
- 		i = xennet_fill_frags(np, skb, &tmpq);
- 
-@@ -999,7 +980,7 @@ err:
- 		 * receive throughout using the standard receive
- 		 * buffer size was cut by 25%(!!!).
- 		 */
--		skb->truesize += skb->data_len - (RX_COPY_THRESHOLD - len);
-+		skb->truesize += skb->data_len - RX_COPY_THRESHOLD;
- 		skb->len += skb->data_len;
- 
- 		if (rx->flags & XEN_NETRXF_csum_blank)
--- 
-1.7.2.5
-
-
-
+2012/8/22, Jan Kara <jack@suse.cz>:
+> On Wed 22-08-12 19:02:26, Namjae Jeon wrote:
+>> 2012/8/21, Jan Kara <jack@suse.cz>:
+>> Hi. Jan.
+>> Okay, We are trying to do it from your comment.
+>> 1. Change udf_ext_cache structure to following which would also include
+>> *bh.
+>> struct udf_ext_cache {
+>>
+>> /* Position of the cached extent */
+>> struct extent_position epos;
+>>
+>> /* Logical block where cached extent starts */
+>> sector_t block;
+>> };
+>   OK.
+>
+>> 2. Remove call to brelse(epos.bh) from all the callers of inode_bmap()
+>> and move it to udf_evict_inode()
+>   It might be easier to keep brelse() where it is and add get_bh() to
+> udf_add_extent_cache() and brelse() to udf_clear_extent_cache(). It is then
+> easier to audit we don't leak bh references...
+Good point. I will~
+>
+>> 3. As now we are not caching elen, etype and eloc, we have to change
+>> the cache_hit logic in inode_bmap.
+>> The call to function udf_next_aext is now necessary from inode_bmap.
+>   Yes.
+>
+>> 4. Remove call to udf_clear_extent_cache() from udf_get_block as with
+>> new scheme, it is not required.
+>   You still need this when you write before the cached location (e.g. when
+> the file has holes, and you write into them, extents will shift).
+Okay, I see.
+I will send v2 patch soon.
+Thanks for your advice.
+>
+>
+> 								Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+>
