@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab2HVPDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:03:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14442 "EHLO mx1.redhat.com"
+	id S932768Ab2HVPEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:04:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37790 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757585Ab2HVPBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:01:16 -0400
+	id S932747Ab2HVPBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:01:06 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,260 +26,718 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 00/36] AutoNUMA24
-Date: Wed, 22 Aug 2012 16:58:44 +0200
-Message-Id: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 31/36] autonuma: shrink the per-page page_autonuma struct size
+Date: Wed, 22 Aug 2012 16:59:15 +0200
+Message-Id: <1345647560-30387-32-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+>From 32 to 12 bytes, so the AutoNUMA memory footprint is reduced to
+0.29% of RAM.
 
-Before the Kernel Summit, I think it's good idea to post a new
-AutoNUMA24 and to go through a new review cycle. The last review cycle
-has been fundamental in improving the patchset. Thanks!
+This however will fail to migrate pages above a 16 Terabyte offset
+from the start of each node (migration failure isn't fatal, simply
+those pages will not follow the CPU, a warning will be printed in the
+log just once in that case).
 
-The objective of AutoNUMA is to be able to perform as close as
-possible to (and sometime faster than) the NUMA hard CPU/memory
-bindings setups, without requiring the administrator to manually setup
-any NUMA hard bind.
+AutoNUMA will also fail to build if there are more than (2**15)-1
+nodes supported by the MAX_NUMNODES at build time (it would be easy to
+relax it to (2**16)-1 nodes without increasing the memory footprint,
+but it's not even worth it, so let's keep the negative space reserved
+for now).
 
-I hope everyone sees this is an hard problem, and what one thinks will
-work great in theory, when tested in practice, it may not run so
-great. But I'd like to remind that all research is good and valuable.
-All approaches to solve the problem are worthwhile, regardless if they
-work better/worse. sched-numa rewrite is also a very interesting
-approach and I hope everyone agrees that it's wonderful that both ways
-to solve the problem are being researched. Whatever will be merged
-upstream in the end won't change the fact that all work done to try to
-solve this hard problem is very valuable and worthwhile.
+This means the max RAM configuration fully supported by AutoNUMA
+becomes AUTONUMA_LIST_MAX_PFN_OFFSET multiplied by 32767 nodes
+multiplied by the PAGE_SIZE (assume 4096 here, but for some archs it's
+bigger).
 
-git clone --reference linux -b autonuma24 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+4096*32767*(0xffffffff-3)>>(10*5) = 511 PetaBytes.
 
-Development autonuma branch:
-
-git clone --reference linux -b autonuma git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-
-To update:
-
-git fetch
-git checkout -f origin/autonuma
-
-PDF with some benchmark results:
-
-http://www.kernel.org/pub/linux/kernel/people/andrea/autonuma/autonuma-vs-sched-numa-rewrite-20120817.pdf
-http://www.kernel.org/pub/linux/kernel/people/andrea/autonuma/autonuma_bench-20120530.pdf
-
-Changelog from AutoNUMA19 to AutoNUMA24:
-
-o Improved lots of comments and header commit messages.
-
-o Rewritten from scratch the comment at the top of kernel/sched/numa.c
-  as the old comment wasn't well received in upstream reviews. Tried
-  to describe the algorithm from a global view now.
-
-o Added ppc64 support.
-
-o Improved patch splitup.
-
-o Lots of code cleanups and variable renames to make the code more readable.
-
-o Try to take advantage of task_autonuma_nid before the knuma_scand is
-  complete.
-
-o Moved some performance tuning sysfs tweaks under DEBUG_VM so they
-  won't be visible on production kernels.
-
-o Enabled by default the working set mode for the mm_autonuma data
-  collection.
-
-o Halved the size of the mm_autonuma structure.
-
-o scan_sleep_pass_millisecs now is more intuitive (you can can set it
-  to 10000 to mean one pass every 10 sec, in the previous release it had
-  to be set to 5000 to one pass every 10 sec).
-
-o Removed PF_THREAD_BOUND to allow CPU isolation. Turned the VM_BUG_ON
-  verifying the hard binding into a WARN_ON_ONCE so the knuma_migrated
-  can be moved by root anywhere safely.
-
-o Optimized autonuma_possible() to avoid checking num_possible_nodes()
-  every time.
-
-o Added the math on the last_nid statistical effects from sched-numa
-  rewrite which also introduced the last_nid logic of AutoNUMA.
-
-o Now handle systems with holes in the NUMA nodemask. Lots of
-  num_possible_nodes() replaced with nr_node_ids (nr_node_ids not so
-  nice name for such information).
-
-o Fixed a bug affecting KSM. KSM failed to merge pages mapped with a
-  pte_numa pte, now it passes LTP fine. LTP found it.
-
-o Fixed repeated CPU scheduler migrate in sched_autonuma_balance()
-  (the idle load balancing sometime was faster and it put the task
-  back to its previous CPU before it had a chance to be scheduled on
-  the destination CPU).
-
-o More...
-
-Changelog from AutoNUMA-alpha14 to AutoNUMA19:
-
-o sched_autonuma_balance callout location removed from schedule() now it runs
-  in the softirq along with CFS load_balancing
-
-o lots of documentation about the math in the sched_autonuma_balance algorithm
-
-o fixed a bug in the fast path detection in sched_autonuma_balance that could
-  decrease performance with many nodes
-
-o reduced the page_autonuma memory overhead to from 32 to 12 bytes per page
-
-o fixed a crash in __pmd_numa_fixup
-
-o knuma_numad won't scan VM_MIXEDMAP|PFNMAP (it never touched those ptes
-  anyway)
-
-o fixed a crash in autonuma_exit
-
-o fixed a crash when split_huge_page returns 0 in knuma_migratedN as the page
-  has been freed already
-
-o assorted cleanups and probably more
-
-Changelog from alpha13 to alpha14:
-
-o page_autonuma introduction, no memory wasted if the kernel is booted
-  on not-NUMA hardware. Tested with flatmem/sparsemem on x86
-  autonuma=y/n and sparsemem/vsparsemem on x86_64 with autonuma=y/n.
-  "noautonuma" kernel param disables autonuma permanently also when
-  booted on NUMA hardware (no /sys/kernel/mm/autonuma, and no
-  page_autonuma allocations, like cgroup_disable=memory)
-
-o autonuma_balance only runs along with run_rebalance_domains, to
-  avoid altering the usual scheduler runtime. autonuma_balance gives a
-  "kick" to the scheduler after a rebalance (it overrides the load
-  balance activity if needed). It's not yet tested on specjbb or more
-  schedule intensive benchmark, hopefully there's no NUMA
-  regression. For intensive compute loads not involving a flood of
-  scheduling activity this doesn't show any performance regression,
-  and it avoids altering the strict schedule performance. It goes in
-  the direction of being less intrusive with the stock scheduler
-  runtime.
-
-  Note: autonuma_balance still runs from normal context (not softirq
-  context like run_rebalance_domains) to be able to wait on process
-  migration (avoid _nowait), but most of the time it does nothing at
-  all.
-
-Changelog from alpha11 to alpha13:
-
-o autonuma_balance optimization (take the fast path when process is in
-  the preferred NUMA node)
-
-TODO:
-
-o THP native migration (orthogonal and also needed for
-  cpuset/migrate_pages(2)/numa/sched).
-
-Andrea Arcangeli (35):
-  autonuma: make set_pmd_at always available
-  autonuma: export is_vma_temporary_stack() even if
-    CONFIG_TRANSPARENT_HUGEPAGE=n
-  autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
-  autonuma: pte_numa() and pmd_numa()
-  autonuma: teach gup_fast about pmd_numa
-  autonuma: introduce kthread_bind_node()
-  autonuma: mm_autonuma and task_autonuma data structures
-  autonuma: define the autonuma flags
-  autonuma: core autonuma.h header
-  autonuma: CPU follows memory algorithm
-  autonuma: add page structure fields
-  autonuma: knuma_migrated per NUMA node queues
-  autonuma: autonuma_enter/exit
-  autonuma: call autonuma_setup_new_exec()
-  autonuma: alloc/free/init task_autonuma
-  autonuma: alloc/free/init mm_autonuma
-  autonuma: prevent select_task_rq_fair to return -1
-  autonuma: teach CFS about autonuma affinity
-  autonuma: memory follows CPU algorithm and task/mm_autonuma stats
-    collection
-  autonuma: default mempolicy follow AutoNUMA
-  autonuma: call autonuma_split_huge_page()
-  autonuma: make khugepaged pte_numa aware
-  autonuma: retain page last_nid information in khugepaged
-  autonuma: numa hinting page faults entry points
-  autonuma: reset autonuma page data when pages are freed
-  autonuma: link mm/autonuma.o and kernel/sched/numa.o
-  autonuma: add CONFIG_AUTONUMA and CONFIG_AUTONUMA_DEFAULT_ENABLED
-  autonuma: page_autonuma
-  autonuma: autonuma_migrate_head[0] dynamic size
-  autonuma: bugcheck page_autonuma fields on newly allocated pages
-  autonuma: shrink the per-page page_autonuma struct size
-  autonuma: boost khugepaged scanning rate
-  autonuma: make the AUTONUMA_SCAN_PMD_FLAG conditional to
-    CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
-  autonuma: add knuma_migrated/allow_first_fault in sysfs
-  autonuma: add mm_autonuma working set estimation
-
-Vaidyanathan Srinivasan (1):
-  autonuma: powerpc port
-
- arch/Kconfig                              |    6 +
- arch/powerpc/Kconfig                      |    6 +
- arch/powerpc/include/asm/pgtable.h        |   48 +-
- arch/powerpc/include/asm/pte-hash64-64k.h |    4 +-
- arch/powerpc/mm/numa.c                    |    3 +-
- arch/x86/Kconfig                          |    2 +
- arch/x86/include/asm/paravirt.h           |    2 -
- arch/x86/include/asm/pgtable.h            |   65 ++-
- arch/x86/include/asm/pgtable_types.h      |   28 +
- arch/x86/mm/gup.c                         |   13 +-
- arch/x86/mm/numa.c                        |    6 +-
- arch/x86/mm/numa_32.c                     |    3 +-
- fs/exec.c                                 |    7 +
- include/asm-generic/pgtable.h             |   12 +
- include/linux/autonuma.h                  |   72 ++
- include/linux/autonuma_flags.h            |  168 +++
- include/linux/autonuma_list.h             |  100 ++
- include/linux/autonuma_sched.h            |   50 +
- include/linux/autonuma_types.h            |  169 +++
- include/linux/huge_mm.h                   |    6 +-
- include/linux/kthread.h                   |    1 +
- include/linux/memory_hotplug.h            |    3 +-
- include/linux/mm_types.h                  |    5 +
- include/linux/mmzone.h                    |   38 +
- include/linux/page_autonuma.h             |   59 +
- include/linux/sched.h                     |    3 +
- init/main.c                               |    2 +
- kernel/fork.c                             |   18 +
- kernel/kthread.c                          |   21 +
- kernel/sched/Makefile                     |    1 +
- kernel/sched/core.c                       |    1 +
- kernel/sched/fair.c                       |   86 ++-
- kernel/sched/numa.c                       |  604 ++++++++++
- kernel/sched/sched.h                      |   19 +
- mm/Kconfig                                |   17 +
- mm/Makefile                               |    1 +
- mm/autonuma.c                             | 1727 +++++++++++++++++++++++++++++
- mm/autonuma_list.c                        |  169 +++
- mm/huge_memory.c                          |   78 ++-
- mm/memory.c                               |   31 +
- mm/memory_hotplug.c                       |    2 +-
- mm/mempolicy.c                            |   12 +-
- mm/mmu_context.c                          |    3 +
- mm/page_alloc.c                           |    7 +-
- mm/page_autonuma.c                        |  248 +++++
- mm/sparse.c                               |  126 ++-
- 46 files changed, 4014 insertions(+), 38 deletions(-)
- create mode 100644 include/linux/autonuma.h
- create mode 100644 include/linux/autonuma_flags.h
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/autonuma_list.h  |  100 +++++++++++++++++++++++
+ include/linux/autonuma_types.h |   45 ++++++-----
+ include/linux/mmzone.h         |    3 +-
+ include/linux/page_autonuma.h  |    2 +-
+ mm/Makefile                    |    2 +-
+ mm/autonuma.c                  |   93 ++++++++++++++++------
+ mm/autonuma_list.c             |  169 ++++++++++++++++++++++++++++++++++++++++
+ mm/page_autonuma.c             |   24 +++---
+ 8 files changed, 380 insertions(+), 58 deletions(-)
  create mode 100644 include/linux/autonuma_list.h
- create mode 100644 include/linux/autonuma_sched.h
- create mode 100644 include/linux/autonuma_types.h
- create mode 100644 include/linux/page_autonuma.h
- create mode 100644 kernel/sched/numa.c
- create mode 100644 mm/autonuma.c
  create mode 100644 mm/autonuma_list.c
- create mode 100644 mm/page_autonuma.c
 
+diff --git a/include/linux/autonuma_list.h b/include/linux/autonuma_list.h
+new file mode 100644
+index 0000000..b77acb4
+--- /dev/null
++++ b/include/linux/autonuma_list.h
+@@ -0,0 +1,100 @@
++#ifndef __AUTONUMA_LIST_H
++#define __AUTONUMA_LIST_H
++
++#include <linux/types.h>
++#include <linux/kernel.h>
++
++typedef uint32_t autonuma_list_entry;
++#define AUTONUMA_LIST_MAX_PFN_OFFSET	(AUTONUMA_LIST_HEAD-3)
++#define AUTONUMA_LIST_POISON1		(AUTONUMA_LIST_HEAD-2)
++#define AUTONUMA_LIST_POISON2		(AUTONUMA_LIST_HEAD-1)
++#define AUTONUMA_LIST_HEAD		((uint32_t)UINT_MAX)
++
++struct autonuma_list_head {
++	autonuma_list_entry anl_next_pfn;
++	autonuma_list_entry anl_prev_pfn;
++};
++
++static inline void AUTONUMA_INIT_LIST_HEAD(struct autonuma_list_head *anl)
++{
++	anl->anl_next_pfn = AUTONUMA_LIST_HEAD;
++	anl->anl_prev_pfn = AUTONUMA_LIST_HEAD;
++}
++
++/* abstraction conversion methods */
++extern struct page *autonuma_list_entry_to_page(int nid,
++					autonuma_list_entry pfn_offset);
++extern autonuma_list_entry autonuma_page_to_list_entry(int page_nid,
++						       struct page *page);
++extern struct autonuma_list_head *__autonuma_list_head(int page_nid,
++					struct autonuma_list_head *head,
++					autonuma_list_entry pfn_offset);
++
++extern bool __autonuma_list_add(int page_nid,
++				struct page *page,
++				struct autonuma_list_head *head,
++				autonuma_list_entry prev,
++				autonuma_list_entry next);
++
++/*
++ * autonuma_list_add - add a new entry
++ *
++ * Insert a new entry after the specified head.
++ */
++static inline bool autonuma_list_add(int page_nid,
++				     struct page *page,
++				     autonuma_list_entry entry,
++				     struct autonuma_list_head *head)
++{
++	struct autonuma_list_head *entry_head;
++	entry_head = __autonuma_list_head(page_nid, head, entry);
++	return __autonuma_list_add(page_nid, page, head,
++				   entry, entry_head->anl_next_pfn);
++}
++
++/*
++ * autonuma_list_add_tail - add a new entry
++ *
++ * Insert a new entry before the specified head.
++ * This is useful for implementing queues.
++ */
++static inline bool autonuma_list_add_tail(int page_nid,
++					  struct page *page,
++					  autonuma_list_entry entry,
++					  struct autonuma_list_head *head)
++{
++	struct autonuma_list_head *entry_head;
++	entry_head = __autonuma_list_head(page_nid, head, entry);
++	return __autonuma_list_add(page_nid, page, head,
++				   entry_head->anl_prev_pfn, entry);
++}
++
++/*
++ * autonuma_list_del - deletes entry from list.
++ * @entry: the element to delete from the list.
++ */
++extern void autonuma_list_del(int page_nid,
++			      struct autonuma_list_head *entry,
++			      struct autonuma_list_head *head);
++
++static inline bool autonuma_list_empty(const struct autonuma_list_head *head)
++{
++	return ACCESS_ONCE(head->anl_next_pfn) == AUTONUMA_LIST_HEAD;
++}
++
++/* safe to call only when the list cannot change under us */
++extern bool autonuma_list_empty_debug(const struct autonuma_list_head *head);
++
++#if 0 /* not needed so far */
++/*
++ * autonuma_list_is_singular - tests whether a list has just one entry.
++ * @head: the list to test.
++ */
++static inline int autonuma_list_is_singular(const struct autonuma_list_head *head)
++{
++	return !autonuma_list_empty_debug(head) &&
++		(head->anl_next_pfn == head->anl_prev_pfn);
++}
++#endif
++
++#endif /* __AUTONUMA_LIST_H */
+diff --git a/include/linux/autonuma_types.h b/include/linux/autonuma_types.h
+index 525c31f..80ace7f 100644
+--- a/include/linux/autonuma_types.h
++++ b/include/linux/autonuma_types.h
+@@ -4,6 +4,7 @@
+ #ifdef CONFIG_AUTONUMA
+ 
+ #include <linux/numa.h>
++#include <linux/autonuma_list.h>
+ 
+ 
+ /*
+@@ -81,6 +82,19 @@ struct task_autonuma {
+ /*
+  * Per page (or per-pageblock) structure dynamically allocated only if
+  * autonuma is possible.
++ *
++ * This structure takes 12 bytes per page for all architectures. There
++ * are two constraints to make this work:
++ *
++ * 1) the build will abort if MAX_NUMNODES is too big according to
++ *    the #error check below
++ *
++ * 2) AutoNUMA will not succeed to insert into the migration queue any
++ *    page whose pfn offset value (offset with respect to the first
++ *    pfn of the node) is bigger than AUTONUMA_LIST_MAX_PFN_OFFSET
++ *    (NOTE: AUTONUMA_LIST_MAX_PFN_OFFSET is still a valid pfn offset
++ *    value). This means with huge node sizes and small PAGE_SIZE,
++ *    some pages may not be allowed to be migrated.
+  */
+ struct page_autonuma {
+ 	/*
+@@ -91,7 +105,14 @@ struct page_autonuma {
+ 	 * systems). Architectures without this granularity require
+ 	 * autonuma_last_nid to be a long.
+ 	 */
+-#ifdef CONFIG_64BIT
++#if MAX_NUMNODES > 32767
++	/*
++	 * Verify at build time that int16_t for autonuma_migrate_nid
++	 * and autonuma_last_nid won't risk to overflow, max allowed
++	 * nid value is (2**15)-1.
++	 */
++#error "too many nodes"
++#endif
+ 	/*
+ 	 * If autonuma_migrate_nid is >= 0, it means the page_autonuma
+ 	 * structure is linked into one of the NUMA node's migrate
+@@ -100,7 +121,7 @@ struct page_autonuma {
+ 	 * page_autonuma structure is not linked into any NUMA node's
+ 	 * migrate list.
+ 	 */
+-	int autonuma_migrate_nid;
++	int16_t autonuma_migrate_nid;
+ 	/*
+ 	 * autonuma_last_nid records the NUMA node that accessed the
+ 	 * page during the last NUMA hinting page fault. If a
+@@ -109,28 +130,14 @@ struct page_autonuma {
+ 	 * requiring that a page be accessed by the same node twice in
+ 	 * a row before it is queued for migration.
+ 	 */
+-	int autonuma_last_nid;
+-#else
+-#if MAX_NUMNODES > 32767
+-#error "too many nodes"
+-#endif
+-	short autonuma_migrate_nid;
+-	short autonuma_last_nid;
+-#endif
++	int16_t autonuma_last_nid;
++
+ 	/*
+ 	 * This is the list node that links the page (referenced by
+ 	 * the page_autonuma structure) in the
+ 	 * &NODE_DATA(dst_nid)->autonuma_migrate_head[page_nid] lru.
+ 	 */
+-	struct list_head autonuma_migrate_node;
+-
+-	/*
+-	 * To find the page starting from the autonuma_migrate_node we
+-	 * need a backlink.
+-	 *
+-	 * FIXME: drop it;
+-	 */
+-	struct page *page;
++	struct autonuma_list_head autonuma_migrate_node;
+ };
+ 
+ extern int alloc_task_autonuma(struct task_struct *tsk,
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 4d8e100..af71633 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -17,6 +17,7 @@
+ #include <linux/pageblock-flags.h>
+ #include <generated/bounds.h>
+ #include <linux/atomic.h>
++#include <linux/autonuma_list.h>
+ #include <asm/page.h>
+ 
+ /* Free memory management - zoned buddy allocator.  */
+@@ -734,7 +735,7 @@ typedef struct pglist_data {
+ 	 * <linux/page_autonuma.h>. The below field must remain the
+ 	 * last one of this structure.
+ 	 */
+-	struct list_head autonuma_migrate_head[0];
++	struct autonuma_list_head autonuma_migrate_head[0];
+ #endif
+ 	/* do not add more variables here, the above array size is dynamic */
+ } pg_data_t;
+diff --git a/include/linux/page_autonuma.h b/include/linux/page_autonuma.h
+index bd6249c..aeb2e9d 100644
+--- a/include/linux/page_autonuma.h
++++ b/include/linux/page_autonuma.h
+@@ -53,7 +53,7 @@ extern void __init sparse_early_page_autonuma_alloc_node(struct page_autonuma **
+ /* inline won't work here */
+ #define autonuma_pglist_data_size() (sizeof(struct pglist_data) +	\
+ 				     (autonuma_possible() ?		\
+-				      sizeof(struct list_head) * \
++				      sizeof(struct autonuma_list_head) * \
+ 				      nr_node_ids : 0))
+ 
+ #endif /* _LINUX_PAGE_AUTONUMA_H */
+diff --git a/mm/Makefile b/mm/Makefile
+index 5a4fa30..04357c1 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -34,7 +34,7 @@ obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
+ obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+ obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
+ obj-$(CONFIG_NUMA) 	+= mempolicy.o
+-obj-$(CONFIG_AUTONUMA) 	+= autonuma.o page_autonuma.o
++obj-$(CONFIG_AUTONUMA) 	+= autonuma.o page_autonuma.o autonuma_list.o
+ obj-$(CONFIG_SPARSEMEM)	+= sparse.o
+ obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
+ obj-$(CONFIG_SLOB) += slob.o
+diff --git a/mm/autonuma.c b/mm/autonuma.c
+index 7967507..ada6c57 100644
+--- a/mm/autonuma.c
++++ b/mm/autonuma.c
+@@ -89,7 +89,14 @@ void autonuma_migrate_split_huge_page(struct page *page,
+ 	VM_BUG_ON(nid < -1);
+ 	VM_BUG_ON(page_tail_autonuma->autonuma_migrate_nid != -1);
+ 	if (nid >= 0) {
+-		VM_BUG_ON(page_to_nid(page) != page_to_nid(page_tail));
++		bool added;
++		int page_nid = page_to_nid(page);
++		struct autonuma_list_head *head;
++		autonuma_list_entry entry;
++		entry = autonuma_page_to_list_entry(page_nid, page);
++		head = &NODE_DATA(nid)->autonuma_migrate_head[page_nid];
++		VM_BUG_ON(page_nid != page_to_nid(page_tail));
++		VM_BUG_ON(page_nid == nid);
+ 
+ 		/*
+ 		 * The caller only takes the compound_lock for the
+@@ -101,11 +108,19 @@ void autonuma_migrate_split_huge_page(struct page *page,
+ 		 */
+ 		compound_lock(page_tail);
+ 		autonuma_migrate_lock(nid);
+-		list_add_tail(&page_tail_autonuma->autonuma_migrate_node,
+-			      &page_autonuma->autonuma_migrate_node);
++		added = autonuma_list_add_tail(page_nid, page_tail, entry,
++					       head);
++		/*
++		 * AUTONUMA_LIST_MAX_PFN_OFFSET+1 isn't a power of 2
++		 * so "added" may be false if there's a pfn overflow
++		 * in the list.
++		 */
++		if (!added)
++			NODE_DATA(nid)->autonuma_nr_migrate_pages--;
+ 		autonuma_migrate_unlock(nid);
+ 
+-		page_tail_autonuma->autonuma_migrate_nid = nid;
++		if (added)
++			page_tail_autonuma->autonuma_migrate_nid = nid;
+ 		compound_unlock(page_tail);
+ 	}
+ 
+@@ -127,8 +142,15 @@ void __autonuma_migrate_page_remove(struct page *page,
+ 	VM_BUG_ON(nid < -1);
+ 	if (nid >= 0) {
+ 		int numpages = hpage_nr_pages(page);
++		int page_nid = page_to_nid(page);
++		struct autonuma_list_head *head;
++		VM_BUG_ON(nid == page_nid);
++		head = &NODE_DATA(nid)->autonuma_migrate_head[page_nid];
++
+ 		autonuma_migrate_lock(nid);
+-		list_del(&page_autonuma->autonuma_migrate_node);
++		autonuma_list_del(page_nid,
++				  &page_autonuma->autonuma_migrate_node,
++				  head);
+ 		NODE_DATA(nid)->autonuma_nr_migrate_pages -= numpages;
+ 		autonuma_migrate_unlock(nid);
+ 
+@@ -147,6 +169,8 @@ static void __autonuma_migrate_page_add(struct page *page,
+ 	int numpages;
+ 	unsigned long nr_migrate_pages;
+ 	wait_queue_head_t *wait_queue;
++	struct autonuma_list_head *head;
++	bool added;
+ 
+ 	VM_BUG_ON(dst_nid >= MAX_NUMNODES);
+ 	VM_BUG_ON(dst_nid < -1);
+@@ -170,25 +194,42 @@ static void __autonuma_migrate_page_add(struct page *page,
+ 	VM_BUG_ON(nid >= MAX_NUMNODES);
+ 	VM_BUG_ON(nid < -1);
+ 	if (nid >= 0) {
++		VM_BUG_ON(nid == page_nid);
++		head = &NODE_DATA(nid)->autonuma_migrate_head[page_nid];
++
+ 		autonuma_migrate_lock(nid);
+-		list_del(&page_autonuma->autonuma_migrate_node);
++		autonuma_list_del(page_nid,
++				  &page_autonuma->autonuma_migrate_node,
++				  head);
+ 		NODE_DATA(nid)->autonuma_nr_migrate_pages -= numpages;
+ 		autonuma_migrate_unlock(nid);
+ 	}
+ 
++	head = &NODE_DATA(dst_nid)->autonuma_migrate_head[page_nid];
++
+ 	autonuma_migrate_lock(dst_nid);
+-	list_add(&page_autonuma->autonuma_migrate_node,
+-		 &NODE_DATA(dst_nid)->autonuma_migrate_head[page_nid]);
+-	NODE_DATA(dst_nid)->autonuma_nr_migrate_pages += numpages;
+-	nr_migrate_pages = NODE_DATA(dst_nid)->autonuma_nr_migrate_pages;
++	added = autonuma_list_add(page_nid, page, AUTONUMA_LIST_HEAD, head);
++	if (added) {
++		NODE_DATA(dst_nid)->autonuma_nr_migrate_pages += numpages;
++		nr_migrate_pages = NODE_DATA(dst_nid)->autonuma_nr_migrate_pages;
++	}
+ 
+ 	autonuma_migrate_unlock(dst_nid);
+ 
+-	page_autonuma->autonuma_migrate_nid = dst_nid;
++	if (added)
++		page_autonuma->autonuma_migrate_nid = dst_nid;
+ 
+ 	compound_unlock_irqrestore(page, flags);
+ 
+-	if (!autonuma_migrate_defer()) {
++	/* Done, if migrate defer flag is set */
++	if (autonuma_migrate_defer())
++		return;
++
++	/*
++	 * Wake up migrate daemon if the number of pages has reached
++	 * the threshold.
++	 */
++	if (added) {
+ 		wait_queue = &NODE_DATA(dst_nid)->autonuma_knuma_migrated_wait;
+ 		if (nr_migrate_pages >= pages_to_migrate &&
+ 		    nr_migrate_pages - numpages < pages_to_migrate &&
+@@ -904,7 +945,7 @@ static int isolate_migratepages(struct list_head *migratepages,
+ 				struct pglist_data *pgdat)
+ {
+ 	int nr = 0, nid;
+-	struct list_head *heads = pgdat->autonuma_migrate_head;
++	struct autonuma_list_head *heads = pgdat->autonuma_migrate_head;
+ 
+ 	/* FIXME: THP balancing, restart from last nid */
+ 	for_each_online_node(nid) {
+@@ -924,10 +965,10 @@ static int isolate_migratepages(struct list_head *migratepages,
+ 			  "thread has been altered in a suboptimal way\n",
+ 			  pgdat->node_id);
+ 		if (nid == pgdat->node_id) {
+-			VM_BUG_ON(!list_empty(&heads[nid]));
++			VM_BUG_ON(!autonuma_list_empty_debug(&heads[nid]));
+ 			continue;
+ 		}
+-		if (list_empty(&heads[nid]))
++		if (autonuma_list_empty(&heads[nid]))
+ 			continue;
+ 		/* some page wants to go to this pgdat */
+ 		/*
+@@ -939,22 +980,26 @@ static int isolate_migratepages(struct list_head *migratepages,
+ 		 * obtained the autonuma_migrate_lock here.
+ 		 */
+ 		autonuma_migrate_lock_irq(pgdat->node_id);
+-		if (list_empty(&heads[nid])) {
++		if (autonuma_list_empty_debug(&heads[nid])) {
+ 			autonuma_migrate_unlock_irq(pgdat->node_id);
+ 			continue;
+ 		}
+-		page_autonuma = list_entry(heads[nid].prev,
+-					   struct page_autonuma,
+-					   autonuma_migrate_node);
+-		page = page_autonuma->page;
++		page = autonuma_list_entry_to_page(nid,
++						   heads[nid].anl_prev_pfn);
++		BUG_ON(nid != page_to_nid(page));
++		page_autonuma = lookup_page_autonuma(page);
+ 		if (unlikely(!get_page_unless_zero(page))) {
++			struct autonuma_list_head *entry_head;
+ 			/*
+ 			 * Is getting freed and will remove self from the
+ 			 * autonuma list shortly, skip it for now.
+ 			 */
+-			list_del(&page_autonuma->autonuma_migrate_node);
+-			list_add(&page_autonuma->autonuma_migrate_node,
+-				 &heads[nid]);
++			entry_head = &page_autonuma->autonuma_migrate_node;
++			autonuma_list_del(nid, entry_head, &heads[nid]);
++			if (!autonuma_list_add(nid, page,
++					       AUTONUMA_LIST_HEAD,
++					       &heads[nid]))
++				BUG();
+ 			autonuma_migrate_unlock_irq(pgdat->node_id);
+ 			autonuma_printk("autonuma migrate page is free\n");
+ 			continue;
+@@ -967,8 +1012,6 @@ static int isolate_migratepages(struct list_head *migratepages,
+ 			continue;
+ 		}
+ 
+-		VM_BUG_ON(nid != page_to_nid(page));
+-
+ 		if (PageTransHuge(page)) {
+ 			VM_BUG_ON(!PageAnon(page));
+ 			/* FIXME: remove split_huge_page */
+diff --git a/mm/autonuma_list.c b/mm/autonuma_list.c
+new file mode 100644
+index 0000000..0a1cab1
+--- /dev/null
++++ b/mm/autonuma_list.c
+@@ -0,0 +1,169 @@
++/*
++ * Copyright 2006, Red Hat, Inc., Dave Jones
++ * Copyright 2012, Red Hat, Inc.
++ * Released under the General Public License (GPL).
++ *
++ * This file contains the linked list implementations for
++ * autonuma migration lists.
++ */
++
++#include <linux/mm.h>
++#include <linux/autonuma.h>
++
++/*
++ * Insert a new entry between two known consecutive entries.
++ *
++ * This is only for internal list manipulation where we know
++ * the prev/next entries already!
++ *
++ * return true if succeeded, or false if the (page_nid, pfn_offset)
++ * pair couldn't represent the pfn and the list_add didn't succeed.
++ */
++bool __autonuma_list_add(int page_nid,
++			 struct page *page,
++			 struct autonuma_list_head *head,
++			 autonuma_list_entry prev,
++			 autonuma_list_entry next)
++{
++	autonuma_list_entry new;
++
++	VM_BUG_ON(page_nid != page_to_nid(page));
++	new = autonuma_page_to_list_entry(page_nid, page);
++	if (new > AUTONUMA_LIST_MAX_PFN_OFFSET)
++		return false;
++
++	WARN(new == prev || new == next,
++	     "autonuma_list_add double add: new=%u, prev=%u, next=%u.\n",
++	     new, prev, next);
++
++	__autonuma_list_head(page_nid, head, next)->anl_prev_pfn = new;
++	__autonuma_list_head(page_nid, head, new)->anl_next_pfn = next;
++	__autonuma_list_head(page_nid, head, new)->anl_prev_pfn = prev;
++	__autonuma_list_head(page_nid, head, prev)->anl_next_pfn = new;
++	return true;
++}
++
++static inline void __autonuma_list_del_entry(int page_nid,
++					     struct autonuma_list_head *entry,
++					     struct autonuma_list_head *head)
++{
++	autonuma_list_entry prev, next;
++
++	next = entry->anl_next_pfn;
++	prev = entry->anl_prev_pfn;
++
++	if (WARN(next == AUTONUMA_LIST_POISON1,
++		 "autonuma_list_del corruption, "
++		 "%p->anl_next_pfn is AUTONUMA_LIST_POISON1 (%u)\n",
++		entry, AUTONUMA_LIST_POISON1) ||
++	    WARN(prev == AUTONUMA_LIST_POISON2,
++		"autonuma_list_del corruption, "
++		 "%p->anl_prev_pfn is AUTONUMA_LIST_POISON2 (%u)\n",
++		entry, AUTONUMA_LIST_POISON2))
++		return;
++
++	__autonuma_list_head(page_nid, head, next)->anl_prev_pfn = prev;
++	__autonuma_list_head(page_nid, head, prev)->anl_next_pfn = next;
++}
++
++/*
++ * autonuma_list_del - deletes entry from list.
++ *
++ * Note: autonuma_list_empty on entry does not return true after this,
++ * the entry is in an undefined state.
++ */
++void autonuma_list_del(int page_nid, struct autonuma_list_head *entry,
++		       struct autonuma_list_head *head)
++{
++	__autonuma_list_del_entry(page_nid, entry, head);
++	entry->anl_next_pfn = AUTONUMA_LIST_POISON1;
++	entry->anl_prev_pfn = AUTONUMA_LIST_POISON2;
++}
++
++/*
++ * autonuma_list_empty - tests whether a list is empty
++ * @head: the list to test.
++ */
++bool autonuma_list_empty_debug(const struct autonuma_list_head *head)
++{
++	bool ret = false;
++	if (head->anl_next_pfn == AUTONUMA_LIST_HEAD) {
++		ret = true;
++		BUG_ON(head->anl_prev_pfn != AUTONUMA_LIST_HEAD);
++	}
++	return ret;
++}
++
++/* abstraction conversion methods */
++
++static inline struct page *__autonuma_list_entry_to_page(int page_nid,
++							 autonuma_list_entry pfn_offset)
++{
++	struct pglist_data *pgdat = NODE_DATA(page_nid);
++	unsigned long pfn = pgdat->node_start_pfn + pfn_offset;
++	BUG_ON(pfn_offset >= pgdat->node_spanned_pages);
++	return pfn_to_page(pfn);
++}
++
++struct page *autonuma_list_entry_to_page(int page_nid,
++					 autonuma_list_entry pfn_offset)
++{
++	VM_BUG_ON(page_nid < 0);
++	BUG_ON(pfn_offset == AUTONUMA_LIST_POISON1);
++	BUG_ON(pfn_offset == AUTONUMA_LIST_POISON2);
++	BUG_ON(pfn_offset == AUTONUMA_LIST_HEAD);
++	return __autonuma_list_entry_to_page(page_nid, pfn_offset);
++}
++
++/*
++ * returns a value above AUTONUMA_LIST_MAX_PFN_OFFSET if the pfn is
++ * located a too big offset from the start of the node and cannot be
++ * represented by the (page_nid, pfn_offset) pair.
++ */
++autonuma_list_entry autonuma_page_to_list_entry(int page_nid,
++						struct page *page)
++{
++	unsigned long pfn = page_to_pfn(page);
++	struct pglist_data *pgdat = NODE_DATA(page_nid);
++	VM_BUG_ON(page_nid != page_to_nid(page));
++	BUG_ON(pfn < pgdat->node_start_pfn);
++	BUG_ON(pfn >= pgdat->node_start_pfn + pgdat->node_spanned_pages);
++	pfn -= pgdat->node_start_pfn;
++	if (pfn > AUTONUMA_LIST_MAX_PFN_OFFSET) {
++		WARN_ONCE(1, "autonuma_page_to_list_entry: "
++			  "pfn_offset  %lu, pgdat %p, "
++			  "pgdat->node_start_pfn %lu\n",
++			  pfn, pgdat, pgdat->node_start_pfn);
++		/*
++		 * Any value bigger than AUTONUMA_LIST_MAX_PFN_OFFSET
++		 * will work as an error retval, but better pick one
++		 * that will cause noise if computed wrong by the
++		 * caller.
++		 */
++		return AUTONUMA_LIST_POISON1;
++	}
++	return pfn; /* convert to uint16_t without losing information */
++}
++
++static inline struct autonuma_list_head *____autonuma_list_head(int page_nid,
++					autonuma_list_entry pfn_offset)
++{
++	struct pglist_data *pgdat = NODE_DATA(page_nid);
++	unsigned long pfn = pgdat->node_start_pfn + pfn_offset;
++	struct page *page = pfn_to_page(pfn);
++	struct page_autonuma *page_autonuma = lookup_page_autonuma(page);
++	return &page_autonuma->autonuma_migrate_node;
++}
++
++struct autonuma_list_head *__autonuma_list_head(int page_nid,
++					struct autonuma_list_head *head,
++					autonuma_list_entry pfn_offset)
++{
++	VM_BUG_ON(page_nid < 0);
++	BUG_ON(pfn_offset == AUTONUMA_LIST_POISON1);
++	BUG_ON(pfn_offset == AUTONUMA_LIST_POISON2);
++	if (pfn_offset != AUTONUMA_LIST_HEAD)
++		return ____autonuma_list_head(page_nid, pfn_offset);
++	else
++		return head;
++}
+diff --git a/mm/page_autonuma.c b/mm/page_autonuma.c
+index 46d616c..c8ba137 100644
+--- a/mm/page_autonuma.c
++++ b/mm/page_autonuma.c
+@@ -1,5 +1,6 @@
+ #include <linux/mm.h>
+ #include <linux/memory.h>
++#include <linux/vmalloc.h>
+ #include <linux/autonuma.h>
+ #include <linux/page_autonuma.h>
+ #include <linux/bootmem.h>
+@@ -12,7 +13,6 @@ void __meminit page_autonuma_map_init(struct page *page,
+ 	for (end = page + nr_pages; page < end; page++, page_autonuma++) {
+ 		page_autonuma->autonuma_last_nid = -1;
+ 		page_autonuma->autonuma_migrate_nid = -1;
+-		page_autonuma->page = page;
+ 	}
+ }
+ 
+@@ -20,6 +20,9 @@ static void __meminit __pgdat_autonuma_init(struct pglist_data *pgdat)
+ {
+ 	int node_iter;
+ 
++	/* verify the per-page page_autonuma 12 byte fixed cost */
++	BUILD_BUG_ON((unsigned long) &((struct page_autonuma *)0)[1] != 12);
++
+ 	spin_lock_init(&pgdat->autonuma_lock);
+ 	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
+ 	pgdat->autonuma_nr_migrate_pages = 0;
+@@ -30,8 +33,11 @@ static void __meminit __pgdat_autonuma_init(struct pglist_data *pgdat)
+ 
+ 	/* noautonuma early param may also clear AUTONUMA_POSSIBLE_FLAG */
+ 	if (autonuma_possible())
+-		for_each_node(node_iter)
+-			INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
++		for_each_node(node_iter) {
++			struct autonuma_list_head *head;
++			head = &pgdat->autonuma_migrate_head[node_iter];
++			AUTONUMA_INIT_LIST_HEAD(head);
++		}
+ }
+ 
+ #if !defined(CONFIG_SPARSEMEM)
+@@ -119,14 +125,6 @@ struct page_autonuma *lookup_page_autonuma(struct page *page)
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct mem_section *section = __pfn_to_section(pfn);
+ 
+-	/* if it's not a power of two we may be wasting memory */
+-	BUILD_BUG_ON(SECTION_PAGE_AUTONUMA_SIZE &
+-		     (SECTION_PAGE_AUTONUMA_SIZE-1));
+-
+-	/* memsection must be a power of two */
+-	BUILD_BUG_ON(sizeof(struct mem_section) &
+-		     (sizeof(struct mem_section)-1));
+-
+ #ifdef CONFIG_DEBUG_VM
+ 	/*
+ 	 * The sanity checks the page allocator does upon freeing a
+@@ -142,6 +140,10 @@ struct page_autonuma *lookup_page_autonuma(struct page *page)
+ 
+ void __meminit pgdat_autonuma_init(struct pglist_data *pgdat)
+ {
++	/* memsection must be a power of two */
++	BUILD_BUG_ON(sizeof(struct mem_section) &
++		     (sizeof(struct mem_section)-1));
++
+ 	__pgdat_autonuma_init(pgdat);
+ }
+ 
