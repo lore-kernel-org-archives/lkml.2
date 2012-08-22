@@ -1,104 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2HVLUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 07:20:46 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:11465 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab2HVLUc (ORCPT
+	id S1755710Ab2HVLVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 07:21:15 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:29472
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753110Ab2HVLVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 07:20:32 -0400
-X-IronPort-AV: E=Sophos;i="4.77,808,1336348800"; 
-   d="scan'208";a="14123572"
-Date: Wed, 22 Aug 2012 12:20:09 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen/events: fix unmask_evtchn for PV on HVM
- guests
-In-Reply-To: <alpine.DEB.2.02.1207181851010.23783@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1208221217290.15568@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1206221722040.27860@kaball.uk.xensource.com> <20120709141915.GB9580@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131821250.23783@kaball.uk.xensource.com> <20120716151441.GD552@phenom.dumpdata.com> <alpine.DEB.2.02.1207181851010.23783@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 22 Aug 2012 07:21:12 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zcb8kz98dI1432Izz1202h1082kzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah1155h)
+Date: Wed, 22 Aug 2012 19:02:10 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Zhao Richard-B20223 <B20223@freescale.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "paul.liu@linaro.org" <paul.liu@linaro.org>
+Subject: Re: [PATCH 6/7] ARM: dts: imx6q: add simple-bus compatible string
+ for anatop
+Message-ID: <20120822110209.GC10057@shlinux2.ap.freescale.net>
+References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
+ <1345619928-15446-7-git-send-email-b29396@freescale.com>
+ <20120822085236.GK4011@b20223-02.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120822085236.GK4011@b20223-02.ap.freescale.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad,
-I cannot see this patch anywhere in your trees. Did I miss it?
-Or maybe it just fell through the cracks?
-Let me know if you want me to do anything more.
-Cheers,
-Stefano
+On Wed, Aug 22, 2012 at 04:52:36PM +0800, Zhao Richard-B20223 wrote:
+> On Wed, Aug 22, 2012 at 03:18:47PM +0800, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > Originally the anatop regulator devices are populated by mfd anatop driver.
+> > Since mfd anatop driver will be deleted later, we change to populate the
+> > regulator devices by devicetree automatically.
+> > This will cause some warning messages as follows during boot due to device
+> > recreation: "vdd1p1: Failed to create debugfs directory"
+> > But it does not break any function.
+> > Later, we will remove mfd anatop driver which can get rid of this
+> > error message.
+> > 
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/imx6q.dtsi |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+> > index 7076be0..426f735 100644
+> > --- a/arch/arm/boot/dts/imx6q.dtsi
+> > +++ b/arch/arm/boot/dts/imx6q.dtsi
+> > @@ -379,7 +379,7 @@
+> >  			};
+> >  
+> >  			anatop: anatop@020c8000 {
+> > -				compatible = "fsl,imx6q-anatop", "fsl,imx-syscon";
+> > +				compatible = "fsl,imx6q-anatop", "fsl,imx-syscon", "simple-bus";
+> To prevent bisect break, it should merge with patch #4.
+Yes, i will try it and merge them if needed.
 
-On Wed, 18 Jul 2012, Stefano Stabellini wrote:
-> xen/events: fix unmask_evtchn for PV on HVM guests
-> 
-> When unmask_evtchn is called, if we already have an event pending, we
-> just set evtchn_pending_sel waiting for local_irq_enable to be called.
-> That is because PV guests set the irq_enable pvops to
-> xen_irq_enable_direct in xen_setup_vcpu_info_placement:
-> xen_irq_enable_direct is implemented in assembly in
-> arch/x86/xen/xen-asm.S and call xen_force_evtchn_callback if
-> XEN_vcpu_info_pending is set.
-> 
-> However HVM guests (and ARM guests) do not change or do not have the
-> irq_enable pvop, so evtchn_unmask cannot work properly for them.
-> 
-> Considering that having the pending_irq bit set when unmask_evtchn is
-> called is not very common, and it is simpler to keep the
-> native_irq_enable implementation for HVM guests (and ARM guests), the
-> best thing to do is just use the EVTCHNOP_unmask hypercall (Xen
-> re-injects pending events in response).
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  drivers/xen/events.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 0a8a17c..d75cc39 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -373,11 +373,22 @@ static void unmask_evtchn(int port)
->  {
->  	struct shared_info *s = HYPERVISOR_shared_info;
->  	unsigned int cpu = get_cpu();
-> +	int do_hypercall = 0, evtchn_pending = 0;
->  
->  	BUG_ON(!irqs_disabled());
->  
-> -	/* Slow path (hypercall) if this is a non-local port. */
-> -	if (unlikely(cpu != cpu_from_evtchn(port))) {
-> +	if (unlikely((cpu != cpu_from_evtchn(port))))
-> +		do_hypercall = 1;
-> +	else
-> +		evtchn_pending = sync_test_bit(port, &s->evtchn_pending[0]);
-> +
-> +	if (unlikely(evtchn_pending && xen_hvm_domain()))
-> +		do_hypercall = 1;
-> +
-> +	/* Slow path (hypercall) if this is a non-local port or if this is
-> +	 * an hvm domain and an event is pending (hvm domains don't have
-> +	 * their own implementation of irq_enable). */
-> +	if (do_hypercall) {
->  		struct evtchn_unmask unmask = { .port = port };
->  		(void)HYPERVISOR_event_channel_op(EVTCHNOP_unmask, &unmask);
->  	} else {
-> @@ -390,7 +401,7 @@ static void unmask_evtchn(int port)
->  		 * 'hw_resend_irq'. Just like a real IO-APIC we 'lose
->  		 * the interrupt edge' if the channel is masked.
->  		 */
-> -		if (sync_test_bit(port, &s->evtchn_pending[0]) &&
-> +		if (evtchn_pending &&
->  		    !sync_test_and_set_bit(port / BITS_PER_LONG,
->  					   &vcpu_info->evtchn_pending_sel))
->  			vcpu_info->evtchn_upcall_pending = 1;
-> -- 
-> 1.7.2.5
-> 
+> It's really strange to use simple-bus, because it's not a bus.
+I can't say it's strange or not.
+There are existing using examples, imx28.dtsi.
+
+> I like more the way how anatop driver handle it. Anatop driver populate
+> devices in its code.
+The anatop mfd driver will be deleted later.
+So the proper solution may be generating regulator devices automatically when call
+of_platform_populate in mach code rather than populate it in driver itself.
+
+Regards
+Dong Aisheng
+
