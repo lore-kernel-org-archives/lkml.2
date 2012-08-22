@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab2HVOIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:08:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41406 "EHLO
+	id S1755961Ab2HVOKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:10:55 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27815 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab2HVOIW (ORCPT
+	with ESMTP id S1753085Ab2HVOKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:08:22 -0400
-Date: Wed, 22 Aug 2012 09:57:53 -0400
+	Wed, 22 Aug 2012 10:10:52 -0400
+Date: Wed, 22 Aug 2012 10:00:39 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Attilio Rao <attilio.rao@citrix.com>, Ian.Campbell@citrix.com,
-        Stefano.Stabellini@eu.citrix.com, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v2 0/5] X86/XEN: Merge
- x86_init.paging.pagetable_setup_start and
- x86_init.paging.pagetable_setup_done setup functions and document its
- semantic
-Message-ID: <20120822135753.GA30964@phenom.dumpdata.com>
-References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>
- <alpine.LFD.2.02.1208212315330.2856@ionos>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "JBeulich@suse.com" <JBeulich@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: Q:pt_base in COMPAT mode offset by two pages. Was:Re:
+ [Xen-devel] [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive areas.
+Message-ID: <20120822140039.GB30964@phenom.dumpdata.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+ <20120820141305.GA2713@phenom.dumpdata.com>
+ <20120821172732.GA23715@phenom.dumpdata.com>
+ <20120821190317.GA13035@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1208221146230.15568@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1208212315330.2856@ionos>
+In-Reply-To: <alpine.DEB.2.02.1208221146230.15568@kaball.uk.xensource.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 11:22:03PM +0200, Thomas Gleixner wrote:
-> On Tue, 21 Aug 2012, Attilio Rao wrote:
-> > Differences with v1:
-> > - The patch serie is re-arranged in a way that it helps reviews, following
-> >   a plan by Thomas Gleixner
-> > - The PVOPS nomenclature is not used as it is not correct
-> > - The front-end message is adjusted with feedback by Thomas Gleixner,
-> >   Stefano Stabellini and Konrad Rzeszutek Wilk 
+> > +	/* Under 64-bit hypervisor with a 32-bit domain, the hypervisor
+> > +	 * offsets the pt_base by two pages. Hence the reservation that is done
+> > +	 * in mmu.c misses two pages. We correct it here if we detect this. */
+> > +	if (last_phys < __pa(xen_start_info->pt_base))
+> > +		memblock_reserve(last_phys, __pa(xen_start_info->pt_base) - last_phys);
+> >  }
 > 
-> This is much simpler to read and review. Just have a look at the
-> diffstats of the two series:
+> What are these two pages used for? They are not documented in xen.h, why
+> should we reserve them?
 > 
->  6 files changed,  9 insertions(+),  8 deletions(-)
->  6 files changed, 11 insertions(+),  9 deletions(-)
->  5 files changed, 50 insertions(+),  2 deletions(-)
->  6 files changed,  2 insertions(+), 65 deletions(-)
->  1 files changed,  5 insertions(+),  0 deletions(-)
+> After all we still have:
 > 
-> versus
+> memblock_reserve(PFN_PHYS(pt_base), (pt_end - pt_base) * PAGE_SIZE);
 > 
->  6 files changed, 10 insertions(+),  9 deletions(-)
->  6 files changed, 11 insertions(+), 11 deletions(-)
->  5 files changed,  3 insertions(+),  3 deletions(-)
->  6 files changed,  4 insertions(+), 20 deletions(-)
->  1 files changed,  5 insertions(+),  0 deletions(-)
-> 
-> The overall result is basically the same, but it's way simpler to look
-> at obvious and well done patches than checking whether a subtle copy
-> and paste bug happened in 3/5 of the first version. Copy and paste is
-> the #1 cause for subtle bugs. :)
-> 
-> I'm waiting for the ack of Xen folks before taking it into tip.
+> that should protect what we are interested in anyway...
 
-I've some extra patches that modify the new "paginig_init" in the Xen
-code that I am going to propose for v3.7 - so will have some merge
-conflicts. Let me figure that out and also run this set of patches
-(and also the previous one .. which I think you didn't have a
-chance to look since you were on vacation?) on an overnight
-test to make sure there are no fallout.
+You are looking at the x86_64 piece of code. This issue only appears
+on 32-bit which was not modified by my patches and has:
 
-With the merge issues that are going to prop up (x86 tip tree
-and my tree in linux-next) should I just take these patches
-in my tree with your Ack? Or should I just ingest your tiptree
-in my tree and that way solve the merge issue? What's your
-preference!
-> 
-> Thanks for following up!
+2003         memblock_reserve(__pa(xen_start_info->pt_base),
+2004                          xen_start_info->nr_pt_frames * PAGE_SIZE);
 
-Thank you for providing valuable feedback! Much appreciated.
-> 
-> 	tglx
+and as I found out, the pt_base is wrong. The cr3 we load and use is actually
+two pages back!
