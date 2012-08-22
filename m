@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758970Ab2HVT2C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:28:02 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57435 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755743Ab2HVT15 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:27:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] [RFC] cross-arch: don't corrupt personality flags upon exec()
-Date: Wed, 22 Aug 2012 19:27:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Jiri Kosina <jkosina@suse.cz>, Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>, Mark Salter <msalter@redhat.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Jonas Bonn <jonas@southpole.se>, Chen Liqin <liqin.chen@sunplusct.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-References: <alpine.LNX.2.00.1208031143320.29827@pobox.suse.cz> <alpine.LNX.2.00.1208131518520.29827@pobox.suse.cz> <20120815154520.f9cf4e24.akpm@linux-foundation.org>
-In-Reply-To: <20120815154520.f9cf4e24.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208221927.28993.arnd@arndb.de>
-X-Provags-ID: V02:K0:PLk6Tpl9qTu20Jxlwqpw469d/3dvSL29EoT6GnxomDP
- 5kq5jtzQW8boFSrlzR2OIV6UabuwgNTGefJH/UwzaVDO67tNOZ
- DtvJUhnEoQax0hePJq+7ywTfFOFGMzUV2BFXsHv95qwsH6fjng
- Fh4VxljQr5ieNHMzCUyEVb/f6xco8PCuw8fG1g0NSAMuHhoMab
- wn3lDEy3dc+nmUyOwRAVtOaY3X866fMDE3QeXpGl6+sFM0Pum6
- BmycL8B4cFOHi4gtuISI2yYCxmXcJADYsDoJo1UamkrLbKgT4O
- xqu3EN52DITYfan8ssQ+SG2ZX6+xIFfdG7KvdJ3VG1ArApk3EU
- XD1tN/cJfGcrdzENxWP8=
+	id S933260Ab2HVT1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:27:53 -0400
+Received: from ns.pmeerw.net ([87.118.82.44]:47013 "EHLO pmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755884Ab2HVT1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 15:27:49 -0400
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        broonie@opensource.wolfsonmicro.com, trivial@kernel.org,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: [PATCH RESEND] extcon: fix typos in sys-class-extcon
+Date: Wed, 22 Aug 2012 21:27:40 +0200
+Message-Id: <1345663663-4790-1-git-send-email-pmeerw@pmeerw.net>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 August 2012, Andrew Morton wrote:
-> Extra marks will be awarded if you can work out whether to use
-> PER_LINUX_32BIT ;)
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+---
+ Documentation/ABI/testing/sysfs-class-extcon |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-I'll try this:
+diff --git a/Documentation/ABI/testing/sysfs-class-extcon b/Documentation/ABI/testing/sysfs-class-extcon
+index 20ab361..57a7262 100644
+--- a/Documentation/ABI/testing/sysfs-class-extcon
++++ b/Documentation/ABI/testing/sysfs-class-extcon
+@@ -13,7 +13,7 @@ Description:
+ 		accessory cables have such capability. For example,
+ 		the 30-pin port of Nuri board (/arch/arm/mach-exynos)
+ 		may have both HDMI and Charger attached, or analog audio,
+-		video, and USB cables attached simulteneously.
++		video, and USB cables attached simultaneously.
+ 
+ 		If there are cables mutually exclusive with each other,
+ 		such binary relations may be expressed with extcon_dev's
+@@ -35,7 +35,7 @@ Description:
+ 		The /sys/class/extcon/.../state shows and stores the cable
+ 		attach/detach information of the corresponding extcon object.
+ 		If the extcon object has an optional callback "show_state"
+-		defined, the showing function is overriden with the optional
++		defined, the showing function is overridden with the optional
+ 		callback.
+ 
+ 		If the default callback for showing function is used, the
+@@ -46,19 +46,19 @@ Description:
+ 		TA=1
+ 		EAR_JACK=0
+ 		#
+-		In this example, the extcon device have USB_OTG and TA
++		In this example, the extcon device has USB_OTG and TA
+ 		cables attached and HDMI and EAR_JACK cables detached.
+ 
+ 		In order to update the state of an extcon device, enter a hex
+-		state number starting with 0x.
+-		 echo 0xHEX > state
++		state number starting with 0x:
++		# echo 0xHEX > state
+ 
+-		This updates the whole state of the extcon dev.
++		This updates the whole state of the extcon device.
+ 		Inputs of all the methods are required to meet the
+-		mutually_exclusive contidions if they exist.
++		mutually_exclusive conditions if they exist.
+ 
+ 		It is recommended to use this "global" state interface if
+-		you need to enter the value atomically. The later state
++		you need to set the value atomically. The later state
+ 		interface associated with each cable cannot update
+ 		multiple cable states of an extcon device simultaneously.
+ 
+@@ -73,7 +73,7 @@ What:		/sys/class/extcon/.../cable.x/state
+ Date:		February 2012
+ Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+ Description:
+-		The /sys/class/extcon/.../cable.x/name shows and stores the
++		The /sys/class/extcon/.../cable.x/state shows and stores the
+ 		state of cable "x" (integer between 0 and 31) of an extcon
+ 		device. The state value is either 0 (detached) or 1
+ 		(attached).
+@@ -83,8 +83,8 @@ Date:		December 2011
+ Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+ Description:
+ 		Shows the relations of mutually exclusiveness. For example,
+-		if the mutually_exclusive array of extcon_dev is
+-		{0x3, 0x5, 0xC, 0x0}, the, the output is:
++		if the mutually_exclusive array of extcon device is
++		{0x3, 0x5, 0xC, 0x0}, then the output is:
+ 		# ls mutually_exclusive/
+ 		0x3
+ 		0x5
+-- 
+1.7.9.5
 
-PER_LINUX_32BIT is defined as (PER_LINUX | ADDR_LIMIT_32BIT).
-
-The ADDR_LIMIT_32BIT flag is used in exactly two places in the kernel:
-
-1. On alpha, it limits the available address space to 32 bits, in order to
-  run certain legacy applications (Netscape) that are not 64 bit safe and were
-  compiled with an interesting 32 bit user space mode with 64 bit syscalls.
-
-2. on ARM, it is used to /not/ limit the user address space to 26 bits.
-   For all practical purposes, one must set the ADDR_LIMIT_32BIT flag to
-   run modern applications now.
-
-The avr32, microblaze architectures always set PER_LINUX_32BIT because they
-copied from ARM, but the flag has no effect there.
-
-On tile, the PER_LINUX_32BIT is always set for 32 bit compat tasks in a 64 bit
-kernel, which is harmless but wrong anyway. Also this, tile never calls
-set_personality, which is also harmless because it just means that exec_domain
-switching on tile is broken, but the only non-bogus exec_domain besides the
-default one is an experimental support for Acorn RISC OS binaries that was
-last updated in 2002 for for linux-2.5.49.
-
-	Arnd
