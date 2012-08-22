@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab2HVFnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 01:43:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48247 "EHLO bear.ext.ti.com"
+	id S1756569Ab2HVFrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 01:47:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48409 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201Ab2HVFnl convert rfc822-to-8bit (ORCPT
+	id S1754009Ab2HVFrR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 01:43:41 -0400
+	Wed, 22 Aug 2012 01:47:17 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <bryan.wu@canonical.com>
-CC: Richard Purdie <rpurdie@rpsys.net>,
+CC: Tejun Heo <tj@kernel.org>, Richard Purdie <rpurdie@rpsys.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
-Subject: RE: [PATCH 1/4] leds-lp5523: add channel name in the platform data
-Thread-Topic: [PATCH 1/4] leds-lp5523: add channel name in the platform data
-Thread-Index: Ac1/e8n5oMMAm/XERXqosJtmV9h97AAUPsYAABHJYrA=
-Date: Wed, 22 Aug 2012 05:43:29 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0BF4@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF0AD5@DQHE02.ent.ti.com>
- <CAK5ve-+LWG=YzEy=qWnGvqzw6+tX=7su5NH5V=5g+fjHA6gJrg@mail.gmail.com>
-In-Reply-To: <CAK5ve-+LWG=YzEy=qWnGvqzw6+tX=7su5NH5V=5g+fjHA6gJrg@mail.gmail.com>
+Subject: RE: [PATCH 2/4] leds-lp5523: set the brightness to 0 forcely on
+ removing the driver
+Thread-Topic: [PATCH 2/4] leds-lp5523: set the brightness to 0 forcely on
+ removing the driver
+Thread-Index: Ac1/e9/2sjm/1CnHR7+HKaHWZOWZZAAWIBmAABUskjA=
+Date: Wed, 22 Aug 2012 05:46:21 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0BFF@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF0AEB@DQHE02.ent.ti.com>
+ <CAK5ve-LoER0X36JMBjY4Dqgts5FapAs=2w01J05YgJ8tmYHMkg@mail.gmail.com>
+In-Reply-To: <CAK5ve-LoER0X36JMBjY4Dqgts5FapAs=2w01J05YgJ8tmYHMkg@mail.gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -32,61 +34,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  LP5523 can drive up to 9 channels. Leds can be controlled directly
-> via
-> > -the led class control interface. Channels have generic names:
-> > +the led class control interface.
-> > +The name of each channel is configurable in the platform data.
-> > +If the name is NULL, channels have generic names:
-> >  lp5523:channelx where x is 0...8
+> Hmmm, I think we still should use cancel_work() here based on your
+> idea. Please find the patch from Tejun and add him to this loop
+> [PATCH 4/6] workqueue: deprecate flush[_delayed]_work_sync()
+> ---
+> Before this patchset,
+> 
+>  flush_work()
+> 
+>         flush the last queued instance of the work item.  If it got
+>         queued on multple CPUs, it only considers the last queued
+>         instance.  The work item could still be executing on other
+>         CPUs and the flush might become noop if there are competing
+>         queueing operation on another CPU.
+> 
+>  flush_work_sync()
+> 
+>         flush_work() + wait for executing instances on all CPUs.  The
+>         flush_work() part may still become noop if there's competing
+>         queueing operation.
+> 
+>  cancel_work()
+> 
+>         Dequeue the work item if it's pending.  Doesn't care about
+>         whether it's executing or not.
+> 
+>  cancel_work_sync()
+> 
+>         cancel_work() + flush_work_sync().
+> 
+> 
+> After this patchset,
+> 
+>  flush_work()
+> 
+>         flush the work item.  Any queueing happened previously is
+>         guaranteed to have finished execution on return.  If no
+>         further queueing happened after flush started, the work item
+>         is guaranteed to be idle on return.
+> 
+>  cancel_work()
+> 
+>         Same as before.
+> 
+>  cancel_work_sync()
+> 
+>         cancel_work() followed by flush_work().  The same semantics as
+>         del_timer_sync().
+> ---
+> 
+> cancel_work_sync() won't execute the work item at all just cancel
+> them, but flush will execute them and return.
+> 
 
-> Why we need a test here "pdata->label ?:"? From the document, looks
-> like we use lp5523:channel%d as default.
+Thanks a lot for the updates!
 
-To define the channel name, we have three options.
-a) using 'name' field for each channel
-b) using 'label' field without 'name'
-c) default : neither data is defined
-
-So I would change the description as below.
-
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- Documentation/leds/leds-lp5523.txt |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/leds/leds-lp5523.txt b/Documentation/leds/leds-lp5523.txt
-index fad2feb..120fdfe 100644
---- a/Documentation/leds/leds-lp5523.txt
-+++ b/Documentation/leds/leds-lp5523.txt
-@@ -10,8 +10,22 @@ Contact: Samu Onkalo (samu.p.onkalo-at-nokia.com)
- Description
- -----------
- LP5523 can drive up to 9 channels. Leds can be controlled directly via
--the led class control interface. Channels have generic names:
--lp5523:channelx where x is 0...8
-+the led class control interface.
-+The name of each channel is configurable in the platform data - name and label.
-+There are three options to make the channel name.
-+
-+a) Define the 'name' in the platform data
-+To make specific channel name, then use 'name' platform data.
-+/sys/class/leds/R1               (name: 'R1')
-+/sys/class/leds/B1               (name: 'B1')
-+
-+b) Use the 'label' with no 'name' field
-+For one device name with channel number, then use 'label'.
-+/sys/class/leds/RGB:channelN     (label: 'RGB', N: 0 ~ 8)
-+
-+c) Default
-+If both fields are NULL, 'lp5523' is used by default.
-+/sys/class/leds/lp5523:channelN  (N: 0 ~ 8)
- 
- The chip provides 3 engines. Each engine can control channels without
- interaction from the main CPU. Details of the micro engine code can be found
--- 
-1.7.2.5
-
+Then, I think flush_work() should be used for executing remaining brightness work
+rather than cancel_work_sync().
 
 Best Regards,
 Milo
