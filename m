@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122Ab2HVQ0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:26:00 -0400
+	id S933134Ab2HVQ0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:26:19 -0400
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:56995 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933053Ab2HVQYM (ORCPT
+	with ESMTP id S1757924Ab2HVQYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:24:12 -0400
+	Wed, 22 Aug 2012 12:24:07 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Hirokazu Takata <takata@linux-m32r.org>, "3.2.x.." <stable@kernel.org>,
+        David Howells <dhowells@redhat.com>, "3.2.x.." <stable@kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 05/10] m32r: Add missing RCU idle APIs on idle loop
-Date: Wed, 22 Aug 2012 18:23:43 +0200
-Message-Id: <1345652628-15060-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 03/10] frv: Add missing RCU idle APIs on idle loop
+Date: Wed, 22 Aug 2012 18:23:41 +0200
+Message-Id: <1345652628-15060-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
 References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
@@ -37,45 +37,44 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the m32r's idle loop.
+Add this missing pair of calls in the Frv's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
+Cc: David Howells <dhowells@redhat.com>
 Cc: 3.2.x.. <stable@kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/m32r/kernel/process.c |    3 +++
+ arch/frv/kernel/process.c |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/m32r/kernel/process.c b/arch/m32r/kernel/process.c
-index 3a4a32b2..384e63f 100644
---- a/arch/m32r/kernel/process.c
-+++ b/arch/m32r/kernel/process.c
-@@ -26,6 +26,7 @@
- #include <linux/ptrace.h>
- #include <linux/unistd.h>
- #include <linux/hardirq.h>
+diff --git a/arch/frv/kernel/process.c b/arch/frv/kernel/process.c
+index ff95f50..2eb7fa5 100644
+--- a/arch/frv/kernel/process.c
++++ b/arch/frv/kernel/process.c
+@@ -25,6 +25,7 @@
+ #include <linux/reboot.h>
+ #include <linux/interrupt.h>
+ #include <linux/pagemap.h>
 +#include <linux/rcupdate.h>
  
- #include <asm/io.h>
+ #include <asm/asm-offsets.h>
  #include <asm/uaccess.h>
-@@ -82,6 +83,7 @@ void cpu_idle (void)
+@@ -69,12 +70,14 @@ void cpu_idle(void)
  {
  	/* endless idle loop with no priority at all */
  	while (1) {
 +		rcu_idle_enter();
  		while (!need_resched()) {
- 			void (*idle)(void) = pm_idle;
+ 			check_pgt_cache();
  
-@@ -90,6 +92,7 @@ void cpu_idle (void)
- 
- 			idle();
+ 			if (!frv_dma_inprogress && idle)
+ 				idle();
  		}
 +		rcu_idle_exit();
+ 
  		schedule_preempt_disabled();
  	}
- }
 -- 
 1.7.5.4
 
