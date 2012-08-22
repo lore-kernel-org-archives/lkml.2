@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab2HVPBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61246 "EHLO mx1.redhat.com"
+	id S932744Ab2HVPA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:00:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8581 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932678Ab2HVPBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:01:03 -0400
+	id S932678Ab2HVPAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:00:48 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,103 +26,45 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 35/36] autonuma: add knuma_migrated/allow_first_fault in sysfs
-Date: Wed, 22 Aug 2012 16:59:19 +0200
-Message-Id: <1345647560-30387-36-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 17/36] autonuma: prevent select_task_rq_fair to return -1
+Date: Wed, 22 Aug 2012 16:59:01 +0200
+Message-Id: <1345647560-30387-18-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This sysfs control, if enabled, allows memory migrations on the first
-numa hinting page fault.
-
-If disabled it forbids it and requires a confirmation through the
-last_nid logic.
-
-By default, the first fault is allowed to migrate memory. Disabling it
-may increase the time it takes to converge, but it reduces some
-initial thrashing in case of NUMA false sharing.
+find_idlest_cpu when run up on all domain levels shouldn't normally
+return -1. With the introduction of the NUMA affinity check that
+should be still true most of the time, but it's not guaranteed if the
+NUMA affinity of the task changes very fast. So better not to depend
+on timings.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/autonuma_flags.h |   20 ++++++++++++++++++++
- mm/autonuma.c                  |    7 +++++--
- 2 files changed, 25 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/autonuma_flags.h b/include/linux/autonuma_flags.h
-index f53203a..28756ca 100644
---- a/include/linux/autonuma_flags.h
-+++ b/include/linux/autonuma_flags.h
-@@ -85,6 +85,20 @@ enum autonuma_flag {
- 	 * Default not set.
- 	 */
- 	AUTONUMA_MIGRATE_DEFER_FLAG,
-+	/*
-+	 * If set, a page must successfully pass a last_nid check
-+	 * before it can be migrated even if it's the very first NUMA
-+	 * hinting page fault occurring on the page. If not set, the
-+	 * first NUMA hinting page fault of a newly allocated page
-+	 * will always pass the last_nid check.
-+	 *
-+	 * If not set a newly started workload can converge quicker,
-+	 * but it may incur in more false positive migrations before
-+	 * reaching convergence.
-+	 *
-+	 * Default not set.
-+	 */
-+	AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG,
- };
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 42a88fa..677b99e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2794,6 +2794,17 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ unlock:
+ 	rcu_read_unlock();
  
- extern unsigned long autonuma_flags;
-@@ -126,4 +140,10 @@ static inline bool autonuma_migrate_defer(void)
- 	return test_bit(AUTONUMA_MIGRATE_DEFER_FLAG, &autonuma_flags);
- }
- 
-+static inline bool autonuma_migrate_allow_first_fault(void)
-+{
-+	return test_bit(AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG,
-+			&autonuma_flags);
-+}
++#ifdef CONFIG_AUTONUMA
++	if (new_cpu < 0)
++		/*
++		 * find_idlest_cpu() may return -1 if
++		 * task_autonuma_cpu() changes all the time, it's very
++		 * unlikely, but we must handle it if it ever happens.
++		 */
++		new_cpu = prev_cpu;
++#endif
++	BUG_ON(new_cpu < 0);
 +
- #endif /* _LINUX_AUTONUMA_FLAGS_H */
-diff --git a/mm/autonuma.c b/mm/autonuma.c
-index 4b7c744..e7570df 100644
---- a/mm/autonuma.c
-+++ b/mm/autonuma.c
-@@ -28,7 +28,7 @@ unsigned long autonuma_flags __read_mostly =
- #ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
- 	|(1<<AUTONUMA_SCAN_PMD_FLAG)
- #endif
--	;
-+	|(1<<AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG);
- 
- static DEFINE_MUTEX(knumad_mm_mutex);
- 
-@@ -345,7 +345,8 @@ static inline bool last_nid_set(struct page *page, int this_nid)
- 	int autonuma_last_nid = ACCESS_ONCE(page_autonuma->autonuma_last_nid);
- 	VM_BUG_ON(this_nid < 0);
- 	VM_BUG_ON(this_nid >= MAX_NUMNODES);
--	if (autonuma_last_nid >= 0 && autonuma_last_nid != this_nid) {
-+	if ((!autonuma_migrate_allow_first_fault() ||
-+	     autonuma_last_nid >= 0) && autonuma_last_nid != this_nid) {
- 		int migrate_nid;
- 		migrate_nid = ACCESS_ONCE(page_autonuma->autonuma_migrate_nid);
- 		if (migrate_nid >= 0)
-@@ -1311,6 +1312,7 @@ SYSFS_ENTRY(debug, AUTONUMA_DEBUG_FLAG);
- SYSFS_ENTRY(load_balance_strict, AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG);
- SYSFS_ENTRY(defer, AUTONUMA_MIGRATE_DEFER_FLAG);
- SYSFS_ENTRY(reset, AUTONUMA_SCHED_RESET_FLAG);
-+SYSFS_ENTRY(allow_first_fault, AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG);
- #endif /* CONFIG_DEBUG_VM */
- 
- #undef SYSFS_ENTRY
-@@ -1419,6 +1421,7 @@ static struct attribute *knuma_migrated_attr[] = {
- 	&pages_migrated_attr.attr,
- #ifdef CONFIG_DEBUG_VM
- 	&defer_attr.attr,
-+	&allow_first_fault_attr.attr,
- #endif
- 	NULL,
- };
+ 	return new_cpu;
+ }
+ #endif /* CONFIG_SMP */
