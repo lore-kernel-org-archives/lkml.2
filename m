@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab2HVOaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:30:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52441 "EHLO
+	id S932630Ab2HVOaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:30:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57712 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab2HVOaL (ORCPT
+	with ESMTP id S1756761Ab2HVOaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Aug 2012 10:30:11 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Magnus Damm <damm@opensource.se>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/4] ARM: export set_irq_flags/irq_set_chip_and_handler
-Date: Wed, 22 Aug 2012 16:29:39 +0200
-Message-Id: <1345645780-2749-4-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 1/4] ARM: export read_current_timer
+Date: Wed, 22 Aug 2012 16:29:37 +0200
+Message-Id: <1345645780-2749-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1345645780-2749-1-git-send-email-arnd@arndb.de>
 References: <1345645780-2749-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:EWdEv/4gQfVX8pc5MiApoTmorp5e3UR0kDbyDBe0ioC
- YMQAfZc9NU6dsr5abhw6Vzo3aVA+kOCoWcCHpNnZuuqR5bpxlE
- d1uHrJj/xyMnYL4iVmoRK6GDgLEcaeUak5vxhcZFR0PoKfGxyB
- qbQoTPtAXClxxqL6nW2pOivPuCnKfKfc+jJb2+CjBZyXjq7Zk+
- zKdqpDWsH73wJx+YukOqJ0yq/6voLwkAsNGsSJj7QpPC2FFWPd
- bNbrnlKZzqbXMOxK/29MI86AsIuEm/zGL56Y2tzcvcbAp7wgZl
- Rl1agphnGV0YrnErOZlfM/ZpPNDvnxfkrG8NgY04cfEU6P/B3E
- mYao8jZOm1Ksma/O1Edvf7EnG0eEAoex7a/HZOu/My1QAPPoyU
- tRfC5Ymy1mpnA==
+X-Provags-ID: V02:K0:jsG2V2QtdXovjnhR6YlCzr3oo+O9JmsKDiiypcy0iF7
+ 5ym9l6QKO4b86yRfb+oaXSb9OItRPEI9cd9NRIGzE7YuIntK4S
+ NI0JJfwkgjXG7r3LkbSQjNHN5Le1CaUVUUZq4/BVFGteP7bXLx
+ SvTVZDJ3KxAGxEBpkU/ictkYv1jhhZgUa2Qsj8uuFbwYARjck6
+ /KZT3yWBci5aBXCCH38g0ywbKv0nx9VwPKXa6QnuoqAg50AS7o
+ 21xQmju8xI9cRqkP1URJpd1BuDEJmUZcLDqq8yiwb2L2ok1d2y
+ srhyx8a+WRfD4Y3frBaAMRsSnon14nwNjsI1Uz5E0XmROGCLjb
+ mgkHynk+OuS28Z4VkSjMJ1/QRRmo5kUhLEdR2HArnYF8Vr9xrP
+ xs/sPPQSMWNcg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recently added Emma Mobile GPIO driver calls set_irq_flags
-and irq_set_chip_and_handler for the interrupts it exports and
-it can be built as a module, which currently fails with
+read_current_timer is used in the get_cycles() function when
+ARM_ARCH_TIMER is set, and that function can be inlined into
+driver modules, so we should export the function to avoid
+errors like
 
-ERROR: "set_irq_flags" [drivers/gpio/gpio-em.ko] undefined!
-ERROR: "irq_set_chip_and_handler_name" [drivers/gpio/gpio-em.ko] undefined!
-
-We either need to replace the call to set_irq_flags with something
-else or export that function. This patch does the latter.
+ERROR: "read_current_timer" [drivers/video/udlfb.ko] undefined!
+ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Magnus Damm <damm@opensource.se>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Will Deacon <will.deacon@arm.com>
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- arch/arm/kernel/irq.c |    2 ++
- kernel/irq/chip.c     |    2 ++
- 2 files changed, 4 insertions(+)
+ arch/arm/kernel/arch_timer.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index 16cedb4..8961650 100644
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -34,6 +34,7 @@
- #include <linux/list.h>
- #include <linux/kallsyms.h>
- #include <linux/proc_fs.h>
+diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
+index cf25880..6327d1f 100644
+--- a/arch/arm/kernel/arch_timer.c
++++ b/arch/arm/kernel/arch_timer.c
+@@ -14,6 +14,7 @@
+ #include <linux/device.h>
+ #include <linux/smp.h>
+ #include <linux/cpu.h>
 +#include <linux/export.h>
- 
- #include <asm/exception.h>
- #include <asm/mach/arch.h>
-@@ -109,6 +110,7 @@ void set_irq_flags(unsigned int irq, unsigned int iflags)
- 	/* Order is clear bits in "clr" then set bits in "set" */
- 	irq_modify_status(irq, clr, set & ~clr);
- }
-+EXPORT_SYMBOL_GPL(set_irq_flags);
- 
- void __init init_IRQ(void)
- {
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index eebd6d5..3c3cea3 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -13,6 +13,7 @@
- #include <linux/irq.h>
- #include <linux/msi.h>
- #include <linux/module.h>
-+#include <linux/export.h>
+ #include <linux/jiffies.h>
+ #include <linux/clockchips.h>
  #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
- 
-@@ -671,6 +672,7 @@ irq_set_chip_and_handler_name(unsigned int irq, struct irq_chip *chip,
- 	irq_set_chip(irq, chip);
- 	__irq_set_handler(irq, handle, 0, name);
+@@ -232,6 +233,7 @@ int read_current_timer(unsigned long *timer_val)
+ 	*timer_val = arch_counter_get_cntpct();
+ 	return 0;
  }
-+EXPORT_SYMBOL_GPL(irq_set_chip_and_handler_name);
++EXPORT_SYMBOL_GPL(read_current_timer);
  
- void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
- {
+ static struct clocksource clocksource_counter = {
+ 	.name	= "arch_sys_counter",
 -- 
 1.7.10
 
