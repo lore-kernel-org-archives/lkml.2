@@ -1,92 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab2HVS5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:57:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58310 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab2HVS5m (ORCPT
+	id S1758524Ab2HVTBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:01:32 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43797 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab2HVTBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:57:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] media/radio/shark2: Fix build error caused by missing dependencies
-Date: Wed, 22 Aug 2012 18:57:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-kernel@vger.kernel.org
-References: <1345648585-5176-1-git-send-email-linux@roeck-us.net> <5034F932.4000405@redhat.com> <20120822152922.GA6177@roeck-us.net>
-In-Reply-To: <20120822152922.GA6177@roeck-us.net>
+	Wed, 22 Aug 2012 15:01:30 -0400
+Date: Wed, 22 Aug 2012 12:01:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        "3.2.x.." <stable@kernel.org>
+Subject: Re: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
+Message-ID: <20120822190109.GH2447@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+ <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
+ <20120822171930.GE2447@linux.vnet.ibm.com>
+ <20120822173542.GD13674@somewhere>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208221857.01527.arnd@arndb.de>
-X-Provags-ID: V02:K0:8lz5/FkHE5hp65xaTknWaYyetUBue8PQMSkxGPL+aAP
- Hzk8jwINnnzd4IM85TMYBPa4SRE4IPc6KccUH+t634/l3PV0Z9
- PQR+gp9sl5yq9IJ4BpJdufn5uEVsLApKyGYWV4aq4STjE20YwN
- gOPD5Y96GHHx7HOK4VuJZu0z1mBiGiVNmxY7Z7uOAZCLEh+Kyw
- OlUcJ5YNkVBCNiZinXXTo6ra+3uB8DxG36rqQsXxvoCf7JsHXO
- 6l+ta9ihCXQH0HKVv9ql66cdy9i5nocfEq8AiklnmNM6+svOmJ
- 9/oWsB72uf5QGaRf033gDHFdgn1tY8OPUuF7ApuJH3FB/JcbMd
- 7YYTysK3QGrs0+ZiHRaU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822173542.GD13674@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082219-2356-0000-0000-000001811590
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 August 2012, Guenter Roeck wrote:
-> On Wed, Aug 22, 2012 at 05:22:26PM +0200, Hans de Goede wrote:
-> > Hi,
+On Wed, Aug 22, 2012 at 07:35:45PM +0200, Frederic Weisbecker wrote:
+> On Wed, Aug 22, 2012 at 10:19:30AM -0700, Paul E. McKenney wrote:
+> > On Wed, Aug 22, 2012 at 06:23:39PM +0200, Frederic Weisbecker wrote:
+> > > In the old times, the whole idle task was considered
+> > > as an RCU quiescent state. But as RCU became more and
+> > > more successful overtime, some RCU read side critical
+> > > section have been added even in the code of some
+> > > architectures idle tasks, for tracing for example.
+> > > 
+> > > So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+> > > be called by the architecture to tell RCU about the part
+> > > in the idle loop that doesn't make use of rcu read side
+> > > critical sections, typically the part that puts the CPU
+> > > in low power mode.
+> > > 
+> > > This is necessary for RCU to find the quiescent states in
+> > > idle in order to complete grace periods.
+> > > 
+> > > Add this missing pair of calls in the Alpha's idle loop.
+> > > 
+> > > Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Cc: Richard Henderson <rth@twiddle.net>
+> > > Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+> > > Cc: Matt Turner <mattst88@gmail.com>
+> > > Cc: alpha <linux-alpha@vger.kernel.org>
+> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: 3.2.x.. <stable@kernel.org>
+> > > ---
+> > >  arch/alpha/kernel/process.c |    6 +++++-
+> > >  1 files changed, 5 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
+> > > index 153d3fc..2ebf7b5 100644
+> > > --- a/arch/alpha/kernel/process.c
+> > > +++ b/arch/alpha/kernel/process.c
+> > > @@ -28,6 +28,7 @@
+> > >  #include <linux/tty.h>
+> > >  #include <linux/console.h>
+> > >  #include <linux/slab.h>
+> > > +#include <linux/rcupdate.h>
+> > > 
+> > >  #include <asm/reg.h>
+> > >  #include <asm/uaccess.h>
+> > > @@ -50,13 +51,16 @@ cpu_idle(void)
+> > >  {
+> > >  	set_thread_flag(TIF_POLLING_NRFLAG);
+> > > 
+> > > +	preempt_disable();
 > > 
-> > I've a better fix for this here:
-> > http://git.linuxtv.org/hgoede/gspca.git/shortlog/refs/heads/media-for_v3.6
-> > 
-> > I already send a pull-req for this to Mauro a while ago, Mauro?
-> > 
-> Looks like it found its way into mainline in the last couple of days.
-> Should have updated my tree first. Sorry for the noise.
+> > I don't understand the above preempt_disable() not having a matching
+> > preempt_enable() at exit, but the rest of the patches in this series
+> > look good to me.
 > 
+> The current code is preemptable, at least it appears so because it calls
+> schedule() directly. And if I call rcu_idle_enter() in a preemptable section,
+> I'm in trouble because I'll schedule while in extended QS.
+> 
+> Thus I need to disable preemption here at least until I call rcu_idle_exit().
+> 
+> Now this is an endless loop so there is no need to re-enable
+> preemption after the loop. And schedule_preempt_disabled()
+> takes care of enabling preemption before schedule() and redisabling
+> it afterward.
+> 
+> 
+> > 
+> > 							Thanx, Paul
+> > 
+> > >  	while (1) {
+> > >  		/* FIXME -- EV6 and LCA45 know how to power down
+> > >  		   the CPU.  */
+> > > 
+> > > +		rcu_idle_enter();
+> > >  		while (!need_resched())
+> > >  			cpu_relax();
+> > > -		schedule();
+> > > +		rcu_idle_exit();
+> > > +		schedule_preempt_disabled();
+> > >  	}
 
-I found another issue with the shark driver while doing randconfig tests.
-Here is my semi-automated log file for the problem. Has this also made
-it in already?
+Understood, but what I don't understand is why you don't need a
+preempt_enable() right here.
 
-	Arnd
+							Thanx, Paul
 
----
-Without this patch, building rand-0y2jSKT results in:
-
-WARNING: drivers/usb/musb/musb_hdrc.o(.devinit.text+0x9b8): Section mismatch in reference from the function musb_init_controller() to the function .init.text:dma_controller_create()
-The function __devinit musb_init_controller() references
-a function __init dma_controller_create().
-If dma_controller_create is only used by musb_init_controller then
-annotate dma_controller_create with a matching annotation.
-
-ERROR: "snd_tea575x_init" [drivers/media/radio/radio-shark.ko] undefined!
-ERROR: "snd_tea575x_exit" [drivers/media/radio/radio-shark.ko] undefined!
-make[2]: *** [__modpost] Error 1
-make[1]: *** [modules] Error 2
-make: *** [sub-make] Error 2
-
----
- sound/pci/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/sound/pci/Kconfig b/sound/pci/Kconfig
-index ff3af6e..f99fa25 100644
---- a/sound/pci/Kconfig
-+++ b/sound/pci/Kconfig
-@@ -2,8 +2,8 @@
- 
- config SND_TEA575X
- 	tristate
--	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO || RADIO_SF16FMR2 || RADIO_MAXIRADIO
--	default SND_FM801 || SND_ES1968 || RADIO_SF16FMR2 || RADIO_MAXIRADIO
-+	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO || RADIO_SF16FMR2 || RADIO_MAXIRADIO || RADIO_SHARK
-+	default SND_FM801 || SND_ES1968 || RADIO_SF16FMR2 || RADIO_MAXIRADIO || RADIO_SHARK
- 
- menuconfig SND_PCI
- 	bool "PCI sound devices"
--- 
-1.7.10
+> > >  }
+> > > 
+> > > -- 
+> > > 1.7.5.4
+> > > 
+> > 
+> 
 
