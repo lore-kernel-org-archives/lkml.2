@@ -1,122 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921Ab2HVPSa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:18:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61410 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab2HVPSZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:18:25 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v2] PCI: allow acpiphp to handle PCIe ports w/o native PCIe hotplug capability
-Date: Wed, 22 Aug 2012 23:16:45 +0800
-Message-Id: <1345648605-7636-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <CAErSpo7ZtHDQNBnreZXsqDqKbqc=O+BKHDM8H0w+QkFep9ydFg@mail.gmail.com>
-References: <CAErSpo7ZtHDQNBnreZXsqDqKbqc=O+BKHDM8H0w+QkFep9ydFg@mail.gmail.com>
+	id S932943Ab2HVPSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:18:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757363Ab2HVPSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:18:00 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep AS_HWPOISON sticky
+Date: Wed, 22 Aug 2012 11:17:35 -0400
+Message-Id: <1345648655-4497-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+"HWPOISON: report sticky EIO for poisoned file" still has a corner case
+where we have possibilities of data lost. This is because in this fix
+AS_HWPOISON is cleared when the inode cache is dropped.
 
-Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
-ignore root bridges using PCIe native hotplug) added code that made the
-acpiphp driver completely ignore PCIe root complexes for which the kernel
-had been granted control of the native PCIe hotplug feature by the BIOS
-through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
-"PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
-the constraints to allow acpiphp driver handle non-PCIe bridges under
-such a complex. The constraint needs to be relaxed further to allow
-acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
+For example, consider an application in which a process periodically
+(every 10 minutes) writes some logs on a file (and closes it after
+each writes,) and at the end of each day some batch programs run using
+the log file. If a memory error hits on dirty pagecache of this log file
+just after periodic write/close and the inode cache is cleared before the
+next write, then this application is not aware of the error and the batch
+programs will work wrongly.
 
-Some MR-IOV switch chipsets, such PLX8696, support multiple virtual PCIe
-switches and may migrate downstream ports among virtual switches.
-To migrate a downstream port from the source virtual switch to the target,
-the port needs to be hot-removed from the source and hot-added into the
-target. pciehp driver can't be used here because there's no slots within
-the virtual PCIe switch. So acpiphp driver is used to support downstream
-port migration. A typical configuration is as below:
-[Root w/o native PCIe HP]
-	[Upstream port of vswitch w/o native PCIe HP]
-		[Downstream port of vswitch w/ native PCIe HP]
-			[PCIe enpoint]
+To avoid this, this patch makes us pin the hwpoisoned inode on memory
+until we remove or completely truncate the hwpoisoned file.
 
-Here acpiphp driver will be used to handle root ports and upstream port
-in the virtual switch, and pciehp driver will be used to handle downstream
-ports in the virtual switch.
-
-v1->v2: use PCIe capability accessors to read PCI_EXP_SLTCAP register
-
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   41 +++++++++++++++++++++++++++---------
- 1 file changed, 31 insertions(+), 10 deletions(-)
+ fs/inode.c              | 12 ++++++++++++
+ include/linux/pagemap.h | 11 +++++++++++
+ mm/memory-failure.c     |  2 +-
+ mm/truncate.c           |  2 ++
+ 4 files changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index ad6fd66..e6da392 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -115,6 +115,35 @@ static const struct acpi_dock_ops acpiphp_dock_ops = {
- 	.handler = handle_hotplug_event_func,
- };
+diff --git v3.6-rc1.orig/fs/inode.c v3.6-rc1/fs/inode.c
+index ac8d904..8742397 100644
+--- v3.6-rc1.orig/fs/inode.c
++++ v3.6-rc1/fs/inode.c
+@@ -717,6 +717,15 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+ 		}
  
-+/* Check whether the PCI device is managed by native PCIe hotplug driver */
-+static bool device_is_managed_by_native_pciehp(struct pci_dev *pdev)
+ 		/*
++		 * Keep inode caches on memory for user processes to certainly
++		 * be aware of memory errors.
++		 */
++		if (unlikely(mapping_hwpoison(inode->i_mapping))) {
++			spin_unlock(&inode->i_lock);
++			continue;
++		}
++
++		/*
+ 		 * Referenced or dirty inodes are still in use. Give them
+ 		 * another pass through the LRU as we canot reclaim them now.
+ 		 */
+@@ -1405,6 +1414,9 @@ static void iput_final(struct inode *inode)
+ 		inode->i_state &= ~I_WILL_FREE;
+ 	}
+ 
++	if (unlikely(mapping_hwpoison(inode->i_mapping) && drop))
++		mapping_clear_hwpoison(inode->i_mapping);
++
+ 	inode->i_state |= I_FREEING;
+ 	if (!list_empty(&inode->i_lru))
+ 		inode_lru_list_del(inode);
+diff --git v3.6-rc1.orig/include/linux/pagemap.h v3.6-rc1/include/linux/pagemap.h
+index 4d8d821..9fce4e4 100644
+--- v3.6-rc1.orig/include/linux/pagemap.h
++++ v3.6-rc1/include/linux/pagemap.h
+@@ -59,11 +59,22 @@ static inline int mapping_hwpoison(struct address_space *mapping)
+ {
+ 	return test_bit(AS_HWPOISON, &mapping->flags);
+ }
++static inline void mapping_set_hwpoison(struct address_space *mapping)
 +{
-+	u32 reg32;
-+	acpi_handle tmp;
-+	struct acpi_pci_root *root;
-+
-+	/* Check whether the PCIe port supports native PCIe hotplug */
-+	if (pcie_capability_read_dword(pdev, PCI_EXP_SLTCAP, &reg32))
-+		return false;
-+	if (!(reg32 & PCI_EXP_SLTCAP_HPC))
-+		return false;
-+
-+	/*
-+	 * Check whether native PCIe hotplug has been enabled for
-+	 * this PCIe hierarchy.
-+	 */
-+	tmp = acpi_find_root_bridge_handle(pdev);
-+	if (!tmp)
-+		return false;
-+	root = acpi_pci_find_root(tmp);
-+	if (!root)
-+		return false;
-+	if (!(root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-+		return false;
-+
-+	return true;
++	set_bit(AS_HWPOISON, &mapping->flags);
 +}
-+
- /* callback routine to register each ACPI PCI slot object */
- static acpi_status
- register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-@@ -142,16 +171,8 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	function = adr & 0xffff;
++static inline void mapping_clear_hwpoison(struct address_space *mapping)
++{
++	clear_bit(AS_HWPOISON, &mapping->flags);
++}
+ #else
+ static inline int mapping_hwpoison(struct address_space *mapping)
+ {
+ 	return 0;
+ }
++static inline void mapping_clear_hwpoison(struct address_space *mapping)
++{
++}
+ #endif
  
- 	pdev = pbus->self;
--	if (pdev && pci_is_pcie(pdev)) {
--		tmp = acpi_find_root_bridge_handle(pdev);
--		if (tmp) {
--			struct acpi_pci_root *root = acpi_pci_find_root(tmp);
--
--			if (root && (root->osc_control_set &
--					OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
--				return AE_OK;
--		}
--	}
-+	if (pdev && device_is_managed_by_native_pciehp(pdev))
-+		return AE_OK;
+ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
+index a1e7e00..ca064c6 100644
+--- v3.6-rc1.orig/mm/memory-failure.c
++++ v3.6-rc1/mm/memory-failure.c
+@@ -652,7 +652,7 @@ static int me_pagecache_dirty(struct page *p, unsigned long pfn)
+ 		 * the first EIO, but we're not worse than other parts
+ 		 * of the kernel.
+ 		 */
+-		set_bit(AS_HWPOISON, &mapping->flags);
++		mapping_set_hwpoison(mapping);
+ 	}
  
- 	newfunc = kzalloc(sizeof(struct acpiphp_func), GFP_KERNEL);
- 	if (!newfunc)
+ 	return me_pagecache_clean(p, pfn);
+diff --git v3.6-rc1.orig/mm/truncate.c v3.6-rc1/mm/truncate.c
+index 75801ac..82a994f 100644
+--- v3.6-rc1.orig/mm/truncate.c
++++ v3.6-rc1/mm/truncate.c
+@@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
+ 
+ 	oldsize = inode->i_size;
+ 	i_size_write(inode, newsize);
++	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
++		mapping_clear_hwpoison(inode->i_mapping);
+ 
+ 	truncate_pagecache(inode, oldsize, newsize);
+ }
 -- 
-1.7.9.5
+1.7.11.4
 
