@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab2HVENC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 00:13:02 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59774 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab2HVEM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 00:12:57 -0400
-Date: Tue, 21 Aug 2012 21:12:09 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between
- secondary MMU and host
-In-Reply-To: <50345735.2000807@linux.vnet.ibm.com>
-Message-ID: <alpine.LSU.2.00.1208212105370.3415@eggly.anvils>
-References: <503358FF.3030009@linux.vnet.ibm.com> <20120821150618.GJ27696@redhat.com> <50345735.2000807@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752411Ab2HVEO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:14:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17444 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584Ab2HVEOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 00:14:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,807,1336374000"; 
+   d="scan'208";a="136698916"
+Subject: Re: [PATCH] drivers/dma/sirf-dma.c: fix usage of devm functions
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Barry Song <baohua.song@csr.com>, Dan Williams <dan.j.williams@intel.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1344069330-29569-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1344069330-29569-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Aug 2012 09:46:34 +0530
+Message-ID: <1345608994.1895.73.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Aug 2012, Xiao Guangrong wrote:
-> On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
-> > 
-> > The KSM usage of it looks safe because it will only establish readonly
-> > ptes with it.
+On Sat, 2012-08-04 at 10:35 +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> Hmm, in KSM code, i found this code in replace_page:
-> 
-> set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-> 
-> It is possible to establish a writable pte, no?
+> Fix some problems with the use of devm_ functions.
+Applied, thanks
 
-No: we only do KSM in private vmas (!VM_SHARED), and because of the
-need to CopyOnWrite in those, vm_page_prot excludes write permission:
-write permission has to be added on COW fault.
 
-Hugh
+-- 
+~Vinod
+
