@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813Ab2HVPFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:05:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65221 "EHLO mx1.redhat.com"
+	id S932767Ab2HVPGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:06:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61397 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932718Ab2HVPFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:05:42 -0400
+	id S932635Ab2HVPGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:06:09 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,148 +26,103 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 33/36] autonuma: powerpc port
-Date: Wed, 22 Aug 2012 16:59:17 +0200
-Message-Id: <1345647560-30387-34-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 34/36] autonuma: make the AUTONUMA_SCAN_PMD_FLAG conditional to CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
+Date: Wed, 22 Aug 2012 16:59:18 +0200
+Message-Id: <1345647560-30387-35-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Remove the sysfs entry /sys/kernel/mm/autonuma/knuma_scand/pmd and
+force the knuma_scand pmd mode off if
+CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD is not set by the architecture.
 
-    * PMD flaging is not required in powerpc since large pages
-      are tracked in ptes.
-    * Yet to be tested with large pages
-    * This is an initial patch that partially works
-    * knuma_scand and numa hinting page faults works
-    * Page migration is yet to be observed/verified
+Enable AutoNUMA for PPC64.
 
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/powerpc/include/asm/pgtable.h        |   48 ++++++++++++++++++++++++++++-
- arch/powerpc/include/asm/pte-hash64-64k.h |    4 ++-
- arch/powerpc/mm/numa.c                    |    3 +-
- mm/autonuma.c                             |    2 +-
- 4 files changed, 53 insertions(+), 4 deletions(-)
+ arch/Kconfig         |    3 +++
+ arch/powerpc/Kconfig |    6 ++++++
+ arch/x86/Kconfig     |    1 +
+ mm/autonuma.c        |    9 ++++++++-
+ 4 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
-index 2e0e411..5f03079 100644
---- a/arch/powerpc/include/asm/pgtable.h
-+++ b/arch/powerpc/include/asm/pgtable.h
-@@ -33,10 +33,56 @@ static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & _PAGE_DIRTY; }
- static inline int pte_young(pte_t pte)		{ return pte_val(pte) & _PAGE_ACCESSED; }
- static inline int pte_file(pte_t pte)		{ return pte_val(pte) & _PAGE_FILE; }
- static inline int pte_special(pte_t pte)	{ return pte_val(pte) & _PAGE_SPECIAL; }
--static inline int pte_present(pte_t pte)	{ return pte_val(pte) & _PAGE_PRESENT; }
-+static inline int pte_present(pte_t pte)	{ return pte_val(pte) &
-+							(_PAGE_PRESENT|_PAGE_NUMA_PTE); }
- static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK) == 0; }
- static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
+diff --git a/arch/Kconfig b/arch/Kconfig
+index ee3ed89..6f4f19f 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -284,4 +284,7 @@ config SECCOMP_FILTER
+ config HAVE_ARCH_AUTONUMA
+ 	bool
  
-+#ifdef CONFIG_AUTONUMA
-+static inline int pte_numa(pte_t pte)
-+{
-+       return (pte_val(pte) &
-+               (_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
-+}
++config HAVE_ARCH_AUTONUMA_SCAN_PMD
++	bool
 +
-+#endif
-+
-+static inline pte_t pte_mknonnuma(pte_t pte)
-+{
-+       pte_val(pte) &= ~_PAGE_NUMA_PTE;
-+       pte_val(pte) |= (_PAGE_PRESENT|_PAGE_ACCESSED);
-+
-+       return pte;
-+}
-+
-+static inline pte_t pte_mknuma(pte_t pte)
-+{
-+       pte_val(pte) |= _PAGE_NUMA_PTE;
-+       pte_val(pte) &= ~_PAGE_PRESENT;
-+       return pte;
-+}
-+
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+       /* PMD tracking not implemented */
-+       return 0;
-+}
-+
-+static inline pmd_t pmd_mknonnuma(pmd_t pmd)
-+{
-+	BUG();
-+	return pmd;
-+}
-+
-+static inline pmd_t pmd_mknuma(pmd_t pmd)
-+{
-+	BUG();
-+	return pmd;
-+}
-+
-+/* No pmd flags on powerpc */
-+#define set_pmd_at(mm, addr, pmdp, pmd)  do { } while (0)
-+
- /* Conversion functions: convert a page and protection to a page entry,
-  * and a page entry and page directory to the page they refer to.
-  *
-diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/include/asm/pte-hash64-64k.h
-index 59247e8..f7e1468 100644
---- a/arch/powerpc/include/asm/pte-hash64-64k.h
-+++ b/arch/powerpc/include/asm/pte-hash64-64k.h
-@@ -7,6 +7,8 @@
- #define _PAGE_COMBO	0x10000000 /* this is a combo 4k page */
- #define _PAGE_4K_PFN	0x20000000 /* PFN is for a single 4k page */
+ source "kernel/gcov/Kconfig"
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 352f416..73fa908 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -140,6 +140,12 @@ config PPC
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
  
-+#define _PAGE_NUMA_PTE 0x40000000 /* Adjust PTE_RPN_SHIFT below */
++# allow AutoNUMA only on PPC64 for now
++config PPC_HAVE_ARCH_AUTONUMA
++	bool
++	default y if PPC64
++	select HAVE_ARCH_AUTONUMA
 +
- /* For 64K page, we don't have a separate _PAGE_HASHPTE bit. Instead,
-  * we set that to be the whole sub-bits mask. The C code will only
-  * test this, so a multi-bit mask will work. For combo pages, this
-@@ -36,7 +38,7 @@
-  * That gives us a max RPN of 34 bits, which means a max of 50 bits
-  * of addressable physical space, or 46 bits for the special 4k PFNs.
-  */
--#define PTE_RPN_SHIFT	(30)
-+#define PTE_RPN_SHIFT	(31)
+ config EARLY_PRINTK
+ 	bool
+ 	default y
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 4cbdfce..f24bff8 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -98,6 +98,7 @@ config X86
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
+ 	select HAVE_ARCH_AUTONUMA
++	select HAVE_ARCH_AUTONUMA_SCAN_PMD
  
- #ifndef __ASSEMBLY__
- 
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
-index 39b1597..80af41e 100644
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -22,6 +22,7 @@
- #include <linux/pfn.h>
- #include <linux/cpuset.h>
- #include <linux/node.h>
-+#include <linux/page_autonuma.h>
- #include <asm/sparsemem.h>
- #include <asm/prom.h>
- #include <asm/smp.h>
-@@ -1045,7 +1046,7 @@ void __init do_init_bootmem(void)
- 		 * all reserved areas marked.
- 		 */
- 		NODE_DATA(nid) = careful_zallocation(nid,
--					sizeof(struct pglist_data),
-+					autonuma_pglist_data_size(),
- 					SMP_CACHE_BYTES, end_pfn);
- 
-   		dbg("node %d\n", nid);
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
 diff --git a/mm/autonuma.c b/mm/autonuma.c
-index ada6c57..a4da3f3 100644
+index a4da3f3..4b7c744 100644
 --- a/mm/autonuma.c
 +++ b/mm/autonuma.c
-@@ -25,7 +25,7 @@ unsigned long autonuma_flags __read_mostly =
+@@ -25,7 +25,10 @@ unsigned long autonuma_flags __read_mostly =
  #ifdef CONFIG_AUTONUMA_DEFAULT_ENABLED
  	|(1<<AUTONUMA_ENABLED_FLAG)
  #endif
--	|(1<<AUTONUMA_SCAN_PMD_FLAG);
-+	|(0<<AUTONUMA_SCAN_PMD_FLAG);
+-	|(0<<AUTONUMA_SCAN_PMD_FLAG);
++#ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
++	|(1<<AUTONUMA_SCAN_PMD_FLAG)
++#endif
++	;
  
  static DEFINE_MUTEX(knumad_mm_mutex);
  
+@@ -1300,7 +1303,9 @@ static ssize_t NAME ## _store(struct kobject *kobj,			\
+ static struct kobj_attribute NAME ## _attr =				\
+ 	__ATTR(NAME, 0644, NAME ## _show, NAME ## _store);
+ 
++#ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
+ SYSFS_ENTRY(pmd, AUTONUMA_SCAN_PMD_FLAG);
++#endif /* CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD */
+ SYSFS_ENTRY(debug, AUTONUMA_DEBUG_FLAG);
+ #ifdef CONFIG_DEBUG_VM
+ SYSFS_ENTRY(load_balance_strict, AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG);
+@@ -1398,7 +1403,9 @@ static struct attribute *knuma_scand_attr[] = {
+ 	&pages_to_scan_attr.attr,
+ 	&pages_scanned_attr.attr,
+ 	&full_scans_attr.attr,
++#ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
+ 	&pmd_attr.attr,
++#endif
+ 	NULL,
+ };
+ static struct attribute_group knuma_scand_attr_group = {
