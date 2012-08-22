@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2HVLup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 07:50:45 -0400
+	id S1755223Ab2HVLuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 07:50:50 -0400
 Received: from mail-vb0-f46.google.com ([209.85.212.46]:51013 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab2HVLu3 (ORCPT
+	with ESMTP id S1754918Ab2HVLuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 07:50:29 -0400
+	Wed, 22 Aug 2012 07:50:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <1345625042-5678-1-git-send-email-linus.walleij@stericsson.com>
-References: <1345625042-5678-1-git-send-email-linus.walleij@stericsson.com>
-Date: Wed, 22 Aug 2012 13:50:28 +0200
-Message-ID: <CACRpkdY=n=a=FEzLOp-KpjjcgeP+RqHM+DC_eVJf0KrHR7ytyA@mail.gmail.com>
-Subject: Re: [PATCH 3/7] gpio/ab8500: MASK_ON_SUSPEND
+In-Reply-To: <1345625049-5714-1-git-send-email-linus.walleij@stericsson.com>
+References: <1345625049-5714-1-git-send-email-linus.walleij@stericsson.com>
+Date: Wed, 22 Aug 2012 13:50:45 +0200
+Message-ID: <CACRpkdb6-a5qaxJRF6j3Fs+DkwngRRi1f=goOb4Pdfuq5CB-4g@mail.gmail.com>
+Subject: Re: [PATCH 4/7] mfd/db8500-prcmu: MASK_ON_SUSPEND
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Linus Walleij <linus.walleij@stericsson.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Samuel Ortiz <sameo@linux.intel.com>,
-        Etienne Carriere <etienne.carriere@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>
+        Etienne Carriere <etienne.carriere@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
