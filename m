@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab2HVWA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 18:00:27 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:18705
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752025Ab2HVWAR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 18:00:17 -0400
-X-Forefront-Antispam-Report: CIP:157.56.232.213;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0511HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: PS1(zzzz1202hzz8275bhz32i2a8h668h839h944hd25hf0ah107ah1155h)
-From: Scan Subscription <scan-subscription@coverity.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: New Defect(s) reported by Coverity Scan
-Thread-Topic: New Defect(s) reported by Coverity Scan
-Thread-Index: Ac2AsM89FmDALAgBTZWT67Rf+c38yA==
-Date: Wed, 22 Aug 2012 22:00:10 +0000
-Message-ID: <C0A4ACBB26D853488EA0C68388B7026813B3C4A6@BLUPRD0511MB401.namprd05.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [38.99.3.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933370Ab2HVWCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 18:02:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38569 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab2HVWCd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 18:02:33 -0400
+Message-ID: <503556E9.6040101@kernel.org>
+Date: Wed, 22 Aug 2012 15:02:17 -0700
+From: Konstantin Ryabitsev <mricon@kernel.org>
+Organization: Linux Foundation/Kernel.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-X-OriginatorOrg: coverity.com
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Kernel Summit 2012 keysigning party
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig3B968411E8806350BE2C1BAC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig3B968411E8806350BE2C1BAC
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi, all:
 
-Please find the latest report on new defect(s) that have been introduced to the Linux Kernel found with Coverity SCAN. 
+I'm going to try to organize a keysigning party at the Kernel Summit. As
+it is pretty late in the game, I'm not sure we'd be able to fit it into
+the schedules, but it doesn't hurt to try.
 
+We'll be using the "hashed list" approach to make this quick and easy.
+If you are not familiar with that procedure, please read
+http://cryptnet.net/fdp/crypto/keysigning_party/en/keysigning_party.html#=
+hash_based
 
-Defect(s) Reported-by: Coverity Scan:
-___________________________________________________________________________
-** CID 716812: Unchecked return value (CHECKED_RETURN)
-/drivers/platform/x86/ideapad-laptop.c: 639
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=716812
+You have to be present -- in person -- at the Kernel Summit in San Diego
+next week in order to participate. If you are not coming to Kernel
+Summit next week, please disregard this message.
 
+If you want to participate, please send your key fingerprint by the end
+of Friday, August 24th so I have enough time to distribute the hashed
+list to participants.
 
-** CID 715732: Macro compares unsigned to 0 (NO_EFFECT)
-/drivers/gpu/drm/nouveau/nve0_fifo.c: 307
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715732
+Step 1: make sure your key is on the keyserver
+Please read the friendly "man gpg" on how to upload your keys to the
+keyservers.
 
+Step 2: Send in your fingerprint
+To generate the fingerprint, run "gpg --fingerprint your_email_address".
+Send the output of that command to ks2012-keys@kernel.org. It doesn't
+matter if that email is signed or not.
 
-** CID 715543: Dereference before null check (REVERSE_INULL)
-/drivers/input/touchscreen/eeti_ts.c: 209
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715543
-
-
-
-###########################################################################
-Defect Details:
-___________________________________________________________________________
-CID 716812: Unchecked return value (CHECKED_RETURN)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=716812
-
-/drivers/platform/x86/ideapad-laptop.c: 639 ( check_return)
-   636    {
-   637    	unsigned long bit, value;
-   638    
->>> CID 716812: Unchecked return value (CHECKED_RETURN) Calling function 
->>> "read_ec_data(acpi_handle, int, unsigned long *)" without checking return value (as is done elsewhere 23 out of 25 times).
->>> No check of the return value of "read_ec_data(ideapad_handle, 49, &value)".
-   639    	read_ec_data(ideapad_handle, VPCCMD_R_SPECIAL_BUTTONS, &value);
-   640    
-   641    	for (bit = 0; bit < 16; bit++) {
-   642    		if (test_bit(bit, &value)) {
-   643    			switch (bit) {
-  
- 
-________________________________________________________________________
-CID 715732: Macro compares unsigned to 0 (NO_EFFECT)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715732
-
-/drivers/gpu/drm/nouveau/nve0_fifo.c: 307 ( unsigned_compare)
-   304    	int ret = -EINVAL;
-   305    
-   306    	spin_lock_irqsave(&dev_priv->channels.lock, flags);
->>> CID 715732: Macro compares unsigned to 0 (NO_EFFECT) This 
->>> greater-than-or-equal-to-zero comparison of an unsigned value is always true. "chid >= 0U".
-   307    	if (likely(chid >= 0 && chid < priv->base.channels)) {
-   308    		chan = dev_priv->channels.ptr[chid];
-   309    		if (likely(chan))
-   310    			ret = nouveau_finish_page_flip(chan, NULL);
-   311    	}
-  
-________________________________________________________________________
-CID 715543: Dereference before null check (REVERSE_INULL)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715543
-
-/drivers/input/touchscreen/eeti_ts.c: 202 ( deref_ptr)
-   199    
-   200    	priv->client = client;
-   201    	priv->input = input;
->>> Directly dereferencing pointer "pdata".
-   202    	priv->irq_gpio = pdata->irq_gpio;
-   203    	priv->irq = gpio_to_irq(pdata->irq_gpio);
-   204    
-   205    	err = gpio_request_one(pdata->irq_gpio, GPIOF_IN, client->name);
-   206    	if (err < 0)
-   207    		goto err1;
-   208    
->>> CID 715543: Dereference before null check (REVERSE_INULL) 
->>> Null-checking "pdata" suggests that it may be null, but it has already been dereferenced on all paths leading to the check.
-   209    	if (pdata)
-   210    		priv->irq_active_high = pdata->irq_active_high;
-   211    
-   212    	irq_flags = priv->irq_active_high ?
-   213    		IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
-  
-________________________________________________________________________
+I will send more details about what comes next together with the hashed
+list of all signatures received.
 
 
-To view the defects in Coverity Scan visit, http://scan5.coverity.com:8080.  
-Your username should be the first part of your email address. If you don't have a username, you can request one by emailing: scan-admin@coverity.com
-	
-Thank you,
-Dakshesh Vyas
-Coverity SCAN-ADMIN
-scan-admin@coverity.com
-http://scan.coverity.com
+Best,
+--=20
+Konstantin Ryabitsev
+Systems Administrator
+Linux Foundation, kernel.org
+Montr=C3=A9al, Qu=C3=A9bec
 
+
+
+
+--------------enig3B968411E8806350BE2C1BAC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQGcBAEBAgAGBQJQNVbpAAoJEI6WedmufEleEDwMAJCuulqjftdBBdQdELsGvLZN
+xH1nf7yn0dU+HJthtvLnQMtXUNvjXCsS9Q+8TPZ7dB1AkdMmTSlXoFlj5NTUBOOB
+83zYd/seCj+c8lOJ++DV9ABm9uDU382j1C5vvJ9dfTJMgpEU02T0k9L29QP4sPiU
+jc/fobxKwXi+jZoTLP1S7SRdNqOPb1/055yGtBtzT8vLNTtRtDORMUNTB/Dt1gpw
+KUx2gJuU0Gewe4PSlqFmNlEVKsK84Agu+oBNAnxMf5L6AXwkuXLXjOSJ4V/UBTB3
+99dizq2UVXQrtmz9lUiUr7emfLsiJqBDr1N58GIlW95SNs7B0E8wuUbaWbXzRxGK
+N2HkArhbH9RB+ObKvJBVhEmyKvgJcvtrFhYhqi/zf7WOUHZxArGg7aVrk/T+zywo
+w6u5VXQIPw2P64xiRWzyD7WMgGsSGOs9xPtMuB48rmb8Rl/yZ71D6nCijPDCs/i9
+00iTeZDFQjdQP1s5WigrxK6Su61kynmTHRo5npXK2A==
+=npW/
+-----END PGP SIGNATURE-----
+
+--------------enig3B968411E8806350BE2C1BAC--
