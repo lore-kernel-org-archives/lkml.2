@@ -1,108 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933431Ab2HVWUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 18:20:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187Ab2HVWUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 18:20:30 -0400
-Date: Thu, 23 Aug 2012 00:19:31 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 00/36] AutoNUMA24
-Message-ID: <20120822221931.GE8107@redhat.com>
-References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
- <5035325C.3070909@redhat.com>
- <20120822214048.GA3092@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120822214048.GA3092@gmail.com>
+	id S933465Ab2HVWZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 18:25:43 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:52217 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933404Ab2HVWZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 18:25:37 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND] mtd: lpc32xx_mlc: Make driver independent of AMBA DMA engine driver
+Date: Thu, 23 Aug 2012 00:25:10 +0200
+Message-Id: <1345674311-16874-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 11:40:48PM +0200, Ingo Molnar wrote:
-> 
-> * Rik van Riel <riel@redhat.com> wrote:
-> 
-> > On 08/22/2012 10:58 AM, Andrea Arcangeli wrote:
-> > >Hello everyone,
-> > >
-> > >Before the Kernel Summit, I think it's good idea to post a new
-> > >AutoNUMA24 and to go through a new review cycle. The last review cycle
-> > >has been fundamental in improving the patchset. Thanks!
-> > 
-> > Thanks for improving the code and incorporating all our 
-> > feedback. The AutoNUMA codebase is now in a state where I can 
-> > live with it.
-> > 
-> > I hope the code will be acceptable to others, too.
-> 
-> Lots of scheduler changes. Has all of peterz's review feedback 
-> been addressed?
+This patch makes the MLC NAND driver independent of the single AMBA DMA engine
+driver by using the platform data provided dma_filter callback.
 
-git diff --stat origin kernel/sched/
- kernel/sched/Makefile |    1 +
- kernel/sched/core.c   |    1 +
- kernel/sched/fair.c   |   86 ++++++-
- kernel/sched/numa.c   |  604 +++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/sched.h  |   19 ++
- 5 files changed, 699 insertions(+), 12 deletions(-)
+(This also fixes the build error of the MLC NAND driver in case of module
+linking because the (not exported) reference to pl08x_filter_id is gone now.)
 
-Lots of scheduler changes only if CONFIG_AUTONUMA=y. If
-CONFIG_AUTONUMA=n it's just 107 lines of scheduler changes (numa.c
-won't get built in that case).
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-> Hm, he isn't even Cc:-ed, how is that supposed to work?
+---
+Applies to: v3.6-rc2
 
-I separately forwarded him the announcement email because I wanted to
-add a few more (minor) details for him. Of course Peter's review is
-fundamental and appreciated and already helped to make the code a lot
-better.
+ drivers/mtd/nand/lpc32xx_mlc.c  |   13 +++++++++++--
+ include/linux/mtd/lpc32xx_mlc.h |   20 ++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 2 deletions(-)
 
-His previous comments should have been addressed, the documentation of
-sched_autonuma_balance has been rewritten from scratch,
-PF_THREAD_BOUND is gone, etc... It's possible we'll have to go through
-more rewrites of the docs if this still isn't good enough. I don't
-know yet. This is what the review is about after all :).
-
-numa.c is self contained but I see it as a plus that it's self
-contained. First it's easy to nuke AutoNUMA by just deleting the .[ch]
-files and fixing up the build errors as result in case a better
-algorithm emerges in the future. Second it's trivial to proof those 107
-lines won't regress CFS when CONFIG_AUTONUMA=n.
-
-About the CFS integration: sched_autonuma_balance() is simply yet
-another idle active load balancing method.
-
-The idle active load balancing that with hyperthreading takes care of
-distributing the threads to be sure to fill all idle cores, in
-principle works identical to AutoNUMA. It also works side by side with
-CFS and moves tasks under CFS control (without CFS possibly noticing)
-to optimize for HT. numa.c in principle does the exact same thing (and
-it also calls the very same stop_one_cpu_nowait to do the migrations)
-but it optimizes for NUMA instead of HT.
-
-Thanks,
-Andrea
+--- linux-2.6.orig/drivers/mtd/nand/lpc32xx_mlc.c
++++ linux-2.6/drivers/mtd/nand/lpc32xx_mlc.c
+@@ -37,7 +37,7 @@
+ #include <linux/of.h>
+ #include <linux/of_mtd.h>
+ #include <linux/of_gpio.h>
+-#include <linux/amba/pl08x.h>
++#include <linux/mtd/lpc32xx_mlc.h>
+ #include <linux/io.h>
+ #include <linux/mm.h>
+ #include <linux/dma-mapping.h>
+@@ -171,6 +171,7 @@ static struct nand_bbt_descr lpc32xx_nan
+ 
+ struct lpc32xx_nand_host {
+ 	struct nand_chip	nand_chip;
++	struct lpc32xx_mlc_platform_data *pdata;
+ 	struct clk		*clk;
+ 	struct mtd_info		mtd;
+ 	void __iomem		*io_base;
+@@ -581,9 +582,15 @@ static int lpc32xx_dma_setup(struct lpc3
+ 	struct mtd_info *mtd = &host->mtd;
+ 	dma_cap_mask_t mask;
+ 
++	if (!host->pdata || !host->pdata->dma_filter) {
++		dev_err(mtd->dev.parent, "no DMA platform data\n");
++		return -ENOENT;
++	}
++
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+-	host->dma_chan = dma_request_channel(mask, pl08x_filter_id, "nand-mlc");
++	host->dma_chan = dma_request_channel(mask, host->pdata->dma_filter,
++					     "nand-mlc");
+ 	if (!host->dma_chan) {
+ 		dev_err(mtd->dev.parent, "Failed to request DMA channel\n");
+ 		return -EBUSY;
+@@ -703,6 +710,8 @@ static int __devinit lpc32xx_nand_probe(
+ 	}
+ 	lpc32xx_wp_disable(host);
+ 
++	host->pdata = pdev->dev.platform_data;
++
+ 	nand_chip->priv = host;		/* link the private data structures */
+ 	mtd->priv = nand_chip;
+ 	mtd->owner = THIS_MODULE;
+--- /dev/null
++++ linux-2.6/include/linux/mtd/lpc32xx_mlc.h
+@@ -0,0 +1,20 @@
++/*
++ * Platform data for LPC32xx SoC MLC NAND controller
++ *
++ * Copyright (C) 2012 Roland Stigge
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __LINUX_MTD_LPC32XX_MLC_H
++#define __LINUX_MTD_LPC32XX_MLC_H
++
++#include <linux/dmaengine.h>
++
++struct lpc32xx_mlc_platform_data {
++	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
++};
++
++#endif  /* __LINUX_MTD_LPC32XX_MLC_H */
