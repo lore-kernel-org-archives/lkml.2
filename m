@@ -1,426 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab2HVI1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:27:21 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:46642 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab2HVI1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:27:14 -0400
-Date: Wed, 22 Aug 2012 13:57:08 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Cc: benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, peterz@infradead.org,
-        oleg@redhat.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, michael@ellerman.id.au
-Subject: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120822082708.GB29216@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120822082205.GA29216@in.ibm.com>
+	id S1752011Ab2HVI3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:29:49 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:10857
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750952Ab2HVI3n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:29:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Ic8kzz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah1155h)
+Date: Wed, 22 Aug 2012 16:29:41 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Dong Aisheng <b29396@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linus.walleij@stericsson.com>, <s.hauer@pengutronix.de>,
+        <shawn.guo@linaro.org>, <kernel@pengutronix.de>,
+        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <sameo@linux.intel.com>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <swarren@wwwdotorg.org>,
+        <paul.liu@linaro.org>
+Subject: Re: [PATCH 1/7] mfd: add imx syscon driver based on regmap
+Message-ID: <20120822082940.GJ4011@b20223-02.ap.freescale.net>
+References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
+ <1345619928-15446-2-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120822082205.GA29216@in.ibm.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082208-1976-0000-0000-00001072BF9F
+In-Reply-To: <1345619928-15446-2-git-send-email-b29396@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+On Wed, Aug 22, 2012 at 03:18:42PM +0800, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Add regmap based imx syscon driver.
+> This is usually used for access misc bits in registers which does not belong
+> to a specific module, for example, IOMUXC GPR and ANATOP.
+> With this driver, we provide a standard API for client driver to call to
+> access registers which are registered into syscon.
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> ---
+> Currently it's just simply for IMX, however the driver really is not too
+> much imx specific.
+> If people want, we probably could extend it to support other platforms too.
+> ---
+>  .../devicetree/bindings/mfd/imx-syscon.txt         |   11 +
+>  drivers/mfd/Kconfig                                |    8 +
+>  drivers/mfd/Makefile                               |    1 +
+>  drivers/mfd/imx-syscon.c                           |  193 ++++++++++++++++++++
+>  include/linux/mfd/imx-syscon.h                     |   22 +++
+>  5 files changed, 235 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/imx-syscon.txt b/Documentation/devicetree/bindings/mfd/imx-syscon.txt
+> new file mode 100644
+> index 0000000..4a72994
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/imx-syscon.txt
+> @@ -0,0 +1,11 @@
+> +* Freescale IMX System Controller Registers R/W driver
+> +
+> +Required properties:
+> +- compatible: Should contain "fsl,imx-syscon".
+> +- reg: the register range can be access from imx-syscon
+> +
+> +Examples:
+> +gpr: iomuxc-gpr@020e0000 {
+> +	compatible = "fsl,imx6q-iomuxc", "fsl,imx-syscon";
+why is it compatible with iomuxc?
 
-This is the port of uprobes to powerpc. Usage is similar to x86.
+> +	reg = <0x020e0000 0x38>;
+> +};
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index b1a1462..20a050e 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -993,6 +993,14 @@ config MFD_ANATOP
+>  	  MFD controller. This controller embeds regulator and
+>  	  thermal devices for Freescale i.MX platforms.
+>  
+> +config MFD_IMX_SYSCON
+> +        bool "Freescale i.MX System Controller Register R/W Based on Regmap"
+> +        depends on ARCH_MXC
+> +        select REGMAP_MMIO
+> +        help
+> +          Select this option to enable access Freescale i.MX system control
+> +	  registers like iomuxc gpr and anatop via regmap.
+> +
+>  config MFD_PALMAS
+>  	bool "Support for the TI Palmas series chips"
+>  	select MFD_CORE
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 79dd22d..82c7ee1 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -131,4 +131,5 @@ obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
+>  obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
+>  obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
+>  obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
+> +obj-$(CONFIG_MFD_IMX_SYSCON)	+= imx-syscon.o
+>  obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
+> diff --git a/drivers/mfd/imx-syscon.c b/drivers/mfd/imx-syscon.c
+> new file mode 100644
+> index 0000000..141b456
+> --- /dev/null
+> +++ b/drivers/mfd/imx-syscon.c
+> @@ -0,0 +1,193 @@
+> +/*
+> + * Freescale IMX System Control Driver
+> + *
+> + * Copyright (C) 2012 Freescale Semiconductor, Inc.
+> + * Copyright (C) 2012 Linaro Ltd.
+> + *
+> + * Author: Dong Aisheng <dong.aisheng@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +
+> +static struct platform_driver imx_syscon_driver;
+> +
+> +struct imx_syscon {
+> +	struct device *dev;
+> +	void __iomem *base;
+> +	struct regmap *regmap;
+> +};
+> +
+> +static int imx_syscon_match(struct device *dev, void *data)
+> +{
+> +	struct imx_syscon *syscon = dev_get_drvdata(dev);
+> +	struct device_node *dn = data;
+> +
+> +	return (syscon->dev->of_node == dn) ? 1 : 0;
+> +}
+> +
+> +int imx_syscon_write(struct device_node *np, u32 reg, u32 val)
+For API function, is it better to use struct device rather not np?
+ - it won't need to search dev in below code every time it access
+   registers.
+> +{
+> +	struct device *dev;
+> +	struct imx_syscon *syscon;
+> +	int ret = 0;
+> +
+> +	dev = driver_find_device(&imx_syscon_driver.driver, NULL, np,
+> +				 imx_syscon_match);
+> +	if (!dev)
+> +		return -EPROBE_DEFER;
+> +
+> +	syscon = dev_get_drvdata(dev);
+> +	ret = regmap_write(syscon->regmap, reg, val);
+> +	if (ret)
+> +		dev_err(dev, "failed to write regmap(%s) reg 0x%x (%d)\n",
+> +			np->name, reg, ret);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(imx_syscon_write);
+> +
+> +int imx_syscon_read(struct device_node *np, u32 reg, u32 *val)
+> +{
+> +	struct device *dev;
+> +	struct imx_syscon *syscon;
+> +	int ret = 0;
+> +
+> +	dev = driver_find_device(&imx_syscon_driver.driver, NULL, np,
+> +				 imx_syscon_match);
+> +	if (!dev)
+> +		return -EPROBE_DEFER;
+> +
+> +	syscon = dev_get_drvdata(dev);
+> +	ret = regmap_read(syscon->regmap, reg, val);
+> +	if (ret)
+> +		dev_err(dev, "failed to read regmap(%s) reg 0x%x (%d)\n",
+> +			np->name, reg, ret);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(imx_syscon_read);
+> +
+> +int imx_syscon_update_bits(struct device_node *np, u32 reg,
+> +					u32 mask, u32 val)
+> +{
+> +	struct device *dev;
+> +	struct imx_syscon *syscon;
+> +	int ret = 0;
+> +
+> +	dev = driver_find_device(&imx_syscon_driver.driver, NULL, np,
+> +				 imx_syscon_match);
+> +	if (!dev)
+> +		return -EPROBE_DEFER;
+> +
+> +	syscon = dev_get_drvdata(dev);
+> +	ret = regmap_update_bits(syscon->regmap, reg, mask, val);
+> +	if (ret)
+> +		dev_err(dev, "failed to update regmap(%s) reg 0x%x (%d)\n",
+> +			np->name, reg, ret);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(imx_syscon_update_bits);
+> +
+> +static const struct of_device_id of_imx_syscon_match[] = {
+> +	{ .compatible = "fsl,imx-syscon", },
+> +	{ },
+> +};
+> +
+> +static struct regmap_config imx_syscon_regmap_config = {
+> +	.reg_bits = 32,
+> +	.val_bits = 32,
+> +	.reg_stride = 4,
+> +};
+> +
+> +static int __devinit imx_syscon_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *np = dev->of_node;
+> +	struct imx_syscon *syscon;
+> +	struct resource res;
+> +	int ret;
+> +
+> +	if (!np)
+> +		return -ENOENT;
+> +
+> +	syscon = devm_kzalloc(&pdev->dev, sizeof(struct imx_syscon),
+> +			    GFP_KERNEL);
+> +	if (!syscon)
+> +		return -ENOMEM;
+> +
+> +	syscon->base = of_iomap(np, 0);
+no request? use devm_request_and_ioremap?
 
-[root@xxxx ~]# ./bin/perf probe -x /lib64/libc.so.6 malloc
-Added new event:
-  probe_libc:malloc    (on 0xb4860)
+Thanks
+Richard
 
-You can now use it in all perf tools, such as:
-
-	perf record -e probe_libc:malloc -aR sleep 1
-
-[root@xxxx ~]# ./bin/perf record -e probe_libc:malloc -aR sleep 20
-[ perf record: Woken up 22 times to write data ]
-[ perf record: Captured and wrote 5.843 MB perf.data (~255302 samples) ]
-[root@xxxx ~]# ./bin/perf report --stdio
-...
-
-# Samples: 83K of event 'probe_libc:malloc'
-# Event count (approx.): 83484
-#
-# Overhead       Command  Shared Object      Symbol
-# ........  ............  .............  ..........
-#
-    69.05%           tar  libc-2.12.so   [.] malloc
-    28.57%            rm  libc-2.12.so   [.] malloc
-     1.32%  avahi-daemon  libc-2.12.so   [.] malloc
-     0.58%          bash  libc-2.12.so   [.] malloc
-     0.28%          sshd  libc-2.12.so   [.] malloc
-     0.08%    irqbalance  libc-2.12.so   [.] malloc
-     0.05%         bzip2  libc-2.12.so   [.] malloc
-     0.04%         sleep  libc-2.12.so   [.] malloc
-     0.03%    multipathd  libc-2.12.so   [.] malloc
-     0.01%      sendmail  libc-2.12.so   [.] malloc
-     0.01%     automount  libc-2.12.so   [.] malloc
-
-The trap_nr addition patch is a prereq.
-
-A few minor changes can be expected down the line based on the
-discussions currently happening on lkml around the single-stepping
-infrastructure code (http://marc.info/?l=linux-kernel&m=134545967710242&w=2).
-
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
----
-
-Tested on POWER6; I don't see anything here that should stop it from
-working on a ppc32; since I don't have access to a ppc32 machine, it
-would be good if somoene could verify that part.
-
-V4:
-Enhance arch_analyze_uprobe_insn() to reject uprobes on trap variants.
-
-V3:
-Added abort_xol() logic for powerpc, using thread_struct.trap_nr to
-determine if the stepped instruction caused an exception.
-
-V2:
-a. arch_uprobe_analyze_insn() now gets unsigned long addr.
-b. Verified that mtmsr[d] and rfi[d] are handled correctly by
-   emulate_step() (no changes to this patch).
-
- arch/powerpc/Kconfig                   |    3 
- arch/powerpc/include/asm/thread_info.h |    4 
- arch/powerpc/include/asm/uprobes.h     |   58 ++++++++++
- arch/powerpc/kernel/Makefile           |    1 
- arch/powerpc/kernel/signal.c           |    6 +
- arch/powerpc/kernel/uprobes.c          |  180 +++++++++++++++++++++++++++++++++
- 6 files changed, 251 insertions(+), 1 deletion(-)
-
-Index: linux-tip-16aug/arch/powerpc/include/asm/thread_info.h
-===================================================================
---- linux-tip-16aug.orig/arch/powerpc/include/asm/thread_info.h
-+++ linux-tip-16aug/arch/powerpc/include/asm/thread_info.h
-@@ -102,6 +102,7 @@ static inline struct thread_info *curren
- #define TIF_RESTOREALL		11	/* Restore all regs (implies NOERROR) */
- #define TIF_NOERROR		12	/* Force successful syscall return */
- #define TIF_NOTIFY_RESUME	13	/* callback before returning to user */
-+#define TIF_UPROBE		14	/* breakpointed or single-stepping */
- #define TIF_SYSCALL_TRACEPOINT	15	/* syscall tracepoint instrumentation */
- 
- /* as above, but as bit values */
-@@ -118,12 +119,13 @@ static inline struct thread_info *curren
- #define _TIF_RESTOREALL		(1<<TIF_RESTOREALL)
- #define _TIF_NOERROR		(1<<TIF_NOERROR)
- #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
-+#define _TIF_UPROBE		(1<<TIF_UPROBE)
- #define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
- #define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
- 				 _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
- 
- #define _TIF_USER_WORK_MASK	(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
--				 _TIF_NOTIFY_RESUME)
-+				 _TIF_NOTIFY_RESUME | _TIF_UPROBE)
- #define _TIF_PERSYSCALL_MASK	(_TIF_RESTOREALL|_TIF_NOERROR)
- 
- /* Bits in local_flags */
-Index: linux-tip-16aug/arch/powerpc/include/asm/uprobes.h
-===================================================================
---- /dev/null
-+++ linux-tip-16aug/arch/powerpc/include/asm/uprobes.h
-@@ -0,0 +1,58 @@
-+#ifndef _ASM_UPROBES_H
-+#define _ASM_UPROBES_H
-+/*
-+ * User-space Probes (UProbes) for powerpc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2007-2012
-+ *
-+ * Adapted from the x86 port by Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-+ */
-+
-+#include <linux/notifier.h>
-+
-+typedef unsigned int uprobe_opcode_t;
-+
-+#define MAX_UINSN_BYTES			4
-+#define UPROBE_XOL_SLOT_BYTES		(MAX_UINSN_BYTES)
-+
-+#define UPROBE_SWBP_INSN		0x7fe00008
-+#define UPROBE_SWBP_INSN_SIZE		4 /* swbp insn size in bytes */
-+
-+#define IS_TW(instr)		(((instr) & 0xfc0007fe) == 0x7c000008)
-+#define IS_TD(instr)		(((instr) & 0xfc0007fe) == 0x7c000088)
-+#define IS_TDI(instr)		(((instr) & 0xfc000000) == 0x08000000)
-+#define IS_TWI(instr)		(((instr) & 0xfc000000) == 0x0c000000)
-+
-+#define is_trap(instr)	(IS_TW(instr) || IS_TD(instr) || \
-+			IS_TWI(instr) || IS_TDI(instr))
-+
-+struct arch_uprobe {
-+	u8	insn[MAX_UINSN_BYTES];
-+};
-+
-+struct arch_uprobe_task {
-+	unsigned long	saved_trap_nr;
-+};
-+
-+extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
-+extern unsigned long uprobe_get_swbp_addr(struct pt_regs *regs);
-+extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
-+extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
-+extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+#endif	/* _ASM_UPROBES_H */
-Index: linux-tip-16aug/arch/powerpc/kernel/Makefile
-===================================================================
---- linux-tip-16aug.orig/arch/powerpc/kernel/Makefile
-+++ linux-tip-16aug/arch/powerpc/kernel/Makefile
-@@ -96,6 +96,7 @@ obj-$(CONFIG_MODULES)		+= ppc_ksyms.o
- obj-$(CONFIG_BOOTX_TEXT)	+= btext.o
- obj-$(CONFIG_SMP)		+= smp.o
- obj-$(CONFIG_KPROBES)		+= kprobes.o
-+obj-$(CONFIG_UPROBES)		+= uprobes.o
- obj-$(CONFIG_PPC_UDBG_16550)	+= legacy_serial.o udbg_16550.o
- obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
- obj-$(CONFIG_SWIOTLB)		+= dma-swiotlb.o
-Index: linux-tip-16aug/arch/powerpc/kernel/signal.c
-===================================================================
---- linux-tip-16aug.orig/arch/powerpc/kernel/signal.c
-+++ linux-tip-16aug/arch/powerpc/kernel/signal.c
-@@ -11,6 +11,7 @@
- 
- #include <linux/tracehook.h>
- #include <linux/signal.h>
-+#include <linux/uprobes.h>
- #include <linux/key.h>
- #include <asm/hw_breakpoint.h>
- #include <asm/uaccess.h>
-@@ -157,6 +158,11 @@ static int do_signal(struct pt_regs *reg
- 
- void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
- {
-+	if (thread_info_flags & _TIF_UPROBE) {
-+		clear_thread_flag(TIF_UPROBE);
-+		uprobe_notify_resume(regs);
-+	}
-+
- 	if (thread_info_flags & _TIF_SIGPENDING)
- 		do_signal(regs);
- 
-Index: linux-tip-16aug/arch/powerpc/kernel/uprobes.c
-===================================================================
---- /dev/null
-+++ linux-tip-16aug/arch/powerpc/kernel/uprobes.c
-@@ -0,0 +1,180 @@
-+/*
-+ * User-space Probes (UProbes) for powerpc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2007-2012
-+ *
-+ * Adapted from the x86 port by Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-+ */
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/ptrace.h>
-+#include <linux/uprobes.h>
-+#include <linux/uaccess.h>
-+#include <linux/kdebug.h>
-+
-+#include <asm/sstep.h>
-+
-+#define UPROBE_TRAP_NR	UINT_MAX
-+
-+/**
-+ * arch_uprobe_analyze_insn
-+ * @mm: the probed address space.
-+ * @arch_uprobe: the probepoint information.
-+ * @addr: vaddr to probe.
-+ * Return 0 on success or a -ve number on error.
-+ */
-+int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
-+{
-+	unsigned int insn;
-+
-+	if (addr & 0x03)
-+		return -EINVAL;
-+
-+	memcpy(&insn, auprobe->insn, MAX_UINSN_BYTES);
-+	if (is_trap(insn))
-+		return -ENOTSUPP;
-+	return 0;
-+}
-+
-+/*
-+ * arch_uprobe_pre_xol - prepare to execute out of line.
-+ * @auprobe: the probepoint information.
-+ * @regs: reflects the saved user state of current task.
-+ */
-+int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
-+{
-+	struct arch_uprobe_task *autask = &current->utask->autask;
-+
-+	autask->saved_trap_nr = current->thread.trap_nr;
-+	current->thread.trap_nr = UPROBE_TRAP_NR;
-+	regs->nip = current->utask->xol_vaddr;
-+	return 0;
-+}
-+
-+/**
-+ * uprobe_get_swbp_addr - compute address of swbp given post-swbp regs
-+ * @regs: Reflects the saved state of the task after it has hit a breakpoint
-+ * instruction.
-+ * Return the address of the breakpoint instruction.
-+ */
-+unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
-+{
-+	return instruction_pointer(regs);
-+}
-+
-+/*
-+ * If xol insn itself traps and generates a signal (SIGILL/SIGSEGV/etc),
-+ * then detect the case where a singlestepped instruction jumps back to its
-+ * own address. It is assumed that anything like do_page_fault/do_trap/etc
-+ * sets thread.trap_nr != -1.
-+ *
-+ * arch_uprobe_pre_xol/arch_uprobe_post_xol save/restore thread.trap_nr,
-+ * arch_uprobe_xol_was_trapped() simply checks that ->trap_nr is not equal to
-+ * UPROBE_TRAP_NR == -1 set by arch_uprobe_pre_xol().
-+ */
-+bool arch_uprobe_xol_was_trapped(struct task_struct *t)
-+{
-+	if (t->thread.trap_nr != UPROBE_TRAP_NR)
-+		return true;
-+
-+	return false;
-+}
-+
-+/*
-+ * Called after single-stepping. To avoid the SMP problems that can
-+ * occur when we temporarily put back the original opcode to
-+ * single-step, we single-stepped a copy of the instruction.
-+ *
-+ * This function prepares to resume execution after the single-step.
-+ */
-+int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
-+{
-+	struct uprobe_task *utask = current->utask;
-+
-+	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
-+
-+	current->thread.trap_nr = utask->autask.saved_trap_nr;
-+
-+	/*
-+	 * On powerpc, except for loads and stores, most instructions
-+	 * including ones that alter code flow (branches, calls, returns)
-+	 * are emulated in the kernel. We get here only if the emulation
-+	 * support doesn't exist and have to fix-up the next instruction
-+	 * to be executed.
-+	 */
-+	regs->nip = utask->vaddr + MAX_UINSN_BYTES;
-+	return 0;
-+}
-+
-+/* callback routine for handling exceptions. */
-+int arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data)
-+{
-+	struct die_args *args = data;
-+	struct pt_regs *regs = args->regs;
-+
-+	/* We are only interested in userspace traps */
-+	if (regs && !user_mode(regs))
-+		return NOTIFY_DONE;
-+
-+	switch (val) {
-+	case DIE_BPT:
-+		if (uprobe_pre_sstep_notifier(regs))
-+			return NOTIFY_STOP;
-+		break;
-+	case DIE_SSTEP:
-+		if (uprobe_post_sstep_notifier(regs))
-+			return NOTIFY_STOP;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_DONE;
-+}
-+
-+/*
-+ * This function gets called when XOL instruction either gets trapped or
-+ * the thread has a fatal signal, so reset the instruction pointer to its
-+ * probed address.
-+ */
-+void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
-+{
-+	struct uprobe_task *utask = current->utask;
-+
-+	current->thread.trap_nr = utask->autask.saved_trap_nr;
-+	instruction_pointer_set(regs, utask->vaddr);
-+}
-+
-+/*
-+ * See if the instruction can be emulated.
-+ * Returns true if instruction was emulated, false otherwise.
-+ */
-+bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
-+{
-+	int ret;
-+	unsigned int insn;
-+
-+	memcpy(&insn, auprobe->insn, MAX_UINSN_BYTES);
-+
-+	/*
-+	 * emulate_step() returns 1 if the insn was successfully emulated.
-+	 * For all other cases, we need to single-step in hardware.
-+	 */
-+	ret = emulate_step(regs, insn);
-+	if (ret > 0)
-+		return true;
-+
-+	return false;
-+}
-Index: linux-tip-16aug/arch/powerpc/Kconfig
-===================================================================
---- linux-tip-16aug.orig/arch/powerpc/Kconfig
-+++ linux-tip-16aug/arch/powerpc/Kconfig
-@@ -239,6 +239,9 @@ config PPC_OF_PLATFORM_PCI
- config ARCH_SUPPORTS_DEBUG_PAGEALLOC
- 	def_bool y
- 
-+config ARCH_SUPPORTS_UPROBES
-+	def_bool y
-+
- config PPC_ADV_DEBUG_REGS
- 	bool
- 	depends on 40x || BOOKE
+> +	if (!syscon->base)
+> +		return -EADDRNOTAVAIL;
+> +
+> +	ret = of_address_to_resource(np, 0, &res);
+> +	if (ret)
+> +		return ret;
+> +
+> +	imx_syscon_regmap_config.max_register = res.end - res.start - 3;
+> +	syscon->regmap = devm_regmap_init_mmio(&pdev->dev, syscon->base,
+> +					&imx_syscon_regmap_config);
+> +	if (IS_ERR(syscon->regmap)) {
+> +		dev_err(&pdev->dev, "regmap init failed\n");
+> +		return PTR_ERR(syscon->regmap);
+> +	}
+> +
+> +	regcache_cache_only(syscon->regmap, false);
+> +
+> +	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
+> +		res.start, res.end);
+> +
+> +	syscon->dev = &pdev->dev;
+> +	platform_set_drvdata(pdev, syscon);
+> +
+> +	return 0;
+> +}
+> +
+> +static int __devexit imx_syscon_remove(struct platform_device *pdev)
+> +{
+> +	struct imx_syscon *syscon;
+> +
+> +	syscon = platform_get_drvdata(pdev);
+> +	iounmap(syscon->base);
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver imx_syscon_driver = {
+> +	.driver = {
+> +		.name = "imx-syscon",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = of_imx_syscon_match,
+> +	},
+> +	.probe		= imx_syscon_probe,
+> +	.remove		= imx_syscon_remove,
+> +};
+> +
+> +static int __init imx_syscon_init(void)
+> +{
+> +	return platform_driver_register(&imx_syscon_driver);
+> +}
+> +postcore_initcall(imx_syscon_init);
+> +
+> +static void __exit anatop_exit(void)
+> +{
+> +	platform_driver_unregister(&imx_syscon_driver);
+> +}
+> +module_exit(anatop_exit);
+> +
+> +MODULE_AUTHOR("Dong Aisheng <dong.aisheng@linaro.org>");
+> +MODULE_DESCRIPTION("Freescale IMX System Control driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/mfd/imx-syscon.h b/include/linux/mfd/imx-syscon.h
+> new file mode 100644
+> index 0000000..be8b6db
+> --- /dev/null
+> +++ b/include/linux/mfd/imx-syscon.h
+> @@ -0,0 +1,22 @@
+> +/*
+> + * Freescale IMX System Control Driver
+> + *
+> + * Copyright (C) 2012 Freescale Semiconductor, Inc.
+> + * Copyright (C) 2012 Linaro Ltd.
+> + *
+> + * Author: Dong Aisheng <dong.aisheng@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef __LINUX_MFD_IMX_SYSCON_H__
+> +#define __LINUX_MFD_IMX_SYSCON_H__
+> +
+> +extern int imx_syscon_write(struct device_node *np, u32 reg, u32 val);
+> +extern int imx_syscon_read(struct device_node *np, u32 reg, u32 *val);
+> +extern int imx_syscon_update_bits(struct device_node *np, u32 reg,
+> +					u32 mask, u32 val);
+> +#endif /* __LINUX_MFD_IMX_SYSCON_H__ */
+> -- 
+> 1.7.0.4
+> 
 
