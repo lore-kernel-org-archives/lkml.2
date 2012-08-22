@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2HVIk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:40:29 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45339 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab2HVIkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:40:23 -0400
-Date: Wed, 22 Aug 2012 10:40:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf tools: Fix 'No libunwind found' make warning message
-Message-ID: <20120822084017.GA21581@gmail.com>
-References: <1345479985-18669-1-git-send-email-acme@infradead.org>
- <20120821093231.GA12385@gmail.com>
- <20120821093628.GA981@krava.brq.redhat.com>
- <20120822083812.GC1003@krava.brq.redhat.com>
+	id S1753451Ab2HVIlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:41:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35390 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751817Ab2HVIlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:41:09 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <akpm@linux-foundation.org>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <b-cousson@ti.com>, <rnayak@ti.com>,
+        <tony@atomide.com>, <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <balbi@ti.com>, <arnd@arndb.de>
+CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <ohad@wizery.com>,
+        <linus.walleij@linaro.org>, <myungjoo.ham@samsung.com>,
+        <rusty@rustcorp.com.au>, <swarren@nvidia.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [RESEND PATCH v4 2/2] arm/dts: omap4: Add ocp2scp data
+Date: Wed, 22 Aug 2012 14:10:03 +0530
+Message-ID: <1345624803-16379-3-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345624803-16379-1-git-send-email-kishon@ti.com>
+References: <1345624803-16379-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120822083812.GC1003@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add ocp2scp data node in omap4 device tree file.
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap4.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-> On Tue, Aug 21, 2012 at 11:36:28AM +0200, Jiri Olsa wrote:
-> > On Tue, Aug 21, 2012 at 11:32:31AM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > > 
-> > 
-> > SNIP
-> > 
-> > > 
-> > > One minor observation, the Makefile tells us:
-> > > 
-> > > Makefile:496: No libunwind found. Please install libunwind >= 0.99
-> > > 
-> > > I guess that should be libunwind-dev[el], right? Plain libunwind 
-> > > is not enough.
-> > 
-> > right, will fix it
-> > 
-> > thanks,
-> > jirka
-> 
-> ---
-> Changing error message when libunwind support is not found
-> to inform properly to install libunwind-dev[el] package.
-> 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 6bd888d..218cdb5 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -493,7 +493,7 @@ endif
->  
->  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
->  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-> -	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-> +	msg := $(warning No libunwind found, disables post unwind support. Please install libunwind-dev[el] >= 0.99);
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 04cbbcb..8a780b2 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -295,5 +295,13 @@
+ 			interrupt-parent = <&gic>;
+ 			ti,hwmods = "dmic";
+ 		};
++
++		ocp2scp {
++			compatible = "ti,omap-ocp2scp";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			ti,hwmods = "ocp2scp_usb_phy";
++		};
+ 	};
+ };
+-- 
+1.7.9.5
 
-s/disables/disable
-
-Thanks,
-
-	Ingo
