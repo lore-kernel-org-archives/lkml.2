@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab2HVHe2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:34:28 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:40578 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab2HVHeZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:34:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABCoZhC5z9Pu19Yq8YCTLw8NJO1pbc3AztD=xmembA8tQiG31Q@mail.gmail.com>
-References: <CABCoZhC5z9Pu19Yq8YCTLw8NJO1pbc3AztD=xmembA8tQiG31Q@mail.gmail.com>
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-Date: Wed, 22 Aug 2012 10:34:04 +0300
-Message-ID: <CA+E=qVdOhTr9iXR9w9UdAQ6q0XuqQLunxyaxgcfd0Y1Tn8hzpA@mail.gmail.com>
-Subject: Re: Power: s3c_adc_battery.c backup battery query
-To: anish kumar <yesanishhere@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lars@metafoo.de, cbou@mail.ru,
-        dwmw2@infradead.org, kzjeef@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	id S1757414Ab2HVHeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 03:34:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44022 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756346Ab2HVHer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 03:34:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,808,1336374000"; 
+   d="scan'208";a="212116973"
+Date: Wed, 22 Aug 2012 15:29:18 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
+Message-ID: <20120822152918.3e59616e@feng-i7>
+In-Reply-To: <4401854.hVfHzgeqjT@ws-stein>
+References: <4401854.hVfHzgeqjT@ws-stein>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 8:05 AM, anish kumar <yesanishhere@gmail.com> wrote:
+On Wed, 22 Aug 2012 08:30:35 +0200
+Alexander Stein <alexander.stein@systec-electronic.com> wrote:
+
 > Hello,
+> 
+> I just noticed the 3.4 linux kernel fails to sucessfully probe the i2c-eg20t 
+> driver. I returns with EBUSY error. It worked on the 3.0 kernel. To my view it 
+> is caused the commit 07e8a51ff68353e01d795cceafbac9f54c49132b ( i2c-eg20t: use 
+> i2c_add_numbered_adapter to get a fixed bus number).
+> The reason it actually fails is that the i2c-isch driver is registered 
+> beforehand which gets bus number 0. But this one is the bus number the eg20t 
+> driver wants to register.
 
-Hi
+Make sense.
 
-> I am trying to write a generic batttery driver using IIO and I have
-> one some below
-> questions:
->
-> Why do we have the representation of backup battery in this
-> driver(s3c_adc_battery.c) and when does the
-> s3c_adc_backup_bat_get_property function gets called?
+> A possibility is that if i2c_add_numbered_adapter failed with EBUSY just use 
+> i2c_add_adapter to get at least the driver working, but with a non-fixed bus 
+> number. Opinions?
 
-Because backup battery differs a bit from main battery (for example,
-it has no current monitoring capability).
-Maybe it was not a good decision, as it's possible to handle it via
-platform data info as you suggested.
+Or can we give it a fixed offset, like let the i2c_eg20t controller bus number
+start with 4? I don't expect there will be more than 4 other i2c controllers 
+on EG20T compatible platforms.
 
-> As I understand, it is as this:It is called when it is registered
-> and when the user wants to know the backup battery status(sysfs)
-> and we don't do a workqueue scheduling as it will consume more power.
->
-> static struct s3c_adc_bat backup_bat = {
->         .psy = {
->                 .name           = "backup-battery",
->                 .type           = POWER_SUPPLY_TYPE_BATTERY,
->                 .properties     = s3c_adc_backup_bat_props,
->                 .num_properties = ARRAY_SIZE(s3c_adc_backup_bat_props),
->                 .get_property   = s3c_adc_backup_bat_get_property,
->                 .use_for_apm    = 1,
->         },
-> };
->
-> I am stuck with mulitple *get_property callbacks.As we don't know how many
-> batteries system has and consequently we don't know how many *get_property
-> callbacks to be implemented.
->
-> So below is my plan:
-> What I am trying to do is to have a single callback(*get_property) and manage
-> everything in this callback and will use the name of the psy to
-> distinguish between
-> the different batteries which system has and driver will receive this
-> information using
-> platform data.Hope it makes sense.
-
-Just send a patch for review :)
-
-Regards
-Vasily
+Thanks,
+Feng
