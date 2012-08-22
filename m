@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964900Ab2HVSlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:41:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56564 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964827Ab2HVSlk convert rfc822-to-8bit (ORCPT
+	id S1758486Ab2HVSmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 14:42:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55688 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab2HVSm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:41:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv3 4/4] ARM: kprobes: make more tests conditional
-Date: Wed, 22 Aug 2012 18:41:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Leif Lindholm <leif.lindholm@arm.com>, linux-kernel@vger.kernel.org,
-        Jon Medhurst <tixy@yxit.co.uk>
-References: <1345645780-2749-1-git-send-email-arnd@arndb.de> <201208221519.12056.arnd@arndb.de> <alpine.LFD.2.02.1208221136180.1754@xanadu.home>
-In-Reply-To: <alpine.LFD.2.02.1208221136180.1754@xanadu.home>
+	Wed, 22 Aug 2012 14:42:28 -0400
+Message-ID: <5035280E.2060100@gmail.com>
+Date: Wed, 22 Aug 2012 12:42:22 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201208221841.29645.arnd@arndb.de>
-X-Provags-ID: V02:K0:oPGJIfZTkySydI/IOCmHSO1KOQJ+5VZsT+UOssNeXQd
- /e3EFFP6CZb9w+VcIOxXW3mdf7fsixaVN2YjkljSJgN2PKzbZn
- gFPyeU23sd78wU7n7QICjkHErTQgNkjlq2SRT9Hu4yH3idTeVB
- HiuOfH/g2Emvn2dI9NkfbRpQntKPBQZMxtITI6Xobhhnwjps2J
- CGGrbEylZiddGtZYDEgmvYUOXidZMPcQ1g+ka2i0ZaMm/qWzPh
- meaDwNi3rOiMUG63KMJbzpUOEO9leLcRrqRxvdF3UrUxvoomuC
- vKhu812KoU2W7hq6nFVcKA7QjiRzTOjH0SkaF0HI52jdcb5pBz
- h/Ct4BCTDglmjbHyk4fI=
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Luigi Semenzato <semenzato@chromium.org>, Ingo Molnar <mingo@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
+        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
+Subject: Re: [PATCH] perf: do not flush maps on COMM for perf report
+References: <1345585940-6497-1-git-send-email-semenzato@chromium.org> <20120822072822.GA11042@gmail.com> <CAA25o9RJOre2mw4z7Mh94iRKcHVdby9RjLfP91far16me8_94Q@mail.gmail.com> <20120822162958.GA13623@infradead.org> <50350F2D.6030408@gmail.com> <20120822181653.GB13623@infradead.org>
+In-Reply-To: <20120822181653.GB13623@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 August 2012, Nicolas Pitre wrote:
-> On Wed, 22 Aug 2012, Arnd Bergmann wrote:
-> > > 
-> > > The ldrex/strex instructions are available on ARMv6.  It's only the d 
-> > > variants (strexd/ldrexd) which are only available from ARMv6k.
-> > 
-> > Ok. How is the version below then? I haven't tested this one yet.
-> 
-> In fact, I think the b variants are ARMv6k+ as well.  Only the plain 
-> (non b non d) variants are available on ARMv6.
+On 8/22/12 12:16 PM, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Aug 22, 2012 at 10:56:13AM -0600, David Ahern escreveu:
+>> On 8/22/12 10:29 AM, Arnaldo Carvalho de Melo wrote:
+>>> Adding the EXEC event, ditto. And I agree that while adding it we want
+>>> to do 1/2 as pre-requisite.
+>>
+>> maps should not be flushed on a COMM event, so that was a mistake.
+>> Given that what new information does an EXEC event provide? Same
+>> process id. A COMM event is generated on an exec, so the name change
+>> happens. Mappings are dropped prior to that - and there is no unmap
+>> event. That seems to be a missing piece. Maps are added which is
+>> handled by MMAP events. After that why is an exec event relevant?
+>
+> Please read the original discussion about it:
+>
+> https://lkml.org/lkml/2012/2/13/545
 
-Ok, third attempt then. This leaves ldrex for ARMv6 but marks
-{st,ld}rex{b,h,d} as V6K specific (which includes ARMv7).
+I do recall that discussion (and re-read just now). If maps are not 
+flushed on a rename (and they should not be), then I still do not 
+understand what information is conveyed by an exec event? It's not a new 
+process or new map and the name change is already handled by a comm event.
 
-	Arnd
-
-8<-----
->From 6eab418c61c18393006f30d189e2f28d6e403040 Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Thu, 16 Aug 2012 07:49:31 +0000
-Subject: [PATCH] ARM: kprobes: make more tests conditional
-
-The mls instruction is not available in ARMv6K or below, so we
-should make the test conditional on at least ARMv7. ldrexd/strexd
-are available in ARMv6K or ARMv7, which we can test by checking
-the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
-
-/tmp/ccuMTZ8D.s: Assembler messages:
-/tmp/ccuMTZ8D.s:22188: Error: selected processor does not support ARM mode `mls r0,r1,r2,r3'
-/tmp/ccuMTZ8D.s:22222: Error: selected processor does not support ARM mode `mlshi r7,r8,r9,r10'
-/tmp/ccuMTZ8D.s:22252: Error: selected processor does not support ARM mode `mls lr,r1,r2,r13'
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jon Medhurst <tixy@yxit.co.uk>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Leif Lindholm <leif.lindholm@arm.com>
----
- arch/arm/kernel/kprobes-test-arm.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
-index 38c1a3b..58dd6c3 100644
---- a/arch/arm/kernel/kprobes-test-arm.c
-+++ b/arch/arm/kernel/kprobes-test-arm.c
-@@ -367,9 +367,11 @@ void kprobe_arm_test_cases(void)
- 	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
- 	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
- 
-+#if __LINUX_ARM_ARCH__ >= 7
- 	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
- 	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
- 	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
-+#endif
- 	TEST_UNSUPPORTED(".word 0xe06f3291 @ mls pc, r1, r2, r3")
- 	TEST_UNSUPPORTED(".word 0xe060329f @ mls r0, pc, r2, r3")
- 	TEST_UNSUPPORTED(".word 0xe0603f91 @ mls r0, r1, pc, r3")
-@@ -456,6 +458,7 @@ void kprobe_arm_test_cases(void)
- 	TEST_UNSUPPORTED(".word	0xe1700090") /* Unallocated space */
- #if __LINUX_ARM_ARCH__ >= 6
- 	TEST_UNSUPPORTED("ldrex	r2, [sp]")
-+#ifdef CONFIG_CPU_32v6K
- 	TEST_UNSUPPORTED("strexd	r0, r2, r3, [sp]")
- 	TEST_UNSUPPORTED("ldrexd	r2, r3, [sp]")
- 	TEST_UNSUPPORTED("strexb	r0, r2, [sp]")
-@@ -463,6 +466,7 @@ void kprobe_arm_test_cases(void)
- 	TEST_UNSUPPORTED("strexh	r0, r2, [sp]")
- 	TEST_UNSUPPORTED("ldrexh	r2, [sp]")
- #endif
-+#endif
- 	TEST_GROUP("Extra load/store instructions")
- 
- 	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
--- 
-1.7.10
-
-
+David
 
