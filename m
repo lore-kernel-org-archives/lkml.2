@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab2HVGAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 02:00:51 -0400
-Received: from mail3-163.sinamail.sina.com.cn ([202.108.3.163]:52977 "EHLO
-	smtp.sina.com.cn" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756831Ab2HVGAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 02:00:47 -0400
-Message-Id: <2cd866$1hl1j5c@irja2-156.sinamail.sina.com.cn>
-X-Originating-IP: [14.147.84.137]
-X-Auth-ID: shibakawamaster
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Als8AKU/KE8Ok1SJ/3poAIFfnD4NMXiTOIx/CIdxg2eBCwSGTo4PijY
-Date: Wed, 22 Aug 2012 13:52:53 +0800
-From: "Shibakawa ink" <shibakawamaster@sina.com>
-Reply-To: lucky_shibakawa@foxmail.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Re:duplicator ink
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+	id S1757233Ab2HVGBD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 02:01:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33655 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757172Ab2HVGA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 02:00:56 -0400
+Date: Wed, 22 Aug 2012 16:00:25 +1000
+From: NeilBrown <neilb@suse.de>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Li Shaohua <shli@fusionio.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
+        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux RAID <linux-raid@vger.kernel.org>
+Subject: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
+Message-ID: <20120822160025.272188d1@notabene.brown>
+In-Reply-To: <20120822035702.GF2570@yliu-dev.sh.intel.com>
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
+	<20120816024654.GB3781@thunk.org>
+	<20120816111051.GA16036@localhost>
+	<20120816152513.GA31346@thunk.org>
+	<20120817060915.GB28786@localhost>
+	<20120817134039.GB11439@thunk.org>
+	<20120817142526.GA1059@localhost>
+	<20120822035702.GF2570@yliu-dev.sh.intel.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/doLWNd9A289=bYVeFpiGDTq"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7M60u19023014
 
-Hi dear!
+--Sig_/doLWNd9A289=bYVeFpiGDTq
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Riso ink, Ricoh ink, Duplo ink, toners, on promotion now!
+On Wed, 22 Aug 2012 11:57:02 +0800 Yuanhan Liu <yuanhan.liu@linux.intel.com>
+wrote:
 
-Christmas celebration, 12 years anniversary, lots of promotions here!
+> =20
+> -#define NR_STRIPES		256
+> +#define NR_STRIPES		1024
 
-Free shipping, 30 days in termless return money.
+Changing one magic number into another magic number might help your case, b=
+ut
+it not really a general solution.
 
-Cheap Ink&master, Toners. 2 years Guarantee.
+Possibly making sure that max_nr_stripes is at least some multiple of the
+chunk size might make sense, but I wouldn't want to see a very large multip=
+le.
 
-Pls contact : Lucky.
+I thing the problems with RAID5 are deeper than that.  Hopefully I'll figure
+out exactly what the best fix is soon - I'm trying to look into it.
 
-Best regards,
-Lucky
+I don't think the size of the cache is a big part of the solution.  I think
+correct scheduling of IO is the real answer.
+
+Thanks,
+NeilBrown
 
 
 
-Shibakawa office equipment Co.,ltd
-Address: Rm 201,Yujing Building B,YuFu Trade Park,NO.25, Tangdong East Rd,Tianhe District,Guangzhou,China
-Email: lucky@shibakawa.com
-Skype: luckyme991
-Yahoo Messenger: luckyhuang18
-Tel:   0086 15989081521ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--Sig_/doLWNd9A289=bYVeFpiGDTq
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBUDR1gznsnt1WYoG5AQIvMBAAnwqYNlar29oqFwn2sT2XzxABU10uA6SW
+px7PJihjVfckygzmPTIibCXb7CdDnKUflXvdTi6YP+ZUEjAmbKVg4OQwkkpZcFoz
+Xevjdk+SyvSAYZFpiZFqgTpWV8XySW1HO8hfC8aagB3mEKYwd7pLaT0SF5Arer9P
+e91hUF3SR4Kvytoig45Ucf6KiXHBghbJ6oU2ARGFKWLv4yrOdR/WKs8z9nvGmDHL
+HMvXY2FONYtxevJ1nWPUp1/gk0cbkpfd/qrZhGopKok/ezQ6CDm4/WpQZZ04dYF9
+cQ0ML57fJT8gR9deSIHKyiu89xVgItFoa5YQpa7gZMyk/9Cr1bierN4OCe8YDV2E
+9gydeFhw1kbWDUEotPhr5Tk2qazjZg1Kt26Ea0zxBetJNX1jwTPaRnsPFyUMsGCj
+WUYQ3pBLLUrcec3kJcVz77+HN78AtvoxDE/ZKC35OrlAU0Lh5T3qJ8dThx31jM8C
+wAqABoqPDeqBUKCe+OA7SRxugvXrpolZ5JH+mGywl3Cp1PHQ7J4G0tHCImHLme+r
+9gMrj6uCVacof/W+g+of0n2fKYC1AekxrRcyRXmzZi4AEla06kCy+DOv0ipb99if
+FaJORbwfZjcd3dOKp+jZg+6UFKWiZ+Clhs5muS2ejkVlagcI/ByP6W53R6EsA8Ds
+Bei+hDYJNEw=
+=6+qx
+-----END PGP SIGNATURE-----
+
+--Sig_/doLWNd9A289=bYVeFpiGDTq--
