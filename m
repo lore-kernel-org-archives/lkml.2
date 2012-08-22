@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab2HVJ2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:28:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34564 "EHLO mga11.intel.com"
+	id S1758905Ab2HVJ3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:29:41 -0400
+Received: from mail.linlab.net ([89.244.147.154]:49829 "EHLO mail.linlab.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758861Ab2HVJ2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:28:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,808,1336374000"; 
-   d="scan'208";a="136766803"
-Date: Wed, 22 Aug 2012 17:28:51 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH 1/2] block: embed bdevname in struct block_device
-Message-ID: <20120822092851.GJ2570@yliu-dev.sh.intel.com>
-References: <1344854040-15334-1-git-send-email-yuanhan.liu@linux.intel.com>
+	id S1758875Ab2HVJ3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 05:29:39 -0400
+X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7M9TQTF002350
+Message-ID: <5034A678.3040207@linlab.net>
+Date: Wed, 22 Aug 2012 11:29:28 +0200
+From: Alex Bergmann <alex@linlab.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1344854040-15334-1-git-send-email-yuanhan.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
+        Nandita Dukkipati <nanditad@google.com>
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+References: <503419D3.1080700@linlab.net>  <1345622798.5158.717.camel@edumazet-glaptop>  <50349CC5.3050601@linlab.net> <1345625910.5158.793.camel@edumazet-glaptop>
+In-Reply-To: <1345625910.5158.793.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.6 (mail.linlab.net [IPv6:2001:470:7142:a0::3]); Wed, 22 Aug 2012 11:29:31 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 06:33:59PM +0800, Yuanhan Liu wrote:
-> Embed block device name in struct block_device, thus we can replace
-> the following code:
-> 	char b[BDEVNAME_SIZE];
-> 	printk(KERN_XXX "...%s..\n", bdevname(bdev, b);
-> 
-> with a much simpler and less stack usage version:
-> 	printk(KERN_XXX "...%s..\n", bdev->bd_name);
-> 
-> This is a RFC version, which I just included one sample with this change
-> appiled. If this patch makes sense to you, I will file more patches to
-> apply this change.
+On 08/22/2012 10:58 AM, Eric Dumazet wrote:
+> On Wed, 2012-08-22 at 10:48 +0200, Alex Bergmann wrote:
+>> On 08/22/2012 10:06 AM, Eric Dumazet wrote:
+>>>> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
+>>>> a timeout of 63secs.
+>>>>
+>>>>           ((2 << 5) - 1) * 3 secs = 189 secs
+>>>>           ((2 << 5) - 1) * 1 secs = 63 secs
+>>>
+>>> Strange maths ... here I have :
+>>>
+>>> (1+2+4+8+16) * 3 = 93 secs
+>>> vs
+>>> (1+2+4+8+16) * 1 = 31 secs
+>>>
+>>> So even before said commit, we were not rfc1122 compliant.
+>>>
+>>> Using 7 retries would give 127 seconds, still not rfc compliant.
+>>
+>> You're missing the timeout after the 5th SYN packet was sent. This
+>> would result in another 32 seconds (96 seconds).
+>>
+>> The timeout is calculated here:
+>>
+>> net/ipv4/tcp_timer.c(146:150)
+>>
+>> 	if (boundary <= linear_backoff_thresh)
+>> 		timeout = ((2 << boundary) - 1) * rto_base;
+>> 	else
+>> 		timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
+>> 			(boundary - linear_backoff_thresh) * TCP_RTO_MAX;
+>
+> Thats the code yes but you miss the fact that last occurence of the
+> timer doesnt send a frame on the _network_
+>
+> R2 is derived from the last frame sent.
+>
+> Fact that the connect() is a bit long to return to user space is not
+> relevant. We could block the task for 2 hours and still be non RFC
+> compliant.
+>
+> Actual 5 frames are sent, so the effective global timeout is the one I
+> quoted.
+>
+> 1 + 2 + 4 + 8 + 16   and its 31
+>
+> Just do a tcpdump and you can see it.
 
-ping... (though it's a trivial RFC patch)
+Actual 6 SYN frames are sent. The initial one and 5 retries.
 
+The kernel is waiting another 32 seconds for a SYN+ACK and then gives 
+the ETIMEDOUT back to userspace.
 
-Thanks,
-Yuanhan Liu
-> 
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> ---
->  fs/block_dev.c     |    2 ++
->  include/linux/fs.h |    3 ++-
->  2 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index 1e51919..5e796e58 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -1213,6 +1213,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
->  			}
->  			bd_set_size(bdev, (loff_t)bdev->bd_part->nr_sects << 9);
->  		}
-> +
-> +		disk_name(bdev->bd_disk, bdev->bd_part->partno, bdev->bd_name);
->  	} else {
->  		if (bdev->bd_contains == bdev) {
->  			ret = 0;
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index aa11047..98ea89d 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -689,6 +689,7 @@ struct address_space {
->  	 */
->  struct request_queue;
->  
-> +#define BDEVNAME_SIZE	32	/* Largest string for a blockdev identifier */
->  struct block_device {
->  	dev_t			bd_dev;  /* not a kdev_t - it's a search key */
->  	int			bd_openers;
-> @@ -724,6 +725,7 @@ struct block_device {
->  	int			bd_fsfreeze_count;
->  	/* Mutex for freeze */
->  	struct mutex		bd_fsfreeze_mutex;
-> +	char 			bd_name[BDEVNAME_SIZE];
->  };
->  
->  /*
-> @@ -2323,7 +2325,6 @@ static inline void unregister_chrdev(unsigned int major, const char *name)
->  }
->  
->  /* fs/block_dev.c */
-> -#define BDEVNAME_SIZE	32	/* Largest string for a blockdev identifier */
->  #define BDEVT_SIZE	10	/* Largest string for MAJ:MIN for blkdev */
->  
->  #ifdef CONFIG_BLOCK
-> -- 
-> 1.7.7.6
+Do you mean that we have to send another SYN packet after the 3 minutes?
+
