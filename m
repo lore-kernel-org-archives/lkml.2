@@ -1,86 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab2HVGC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 02:02:27 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45128 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756831Ab2HVGCY (ORCPT
+	id S1757227Ab2HVGDx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 02:03:53 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:47749 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756920Ab2HVGDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 02:02:24 -0400
+	Wed, 22 Aug 2012 02:03:50 -0400
+Message-ID: <5034763D.60508@linux.vnet.ibm.com>
+Date: Wed, 22 Aug 2012 14:03:41 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1344451432-30735-1-git-send-email-linz@li-pro.net>
-References: <1344451432-30735-1-git-send-email-linz@li-pro.net>
-Date: Wed, 22 Aug 2012 16:02:23 +1000
-Message-ID: <CAEgOgz6AjqM7TcpZfp5RBbSD3Bo8fv+JcGVOZz5Ohignchw+=g@mail.gmail.com>
-Subject: Re: [PATCH v2] microblaze: improve failure handling for GPIO reset
-From: Peter Crosthwaite <peter.crosthwaite@petalogix.com>
-To: Stephan Linz <linz@li-pro.net>
-Cc: monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between secondary
+ MMU and host
+References: <503358FF.3030009@linux.vnet.ibm.com> <20120821150618.GJ27696@redhat.com>
+In-Reply-To: <20120821150618.GJ27696@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082206-5140-0000-0000-000001F24231
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 9, 2012 at 4:43 AM, Stephan Linz <linz@li-pro.net> wrote:
-> Early exit from of_platform_reset_gpio_probe() if there
-> was no GPIO reset line configured.
->
-> Avoid kernel oops in gpio_system_reset():
->
-> [   96.603690] Restarting system.
-> [   96.606094] Machine restart...
-> [   96.608810] Oops: kernel access of bad area, sig: 11
-> [   96.613662]  Registers dump: mode=824C1D1C
-> [   96.617858]  r1=C000BB0C, r2=00000000, r3=FFFFFEF8, r4=000015B4
-> [   96.623736]  r5=C0276270, r6=00000001, r7=FFFFFFFF, r8=000015B4
-> [   96.629597]  r9=000015B3, r10=000015B4, r11=00000000, r12=00000000
-> [   96.635733]  r13=00000000, r14=0000000F, r15=C0002B04, r16=00000000
-> [   96.641973]  r17=C011E1A0, r18=80000115, r19=00000010, r20=48184ED8
-> [   96.648184]  r21=00000000, r22=FFFFFFEA, r23=00000001, r24=FEE1DEAD
-> [   96.654396]  r25=00000054, r26=1000B1C8, r27=00000000, r28=00000000
-> [   96.660622]  r29=00000000, r30=00000000, r31=C24A97E0, rPC=C011E1A0
-> [   96.666849]  msr=000042A2, ear=0000004C, esr=00000872, fsr=362E3639
->
-> Signed-off-by: Stephan Linz <linz@li-pro.net>
+On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
+> On Tue, Aug 21, 2012 at 05:46:39PM +0800, Xiao Guangrong wrote:
+>> There has a bug in set_pte_at_notify which always set the pte to the
+>> new page before release the old page in secondary MMU, at this time,
+>> the process will access on the new page, but the secondary MMU still
+>> access on the old page, the memory is inconsistent between them
+>>
+>> Below scenario shows the bug more clearly:
+>>
+>> at the beginning: *p = 0, and p is write-protected by KSM or shared with
+>> parent process
+>>
+>> CPU 0                                       CPU 1
+>> write 1 to p to trigger COW,
+>> set_pte_at_notify will be called:
+>>   *pte = new_page + W; /* The W bit of pte is set */
+>>
+>>                                      *p = 1; /* pte is valid, so no #PF */
+>>
+>>                                      return back to secondary MMU, then
+>>                                      the secondary MMU read p, but get:
+>>                                      *p == 0;
+>>
+>>                          /*
+>>                           * !!!!!!
+>>                           * the host has already set p to 1, but the secondary
+>>                           * MMU still get the old value 0
+>>                           */
+>>
+>>   call mmu_notifier_change_pte to release
+>>   old page in secondary MMU
+> 
+> The KSM usage of it looks safe because it will only establish readonly
+> ptes with it.
+> 
+> It seems a problem only for do_wp_page. It wasn't safe to setup
+> writable ptes with it. I guess we first introduced it for KSM and then
+> we added it to do_wp_page too by mistake.
+> 
+> The race window is really tiny, it's unlikely it has ever triggered,
+> however this one seem to be possible so it's slightly more serious
+> than the other race you recently found (the previous one in the exit
+> path I think it was impossible to trigger with KVM).
+> 
+>> We can fix it by release old page first, then set the pte to the new
+>> page.
+>>
+>> Note, the new page will be firstly used in secondary MMU before it is
+>> mapped into the page table of the process, but this is safe because it
+>> is protected by the page table lock, there is no race to change the pte
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  include/linux/mmu_notifier.h |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+>> index 1d1b1e1..8c7435a 100644
+>> --- a/include/linux/mmu_notifier.h
+>> +++ b/include/linux/mmu_notifier.h
+>> @@ -317,8 +317,8 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
+>>  	unsigned long ___address = __address;				\
+>>  	pte_t ___pte = __pte;						\
+>>  									\
+>> -	set_pte_at(___mm, ___address, __ptep, ___pte);			\
+>>  	mmu_notifier_change_pte(___mm, ___address, ___pte);		\
+>> +	set_pte_at(___mm, ___address, __ptep, ___pte);			\
+>>  })
+> 
+> If we establish the spte on the new page, what will happen is the same
+> race in reverse. The fundamental problem is that the first guy that
+> writes to the "newpage" (guest or host) won't fault again and so it
+> will fail to serialize against the PT lock.
+> 
+> CPU0  		    	    	CPU1
+> 				oldpage[1] == 0 (both guest & host)
+> oldpage[0] = 1
+> trigger do_wp_page
 
-Tested-by: Peter Crosthwaite <peter.crosthwaite@petalogix.com>
+We always do ptep_clear_flush before set_pte_at_notify(),
+at this point, we have done:
+  pte = 0 and flush all tlbs
 
-> ---
-> v2 Remove additional printk message from machine_restart()
-> ---
->  arch/microblaze/kernel/reset.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/microblaze/kernel/reset.c b/arch/microblaze/kernel/reset.c
-> index 8d663d9..c021123 100644
-> --- a/arch/microblaze/kernel/reset.c
-> +++ b/arch/microblaze/kernel/reset.c
-> @@ -28,6 +28,7 @@ void of_platform_reset_gpio_probe(void)
->         if (!gpio_is_valid(handle)) {
->                 printk(KERN_INFO "Skipping unavailable RESET gpio %d (%s)\n",
->                                 handle, "reset");
-> +               return;
->         }
->
->         ret = gpio_request(handle, "reset");
-> @@ -60,7 +61,10 @@ err:
->
->  static void gpio_system_reset(void)
->  {
-> -       gpio_set_value(handle, 1 - reset_val);
-> +       if (gpio_is_valid(handle))
-> +               gpio_set_value(handle, 1 - reset_val);
-> +       else
-> +               printk(KERN_NOTICE "Reset GPIO unavailable - halting!\n");
->  }
->  #else
->  static void gpio_system_reset(void)
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> mmu_notifier_change_pte
+> spte = newpage + writable
+> 				guest does newpage[1] = 1
+> 				vmexit
+> 				host read oldpage[1] == 0
+
+                  It can not happen, at this point pte = 0, host can not
+		  access oldpage anymore, host read can generate #PF, it
+                  will be blocked on page table lock until CPU 0 release the lock.
+
+> pte = newpage + writable (too late)
+> 
+
+
+
+
