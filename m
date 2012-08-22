@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab2HVC1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 22:27:02 -0400
+	id S1753632Ab2HVC1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 22:27:14 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:43131 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab2HVC05 (ORCPT
+	with ESMTP id S1752744Ab2HVC1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 22:26:57 -0400
+	Tue, 21 Aug 2012 22:27:09 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-Date: Wed, 22 Aug 2012 04:26:56 +0200
-Message-Id: <1345602432-27673-2-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v3 03/17] mm,ksm: use new hashtable implementation
+Date: Wed, 22 Aug 2012 04:26:58 +0200
+Message-Id: <1345602432-27673-4-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
 References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
@@ -32,312 +32,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This hashtable implementation is using hlist buckets to provide a simple
-hashtable to prevent it from getting reimplemented all over the kernel.
+Switch ksm to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the ksm module.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- include/linux/hashtable.h |  291 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 291 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/hashtable.h
+ mm/ksm.c |   33 +++++++++++++++------------------
+ 1 files changed, 15 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-new file mode 100644
-index 0000000..d2d6ed0
---- /dev/null
-+++ b/include/linux/hashtable.h
-@@ -0,0 +1,291 @@
-+/*
-+ * Hash table implementation
-+ * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
-+ */
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 9638620..dd4d6af 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -33,7 +33,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/swap.h>
+ #include <linux/ksm.h>
+-#include <linux/hash.h>
++#include <linux/hashtable.h>
+ #include <linux/freezer.h>
+ #include <linux/oom.h>
+ 
+@@ -156,9 +156,8 @@ struct rmap_item {
+ static struct rb_root root_stable_tree = RB_ROOT;
+ static struct rb_root root_unstable_tree = RB_ROOT;
+ 
+-#define MM_SLOTS_HASH_SHIFT 10
+-#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
+-static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
++#define MM_SLOTS_HASH_BITS 10
++static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
+ 
+ static struct mm_slot ksm_mm_head = {
+ 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
+@@ -275,26 +274,21 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
+ 
+ static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+ {
+-	struct mm_slot *mm_slot;
+-	struct hlist_head *bucket;
+ 	struct hlist_node *node;
++	struct mm_slot *slot;
 +
-+#ifndef _LINUX_HASHTABLE_H
-+#define _LINUX_HASHTABLE_H
++	hash_for_each_possible(mm_slots_hash, slot, node, link, (unsigned long)mm) 
++		if (slot->mm == mm)
++			return slot;
+ 
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+-	hlist_for_each_entry(mm_slot, node, bucket, link) {
+-		if (mm == mm_slot->mm)
+-			return mm_slot;
+-	}
+ 	return NULL;
+ }
+ 
+ static void insert_to_mm_slots_hash(struct mm_struct *mm,
+ 				    struct mm_slot *mm_slot)
+ {
+-	struct hlist_head *bucket;
+-
+-	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+ 	mm_slot->mm = mm;
+-	hlist_add_head(&mm_slot->link, bucket);
++	hash_add(mm_slots_hash, &mm_slot->link, (unsigned long)mm);
+ }
+ 
+ static inline int in_stable_tree(struct rmap_item *rmap_item)
+@@ -647,7 +641,7 @@ static int unmerge_and_remove_all_rmap_items(void)
+ 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
+ 						struct mm_slot, mm_list);
+ 		if (ksm_test_exit(mm)) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1385,7 +1379,7 @@ next_mm:
+ 		 * or when all VM_MERGEABLE areas have been unmapped (and
+ 		 * mmap_sem then protects against race with MADV_MERGEABLE).
+ 		 */
+-		hlist_del(&slot->link);
++		hash_del(&slot->link);
+ 		list_del(&slot->mm_list);
+ 		spin_unlock(&ksm_mmlist_lock);
+ 
+@@ -1552,7 +1546,7 @@ void __ksm_exit(struct mm_struct *mm)
+ 	mm_slot = get_mm_slot(mm);
+ 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
+ 		if (!mm_slot->rmap_list) {
+-			hlist_del(&mm_slot->link);
++			hash_del(&mm_slot->link);
+ 			list_del(&mm_slot->mm_list);
+ 			easy_to_free = 1;
+ 		} else {
+@@ -2028,6 +2022,9 @@ static int __init ksm_init(void)
+ 	 */
+ 	hotplug_memory_notifier(ksm_memory_callback, 100);
+ #endif
 +
-+#include <linux/list.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/hash.h>
-+#include <linux/rculist.h>
++	hash_init(mm_slots_hash);
 +
-+#define DEFINE_HASHTABLE(name, bits)					\
-+	struct hlist_head name[HASH_SIZE(bits)];
-+
-+#define HASH_SIZE(bits) (1 << (bits))
-+#define HASH_BITS(name) (ilog2(ARRAY_SIZE(name)))
-+#define HASH_REQUIRED_SIZE(bits) (sizeof(struct hlist_head) * HASH_SIZE(bits))
-+
-+/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
-+#define hash_min(val, bits) ((sizeof(val)==4) ? hash_32((val), (bits)) : hash_long((val), (bits)))
-+
-+/**
-+ * hash_init_size - initialize a hash table
-+ * @hashtable: hashtable to be initialized
-+ * @bits: bit count of hashing function
-+ *
-+ * Initializes a hash table with 2**bits buckets.
-+ */
-+static inline void hash_init_size(struct hlist_head *hashtable, int bits)
-+{
-+	int i;
-+
-+	for (i = 0; i < HASH_SIZE(bits); i++)
-+		INIT_HLIST_HEAD(hashtable + i);
-+}
-+
-+/**
-+ * hash_init - initialize a hash table
-+ * @hashtable: hashtable to be initialized
-+ *
-+ * Calculates the size of the hashtable from the given parameter, otherwise
-+ * same as hash_init_size.
-+ */
-+#define hash_init(name) hash_init_size(name, HASH_BITS(name))
-+
-+/**
-+ * hash_add_size - add an object to a hashtable
-+ * @hashtable: hashtable to add to
-+ * @bits: bit count used for hashing
-+ * @node: the &struct hlist_node of the object to be added
-+ * @key: the key of the object to be added
-+ */
-+#define hash_add_size(hashtable, bits, node, key)				\
-+	hlist_add_head(node, &hashtable[hash_min(key, bits)]);
-+
-+/**
-+ * hash_add - add an object to a hashtable
-+ * @hashtable: hashtable to add to
-+ * @node: the &struct hlist_node of the object to be added
-+ * @key: the key of the object to be added
-+ */
-+#define hash_add(hashtable, node, key)						\
-+	hash_add_size(hashtable, HASH_BITS(hashtable), node, key)
-+
-+/**
-+ * hash_add_rcu_size - add an object to a rcu enabled hashtable
-+ * @hashtable: hashtable to add to
-+ * @bits: bit count used for hashing
-+ * @node: the &struct hlist_node of the object to be added
-+ * @key: the key of the object to be added
-+ */
-+#define hash_add_rcu_size(hashtable, bits, node, key)				\
-+	hlist_add_head_rcu(node, &hashtable[hash_min(key, bits)]);
-+
-+/**
-+ * hash_add_rcu - add an object to a rcu enabled hashtable
-+ * @hashtable: hashtable to add to
-+ * @node: the &struct hlist_node of the object to be added
-+ * @key: the key of the object to be added
-+ */
-+#define hash_add_rcu(hashtable, node, key)					\
-+	hash_add_rcu_size(hashtable, HASH_BITS(hashtable), node, key)
-+
-+/**
-+ * hash_hashed - check whether an object is in any hashtable
-+ * @node: the &struct hlist_node of the object to be checked
-+ */
-+#define hash_hashed(node) (!hlist_unhashed(node))
-+
-+/**
-+ * hash_empty_size - check whether a hashtable is empty
-+ * @hashtable: hashtable to check
-+ * @bits: bit count used for hashing
-+ */
-+static inline bool hash_empty_size(struct hlist_head *hashtable, int bits)
-+{
-+	int i;
-+
-+	for (i = 0; i < HASH_SIZE(bits); i++)
-+		if (!hlist_empty(&hashtable[i]))
-+			return false;
-+
-+	return true;
-+}
-+
-+/**
-+ * hash_empty - check whether a hashtable is empty
-+ * @hashtable: hashtable to check
-+ */
-+#define hash_empty(name) hash_empty_size(name, HASH_BITS(name))
-+
-+/**
-+ * hash_del - remove an object from a hashtable
-+ * @node: &struct hlist_node of the object to remove
-+ */
-+static inline void hash_del(struct hlist_node *node)
-+{
-+	hlist_del_init(node);
-+}
-+
-+/**
-+ * hash_del_rcu - remove an object from a rcu enabled hashtable
-+ * @node: &struct hlist_node of the object to remove
-+ */
-+static inline void hash_del_rcu(struct hlist_node *node)
-+{
-+	hlist_del_init_rcu(node);
-+}
-+
-+/**
-+ * hash_for_each_size - iterate over a hashtable
-+ * @name: hashtable to iterate
-+ * @bits: bit count of hashing function of the hashtable
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each_size(name, bits, bkt, node, obj, member)			\
-+	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)				\
-+		hlist_for_each_entry(obj, node, &name[bkt], member)
-+
-+/**
-+ * hash_for_each - iterate over a hashtable
-+ * @name: hashtable to iterate
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each(name, bkt, node, obj, member)				\
-+	hash_for_each_size(name, HASH_BITS(name), bkt, node, obj, member)
-+
-+/**
-+ * hash_for_each_rcu_size - iterate over a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @bits: bit count of hashing function of the hashtable
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each_rcu_size(name, bits, bkt, node, obj, member)		\
-+	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)				\
-+		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
-+
-+/**
-+ * hash_for_each_rcu - iterate over a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each_rcu(name, bkt, node, obj, member)				\
-+	hash_for_each_rcu_size(name, HASH_BITS(name), bkt, node, obj, member)
-+
-+/**
-+ * hash_for_each_safe_size - iterate over a hashtable safe against removal of
-+ * hash entry
-+ * @name: hashtable to iterate
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @tmp: another &struct hlist_node to use as temporary storage
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each_safe_size(name, bits, bkt, node, tmp, obj, member)	\
-+	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)                     	\
-+		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
-+
-+/**
-+ * hash_for_each_safe_size - iterate over a hashtable safe against removal of
-+ * hash entry
-+ * @name: hashtable to iterate
-+ * @bkt: integer to use as bucket loop cursor
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ */
-+#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
-+	hash_for_each_safe_size(name, HASH_BITS(name), bkt, node,		\
-+				tmp, obj, member)
-+
-+/**
-+ * hash_for_each_possible - iterate over all possible objects hasing to the
-+ * same bucket
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @bits: bit count of hashing function of the hashtable
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible_size(name, obj, bits, node, member, key)		\
-+	hlist_for_each_entry(obj, node,	&name[hash_min(key, bits)], member)
-+
-+/**
-+ * hash_for_each_possible - iterate over all possible objects hashing to the
-+ * same bucket
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @bits: bit count of hashing function of the hashtable
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible(name, obj, node, member, key)			\
-+	hash_for_each_possible_size(name, obj, HASH_BITS(name), node, member, key)
-+
-+/**
-+ * hash_for_each_possible - iterate over all possible objects hashing to the
-+ * same bucket
-+ * in a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @bits: bit count of hashing function of the hashtable
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible_rcu_size(name, obj, bits, node, member, key)	\
-+	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, bits)], member)
-+
-+/**
-+ * hash_for_each_possible - iterate over all possible objects hashing to the
-+ * same bucket
-+ * in a rcu enabled hashtable
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
-+	hash_for_each_possible_rcu_size(name, obj, HASH_BITS(name),		\
-+					node, member, key)
-+
-+/**
-+ * hash_for_each_possible - iterate over all possible objects hashing to the
-+ * same bucket
-+ * safe against removal of hash entry
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @bits: bit count of hashing function of the hashtable
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible_safe_size(name, obj, bits, node, tmp, member, key)\
-+	hlist_for_each_entry_safe(obj, node, tmp,				\
-+		&name[hash_min(key, bits)], member)
-+
-+/**
-+ * hash_for_each_possible - iterate over all possible objects hashing to the
-+ * same bucket
-+ * safe against removal of hash entry
-+ * @name: hashtable to iterate
-+ * @obj: the type * to use as a loop cursor for each entry
-+ * @node: the &struct list_head to use as a loop cursor for each entry
-+ * @member: the name of the hlist_node within the struct
-+ * @key: the key of the objects to iterate over
-+ */
-+#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
-+	hash_for_each_possible_safe_size(name, obj, HASH_BITS(name),		\
-+						node, tmp, member, key)
-+
-+#endif
+ 	return 0;
+ 
+ out_free:
 -- 
 1.7.8.6
 
