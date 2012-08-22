@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab2HVVnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 17:43:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43404 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab2HVVnk (ORCPT
+	id S932616Ab2HVVpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 17:45:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58604 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab2HVVpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 17:43:40 -0400
-Date: Wed, 22 Aug 2012 22:43:23 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more
-	mach-*/*.h includes
-Message-ID: <20120822214323.GA12255@n2100.arm.linux.org.uk>
-References: <201208221253.07278.arnd@arndb.de> <201208221301.19439.arnd@arndb.de>
+	Wed, 22 Aug 2012 17:45:42 -0400
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Christopher Heiny <cheiny@synaptics.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Peichen Chang <peichen.chang@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: [RFC PATCH 1/17] input: RMI4 public header file and documentation.
+Date: Wed, 22 Aug 2012 14:45:35 -0700
+Message-ID: <1965688.fPKEQJnVvJ@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.8.5 (Linux/3.5.1-1.fc17.x86_64; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CACRpkdbP1uTXC9jVNVG3es0KFRq+8MaUa6=6nPuG5WUz5jgiRQ@mail.gmail.com>
+References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com> <1345241877-16200-2-git-send-email-cheiny@synaptics.com> <CACRpkdbP1uTXC9jVNVG3es0KFRq+8MaUa6=6nPuG5WUz5jgiRQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208221301.19439.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 01:01:19PM +0000, Arnd Bergmann wrote:
-> These are lots of device drivers that include machine
-> specific header files from ARM platforms and that are
-> not easily scriptable. The changes have been found through
-> manual inspection and should cause no visible changes
-> because of the build script that maps the old names to the
-> new ones.
+On Wednesday, August 22, 2012 09:08:00 PM Linus Walleij wrote:
+> On Sat, Aug 18, 2012 at 12:17 AM, Christopher Heiny
+> <cheiny@synaptics.com> wrote:
+> 
+> > +/* Helper fn to convert a byte array representing a short in the RMI
+> > + * endian-ness to a short in the native processor's specific endianness.
 
-And you end up missing a bunch of drivers in the process, such as the
-sa1100 RTC driver which is shared between sa11x0 and PXA.  I wonder
-how many of the Samsung platforms get broken by this as well...
+Is RMI-endiannes different from BE and LE (joking)? Please simply state what 
+on-wire endianness is and use xx_to_cpu() or cpu_to_xx() as needed. I think I 
+mentioned it about a year ago already...
 
-In any case, what we _should_ be doing here as well is moving the headers
-included by drivers for platform data out of the arch/arm/mach/ subtrees
-and into include/linux/platform_data.  That will substantially reduce the
-amount of mach/ headers to deal with.
+Thanks.
 
-Where I want this to get to is not a persistence of the existing crappy
-situation where platforms stuff platform data definitions into arch/arm,
-but instead put them in the right place.  That means providing them with
-a good reason why the existing solution won't work, and not allowing
-mach/ includes in drivers is a very good way to achieve that.
+-- 
+Dmitry
