@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199Ab2HVEDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 00:03:54 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5652 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab2HVEDx (ORCPT
+	id S1751291Ab2HVEFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:05:55 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:48440 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab2HVEFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 00:03:53 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6811"; a="225707544"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC/PATCH] ARM: smp: Fix cpu_up() racing with sys_reboot
-Date: Tue, 21 Aug 2012 21:03:49 -0700
-Message-Id: <1345608229-5707-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.12
+	Wed, 22 Aug 2012 00:05:53 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: linux-mmc@vger.kernel.org
+Cc: Olof Johansson <olof@lixom.net>, Alim Akhtar <alim.akhtar@samsung.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH 1/2] mmc: core: Add a capability for disabling mmc cards
+Date: Tue, 21 Aug 2012 21:05:17 -0700
+Message-Id: <1345608318-15347-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing stops a process from hotplugging in a CPU concurrently
-with a sys_reboot() call. In such a situation we could have
-ipi_cpu_stop() mark a cpu as 'offline' and _cpu_up() ignore the
-fact that the CPU is not really offline and call the
-CPU_UP_PREPARE notifier. When this happens stop_machine code will
-complain that the cpu thread already exists and BUG_ON().
+On some systems we need a way to disable MMC card support in a MMC/SD
+card slot.  Add support in the core SD/MMC code to support this.
 
-CPU0                      CPU1
-
-sys_reboot()
- kernel_restart()
-  machine_restart()
-   machine_shutdown()
-    smp_send_stop()
-    ...                   ipi_cpu_stop()
-                           set_cpu_online(1, false)
-                            local_irq_disable()
-                             while(1)
-    <PREEMPT>
-cpu_up()
- _cpu_up()
-   if (!cpu_online(1))
-    __cpu_notify(CPU_UP_PREPARE...)
-
-cpu_stop_cpu_callback()
-  BUG_ON(stopper->thread)
-
-This is easily reproducible by hotplugging in and out in a tight
-loop while also rebooting.
-
-Since the CPU is not really offline and hasn't gone through the
-proper steps to be marked as such, let's mark the CPU as inactive.
-This is just as easily testable as online and avoids any possibility
-of _cpu_up() trying to bring the CPU back online when it never was
-offline to begin with.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
 ---
+ drivers/mmc/core/core.c  |    2 +-
+ include/linux/mmc/host.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-Perhaps we can take the hotplug lock in the sys_reboot() case but I
-don't think that actually fixes everything. For example, in cases
-where machine_shutdown() is called from emergency_restart() we would
-have to take the hotplug lock which doesn't really seem feasible.
-
- arch/arm/kernel/smp.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index ebd8ad2..836b771 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -478,7 +478,7 @@ static void ipi_cpu_stop(unsigned int cpu)
- 		raw_spin_unlock(&stop_lock);
- 	}
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 8ac5246..3214972 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1981,7 +1981,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
+ 		return 0;
+ 	if (!mmc_attach_sd(host))
+ 		return 0;
+-	if (!mmc_attach_mmc(host))
++	if (!(host->caps2 & MMC_CAP2_NO_MMC) && !mmc_attach_mmc(host))
+ 		return 0;
  
--	set_cpu_online(cpu, false);
-+	set_cpu_active(cpu, false);
+ 	mmc_power_off(host);
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index f578a71..f36370e 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -257,6 +257,7 @@ struct mmc_host {
+ #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
+ #define MMC_CAP2_CD_ACTIVE_HIGH	(1 << 10)	/* Card-detect signal active high */
+ #define MMC_CAP2_RO_ACTIVE_HIGH	(1 << 11)	/* Write-protect signal active high */
++#define MMC_CAP2_NO_MMC		(1 << 12)	/* Only SD supported, not MMC */
  
- 	local_fiq_disable();
- 	local_irq_disable();
-@@ -568,10 +568,10 @@ void smp_send_stop(void)
- 
- 	/* Wait up to one second for other CPUs to stop */
- 	timeout = USEC_PER_SEC;
--	while (num_online_cpus() > 1 && timeout--)
-+	while (num_active_cpus() > 1 && timeout--)
- 		udelay(1);
- 
--	if (num_online_cpus() > 1)
-+	if (num_active_cpus() > 1)
- 		pr_warning("SMP: failed to stop secondary CPUs\n");
- 
- 	smp_kill_cpus(&mask);
+ 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+ 	unsigned int        power_notify_type;
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.7.3
 
