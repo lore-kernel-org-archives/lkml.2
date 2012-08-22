@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2HVGGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 02:06:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55277 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab2HVGFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 02:05:39 -0400
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <spi-devel-general@lists.sourceforge.net>
-CC: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCHv2 3/3] spi: omap2-mcspi: At remove dont use the runtime_autosuspend calls
-Date: Wed, 22 Aug 2012 11:35:14 +0530
-Message-ID: <1345615515-26745-4-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1345615515-26745-1-git-send-email-shubhrajyoti@ti.com>
-References: <1345615515-26745-1-git-send-email-shubhrajyoti@ti.com>
+	id S1757242Ab2HVGKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 02:10:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:22527 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752646Ab2HVGKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 02:10:19 -0400
+X-IronPort-AV: E=Sophos;i="4.77,808,1336320000"; 
+   d="scan'208";a="5691300"
+Message-ID: <50347906.4030101@cn.fujitsu.com>
+Date: Wed, 22 Aug 2012 14:15:34 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: qiuxishi <qiuxishi@gmail.com>
+CC: akpm@linux-foundation.org, liuj97@gmail.com, paul.gortmaker@windriver.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bessel.wang@huawei.com, wujianguo@huawei.com, qiuxishi@huawei.com,
+        jiang.liu@huawei.com, guohanjun@huawei.com, chenkeping@huawei.com,
+        yinghai@kernel.org
+Subject: Re: [PATCH] memory-hotplug: add build zonelists when offline pages
+References: <5033843E.8000902@gmail.com>
+In-Reply-To: <5033843E.8000902@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/22 14:10:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/22 14:10:17,
+	Serialize complete at 2012/08/22 14:10:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At remove we shouldnt be using the autosuspend timeout as we are
-calling pm_runtime_disable immediately after.
+At 08/21/2012 08:51 PM, qiuxishi Wrote:
+> From: Xishi Qiu <qiuxishi@huawei.com>
+> 
+> online_pages() does build_all_zonelists() and zone_pcp_update(),
+> I think offline_pages() should do it too. The node has no memory
+> to allocate, so remove this node's zones form other nodes' zonelists.
+> 
+> 
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  mm/memory_hotplug.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index bc7e7a2..5172bd4 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -979,7 +979,11 @@ repeat:
+>  	if (!node_present_pages(node)) {
+>  		node_clear_state(node, N_HIGH_MEMORY);
+>  		kswapd_stop(node);
+> -	}
+> +		mutex_lock(&zonelists_mutex);
+> +		build_all_zonelists(NODE_DATA(node), NULL);
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/spi/spi-omap2-mcspi.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+The node is still onlined now, so there is no need to pass
+this node's pgdat to build_all_zonelists().
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 8a5e2c0..1c1dd34 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -1244,8 +1244,7 @@ static int __devexit omap2_mcspi_remove(struct platform_device *pdev)
- 	mcspi = spi_master_get_devdata(master);
- 	dma_channels = mcspi->dma_channels;
- 
--	pm_runtime_mark_last_busy(mcspi->dev);
--	pm_runtime_put_autosuspend(mcspi->dev);
-+	pm_runtime_put_sync(mcspi->dev);
- 	pm_runtime_disable(&pdev->dev);
- 
- 	spi_unregister_master(master);
--- 
-1.7.5.4
+I think we should build all zonelists when the zone has no
+pages.
+
+> +		mutex_unlock(&zonelists_mutex);
+> +	} else
+> +		zone_pcp_update(zone);
+
+There is more than one zone in a node. So the zone can have
+no pages when the node has some pages.
+
+And we have called drain_all_pages(), I think there is no need
+to call zone_pcp_update() here.
+
+Thanks
+Wen Congyang
+
+> 
+>  	vm_total_pages = nr_free_pagecache_pages();
+>  	writeback_set_ratelimit();
 
