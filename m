@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab2HVIUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:20:21 -0400
-Received: from shutemov.name ([176.9.204.213]:58939 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab2HVIUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:20:17 -0400
-Date: Wed, 22 Aug 2012 11:20:15 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 4/4] tools lib traceevent: Fix strerror_r() use in
- pevent_strerror
-Message-ID: <20120822082015.GA6250@shutemov.name>
-References: <1345618831-9148-1-git-send-email-namhyung@kernel.org>
- <1345618831-9148-5-git-send-email-namhyung@kernel.org>
+	id S1753778Ab2HVIWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:22:18 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56607 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab2HVIWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:22:12 -0400
+Date: Wed, 22 Aug 2012 13:52:05 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: ppcdev <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, peterz@infradead.org,
+        oleg@redhat.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, michael@ellerman.id.au
+Subject: [PATCH 1/2] powerpc: Add trap_nr to thread_struct
+Message-ID: <20120822082205.GA29216@in.ibm.com>
+Reply-To: ananth@in.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345618831-9148-5-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082208-1780-0000-0000-0000089F2D4F
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000293; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00167458; UDB=6.00037934; UTC=2012-08-22
+ 08:22:10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 04:00:31PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> glibc-2.16 starts to mark the function with attribute
-> warn_unused_result so that it can cause a build warning.
-> 
-> Since GNU version of strerror_r() can return a pointer to a string
-> without setting @buf, check the return value and copy/truncate it to
-> our buffer if needed.
-> 
-> Cc: Fredereic Weisbecker <fweisbec@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Add thread_struct.trap_nr and use it to store the last exception
+the thread experienced. In this patch, we populate the field at
+various places where we force_sig_info() to the process.
 
-> ---
->  tools/lib/traceevent/event-parse.c | 7 ++++++-
->  tools/lib/traceevent/event-utils.h | 6 ++++++
->  2 files changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-> index 1373e4cf109e..f978c59f67bf 100644
-> --- a/tools/lib/traceevent/event-parse.c
-> +++ b/tools/lib/traceevent/event-parse.c
-> @@ -4809,7 +4809,12 @@ int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
->  	const char *msg;
->  
->  	if (errnum >= 0) {
-> -		strerror_r(errnum, buf, buflen);
-> +		msg = strerror_r(errnum, buf, buflen);
-> +		if (msg != buf) {
-> +			size_t len = strlen(msg);
-> +			char *c = mempcpy(buf, msg, min(buflen-1, len));
-> +			*c = '\0';
-> +		}
->  		return 0;
->  	}
->  
-> diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
-> index 08296383d1e6..bc075006966e 100644
-> --- a/tools/lib/traceevent/event-utils.h
-> +++ b/tools/lib/traceevent/event-utils.h
-> @@ -39,6 +39,12 @@ void __vdie(const char *fmt, ...);
->  void __vwarning(const char *fmt, ...);
->  void __vpr_stat(const char *fmt, ...);
->  
-> +#define min(x, y) ({				\
-> +	typeof(x) _min1 = (x);			\
-> +	typeof(y) _min2 = (y);			\
-> +	(void) (&_min1 == &_min2);		\
-> +	_min1 < _min2 ? _min1 : _min2; })
-> +
->  static inline char *strim(char *string)
->  {
->  	char *ret;
-> -- 
-> 1.7.11.4
-> 
+This is also used in uprobes to determine if the probed instruction
+caused an exception.
 
--- 
- Kirill A. Shutemov
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
+ arch/powerpc/include/asm/processor.h |    1 +
+ arch/powerpc/kernel/process.c        |    2 ++
+ arch/powerpc/kernel/traps.c          |    1 +
+ arch/powerpc/mm/fault.c              |    1 +
+ 4 files changed, 5 insertions(+)
+
+Index: linux-26jul/arch/powerpc/include/asm/processor.h
+===================================================================
+--- linux-26jul.orig/arch/powerpc/include/asm/processor.h
++++ linux-26jul/arch/powerpc/include/asm/processor.h
+@@ -219,6 +219,7 @@ struct thread_struct {
+ #endif /* CONFIG_HAVE_HW_BREAKPOINT */
+ #endif
+ 	unsigned long	dabr;		/* Data address breakpoint register */
++	unsigned long	trap_nr;	/* last trap # on this thread */
+ #ifdef CONFIG_ALTIVEC
+ 	/* Complete AltiVec register set */
+ 	vector128	vr[32] __attribute__((aligned(16)));
+Index: linux-26jul/arch/powerpc/kernel/process.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/process.c
++++ linux-26jul/arch/powerpc/kernel/process.c
+@@ -258,6 +258,7 @@ void do_send_trap(struct pt_regs *regs, 
+ {
+ 	siginfo_t info;
+ 
++	current->thread.trap_nr = signal_code;
+ 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
+ 			11, SIGSEGV) == NOTIFY_STOP)
+ 		return;
+@@ -275,6 +276,7 @@ void do_dabr(struct pt_regs *regs, unsig
+ {
+ 	siginfo_t info;
+ 
++	current->thread.trap_nr = TRAP_HWBKPT;
+ 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
+ 			11, SIGSEGV) == NOTIFY_STOP)
+ 		return;
+Index: linux-26jul/arch/powerpc/kernel/traps.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/traps.c
++++ linux-26jul/arch/powerpc/kernel/traps.c
+@@ -251,6 +251,7 @@ void _exception(int signr, struct pt_reg
+ 	if (arch_irqs_disabled() && !arch_irq_disabled_regs(regs))
+ 		local_irq_enable();
+ 
++	current->thread.trap_nr = code;
+ 	memset(&info, 0, sizeof(info));
+ 	info.si_signo = signr;
+ 	info.si_code = code;
+Index: linux-26jul/arch/powerpc/mm/fault.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/mm/fault.c
++++ linux-26jul/arch/powerpc/mm/fault.c
+@@ -133,6 +133,7 @@ static int do_sigbus(struct pt_regs *reg
+ 	up_read(&current->mm->mmap_sem);
+ 
+ 	if (user_mode(regs)) {
++		current->thread.trap_nr = BUS_ADRERR;
+ 		info.si_signo = SIGBUS;
+ 		info.si_errno = 0;
+ 		info.si_code = BUS_ADRERR;
+
