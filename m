@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab2HVMfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 08:35:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58096 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756422Ab2HVMfI (ORCPT
+	id S932419Ab2HVMfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 08:35:17 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:33017 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932387Ab2HVMfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 08:35:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [RESEND PATCH v4 0/2] omap: add ocp2scp as a bus driver
-Date: Wed, 22 Aug 2012 12:34:30 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: akpm@linux-foundation.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, b-cousson@ti.com, rnayak@ti.com,
-        tony@atomide.com, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, balbi@ti.com,
-        rob@landley.net, linux@arm.linux.org.uk, ohad@wizery.com,
-        linus.walleij@linaro.org, myungjoo.ham@samsung.com,
-        rusty@rustcorp.com.au, swarren@nvidia.com
-References: <1345624803-16379-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1345624803-16379-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208221234.31193.arnd@arndb.de>
-X-Provags-ID: V02:K0:YkG4bNHU+5g2+IhoIFymyY6WhmN84soomg0wmQvbtox
- 8X0huRDumpkMW3qW/+cZEAUrIGiLW52DypxdKq2tdYAR0JiG9R
- KgikSYspcHt82YwiAjKCVxbBPbo/Ru/EQ6gOqruh8u60FVnNSA
- zJMOj4qml+xH6tZMS5PaxaLPfb4d65GV0IhTjxyFYvwQgdqmNa
- 30czRw6h31NJXpu/6z+b4P6orTYPxiBBHR4bJn6gFotRugKRQb
- O93HQ+pfqSS5PQLvYoBbOK6n+9KEqJ+2FkWZkSfnvoMft/313j
- K01mFF4n8hup3Vfgrqx7zlMLtzNuNbUH0Y8/tyy1iu6H/HKghY
- BBMiesXEVaPCAuYrqTm0=
+	Wed, 22 Aug 2012 08:35:13 -0400
+Date: Wed, 22 Aug 2012 14:35:07 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
+        JBeulich@suse.com, akpm@linux-foundation.org
+Subject: Re: RFC: Link Time Optimization support for the kernel
+Message-ID: <20120822123507.GO16230@one.firstfloor.org>
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <201208220858.03227.arnd@arndb.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208220858.03227.arnd@arndb.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 August 2012, Kishon Vijay Abraham I wrote:
-> This patch series has been lying here for long. If no one has any
-> comments on this patch series, can someone pick it up?
+On Wed, Aug 22, 2012 at 08:58:02AM +0000, Arnd Bergmann wrote:
+> * Debuggability: When we get more aggressive optimizations, it
+> often becomes harder to trace back object code to a specific source
+> line, which may be a reason for distros not to enable it for their
+> product kernels in the end because it can make the work of their
+> support teams harder.
 
-I've added them now as a drivers/ocp2scp branch arm-soc and pulled
-them into the next/drivers topic branch.
+Yes, that's a potential issue with the larger functions. People looking
+at oopses may need to rely more on addr2line with debug info. It's probably 
+less an issue for distributions (who should have debug info for their kernels
+and may even use crash instead of only oops logs), but more for random reports 
+on linux-kernel.
 
-	Arnd
+That said for the few LTO crashes I looked at it wasn't that big an issue.
+Usually the inline chains are still broken up by indirect calls, and 
+a lot of kernel paths have that, so all the backtraces I could make
+sense of without debug info.
+
+> * Stack consumption: If you do more inlining, the total stack usage
+> of large functions can become higher than what the deepest path through
+> the same code in the non-inlined version would be. This bites us
+> more in the kernel than in user applications, which have much more
+> stack space available.
+
+Newer gcc has a heuristic to not inline when the stack frame gets too
+large. We set that option. Also there's a warning for too large
+stack frames. With these two together we should be pretty safe.
+
+iirc the warning mostly showed up in some staging drivers which were likely
+already too large on their own. I haven't hunted for it explicitely,
+but I don't remember seeing it much in other places. Also it was alwas
+still in a range that does not necessarily crash.
+
+> Have you noticed problems with either of these so far? Do you think
+> they are realistic concerns or is the LTO implementation good enough
+> that they would rarely become an issue?
+
+I think the first is a realistic possible concern, but I personally haven't
+had much trouble with it so far.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
