@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818Ab2HVPCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:02:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53428 "EHLO mx1.redhat.com"
+	id S932806Ab2HVPCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:02:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab2HVPBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757416Ab2HVPBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Aug 2012 11:01:31 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -26,52 +26,77 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 23/36] autonuma: retain page last_nid information in khugepaged
-Date: Wed, 22 Aug 2012 16:59:07 +0200
-Message-Id: <1345647560-30387-24-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 27/36] autonuma: add CONFIG_AUTONUMA and CONFIG_AUTONUMA_DEFAULT_ENABLED
+Date: Wed, 22 Aug 2012 16:59:11 +0200
+Message-Id: <1345647560-30387-28-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When pages are collapsed try to keep the last_nid information from one
-of the original pages.
+Add the config options to allow building the kernel with AutoNUMA.
+
+If CONFIG_AUTONUMA_DEFAULT_ENABLED is "=y", then
+/sys/kernel/mm/autonuma/enabled will be equal to 1, and AutoNUMA will
+be enabled automatically at boot.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/huge_memory.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ arch/Kconfig     |    3 +++
+ arch/x86/Kconfig |    1 +
+ mm/Kconfig       |   17 +++++++++++++++++
+ 3 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index a65590f..0d2a12f 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1829,6 +1829,9 @@ static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
- {
- 	pte_t *_pte;
- 	bool mknuma = false;
-+#ifdef CONFIG_AUTONUMA
-+	int autonuma_last_nid = -1;
-+#endif
- 	for (_pte = pte; _pte < pte+HPAGE_PMD_NR; _pte++) {
- 		pte_t pteval = *_pte;
- 		struct page *src_page;
-@@ -1838,6 +1841,17 @@ static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
- 			add_mm_counter(vma->vm_mm, MM_ANONPAGES, 1);
- 		} else {
- 			src_page = pte_page(pteval);
-+#ifdef CONFIG_AUTONUMA
-+			/* pick the first one, better than nothing */
-+			if (autonuma_last_nid < 0) {
-+				autonuma_last_nid =
-+					ACCESS_ONCE(src_page->
-+						    autonuma_last_nid);
-+				if (autonuma_last_nid >= 0)
-+					ACCESS_ONCE(page->autonuma_last_nid) =
-+						autonuma_last_nid;
-+			}
-+#endif
- 			copy_user_highpage(page, src_page, address, vma);
- 			VM_BUG_ON(page_mapcount(src_page) != 1);
- 			VM_BUG_ON(page_count(src_page) != 0);
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 72f2fa1..ee3ed89 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -281,4 +281,7 @@ config SECCOMP_FILTER
+ 
+ 	  See Documentation/prctl/seccomp_filter.txt for details.
+ 
++config HAVE_ARCH_AUTONUMA
++	bool
++
+ source "kernel/gcov/Kconfig"
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 8ec3a1a..4cbdfce 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -97,6 +97,7 @@ config X86
+ 	select KTIME_SCALAR if X86_32
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
++	select HAVE_ARCH_AUTONUMA
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
+diff --git a/mm/Kconfig b/mm/Kconfig
+index d5c8019..f00a0cd 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -211,6 +211,23 @@ config MIGRATION
+ 	  pages as migration can relocate pages to satisfy a huge page
+ 	  allocation instead of reclaiming.
+ 
++config AUTONUMA
++	bool "AutoNUMA"
++	select MIGRATION
++	depends on NUMA && HAVE_ARCH_AUTONUMA
++	help
++	  Automatic NUMA CPU scheduling and memory migration.
++
++	  Avoids the administrator to manually setup hard NUMA
++	  bindings in order to achieve optimal performance on NUMA
++	  hardware.
++
++config AUTONUMA_DEFAULT_ENABLED
++	bool "Auto NUMA default enabled"
++	depends on AUTONUMA
++	help
++	  Automatic NUMA CPU scheduling and memory migration enabled at boot.
++
+ config PHYS_ADDR_T_64BIT
+ 	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
+ 
