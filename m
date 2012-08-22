@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab2HVNNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 09:13:05 -0400
-Received: from fieldses.org ([174.143.236.118]:36106 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932507Ab2HVNNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 09:13:01 -0400
-Date: Wed, 22 Aug 2012 09:12:25 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 13/17] lockd: use new hashtable implementation
-Message-ID: <20120822131225.GD20158@fieldses.org>
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
- <1345602432-27673-14-git-send-email-levinsasha928@gmail.com>
- <20120822114752.GC20158@fieldses.org>
- <5034CD02.2010103@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5034CD02.2010103@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757340Ab2HVNOK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 09:14:10 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56871 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab2HVNOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 09:14:06 -0400
+Date: Wed, 22 Aug 2012 14:18:46 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 0/2] console_lock debug improvements
+Message-ID: <20120822141846.3b142c12@pyramind.ukuu.org.uk>
+In-Reply-To: <1345588472-4055-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1345588472-4055-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 02:13:54PM +0200, Sasha Levin wrote:
-> On 08/22/2012 01:47 PM, J. Bruce Fields wrote:
-> > On Wed, Aug 22, 2012 at 04:27:08AM +0200, Sasha Levin wrote:
-> >> +static int __init nlm_init(void)
-> >> +{
-> >> +	hash_init(nlm_files);
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +module_init(nlm_init);
-> > 
-> > That's giving me:
-> > 
-> > fs/lockd/svcsubs.o: In function `nlm_init':
-> > /home/bfields/linux-2.6/fs/lockd/svcsubs.c:454: multiple definition of `init_module'
-> > fs/lockd/svc.o:/home/bfields/linux-2.6/fs/lockd/svc.c:606: first defined here
-> > make[2]: *** [fs/lockd/lockd.o] Error 1
-> > make[1]: *** [fs/lockd] Error 2
-> > make[1]: *** Waiting for unfinished jobs....
+On Wed, 22 Aug 2012 00:34:30 +0200
+Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+
+> Hi all,
 > 
-> I tested this entire patch set both with linux-next and Linus' latest master,
-> and it worked fine in both places.
+> After Dave Airlie blew through a few days to track down a deadlock at boot-up
+> when handing over from the firmware fb to the kms/drm framebuffer driver (1), I've
+> figured that lockdep /should/ have caught this.
 > 
-> Is it possible that lockd has a -next tree which isn't pulled into linux-next?
-> (there's nothing listed in MAINTAINERS that I could see).
+> And indeed, by adding proper annotations to the console_lock it complains about
+> the potential deadlock when exercising the entire driver life-cycle of just one
+> fb driver (i.e. not even a handover required). While at it, I've replaced the
+> existing in_interrupt check with the more paranoid might_sleep.
+> 
+> Comments, flames and review highly welcome.
 
-No, there's the same problem with Linus's latest.
+This will be an absolute godsend for DRI debugging. Definitely wants to go
+in.
 
-I'm applying just patches 1 and 13--but doesn't look like your earlier
-patches touch lockd.
-
-Are you actually building lockd?  (CONFIG_LOCKD).
-
---b.
+Alan
