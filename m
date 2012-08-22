@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174Ab2HVQYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:24:08 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36983 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757918Ab2HVQYE (ORCPT
+	id S933073Ab2HVQYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:24:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48199 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933045Ab2HVQYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:24:04 -0400
+	Wed, 22 Aug 2012 12:24:10 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "3.2.x.." <stable@kernel.org>
-Subject: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
-Date: Wed, 22 Aug 2012 18:23:39 +0200
-Message-Id: <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        "3.2.x.." <stable@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 04/10] h8300: Add missing RCU idle APIs on idle loop
+Date: Wed, 22 Aug 2012 18:23:42 +0200
+Message-Id: <1345652628-15060-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
 References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
@@ -40,50 +38,40 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the Alpha's idle loop.
+Add this missing pair of calls in the h8300's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: alpha <linux-alpha@vger.kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
 Cc: 3.2.x.. <stable@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/alpha/kernel/process.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ arch/h8300/kernel/process.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
-index 153d3fc..2ebf7b5 100644
---- a/arch/alpha/kernel/process.c
-+++ b/arch/alpha/kernel/process.c
-@@ -28,6 +28,7 @@
- #include <linux/tty.h>
- #include <linux/console.h>
+diff --git a/arch/h8300/kernel/process.c b/arch/h8300/kernel/process.c
+index 0e9c315..f153ed1 100644
+--- a/arch/h8300/kernel/process.c
++++ b/arch/h8300/kernel/process.c
+@@ -36,6 +36,7 @@
+ #include <linux/reboot.h>
+ #include <linux/fs.h>
  #include <linux/slab.h>
 +#include <linux/rcupdate.h>
  
- #include <asm/reg.h>
  #include <asm/uaccess.h>
-@@ -50,13 +51,16 @@ cpu_idle(void)
+ #include <asm/traps.h>
+@@ -78,8 +79,10 @@ void (*idle)(void) = default_idle;
+ void cpu_idle(void)
  {
- 	set_thread_flag(TIF_POLLING_NRFLAG);
- 
-+	preempt_disable();
  	while (1) {
- 		/* FIXME -- EV6 and LCA45 know how to power down
- 		   the CPU.  */
- 
 +		rcu_idle_enter();
  		while (!need_resched())
- 			cpu_relax();
--		schedule();
+ 			idle();
 +		rcu_idle_exit();
-+		schedule_preempt_disabled();
+ 		schedule_preempt_disabled();
  	}
  }
- 
 -- 
 1.7.5.4
 
