@@ -1,57 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab2HVPQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:16:39 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52772 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757334Ab2HVPQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:16:36 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Wed, 22 Aug 2012 10:16:30 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-media@vger.kernel.org
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] media/radio/shark2: Fix build error caused by missing dependencies
-Date: Wed, 22 Aug 2012 08:16:25 -0700
-Message-Id: <1345648585-5176-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	id S932907Ab2HVPSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:18:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12476 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757362Ab2HVPSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:18:00 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] HWPOISON: report sticky EIO for poisoned file
+Date: Wed, 22 Aug 2012 11:17:34 -0400
+Message-Id: <1345648655-4497-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix build error:
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-ERROR: "led_classdev_register" [drivers/media/radio/shark2.ko] undefined!
-ERROR: "led_classdev_unregister" [drivers/media/radio/shark2.ko] undefined!
+This makes the EIO reports on write(), fsync(), or the NFS close()
+sticky enough. The only way to get rid of it may be
 
-which is seen if RADIO_SHARK2 is enabled, but LEDS_CLASS is not.
+	echo 3 > /proc/sys/vm/drop_caches
 
-Since RADIO_SHARK2 depends on NEW_LEDS and LEDS_CLASS, select both if
-it is enabled.
+Note that the impacted process will only be killed if it mapped the page.
+XXX
+via read()/write()/fsync() instead of memory mapped reads/writes, simply
+because it's very hard to find them.
 
-Cc: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- drivers/media/radio/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/pagemap.h | 13 +++++++++++++
+ mm/filemap.c            | 11 +++++++++++
+ mm/memory-failure.c     |  2 +-
+ 3 files changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
-index 8090b87..bee4bee 100644
---- a/drivers/media/radio/Kconfig
-+++ b/drivers/media/radio/Kconfig
-@@ -77,6 +77,8 @@ config RADIO_SHARK
- config RADIO_SHARK2
- 	tristate "Griffin radioSHARK2 USB radio receiver"
- 	depends on USB
-+	select NEW_LEDS
-+	select LEDS_CLASS
- 	---help---
- 	  Choose Y here if you have this radio receiver.
+diff --git v3.6-rc1.orig/include/linux/pagemap.h v3.6-rc1/include/linux/pagemap.h
+index e42c762..4d8d821 100644
+--- v3.6-rc1.orig/include/linux/pagemap.h
++++ v3.6-rc1/include/linux/pagemap.h
+@@ -24,6 +24,7 @@ enum mapping_flags {
+ 	AS_ENOSPC	= __GFP_BITS_SHIFT + 1,	/* ENOSPC on async write */
+ 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
+ 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
++	AS_HWPOISON	= __GFP_BITS_SHIFT + 4,	/* hardware memory corruption */
+ };
  
+ static inline void mapping_set_error(struct address_space *mapping, int error)
+@@ -53,6 +54,18 @@ static inline int mapping_unevictable(struct address_space *mapping)
+ 	return !!mapping;
+ }
+ 
++#ifdef CONFIG_MEMORY_FAILURE
++static inline int mapping_hwpoison(struct address_space *mapping)
++{
++	return test_bit(AS_HWPOISON, &mapping->flags);
++}
++#else
++static inline int mapping_hwpoison(struct address_space *mapping)
++{
++	return 0;
++}
++#endif
++
+ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+ {
+ 	return (__force gfp_t)mapping->flags & __GFP_BITS_MASK;
+diff --git v3.6-rc1.orig/mm/filemap.c v3.6-rc1/mm/filemap.c
+index fa5ca30..8bdaf57 100644
+--- v3.6-rc1.orig/mm/filemap.c
++++ v3.6-rc1/mm/filemap.c
+@@ -297,6 +297,8 @@ int filemap_fdatawait_range(struct address_space *mapping, loff_t start_byte,
+ 		ret = -ENOSPC;
+ 	if (test_and_clear_bit(AS_EIO, &mapping->flags))
+ 		ret = -EIO;
++	if (mapping_hwpoison(mapping))
++		ret = -EIO;
+ 
+ 	return ret;
+ }
+@@ -447,6 +449,15 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 	VM_BUG_ON(!PageLocked(page));
+ 	VM_BUG_ON(PageSwapBacked(page));
+ 
++	/*
++	 * Hardware corrupted page will be removed from mapping,
++	 * so we want to deny (possibly) reloading the old data.
++	 */
++	if (unlikely(mapping_hwpoison(mapping))) {
++		error = -EIO;
++		goto out;
++	}
++
+ 	error = mem_cgroup_cache_charge(page, current->mm,
+ 					gfp_mask & GFP_RECLAIM_MASK);
+ 	if (error)
+diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
+index 79dfb2f..a1e7e00 100644
+--- v3.6-rc1.orig/mm/memory-failure.c
++++ v3.6-rc1/mm/memory-failure.c
+@@ -652,7 +652,7 @@ static int me_pagecache_dirty(struct page *p, unsigned long pfn)
+ 		 * the first EIO, but we're not worse than other parts
+ 		 * of the kernel.
+ 		 */
+-		mapping_set_error(mapping, EIO);
++		set_bit(AS_HWPOISON, &mapping->flags);
+ 	}
+ 
+ 	return me_pagecache_clean(p, pfn);
 -- 
-1.7.9.7
+1.7.11.4
 
