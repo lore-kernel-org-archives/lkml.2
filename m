@@ -1,42 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab2HVPDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:03:00 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:33354 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932780Ab2HVPCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:02:47 -0400
-X-IronPort-AV: E=Sophos;i="4.77,808,1336348800"; 
-   d="scan'208";a="14129486"
-Date: Wed, 22 Aug 2012 16:01:56 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen/events: fix unmask_evtchn for PV on HVM
- guests
-In-Reply-To: <20120822140315.GC30964@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1208221601080.15568@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1206221722040.27860@kaball.uk.xensource.com> <20120709141915.GB9580@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131821250.23783@kaball.uk.xensource.com> <20120716151441.GD552@phenom.dumpdata.com> <alpine.DEB.2.02.1207181851010.23783@kaball.uk.xensource.com> <alpine.DEB.2.02.1208221217290.15568@kaball.uk.xensource.com>
- <20120822140315.GC30964@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S932775Ab2HVPB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:01:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46852 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757576Ab2HVPBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:01:14 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 07/36] autonuma: mm_autonuma and task_autonuma data structures
+Date: Wed, 22 Aug 2012 16:58:51 +0200
+Message-Id: <1345647560-30387-8-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> On Wed, Aug 22, 2012 at 12:20:09PM +0100, Stefano Stabellini wrote:
-> > Konrad,
-> > I cannot see this patch anywhere in your trees. Did I miss it?
-> > Or maybe it just fell through the cracks?
-> 
-> Fell through the cracks.. Was there a new version of this? Can you
-> send me a subset of the patches you want me to pick up?
+Define the two data structures that collect the per-process (in the
+mm) and per-thread (in the task_struct) statistical information that
+are the input of the CPU follow memory algorithms in the NUMA
+scheduler.
 
-OK, I'll send out a small patch series based on v3.6-rc2
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/autonuma_types.h |  107 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 107 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/autonuma_types.h
+
+diff --git a/include/linux/autonuma_types.h b/include/linux/autonuma_types.h
+new file mode 100644
+index 0000000..9673ce8
+--- /dev/null
++++ b/include/linux/autonuma_types.h
+@@ -0,0 +1,107 @@
++#ifndef _LINUX_AUTONUMA_TYPES_H
++#define _LINUX_AUTONUMA_TYPES_H
++
++#ifdef CONFIG_AUTONUMA
++
++#include <linux/numa.h>
++
++
++/*
++ * Per-mm (per-process) structure that contains the NUMA memory
++ * placement statistics generated by the knuma scan daemon. This
++ * structure is dynamically allocated only if AutoNUMA is possible on
++ * this system. They are linked togehter in a list headed within the
++ * knumad_scan structure.
++ */
++struct mm_autonuma {
++	/* link for knuma_scand's list of mm structures to scan */
++	struct list_head mm_node;
++	/* Pointer to associated mm structure */
++	struct mm_struct *mm;
++
++	/*
++	 * Zeroed from here during allocation, check
++	 * mm_autonuma_reset() if you alter the below.
++	 */
++
++	/*
++	 * Pass counter for this mm. This exist only to be able to
++	 * tell when it's time to apply the exponential backoff on the
++	 * task_autonuma statistics.
++	 */
++	unsigned long mm_numa_fault_pass;
++	/* Total number of pages that will trigger NUMA faults for this mm */
++	unsigned long mm_numa_fault_tot;
++	/* Number of pages that will trigger NUMA faults for each [nid] */
++	unsigned long mm_numa_fault[0];
++	/* do not add more variables here, the above array size is dynamic */
++};
++
++extern int alloc_mm_autonuma(struct mm_struct *mm);
++extern void free_mm_autonuma(struct mm_struct *mm);
++extern void __init mm_autonuma_init(void);
++
++/*
++ * Per-task (thread) structure that contains the NUMA memory placement
++ * statistics generated by the knuma scan daemon. This structure is
++ * dynamically allocated only if AutoNUMA is possible on this
++ * system. They are linked togehter in a list headed within the
++ * knumad_scan structure.
++ */
++struct task_autonuma {
++	/* node id the CPU scheduler should try to stick with (-1 if none) */
++	int task_selected_nid;
++
++	/*
++	 * Zeroed from here during allocation, check
++	 * mm_autonuma_reset() if you alter the below.
++	 */
++
++	/*
++	 * Pass counter for this task. When the pass counter is found
++	 * out of sync with the mm_numa_fault_pass we know it's time
++	 * to apply the exponential backoff on the task_autonuma
++	 * statistics, and then we synchronize it with
++	 * mm_numa_fault_pass. This pass counter is needed because in
++	 * knuma_scand we work on the mm and we've no visibility on
++	 * the task_autonuma. Furthermore it would be detrimental to
++	 * apply exponential backoff to all task_autonuma associated
++	 * to a certain mm_autonuma (potentially zeroing out the trail
++	 * of statistical data in task_autonuma) if the task is idle
++	 * for a long period of time (i.e. several knuma_scand passes).
++	 */
++	unsigned long task_numa_fault_pass;
++	/* Total number of eligible pages that triggered NUMA faults */
++	unsigned long task_numa_fault_tot;
++	/* Number of pages that triggered NUMA faults for each [nid] */
++	unsigned long task_numa_fault[0];
++	/* do not add more variables here, the above array size is dynamic */
++};
++
++extern int alloc_task_autonuma(struct task_struct *tsk,
++			       struct task_struct *orig,
++			       int node);
++extern void __init task_autonuma_init(void);
++extern void free_task_autonuma(struct task_struct *tsk);
++
++#else /* CONFIG_AUTONUMA */
++
++static inline int alloc_mm_autonuma(struct mm_struct *mm)
++{
++	return 0;
++}
++static inline void free_mm_autonuma(struct mm_struct *mm) {}
++static inline void mm_autonuma_init(void) {}
++
++static inline int alloc_task_autonuma(struct task_struct *tsk,
++				      struct task_struct *orig,
++				      int node)
++{
++	return 0;
++}
++static inline void task_autonuma_init(void) {}
++static inline void free_task_autonuma(struct task_struct *tsk) {}
++
++#endif /* CONFIG_AUTONUMA */
++
++#endif /* _LINUX_AUTONUMA_TYPES_H */
