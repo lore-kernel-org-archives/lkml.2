@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750989Ab2HVEAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 00:00:30 -0400
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:54565 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab2HVD76 (ORCPT
+	id S1751203Ab2HVEA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:00:58 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60408 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab2HVEAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 23:59:58 -0400
-Message-ID: <5034593F.8010806@hardwarefreak.com>
-Date: Tue, 21 Aug 2012 22:59:59 -0500
-From: Stan Hoeppner <stan@hardwarefreak.com>
-Reply-To: stan@hardwarefreak.com
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Wed, 22 Aug 2012 00:00:06 -0400
 MIME-Version: 1.0
-To: Miquel van Smoorenburg <mikevs@xs4all.net>
-CC: David Brown <david.brown@hesbynett.no>, Michael Tokarev <mjt@tls.msk.ru>,
-        Linux RAID <linux-raid@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: O_DIRECT to md raid 6 is slow
-References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com> <502D6B0A.6090508@xs4all.net> <502DF357.8090205@hardwarefreak.com> <502E2817.8040306@xs4all.net> <502F237D.6060806@hardwarefreak.com> <502F698C.9010507@msgid.tls.msk.ru> <50305AB9.5080302@hardwarefreak.com> <5030F1C6.90205@hesbynett.no> <50317804.9010701@hardwarefreak.com> <5033A06B.30508@xs4all.net>
-In-Reply-To: <5033A06B.30508@xs4all.net>
+In-Reply-To: <20120821101505.61c0221a@pyramind.ukuu.org.uk>
+References: <1345531207-24926-1-git-send-email-airlied@redhat.com>
+	<20120821101505.61c0221a@pyramind.ukuu.org.uk>
+Date: Wed, 22 Aug 2012 14:00:05 +1000
+Message-ID: <CAPM=9tzv=YKEfvmN+18huXGd7ZO-AGvcAsrD8m7NQh5twEfbhw@mail.gmail.com>
+Subject: Re: [PATCH] fbcon: fix race condition between console lock and cursor timer
+From: Dave Airlie <airlied@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Dave Airlie <airlied@redhat.com>, linux-fbdev@vger.kernel.org,
+        dri-devel@lists.sf.net, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Josh Boyer <jwboyer@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/21/2012 9:51 AM, Miquel van Smoorenburg wrote:
-> On 08/20/2012 01:34 AM, Stan Hoeppner wrote:
->> I'm glad you jumped in David.  You made a critical statement of fact
->> below which clears some things up.  If you had stated it early on,
->> before Miquel stole the thread and moved it to LKML proper, it would
->> have short circuited a lot of this discussion.  Which is:
-> 
-> I'm sorry about that, that's because of the software that I use to
-> follow most mailinglist. I didn't notice that the discussion was cc'ed
-> to both lkml and l-r. I should fix that.
+On Tue, Aug 21, 2012 at 7:15 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> So after much tracing with direct netconsole writes (printks
+>> under console_lock not so useful), I think I found the race.
+>
+> Direct netconsole write would be a useful patch to have mainline I think
+> 8)
 
-Oh, my bad.  I thought it was intentional.
+Well I used a one line wrapper around the netconsole write_msg, which
+just passed
+NULL as the first arg, then sprinkled netconsole_write_msg around the
+place, not having
+printf stuff could be an annoyance for some people, for this it didn't matter.
 
-Don't feel too bad about it.  When I tried to copy lkml back in on the
-one message I screwed up as well.  I though Tbird had filled in the full
-address but it didn't.
+Peter I wish I had a serial port to work with :-)
 
->> Thus my original statement was correct, or at least half correct[1], as
->> it pertained to md/RAID6.  Then Miquel switched the discussion to
->> md/RAID5 and stated I was all wet.  I wasn't, and neither was Dave
->> Chinner.  I was simply unaware of this md/RAID5 single block write RMW
->> shortcut
-> 
-> Well, all I tried to say is that a small write of, say, 4K, to a
-> raid5/raid6 array does not need to re-write the whole stripe (i.e.
-> chunksize * nr_disks) but just 4K * nr_disks, or the RMW variant of that.
+>
+> Not really the proper fix but its clear and is probably the best thing to
+> go in initially with a cc: stable. Can you at least stick a large
+>
+> + /* FIXME: we should sort out the unbind locking instead */
 
-And I'm glad you did.  Before that I didn't know about these efficiency
-shortcuts and exactly how md does writeback on partial stripe updates.
+Done, and cc stable, I'll send this to Linus via my tree as its fairly
+urgent from my pov.
 
-Even with these optimizations, a default 512KB chunk is too big, for the
-reasons I stated, the big one being the fact that you'll rarely fill a
-full stripe, meaning nearly every write will incur an RMW cycle.
-
--- 
-Stan
-
+Dave.
