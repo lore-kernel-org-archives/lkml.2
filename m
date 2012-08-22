@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754Ab2HVPI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:08:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11194 "EHLO mx1.redhat.com"
+	id S932792Ab2HVPIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:08:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8538 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932666Ab2HVPAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932664Ab2HVPAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Aug 2012 11:00:31 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -26,81 +26,143 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 16/36] autonuma: alloc/free/init mm_autonuma
-Date: Wed, 22 Aug 2012 16:59:00 +0200
-Message-Id: <1345647560-30387-17-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 36/36] autonuma: add mm_autonuma working set estimation
+Date: Wed, 22 Aug 2012 16:59:20 +0200
+Message-Id: <1345647560-30387-37-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where the mm_autonuma structure is being handled.
-
-mm_autonuma holds the link for knuma_scand's list of mm structures to
-scan and a pointer to the associated mm structure for knuma_scand's
-convenience.
-
-It also contains the per-mm NUMA statistics collected by knuma_scand
-daemon. The per-mm NUMA statistics are needed by
-sched_autonuma_balance to take appropriate NUMA balancing decision
-when balancing threads belonging to different processes.
-
-Just like task_autonuma, this is only allocated at runtime if the
-hardware the kernel is running on has been detected as NUMA. On not
-NUMA hardware the memory cost is reduced to one pointer per mm.
-
-To get rid of the pointer in the each mm, the kernel can be compiled
-with CONFIG_AUTONUMA=n.
+Working set estimation will only record memory that was recently used
+and in turn will be eligible for automatic migration. It will ignore
+memory that is never accessed by the process and that in turn will
+never attempted to be migrated. This can increase NUMA convergence if
+large areas of memory are never used.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/fork.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ include/linux/autonuma_flags.h |   25 ++++++++++++++++++++++---
+ mm/autonuma.c                  |   25 +++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 9ba6e9b..7367c32 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -532,6 +532,8 @@ static void mm_init_aio(struct mm_struct *mm)
- 
- static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- {
-+	if (unlikely(alloc_mm_autonuma(mm)))
-+		goto out_free_mm;
- 	atomic_set(&mm->mm_users, 1);
- 	atomic_set(&mm->mm_count, 1);
- 	init_rwsem(&mm->mmap_sem);
-@@ -554,6 +556,8 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- 		return mm;
- 	}
- 
-+	free_mm_autonuma(mm);
-+out_free_mm:
- 	free_mm(mm);
- 	return NULL;
- }
-@@ -603,6 +607,7 @@ void __mmdrop(struct mm_struct *mm)
- 	destroy_context(mm);
- 	mmu_notifier_mm_destroy(mm);
- 	check_mm(mm);
-+	free_mm_autonuma(mm);
- 	free_mm(mm);
- }
- EXPORT_SYMBOL_GPL(__mmdrop);
-@@ -885,6 +890,7 @@ fail_nocontext:
- 	 * If init_new_context() failed, we cannot use mmput() to free the mm
- 	 * because it calls destroy_context()
+diff --git a/include/linux/autonuma_flags.h b/include/linux/autonuma_flags.h
+index 28756ca..f72f2e2 100644
+--- a/include/linux/autonuma_flags.h
++++ b/include/linux/autonuma_flags.h
+@@ -62,9 +62,10 @@ enum autonuma_flag {
+ 	 * faults at the pmd level instead of the pte level. This
+ 	 * reduces the number of NUMA hinting faults potentially
+ 	 * saving CPU time. It reduces the accuracy of the
+-	 * task_autonuma statistics (but does not change the accuracy
+-	 * of the mm_autonuma statistics). This flag can be toggled
+-	 * through sysfs as runtime.
++	 * task_autonuma statistics (it doesn't change the accuracy of
++	 * the mm_autonuma statistics if the mm_working_set mode is
++	 * not set). This flag can be toggled through sysfs as
++	 * runtime.
+ 	 *
+ 	 * This flag does not affect AutoNUMA with transparent
+ 	 * hugepages (THP). With THP the NUMA hinting page faults
+@@ -99,6 +100,18 @@ enum autonuma_flag {
+ 	 * Default not set.
  	 */
-+	free_mm_autonuma(mm);
- 	mm_free_pgd(mm);
- 	free_mm(mm);
- 	return NULL;
-@@ -1707,6 +1713,7 @@ void __init proc_caches_init(void)
- 	mm_cachep = kmem_cache_create("mm_struct",
- 			sizeof(struct mm_struct), ARCH_MIN_MMSTRUCT_ALIGN,
- 			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_NOTRACK, NULL);
-+	mm_autonuma_init();
- 	vm_area_cachep = KMEM_CACHE(vm_area_struct, SLAB_PANIC);
- 	mmap_init();
- 	nsproxy_cache_init();
+ 	AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG,
++	/*
++	 * If set, mm_autonuma will represent a working set estimation
++	 * of the memory used by the process over the last knuma_scand
++	 * pass.
++	 *
++	 * If not set, mm_autonuma will represent all (not shared)
++	 * memory eligible for automatic migration mapped by the
++	 * process.
++	 *
++	 * Default set.
++	 */
++	AUTONUMA_MM_WORKING_SET_FLAG,
+ };
+ 
+ extern unsigned long autonuma_flags;
+@@ -146,4 +159,10 @@ static inline bool autonuma_migrate_allow_first_fault(void)
+ 			&autonuma_flags);
+ }
+ 
++static inline bool autonuma_mm_working_set(void)
++{
++	return test_bit(AUTONUMA_MM_WORKING_SET_FLAG,
++			&autonuma_flags);
++}
++
+ #endif /* _LINUX_AUTONUMA_FLAGS_H */
+diff --git a/mm/autonuma.c b/mm/autonuma.c
+index e7570df..71ce619 100644
+--- a/mm/autonuma.c
++++ b/mm/autonuma.c
+@@ -28,6 +28,7 @@ unsigned long autonuma_flags __read_mostly =
+ #ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
+ 	|(1<<AUTONUMA_SCAN_PMD_FLAG)
+ #endif
++	|(1<<AUTONUMA_MM_WORKING_SET_FLAG)
+ 	|(1<<AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG);
+ 
+ static DEFINE_MUTEX(knumad_mm_mutex);
+@@ -603,6 +604,12 @@ static int knuma_scand_pmd(struct mm_struct *mm,
+ 				unsigned long *fault_tmp;
+ 				ret = HPAGE_PMD_NR;
+ 
++				if (autonuma_mm_working_set() &&
++				    pmd_numa(*pmd)) {
++					spin_unlock(&mm->page_table_lock);
++					goto out;
++				}
++
+ 				page = pmd_page(*pmd);
+ 
+ 				/* only check non-shared pages */
+@@ -639,6 +646,9 @@ static int knuma_scand_pmd(struct mm_struct *mm,
+ 		unsigned long *fault_tmp;
+ 		if (!pte_present(pteval))
+ 			continue;
++		if (autonuma_mm_working_set() &&
++		    pte_numa(pteval))
++			continue;
+ 		page = vm_normal_page(vma, _address, pteval);
+ 		if (unlikely(!page))
+ 			continue;
+@@ -682,6 +692,17 @@ static void mm_numa_fault_tmp_flush(struct mm_struct *mm)
+ 	unsigned long tot;
+ 	unsigned long *fault_tmp = knuma_scand_data.mm_numa_fault_tmp;
+ 
++	if (autonuma_mm_working_set()) {
++		for_each_node(nid) {
++			tot = fault_tmp[nid];
++			if (tot)
++				break;
++		}
++		if (!tot)
++			/* process was idle, keep the old data */
++			return;
++	}
++
+ 	/* FIXME: would be better protected with write_seqlock_bh() */
+ 	local_bh_disable();
+ 
+@@ -1313,6 +1334,7 @@ SYSFS_ENTRY(load_balance_strict, AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG);
+ SYSFS_ENTRY(defer, AUTONUMA_MIGRATE_DEFER_FLAG);
+ SYSFS_ENTRY(reset, AUTONUMA_SCHED_RESET_FLAG);
+ SYSFS_ENTRY(allow_first_fault, AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG);
++SYSFS_ENTRY(mm_working_set, AUTONUMA_MM_WORKING_SET_FLAG);
+ #endif /* CONFIG_DEBUG_VM */
+ 
+ #undef SYSFS_ENTRY
+@@ -1408,6 +1430,9 @@ static struct attribute *knuma_scand_attr[] = {
+ #ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
+ 	&pmd_attr.attr,
+ #endif
++#ifdef CONFIG_DEBUG_VM
++	&mm_working_set_attr.attr,
++#endif
+ 	NULL,
+ };
+ static struct attribute_group knuma_scand_attr_group = {
