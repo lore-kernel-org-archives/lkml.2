@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab2HVPiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:38:51 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34620 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab2HVPit (ORCPT
+	id S1756663Ab2HVPkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:40:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59960 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752962Ab2HVPks convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:38:49 -0400
-Date: Wed, 22 Aug 2012 11:38:46 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jon Medhurst <tixy@yxit.co.uk>, Leif Lindholm <leif.lindholm@arm.com>
-Subject: Re: [PATCH 4/4] ARM: kprobes: make more tests conditional
-In-Reply-To: <201208221519.12056.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.02.1208221136180.1754@xanadu.home>
-References: <1345645780-2749-1-git-send-email-arnd@arndb.de> <1345645780-2749-5-git-send-email-arnd@arndb.de> <alpine.LFD.2.02.1208221040250.1754@xanadu.home> <201208221519.12056.arnd@arndb.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 22 Aug 2012 11:40:48 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Chinmay V S <cvs268@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
+ accelerometer
+Thread-Topic: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
+ accelerometer
+Thread-Index: AQHNgC+0NDpTyonaHU+HVTncuJ8wyZdlGIEAgAAPuoCAAFzA0P//wzoAgACtl/A=
+Date: Wed, 22 Aug 2012 15:40:25 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA1BDA9@DBDE01.ent.ti.com>
+References: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
+ <201208220748.39106.arnd@arndb.de>
+ <CAK-9PRBy0PCQ4XAVZzQpWv5rnT8A9f6F=qxT=pJEaioN7RN_5w@mail.gmail.com>
+ <331ABD5ECB02734CA317220B2BBEABC13EA1B975@DBDE01.ent.ti.com>
+ <CAK-9PRBDpxtrxZWL_x9Uz--GMWDN5anyB_fuKtLrvZcLoRR+FQ@mail.gmail.com>
+In-Reply-To: <CAK-9PRBDpxtrxZWL_x9Uz--GMWDN5anyB_fuKtLrvZcLoRR+FQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.132.219]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Aug 2012, Arnd Bergmann wrote:
+On Wed, Aug 22, 2012 at 16:09:22, Chinmay V S wrote:
+> Hmmm. Interesting. As i understand LIS331DLH provides 16bit data
+> irrespective of the full-scale/sensitivity configuration. Hence we
+> could effectively map +/-2G to +/-32768(signed 16bit 2's complement).
+> According to the current-patch right-shifting the register values by
+> 4(i.e. reducing 16bit --> 12bit) will mean that we lose accuracy by
+> ~1mG.
+> 
+> Clearly this will NOT affect use-case like display-orientation in
+> smart-phones, but surely medical and industrial applications WILL
+> benefit from the additional accuracy by utilising the entire 16-bit
+> resolution provided by LIS331DLH hardware.
+> 
+> I went through the LIS331DLH datasheet/application-note from
+> http://www.st.com/internet/analog/product/218132.jsp and i'm a bit
+> confused from your statement about +/-2G being 12bit data. Nowhere is
+> it mentioned that LIS331DLH provides +/-2G|+/-4G|+/-8G as 12|13|14 bit
+> data respectively. Then again i might be wrong...
+> 
 
-> On Wednesday 22 August 2012, Nicolas Pitre wrote:
-> > On Wed, 22 Aug 2012, Arnd Bergmann wrote:
-> > 
-> > > The mls instruction is not available in ARMv6K or below, so we
-> > > should make the test conditional on at least ARMv7. ldrex/strex
-> > > are available in ARMv6K or ARMv7, which we can test by checking
-> > > the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
-> > 
-> > The ldrex/strex instructions are available on ARMv6.  It's only the d 
-> > variants (strexd/ldrexd) which are only available from ARMv6k.
-> 
-> Ok. How is the version below then? I haven't tested this one yet.
+Look at this application note which talks about the outdata values
+for 2G range (page 12/31) http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/APPLICATION_NOTE/CD00215823.pdf
 
-In fact, I think the b variants are ARMv6k+ as well.  Only the plain 
-(non b non d) variants are available on ARMv6.
+Corresponding to the 4G and 8G I got the details form older
+patches (SHIFT_ADJ_4G and SHIFT_ADJ_8G).
+http://driverdev.linuxdriverproject.org/pipermail/devel/2010-November/009685.html
 
+We can easily interpret number of bits for 4G and 8G from 2G
+information.
 
-> 
-> 	Arnd
-> 
-> 8<---
-> From d878ab212cf0ac1957be83ad80dc734ace2b476c Mon Sep 17 00:00:00 2001
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Thu, 16 Aug 2012 07:49:31 +0000
-> Subject: [PATCH] ARM: kprobes: make more tests conditional
-> 
-> The mls instruction is not available in ARMv6K or below, so we
-> should make the test conditional on at least ARMv7. ldrexd/strexd
-> are available in ARMv6K or ARMv7, which we can test by checking
-> the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
-> 
-> /tmp/ccuMTZ8D.s: Assembler messages:
-> /tmp/ccuMTZ8D.s:22188: Error: selected processor does not support ARM mode `mls r0,r1,r2,r3'
-> /tmp/ccuMTZ8D.s:22222: Error: selected processor does not support ARM mode `mlshi r7,r8,r9,r10'
-> /tmp/ccuMTZ8D.s:22252: Error: selected processor does not support ARM mode `mls lr,r1,r2,r13'
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jon Medhurst <tixy@yxit.co.uk>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Cc: Leif Lindholm <leif.lindholm@arm.com>
-> ---
->  arch/arm/kernel/kprobes-test-arm.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
-> index 38c1a3b..fc9f6e0 100644
-> --- a/arch/arm/kernel/kprobes-test-arm.c
-> +++ b/arch/arm/kernel/kprobes-test-arm.c
-> @@ -367,9 +367,11 @@ void kprobe_arm_test_cases(void)
->  	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
->  	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
->  
-> +#if __LINUX_ARM_ARCH__ >= 7
->  	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
->  	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
->  	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
-> +#endif
->  	TEST_UNSUPPORTED(".word 0xe06f3291 @ mls pc, r1, r2, r3")
->  	TEST_UNSUPPORTED(".word 0xe060329f @ mls r0, pc, r2, r3")
->  	TEST_UNSUPPORTED(".word 0xe0603f91 @ mls r0, r1, pc, r3")
-> @@ -456,8 +458,10 @@ void kprobe_arm_test_cases(void)
->  	TEST_UNSUPPORTED(".word	0xe1700090") /* Unallocated space */
->  #if __LINUX_ARM_ARCH__ >= 6
->  	TEST_UNSUPPORTED("ldrex	r2, [sp]")
-> +#ifdef CONFIG_CPU_32v6K
->  	TEST_UNSUPPORTED("strexd	r0, r2, r3, [sp]")
->  	TEST_UNSUPPORTED("ldrexd	r2, r3, [sp]")
-> +#endif
->  	TEST_UNSUPPORTED("strexb	r0, r2, [sp]")
->  	TEST_UNSUPPORTED("ldrexb	r2, [sp]")
->  	TEST_UNSUPPORTED("strexh	r0, r2, [sp]")
-> -- 
-> 1.7.10
-> 
+Thanks
+AnilKumar
