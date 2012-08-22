@@ -1,130 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab2HVQ3Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:29:25 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51827 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755496Ab2HVQ3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:29:21 -0400
+	id S933097Ab2HVQaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:30:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932164Ab2HVQaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:30:05 -0400
+Date: Wed, 22 Aug 2012 18:29:55 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between
+ secondary MMU and host
+Message-ID: <20120822162955.GT29978@redhat.com>
+References: <503358FF.3030009@linux.vnet.ibm.com>
+ <20120821150618.GJ27696@redhat.com>
+ <5034763D.60508@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <A25F549E4D43CD42B4C02DF47A1913230FE50780@SHSMSX102.ccr.corp.intel.com>
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
- <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
- <50325732.3000700@gmail.com> <CAErSpo4-SGH__kE5tPNzz+VO=V-GKOMdcKCqqy6s3=5sNKgG0w@mail.gmail.com>
- <50325C18.9030207@gmail.com> <CAErSpo6t9m0xmWkXfmONtbicjqLR_z5dLsjKCLWQfcktzRKkUA@mail.gmail.com>
- <CAErSpo5=OUM9veX8890USWegTG_Fhh10soxPJbjemd80bAO0qg@mail.gmail.com> <A25F549E4D43CD42B4C02DF47A1913230FE50780@SHSMSX102.ccr.corp.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 22 Aug 2012 09:28:58 -0700
-Message-ID: <CAErSpo5ftvKLF2=1ixzp1KroNLKh_s-b5hi9aFv3X7PpqisGwg@mail.gmail.com>
-Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities registers
-To: "Cui, Dexuan" <dexuan.cui@intel.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5034763D.60508@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 9:40 PM, Cui, Dexuan <dexuan.cui@intel.com> wrote:
-> Bjorn Helgaas wrote on 2012-08-21:
+On Wed, Aug 22, 2012 at 02:03:41PM +0800, Xiao Guangrong wrote:
+> On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
+> > CPU0  		    	    	CPU1
+> > 				oldpage[1] == 0 (both guest & host)
+> > oldpage[0] = 1
+> > trigger do_wp_page
+> 
+> We always do ptep_clear_flush before set_pte_at_notify(),
+> at this point, we have done:
+>   pte = 0 and flush all tlbs
+> > mmu_notifier_change_pte
+> > spte = newpage + writable
+> > 				guest does newpage[1] = 1
+> > 				vmexit
+> > 				host read oldpage[1] == 0
+> 
+>                   It can not happen, at this point pte = 0, host can not
+> 		  access oldpage anymore, host read can generate #PF, it
+>                   will be blocked on page table lock until CPU 0 release the lock.
 
->> I am still concerned about reset_intel_82599_sfp_virtfn().  It looks
->> wrong and possibly unnecessary.  It looks wrong because it sets
->> PCI_EXP_DEVCTL_BCR_FLR and blindly clears all other bits in
->> PCI_EXP_DEVCTL.  Most of the bits are probably cleared by the FLR
->> anyway, but Aux Power PM Enable is RWS ("sticky"), so it is *not*
->> modified by FLR.  Therefore, using reset_intel_82599_sfp_virtfn() has
->> the probably unintended side effect of clearing Aux Power PM Enable.
->>
->> It looks possibly unnecessary because the generic pcie_flr() does
->> essentially the same thing, so it's not clear why we need a special
->> case for 82599.
+Agreed, this is why your fix is safe.
 
-> I think reset_intel_82599_sfp_virtfn() is correct AND necessary.
-> (pcie_flr() doesn't work here)
->
-> Please note the 82599 VF is a special PCIe device that doesn't report
-> PCIe FLR capability though actually it does support that.
-> That is why we put it in quirks.c. :-)
->
-> The PCI_EXP_DEVCTL_AUX_PME bit of the 82599 VF is read-only and
-> always zero.
->
-> Please see
-> http://www.intel.com/content/dam/doc/datasheet/82599-10-gbe-controller-datasheet.pdf
-> 9.5 Virtual Functions Configuration Space
->   Table 9.7 VF PCIe Configuration Space
->   9.5.2.2.1 VF Device Control Register (0xA8; RW)
+So the thing is, it is never safe to mangle the secondary MMU before
+the primary MMU. This is why your patch triggered all sort of alarm
+bells to me and I was tempted to suggest an obviously safe
+alternative.
 
-Thanks, Dexuan!
+The reason why your patch is safe, is that the required primary MMU
+pte mangling happens before the set_pte_at_notify is invoked.
 
-The 82599 does report FLR in the DEVCAP for the PF (sec 9.3.10.4), but
-not in the DEVCAP for the VF (sec 9.5), which indeed means we can't
-use pcie_flr() on the VFs.  I wonder whether this error appears in any
-other devices.
+Other details about change_pte:
 
-The VF DEVCTL register (sec 9.5.2.2.1) is RO and zero except for
-"Initiate FLR" unlike the PF DEVCTL (sec 9.3.10.5).  The
-read/modify/write done by pcie_flr() would work on the VF but is not
-necessary.
+1) it is only safe to use on an already readonly pte if the pfn is
+   being altered
 
-The VF DEVSTA register (sec 9.5.2.2.2) does have an active
-"Transaction Pending" bit.  That suggests to me that we should wait
-for it to be clear, as pcie_flr() does.
+2) it is only safe to run on a read-write mapping to convert it to a
+   readonly mapping if the pfn doesn't change
 
-What would you think of a patch like the following?  My idea is to
-make it the same as pcie_flr() except for the absolutely necessary
-differences.  With this patch, the only difference is that we don't
-look at the 82599 DEVCAP FLR bit.
+KSM uses it as 2) in page_write_protect.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index aa77538..7a451ff 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3081,10 +3081,36 @@ static int reset_intel_generic_dev(struct
-pci_dev *dev, int probe)
+KSM uses it as 1) in replace_page and do_wp_page uses it as 1) too.
 
- static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
- {
-+       int i;
-+       u16 status;
-+
-+       /*
-+        * http://www.intel.com/content/dam/doc/datasheet/82599-10-gbe-controller-datasheet.pdf
-+        *
-+        * The 82599 supports FLR on VFs, but FLR support is reported only
-+        * in the PF DEVCAP (sec 9.3.10.4), not in the VF DEVCAP (sec 9.5).
-+        * Therefore, we can't use pcie_flr(), which checks the VF DEVCAP.
-+        */
-+
-        if (probe)
-                return 0;
+The new constraint for its safety after your fix is that it must
+always be preceded by a ptep_clear_flush.
 
--       pcie_capability_write_word(dev, PCI_EXP_DEVCTL, PCI_EXP_DEVCTL_BCR_FLR);
-+       /* Wait for Transaction Pending bit clean */
-+       for (i = 0; i < 4; i++) {
-+               if (i)
-+                       msleep((1 << (i - 1)) * 100);
-+
-+               pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &status);
-+               if (!(status & PCI_EXP_DEVSTA_TRPND))
-+                       goto clear;
-+       }
-+
-+       dev_err(&dev->dev, "transaction is not cleared; "
-+                       "proceeding with reset anyway\n");
-+
-+clear:
-+       pcie_capability_set_word(dev, PCI_EXP_DEVCTL, PCI_EXP_DEVCTL_BCR_FLR);
-+
-        msleep(100);
+Of course it's quite natural that it is preceded by a
+ptep_clear_flush, other things would risk to go wrong if
+ptep_clear_flush wasn't done, so there's little risk of getting it
+wrong.
 
-        return 0;
+I thought, maybe it would be clearer to do it as
+ptep_clear_flush_notify_at(pte). That would avoid having methods that
+rings the alarm bells. But the O_DIRECT check of KSM in
+page_write_protect prevents such a change (there we need to run a
+standalone ptep_clear_flush).
+
+I suggest only adding a comment to mention the real primary MMU pte
+update happens before set_pte_at_notify is invoked and we're not
+really doing secondary MMU updates before primary MMU updates which
+wouldn't never be safe.
+
+It never would be safe because the secondary MMU can be just a TLB and
+even the KSM sptes can be dropped at any time and refilled through
+secondary MMU page faults running gup_fast. The PT lock won't stop it.
+
+Thanks a lot for fixing this subtle race!
+Andrea
