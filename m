@@ -1,201 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933293Ab2HVUfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 16:35:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63200 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2HVUff (ORCPT
+	id S933302Ab2HVUnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 16:43:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58170 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126Ab2HVUnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 16:35:35 -0400
-Date: Wed, 22 Aug 2012 13:30:03 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v6 07/13] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120822203003.GJ19212@google.com>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-8-git-send-email-koverstreet@google.com>
+	Wed, 22 Aug 2012 16:43:11 -0400
+Message-ID: <5035445B.6000500@wwwdotorg.org>
+Date: Wed, 22 Aug 2012 14:43:07 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345655050-28199-8-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kent.
+On 08/22/2012 02:22 AM, Sebastian Hesselbarth wrote:
+> This patch adds a pinctrl driver core for Marvell SoCs plus DT
+> binding documentation. This core driver will be used by SoC family
+> specific drivers, i.e. Armada XP, Armada 370, Dove, Kirkwood, aso.
 
-On Wed, Aug 22, 2012 at 10:04:04AM -0700, Kent Overstreet wrote:
-> Previously, if we ever try to allocate more than once from the same bio
-> set while running under generic_make_request(), we risk deadlock.
-> 
-> This would happen if e.g. a bio ever needed to be split more than once,
-> and it's difficult to handle correctly in the drivers - so in practice
-> it's not.
-> 
-> This patch fixes this issue by allocating a rescuer workqueue for each
-> bio_set, and punting queued bios to said rescuer when necessary:
+> +++ b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
 
-This description needs to be several times more descriptive than it
-currently is.  The deadlock issue at hand is very unobvious.  Please
-explain it so that someone who isn't familiar with the problem can
-understand it by reading it.
+This, and all the other binding documents in this series, all look sane
+to me.
 
-Also, please describe how the patch was tested.
+> +++ b/drivers/pinctrl/pinctrl-mvebu.c
 
-> @@ -306,16 +324,39 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  		p = kmalloc(sizeof(struct bio) +
->  			    nr_iovecs * sizeof(struct bio_vec),
->  			    gfp_mask);
+> +static int mvebu_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
+
+
+> +	of_property_for_each_string(np, "marvell,pins", prop, group) {
+> +		struct mvebu_pinctrl_group *grp =
+> +			mvebu_pinctrl_find_group_by_name(pctl, group);
 > +
->  		front_pad = 0;
->  		inline_vecs = nr_iovecs;
->  	} else {
-> -		p = mempool_alloc(bs->bio_pool, gfp_mask);
-> +		/*
-> +		 * If we're running under generic_make_request()
-> +		 * (current->bio_list != NULL), we risk deadlock if we sleep on
-> +		 * allocation and there's already bios on current->bio_list that
-> +		 * were allocated from the same bio_set; they won't be submitted
-> +		 * (and thus freed) as long as we're blocked here.
-> +		 *
-> +		 * To deal with this, we first try the allocation without using
-> +		 * the mempool; if that fails, we punt all the bios on
-> +		 * current->bio_list to a different thread and then retry the
-> +		 * allocation with the original gfp mask.
-> +		 */
-
-Ditto here.
-
-> +		if (current->bio_list &&
-> +		    !bio_list_empty(current->bio_list) &&
-> +		    (gfp_mask & __GFP_WAIT))
-> +			gfp_mask &= GFP_ATOMIC;
-
-Why aren't we turning off __GFP_WAIT instead?  e.g. What if the caller
-has one of NUMA flags or __GFP_COLD specified?
-
-> +retry:
-> +		if (gfp_mask & __GFP_WAIT)
-> +			p = mempool_alloc(bs->bio_pool, gfp_mask);
-> +		else
-> +			p = kmem_cache_alloc(bs->bio_slab, gfp_mask);
-
-Why is it necessary to avoid using the mempool if __GFP_WAIT is
-already cleared?
-
->  		front_pad = bs->front_pad;
->  		inline_vecs = BIO_INLINE_VECS;
->  	}
->  
->  	if (unlikely(!p))
-> -		return NULL;
-> +		goto err;
->  
->  	bio = p + front_pad;
->  	bio_init(bio);
-> @@ -336,6 +377,19 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  
->  err_free:
->  	mempool_free(p, bs->bio_pool);
-> +err:
-> +	if (gfp_mask != saved_gfp) {
-> +		gfp_mask = saved_gfp;
+> +		if (!grp) {
+> +			dev_err(pctl->dev, "unknown pin %s", group);
+> +			continue;
+> +		}
 > +
-> +		spin_lock(&bs->rescue_lock);
-> +		bio_list_merge(&bs->rescue_list, current->bio_list);
-> +		bio_list_init(current->bio_list);
-> +		spin_unlock(&bs->rescue_lock);
-> +
-> +		queue_work(bs->rescue_workqueue, &bs->rescue_work);
-> +		goto retry;
-> +	}
-> +
->  	return NULL;
->  }
->  EXPORT_SYMBOL(bio_alloc_bioset);
-> @@ -1544,6 +1598,9 @@ static void biovec_free_pools(struct bio_set *bs)
->  
->  void bioset_free(struct bio_set *bs)
->  {
-> +	if (bs->rescue_workqueue)
-> +		destroy_workqueue(bs->rescue_workqueue);
-> +
->  	if (bs->bio_pool)
->  		mempool_destroy(bs->bio_pool);
->  
-> @@ -1579,6 +1636,10 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
->  
->  	bs->front_pad = front_pad;
->  
-> +	spin_lock_init(&bs->rescue_lock);
-> +	bio_list_init(&bs->rescue_list);
-> +	INIT_WORK(&bs->rescue_work, bio_alloc_rescue);
-> +
->  	bs->bio_slab = bio_find_or_create_slab(front_pad + back_pad);
->  	if (!bs->bio_slab) {
->  		kfree(bs);
-> @@ -1589,9 +1650,14 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
->  	if (!bs->bio_pool)
->  		goto bad;
->  
-> -	if (!biovec_create_pools(bs, pool_size))
-> -		return bs;
-> +	if (biovec_create_pools(bs, pool_size))
-> +		goto bad;
-> +
-> +	bs->rescue_workqueue = alloc_workqueue("bioset", WQ_MEM_RECLAIM, 0);
-> +	if (!bs->rescue_workqueue)
-> +		goto bad;
->  
-> +	return bs;
->  bad:
->  	bioset_free(bs);
->  	return NULL;
-> diff --git a/include/linux/bio.h b/include/linux/bio.h
-> index b22c22b..ba5b52e 100644
-> --- a/include/linux/bio.h
-> +++ b/include/linux/bio.h
-> @@ -290,39 +290,6 @@ static inline int bio_associate_current(struct bio *bio) { return -ENOENT; }
->  static inline void bio_disassociate_task(struct bio *bio) { }
->  #endif	/* CONFIG_BLK_CGROUP */
->  
-> -/*
-> - * bio_set is used to allow other portions of the IO system to
-> - * allocate their own private memory pools for bio and iovec structures.
-> - * These memory pools in turn all allocate from the bio_slab
-> - * and the bvec_slabs[].
-> - */
-> -#define BIO_POOL_SIZE 2
-> -#define BIOVEC_NR_POOLS 6
-> -#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
-> -
-> -struct bio_set {
-> -	struct kmem_cache *bio_slab;
-> -	unsigned int front_pad;
-> -
-> -	mempool_t *bio_pool;
-> -#if defined(CONFIG_BLK_DEV_INTEGRITY)
-> -	mempool_t *bio_integrity_pool;
-> -#endif
-> -	mempool_t *bvec_pool;
-> -};
-> -
-> -struct biovec_slab {
-> -	int nr_vecs;
-> -	char *name;
-> -	struct kmem_cache *slab;
-> -};
+> +		if (!mvebu_pinctrl_find_setting_by_name(pctl, grp, function)) {
+> +			dev_err(pctl->dev, "unsupported function %s on pin %s",
+> +				function, group);
+> +			continue;
+> +		}
 
-Plesae don't mix struct definition relocation (or any relocation
-really) with actual changes.  It buries the actual changes and makes
-reviewing difficult.
+The error-checking here isn't strictly necessary; the pinctrl core will
+error-check all the names if/when the map entries are used. So, you
+could probably get away with just assigning the pin/function names
+directly into (*map) and hence remove some code here. Still, it's not a
+big deal either way.
 
-Thanks.
+> +static int __devinit mvebu_pinctrl_dt_parse_function(struct mvebu_pinctrl *pctl,
 
--- 
-tejun
+> +static int __devinit mvebu_pinctrl_dt_parse(struct platform_device *pdev,
+> +					struct mvebu_pinctrl *pctl)
+
+I don't understand what those two functions do, or a good chunk of
+probe(). It seems like they're setting up the ability to get/set pin
+configrations in addition to pin muxing, although if that's so, it seems
+odd that none of the binding documents specify any way of controlling
+pin configuration from device tree. Are you expecting drivers to call
+APIs such as pin_config_set() directly, rather than controlling pin
+config through DT?
+
