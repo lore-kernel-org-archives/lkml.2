@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072Ab2HVQVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:21:41 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:16732 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933001Ab2HVQUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:20:31 -0400
-X-IronPort-AV: E=Sophos;i="4.77,808,1336363200"; 
-   d="scan'208";a="35465044"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: xen-devel@lists.xensource.com
-CC: linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
-        Stefano.Stabellini@eu.citrix.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 3/6] xen: update xen_add_to_physmap interface
-Date: Wed, 22 Aug 2012 17:20:13 +0100
-Message-ID: <1345652416-27181-3-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1208221635020.15568@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1208221635020.15568@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1758174Ab2HVQYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:24:08 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36983 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757918Ab2HVQYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:24:04 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "3.2.x.." <stable@kernel.org>
+Subject: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
+Date: Wed, 22 Aug 2012 18:23:39 +0200
+Message-Id: <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update struct xen_add_to_physmap to be in sync with Xen's version of the
-structure.
-The size field was introduced by:
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-changeset:   24164:707d27fe03e7
-user:        Jean Guyader <jean.guyader@eu.citrix.com>
-date:        Fri Nov 18 13:42:08 2011 +0000
-summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-According to the comment:
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
 
-"This new field .size is located in the 16 bits padding between .domid
-and .space in struct xen_add_to_physmap to stay compatible with older
-versions."
+Add this missing pair of calls in the Alpha's idle loop.
 
-Changes in v2:
-
-- remove erroneous comment in the commit message.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: alpha <linux-alpha@vger.kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: 3.2.x.. <stable@kernel.org>
 ---
- include/xen/interface/memory.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/alpha/kernel/process.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index eac3ce1..8d4efc1 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -163,6 +163,9 @@ struct xen_add_to_physmap {
-     /* Which domain to change the mapping for. */
-     domid_t domid;
+diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
+index 153d3fc..2ebf7b5 100644
+--- a/arch/alpha/kernel/process.c
++++ b/arch/alpha/kernel/process.c
+@@ -28,6 +28,7 @@
+ #include <linux/tty.h>
+ #include <linux/console.h>
+ #include <linux/slab.h>
++#include <linux/rcupdate.h>
  
-+    /* Number of pages to go through for gmfn_range */
-+    uint16_t    size;
-+
-     /* Source mapping space. */
- #define XENMAPSPACE_shared_info 0 /* shared info page */
- #define XENMAPSPACE_grant_table 1 /* grant table page */
+ #include <asm/reg.h>
+ #include <asm/uaccess.h>
+@@ -50,13 +51,16 @@ cpu_idle(void)
+ {
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
++	preempt_disable();
+ 	while (1) {
+ 		/* FIXME -- EV6 and LCA45 know how to power down
+ 		   the CPU.  */
+ 
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			cpu_relax();
+-		schedule();
++		rcu_idle_exit();
++		schedule_preempt_disabled();
+ 	}
+ }
+ 
 -- 
-1.7.2.5
+1.7.5.4
 
