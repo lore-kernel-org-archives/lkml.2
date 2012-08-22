@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab2HVON1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:13:27 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:27325 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab2HVONY (ORCPT
+	id S1756371Ab2HVORV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:17:21 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56018 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789Ab2HVORT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:13:24 -0400
-Date: Wed, 22 Aug 2012 10:03:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen/events: fix unmask_evtchn for PV on HVM
- guests
-Message-ID: <20120822140315.GC30964@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
- <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <alpine.DEB.2.02.1206221722040.27860@kaball.uk.xensource.com>
- <20120709141915.GB9580@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207131821250.23783@kaball.uk.xensource.com>
- <20120716151441.GD552@phenom.dumpdata.com>
- <alpine.DEB.2.02.1207181851010.23783@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1208221217290.15568@kaball.uk.xensource.com>
+	Wed, 22 Aug 2012 10:17:19 -0400
+Date: Wed, 22 Aug 2012 16:17:11 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf tools: Fix 'No libunwind found' make warning message
+Message-ID: <20120822141711.GA30317@gmail.com>
+References: <1345479985-18669-1-git-send-email-acme@infradead.org>
+ <20120821093231.GA12385@gmail.com>
+ <20120821093628.GA981@krava.brq.redhat.com>
+ <20120822083812.GC1003@krava.brq.redhat.com>
+ <20120822084017.GA21581@gmail.com>
+ <1345642439.5069.27.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1208221217290.15568@kaball.uk.xensource.com>
+In-Reply-To: <1345642439.5069.27.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 12:20:09PM +0100, Stefano Stabellini wrote:
-> Konrad,
-> I cannot see this patch anywhere in your trees. Did I miss it?
-> Or maybe it just fell through the cracks?
 
-Fell through the cracks.. Was there a new version of this? Can you
-send me a subset of the patches you want me to pick up?
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> Let me know if you want me to do anything more.
-> Cheers,
-> Stefano
+> On Wed, 2012-08-22 at 10:40 +0200, Ingo Molnar wrote:
+> >  
+> > >  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+> > >  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
+> > > -	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
+> > > +	msg := $(warning No libunwind found, disables post unwind support. Please install libunwind-dev[el] >= 0.99);
+> > 
+> > s/disables/disable
 > 
-> On Wed, 18 Jul 2012, Stefano Stabellini wrote:
-> > xen/events: fix unmask_evtchn for PV on HVM guests
-> > 
-> > When unmask_evtchn is called, if we already have an event pending, we
-> > just set evtchn_pending_sel waiting for local_irq_enable to be called.
-> > That is because PV guests set the irq_enable pvops to
-> > xen_irq_enable_direct in xen_setup_vcpu_info_placement:
-> > xen_irq_enable_direct is implemented in assembly in
-> > arch/x86/xen/xen-asm.S and call xen_force_evtchn_callback if
-> > XEN_vcpu_info_pending is set.
-> > 
-> > However HVM guests (and ARM guests) do not change or do not have the
-> > irq_enable pvop, so evtchn_unmask cannot work properly for them.
-> > 
-> > Considering that having the pending_irq bit set when unmask_evtchn is
-> > called is not very common, and it is simpler to keep the
-> > native_irq_enable implementation for HVM guests (and ARM guests), the
-> > best thing to do is just use the EVTCHNOP_unmask hypercall (Xen
-> > re-injects pending events in response).
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  drivers/xen/events.c |   17 ++++++++++++++---
-> >  1 files changed, 14 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> > index 0a8a17c..d75cc39 100644
-> > --- a/drivers/xen/events.c
-> > +++ b/drivers/xen/events.c
-> > @@ -373,11 +373,22 @@ static void unmask_evtchn(int port)
-> >  {
-> >  	struct shared_info *s = HYPERVISOR_shared_info;
-> >  	unsigned int cpu = get_cpu();
-> > +	int do_hypercall = 0, evtchn_pending = 0;
-> >  
-> >  	BUG_ON(!irqs_disabled());
-> >  
-> > -	/* Slow path (hypercall) if this is a non-local port. */
-> > -	if (unlikely(cpu != cpu_from_evtchn(port))) {
-> > +	if (unlikely((cpu != cpu_from_evtchn(port))))
-> > +		do_hypercall = 1;
-> > +	else
-> > +		evtchn_pending = sync_test_bit(port, &s->evtchn_pending[0]);
-> > +
-> > +	if (unlikely(evtchn_pending && xen_hvm_domain()))
-> > +		do_hypercall = 1;
-> > +
-> > +	/* Slow path (hypercall) if this is a non-local port or if this is
-> > +	 * an hvm domain and an event is pending (hvm domains don't have
-> > +	 * their own implementation of irq_enable). */
-> > +	if (do_hypercall) {
-> >  		struct evtchn_unmask unmask = { .port = port };
-> >  		(void)HYPERVISOR_event_channel_op(EVTCHNOP_unmask, &unmask);
-> >  	} else {
-> > @@ -390,7 +401,7 @@ static void unmask_evtchn(int port)
-> >  		 * 'hw_resend_irq'. Just like a real IO-APIC we 'lose
-> >  		 * the interrupt edge' if the channel is masked.
-> >  		 */
-> > -		if (sync_test_bit(port, &s->evtchn_pending[0]) &&
-> > +		if (evtchn_pending &&
-> >  		    !sync_test_and_set_bit(port / BITS_PER_LONG,
-> >  					   &vcpu_info->evtchn_pending_sel))
-> >  			vcpu_info->evtchn_upcall_pending = 1;
-> > -- 
-> > 1.7.2.5
-> > 
+> Is it a command for the user to do, or something it is about to do for
+> the user? If the latter, then "disabling" may be the better word.
+
+Yeah, agreed 'disabling' is even better.
+
+Thanks,
+
+	Ingo
