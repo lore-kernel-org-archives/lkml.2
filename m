@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758905Ab2HVJ3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:29:41 -0400
-Received: from mail.linlab.net ([89.244.147.154]:49829 "EHLO mail.linlab.net"
+	id S1758900Ab2HVJcy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:32:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42718 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758875Ab2HVJ3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:29:39 -0400
-X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7M9TQTF002350
-Message-ID: <5034A678.3040207@linlab.net>
-Date: Wed, 22 Aug 2012 11:29:28 +0200
-From: Alex Bergmann <alex@linlab.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1754550Ab2HVJcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 05:32:51 -0400
+Date: Wed, 22 Aug 2012 12:33:17 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120822093317.GC10680@redhat.com>
+References: <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
+ <1345562411.23018.111.camel@twins>
+ <20120821162432.GG2456@linux.vnet.ibm.com>
+ <20120821172819.GA12294@t510.redhat.com>
+ <20120821191330.GA8324@redhat.com>
+ <20120821192357.GD12294@t510.redhat.com>
+ <20120821193031.GC9027@redhat.com>
+ <20120821204556.GF12294@t510.redhat.com>
+ <20120822000741.GI9027@redhat.com>
+ <20120822011930.GA23753@t510.redhat.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Nandita Dukkipati <nanditad@google.com>
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-References: <503419D3.1080700@linlab.net>  <1345622798.5158.717.camel@edumazet-glaptop>  <50349CC5.3050601@linlab.net> <1345625910.5158.793.camel@edumazet-glaptop>
-In-Reply-To: <1345625910.5158.793.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.6 (mail.linlab.net [IPv6:2001:470:7142:a0::3]); Wed, 22 Aug 2012 11:29:31 +0200 (CEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822011930.GA23753@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 10:58 AM, Eric Dumazet wrote:
-> On Wed, 2012-08-22 at 10:48 +0200, Alex Bergmann wrote:
->> On 08/22/2012 10:06 AM, Eric Dumazet wrote:
->>>> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
->>>> a timeout of 63secs.
->>>>
->>>>           ((2 << 5) - 1) * 3 secs = 189 secs
->>>>           ((2 << 5) - 1) * 1 secs = 63 secs
->>>
->>> Strange maths ... here I have :
->>>
->>> (1+2+4+8+16) * 3 = 93 secs
->>> vs
->>> (1+2+4+8+16) * 1 = 31 secs
->>>
->>> So even before said commit, we were not rfc1122 compliant.
->>>
->>> Using 7 retries would give 127 seconds, still not rfc compliant.
->>
->> You're missing the timeout after the 5th SYN packet was sent. This
->> would result in another 32 seconds (96 seconds).
->>
->> The timeout is calculated here:
->>
->> net/ipv4/tcp_timer.c(146:150)
->>
->> 	if (boundary <= linear_backoff_thresh)
->> 		timeout = ((2 << boundary) - 1) * rto_base;
->> 	else
->> 		timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
->> 			(boundary - linear_backoff_thresh) * TCP_RTO_MAX;
->
-> Thats the code yes but you miss the fact that last occurence of the
-> timer doesnt send a frame on the _network_
->
-> R2 is derived from the last frame sent.
->
-> Fact that the connect() is a bit long to return to user space is not
-> relevant. We could block the task for 2 hours and still be non RFC
-> compliant.
->
-> Actual 5 frames are sent, so the effective global timeout is the one I
-> quoted.
->
-> 1 + 2 + 4 + 8 + 16   and its 31
->
-> Just do a tcpdump and you can see it.
+On Tue, Aug 21, 2012 at 10:19:31PM -0300, Rafael Aquini wrote:
+> On Wed, Aug 22, 2012 at 03:07:41AM +0300, Michael S. Tsirkin wrote:
+> > On Tue, Aug 21, 2012 at 05:45:56PM -0300, Rafael Aquini wrote:
+> > > On Tue, Aug 21, 2012 at 10:30:31PM +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Aug 21, 2012 at 04:23:58PM -0300, Rafael Aquini wrote:
+> > > > > On Tue, Aug 21, 2012 at 10:13:30PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > 
+> > > > > > > I believe rcu_dereference_protected() is what I want/need here, since this code
+> > > > > > > is always called for pages which we hold locked (PG_locked bit).
+> > > > > > 
+> > > > > > It would only help if we locked the page while updating the mapping,
+> > > > > > as far as I can see we don't.
+> > > > > >
+> > > > > 
+> > > > > But we can do it. In fact, by doing it (locking the page) we can easily avoid
+> > > > > the nasty race balloon_isolate_page / leak_balloon, in a much simpler way, IMHO.
+> > > > 
+> > > > Absolutely. Further, we should look hard at whether most RCU uses
+> > > > in this patchset can be replaced with page lock.
+> > > >
+> > > 
+> > > Yeah, In fact, by testing/grabbing the page lock at leak_balloon() even the
+> > > module unload X migration / putback race seems to fade away, since migration
+> > > code holds the page locked all the way.
+> > > And that seems a quite easy task to be accomplished:
+> > > 
+> > > ....
+> > > @@ -169,21 +197,61 @@ static void leak_balloon(struct virtio_balloon *vb, size_t
+> > > num)
+> > >         /* We can only do one array worth at a time. */
+> > >         num = min(num, ARRAY_SIZE(vb->pfns));
+> > > 
+> > > +       mutex_lock(&vb->balloon_lock);
+> > >         for (vb->num_pfns = 0; vb->num_pfns < num;
+> > >              vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+> > > +               spin_lock(&vb->pages_lock);
+> > > +               /*
+> > > +                * 'virtballoon_isolatepage()' can drain vb->pages list
+> > > +                * making us to stumble across a _temporarily_ empty list.
+> > 
+> > This still worries me. If this happens we do not
+> > lock the page so module can go away?
+> > if not need to document why.
+> >
+> The module won't unload unless it leaks all its pages. If we hit that test that
+> worries you, leak_balloon() will get back to its caller -- remove_common(), and
+> it will kept looping at:
+> 
+>         /* There might be pages left in the balloon: free them. */
+>         while (vb->num_pages)
+>                 leak_balloon(vb, vb->num_pages);
+> 
+> This is true because we do not mess with vb->num_pages while isolating/migrating
+> balloon pages, so the module will only unload when all isolated pages get back
+> to vb->pages_list and leak_balloon() reap them appropriatelly. As we will be
+> doing isolation/migration/putback steps under 'page lock' that race is gone.
 
-Actual 6 SYN frames are sent. The initial one and 5 retries.
 
-The kernel is waiting another 32 seconds for a SYN+ACK and then gives 
-the ETIMEDOUT back to userspace.
+Hmm, so this will busy wait which is unelegant.
+We need some event IMO.
+Also, reading num_pages without a lock here
+which seems wrong.
 
-Do you mean that we have to send another SYN packet after the 3 minutes?
+A similar concern applies to normal leaking
+of the balloon: here we might leak less than
+required, then wait for the next config change
+event.
 
+How about we signal config_change
+event when pages are back to pages_list?
+
+-- 
+MST
