@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933445Ab2HVW4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 18:56:12 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:53563 "EHLO
+	id S933473Ab2HVW4R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 18:56:17 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:53556 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146Ab2HVWzs (ORCPT
+	with ESMTP id S1755856Ab2HVWzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 18:55:48 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6812"; a="226084947"
+	Wed, 22 Aug 2012 18:55:47 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6812"; a="226084943"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/3] ARM: MSM: Remove unused idle.c
-Date: Wed, 22 Aug 2012 15:55:45 -0700
-Message-Id: <1345676145-12321-4-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 1/3] ARM: MSM: Remove msm_hw_reset_hook
+Date: Wed, 22 Aug 2012 15:55:43 -0700
+Message-Id: <1345676145-12321-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1345676145-12321-1-git-send-email-sboyd@codeaurora.org>
 References: <1345676145-12321-1-git-send-email-sboyd@codeaurora.org>
@@ -22,40 +22,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forcing arm_pm_idle to be msm_idle() doesn't make sense in
-configurations that don't have CONFIG_MSM7X00A_IDLE=y (i.e. any
-targets that aren't 7x00a). Furthermore, that config doesn't even
-exist, so this entire file is dead code. Just remove it so we can
-use the default idle support on MSM.
+This reset hook is never assigned and is dead code. Remove it so
+we have one less header file in the mach directory.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/Makefile |  2 +-
- arch/arm/mach-msm/idle.c   | 49 ----------------------------------------------
- 2 files changed, 1 insertion(+), 50 deletions(-)
- delete mode 100644 arch/arm/mach-msm/idle.c
+ arch/arm/mach-msm/board-mahimahi.c      |  1 -
+ arch/arm/mach-msm/board-sapphire.c      |  1 -
+ arch/arm/mach-msm/include/mach/system.h | 19 -------------------
+ arch/arm/mach-msm/proc_comm.c           |  1 -
+ arch/arm/mach-msm/smd.c                 |  7 -------
+ 5 files changed, 29 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/include/mach/system.h
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 4ad3969..5fd0464 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -1,4 +1,4 @@
--obj-y += io.o idle.o timer.o
-+obj-y += io.o timer.o
- obj-y += clock.o
- obj-$(CONFIG_DEBUG_FS) += clock-debug.o
+diff --git a/arch/arm/mach-msm/board-mahimahi.c b/arch/arm/mach-msm/board-mahimahi.c
+index cf1f89a..df00bc0 100644
+--- a/arch/arm/mach-msm/board-mahimahi.c
++++ b/arch/arm/mach-msm/board-mahimahi.c
+@@ -30,7 +30,6 @@
  
-diff --git a/arch/arm/mach-msm/idle.c b/arch/arm/mach-msm/idle.c
+ #include <mach/board.h>
+ #include <mach/hardware.h>
+-#include <mach/system.h>
+ 
+ #include "board-mahimahi.h"
+ #include "devices.h"
+diff --git a/arch/arm/mach-msm/board-sapphire.c b/arch/arm/mach-msm/board-sapphire.c
+index 2e569ab..b7b0fc7 100644
+--- a/arch/arm/mach-msm/board-sapphire.c
++++ b/arch/arm/mach-msm/board-sapphire.c
+@@ -27,7 +27,6 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/mach/flash.h>
+-#include <mach/system.h>
+ #include <mach/vreg.h>
+ #include <mach/board.h>
+ 
+diff --git a/arch/arm/mach-msm/include/mach/system.h b/arch/arm/mach-msm/include/mach/system.h
 deleted file mode 100644
-index 0c9e13c..0000000
---- a/arch/arm/mach-msm/idle.c
+index f5fb2ec..0000000
+--- a/arch/arm/mach-msm/include/mach/system.h
 +++ /dev/null
-@@ -1,49 +0,0 @@
--/* arch/arm/mach-msm/idle.c
+@@ -1,19 +0,0 @@
+-/* arch/arm/mach-msm/include/mach/system.h
 - *
-- * Idle processing for MSM7K - work around bugs with SWFI.
-- *
-- * Copyright (c) 2007 QUALCOMM Incorporated.
 - * Copyright (C) 2007 Google, Inc.
 - *
 - * This software is licensed under the terms of the GNU General Public
@@ -69,37 +80,54 @@ index 0c9e13c..0000000
 - *
 - */
 -
--#include <linux/init.h>
--#include <asm/system.h>
+-/* low level hardware reset hook -- for example, hitting the
+- * PSHOLD line on the PMIC to hard reset the system
+- */
+-extern void (*msm_hw_reset_hook)(void);
+diff --git a/arch/arm/mach-msm/proc_comm.c b/arch/arm/mach-msm/proc_comm.c
+index 9980dc7..8f1eecd 100644
+--- a/arch/arm/mach-msm/proc_comm.c
++++ b/arch/arm/mach-msm/proc_comm.c
+@@ -19,7 +19,6 @@
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+ #include <mach/msm_iomap.h>
+-#include <mach/system.h>
+ 
+ #include "proc_comm.h"
+ 
+diff --git a/arch/arm/mach-msm/smd.c b/arch/arm/mach-msm/smd.c
+index 657be73..84183ed 100644
+--- a/arch/arm/mach-msm/smd.c
++++ b/arch/arm/mach-msm/smd.c
+@@ -30,7 +30,6 @@
+ #include <linux/delay.h>
+ 
+ #include <mach/msm_smd.h>
+-#include <mach/system.h>
+ 
+ #include "smd_private.h"
+ #include "proc_comm.h"
+@@ -39,8 +38,6 @@
+ #define CONFIG_QDSP6 1
+ #endif
+ 
+-void (*msm_hw_reset_hook)(void);
 -
--static void msm_idle(void)
--{
--#ifdef CONFIG_MSM7X00A_IDLE
--	asm volatile (
+ #define MODULE_NAME "msm_smd"
+ 
+ enum {
+@@ -101,10 +98,6 @@ static void handle_modem_crash(void)
+ 	pr_err("ARM9 has CRASHED\n");
+ 	smd_diag();
+ 
+-	/* hard reboot if possible */
+-	if (msm_hw_reset_hook)
+-		msm_hw_reset_hook();
 -
--	"mrc     p15, 0, r1, c1, c0, 0    /* read current CR    */ \n\t"
--	"bic     r0, r1, #(1 << 2)        /* clear dcache bit   */ \n\t"
--	"bic     r0, r0, #(1 << 12)       /* clear icache bit   */ \n\t"
--	"mcr     p15, 0, r0, c1, c0, 0    /* disable d/i cache  */ \n\t"
--
--	"mov     r0, #0                   /* prepare wfi value  */ \n\t"
--	"mcr     p15, 0, r0, c7, c10, 0   /* flush the cache    */ \n\t"
--	"mcr     p15, 0, r0, c7, c10, 4   /* memory barrier     */ \n\t"
--	"mcr     p15, 0, r0, c7, c0, 4    /* wait for interrupt */ \n\t"
--
--	"mcr     p15, 0, r1, c1, c0, 0    /* restore d/i cache  */ \n\t"
--
--	: : : "r0","r1" );
--#endif
--}
--
--static int __init msm_idle_init(void)
--{
--	arm_pm_idle = msm_idle;
--	return 0;
--}
--
--arch_initcall(msm_idle_init);
+ 	/* in this case the modem or watchdog should reboot us */
+ 	for (;;)
+ 		;
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
