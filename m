@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571Ab2HVNWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 09:22:22 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40393 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab2HVNWS convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 22 Aug 2012 09:22:18 -0400
-Message-Id: <5034F9510200007800096E97@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 22 Aug 2012 14:22:57 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Alex Shi" <alex.shi@intel.com>
-Cc: <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: apparent regressions from TLB range flushing page set
-References: <503261F00200007800096710@nat28.tlf.novell.com>
- <503450C1.8070600@intel.com>
- <50349AB4020000780008A4B5@nat28.tlf.novell.com>
- <50349E45.3020502@intel.com>
-In-Reply-To: <50349E45.3020502@intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S932584Ab2HVNWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 09:22:52 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:33625 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751972Ab2HVNWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 09:22:50 -0400
+Date: Wed, 22 Aug 2012 09:22:43 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 13/17] lockd: use new hashtable implementation
+Message-ID: <20120822132243.GA2844@Krystal>
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-14-git-send-email-levinsasha928@gmail.com> <20120822114752.GC20158@fieldses.org> <5034CD02.2010103@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <5034CD02.2010103@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 22.08.12 at 10:54, Alex Shi <alex.shi@intel.com> wrote:
-> On 08/22/2012 03:39 PM, Jan Beulich wrote:
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> On 08/22/2012 01:47 PM, J. Bruce Fields wrote:
+> > On Wed, Aug 22, 2012 at 04:27:08AM +0200, Sasha Levin wrote:
+> >> +static int __init nlm_init(void)
+> >> +{
+> >> +	hash_init(nlm_files);
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +module_init(nlm_init);
+> > 
+> > That's giving me:
+> > 
+> > fs/lockd/svcsubs.o: In function `nlm_init':
+> > /home/bfields/linux-2.6/fs/lockd/svcsubs.c:454: multiple definition of `init_module'
+> > fs/lockd/svc.o:/home/bfields/linux-2.6/fs/lockd/svc.c:606: first defined here
+> > make[2]: *** [fs/lockd/lockd.o] Error 1
+> > make[1]: *** [fs/lockd] Error 2
+> > make[1]: *** Waiting for unfinished jobs....
 > 
->>>>> Alex Shi <alex.shi@intel.com> 08/22/12 5:24 AM >>>
->>> On 08/20/2012 10:12 PM, Jan Beulich wrote:
->>> I was thought you have 'Agreed' for xen part code. :)
->> 
->> I had agreed to it being done the right way, and I had pointed out the
->> problem once. I can't say for sure that I looked at the most recent rev
->> closely enough to spot the issue still being unfixed.
->> 
->>>> For one, while TLB_FLUSH_ALL gets passed as 'end' argument to
->>>> flush_tlb_others(), the Xen code was made to check its 'start'
->>>> parameter.
->>>
->>> Do you mean need the following change? --untested.
->> 
->> Yes. I'd question though whether for that special case it shouldn't be
->> start _and_ end to get passed the special value.
+> I tested this entire patch set both with linux-next and Linus' latest master,
+> and it worked fine in both places.
 > 
-> 
-> Actually the special value is already there in old code.
-> so, what's your meaning of the question?
+> Is it possible that lockd has a -next tree which isn't pulled into linux-next?
+> (there's nothing listed in MAINTAINERS that I could see).
 
-I'm saying that I'd rather see
+fs/lockd/Makefile:
 
-#define flush_tlb_mm(mm)	flush_tlb_mm_range(mm, TLB_FLUSH_ALL, TLB_FLUSH_ALL, 0UL)
+obj-$(CONFIG_LOCKD) += lockd.o
 
-Jan
+lockd-objs-y := clntlock.o clntproc.o clntxdr.o host.o svc.o svclock.o \
+                svcshare.o svcproc.o svcsubs.o mon.o xdr.o grace.o
 
+your patch adds a module_init to svcsubs.c.
+However, there is already one in svc.c, pulled into the same module.
+
+in your test build, is CONFIG_LOCKD defined as "m" or "y" ? You should
+always test both.
+
+One solution here is to create a "local" init function in svcsubs.c and
+expose it to svc.c, so the latter can call it from its module init
+function.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
