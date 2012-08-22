@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab2HVPAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:00:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29866 "EHLO mx1.redhat.com"
+	id S1757196Ab2HVPBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:01:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61246 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932717Ab2HVPAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:00:48 -0400
+	id S932678Ab2HVPBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:01:03 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,82 +26,103 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 11/36] autonuma: add page structure fields
-Date: Wed, 22 Aug 2012 16:58:55 +0200
-Message-Id: <1345647560-30387-12-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 35/36] autonuma: add knuma_migrated/allow_first_fault in sysfs
+Date: Wed, 22 Aug 2012 16:59:19 +0200
+Message-Id: <1345647560-30387-36-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 64bit archs, 20 bytes are used for async memory migration (specific
-to the knuma_migrated per-node threads), and 4 bytes are used for the
-thread NUMA false sharing detection logic.
+This sysfs control, if enabled, allows memory migrations on the first
+numa hinting page fault.
 
-This is the basic implementation improved by later patches.
+If disabled it forbids it and requires a confirmation through the
+last_nid logic.
 
-Later patches moves the new fields to a dynamically allocated
-page_autonuma of 32 bytes per page (only allocated if booted on NUMA
-hardware, unless "noautonuma" is passed as parameter to the kernel at
-boot). Yet another later patch introduces the autonuma_list and
-reduces the size of the page_autonuma from 32 to 12 bytes.
+By default, the first fault is allowed to migrate memory. Disabling it
+may increase the time it takes to converge, but it reduces some
+initial thrashing in case of NUMA false sharing.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/mm_types.h |   26 ++++++++++++++++++++++++++
- mm/page_alloc.c          |    4 ++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ include/linux/autonuma_flags.h |   20 ++++++++++++++++++++
+ mm/autonuma.c                  |    7 +++++--
+ 2 files changed, 25 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index c80101c..3f10fef 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -152,6 +152,32 @@ struct page {
- 		struct page *first_page;	/* Compound tail pages */
- 	};
+diff --git a/include/linux/autonuma_flags.h b/include/linux/autonuma_flags.h
+index f53203a..28756ca 100644
+--- a/include/linux/autonuma_flags.h
++++ b/include/linux/autonuma_flags.h
+@@ -85,6 +85,20 @@ enum autonuma_flag {
+ 	 * Default not set.
+ 	 */
+ 	AUTONUMA_MIGRATE_DEFER_FLAG,
++	/*
++	 * If set, a page must successfully pass a last_nid check
++	 * before it can be migrated even if it's the very first NUMA
++	 * hinting page fault occurring on the page. If not set, the
++	 * first NUMA hinting page fault of a newly allocated page
++	 * will always pass the last_nid check.
++	 *
++	 * If not set a newly started workload can converge quicker,
++	 * but it may incur in more false positive migrations before
++	 * reaching convergence.
++	 *
++	 * Default not set.
++	 */
++	AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG,
+ };
  
-+#ifdef CONFIG_AUTONUMA
-+	/*
-+	 * FIXME: move to pgdat section along with the memcg and allocate
-+	 * at runtime only in presence of a numa system.
-+	 */
-+	/*
-+	 * To modify autonuma_last_nid lockless the architecture,
-+	 * needs SMP atomic granularity < sizeof(long), not all archs
-+	 * have that, notably some ancient alpha (but none of those
-+	 * should run in NUMA systems). Archs without that requires
-+	 * autonuma_last_nid to be a long.
-+	 */
-+#ifdef CONFIG_64BIT
-+	int autonuma_migrate_nid;
-+	int autonuma_last_nid;
-+#else
-+#if MAX_NUMNODES > 32767
-+#error "too many nodes"
-+#endif
-+	/* FIXME: remember to check the updates are atomic */
-+	short autonuma_migrate_nid;
-+	short autonuma_last_nid;
-+#endif
-+	struct list_head autonuma_migrate_node;
-+#endif
+ extern unsigned long autonuma_flags;
+@@ -126,4 +140,10 @@ static inline bool autonuma_migrate_defer(void)
+ 	return test_bit(AUTONUMA_MIGRATE_DEFER_FLAG, &autonuma_flags);
+ }
+ 
++static inline bool autonuma_migrate_allow_first_fault(void)
++{
++	return test_bit(AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG,
++			&autonuma_flags);
++}
 +
- 	/*
- 	 * On machines where all RAM is mapped into kernel address space,
- 	 * we can simply calculate the virtual address. On machines with
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ff61443..a6337b3 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3787,6 +3787,10 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+ #endif /* _LINUX_AUTONUMA_FLAGS_H */
+diff --git a/mm/autonuma.c b/mm/autonuma.c
+index 4b7c744..e7570df 100644
+--- a/mm/autonuma.c
++++ b/mm/autonuma.c
+@@ -28,7 +28,7 @@ unsigned long autonuma_flags __read_mostly =
+ #ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
+ 	|(1<<AUTONUMA_SCAN_PMD_FLAG)
+ #endif
+-	;
++	|(1<<AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG);
  
- 		INIT_LIST_HEAD(&page->lru);
-+#ifdef CONFIG_AUTONUMA
-+		page->autonuma_last_nid = -1;
-+		page->autonuma_migrate_nid = -1;
-+#endif
- #ifdef WANT_PAGE_VIRTUAL
- 		/* The shift won't overflow because ZONE_NORMAL is below 4G. */
- 		if (!is_highmem_idx(zone))
+ static DEFINE_MUTEX(knumad_mm_mutex);
+ 
+@@ -345,7 +345,8 @@ static inline bool last_nid_set(struct page *page, int this_nid)
+ 	int autonuma_last_nid = ACCESS_ONCE(page_autonuma->autonuma_last_nid);
+ 	VM_BUG_ON(this_nid < 0);
+ 	VM_BUG_ON(this_nid >= MAX_NUMNODES);
+-	if (autonuma_last_nid >= 0 && autonuma_last_nid != this_nid) {
++	if ((!autonuma_migrate_allow_first_fault() ||
++	     autonuma_last_nid >= 0) && autonuma_last_nid != this_nid) {
+ 		int migrate_nid;
+ 		migrate_nid = ACCESS_ONCE(page_autonuma->autonuma_migrate_nid);
+ 		if (migrate_nid >= 0)
+@@ -1311,6 +1312,7 @@ SYSFS_ENTRY(debug, AUTONUMA_DEBUG_FLAG);
+ SYSFS_ENTRY(load_balance_strict, AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG);
+ SYSFS_ENTRY(defer, AUTONUMA_MIGRATE_DEFER_FLAG);
+ SYSFS_ENTRY(reset, AUTONUMA_SCHED_RESET_FLAG);
++SYSFS_ENTRY(allow_first_fault, AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG);
+ #endif /* CONFIG_DEBUG_VM */
+ 
+ #undef SYSFS_ENTRY
+@@ -1419,6 +1421,7 @@ static struct attribute *knuma_migrated_attr[] = {
+ 	&pages_migrated_attr.attr,
+ #ifdef CONFIG_DEBUG_VM
+ 	&defer_attr.attr,
++	&allow_first_fault_attr.attr,
+ #endif
+ 	NULL,
+ };
