@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab2HVQAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:00:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64464 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab2HVQAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:00:18 -0400
-Message-ID: <5035020E.5040806@lwfinger.net>
-Date: Wed, 22 Aug 2012 11:00:14 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1757724Ab2HVQBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:01:06 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:58620 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754710Ab2HVQBB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:01:01 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: Doug Anderson <dianders@chromium.org>
+CC: Jaehoon Chung <jh80.chung@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Alim Akhtar <alim.akhtar@samsung.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Date: Wed, 22 Aug 2012 09:00:43 -0700
+Subject: Re: [PATCH 1/2] mmc: core: Add a capability for disabling mmc cards
+Thread-Topic: [PATCH 1/2] mmc: core: Add a capability for disabling mmc cards
+Thread-Index: Ac2Af0kY4pNx+8hDTeOFeh5YtSaoWw==
+Message-ID: <5ED03810-753A-407D-A994-E1FD22BE45E6@marvell.com>
+References: <1345608318-15347-1-git-send-email-dianders@chromium.org>
+ <50346181.3010406@samsung.com>
+ <CAD=FV=UZM9b6++DkgemZA7qpAZgFN+NyyLjRecgSdjcEsu0YYA@mail.gmail.com>
+In-Reply-To: <CAD=FV=UZM9b6++DkgemZA7qpAZgFN+NyyLjRecgSdjcEsu0YYA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        John W Linville <linville@tuxdriver.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
- out_of_order memory use"
-References: <50345B12.1050600@lwfinger.net> <1345612503.5158.566.camel@edumazet-glaptop>
-In-Reply-To: <1345612503.5158.566.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 12:15 AM, Eric Dumazet wrote:
->
-> This particular commit is the start of a patches batch that ended in the
-> generic TCP coalescing mechanism.
->
-> It is known to have problem on drivers doing skb_clone() in their rx
-> path.
->
-> Current kernels should be ok, because coalescing doesnt happen if the
-> destination skb is cloned (skb_cloned(to) in skb_try_coalesce())
->
-> For 3.4 kernel, I guess I need to backport this skb_cloned(to) check fo
-> stable 3.4 kernel
->
-> But these skb_clone() in various USB drivers should be killed for good,
-> they really can kill the box because of skb->truesize lies.
 
-Applying your patch to 3.4 does not fix the problem. In addition, all of the 
-problems I noted happen with 3.6-rc2 - current kernels are not OK.
+On Aug 22, 2012, at 8:44 AM, Doug Anderson <dianders@chromium.org> wrote:
 
-Of the drivers I reported, only r8712u in staging/rtl8712/rtl8712_recv.c has a 
-direct call to skb_clone(). As its symptoms are different, the cloning is likely 
-the source of the problems there. In addition, the problem is intermittent. The 
-driver normally allocates a new buffer and copies to it, and the clone only 
-occurs when that skb allocation fails. I will try to fix that. My skb skills are 
-minimal and I will have to do some studying.
+> Jaehoon,
+> 
+> On Tue, Aug 21, 2012 at 9:35 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>> 
+>> Hi Doug,
+>> 
+>> I didn't know what purpose is.
+>> Why need to add the MMC_CAP2_NO_MMC?
+>> If card is SD or SDIO, mmc_attach_mmc(host) should not be entered.
+>> Could you explain to me in more detail?
+> 
+> Thanks for your feedback.  In this case I have a card that is an MMC
+> card so mmc_attach_sdio() and mmc_attach_sd() will fail.  If I let
+> mmc_attach_mmc() run it will actually find the MMC card.  However, on
+> this platform it is not valid to recognize MMC cards.
+> 
 
-Thanks,
 
-Larry
+Understand.   
 
+Can you explain why the change is needed.  Is it for technical 
+reasons that MMC is not allowed -- if so then I do not understand how SD can work
+and MMC cannot.
+
+If it is for marketing reasons -- then --- oh well .....
+
+
+Could you add some additional comments to the commit message.
+I think it makes sense to handle all 3 cases
+a) SDIO not allowed
+b) SD not allowed
+c) MMC not allowed
+
+> -Doug
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
