@@ -1,44 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab2HVMjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 08:39:46 -0400
-Received: from gherkin.frus.com ([192.158.254.49]:36224 "EHLO gherkin.frus.com"
+	id S932434Ab2HVMrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 08:47:06 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:37713 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932184Ab2HVMjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 08:39:45 -0400
-X-Greylist: delayed 1535 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Aug 2012 08:39:44 EDT
-Date: Wed, 22 Aug 2012 07:14:07 -0500
-From: Bob Tracy <rct@gherkin.frus.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-alpha@vger.kernel.org, mcree@orcon.net.nz
-Subject: [BUG] net/core/sock.c won't compile on alpha
-Message-ID: <20120822121407.GA6257@gherkin.frus.com>
-Mime-Version: 1.0
+	id S932132Ab2HVMrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 08:47:01 -0400
+Date: Wed, 22 Aug 2012 14:46:49 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org,
+        gong.chen@linux.intel.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        linux-edac@vger.kernel.org
+Subject: Re: [PATCH] x86: mce: Honour bios-set CMCI threshold
+Message-ID: <20120822124649.GD5817@aftab.osrc.amd.com>
+References: <20120822123054.29238.3864.stgit@localhost.localdomain>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20120822123054.29238.3864.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel version 3.6.0-rc2, and probably -rc1 as well.  I get the
-following compile-time error on alpha architecture:
+On Wed, Aug 22, 2012 at 06:00:54PM +0530, Naveen N. Rao wrote:
+> The ACPI spec doesn't provide for a way for the bios to pass down
+> recommended thresholds to the OS on a _per-bank_ basis. This patch adds
+> a new boot option, which if passed, allows bios to initialize the CMCI
+> threshold. In such a case, we simply skip programming any threshold
+> value.
+> 
+> As fail-safe, we initialize threshold to 1 if some banks have not been
+> initialized by the bios and warn the user.
+> 
+> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+> ---
+>  Documentation/x86/x86_64/boot-options.txt |    5 ++++
+>  arch/x86/include/asm/mce.h                |    1 +
+>  arch/x86/kernel/cpu/mcheck/mce.c          |    4 +++
+>  arch/x86/kernel/cpu/mcheck/mce_intel.c    |   39 +++++++++++++++++++++++++++--
+>  4 files changed, 46 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+> index c54b4f5..ec92540 100644
+> --- a/Documentation/x86/x86_64/boot-options.txt
+> +++ b/Documentation/x86/x86_64/boot-options.txt
+> @@ -50,6 +50,11 @@ Machine check
+>  		monarchtimeout:
+>  		Sets the time in us to wait for other CPUs on machine checks. 0
+>  		to disable.
+> +   mce=bios_cmci_threshold
+> +		Don't overwrite the bios-set CMCI threshold. This boot option
+> +		prevents Linux from overwriting the CMCI threshold set by the
+> +		bios. Without this option, Linux always sets the CMCI
+> +		threshold to 1.
+>  
+>     nomce (for compatibility with i386): same as mce=off
+>  
+> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+> index a3ac52b..8ad5078 100644
+> --- a/arch/x86/include/asm/mce.h
+> +++ b/arch/x86/include/asm/mce.h
+> @@ -171,6 +171,7 @@ DECLARE_PER_CPU(struct device *, mce_device);
+>  #ifdef CONFIG_X86_MCE_INTEL
+>  extern int mce_cmci_disabled;
+>  extern int mce_ignore_ce;
+> +extern int mce_bios_cmci_threshold;
+>  void mce_intel_feature_init(struct cpuinfo_x86 *c);
+>  void cmci_clear(void);
+>  void cmci_reenable(void);
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 292d025..401359d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -82,6 +82,7 @@ static int			mce_panic_timeout	__read_mostly;
+>  static int			mce_dont_log_ce		__read_mostly;
+>  int				mce_cmci_disabled	__read_mostly;
+>  int				mce_ignore_ce		__read_mostly;
+> +int				mce_bios_cmci_threshold	__read_mostly;
+>  int				mce_ser			__read_mostly;
 
-(...)
-  CC      net/core/sock.o
-net/core/sock.c:274:36: error: initializer element is not constant
-net/core/sock.c:274:36: error: (near initialization for "memalloc_socks")
-net/core/sock.c:274:36: error: initializer element is not constant
-make[2]: *** [net/core/sock.o] Error 1
-make[1]: *** [net/core] Error 2
-make: *** [net] Error 2
+AFAICT, this is actually a single-bit flag but we're using a whole
+integer for it and from looking at the other boot options a couple of
+them are used as flags too.
 
-Compiler is gcc-4.6.3.
+Care to define a
 
-Line 274 of net/core/sock.c is
+struct boot_flags {
+	__u64 	mce_bios_cmci_threshold : 1,
+		__reserved		: 63;
+};
 
-struct static_key memalloc_socks = STATIC_KEY_INIT_FALSE;
+and use
 
-which made its first appearance in 3.6.0-rc1.
+	boot_flags.mce_bios_cmci_threshold
 
---Bob
+in the conditionals below instead?
+
+I'll try to convert the rest of them to that struct and thus save some
+more space...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
