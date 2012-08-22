@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743Ab2HVH5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:57:12 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:57346 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757490Ab2HVH5K (ORCPT
+	id S1758752Ab2HVH5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 03:57:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36224 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757650Ab2HVH5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:57:10 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
-Date: Wed, 22 Aug 2012 09:57:07 +0200
-Message-ID: <3514180.RWySLZuOJm@ws-stein>
-User-Agent: KMail/4.8.5 (Linux/3.3.8-gentoo; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20120822152918.3e59616e@feng-i7>
-References: <4401854.hVfHzgeqjT@ws-stein> <20120822152918.3e59616e@feng-i7>
+	Wed, 22 Aug 2012 03:57:52 -0400
+Message-ID: <503490F9.2050805@gmail.com>
+Date: Wed, 22 Aug 2012 15:57:45 +0800
+From: qiuxishi <qiuxishi@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Minchan Kim <minchan@kernel.org>
+CC: akpm@linux-foundation.org, lliubbo@gmail.com, jiang.liu@huawei.com,
+        mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, qiuxishi@huawei.com,
+        wujianguo@huawei.com, bessel.wang@huawei.com, guohanjun@huawei.com,
+        chenkeping@huawei.com, yinghai@kernel.org, wency@cn.fujitsu.com
+Subject: Re: [PATCH] memory-hotplug: fix a drain pcp bug when offline pages
+References: <50337B15.2090701@gmail.com> <20120822033441.GB24667@bbox>
+In-Reply-To: <20120822033441.GB24667@bbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 2012-8-22 11:34, Minchan Kim wrote:
+> Hello Xishi,
+> 
+> On Tue, Aug 21, 2012 at 08:12:05PM +0800, qiuxishi wrote:
+>> From: Xishi Qiu <qiuxishi@huawei.com>
+>>
+>> When offline a section, we move all the free pages and pcp into MIGRATE_ISOLATE list first.
+>> start_isolate_page_range()
+>> 	set_migratetype_isolate()
+>> 		drain_all_pages(),
+>>
+>> Here is a problem, it is not sure that pcp will be moved into MIGRATE_ISOLATE list. They may
+>> be moved into MIGRATE_MOVABLE list because page_private() maybe 2. So when finish migrating
+>> pages, the free pages from pcp may be allocated again, and faild in check_pages_isolated().
+>> drain_all_pages()
+>> 	drain_local_pages()
+>> 		drain_pages()
+>> 			free_pcppages_bulk()
+>> 				__free_one_page(page, zone, 0, page_private(page));
+>>
+>> If we add move_freepages_block() after drain_all_pages(), it can not sure that all the pcp
+>> will be moved into MIGRATE_ISOLATE list when the system works on high load. The free pages
+>> which from pcp may immediately be allocated again.
+>>
+>> I think the similar bug described in http://marc.info/?t=134250882300003&r=1&w=2
+> 
+> Yes. I reported the problem a few month ago but it's not real bug in practice
+> but found by my eyes during looking the code so I wanted to confirm the problem.
+> 
+> Do you find that problem in real practice? or just code review?
+> 
 
-On Wednesday 22 August 2012 15:29:18, Feng Tang wrote:
-> On Wed, 22 Aug 2012 08:30:35 +0200
-> Alexander Stein <alexander.stein@systec-electronic.com> wrote:
-> 
-> > Hello,
-> > 
-> > I just noticed the 3.4 linux kernel fails to sucessfully probe the i2c-eg20t 
-> > driver. I returns with EBUSY error. It worked on the 3.0 kernel. To my view it 
-> > is caused the commit 07e8a51ff68353e01d795cceafbac9f54c49132b ( i2c-eg20t: use 
-> > i2c_add_numbered_adapter to get a fixed bus number).
-> > The reason it actually fails is that the i2c-isch driver is registered 
-> > beforehand which gets bus number 0. But this one is the bus number the eg20t 
-> > driver wants to register.
-> 
-> Make sense.
-> 
-> > A possibility is that if i2c_add_numbered_adapter failed with EBUSY just use 
-> > i2c_add_adapter to get at least the driver working, but with a non-fixed bus 
-> > number. Opinions?
-> 
-> Or can we give it a fixed offset, like let the i2c_eg20t controller bus number
-> start with 4? I don't expect there will be more than 4 other i2c controllers 
-> on EG20T compatible platforms.
+I use /sys/devices/system/memory/soft_offline_page to offline a lot of pages when the
+system works on high load, then I find some unknown zero refcount pages, such as
+get_any_page: 0x650422: unknown zero refcount page type 19400c00000000
+get_any_page: 0x650867: unknown zero refcount page type 19400c00000000
 
-Why use a fixed one? Give the driver (and maybe every i2c bus driver) a parameter which sets the base bus number it should use.
-E.g. i2c-eg20t.base-bus-num=2 so it will register the bus numbers starting from 2. If this parameter is unset. It would use the first free one, thus simply using i2c_add_adapter.
+soft_offline_page()
+	get_any_page()
+		set_migratetype_isolate()
+			drain_all_pages()
 
-Regards,
-Alexander
+I think after drain_all_pages(), pcp are moved into MIGRATE_MOVABLE list which managed by
+buddy allocator, but they are allocated and becaome pcp again as the system works on high
+load. There will be no this problem by applying this patch.
+
+> Anyway, I don't like your approach which I already considered because it hurts hotpath
+> while the race is really unlikely. Get_pageblock_migratetype is never trivial.
+> We should avoid the overhead in hotpath and move into memory-hotplug itself.
+> Do you see my patch in https://patchwork.kernel.org/patch/1225081/ ?
+
+Yes, you are right, I will try to find another way to fix this problem.
+How about doing this work in set_migratetype_isolate(), find the pcp and change the value
+of private to get_pageblock_migratetype(page)?
+
+Thanks
+Xishi Qiu
+
+>>
+>>
+>> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+>> ---
+>>  mm/page_alloc.c |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index d0723b2..501f6de 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -673,7 +673,8 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+>>  			/* must delete as __free_one_page list manipulates */
+>>  			list_del(&page->lru);
+>>  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+>> -			__free_one_page(page, zone, 0, page_private(page));
+>> +			__free_one_page(page, zone, 0,
+>> +					get_pageblock_migratetype(page));
+>>  			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+>>  		} while (--to_free && --batch_free && !list_empty(list));
+>>  	}
+>> -- 1.7.6.1 .
+>>
+>>
+>>
+>> .
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
