@@ -1,121 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933387Ab2HVW4F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 18:56:05 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:53556 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757216Ab2HVWzs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 18:55:48 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6812"; a="226084946"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/3] ARM: MSM: clock-pcom: Mark functions static
-Date: Wed, 22 Aug 2012 15:55:44 -0700
-Message-Id: <1345676145-12321-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1345676145-12321-1-git-send-email-sboyd@codeaurora.org>
-References: <1345676145-12321-1-git-send-email-sboyd@codeaurora.org>
+	id S933324Ab2HVW5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 18:57:46 -0400
+Received: from gate.crashing.org ([63.228.1.57]:50204 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755268Ab2HVW5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 18:57:42 -0400
+Message-ID: <1345676194.13399.1.camel@pasglop>
+Subject: Re: [PATCH 33/36] autonuma: powerpc port
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>, Andrea Arcangeli <aarcange@redhat.com>
+Date: Thu, 23 Aug 2012 08:56:34 +1000
+In-Reply-To: <1345672907.2617.44.camel@pasglop>
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+	 <1345647560-30387-34-git-send-email-aarcange@redhat.com>
+	 <1345672907.2617.44.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions are only used within clock-pcom.c, therefore mark
-them as static.
+On Thu, 2012-08-23 at 08:01 +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2012-08-22 at 16:59 +0200, Andrea Arcangeli wrote:
+> > From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> > 
+> >     * PMD flaging is not required in powerpc since large pages
+> >       are tracked in ptes.
+> >     * Yet to be tested with large pages
+> >     * This is an initial patch that partially works
+> >     * knuma_scand and numa hinting page faults works
+> >     * Page migration is yet to be observed/verified
+> > 
+> > Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> I don't like this.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/clock-pcom.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+What I mean here is that it's fine as a proof of concept ;-) I don't
+like it being in a series aimed at upstream...
 
-diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
-index 63b7113..a52c970 100644
---- a/arch/arm/mach-msm/clock-pcom.c
-+++ b/arch/arm/mach-msm/clock-pcom.c
-@@ -25,7 +25,7 @@
- /*
-  * glue for the proc_comm interface
-  */
--int pc_clk_enable(unsigned id)
-+static int pc_clk_enable(unsigned id)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_ENABLE, &id, NULL);
- 	if (rc < 0)
-@@ -34,7 +34,7 @@ int pc_clk_enable(unsigned id)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--void pc_clk_disable(unsigned id)
-+static void pc_clk_disable(unsigned id)
- {
- 	msm_proc_comm(PCOM_CLKCTL_RPC_DISABLE, &id, NULL);
- }
-@@ -54,7 +54,7 @@ int pc_clk_reset(unsigned id, enum clk_reset_action action)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_rate(unsigned id, unsigned rate)
-+static int pc_clk_set_rate(unsigned id, unsigned rate)
- {
- 	/* The rate _might_ be rounded off to the nearest KHz value by the
- 	 * remote function. So a return value of 0 doesn't necessarily mean
-@@ -67,7 +67,7 @@ int pc_clk_set_rate(unsigned id, unsigned rate)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_min_rate(unsigned id, unsigned rate)
-+static int pc_clk_set_min_rate(unsigned id, unsigned rate)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_MIN_RATE, &id, &rate);
- 	if (rc < 0)
-@@ -76,7 +76,7 @@ int pc_clk_set_min_rate(unsigned id, unsigned rate)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_max_rate(unsigned id, unsigned rate)
-+static int pc_clk_set_max_rate(unsigned id, unsigned rate)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_MAX_RATE, &id, &rate);
- 	if (rc < 0)
-@@ -85,7 +85,7 @@ int pc_clk_set_max_rate(unsigned id, unsigned rate)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_flags(unsigned id, unsigned flags)
-+static int pc_clk_set_flags(unsigned id, unsigned flags)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_SET_FLAGS, &id, &flags);
- 	if (rc < 0)
-@@ -94,7 +94,7 @@ int pc_clk_set_flags(unsigned id, unsigned flags)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--unsigned pc_clk_get_rate(unsigned id)
-+static unsigned pc_clk_get_rate(unsigned id)
- {
- 	if (msm_proc_comm(PCOM_CLKCTL_RPC_RATE, &id, NULL))
- 		return 0;
-@@ -102,7 +102,7 @@ unsigned pc_clk_get_rate(unsigned id)
- 		return id;
- }
- 
--unsigned pc_clk_is_enabled(unsigned id)
-+static unsigned pc_clk_is_enabled(unsigned id)
- {
- 	if (msm_proc_comm(PCOM_CLKCTL_RPC_ENABLED, &id, NULL))
- 		return 0;
-@@ -110,7 +110,7 @@ unsigned pc_clk_is_enabled(unsigned id)
- 		return id;
- }
- 
--long pc_clk_round_rate(unsigned id, unsigned rate)
-+static long pc_clk_round_rate(unsigned id, unsigned rate)
- {
- 
- 	/* Not really supported; pc_clk_set_rate() does rounding on it's own. */
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+We can try to flush out the issues, but as it is, the patch isn't
+upstreamable imho.
+
+As for finding PTE bits, I have a few ideas we need to discuss, but
+nothing simple I'm afraid.
+
+Cheers,
+Ben.
+
+> ---
+> >  arch/powerpc/include/asm/pgtable.h        |   48 ++++++++++++++++++++++++++++-
+> >  arch/powerpc/include/asm/pte-hash64-64k.h |    4 ++-
+> >  arch/powerpc/mm/numa.c                    |    3 +-
+> >  mm/autonuma.c                             |    2 +-
+> >  4 files changed, 53 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
+> > index 2e0e411..5f03079 100644
+> > --- a/arch/powerpc/include/asm/pgtable.h
+> > +++ b/arch/powerpc/include/asm/pgtable.h
+> > @@ -33,10 +33,56 @@ static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & _PAGE_DIRTY; }
+> >  static inline int pte_young(pte_t pte)		{ return pte_val(pte) & _PAGE_ACCESSED; }
+> >  static inline int pte_file(pte_t pte)		{ return pte_val(pte) & _PAGE_FILE; }
+> >  static inline int pte_special(pte_t pte)	{ return pte_val(pte) & _PAGE_SPECIAL; }
+> > -static inline int pte_present(pte_t pte)	{ return pte_val(pte) & _PAGE_PRESENT; }
+> > +static inline int pte_present(pte_t pte)	{ return pte_val(pte) &
+> > +							(_PAGE_PRESENT|_PAGE_NUMA_PTE); }
+> 
+> Is this absolutely necessary ? (testing two bits). It somewhat changes
+> the semantics of "pte_present" which I don't really like.
+> 
+> >  static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK) == 0; }
+> >  static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
+> >  
+> > +#ifdef CONFIG_AUTONUMA
+> > +static inline int pte_numa(pte_t pte)
+> > +{
+> > +       return (pte_val(pte) &
+> > +               (_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
+> > +}
+> > +
+> > +#endif
+> 
+> Why the ifdef and not anywhere else ?
+> 
+> > +static inline pte_t pte_mknonnuma(pte_t pte)
+> > +{
+> > +       pte_val(pte) &= ~_PAGE_NUMA_PTE;
+> > +       pte_val(pte) |= (_PAGE_PRESENT|_PAGE_ACCESSED);
+> > +
+> > +       return pte;
+> > +}
+> > +
+> > +static inline pte_t pte_mknuma(pte_t pte)
+> > +{
+> > +       pte_val(pte) |= _PAGE_NUMA_PTE;
+> > +       pte_val(pte) &= ~_PAGE_PRESENT;
+> > +       return pte;
+> > +}
+> > +
+> > +static inline int pmd_numa(pmd_t pmd)
+> > +{
+> > +       /* PMD tracking not implemented */
+> > +       return 0;
+> > +}
+> > +
+> > +static inline pmd_t pmd_mknonnuma(pmd_t pmd)
+> > +{
+> > +	BUG();
+> > +	return pmd;
+> > +}
+> > +
+> > +static inline pmd_t pmd_mknuma(pmd_t pmd)
+> > +{
+> > +	BUG();
+> > +	return pmd;
+> > +}
+> > +
+> > +/* No pmd flags on powerpc */
+> > +#define set_pmd_at(mm, addr, pmdp, pmd)  do { } while (0)
+> > +
+> >  /* Conversion functions: convert a page and protection to a page entry,
+> >   * and a page entry and page directory to the page they refer to.
+> >   *
+> > diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/include/asm/pte-hash64-64k.h
+> > index 59247e8..f7e1468 100644
+> > --- a/arch/powerpc/include/asm/pte-hash64-64k.h
+> > +++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+> > @@ -7,6 +7,8 @@
+> >  #define _PAGE_COMBO	0x10000000 /* this is a combo 4k page */
+> >  #define _PAGE_4K_PFN	0x20000000 /* PFN is for a single 4k page */
+> >  
+> > +#define _PAGE_NUMA_PTE 0x40000000 /* Adjust PTE_RPN_SHIFT below */
+> > +
+> >  /* For 64K page, we don't have a separate _PAGE_HASHPTE bit. Instead,
+> >   * we set that to be the whole sub-bits mask. The C code will only
+> >   * test this, so a multi-bit mask will work. For combo pages, this
+> > @@ -36,7 +38,7 @@
+> >   * That gives us a max RPN of 34 bits, which means a max of 50 bits
+> >   * of addressable physical space, or 46 bits for the special 4k PFNs.
+> >   */
+> > -#define PTE_RPN_SHIFT	(30)
+> > +#define PTE_RPN_SHIFT	(31)
+> 
+> I'm concerned. We are already running short on RPN bits. We can't spare
+> more. If you absolutely need a PTE bit, we'll need to explore ways to
+> free some, but just reducing the RPN isn't an option.
+> 
+> Think of what happens if PTE_4K_PFN is set...
+> 
+> Also you conveniently avoided all the other pte-*.h variants meaning you
+> broke the build for everything except ppc64 with 64k pages.
+> 
+> >  #ifndef __ASSEMBLY__
+> >  
+> > diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+> > index 39b1597..80af41e 100644
+> > --- a/arch/powerpc/mm/numa.c
+> > +++ b/arch/powerpc/mm/numa.c
+> > @@ -22,6 +22,7 @@
+> >  #include <linux/pfn.h>
+> >  #include <linux/cpuset.h>
+> >  #include <linux/node.h>
+> > +#include <linux/page_autonuma.h>
+> >  #include <asm/sparsemem.h>
+> >  #include <asm/prom.h>
+> >  #include <asm/smp.h>
+> > @@ -1045,7 +1046,7 @@ void __init do_init_bootmem(void)
+> >  		 * all reserved areas marked.
+> >  		 */
+> >  		NODE_DATA(nid) = careful_zallocation(nid,
+> > -					sizeof(struct pglist_data),
+> > +					autonuma_pglist_data_size(),
+> >  					SMP_CACHE_BYTES, end_pfn);
+> >  
+> >    		dbg("node %d\n", nid);
+> > diff --git a/mm/autonuma.c b/mm/autonuma.c
+> > index ada6c57..a4da3f3 100644
+> > --- a/mm/autonuma.c
+> > +++ b/mm/autonuma.c
+> > @@ -25,7 +25,7 @@ unsigned long autonuma_flags __read_mostly =
+> >  #ifdef CONFIG_AUTONUMA_DEFAULT_ENABLED
+> >  	|(1<<AUTONUMA_ENABLED_FLAG)
+> >  #endif
+> > -	|(1<<AUTONUMA_SCAN_PMD_FLAG);
+> > +	|(0<<AUTONUMA_SCAN_PMD_FLAG);
+> 
+> That changes the default accross all architectures, is that ok vs.
+> Andrea ?
+> 
+> Cheers,
+> Ben.
+> 
+> >  static DEFINE_MUTEX(knumad_mm_mutex);
+> >  
+> 
+
 
