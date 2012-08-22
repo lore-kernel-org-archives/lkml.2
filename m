@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab2HVDaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 23:30:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144Ab2HVDaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 23:30:08 -0400
-Message-ID: <50345232.4090002@redhat.com>
-Date: Tue, 21 Aug 2012 23:29:54 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755579Ab2HVDcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 23:32:00 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60546 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab2HVDb4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 23:31:56 -0400
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Hugh Dickins <hughd@google.com>,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] Re: Repeated fork() causes SLAB to grow without bound
-References: <20120816024610.GA5350@evergreen.ssec.wisc.edu> <502D42E5.7090403@redhat.com> <20120818000312.GA4262@evergreen.ssec.wisc.edu> <502F100A.1080401@redhat.com> <alpine.LSU.2.00.1208200032450.24855@eggly.anvils> <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com> <20120822032057.GA30871@google.com>
-In-Reply-To: <20120822032057.GA30871@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1208211109050.3421@lazy>
+References: <1345521975-13708-1-git-send-email-manoj.iyer@canonical.com>
+	<1345522015-13740-1-git-send-email-manoj.iyer@canonical.com>
+	<CAOvWMLaAJrmOKiq=ESXq3wCvFHxWAXMBaeLsK6MUaWBZG+i4Aw@mail.gmail.com>
+	<alpine.DEB.2.02.1208211109050.3421@lazy>
+Date: Wed, 22 Aug 2012 11:31:55 +0800
+Message-ID: <CAOvWMLZz2RnWG77nrxs=HhR8QAqvX47i-a9JpbdmSqQEY2TWkQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] xhci: Unconditionally switch ports to xHCI on powerup
+From: Andiry Xu <andiry@gmail.com>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 11:20 PM, Michel Lespinasse wrote:
-> On Mon, Aug 20, 2012 at 02:39:26AM -0700, Michel Lespinasse wrote:
->> Instead of adding an atomic count for page references, we could limit
->> the anon_vma stacking depth. In fork, we would only clone anon_vmas
->> that have a low enough generation count. I think that's not great
->> (adds a special case for the deep-fork-without-exec behavior), but
->> still better than the atomic page reference counter.
+On Wed, Aug 22, 2012 at 12:16 AM, Manoj Iyer <manoj.iyer@canonical.com> wrote:
 >
-> Here is an attached patch to demonstrate the idea.
+> Looks like in pci-quirks.c, we enter the do() while() loop, reach the end of
+> extended capabilities and goto hc_init: label, skipping the switch. Probably
+> moving the switch under the hc_init label might work? Currently we switch
+> unconditionally on resume, so we could do the same at powerup as well.
 >
-> anon_vma_clone() is modified to return the length of the existing same_vma
-> anon vma chain, and we create a new anon_vma in the child only on the first
-> fork (this could be tweaked to allow up to a set number of forks, but
-> I think the first fork would cover all the common forking server cases).
 
-I suspect we need 2 or 3.
+If this is a must-to-do thing for Intel Panther Point platform, then
+we need to make sure it's called on power up and resume. Yes, I think
+moving the code below hc_init label should work and I think it's a
+better solution than your original patch.
 
-Some forking servers first fork off one child, and have
-the original parent exit, in order to "background the server".
-That first child then becomes the parent to the real child
-processes that do the work.
+Thanks,
+Andiry
 
-It is conceivable that we might need an extra level for
-processes that do something special with privilege dropping,
-namespace changing, etc...
-
-Even setting the threshold to 5 should be totally harmless,
-since the problem does not kick in until we have really
-long chains, like in Dan's bug report.
-
--- 
-All rights reversed
+>
+> On Tue, 21 Aug 2012, Andiry Xu wrote:
+>
+>> On Tue, Aug 21, 2012 at 12:06 PM,  <manoj.iyer@canonical.com> wrote:
+>>>
+>>> From: Manoj Iyer <manoj.iyer@canonical.com>
+>>>
+>>> USB 3.0 devices show up as high-speed devices on powerup, after an
+>>> s3 cycle they are correctly recognized as SuperSpeed. At powerup
+>>> unconditionally switch the port to xHCI like we do when we resume
+>>> from suspend.
+>>>
+>>> BugLink: http://bugs.launchpad.net/bugs/1000424
+>>>
+>>> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+>>> ---
+>>>  drivers/usb/host/xhci-pci.c |    8 ++++++++
+>>>  1 file changed, 8 insertions(+)
+>>>
+>>> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+>>> index 9bfd4ca11..5c8dbea 100644
+>>> --- a/drivers/usb/host/xhci-pci.c
+>>> +++ b/drivers/usb/host/xhci-pci.c
+>>> @@ -48,6 +48,14 @@ static int xhci_pci_reinit(struct xhci_hcd *xhci,
+>>> struct pci_dev *pdev)
+>>>         if (!pci_set_mwi(pdev))
+>>>                 xhci_dbg(xhci, "MWI active\n");
+>>>
+>>> +       /*
+>>> +        * USB SuperSpeed ports are recognized as HighSpeed ports on
+>>> powerup
+>>> +        * unconditionally switch the ports to xHCI like we do when
+>>> resume
+>>> +        * from suspend.
+>>> +        */
+>>> +       if (usb_is_intel_switchable_xhci(pdev))
+>>> +               usb_enable_xhci_ports(pdev);
+>>> +
+>>
+>>
+>> Strange. This should have been called during system power up, in
+>> quirk_usb_handoff_xhci() of pci_quirks.c. Do you see that routine get
+>> called during power up?
+>>
+>> Thanks,
+>> Andiry
+>>
+>>>         xhci_dbg(xhci, "Finished xhci_pci_reinit\n");
+>>>         return 0;
+>>>  }
+>>> --
+>>> 1.7.9.5
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>>
+>
+> --
+> ====================
+> Manoj Iyer
+> Ubuntu/Canonical
+> Hardware Enablement
+> ====================
