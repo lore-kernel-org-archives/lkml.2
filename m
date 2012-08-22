@@ -1,107 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319Ab2HVWAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 18:00:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59278 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752025Ab2HVWAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 18:00:12 -0400
-Date: Thu, 23 Aug 2012 07:59:45 +1000
-From: NeilBrown <neilb@suse.de>
-To: Dan Williams <djbw@fb.com>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Li Shaohua <shli@fusionio.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
-        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux RAID <linux-raid@vger.kernel.org>
-Subject: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
-Message-ID: <20120823075945.4dd02cbd@notabene.brown>
-In-Reply-To: <CAA9_cmc4t_P3p-72iZx4UALNe3fupVqBKvvsvCtMH6G3HZUdww@mail.gmail.com>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
-	<20120816024654.GB3781@thunk.org>
-	<20120816111051.GA16036@localhost>
-	<20120816152513.GA31346@thunk.org>
-	<20120817060915.GB28786@localhost>
-	<20120817134039.GB11439@thunk.org>
-	<20120817142526.GA1059@localhost>
-	<20120822035702.GF2570@yliu-dev.sh.intel.com>
-	<20120822160025.272188d1@notabene.brown>
-	<CAA9_cmc4t_P3p-72iZx4UALNe3fupVqBKvvsvCtMH6G3HZUdww@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/4_+e5+VL34ObpP6rg+7KLCz"; protocol="application/pgp-signature"
+	id S1757707Ab2HVWA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 18:00:27 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:18705
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752025Ab2HVWAR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 18:00:17 -0400
+X-Forefront-Antispam-Report: CIP:157.56.232.213;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0511HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: PS1(zzzz1202hzz8275bhz32i2a8h668h839h944hd25hf0ah107ah1155h)
+From: Scan Subscription <scan-subscription@coverity.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: New Defect(s) reported by Coverity Scan
+Thread-Topic: New Defect(s) reported by Coverity Scan
+Thread-Index: Ac2AsM89FmDALAgBTZWT67Rf+c38yA==
+Date: Wed, 22 Aug 2012 22:00:10 +0000
+Message-ID: <C0A4ACBB26D853488EA0C68388B7026813B3C4A6@BLUPRD0511MB401.namprd05.prod.outlook.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [38.99.3.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: coverity.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/4_+e5+VL34ObpP6rg+7KLCz
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 22 Aug 2012 13:47:07 -0700 Dan Williams <djbw@fb.com> wrote:
+Hi,
 
-> On Tue, Aug 21, 2012 at 11:00 PM, NeilBrown <neilb@suse.de> wrote:
-> > On Wed, 22 Aug 2012 11:57:02 +0800 Yuanhan Liu <yuanhan.liu@linux.intel=
-.com>
-> > wrote:
-> >
-> >>
-> >> -#define NR_STRIPES           256
-> >> +#define NR_STRIPES           1024
-> >
-> > Changing one magic number into another magic number might help your cas=
-e, but
-> > it not really a general solution.
-> >
-> > Possibly making sure that max_nr_stripes is at least some multiple of t=
-he
-> > chunk size might make sense, but I wouldn't want to see a very large mu=
-ltiple.
-> >
-> > I thing the problems with RAID5 are deeper than that.  Hopefully I'll f=
-igure
-> > out exactly what the best fix is soon - I'm trying to look into it.
-> >
-> > I don't think the size of the cache is a big part of the solution.  I t=
-hink
-> > correct scheduling of IO is the real answer.
->=20
-> Not sure if this is what we are seeing here, but we still have the
-> unresolved fast parity effect whereby slower parity calculation gives
-> a larger time to coalesce writes.  I saw this effect when playing with
-> xor offload.
+Please find the latest report on new defect(s) that have been introduced to the Linux Kernel found with Coverity SCAN. 
 
-I did find a case where inserting a printk made it go faster again.
-Replacing that with msleep(2) worked as well. :-)
 
-I'm looking for a most robust solution though.
-Thanks for the reminder.
+Defect(s) Reported-by: Coverity Scan:
+___________________________________________________________________________
+** CID 716812: Unchecked return value (CHECKED_RETURN)
+/drivers/platform/x86/ideapad-laptop.c: 639
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=716812
 
-NeilBrown
 
---Sig_/4_+e5+VL34ObpP6rg+7KLCz
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+** CID 715732: Macro compares unsigned to 0 (NO_EFFECT)
+/drivers/gpu/drm/nouveau/nve0_fifo.c: 307
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715732
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIVAwUBUDVWUTnsnt1WYoG5AQJCbg//cV3klQTHJr6ReUaxedXIeb6G2VfpFlpE
-0C8epq3N0RQtz7Mm3hUjuvN2kleXUpegiQ2QoG9VTm0Mr/8LIDU3k8lHgd2AnKSh
-t4QKjHjDbBNe3Vpl5ceFYEZJAscF6z/xFAsGxxuoqMarLRGCF/UFzbSpygk4DrnF
-JdI3xyMwx5SgpTIkyj6Ef14EJevTC1I3glGCqYGpZn6Do4JurWtpr314VbSTaQhI
-FnNNHENzp4D4YokqmSat4bxR83u+AiH5pgJYZ0T9yt2ABoyTKQDj8ztidcUXNvLj
-YHSWHNATS5FazBPavcS8CnOZX0H3rd9Q6pUEFcJxSvOQwMzZOydakN8SAiTycwoU
-RBMkPN0nZtKmZfgMMa5sAfYNtt7UMCvbflo6Szjy+Ee2iqh9M6gb0Occ6cDmVTx/
-RomBZBZopn3jphgu/NPIWQsWDDp3Y7+8IiTeRVBQPEuNbogUJgONxwQ2LY13Kp7t
-ZbmGbsSy2/ZF2PvIsTMdAH1UbK8qsAAGtsz3jZVDYjwDk0CmpEx3/bA9vKLjQqXa
-D+l+vFlWUT6brvmf3xjQWBgUZOoyx4DmfRJjfkxXbb59WmmgU0+pQNYWjaN4Slyz
-qxQydPVJxsl8Vsj8zMVpnL4I5D+9S5JvlwZ+KSY0vrM1dzcFG4RC+nIy6/Th7gj5
-7ag5uNoaMu0=
-=shyY
------END PGP SIGNATURE-----
+** CID 715543: Dereference before null check (REVERSE_INULL)
+/drivers/input/touchscreen/eeti_ts.c: 209
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715543
 
---Sig_/4_+e5+VL34ObpP6rg+7KLCz--
+
+
+###########################################################################
+Defect Details:
+___________________________________________________________________________
+CID 716812: Unchecked return value (CHECKED_RETURN)
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=716812
+
+/drivers/platform/x86/ideapad-laptop.c: 639 ( check_return)
+   636    {
+   637    	unsigned long bit, value;
+   638    
+>>> CID 716812: Unchecked return value (CHECKED_RETURN) Calling function 
+>>> "read_ec_data(acpi_handle, int, unsigned long *)" without checking return value (as is done elsewhere 23 out of 25 times).
+>>> No check of the return value of "read_ec_data(ideapad_handle, 49, &value)".
+   639    	read_ec_data(ideapad_handle, VPCCMD_R_SPECIAL_BUTTONS, &value);
+   640    
+   641    	for (bit = 0; bit < 16; bit++) {
+   642    		if (test_bit(bit, &value)) {
+   643    			switch (bit) {
+  
+ 
+________________________________________________________________________
+CID 715732: Macro compares unsigned to 0 (NO_EFFECT)
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715732
+
+/drivers/gpu/drm/nouveau/nve0_fifo.c: 307 ( unsigned_compare)
+   304    	int ret = -EINVAL;
+   305    
+   306    	spin_lock_irqsave(&dev_priv->channels.lock, flags);
+>>> CID 715732: Macro compares unsigned to 0 (NO_EFFECT) This 
+>>> greater-than-or-equal-to-zero comparison of an unsigned value is always true. "chid >= 0U".
+   307    	if (likely(chid >= 0 && chid < priv->base.channels)) {
+   308    		chan = dev_priv->channels.ptr[chid];
+   309    		if (likely(chan))
+   310    			ret = nouveau_finish_page_flip(chan, NULL);
+   311    	}
+  
+________________________________________________________________________
+CID 715543: Dereference before null check (REVERSE_INULL)
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=715543
+
+/drivers/input/touchscreen/eeti_ts.c: 202 ( deref_ptr)
+   199    
+   200    	priv->client = client;
+   201    	priv->input = input;
+>>> Directly dereferencing pointer "pdata".
+   202    	priv->irq_gpio = pdata->irq_gpio;
+   203    	priv->irq = gpio_to_irq(pdata->irq_gpio);
+   204    
+   205    	err = gpio_request_one(pdata->irq_gpio, GPIOF_IN, client->name);
+   206    	if (err < 0)
+   207    		goto err1;
+   208    
+>>> CID 715543: Dereference before null check (REVERSE_INULL) 
+>>> Null-checking "pdata" suggests that it may be null, but it has already been dereferenced on all paths leading to the check.
+   209    	if (pdata)
+   210    		priv->irq_active_high = pdata->irq_active_high;
+   211    
+   212    	irq_flags = priv->irq_active_high ?
+   213    		IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
+  
+________________________________________________________________________
+
+
+To view the defects in Coverity Scan visit, http://scan5.coverity.com:8080.  
+Your username should be the first part of your email address. If you don't have a username, you can request one by emailing: scan-admin@coverity.com
+	
+Thank you,
+Dakshesh Vyas
+Coverity SCAN-ADMIN
+scan-admin@coverity.com
+http://scan.coverity.com
+
