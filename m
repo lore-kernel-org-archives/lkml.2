@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab2HVPGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:06:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932693Ab2HVPAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:00:43 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 06/36] autonuma: introduce kthread_bind_node()
-Date: Wed, 22 Aug 2012 16:58:50 +0200
-Message-Id: <1345647560-30387-7-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
-References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+	id S932843Ab2HVPHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:07:17 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:30581
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932678Ab2HVPHH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:07:07 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zz98dI9371I78fbmzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3hd25hf0ah107ahbe9i1155h)
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] powerpc: Bail out of KGDB when we've been triggered
+Thread-Topic: [PATCH 2/3] powerpc: Bail out of KGDB when we've been triggered
+Thread-Index: AQHNgHfHPfqz5vKODkm0m2GxH8E0Ew==
+Date: Wed, 22 Aug 2012 15:07:00 +0000
+Message-ID: <6AE080B68D46FC4BA2D2769E68D765B7059AE7E7@039-SN2MPN1-022.039d.mgd.msft.net>
+References: <1345632192-19810-1-git-send-email-tiejun.chen@windriver.com>
+	<1345632192-19810-2-git-send-email-tiejun.chen@windriver.com>
+In-Reply-To: <1345632192-19810-2-git-send-email-tiejun.chen@windriver.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [70.112.118.223]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <6AAA1B076287954CAAD6A9E7C7F49D88@mgd.freescale.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function makes it easy to bind the per-node knuma_migrated
-threads to their respective NUMA nodes. Those threads take memory from
-the other nodes (in round robin with a incoming queue for each remote
-node) and they move that memory to their local node.
+On Wed, Aug 22, 2012 at 5:43 AM, Tiejun Chen <tiejun.chen@windriver.com> wrote:
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/kthread.h |    1 +
- kernel/kthread.c        |   21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+> +int kgdb_skipexception(int exception, struct pt_regs *regs)
+> +{
+> +       if (kgdb_isremovedbreak(regs->nip))
+> +               return 1;
+> +
+> +       return 0;
+> +}
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index 22ccf9d..5901aad 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -33,6 +33,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- })
- 
- void kthread_bind(struct task_struct *k, unsigned int cpu);
-+void kthread_bind_node(struct task_struct *p, int nid);
- int kthread_stop(struct task_struct *k);
- int kthread_should_stop(void);
- bool kthread_freezable_should_stop(bool *was_frozen);
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index b579af5..0034e5f 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -234,6 +234,27 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
- EXPORT_SYMBOL(kthread_bind);
- 
- /**
-+ * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
-+ * @p: thread created by kthread_create().
-+ * @nid: node (might not be online, must be possible) for @k to run on.
-+ *
-+ * Description: This function is equivalent to set_cpus_allowed(),
-+ * except that @nid doesn't need to be online, and the thread must be
-+ * stopped (i.e., just returned from kthread_create()).
-+ */
-+void kthread_bind_node(struct task_struct *p, int nid)
-+{
-+	/* Must have done schedule() in kthread() before we set_task_cpu */
-+	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	/* It's safe because the task is inactive. */
-+	do_set_cpus_allowed(p, cpumask_of_node(nid));
-+}
-+
-+/**
-  * kthread_stop - stop a thread created by kthread_create().
-  * @k: thread created by kthread_create().
-  *
+int kgdb_skipexception(int exception, struct pt_regs *regs)
+{
+        return !!kgdb_isremovedbreak(regs->nip));
+}
+
+If the caller only cares about zero vs. non-zero, you can drop the !!.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
