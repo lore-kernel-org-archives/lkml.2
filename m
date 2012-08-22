@@ -1,177 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab2HVLUe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 07:20:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36607 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab2HVLUb (ORCPT
+	id S1755585Ab2HVLUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 07:20:46 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:11465 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab2HVLUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 07:20:31 -0400
-From: Ido Yariv <ido@wizery.com>
-To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Shai Fultheim <shai@scalemp.com>, Ido Yariv <ido@wizery.com>
-Subject: [PATCH v2] x86/vsmp: Use hypervisor layer for initialization
-Date: Wed, 22 Aug 2012 14:20:11 +0300
-Message-Id: <1345634411-28108-1-git-send-email-ido@wizery.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <20120822100845.GB26323@gmail.com>
-References: <20120822100845.GB26323@gmail.com>
+	Wed, 22 Aug 2012 07:20:32 -0400
+X-IronPort-AV: E=Sophos;i="4.77,808,1336348800"; 
+   d="scan'208";a="14123572"
+Date: Wed, 22 Aug 2012 12:20:09 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] xen/events: fix unmask_evtchn for PV on HVM
+ guests
+In-Reply-To: <alpine.DEB.2.02.1207181851010.23783@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1208221217290.15568@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com> <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1206221722040.27860@kaball.uk.xensource.com> <20120709141915.GB9580@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1207131821250.23783@kaball.uk.xensource.com> <20120716151441.GD552@phenom.dumpdata.com> <alpine.DEB.2.02.1207181851010.23783@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vSMP Foundation detection and initialization could be done by the
-hypervisor layer, so set it up that way.
+Konrad,
+I cannot see this patch anywhere in your trees. Did I miss it?
+Or maybe it just fell through the cracks?
+Let me know if you want me to do anything more.
+Cheers,
+Stefano
 
-Signed-off-by: Ido Yariv <ido@wizery.com>
-Acked-by: Shai Fultheim <shai@scalemp.com>
----
-Changes from v1:
-- Fixed build errors on 32bit kernels
-
- arch/x86/include/asm/hypervisor.h |    1 +
- arch/x86/include/asm/setup.h      |    7 -------
- arch/x86/kernel/cpu/hypervisor.c  |    3 +++
- arch/x86/kernel/setup.c           |    2 --
- arch/x86/kernel/vsmp_64.c         |   27 +++++++++++++++++----------
- 5 files changed, 21 insertions(+), 19 deletions(-)
-
-diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
-index b518c75..eb617ae 100644
---- a/arch/x86/include/asm/hypervisor.h
-+++ b/arch/x86/include/asm/hypervisor.h
-@@ -50,6 +50,7 @@ extern const struct hypervisor_x86 x86_hyper_vmware;
- extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
- extern const struct hypervisor_x86 x86_hyper_xen_hvm;
- extern const struct hypervisor_x86 x86_hyper_kvm;
-+extern const struct hypervisor_x86 x86_hyper_vsmp;
- 
- static inline bool hypervisor_x2apic_available(void)
- {
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index d0f19f9..a4c5b14 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -26,13 +26,6 @@
- #include <asm/bootparam.h>
- #include <asm/x86_init.h>
- 
--/* Interrupt control for vSMPowered x86_64 systems */
--#ifdef CONFIG_X86_64
--void vsmp_init(void);
--#else
--static inline void vsmp_init(void) { }
--#endif
--
- void setup_bios_corruption_check(void);
- 
- #ifdef CONFIG_X86_VISWS
-diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-index a8f8fa9..f250d6a 100644
---- a/arch/x86/kernel/cpu/hypervisor.c
-+++ b/arch/x86/kernel/cpu/hypervisor.c
-@@ -40,6 +40,9 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
- #ifdef CONFIG_KVM_GUEST
- 	&x86_hyper_kvm,
- #endif
-+#ifdef CONFIG_X86_64
-+	&x86_hyper_vsmp,
-+#endif
- };
- 
- const struct hypervisor_x86 *x86_hyper;
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f4b9b80..f9706d1 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -943,8 +943,6 @@ void __init setup_arch(char **cmdline_p)
- 
- 	reserve_crashkernel();
- 
--	vsmp_init();
--
- 	io_delay_init();
- 
- 	/*
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index 992f890..f655f2c 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -17,12 +17,14 @@
- #include <linux/pci_regs.h>
- #include <linux/smp.h>
- #include <linux/irq.h>
-+#include <linux/module.h>
- 
- #include <asm/apic.h>
- #include <asm/pci-direct.h>
- #include <asm/io.h>
- #include <asm/paravirt.h>
- #include <asm/setup.h>
-+#include <asm/hypervisor.h>
- 
- #define TOPOLOGY_REGISTER_OFFSET 0x10
- 
-@@ -132,17 +134,20 @@ static void __init set_vsmp_pv_ops(void)
- #ifdef CONFIG_PCI
- static int is_vsmp = -1;
- 
--static void __init detect_vsmp_box(void)
-+static bool __init detect_vsmp_box(void)
- {
- 	is_vsmp = 0;
- 
- 	if (!early_pci_allowed())
--		return;
-+		goto out;
- 
- 	/* Check if we are running on a ScaleMP vSMPowered box */
- 	if (read_pci_config(0, 0x1f, 0, PCI_VENDOR_ID) ==
- 	     (PCI_VENDOR_ID_SCALEMP | (PCI_DEVICE_ID_SCALEMP_VSMP_CTL << 16)))
- 		is_vsmp = 1;
-+
-+out:
-+	return is_vsmp == 1;
- }
- 
- int is_vsmp_box(void)
-@@ -156,8 +161,9 @@ int is_vsmp_box(void)
- }
- 
- #else
--static void __init detect_vsmp_box(void)
-+static bool __init detect_vsmp_box(void)
- {
-+	return false;
- }
- int is_vsmp_box(void)
- {
-@@ -221,16 +227,17 @@ static void vsmp_apic_post_init(void)
- 	apic->vector_allocation_domain = fill_vector_allocation_domain;
- }
- 
--void __init vsmp_init(void)
-+static void __init vsmp_platform_setup(void)
- {
--	detect_vsmp_box();
--	if (!is_vsmp_box())
--		return;
--
- 	x86_platform.apic_post_init = vsmp_apic_post_init;
- 
- 	vsmp_cap_cpus();
--
- 	set_vsmp_pv_ops();
--	return;
- }
-+
-+const __refconst struct hypervisor_x86 x86_hyper_vsmp = {
-+	.name			= "ScaleMP vSMP Foundation",
-+	.detect			= detect_vsmp_box,
-+	.init_platform		= vsmp_platform_setup,
-+};
-+EXPORT_SYMBOL(x86_hyper_vsmp);
--- 
-1.7.7.6
-
+On Wed, 18 Jul 2012, Stefano Stabellini wrote:
+> xen/events: fix unmask_evtchn for PV on HVM guests
+> 
+> When unmask_evtchn is called, if we already have an event pending, we
+> just set evtchn_pending_sel waiting for local_irq_enable to be called.
+> That is because PV guests set the irq_enable pvops to
+> xen_irq_enable_direct in xen_setup_vcpu_info_placement:
+> xen_irq_enable_direct is implemented in assembly in
+> arch/x86/xen/xen-asm.S and call xen_force_evtchn_callback if
+> XEN_vcpu_info_pending is set.
+> 
+> However HVM guests (and ARM guests) do not change or do not have the
+> irq_enable pvop, so evtchn_unmask cannot work properly for them.
+> 
+> Considering that having the pending_irq bit set when unmask_evtchn is
+> called is not very common, and it is simpler to keep the
+> native_irq_enable implementation for HVM guests (and ARM guests), the
+> best thing to do is just use the EVTCHNOP_unmask hypercall (Xen
+> re-injects pending events in response).
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  drivers/xen/events.c |   17 ++++++++++++++---
+>  1 files changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 0a8a17c..d75cc39 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -373,11 +373,22 @@ static void unmask_evtchn(int port)
+>  {
+>  	struct shared_info *s = HYPERVISOR_shared_info;
+>  	unsigned int cpu = get_cpu();
+> +	int do_hypercall = 0, evtchn_pending = 0;
+>  
+>  	BUG_ON(!irqs_disabled());
+>  
+> -	/* Slow path (hypercall) if this is a non-local port. */
+> -	if (unlikely(cpu != cpu_from_evtchn(port))) {
+> +	if (unlikely((cpu != cpu_from_evtchn(port))))
+> +		do_hypercall = 1;
+> +	else
+> +		evtchn_pending = sync_test_bit(port, &s->evtchn_pending[0]);
+> +
+> +	if (unlikely(evtchn_pending && xen_hvm_domain()))
+> +		do_hypercall = 1;
+> +
+> +	/* Slow path (hypercall) if this is a non-local port or if this is
+> +	 * an hvm domain and an event is pending (hvm domains don't have
+> +	 * their own implementation of irq_enable). */
+> +	if (do_hypercall) {
+>  		struct evtchn_unmask unmask = { .port = port };
+>  		(void)HYPERVISOR_event_channel_op(EVTCHNOP_unmask, &unmask);
+>  	} else {
+> @@ -390,7 +401,7 @@ static void unmask_evtchn(int port)
+>  		 * 'hw_resend_irq'. Just like a real IO-APIC we 'lose
+>  		 * the interrupt edge' if the channel is masked.
+>  		 */
+> -		if (sync_test_bit(port, &s->evtchn_pending[0]) &&
+> +		if (evtchn_pending &&
+>  		    !sync_test_and_set_bit(port / BITS_PER_LONG,
+>  					   &vcpu_info->evtchn_pending_sel))
+>  			vcpu_info->evtchn_upcall_pending = 1;
+> -- 
+> 1.7.2.5
+> 
