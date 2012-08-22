@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab2HVHOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:14:52 -0400
-Received: from smtp-out-04.shaw.ca ([64.59.134.12]:10831 "EHLO
-	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab2HVHOs (ORCPT
+	id S1756283Ab2HVHPE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 03:15:04 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45249 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755947Ab2HVHO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:14:48 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=aDUJ/pRHNXkohnfhaDKKve0FfU8uPxX8npdo6G126bI= c=1 sm=1
- a=M1j8YbFVnEoA:10 a=BLceEmwcHowA:10 a=WvdZ44He1QAA:10
- a=sQcIUxX0G8DGr1HsvJ29bQ==:17 a=QyXUC8HyAAAA:8 a=ySfo2T4IAAAA:8
- a=2UkASJ5G1MoEXep2ZAkA:9 a=CjuIK1q_8ugA:10 a=wcwyecJwAnrTbuc_:21
- a=oxZp5YP5HTs3EkUh:21 a=j4nzMFrpAAAA:8 a=CTqgaCOKGsTkfkrjCWAA:9
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: multipart/signed; protocol="application/pgp-signature"; micalg=pgp-sha1; boundary="Apple-Mail-22-92778657"
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20120822160025.272188d1@notabene.brown>
-Date: Wed, 22 Aug 2012 01:14:42 -0600
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Li Shaohua <shli@fusionio.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
-        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux RAID <linux-raid@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <1B78C9B4-CC2B-43B3-8513-2221925D25A0@dilger.ca>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com> <20120816024654.GB3781@thunk.org> <20120816111051.GA16036@localhost> <20120816152513.GA31346@thunk.org> <20120817060915.GB28786@localhost> <20120817134039.GB11439@thunk.org> <20120817142526.GA1059@localhost> <20120822035702.GF2570@yliu-dev.sh.intel.com> <20120822160025.272188d1@notabene.brown>
-To: NeilBrown <neilb@suse.de>
-X-Pgp-Agent: GPGMail 1.3.3
-X-Mailer: Apple Mail (2.1084)
+	Wed, 22 Aug 2012 03:14:57 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-45-503486eed56d
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
+Subject: [RFC 0/5] Consider higher small zone and mmaped-pages stream
+Date: Wed, 22 Aug 2012 16:15:12 +0900
+Message-Id: <1345619717-5322-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---Apple-Mail-22-92778657
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=us-ascii
+This patchset solves two problem.
 
-On 2012-08-22, at 12:00 AM, NeilBrown wrote:
-> On Wed, 22 Aug 2012 11:57:02 +0800 Yuanhan Liu =
-<yuanhan.liu@linux.intel.com>
-> wrote:
->>=20
->> -#define NR_STRIPES		256
->> +#define NR_STRIPES		1024
->=20
-> Changing one magic number into another magic number might help your =
-case, but
-> it not really a general solution.
+1. higher small memory zone - [2] and [3]
+2. mmaped-pages stream reclaim efficiency [5]
 
-We've actually been carrying a patch for a few years in Lustre to
-increase the NR_STRIPES to 2048, and made it a configurable module
-parameter.  This made a noticeable improvement to the performance
-for fast systems.
+[1] and [4] is minor fix which isn't related with
+this series so it could be apply separately.
 
-> Possibly making sure that max_nr_stripes is at least some multiple of =
-the
-> chunk size might make sense, but I wouldn't want to see a very large =
-multiple.
->=20
-> I thing the problems with RAID5 are deeper than that.  Hopefully I'll =
-figure
-> out exactly what the best fix is soon - I'm trying to look into it.
+I wrote down each problem in each patch description.
+Please look at each patch.
 
-The other MD RAID-5/6 patches that we have change the page submission
-order to avoid the need to merge pages in the elevator so much, and a
-patch to allow zero-copy IO submission if the caller marks the page for
-direct IO (indicating it will not be modified until after IO completes).
-This avoids a lot of overhead on fast systems.
+Test enviroment is following as
 
-This isn't really my area of expertise, but patches against RHEL6
-could be seen at http://review.whamcloud.com/1142 if you want to
-take a look.  I don't know if that code is at all relevant to what
-is in 3.x today.
+1. Intel(R) Core(TM)2 Duo CPU
+2. 2G RAM and 400M movable zone
+3. Test program:
+   Hannes's mapped-file-stream.c with 78 processes per 1G.
+   10 times exectuion.
 
-> I don't think the size of the cache is a big part of the solution.  I =
-think
-> correct scheduling of IO is the real answer.
+Thanks.
 
-My experience is that on fast systems the IO scheduler just gets in the
-way.  Submitting larger contiguous IOs to each disk in the first place
-is far better than trying to merge small IOs again at the back end.
+Minchan Kim (5):
+  [1] vmscan: Fix obsolete comment of balance_pgdat
+  [2] vmscan: sleep only if backingdev is congested
+  [3] vmscan: prevent excessive pageout of kswapd
+  [4] vmscan: get rid of unnecessary nr_dirty ret variable
+  [5] vmscan: accelerate to reclaim mapped-pages stream
 
-Cheers, Andreas
+ include/linux/mmzone.h |   23 +++++++++++++++
+ mm/vmscan.c            |   77 ++++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 85 insertions(+), 15 deletions(-)
 
+-- 
+1.7.9.5
 
-
-
-
-
---Apple-Mail-22-92778657
-content-type: application/pgp-signature; x-mac-type=70674453;
-	name=PGP.sig
-content-description: This is a digitally signed message part
-content-disposition: inline; filename=PGP.sig
-content-transfer-encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.17 (Darwin)
-Comment: GPGTools - http://gpgtools.org
-
-iD8DBQFQNIbipIg59Q01vtYRAkAcAKCGtJsylLo4ETG37VAdEClYoaIN3gCfbuCf
-Hnhc3up3Pzt4rcJP0PRnNJQ=
-=Q66g
------END PGP SIGNATURE-----
-
---Apple-Mail-22-92778657--
