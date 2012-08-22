@@ -1,141 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758770Ab2HVIGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:06:54 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62820 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085Ab2HVIGo (ORCPT
+	id S1758553Ab2HVIHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:07:23 -0400
+Received: from smtp-vbr11.xs4all.nl ([194.109.24.31]:2889 "EHLO
+	smtp-vbr11.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758769Ab2HVIGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:06:44 -0400
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alex Bergmann <alex@linlab.net>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Nandita Dukkipati <nanditad@google.com>
-In-Reply-To: <503419D3.1080700@linlab.net>
-References: <503419D3.1080700@linlab.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Aug 2012 10:06:38 +0200
-Message-ID: <1345622798.5158.717.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 22 Aug 2012 04:06:55 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Volokh Konstantin <volokh84@gmail.com>
+Subject: Re: [PATCH 04/10] staging: media: go7007: Add IDENT for TW2802/2804
+Date: Wed, 22 Aug 2012 10:05:18 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, volokh@telros.ru
+References: <1345632319-23224-1-git-send-email-volokh84@gmail.com> <1345632319-23224-4-git-send-email-volokh84@gmail.com>
+In-Reply-To: <1345632319-23224-4-git-send-email-volokh84@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201208221005.18039.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-22 at 01:29 +0200, Alex Bergmann wrote:
-> Hi David,
-> 
-> I'm not 100% sure, but it looks like I found an RFC mismatch with the 
-> current default values of the TCP implementation.
-> 
-> Alex
-> 
-> From 8b854a525eb45f64ad29dfab16f9d9f681e84495 Mon Sep 17 00:00:00 2001
-> From: Alexander Bergmann <alex@linlab.net>
-> Date: Wed, 22 Aug 2012 00:29:08 +0200
-> Subject: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-> 
-> Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
-> RFC6298 (former RFC2988bis). This introduced a gap with RFC1122 that
-> defines a minimum retransmission window for SYN segments of at least
-> 180secs.
-> 
-> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
-> a timeout of 63secs.
-> 
->         ((2 << 5) - 1) * 3 secs = 189 secs
->         ((2 << 5) - 1) * 1 secs = 63 secs
-
-Strange maths ... here I have :
-
-(1+2+4+8+16) * 3 = 93 secs
-vs
-(1+2+4+8+16) * 1 = 31 secs
-
-So even before said commit, we were not rfc1122 compliant.
-
-Using 7 retries would give 127 seconds, still not rfc compliant.
-
-> 
-> To fulfill the MUST constraint in RFC1122 section 4.2.3.5 about R2 for
-> SYN segments, the values of TCP_SYN_RETRIES and TCP_SYNACK_RETRIES must
-> be changed to 7 reties.
-> 
->         ((2 << 7) - 1) * 1 secs = 255 secs
-> 
-> This would result in an ETIMEDOUT of 4 minutes 15 seconds.
-> 
-> Signed-off-by: Alexander Bergmann <alex@linlab.net>
+On Wed August 22 2012 12:45:13 Volokh Konstantin wrote:
+> Signed-off-by: Volokh Konstantin <volokh84@gmail.com>
 > ---
->  include/net/tcp.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  include/media/v4l2-chip-ident.h |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/net/tcp.h b/include/net/tcp.h
-> index 1f000ff..7eaae19 100644
-> --- a/include/net/tcp.h
-> +++ b/include/net/tcp.h
-> @@ -98,10 +98,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
->                                  * 15 is ~13-30min depending on RTO.
->                                  */
+> diff --git a/include/media/v4l2-chip-ident.h b/include/media/v4l2-chip-ident.h
+> index 7395c81..5395495 100644
+> --- a/include/media/v4l2-chip-ident.h
+> +++ b/include/media/v4l2-chip-ident.h
+> @@ -113,6 +113,10 @@ enum {
+>  	/* module vp27smpx: just ident 2700 */
+>  	V4L2_IDENT_VP27SMPX = 2700,
 >  
-> -#define TCP_SYN_RETRIES         5      /* number of times to retry active opening a
-> +#define TCP_SYN_RETRIES         7      /* number of times to retry active opening a
->                                  * connection: ~180sec is RFC minimum   */
->  
-> -#define TCP_SYNACK_RETRIES 5   /* number of times to retry passive opening a
-> +#define TCP_SYNACK_RETRIES 7   /* number of times to retry passive opening a
->                                  * connection: ~180sec is RFC minimum   */
->  
->  #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
+> +	/* module wis-tw2804: 2802/2804 */
+> +	V4L2_IDENT_TW2802 = 2802,
+> +	V4L2_IDENT_TW2804 = 2804,
+> +
+>  	/* module vpx3220: reserved range: 3210-3229 */
+>  	V4L2_IDENT_VPX3214C = 3214,
+>  	V4L2_IDENT_VPX3216B = 3216,
+> 
 
-Nice catch !
+There is no need to add this, unless the g/s_register or g_chip_ident ops
+are also implemented.
 
-I kind of disagree with the SYNACK part.
+In this case I'd just drop this patch.
 
-RFC 1122 says in 4.2.3.5 :
+Regards,
 
-  However, the values of R1 and R2 may be different for SYN
-  and data segments.  In particular, R2 for a SYN segment MUST
-  be set large enough to provide retransmission of the segment
-  for at least 3 minutes.  The application can close the
-  connection (i.e., give up on the open attempt) sooner, of
-  course.
-
-I am not sure SYNACK segments were considered as a 'SYN segment' in this
-section. (as the application cannot 'close' the connection on the passive
-side, only kernel is aware of a SYN_RECV socket)
-
-Increasing TCP_SYNACK_RETRIES from 5 to 7 or 8 amplifies the
-SYN/synflood problem.
-
-A valid client should retransmit its SYN packet for 180 seconds, I dont
-believe we should make sure the SYNACK will be sent for 180 seconds as
-well.
-
-If we _really_ want to have a 3 minutes R2 for SYNACK, I suggest
-changing things to that we dont send more than 5 SYNACKS, maybe using
-RTO=6 after one retransmit
-
-current situation :
-1 sec
-2 sec
-4 sec
-8 sec
-16 sec
-----
-total of 31 seconds
-
-
-1 sec
-12 sec  // switch to RTO = 6
-24 sec
-48 sec
-96 sec
------
-total of 181 seconds
-
-
-
+	Hans
