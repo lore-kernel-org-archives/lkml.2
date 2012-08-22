@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab2HVPGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:06:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61397 "EHLO mx1.redhat.com"
+	id S932831Ab2HVPG6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:06:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26876 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932635Ab2HVPGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:06:09 -0400
+	id S932692Ab2HVPAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:00:43 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,103 +26,71 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 34/36] autonuma: make the AUTONUMA_SCAN_PMD_FLAG conditional to CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
-Date: Wed, 22 Aug 2012 16:59:18 +0200
-Message-Id: <1345647560-30387-35-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 09/36] autonuma: core autonuma.h header
+Date: Wed, 22 Aug 2012 16:58:53 +0200
+Message-Id: <1345647560-30387-10-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the sysfs entry /sys/kernel/mm/autonuma/knuma_scand/pmd and
-force the knuma_scand pmd mode off if
-CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD is not set by the architecture.
+Header that defines the generic AutoNUMA specific functions.
 
-Enable AutoNUMA for PPC64.
+All functions are defined unconditionally, but are only linked into
+the kernel if CONFIG_AUTONUMA=y. When CONFIG_AUTONUMA=n, their call
+sites are optimized away at build time (or the kernel wouldn't link).
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/Kconfig         |    3 +++
- arch/powerpc/Kconfig |    6 ++++++
- arch/x86/Kconfig     |    1 +
- mm/autonuma.c        |    9 ++++++++-
- 4 files changed, 18 insertions(+), 1 deletions(-)
+ include/linux/autonuma.h |   41 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 41 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/autonuma.h
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index ee3ed89..6f4f19f 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -284,4 +284,7 @@ config SECCOMP_FILTER
- config HAVE_ARCH_AUTONUMA
- 	bool
- 
-+config HAVE_ARCH_AUTONUMA_SCAN_PMD
-+	bool
+diff --git a/include/linux/autonuma.h b/include/linux/autonuma.h
+new file mode 100644
+index 0000000..85ca5eb
+--- /dev/null
++++ b/include/linux/autonuma.h
+@@ -0,0 +1,41 @@
++#ifndef _LINUX_AUTONUMA_H
++#define _LINUX_AUTONUMA_H
 +
- source "kernel/gcov/Kconfig"
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 352f416..73fa908 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -140,6 +140,12 @@ config PPC
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
- 
-+# allow AutoNUMA only on PPC64 for now
-+config PPC_HAVE_ARCH_AUTONUMA
-+	bool
-+	default y if PPC64
-+	select HAVE_ARCH_AUTONUMA
++#ifdef CONFIG_AUTONUMA
 +
- config EARLY_PRINTK
- 	bool
- 	default y
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 4cbdfce..f24bff8 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -98,6 +98,7 @@ config X86
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
- 	select HAVE_ARCH_AUTONUMA
-+	select HAVE_ARCH_AUTONUMA_SCAN_PMD
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-diff --git a/mm/autonuma.c b/mm/autonuma.c
-index a4da3f3..4b7c744 100644
---- a/mm/autonuma.c
-+++ b/mm/autonuma.c
-@@ -25,7 +25,10 @@ unsigned long autonuma_flags __read_mostly =
- #ifdef CONFIG_AUTONUMA_DEFAULT_ENABLED
- 	|(1<<AUTONUMA_ENABLED_FLAG)
- #endif
--	|(0<<AUTONUMA_SCAN_PMD_FLAG);
-+#ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
-+	|(1<<AUTONUMA_SCAN_PMD_FLAG)
-+#endif
-+	;
- 
- static DEFINE_MUTEX(knumad_mm_mutex);
- 
-@@ -1300,7 +1303,9 @@ static ssize_t NAME ## _store(struct kobject *kobj,			\
- static struct kobj_attribute NAME ## _attr =				\
- 	__ATTR(NAME, 0644, NAME ## _show, NAME ## _store);
- 
-+#ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
- SYSFS_ENTRY(pmd, AUTONUMA_SCAN_PMD_FLAG);
-+#endif /* CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD */
- SYSFS_ENTRY(debug, AUTONUMA_DEBUG_FLAG);
- #ifdef CONFIG_DEBUG_VM
- SYSFS_ENTRY(load_balance_strict, AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG);
-@@ -1398,7 +1403,9 @@ static struct attribute *knuma_scand_attr[] = {
- 	&pages_to_scan_attr.attr,
- 	&pages_scanned_attr.attr,
- 	&full_scans_attr.attr,
-+#ifdef CONFIG_HAVE_ARCH_AUTONUMA_SCAN_PMD
- 	&pmd_attr.attr,
-+#endif
- 	NULL,
- };
- static struct attribute_group knuma_scand_attr_group = {
++#include <linux/autonuma_flags.h>
++
++extern void autonuma_enter(struct mm_struct *mm);
++extern void autonuma_exit(struct mm_struct *mm);
++extern void __autonuma_migrate_page_remove(struct page *page);
++extern void autonuma_migrate_split_huge_page(struct page *page,
++					     struct page *page_tail);
++extern void autonuma_setup_new_exec(struct task_struct *p);
++
++static inline void autonuma_migrate_page_remove(struct page *page)
++{
++	if (ACCESS_ONCE(page->autonuma_migrate_nid) >= 0)
++		__autonuma_migrate_page_remove(page);
++}
++
++#define autonuma_printk(format, args...) \
++	if (autonuma_debug()) printk(format, ##args)
++
++#else /* CONFIG_AUTONUMA */
++
++static inline void autonuma_enter(struct mm_struct *mm) {}
++static inline void autonuma_exit(struct mm_struct *mm) {}
++static inline void autonuma_migrate_page_remove(struct page *page) {}
++static inline void autonuma_migrate_split_huge_page(struct page *page,
++						    struct page *page_tail) {}
++static inline void autonuma_setup_new_exec(struct task_struct *p) {}
++
++#endif /* CONFIG_AUTONUMA */
++
++extern pte_t __pte_numa_fixup(struct mm_struct *mm, struct vm_area_struct *vma,
++			      unsigned long addr, pte_t pte, pte_t *ptep);
++extern void __pmd_numa_fixup(struct mm_struct *mm, unsigned long addr,
++			     pmd_t *pmd);
++extern void numa_hinting_fault(struct page *page, int numpages);
++
++#endif /* _LINUX_AUTONUMA_H */
