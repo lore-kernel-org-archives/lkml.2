@@ -1,111 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab2HVPsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:48:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41986 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753475Ab2HVPsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:48:15 -0400
-Date: Wed, 22 Aug 2012 16:48:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
-Message-ID: <20120822154812.GK7995@opensource.wolfsonmicro.com>
-References: <20120820175155.GH26991@opensource.wolfsonmicro.com>
- <20120821085618.GA26899@gmail.com>
- <20120821095026.GU26991@opensource.wolfsonmicro.com>
- <20120821105413.GD26899@gmail.com>
- <20120821110329.GA7995@opensource.wolfsonmicro.com>
- <20120821120243.GF26899@gmail.com>
- <20120821165207.GX7995@opensource.wolfsonmicro.com>
- <20120822081746.GA4089@gmail.com>
- <20120822111913.GG7995@opensource.wolfsonmicro.com>
- <20120822115524.GA18545@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IdGNrZu1oYcejyEu"
+	id S1754890Ab2HVP6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:58:35 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:43192 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab2HVP6b convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 22 Aug 2012 11:58:31 -0400
+Message-Id: <50351DEF020000780009702A@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 22 Aug 2012 16:59:11 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Q:pt_base in COMPAT mode offset by two pages. Was:Re:
+ [Xen-devel] [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive
+ areas.
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+ <20120820141305.GA2713@phenom.dumpdata.com>
+ <20120821172732.GA23715@phenom.dumpdata.com>
+ <20120821190317.GA13035@phenom.dumpdata.com>
+In-Reply-To: <20120821190317.GA13035@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120822115524.GA18545@gmail.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 21.08.12 at 21:03, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Tue, Aug 21, 2012 at 01:27:32PM -0400, Konrad Rzeszutek Wilk wrote:
+>> On Mon, Aug 20, 2012 at 10:13:05AM -0400, Konrad Rzeszutek Wilk wrote:
+>> > On Fri, Aug 17, 2012 at 06:35:12PM +0100, Stefano Stabellini wrote:
+>> > > On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+>> > > > instead of a big memblock_reserve. This way we can be more
+>> > > > selective in freeing regions (and it also makes it easier
+>> > > > to understand where is what).
+>> > > > 
+>> > > > [v1: Move the auto_translate_physmap to proper line]
+>> > > > [v2: Per Stefano suggestion add more comments]
+>> > > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> > > 
+>> > > much better now!
+>> > 
+>> > Thought interestingly enough it breaks 32-bit dom0s (and only dom0s).
+>> > Will have a revised patch posted shortly.
+>> 
+>> Jan, I thought something odd. Part of this code replaces this:
+>> 
+>> 	memblock_reserve(__pa(xen_start_info->mfn_list),
+>> 		xen_start_info->pt_base - xen_start_info->mfn_list);
+>> 
+>> with a more region-by-region area. What I found out that if I boot this
+>> as 32-bit guest with a 64-bit hypervisor the xen_start_info->pt_base is
+>> actually wrong.
+>> 
+>> Specifically this is what bootup says:
+>> 
+>> (good working case - 32bit hypervisor with 32-bit dom0):
+>> (XEN)  Loaded kernel: c1000000->c1a23000
+>> (XEN)  Init. ramdisk: c1a23000->cf730e00
+>> (XEN)  Phys-Mach map: cf731000->cf831000
+>> (XEN)  Start info:    cf831000->cf83147c
+>> (XEN)  Page tables:   cf832000->cf8b5000
+>> (XEN)  Boot stack:    cf8b5000->cf8b6000
+>> (XEN)  TOTAL:         c0000000->cfc00000
+>> 
+>> [    0.000000] PT: cf832000 (f832000)
+>> [    0.000000] Reserving PT: f832000->f8b5000
+>> 
+>> And with a 64-bit hypervisor:
+>> 
+>> XEN) VIRTUAL MEMORY ARRANGEMENT:
+>> (XEN)  Loaded kernel: 00000000c1000000->00000000c1a23000
+>> (XEN)  Init. ramdisk: 00000000c1a23000->00000000cf730e00
+>> (XEN)  Phys-Mach map: 00000000cf731000->00000000cf831000
+>> (XEN)  Start info:    00000000cf831000->00000000cf8314b4
+>> (XEN)  Page tables:   00000000cf832000->00000000cf8b6000
+>> (XEN)  Boot stack:    00000000cf8b6000->00000000cf8b7000
+>> (XEN)  TOTAL:         00000000c0000000->00000000cfc00000
+>> (XEN)  ENTRY ADDRESS: 00000000c16bb22c
+>> 
+>> [    0.000000] PT: cf834000 (f834000)
+>> [    0.000000] Reserving PT: f834000->f8b8000
+>> 
+>> So the pt_base is offset by two pages. And looking at c/s 13257
+>> its not clear to me why this two page offset was added?
 
---IdGNrZu1oYcejyEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Actually, the adjustment turns out to be correct: The page
+tables for a 32-on-64 dom0 get allocated in the order "first L1",
+"first L2", "first L3", so the offset to the page table base is
+indeed 2. When reading xen/include/public/xen.h's comment
+very strictly, this is not a violation (since there nothing is said
+that the first thing in the page table space is pointed to by
+pt_base; I admit that this seems to be implied though, namely
+do I think that it is implied that the page table space is the
+range [pt_base, pt_base + nt_pt_frames), whereas that
+range here indeed is [pt_base - 2, pt_base - 2 + nt_pt_frames),
+which - without a priori knowledge - the kernel would have
+difficulty to figure out).
 
-On Wed, Aug 22, 2012 at 12:55:25PM +0100, Lee Jones wrote:
+Below is a debugging patch I used to see the full picture, if you
+want to double check.
 
-> > I *have* asked you to communicate more clearly about what you're doing
-> > but that doesn't mean to stop sending code, it means to have clearer
-> > words around what you're sending.=20
+One thing I also noticed is that nr_pt_frames apparently is
+one too high in this case, as the L4 is not really part of the
+page tables from the kernel's perspective (and not represented
+anywhere in the corresponding VA range).
 
-> That's not how I interpreted your words:
+Jan
 
-> "What you can do here is to commmunicate about what you're doing more.
-> Don't just think about the code, think about the communication
-> surrounding the code - this is the core of the issue."
+--- a/xen/arch/x86/domain_build.c
++++ b/xen/arch/x86/domain_build.c
+@@ -940,6 +940,7 @@ int __init construct_dom0(
+     si->flags       |= (xen_processor_pmbits << 8) & SIF_PM_MASK;
+     si->pt_base      = vpt_start + 2 * PAGE_SIZE * !!is_pv_32on64_domain(d);
+     si->nr_pt_frames = nr_pt_pages;
++printk("PT#%lx\n", si->nr_pt_frames);//temp
+     si->mfn_list     = vphysmap_start;
+     snprintf(si->magic, sizeof(si->magic), "xen-3.0-x86_%d%s",
+              elf_64bit(&elf) ? 64 : 32, parms.pae ? "p" : "");
+@@ -1115,6 +1116,10 @@ int __init construct_dom0(
+                 process_pending_softirqs();
+         }
+     }
++show_page_walk(vpt_start);//temp
++show_page_walk(si->pt_base);//temp
++show_page_walk(v_start);//temp
++show_page_walk(v_end - 1);//temp
+ 
+     if ( initrd_len != 0 )
+     {
 
-Just to be clear I'd include things like commit messages, cover letters
-and so on in the general area of communication.
-
-> I think it's great that you like the idea and want to extend that
-> functionality to other MFDs which perhaps don't support DT, or the
-> ones that do but don't want to provide compatible strings or device
-> nodes for all the MFD's child devices. But that is all we're doing
-> here. There was no breakage. It served a purpose and it worked well.
-> So well in fact that you've now provided the intended functionality
-> to other devices.
-
-I'm looking at this from the point of view of adding the compatible
-strings and then finding that the core starts remapping things in the
-case where you're probing from DT - and this behaviour will vary
-depending on the device tree that the user is using so the driver can't
-even make a decision based on if device tree is being used by the
-system.
-
-> You only noticed it 2 days ago and I had a patch ready to go yesterday.
-> I'm confused because I don't understand why would you even complain about
-> it if you intended to work on it yourself? Surely, "Ah, I see an issue wi=
-th
-> xyz, patch to follow." Would have been more appropriate, instead of=20
-> complaining about it, then I go and waste my time trying to fix something
-> you intend on fixing yourself.
-
-I didn't originally intend to do anything, if I had done I'd just have
-sent a patch as you say.  Originally I'd just noticed it as being an
-awkwardly designed interface at the wrong abstraction layer, it was only
-later on that I realised how it could blow up.
-
---IdGNrZu1oYcejyEu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQNP81AAoJEFJkBDiqVpZ43FgP/0h+Ke0tOqodTDXZ+VXBM0yB
-Abfa6sTbjCfGL3DGhf4TvngPoUy/3Hsj4AA8SOV66oFZ+0mw6GcfMYv7dg0ixiZh
-a7RSInapNy4voYOHeRsF2lT3Uw7ZHHiT8K4Mq3ZmKQ0GPltfLF/g73lR49/7TdLC
-Rx8MhNvm4uViPLzz7txQwG77tqVyINY8foJkm3nlFSyef4iyqG2OtuxfurQcEmSv
-GgA8Y2tvWeCmnWnf7vBDZ+TYgkER1xV/1XrC1Z2pTzVMBMHt8deFY048SegjfHtW
-oeYUxTPDkLKqQ1lfVDcvUHurK3jrQIeo+hN2c8qypCc41WoJEwS3Xte/hFR4nkk/
-PiY0CHs3f2+u64inWlEthEc+fPIA68XvxlYkxdXsviixV6taTIjUs5p+ZW+YDAIZ
-W6ZbMIrN0Vjuh3Z07zBx8hX2HQstLjl+msPvSEnjAEuf2dLjkJ2yA9lzV0aOd9yu
-1w/woHiSx1dVaXkYJyDBIZEsHhRT6JVRYBNq5+H2GpwuzI1Ajf60QuJF26bGvoMN
-/Mt+CzVSb145zY5boMSyBZyO/hrVn+yH69ES2zzwPRh10buOppPE74kxI5gkhrBn
-zjBK7vnJw03Rdmx5OlDgH70c5NSZD9RoouzgduvKBy4H/AB9KOBHUh74hapBLSz7
-2FcYoaJdwSMN3WMx7v1X
-=eNsF
------END PGP SIGNATURE-----
-
---IdGNrZu1oYcejyEu--
