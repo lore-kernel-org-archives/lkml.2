@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591Ab2HVIot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:44:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54267 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab2HVInl (ORCPT
+	id S1757226Ab2HVIpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:45:09 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:51661 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755320Ab2HVIon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:43:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 56/74] lto, workaround: Add workaround for missing LTO symbols in igb
-Date: Wed, 22 Aug 2012 08:43:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, JBeulich@suse.com,
-        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-57-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1345345030-22211-57-git-send-email-andi@firstfloor.org>
+	Wed, 22 Aug 2012 04:44:43 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: Etienne Carriere <etienne.carriere@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 7/7] mfd/tc3589x: MASK_ON_SUSPEND
+Date: Wed, 22 Aug 2012 10:44:30 +0200
+Message-ID: <1345625070-5820-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208220843.36047.arnd@arndb.de>
-X-Provags-ID: V02:K0:7vRy4jjPvvtGagENurz9DiL/MO3PzRhs6i5wKfr2V4G
- 6t8YRVZqLtPjBGEjl23MZ+XBGs7w7cEHV08r6dL0b6VCwKrT+Y
- 9yD9zK10VE6MHiFmh4J903V9akiuIvIosrAttEgXd7gi31Mixy
- SoOQRiuPWOfCFWJvcI6KjcdmZ5GrPw3uGee6BE5DvAcyeNgOs7
- /4Qju/homIykm4eGrbIXmigsvR+ETATzaD/YMQGf6J+u8zLjJj
- 0N717z4wThkasHEzwKuLT3qoJnZSjoop6l+vPMkZNG7lU1ZIAR
- ZLY6IYkcoqXnm0wkUxPWTTRjKFH3Lgmn/9wrqtN2d5NUlsNcVB
- hQZrsTzQeZaLOCPwgwmo=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 August 2012, Andi Kleen wrote:
-> -static struct e1000_mac_operations e1000_mac_ops_82575 = {
-> +/* Workaround for LTO bug */
-> +__visible struct e1000_mac_operations e1000_mac_ops_82575 = {
+From: Etienne Carriere <etienne.carriere@stericsson.com>
 
-The comment is not very clear outside the context of this patch.
-Maybe change it to /* __visible added to work around an LTO but */.
+ux500 machines performs pins (GPIO) reconfiguration when entering
+in the suspended mode. This reconfiguration aims at reaching an ultra
+low power HW configuration.
 
-	Arnd
+Due to this HW reconfiguration, some HW devices can change of HW state
+and have their output signals at level that could generate IRQs.
+
+If the non-wakeup IRQs are disabled but not yet masked (delayed interrupt
+disable feature from the generic irq layer), effective interrupts reach
+the system only because the system attempt to enter the suspended mode.
+
+To prevent such IRQs to trig, all irq chips embedded in ux500 platform
+should enable their IRQCHIP_MASK_ON_SUSPEND flag.
+
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Etienne Carriere <etienne.carriere@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/gpio-tc3589x.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+index 2a82e89..6e48c50 100644
+--- a/drivers/gpio/gpio-tc3589x.c
++++ b/drivers/gpio/gpio-tc3589x.c
+@@ -199,6 +199,7 @@ static struct irq_chip tc3589x_gpio_irq_chip = {
+ 	.irq_mask		= tc3589x_gpio_irq_mask,
+ 	.irq_unmask		= tc3589x_gpio_irq_unmask,
+ 	.irq_set_type		= tc3589x_gpio_irq_set_type,
++	.flags			= IRQCHIP_MASK_ON_SUSPEND,
+ };
+ 
+ static irqreturn_t tc3589x_gpio_irq(int irq, void *dev)
+-- 
+1.7.11.3
+
