@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197Ab2HVJOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:14:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33526 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966Ab2HVJOv convert rfc822-to-8bit (ORCPT
+	id S1758859Ab2HVJR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:17:57 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:59759 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753195Ab2HVJRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:14:51 -0400
-Message-ID: <5034A302.4090406@parallels.com>
-Date: Wed, 22 Aug 2012 13:14:42 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 22 Aug 2012 05:17:53 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
+Date: Wed, 22 Aug 2012 11:17:51 +0200
+Message-ID: <24029861.U7thTLuEmC@ws-stein>
+User-Agent: KMail/4.8.5 (Linux/3.3.8-gentoo; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20120822160439.62c619bf@feng-i7>
+References: <4401854.hVfHzgeqjT@ws-stein> <3514180.RWySLZuOJm@ws-stein> <20120822160439.62c619bf@feng-i7>
 MIME-Version: 1.0
-To: Neal Cardwell <ncardwell@google.com>
-CC: David Miller <davem@davemloft.net>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "rick.jones2@hp.com" <rick.jones2@hp.com>,
-        "ycheng@google.com" <ycheng@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikulas@artax.karlin.mff.cuni.cz" <mikulas@artax.karlin.mff.cuni.cz>
-Subject: Re: [PATCH] tun: don't zeroize sock->file on detach
-References: <20120809124436.5156.26944.stgit@localhost.localdomain> <20120809.161639.1789560369123168415.davem@davemloft.net> <5033B199.6080305@parallels.com> <CADVnQy=HGxFiczXGxb4iMumKUAXt77UzTWFqFwGzpLoQjvUR7Q@mail.gmail.com>
-In-Reply-To: <CADVnQy=HGxFiczXGxb4iMumKUAXt77UzTWFqFwGzpLoQjvUR7Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-21.08.2012 21:18, Neal Cardwell пишет:
-> On Tue, Aug 21, 2012 at 12:04 PM, Stanislav Kinsbursky
-> <skinsbursky@parallels.com> wrote:
->> 10.08.2012 03:16, David Miller пишет:
->>
->>> From: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>> Date: Thu, 09 Aug 2012 16:50:40 +0400
->>>
->>>> This is a fix for bug, introduced in 3.4 kernel by commit
->>>> 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d, which, among other things,
->>>> replaced
->>>> simple sock_put() by sk_release_kernel(). Below is sequence, which leads
->>>> to
->>>> oops for non-persistent devices:
->>>>
->>>> tun_chr_close()
->>>> tun_detach()                            <== tun->socket.file = NULL
->>>> tun_free_netdev()
->>>> sk_release_sock()
->>>> sock_release(sock->file == NULL)
->>>> iput(SOCK_INODE(sock))                  <== dereference on NULL pointer
->>>>
->>>> This patch just removes zeroing of socket's file from __tun_detach().
->>>> sock_release() will do this.
->>>>
->>>> Cc: stable@vger.kernel.org
->>>> Reported-by: Ruan Zhijie <ruanzhijie@hotmail.com>
->>>> Tested-by: Ruan Zhijie <ruanzhijie@hotmail.com>
->>>> Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
->>>> Acked-by: Eric Dumazet <edumazet@google.com>
->>>> Acked-by: Yuchung Cheng <ycheng@google.com>
->>>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>>
->>>
->>> Applied, thanks.
->>>
->>
->> Hi, David.
->> I found out, that this commit: b09e786bd1dd66418b69348cb110f3a64764626a
->> was previous attempt to fix the problem.
->> I believe this commit have to be dropped.
->
-> Have you tried testing with that commit reverted? AFAICT from reading
-> the code, if you revert b09e786bd1dd66418b69348cb110f3a64764626a then
-> the sockets_in_use count becomes incorrect, because sock_release()
-> will be calling this_cpu_sub() for each tun socket teardown when there
-> was no corresponding this_cpu_add() for the tun socket (because the
-> tun socket is not allocated with sock_alloc()).
->
-> Can you sketch in more detail why that commit should be dropped?
->
+Hello,
 
-Yep, I've noticed, that first commit patch fixes two problems simultaneously.
-Here are they:
-1) Dereference of invalid SOCK_INODE()
-2) sockets_in_use incorrect value.
+Am Mittwoch, 22. August 2012, 16:04:39 schrieb Feng Tang:
+> > Why use a fixed one? Give the driver (and maybe every i2c bus driver) a parameter which sets the base bus number it should use.
+> > E.g. i2c-eg20t.base-bus-num=2 so it will register the bus numbers starting from 2. If this parameter is unset. It would use the first free one, thus simply using i2c_add_adapter.
+> 
+> The reason we need a fixed number is it is easier for platform code
+> which needs to register dozens of i2c devices to different controllers
+> with i2c_register_board_info, and they need provide a bus number for
+> each i2c device, this _binding_ info is not detectable but have to
+> be fixed.
 
-But I believe, that introducing new SOCK_EXTERNALLY_ALLOCATED socket flag and 
-use it in generic code just to handle tun issues is overkill.
-My patch solves first problem mush simpler, than mentioned commit.
+Yes, I'm aware of that. With "Why use a fixed one?" I meant why hard-code it into the driver. I should be changeable.
+Because this is/was not possible in general to use i2c_register_board_info, so we used an echo to /sys/bus/i2c/devices/i2c-0/new_device or /sys/bus/i2c/devices/i2c-1/new_device.
 
-About second problem...
-What about this:
+> Yes, your module parameter "base-bus-num" sounds like a plan too,
+> at the cost of some extra setting in the kernel cmdline. And I'm fine
+> with all solutions as long as I can get a _fixed_ bus number so that
+> I can easily write the platform config code (I guess this is same
+> for device tree, and even ACPI 5.0)
 
-diff --git a/net/socket.c b/net/socket.c
-index dfe5b66..dab462b 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -526,8 +526,8 @@ void sock_release(struct socket *sock)
-         if (test_bit(SOCK_EXTERNALLY_ALLOCATED, &sock->flags))
-                 return;
+i2c_add_numbered_adapter only works reliably if only using a single driver. If you are using several, especially if one uses dynamic bus numbers, you're kinda screwed.
+So, not very driver can add busses starting at bus number 0.
+I guess using an Intel Atom (i2c-isch) with an eg20t is not that uncommon, so you'll end up using 2 drivers where each one should have a fixed number.
+Some mechanism like udev for renaming ethernet or block devices is needed here.
 
--       this_cpu_sub(sockets_in_use, 1);
-         if (!sock->file) {
-+               this_cpu_sub(sockets_in_use, 1);
-                 iput(SOCK_INODE(sock));
-                 return;
-         }
+Regards,
+Alexander
 
-?
-
-
-> neal
->
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
