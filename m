@@ -1,114 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab2HVJcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:32:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42718 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550Ab2HVJcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:32:51 -0400
-Date: Wed, 22 Aug 2012 12:33:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120822093317.GC10680@redhat.com>
-References: <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <1345562411.23018.111.camel@twins>
- <20120821162432.GG2456@linux.vnet.ibm.com>
- <20120821172819.GA12294@t510.redhat.com>
- <20120821191330.GA8324@redhat.com>
- <20120821192357.GD12294@t510.redhat.com>
- <20120821193031.GC9027@redhat.com>
- <20120821204556.GF12294@t510.redhat.com>
- <20120822000741.GI9027@redhat.com>
- <20120822011930.GA23753@t510.redhat.com>
+	id S1758908Ab2HVJgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:36:55 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:38821 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758101Ab2HVJgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 05:36:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120822011930.GA23753@t510.redhat.com>
+In-Reply-To: <1345460017-404-1-git-send-email-lee.jones@linaro.org>
+References: <1345460017-404-1-git-send-email-lee.jones@linaro.org>
+Date: Wed, 22 Aug 2012 11:36:51 +0200
+Message-ID: <CACRpkdZu5o9mzY7Foktu0cL5pp2o+CRfvkmGzQj+TQKAL8QfYA@mail.gmail.com>
+Subject: Re: [PATCH] mfd: ab8500: Make ab8500_irq_get_virq() static
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 10:19:31PM -0300, Rafael Aquini wrote:
-> On Wed, Aug 22, 2012 at 03:07:41AM +0300, Michael S. Tsirkin wrote:
-> > On Tue, Aug 21, 2012 at 05:45:56PM -0300, Rafael Aquini wrote:
-> > > On Tue, Aug 21, 2012 at 10:30:31PM +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Aug 21, 2012 at 04:23:58PM -0300, Rafael Aquini wrote:
-> > > > > On Tue, Aug 21, 2012 at 10:13:30PM +0300, Michael S. Tsirkin wrote:
-> > > > > > > 
-> > > > > > > I believe rcu_dereference_protected() is what I want/need here, since this code
-> > > > > > > is always called for pages which we hold locked (PG_locked bit).
-> > > > > > 
-> > > > > > It would only help if we locked the page while updating the mapping,
-> > > > > > as far as I can see we don't.
-> > > > > >
-> > > > > 
-> > > > > But we can do it. In fact, by doing it (locking the page) we can easily avoid
-> > > > > the nasty race balloon_isolate_page / leak_balloon, in a much simpler way, IMHO.
-> > > > 
-> > > > Absolutely. Further, we should look hard at whether most RCU uses
-> > > > in this patchset can be replaced with page lock.
-> > > >
-> > > 
-> > > Yeah, In fact, by testing/grabbing the page lock at leak_balloon() even the
-> > > module unload X migration / putback race seems to fade away, since migration
-> > > code holds the page locked all the way.
-> > > And that seems a quite easy task to be accomplished:
-> > > 
-> > > ....
-> > > @@ -169,21 +197,61 @@ static void leak_balloon(struct virtio_balloon *vb, size_t
-> > > num)
-> > >         /* We can only do one array worth at a time. */
-> > >         num = min(num, ARRAY_SIZE(vb->pfns));
-> > > 
-> > > +       mutex_lock(&vb->balloon_lock);
-> > >         for (vb->num_pfns = 0; vb->num_pfns < num;
-> > >              vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
-> > > +               spin_lock(&vb->pages_lock);
-> > > +               /*
-> > > +                * 'virtballoon_isolatepage()' can drain vb->pages list
-> > > +                * making us to stumble across a _temporarily_ empty list.
-> > 
-> > This still worries me. If this happens we do not
-> > lock the page so module can go away?
-> > if not need to document why.
-> >
-> The module won't unload unless it leaks all its pages. If we hit that test that
-> worries you, leak_balloon() will get back to its caller -- remove_common(), and
-> it will kept looping at:
-> 
->         /* There might be pages left in the balloon: free them. */
->         while (vb->num_pages)
->                 leak_balloon(vb, vb->num_pages);
-> 
-> This is true because we do not mess with vb->num_pages while isolating/migrating
-> balloon pages, so the module will only unload when all isolated pages get back
-> to vb->pages_list and leak_balloon() reap them appropriatelly. As we will be
-> doing isolation/migration/putback steps under 'page lock' that race is gone.
+On Mon, Aug 20, 2012 at 12:53 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
+> MFD core now takes care of  HWIRQ <-> VIRQ mapping, so the helper
+> ab8500_irq_get_virq() is no longer used by ab8500 subordinate devices
+> to obtain a Linux wide Virtual IRQ. The AB8500 IRQ controller still
+> uses it internally though, so we'll just hide it from the rest of the
+> world by making it static instead.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Hmm, so this will busy wait which is unelegant.
-We need some event IMO.
-Also, reading num_pages without a lock here
-which seems wrong.
+Luv this patch, well done!
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-A similar concern applies to normal leaking
-of the balloon: here we might leak less than
-required, then wait for the next config change
-event.
-
-How about we signal config_change
-event when pages are back to pages_list?
-
--- 
-MST
+Yours,
+Linus Walleij
