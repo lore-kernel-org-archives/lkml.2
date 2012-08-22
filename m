@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698Ab2HVPJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:09:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40967 "EHLO mx1.redhat.com"
+	id S932853Ab2HVPJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:09:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47645 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757199Ab2HVPA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753705Ab2HVPA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Aug 2012 11:00:26 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -26,38 +26,71 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 25/36] autonuma: reset autonuma page data when pages are freed
-Date: Wed, 22 Aug 2012 16:59:09 +0200
-Message-Id: <1345647560-30387-26-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 30/36] autonuma: bugcheck page_autonuma fields on newly allocated pages
+Date: Wed, 22 Aug 2012 16:59:14 +0200
+Message-Id: <1345647560-30387-31-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When pages are freed abort any pending migration. If knuma_migrated
-arrives first it will notice because get_page_unless_zero would fail.
-
-You can safely ignore the #ifdef because a later patch (page_autonuma)
-clears it.
+Debug tweak.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/page_alloc.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ include/linux/autonuma.h |   19 +++++++++++++++++++
+ mm/page_alloc.c          |    3 ++-
+ 2 files changed, 21 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/autonuma.h b/include/linux/autonuma.h
+index 1d87ecc..8a779e0 100644
+--- a/include/linux/autonuma.h
++++ b/include/linux/autonuma.h
+@@ -29,6 +29,24 @@ static inline void autonuma_free_page(struct page *page)
+ 	}
+ }
+ 
++static inline int autonuma_check_new_page(struct page *page)
++{
++	struct page_autonuma *page_autonuma;
++	int ret = 0;
++	if (autonuma_possible()) {
++		page_autonuma = lookup_page_autonuma(page);
++		if (unlikely(page_autonuma->autonuma_migrate_nid != -1)) {
++			ret = 1;
++			WARN_ON(1);
++		}
++		if (unlikely(page_autonuma->autonuma_last_nid != -1)) {
++			ret = 1;
++			WARN_ON(1);
++		}
++	}
++	return ret;
++}
++
+ #define autonuma_printk(format, args...) \
+ 	if (autonuma_debug()) printk(format, ##args)
+ 
+@@ -41,6 +59,7 @@ static inline void autonuma_migrate_split_huge_page(struct page *page,
+ 						    struct page *page_tail) {}
+ static inline void autonuma_setup_new_exec(struct task_struct *p) {}
+ static inline void autonuma_free_page(struct page *page) {}
++static inline int autonuma_check_new_page(struct page *page) { return 0; }
+ 
+ #endif /* CONFIG_AUTONUMA */
+ 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8c9cad5..49e2916 100644
+index 74b73fa..87a4d5b 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -619,6 +619,10 @@ static inline int free_pages_check(struct page *page)
+@@ -833,7 +833,8 @@ static inline int check_new_page(struct page *page)
+ 		(page->mapping != NULL)  |
+ 		(__page_count(page) != 0)  |
+ 		(page->flags & PAGE_FLAGS_CHECK_AT_PREP) |
+-		(mem_cgroup_bad_page_check(page)))) {
++		(mem_cgroup_bad_page_check(page)) |
++		autonuma_check_new_page(page))) {
  		bad_page(page);
  		return 1;
  	}
-+	autonuma_migrate_page_remove(page);
-+#ifdef CONFIG_AUTONUMA
-+	page->autonuma_last_nid = -1;
-+#endif
- 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
- 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
- 	return 0;
