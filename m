@@ -1,941 +1,655 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab2HVVmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 17:42:06 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:39226 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932094Ab2HVVmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 17:42:01 -0400
-Date: Wed, 22 Aug 2012 16:42:18 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Ashley Lai <adlai@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, rcj@linux.vnet.ibm.com,
-        adlai@us.ibm.com
-Subject: Re: [PATCH V3 1/3] drivers/char/tpm: Add new device driver to
- support IBM vTPM
-Message-ID: <20120822214217.GB13519@linux.vnet.ibm.com>
-References: <1344987282.4430.26.camel@footlong>
- <1345670263.25124.7.camel@footlong>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345670263.25124.7.camel@footlong>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082221-5930-0000-0000-00000B28F890
+	id S932565Ab2HVVnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 17:43:09 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:53336 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757130Ab2HVVnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 17:43:05 -0400
+Subject: Re: [PATCH] fs/proc: Move kfree outside pde_unload_lock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adobriyan@gmail.com, Alexander Viro <viro@zeniv.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>
+In-Reply-To: <1345660110.5158.1969.camel@edumazet-glaptop>
+References: <n>  <1345653510-22000-1-git-send-email-nzimmer@sgi.com>
+	 <1345660110.5158.1969.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Aug 2012 23:42:58 +0200
+Message-ID: <1345671778.5158.2369.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 04:17:43PM -0500, Ashley Lai wrote:
-> This patch adds a new device driver to support IBM virtual TPM
-> (vTPM) for PPC64.  IBM vTPM is supported through the adjunct
-> partition with firmware release 740 or higher.  With vTPM
-> support, each lpar is able to have its own vTPM without the
-> physical TPM hardware.
-> 
-> This driver provides TPM functionalities by communicating with
-> the vTPM adjunct partition through Hypervisor calls (Hcalls)
-> and Command/Response Queue (CRQ) commands.
+On Wed, 2012-08-22 at 20:28 +0200, Eric Dumazet wrote:
 
- Thanks Ashley, I'll include this in my next pull request to James.
+> 
+> Thats interesting, but if you really want this to fly, one RCU
+> conversion would be much better ;)
+> 
+> pde_users would be an atomic_t and you would avoid the spinlock
+> contention.
 
-Kent
+Here is what I had in mind, I would be interested to know how it helps a 512 core machine ;)
 
-> Signed-off-by: Ashley Lai <adlai@us.ibm.com>
-> ---
-> 
-> Oopps... I forgot to remove some invalid comments.  Please use this patch for 1/3.
-> 
->  drivers/char/tpm/Kconfig       |    8 +
->  drivers/char/tpm/Makefile      |    1 +
->  drivers/char/tpm/tpm.h         |    1 +
->  drivers/char/tpm/tpm_ibmvtpm.c |  749 ++++++++++++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm_ibmvtpm.h |   77 ++++
->  5 files changed, 836 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm_ibmvtpm.c
->  create mode 100644 drivers/char/tpm/tpm_ibmvtpm.h
-> 
-> diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-> index c4aac48..915875e 100644
-> --- a/drivers/char/tpm/Kconfig
-> +++ b/drivers/char/tpm/Kconfig
-> @@ -73,4 +73,12 @@ config TCG_INFINEON
->  	  Further information on this driver and the supported hardware
->  	  can be found at http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/ 
-> 
-> +config TCG_IBMVTPM
-> +	tristate "IBM VTPM Interface"
-> +	depends on PPC64
-> +	---help---
-> +	  If you have IBM virtual TPM (VTPM) support say Yes and it
-> +	  will be accessible from within Linux.  To compile this driver
-> +	  as a module, choose M here; the module will be called tpm_ibmvtpm.
-> +
->  endif # TCG_TPM
-> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> index beac52f..547509d 100644
-> --- a/drivers/char/tpm/Makefile
-> +++ b/drivers/char/tpm/Makefile
-> @@ -11,3 +11,4 @@ obj-$(CONFIG_TCG_TIS_I2C_INFINEON) += tpm_i2c_infineon.o
->  obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
->  obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
->  obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-> +obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
-> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> index 645136e..870fde7 100644
-> --- a/drivers/char/tpm/tpm.h
-> +++ b/drivers/char/tpm/tpm.h
-> @@ -100,6 +100,7 @@ struct tpm_vendor_specific {
->  	bool timeout_adjusted;
->  	unsigned long duration[3]; /* jiffies */
->  	bool duration_adjusted;
-> +	void *data;
-> 
->  	wait_queue_head_t read_queue;
->  	wait_queue_head_t int_queue;
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-> new file mode 100644
-> index 0000000..efc4ab3
-> --- /dev/null
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
-> @@ -0,0 +1,749 @@
-> +/*
-> + * Copyright (C) 2012 IBM Corporation
-> + *
-> + * Author: Ashley Lai <adlai@us.ibm.com>
-> + *
-> + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-> + *
-> + * Device driver for TCG/TCPA TPM (trusted platform module).
-> + * Specifications at www.trustedcomputinggroup.org
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation, version 2 of the
-> + * License.
-> + *
-> + */
-> +
-> +#include <linux/dma-mapping.h>
-> +#include <linux/dmapool.h>
-> +#include <linux/slab.h>
-> +#include <asm/vio.h>
-> +#include <asm/irq.h>
-> +#include <linux/types.h>
-> +#include <linux/list.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/wait.h>
-> +#include <asm/prom.h>
-> +
-> +#include "tpm.h"
-> +#include "tpm_ibmvtpm.h"
-> +
-> +static const char tpm_ibmvtpm_driver_name[] = "tpm_ibmvtpm";
-> +
-> +static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
-> +	{ "IBM,vtpm", "IBM,vtpm"},
-> +	{ "", "" }
-> +};
-> +MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
-> +
-> +DECLARE_WAIT_QUEUE_HEAD(wq);
-> +
-> +/**
-> + * ibmvtpm_send_crq - Send a CRQ request
-> + * @vdev:	vio device struct
-> + * @w1:		first word
-> + * @w2:		second word
-> + *
-> + * Return value:
-> + *	0 -Sucess
-> + *	Non-zero - Failure
-> + */
-> +static int ibmvtpm_send_crq(struct vio_dev *vdev, u64 w1, u64 w2)
-> +{
-> +	return plpar_hcall_norets(H_SEND_CRQ, vdev->unit_address, w1, w2);
-> +}
-> +
-> +/**
-> + * ibmvtpm_get_data - Retrieve ibm vtpm data
-> + * @dev:	device struct
-> + *
-> + * Return value:
-> + *	vtpm device struct
-> + */
-> +static struct ibmvtpm_dev *ibmvtpm_get_data(const struct device *dev)
-> +{
-> +	struct tpm_chip *chip = dev_get_drvdata(dev);
-> +	if (chip)
-> +		return (struct ibmvtpm_dev *)chip->vendor.data;
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * tpm_ibmvtpm_recv - Receive data after send
-> + * @chip:	tpm chip struct
-> + * @buf:	buffer to read
-> + * count:	size of buffer
-> + *
-> + * Return value:
-> + *	Number of bytes read
-> + */
-> +static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm;
-> +	u16 len;
-> +
-> +	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
-> +
-> +	if (!ibmvtpm->rtce_buf) {
-> +		dev_err(ibmvtpm->dev, "ibmvtpm device is not ready\n");
-> +		return 0;
-> +	}
-> +
-> +	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
-> +
-> +	if (count < ibmvtpm->crq_res.len) {
-> +		dev_err(ibmvtpm->dev,
-> +			"Invalid size in recv: count=%ld, crq_size=%d\n",
-> +			count, ibmvtpm->crq_res.len);
-> +		return -EIO;
-> +	}
-> +
-> +	spin_lock(&ibmvtpm->rtce_lock);
-> +	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
-> +	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
-> +	ibmvtpm->crq_res.valid = 0;
-> +	ibmvtpm->crq_res.msg = 0;
-> +	len = ibmvtpm->crq_res.len;
-> +	ibmvtpm->crq_res.len = 0;
-> +	spin_unlock(&ibmvtpm->rtce_lock);
-> +	return len;
-> +}
-> +
-> +/**
-> + * tpm_ibmvtpm_send - Send tpm request
-> + * @chip:	tpm chip struct
-> + * @buf:	buffer contains data to send
-> + * count:	size of buffer
-> + *
-> + * Return value:
-> + *	Number of bytes sent
-> + */
-> +static int tpm_ibmvtpm_send(struct tpm_chip *chip, u8 *buf, size_t count)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm;
-> +	struct ibmvtpm_crq crq;
-> +	u64 *word = (u64 *) &crq;
-> +	int rc;
-> +
-> +	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
-> +
-> +	if (!ibmvtpm->rtce_buf) {
-> +		dev_err(ibmvtpm->dev, "ibmvtpm device is not ready\n");
-> +		return 0;
-> +	}
-> +
-> +	if (count > ibmvtpm->rtce_size) {
-> +		dev_err(ibmvtpm->dev,
-> +			"Invalid size in send: count=%ld, rtce_size=%d\n",
-> +			count, ibmvtpm->rtce_size);
-> +		return -EIO;
-> +	}
-> +
-> +	spin_lock(&ibmvtpm->rtce_lock);
-> +	memcpy((void *)ibmvtpm->rtce_buf, (void *)buf, count);
-> +	crq.valid = (u8)IBMVTPM_VALID_CMD;
-> +	crq.msg = (u8)VTPM_TPM_COMMAND;
-> +	crq.len = (u16)count;
-> +	crq.data = ibmvtpm->rtce_dma_handle;
-> +
-> +	rc = ibmvtpm_send_crq(ibmvtpm->vdev, word[0], word[1]);
-> +	if (rc != H_SUCCESS) {
-> +		dev_err(ibmvtpm->dev, "tpm_ibmvtpm_send failed rc=%d\n", rc);
-> +		rc = 0;
-> +	} else
-> +		rc = count;
-> +
-> +	spin_unlock(&ibmvtpm->rtce_lock);
-> +	return rc;
-> +}
-> +
-> +static void tpm_ibmvtpm_cancel(struct tpm_chip *chip)
-> +{
-> +	return;
-> +}
-> +
-> +static u8 tpm_ibmvtpm_status(struct tpm_chip *chip)
-> +{
-> +	return 0;
-> +}
-> +
-> +/**
-> + * ibmvtpm_crq_get_rtce_size - Send a CRQ request to get rtce size
-> + * @ibmvtpm:	vtpm device struct
-> + *
-> + * Return value:
-> + *	0 - Success
-> + *	Non-zero - Failure
-> + */
-> +static int ibmvtpm_crq_get_rtce_size(struct ibmvtpm_dev *ibmvtpm)
-> +{
-> +	struct ibmvtpm_crq crq;
-> +	u64 *buf = (u64 *) &crq;
-> +	int rc;
-> +
-> +	crq.valid = (u8)IBMVTPM_VALID_CMD;
-> +	crq.msg = (u8)VTPM_GET_RTCE_BUFFER_SIZE;
-> +
-> +	rc = ibmvtpm_send_crq(ibmvtpm->vdev, buf[0], buf[1]);
-> +	if (rc != H_SUCCESS)
-> +		dev_err(ibmvtpm->dev,
-> +			"ibmvtpm_crq_get_rtce_size failed rc=%d\n", rc);
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * ibmvtpm_crq_get_version - Send a CRQ request to get vtpm version
-> + *			   - Note that this is vtpm version and not tpm version
-> + * @ibmvtpm:	vtpm device struct
-> + *
-> + * Return value:
-> + *	0 - Success
-> + *	Non-zero - Failure
-> + */
-> +static int ibmvtpm_crq_get_version(struct ibmvtpm_dev *ibmvtpm)
-> +{
-> +	struct ibmvtpm_crq crq;
-> +	u64 *buf = (u64 *) &crq;
-> +	int rc;
-> +
-> +	crq.valid = (u8)IBMVTPM_VALID_CMD;
-> +	crq.msg = (u8)VTPM_GET_VERSION;
-> +
-> +	rc = ibmvtpm_send_crq(ibmvtpm->vdev, buf[0], buf[1]);
-> +	if (rc != H_SUCCESS)
-> +		dev_err(ibmvtpm->dev,
-> +			"ibmvtpm_crq_get_version failed rc=%d\n", rc);
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * ibmvtpm_crq_send_init_complete - Send a CRQ initialize complete message
-> + * @ibmvtpm:	vtpm device struct
-> + *
-> + * Return value:
-> + *	0 - Success
-> + *	Non-zero - Failure
-> + */
-> +static int ibmvtpm_crq_send_init_complete(struct ibmvtpm_dev *ibmvtpm)
-> +{
-> +	int rc;
-> +
-> +	rc = ibmvtpm_send_crq(ibmvtpm->vdev, INIT_CRQ_COMP_CMD, 0);
-> +	if (rc != H_SUCCESS)
-> +		dev_err(ibmvtpm->dev,
-> +			"ibmvtpm_crq_send_init_complete failed rc=%d\n", rc);
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * ibmvtpm_crq_send_init - Send a CRQ initialize message
-> + * @ibmvtpm:	vtpm device struct
-> + *
-> + * Return value:
-> + *	0 - Success
-> + *	Non-zero - Failure
-> + */
-> +static int ibmvtpm_crq_send_init(struct ibmvtpm_dev *ibmvtpm)
-> +{
-> +	int rc;
-> +
-> +	rc = ibmvtpm_send_crq(ibmvtpm->vdev, INIT_CRQ_CMD, 0);
-> +	if (rc != H_SUCCESS)
-> +		dev_err(ibmvtpm->dev,
-> +			"ibmvtpm_crq_send_init failed rc=%d\n", rc);
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * tpm_ibmvtpm_remove - ibm vtpm remove entry point
-> + * @vdev:	vio device struct
-> + *
-> + * Return value:
-> + *	0
-> + */
-> +static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(&vdev->dev);
-> +	int rc = 0;
-> +
-> +	free_irq(vdev->irq, ibmvtpm);
-> +	tasklet_kill(&ibmvtpm->tasklet);
-> +
-> +	do {
-> +		if (rc)
-> +			msleep(100);
-> +		rc = plpar_hcall_norets(H_FREE_CRQ, vdev->unit_address);
-> +	} while (rc == H_BUSY || H_IS_LONG_BUSY(rc));
-> +
-> +	dma_unmap_single(ibmvtpm->dev, ibmvtpm->crq_dma_handle,
-> +			 CRQ_RES_BUF_SIZE, DMA_BIDIRECTIONAL);
-> +	free_page((unsigned long)ibmvtpm->crq_queue.crq_addr);
-> +
-> +	if (ibmvtpm->rtce_buf) {
-> +		dma_unmap_single(ibmvtpm->dev, ibmvtpm->rtce_dma_handle,
-> +				 ibmvtpm->rtce_size, DMA_BIDIRECTIONAL);
-> +		kfree(ibmvtpm->rtce_buf);
-> +	}
-> +
-> +	tpm_remove_hardware(ibmvtpm->dev);
-> +
-> +	kfree(ibmvtpm);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * tpm_ibmvtpm_get_desired_dma - Get DMA size needed by this driver
-> + * @vdev:	vio device struct
-> + *
-> + * Return value:
-> + *	Number of bytes the driver needs to DMA map
-> + */
-> +static unsigned long tpm_ibmvtpm_get_desired_dma(struct vio_dev *vdev)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(&vdev->dev);
-> +	return CRQ_RES_BUF_SIZE + ibmvtpm->rtce_size;
-> +}
-> +
-> +/**
-> + * tpm_ibmvtpm_suspend - Suspend
-> + * @dev:	device struct
-> + *
-> + * Return value:
-> + *	0
-> + */
-> +static int tpm_ibmvtpm_suspend(struct device *dev)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
-> +	struct ibmvtpm_crq crq;
-> +	u64 *buf = (u64 *) &crq;
-> +	int rc = 0;
-> +
-> +	crq.valid = (u8)IBMVTPM_VALID_CMD;
-> +	crq.msg = (u8)VTPM_PREPARE_TO_SUSPEND;
-> +
-> +	rc = ibmvtpm_send_crq(ibmvtpm->vdev, buf[0], buf[1]);
-> +	if (rc != H_SUCCESS)
-> +		dev_err(ibmvtpm->dev,
-> +			"tpm_ibmvtpm_suspend failed rc=%d\n", rc);
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * ibmvtpm_reset_crq - Reset CRQ
-> + * @ibmvtpm:	ibm vtpm struct
-> + *
-> + * Return value:
-> + *	0 - Success
-> + *	Non-zero - Failure
-> + */
-> +static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
-> +{
-> +	int rc = 0;
-> +
-> +	do {
-> +		if (rc)
-> +			msleep(100);
-> +		rc = plpar_hcall_norets(H_FREE_CRQ,
-> +					ibmvtpm->vdev->unit_address);
-> +	} while (rc == H_BUSY || H_IS_LONG_BUSY(rc));
-> +
-> +	memset(ibmvtpm->crq_queue.crq_addr, 0, CRQ_RES_BUF_SIZE);
-> +	ibmvtpm->crq_queue.index = 0;
-> +
-> +	return plpar_hcall_norets(H_REG_CRQ, ibmvtpm->vdev->unit_address,
-> +				  ibmvtpm->crq_dma_handle, CRQ_RES_BUF_SIZE);
-> +}
-> +
-> +/**
-> + * tpm_ibmvtpm_resume - Resume from suspend
-> + * @dev:	device struct
-> + *
-> + * Return value:
-> + *	0
-> + */
-> +static int tpm_ibmvtpm_resume(struct device *dev)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
-> +	unsigned long flags;
-> +	int rc = 0;
-> +
-> +	do {
-> +		if (rc)
-> +			msleep(100);
-> +		rc = plpar_hcall_norets(H_ENABLE_CRQ,
-> +					ibmvtpm->vdev->unit_address);
-> +	} while (rc == H_IN_PROGRESS || rc == H_BUSY || H_IS_LONG_BUSY(rc));
-> +
-> +	if (rc) {
-> +		dev_err(dev, "Error enabling ibmvtpm rc=%d\n", rc);
-> +		return rc;
-> +	}
-> +
-> +	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> +	vio_disable_interrupts(ibmvtpm->vdev);
-> +	tasklet_schedule(&ibmvtpm->tasklet);
-> +	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> +
-> +	rc = ibmvtpm_crq_send_init(ibmvtpm);
-> +	if (rc)
-> +		dev_err(dev, "Error send_init rc=%d\n", rc);
-> +
-> +	return rc;
-> +}
-> +
-> +static const struct file_operations ibmvtpm_ops = {
-> +	.owner = THIS_MODULE,
-> +	.llseek = no_llseek,
-> +	.open = tpm_open,
-> +	.read = tpm_read,
-> +	.write = tpm_write,
-> +	.release = tpm_release,
-> +};
-> +
-> +static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
-> +static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
-> +static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
-> +static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
-> +static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
-> +static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
-> +		   NULL);
-> +static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
-> +static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-> +static DEVICE_ATTR(durations, S_IRUGO, tpm_show_durations, NULL);
-> +static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
-> +
-> +static struct attribute *ibmvtpm_attrs[] = {
-> +	&dev_attr_pubek.attr,
-> +	&dev_attr_pcrs.attr,
-> +	&dev_attr_enabled.attr,
-> +	&dev_attr_active.attr,
-> +	&dev_attr_owned.attr,
-> +	&dev_attr_temp_deactivated.attr,
-> +	&dev_attr_caps.attr,
-> +	&dev_attr_cancel.attr,
-> +	&dev_attr_durations.attr,
-> +	&dev_attr_timeouts.attr, NULL,
-> +};
-> +
-> +static struct attribute_group ibmvtpm_attr_grp = { .attrs = ibmvtpm_attrs };
-> +
-> +static const struct tpm_vendor_specific tpm_ibmvtpm = {
-> +	.recv = tpm_ibmvtpm_recv,
-> +	.send = tpm_ibmvtpm_send,
-> +	.cancel = tpm_ibmvtpm_cancel,
-> +	.status = tpm_ibmvtpm_status,
-> +	.req_complete_mask = 0,
-> +	.req_complete_val = 0,
-> +	.req_canceled = 0,
-> +	.attr_group = &ibmvtpm_attr_grp,
-> +	.miscdev = { .fops = &ibmvtpm_ops, },
-> +};
-> +
-> +static const struct dev_pm_ops tpm_ibmvtpm_pm_ops = {
-> +	.suspend = tpm_ibmvtpm_suspend,
-> +	.resume = tpm_ibmvtpm_resume,
-> +};
-> +
-> +/**
-> + * ibmvtpm_crq_get_next - Get next responded crq
-> + * @ibmvtpm	vtpm device struct
-> + *
-> + * Return value:
-> + *	vtpm crq pointer
-> + */
-> +static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
-> +{
-> +	struct ibmvtpm_crq_queue *crq_q = &ibmvtpm->crq_queue;
-> +	struct ibmvtpm_crq *crq = &crq_q->crq_addr[crq_q->index];
-> +
-> +	if (crq->valid & VTPM_MSG_RES) {
-> +		if (++crq_q->index == crq_q->num_entry)
-> +			crq_q->index = 0;
-> +		rmb();
-> +	} else
-> +		crq = NULL;
-> +	return crq;
-> +}
-> +
-> +/**
-> + * ibmvtpm_crq_process - Process responded crq
-> + * @crq		crq to be processed
-> + * @ibmvtpm	vtpm device struct
-> + *
-> + * Return value:
-> + *	Nothing
-> + */
-> +static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
-> +				struct ibmvtpm_dev *ibmvtpm)
-> +{
-> +	int rc = 0;
-> +
-> +	switch (crq->valid) {
-> +	case VALID_INIT_CRQ:
-> +		switch (crq->msg) {
-> +		case INIT_CRQ_RES:
-> +			dev_info(ibmvtpm->dev, "CRQ initialized\n");
-> +			rc = ibmvtpm_crq_send_init_complete(ibmvtpm);
-> +			if (rc)
-> +				dev_err(ibmvtpm->dev, "Unable to send CRQ init complete rc=%d\n", rc);
-> +			return;
-> +		case INIT_CRQ_COMP_RES:
-> +			dev_info(ibmvtpm->dev,
-> +				 "CRQ initialization completed\n");
-> +			return;
-> +		default:
-> +			dev_err(ibmvtpm->dev, "Unknown crq message type: %d\n", crq->msg);
-> +			return;
-> +		}
-> +		return;
-> +	case IBMVTPM_VALID_CMD:
-> +		switch (crq->msg) {
-> +		case VTPM_GET_RTCE_BUFFER_SIZE_RES:
-> +			if (crq->len <= 0) {
-> +				dev_err(ibmvtpm->dev, "Invalid rtce size\n");
-> +				return;
-> +			}
-> +			ibmvtpm->rtce_size = crq->len;
-> +			ibmvtpm->rtce_buf = kmalloc(ibmvtpm->rtce_size,
-> +						    GFP_KERNEL);
-> +			if (!ibmvtpm->rtce_buf) {
-> +				dev_err(ibmvtpm->dev, "Failed to allocate memory for rtce buffer\n");
-> +				return;
-> +			}
-> +
-> +			ibmvtpm->rtce_dma_handle = dma_map_single(ibmvtpm->dev,
-> +				ibmvtpm->rtce_buf, ibmvtpm->rtce_size,
-> +				DMA_BIDIRECTIONAL);
-> +
-> +			if (dma_mapping_error(ibmvtpm->dev,
-> +					      ibmvtpm->rtce_dma_handle)) {
-> +				kfree(ibmvtpm->rtce_buf);
-> +				ibmvtpm->rtce_buf = NULL;
-> +				dev_err(ibmvtpm->dev, "Failed to dma map rtce buffer\n");
-> +			}
-> +
-> +			return;
-> +		case VTPM_GET_VERSION_RES:
-> +			ibmvtpm->vtpm_version = crq->data;
-> +			return;
-> +		case VTPM_TPM_COMMAND_RES:
-> +			ibmvtpm->crq_res.valid = crq->valid;
-> +			ibmvtpm->crq_res.msg = crq->msg;
-> +			ibmvtpm->crq_res.len = crq->len;
-> +			ibmvtpm->crq_res.data = crq->data;
-> +			wake_up_interruptible(&wq);
-> +			return;
-> +		default:
-> +			return;
-> +		}
-> +	}
-> +	return;
-> +}
-> +
-> +/**
-> + * ibmvtpm_interrupt -	Interrupt handler
-> + * @irq:		irq number to handle
-> + * @vtpm_instance:	vtpm that received interrupt
-> + *
-> + * Returns:
-> + *	IRQ_HANDLED
-> + **/
-> +static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> +	vio_disable_interrupts(ibmvtpm->vdev);
-> +	tasklet_schedule(&ibmvtpm->tasklet);
-> +	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +/**
-> + * ibmvtpm_tasklet - Interrupt handler tasklet
-> + * @data:	ibm vtpm device struct
-> + *
-> + * Returns:
-> + *	Nothing
-> + **/
-> +static void ibmvtpm_tasklet(void *data)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm = data;
-> +	struct ibmvtpm_crq *crq;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> +	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
-> +		ibmvtpm_crq_process(crq, ibmvtpm);
-> +		crq->valid = 0;
-> +		wmb();
-> +	}
-> +
-> +	vio_enable_interrupts(ibmvtpm->vdev);
-> +	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> +}
-> +
-> +/**
-> + * tpm_ibmvtpm_probe - ibm vtpm initialize entry point
-> + * @vio_dev:	vio device struct
-> + * @id:		vio device id struct
-> + *
-> + * Return value:
-> + *	0 - Success
-> + *	Non-zero - Failure
-> + */
-> +static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
-> +				   const struct vio_device_id *id)
-> +{
-> +	struct ibmvtpm_dev *ibmvtpm;
-> +	struct device *dev = &vio_dev->dev;
-> +	struct ibmvtpm_crq_queue *crq_q;
-> +	struct tpm_chip *chip;
-> +	int rc = -ENOMEM, rc1;
-> +
-> +	chip = tpm_register_hardware(dev, &tpm_ibmvtpm);
-> +	if (!chip) {
-> +		dev_err(dev, "tpm_register_hardware failed\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	ibmvtpm = kzalloc(sizeof(struct ibmvtpm_dev), GFP_KERNEL);
-> +	if (!ibmvtpm) {
-> +		dev_err(dev, "kzalloc for ibmvtpm failed\n");
-> +		goto cleanup;
-> +	}
-> +
-> +	crq_q = &ibmvtpm->crq_queue;
-> +	crq_q->crq_addr = (struct ibmvtpm_crq *)get_zeroed_page(GFP_KERNEL);
-> +	if (!crq_q->crq_addr) {
-> +		dev_err(dev, "Unable to allocate memory for crq_addr\n");
-> +		goto cleanup;
-> +	}
-> +
-> +	crq_q->num_entry = CRQ_RES_BUF_SIZE / sizeof(*crq_q->crq_addr);
-> +	ibmvtpm->crq_dma_handle = dma_map_single(dev, crq_q->crq_addr,
-> +						 CRQ_RES_BUF_SIZE,
-> +						 DMA_BIDIRECTIONAL);
-> +
-> +	if (dma_mapping_error(dev, ibmvtpm->crq_dma_handle)) {
-> +		dev_err(dev, "dma mapping failed\n");
-> +		goto cleanup;
-> +	}
-> +
-> +	rc = plpar_hcall_norets(H_REG_CRQ, vio_dev->unit_address,
-> +				ibmvtpm->crq_dma_handle, CRQ_RES_BUF_SIZE);
-> +	if (rc == H_RESOURCE)
-> +		rc = ibmvtpm_reset_crq(ibmvtpm);
-> +
-> +	if (rc) {
-> +		dev_err(dev, "Unable to register CRQ rc=%d\n", rc);
-> +		goto reg_crq_cleanup;
-> +	}
-> +
-> +	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
-> +		     (unsigned long)ibmvtpm);
-> +
-> +	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
-> +			 tpm_ibmvtpm_driver_name, ibmvtpm);
-> +	if (rc) {
-> +		dev_err(dev, "Error %d register irq 0x%x\n", rc, vio_dev->irq);
-> +		goto init_irq_cleanup;
-> +	}
-> +
-> +	rc = vio_enable_interrupts(vio_dev);
-> +	if (rc) {
-> +		dev_err(dev, "Error %d enabling interrupts\n", rc);
-> +		goto init_irq_cleanup;
-> +	}
-> +
-> +	crq_q->index = 0;
-> +
-> +	ibmvtpm->dev = dev;
-> +	ibmvtpm->vdev = vio_dev;
-> +	chip->vendor.data = (void *)ibmvtpm;
-> +
-> +	spin_lock_init(&ibmvtpm->lock);
-> +	spin_lock_init(&ibmvtpm->rtce_lock);
-> +
-> +	rc = ibmvtpm_crq_send_init(ibmvtpm);
-> +	if (rc)
-> +		goto init_irq_cleanup;
-> +
-> +	rc = ibmvtpm_crq_get_version(ibmvtpm);
-> +	if (rc)
-> +		goto init_irq_cleanup;
-> +
-> +	rc = ibmvtpm_crq_get_rtce_size(ibmvtpm);
-> +	if (rc)
-> +		goto init_irq_cleanup;
-> +
-> +	return rc;
-> +init_irq_cleanup:
-> +	tasklet_kill(&ibmvtpm->tasklet);
-> +	do {
-> +		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
-> +	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
-> +reg_crq_cleanup:
-> +	dma_unmap_single(dev, ibmvtpm->crq_dma_handle, CRQ_RES_BUF_SIZE,
-> +			 DMA_BIDIRECTIONAL);
-> +cleanup:
-> +	if (ibmvtpm) {
-> +		if (crq_q->crq_addr)
-> +			free_page((unsigned long)crq_q->crq_addr);
-> +		kfree(ibmvtpm);
-> +	}
-> +
-> +	tpm_remove_hardware(dev);
-> +
-> +	return rc;
-> +}
-> +
-> +static struct vio_driver ibmvtpm_driver = {
-> +	.id_table	 = tpm_ibmvtpm_device_table,
-> +	.probe		 = tpm_ibmvtpm_probe,
-> +	.remove		 = tpm_ibmvtpm_remove,
-> +	.get_desired_dma = tpm_ibmvtpm_get_desired_dma,
-> +	.name		 = tpm_ibmvtpm_driver_name,
-> +	.pm		 = &tpm_ibmvtpm_pm_ops,
-> +};
-> +
-> +/**
-> + * ibmvtpm_module_init - Initialize ibm vtpm module
-> + *
-> + * Return value:
-> + *	0 -Success
-> + *	Non-zero - Failure
-> + */
-> +static int __init ibmvtpm_module_init(void)
-> +{
-> +	return vio_register_driver(&ibmvtpm_driver);
-> +}
-> +
-> +/**
-> + * ibmvtpm_module_exit - Teardown ibm vtpm module
-> + *
-> + * Return value:
-> + *	Nothing
-> + */
-> +static void __exit ibmvtpm_module_exit(void)
-> +{
-> +	vio_unregister_driver(&ibmvtpm_driver);
-> +}
-> +
-> +module_init(ibmvtpm_module_init);
-> +module_exit(ibmvtpm_module_exit);
-> +
-> +MODULE_AUTHOR("adlai@us.ibm.com");
-> +MODULE_DESCRIPTION("IBM vTPM Driver");
-> +MODULE_VERSION("1.0");
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
-> new file mode 100644
-> index 0000000..4296eb4
-> --- /dev/null
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.h
-> @@ -0,0 +1,77 @@
-> +/*
-> + * Copyright (C) 2012 IBM Corporation
-> + *
-> + * Author: Ashley Lai <adlai@us.ibm.com>
-> + *
-> + * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-> + *
-> + * Device driver for TCG/TCPA TPM (trusted platform module).
-> + * Specifications at www.trustedcomputinggroup.org
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation, version 2 of the
-> + * License.
-> + *
-> + */
-> +
-> +#ifndef __TPM_IBMVTPM_H__
-> +#define __TPM_IBMVTPM_H__
-> +
-> +/* vTPM Message Format 1 */
-> +struct ibmvtpm_crq {
-> +	u8 valid;
-> +	u8 msg;
-> +	u16 len;
-> +	u32 data;
-> +	u64 reserved;
-> +} __attribute__((packed, aligned(8)));
-> +
-> +struct ibmvtpm_crq_queue {
-> +	struct ibmvtpm_crq *crq_addr;
-> +	u32 index;
-> +	u32 num_entry;
-> +};
-> +
-> +struct ibmvtpm_dev {
-> +	struct device *dev;
-> +	struct vio_dev *vdev;
-> +	struct ibmvtpm_crq_queue crq_queue;
-> +	dma_addr_t crq_dma_handle;
-> +	spinlock_t lock;
-> +	struct tasklet_struct tasklet;
-> +	u32 rtce_size;
-> +	void __iomem *rtce_buf;
-> +	dma_addr_t rtce_dma_handle;
-> +	spinlock_t rtce_lock;
-> +	struct ibmvtpm_crq crq_res;
-> +	u32 vtpm_version;
-> +};
-> +
-> +#define CRQ_RES_BUF_SIZE	PAGE_SIZE
-> +
-> +/* Initialize CRQ */
-> +#define INIT_CRQ_CMD		0xC001000000000000LL /* Init cmd */
-> +#define INIT_CRQ_COMP_CMD	0xC002000000000000LL /* Init complete cmd */
-> +#define INIT_CRQ_RES		0x01	/* Init respond */
-> +#define INIT_CRQ_COMP_RES	0x02	/* Init complete respond */
-> +#define VALID_INIT_CRQ		0xC0	/* Valid command for init crq */
-> +
-> +/* vTPM CRQ response is the message type | 0x80 */
-> +#define VTPM_MSG_RES		0x80
-> +#define IBMVTPM_VALID_CMD	0x80
-> +
-> +/* vTPM CRQ message types */
-> +#define VTPM_GET_VERSION			0x01
-> +#define VTPM_GET_VERSION_RES			(0x01 | VTPM_MSG_RES)
-> +
-> +#define VTPM_TPM_COMMAND			0x02
-> +#define VTPM_TPM_COMMAND_RES			(0x02 | VTPM_MSG_RES)
-> +
-> +#define VTPM_GET_RTCE_BUFFER_SIZE		0x03
-> +#define VTPM_GET_RTCE_BUFFER_SIZE_RES		(0x03 | VTPM_MSG_RES)
-> +
-> +#define VTPM_PREPARE_TO_SUSPEND			0x04
-> +#define VTPM_PREPARE_TO_SUSPEND_RES		(0x04 | VTPM_MSG_RES)
-> +
-> +#endif
-> -- 
-> 1.7.1
-> 
-> 
+ fs/proc/generic.c       |   66 ++++------
+ fs/proc/inode.c         |  250 +++++++++++++++++++++++---------------
+ fs/proc/internal.h      |    2 
+ include/linux/proc_fs.h |    7 -
+ 4 files changed, 190 insertions(+), 135 deletions(-)
+
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index b3647fe..d2f1b70 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -21,7 +21,7 @@
+ #include <linux/namei.h>
+ #include <linux/bitops.h>
+ #include <linux/spinlock.h>
+-#include <linux/completion.h>
++#include <linux/sched.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -190,14 +190,16 @@ proc_file_read(struct file *file, char __user *buf, size_t nbytes,
+ {
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	ssize_t rv = -EIO;
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	rcu_read_unlock();
+ 
+ 	rv = __proc_file_read(file, buf, nbytes, ppos);
+ 
+@@ -213,13 +215,16 @@ proc_file_write(struct file *file, const char __user *buffer,
+ 	ssize_t rv = -EIO;
+ 
+ 	if (pde->write_proc) {
+-		spin_lock(&pde->pde_unload_lock);
+-		if (!pde->proc_fops) {
+-			spin_unlock(&pde->pde_unload_lock);
++		const struct file_operations *fops;
++
++		rcu_read_lock();
++		fops = rcu_dereference(pde->proc_fops);
++		if (!fops) {
++			rcu_read_unlock();
+ 			return rv;
+ 		}
+-		pde->pde_users++;
+-		spin_unlock(&pde->pde_unload_lock);
++		atomic_inc(&pde->pde_users);
++		rcu_read_unlock();
+ 
+ 		/* FIXME: does this routine need ppos?  probably... */
+ 		rv = pde->write_proc(file, buffer, count, pde->data);
+@@ -564,7 +569,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
+ 
+ 	if (S_ISDIR(dp->mode)) {
+ 		if (dp->proc_iops == NULL) {
+-			dp->proc_fops = &proc_dir_operations;
++			RCU_INIT_POINTER(dp->proc_fops, &proc_dir_operations);
+ 			dp->proc_iops = &proc_dir_inode_operations;
+ 		}
+ 		dir->nlink++;
+@@ -573,7 +578,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
+ 			dp->proc_iops = &proc_link_inode_operations;
+ 	} else if (S_ISREG(dp->mode)) {
+ 		if (dp->proc_fops == NULL)
+-			dp->proc_fops = &proc_file_operations;
++			RCU_INIT_POINTER(dp->proc_fops, &proc_file_operations);
+ 		if (dp->proc_iops == NULL)
+ 			dp->proc_iops = &proc_file_inode_operations;
+ 	}
+@@ -625,11 +630,8 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
+ 	ent->mode = mode;
+ 	ent->nlink = nlink;
+ 	atomic_set(&ent->count, 1);
+-	ent->pde_users = 0;
+-	spin_lock_init(&ent->pde_unload_lock);
+-	ent->pde_unload_completion = NULL;
+-	INIT_LIST_HEAD(&ent->pde_openers);
+- out:
++	atomic_set(&ent->pde_users, 0);
++out:
+ 	return ent;
+ }
+ 
+@@ -751,7 +753,7 @@ struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
+ 	pde = __proc_create(&parent, name, mode, nlink);
+ 	if (!pde)
+ 		goto out;
+-	pde->proc_fops = proc_fops;
++	rcu_assign_pointer(pde->proc_fops, proc_fops);
+ 	pde->data = data;
+ 	if (proc_register(parent, pde) < 0)
+ 		goto out_free;
+@@ -787,6 +789,7 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
+ 	struct proc_dir_entry *de = NULL;
+ 	const char *fn = name;
+ 	unsigned int len;
++	LIST_HEAD(purge_queue);
+ 
+ 	spin_lock(&proc_subdir_lock);
+ 	if (__xlate_proc_name(name, &parent, &fn) != 0) {
+@@ -809,37 +812,28 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
+ 		return;
+ 	}
+ 
+-	spin_lock(&de->pde_unload_lock);
+ 	/*
+ 	 * Stop accepting new callers into module. If you're
+ 	 * dynamically allocating ->proc_fops, save a pointer somewhere.
+ 	 */
+ 	de->proc_fops = NULL;
++	synchronize_rcu();
+ 	/* Wait until all existing callers into module are done. */
+-	if (de->pde_users > 0) {
+-		DECLARE_COMPLETION_ONSTACK(c);
+-
+-		if (!de->pde_unload_completion)
+-			de->pde_unload_completion = &c;
+-
+-		spin_unlock(&de->pde_unload_lock);
+-
+-		wait_for_completion(de->pde_unload_completion);
+-
+-		spin_lock(&de->pde_unload_lock);
++	while (atomic_read(&de->pde_users)) {
++		set_current_state(TASK_UNINTERRUPTIBLE);
++		schedule();
+ 	}
++	current->state = TASK_RUNNING;
++	pde_openers_purge(de, &purge_queue);
+ 
+-	while (!list_empty(&de->pde_openers)) {
++	while (!list_empty(&purge_queue)) {
+ 		struct pde_opener *pdeo;
+ 
+-		pdeo = list_first_entry(&de->pde_openers, struct pde_opener, lh);
++		pdeo = list_first_entry(&purge_queue, struct pde_opener, lh);
+ 		list_del(&pdeo->lh);
+-		spin_unlock(&de->pde_unload_lock);
+ 		pdeo->release(pdeo->inode, pdeo->file);
+ 		kfree(pdeo);
+-		spin_lock(&de->pde_unload_lock);
+ 	}
+-	spin_unlock(&de->pde_unload_lock);
+ 
+ 	if (S_ISDIR(de->mode))
+ 		parent->nlink--;
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 7ac817b..eebf6ab 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -21,6 +21,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+ #include <linux/mount.h>
++#include <linux/hash.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -94,8 +95,27 @@ static void init_once(void *foo)
+ 	inode_init_once(&ei->vfs_inode);
+ }
+ 
++#define PDE_HASH_BITS 5
++#define PDE_HASH_SIZE (1 << PDE_HASH_BITS)
++
++static struct {
++	spinlock_t	 lock;
++	struct list_head head;
++} pde_openers[PDE_HASH_SIZE];
++
++static void __init pde_openers_init(void)
++{
++	int i;
++
++	for (i = 0; i < PDE_HASH_SIZE; i++) {
++		spin_lock_init(&pde_openers[i].lock);
++		INIT_LIST_HEAD(&pde_openers[i].head);
++	}
++}
++
+ void __init proc_init_inodecache(void)
+ {
++	pde_openers_init();
+ 	proc_inode_cachep = kmem_cache_create("proc_inode_cache",
+ 					     sizeof(struct proc_inode),
+ 					     0, (SLAB_RECLAIM_ACCOUNT|
+@@ -126,18 +146,9 @@ static const struct super_operations proc_sops = {
+ 	.show_options	= proc_show_options,
+ };
+ 
+-static void __pde_users_dec(struct proc_dir_entry *pde)
+-{
+-	pde->pde_users--;
+-	if (pde->pde_unload_completion && pde->pde_users == 0)
+-		complete(pde->pde_unload_completion);
+-}
+-
+ void pde_users_dec(struct proc_dir_entry *pde)
+ {
+-	spin_lock(&pde->pde_unload_lock);
+-	__pde_users_dec(pde);
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_dec(&pde->pde_users);
+ }
+ 
+ static loff_t proc_reg_llseek(struct file *file, loff_t offset, int whence)
+@@ -145,27 +156,29 @@ static loff_t proc_reg_llseek(struct file *file, loff_t offset, int whence)
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	loff_t rv = -EINVAL;
+ 	loff_t (*llseek)(struct file *, loff_t, int);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
+ 	/*
+ 	 * remove_proc_entry() is going to delete PDE (as part of module
+ 	 * cleanup sequence). No new callers into module allowed.
+ 	 */
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+ 	/*
+ 	 * Bump refcount so that remove_proc_entry will wail for ->llseek to
+ 	 * complete.
+ 	 */
+-	pde->pde_users++;
++	atomic_inc(&pde->pde_users);
+ 	/*
+ 	 * Save function pointer under lock, to protect against ->proc_fops
+ 	 * NULL'ifying right after ->pde_unload_lock is dropped.
+ 	 */
+-	llseek = pde->proc_fops->llseek;
+-	spin_unlock(&pde->pde_unload_lock);
++	llseek = fops->llseek;
++	rcu_read_unlock();
+ 
+ 	if (!llseek)
+ 		llseek = default_llseek;
+@@ -180,15 +193,17 @@ static ssize_t proc_reg_read(struct file *file, char __user *buf, size_t count,
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	ssize_t rv = -EIO;
+ 	ssize_t (*read)(struct file *, char __user *, size_t, loff_t *);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	read = pde->proc_fops->read;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	read = fops->read;
++	rcu_read_unlock();
+ 
+ 	if (read)
+ 		rv = read(file, buf, count, ppos);
+@@ -202,15 +217,17 @@ static ssize_t proc_reg_write(struct file *file, const char __user *buf, size_t
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	ssize_t rv = -EIO;
+ 	ssize_t (*write)(struct file *, const char __user *, size_t, loff_t *);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	write = pde->proc_fops->write;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	write = fops->write;
++	rcu_read_unlock();
+ 
+ 	if (write)
+ 		rv = write(file, buf, count, ppos);
+@@ -224,15 +241,17 @@ static unsigned int proc_reg_poll(struct file *file, struct poll_table_struct *p
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	unsigned int rv = DEFAULT_POLLMASK;
+ 	unsigned int (*poll)(struct file *, struct poll_table_struct *);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	poll = pde->proc_fops->poll;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	poll = fops->poll;
++	rcu_read_unlock();
+ 
+ 	if (poll)
+ 		rv = poll(file, pts);
+@@ -246,15 +265,17 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	long rv = -ENOTTY;
+ 	long (*ioctl)(struct file *, unsigned int, unsigned long);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	ioctl = pde->proc_fops->unlocked_ioctl;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	ioctl = fops->unlocked_ioctl;
++	rcu_read_unlock();
+ 
+ 	if (ioctl)
+ 		rv = ioctl(file, cmd, arg);
+@@ -269,15 +290,17 @@ static long proc_reg_compat_ioctl(struct file *file, unsigned int cmd, unsigned
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	long rv = -ENOTTY;
+ 	long (*compat_ioctl)(struct file *, unsigned int, unsigned long);
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	compat_ioctl = pde->proc_fops->compat_ioctl;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	compat_ioctl = fops->compat_ioctl;
++	rcu_read_unlock();
+ 
+ 	if (compat_ioctl)
+ 		rv = compat_ioctl(file, cmd, arg);
+@@ -292,15 +315,17 @@ static int proc_reg_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+ 	int rv = -EIO;
+ 	int (*mmap)(struct file *, struct vm_area_struct *);
++	const struct file_operations *fops; 
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	mmap = pde->proc_fops->mmap;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	mmap = fops->mmap;
++	rcu_read_unlock();
+ 
+ 	if (mmap)
+ 		rv = mmap(file, vma);
+@@ -309,6 +334,59 @@ static int proc_reg_mmap(struct file *file, struct vm_area_struct *vma)
+ 	return rv;
+ }
+ 
++
++static unsigned int pdeo_hash(const struct inode *inode, const struct file *file)
++{
++	unsigned long hashval = (unsigned long)inode ^ (unsigned long)file;
++
++	return hash_long(hashval, PDE_HASH_BITS);
++}
++
++static void pde_openers_add(struct pde_opener *pdeo)
++{
++	unsigned int slot = pdeo_hash(pdeo->inode, pdeo->file);
++
++	spin_lock(&pde_openers[slot].lock);
++	list_add(&pdeo->lh, &pde_openers[slot].head);
++	spin_unlock(&pde_openers[slot].lock);
++}
++
++void pde_openers_purge(struct proc_dir_entry *pde, struct list_head *queue)
++{
++	int i;
++	struct pde_opener *n, *pdeo;
++
++	for (i = 0; i < PDE_HASH_SIZE; i++) {
++		spin_lock(&pde_openers[i].lock);
++		list_for_each_entry_safe(pdeo, n, &pde_openers[i].head, lh) {
++			if (pdeo->pde == pde)
++				list_move(&pdeo->lh, queue);
++		}
++		spin_unlock(&pde_openers[i].lock);
++	}
++}
++
++typedef int (*release_t)(struct inode *, struct file *);
++
++static release_t pde_opener_del(struct inode *inode, struct file *file)
++{
++	unsigned int slot = pdeo_hash(inode, file);
++	struct pde_opener *pdeo;
++	release_t release = NULL;
++
++	spin_lock(&pde_openers[slot].lock);
++	list_for_each_entry(pdeo, &pde_openers[slot].head, lh) {
++		if (pdeo->inode == inode && pdeo->file == file) {
++			release = pdeo->release;
++			list_del(&pdeo->lh);
++			kfree(pdeo);
++			break;
++		}
++	}
++	spin_unlock(&pde_openers[slot].lock);
++	return release;
++}
++
+ static int proc_reg_open(struct inode *inode, struct file *file)
+ {
+ 	struct proc_dir_entry *pde = PDE(inode);
+@@ -316,6 +394,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
+ 	int (*open)(struct inode *, struct file *);
+ 	int (*release)(struct inode *, struct file *);
+ 	struct pde_opener *pdeo;
++	const struct file_operations *fops;
+ 
+ 	/*
+ 	 * What for, you ask? Well, we can have open, rmmod, remove_proc_entry
+@@ -331,57 +410,48 @@ static int proc_reg_open(struct inode *inode, struct file *file)
+ 	if (!pdeo)
+ 		return -ENOMEM;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	if (!pde->proc_fops) {
+-		spin_unlock(&pde->pde_unload_lock);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
++		rcu_read_unlock();
+ 		kfree(pdeo);
+ 		return -ENOENT;
+ 	}
+-	pde->pde_users++;
+-	open = pde->proc_fops->open;
+-	release = pde->proc_fops->release;
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	open = fops->open;
++	release = fops->release;
++	rcu_read_unlock();
+ 
+ 	if (open)
+ 		rv = open(inode, file);
+ 
+-	spin_lock(&pde->pde_unload_lock);
+ 	if (rv == 0 && release) {
+ 		/* To know what to release. */
+ 		pdeo->inode = inode;
+ 		pdeo->file = file;
++		pdeo->pde = pde;
+ 		/* Strictly for "too late" ->release in proc_reg_release(). */
+ 		pdeo->release = release;
+-		list_add(&pdeo->lh, &pde->pde_openers);
+-	} else
+-		kfree(pdeo);
+-	__pde_users_dec(pde);
+-	spin_unlock(&pde->pde_unload_lock);
++		pde_openers_add(pdeo);
++		pdeo = NULL;
++	}
++	pde_users_dec(pde);
++	kfree(pdeo);
+ 	return rv;
+ }
+ 
+-static struct pde_opener *find_pde_opener(struct proc_dir_entry *pde,
+-					struct inode *inode, struct file *file)
+-{
+-	struct pde_opener *pdeo;
+-
+-	list_for_each_entry(pdeo, &pde->pde_openers, lh) {
+-		if (pdeo->inode == inode && pdeo->file == file)
+-			return pdeo;
+-	}
+-	return NULL;
+-}
+ 
+ static int proc_reg_release(struct inode *inode, struct file *file)
+ {
+ 	struct proc_dir_entry *pde = PDE(inode);
+ 	int rv = 0;
+ 	int (*release)(struct inode *, struct file *);
+-	struct pde_opener *pdeo;
++	const struct file_operations *fops;
+ 
+-	spin_lock(&pde->pde_unload_lock);
+-	pdeo = find_pde_opener(pde, inode, file);
+-	if (!pde->proc_fops) {
++	release = pde_opener_del(inode, file);
++	rcu_read_lock();
++	fops = rcu_dereference(pde->proc_fops);
++	if (!fops) {
+ 		/*
+ 		 * Can't simply exit, __fput() will think that everything is OK,
+ 		 * and move on to freeing struct file. remove_proc_entry() will
+@@ -390,22 +460,14 @@ static int proc_reg_release(struct inode *inode, struct file *file)
+ 		 *
+ 		 * But if opener is removed from list, who will ->release it?
+ 		 */
+-		if (pdeo) {
+-			list_del(&pdeo->lh);
+-			spin_unlock(&pde->pde_unload_lock);
+-			rv = pdeo->release(inode, file);
+-			kfree(pdeo);
+-		} else
+-			spin_unlock(&pde->pde_unload_lock);
++		rcu_read_unlock();
++		if (release)
++			release(inode, file);
+ 		return rv;
+ 	}
+-	pde->pde_users++;
+-	release = pde->proc_fops->release;
+-	if (pdeo) {
+-		list_del(&pdeo->lh);
+-		kfree(pdeo);
+-	}
+-	spin_unlock(&pde->pde_unload_lock);
++	atomic_inc(&pde->pde_users);
++	release = fops->release;
++	rcu_read_unlock();
+ 
+ 	if (release)
+ 		rv = release(inode, file);
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index e1167a1..da166be 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -97,12 +97,14 @@ int proc_readdir_de(struct proc_dir_entry *de, struct file *filp, void *dirent,
+ 		filldir_t filldir);
+ 
+ struct pde_opener {
++	struct proc_dir_entry *pde;
+ 	struct inode *inode;
+ 	struct file *file;
+ 	int (*release)(struct inode *, struct file *);
+ 	struct list_head lh;
+ };
+ void pde_users_dec(struct proc_dir_entry *pde);
++void pde_openers_purge(struct proc_dir_entry *pde, struct list_head *queue);
+ 
+ extern spinlock_t proc_subdir_lock;
+ 
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 3fd2e87..35766c1 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -64,16 +64,13 @@ struct proc_dir_entry {
+ 	 * If you're allocating ->proc_fops dynamically, save a pointer
+ 	 * somewhere.
+ 	 */
+-	const struct file_operations *proc_fops;
++	const struct file_operations __rcu *proc_fops;
+ 	struct proc_dir_entry *next, *parent, *subdir;
+ 	void *data;
+ 	read_proc_t *read_proc;
+ 	write_proc_t *write_proc;
+ 	atomic_t count;		/* use count */
+-	int pde_users;	/* number of callers into module in progress */
+-	struct completion *pde_unload_completion;
+-	struct list_head pde_openers;	/* who did ->open, but not ->release */
+-	spinlock_t pde_unload_lock; /* proc_fops checks and pde_users bumps */
++	atomic_t pde_users;	/* number of callers into module in progress */
+ 	u8 namelen;
+ 	char name[];
+ };
+
 
