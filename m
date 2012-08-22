@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758835Ab2HVJKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:10:23 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53578 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab2HVJKU (ORCPT
+	id S1758847Ab2HVJLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:11:50 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:65132 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758731Ab2HVJLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:10:20 -0400
-Date: Wed, 22 Aug 2012 11:10:13 +0200
+	Wed, 22 Aug 2012 05:11:46 -0400
+Date: Wed, 22 Aug 2012 11:11:41 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
-        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
-Subject: Re: [discussion]sched: a rough proposal to enable power saving in
- scheduler
-Message-ID: <20120822091013.GB23336@gmail.com>
-References: <20120820080606.GA6931@gmail.com>
- <20120820181651.GA737@srcf.ucam.org>
- <20120821094203.GB12385@gmail.com>
- <20120821113951.GA22436@srcf.ucam.org>
- <20120821151910.GA5359@gmail.com>
- <20120821152828.GB28241@srcf.ucam.org>
- <20120821155908.GA5499@gmail.com>
- <20120821161324.GA29665@srcf.ucam.org>
- <20120821182346.GA7325@gmail.com>
- <20120821183414.GA436@srcf.ucam.org>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, shai@scalemp.com,
+        tglx@linutronix.de, ido@wizery.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/platform] x86/vsmp: Use hypervisor layer for
+ initialization
+Message-ID: <20120822091141.GC23336@gmail.com>
+References: <1344445299-22142-1-git-send-email-ido@wizery.com>
+ <tip-c00679af441c5be76e195deed2c76fef65a5d102@git.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120821183414.GA436@srcf.ucam.org>
+In-Reply-To: <tip-c00679af441c5be76e195deed2c76fef65a5d102@git.kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+* tip-bot for Ido Yariv <ido@wizery.com> wrote:
 
-> [...]
->
-> Our power consumption is worse than under other operating 
-> systems is almost entirely because only one of our three GPU 
-> drivers implements any kind of useful power management. [...]
+> Commit-ID:  c00679af441c5be76e195deed2c76fef65a5d102
+> Gitweb:     http://git.kernel.org/tip/c00679af441c5be76e195deed2c76fef65a5d102
+> Author:     Ido Yariv <ido@wizery.com>
+> AuthorDate: Wed, 8 Aug 2012 20:01:38 +0300
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 22 Aug 2012 10:48:05 +0200
+> 
+> x86/vsmp: Use hypervisor layer for initialization
+> 
+> vSMP detection and initialization could be done by
+> the hypervisor layer, so set it up that way.
+> 
+> This cleans up vSMP initialization.
+> 
+> Signed-off-by: Ido Yariv <ido@wizery.com>
+> Acked-by: Shai Fultheim <shai@scalemp.com>
+> Link: http://lkml.kernel.org/r/1344445299-22142-1-git-send-email-ido@wizery.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/include/asm/hypervisor.h |    1 +
+>  arch/x86/include/asm/setup.h      |    7 -------
+>  arch/x86/kernel/cpu/hypervisor.c  |    1 +
+>  arch/x86/kernel/setup.c           |    2 --
+>  arch/x86/kernel/vsmp_64.c         |   27 +++++++++++++++++----------
+>  5 files changed, 19 insertions(+), 19 deletions(-)
 
-... and because our CPU frequency and C state selection logic is 
-doing pretty much the worst possible decisions (on x86 at 
-least).
+I had to zap this commit because it breaks the build:
 
-Regardless, you cannot possibly seriously suggest that because 
-there's even greater suckage elsewhere for some workloads we 
-should not even bother with improving the situation here.
-
-Anyway, I agree with Alan that actual numbers matter.
+(.init.rodata+0x4c8): undefined reference to `x86_hyper_vsmp'
 
 Thanks,
 
