@@ -1,129 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab2HVGDx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 02:03:53 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:47749 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756920Ab2HVGDu (ORCPT
+	id S932099Ab2HVGFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 02:05:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48301 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756831Ab2HVGE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 02:03:50 -0400
-Message-ID: <5034763D.60508@linux.vnet.ibm.com>
-Date: Wed, 22 Aug 2012 14:03:41 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 22 Aug 2012 02:04:56 -0400
+Date: Tue, 21 Aug 2012 23:04:50 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Eric Andersson <eric.andersson@unixphere.com>,
+        Andrew Jones <drjones@redhat.com>, linux-input@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V3 3/8] DA9058 ONKEY driver
+Message-ID: <20120822060450.GG20624@core.coreip.homeip.net>
+References: <201208151518.q7FFINn3011629@latitude.olech.com>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between secondary
- MMU and host
-References: <503358FF.3030009@linux.vnet.ibm.com> <20120821150618.GJ27696@redhat.com>
-In-Reply-To: <20120821150618.GJ27696@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082206-5140-0000-0000-000001F24231
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151518.q7FFINn3011629@latitude.olech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
-> On Tue, Aug 21, 2012 at 05:46:39PM +0800, Xiao Guangrong wrote:
->> There has a bug in set_pte_at_notify which always set the pte to the
->> new page before release the old page in secondary MMU, at this time,
->> the process will access on the new page, but the secondary MMU still
->> access on the old page, the memory is inconsistent between them
->>
->> Below scenario shows the bug more clearly:
->>
->> at the beginning: *p = 0, and p is write-protected by KSM or shared with
->> parent process
->>
->> CPU 0                                       CPU 1
->> write 1 to p to trigger COW,
->> set_pte_at_notify will be called:
->>   *pte = new_page + W; /* The W bit of pte is set */
->>
->>                                      *p = 1; /* pte is valid, so no #PF */
->>
->>                                      return back to secondary MMU, then
->>                                      the secondary MMU read p, but get:
->>                                      *p == 0;
->>
->>                          /*
->>                           * !!!!!!
->>                           * the host has already set p to 1, but the secondary
->>                           * MMU still get the old value 0
->>                           */
->>
->>   call mmu_notifier_change_pte to release
->>   old page in secondary MMU
+On Wed, Aug 15, 2012 at 04:05:22PM +0100, Anthony Olech wrote:
+> This is the ONKEY component driver of the Dialog DA9058 PMIC.
+> This driver is just one component of the whole DA9058 PMIC driver.
+> It depends on the CORE component driver of the DA9058 MFD.
 > 
-> The KSM usage of it looks safe because it will only establish readonly
-> ptes with it.
-> 
-> It seems a problem only for do_wp_page. It wasn't safe to setup
-> writable ptes with it. I guess we first introduced it for KSM and then
-> we added it to do_wp_page too by mistake.
-> 
-> The race window is really tiny, it's unlikely it has ever triggered,
-> however this one seem to be possible so it's slightly more serious
-> than the other race you recently found (the previous one in the exit
-> path I think it was impossible to trigger with KVM).
-> 
->> We can fix it by release old page first, then set the pte to the new
->> page.
->>
->> Note, the new page will be firstly used in secondary MMU before it is
->> mapped into the page table of the process, but this is safe because it
->> is protected by the page table lock, there is no race to change the pte
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  include/linux/mmu_notifier.h |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
->> index 1d1b1e1..8c7435a 100644
->> --- a/include/linux/mmu_notifier.h
->> +++ b/include/linux/mmu_notifier.h
->> @@ -317,8 +317,8 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
->>  	unsigned long ___address = __address;				\
->>  	pte_t ___pte = __pte;						\
->>  									\
->> -	set_pte_at(___mm, ___address, __ptep, ___pte);			\
->>  	mmu_notifier_change_pte(___mm, ___address, ___pte);		\
->> +	set_pte_at(___mm, ___address, __ptep, ___pte);			\
->>  })
-> 
-> If we establish the spte on the new page, what will happen is the same
-> race in reverse. The fundamental problem is that the first guy that
-> writes to the "newpage" (guest or host) won't fault again and so it
-> will fail to serialize against the PT lock.
-> 
-> CPU0  		    	    	CPU1
-> 				oldpage[1] == 0 (both guest & host)
-> oldpage[0] = 1
-> trigger do_wp_page
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 
-We always do ptep_clear_flush before set_pte_at_notify(),
-at this point, we have done:
-  pte = 0 and flush all tlbs
+This is almost exact copy of da9052_onkey, can they be merged together?
 
-> mmu_notifier_change_pte
-> spte = newpage + writable
-> 				guest does newpage[1] = 1
-> 				vmexit
-> 				host read oldpage[1] == 0
+Thanks.
 
-                  It can not happen, at this point pte = 0, host can not
-		  access oldpage anymore, host read can generate #PF, it
-                  will be blocked on page table lock until CPU 0 release the lock.
-
-> pte = newpage + writable (too late)
-> 
-
-
-
-
+-- 
+Dmitry
