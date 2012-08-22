@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab2HVCbB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 22:31:01 -0400
+	id S1754485Ab2HVC1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 22:27:34 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:43131 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab2HVC1w (ORCPT
+	with ESMTP id S1750799Ab2HVC11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 22:27:52 -0400
+	Tue, 21 Aug 2012 22:27:27 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v3 10/17] dlm: use new hashtable implementation
-Date: Wed, 22 Aug 2012 04:27:05 +0200
-Message-Id: <1345602432-27673-11-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v3 06/17] tracepoint: use new hashtable implementation
+Date: Wed, 22 Aug 2012 04:27:01 +0200
+Message-Id: <1345602432-27673-7-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
 References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
@@ -32,142 +32,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch dlm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the dlm.
+Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+generic unrelated code in the tracepoints.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- fs/dlm/lowcomms.c |   47 +++++++++++++----------------------------------
- 1 files changed, 13 insertions(+), 34 deletions(-)
+ kernel/tracepoint.c |   27 +++++++++++----------------
+ 1 files changed, 11 insertions(+), 16 deletions(-)
 
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 331ea4f..9f21774 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -55,6 +55,7 @@
- #include <net/sctp/sctp.h>
- #include <net/sctp/user.h>
- #include <net/ipv6.h>
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index d96ba22..854df92 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+ #include <linux/static_key.h>
 +#include <linux/hashtable.h>
  
- #include "dlm_internal.h"
- #include "lowcomms.h"
-@@ -62,7 +63,7 @@
- #include "config.h"
+ extern struct tracepoint * const __start___tracepoints_ptrs[];
+ extern struct tracepoint * const __stop___tracepoints_ptrs[];
+@@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+  * Protected by tracepoints_mutex.
+  */
+ #define TRACEPOINT_HASH_BITS 6
+-#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+-static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
++static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
  
- #define NEEDED_RMEM (4*1024*1024)
--#define CONN_HASH_SIZE 32
-+#define CONN_HASH_BITS 5
- 
- /* Number of messages to send before rescheduling */
- #define MAX_SEND_MSG_COUNT 25
-@@ -158,34 +159,21 @@ static int dlm_allow_conn;
- static struct workqueue_struct *recv_workqueue;
- static struct workqueue_struct *send_workqueue;
- 
--static struct hlist_head connection_hash[CONN_HASH_SIZE];
-+static struct hlist_head connection_hash[CONN_HASH_BITS];
- static DEFINE_MUTEX(connections_lock);
- static struct kmem_cache *con_cache;
- 
- static void process_recv_sockets(struct work_struct *work);
- static void process_send_sockets(struct work_struct *work);
- 
--
--/* This is deliberately very simple because most clusters have simple
--   sequential nodeids, so we should be able to go straight to a connection
--   struct in the array */
--static inline int nodeid_hash(int nodeid)
--{
--	return nodeid & (CONN_HASH_SIZE-1);
--}
--
- static struct connection *__find_con(int nodeid)
+ /*
+  * Note about RCU :
+@@ -191,16 +191,15 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
+  */
+ static struct tracepoint_entry *get_tracepoint(const char *name)
  {
--	int r;
- 	struct hlist_node *h;
- 	struct connection *con;
+-	struct hlist_head *head;
+ 	struct hlist_node *node;
+ 	struct tracepoint_entry *e;
+ 	u32 hash = jhash(name, strlen(name), 0);
  
--	r = nodeid_hash(nodeid);
--
--	hlist_for_each_entry(con, h, &connection_hash[r], list) {
-+	hash_for_each_possible(connection_hash, con, h, list, nodeid)
- 		if (con->nodeid == nodeid)
- 			return con;
--	}
+-	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+-	hlist_for_each_entry(e, node, head, hlist) {
++	hash_for_each_possible(tracepoint_table, e, node, hlist, hash) {
+ 		if (!strcmp(name, e->name))
+ 			return e;
+ 	}
++
  	return NULL;
  }
  
-@@ -196,7 +184,6 @@ static struct connection *__find_con(int nodeid)
- static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
+@@ -210,19 +209,13 @@ static struct tracepoint_entry *get_tracepoint(const char *name)
+  */
+ static struct tracepoint_entry *add_tracepoint(const char *name)
  {
- 	struct connection *con = NULL;
--	int r;
+-	struct hlist_head *head;
+-	struct hlist_node *node;
+ 	struct tracepoint_entry *e;
+ 	size_t name_len = strlen(name) + 1;
+ 	u32 hash = jhash(name, name_len-1, 0);
  
- 	con = __find_con(nodeid);
- 	if (con || !alloc)
-@@ -206,8 +193,7 @@ static struct connection *__nodeid2con(int nodeid, gfp_t alloc)
- 	if (!con)
- 		return NULL;
- 
--	r = nodeid_hash(nodeid);
--	hlist_add_head(&con->list, &connection_hash[r]);
-+	hash_add(connection_hash, &con->list, nodeid);
- 
- 	con->nodeid = nodeid;
- 	mutex_init(&con->sock_mutex);
-@@ -235,11 +221,8 @@ static void foreach_conn(void (*conn_func)(struct connection *c))
- 	struct hlist_node *h, *n;
- 	struct connection *con;
- 
--	for (i = 0; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry_safe(con, h, n, &connection_hash[i], list){
--			conn_func(con);
+-	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+-	hlist_for_each_entry(e, node, head, hlist) {
+-		if (!strcmp(name, e->name)) {
+-			printk(KERN_NOTICE
+-				"tracepoint %s busy\n", name);
+-			return ERR_PTR(-EEXIST);	/* Already there */
 -		}
--	}
-+	hash_for_each_safe(connection_hash, i, h, n, con, list)
-+		conn_func(con);
- }
- 
- static struct connection *nodeid2con(int nodeid, gfp_t allocation)
-@@ -262,12 +245,10 @@ static struct connection *assoc2con(int assoc_id)
- 
- 	mutex_lock(&connections_lock);
- 
--	for (i = 0 ; i < CONN_HASH_SIZE; i++) {
--		hlist_for_each_entry(con, h, &connection_hash[i], list) {
--			if (con->sctp_assoc == assoc_id) {
--				mutex_unlock(&connections_lock);
--				return con;
--			}
-+	hash_for_each(connection_hash, i, h, con, list) {
-+		if (con->sctp_assoc == assoc_id) {
-+			mutex_unlock(&connections_lock);
-+			return con;
- 		}
++	if (get_tracepoint(name)) {
++		printk(KERN_NOTICE "tracepoint %s busy\n", name);
++		return ERR_PTR(-EEXIST);	/* Already there */
  	}
- 	mutex_unlock(&connections_lock);
-@@ -1638,7 +1619,7 @@ static void free_conn(struct connection *con)
- 	close_connection(con, true);
- 	if (con->othercon)
- 		kmem_cache_free(con_cache, con->othercon);
--	hlist_del(&con->list);
-+	hash_del(&con->list);
- 	kmem_cache_free(con_cache, con);
+ 	/*
+ 	 * Using kmalloc here to allocate a variable length element. Could
+@@ -234,7 +227,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+ 	memcpy(&e->name[0], name, name_len);
+ 	e->funcs = NULL;
+ 	e->refcount = 0;
+-	hlist_add_head(&e->hlist, head);
++	hash_add(tracepoint_table, &e->hlist, hash);
+ 	return e;
  }
  
-@@ -1667,10 +1648,8 @@ int dlm_lowcomms_start(void)
+@@ -244,7 +237,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+  */
+ static inline void remove_tracepoint(struct tracepoint_entry *e)
  {
- 	int error = -EINVAL;
- 	struct connection *con;
--	int i;
+-	hlist_del(&e->hlist);
++	hash_del(&e->hlist);
+ 	kfree(e);
+ }
  
--	for (i = 0; i < CONN_HASH_SIZE; i++)
--		INIT_HLIST_HEAD(&connection_hash[i]);
-+	hash_init(connection_hash);
+@@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
  
- 	init_local();
- 	if (!dlm_local_count) {
+ static int init_tracepoints(void)
+ {
++	hash_init(tracepoint_table);
++
+ 	return register_module_notifier(&tracepoint_module_nb);
+ }
+ __initcall(init_tracepoints);
 -- 
 1.7.8.6
 
