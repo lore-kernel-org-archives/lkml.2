@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab2HVQVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:21:43 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:35720 "EHLO SMTP.CITRIX.COM"
+	id S933072Ab2HVQVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:21:41 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:16732 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935Ab2HVQUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933001Ab2HVQUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Aug 2012 12:20:31 -0400
 X-IronPort-AV: E=Sophos;i="4.77,808,1336363200"; 
-   d="scan'208";a="35465043"
+   d="scan'208";a="35465044"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: xen-devel@lists.xensource.com
 CC: linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
         Stefano.Stabellini@eu.citrix.com,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 5/6] xen: clear IRQ_NOAUTOEN and IRQ_NOREQUEST
-Date: Wed, 22 Aug 2012 17:20:15 +0100
-Message-ID: <1345652416-27181-5-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 3/6] xen: update xen_add_to_physmap interface
+Date: Wed, 22 Aug 2012 17:20:13 +0100
+Message-ID: <1345652416-27181-3-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1208221635020.15568@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1208221635020.15568@kaball.uk.xensource.com>
@@ -25,29 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reset the IRQ_NOAUTOEN and IRQ_NOREQUEST flags that are enabled by
-default on ARM. If IRQ_NOAUTOEN is set, __setup_irq doesn't call
-irq_startup, that is responsible for calling irq_unmask at startup time.
-As a result event channels remain masked.
+Update struct xen_add_to_physmap to be in sync with Xen's version of the
+structure.
+The size field was introduced by:
+
+changeset:   24164:707d27fe03e7
+user:        Jean Guyader <jean.guyader@eu.citrix.com>
+date:        Fri Nov 18 13:42:08 2011 +0000
+summary:     mm: New XENMEM space, XENMAPSPACE_gmfn_range
+
+According to the comment:
+
+"This new field .size is located in the 16 bits padding between .domid
+and .space in struct xen_add_to_physmap to stay compatible with older
+versions."
+
+Changes in v2:
+
+- remove erroneous comment in the commit message.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/events.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ include/xen/interface/memory.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 36bf17d..c60d162 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -842,6 +842,7 @@ int bind_evtchn_to_irq(unsigned int evtchn)
- 		struct irq_info *info = info_for_irq(irq);
- 		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
- 	}
-+	irq_clear_status_flags(irq, IRQ_NOREQUEST|IRQ_NOAUTOEN);
+diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+index eac3ce1..8d4efc1 100644
+--- a/include/xen/interface/memory.h
++++ b/include/xen/interface/memory.h
+@@ -163,6 +163,9 @@ struct xen_add_to_physmap {
+     /* Which domain to change the mapping for. */
+     domid_t domid;
  
- out:
- 	mutex_unlock(&irq_mapping_update_lock);
++    /* Number of pages to go through for gmfn_range */
++    uint16_t    size;
++
+     /* Source mapping space. */
+ #define XENMAPSPACE_shared_info 0 /* shared info page */
+ #define XENMAPSPACE_grant_table 1 /* grant table page */
 -- 
 1.7.2.5
 
