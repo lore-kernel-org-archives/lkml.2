@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab2HVPN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:13:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51915 "EHLO
+	id S932893Ab2HVPO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:14:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59936 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671Ab2HVPNz (ORCPT
+	with ESMTP id S932663Ab2HVPNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:13:55 -0400
+	Wed, 22 Aug 2012 11:13:38 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Artem Bityutskiy <dedekind1@gmail.com>,
-        Eric Miao <eric.miao@linaro.org>, Kevin Hilman <khilman@ti.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Yong Shen <yong.shen@linaro.org>
-Subject: [PATCH 0/6] ARM: randconfig bugs
-Date: Wed, 22 Aug 2012 17:13:04 +0200
-Message-Id: <1345648390-4234-1-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Eric Miao <eric.miao@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, stable@vger.kernel.org
+Subject: [PATCH 6/6] ARM: imx: select ARM_CPU_SUSPEND when necessary
+Date: Wed, 22 Aug 2012 17:13:10 +0200
+Message-Id: <1345648390-4234-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-X-Provags-ID: V02:K0:RmdIHCsOWp2Ap9nDAU6LpdW9eWg8S7nhXXq2b4xB8+6
- 6F7AuRgzspZ35TQvBZ7NQTB+83D7iKLl6cgvU1YGyn+XZl42c6
- uP2S1lB0odZqn+4TGnwJ4VCB9Rk1u1fDKCQJ025chp9lyPsUOz
- ZoDsyCF1AhOcl0Xreezi62Z2EUdiAY1q7GbN6BTyRCIuzu+J2I
- jKejwhYH3oFB2yYk/vAjwBqSBJ9LWYOx5c6827QJ7zyLeGb1GT
- KOJArKmq4bV/KNHgRCZOKUIK15DdVbZiwM6R65y+gnp1CzUJMd
- 7DimNFQnuMDv5qtZInt6XhbsJDxFTArektZQgtscN9YwHnSwgk
- XmNo8OGmPDpOBWwUvcwI8A1WAdbsaawcOzJSH79dP+0yhJdR03
- 9jfefvNe0uTzw==
+In-Reply-To: <1345648390-4234-1-git-send-email-arnd@arndb.de>
+References: <1345648390-4234-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:OD1Me6i0W/zZ4Y+z8kxaSc57hzfBVZnnNRQRl3795Nm
+ 1YrYqFPukLnSOo7ESkJnf6Ehy4TsNVSgd9cgewUk/osRMHoiwq
+ Ty3zudlbovXIJjuo5XraqDRD3dWeg76WLEMU3tHsn7kye4yngv
+ gmiZ214gYl9qYY/6OmL0xQjyrCFXm5yK7vBtEsCBY3kUn1T/3u
+ terMvVWR+pbRuuQm0WDSzSrlm74QrB/AXtLB7WL7lasjUlX7EQ
+ C4a5ht1OkeRKKf9kceti/m4fdyX2ehL2OMG191ds8Sw8Sfeaor
+ Us3UKTDxfUSwIocyGirr293nvMEYMTJX+cOm8zDjPyyhvvHW0N
+ GFLm6tu3fIzJlrxANNzPI8xDWzSF/pj4+8PLpySbVcx+/ixG/p
+ GCw4nhc7pvLCA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On i.MX6, we select ARM_CPU_SUSPEND when building with power management
+support, but for some reason this was omitted on i.MX5. Normally we
+build kernels for both together so the error only showed up in
+randconfig tests.
 
-Here are some more patches for bugs I found using
-'make randconfig' in v3.6-rc+multiplatform. I can
-to merge them through the arm-soc tree, but please
-have a look and provide Acks.
+Without this patch, building imx5 standalone results in:
 
-	Arnd
+arch/arm/mach-imx/built-in.o: In function `v7_cpu_resume':
+arch/arm/mach-imx/head-v7.S:104: undefined reference to `cpu_resume'
 
----
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Cc: Eric Miao <eric.miao@linaro.org>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
 Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Yong Shen <yong.shen@linaro.org>
+Cc: stable@vger.kernel.org
+---
+ arch/arm/mach-imx/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-
-Arnd Bergmann (6):
-  ARM: ux500: don't select LEDS_GPIO for snowball
-  ARM: omap: allow building omap44xx without SMP
-  ARM: imx: build pm-imx5 code only when PM is enabled
-  ARM: imx: fix ksz9021rn_phy_fixup
-  ARM: imx: select CPU_FREQ_TABLE when needed
-  ARM: imx: select ARM_CPU_SUSPEND when necessary
-
- arch/arm/Kconfig                  |    1 +
- arch/arm/mach-imx/Kconfig         |    1 +
- arch/arm/mach-imx/Makefile        |    3 ++-
- arch/arm/mach-imx/mach-imx6q.c    |    4 ++--
- arch/arm/mach-omap2/Kconfig       |    2 +-
- arch/arm/mach-omap2/cpuidle44xx.c |    3 ++-
- arch/arm/mach-ux500/Kconfig       |    1 -
- include/linux/cpuidle.h           |    4 ++++
- 8 files changed, 13 insertions(+), 6 deletions(-)
-
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index afd542a..8e96573 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -89,6 +89,7 @@ config SOC_IMX5
+ 	select ARCH_MXC_IOMUX_V3
+ 	select ARCH_HAS_CPUFREQ
+ 	select ARCH_MX5
++	select ARM_CPU_SUSPEND if PM
+ 	bool
+ 
+ config SOC_IMX50
 -- 
 1.7.10
 
