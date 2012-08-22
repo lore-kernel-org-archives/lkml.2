@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab2HVRc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 13:32:29 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38593 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab2HVRc0 (ORCPT
+	id S1752945Ab2HVRfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 13:35:55 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:33141 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab2HVRfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 13:32:26 -0400
-Message-ID: <503517C4.5030500@gmail.com>
-Date: Wed, 22 Aug 2012 19:32:52 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Wed, 22 Aug 2012 13:35:51 -0400
+Date: Wed, 22 Aug 2012 19:35:45 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        "3.2.x.." <stable@kernel.org>
+Subject: Re: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
+Message-ID: <20120822173542.GD13674@somewhere>
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+ <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
+ <20120822171930.GE2447@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, torvalds@linux-foundation.org,
-        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 13/17] lockd: use new hashtable implementation
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-14-git-send-email-levinsasha928@gmail.com> <20120822114752.GC20158@fieldses.org> <5034CD02.2010103@gmail.com> <20120822132243.GA2844@Krystal>
-In-Reply-To: <20120822132243.GA2844@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822171930.GE2447@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 03:22 PM, Mathieu Desnoyers wrote:
-> * Sasha Levin (levinsasha928@gmail.com) wrote:
->> On 08/22/2012 01:47 PM, J. Bruce Fields wrote:
->>> On Wed, Aug 22, 2012 at 04:27:08AM +0200, Sasha Levin wrote:
->>>> +static int __init nlm_init(void)
->>>> +{
->>>> +	hash_init(nlm_files);
->>>> +	return 0;
->>>> +}
->>>> +
->>>> +module_init(nlm_init);
->>>
->>> That's giving me:
->>>
->>> fs/lockd/svcsubs.o: In function `nlm_init':
->>> /home/bfields/linux-2.6/fs/lockd/svcsubs.c:454: multiple definition of `init_module'
->>> fs/lockd/svc.o:/home/bfields/linux-2.6/fs/lockd/svc.c:606: first defined here
->>> make[2]: *** [fs/lockd/lockd.o] Error 1
->>> make[1]: *** [fs/lockd] Error 2
->>> make[1]: *** Waiting for unfinished jobs....
->>
->> I tested this entire patch set both with linux-next and Linus' latest master,
->> and it worked fine in both places.
->>
->> Is it possible that lockd has a -next tree which isn't pulled into linux-next?
->> (there's nothing listed in MAINTAINERS that I could see).
+On Wed, Aug 22, 2012 at 10:19:30AM -0700, Paul E. McKenney wrote:
+> On Wed, Aug 22, 2012 at 06:23:39PM +0200, Frederic Weisbecker wrote:
+> > In the old times, the whole idle task was considered
+> > as an RCU quiescent state. But as RCU became more and
+> > more successful overtime, some RCU read side critical
+> > section have been added even in the code of some
+> > architectures idle tasks, for tracing for example.
+> > 
+> > So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+> > be called by the architecture to tell RCU about the part
+> > in the idle loop that doesn't make use of rcu read side
+> > critical sections, typically the part that puts the CPU
+> > in low power mode.
+> > 
+> > This is necessary for RCU to find the quiescent states in
+> > idle in order to complete grace periods.
+> > 
+> > Add this missing pair of calls in the Alpha's idle loop.
+> > 
+> > Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Richard Henderson <rth@twiddle.net>
+> > Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+> > Cc: Matt Turner <mattst88@gmail.com>
+> > Cc: alpha <linux-alpha@vger.kernel.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: 3.2.x.. <stable@kernel.org>
+> > ---
+> >  arch/alpha/kernel/process.c |    6 +++++-
+> >  1 files changed, 5 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
+> > index 153d3fc..2ebf7b5 100644
+> > --- a/arch/alpha/kernel/process.c
+> > +++ b/arch/alpha/kernel/process.c
+> > @@ -28,6 +28,7 @@
+> >  #include <linux/tty.h>
+> >  #include <linux/console.h>
+> >  #include <linux/slab.h>
+> > +#include <linux/rcupdate.h>
+> > 
+> >  #include <asm/reg.h>
+> >  #include <asm/uaccess.h>
+> > @@ -50,13 +51,16 @@ cpu_idle(void)
+> >  {
+> >  	set_thread_flag(TIF_POLLING_NRFLAG);
+> > 
+> > +	preempt_disable();
 > 
-> fs/lockd/Makefile:
-> 
-> obj-$(CONFIG_LOCKD) += lockd.o
-> 
-> lockd-objs-y := clntlock.o clntproc.o clntxdr.o host.o svc.o svclock.o \
->                 svcshare.o svcproc.o svcsubs.o mon.o xdr.o grace.o
-> 
-> your patch adds a module_init to svcsubs.c.
-> However, there is already one in svc.c, pulled into the same module.
-> 
-> in your test build, is CONFIG_LOCKD defined as "m" or "y" ? You should
-> always test both.
-> 
-> One solution here is to create a "local" init function in svcsubs.c and
-> expose it to svc.c, so the latter can call it from its module init
-> function.
+> I don't understand the above preempt_disable() not having a matching
+> preempt_enable() at exit, but the rest of the patches in this series
+> look good to me.
 
-Ah yes, it was on =y and I didn't notice :/
+The current code is preemptable, at least it appears so because it calls
+schedule() directly. And if I call rcu_idle_enter() in a preemptable section,
+I'm in trouble because I'll schedule while in extended QS.
 
-I'll fix that.
+Thus I need to disable preemption here at least until I call rcu_idle_exit().
 
-> Thanks,
+Now this is an endless loop so there is no need to re-enable
+preemption after the loop. And schedule_preempt_disabled()
+takes care of enabling preemption before schedule() and redisabling
+it afterward.
+
+
 > 
-> Mathieu
+> 							Thanx, Paul
 > 
-
+> >  	while (1) {
+> >  		/* FIXME -- EV6 and LCA45 know how to power down
+> >  		   the CPU.  */
+> > 
+> > +		rcu_idle_enter();
+> >  		while (!need_resched())
+> >  			cpu_relax();
+> > -		schedule();
+> > +		rcu_idle_exit();
+> > +		schedule_preempt_disabled();
+> >  	}
+> >  }
+> > 
+> > -- 
+> > 1.7.5.4
+> > 
+> 
