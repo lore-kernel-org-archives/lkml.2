@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899Ab2HVPOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:14:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59062 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab2HVPNh (ORCPT
+	id S932876Ab2HVPQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:16:39 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52772 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757334Ab2HVPQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:13:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, stable@vger.kernel.org
-Subject: [PATCH 3/6] ARM: imx: build pm-imx5 code only when PM is enabled
-Date: Wed, 22 Aug 2012 17:13:07 +0200
-Message-Id: <1345648390-4234-4-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1345648390-4234-1-git-send-email-arnd@arndb.de>
-References: <1345648390-4234-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:v3FtPFwQxFF2RP6esnaJXbVdaaB3CBfX+Do6qm/t0ss
- QrGQAGZHvuCQ1wfCr1YwXXC3qCaOKsn61qSUv5UiTEhV4G7gWZ
- iT+pMwuvLyN2KikhKP29D4sXNsnZReezjzMwVqEQw+lV+qYUfT
- lPzr7GsXkTLyXxzPaI6hhh3SsaRYsxGQhE60bWFKArnrb6UA66
- kSbjY1AMOrRIdMqwqG1jD+DgFL2NQKjG427JrzFcHg523MCxcK
- 4Jk9FQK8VlFzEzF+bhO8NKDx2wVciqexSV35uODgcoOSJo6+ix
- +1I2mKQ5A7MtuFeFG5LODyRIb/UFALVr+mKJYXW0+jqBF6edTU
- iPadQ6ObLD36cHosy2t8jk+zMUqXtUop+b1ukO6ZiAaxInekhe
- WVHBYrQuOeUjA==
+	Wed, 22 Aug 2012 11:16:36 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Wed, 22 Aug 2012 10:16:30 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-media@vger.kernel.org
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] media/radio/shark2: Fix build error caused by missing dependencies
+Date: Wed, 22 Aug 2012 08:16:25 -0700
+Message-Id: <1345648585-5176-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the imx5 pm code out of the list of unconditionally
-compiled files for imx5, mirroring what we already do for imx6
-and how it was done before the code was move from mach-mx5 to
-mach-imx in v3.3.
+Fix build error:
 
-Without this patch, building with CONFIG_PM disabled results in:
+ERROR: "led_classdev_register" [drivers/media/radio/shark2.ko] undefined!
+ERROR: "led_classdev_unregister" [drivers/media/radio/shark2.ko] undefined!
 
-arch/arm/mach-imx/pm-imx5.c:202:116: error: redefinition of 'imx51_pm_init'
-arch/arm/mach-imx/include/mach-imx/common.h:154:91: note: previous definition of 'imx51_pm_init' was here
-arch/arm/mach-imx/pm-imx5.c:209:116: error: redefinition of 'imx53_pm_init'
-arch/arm/mach-imx/include/mach-imx/common.h:155:91: note: previous definition of 'imx53_pm_init' was here
+which is seen if RADIO_SHARK2 is enabled, but LEDS_CLASS is not.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: stable@vger.kernel.org
+Since RADIO_SHARK2 depends on NEW_LEDS and LEDS_CLASS, select both if
+it is enabled.
+
+Cc: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- arch/arm/mach-imx/Makefile |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/media/radio/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
-index 07f7c22..e08adb7 100644
---- a/arch/arm/mach-imx/Makefile
-+++ b/arch/arm/mach-imx/Makefile
-@@ -9,7 +9,8 @@ obj-$(CONFIG_SOC_IMX27) += clk-imx27.o mm-imx27.o ehci-imx27.o
- obj-$(CONFIG_SOC_IMX31) += mm-imx3.o cpu-imx31.o clk-imx31.o iomux-imx31.o ehci-imx31.o pm-imx3.o
- obj-$(CONFIG_SOC_IMX35) += mm-imx3.o cpu-imx35.o clk-imx35.o ehci-imx35.o pm-imx3.o
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+index 8090b87..bee4bee 100644
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -77,6 +77,8 @@ config RADIO_SHARK
+ config RADIO_SHARK2
+ 	tristate "Griffin radioSHARK2 USB radio receiver"
+ 	depends on USB
++	select NEW_LEDS
++	select LEDS_CLASS
+ 	---help---
+ 	  Choose Y here if you have this radio receiver.
  
--obj-$(CONFIG_SOC_IMX5) += cpu-imx5.o mm-imx5.o clk-imx51-imx53.o ehci-imx5.o pm-imx5.o cpu_op-mx51.o
-+imx5-pm-$(CONFIG_PM) += pm-imx5.o
-+obj-$(CONFIG_SOC_IMX5) += cpu-imx5.o mm-imx5.o clk-imx51-imx53.o ehci-imx5.o $(imx5-pm-y) cpu_op-mx51.o
- 
- obj-$(CONFIG_COMMON_CLK) += clk-pllv1.o clk-pllv2.o clk-pllv3.o clk-gate2.o \
- 			    clk-pfd.o clk-busy.o
 -- 
-1.7.10
+1.7.9.7
 
