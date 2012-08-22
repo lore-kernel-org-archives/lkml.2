@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab2HVUp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 16:45:26 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46418 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126Ab2HVUpX (ORCPT
+	id S933313Ab2HVUqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 16:46:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49265 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126Ab2HVUqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 16:45:23 -0400
-Message-ID: <503544DE.20003@wwwdotorg.org>
-Date: Wed, 22 Aug 2012 14:45:18 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 22 Aug 2012 16:46:13 -0400
+Date: Wed, 22 Aug 2012 13:46:08 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH v6 10/13] block: Introduce new bio_split()
+Message-ID: <20120822204608.GK19212@google.com>
+References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
+ <1345655050-28199-11-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 7/9] ARM: mvebu: Add pinctrl support to Armada XP SoCs
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-8-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1345623750-10645-8-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345655050-28199-11-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 02:22 AM, Sebastian Hesselbarth wrote:
-> This commits adds the necessary device tree information to define the
-> compatible property for the pinctrl driver instance of Armada XP SoCs.
-> 
-> Until now, the device tree representation considered the Armada XP as
-> a single SoC. But in fact, there are three different SoCs in the
-> Armada XP families, with different number of CPU cores, different
-> number of Ethernet interfaces... and different number of muxable pins
-> or functions. We therefore introduce three armada-xp-mv78xx0.dtsi for
-> the three SoCs of the Armada XP family. The current armada-xp-db.dts
-> evaluation board uses the MV78460 variant of the SoC.
+Hello, Kent.
 
-> diff --git a/arch/arm/boot/dts/armada-xp-mv78230.dtsi b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
+On Wed, Aug 22, 2012 at 10:04:07AM -0700, Kent Overstreet wrote:
+> @@ -672,7 +672,6 @@ void bio_integrity_trim(struct bio *bio, unsigned int offset,
+>  
+>  	BUG_ON(bip == NULL);
+>  	BUG_ON(bi == NULL);
+> -	BUG_ON(!bio_flagged(bio, BIO_CLONED));
+>  
+>  	nr_sectors = bio_integrity_hw_sectors(bi, sectors);
+>  	bip->bip_sector = bip->bip_sector + offset;
 
-> +/include/ "armada-xp.dtsi"
+It depends on what BIO_CLONED is supposed to do but maybe the right
+thing to do is clearing BIO_CLONED on split bio?  The split bio isn't
+a clone after all.
+
+>  /**
+> + * bio_split - split a bio
+> + * @bio:	bio to split
+> + * @sectors:	number of sectors to split from the front of @bio
+> + * @gfp:	gfp mask
+> + * @bs:		bio set to allocate from
+> + *
+> + * Allocates and returns a new bio which represents @sectors from the start of
+> + * @bio, and updates @bio to represent the remaining sectors.
+> + *
+> + * If bio_sectors(@bio) was less than or equal to @sectors, returns @bio
+> + * unchanged.
+
+This is no longer true.
+
+> + * The newly allocated bio will point to @bio's bi_io_vec, if the split was on a
+> + * bvec boundry; it is the caller's responsibility to ensure that @bio is not
+> + * freed before the split.
+> + */
+> +struct bio *bio_split(struct bio *bio, int sectors,
+> +		      gfp_t gfp, struct bio_set *bs)
+> +{
+...
+> +	if (bio_integrity(bio)) {
+> +		bio_integrity_clone(split, bio, gfp, bs);
+
+What happens if bio_integrity_clone() fails?
+
+> +		bio_integrity_trim(split, 0, bio_sectors(split));
+> +		bio_integrity_trim(bio, bio_sectors(split), bio_sectors(bio));
+
+I complained pretty loudly about this not being mentioned in the
+description of this patch or the following one and there still is no
+explanation.  Come on, Kent.
+
+> +static inline struct bio *bio_next_split(struct bio *bio, int sectors,
+> +					 gfp_t gfp, struct bio_set *bs)
+> +{
+> +	if (sectors >= bio_sectors(bio))
+> +		return bio;
 > +
-> +/ {
-> +	model = "Marvell Armada XP family SoC";
-> +	compatible = "marvell,armadaxp-mv78230", "marvell,armadaxp", "marvell,armada-370-xp";
+> +	return bio_split(bio, sectors, gfp, bs);
+> +}
 
-Since each of these files is specifically for a different SoC, I'd
-expect them all to say something different in the model property?
+First of all, I don't think this is necessary.  In addition, this
+doesn't have any comment explaining what it does and is never
+mentioned or justified in patch description.  Kent, you're repeating
+the same mistakes even after being explicitly pointed out multiple
+times.  *Please* pay more attention.
 
-> diff --git a/arch/arm/boot/dts/armada-xp-mv78260.dtsi b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+Thanks.
 
-> +	model = "Marvell Armada XP family SoC";
-> +	compatible = "marvell,armadaxp-mv78260", "marvell,armadaxp", "marvell,armada-370-xp";
-
-> diff --git a/arch/arm/boot/dts/armada-xp-mv78460.dtsi b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
-
-> +	model = "Marvell Armada XP family SoC";
-> +	compatible = "marvell,armadaxp-mv78460", "marvell,armadaxp", "marvell,armada-370-xp";
-
+-- 
+tejun
