@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab2HVS1C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:27:02 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60611 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933208Ab2HVS05 (ORCPT
+	id S933268Ab2HVS2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 14:28:05 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:65076 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933208Ab2HVS2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:26:57 -0400
+	Wed, 22 Aug 2012 14:28:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120822181653.GB13623@infradead.org>
-References: <1345585940-6497-1-git-send-email-semenzato@chromium.org>
-	<20120822072822.GA11042@gmail.com>
-	<CAA25o9RJOre2mw4z7Mh94iRKcHVdby9RjLfP91far16me8_94Q@mail.gmail.com>
-	<20120822162958.GA13623@infradead.org>
-	<50350F2D.6030408@gmail.com>
-	<20120822181653.GB13623@infradead.org>
-Date: Wed, 22 Aug 2012 11:26:56 -0700
-X-Google-Sender-Auth: dEEn44T1F9O5SH4bgHNbfCpkyMg
-Message-ID: <CAA25o9S9tn0cT7yUJ-fpO7C5chXHtF_fKehttS9BUu=eqjVing@mail.gmail.com>
-Subject: Re: [PATCH] perf: do not flush maps on COMM for perf report
-From: Luigi Semenzato <semenzato@chromium.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
-        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
+X-Originating-IP: [2001:470:1f05:1640:b8ad:b160:faca:2a73]
+In-Reply-To: <alpine.LFD.2.02.1208221423050.1754@xanadu.home>
+References: <1345608318-15347-1-git-send-email-dianders@chromium.org>
+	<50346181.3010406@samsung.com>
+	<CAD=FV=UZM9b6++DkgemZA7qpAZgFN+NyyLjRecgSdjcEsu0YYA@mail.gmail.com>
+	<5ED03810-753A-407D-A994-E1FD22BE45E6@marvell.com>
+	<CAOesGMjX+jW6PKCzej27NHN2QFTg8XbMawPJNa53eQ2ojee3+A@mail.gmail.com>
+	<alpine.LFD.2.02.1208221423050.1754@xanadu.home>
+Date: Wed, 22 Aug 2012 11:27:59 -0700
+Message-ID: <CAOesGMjsA4-jcX-PvQ-MNkZLrn4qmvV5xCyKdFt3kspHghCk=Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: core: Add a capability for disabling mmc cards
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Philip Rakity <prakity@marvell.com>, Doug Anderson <dianders@chromium.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is also this (incomplete, untested) patch, which shows what it
-takes to add the new record type.
-
-https://lkml.org/lkml/2012/3/2/345
-
-On Wed, Aug 22, 2012 at 11:16 AM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
-> Em Wed, Aug 22, 2012 at 10:56:13AM -0600, David Ahern escreveu:
->> On 8/22/12 10:29 AM, Arnaldo Carvalho de Melo wrote:
->> >Adding the EXEC event, ditto. And I agree that while adding it we want
->> >to do 1/2 as pre-requisite.
+On Wed, Aug 22, 2012 at 11:25 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> On Wed, 22 Aug 2012, Olof Johansson wrote:
+>
+>> On Wed, Aug 22, 2012 at 9:00 AM, Philip Rakity <prakity@marvell.com> wrote:
+>> >
+>> > On Aug 22, 2012, at 8:44 AM, Doug Anderson <dianders@chromium.org> wrote:
+>> >
+>> >> Thanks for your feedback.  In this case I have a card that is an MMC
+>> >> card so mmc_attach_sdio() and mmc_attach_sd() will fail.  If I let
+>> >> mmc_attach_mmc() run it will actually find the MMC card.  However, on
+>> >> this platform it is not valid to recognize MMC cards.
+>> >>
+>> >
+>> >
+>> > Understand.
+>> >
+>> > Can you explain why the change is needed.  Is it for technical
+>> > reasons that MMC is not allowed -- if so then I do not understand how SD can work
+>> > and MMC cannot.
+>> >
+>> > If it is for marketing reasons -- then --- oh well .....
+>> >
+>> >
+>> > Could you add some additional comments to the commit message.
+>> > I think it makes sense to handle all 3 cases
+>> > a) SDIO not allowed
+>> > b) SD not allowed
+>> > c) MMC not allowed
 >>
->> maps should not be flushed on a COMM event, so that was a mistake.
->> Given that what new information does an EXEC event provide? Same
->> process id. A COMM event is generated on an exec, so the name change
->> happens. Mappings are dropped prior to that - and there is no unmap
->> event. That seems to be a missing piece. Maps are added which is
->> handled by MMAP events. After that why is an exec event relevant?
+>> We are working with a system manufacturer who wishes to only support
+>> SD cards in their product, and need to accommodate that. It made sense
+>> for us to contribute this work upstream since others might want to do
+>> the same in the future for some reason.
+>>
+>> Adding all three cases makes sense if others foresee a use case for it.
 >
-> Please read the original discussion about it:
+> Isn't this rather revolting?
 >
-> https://lkml.org/lkml/2012/2/13/545
+> Personally I find such "feature" totally ridiculous. If said
+> manufacturer doesn't want to support MMC cards, they just have to not
+> advertise it, period.  Or if they really mean it, then they only have to
+> state it explicitly in their user manual, and repeat it if ever problems
+> are reported.
 >
-> - Arnaldo
+> Dumbing down kernel functionality to serve marketing purpose or
+> technology lock-ins is utterly stupid.  Purposely restricting
+> interoperability might even be ruled illegal in some jurisdictions.
+>
+> I therefore insist on providing a vehement NAK on such patches.
+
+Ok, thanks. We'll keep carrying it locally instead then.
+
+
+-Olof
