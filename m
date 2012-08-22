@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2HVSyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:54:06 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47060 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab2HVSyD (ORCPT
+	id S1757471Ab2HVSzI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 14:55:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51195 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab2HVSzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:54:03 -0400
-Date: Wed, 22 Aug 2012 15:53:56 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] tools lib traceevent: Basic error handling
-Message-ID: <20120822185356.GC13623@infradead.org>
-References: <1345618831-9148-1-git-send-email-namhyung@kernel.org>
- <877gsrie2s.fsf@sejong.aot.lge.com>
+	Wed, 22 Aug 2012 14:55:04 -0400
+Date: Wed, 22 Aug 2012 20:55:01 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / Freezer: Fix small typo "regrigerator"
+Message-ID: <20120822185501.GA8791@elf.ucw.cz>
+References: <1345581376-7288-1-git-send-email-sedat.dilek@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <877gsrie2s.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1345581376-7288-1-git-send-email-sedat.dilek@gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 22, 2012 at 04:24:43PM +0900, Namhyung Kim escreveu:
-> Hi Arnaldo,
+On Tue 2012-08-21 22:36:15, Sedat Dilek wrote:
+> Noticed when digging into a suspend issue in linux-next (next-20120821).
 > 
-> On Wed, 22 Aug 2012 16:00:27 +0900, Namhyung Kim wrote:
-> > I almost forgot that I have some libtraceevent patch left. ;)  The
-> > first three of them are acked by Steven and the last is a port of a
-> > recent perf patch from Kirill that handles a strerror_r build warning.
-> > Please consider applying.
+> For more details see <http://marc.info/?t=134554708000002&r=1&w=2>.
 > 
-> I also forgot that I didn't remove the Link: line from the changelogs
-> before sending them, sorry.  Anyway, you can pull this series from my
-> tree which contains libtraceevent/core branch, if you like (I added a
-> Link to patch 4 there for your convenience).
+> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
 
-This time around I'll get it manually since its a short patchset so as
-to get the Acked-by Kirill
-
-- Arnaldo
+ACK.
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
