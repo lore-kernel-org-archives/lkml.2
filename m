@@ -1,90 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab2HVIin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:38:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52673 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2HVIih (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:38:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-Date: Wed, 22 Aug 2012 08:38:25 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Alexander Thomas <alexander.thomas@esaturnus.com>,
-        Carlos Alberto Lopez Perez <clopez@igalia.com>,
-        Dan Luedtke <mail@danrl.de>, Jochen Striepe <jochen@tolot.escape.de>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lanyfs@librelist.com
-References: <CAFLxGvwwAX=85hmgxg6qGTpp4YCppuj2mpw7GkB1eV8qhta2bg@mail.gmail.com> <CAKr4yMxkrMXpVXmX9zgieTKrWmKtRx+Y2toZ2msrUdrBKFq13w@mail.gmail.com> <20120820132141.GC5197@thunk.org>
-In-Reply-To: <20120820132141.GC5197@thunk.org>
+	id S1753724Ab2HVIix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:38:53 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48118 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750934Ab2HVIio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:38:44 -0400
+Message-ID: <503499CC.7070704@parallels.com>
+Date: Wed, 22 Aug 2012 12:35:24 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Greg Thelen <gthelen@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-7-git-send-email-glommer@parallels.com> <xr93boi3ewxt.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93boi3ewxt.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208220838.25876.arnd@arndb.de>
-X-Provags-ID: V02:K0:w+LHTEuWIHoXauyfKg3NcehanKtYOGadvdT0c8x0Hrj
- uX/+nEB+QlNuYJU1CghwsJ/KVTBhEmTMbwMyfbYo81y0Rv9zL4
- 4sOqUQdtpobqHPGEnkp1pHNxdHzeRHKO946JIOnFycTXzD7Utr
- Fl77fDvHXp6lBQ4dRhX9dqVQXENdWHV2mB/t6umCoKsAfbBB5c
- uB+t1BZ3Gie3X07NtpcLXTvRu4Hd2l2luL1IUPqi51urNW6dYf
- lRbNRIdaA6XwyRBztQaPwvUn/s0/E2wT2V4DvXGlpo9koQnNvD
- VPre4jGUImw6YQPzA2gDryXzaeupvyLG/vjaL9+XWKXnNu1I6g
- wsDka1nCOqv1Vlv9281c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 August 2012, Theodore Ts'o wrote:
-> On Mon, Aug 20, 2012 at 11:12:07AM +0200, Alexander Thomas wrote:
-> > 
-> > Flash drives are getting faster as well. Copying an 8GB file to/from a
-> > USB drive is not excruciatingly slow and may be quicker and more
-> > certain than figuring out how to get a working network connection in
-> > some random place, if possible at all. If it is some lousy WiFi with
-> > the base station at a distance, a flash drive will be faster. And
-> > sometimes people just want to be sure that their data will be at a
-> > certain place at a certain time without having to rely on a network
-> > that may go down due to external reasons.
+On 08/22/2012 01:50 AM, Greg Thelen wrote:
+> On Thu, Aug 09 2012, Glauber Costa wrote:
+> 
+>> This patch introduces infrastructure for tracking kernel memory pages to
+>> a given memcg. This will happen whenever the caller includes the flag
+>> __GFP_KMEMCG flag, and the task belong to a memcg other than the root.
+>>
+>> In memcontrol.h those functions are wrapped in inline accessors.  The
+>> idea is to later on, patch those with static branches, so we don't incur
+>> any overhead when no mem cgroups with limited kmem are being used.
+>>
+>> [ v2: improved comments and standardized function names ]
+>>
+>> Signed-off-by: Glauber Costa <glommer@parallels.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+>> CC: Michal Hocko <mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner <hannes@cmpxchg.org>
+>> ---
+>>  include/linux/memcontrol.h |  79 +++++++++++++++++++
+>>  mm/memcontrol.c            | 185 +++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 264 insertions(+)
+>>
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 8d9489f..75b247e 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -21,6 +21,7 @@
+>>  #define _LINUX_MEMCONTROL_H
+>>  #include <linux/cgroup.h>
+>>  #include <linux/vm_event_item.h>
+>> +#include <linux/hardirq.h>
+>>  
+>>  struct mem_cgroup;
+>>  struct page_cgroup;
+>> @@ -399,6 +400,11 @@ struct sock;
+>>  #ifdef CONFIG_MEMCG_KMEM
+>>  void sock_update_memcg(struct sock *sk);
+>>  void sock_release_memcg(struct sock *sk);
+>> +
+>> +#define memcg_kmem_on 1
+>> +bool __memcg_kmem_new_page(gfp_t gfp, void *handle, int order);
+>> +void __memcg_kmem_commit_page(struct page *page, void *handle, int order);
+>> +void __memcg_kmem_free_page(struct page *page, int order);
+>>  #else
+>>  static inline void sock_update_memcg(struct sock *sk)
+>>  {
+>> @@ -406,6 +412,79 @@ static inline void sock_update_memcg(struct sock *sk)
+>>  static inline void sock_release_memcg(struct sock *sk)
+>>  {
+>>  }
+>> +
+>> +#define memcg_kmem_on 0
+>> +static inline bool
+>> +__memcg_kmem_new_page(gfp_t gfp, void *handle, int order)
+>> +{
+>> +	return false;
+>> +}
+>> +
+>> +static inline void  __memcg_kmem_free_page(struct page *page, int order)
+>> +{
+>> +}
+>> +
+>> +static inline void
+>> +__memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle, int order)
+>> +{
+>> +}
+>>  #endif /* CONFIG_MEMCG_KMEM */
+>> +
+>> +/**
+>> + * memcg_kmem_new_page: verify if a new kmem allocation is allowed.
+>> + * @gfp: the gfp allocation flags.
+>> + * @handle: a pointer to the memcg this was charged against.
+>> + * @order: allocation order.
+>> + *
+>> + * returns true if the memcg where the current task belongs can hold this
+>> + * allocation.
+>> + *
+>> + * We return true automatically if this allocation is not to be accounted to
+>> + * any memcg.
+>> + */
+>> +static __always_inline bool
+>> +memcg_kmem_new_page(gfp_t gfp, void *handle, int order)
+>> +{
+>> +	if (!memcg_kmem_on)
+>> +		return true;
+>> +	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
+>> +		return true;
+>> +	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
+>> +		return true;
+>> +	return __memcg_kmem_new_page(gfp, handle, order);
+>> +}
+>> +
+>> +/**
+>> + * memcg_kmem_free_page: uncharge pages from memcg
+>> + * @page: pointer to struct page being freed
+>> + * @order: allocation order.
+>> + *
+>> + * there is no need to specify memcg here, since it is embedded in page_cgroup
+>> + */
+>> +static __always_inline void
+>> +memcg_kmem_free_page(struct page *page, int order)
+>> +{
+>> +	if (memcg_kmem_on)
+>> +		__memcg_kmem_free_page(page, order);
+>> +}
+>> +
+>> +/**
+>> + * memcg_kmem_commit_page: embeds correct memcg in a page
+>> + * @handle: a pointer to the memcg this was charged against.
+>> + * @page: pointer to struct page recently allocated
+>> + * @handle: the memcg structure we charged against
+>> + * @order: allocation order.
+>> + *
+>> + * Needs to be called after memcg_kmem_new_page, regardless of success or
+>> + * failure of the allocation. if @page is NULL, this function will revert the
+>> + * charges. Otherwise, it will commit the memcg given by @handle to the
+>> + * corresponding page_cgroup.
+>> + */
+>> +static __always_inline void
+>> +memcg_kmem_commit_page(struct page *page, struct mem_cgroup *handle, int order)
+>> +{
+>> +	if (memcg_kmem_on)
+>> +		__memcg_kmem_commit_page(page, handle, order);
+>> +}
+>>  #endif /* _LINUX_MEMCONTROL_H */
+>>  
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 54e93de..e9824c1 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -10,6 +10,10 @@
+>>   * Copyright (C) 2009 Nokia Corporation
+>>   * Author: Kirill A. Shutemov
+>>   *
+>> + * Kernel Memory Controller
+>> + * Copyright (C) 2012 Parallels Inc. and Google Inc.
+>> + * Authors: Glauber Costa and Suleiman Souhlal
+>> + *
+>>   * This program is free software; you can redistribute it and/or modify
+>>   * it under the terms of the GNU General Public License as published by
+>>   * the Free Software Foundation; either version 2 of the License, or
+>> @@ -434,6 +438,9 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
+>>  #include <net/ip.h>
+>>  
+>>  static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
+>> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
+>> +static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
+>> +
+>>  void sock_update_memcg(struct sock *sk)
+>>  {
+>>  	if (mem_cgroup_sockets_enabled) {
+>> @@ -488,6 +495,118 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+>>  }
+>>  EXPORT_SYMBOL(tcp_proto_cgroup);
+>>  #endif /* CONFIG_INET */
+>> +
+>> +static inline bool memcg_kmem_enabled(struct mem_cgroup *memcg)
+>> +{
+>> +	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+>> +		memcg->kmem_accounted;
+>> +}
+>> +
+>> +/*
+>> + * We need to verify if the allocation against current->mm->owner's memcg is
+>> + * possible for the given order. But the page is not allocated yet, so we'll
+>> + * need a further commit step to do the final arrangements.
+>> + *
+>> + * It is possible for the task to switch cgroups in this mean time, so at
+>> + * commit time, we can't rely on task conversion any longer.  We'll then use
+>> + * the handle argument to return to the caller which cgroup we should commit
+>> + * against
+>> + *
+>> + * Returning true means the allocation is possible.
+>> + */
+>> +bool __memcg_kmem_new_page(gfp_t gfp, void *_handle, int order)
+>> +{
+>> +	struct mem_cgroup *memcg;
+>> +	struct mem_cgroup **handle = (struct mem_cgroup **)_handle;
+>> +	bool ret = true;
+>> +	size_t size;
+>> +	struct task_struct *p;
+>> +
+>> +	*handle = NULL;
+>> +	rcu_read_lock();
+>> +	p = rcu_dereference(current->mm->owner);
+>> +	memcg = mem_cgroup_from_task(p);
+>> +	if (!memcg_kmem_enabled(memcg))
+>> +		goto out;
+>> +
+>> +	mem_cgroup_get(memcg);
+>> +
+>> +	size = PAGE_SIZE << order;
+>> +	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
+>> +	if (!ret) {
+>> +		mem_cgroup_put(memcg);
+>> +		goto out;
+>> +	}
+>> +
+>> +	*handle = memcg;
+>> +out:
+>> +	rcu_read_unlock();
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL(__memcg_kmem_new_page);
+>> +
+>> +void __memcg_kmem_commit_page(struct page *page, void *handle, int order)
+>> +{
+>> +	struct page_cgroup *pc;
+>> +	struct mem_cgroup *memcg = handle;
+>> +
+>> +	if (!memcg)
+>> +		return;
+>> +
+>> +	WARN_ON(mem_cgroup_is_root(memcg));
+>> +	/* The page allocation must have failed. Revert */
+>> +	if (!page) {
+>> +		size_t size = PAGE_SIZE << order;
+>> +
+>> +		memcg_uncharge_kmem(memcg, size);
+>> +		mem_cgroup_put(memcg);
+>> +		return;
+> 
+>> +
+>> +	pc = lookup_page_cgroup(page);
+>> +	lock_page_cgroup(pc);
+>> +	pc->mem_cgroup = memcg;
+>> +	SetPageCgroupUsed(pc);
+>> +	unlock_page_cgroup(pc);
+> 
+> I have no problem with the code here.  But, out of curiosity, why do we
+> need to lock the pc here and below in __memcg_kmem_free_page()?
+> 
+> For the allocating side, I don't think that migration or reclaim will be
+> manipulating this page.  But is there something else that we need the
+> locking for?
+> 
+> For the freeing side, it seems that anyone calling
+> __memcg_kmem_free_page() is going to be freeing a previously accounted
+> page.
+> 
+> I imagine that if we did not need the locking we would still need some
+> memory barriers to make sure that modifications to the PG_lru are
+> serialized wrt. to kmem modifying PageCgroupUsed here.
+> 
+Unlocking should do that, no?
 
-Actually, flash drives are not really getting faster as much as you
-think, at least not any more. The main source for performance improvements
-over the last few years was from increasing the flash page and block
-sizes. Writing single bits may get slightly faster over time, but
-we are writing more of them at the same time now, which leads to
-significant problems:
+> Perhaps we're just trying to take a conservative initial implementation
+> which is consistent with user visible pages.
+>
 
-* The page size is now effectively 16kb on most flash drives, and
-writing in 4kb alignments as practically all our file systems do
-(including the lanyfs proposal) means we're actually slower now
-than we would be with smaller pages, unless you get into the
-special case of writing large chunks of data.
+The way I see it, is not about being conservative, but rather about my
+physical safety. It is quite easy and natural to assume that "all
+modifications to page cgroup are done under lock". So someone modifying
+this later will likely find out about this exception in a rather
+unpleasant way. They know where I live, and guns for hire are everywhere.
 
-* The erase block size is increasing insanely. We're seeing 12MB
-and 16MB block size devices now, and our simulations have shown that
-our file systems that are not aware of this block size are hitting
-a wall at around 4MB.
+Note that it is not unreasonable to believe that we can modify this
+later. This can be a way out, for example, for the memcg lifecycle problem.
 
-> I used to think that we would need an IP unencumbered file system,
-> given issues around TomTom and Microsoft, but these days, given how
-> quickly Linux has taken over the embedded and mobile landscape[2] for
-> all but the most tiniest of devices, I don't think that's as important
-> of an issue, since we can just simply use a native linux file system.
-> In the time that it would take to get some other new file system
-> adopted across the industry, it's likely Linux will have enough market
-> share to perhaps compel the other OS vendors to provide
-> interoperability solutions.  (Just as the BSD folks have implemented
-> ext2 support; Linux hasn't bothered to implement FFS2 support....)
+I agree with your analysis and we can ultimately remove it, but if we
+cannot pinpoint any performance problems to here, maybe consistency
+wins. Also, the locking operation itself is a bit expensive, but the
+biggest price is the actual contention. If we'll have nobody contending
+for the same page_cgroup, the problem - if exists - shouldn't be that
+bad. And if we ever have, the lock is needed.
 
-There will be patches very soon for a new file system from a major
-flash vendor that I'm cooperating with. I haven't seen the patches
-myself yet, but the design is similar to a prototype that was done
-as a thesis I supervised [1]. I hope that the new implementation is
-similarly simple to this design, and also able to provide optimum
-performance on most flash media.
 
-	Arnd
+>> +}
+>> +
+>> +void __memcg_kmem_free_page(struct page *page, int order)
+>> +{
+>> +	struct mem_cgroup *memcg;
+>> +	size_t size;
+>> +	struct page_cgroup *pc;
+>> +
+>> +	if (mem_cgroup_disabled())
+>> +		return;
+>> +
+>> +	pc = lookup_page_cgroup(page);
+>> +	lock_page_cgroup(pc);
+>> +	memcg = pc->mem_cgroup;
+>> +	pc->mem_cgroup = NULL;
+>> +	if (!PageCgroupUsed(pc)) {
+> 
+> When do we expect to find PageCgroupUsed() unset in this routine?  Is
+> this just to handle the race of someone enabling kmem accounting after
+> allocating a page and then later freeing that page?
+> 
 
-[1] https://wiki.linaro.org/WorkingGroups/Kernel/Specs/flash-file-system-prototype
+All the time we have a valid memcg. It is marked Used at charge time, so
+this is how we differentiate between a tracked page and a non-tracked
+page. Note that even though we explicit mark the freeing call sites with
+free_allocated_page, etc, not all pc->memcg will be valid. There are
+unlimited memcgs, bypassed charges, GFP_NOFAIL allocations, etc.
+
+
