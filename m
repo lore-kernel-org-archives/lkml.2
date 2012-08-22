@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab2HVIHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:07:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57687 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758778Ab2HVIHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:07:20 -0400
-Date: Wed, 22 Aug 2012 10:07:11 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] pwm: fixes for v3.6-rc3
-Message-ID: <20120822080711.GA5706@avionic-0098.adnet.avionic-design.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:VtLBuL/x6pfyvt7CWPAeaEevYJM36/BPsxQ6LU3t8zT
- ngf04Enu6QOxbtMOtABvpjpGNjbN1ax4bvSkDFSMMXSkJdQgyw
- fvYq2tAkRw3SUoyAHbnYRFEnlqWquQKGWa5q8sGVmqPP0/Pucw
- /F505+lI87LYe+j9g+cwETMp6JnuzIXK8nP4ZmOv5H7PbZ5r+O
- AJ1+aDzKQbgpRF/GZRwrAMyofWXINy4UpD9WQTQqKhQz+wFq2e
- +r2Dq3KOYmBAjLV9ahqOC6LHUMitRAWuNCZQV3uBBNXsjgHrlK
- SxoSpSe5tb+prT1xoAUvhWWAYerYqPcrzWy6iIFzeoCaoPs5RC
- 6v1q43UOwtqGM9h2vhiXMQPB9ax2m7fcS4xMxpz+f507RI7ec5
- Qc5+eswK8iCiPve1oycxbVTQf2njCXnpVw=
+	id S1758784Ab2HVIKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:10:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16772 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756832Ab2HVIKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:10:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,808,1336374000"; 
+   d="scan'208";a="183878816"
+Date: Wed, 22 Aug 2012 16:04:39 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
+Message-ID: <20120822160439.62c619bf@feng-i7>
+In-Reply-To: <3514180.RWySLZuOJm@ws-stein>
+References: <4401854.hVfHzgeqjT@ws-stein>
+	<20120822152918.3e59616e@feng-i7>
+	<3514180.RWySLZuOJm@ws-stein>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alexander,
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Wed, 22 Aug 2012 09:57:07 +0200
+Alexander Stein <alexander.stein@systec-electronic.com> wrote:
 
-Hi Linus,
+> Hello,
+> 
+> On Wednesday 22 August 2012 15:29:18, Feng Tang wrote:
+> > On Wed, 22 Aug 2012 08:30:35 +0200
+> > Alexander Stein <alexander.stein@systec-electronic.com> wrote:
+> > 
+> > > Hello,
+> > > 
+> > > I just noticed the 3.4 linux kernel fails to sucessfully probe the i2c-eg20t 
+> > > driver. I returns with EBUSY error. It worked on the 3.0 kernel. To my view it 
+> > > is caused the commit 07e8a51ff68353e01d795cceafbac9f54c49132b ( i2c-eg20t: use 
+> > > i2c_add_numbered_adapter to get a fixed bus number).
+> > > The reason it actually fails is that the i2c-isch driver is registered 
+> > > beforehand which gets bus number 0. But this one is the bus number the eg20t 
+> > > driver wants to register.
+> > 
+> > Make sense.
+> > 
+> > > A possibility is that if i2c_add_numbered_adapter failed with EBUSY just use 
+> > > i2c_add_adapter to get at least the driver working, but with a non-fixed bus 
+> > > number. Opinions?
+> > 
+> > Or can we give it a fixed offset, like let the i2c_eg20t controller bus number
+> > start with 4? I don't expect there will be more than 4 other i2c controllers 
+> > on EG20T compatible platforms.
+> 
+> Why use a fixed one? Give the driver (and maybe every i2c bus driver) a parameter which sets the base bus number it should use.
+> E.g. i2c-eg20t.base-bus-num=2 so it will register the bus numbers starting from 2. If this parameter is unset. It would use the first free one, thus simply using i2c_add_adapter.
 
-The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
+The reason we need a fixed number is it is easier for platform code
+which needs to register dozens of i2c devices to different controllers
+with i2c_register_board_info, and they need provide a bus number for
+each i2c device, this _binding_ info is not detectable but have to
+be fixed.
 
-  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
+Yes, your module parameter "base-bus-num" sounds like a plan too,
+at the cost of some extra setting in the kernel cmdline. And I'm fine
+with all solutions as long as I can get a _fixed_ bus number so that
+I can easily write the platform config code (I guess this is same
+for device tree, and even ACPI 5.0)
 
-are available in the git repository at:
-
-  git://gitorious.org/linux-pwm/linux-pwm.git tags/for-3.6-rc3
-
-for you to fetch changes up to b817bf5c72774556345a9043c6b0c497cdcb7295:
-
-  pwm: Improve Kconfig help text (2012-08-20 11:58:43 +0200)
-
-----------------------------------------------------------------
-pwm: fixes for v3.6-rc3
-
-These patches fix the Samsung PWM driver and perform some minor cleanups
-like fixing checkpatch and sparse warnings. Two redundant error messages
-are removed and the Kconfig help text for the PWM subsystem is made more
-descriptive.
-
-----------------------------------------------------------------
-Axel Lin (1):
-      pwm: Remove a redundant error message when devm_request_and_ioremap fails
-
-Jingoo Han (1):
-      pwm: samsung: add missing device pointer to struct pwm_chip
-
-Sachin Kamat (3):
-      pwm: Add missing static storage class specifiers in core.c file
-      pwm: vt8500: Fix coding style issue
-      pwm: core: Fix coding style issues
-
-Thierry Reding (1):
-      pwm: Improve Kconfig help text
-
- drivers/pwm/Kconfig        | 31 +++++++++++++++++++++++++------
- drivers/pwm/core.c         | 12 ++++++------
- drivers/pwm/pwm-samsung.c  |  1 +
- drivers/pwm/pwm-tegra.c    |  4 +---
- drivers/pwm/pwm-tiecap.c   |  4 +---
- drivers/pwm/pwm-tiehrpwm.c |  4 +---
- drivers/pwm/pwm-vt8500.c   |  2 +-
- 7 files changed, 36 insertions(+), 22 deletions(-)
-
---qDbXVdCdHGoSgWSk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQNJMvAAoJEN0jrNd/PrOhAOAQALm4XOMpbZX4Sn6Hopx73QgJ
-TDnnXzcDWUvypPUX5/eyGNtEexGXiH+TLnvwb1oOHbDOuYEqu9TBI459Rxj2ejWq
-FkFyUJzuNvvYbCVW+0JWj8ooK0O6YdTwTty+IJ5xl2J1FSaTUHJw6AxB+2A/mMPC
-LaD+EOKihQPb6v0VSudqmeFql3KQ7Zti30GwAht6t0lIb5frA5fGdD0n/XDQX5Wv
-dOApEQSmtTI6lmRy1f989xZGZH3kZkFzDNuGwFS7J6CYbAeUgRJFTc5j/CZRA++o
-ggJQOoCg9s8WjwPklmJTAvH/wJ0MBtJPcNg2siDQJiqnIcTPHZN1IgLcQt9eDpla
-YEYve42lp64PwcV2tBFN2TGntRiFdTwY/6kDbgfxgvrkZX5TNrf+nFvOqZsuRrsi
-RuImm4ur5hZHaNZfF/1c7MzCsNAHHltcw6q+DNwvkvD9be+dWUuiKo9tU8l113ls
-P/PWZDOTZCNer32ymKEYp34IFFXeVB7QjJ/UOAcocvLFpQUlUxIs92iXHA/VxzCJ
-Ez/YRvdMshxTwvjq1IFer7m2YF9Wh64G1yfxmpOcgak4sbQo03J/AlIrV4jmfgEa
-AdurtASs16R28r5so8cJVZdVd6Ml25LR1OzyUJPJqZ3p9pWE6aisQj+Wl2dyorun
-OkprQTZfujNSrsZ8T6GY
-=MAzA
------END PGP SIGNATURE-----
-
---qDbXVdCdHGoSgWSk--
+Thanks,
+Feng
