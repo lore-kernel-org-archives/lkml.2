@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab2HVE0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 00:26:41 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48467 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2HVE0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 00:26:40 -0400
-Date: Tue, 21 Aug 2012 21:26:39 -0700 (PDT)
-Message-Id: <20120821.212639.516363749620870558.davem@davemloft.net>
-To: Larry.Finger@lwfinger.net
-Cc: eric.dumazet@gmail.com, ncardwell@google.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
- out_of_order memory use"
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <50345B12.1050600@lwfinger.net>
-References: <50345B12.1050600@lwfinger.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1752949Ab2HVE1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:27:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28069 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751511Ab2HVE1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 00:27:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,807,1336374000"; 
+   d="scan'208";a="136701447"
+Subject: Re: [PATCH 2/5] drivers/dma/amba-pl08x.c: fix error return code
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1344949115-13266-3-git-send-email-Julia.Lawall@lip6.fr>
+References: <1344949115-13266-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1344949115-13266-3-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Aug 2012 09:59:30 +0530
+Message-ID: <1345609770.1895.81.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
-Date: Tue, 21 Aug 2012 23:07:46 -0500
+On Tue, 2012-08-14 at 14:58 +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Convert a 0 error return code to a negative one, as returned elsewhere in the
+> function.
+Applied, thanks
 
-> I find it hard to understand why this patch should cause these
-> effects; however, I have verified that a kernel generated from "git
-> checkout e86b2919" works fine. This commit is immediately before the
-> patch in question.
+-- 
+~Vinod
 
-I can guarentee it's improper skb->truesize setting in these drivers,
-or use of too huge buffer sizes compared to the amount of data
-contained within the packet.
