@@ -1,141 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330Ab2HVIsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:48:33 -0400
-Received: from mail.linlab.net ([89.244.147.154]:56422 "EHLO mail.linlab.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757600Ab2HVIsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:48:19 -0400
-X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7M8m3OM001670
-Message-ID: <50349CC5.3050601@linlab.net>
-Date: Wed, 22 Aug 2012 10:48:05 +0200
-From: Alex Bergmann <alex@linlab.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1757337Ab2HVIue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:50:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34500 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab2HVIuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:50:22 -0400
+Date: Wed, 22 Aug 2012 09:50:17 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH V3 08/14] Tools: hv: Gather DNS information
+Message-ID: <20120822085017.GX29100@dm>
+References: <1345167068-5461-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-1-git-send-email-kys@microsoft.com>
+ <1345167145-5513-8-git-send-email-kys@microsoft.com>
+ <20120817165109.GA11323@kroah.com>
+ <20120817173209.GA29217@decadent.org.uk>
+ <20120817182721.GA7747@aepfle.de>
+ <20120817184421.GD29217@decadent.org.uk>
+ <20120817185353.GA14154@aepfle.de>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Nandita Dukkipati <nanditad@google.com>
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-References: <503419D3.1080700@linlab.net> <1345622798.5158.717.camel@edumazet-glaptop>
-In-Reply-To: <1345622798.5158.717.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.6 (mail.linlab.net [IPv6:2001:470:7142:a0::3]); Wed, 22 Aug 2012 10:48:09 +0200 (CEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120817185353.GA14154@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 10:06 AM, Eric Dumazet wrote:
->> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
->> a timeout of 63secs.
->>
->>          ((2 << 5) - 1) * 3 secs = 189 secs
->>          ((2 << 5) - 1) * 1 secs = 63 secs
+On Fri, Aug 17, 2012 at 08:53:53PM +0200, Olaf Hering wrote:
+> On Fri, Aug 17, Ben Hutchings wrote:
 > 
-> Strange maths ... here I have :
+> > You are never going to have a 'works everywhere' solution for
+> > Linux guests.
 > 
-> (1+2+4+8+16) * 3 = 93 secs
-> vs
-> (1+2+4+8+16) * 1 = 31 secs
+> The hook is the solution.
 > 
-> So even before said commit, we were not rfc1122 compliant.
+> > How are these distribution-specific integration scripts going
+> > to get installed in the guesta, anyway?
 > 
-> Using 7 retries would give 127 seconds, still not rfc compliant.
+> The packager of the daemon will write the script, perhaps based on a
+> template included in tools/hv/script_xyz.sh?
 
-You're missing the timeout after the 5th SYN packet was sent. This 
-would result in another 32 seconds (96 seconds).
+This seems a reasonable approach and one with precident.  We use a similar
+scheme for how to handle 'make install' in the kernel letting the distro
+provide /sbin/installkernel so as to avoid having distro smarts for every
+distro in the kernel source.
 
-The timeout is calculated here:
+It might be nice to share some examples if you have them, but it feels a
+little grubby to have them in the kernel tree.
 
-net/ipv4/tcp_timer.c(146:150)
-
-	if (boundary <= linear_backoff_thresh)
-		timeout = ((2 << boundary) - 1) * rto_base;
-	else
-		timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
-			(boundary - linear_backoff_thresh) * TCP_RTO_MAX;
-
-> 
->>
->> To fulfill the MUST constraint in RFC1122 section 4.2.3.5 about R2 for
->> SYN segments, the values of TCP_SYN_RETRIES and TCP_SYNACK_RETRIES must
->> be changed to 7 reties.
->>
->>          ((2 << 7) - 1) * 1 secs = 255 secs
->>
->> This would result in an ETIMEDOUT of 4 minutes 15 seconds.
->>
->> Signed-off-by: Alexander Bergmann <alex@linlab.net>
->> ---
->>   include/net/tcp.h |    4 ++--
->>   1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/net/tcp.h b/include/net/tcp.h
->> index 1f000ff..7eaae19 100644
->> --- a/include/net/tcp.h
->> +++ b/include/net/tcp.h
->> @@ -98,10 +98,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
->>                                   * 15 is ~13-30min depending on RTO.
->>                                   */
->>   
->> -#define TCP_SYN_RETRIES         5      /* number of times to retry active opening a
->> +#define TCP_SYN_RETRIES         7      /* number of times to retry active opening a
->>                                   * connection: ~180sec is RFC minimum   */
->>   
->> -#define TCP_SYNACK_RETRIES 5   /* number of times to retry passive opening a
->> +#define TCP_SYNACK_RETRIES 7   /* number of times to retry passive opening a
->>                                   * connection: ~180sec is RFC minimum   */
->>   
->>   #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
-> 
-> Nice catch !
-> 
-> I kind of disagree with the SYNACK part.
-
-I will look into this. 
-
-> RFC 1122 says in 4.2.3.5 :
-> 
->    However, the values of R1 and R2 may be different for SYN
->    and data segments.  In particular, R2 for a SYN segment MUST
->    be set large enough to provide retransmission of the segment
->    for at least 3 minutes.  The application can close the
->    connection (i.e., give up on the open attempt) sooner, of
->    course.
-> 
-> I am not sure SYNACK segments were considered as a 'SYN segment' in this
-> section. (as the application cannot 'close' the connection on the passive
-> side, only kernel is aware of a SYN_RECV socket)
-> 
-> Increasing TCP_SYNACK_RETRIES from 5 to 7 or 8 amplifies the
-> SYN/synflood problem.
-> 
-> A valid client should retransmit its SYN packet for 180 seconds, I dont
-> believe we should make sure the SYNACK will be sent for 180 seconds as
-> well.
-> 
-> If we _really_ want to have a 3 minutes R2 for SYNACK, I suggest
-> changing things to that we dont send more than 5 SYNACKS, maybe using
-> RTO=6 after one retransmit
-> 
-> current situation :
-> 1 sec
-> 2 sec
-> 4 sec
-> 8 sec
-> 16 sec
-> ----
-> total of 31 seconds
-> 
-> 
-> 1 sec
-> 12 sec  // switch to RTO = 6
-> 24 sec
-> 48 sec
-> 96 sec
-> -----
-> total of 181 seconds
-> 
-> 
-> 
+-apw
