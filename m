@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab2HVOmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:42:45 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37250 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757324Ab2HVOmn (ORCPT
+	id S932658Ab2HVOm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:42:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48340 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757357Ab2HVOmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:42:43 -0400
-Date: Wed, 22 Aug 2012 10:42:40 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jon Medhurst <tixy@yxit.co.uk>, Leif Lindholm <leif.lindholm@arm.com>
-Subject: Re: [PATCH 4/4] ARM: kprobes: make more tests conditional
-In-Reply-To: <1345645780-2749-5-git-send-email-arnd@arndb.de>
-Message-ID: <alpine.LFD.2.02.1208221040250.1754@xanadu.home>
-References: <1345645780-2749-1-git-send-email-arnd@arndb.de> <1345645780-2749-5-git-send-email-arnd@arndb.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 22 Aug 2012 10:42:44 -0400
+Date: Wed, 22 Aug 2012 15:42:43 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs.git for -rc3
+Message-ID: <20120822144243.GN23464@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Aug 2012, Arnd Bergmann wrote:
+Assorted fixes, with an unexpected detour into vfio refcounting logics
+(fell out when digging in an analog of eventpoll race in there).  Please,
+pull from the usual place -
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-> The mls instruction is not available in ARMv6K or below, so we
-> should make the test conditional on at least ARMv7. ldrex/strex
-> are available in ARMv6K or ARMv7, which we can test by checking
-> the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
+Shortlog:
+Al Viro (7):
+      mqueue: lift mnt_want_write() outside ->i_mutex, clean up a bit
+      vfio: don't dereference after kfree...
+      introduce kref_put_mutex()
+      vfio: get rid of open-coding kref_put_mutex
+      vfio: get rid of vfio_device_put()/vfio_group_get_device* races
+      vfio: grab vfio_device reference *before* exposing the sucker via fd_install()
+      eventpoll: use-after-possible-free in epoll_create1()
 
-The ldrex/strex instructions are available on ARMv6.  It's only the d 
-variants (strexd/ldrexd) which are only available from ARMv6k.
+Eric Dumazet (1):
+      task_work: add a scheduling point in task_work_run()
 
+Randy Dunlap (1):
+      fs: fix fs/namei.c kernel-doc warnings
 
-Nicolas
+Diffstat:
+ drivers/vfio/vfio.c  |   19 +++++---------
+ fs/eventpoll.c       |    2 +-
+ fs/namei.c           |    2 +
+ include/linux/kref.h |   18 ++++++++++++++
+ ipc/mqueue.c         |   61 +++++++++++++++++++++++---------------------------
+ kernel/task_work.c   |    1 +
+ 6 files changed, 57 insertions(+), 46 deletions(-)
