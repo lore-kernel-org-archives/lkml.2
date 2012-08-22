@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab2HVGBD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 02:01:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33655 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757172Ab2HVGA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 02:00:56 -0400
-Date: Wed, 22 Aug 2012 16:00:25 +1000
-From: NeilBrown <neilb@suse.de>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Li Shaohua <shli@fusionio.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>,
-        ext4 hackers <linux-ext4@vger.kernel.org>, maze@google.com,
-        "Shi, Alex" <alex.shi@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux RAID <linux-raid@vger.kernel.org>
-Subject: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
-Message-ID: <20120822160025.272188d1@notabene.brown>
-In-Reply-To: <20120822035702.GF2570@yliu-dev.sh.intel.com>
-References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com>
-	<20120816024654.GB3781@thunk.org>
-	<20120816111051.GA16036@localhost>
-	<20120816152513.GA31346@thunk.org>
-	<20120817060915.GB28786@localhost>
-	<20120817134039.GB11439@thunk.org>
-	<20120817142526.GA1059@localhost>
-	<20120822035702.GF2570@yliu-dev.sh.intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/doLWNd9A289=bYVeFpiGDTq"; protocol="application/pgp-signature"
+	id S1757184Ab2HVGC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 02:02:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45128 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756831Ab2HVGCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 02:02:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1344451432-30735-1-git-send-email-linz@li-pro.net>
+References: <1344451432-30735-1-git-send-email-linz@li-pro.net>
+Date: Wed, 22 Aug 2012 16:02:23 +1000
+Message-ID: <CAEgOgz6AjqM7TcpZfp5RBbSD3Bo8fv+JcGVOZz5Ohignchw+=g@mail.gmail.com>
+Subject: Re: [PATCH v2] microblaze: improve failure handling for GPIO reset
+From: Peter Crosthwaite <peter.crosthwaite@petalogix.com>
+To: Stephan Linz <linz@li-pro.net>
+Cc: monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/doLWNd9A289=bYVeFpiGDTq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 9, 2012 at 4:43 AM, Stephan Linz <linz@li-pro.net> wrote:
+> Early exit from of_platform_reset_gpio_probe() if there
+> was no GPIO reset line configured.
+>
+> Avoid kernel oops in gpio_system_reset():
+>
+> [   96.603690] Restarting system.
+> [   96.606094] Machine restart...
+> [   96.608810] Oops: kernel access of bad area, sig: 11
+> [   96.613662]  Registers dump: mode=824C1D1C
+> [   96.617858]  r1=C000BB0C, r2=00000000, r3=FFFFFEF8, r4=000015B4
+> [   96.623736]  r5=C0276270, r6=00000001, r7=FFFFFFFF, r8=000015B4
+> [   96.629597]  r9=000015B3, r10=000015B4, r11=00000000, r12=00000000
+> [   96.635733]  r13=00000000, r14=0000000F, r15=C0002B04, r16=00000000
+> [   96.641973]  r17=C011E1A0, r18=80000115, r19=00000010, r20=48184ED8
+> [   96.648184]  r21=00000000, r22=FFFFFFEA, r23=00000001, r24=FEE1DEAD
+> [   96.654396]  r25=00000054, r26=1000B1C8, r27=00000000, r28=00000000
+> [   96.660622]  r29=00000000, r30=00000000, r31=C24A97E0, rPC=C011E1A0
+> [   96.666849]  msr=000042A2, ear=0000004C, esr=00000872, fsr=362E3639
+>
+> Signed-off-by: Stephan Linz <linz@li-pro.net>
 
-On Wed, 22 Aug 2012 11:57:02 +0800 Yuanhan Liu <yuanhan.liu@linux.intel.com>
-wrote:
+Tested-by: Peter Crosthwaite <peter.crosthwaite@petalogix.com>
 
-> =20
-> -#define NR_STRIPES		256
-> +#define NR_STRIPES		1024
-
-Changing one magic number into another magic number might help your case, b=
-ut
-it not really a general solution.
-
-Possibly making sure that max_nr_stripes is at least some multiple of the
-chunk size might make sense, but I wouldn't want to see a very large multip=
-le.
-
-I thing the problems with RAID5 are deeper than that.  Hopefully I'll figure
-out exactly what the best fix is soon - I'm trying to look into it.
-
-I don't think the size of the cache is a big part of the solution.  I think
-correct scheduling of IO is the real answer.
-
-Thanks,
-NeilBrown
-
-
-
---Sig_/doLWNd9A289=bYVeFpiGDTq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUDR1gznsnt1WYoG5AQIvMBAAnwqYNlar29oqFwn2sT2XzxABU10uA6SW
-px7PJihjVfckygzmPTIibCXb7CdDnKUflXvdTi6YP+ZUEjAmbKVg4OQwkkpZcFoz
-Xevjdk+SyvSAYZFpiZFqgTpWV8XySW1HO8hfC8aagB3mEKYwd7pLaT0SF5Arer9P
-e91hUF3SR4Kvytoig45Ucf6KiXHBghbJ6oU2ARGFKWLv4yrOdR/WKs8z9nvGmDHL
-HMvXY2FONYtxevJ1nWPUp1/gk0cbkpfd/qrZhGopKok/ezQ6CDm4/WpQZZ04dYF9
-cQ0ML57fJT8gR9deSIHKyiu89xVgItFoa5YQpa7gZMyk/9Cr1bierN4OCe8YDV2E
-9gydeFhw1kbWDUEotPhr5Tk2qazjZg1Kt26Ea0zxBetJNX1jwTPaRnsPFyUMsGCj
-WUYQ3pBLLUrcec3kJcVz77+HN78AtvoxDE/ZKC35OrlAU0Lh5T3qJ8dThx31jM8C
-wAqABoqPDeqBUKCe+OA7SRxugvXrpolZ5JH+mGywl3Cp1PHQ7J4G0tHCImHLme+r
-9gMrj6uCVacof/W+g+of0n2fKYC1AekxrRcyRXmzZi4AEla06kCy+DOv0ipb99if
-FaJORbwfZjcd3dOKp+jZg+6UFKWiZ+Clhs5muS2ejkVlagcI/ByP6W53R6EsA8Ds
-Bei+hDYJNEw=
-=6+qx
------END PGP SIGNATURE-----
-
---Sig_/doLWNd9A289=bYVeFpiGDTq--
+> ---
+> v2 Remove additional printk message from machine_restart()
+> ---
+>  arch/microblaze/kernel/reset.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/microblaze/kernel/reset.c b/arch/microblaze/kernel/reset.c
+> index 8d663d9..c021123 100644
+> --- a/arch/microblaze/kernel/reset.c
+> +++ b/arch/microblaze/kernel/reset.c
+> @@ -28,6 +28,7 @@ void of_platform_reset_gpio_probe(void)
+>         if (!gpio_is_valid(handle)) {
+>                 printk(KERN_INFO "Skipping unavailable RESET gpio %d (%s)\n",
+>                                 handle, "reset");
+> +               return;
+>         }
+>
+>         ret = gpio_request(handle, "reset");
+> @@ -60,7 +61,10 @@ err:
+>
+>  static void gpio_system_reset(void)
+>  {
+> -       gpio_set_value(handle, 1 - reset_val);
+> +       if (gpio_is_valid(handle))
+> +               gpio_set_value(handle, 1 - reset_val);
+> +       else
+> +               printk(KERN_NOTICE "Reset GPIO unavailable - halting!\n");
+>  }
+>  #else
+>  static void gpio_system_reset(void)
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
