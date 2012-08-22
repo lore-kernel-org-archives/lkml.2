@@ -1,145 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab2HVXwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 19:52:18 -0400
-Received: from queue02.mail.zen.net.uk ([212.23.3.27]:35802 "EHLO
-	queue02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757737Ab2HVXwO (ORCPT
+	id S933524Ab2HVXwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 19:52:30 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60126 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932149Ab2HVXwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 19:52:14 -0400
-Message-ID: <1345679461.3601.20.camel@computer5.home>
-Subject: Re: [PATCHv3 4/4] ARM: kprobes: make more tests conditional
-From: Tixy <tixy@yxit.co.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Leif Lindholm <leif.lindholm@arm.com>, linux-kernel@vger.kernel.org
-Date: Thu, 23 Aug 2012 00:51:01 +0100
-In-Reply-To: <201208221841.29645.arnd@arndb.de>
-References: <1345645780-2749-1-git-send-email-arnd@arndb.de>
-	 <201208221519.12056.arnd@arndb.de>
-	 <alpine.LFD.2.02.1208221136180.1754@xanadu.home>
-	 <201208221841.29645.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 22 Aug 2012 19:52:15 -0400
+Date: Thu, 23 Aug 2012 09:52:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>
+Subject: Re: linux-next: New tree -- linux-pstore.git
+Message-Id: <20120823095204.a8e288ddb46a9707000ac5c8@canb.auug.org.au>
+In-Reply-To: <20120822025037.GA18807@lizard>
+References: <20120822025037.GA18807@lizard>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost01-IP: [82.69.122.217]
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-22 at 18:41 +0000, Arnd Bergmann wrote:
-> On Wednesday 22 August 2012, Nicolas Pitre wrote:
-> > On Wed, 22 Aug 2012, Arnd Bergmann wrote:
-> > > > 
-> > > > The ldrex/strex instructions are available on ARMv6.  It's only the d 
-> > > > variants (strexd/ldrexd) which are only available from ARMv6k.
-> > > 
-> > > Ok. How is the version below then? I haven't tested this one yet.
-> > 
-> > In fact, I think the b variants are ARMv6k+ as well.  Only the plain 
-> > (non b non d) variants are available on ARMv6.
-> 
-> Ok, third attempt then. This leaves ldrex for ARMv6 but marks
-> {st,ld}rex{b,h,d} as V6K specific (which includes ARMv7).
+--Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ARMv7 does set CPU_32v6K, because arch/arm/mm/Kconfig has
+Hi Anton,
 
-config CPU_V7
-	bool "Support ARM V7 processor" if ARCH_INTEGRATOR || MACH_REALVIEW_EB || MACH_REALVIEW_PBX
-	select CPU_32v6K
-	select CPU_32v7
+On Tue, 21 Aug 2012 19:50:37 -0700 Anton Vorontsov <cbouatmailru@gmail.com>=
+ wrote:
+>
+> Can you please add linux-pstore.git tree to the linux-next,
+> the repository address is as follows:
+>=20
+>   git://git.infradead.org/users/cbou/linux-pstore.git master
+>=20
+> This tree is dedicated to track pstore infrastructure fixes and
+> enhancements, currently it holds these commits:
+>=20
+> Anton Vorontsov (3):
+>       pstore/ram: Fix possible NULL dereference
+>       pstore/ram: Mark ramoops_pstore_write_buf() as notrace
+>       MAINTAINERS: Add pstore maintainers
+>=20
+> Jovi Zhang (1):
+>       pstore/ram: Add missing platform_device_unregister
+>=20
+> Randy Dunlap (1):
+>       pstore/ram: Fix printk format warning
 
-but this seems more for peripheral reasons not because all the various
-CPU configs systematically select the earlier architecture variants,
-e.g. CPU_V7 doesn't select CPU_32v6.
+I have added this tree from today.  I note that Linus may require you to
+GPG sign a tag for him to fetch since your tree is not located on
+kernel.org (he likes them anyway).
 
-So I would have been inclined to test for
+I have put just you as the contact in case of problems - if anyone else
+should also be listed, just let me know.
 
-#if defined(CONFIG_CPU_32v6K) || (__LINUX_ARM_ARCH__ >= 7) 
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-but as the current patch is functionally correct I'm not going to
-suggest a v4 patch :-)
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
-If you do feel so inclined for a v4 however ;-) you could also make the
-mls part of the patch tidier by moving the added #endif to instead
-terminate the preceding "#if __LINUX_ARM_ARCH__ >= 6", i.e.
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-@@ -367,8 +367,10 @@ void kprobe_arm_test_cases(void)
- 	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
- 	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
-+#endif
- 
-+#if __LINUX_ARM_ARCH__ >= 7
- 	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
- 	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
- 	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
 
-this looks funny in patch form, but the resulting source file is more
-consistent with other conditional tests.
+--Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 	Arnd
-> 
-> 8<-----
-> From 6eab418c61c18393006f30d189e2f28d6e403040 Mon Sep 17 00:00:00 2001
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Thu, 16 Aug 2012 07:49:31 +0000
-> Subject: [PATCH] ARM: kprobes: make more tests conditional
-> 
-> The mls instruction is not available in ARMv6K or below, so we
-> should make the test conditional on at least ARMv7. ldrexd/strexd
-> are available in ARMv6K or ARMv7, which we can test by checking
-> the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
-> 
-> /tmp/ccuMTZ8D.s: Assembler messages:
-> /tmp/ccuMTZ8D.s:22188: Error: selected processor does not support ARM mode `mls r0,r1,r2,r3'
-> /tmp/ccuMTZ8D.s:22222: Error: selected processor does not support ARM mode `mlshi r7,r8,r9,r10'
-> /tmp/ccuMTZ8D.s:22252: Error: selected processor does not support ARM mode `mls lr,r1,r2,r13'
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Jon Medhurst <tixy@yxit.co.uk>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Cc: Leif Lindholm <leif.lindholm@arm.com>
-> ---
->  arch/arm/kernel/kprobes-test-arm.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
-> index 38c1a3b..58dd6c3 100644
-> --- a/arch/arm/kernel/kprobes-test-arm.c
-> +++ b/arch/arm/kernel/kprobes-test-arm.c
-> @@ -367,9 +367,11 @@ void kprobe_arm_test_cases(void)
->  	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
->  	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
->  
-> +#if __LINUX_ARM_ARCH__ >= 7
->  	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
->  	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
->  	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
-> +#endif
->  	TEST_UNSUPPORTED(".word 0xe06f3291 @ mls pc, r1, r2, r3")
->  	TEST_UNSUPPORTED(".word 0xe060329f @ mls r0, pc, r2, r3")
->  	TEST_UNSUPPORTED(".word 0xe0603f91 @ mls r0, r1, pc, r3")
-> @@ -456,6 +458,7 @@ void kprobe_arm_test_cases(void)
->  	TEST_UNSUPPORTED(".word	0xe1700090") /* Unallocated space */
->  #if __LINUX_ARM_ARCH__ >= 6
->  	TEST_UNSUPPORTED("ldrex	r2, [sp]")
-> +#ifdef CONFIG_CPU_32v6K
->  	TEST_UNSUPPORTED("strexd	r0, r2, r3, [sp]")
->  	TEST_UNSUPPORTED("ldrexd	r2, r3, [sp]")
->  	TEST_UNSUPPORTED("strexb	r0, r2, [sp]")
-> @@ -463,6 +466,7 @@ void kprobe_arm_test_cases(void)
->  	TEST_UNSUPPORTED("strexh	r0, r2, [sp]")
->  	TEST_UNSUPPORTED("ldrexh	r2, [sp]")
->  #endif
-> +#endif
->  	TEST_GROUP("Extra load/store instructions")
->  
->  	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
+iQIcBAEBCAAGBQJQNXCkAAoJEECxmPOUX5FE9h8QAJExFxYIhi26ygMBulrhDV5X
+5lUL714kjNPb2NnLYZc4PlEt/s9Na3o/Us2eezQnwCkLQDoR4p3+QtXc19PKWN20
+/pV40k7C3SFL8Q8z5kHj4QUd8u7oFqbdu4JPYsEsvIsXoQqFsbKqrnBvHXyPgXFL
+E8nw/oAlGGiijsyVadcvAmHjDUm6g0beLG2/LVpSLZ1FJBgFdBJFtwmVqDGJqrYJ
+xLwvS5OvMy8MPez2p8iYscNYsZNEAgURJzdC0xWrWFOjff04jdsgpA7aMVLLaL9p
+HLufo6oBkxZF175WTAI9PqxbCA/K+BL7WHaDCfUX4Gq/pIcpV9rw9+XRZKYY4alV
+OAdWX6pLo4aefc+xhrxsV9xsdk53mmfD7CVOnBQL/rSApJ6A9/ZzKBjzK0oVXWk3
+5aaS0FU3vUSJFF1OdFxQo/1XR6t1aEG8Z1kCstBeo00aGe5mw17pCPhYgJ5RN3Nu
+Uhu5McWCwXsOA2vWSXaNWiv7CnDdSfT6viH7QgK4ZtgnXUH3TJYssKL/HJ/lUgOn
+0QQMP1WmCrCYEiFiddu4kYQV0hcpjO5guA8iIpaUXhWixKqt4rZZghwSHUVjGbE9
+RW51KXqbXPOMOrBvrNqX0ulWWfPDKMAiKfUB0z/9QkV0ovf1+0HBRuKNPq0CNT6b
+lATH0m3+uY26uKIyown5
+=899Q
+-----END PGP SIGNATURE-----
 
-
+--Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN--
