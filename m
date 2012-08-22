@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2HVFGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 01:06:15 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46734 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab2HVFGM (ORCPT
+	id S1756044Ab2HVFPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 01:15:11 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58297 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2HVFPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 01:06:12 -0400
-Date: Tue, 21 Aug 2012 22:05:40 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the rcu tree with the tip tree
-Message-ID: <20120822050540.GC2531@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120822142735.5366c9abdee5274329e65fe3@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120822142735.5366c9abdee5274329e65fe3@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082205-1780-0000-0000-0000089E95AF
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000293; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000007; SDB=6.00167419; UDB=6.00037924; UTC=2012-08-22
- 05:06:10
+	Wed, 22 Aug 2012 01:15:09 -0400
+Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
+ out_of_order memory use"
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        John W Linville <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <50345B12.1050600@lwfinger.net>
+References: <50345B12.1050600@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Aug 2012 07:15:03 +0200
+Message-ID: <1345612503.5158.566.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 02:27:35PM +1000, Stephen Rothwell wrote:
-> Hi Paul,
+On Tue, 2012-08-21 at 23:07 -0500, Larry Finger wrote:
+> Hi,
 > 
-> Today's linux-next merge of the rcu tree got a conflict in
-> kernel/rcutree.h between commit 62ab7072476a ("rcu: Use
-> smp_hotplug_thread facility for RCUs per-CPU kthread") from the tip tree
-> and commit daa5d37ff51b ("rcu: Prevent force_quiescent_state() memory
-> contention") from the rcu tree.
+> The commit entitled "tcp: reduce out_of_order memory use" turns out to cause 
+> problems with a number of USB drivers.
 > 
-> Just context changes (I think).  I fixed it up (see below) and can carry
-> the fix as necessary.
-
-This one also looks correct.
-
-							Thanx, Paul
-
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> The first one called to my attention was for staging/r8712u. For this driver, 
+> there are problems with SSL communications as reported in 
+> https://bugzilla.redhat.com/show_bug.cgi?id=847525.
 > 
-> diff --cc kernel/rcutree.h
-> index 1224d4c,c2a3e7d..0000000
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@@ -196,6 -200,13 +200,7 @@@ struct rcu_node 
->   				/* Refused to boost: not sure why, though. */
->   				/*  This can happen due to race conditions. */
->   #endif /* #ifdef CONFIG_RCU_BOOST */
->  -	struct task_struct *node_kthread_task;
->  -				/* kthread that takes care of this rcu_node */
->  -				/*  structure, for example, awakening the */
->  -				/*  per-CPU kthreads as needed. */
->  -	unsigned int node_kthread_status;
->  -				/* State of node_kthread_task for tracing. */
-> + 	raw_spinlock_t fqslock ____cacheline_internodealigned_in_smp;
->   } ____cacheline_internodealigned_in_smp;
->   
->   /*
+> Other drivers including rtl8187, rtl8192cu and rt2800usb cannot connect to a 
+> WPA1- or WEP-encrypted AP, but work fine with WPA2. The rtl8192cu problem is 
+> reported in https://bugzilla.kernel.org/show_bug.cgi?id=46171.
+> 
+> I find it hard to understand why this patch should cause these effects; however, 
+> I have verified that a kernel generated from "git checkout e86b2919" works fine. 
+> This commit is immediately before the patch in question.
+> 
+> Note, this patch was applied during the merge between 3.3 and 3.4. The 
+> regression has been undiscovered for some time.
+> 
+> Any help on this problem will be appreciated.
+> 
+> Larry
+
+This particular commit is the start of a patches batch that ended in the
+generic TCP coalescing mechanism.
+
+It is known to have problem on drivers doing skb_clone() in their rx
+path.
+
+Current kernels should be ok, because coalescing doesnt happen if the
+destination skb is cloned (skb_cloned(to) in skb_try_coalesce())
+
+For 3.4 kernel, I guess I need to backport this skb_cloned(to) check fo
+stable 3.4 kernel
+
+But these skb_clone() in various USB drivers should be killed for good,
+they really can kill the box because of skb->truesize lies.
+
+Please test following patch (for 3.4 kernels)
+
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 257b617..c45ac2d 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4496,7 +4496,9 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
+ 		 * to avoid future tcp_collapse_ofo_queue(),
+ 		 * probably the most expensive function in tcp stack.
+ 		 */
+-		if (skb->len <= skb_tailroom(skb1) && !tcp_hdr(skb)->fin) {
++		if (skb->len <= skb_tailroom(skb1) &&
++		    !skb_cloned(skb1) &&
++		    !tcp_hdr(skb)->fin) {
+ 			NET_INC_STATS_BH(sock_net(sk),
+ 					 LINUX_MIB_TCPRCVCOALESCE);
+ 			BUG_ON(skb_copy_bits(skb, 0,
 
 
