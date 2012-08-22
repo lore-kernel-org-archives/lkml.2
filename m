@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab2HVFFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 01:05:30 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34104 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab2HVFF2 (ORCPT
+	id S1756013Ab2HVFGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 01:06:15 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:46734 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2HVFGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 01:05:28 -0400
+	Wed, 22 Aug 2012 01:06:12 -0400
+Date: Tue, 21 Aug 2012 22:05:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the rcu tree with the tip tree
+Message-ID: <20120822050540.GC2531@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120822142735.5366c9abdee5274329e65fe3@canb.auug.org.au>
 MIME-Version: 1.0
-Date: Wed, 22 Aug 2012 10:35:27 +0530
-Message-ID: <CABCoZhC5z9Pu19Yq8YCTLw8NJO1pbc3AztD=xmembA8tQiG31Q@mail.gmail.com>
-Subject: Power: s3c_adc_battery.c backup battery query
-From: anish kumar <yesanishhere@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: lars@metafoo.de, cbou@mail.ru, dwmw2@infradead.org, kzjeef@gmail.com,
-        anarsoul@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822142735.5366c9abdee5274329e65fe3@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082205-1780-0000-0000-0000089E95AF
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000293; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00167419; UDB=6.00037924; UTC=2012-08-22
+ 05:06:10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Aug 22, 2012 at 02:27:35PM +1000, Stephen Rothwell wrote:
+> Hi Paul,
+> 
+> Today's linux-next merge of the rcu tree got a conflict in
+> kernel/rcutree.h between commit 62ab7072476a ("rcu: Use
+> smp_hotplug_thread facility for RCUs per-CPU kthread") from the tip tree
+> and commit daa5d37ff51b ("rcu: Prevent force_quiescent_state() memory
+> contention") from the rcu tree.
+> 
+> Just context changes (I think).  I fixed it up (see below) and can carry
+> the fix as necessary.
 
-I am trying to write a generic batttery driver using IIO and I have
-one some below
-questions:
+This one also looks correct.
 
-Why do we have the representation of backup battery in this
-driver(s3c_adc_battery.c) and when does the
-s3c_adc_backup_bat_get_property function gets called?
+							Thanx, Paul
 
-As I understand, it is as this:It is called when it is registered
-and when the user wants to know the backup battery status(sysfs)
-and we don't do a workqueue scheduling as it will consume more power.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc kernel/rcutree.h
+> index 1224d4c,c2a3e7d..0000000
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@@ -196,6 -200,13 +200,7 @@@ struct rcu_node 
+>   				/* Refused to boost: not sure why, though. */
+>   				/*  This can happen due to race conditions. */
+>   #endif /* #ifdef CONFIG_RCU_BOOST */
+>  -	struct task_struct *node_kthread_task;
+>  -				/* kthread that takes care of this rcu_node */
+>  -				/*  structure, for example, awakening the */
+>  -				/*  per-CPU kthreads as needed. */
+>  -	unsigned int node_kthread_status;
+>  -				/* State of node_kthread_task for tracing. */
+> + 	raw_spinlock_t fqslock ____cacheline_internodealigned_in_smp;
+>   } ____cacheline_internodealigned_in_smp;
+>   
+>   /*
 
-static struct s3c_adc_bat backup_bat = {
-        .psy = {
-                .name           = "backup-battery",
-                .type           = POWER_SUPPLY_TYPE_BATTERY,
-                .properties     = s3c_adc_backup_bat_props,
-                .num_properties = ARRAY_SIZE(s3c_adc_backup_bat_props),
-                .get_property   = s3c_adc_backup_bat_get_property,
-                .use_for_apm    = 1,
-        },
-};
 
-I am stuck with mulitple *get_property callbacks.As we don't know how many
-batteries system has and consequently we don't know how many *get_property
-callbacks to be implemented.
-
-So below is my plan:
-What I am trying to do is to have a single callback(*get_property) and manage
-everything in this callback and will use the name of the psy to
-distinguish between
-the different batteries which system has and driver will receive this
-information using
-platform data.Hope it makes sense.
