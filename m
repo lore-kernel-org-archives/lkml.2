@@ -1,110 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab2HVDcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 23:32:00 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60546 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab2HVDb4 (ORCPT
+	id S1755797Ab2HVDeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 23:34:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56432 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab2HVDeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 23:31:56 -0400
+	Tue, 21 Aug 2012 23:34:20 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-c6-5034533959ac
+Date: Wed, 22 Aug 2012 12:34:41 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: qiuxishi <qiuxishi@gmail.com>
+Cc: akpm@linux-foundation.org, lliubbo@gmail.com, jiang.liu@huawei.com,
+        mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, qiuxishi@huawei.com,
+        wujianguo@huawei.com, bessel.wang@huawei.com, guohanjun@huawei.com,
+        chenkeping@huawei.com, yinghai@kernel.org, wency@cn.fujitsu.com
+Subject: Re: [PATCH] memory-hotplug: fix a drain pcp bug when offline pages
+Message-ID: <20120822033441.GB24667@bbox>
+References: <50337B15.2090701@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1208211109050.3421@lazy>
-References: <1345521975-13708-1-git-send-email-manoj.iyer@canonical.com>
-	<1345522015-13740-1-git-send-email-manoj.iyer@canonical.com>
-	<CAOvWMLaAJrmOKiq=ESXq3wCvFHxWAXMBaeLsK6MUaWBZG+i4Aw@mail.gmail.com>
-	<alpine.DEB.2.02.1208211109050.3421@lazy>
-Date: Wed, 22 Aug 2012 11:31:55 +0800
-Message-ID: <CAOvWMLZz2RnWG77nrxs=HhR8QAqvX47i-a9JpbdmSqQEY2TWkQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] xhci: Unconditionally switch ports to xHCI on powerup
-From: Andiry Xu <andiry@gmail.com>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50337B15.2090701@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 12:16 AM, Manoj Iyer <manoj.iyer@canonical.com> wrote:
->
-> Looks like in pci-quirks.c, we enter the do() while() loop, reach the end of
-> extended capabilities and goto hc_init: label, skipping the switch. Probably
-> moving the switch under the hc_init label might work? Currently we switch
-> unconditionally on resume, so we could do the same at powerup as well.
->
+Hello Xishi,
 
-If this is a must-to-do thing for Intel Panther Point platform, then
-we need to make sure it's called on power up and resume. Yes, I think
-moving the code below hc_init label should work and I think it's a
-better solution than your original patch.
+On Tue, Aug 21, 2012 at 08:12:05PM +0800, qiuxishi wrote:
+> From: Xishi Qiu <qiuxishi@huawei.com>
+> 
+> When offline a section, we move all the free pages and pcp into MIGRATE_ISOLATE list first.
+> start_isolate_page_range()
+> 	set_migratetype_isolate()
+> 		drain_all_pages(),
+> 
+> Here is a problem, it is not sure that pcp will be moved into MIGRATE_ISOLATE list. They may
+> be moved into MIGRATE_MOVABLE list because page_private() maybe 2. So when finish migrating
+> pages, the free pages from pcp may be allocated again, and faild in check_pages_isolated().
+> drain_all_pages()
+> 	drain_local_pages()
+> 		drain_pages()
+> 			free_pcppages_bulk()
+> 				__free_one_page(page, zone, 0, page_private(page));
+> 
+> If we add move_freepages_block() after drain_all_pages(), it can not sure that all the pcp
+> will be moved into MIGRATE_ISOLATE list when the system works on high load. The free pages
+> which from pcp may immediately be allocated again.
+> 
+> I think the similar bug described in http://marc.info/?t=134250882300003&r=1&w=2
 
-Thanks,
-Andiry
+Yes. I reported the problem a few month ago but it's not real bug in practice
+but found by my eyes during looking the code so I wanted to confirm the problem.
 
->
-> On Tue, 21 Aug 2012, Andiry Xu wrote:
->
->> On Tue, Aug 21, 2012 at 12:06 PM,  <manoj.iyer@canonical.com> wrote:
->>>
->>> From: Manoj Iyer <manoj.iyer@canonical.com>
->>>
->>> USB 3.0 devices show up as high-speed devices on powerup, after an
->>> s3 cycle they are correctly recognized as SuperSpeed. At powerup
->>> unconditionally switch the port to xHCI like we do when we resume
->>> from suspend.
->>>
->>> BugLink: http://bugs.launchpad.net/bugs/1000424
->>>
->>> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
->>> ---
->>>  drivers/usb/host/xhci-pci.c |    8 ++++++++
->>>  1 file changed, 8 insertions(+)
->>>
->>> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
->>> index 9bfd4ca11..5c8dbea 100644
->>> --- a/drivers/usb/host/xhci-pci.c
->>> +++ b/drivers/usb/host/xhci-pci.c
->>> @@ -48,6 +48,14 @@ static int xhci_pci_reinit(struct xhci_hcd *xhci,
->>> struct pci_dev *pdev)
->>>         if (!pci_set_mwi(pdev))
->>>                 xhci_dbg(xhci, "MWI active\n");
->>>
->>> +       /*
->>> +        * USB SuperSpeed ports are recognized as HighSpeed ports on
->>> powerup
->>> +        * unconditionally switch the ports to xHCI like we do when
->>> resume
->>> +        * from suspend.
->>> +        */
->>> +       if (usb_is_intel_switchable_xhci(pdev))
->>> +               usb_enable_xhci_ports(pdev);
->>> +
->>
->>
->> Strange. This should have been called during system power up, in
->> quirk_usb_handoff_xhci() of pci_quirks.c. Do you see that routine get
->> called during power up?
->>
->> Thanks,
->> Andiry
->>
->>>         xhci_dbg(xhci, "Finished xhci_pci_reinit\n");
->>>         return 0;
->>>  }
->>> --
->>> 1.7.9.5
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->>
->
+Do you find that problem in real practice? or just code review?
+
+Anyway, I don't like your approach which I already considered because it hurts hotpath
+while the race is really unlikely. Get_pageblock_migratetype is never trivial.
+We should avoid the overhead in hotpath and move into memory-hotplug itself.
+Do you see my patch in https://patchwork.kernel.org/patch/1225081/ ?
+
+> 
+> 
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  mm/page_alloc.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index d0723b2..501f6de 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -673,7 +673,8 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+>  			/* must delete as __free_one_page list manipulates */
+>  			list_del(&page->lru);
+>  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+> -			__free_one_page(page, zone, 0, page_private(page));
+> +			__free_one_page(page, zone, 0,
+> +					get_pageblock_migratetype(page));
+>  			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+>  		} while (--to_free && --batch_free && !list_empty(list));
+>  	}
+> -- 1.7.6.1 .
+> 
+> 
+> 
+> .
+> 
 > --
-> ====================
-> Manoj Iyer
-> Ubuntu/Canonical
-> Hardware Enablement
-> ====================
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
