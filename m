@@ -1,165 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab2HVNDC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 09:03:02 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:61488 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab2HVNB5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 09:01:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/4] [RFC] ARM: autogenerate mach-foo/* and plat-foo/* header redirects
-Date: Wed, 22 Aug 2012 12:54:22 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-References: <201208221253.07278.arnd@arndb.de>
-In-Reply-To: <201208221253.07278.arnd@arndb.de>
+	id S932497Ab2HVNDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 09:03:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42870 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932426Ab2HVNDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 09:03:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.77,808,1336374000"; 
+   d="scan'208";a="189841223"
+Message-ID: <5034D878.1000305@linux.intel.com>
+Date: Wed, 22 Aug 2012 06:02:48 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Mike Galbraith <efault@gmx.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Alex Shi <alex.shi@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, vincent.guittot@linaro.org,
+        svaidy@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>
+Subject: Re: [discussion]sched: a rough proposal to enable power saving in
+ scheduler
+References: <1345028738.31459.82.camel@twins>  <502BA7DC.7060907@linux.intel.com> <1345041548.31459.90.camel@twins>  <502BB5A3.5000403@linux.intel.com> <1345043096.31459.106.camel@twins>  <502BE38D.9030405@linux.intel.com> <20120820080606.GA6931@gmail.com>  <20120820181651.GA737@srcf.ucam.org> <20120821094203.GB12385@gmail.com>  <20120821113951.GA22436@srcf.ucam.org> <20120821151910.GA5359@gmail.com>  <20120821170254.0b10ece6@pyramind.ukuu.org.uk> <1345614110.4374.65.camel@marge.simpson.net>
+In-Reply-To: <1345614110.4374.65.camel@marge.simpson.net>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208221254.22292.arnd@arndb.de>
-X-Provags-ID: V02:K0:byxa+A5pKr+xytSiuQpKCTQ53ZcuyyNM0obb3Lc1mmE
- 8t4k5qIdVPTBJ0YiRV4Zjpm2DRq7DiJxGgd0kWyW6ObICJtfgT
- 8W2MTspeu0m0OsGj6T90GCiagbHy1Pf2kMWPv7xvy698JSTQyz
- c3Gj5Lupk76vNSs6BldAy1VUGa8hw9zMlXsaZir63yJp13EYI6
- KYkfffGBG8QW6lS1aw6m8vPpaBXFcMsIZAbpSM6m3JhtWEY+3c
- nF1IHKC3vWwhA+XaVLGH/uxw8E6C1piYxBBJm4IFvg8WbKwtcW
- 23CSltq6V3hLIir2/MMDM7xnr4haCREjKGYvWNG9gmvnAGF2IS
- drSkZaep3KeA1OS9FGK8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an attempt to simplify the duplicate header problem for
-multiplatform kernels, in multiple steps:
+On 8/21/2012 10:41 PM, Mike Galbraith wrote:
+> On Tue, 2012-08-21 at 17:02 +0100, Alan Cox wrote:
+> 
+>> I'd like to see actual numbers and evidence on a wide range of workloads
+>> the spread/don't spread thing is even measurable given that you've also
+>> got to factor in effects like completing faster and turning everything
+>> off. I'd *really* like to see such evidence on a laptop,which is your
+>> one cited case it might work.
+> 
+> For my dinky dual core laptop, I suspect you're right, but for a more
+> powerful laptop, I'd expect spread/don't to be noticeable.
 
-1. (this patch)
-   for each arch/arm/mach-${MACHINE}/include/mach-${MACHINE}/*.h file,
-   generate a arch/arm/include/generated/mach/*.h file at build time,
-   same for plat-*.
+yeah if you don't spread, you will waste some power.
+but.. current linux behavior is to spread.
+so we can only make it worse.
 
-2. rename all arch/arm/mach-${MACHINE}/include/mach/*.h to
-   arch/arm/mach-${MACHINE}/include/mach-${MACHINE}/*.h and
-   arch/arm/plat-${PLAT}/include/plat/*.h to
-   arch/arm/plat-${PLAT}/include/plat-${PLAT}/*.h
 
-3. change all includes of <mach/*.h> to <mach-${MACHINE}/*.h>
-   in all files where ${MACHINE} is known.
+> 
+> Yeah, hard numbers would be nice to see.
+> 
+> If I had a powerful laptop, I'd kill irq balancing, and all but periodic
+> load balancing, and expect to see a positive result. 
 
-4. ...
-
-5. Revert this patch again.
-
-We can apply this patch at any time, and do step 2 at the end
-of the next merge window to minimize the potential for conflicts.
-We will also still need to deal with any inclusion of a mach/*
-file, but out of the 6355 ones we have today, I expect only a
-few hundred to remain after step 3 and they will be much easier
-to spot.
-
-I've picked the format <mach-foo/bar.h> to get a unique name because
-it matches the directory name under arch/arm, but other names
-would work with the same script, <mach/foo-bar.h> and <foo/bar.h>
-have been suggested previously.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/Makefile          |    1 +
- arch/arm/tools/Makefile    |    5 ++++
- arch/arm/tools/gen-headers |   57 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 63 insertions(+)
- create mode 100755 arch/arm/tools/gen-headers
-
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 30eae87..761b077 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -274,6 +274,7 @@ boot := arch/arm/boot
- 
- archprepare:
-        $(Q)$(MAKE) $(build)=arch/arm/tools include/generated/mach-types.h
-+       $(Q)$(MAKE) $(build)=arch/arm/tools plat="$(plat-y)" machine="$(machine-y)" gen_headers
- 
- # Convert bzImage to zImage
- bzImage: zImage
-diff --git a/arch/arm/tools/Makefile b/arch/arm/tools/Makefile
-index 635cb18..6e18ca9 100644
---- a/arch/arm/tools/Makefile
-+++ b/arch/arm/tools/Makefile
-@@ -8,3 +8,8 @@ include/generated/mach-types.h: $(src)/gen-mach-types $(src)/mach-types
-        @echo '  Generating $@'
-        @mkdir -p $(dir $@)
-        $(Q)$(AWK) -f $^ > $@ || { rm -f $@; /bin/false; }
-+
-+gen_headers:
-+       $(Q)bash $(srctree)/$(src)/gen-headers $(srctree) $(objtree) $(machine) $(plat)
-+
-+.PHONY: gen_headers
-diff --git a/arch/arm/tools/gen-headers b/arch/arm/tools/gen-headers
-new file mode 100755
-index 0000000..caa6a9a
---- /dev/null
-+++ b/arch/arm/tools/gen-headers
-@@ -0,0 +1,57 @@
-+#!/bin/bash
-+
-+SRC=$1
-+OBJ=$2
-+MACH=$3
-+PLAT1=$4
-+PLAT2=$5
-+
-+# create $3 to include $2 if it doesn't already have the correct
-+# contents, or remove it if it's no longer needed.
-+mkfile()
-+{
-+       if [ -e $1/$2 ] ; then
-+               if [ ! -e $3 ] ; then
-+                       mkdir -p ${3%/*}
-+                       echo "#include <${2}>" > $3
-+               elif [ "`cat $3`" != "#include <${2#./}>" ] ; then
-+                       echo "#include <${2}>" > $3
-+               fi
-+       elif [ ! -e $1/$2 -a -e $3 ] ; then
-+               rm -f $3
-+       fi
-+}
-+
-+# list any header files that are present in the source or
-+# destination directories
-+find_files()
-+{
-+       pushd ${SRC}/arch/arm/$1-$2/include/$1-$2 >/dev/null 2>&1 &&
-+       find . -type f -name \*.h -o -name \*.S &&
-+       popd > /dev/null 2>&1
-+       pushd ${OBJ}/arch/arm/include/generated/$1 >/dev/null 2>&1 &&
-+       find . -type f -name \*.h -o -name \*.S &&
-+       popd > /dev/null 2>&1
-+}
-+
-+# process files in either mach-{MACH} or plat-${PLAT}
-+mkfiles()
-+{
-+       mkdir -p ${OBJ}/arch/arm/include/generated/$1
-+
-+       FILES=`find_files $1 $2 | sort -u`
-+       for i in ${FILES} ; do
-+               mkfile "${SRC}/arch/arm/$1-$2/include/" "$1-$2/${i#./}" \
-+                       "${OBJ}/arch/arm/include/generated/$1/$i"
-+       done
-+}
-+
-+# always process mach-*
-+mkfiles mach ${MACH}
-+# process plat-* if applicable
-+if [ -d ${SRC}/arch/arm/plat-${PLAT1} ]; then
-+       mkfiles plat ${PLAT1}
-+fi
-+if [ -d ${SRC}/arch/arm/plat-${PLAT2} ]; then
-+       mkfiles plat ${PLAT2}
-+fi
--- 
-1.7.10
+I'd expect to see a negative result ;-)
 
