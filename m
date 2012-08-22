@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab2HVFAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 01:00:07 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59724 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750825Ab2HVFAE (ORCPT
+	id S1754177Ab2HVFAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 01:00:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41451 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab2HVFAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 01:00:04 -0400
+	Wed, 22 Aug 2012 01:00:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <5033FFE0.5070209@wwwdotorg.org>
-References: <1345060656-32201-1-git-send-email-thomas.abraham@linaro.org>
-	<1345060656-32201-2-git-send-email-thomas.abraham@linaro.org>
-	<CACRpkdYqPYesgE-YxPLZqROw1T2fsPWR6R+aDTTz2=XbP7oe9A@mail.gmail.com>
-	<5033FFE0.5070209@wwwdotorg.org>
-Date: Wed, 22 Aug 2012 10:30:02 +0530
-Message-ID: <CAJuYYwQx35bNJdNeNexGoxzenstT7GaOLa3=+6uYMMGoYrCtRQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] pinctrl: add samsung pinctrl and gpiolib driver
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, kgene.kim@samsung.com,
-        Dong Aisheng <dong.aisheng@linaro.org>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF0AF3@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF0AF3@DQHE02.ent.ti.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 22 Aug 2012 12:59:43 +0800
+X-Google-Sender-Auth: q_NgNVhaoGLVGytvD18B0ZEjc9E
+Message-ID: <CAK5ve-J83jd4wGtkTdycuYpS6Yt3t8FqAQP_asQn-kXbgfP3fw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] leds-lp5523: change the return type of lp5523_set_mode()
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 August 2012 03:08, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/21/2012 05:25 AM, Linus Walleij wrote:
->> On Wed, Aug 15, 2012 at 9:57 PM, Thomas Abraham
->> <thomas.abraham@linaro.org> wrote:
->>
->>> Add a new device tree enabled pinctrl and gpiolib driver for Samsung
->>> SoC's.
-> ...
->>> +  The child node can also optionally specify one or more of the pin
->>> +  configuration that should be applied on all the pins listed in the
->>> +  "samsung,pins" property of the child node. The following pin configuration
->>> +  properties are supported.
->>> +
->>> +  - samsung,pin-pud: Pull up/down configuration.
->>> +  - samsung,pin-drv: Drive strength configuration.
->>> +  - samsung,pin-pud-pdn: Pull up/down configuration in power down mode.
->>> +  - samsung,pin-drv-pdn: Drive strength configuration in power down mode.
->>
->> This looks a bit scary, as it seems to be orthogonal to the pin config
->> interface. I.e. this will be programmed "behind the back" of the
->> pin config system. However as long as the pin config implementation
->> reads back these things from the registers it will work, too.
->>
->> In the U300 and Ux500 I explicitly use pin config hogs to set up
->> the pin configuration, and when we enter a state such as
->> "default" the mux setting and config settings are set from the
->> framework separately.
+On Tue, Aug 21, 2012 at 5:03 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> The return value of this function is not handled any place, so
+> make it as void type.
 >
-> I know that some HW has a separate set of registers (or fields) for the
-> "awake" and "sleep" configuration, and the HW switches between the two
-> automatically when sleeping. I have no idea if the Samsung SoCs do this,
-> but I think if this were the case, it'd be quite legitimate to define
-> both these HW states as separate sets of properties within a single
-> pinctrl SW state. So, that might be the explanation here?
+> And three if-statements are replaced with switch-statements.
 >
 
-Hi Stephen,
-
-Yes, Samsung SoC support the "awake" and "sleep" configuration in that
-way you described.
+This one looks fine with me. I will merge it after you rework on first 2 patches
 
 Thanks,
-Thomas.
+-Bryan
+
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/leds-lp5523.c |   24 +++++++++++++-----------
+>  1 files changed, 13 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+> index f090819..f8231f1 100644
+> --- a/drivers/leds/leds-lp5523.c
+> +++ b/drivers/leds/leds-lp5523.c
+> @@ -150,7 +150,7 @@ static inline struct lp5523_chip *led_to_lp5523(struct lp5523_led *led)
+>                             leds[led->id]);
+>  }
+>
+> -static int lp5523_set_mode(struct lp5523_engine *engine, u8 mode);
+> +static void lp5523_set_mode(struct lp5523_engine *engine, u8 mode);
+>  static int lp5523_set_engine_mode(struct lp5523_engine *engine, u8 mode);
+>  static int lp5523_load_program(struct lp5523_engine *engine, const u8 *pattern);
+>
+> @@ -789,26 +789,28 @@ static void lp5523_unregister_sysfs(struct i2c_client *client)
+>  /*--------------------------------------------------------------*/
+>  /*                     Set chip operating mode                 */
+>  /*--------------------------------------------------------------*/
+> -static int lp5523_set_mode(struct lp5523_engine *engine, u8 mode)
+> +static void lp5523_set_mode(struct lp5523_engine *engine, u8 mode)
+>  {
+> -       int ret = 0;
+> -
+>         /* if in that mode already do nothing, except for run */
+>         if (mode == engine->mode && mode != LP5523_CMD_RUN)
+> -               return 0;
+> +               return;
+>
+> -       if (mode == LP5523_CMD_RUN) {
+> -               ret = lp5523_run_program(engine);
+> -       } else if (mode == LP5523_CMD_LOAD) {
+> +       switch (mode) {
+> +       case LP5523_CMD_RUN:
+> +               lp5523_run_program(engine);
+> +               break;
+> +       case LP5523_CMD_LOAD:
+>                 lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
+>                 lp5523_set_engine_mode(engine, LP5523_CMD_LOAD);
+> -       } else if (mode == LP5523_CMD_DISABLED) {
+> +               break;
+> +       case LP5523_CMD_DISABLED:
+>                 lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
+> +               break;
+> +       default:
+> +               return;
+>         }
+>
+>         engine->mode = mode;
+> -
+> -       return ret;
+>  }
+>
+>  /*--------------------------------------------------------------*/
+> --
+> 1.7.2.5
+>
+>
+> Best Regards,
+> Milo
+>
+>
+
+
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
