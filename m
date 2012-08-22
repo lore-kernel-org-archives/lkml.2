@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964813Ab2HVQ4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:56:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35922 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab2HVQ4U (ORCPT
+	id S933176Ab2HVQ7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:59:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54499 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932992Ab2HVQ7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:56:20 -0400
-Message-ID: <50350F2D.6030408@gmail.com>
-Date: Wed, 22 Aug 2012 10:56:13 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Wed, 22 Aug 2012 12:59:36 -0400
+Date: Wed, 22 Aug 2012 17:59:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/3] spi: omap2-mcspi: spi cleanups
+Message-ID: <20120822165933.GU7995@opensource.wolfsonmicro.com>
+References: <1345615515-26745-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Luigi Semenzato <semenzato@chromium.org>, Ingo Molnar <mingo@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
-        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
-Subject: Re: [PATCH] perf: do not flush maps on COMM for perf report
-References: <1345585940-6497-1-git-send-email-semenzato@chromium.org> <20120822072822.GA11042@gmail.com> <CAA25o9RJOre2mw4z7Mh94iRKcHVdby9RjLfP91far16me8_94Q@mail.gmail.com> <20120822162958.GA13623@infradead.org>
-In-Reply-To: <20120822162958.GA13623@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B9I4cJCE9PLEoxgz"
+Content-Disposition: inline
+In-Reply-To: <1345615515-26745-1-git-send-email-shubhrajyoti@ti.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/22/12 10:29 AM, Arnaldo Carvalho de Melo wrote:
-> Adding the EXEC event, ditto. And I agree that while adding it we want
-> to do 1/2 as pre-requisite.
 
-maps should not be flushed on a COMM event, so that was a mistake. Given 
-that what new information does an EXEC event provide? Same process id. A 
-COMM event is generated on an exec, so the name change happens. Mappings 
-are dropped prior to that - and there is no unmap event. That seems to 
-be a missing piece. Maps are added which is handled by MMAP events. 
-After that why is an exec event relevant?
+--B9I4cJCE9PLEoxgz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-David
+On Wed, Aug 22, 2012 at 11:35:11AM +0530, Shubhrajyoti D wrote:
+> This patch does the following
+>=20
+> Calls the pm_runtime_* functions directly.
+> Remove the MOD_REG_BIT macro usage thereby removiing un-needed branch.
+> At remove dont use the autosuspend runtime calls.
+
+Applied all, thanks.
+
+> The following changes since commit 23dcfa61bac244e1200ff9ad19c6e9144dcb6b=
+b5:
+>=20
+>   Merge branch 'akpm' (Andrew's patch-bomb) (2012-08-21 17:22:22 -0700)
+
+When sending pull requests please always base them off a tag of some
+kind, normally one of Linus' is a good option if you've no special
+needs.  This one looks like it's based off -next so can't be pulled into
+any other tree, -next is rebased daily.
+
+--B9I4cJCE9PLEoxgz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQNQ/pAAoJEFJkBDiqVpZ4bl0P/3edWnyJpaN6LXP4W/6w2XZR
+CqxH9YHjPCzLq8QGaltIofp2AItL478YENaEWGCc9nCCFdeY+qMdFwX0ypy1+faT
+rkY15ttIOrxHKsCRumnLVtO3q61oRDEDpKNnDUAilNL+T32FctfxIsU+gr3tfblm
+3FgbxBEUIBi5fRh5oP/UHW+dhRQREe1rylj1NmmxNm6lLdSPW3fuW5LdQcWD8BmO
+UxgxTOCE90ESaNOud6aT8zQVWqMuly/OJvYidmrHXi27VCW6D3ajpVVQMOPZH95+
+DpLeRTlTvvYnpyQY5fK6isZ/xKJ7FeUI9c9FGn7LhPOdv/0N2/0wYyVIb7o2ZszE
+u01VV8aBUFT+gwAU68NAB6SvYNIiLtdXLbP7/DBCNjR1qurIeDS2lt25guBmF+lm
+bKFBMuq1+olK+ao/KN+cRTlC22I3epAo6Eh5oYw/lv3bblXtcGNrjLkVeJ+iBm81
+NpyqSILb8AyHrkLTpTWMgPLG7MXxsTs1TNG20TQlR+XpPy045GcxnZwgnZotc3i6
+XduMxEjENBU0xFNxd1r61pv8O+udbxuDZdmtkLk8A6Bn18j0pP/wA4EmWkxW9b0e
+3kr225X+7C5bc5S04t6rPudMgCsY29Cznv6kjvc+KREbO4ocEeSj8RntwOHSUKJC
+829vlRehXAXxrPFbfRiv
+=rc9U
+-----END PGP SIGNATURE-----
+
+--B9I4cJCE9PLEoxgz--
