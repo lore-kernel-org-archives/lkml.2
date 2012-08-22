@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab2HVXi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 19:38:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47460 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab2HVXiu (ORCPT
+	id S932226Ab2HVXjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 19:39:24 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:60487 "EHLO
+	homiemail-a46.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755770Ab2HVXjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 19:38:50 -0400
-Date: Wed, 22 Aug 2012 16:38:36 -0700
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-bb9d3e473d5b324907e15dff4e54410b28ea50e2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
-In-Reply-To: <1344361461-10076-4-git-send-email-bp@amd64.org>
-References: <1344361461-10076-4-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86, microcode: Drop uci->
- mc check on resume path
-Git-Commit-ID: bb9d3e473d5b324907e15dff4e54410b28ea50e2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Aug 2012 16:38:42 -0700 (PDT)
+	Wed, 22 Aug 2012 19:39:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=from:to:cc
+	:subject:date:message-id; q=dns; s=shealevy.com; b=Um+2OXdfxTvA9
+	lsxMLfx2Ian/tZNDcsEaNnzZ1YfJYSgNk0dDb4pIUMOIHFbEAh4+It9bcjcg3HGd
+	Bypv65Q/ZmxuCgHbd6hvCoa0++h9LB2bYpyLCl+MHQHcpj195pJ+Dt+TtotJMmPU
+	pMRwPEWgzwHJgo1ZSiO6INouHumTbI=
+From: Shea Levy <shea@shealevy.com>
+To: linux-bluetooth@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Johan Hedberg <johan.hedberg@gmail.com>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH RESEND RESEND] Bluetooth: Add support for Apple MacBook Pro 9,2
+Date: Wed, 22 Aug 2012 19:39:13 -0400
+Message-Id: <1345678753-32753-1-git-send-email-shea@shealevy.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bb9d3e473d5b324907e15dff4e54410b28ea50e2
-Gitweb:     http://git.kernel.org/tip/bb9d3e473d5b324907e15dff4e54410b28ea50e2
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Fri, 3 Aug 2012 15:26:50 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 22 Aug 2012 16:14:44 -0700
+$ usb-devices
+<snip>
+T:  Bus=04 Lev=04 Prnt=04 Port=02 Cnt=01 Dev#=  9 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=05ac ProdID=821d Rev=00.86
+S:  Manufacturer=Apple Inc.
+S:  Product=Bluetooth USB Host Controller
+C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+<snip>
 
-x86, microcode: Drop uci->mc check on resume path
-
-Remove the uci->mc check on the cpu resume path because the low-level
-drivers do that anyway.
-
-More importantly, though, this fixes a contrived and obscure but still
-important case. Imagine the following:
-
-* boot machine, no new microcode in /lib/firmware
-
-* a subset of the CPUs is offlined
-
-* in the meantime, user puts new fresh microcode container into
-/lib/firmware and reloads it by doing
-$ echo 1 > /sys/devices/system/cpu/microcode/reload
-
-* offlined cores come back online and they don't get the newer microcode
-applied due to this check.
-
-Later patches take care of the issue on AMD.
-
-While at it, cleanup code around it.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/1344361461-10076-4-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Shea Levy <shea@shealevy.com>
 ---
- arch/x86/kernel/microcode_core.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
+ drivers/bluetooth/btusb.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 63a9568..706a5c9 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -369,13 +369,10 @@ static void microcode_fini_cpu(int cpu)
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index f077f4d..fdddb6e 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -73,6 +73,9 @@ static struct usb_device_id btusb_table[] = {
+ 	/* Apple MacBookPro8,2 */
+ 	{ USB_DEVICE(0x05ac, 0x821a) },
  
- static enum ucode_state microcode_resume_cpu(int cpu)
- {
--	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
--
--	if (!uci->mc)
--		return UCODE_NFOUND;
--
- 	pr_debug("CPU%d updated upon resume\n", cpu);
--	apply_microcode_on_target(cpu);
++	/* Apple MacBookPro9,2 */
++	{ USB_DEVICE(0x05ac, 0x821d) },
 +
-+	if (apply_microcode_on_target(cpu))
-+		return UCODE_ERROR;
+ 	/* Apple MacMini5,1 */
+ 	{ USB_DEVICE(0x05ac, 0x8281) },
  
- 	return UCODE_OK;
- }
-@@ -404,14 +401,11 @@ static enum ucode_state microcode_init_cpu(int cpu)
- static enum ucode_state microcode_update_cpu(int cpu)
- {
- 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
--	enum ucode_state ustate;
- 
- 	if (uci->valid)
--		ustate = microcode_resume_cpu(cpu);
--	else
--		ustate = microcode_init_cpu(cpu);
-+		return microcode_resume_cpu(cpu);
- 
--	return ustate;
-+	return microcode_init_cpu(cpu);
- }
- 
- static int mc_device_add(struct device *dev, struct subsys_interface *sif)
+-- 
+1.7.11.4
+
