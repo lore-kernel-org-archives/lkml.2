@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab2HVQYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:24:49 -0400
-Received: from mga05.intel.com ([192.55.52.89]:57785 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758184Ab2HVQYp (ORCPT
+	id S933119Ab2HVQZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:25:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36983 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933085Ab2HVQYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:24:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <19122.1345632644@warthog.procyon.org.uk>
-References: <20120816013405.872.42381.stgit@warthog.procyon.org.uk>
-	<87sjbg3kfe.fsf@rustcorp.com.au>
-	<19122.1345632644@warthog.procyon.org.uk>
-Date: Wed, 22 Aug 2012 19:07:12 +0300
-Message-ID: <CALLzPKahRmanB5ZukxFkT6oe5L4==m_XMv=Sea3Kz39iACgeyw@mail.gmail.com>
-Subject: Re: [PATCH 00/25] Crypto keys and module signing
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, zohar@linux.vnet.ibm.com,
-        jmorris@namei.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Aug 2012 12:24:20 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        "3.2.x.." <stable@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 08/10] parisc: Add missing RCU idle APIs on idle loop
+Date: Wed, 22 Aug 2012 18:23:46 +0200
+Message-Id: <1345652628-15060-9-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-Yes, I will be also attending LSS and would like to visit KS discussion as well.
-Hope Rusty will send a schedule soon...
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-Regards,
-Dmitry
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
 
+Add this missing pair of calls in the parisc's idle loop.
 
-On Wed, Aug 22, 2012 at 1:50 PM, David Howells <dhowells@redhat.com> wrote:
-> Rusty Russell <rusty@rustcorp.com.au> wrote:
->
->> > I've posted new versions of my module signing patches to my GIT trees.
->>
->> Now I get to punt this discussion to KS.
->
-> :-)
->
-> See you there!
->
-> Dmitry, Mimi: We should discuss if there's any way to integrate our two
-> approaches.  Are you going to the security summit?
->
-> David
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: James E.J. Bottomley <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: Parisc <linux-parisc@vger.kernel.org>
+Cc: 3.2.x.. <stable@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ arch/parisc/kernel/process.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
+index d4b94b3..c54a4db 100644
+--- a/arch/parisc/kernel/process.c
++++ b/arch/parisc/kernel/process.c
+@@ -48,6 +48,7 @@
+ #include <linux/unistd.h>
+ #include <linux/kallsyms.h>
+ #include <linux/uaccess.h>
++#include <linux/rcupdate.h>
+ 
+ #include <asm/io.h>
+ #include <asm/asm-offsets.h>
+@@ -69,8 +70,10 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			barrier();
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
+ 		check_pgt_cache();
+ 	}
+-- 
+1.7.5.4
+
