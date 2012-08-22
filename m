@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab2HVPC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:02:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3612 "EHLO mx1.redhat.com"
+	id S932837Ab2HVPCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:02:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25887 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932803Ab2HVPCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:02:07 -0400
+	id S932780Ab2HVPCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:02:33 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,1175 +26,805 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 28/36] autonuma: page_autonuma
-Date: Wed, 22 Aug 2012 16:59:12 +0200
-Message-Id: <1345647560-30387-29-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 10/36] autonuma: CPU follows memory algorithm
+Date: Wed, 22 Aug 2012 16:58:54 +0200
+Message-Id: <1345647560-30387-11-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the AutoNUMA per page information from the "struct page" to a
-separate page_autonuma data structure allocated in the memsection
-(with sparsemem) or in the pgdat (with flatmem).
+This algorithm takes as input the statistical information filled by the
+knuma_scand (mm->mm_autonuma) and by the NUMA hinting page faults
+(p->task_autonuma), evaluates it for the current scheduled task, and
+compares it against every other running process to see if it should
+move the current task to another NUMA node.
 
-This is done to avoid growing the size of "struct page". The
-page_autonuma data is only allocated if the kernel is booted on real
-NUMA hardware and noautonuma is not passed as a parameter to the
-kernel.
+When the scheduler decides if the task should be migrated to a
+different NUMA node or to stay in the same NUMA node, the decision is
+then stored into p->task_autonuma->task_selected_nid. The fair
+scheduler then tries to keep the task on the task_selected_nid.
+
+Code include fixes and cleanups from Hillf Danton <dhillf@gmail.com>.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/autonuma.h       |   18 +++-
- include/linux/autonuma_types.h |   55 +++++++++
- include/linux/mm_types.h       |   26 ----
- include/linux/mmzone.h         |   24 +++-
- include/linux/page_autonuma.h  |   53 +++++++++
- init/main.c                    |    2 +
- mm/Makefile                    |    2 +-
- mm/autonuma.c                  |  102 +++++++++++------
- mm/huge_memory.c               |   13 ++-
- mm/page_alloc.c                |   21 +---
- mm/page_autonuma.c             |  246 ++++++++++++++++++++++++++++++++++++++++
- mm/sparse.c                    |  126 +++++++++++++++++++-
- 12 files changed, 588 insertions(+), 100 deletions(-)
- create mode 100644 include/linux/page_autonuma.h
- create mode 100644 mm/page_autonuma.c
+ include/linux/autonuma_sched.h |   50 ++++
+ include/linux/mm_types.h       |    5 +
+ include/linux/sched.h          |    3 +
+ kernel/sched/core.c            |    1 +
+ kernel/sched/fair.c            |    4 +
+ kernel/sched/numa.c            |  604 ++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h           |   19 ++
+ 7 files changed, 686 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/autonuma_sched.h
+ create mode 100644 kernel/sched/numa.c
 
-diff --git a/include/linux/autonuma.h b/include/linux/autonuma.h
-index 85ca5eb..1d87ecc 100644
---- a/include/linux/autonuma.h
-+++ b/include/linux/autonuma.h
-@@ -7,15 +7,26 @@
- 
- extern void autonuma_enter(struct mm_struct *mm);
- extern void autonuma_exit(struct mm_struct *mm);
--extern void __autonuma_migrate_page_remove(struct page *page);
-+extern void __autonuma_migrate_page_remove(struct page *,
-+					   struct page_autonuma *);
- extern void autonuma_migrate_split_huge_page(struct page *page,
- 					     struct page *page_tail);
- extern void autonuma_setup_new_exec(struct task_struct *p);
-+extern struct page_autonuma *lookup_page_autonuma(struct page *page);
- 
- static inline void autonuma_migrate_page_remove(struct page *page)
- {
--	if (ACCESS_ONCE(page->autonuma_migrate_nid) >= 0)
--		__autonuma_migrate_page_remove(page);
-+	struct page_autonuma *page_autonuma = lookup_page_autonuma(page);
-+	if (ACCESS_ONCE(page_autonuma->autonuma_migrate_nid) >= 0)
-+		__autonuma_migrate_page_remove(page, page_autonuma);
-+}
-+
-+static inline void autonuma_free_page(struct page *page)
-+{
-+	if (autonuma_possible()) {
-+		autonuma_migrate_page_remove(page);
-+		lookup_page_autonuma(page)->autonuma_last_nid = -1;
-+	}
- }
- 
- #define autonuma_printk(format, args...) \
-@@ -29,6 +40,7 @@ static inline void autonuma_migrate_page_remove(struct page *page) {}
- static inline void autonuma_migrate_split_huge_page(struct page *page,
- 						    struct page *page_tail) {}
- static inline void autonuma_setup_new_exec(struct task_struct *p) {}
-+static inline void autonuma_free_page(struct page *page) {}
- 
- #endif /* CONFIG_AUTONUMA */
- 
-diff --git a/include/linux/autonuma_types.h b/include/linux/autonuma_types.h
-index 9673ce8..525c31f 100644
---- a/include/linux/autonuma_types.h
-+++ b/include/linux/autonuma_types.h
-@@ -78,6 +78,61 @@ struct task_autonuma {
- 	/* do not add more variables here, the above array size is dynamic */
- };
- 
-+/*
-+ * Per page (or per-pageblock) structure dynamically allocated only if
-+ * autonuma is possible.
-+ */
-+struct page_autonuma {
-+	/*
-+	 * To modify autonuma_last_nid locklessly, the architecture
-+	 * needs to have SMP atomic granularity < sizeof(long). Not
-+	 * all architectures have this, notably some ancient Alphas
-+	 * (but none of them should run in NUMA
-+	 * systems). Architectures without this granularity require
-+	 * autonuma_last_nid to be a long.
-+	 */
-+#ifdef CONFIG_64BIT
-+	/*
-+	 * If autonuma_migrate_nid is >= 0, it means the page_autonuma
-+	 * structure is linked into one of the NUMA node's migrate
-+	 * lists. Which list is determined by the NUMA node the page
-+	 * belongs to. If autonuma_migrate_nid is -1, the
-+	 * page_autonuma structure is not linked into any NUMA node's
-+	 * migrate list.
-+	 */
-+	int autonuma_migrate_nid;
-+	/*
-+	 * autonuma_last_nid records the NUMA node that accessed the
-+	 * page during the last NUMA hinting page fault. If a
-+	 * different node accesses the page next, AutoNUMA will not
-+	 * migrate the page. This tries to avoid page thrashing by
-+	 * requiring that a page be accessed by the same node twice in
-+	 * a row before it is queued for migration.
-+	 */
-+	int autonuma_last_nid;
-+#else
-+#if MAX_NUMNODES > 32767
-+#error "too many nodes"
-+#endif
-+	short autonuma_migrate_nid;
-+	short autonuma_last_nid;
-+#endif
-+	/*
-+	 * This is the list node that links the page (referenced by
-+	 * the page_autonuma structure) in the
-+	 * &NODE_DATA(dst_nid)->autonuma_migrate_head[page_nid] lru.
-+	 */
-+	struct list_head autonuma_migrate_node;
-+
-+	/*
-+	 * To find the page starting from the autonuma_migrate_node we
-+	 * need a backlink.
-+	 *
-+	 * FIXME: drop it;
-+	 */
-+	struct page *page;
-+};
-+
- extern int alloc_task_autonuma(struct task_struct *tsk,
- 			       struct task_struct *orig,
- 			       int node);
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 3f10fef..c80101c 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -152,32 +152,6 @@ struct page {
- 		struct page *first_page;	/* Compound tail pages */
- 	};
- 
--#ifdef CONFIG_AUTONUMA
--	/*
--	 * FIXME: move to pgdat section along with the memcg and allocate
--	 * at runtime only in presence of a numa system.
--	 */
--	/*
--	 * To modify autonuma_last_nid lockless the architecture,
--	 * needs SMP atomic granularity < sizeof(long), not all archs
--	 * have that, notably some ancient alpha (but none of those
--	 * should run in NUMA systems). Archs without that requires
--	 * autonuma_last_nid to be a long.
--	 */
--#ifdef CONFIG_64BIT
--	int autonuma_migrate_nid;
--	int autonuma_last_nid;
--#else
--#if MAX_NUMNODES > 32767
--#error "too many nodes"
--#endif
--	/* FIXME: remember to check the updates are atomic */
--	short autonuma_migrate_nid;
--	short autonuma_last_nid;
--#endif
--	struct list_head autonuma_migrate_node;
--#endif
--
- 	/*
- 	 * On machines where all RAM is mapped into kernel address space,
- 	 * we can simply calculate the virtual address. On machines with
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index a5920f8..853e236 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -710,12 +710,9 @@ typedef struct pglist_data {
- 	int kswapd_max_order;
- 	enum zone_type classzone_idx;
- #ifdef CONFIG_AUTONUMA
--	/*
--	 * lock serializing all lists with heads in the
--	 * autonuma_migrate_head[] array, and the
--	 * autonuma_nr_migrate_pages field.
--	 */
--	spinlock_t autonuma_lock;
-+#if !defined(CONFIG_SPARSEMEM)
-+	struct page_autonuma *node_page_autonuma;
-+#endif
- 	/*
- 	 * All pages from node "page_nid" to be migrated to this node,
- 	 * will be queued into the list
-@@ -726,6 +723,12 @@ typedef struct pglist_data {
- 	unsigned long autonuma_nr_migrate_pages;
- 	/* waitqueue for this node knuma_migrated daemon */
- 	wait_queue_head_t autonuma_knuma_migrated_wait;
-+	/*
-+	 * lock serializing all lists with heads in the
-+	 * autonuma_migrate_head[] array, and the
-+	 * autonuma_nr_migrate_pages field.
-+	 */
-+	spinlock_t autonuma_lock;
- #endif
- } pg_data_t;
- 
-@@ -1088,6 +1091,15 @@ struct mem_section {
- 	 * section. (see memcontrol.h/page_cgroup.h about this.)
- 	 */
- 	struct page_cgroup *page_cgroup;
-+#endif
-+#ifdef CONFIG_AUTONUMA
-+	/*
-+	 * If !SPARSEMEM, pgdat doesn't have page_autonuma pointer. We use
-+	 * section.
-+	 */
-+	struct page_autonuma *section_page_autonuma;
-+#endif
-+#if defined(CONFIG_MEMCG) ^ defined(CONFIG_AUTONUMA)
- 	unsigned long pad;
- #endif
- };
-diff --git a/include/linux/page_autonuma.h b/include/linux/page_autonuma.h
+diff --git a/include/linux/autonuma_sched.h b/include/linux/autonuma_sched.h
 new file mode 100644
-index 0000000..9763e61
+index 0000000..588bba5
 --- /dev/null
-+++ b/include/linux/page_autonuma.h
-@@ -0,0 +1,53 @@
-+#ifndef _LINUX_PAGE_AUTONUMA_H
-+#define _LINUX_PAGE_AUTONUMA_H
-+
-+#if defined(CONFIG_AUTONUMA) && !defined(CONFIG_SPARSEMEM)
-+extern void __init page_autonuma_init_flatmem(void);
-+#else
-+static inline void __init page_autonuma_init_flatmem(void) {}
-+#endif
++++ b/include/linux/autonuma_sched.h
+@@ -0,0 +1,50 @@
++#ifndef _LINUX_AUTONUMA_SCHED_H
++#define _LINUX_AUTONUMA_SCHED_H
 +
 +#ifdef CONFIG_AUTONUMA
-+
 +#include <linux/autonuma_flags.h>
 +
-+extern void __meminit page_autonuma_map_init(struct page *page,
-+					     struct page_autonuma *page_autonuma,
-+					     int nr_pages);
++extern void __sched_autonuma_balance(void);
++extern bool sched_autonuma_can_migrate_task(struct task_struct *p,
++					    int numa, int dst_cpu,
++					    enum cpu_idle_type idle);
 +
-+#ifdef CONFIG_SPARSEMEM
-+#define PAGE_AUTONUMA_SIZE (sizeof(struct page_autonuma))
-+#define SECTION_PAGE_AUTONUMA_SIZE (PAGE_AUTONUMA_SIZE *	\
-+				    PAGES_PER_SECTION)
-+#endif
++static bool inline task_autonuma_cpu(struct task_struct *p, int cpu)
++{
++	int task_selected_nid;
++	struct task_autonuma *task_autonuma = p->task_autonuma;
 +
-+extern void __meminit pgdat_autonuma_init(struct pglist_data *);
++	if (!task_autonuma)
++		return true;
 +
++	task_selected_nid = ACCESS_ONCE(task_autonuma->task_selected_nid);
++	if (task_selected_nid < 0 || task_selected_nid == cpu_to_node(cpu))
++		return true;
++	else
++		return false;
++}
++
++static inline void sched_autonuma_balance(void)
++{
++	struct task_autonuma *ta = current->task_autonuma;
++
++	if (ta && current->mm)
++		__sched_autonuma_balance();
++}
 +#else /* CONFIG_AUTONUMA */
++static inline bool sched_autonuma_can_migrate_task(struct task_struct *p,
++						   int numa, int dst_cpu,
++						   enum cpu_idle_type idle)
++{
++	return true;
++}
 +
-+#ifdef CONFIG_SPARSEMEM
-+struct page_autonuma;
-+#define PAGE_AUTONUMA_SIZE 0
-+#define SECTION_PAGE_AUTONUMA_SIZE 0
++static bool inline task_autonuma_cpu(struct task_struct *p, int cpu)
++{
++	return true;
++}
 +
-+#define autonuma_possible() false
-+
-+#endif /* CONFIG_SPARSEMEM */
-+
-+static inline void pgdat_autonuma_init(struct pglist_data *pgdat) {}
-+
++static inline void sched_autonuma_balance(void) {}
 +#endif /* CONFIG_AUTONUMA */
 +
-+#ifdef CONFIG_SPARSEMEM
-+extern struct page_autonuma * __meminit __kmalloc_section_page_autonuma(int nid,
-+									unsigned long nr_pages);
-+extern void __kfree_section_page_autonuma(struct page_autonuma *page_autonuma,
-+					  unsigned long nr_pages);
-+extern void __init sparse_early_page_autonuma_alloc_node(struct page_autonuma **page_autonuma_map,
-+							 unsigned long pnum_begin,
-+							 unsigned long pnum_end,
-+							 unsigned long map_count,
-+							 int nodeid);
-+#endif
-+
-+#endif /* _LINUX_PAGE_AUTONUMA_H */
-diff --git a/init/main.c b/init/main.c
-index b286730..586764f 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -69,6 +69,7 @@
- #include <linux/slab.h>
- #include <linux/perf_event.h>
- #include <linux/file.h>
-+#include <linux/page_autonuma.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -456,6 +457,7 @@ static void __init mm_init(void)
- 	 * bigger than MAX_ORDER unless SPARSEMEM.
- 	 */
- 	page_cgroup_init_flatmem();
-+	page_autonuma_init_flatmem();
- 	mem_init();
- 	kmem_cache_init();
- 	percpu_init_late();
-diff --git a/mm/Makefile b/mm/Makefile
-index 0fd3165..5a4fa30 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -34,7 +34,7 @@ obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
- obj-$(CONFIG_HAS_DMA)	+= dmapool.o
- obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
- obj-$(CONFIG_NUMA) 	+= mempolicy.o
--obj-$(CONFIG_AUTONUMA) 	+= autonuma.o
-+obj-$(CONFIG_AUTONUMA) 	+= autonuma.o page_autonuma.o
- obj-$(CONFIG_SPARSEMEM)	+= sparse.o
- obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
- obj-$(CONFIG_SLOB) += slob.o
-diff --git a/mm/autonuma.c b/mm/autonuma.c
-index a505ec3..7967507 100644
---- a/mm/autonuma.c
-+++ b/mm/autonuma.c
-@@ -76,11 +76,18 @@ void autonuma_migrate_split_huge_page(struct page *page,
- 				      struct page *page_tail)
- {
- 	int nid, last_nid;
-+	struct page_autonuma *page_autonuma, *page_tail_autonuma;
- 
--	nid = page->autonuma_migrate_nid;
-+	if (!autonuma_possible())
-+		return;
-+
-+	page_autonuma = lookup_page_autonuma(page);
-+	page_tail_autonuma = lookup_page_autonuma(page_tail);
-+
-+	nid = page_autonuma->autonuma_migrate_nid;
- 	VM_BUG_ON(nid >= MAX_NUMNODES);
- 	VM_BUG_ON(nid < -1);
--	VM_BUG_ON(page_tail->autonuma_migrate_nid != -1);
-+	VM_BUG_ON(page_tail_autonuma->autonuma_migrate_nid != -1);
- 	if (nid >= 0) {
- 		VM_BUG_ON(page_to_nid(page) != page_to_nid(page_tail));
- 
-@@ -94,44 +101,46 @@ void autonuma_migrate_split_huge_page(struct page *page,
- 		 */
- 		compound_lock(page_tail);
- 		autonuma_migrate_lock(nid);
--		list_add_tail(&page_tail->autonuma_migrate_node,
--			      &page->autonuma_migrate_node);
-+		list_add_tail(&page_tail_autonuma->autonuma_migrate_node,
-+			      &page_autonuma->autonuma_migrate_node);
- 		autonuma_migrate_unlock(nid);
- 
--		page_tail->autonuma_migrate_nid = nid;
-+		page_tail_autonuma->autonuma_migrate_nid = nid;
- 		compound_unlock(page_tail);
- 	}
- 
--	last_nid = ACCESS_ONCE(page->autonuma_last_nid);
-+	last_nid = ACCESS_ONCE(page_autonuma->autonuma_last_nid);
- 	if (last_nid >= 0)
--		page_tail->autonuma_last_nid = last_nid;
-+		page_tail_autonuma->autonuma_last_nid = last_nid;
- }
- 
--void __autonuma_migrate_page_remove(struct page *page)
-+void __autonuma_migrate_page_remove(struct page *page,
-+				    struct page_autonuma *page_autonuma)
- {
- 	unsigned long flags;
- 	int nid;
- 
- 	flags = compound_lock_irqsave(page);
- 
--	nid = page->autonuma_migrate_nid;
-+	nid = page_autonuma->autonuma_migrate_nid;
- 	VM_BUG_ON(nid >= MAX_NUMNODES);
- 	VM_BUG_ON(nid < -1);
- 	if (nid >= 0) {
- 		int numpages = hpage_nr_pages(page);
- 		autonuma_migrate_lock(nid);
--		list_del(&page->autonuma_migrate_node);
-+		list_del(&page_autonuma->autonuma_migrate_node);
- 		NODE_DATA(nid)->autonuma_nr_migrate_pages -= numpages;
- 		autonuma_migrate_unlock(nid);
- 
--		page->autonuma_migrate_nid = -1;
-+		page_autonuma->autonuma_migrate_nid = -1;
- 	}
- 
- 	compound_unlock_irqrestore(page, flags);
- }
- 
--static void __autonuma_migrate_page_add(struct page *page, int dst_nid,
--					int page_nid)
-+static void __autonuma_migrate_page_add(struct page *page,
-+					struct page_autonuma *page_autonuma,
-+					int dst_nid, int page_nid)
- {
- 	unsigned long flags;
- 	int nid;
-@@ -157,25 +166,25 @@ static void __autonuma_migrate_page_add(struct page *page, int dst_nid,
- 	flags = compound_lock_irqsave(page);
- 
- 	numpages = hpage_nr_pages(page);
--	nid = page->autonuma_migrate_nid;
-+	nid = page_autonuma->autonuma_migrate_nid;
- 	VM_BUG_ON(nid >= MAX_NUMNODES);
- 	VM_BUG_ON(nid < -1);
- 	if (nid >= 0) {
- 		autonuma_migrate_lock(nid);
--		list_del(&page->autonuma_migrate_node);
-+		list_del(&page_autonuma->autonuma_migrate_node);
- 		NODE_DATA(nid)->autonuma_nr_migrate_pages -= numpages;
- 		autonuma_migrate_unlock(nid);
- 	}
- 
- 	autonuma_migrate_lock(dst_nid);
--	list_add(&page->autonuma_migrate_node,
-+	list_add(&page_autonuma->autonuma_migrate_node,
- 		 &NODE_DATA(dst_nid)->autonuma_migrate_head[page_nid]);
- 	NODE_DATA(dst_nid)->autonuma_nr_migrate_pages += numpages;
- 	nr_migrate_pages = NODE_DATA(dst_nid)->autonuma_nr_migrate_pages;
- 
- 	autonuma_migrate_unlock(dst_nid);
- 
--	page->autonuma_migrate_nid = dst_nid;
-+	page_autonuma->autonuma_migrate_nid = dst_nid;
- 
- 	compound_unlock_irqrestore(page, flags);
- 
-@@ -191,9 +200,13 @@ static void __autonuma_migrate_page_add(struct page *page, int dst_nid,
- static void autonuma_migrate_page_add(struct page *page, int dst_nid,
- 				      int page_nid)
- {
--	int migrate_nid = ACCESS_ONCE(page->autonuma_migrate_nid);
-+	int migrate_nid;
-+	struct page_autonuma *page_autonuma = lookup_page_autonuma(page);
-+
-+	migrate_nid = ACCESS_ONCE(page_autonuma->autonuma_migrate_nid);
- 	if (migrate_nid != dst_nid)
--		__autonuma_migrate_page_add(page, dst_nid, page_nid);
-+		__autonuma_migrate_page_add(page, page_autonuma,
-+					    dst_nid, page_nid);
- }
- 
- static bool autonuma_balance_pgdat(struct pglist_data *pgdat,
-@@ -284,23 +297,26 @@ static void numa_hinting_fault_cpu_follow_memory(struct task_struct *p,
- static inline bool last_nid_set(struct page *page, int this_nid)
- {
- 	bool ret = true;
--	int autonuma_last_nid = ACCESS_ONCE(page->autonuma_last_nid);
-+	struct page_autonuma *page_autonuma = lookup_page_autonuma(page);
-+	int autonuma_last_nid = ACCESS_ONCE(page_autonuma->autonuma_last_nid);
- 	VM_BUG_ON(this_nid < 0);
- 	VM_BUG_ON(this_nid >= MAX_NUMNODES);
- 	if (autonuma_last_nid >= 0 && autonuma_last_nid != this_nid) {
--		int migrate_nid = ACCESS_ONCE(page->autonuma_migrate_nid);
-+		int migrate_nid;
-+		migrate_nid = ACCESS_ONCE(page_autonuma->autonuma_migrate_nid);
- 		if (migrate_nid >= 0)
--			__autonuma_migrate_page_remove(page);
-+			__autonuma_migrate_page_remove(page, page_autonuma);
- 		ret = false;
- 	}
- 	if (autonuma_last_nid != this_nid)
--		ACCESS_ONCE(page->autonuma_last_nid) = this_nid;
-+		ACCESS_ONCE(page_autonuma->autonuma_last_nid) = this_nid;
- 	return ret;
- }
- 
- static int __page_migrate_nid(struct page *page, int page_nid)
- {
--	int migrate_nid = ACCESS_ONCE(page->autonuma_migrate_nid);
-+	struct page_autonuma *page_autonuma = lookup_page_autonuma(page);
-+	int migrate_nid = ACCESS_ONCE(page_autonuma->autonuma_migrate_nid);
- 	if (migrate_nid < 0)
- 		migrate_nid = page_nid;
- 	return migrate_nid;
-@@ -895,6 +911,7 @@ static int isolate_migratepages(struct list_head *migratepages,
- 		struct zone *zone;
- 		struct page *page;
- 		struct lruvec *lruvec;
-+		struct page_autonuma *page_autonuma;
- 
- 		cond_resched();
- 		/*
-@@ -926,16 +943,17 @@ static int isolate_migratepages(struct list_head *migratepages,
- 			autonuma_migrate_unlock_irq(pgdat->node_id);
- 			continue;
- 		}
--		page = list_entry(heads[nid].prev,
--				  struct page,
--				  autonuma_migrate_node);
-+		page_autonuma = list_entry(heads[nid].prev,
-+					   struct page_autonuma,
-+					   autonuma_migrate_node);
-+		page = page_autonuma->page;
- 		if (unlikely(!get_page_unless_zero(page))) {
- 			/*
- 			 * Is getting freed and will remove self from the
- 			 * autonuma list shortly, skip it for now.
- 			 */
--			list_del(&page->autonuma_migrate_node);
--			list_add(&page->autonuma_migrate_node,
-+			list_del(&page_autonuma->autonuma_migrate_node);
-+			list_add(&page_autonuma->autonuma_migrate_node,
- 				 &heads[nid]);
- 			autonuma_migrate_unlock_irq(pgdat->node_id);
- 			autonuma_printk("autonuma migrate page is free\n");
-@@ -944,7 +962,7 @@ static int isolate_migratepages(struct list_head *migratepages,
- 		autonuma_migrate_unlock_irq(pgdat->node_id);
- 		if (!PageLRU(page)) {
- 			autonuma_printk("autonuma migrate page not in LRU\n");
--			__autonuma_migrate_page_remove(page);
-+			__autonuma_migrate_page_remove(page, page_autonuma);
- 			put_page(page);
- 			continue;
- 		}
-@@ -956,13 +974,14 @@ static int isolate_migratepages(struct list_head *migratepages,
- 			/* FIXME: remove split_huge_page */
- 			if (unlikely(split_huge_page(page))) {
- 				autonuma_printk("autonuma migrate THP free\n");
--				__autonuma_migrate_page_remove(page);
-+				__autonuma_migrate_page_remove(page,
-+							       page_autonuma);
- 				put_page(page);
- 				continue;
- 			}
- 		}
- 
--		__autonuma_migrate_page_remove(page);
-+		__autonuma_migrate_page_remove(page, page_autonuma);
- 
- 		zone = page_zone(page);
- 		spin_lock_irq(&zone->lru_lock);
-@@ -1007,11 +1026,16 @@ static struct page *alloc_migrate_dst_page(struct page *page,
- {
- 	int nid = (int) data;
- 	struct page *newpage;
-+	struct page_autonuma *page_autonuma, *newpage_autonuma;
- 	newpage = alloc_pages_exact_node(nid,
- 					 GFP_HIGHUSER_MOVABLE | GFP_THISNODE,
- 					 0);
--	if (newpage)
--		newpage->autonuma_last_nid = page->autonuma_last_nid;
-+	if (newpage) {
-+		page_autonuma = lookup_page_autonuma(page);
-+		newpage_autonuma = lookup_page_autonuma(newpage);
-+		newpage_autonuma->autonuma_last_nid =
-+			page_autonuma->autonuma_last_nid;
-+	}
- 	return newpage;
- }
- 
-@@ -1446,7 +1470,8 @@ static int __init noautonuma_setup(char *str)
- 	}
- 	return 1;
- }
--__setup("noautonuma", noautonuma_setup);
-+/* early so sparse.c also can see it */
-+early_param("noautonuma", noautonuma_setup);
- 
- static bool autonuma_init_checks_failed(void)
- {
-@@ -1470,7 +1495,12 @@ static int __init autonuma_init(void)
- 
- 	VM_BUG_ON(num_possible_nodes() < 1);
- 	if (num_possible_nodes() <= 1 || !autonuma_possible()) {
--		clear_bit(AUTONUMA_POSSIBLE_FLAG, &autonuma_flags);
-+		/* should have been already initialized by page_autonuma */
-+		if (autonuma_possible()) {
-+			WARN_ON(1);
-+			/* try to fixup if it wasn't ok */
-+			clear_bit(AUTONUMA_POSSIBLE_FLAG, &autonuma_flags);
-+		}
- 		return -EINVAL;
- 	} else if (autonuma_init_checks_failed()) {
- 		printk("autonuma disengaged: init checks failed\n");
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 067cba1..579e52b 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1849,7 +1849,12 @@ static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
- 	bool mknuma = false;
- #ifdef CONFIG_AUTONUMA
- 	int autonuma_last_nid = -1;
-+	struct page_autonuma *src_page_an, *page_an = NULL;
-+
-+	if (autonuma_possible())
-+		page_an = lookup_page_autonuma(page);
- #endif
-+
- 	for (_pte = pte; _pte < pte+HPAGE_PMD_NR; _pte++) {
- 		pte_t pteval = *_pte;
- 		struct page *src_page;
-@@ -1861,12 +1866,12 @@ static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
- 			src_page = pte_page(pteval);
- #ifdef CONFIG_AUTONUMA
- 			/* pick the first one, better than nothing */
--			if (autonuma_last_nid < 0) {
-+			if (autonuma_possible() && autonuma_last_nid < 0) {
-+				src_page_an = lookup_page_autonuma(src_page);
- 				autonuma_last_nid =
--					ACCESS_ONCE(src_page->
--						    autonuma_last_nid);
-+					ACCESS_ONCE(src_page_an->autonuma_last_nid);
- 				if (autonuma_last_nid >= 0)
--					ACCESS_ONCE(page->autonuma_last_nid) =
-+					ACCESS_ONCE(page_an->autonuma_last_nid) =
- 						autonuma_last_nid;
- 			}
- #endif
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 49e2916..74b73fa 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -59,6 +59,7 @@
- #include <linux/migrate.h>
++#endif /* _LINUX_AUTONUMA_SCHED_H */
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index bf78672..c80101c 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -13,6 +13,7 @@
+ #include <linux/cpumask.h>
  #include <linux/page-debug-flags.h>
- #include <linux/autonuma.h>
-+#include <linux/page_autonuma.h>
+ #include <linux/uprobes.h>
++#include <linux/autonuma_types.h>
+ #include <asm/page.h>
+ #include <asm/mmu.h>
  
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -619,10 +620,7 @@ static inline int free_pages_check(struct page *page)
- 		bad_page(page);
- 		return 1;
- 	}
--	autonuma_migrate_page_remove(page);
--#ifdef CONFIG_AUTONUMA
--	page->autonuma_last_nid = -1;
--#endif
-+	autonuma_free_page(page);
- 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
- 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
- 	return 0;
-@@ -3792,10 +3790,6 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
- 
- 		INIT_LIST_HEAD(&page->lru);
--#ifdef CONFIG_AUTONUMA
--		page->autonuma_last_nid = -1;
--		page->autonuma_migrate_nid = -1;
--#endif
- #ifdef WANT_PAGE_VIRTUAL
- 		/* The shift won't overflow because ZONE_NORMAL is below 4G. */
- 		if (!is_highmem_idx(zone))
-@@ -4396,21 +4390,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	int nid = pgdat->node_id;
- 	unsigned long zone_start_pfn = pgdat->node_start_pfn;
- 	int ret;
--#ifdef CONFIG_AUTONUMA
--	int node_iter;
--#endif
- 
- 	pgdat_resize_init(pgdat);
--#ifdef CONFIG_AUTONUMA
--	spin_lock_init(&pgdat->autonuma_lock);
--	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
--	pgdat->autonuma_nr_migrate_pages = 0;
--	for_each_node(node_iter)
--		INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
--#endif
- 	init_waitqueue_head(&pgdat->kswapd_wait);
- 	init_waitqueue_head(&pgdat->pfmemalloc_wait);
- 	pgdat_page_cgroup_init(pgdat);
-+	pgdat_autonuma_init(pgdat);
- 
- 	for (j = 0; j < MAX_NR_ZONES; j++) {
- 		struct zone *zone = pgdat->node_zones + j;
-diff --git a/mm/page_autonuma.c b/mm/page_autonuma.c
-new file mode 100644
-index 0000000..46d616c
---- /dev/null
-+++ b/mm/page_autonuma.c
-@@ -0,0 +1,246 @@
-+#include <linux/mm.h>
-+#include <linux/memory.h>
-+#include <linux/autonuma.h>
-+#include <linux/page_autonuma.h>
-+#include <linux/bootmem.h>
-+
-+void __meminit page_autonuma_map_init(struct page *page,
-+				      struct page_autonuma *page_autonuma,
-+				      int nr_pages)
-+{
-+	struct page *end;
-+	for (end = page + nr_pages; page < end; page++, page_autonuma++) {
-+		page_autonuma->autonuma_last_nid = -1;
-+		page_autonuma->autonuma_migrate_nid = -1;
-+		page_autonuma->page = page;
-+	}
-+}
-+
-+static void __meminit __pgdat_autonuma_init(struct pglist_data *pgdat)
-+{
-+	int node_iter;
-+
-+	spin_lock_init(&pgdat->autonuma_lock);
-+	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
-+	pgdat->autonuma_nr_migrate_pages = 0;
-+
-+	/* initialize autonuma_possible() */
-+	if (num_possible_nodes() <= 1)
-+		clear_bit(AUTONUMA_POSSIBLE_FLAG, &autonuma_flags);
-+
-+	/* noautonuma early param may also clear AUTONUMA_POSSIBLE_FLAG */
-+	if (autonuma_possible())
-+		for_each_node(node_iter)
-+			INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
-+}
-+
-+#if !defined(CONFIG_SPARSEMEM)
-+
-+static unsigned long total_usage;
-+
-+void __meminit pgdat_autonuma_init(struct pglist_data *pgdat)
-+{
-+	__pgdat_autonuma_init(pgdat);
-+	pgdat->node_page_autonuma = NULL;
-+}
-+
-+struct page_autonuma *lookup_page_autonuma(struct page *page)
-+{
-+	unsigned long pfn = page_to_pfn(page);
-+	unsigned long offset;
-+	struct page_autonuma *base;
-+
-+	base = NODE_DATA(page_to_nid(page))->node_page_autonuma;
-+#ifdef CONFIG_DEBUG_VM
-+	/*
-+	 * The sanity checks the page allocator does upon freeing a
-+	 * page can reach here before the page_autonuma arrays are
-+	 * allocated when feeding a range of pages to the allocator
-+	 * for the first time during bootup or memory hotplug.
-+	 */
-+	if (unlikely(!base))
-+		return NULL;
+@@ -405,6 +406,10 @@ struct mm_struct {
+ 	struct cpumask cpumask_allocation;
+ #endif
+ 	struct uprobes_state uprobes_state;
++#ifdef CONFIG_AUTONUMA
++	/* this is used by the scheduler and the page allocator */
++	struct mm_autonuma *mm_autonuma;
 +#endif
-+	offset = pfn - NODE_DATA(page_to_nid(page))->node_start_pfn;
-+	return base + offset;
-+}
+ };
+ 
+ static inline void mm_init_cpumask(struct mm_struct *mm)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b8c8664..8b91676 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1523,6 +1523,9 @@ struct task_struct {
+ 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
+ 	short il_next;
+ 	short pref_node_fork;
++#ifdef CONFIG_AUTONUMA
++	struct task_autonuma *task_autonuma;
++#endif
+ #endif
+ 	struct rcu_head rcu;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index fbf1fd0..d0af967 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -72,6 +72,7 @@
+ #include <linux/slab.h>
+ #include <linux/init_task.h>
+ #include <linux/binfmts.h>
++#include <linux/autonuma_sched.h>
+ 
+ #include <asm/switch_to.h>
+ #include <asm/tlb.h>
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c219bf8..42a88fa 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/profile.h>
+ #include <linux/interrupt.h>
++#include <linux/autonuma_sched.h>
+ 
+ #include <trace/events/sched.h>
+ 
+@@ -4920,6 +4921,9 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 
+ 	rebalance_domains(this_cpu, idle);
+ 
++	if (!this_rq->idle_balance)
++		sched_autonuma_balance();
 +
-+static int __init alloc_node_page_autonuma(int nid)
+ 	/*
+ 	 * If this cpu has a pending nohz_balance_kick, then do the
+ 	 * balancing on behalf of the other idle cpus whose ticks are
+diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
+new file mode 100644
+index 0000000..2646c82
+--- /dev/null
++++ b/kernel/sched/numa.c
+@@ -0,0 +1,604 @@
++/*
++ *  Copyright (C) 2012  Red Hat, Inc.
++ *
++ *  This work is licensed under the terms of the GNU GPL, version 2. See
++ *  the COPYING file in the top-level directory.
++ */
++
++#include <linux/sched.h>
++#include <linux/autonuma_sched.h>
++#include <asm/tlb.h>
++
++#include "sched.h"
++
++/*
++ * Callback used by the AutoNUMA balancer to migrate a task to the
++ * selected CPU. Invoked by stop_one_cpu_nowait().
++ */
++static int autonuma_balance_cpu_stop(void *data)
 +{
-+	struct page_autonuma *base;
-+	unsigned long table_size;
-+	unsigned long nr_pages;
++	struct rq *src_rq = data;
++	int src_cpu = cpu_of(src_rq);
++	int dst_cpu = src_rq->autonuma_balance_dst_cpu;
++	struct task_struct *p = src_rq->autonuma_balance_task;
++	struct rq *dst_rq = cpu_rq(dst_cpu);
 +
-+	nr_pages = NODE_DATA(nid)->node_spanned_pages;
-+	if (!nr_pages)
-+		return 0;
++	raw_spin_lock_irq(&p->pi_lock);
++	raw_spin_lock(&src_rq->lock);
 +
-+	table_size = sizeof(struct page_autonuma) * nr_pages;
++	/* Make sure the selected cpu hasn't gone down in the meanwhile */
++	if (unlikely(src_cpu != smp_processor_id() ||
++		     !src_rq->autonuma_balance))
++		goto out_unlock;
 +
-+	base = __alloc_bootmem_node_nopanic(NODE_DATA(nid),
-+			table_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
-+	if (!base)
-+		return -ENOMEM;
-+	NODE_DATA(nid)->node_page_autonuma = base;
-+	total_usage += table_size;
-+	page_autonuma_map_init(NODE_DATA(nid)->node_mem_map, base, nr_pages);
++	/* Check if the affinity changed in the meanwhile */
++	if (!cpumask_test_cpu(dst_cpu, tsk_cpus_allowed(p)))
++		goto out_unlock;
++
++	/* Is the task to migrate still there? */
++	if (task_cpu(p) != src_cpu)
++		goto out_unlock;
++
++	BUG_ON(src_rq == dst_rq);
++
++	/* Prepare to move the task from src_rq to dst_rq */
++	double_lock_balance(src_rq, dst_rq);
++
++	/*
++	 * Supposedly pi_lock should have been enough but some code
++	 * seems to call __set_task_cpu without pi_lock.
++	 */
++	if (task_cpu(p) != src_cpu)
++		goto out_double_unlock;
++
++	/*
++	 * If the task is not on a rq, the task_selected_nid will take
++	 * care of the NUMA affinity at the next wake-up.
++	 */
++	if (p->on_rq) {
++		deactivate_task(src_rq, p, 0);
++		set_task_cpu(p, dst_cpu);
++		activate_task(dst_rq, p, 0);
++		check_preempt_curr(dst_rq, p, 0);
++	}
++
++out_double_unlock:
++	double_unlock_balance(src_rq, dst_rq);
++out_unlock:
++	src_rq->autonuma_balance = false;
++	raw_spin_unlock(&src_rq->lock);
++	/* spinlocks acts as barrier() so p is stored locally on the stack */
++	raw_spin_unlock_irq(&p->pi_lock);
++	put_task_struct(p);
 +	return 0;
 +}
 +
-+void __init page_autonuma_init_flatmem(void)
++#define AUTONUMA_BALANCE_SCALE 1000
++
++enum {
++	W_TYPE_THREAD,
++	W_TYPE_PROCESS,
++};
++
++/*
++ * This function __sched_autonuma_balance() is responsible for
++ * deciding which is the best CPU each process should be running on
++ * according to the NUMA statistics collected in mm->mm_autonuma and
++ * tsk->task_autonuma.
++ *
++ * This will not alter the active idle load balancing and most other
++ * scheduling activity, it works by exchanging running tasks across
++ * CPUs located in different NUMA nodes, when such an exchange
++ * provides a net benefit in increasing the system wide NUMA
++ * convergence.
++ *
++ * The tasks that are the closest to "fully converged" are given the
++ * maximum priority in being moved to their "best node".
++ *
++ * "Full convergence" is achieved when all memory accesses by a task
++ * are 100% local to the CPU it is running on. A task's "best node" is
++ * the NUMA node that recently had the most memory accesses from the
++ * task. The tasks that are closest to being fully converged are given
++ * maximum priority for being moved to their "best node."
++ *
++ * To find how close a task is to converging we use weights. These
++ * weights are computed using the task_autonuma and mm_autonuma
++ * statistics. These weights represent the percentage amounts of
++ * memory accesses (in AUTONUMA_BALANCE_SCALE) that each task recently
++ * had in each node. If the weight of one node is equal to
++ * AUTONUMA_BALANCE_SCALE that implies the task reached "full
++ * convergence" in that given node. To the contrary, a node with a
++ * zero weight would be the "worst node" for the task.
++ *
++ * If the weights for two tasks on CPUs in different nodes are equal
++ * no switch will happen.
++ *
++ * The core math that evaluates the current CPU against the CPUs of
++ * all other nodes is this:
++ *
++ *	if (w_nid > w_other && w_nid > w_this_nid)
++ *		weight = w_nid - w_other + w_nid - w_this_nid;
++ *
++ * w_nid is the memory weight of this task on the other CPU.
++ * w_other is the memory weight of the other task in the other CPU.
++ * w_this_nid is the memory weight of this task on the current CPU.
++ *
++ * w_nid > w_other means: the current task is closer to fully converge
++ * on the node of the other CPU than the other task that is currently
++ * running in the other CPU.
++ *
++ * w_nid > w_this_nid means: the current task is closer to converge on
++ * the node of the other CPU than in the current node.
++ *
++ * If both checks succeed it guarantees that we found a way to
++ * multilaterally improve the system wide NUMA
++ * convergence. Multilateral here means that the same checks will not
++ * succeed again on those same two tasks, after the task exchange, so
++ * there is no risk of ping-pong.
++ *
++ * If a task exchange can happen because the two checks succeed, we
++ * select the destination CPU that will give us the biggest increase
++ * in system wide convergence (i.e. biggest "weight", in the above
++ * quoted code).
++ *
++ * CFS is NUMA aware via sched_autonuma_can migrate_task(). CFS searches
++ * CPUs in the task's task_selected_nid first during load balancing and
++ * idle balancing.
++ *
++ * The task's task_selected_nid is the node selected by
++ * __sched_autonuma_balance() when it migrates the current task to the
++ * selected cpu in the selected node during the task exchange.
++ *
++ * Once a task has been moved to another node, closer to most of the
++ * memory it has recently accessed, any memory for that task not in
++ * the new node moves slowly (asynchronously in the background) to the
++ * new node. This is done by the knuma_migratedN (where the suffix N
++ * is the node id) daemon described in mm/autonuma.c.
++ *
++ * One important thing is how we calculate the weights using
++ * task_autonuma or mm_autonuma, depending if the other CPU is running
++ * a thread of the current process, or a thread of a different
++ * process.
++ *
++ * We use the mm_autonuma statistics to calculate the NUMA weights of
++ * the two task candidates for exchange if the task in the other CPU
++ * belongs to a different process. This way all threads of the same
++ * process will converge to the same node, which is the one with the
++ * highest percentage of memory for the process.  This will happen
++ * even if the thread's "best node" is busy running threads of a
++ * different process.
++ *
++ * If the two candidate tasks for exchange are threads of the same
++ * process, we use the task_autonuma information (because the
++ * mm_autonuma information is identical). By using the task_autonuma
++ * statistics, each thread follows its own memory locality and they
++ * will not necessarily converge on the same node. This is often very
++ * desirable for processes with more theads than CPUs on each NUMA
++ * node.
++ *
++ * To avoid the risk of NUMA false sharing it's best to schedule all
++ * threads accessing the same memory in the same node (on in as fewer
++ * nodes as possible if they can't fit in a single node).
++ *
++ * False sharing in the above sentence is intended as simultaneous
++ * virtual memory accesses to the same pages of memory, by threads
++ * running in CPUs of different nodes. Sharing doesn't refer to shared
++ * memory as in tmpfs, but it refers to CLONE_VM instead.
++ *
++ * This algorithm might be expanded to take all runnable processes
++ * into account later.
++ *
++ * This algorithm is executed by every CPU in the context of the
++ * SCHED_SOFTIRQ load balancing event at regular intervals.
++ *
++ * If the task is found to have converged in the current node, we
++ * already know that the check "w_nid > w_this_nid" will not succeed,
++ * so the function returns without having to check any of the CPUs of
++ * the other NUMA nodes.
++ */
++void __sched_autonuma_balance(void)
 +{
-+
-+	int nid, fail;
-+
-+	/* __pgdat_autonuma_init initialized autonuma_possible() */
-+	if (!autonuma_possible())
-+		return;
-+
-+	for_each_online_node(nid)  {
-+		fail = alloc_node_page_autonuma(nid);
-+		if (fail)
-+			goto fail;
-+	}
-+	printk(KERN_INFO "allocated %lu KBytes of page_autonuma\n",
-+	       total_usage >> 10);
-+	printk(KERN_INFO "please try the 'noautonuma' option if you"
-+	" don't want to allocate page_autonuma memory\n");
-+	return;
-+fail:
-+	printk(KERN_CRIT "allocation of page_autonuma failed.\n");
-+	printk(KERN_CRIT "please try the 'noautonuma' boot option\n");
-+	panic("Out of memory");
-+}
-+
-+#else /* CONFIG_SPARSEMEM */
-+
-+struct page_autonuma *lookup_page_autonuma(struct page *page)
-+{
-+	unsigned long pfn = page_to_pfn(page);
-+	struct mem_section *section = __pfn_to_section(pfn);
-+
-+	/* if it's not a power of two we may be wasting memory */
-+	BUILD_BUG_ON(SECTION_PAGE_AUTONUMA_SIZE &
-+		     (SECTION_PAGE_AUTONUMA_SIZE-1));
-+
-+	/* memsection must be a power of two */
-+	BUILD_BUG_ON(sizeof(struct mem_section) &
-+		     (sizeof(struct mem_section)-1));
-+
-+#ifdef CONFIG_DEBUG_VM
++	int cpu, nid, selected_cpu, selected_nid, selected_nid_mm;
++	int this_nid = numa_node_id();
++	int this_cpu = smp_processor_id();
 +	/*
-+	 * The sanity checks the page allocator does upon freeing a
-+	 * page can reach here before the page_autonuma arrays are
-+	 * allocated when feeding a range of pages to the allocator
-+	 * for the first time during bootup or memory hotplug.
++	 * task_weight: node thread weight
++	 * task_tot: total sum of all node thread weights
++	 * mm_weight: node mm/process weight
++	 * mm_tot: total sum of all node mm/process weights
 +	 */
-+	if (!section->section_page_autonuma)
-+		return NULL;
-+#endif
-+	return section->section_page_autonuma + pfn;
-+}
++	unsigned long task_weight, task_tot, mm_weight, mm_tot;
++	unsigned long task_max, mm_max;
++	unsigned long weight_max, weight;
++	long s_w_nid = -1, s_w_this_nid = -1, s_w_other = -1;
++	int s_w_type = -1;
++	struct cpumask *allowed;
++	struct task_struct *p = current, *selected_task;
++	struct task_autonuma *task_autonuma = p->task_autonuma;
++	struct mm_autonuma *mm_autonuma;
++	struct rq *rq;
 +
-+void __meminit pgdat_autonuma_init(struct pglist_data *pgdat)
-+{
-+	__pgdat_autonuma_init(pgdat);
-+}
++	/* per-cpu statically allocated in runqueues */
++	long *task_numa_weight;
++	long *mm_numa_weight;
 +
-+struct page_autonuma * __meminit __kmalloc_section_page_autonuma(int nid,
-+								 unsigned long nr_pages)
-+{
-+	struct page_autonuma *ret;
-+	struct page *page;
-+	unsigned long memmap_size = PAGE_AUTONUMA_SIZE * nr_pages;
++	if (!task_autonuma || !p->mm)
++		return;
 +
-+	page = alloc_pages_node(nid, GFP_KERNEL|__GFP_NOWARN,
-+				get_order(memmap_size));
-+	if (page)
-+		goto got_map_page_autonuma;
-+
-+	ret = vmalloc(memmap_size);
-+	if (ret)
-+		goto out;
-+
-+	return NULL;
-+got_map_page_autonuma:
-+	ret = (struct page_autonuma *)pfn_to_kaddr(page_to_pfn(page));
-+out:
-+	return ret;
-+}
-+
-+void __kfree_section_page_autonuma(struct page_autonuma *page_autonuma,
-+				   unsigned long nr_pages)
-+{
-+	if (is_vmalloc_addr(page_autonuma))
-+		vfree(page_autonuma);
-+	else
-+		free_pages((unsigned long)page_autonuma,
-+			   get_order(PAGE_AUTONUMA_SIZE * nr_pages));
-+}
-+
-+static struct page_autonuma __init *sparse_page_autonuma_map_populate(unsigned long pnum,
-+								      int nid)
-+{
-+	struct page_autonuma *map;
-+	unsigned long size;
-+
-+	map = alloc_remap(nid, SECTION_PAGE_AUTONUMA_SIZE);
-+	if (map)
-+		return map;
-+
-+	size = PAGE_ALIGN(SECTION_PAGE_AUTONUMA_SIZE);
-+	map = __alloc_bootmem_node_high(NODE_DATA(nid), size,
-+					PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
-+	return map;
-+}
-+
-+void __init sparse_early_page_autonuma_alloc_node(struct page_autonuma **page_autonuma_map,
-+						  unsigned long pnum_begin,
-+						  unsigned long pnum_end,
-+						  unsigned long map_count,
-+						  int nodeid)
-+{
-+	void *map;
-+	unsigned long pnum;
-+	unsigned long size = SECTION_PAGE_AUTONUMA_SIZE;
-+
-+	map = alloc_remap(nodeid, size * map_count);
-+	if (map) {
-+		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
-+			if (!present_section_nr(pnum))
-+				continue;
-+			page_autonuma_map[pnum] = map;
-+			map += size;
-+		}
++	if (!autonuma_enabled()) {
++		if (task_autonuma->task_selected_nid != -1)
++			task_autonuma->task_selected_nid = -1;
 +		return;
 +	}
 +
-+	size = PAGE_ALIGN(size);
-+	map = __alloc_bootmem_node_high(NODE_DATA(nodeid), size * map_count,
-+					PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
-+	if (map) {
-+		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
-+			if (!present_section_nr(pnum))
-+				continue;
-+			page_autonuma_map[pnum] = map;
-+			map += size;
-+		}
++	allowed = tsk_cpus_allowed(p);
++	mm_autonuma = p->mm->mm_autonuma;
++
++	/*
++	 * If the task has no NUMA hinting page faults or if the mm
++	 * hasn't been fully scanned by knuma_scand yet, set task
++	 * selected nid to the current nid, to avoid the task bounce
++	 * around randomly.
++	 */
++	mm_tot = ACCESS_ONCE(mm_autonuma->mm_numa_fault_tot);
++	if (!mm_tot) {
++		if (task_autonuma->task_selected_nid != this_nid)
++			task_autonuma->task_selected_nid = this_nid;
++		return;
++	}
++	task_tot = task_autonuma->task_numa_fault_tot;
++	if (!task_tot) {
++		if (task_autonuma->task_selected_nid != this_nid)
++			task_autonuma->task_selected_nid = this_nid;
 +		return;
 +	}
 +
-+	/* fallback */
-+	for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
-+		struct mem_section *ms;
++	rq = cpu_rq(this_cpu);
 +
-+		if (!present_section_nr(pnum))
-+			continue;
-+		page_autonuma_map[pnum] = sparse_page_autonuma_map_populate(pnum, nodeid);
-+		if (page_autonuma_map[pnum])
-+			continue;
-+		ms = __nr_to_section(pnum);
-+		printk(KERN_ERR "%s: sparsemem page_autonuma map backing failed "
-+		       "some memory will not be available.\n", __func__);
-+	}
-+}
++	/*
++	 * Verify that we can migrate the current task, otherwise try
++	 * again later.
++	 */
++	if (ACCESS_ONCE(rq->autonuma_balance))
++		return;
 +
-+#endif /* CONFIG_SPARSEMEM */
-diff --git a/mm/sparse.c b/mm/sparse.c
-index fac95f2..5b8d018 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -9,6 +9,7 @@
- #include <linux/export.h>
- #include <linux/spinlock.h>
- #include <linux/vmalloc.h>
-+#include <linux/page_autonuma.h>
- #include "internal.h"
- #include <asm/dma.h>
- #include <asm/pgalloc.h>
-@@ -230,7 +231,8 @@ struct page *sparse_decode_mem_map(unsigned long coded_mem_map, unsigned long pn
- 
- static int __meminit sparse_init_one_section(struct mem_section *ms,
- 		unsigned long pnum, struct page *mem_map,
--		unsigned long *pageblock_bitmap)
-+		unsigned long *pageblock_bitmap,
-+		struct page_autonuma *page_autonuma)
- {
- 	if (!present_section(ms))
- 		return -EINVAL;
-@@ -239,6 +241,14 @@ static int __meminit sparse_init_one_section(struct mem_section *ms,
- 	ms->section_mem_map |= sparse_encode_mem_map(mem_map, pnum) |
- 							SECTION_HAS_MEM_MAP;
-  	ms->pageblock_flags = pageblock_bitmap;
-+#ifdef CONFIG_AUTONUMA
-+	if (page_autonuma) {
-+		ms->section_page_autonuma = page_autonuma - section_nr_to_pfn(pnum);
-+		page_autonuma_map_init(mem_map, page_autonuma, PAGES_PER_SECTION);
-+	}
-+#else
-+	BUG_ON(page_autonuma);
-+#endif
- 
- 	return 1;
- }
-@@ -480,6 +490,9 @@ void __init sparse_init(void)
- 	int size2;
- 	struct page **map_map;
- #endif
-+	struct page_autonuma **uninitialized_var(page_autonuma_map);
-+	struct page_autonuma *page_autonuma;
-+	int size3;
- 
- 	/* Setup pageblock_order for HUGETLB_PAGE_SIZE_VARIABLE */
- 	set_pageblock_order();
-@@ -577,6 +590,63 @@ void __init sparse_init(void)
- 					 map_count, nodeid_begin);
- #endif
- 
-+	/* __pgdat_autonuma_init initialized autonuma_possible() */
-+	if (autonuma_possible()) {
-+		unsigned long total_page_autonuma;
-+		unsigned long page_autonuma_count;
++	/*
++	 * The following two arrays will hold the NUMA affinity weight
++	 * information for the current process if scheduled on the
++	 * given NUMA node.
++	 *
++	 * mm_numa_weight[nid] - mm NUMA affinity weight for the NUMA node
++	 * task_numa_weight[nid] - task NUMA affinity weight for the NUMA node
++	 */
++	task_numa_weight = rq->task_numa_weight;
++	mm_numa_weight = rq->mm_numa_weight;
 +
-+		size3 = sizeof(struct page_autonuma *) * NR_MEM_SECTIONS;
-+		page_autonuma_map = alloc_bootmem(size3);
-+		if (!page_autonuma_map)
-+			panic("can not allocate page_autonuma_map\n");
-+
-+		for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
-+			struct mem_section *ms;
-+
-+			if (!present_section_nr(pnum))
-+				continue;
-+			ms = __nr_to_section(pnum);
-+			nodeid_begin = sparse_early_nid(ms);
-+			pnum_begin = pnum;
-+			break;
++	/*
++	 * Identify the NUMA node where this thread (task_struct), and
++	 * the process (mm_struct) as a whole, has the largest number
++	 * of NUMA faults.
++	 */
++	task_max = mm_max = 0;
++	selected_nid = selected_nid_mm = -1;
++	for_each_online_node(nid) {
++		mm_weight = ACCESS_ONCE(mm_autonuma->mm_numa_fault[nid]);
++		task_weight = task_autonuma->task_numa_fault[nid];
++		if (mm_weight > mm_tot)
++			/* could be removed with a seqlock */
++			mm_tot = mm_weight;
++		mm_numa_weight[nid] = mm_weight*AUTONUMA_BALANCE_SCALE/mm_tot;
++		if (task_weight > task_tot) {
++			task_tot = task_weight;
++			WARN_ON(1);
 +		}
-+		total_page_autonuma = 0;
-+		page_autonuma_count = 1;
-+		for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
-+			struct mem_section *ms;
-+			int nodeid;
++		task_numa_weight[nid] = task_weight*AUTONUMA_BALANCE_SCALE/task_tot;
++		if (mm_numa_weight[nid] > mm_max) {
++			mm_max = mm_numa_weight[nid];
++			selected_nid_mm = nid;
++		}
++		if (task_numa_weight[nid] > task_max) {
++			task_max = task_numa_weight[nid];
++			selected_nid = nid;
++		}
++	}
++	/*
++	 * If this NUMA node is the selected one, based on process
++	 * memory and task NUMA faults, set task_selected_nid and
++	 * we're done.
++	 */
++	if (selected_nid == this_nid && selected_nid_mm == selected_nid) {
++		if (task_autonuma->task_selected_nid != selected_nid)
++			task_autonuma->task_selected_nid = selected_nid;
++		return;
++	}
 +
-+			if (!present_section_nr(pnum))
++	selected_cpu = this_cpu;
++	selected_nid = this_nid;
++
++	weight = weight_max = 0;
++
++	selected_task = NULL;
++
++	/* check that the following raw_spin_lock_irq is safe */
++	BUG_ON(irqs_disabled());
++
++	/*
++	 * Check the other NUMA nodes to see if there is a task we
++	 * should exchange places with.
++	 */
++	for_each_online_node(nid) {
++		/* No need to check our current node. */
++		if (nid == this_nid)
++			continue;
++		for_each_cpu_and(cpu, cpumask_of_node(nid), allowed) {
++			long w_nid, w_this_nid, w_other;
++			int w_type;
++			struct mm_struct *mm;
++			struct task_struct *_selected_task;
++			rq = cpu_rq(cpu);
++			if (!cpu_online(cpu))
 +				continue;
-+			ms = __nr_to_section(pnum);
-+			nodeid = sparse_early_nid(ms);
-+			if (nodeid == nodeid_begin) {
-+				page_autonuma_count++;
++
++			/* CFS takes care of idle balancing. */
++			if (idle_cpu(cpu))
++				continue;
++
++			mm = rq->curr->mm;
++			if (!mm)
++				continue;
++
++			/*
++			 * Check if the _selected_task is pending for
++			 * migrate. Do it locklessly: it's an
++			 * optimistic racy check anyway.
++			 */
++			if (ACCESS_ONCE(rq->autonuma_balance))
++				continue;
++
++			/*
++			 * Grab the mm_weight/task_weight/mm_tot/task_tot of the
++			 * processes running in the other CPUs to
++			 * compute w_other.
++			 */
++			raw_spin_lock_irq(&rq->lock);
++			_selected_task = rq->curr;
++			/* recheck after implicit barrier() */
++			mm = _selected_task->mm;
++			if (!mm) {
++				raw_spin_unlock_irq(&rq->lock);
 +				continue;
 +			}
-+			/* ok, we need to take cake of from pnum_begin to pnum - 1*/
-+			sparse_early_page_autonuma_alloc_node(page_autonuma_map,
-+							      pnum_begin,
-+							      NR_MEM_SECTIONS,
-+							      page_autonuma_count,
-+							      nodeid_begin);
-+			total_page_autonuma += SECTION_PAGE_AUTONUMA_SIZE * page_autonuma_count;
-+			/* new start, update count etc*/
-+			nodeid_begin = nodeid;
-+			pnum_begin = pnum;
-+			page_autonuma_count = 1;
++			mm_tot = ACCESS_ONCE(mm->mm_autonuma->mm_numa_fault_tot);
++			task_tot = _selected_task->task_autonuma->task_numa_fault_tot;
++			if (!mm_tot || !task_tot) {
++				/* Need NUMA faults to evaluate NUMA placement. */
++				raw_spin_unlock_irq(&rq->lock);
++				continue;
++			}
++			/*
++			 * Check if that the _selected_task is allowed
++			 * to be migrated to this_cpu.
++			 */
++			if (!cpumask_test_cpu(this_cpu,
++					      tsk_cpus_allowed(_selected_task))) {
++				raw_spin_unlock_irq(&rq->lock);
++				continue;
++			}
++			mm_weight = ACCESS_ONCE(mm->mm_autonuma->mm_numa_fault[nid]);
++			task_weight = _selected_task->task_autonuma->task_numa_fault[nid];
++			raw_spin_unlock_irq(&rq->lock);
++
++			if (mm == p->mm) {
++				/*
++				 * This task is another thread in the
++				 * same process. Use the task statistics.
++				 */
++				if (task_weight > task_tot)
++					task_tot = task_weight;
++				w_other = task_weight*AUTONUMA_BALANCE_SCALE/task_tot;
++				w_nid = task_numa_weight[nid];
++				w_this_nid = task_numa_weight[this_nid];
++				w_type = W_TYPE_THREAD;
++			} else {
++				/*
++				 * This task is part of another process.
++				 * Use the mm statistics.
++				 */
++				if (mm_weight > mm_tot)
++					mm_tot = mm_weight;
++				w_other = mm_weight*AUTONUMA_BALANCE_SCALE/mm_tot;
++				w_nid = mm_numa_weight[nid];
++				w_this_nid = mm_numa_weight[this_nid];
++				w_type = W_TYPE_PROCESS;
++			}
++
++			/*
++			 * Would swapping NUMA location with this task
++			 * reduce the total number of cross-node NUMA
++			 * faults in the system?
++			 */
++			if (w_nid > w_other && w_nid > w_this_nid) {
++				weight = w_nid - w_other + w_nid - w_this_nid;
++
++				/* Remember the best candidate. */
++				if (weight > weight_max) {
++					weight_max = weight;
++					selected_cpu = cpu;
++					selected_nid = nid;
++
++					s_w_other = w_other;
++					s_w_nid = w_nid;
++					s_w_this_nid = w_this_nid;
++					s_w_type = w_type;
++					selected_task = _selected_task;
++				}
++			}
 +		}
-+		/* ok, last chunk */
-+		sparse_early_page_autonuma_alloc_node(page_autonuma_map, pnum_begin,
-+						      NR_MEM_SECTIONS,
-+						      page_autonuma_count, nodeid_begin);
-+		total_page_autonuma += SECTION_PAGE_AUTONUMA_SIZE * page_autonuma_count;
-+		printk("allocated %lu KBytes of page_autonuma\n",
-+		       total_page_autonuma >> 10);
-+		printk(KERN_INFO "please try the 'noautonuma' option if you"
-+		       " don't want to allocate page_autonuma memory\n");
 +	}
 +
- 	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
- 		if (!present_section_nr(pnum))
- 			continue;
-@@ -585,6 +655,13 @@ void __init sparse_init(void)
- 		if (!usemap)
- 			continue;
- 
-+		if (autonuma_possible()) {
-+			page_autonuma = page_autonuma_map[pnum];
-+			if (!page_autonuma)
-+				continue;
-+		} else
-+			page_autonuma = NULL;
-+
- #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
- 		map = map_map[pnum];
- #else
-@@ -594,11 +671,13 @@ void __init sparse_init(void)
- 			continue;
- 
- 		sparse_init_one_section(__nr_to_section(pnum), pnum, map,
--								usemap);
-+					usemap, page_autonuma);
- 	}
- 
- 	vmemmap_populate_print_last();
- 
-+	if (autonuma_possible())
-+		free_bootmem(__pa(page_autonuma_map), size3);
- #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
- 	free_bootmem(__pa(map_map), size2);
- #endif
-@@ -685,7 +764,8 @@ static void free_map_bootmem(struct page *page, unsigned long nr_pages)
- }
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
--static void free_section_usemap(struct page *memmap, unsigned long *usemap)
-+static void free_section_usemap(struct page *memmap, unsigned long *usemap,
-+				struct page_autonuma *page_autonuma)
- {
- 	struct page *usemap_page;
- 	unsigned long nr_pages;
-@@ -699,8 +779,14 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
- 	 */
- 	if (PageSlab(usemap_page)) {
- 		kfree(usemap);
--		if (memmap)
-+		if (memmap) {
- 			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
-+			if (autonuma_possible())
-+				__kfree_section_page_autonuma(page_autonuma,
-+							      PAGES_PER_SECTION);
-+			else
-+				BUG_ON(page_autonuma);
++	if (task_autonuma->task_selected_nid != selected_nid)
++		task_autonuma->task_selected_nid = selected_nid;
++	if (selected_cpu != this_cpu) {
++		if (autonuma_debug()) {
++			char *w_type_str = NULL;
++			switch (s_w_type) {
++			case W_TYPE_THREAD:
++				w_type_str = "thread";
++				break;
++			case W_TYPE_PROCESS:
++				w_type_str = "process";
++				break;
++			}
++			printk("%p %d - %dto%d - %dto%d - %ld %ld %ld - %s\n",
++			       p->mm, p->pid, this_nid, selected_nid,
++			       this_cpu, selected_cpu,
++			       s_w_other, s_w_nid, s_w_this_nid,
++			       w_type_str);
 +		}
- 		return;
- 	}
- 
-@@ -717,6 +803,13 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
- 			>> PAGE_SHIFT;
- 
- 		free_map_bootmem(memmap_page, nr_pages);
++		BUG_ON(this_nid == selected_nid);
++		goto found;
++	}
 +
-+		if (autonuma_possible()) {
-+			struct page *page_autonuma_page;
-+			page_autonuma_page = virt_to_page(page_autonuma);
-+			free_map_bootmem(page_autonuma_page, nr_pages);
-+		} else
-+			BUG_ON(page_autonuma);
- 	}
- }
- 
-@@ -732,6 +825,7 @@ int __meminit sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 	struct pglist_data *pgdat = zone->zone_pgdat;
- 	struct mem_section *ms;
- 	struct page *memmap;
-+	struct page_autonuma *page_autonuma;
- 	unsigned long *usemap;
- 	unsigned long flags;
- 	int ret;
-@@ -751,6 +845,16 @@ int __meminit sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 		__kfree_section_memmap(memmap, nr_pages);
- 		return -ENOMEM;
- 	}
-+	if (autonuma_possible()) {
-+		page_autonuma = __kmalloc_section_page_autonuma(pgdat->node_id,
-+								nr_pages);
-+		if (!page_autonuma) {
-+			kfree(usemap);
-+			__kfree_section_memmap(memmap, nr_pages);
-+			return -ENOMEM;
-+		}
-+	} else
-+		page_autonuma = NULL;
- 
- 	pgdat_resize_lock(pgdat, &flags);
- 
-@@ -762,11 +866,16 @@ int __meminit sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 
- 	ms->section_mem_map |= SECTION_MARKED_PRESENT;
- 
--	ret = sparse_init_one_section(ms, section_nr, memmap, usemap);
-+	ret = sparse_init_one_section(ms, section_nr, memmap, usemap,
-+				      page_autonuma);
- 
- out:
- 	pgdat_resize_unlock(pgdat, &flags);
- 	if (ret <= 0) {
-+		if (autonuma_possible())
-+			__kfree_section_page_autonuma(page_autonuma, nr_pages);
-+		else
-+			BUG_ON(page_autonuma);
- 		kfree(usemap);
- 		__kfree_section_memmap(memmap, nr_pages);
- 	}
-@@ -777,6 +886,7 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- {
- 	struct page *memmap = NULL;
- 	unsigned long *usemap = NULL;
-+	struct page_autonuma *page_autonuma = NULL;
- 
- 	if (ms->section_mem_map) {
- 		usemap = ms->pageblock_flags;
-@@ -784,8 +894,12 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- 						__section_nr(ms));
- 		ms->section_mem_map = 0;
- 		ms->pageblock_flags = NULL;
++	return;
 +
-+#ifdef CONFIG_AUTONUMA
-+		page_autonuma = ms->section_page_autonuma;
++found:
++	rq = cpu_rq(this_cpu);
++
++	/*
++	 * autonuma_balance synchronizes accesses to
++	 * autonuma_balance_work. After set, it's cleared by the
++	 * callback once the migration work is finished.
++	 */
++	raw_spin_lock_irq(&rq->lock);
++	if (rq->autonuma_balance) {
++		raw_spin_unlock_irq(&rq->lock);
++		return;
++	}
++	rq->autonuma_balance = true;
++	raw_spin_unlock_irq(&rq->lock);
++
++	rq->autonuma_balance_dst_cpu = selected_cpu;
++	rq->autonuma_balance_task = p;
++	get_task_struct(p);
++
++	/* Do the actual migration. */
++	stop_one_cpu_nowait(this_cpu,
++			    autonuma_balance_cpu_stop, rq,
++			    &rq->autonuma_balance_work);
++
++	BUG_ON(!selected_task);
++	rq = cpu_rq(selected_cpu);
++
++	/*
++	 * autonuma_balance synchronizes accesses to
++	 * autonuma_balance_work. After set, it's cleared by the
++	 * callback once the migration work is finished.
++	 */
++	raw_spin_lock_irq(&rq->lock);
++	/*
++	 * The chance of selected_task having quit in the meanwhile
++	 * and another task having reused its previous task struct is
++	 * tiny. Even if it happens the kernel will be stable.
++	 */
++	if (rq->autonuma_balance || rq->curr != selected_task) {
++		raw_spin_unlock_irq(&rq->lock);
++		return;
++	}
++	rq->autonuma_balance = true;
++	/* take the pin on the task struct before dropping the lock */
++	get_task_struct(selected_task);
++	raw_spin_unlock_irq(&rq->lock);
++
++	rq->autonuma_balance_dst_cpu = this_cpu;
++	rq->autonuma_balance_task = selected_task;
++
++	/* Do the actual migration. */
++	stop_one_cpu_nowait(selected_cpu,
++			    autonuma_balance_cpu_stop, rq,
++			    &rq->autonuma_balance_work);
++#ifdef __ia64__
++#error "NOTE: tlb_migrate_finish won't run here, review before deleting"
 +#endif
- 	}
- 
--	free_section_usemap(memmap, usemap);
-+	free_section_usemap(memmap, usemap, page_autonuma);
- }
++}
++
++/*
++ * The function sched_autonuma_can_migrate_task is called by CFS
++ * can_migrate_task() to prioritize on the task's
++ * task_selected_nid. It is called during load_balancing, idle
++ * balancing and in general before any task CPU migration event
++ * happens.
++ *
++ * The caller first scans the CFS migration candidate tasks passing a
++ * not zero numa parameter, to skip tasks without AutoNUMA affinity
++ * (according to the tasks's task_selected_nid). If no task can be
++ * migrated in the first scan, a second scan is run with a zero numa
++ * parameter.
++ *
++ * If the numa parameter is not zero, this function allows the task
++ * migration only if the dst_cpu of the migration is in the node
++ * selected by AutoNUMA or if it's an idle load balancing event.
++ *
++ * If load_balance_strict is enabled, AutoNUMA will only allow
++ * migration of tasks for idle balancing purposes (the idle balancing
++ * of CFS is never altered by AutoNUMA). In the not strict mode the
++ * load balancing is not altered and the AutoNUMA affinity is
++ * disregarded in favor of higher fairness. The load_balance_strict
++ * knob is runtime tunable in sysfs.
++ *
++ * If load_balance_strict is enabled, it tends to partition the
++ * system. In turn it may reduce the scheduler fairness across NUMA
++ * nodes, but it should deliver higher global performance.
++ */
++bool sched_autonuma_can_migrate_task(struct task_struct *p,
++				     int numa, int dst_cpu,
++				     enum cpu_idle_type idle)
++{
++	if (!task_autonuma_cpu(p, dst_cpu)) {
++		if (numa)
++			return false;
++		if (autonuma_sched_load_balance_strict() &&
++		    idle != CPU_NEWLY_IDLE && idle != CPU_IDLE)
++			return false;
++	}
++	return true;
++}
++
++/*
++ * sched_autonuma_dump_mm is a purely debugging function called at
++ * regular intervals when /sys/kernel/mm/autonuma/debug is
++ * enabled. This prints in the kernel logs how the threads and
++ * processes are distributed in all NUMA nodes to easily check if the
++ * threads of the same processes are converging in the same
++ * nodes. This won't take into account kernel threads and because it
++ * runs itself from a kernel thread it won't show what was running in
++ * the current CPU, but it's simple and good enough to get what we
++ * need in the debug logs. This function can be disabled or deleted
++ * later.
++ */
++void sched_autonuma_dump_mm(void)
++{
++	int nid, cpu;
++	cpumask_var_t x;
++
++	if (!alloc_cpumask_var(&x, GFP_KERNEL))
++		return;
++	cpumask_setall(x);
++	for_each_online_node(nid) {
++		for_each_cpu(cpu, cpumask_of_node(nid)) {
++			struct rq *rq = cpu_rq(cpu);
++			struct mm_struct *mm = rq->curr->mm;
++			int nr = 0, cpux;
++			if (!cpumask_test_cpu(cpu, x))
++				continue;
++			for_each_cpu(cpux, cpumask_of_node(nid)) {
++				struct rq *rqx = cpu_rq(cpux);
++				if (rqx->curr->mm == mm) {
++					nr++;
++					cpumask_clear_cpu(cpux, x);
++				}
++			}
++			printk("nid %d process %p nr_threads %d\n", nid, mm, nr);
++		}
++	}
++	free_cpumask_var(x);
++}
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index f6714d0..458b711 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -467,6 +467,25 @@ struct rq {
+ #ifdef CONFIG_SMP
+ 	struct llist_head wake_list;
  #endif
++#ifdef CONFIG_AUTONUMA
++	/* stop_one_cpu_nowait() data used by autonuma_balance_cpu_stop() */
++	bool autonuma_balance;
++	int autonuma_balance_dst_cpu;
++	struct task_struct *autonuma_balance_task;
++	struct cpu_stop_work autonuma_balance_work;
++	/*
++	 * Per-cpu arrays used to compute the per-thread and
++	 * per-process NUMA affinity weights (per nid) for the current
++	 * process. Allocated statically to avoid overflowing the
++	 * stack with large MAX_NUMNODES values.
++	 *
++	 * FIXME: allocate with dynamic num_possible_nodes() array
++	 * sizes and only if autonuma is possible, to save some dozen
++	 * KB of RAM when booting on non NUMA (or small NUMA) systems.
++	 */
++	long task_numa_weight[MAX_NUMNODES];
++	long mm_numa_weight[MAX_NUMNODES];
++#endif
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
