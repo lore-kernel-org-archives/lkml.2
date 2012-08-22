@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933287Ab2HVSed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:34:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60286 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933259Ab2HVSeb (ORCPT
+	id S964963Ab2HVShm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 14:37:42 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:44212 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964798Ab2HVShk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:34:31 -0400
-Date: Wed, 22 Aug 2012 11:34:26 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v6 03/13] block: Add bio_reset()
-Message-ID: <20120822183426.GD19212@google.com>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-4-git-send-email-koverstreet@google.com>
+	Wed, 22 Aug 2012 14:37:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345655050-28199-4-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1345643359-16584-1-git-send-email-stigge@antcom.de>
+References: <1345643359-16584-1-git-send-email-stigge@antcom.de>
+Date: Wed, 22 Aug 2012 20:37:39 +0200
+Message-ID: <CACRpkdYcF4ct0Y5wZm1YMSTFSHwoJJP9G6nax78D8G6esokO5Q@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] spi/pl022: Add chip select handling via GPIO
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: aletes.xgr@gmail.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        gabriel.fernandez@stericsson.com, lee.jones@linaro.org,
+        viresh.kumar@linaro.org, sachin.verma@st.co
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 10:04:00AM -0700, Kent Overstreet wrote:
-> Reusing bios is something that's been highly frowned upon in the past,
-> but driver code keeps doing it anyways. If it's going to happen anyways,
-> we should provide a generic method.
-> 
-> This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
-> was open coding it, by doing a bio_init() and resetting bi_destructor.
-> 
-> v5: Add a define BIO_RESET_BITS, to be very explicit about what parts of
-> bio->bi_flags are saved.
-> v6: Further commenting verbosity, per Tejun
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> CC: Jens Axboe <axboe@kernel.dk>
+On Wed, Aug 22, 2012 at 3:49 PM, Roland Stigge <stigge@antcom.de> wrote:
 
-Given some users are converted later.
+> This patch adds the ability for the driver to control the chip select directly.
+> This enables independence from cs_control callbacks.  Configurable via
+> platform_data, to be extended as DT in the following patch.
+>
+> Based on the initial patch by Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
- Acked-by: Tejun Heo <tj@kernel.org>
+Thanks Roland, excellent work!
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-Thanks.
-
--- 
-tejun
+Yours,
+Linus Walleij
