@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758617Ab2HVIxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:53:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40067 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab2HVIxd (ORCPT
+	id S1758568Ab2HVIy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:54:27 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:47269 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab2HVIyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:53:33 -0400
-Date: Wed, 22 Aug 2012 01:52:59 -0700
-From: tip-bot for John Stultz <john.stultz@linaro.org>
-Message-ID: <tip-bf2ac312195155511a0f79325515cbb61929898a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, prarit@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, prarit@redhat.com
-In-Reply-To: <1345595449-34965-5-git-send-email-john.stultz@linaro.org>
-References: <1345595449-34965-5-git-send-email-john.stultz@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] time: Avoid making adjustments if we haven'
- t accumulated anything
-Git-Commit-ID: bf2ac312195155511a0f79325515cbb61929898a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Aug 2012 01:53:09 -0700 (PDT)
+	Wed, 22 Aug 2012 04:54:24 -0400
+Message-ID: <1345625663.29604.36.camel@vlad>
+Subject: [PATCH] sched: optimize the locking in the rebalance_domains()
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Date: Wed, 22 Aug 2012 11:54:23 +0300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bf2ac312195155511a0f79325515cbb61929898a
-Gitweb:     http://git.kernel.org/tip/bf2ac312195155511a0f79325515cbb61929898a
-Author:     John Stultz <john.stultz@linaro.org>
-AuthorDate: Tue, 21 Aug 2012 20:30:49 -0400
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 22 Aug 2012 10:42:13 +0200
+Don't perform the locking in the rebalance_domains() when it's not needed.
 
-time: Avoid making adjustments if we haven't accumulated anything
+rebalance_domains() tried to take a "balancing" spin-lock when SD_SERIALIZE 
+flag was set (which is a default configuration for NUMA aware systems)
+every time it was called. This is done regardless the fact that maybe
+there hasn't passed enough time since the last re-balancing in which case
+there is no need to take a lock the first place.
 
-If update_wall_time() is called and the current offset isn't large
-enough to accumulate, avoid re-calling timekeeping_adjust which may
-change the clock freq and can cause 1ns inconsistencies with
-CLOCK_REALTIME_COARSE/CLOCK_MONOTONIC_COARSE.
+The above creates a heavy false sharing problem on the "balancing"
+spin-lock on large SMP systems: try_lock() is implemented with an
+(atomic) xchng instruction which invalidates the cache line "balancing"
+belongs to and therefore creates an intensive cross-NUMA-nodes traffic.
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1345595449-34965-5-git-send-email-john.stultz@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The below patch will minimize the above phenomena to the time slots it's
+really needed, namely when the "interval" time period has really passed 
+since the last re-balancing.
+
+Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
+Acked-by: Shai Fultheim <shai@scalemp.com>
 ---
- kernel/time/timekeeping.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |   24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index a5a9389..0c1485e 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1152,6 +1152,10 @@ static void update_wall_time(void)
- 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
- #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c219bf8..298e201 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4754,6 +4754,13 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 		interval = msecs_to_jiffies(interval);
+ 		interval = clamp(interval, 1UL, max_load_balance_interval);
  
-+	/* Check if there's really nothing to do */
-+	if (offset < tk->cycle_interval)
-+		goto out;
++		/*
++		 * continue to the next domain if the current domain doesn't
++		 * need to be re-balanced yet
++		 */
++		if (time_before(jiffies, sd->last_balance + interval))
++			goto out;
 +
- 	/*
- 	 * With NO_HZ we may have to accumulate many cycle_intervals
- 	 * (think "ticks") worth of time at once. To do this efficiently,
+ 		need_serialize = sd->flags & SD_SERIALIZE;
+ 
+ 		if (need_serialize) {
+@@ -4761,16 +4768,15 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 				goto out;
+ 		}
+ 
+-		if (time_after_eq(jiffies, sd->last_balance + interval)) {
+-			if (load_balance(cpu, rq, sd, idle, &balance)) {
+-				/*
+-				 * We've pulled tasks over so either we're no
+-				 * longer idle.
+-				 */
+-				idle = CPU_NOT_IDLE;
+-			}
+-			sd->last_balance = jiffies;
++		if (load_balance(cpu, rq, sd, idle, &balance)) {
++			/*
++			 * We've pulled tasks over so either we're no
++			 * longer idle.
++			 */
++			idle = CPU_NOT_IDLE;
+ 		}
++		sd->last_balance = jiffies;
++
+ 		if (need_serialize)
+ 			spin_unlock(&balancing);
+ out:
+-- 
+1.7.9.5
+
+
+
