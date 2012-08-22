@@ -1,91 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2HVISB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:18:01 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64569 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab2HVIRz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:17:55 -0400
-Date: Wed, 22 Aug 2012 09:17:50 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 5/8] mfd: Provide the PRCMU with its own IRQ domain
-Message-ID: <20120822081746.GA4089@gmail.com>
-References: <20120820125531.GA20242@gmail.com>
- <20120820162923.GF26991@opensource.wolfsonmicro.com>
- <20120820164949.GB22749@gmail.com>
- <20120820175155.GH26991@opensource.wolfsonmicro.com>
- <20120821085618.GA26899@gmail.com>
- <20120821095026.GU26991@opensource.wolfsonmicro.com>
- <20120821105413.GD26899@gmail.com>
- <20120821110329.GA7995@opensource.wolfsonmicro.com>
- <20120821120243.GF26899@gmail.com>
- <20120821165207.GX7995@opensource.wolfsonmicro.com>
+	id S1753555Ab2HVIUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:20:21 -0400
+Received: from shutemov.name ([176.9.204.213]:58939 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab2HVIUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:20:17 -0400
+Date: Wed, 22 Aug 2012 11:20:15 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 4/4] tools lib traceevent: Fix strerror_r() use in
+ pevent_strerror
+Message-ID: <20120822082015.GA6250@shutemov.name>
+References: <1345618831-9148-1-git-send-email-namhyung@kernel.org>
+ <1345618831-9148-5-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120821165207.GX7995@opensource.wolfsonmicro.com>
+In-Reply-To: <1345618831-9148-5-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 05:52:07PM +0100, Mark Brown wrote:
-> On Tue, Aug 21, 2012 at 01:02:46PM +0100, Lee Jones wrote:
-> > On Tue, Aug 21, 2012 at 12:03:29PM +0100, Mark Brown wrote:
+On Wed, Aug 22, 2012 at 04:00:31PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> > > > another way to get hold of the domain, because the only way to obtain
-> > > > it without having direct access is via a device node.
+> glibc-2.16 starts to mark the function with attribute
+> warn_unused_result so that it can cause a build warning.
 > 
-> > > This doesn't actually hold.
+> Since GNU version of strerror_r() can return a pointer to a string
+> without setting @buf, check the return value and copy/truncate it to
+> our buffer if needed.
 > 
-> > Okay, besides irq_find_host(struct device_node *np), how else can you fetch
-> > a domain from the irqdomain?
->
-> I'm not sure I can parse the above, sorry - I'm not sure I can
-> distinguish "domain" and "irqdomain".
+> Cc: Fredereic Weisbecker <fweisbec@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Kirill A. Shutemov <kirill@shutemov.name>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-Are you being intentionally awkward on this? Picking holes when you know
-exactly what I'm trying to say? Not that it matters now, but just out of
-principle, let me try to put it in a very clear way so there can be no
-misinterpretation.
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-I was saying that in order for the MFD core to carry out the hwirq->virq
-conversion, it needed to obtain the irqdomain pointer pertaining to the
-provided hwirq. The only helper function the irqdomain subsystem provides
-requires a device node pointer to be passed as an argument, hence the
-mention of 'irq_find_host(struct device_node *np)'. Then the Device Tree
-is traversed until a specified 'interrupt-controller' is stumbled upon
-or is pointed to by the 'interrupt-parent' property. Hence, we have to 
-find another way to find the irqdomain pointers for non-DT based MFDs. To
-which we now have a solution.
-
-> > What have you done already? 
+> ---
+>  tools/lib/traceevent/event-parse.c | 7 ++++++-
+>  tools/lib/traceevent/event-utils.h | 6 ++++++
+>  2 files changed, 12 insertions(+), 1 deletion(-)
 > 
-> Implemented a patch for this which I've now tested a bit and will
-> probably post in the next hour or so.
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index 1373e4cf109e..f978c59f67bf 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -4809,7 +4809,12 @@ int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
+>  	const char *msg;
+>  
+>  	if (errnum >= 0) {
+> -		strerror_r(errnum, buf, buflen);
+> +		msg = strerror_r(errnum, buf, buflen);
+> +		if (msg != buf) {
+> +			size_t len = strlen(msg);
+> +			char *c = mempcpy(buf, msg, min(buflen-1, len));
+> +			*c = '\0';
+> +		}
+>  		return 0;
+>  	}
+>  
+> diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
+> index 08296383d1e6..bc075006966e 100644
+> --- a/tools/lib/traceevent/event-utils.h
+> +++ b/tools/lib/traceevent/event-utils.h
+> @@ -39,6 +39,12 @@ void __vdie(const char *fmt, ...);
+>  void __vwarning(const char *fmt, ...);
+>  void __vpr_stat(const char *fmt, ...);
+>  
+> +#define min(x, y) ({				\
+> +	typeof(x) _min1 = (x);			\
+> +	typeof(y) _min2 = (y);			\
+> +	(void) (&_min1 == &_min2);		\
+> +	_min1 < _min2 ? _min1 : _min2; })
+> +
+>  static inline char *strim(char *string)
+>  {
+>  	char *ret;
+> -- 
+> 1.7.11.4
 > 
-> > Why make suggestions if you're just going to do the work yourself?
-> 
-> I made the suggestion then later on realised that this was actively
-> going to break things I care about so I actually need it fixing.
-
-I'm a little taken aback and annoyed by this. In a previous email thread
-you categorically requested that I discuss some of the important changes
-with maintainers and people in-the-know prior to actually writing any
-code. I was obviously actively working on, had put time into, and was in
-the mist of discussing this with you. Then you just go ahead and code it
-(the easy part) yourself, essentially wasting my time. Surely there's
-some kind of etiquette surrounding such things?
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+ Kirill A. Shutemov
