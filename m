@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758847Ab2HVJLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 05:11:50 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:65132 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758731Ab2HVJLq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 05:11:46 -0400
-Date: Wed, 22 Aug 2012 11:11:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: hpa@zytor.com, linux-kernel@vger.kernel.org, shai@scalemp.com,
-        tglx@linutronix.de, ido@wizery.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/platform] x86/vsmp: Use hypervisor layer for
- initialization
-Message-ID: <20120822091141.GC23336@gmail.com>
-References: <1344445299-22142-1-git-send-email-ido@wizery.com>
- <tip-c00679af441c5be76e195deed2c76fef65a5d102@git.kernel.org>
+	id S1758854Ab2HVJNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 05:13:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758731Ab2HVJNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 05:13:11 -0400
+Date: Wed, 22 Aug 2012 10:12:59 +0100
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: replace __getblk_slow misfix by grow_dev_page fix
+Message-ID: <20120822091259.GT1448@rhmail.home.annexia.org>
+References: <alpine.LSU.2.00.1208211826270.2488@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-c00679af441c5be76e195deed2c76fef65a5d102@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LSU.2.00.1208211826270.2488@eggly.anvils>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* tip-bot for Ido Yariv <ido@wizery.com> wrote:
-
-> Commit-ID:  c00679af441c5be76e195deed2c76fef65a5d102
-> Gitweb:     http://git.kernel.org/tip/c00679af441c5be76e195deed2c76fef65a5d102
-> Author:     Ido Yariv <ido@wizery.com>
-> AuthorDate: Wed, 8 Aug 2012 20:01:38 +0300
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 22 Aug 2012 10:48:05 +0200
+On Tue, Aug 21, 2012 at 06:33:45PM -0700, Hugh Dickins wrote:
+> Jeff,
 > 
-> x86/vsmp: Use hypervisor layer for initialization
-> 
-> vSMP detection and initialization could be done by
-> the hypervisor layer, so set it up that way.
-> 
-> This cleans up vSMP initialization.
-> 
-> Signed-off-by: Ido Yariv <ido@wizery.com>
-> Acked-by: Shai Fultheim <shai@scalemp.com>
-> Link: http://lkml.kernel.org/r/1344445299-22142-1-git-send-email-ido@wizery.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/include/asm/hypervisor.h |    1 +
->  arch/x86/include/asm/setup.h      |    7 -------
->  arch/x86/kernel/cpu/hypervisor.c  |    1 +
->  arch/x86/kernel/setup.c           |    2 --
->  arch/x86/kernel/vsmp_64.c         |   27 +++++++++++++++++----------
->  5 files changed, 19 insertions(+), 19 deletions(-)
+> Your commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow"),
+> already gone into 3.* stable, is not good.  Could you and your testers
+> please give this alternative a try - I think it should work, and have
+> started it on a few days' memory load on 3.5, but not tried your case.
 
-I had to zap this commit because it breaks the build:
+I'll try your patch later today, but the test is very simple:
 
-(.init.rodata+0x4c8): undefined reference to `x86_hyper_vsmp'
+- Create a 1024 byte empty (all zeroes) partition and then try to mount it.
 
-Thanks,
+Failure was that the mount command would go into an infinite loop
+using 100% CPU.  Success is that it gives an error.
 
-	Ingo
+More about it here including a very simple libguestfs script to
+reproduce it:
+
+  https://bugzilla.redhat.com/show_bug.cgi?id=835019#c0
+
+and a virtual disk image that also demonstrates the problem without
+needing anything except a VM running the test kernel:
+
+  https://bugzilla.redhat.com/show_bug.cgi?id=835019#c1
+
+Rich.
+
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+New in Fedora 11: Fedora Windows cross-compiler. Compile Windows
+programs, test, and build Windows installers. Over 70 libraries supprt'd
+http://fedoraproject.org/wiki/MinGW http://www.annexia.org/fedora_mingw
