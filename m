@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab2HVB2U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 21:28:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2172 "EHLO mx1.redhat.com"
+	id S1755024Ab2HVBeT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 21:34:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56316 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab2HVB2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 21:28:16 -0400
-Message-ID: <1345598895.29292.115.camel@ul30vt.home>
-Subject: Re: [PATCH v9 0/2] kvm: level irqfd support
+	id S1753281Ab2HVBeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 21:34:18 -0400
+Message-ID: <1345599256.29292.121.camel@ul30vt.home>
+Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
 From: Alex Williamson <alex.williamson@redhat.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 21 Aug 2012 19:28:15 -0600
-In-Reply-To: <20120822003129.GK9027@redhat.com>
+Date: Tue, 21 Aug 2012 19:34:16 -0600
+In-Reply-To: <20120822004138.GM9027@redhat.com>
 References: <20120821190800.24958.74812.stgit@bling.home>
-	 <20120822003129.GK9027@redhat.com>
+	 <20120821192903.24958.90138.stgit@bling.home>
+	 <20120821195813.GD9027@redhat.com> <1345579579.29292.67.camel@ul30vt.home>
+	 <20120821204125.GF9027@redhat.com> <1345583694.29292.91.camel@ul30vt.home>
+	 <20120822004138.GM9027@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -23,129 +26,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-22 at 03:31 +0300, Michael S. Tsirkin wrote:
-> On Tue, Aug 21, 2012 at 01:28:57PM -0600, Alex Williamson wrote:
-> > Here's the much anticipated re-write of support for level irqfds.  As
-> > Michael suggested, I've rolled the eoi/ack notification fd into
-> > KVM_IRQFD as a new mode.  For lack of a better name, as there seems to
-> > be objections to associating this specifically with an EOI or an ACK,
-> > I've name this OADN or "On Ack, De-assert & Notify".
+On Wed, 2012-08-22 at 03:41 +0300, Michael S. Tsirkin wrote:
+> On Tue, Aug 21, 2012 at 03:14:54PM -0600, Alex Williamson wrote:
+> > On Tue, 2012-08-21 at 23:41 +0300, Michael S. Tsirkin wrote:
+> > > On Tue, Aug 21, 2012 at 02:06:19PM -0600, Alex Williamson wrote:
+> > > > On Tue, 2012-08-21 at 22:58 +0300, Michael S. Tsirkin wrote:
+> > > > > On Tue, Aug 21, 2012 at 01:29:06PM -0600, Alex Williamson wrote:
+> > > > > > KVM_IRQFD currently uses the reserved KVM_USERSPACE_IRQ_SOURCE_ID
+> > > > > > which is also shared with userspace injection methods like
+> > > > > > KVM_IRQ_LINE.  This can cause a conflict if an irqfd triggers on
+> > > > > > a GSI asserted through KVM_IRQ_LINE.
+> > > > > 
+> > > > > What kind of conflict do you envision?  Pls note level interrupts are
+> > > > > unsupported ATM.
+> > > > 
+> > > > If KVM_IRQ_LINE asserts a level interrupt and KVM_IRQFD triggers on the
+> > > > same GSI then the pin is no longer asserted as userspace thinks it is.
+> > > > Do we just chalk this up to userspace error?
+> > > 
+> > > Yes: using a level GSI with current irqfd is a userspace error
+> > > because you can lose interrupts anyway.
+> > > 
+> > > Are edge GSIs affected?
 > > 
-> > Patch 1of2 switches current KVM_IRQFDs to use their own IRQ source ID
-> > since we're potentially stepping on KVM_USERSPACE_IRQ_SOURCE_ID.
-> > Unfurtunately I was not able to make 2of2 use a single IRQ source ID,
-> > the reason is it's racy.  Objects to track OADNs are made dynamically,
-> > we look through existing ones for a match under spinlock and setup a
-> > new one if there's no match.  On teardown, we can remove the OADN from
-> > the list under lock, but that same lock prevents us from de-assigning
-> > the IRQ ACK notifier or waiting for an RCU grace period.  We must make
-> > sure that any unused GSI is de-asserted, but the above means it's
-> > possible that another OADN has been created for this source ID/GSI
-> > and de-asserting the GSI could lead to breakage.
+> > I wouldn't think so.
 > 
-> I do not see it. What breakage? Could you give an example please?
+> No? If userspace does
 > 
+> . set line to 1
+> . trigger irqfd
+> . set line to 1
+> . trigger irqfd
+> . set line to 1
+> . trigger irqfd
+> . set line to 1
 > 
-> I think what you are saying is last deassign must clear
-> since otherwise we never will clear.
-> I agree it is either that or delay deassign until ack.
+> it gets 4 interrupts now
 > 
-> Can it be as simple as this (after all rcu etc dances)?
-> 	lock irqfds
-> 	if no oadns
-> 		set level to 0
-> 	unlock irqfds
-> ?
-
-lock irqfds
-remove irqfd from oadn list
-if no oadns
-    remove oadn
-    set gsi 0
-unlock
-                                    lock irqfds
-                                    new oadn
-                                    unlock irqfds
-
->> EOI 
-                                                          ack notify new oadn
-                                                          de-assert gsi
-                                                          notify new oadn
->> re-assert irqfd
-                                                          ack notify old oadn
-                                                          de-assert gsi
-                                                          notify old oadn
-
-synchronize_rcu
-
-kvm_unregister_irq_ack_notifier
-
-So, because the unregister is removed from the final clear and because
-we share an IRQ source ID there's a window where we can have two oadns
-registered for the same GSI.  The new one will de-assert and notify
-while the old one has an empty list to notify, but still de-asserts.  We
-can therefore de-assert w/o notify.
-
-By using a new source ID, we separate the two so users of the new oadn
-can't race the old and we can cleanly free the old source ID,
-de-asserting it.
-
-> >  Instead each OADN
-> > object gets it's own source ID, but these are all shared by users
-> > of the same GSI.  So for PCI devices, we might have up to 4 IRQ
-> > source IDs allocated.
+> With your patch it will get 1, right?
+> 
+> > > > > > Move irqfd to it's own reserved IRQ source ID.  Add a capability for
+> > > > > > userspace to test for this fix.
+> > > > > > 
+> > > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > > > > ---
+> > > > > > 
+> > > > > >  arch/x86/kvm/x86.c       |    3 +++
+> > > > > >  include/linux/kvm.h      |    1 +
+> > > > > >  include/linux/kvm_host.h |    1 +
+> > > > > >  virt/kvm/eventfd.c       |    6 +++---
+> > > > > >  4 files changed, 8 insertions(+), 3 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > > > > index 42bce48..cd98673 100644
+> > > > > > --- a/arch/x86/kvm/x86.c
+> > > > > > +++ b/arch/x86/kvm/x86.c
+> > > > > > @@ -2174,6 +2174,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> > > > > >  	case KVM_CAP_GET_TSC_KHZ:
+> > > > > >  	case KVM_CAP_PCI_2_3:
+> > > > > >  	case KVM_CAP_KVMCLOCK_CTRL:
+> > > > > > +	case KVM_CAP_IRQFD_IRQ_SOURCE_ID:
+> > > > > >  		r = 1;
+> > > > > >  		break;
+> > > > > >  	case KVM_CAP_COALESCED_MMIO:
+> > > > > > @@ -6258,6 +6259,8 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
+> > > > > >  
+> > > > > >  	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
+> > > > > >  	set_bit(KVM_USERSPACE_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
+> > > > > > +	/* Reserve bit 1 of irq_sources_bitmap for irqfd irq source */
+> > > > > > +	set_bit(KVM_IRQFD_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
+> > > > > >  
+> > > > > >  	raw_spin_lock_init(&kvm->arch.tsc_write_lock);
+> > > > > >  
+> > > > > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> > > > > > index 2ce09aa..ae66b9c 100644
+> > > > > > --- a/include/linux/kvm.h
+> > > > > > +++ b/include/linux/kvm.h
+> > > > > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
+> > > > > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+> > > > > >  #define KVM_CAP_S390_COW 79
+> > > > > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
+> > > > > > +#define KVM_CAP_IRQFD_IRQ_SOURCE_ID 81
+> > > > > >  
+> > > > > >  #ifdef KVM_CAP_IRQ_ROUTING
+> > > > > >  
+> > > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > > > > index b70b48b..b763230 100644
+> > > > > > --- a/include/linux/kvm_host.h
+> > > > > > +++ b/include/linux/kvm_host.h
+> > > > > > @@ -71,6 +71,7 @@
+> > > > > >  #define KVM_REQ_PMI               17
+> > > > > >  
+> > > > > >  #define KVM_USERSPACE_IRQ_SOURCE_ID	0
+> > > > > > +#define KVM_IRQFD_IRQ_SOURCE_ID		1
+> > > > > >  
+> > > > > >  struct kvm;
+> > > > > >  struct kvm_vcpu;
+> > > > > 
+> > > > > Above looks fine but I'm not sure why is the below needed.
+> > > > > This changes irqfd behaviour for edge GSIs slightly
+> > > > > in a userspace-visible way. Maybe make it a separate patch
+> > > > > so it can be considered on merits?
+> > > > 
+> > > > Hmm, the above does nothing without the below.
+> > > 
+> > > Yes. But you can use the above with the new irqfds you are adding.
 > > 
-> > Michael had also suggested avoiding reference counting and using
-> > list_empty for this OADN object.  Unfortunately, that doesn't work
-> > for similar reasons.  We want to release the OADN object underlock,
-> > preventing others from re-using it on the free path, but in order
-> > to have lock-less de-assert & notify we use RCU, meaning we can't
-> > trust list_empty until after an RCU grace period, which must be
-> > done outside of spinlocks.
-> 
-> confused. list empty on assign/deassing would be under lock
-> so no need for grace periods to trust it.
-> what am I missing?
-> 
-> But if you like kref more that is OK too.
-
-Maybe I'm misinterpreting this:
-
-include/linux/rculist.h:
-/**
- * list_del_rcu - deletes entry from list without re-initialization
- * @entry: the element to delete from the list.
- *
- * Note: list_empty() on entry does not return true after this,
- * the entry is in an undefined state. It is useful for RCU based
- * lockfree traversal.
-
-If I can trust list_empty on oadn->irqfds, which maybe I can re-reading
-it again, then we can drop the kref.  Thanks,
-
-Alex
-
-
-> > If there are suggestions how we can handle these better, please
-> > make them, but I think this compromise is race-free and still
-> > manages to make allocation of IRQ source IDs mostly a non-issue
-> > for device assignment limits.  Thanks,
+> > Nope, racy.
+> > 
+> > > > I thought I was just
+> > > > implementing your idea that IRQFDs should all share a single IRQ source
+> > > > ID...
+> > > 
+> > > Sorry I only meant for level irqfds. You are changing edge here.
+> > 
+> > Ok, I misunderstood then.
+> > 
+> > > > why is that no longer a good idea?  Thanks,
+> > > > 
+> > > > Alex
+> > > 
+> > > Maybe it is a good idea. I am just asking for the motivation.
+> > 
+> > I assumed you were pointing out the level vs edge interaction.  If we
+> > call that a userspace bug, I can just drop this.  Thanks,
 > > 
 > > Alex
-> > 
-> > ---
-> > 
-> > Alex Williamson (2):
-> >       kvm: On Ack, De-assert & Notify KVM_IRQFD extension
-> >       kvm: Use a reserved IRQ source ID for irqfd
-> > 
-> > 
-> >  Documentation/virtual/kvm/api.txt |   13 ++
-> >  arch/x86/kvm/x86.c                |    4 +
-> >  include/linux/kvm.h               |    7 +
-> >  include/linux/kvm_host.h          |    2 
-> >  virt/kvm/eventfd.c                |  199 ++++++++++++++++++++++++++++++++++++-
-> >  5 files changed, 218 insertions(+), 7 deletions(-)
+> 
+> level is userspace bug I think :)
 
+Dropped.  Thanks,
 
+Alex
 
