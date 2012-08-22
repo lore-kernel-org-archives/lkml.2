@@ -1,88 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab2HVOT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:19:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47095 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab2HVOTz (ORCPT
+	id S1756595Ab2HVO1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:27:32 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56968 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab2HVO11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:19:55 -0400
-Date: Wed, 22 Aug 2012 16:19:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: Attilio Rao <attilio.rao@citrix.com>, Ian.Campbell@citrix.com,
-        Stefano.Stabellini@eu.citrix.com, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v2 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
- and x86_init.paging.pagetable_setup_done setup functions and document its
- semantic
-In-Reply-To: <20120822135753.GA30964@phenom.dumpdata.com>
-Message-ID: <alpine.LFD.2.02.1208221618380.2856@ionos>
-References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208212315330.2856@ionos> <20120822135753.GA30964@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 22 Aug 2012 10:27:27 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [RFC PATCH] tty: move the async flags from the serial code into the
+ tty includes
+To: greg@kroah.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 22 Aug 2012 15:44:50 +0100
+Message-ID: <20120822144426.27149.93723.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Aug 2012, Konrad Rzeszutek Wilk wrote:
-> On Tue, Aug 21, 2012 at 11:22:03PM +0200, Thomas Gleixner wrote:
-> > On Tue, 21 Aug 2012, Attilio Rao wrote:
-> > > Differences with v1:
-> > > - The patch serie is re-arranged in a way that it helps reviews, following
-> > >   a plan by Thomas Gleixner
-> > > - The PVOPS nomenclature is not used as it is not correct
-> > > - The front-end message is adjusted with feedback by Thomas Gleixner,
-> > >   Stefano Stabellini and Konrad Rzeszutek Wilk 
-> > 
-> > This is much simpler to read and review. Just have a look at the
-> > diffstats of the two series:
-> > 
-> >  6 files changed,  9 insertions(+),  8 deletions(-)
-> >  6 files changed, 11 insertions(+),  9 deletions(-)
-> >  5 files changed, 50 insertions(+),  2 deletions(-)
-> >  6 files changed,  2 insertions(+), 65 deletions(-)
-> >  1 files changed,  5 insertions(+),  0 deletions(-)
-> > 
-> > versus
-> > 
-> >  6 files changed, 10 insertions(+),  9 deletions(-)
-> >  6 files changed, 11 insertions(+), 11 deletions(-)
-> >  5 files changed,  3 insertions(+),  3 deletions(-)
-> >  6 files changed,  4 insertions(+), 20 deletions(-)
-> >  1 files changed,  5 insertions(+),  0 deletions(-)
-> > 
-> > The overall result is basically the same, but it's way simpler to look
-> > at obvious and well done patches than checking whether a subtle copy
-> > and paste bug happened in 3/5 of the first version. Copy and paste is
-> > the #1 cause for subtle bugs. :)
-> > 
-> > I'm waiting for the ack of Xen folks before taking it into tip.
-> 
-> I've some extra patches that modify the new "paginig_init" in the Xen
-> code that I am going to propose for v3.7 - so will have some merge
-> conflicts. Let me figure that out and also run this set of patches
-> (and also the previous one .. which I think you didn't have a
-> chance to look since you were on vacation?) on an overnight
+Jiri - this seem more sensible ?
 
-Which previous one ?
+From: Alan Cox <alan@linux.intel.com>
 
-> test to make sure there are no fallout.
-> 
-> With the merge issues that are going to prop up (x86 tip tree
-> and my tree in linux-next) should I just take these patches
-> in my tree with your Ack? Or should I just ingest your tiptree
-> in my tree and that way solve the merge issue? What's your
-> preference!
+These are used with the tty_port flags which are tty generic so move the
+flags into a more sensible place. This then makes it possible to add
+helpers such as those suggested by Huang Shijie.
 
-Having it in tip in an extra branch which you pull into your
-tree. That's the easiest one.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-Thanks,
+ include/linux/Kbuild      |    1 +
+ include/linux/serial.h    |   75 ++-----------------------------------------
+ include/linux/tty.h       |    1 +
+ include/linux/tty_flags.h |   78 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 83 insertions(+), 72 deletions(-)
+ create mode 100644 include/linux/tty_flags.h
 
-	tglx
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index b3d6385..b45caff 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -370,6 +370,7 @@ header-y += tipc.h
+ header-y += tipc_config.h
+ header-y += toshiba.h
+ header-y += tty.h
++header-y += tty_flags.h
+ header-y += types.h
+ header-y += udf_fs_i.h
+ header-y += udp.h
+diff --git a/include/linux/serial.h b/include/linux/serial.h
+index 90e9f98..3504f42 100644
+--- a/include/linux/serial.h
++++ b/include/linux/serial.h
+@@ -12,9 +12,12 @@
+ 
+ #include <linux/types.h>
+ 
++#include <linux/tty_flags.h>
++
+ #ifdef __KERNEL__
+ #include <asm/page.h>
+ 
++
+ /*
+  * Counters of the input lines (CTS, DSR, RI, CD) interrupts
+  */
+@@ -94,78 +97,6 @@ struct serial_uart_config {
+ #define UART_STARTECH		0x04
+ #define UART_NATSEMI		0x08
+ 
+-/*
+- * Definitions for async_struct (and serial_struct) flags field
+- *
+- * Define ASYNCB_* for convenient use with {test,set,clear}_bit.
+- */
+-#define ASYNCB_HUP_NOTIFY	 0 /* Notify getty on hangups and closes
+-				    * on the callout port */
+-#define ASYNCB_FOURPORT		 1 /* Set OU1, OUT2 per AST Fourport settings */
+-#define ASYNCB_SAK		 2 /* Secure Attention Key (Orange book) */
+-#define ASYNCB_SPLIT_TERMIOS	 3 /* Separate termios for dialin/callout */
+-#define ASYNCB_SPD_HI		 4 /* Use 56000 instead of 38400 bps */
+-#define ASYNCB_SPD_VHI		 5 /* Use 115200 instead of 38400 bps */
+-#define ASYNCB_SKIP_TEST	 6 /* Skip UART test during autoconfiguration */
+-#define ASYNCB_AUTO_IRQ		 7 /* Do automatic IRQ during
+-				    * autoconfiguration */
+-#define ASYNCB_SESSION_LOCKOUT	 8 /* Lock out cua opens based on session */
+-#define ASYNCB_PGRP_LOCKOUT	 9 /* Lock out cua opens based on pgrp */
+-#define ASYNCB_CALLOUT_NOHUP	10 /* Don't do hangups for cua device */
+-#define ASYNCB_HARDPPS_CD	11 /* Call hardpps when CD goes high  */
+-#define ASYNCB_SPD_SHI		12 /* Use 230400 instead of 38400 bps */
+-#define ASYNCB_LOW_LATENCY	13 /* Request low latency behaviour */
+-#define ASYNCB_BUGGY_UART	14 /* This is a buggy UART, skip some safety
+-				    * checks.  Note: can be dangerous! */
+-#define ASYNCB_AUTOPROBE	15 /* Port was autoprobed by PCI or PNP code */
+-#define ASYNCB_LAST_USER	15
+-
+-/* Internal flags used only by kernel */
+-#define ASYNCB_INITIALIZED	31 /* Serial port was initialized */
+-#define ASYNCB_SUSPENDED	30 /* Serial port is suspended */
+-#define ASYNCB_NORMAL_ACTIVE	29 /* Normal device is active */
+-#define ASYNCB_BOOT_AUTOCONF	28 /* Autoconfigure port on bootup */
+-#define ASYNCB_CLOSING		27 /* Serial port is closing */
+-#define ASYNCB_CTS_FLOW		26 /* Do CTS flow control */
+-#define ASYNCB_CHECK_CD		25 /* i.e., CLOCAL */
+-#define ASYNCB_SHARE_IRQ	24 /* for multifunction cards, no longer used */
+-#define ASYNCB_CONS_FLOW	23 /* flow control for console  */
+-#define ASYNCB_FIRST_KERNEL	22
+-
+-#define ASYNC_HUP_NOTIFY	(1U << ASYNCB_HUP_NOTIFY)
+-#define ASYNC_SUSPENDED		(1U << ASYNCB_SUSPENDED)
+-#define ASYNC_FOURPORT		(1U << ASYNCB_FOURPORT)
+-#define ASYNC_SAK		(1U << ASYNCB_SAK)
+-#define ASYNC_SPLIT_TERMIOS	(1U << ASYNCB_SPLIT_TERMIOS)
+-#define ASYNC_SPD_HI		(1U << ASYNCB_SPD_HI)
+-#define ASYNC_SPD_VHI		(1U << ASYNCB_SPD_VHI)
+-#define ASYNC_SKIP_TEST		(1U << ASYNCB_SKIP_TEST)
+-#define ASYNC_AUTO_IRQ		(1U << ASYNCB_AUTO_IRQ)
+-#define ASYNC_SESSION_LOCKOUT	(1U << ASYNCB_SESSION_LOCKOUT)
+-#define ASYNC_PGRP_LOCKOUT	(1U << ASYNCB_PGRP_LOCKOUT)
+-#define ASYNC_CALLOUT_NOHUP	(1U << ASYNCB_CALLOUT_NOHUP)
+-#define ASYNC_HARDPPS_CD	(1U << ASYNCB_HARDPPS_CD)
+-#define ASYNC_SPD_SHI		(1U << ASYNCB_SPD_SHI)
+-#define ASYNC_LOW_LATENCY	(1U << ASYNCB_LOW_LATENCY)
+-#define ASYNC_BUGGY_UART	(1U << ASYNCB_BUGGY_UART)
+-#define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
+-
+-#define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
+-#define ASYNC_USR_MASK		(ASYNC_SPD_MASK|ASYNC_CALLOUT_NOHUP| \
+-		ASYNC_LOW_LATENCY)
+-#define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
+-#define ASYNC_SPD_WARP		(ASYNC_SPD_HI|ASYNC_SPD_SHI)
+-#define ASYNC_SPD_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI|ASYNC_SPD_SHI)
+-
+-#define ASYNC_INITIALIZED	(1U << ASYNCB_INITIALIZED)
+-#define ASYNC_NORMAL_ACTIVE	(1U << ASYNCB_NORMAL_ACTIVE)
+-#define ASYNC_BOOT_AUTOCONF	(1U << ASYNCB_BOOT_AUTOCONF)
+-#define ASYNC_CLOSING		(1U << ASYNCB_CLOSING)
+-#define ASYNC_CTS_FLOW		(1U << ASYNCB_CTS_FLOW)
+-#define ASYNC_CHECK_CD		(1U << ASYNCB_CHECK_CD)
+-#define ASYNC_SHARE_IRQ		(1U << ASYNCB_SHARE_IRQ)
+-#define ASYNC_CONS_FLOW		(1U << ASYNCB_CONS_FLOW)
+-#define ASYNC_INTERNAL_FLAGS	(~((1U << ASYNCB_FIRST_KERNEL) - 1))
+ 
+ /*
+  * Multiport serial configuration structure --- external structure
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 69a787f..dbebd1e 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -43,6 +43,7 @@
+ #include <linux/tty_driver.h>
+ #include <linux/tty_ldisc.h>
+ #include <linux/mutex.h>
++#include <linux/tty_flags.h>
+ 
+ 
+ 
+diff --git a/include/linux/tty_flags.h b/include/linux/tty_flags.h
+new file mode 100644
+index 0000000..eefcb48
+--- /dev/null
++++ b/include/linux/tty_flags.h
+@@ -0,0 +1,78 @@
++#ifndef _LINUX_TTY_FLAGS_H
++#define _LINUX_TTY_FLAGS_H
++
++/*
++ * Definitions for async_struct (and serial_struct) flags field also
++ * shared by the tty_port flags structures.
++ *
++ * Define ASYNCB_* for convenient use with {test,set,clear}_bit.
++ */
++#define ASYNCB_HUP_NOTIFY	 0 /* Notify getty on hangups and closes
++				    * on the callout port */
++#define ASYNCB_FOURPORT		 1 /* Set OU1, OUT2 per AST Fourport settings */
++#define ASYNCB_SAK		 2 /* Secure Attention Key (Orange book) */
++#define ASYNCB_SPLIT_TERMIOS	 3 /* Separate termios for dialin/callout */
++#define ASYNCB_SPD_HI		 4 /* Use 56000 instead of 38400 bps */
++#define ASYNCB_SPD_VHI		 5 /* Use 115200 instead of 38400 bps */
++#define ASYNCB_SKIP_TEST	 6 /* Skip UART test during autoconfiguration */
++#define ASYNCB_AUTO_IRQ		 7 /* Do automatic IRQ during
++				    * autoconfiguration */
++#define ASYNCB_SESSION_LOCKOUT	 8 /* Lock out cua opens based on session */
++#define ASYNCB_PGRP_LOCKOUT	 9 /* Lock out cua opens based on pgrp */
++#define ASYNCB_CALLOUT_NOHUP	10 /* Don't do hangups for cua device */
++#define ASYNCB_HARDPPS_CD	11 /* Call hardpps when CD goes high  */
++#define ASYNCB_SPD_SHI		12 /* Use 230400 instead of 38400 bps */
++#define ASYNCB_LOW_LATENCY	13 /* Request low latency behaviour */
++#define ASYNCB_BUGGY_UART	14 /* This is a buggy UART, skip some safety
++				    * checks.  Note: can be dangerous! */
++#define ASYNCB_AUTOPROBE	15 /* Port was autoprobed by PCI or PNP code */
++#define ASYNCB_LAST_USER	15
++
++/* Internal flags used only by kernel */
++#define ASYNCB_INITIALIZED	31 /* Serial port was initialized */
++#define ASYNCB_SUSPENDED	30 /* Serial port is suspended */
++#define ASYNCB_NORMAL_ACTIVE	29 /* Normal device is active */
++#define ASYNCB_BOOT_AUTOCONF	28 /* Autoconfigure port on bootup */
++#define ASYNCB_CLOSING		27 /* Serial port is closing */
++#define ASYNCB_CTS_FLOW		26 /* Do CTS flow control */
++#define ASYNCB_CHECK_CD		25 /* i.e., CLOCAL */
++#define ASYNCB_SHARE_IRQ	24 /* for multifunction cards, no longer used */
++#define ASYNCB_CONS_FLOW	23 /* flow control for console  */
++#define ASYNCB_FIRST_KERNEL	22
++
++#define ASYNC_HUP_NOTIFY	(1U << ASYNCB_HUP_NOTIFY)
++#define ASYNC_SUSPENDED		(1U << ASYNCB_SUSPENDED)
++#define ASYNC_FOURPORT		(1U << ASYNCB_FOURPORT)
++#define ASYNC_SAK		(1U << ASYNCB_SAK)
++#define ASYNC_SPLIT_TERMIOS	(1U << ASYNCB_SPLIT_TERMIOS)
++#define ASYNC_SPD_HI		(1U << ASYNCB_SPD_HI)
++#define ASYNC_SPD_VHI		(1U << ASYNCB_SPD_VHI)
++#define ASYNC_SKIP_TEST		(1U << ASYNCB_SKIP_TEST)
++#define ASYNC_AUTO_IRQ		(1U << ASYNCB_AUTO_IRQ)
++#define ASYNC_SESSION_LOCKOUT	(1U << ASYNCB_SESSION_LOCKOUT)
++#define ASYNC_PGRP_LOCKOUT	(1U << ASYNCB_PGRP_LOCKOUT)
++#define ASYNC_CALLOUT_NOHUP	(1U << ASYNCB_CALLOUT_NOHUP)
++#define ASYNC_HARDPPS_CD	(1U << ASYNCB_HARDPPS_CD)
++#define ASYNC_SPD_SHI		(1U << ASYNCB_SPD_SHI)
++#define ASYNC_LOW_LATENCY	(1U << ASYNCB_LOW_LATENCY)
++#define ASYNC_BUGGY_UART	(1U << ASYNCB_BUGGY_UART)
++#define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
++
++#define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
++#define ASYNC_USR_MASK		(ASYNC_SPD_MASK|ASYNC_CALLOUT_NOHUP| \
++		ASYNC_LOW_LATENCY)
++#define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
++#define ASYNC_SPD_WARP		(ASYNC_SPD_HI|ASYNC_SPD_SHI)
++#define ASYNC_SPD_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI|ASYNC_SPD_SHI)
++
++#define ASYNC_INITIALIZED	(1U << ASYNCB_INITIALIZED)
++#define ASYNC_NORMAL_ACTIVE	(1U << ASYNCB_NORMAL_ACTIVE)
++#define ASYNC_BOOT_AUTOCONF	(1U << ASYNCB_BOOT_AUTOCONF)
++#define ASYNC_CLOSING		(1U << ASYNCB_CLOSING)
++#define ASYNC_CTS_FLOW		(1U << ASYNCB_CTS_FLOW)
++#define ASYNC_CHECK_CD		(1U << ASYNCB_CHECK_CD)
++#define ASYNC_SHARE_IRQ		(1U << ASYNCB_SHARE_IRQ)
++#define ASYNC_CONS_FLOW		(1U << ASYNCB_CONS_FLOW)
++#define ASYNC_INTERNAL_FLAGS	(~((1U << ASYNCB_FIRST_KERNEL) - 1))
++
++#endif
+
