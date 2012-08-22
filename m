@@ -1,64 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab2HVDPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 23:15:19 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:50855 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab2HVDPQ (ORCPT
+	id S1753349Ab2HVDVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 23:21:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53365 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2HVDVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 23:15:16 -0400
-Message-ID: <1345605221.2366.2.camel@falcor.watson.ibm.com>
-Subject: Re: [PATCH] task_work: add a scheduling point in task_work_run()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Date: Tue, 21 Aug 2012 23:13:41 -0400
-In-Reply-To: <1345584725.5158.550.camel@edumazet-glaptop>
-References: <1341014197.2342.7.camel@falcor.watson.ibm.com>
-	 <20120630050238.GZ14083@ZenIV.linux.org.uk>
-	 <1341172202.2556.13.camel@falcor>
-	 <20120701205722.GD22927@ZenIV.linux.org.uk>
-		 <1341193591.2249.3.camel@falcor>
-	 <20120702034310.GE22927@ZenIV.linux.org.uk>
-	 <20120702051155.GF22927@ZenIV.linux.org.uk>
-		 <1341229790.2350.1.camel@falcor>
-	 <20120702120259.GG22927@ZenIV.linux.org.uk>
-		 <1341234091.2166.5.camel@falcor>
-	 <20120702133329.GH22927@ZenIV.linux.org.uk>
-		 <1341240603.2086.1.camel@falcor>
-	 <1345554314.5158.490.camel@edumazet-glaptop>
-	 <1345581470.2815.14.camel@falcor.watson.ibm.com>
-	 <1345584725.5158.550.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082203-7606-0000-0000-000002FE0102
+	Tue, 21 Aug 2012 23:21:03 -0400
+Date: Tue, 21 Aug 2012 20:20:57 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [RFC PATCH] Re: Repeated fork() causes SLAB to grow without bound
+Message-ID: <20120822032057.GA30871@google.com>
+References: <20120816024610.GA5350@evergreen.ssec.wisc.edu>
+ <502D42E5.7090403@redhat.com>
+ <20120818000312.GA4262@evergreen.ssec.wisc.edu>
+ <502F100A.1080401@redhat.com>
+ <alpine.LSU.2.00.1208200032450.24855@eggly.anvils>
+ <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANN689Ej7XLh8VKuaPrTttDrtDGQbXuYJgS2uKnZL2EYVTM3Dg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-08-21 at 23:32 +0200, Eric Dumazet wrote:
-> On Tue, 2012-08-21 at 16:37 -0400, Mimi Zohar wrote:
-> 
-> > We're here, because fput() called schedule_work() to delay the last
-> > fput().  The execution needs to take place before the syscall returns to
-> > userspace.  Need to read __schedule()...  Do you know if cond_resched()
-> > can guarantee that it will be executed before the return to userspace? 
-> 
-> Some clarifications : 
-> 
-> - fput() does not call schedule_work() in this case but task_work_add()
-> 
-> - cond_resched() wont return to userspace.
+On Mon, Aug 20, 2012 at 02:39:26AM -0700, Michel Lespinasse wrote:
+> Instead of adding an atomic count for page references, we could limit
+> the anon_vma stacking depth. In fork, we would only clone anon_vmas
+> that have a low enough generation count. I think that's not great
+> (adds a special case for the deep-fork-without-exec behavior), but
+> still better than the atomic page reference counter.
 
-Thanks for the clarification.
+Here is an attached patch to demonstrate the idea.
 
-Mimi
+anon_vma_clone() is modified to return the length of the existing same_vma
+anon vma chain, and we create a new anon_vma in the child only on the first
+fork (this could be tweaked to allow up to a set number of forks, but
+I think the first fork would cover all the common forking server cases).
 
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ mm/mmap.c |    6 +++---
+ mm/rmap.c |   18 ++++++++++++++----
+ 2 files changed, 17 insertions(+), 7 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3edfcdfa42d9..e14b19a838cb 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -539,7 +539,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		 * shrinking vma had, to cover any anon pages imported.
+ 		 */
+ 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
+-			if (anon_vma_clone(importer, exporter))
++			if (anon_vma_clone(importer, exporter) < 0)
+ 				return -ENOMEM;
+ 			importer->anon_vma = exporter->anon_vma;
+ 		}
+@@ -1988,7 +1988,7 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 	}
+ 	vma_set_policy(new, pol);
+ 
+-	if (anon_vma_clone(new, vma))
++	if (anon_vma_clone(new, vma) < 0)
+ 		goto out_free_mpol;
+ 
+ 	if (new->vm_file) {
+@@ -2409,7 +2409,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 			if (IS_ERR(pol))
+ 				goto out_free_vma;
+ 			INIT_LIST_HEAD(&new_vma->anon_vma_chain);
+-			if (anon_vma_clone(new_vma, vma))
++			if (anon_vma_clone(new_vma, vma) < 0)
+ 				goto out_free_mempol;
+ 			vma_set_policy(new_vma, pol);
+ 			new_vma->vm_start = addr;
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 0f3b7cda2a24..ba8a726aaee6 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -238,12 +238,13 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
+ 
+ /*
+  * Attach the anon_vmas from src to dst.
+- * Returns 0 on success, -ENOMEM on failure.
++ * Returns length of the anon_vma chain on success, -ENOMEM on failure.
+  */
+ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+ {
+ 	struct anon_vma_chain *avc, *pavc;
+ 	struct anon_vma *root = NULL;
++	int length = 0;
+ 
+ 	list_for_each_entry_reverse(pavc, &src->anon_vma_chain, same_vma) {
+ 		struct anon_vma *anon_vma;
+@@ -259,9 +260,10 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+ 		anon_vma = pavc->anon_vma;
+ 		root = lock_anon_vma_root(root, anon_vma);
+ 		anon_vma_chain_link(dst, avc, anon_vma);
++		length++;
+ 	}
+ 	unlock_anon_vma_root(root);
+-	return 0;
++	return length;
+ 
+  enomem_failure:
+ 	unlink_anon_vmas(dst);
+@@ -322,6 +324,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ {
+ 	struct anon_vma_chain *avc;
+ 	struct anon_vma *anon_vma;
++	int length;
+ 
+ 	/* Don't bother if the parent process has no anon_vma here. */
+ 	if (!pvma->anon_vma)
+@@ -331,10 +334,17 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	 * First, attach the new VMA to the parent VMA's anon_vmas,
+ 	 * so rmap can find non-COWed pages in child processes.
+ 	 */
+-	if (anon_vma_clone(vma, pvma))
++	length = anon_vma_clone(vma, pvma);
++	if (length < 0)
+ 		return -ENOMEM;
++	else if (length > 1)
++		return 0;
+ 
+-	/* Then add our own anon_vma. */
++	/*
++	 * Then add our own anon_vma. We do this only on the first fork after
++	 * the anon_vma is created, as we don't want the same_vma chain to
++	 * grow arbitrarily large.
++	 */
+ 	anon_vma = anon_vma_alloc();
+ 	if (!anon_vma)
+ 		goto out_error;
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
