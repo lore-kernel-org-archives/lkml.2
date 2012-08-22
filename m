@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933Ab2HVPhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:37:03 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:53147 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752439Ab2HVPhA (ORCPT
+	id S932990Ab2HVPiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:38:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51144 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756642Ab2HVPh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:37:00 -0400
+	Wed, 22 Aug 2012 11:37:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH 2/4] [RFC] ARM: mass move of mach-*/plat-* header files
+Date: Wed, 22 Aug 2012 15:37:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+References: <201208221253.07278.arnd@arndb.de> <201208221256.35657.arnd@arndb.de> <alpine.LFD.2.02.1208221126180.1754@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1208221126180.1754@xanadu.home>
 MIME-Version: 1.0
-In-Reply-To: <1345648390-4234-3-git-send-email-arnd@arndb.de>
-References: <1345648390-4234-1-git-send-email-arnd@arndb.de> <1345648390-4234-3-git-send-email-arnd@arndb.de>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Wed, 22 Aug 2012 21:06:38 +0530
-Message-ID: <CAMQu2gw0x6saWrK-M3teu49tJDGvS8RhGrVSh6JTs5DEy+22pA@mail.gmail.com>
-Subject: Re: [PATCH 2/6] ARM: omap: allow building omap44xx without SMP
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208221537.53904.arnd@arndb.de>
+X-Provags-ID: V02:K0:iiYu1sxb1zA+haxHtQF+NbOT1y+qcLnuOl9qElLGDCj
+ 7hDhThMSxl1FHM2eByj7aqfL0NBfzEzWw0Jnt4Fu3mVpgYM7Ex
+ f1xGJeyoQqUYXnfsqj8E7/ukgiawvylSWTfzcU73D4xn732zIB
+ 9Bjb0Gc9pf06258kpxs57uf3jRTwSkfMVPqBKQ+lOe95iWFmhd
+ 2CX+YV/gKhf53VvEW983YAvdiAvF1pe6xYHL6OpIY+gn/ewJ8n
+ APQZunwAxbQ7HIaYfO3hZc5Fg8wNEQ5NxkAambmGh6kgYdHYrV
+ TZdETChzhNq1hx9eP6D4HpikUhqyKwMY2ivFAh+T284w9xOvPs
+ KfLar1cBxaDPBIsfrdzc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 8:43 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> The new omap4 cpuidle implementation currently requires
-> ARCH_NEEDS_CPU_IDLE_COUPLED, which only works on SMP.
->
-> This patch makes it possible to build a non-SMP kernel
-> for that platform. This is not normally desired for
-> end-users but can be useful for testing.
->
-> Without this patch, building rand-0y2jSKT results in:
->
-> drivers/cpuidle/coupled.c: In function 'cpuidle_coupled_poke':
-> drivers/cpuidle/coupled.c:317:3: error: implicit declaration of function '__smp_call_function_single' [-Werror=implicit-function-declaration]
->
-> It's not clear if this patch is the best solution for
-> the problem at hand. I have made sure that we can now
-> build the kernel in all configurations, but that does
-> not mean it will actually work on an OMAP44xx.
->
-Am not sure either about the subject patch.
+On Wednesday 22 August 2012, Nicolas Pitre wrote:
+> Ideally, files such as ...
+> 
+> > rename from arch/arm/mach-at91/include/mach/at91_pio.h
+> > rename to arch/arm/mach-at91/include/mach-at91/at91_pio.h
+> 
+> should move next to the A91 GPIO driver file.  but that require manual 
+> operations which can be done later.
 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> ---
->  arch/arm/mach-omap2/Kconfig       |    2 +-
->  arch/arm/mach-omap2/cpuidle44xx.c |    3 ++-
->  include/linux/cpuidle.h           |    4 ++++
->  3 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> index dd2db02..66a8be3 100644
-> --- a/arch/arm/mach-omap2/Kconfig
-> +++ b/arch/arm/mach-omap2/Kconfig
-> @@ -62,7 +62,7 @@ config ARCH_OMAP4
->         select PM_OPP if PM
->         select USB_ARCH_HAS_EHCI if USB_SUPPORT
->         select ARM_CPU_SUSPEND if PM
-> -       select ARCH_NEEDS_CPU_IDLE_COUPLED
-> +       select ARCH_NEEDS_CPU_IDLE_COUPLED if SMP
->
->  config SOC_OMAP5
->         bool "TI OMAP5"
-> diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
-> index ee05e19..288bee6 100644
-> --- a/arch/arm/mach-omap2/cpuidle44xx.c
-> +++ b/arch/arm/mach-omap2/cpuidle44xx.c
-> @@ -238,8 +238,9 @@ int __init omap4_idle_init(void)
->         for_each_cpu(cpu_id, cpu_online_mask) {
->                 dev = &per_cpu(omap4_idle_dev, cpu_id);
->                 dev->cpu = cpu_id;
-> +#ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
->                 dev->coupled_cpus = *cpu_online_mask;
-> -
-> +#endif
+Right. There are cases where we have to do this eventually because the
+files are duplicated, e.g. at91/avr32, pxa/mmp, s3c/s5p/exynos, or
+sa1100/pxa.
 
-Was just thinking whether we should just take care of it at
-core cpuidle level itself. Will below be enough to kill the build
-error what you mentioned in the change log ?
+For the majority of cases where it's desirable to move the header file
+closer to the driver, it's not actually a prerequisite to do this
+in order to get a complete multiplatform setup.
 
-diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-index 2c9bf26..df34534 100644
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -314,7 +314,9 @@ static void cpuidle_coupled_poke(int cpu)
-        struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb, cpu);
-
-        if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
-+#ifdef CONFIG_SMP
-                __smp_call_function_single(cpu, csd, 0);
-+#endif
- }
-
- /**
-
-Regards
-Santosh
+	Arnd
