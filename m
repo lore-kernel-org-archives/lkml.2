@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab2HVI6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:58:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49919 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab2HVI6T (ORCPT
+	id S1758780Ab2HVI6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:58:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45484 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758633Ab2HVI6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:58:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: RFC: Link Time Optimization support for the kernel
-Date: Wed, 22 Aug 2012 08:58:02 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, JBeulich@suse.com,
-        akpm@linux-foundation.org
-References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Wed, 22 Aug 2012 04:58:37 -0400
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alex Bergmann <alex@linlab.net>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
+        Nandita Dukkipati <nanditad@google.com>
+In-Reply-To: <50349CC5.3050601@linlab.net>
+References: <503419D3.1080700@linlab.net>
+	 <1345622798.5158.717.camel@edumazet-glaptop>  <50349CC5.3050601@linlab.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Aug 2012 10:58:30 +0200
+Message-ID: <1345625910.5158.793.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208220858.03227.arnd@arndb.de>
-X-Provags-ID: V02:K0:TYuOa+O/+4o3qoW/mjuCdMpUDQfd4Fa1wgzy2c1rPjF
- L9ztmbrelY601sjqLo/vmDvh8/WENWqbb9+aQ5Abk0w47rZA6h
- otR7RgFvbKkOQB4YNvyLMRTGpNLfLckJoFiBrKw+we+efPlodc
- 1EW5PRpqA4y6HZvlF5zGDH5jPgHW2WPx2xh5VEjG8THpydkBxM
- zanH0utEMsG1FiHaRtQD1UI/u5obrJBOLGSgUzx4VgQRxCQCCg
- l2ZFeojKGqaiNdxcgtz4JHSdNVtI5ClkAlhbLC+S6WHDTHnj5X
- n32are74S7tscHnBSvdnq+EbcxIXxoAcpBUcfkVWJ1Zb7oyyxe
- HXkAXadamKlWoPi4yqs0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 August 2012, Andi Kleen wrote:
+On Wed, 2012-08-22 at 10:48 +0200, Alex Bergmann wrote:
+> On 08/22/2012 10:06 AM, Eric Dumazet wrote:
+> >> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
+> >> a timeout of 63secs.
+> >>
+> >>          ((2 << 5) - 1) * 3 secs = 189 secs
+> >>          ((2 << 5) - 1) * 1 secs = 63 secs
+> > 
+> > Strange maths ... here I have :
+> > 
+> > (1+2+4+8+16) * 3 = 93 secs
+> > vs
+> > (1+2+4+8+16) * 1 = 31 secs
+> > 
+> > So even before said commit, we were not rfc1122 compliant.
+> > 
+> > Using 7 retries would give 127 seconds, still not rfc compliant.
 > 
-> This rather large patchkit enables gcc Link Time Optimization (LTO) 
-> support for the kernel. 
+> You're missing the timeout after the 5th SYN packet was sent. This 
+> would result in another 32 seconds (96 seconds).
 > 
-> With LTO gcc will do whole program optimizations for
-> the whole kernel and each module. This increases compile time,
-> but can generate faster code.
->     
-> LTO allows gcc to inline functions between different files and
-> do various other optimization across the whole binary.
+> The timeout is calculated here:
+> 
+> net/ipv4/tcp_timer.c(146:150)
+> 
+> 	if (boundary <= linear_backoff_thresh)
+> 		timeout = ((2 << boundary) - 1) * rto_base;
+> 	else
+> 		timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
+> 			(boundary - linear_backoff_thresh) * TCP_RTO_MAX;
 
-This looks quite nice overall. Have you seen other disadvantages
-besides bugs and compile time? There are two possible issues that
-I can see happening:
+Thats the code yes but you miss the fact that last occurence of the
+timer doesnt send a frame on the _network_
 
-* Debuggability: When we get more aggressive optimizations, it
-often becomes harder to trace back object code to a specific source
-line, which may be a reason for distros not to enable it for their
-product kernels in the end because it can make the work of their
-support teams harder.
+R2 is derived from the last frame sent.
 
-* Stack consumption: If you do more inlining, the total stack usage
-of large functions can become higher than what the deepest path through
-the same code in the non-inlined version would be. This bites us
-more in the kernel than in user applications, which have much more
-stack space available.
+Fact that the connect() is a bit long to return to user space is not
+relevant. We could block the task for 2 hours and still be non RFC
+compliant.
 
-Have you noticed problems with either of these so far? Do you think
-they are realistic concerns or is the LTO implementation good enough
-that they would rarely become an issue?
+Actual 5 frames are sent, so the effective global timeout is the one I
+quoted.
 
-	Arnd
+1 + 2 + 4 + 8 + 16   and its 31 
+
+Just do a tcpdump and you can see it.
+
+
+
