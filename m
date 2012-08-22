@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab2HVOzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:55:53 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57362 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab2HVOzw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:55:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EF0C47@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F41EF0C47@DQHE02.ent.ti.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Wed, 22 Aug 2012 22:55:30 +0800
-X-Google-Sender-Auth: jUo15Jv75zeXfKS2bZf4ohJm8js
-Message-ID: <CAK5ve-LtWsnKRbDCdsCfnNOKOZXWgfXij0yP6kn_mD4DuB7npg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] leds-lp5523: set the brightness to 0 forcely on
- removing the driver
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757463Ab2HVPAe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:00:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60762 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757085Ab2HVPAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:00:25 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 14/36] autonuma: call autonuma_setup_new_exec()
+Date: Wed, 22 Aug 2012 16:58:58 +0200
+Message-Id: <1345647560-30387-15-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 3:32 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
-> Turning off the brightness of each channel is required
-> when removing the driver.
->
-> So use flush_work() rather than cancel_work_sync() to execute
-> remaining brightness works.
->
+This resets all per-thread and per-process statistics across exec
+syscalls or after kernel threads detach from the mm. The past
+statistical NUMA information is unlikely to be relevant for the future
+in these cases.
 
-Thanks, merged to my for-next
--Bryan
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ fs/exec.c        |    7 +++++++
+ mm/mmu_context.c |    3 +++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/leds/leds-lp5523.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-> index 9fd9a92..2fd5689 100644
-> --- a/drivers/leds/leds-lp5523.c
-> +++ b/drivers/leds/leds-lp5523.c
-> @@ -974,7 +974,7 @@ static int __devinit lp5523_probe(struct i2c_client *client,
->  fail2:
->         for (i = 0; i < chip->num_leds; i++) {
->                 led_classdev_unregister(&chip->leds[i].cdev);
-> -               cancel_work_sync(&chip->leds[i].brightness_work);
-> +               flush_work(&chip->leds[i].brightness_work);
->         }
->  fail1:
->         if (pdata->enable)
-> @@ -993,7 +993,7 @@ static int lp5523_remove(struct i2c_client *client)
->
->         for (i = 0; i < chip->num_leds; i++) {
->                 led_classdev_unregister(&chip->leds[i].cdev);
-> -               cancel_work_sync(&chip->leds[i].brightness_work);
-> +               flush_work(&chip->leds[i].brightness_work);
->         }
->
->         if (chip->pdata->enable)
-> --
-> 1.7.2.5
->
->
-> Best Regards,
-> Milo
->
->
-
-
-
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+diff --git a/fs/exec.c b/fs/exec.c
+index 574cf4d..1d55077 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -55,6 +55,7 @@
+ #include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
+ #include <linux/compat.h>
++#include <linux/autonuma.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -1172,6 +1173,12 @@ void setup_new_exec(struct linux_binprm * bprm)
+ 			
+ 	flush_signal_handlers(current, 0);
+ 	flush_old_files(current->files);
++
++	/*
++	 * Reset autonuma counters, as past NUMA information
++	 * is unlikely to be relevant for the future.
++	 */
++	autonuma_setup_new_exec(current);
+ }
+ EXPORT_SYMBOL(setup_new_exec);
+ 
+diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+index 3dcfaf4..e6fff1c 100644
+--- a/mm/mmu_context.c
++++ b/mm/mmu_context.c
+@@ -7,6 +7,7 @@
+ #include <linux/mmu_context.h>
+ #include <linux/export.h>
+ #include <linux/sched.h>
++#include <linux/autonuma.h>
+ 
+ #include <asm/mmu_context.h>
+ 
+@@ -52,6 +53,8 @@ void unuse_mm(struct mm_struct *mm)
+ {
+ 	struct task_struct *tsk = current;
+ 
++	autonuma_setup_new_exec(tsk);
++
+ 	task_lock(tsk);
+ 	sync_mm_rss(mm);
+ 	tsk->mm = NULL;
