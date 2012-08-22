@@ -1,75 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab2HVIpd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:45:33 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:55326 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755234Ab2HVIob (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:44:31 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: Etienne Carriere <etienne.carriere@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 6/7] mfd/stmpe: MASK_ON_SUSPEND
-Date: Wed, 22 Aug 2012 10:44:23 +0200
-Message-ID: <1345625063-5784-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	id S1758330Ab2HVIsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:48:33 -0400
+Received: from mail.linlab.net ([89.244.147.154]:56422 "EHLO mail.linlab.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757600Ab2HVIsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:48:19 -0400
+X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7M8m3OM001670
+Message-ID: <50349CC5.3050601@linlab.net>
+Date: Wed, 22 Aug 2012 10:48:05 +0200
+From: Alex Bergmann <alex@linlab.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
+        Nandita Dukkipati <nanditad@google.com>
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+References: <503419D3.1080700@linlab.net> <1345622798.5158.717.camel@edumazet-glaptop>
+In-Reply-To: <1345622798.5158.717.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.6 (mail.linlab.net [IPv6:2001:470:7142:a0::3]); Wed, 22 Aug 2012 10:48:09 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Etienne Carriere <etienne.carriere@stericsson.com>
+On 08/22/2012 10:06 AM, Eric Dumazet wrote:
+>> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
+>> a timeout of 63secs.
+>>
+>>          ((2 << 5) - 1) * 3 secs = 189 secs
+>>          ((2 << 5) - 1) * 1 secs = 63 secs
+> 
+> Strange maths ... here I have :
+> 
+> (1+2+4+8+16) * 3 = 93 secs
+> vs
+> (1+2+4+8+16) * 1 = 31 secs
+> 
+> So even before said commit, we were not rfc1122 compliant.
+> 
+> Using 7 retries would give 127 seconds, still not rfc compliant.
 
-ux500 machines performs pins (GPIO) reconfiguration when entering
-in the suspended mode. This reconfiguration aims at reaching an ultra
-low power HW configuration.
+You're missing the timeout after the 5th SYN packet was sent. This 
+would result in another 32 seconds (96 seconds).
 
-Due to this HW reconfiguration, some HW devices can change of HW state
-and have their output signals at level that could generate IRQs.
+The timeout is calculated here:
 
-If the non-wakeup IRQs are disabled but not yet masked (delayed interrupt
-disable feature from the generic irq layer), effective interrupts reach
-the system only because the system attempt to enter the suspended mode.
+net/ipv4/tcp_timer.c(146:150)
 
-To prevent such IRQs to trig, all irq chips embedded in ux500 platform
-should enable their IRQCHIP_MASK_ON_SUSPEND flag.
+	if (boundary <= linear_backoff_thresh)
+		timeout = ((2 << boundary) - 1) * rto_base;
+	else
+		timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
+			(boundary - linear_backoff_thresh) * TCP_RTO_MAX;
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Etienne Carriere <etienne.carriere@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-stmpe.c | 1 +
- drivers/mfd/stmpe.c       | 1 +
- 2 files changed, 2 insertions(+)
+> 
+>>
+>> To fulfill the MUST constraint in RFC1122 section 4.2.3.5 about R2 for
+>> SYN segments, the values of TCP_SYN_RETRIES and TCP_SYNACK_RETRIES must
+>> be changed to 7 reties.
+>>
+>>          ((2 << 7) - 1) * 1 secs = 255 secs
+>>
+>> This would result in an ETIMEDOUT of 4 minutes 15 seconds.
+>>
+>> Signed-off-by: Alexander Bergmann <alex@linlab.net>
+>> ---
+>>   include/net/tcp.h |    4 ++--
+>>   1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/net/tcp.h b/include/net/tcp.h
+>> index 1f000ff..7eaae19 100644
+>> --- a/include/net/tcp.h
+>> +++ b/include/net/tcp.h
+>> @@ -98,10 +98,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
+>>                                   * 15 is ~13-30min depending on RTO.
+>>                                   */
+>>   
+>> -#define TCP_SYN_RETRIES         5      /* number of times to retry active opening a
+>> +#define TCP_SYN_RETRIES         7      /* number of times to retry active opening a
+>>                                   * connection: ~180sec is RFC minimum   */
+>>   
+>> -#define TCP_SYNACK_RETRIES 5   /* number of times to retry passive opening a
+>> +#define TCP_SYNACK_RETRIES 7   /* number of times to retry passive opening a
+>>                                   * connection: ~180sec is RFC minimum   */
+>>   
+>>   #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
+> 
+> Nice catch !
+> 
+> I kind of disagree with the SYNACK part.
 
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index dce3472..2195abc 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -223,6 +223,7 @@ static struct irq_chip stmpe_gpio_irq_chip = {
- 	.irq_mask		= stmpe_gpio_irq_mask,
- 	.irq_unmask		= stmpe_gpio_irq_unmask,
- 	.irq_set_type		= stmpe_gpio_irq_set_type,
-+	.flags			= IRQCHIP_MASK_ON_SUSPEND,
- };
- 
- static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 2dd8d49..846b9c8 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -851,6 +851,7 @@ static struct irq_chip stmpe_irq_chip = {
- 	.irq_bus_sync_unlock	= stmpe_irq_sync_unlock,
- 	.irq_mask		= stmpe_irq_mask,
- 	.irq_unmask		= stmpe_irq_unmask,
-+	.flags			= IRQCHIP_MASK_ON_SUSPEND,
- };
- 
- static int __devinit stmpe_irq_init(struct stmpe *stmpe)
--- 
-1.7.11.3
+I will look into this. 
 
+> RFC 1122 says in 4.2.3.5 :
+> 
+>    However, the values of R1 and R2 may be different for SYN
+>    and data segments.  In particular, R2 for a SYN segment MUST
+>    be set large enough to provide retransmission of the segment
+>    for at least 3 minutes.  The application can close the
+>    connection (i.e., give up on the open attempt) sooner, of
+>    course.
+> 
+> I am not sure SYNACK segments were considered as a 'SYN segment' in this
+> section. (as the application cannot 'close' the connection on the passive
+> side, only kernel is aware of a SYN_RECV socket)
+> 
+> Increasing TCP_SYNACK_RETRIES from 5 to 7 or 8 amplifies the
+> SYN/synflood problem.
+> 
+> A valid client should retransmit its SYN packet for 180 seconds, I dont
+> believe we should make sure the SYNACK will be sent for 180 seconds as
+> well.
+> 
+> If we _really_ want to have a 3 minutes R2 for SYNACK, I suggest
+> changing things to that we dont send more than 5 SYNACKS, maybe using
+> RTO=6 after one retransmit
+> 
+> current situation :
+> 1 sec
+> 2 sec
+> 4 sec
+> 8 sec
+> 16 sec
+> ----
+> total of 31 seconds
+> 
+> 
+> 1 sec
+> 12 sec  // switch to RTO = 6
+> 24 sec
+> 48 sec
+> 96 sec
+> -----
+> total of 181 seconds
+> 
+> 
+> 
