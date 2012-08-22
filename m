@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964978Ab2HVR3a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 13:29:30 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55411 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964848Ab2HVR32 (ORCPT
+	id S1752403Ab2HVRc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 13:32:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38593 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab2HVRc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 13:29:28 -0400
+	Wed, 22 Aug 2012 13:32:26 -0400
+Message-ID: <503517C4.5030500@gmail.com>
+Date: Wed, 22 Aug 2012 19:32:52 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1345629806.5158.933.camel@edumazet-glaptop>
-References: <503419D3.1080700@linlab.net>
-	<1345622798.5158.717.camel@edumazet-glaptop>
-	<50349CC5.3050601@linlab.net>
-	<1345625910.5158.793.camel@edumazet-glaptop>
-	<5034A678.3040207@linlab.net>
-	<1345629597.5158.924.camel@edumazet-glaptop>
-	<1345629806.5158.933.camel@edumazet-glaptop>
-Date: Wed, 22 Aug 2012 10:29:26 -0700
-Message-ID: <CAFbMe2N-Ag_tUnHCr1=cJJmC4FTfXVJumn2Bk-oVfxuBoSCGrQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alex Bergmann <alex@linlab.net>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Nandita Dukkipati <nanditad@google.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 13/17] lockd: use new hashtable implementation
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-14-git-send-email-levinsasha928@gmail.com> <20120822114752.GC20158@fieldses.org> <5034CD02.2010103@gmail.com> <20120822132243.GA2844@Krystal>
+In-Reply-To: <20120822132243.GA2844@Krystal>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 3:03 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Wed, 2012-08-22 at 12:00 +0200, Eric Dumazet wrote:
->> On Wed, 2012-08-22 at 11:29 +0200, Alex Bergmann wrote:
+On 08/22/2012 03:22 PM, Mathieu Desnoyers wrote:
+> * Sasha Levin (levinsasha928@gmail.com) wrote:
+>> On 08/22/2012 01:47 PM, J. Bruce Fields wrote:
+>>> On Wed, Aug 22, 2012 at 04:27:08AM +0200, Sasha Levin wrote:
+>>>> +static int __init nlm_init(void)
+>>>> +{
+>>>> +	hash_init(nlm_files);
+>>>> +	return 0;
+>>>> +}
+>>>> +
+>>>> +module_init(nlm_init);
+>>>
+>>> That's giving me:
+>>>
+>>> fs/lockd/svcsubs.o: In function `nlm_init':
+>>> /home/bfields/linux-2.6/fs/lockd/svcsubs.c:454: multiple definition of `init_module'
+>>> fs/lockd/svc.o:/home/bfields/linux-2.6/fs/lockd/svc.c:606: first defined here
+>>> make[2]: *** [fs/lockd/lockd.o] Error 1
+>>> make[1]: *** [fs/lockd] Error 2
+>>> make[1]: *** Waiting for unfinished jobs....
 >>
->> > Actual 6 SYN frames are sent. The initial one and 5 retries.
->> >
+>> I tested this entire patch set both with linux-next and Linus' latest master,
+>> and it worked fine in both places.
 >>
->> first one had a t0 + 0 delay. How can it count ???
->>
->> > The kernel is waiting another 32 seconds for a SYN+ACK and then gives
->> > the ETIMEDOUT back to userspace.
->> >
->> > Do you mean that we have to send another SYN packet after the 3 minutes?
->> >
->>
->> First SYN is not a retransmit
->>
->> R2 = time_of_last_SYN - time_of_initial_SYN (t0) = 31
->>
->> If you read RFC it states :
->>
->> "In particular, R2 for a SYN segment MUST
->>  be set large enough to provide retransmission of the segment
->>  for at least 3 minutes."
->>
->>
->> That means that the last _retransmit_ MUST happen after 180 seconds.
->>
->> And not :
->>
->> Send all the restransmits at t0 + 1, then wait 180 seconds before giving
->> connect() a timeout indication.
->>
->>
->
-> Therefore, the minimal connect() timeout should be : 180 + 100 seconds
->
-> (allowing 100 seconds for the SYNACKs sent in answer of the very last
-> retransmit to come back)
->
-> (100 seconds is the R2 for non SYN frames)
->
-> RFC quote : The value of R2 SHOULD
->             correspond to at least 100 seconds.
+>> Is it possible that lockd has a -next tree which isn't pulled into linux-next?
+>> (there's nothing listed in MAINTAINERS that I could see).
+> 
+> fs/lockd/Makefile:
+> 
+> obj-$(CONFIG_LOCKD) += lockd.o
+> 
+> lockd-objs-y := clntlock.o clntproc.o clntxdr.o host.o svc.o svclock.o \
+>                 svcshare.o svcproc.o svcsubs.o mon.o xdr.o grace.o
+> 
+> your patch adds a module_init to svcsubs.c.
+> However, there is already one in svc.c, pulled into the same module.
+> 
+> in your test build, is CONFIG_LOCKD defined as "m" or "y" ? You should
+> always test both.
+> 
+> One solution here is to create a "local" init function in svcsubs.c and
+> expose it to svc.c, so the latter can call it from its module init
+> function.
 
-I agree if you take RFC1122 literally the last retransmission must
-happen no less than 3 minutes from the 1st SYN... Oh actually it'd be
-3 minutes plus initRTO because the 3 minutes applies only to
-"retransmission" as in
+Ah yes, it was on =y and I didn't notice :/
 
-"R2 for a SYN segment MUST be set large enough to provide retransmission
-of the segment for at least 3 minutes.:
+I'll fix that.
 
-But IMHO 6 retries providing 1+2+4+8+16+32 = 63 secs retransmission plus
-64 secs wait time totaling 127 secs is really plenty enough.
+> Thanks,
+> 
+> Mathieu
+> 
 
-You have a good point on SYN-ACK.
-
-Jerry
-
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
