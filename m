@@ -1,159 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab2HVFnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 01:43:18 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43792 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab2HVFmn (ORCPT
+	id S1756640Ab2HVFnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 01:43:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48247 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756201Ab2HVFnl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 01:42:43 -0400
-From: Omar Ramirez Luna <omar.luna@linaro.org>
-To: Benoit Cousson <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.luna@linaro.org>
-Subject: [PATCH 1/2] ARM: OMAP: hwmod: partially un-reset hwmods might not be properly enabled
-Date: Wed, 22 Aug 2012 00:42:29 -0500
-Message-Id: <1345614150-25723-2-git-send-email-omar.luna@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345614150-25723-1-git-send-email-omar.luna@linaro.org>
-References: <1345614150-25723-1-git-send-email-omar.luna@linaro.org>
+	Wed, 22 Aug 2012 01:43:41 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+CC: Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
+Subject: RE: [PATCH 1/4] leds-lp5523: add channel name in the platform data
+Thread-Topic: [PATCH 1/4] leds-lp5523: add channel name in the platform data
+Thread-Index: Ac1/e8n5oMMAm/XERXqosJtmV9h97AAUPsYAABHJYrA=
+Date: Wed, 22 Aug 2012 05:43:29 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F41EF0BF4@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F41EF0AD5@DQHE02.ent.ti.com>
+ <CAK5ve-+LWG=YzEy=qWnGvqzw6+tX=7su5NH5V=5g+fjHA6gJrg@mail.gmail.com>
+In-Reply-To: <CAK5ve-+LWG=YzEy=qWnGvqzw6+tX=7su5NH5V=5g+fjHA6gJrg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some IP blocks might not be using/controlling more than one
-reset line, this check loosens the restriction to fully use
-hwmod framework for those drivers.
+> >  LP5523 can drive up to 9 channels. Leds can be controlled directly
+> via
+> > -the led class control interface. Channels have generic names:
+> > +the led class control interface.
+> > +The name of each channel is configurable in the platform data.
+> > +If the name is NULL, channels have generic names:
+> >  lp5523:channelx where x is 0...8
 
-E.g.: ipu has reset lines: mmu_cache, cpu0 and cpu1.
-- As of now cpu1 is not used and hence (with previous check) the
-  IP block isn't fully enabled by hwmod code.
-- Usually ipu and dsp processors configure their mmu module first
-  and then enable the processors, this involves:
-    * Deasserting mmu reset line, and enabling the module.
-    * Deasserting cpu0 reset line, and enabling the processor.
-  The ones portrayed in this example are controlled through
-  rproc_fw_boot in drivers/remoteproc/remoteproc_core.c
+> Why we need a test here "pdata->label ?:"? From the document, looks
+> like we use lp5523:channel%d as default.
 
-While at it, prevent _omap4_module_disable if all the hardreset
-lines on an IP block are not under reset.
+To define the channel name, we have three options.
+a) using 'name' field for each channel
+b) using 'label' field without 'name'
+c) default : neither data is defined
 
-This will allow the driver to:
-  a. Deassert the reset line.
-  b. Enable the hwmod through runtime PM default callbacks.
-  c. Do its usecase.
-  d. Disable hwmod through runtime PM.
-  e. Assert the reset line.
+So I would change the description as below.
 
-Signed-off-by: Omar Ramirez Luna <omar.luna@linaro.org>
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod.c |   37 ++++++++++++++++++++++---------------
- 1 file changed, 22 insertions(+), 15 deletions(-)
+ Documentation/leds/leds-lp5523.txt |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index 6ca8e51..eaedc33 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -1558,25 +1558,28 @@ static int _read_hardreset(struct omap_hwmod *oh, const char *name)
- }
- 
- /**
-- * _are_any_hardreset_lines_asserted - return true if part of @oh is hard-reset
-+ * _are_all_hardreset_lines_asserted - return true if the @oh is hard-reset
-  * @oh: struct omap_hwmod *
-  *
-- * If any hardreset line associated with @oh is asserted, then return true.
-- * Otherwise, if @oh has no hardreset lines associated with it, or if
-- * no hardreset lines associated with @oh are asserted, then return false.
-+ * If all hardreset lines associated with @oh are asserted, then return true.
-+ * Otherwise, if part of @oh is out hardreset or if no hardreset lines
-+ * associated with @oh are asserted, then return false.
-  * This function is used to avoid executing some parts of the IP block
-- * enable/disable sequence if a hardreset line is set.
-+ * enable/disable sequence if its hardreset line is set.
-  */
--static bool _are_any_hardreset_lines_asserted(struct omap_hwmod *oh)
-+static bool _are_all_hardreset_lines_asserted(struct omap_hwmod *oh)
- {
--	int i;
-+	int i, rst_cnt = 0;
- 
- 	if (oh->rst_lines_cnt == 0)
- 		return false;
- 
- 	for (i = 0; i < oh->rst_lines_cnt; i++)
- 		if (_read_hardreset(oh, oh->rst_lines[i].name) > 0)
--			return true;
-+			rst_cnt++;
+diff --git a/Documentation/leds/leds-lp5523.txt b/Documentation/leds/leds-lp5523.txt
+index fad2feb..120fdfe 100644
+--- a/Documentation/leds/leds-lp5523.txt
++++ b/Documentation/leds/leds-lp5523.txt
+@@ -10,8 +10,22 @@ Contact: Samu Onkalo (samu.p.onkalo-at-nokia.com)
+ Description
+ -----------
+ LP5523 can drive up to 9 channels. Leds can be controlled directly via
+-the led class control interface. Channels have generic names:
+-lp5523:channelx where x is 0...8
++the led class control interface.
++The name of each channel is configurable in the platform data - name and label.
++There are three options to make the channel name.
 +
-+	if (oh->rst_lines_cnt == rst_cnt)
-+		return true;
- 
- 	return false;
- }
-@@ -1595,6 +1598,13 @@ static int _omap4_disable_module(struct omap_hwmod *oh)
- 	if (!oh->clkdm || !oh->prcm.omap4.modulemode)
- 		return -EINVAL;
- 
-+	/*
-+	 * Since integration code might still be doing something, only
-+	 * disable if all lines are under hardreset.
-+	 */
-+	if (!_are_all_hardreset_lines_asserted(oh))
-+		return 0;
++a) Define the 'name' in the platform data
++To make specific channel name, then use 'name' platform data.
++/sys/class/leds/R1               (name: 'R1')
++/sys/class/leds/B1               (name: 'B1')
 +
- 	pr_debug("omap_hwmod: %s: %s\n", oh->name, __func__);
++b) Use the 'label' with no 'name' field
++For one device name with channel number, then use 'label'.
++/sys/class/leds/RGB:channelN     (label: 'RGB', N: 0 ~ 8)
++
++c) Default
++If both fields are NULL, 'lp5523' is used by default.
++/sys/class/leds/lp5523:channelN  (N: 0 ~ 8)
  
- 	omap4_cminst_module_disable(oh->clkdm->prcm_partition,
-@@ -1602,9 +1612,6 @@ static int _omap4_disable_module(struct omap_hwmod *oh)
- 				    oh->clkdm->clkdm_offs,
- 				    oh->prcm.omap4.clkctrl_offs);
- 
--	if (_are_any_hardreset_lines_asserted(oh))
--		return 0;
--
- 	v = _omap4_wait_target_disable(oh);
- 	if (v)
- 		pr_warn("omap_hwmod: %s: _wait_target_disable failed\n",
-@@ -1830,7 +1837,7 @@ static int _enable(struct omap_hwmod *oh)
- 	}
- 
- 	/*
--	 * If an IP block contains HW reset lines and any of them are
-+	 * If an IP block contains HW reset lines and all of them are
- 	 * asserted, we let integration code associated with that
- 	 * block handle the enable.  We've received very little
- 	 * information on what those driver authors need, and until
-@@ -1838,7 +1845,7 @@ static int _enable(struct omap_hwmod *oh)
- 	 * posted to the public lists, this is probably the best we
- 	 * can do.
- 	 */
--	if (_are_any_hardreset_lines_asserted(oh))
-+	if (_are_all_hardreset_lines_asserted(oh))
- 		return 0;
- 
- 	/* Mux pins for device runtime if populated */
-@@ -1918,7 +1925,7 @@ static int _idle(struct omap_hwmod *oh)
- 		return -EINVAL;
- 	}
- 
--	if (_are_any_hardreset_lines_asserted(oh))
-+	if (_are_all_hardreset_lines_asserted(oh))
- 		return 0;
- 
- 	if (oh->class->sysc)
-@@ -2006,7 +2013,7 @@ static int _shutdown(struct omap_hwmod *oh)
- 		return -EINVAL;
- 	}
- 
--	if (_are_any_hardreset_lines_asserted(oh))
-+	if (_are_all_hardreset_lines_asserted(oh))
- 		return 0;
- 
- 	pr_debug("omap_hwmod: %s: disabling\n", oh->name);
+ The chip provides 3 engines. Each engine can control channels without
+ interaction from the main CPU. Details of the micro engine code can be found
 -- 
-1.7.9.5
+1.7.2.5
+
+
+Best Regards,
+Milo
+
+
 
