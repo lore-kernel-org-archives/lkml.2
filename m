@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab2HVXjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 19:39:24 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:60487 "EHLO
-	homiemail-a46.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755770Ab2HVXjU (ORCPT
+	id S932914Ab2HVXju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 19:39:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47473 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243Ab2HVXjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 19:39:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=from:to:cc
-	:subject:date:message-id; q=dns; s=shealevy.com; b=Um+2OXdfxTvA9
-	lsxMLfx2Ian/tZNDcsEaNnzZ1YfJYSgNk0dDb4pIUMOIHFbEAh4+It9bcjcg3HGd
-	Bypv65Q/ZmxuCgHbd6hvCoa0++h9LB2bYpyLCl+MHQHcpj195pJ+Dt+TtotJMmPU
-	pMRwPEWgzwHJgo1ZSiO6INouHumTbI=
-From: Shea Levy <shea@shealevy.com>
-To: linux-bluetooth@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hedberg <johan.hedberg@gmail.com>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH RESEND RESEND] Bluetooth: Add support for Apple MacBook Pro 9,2
-Date: Wed, 22 Aug 2012 19:39:13 -0400
-Message-Id: <1345678753-32753-1-git-send-email-shea@shealevy.com>
-X-Mailer: git-send-email 1.7.11.4
+	Wed, 22 Aug 2012 19:39:46 -0400
+Date: Wed, 22 Aug 2012 16:39:31 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-09c3f0d883300c8fc2bb62e9a70cf89a2ada9a80@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
+In-Reply-To: <1344361461-10076-5-git-send-email-bp@amd64.org>
+References: <1344361461-10076-5-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86, microcode:
+  Cleanup cpu hotplug notifier callback
+Git-Commit-ID: 09c3f0d883300c8fc2bb62e9a70cf89a2ada9a80
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Aug 2012 16:39:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-$ usb-devices
-<snip>
-T:  Bus=04 Lev=04 Prnt=04 Port=02 Cnt=01 Dev#=  9 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=05ac ProdID=821d Rev=00.86
-S:  Manufacturer=Apple Inc.
-S:  Product=Bluetooth USB Host Controller
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-<snip>
+Commit-ID:  09c3f0d883300c8fc2bb62e9a70cf89a2ada9a80
+Gitweb:     http://git.kernel.org/tip/09c3f0d883300c8fc2bb62e9a70cf89a2ada9a80
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Mon, 23 Jul 2012 20:15:10 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 22 Aug 2012 16:14:52 -0700
 
-Signed-off-by: Shea Levy <shea@shealevy.com>
+x86, microcode: Cleanup cpu hotplug notifier callback
+
+Mask out CPU_TASKS_FROZEN bit so that all _FROZEN cases can be dropped.
+Also, add some more comments as to why CPU_ONLINE falls through to
+CPU_DOWN_FAILED (no break), and for the CPU_DEAD case. Realign debug
+printks better.
+
+Idea blatantly stolen from a tglx patch:
+http://marc.info/?l=linux-kernel&m=134267779513862
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Link: http://lkml.kernel.org/r/1344361461-10076-5-git-send-email-bp@amd64.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/bluetooth/btusb.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/microcode_core.c |   25 ++++++++++++++++---------
+ 1 files changed, 16 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index f077f4d..fdddb6e 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -73,6 +73,9 @@ static struct usb_device_id btusb_table[] = {
- 	/* Apple MacBookPro8,2 */
- 	{ USB_DEVICE(0x05ac, 0x821a) },
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index 706a5c9..dcde544 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -470,34 +470,41 @@ mc_cpu_callback(struct notifier_block *nb, unsigned long action, void *hcpu)
+ 	struct device *dev;
  
-+	/* Apple MacBookPro9,2 */
-+	{ USB_DEVICE(0x05ac, 0x821d) },
+ 	dev = get_cpu_device(cpu);
+-	switch (action) {
 +
- 	/* Apple MacMini5,1 */
- 	{ USB_DEVICE(0x05ac, 0x8281) },
++	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+ 		microcode_update_cpu(cpu);
+-	case CPU_DOWN_FAILED:
+-	case CPU_DOWN_FAILED_FROZEN:
+ 		pr_debug("CPU%d added\n", cpu);
++		/*
++		 * "break" is missing on purpose here because we want to fall
++		 * through in order to create the sysfs group.
++		 */
++
++	case CPU_DOWN_FAILED:
+ 		if (sysfs_create_group(&dev->kobj, &mc_attr_group))
+ 			pr_err("Failed to create group for CPU%d\n", cpu);
+ 		break;
++
+ 	case CPU_DOWN_PREPARE:
+-	case CPU_DOWN_PREPARE_FROZEN:
+ 		/* Suspend is in progress, only remove the interface */
+ 		sysfs_remove_group(&dev->kobj, &mc_attr_group);
+ 		pr_debug("CPU%d removed\n", cpu);
+ 		break;
  
--- 
-1.7.11.4
-
+ 	/*
++	 * case CPU_DEAD:
++	 *
+ 	 * When a CPU goes offline, don't free up or invalidate the copy of
+ 	 * the microcode in kernel memory, so that we can reuse it when the
+ 	 * CPU comes back online without unnecessarily requesting the userspace
+ 	 * for it again.
+ 	 */
+-	case CPU_UP_CANCELED_FROZEN:
+-		/* The CPU refused to come up during a system resume */
+-		microcode_fini_cpu(cpu);
+-		break;
+ 	}
++
++	/* The CPU refused to come up during a system resume */
++	if (action == CPU_UP_CANCELED_FROZEN)
++		microcode_fini_cpu(cpu);
++
+ 	return NOTIFY_OK;
+ }
+ 
