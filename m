@@ -1,55 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758658Ab2HVIyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:54:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59924 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757078Ab2HVIyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:54:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.77,808,1336374000"; 
-   d="scan'208";a="189743323"
-Message-ID: <50349E45.3020502@intel.com>
-Date: Wed, 22 Aug 2012 16:54:29 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1758580Ab2HVI4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:56:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23852 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753195Ab2HVI41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:56:27 -0400
+X-IronPort-AV: E=Sophos;i="4.77,808,1336320000"; 
+   d="scan'208";a="5693817"
+Message-ID: <50349FF7.6030407@cn.fujitsu.com>
+Date: Wed, 22 Aug 2012 17:01:43 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jan Beulich <jbeulich@suse.com>
-CC: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: apparent regressions from TLB range flushing page set
-References: <503261F00200007800096710@nat28.tlf.novell.com> <503450C1.8070600@intel.com> <50349AB4020000780008A4B5@nat28.tlf.novell.com>
-In-Reply-To: <50349AB4020000780008A4B5@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: qiuxishi <qiuxishi@gmail.com>
+CC: akpm@linux-foundation.org, liuj97@gmail.com, paul.gortmaker@windriver.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        bessel.wang@huawei.com, wujianguo@huawei.com, qiuxishi@huawei.com,
+        jiang.liu@huawei.com, guohanjun@huawei.com, chenkeping@huawei.com,
+        yinghai@kernel.org
+Subject: Re: [PATCH] memory-hotplug: add build zonelists when offline pages
+References: <5033843E.8000902@gmail.com> <50347906.4030101@cn.fujitsu.com> <5034917E.2060800@gmail.com>
+In-Reply-To: <5034917E.2060800@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/22 16:56:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/22 16:56:26,
+	Serialize complete at 2012/08/22 16:56:26
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 03:39 PM, Jan Beulich wrote:
+At 08/22/2012 03:59 PM, qiuxishi Wrote:
+> On 2012-8-22 14:15, Wen Congyang wrote:
+>> > At 08/21/2012 08:51 PM, qiuxishi Wrote:
+>>> >> From: Xishi Qiu <qiuxishi@huawei.com>
+>>> >>
+>>> >> online_pages() does build_all_zonelists() and zone_pcp_update(),
+>>> >> I think offline_pages() should do it too. The node has no memory
+>>> >> to allocate, so remove this node's zones form other nodes' zonelists.
+>>> >>
+>>> >>
+>>> >> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+>>> >> ---
+>>> >>  mm/memory_hotplug.c |    6 +++++-
+>>> >>  1 files changed, 5 insertions(+), 1 deletions(-)
+>>> >>
+>>> >> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>>> >> index bc7e7a2..5172bd4 100644
+>>> >> --- a/mm/memory_hotplug.c
+>>> >> +++ b/mm/memory_hotplug.c
+>>> >> @@ -979,7 +979,11 @@ repeat:
+>>> >>  	if (!node_present_pages(node)) {
+>>> >>  		node_clear_state(node, N_HIGH_MEMORY);
+>>> >>  		kswapd_stop(node);
+>>> >> -	}
+>>> >> +		mutex_lock(&zonelists_mutex);
+>>> >> +		build_all_zonelists(NODE_DATA(node), NULL);
+>> > 
+>> > The node is still onlined now, so there is no need to pass
+>> > this node's pgdat to build_all_zonelists().
+>> > 
+>> > I think we should build all zonelists when the zone has no
+>> > pages.
+>> > 
+>>> >> +		mutex_unlock(&zonelists_mutex);
+>>> >> +	} else
+>>> >> +		zone_pcp_update(zone);
+>> > 
+>> > There is more than one zone in a node. So the zone can have
+>> > no pages when the node has some pages.
+>> > 
+> Yes, you are right. Here is the new patch,
 
->>>> Alex Shi <alex.shi@intel.com> 08/22/12 5:24 AM >>>
->> On 08/20/2012 10:12 PM, Jan Beulich wrote:
->> I was thought you have 'Agreed' for xen part code. :)
-> 
-> I had agreed to it being done the right way, and I had pointed out the
-> problem once. I can't say for sure that I looked at the most recent rev
-> closely enough to spot the issue still being unfixed.
-> 
->>> For one, while TLB_FLUSH_ALL gets passed as 'end' argument to
->>> flush_tlb_others(), the Xen code was made to check its 'start'
->>> parameter.
->>
->> Do you mean need the following change? --untested.
-> 
-> Yes. I'd question though whether for that special case it shouldn't be
-> start _and_ end to get passed the special value.
-
-
-Actually the special value is already there in old code.
-so, what's your meaning of the question?
+This version looks fine to me.
 
 > 
-> Jan
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  mm/memory_hotplug.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
 > 
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index bc7e7a2..5f6997f 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -973,8 +973,13 @@ repeat:
+> 
+>  	init_per_zone_wmark_min();
+> 
+> -	if (!populated_zone(zone))
+> +	if (!populated_zone(zone)) {
+>  		zone_pcp_reset(zone);
+> +		mutex_lock(&zonelists_mutex);
+> +		build_all_zonelists(NULL, NULL);
+> +		mutex_unlock(&zonelists_mutex);
+> +	} else
+> +		zone_pcp_update(zone);
+> 
+>  	if (!node_present_pages(node)) {
+>  		node_clear_state(node, N_HIGH_MEMORY);
+> -- 1.7.6.1
+>> > And we have called drain_all_pages(), I think there is no need
+>> > to call zone_pcp_update() here.
+>> > 
+>> > Thanks
+>> > Wen Congyang
+>> > 
+> In zone_pcp_update(), it calculates zone_batchsize() which does
+> not calculated in drain_all_pages().
 
+Yes, zone_batchsize() depends on zone's present pages.
+If zone's present pages are changed, zone's pcp should be updated.
+
+Thanks
+Wen Congyang
+
+> 
+> Thanks
+> Xishi Qiu
+> 
+>>> >>
+>>> >>  	vm_total_pages = nr_free_pagecache_pages();
+>>> >>  	writeback_set_ratelimit();
+>> > 
+>> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
