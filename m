@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2HVAb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 20:31:28 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:41403 "EHLO e1.ny.us.ibm.com"
+	id S1752064Ab2HVAgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 20:36:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59446 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752962Ab2HVAbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 20:31:02 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Schwab <schwab@linux-m68k.org>
-Subject: [PATCH 1/4] time: Ensure we normalize the timekeeper in tk_xtime_add
-Date: Tue, 21 Aug 2012 20:30:46 -0400
-Message-Id: <1345595449-34965-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345595449-34965-1-git-send-email-john.stultz@linaro.org>
-References: <1345595449-34965-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082200-6078-0000-0000-00000E833257
+	id S1751290Ab2HVAgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 20:36:40 -0400
+Date: Wed, 22 Aug 2012 03:37:24 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Mel Gorman <mel@csn.ul.ie>, Rafael Aquini <aquini@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v7 2/4] virtio_balloon: introduce migration primitives to
+ balloon pages
+Message-ID: <20120822003723.GL9027@redhat.com>
+References: <20120814182244.GB13338@t510.redhat.com>
+ <20120814195139.GA28870@redhat.com>
+ <20120814201113.GE22133@t510.redhat.com>
+ <20120815090528.GH4052@csn.ul.ie>
+ <20120815092528.GA29214@redhat.com>
+ <20120815094839.GJ4052@csn.ul.ie>
+ <20120815100108.GA1999@redhat.com>
+ <20120815111651.GL4052@csn.ul.ie>
+ <20120815112851.GA2707@redhat.com>
+ <87mx1o3j5y.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mx1o3j5y.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas noticed problems with resume on specific hardware
-after commit 1e75fa8be9fb61e1af46b5b3b176347a4c958ca1
-combined with commit b44d50dcacea0d485ca2ff9140f8cc28ee22f28d
+On Tue, Aug 21, 2012 at 03:01:37PM +0930, Rusty Russell wrote:
+> On Wed, 15 Aug 2012 14:28:51 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > On Wed, Aug 15, 2012 at 12:16:51PM +0100, Mel Gorman wrote:
+> > > I was thinking of exactly that page->mapping == balloon_mapping check. As I
+> > > do not know how many active balloon drivers there might be I cannot guess
+> > > in advance how much of a scalability problem it will be.
+> > 
+> > Not at all sure multiple drivers are worth supporting, but multiple
+> > *devices* is I think worth supporting, if for no other reason than that
+> > they can work today. For that, we need a device pointer which Rafael
+> > wants to put into the mapping, this means multiple balloon mappings.
+> 
+> Rafael, please make sure that the balloon driver fails on the second and
+> subsequent balloon devices.
+> 
+> Michael, we only allow multiple balloon devices because it fell out of
+> the implementation.  If it causes us even the slightest issue, we should
+> not support it.  It's not a sensible setup.
+> 
+> Cheers,
+> Rusty.
 
-After some digging I realized we aren't normalizing
-the timekeeper after the add. This patch to correct this
-resolved the issue.
+Looks like latest revision does it using a flag which seems cleaner,
+so I think the point is moot.
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andreas Schwab <schwab@linux-m68k.org>
-Reported-by: Andreas Schwab <schwab@linux-m68k.org>
-Tested-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/time/timekeeping.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 898bef0..258164a 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -115,6 +115,7 @@ static void tk_xtime_add(struct timekeeper *tk, const struct timespec *ts)
- {
- 	tk->xtime_sec += ts->tv_sec;
- 	tk->xtime_nsec += (u64)ts->tv_nsec << tk->shift;
-+	tk_normalize_xtime(tk);
- }
- 
- static void tk_set_wall_to_mono(struct timekeeper *tk, struct timespec wtm)
 -- 
-1.7.9.5
-
+MST
