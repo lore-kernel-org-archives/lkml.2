@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab2HVRD6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 13:03:58 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:35415 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932992Ab2HVRD4 (ORCPT
+	id S964834Ab2HVREc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 13:04:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34722 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964802Ab2HVRE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 13:03:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120822165933.GU7995@opensource.wolfsonmicro.com>
-References: <1345615515-26745-1-git-send-email-shubhrajyoti@ti.com>
-	<20120822165933.GU7995@opensource.wolfsonmicro.com>
-Date: Wed, 22 Aug 2012 22:33:55 +0530
-Message-ID: <CAM=Q2cvEyas6r8pb-edQ7UUJOE1YSxns9j5hA8Cz5pJnd4mPYA@mail.gmail.com>
-Subject: Re: [PATCHv2 0/3] spi: omap2-mcspi: spi cleanups
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Shubhrajyoti D <shubhrajyoti@ti.com>,
-        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 22 Aug 2012 13:04:28 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, vgoyal@redhat.com,
+        mpatocka@redhat.com, bharrosh@panasas.com
+Subject: [PATCH v6 00/13] Block cleanups
+Date: Wed, 22 Aug 2012 10:03:57 -0700
+Message-Id: <1345655050-28199-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 10:29 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, Aug 22, 2012 at 11:35:11AM +0530, Shubhrajyoti D wrote:
->> This patch does the following
->>
->> Calls the pm_runtime_* functions directly.
->> Remove the MOD_REG_BIT macro usage thereby removiing un-needed branch.
->> At remove dont use the autosuspend runtime calls.
->
-> Applied all, thanks.
+Buncha changes in this version.
 
-thanks.
+I came up with a new, much better solution to the "bio allocation from
+bio sets under generic_make_request()" problem. Previously, I was
+working around this in all of my code that allocated bios; it'd mask out
+GFP_WAIT if current->bio_list != NULL, then punt to workqueue if the
+allocation failed - so as to avoid the deadlock from allocating multiple
+bios from the same bio set.
 
->
->> The following changes since commit 23dcfa61bac244e1200ff9ad19c6e9144dcb6bb5:
->>
->>   Merge branch 'akpm' (Andrew's patch-bomb) (2012-08-21 17:22:22 -0700)
->
-> When sending pull requests please always base them off a tag of some
-> kind, normally one of Linus' is a good option if you've no special
-> needs.  This one looks like it's based off -next so can't be pulled into
-> any other tree, -next is rebased daily.
+This approach worked, but it required it to be explicitly handled in any
+stacking driver that might split a bio an arbitrary number of times -
+less than ideal.
 
-Actually there was a patch in your tree that I sent which is not yet
-in linus tree so I rebased
-it to linux-next to avoid any merge conflicts.
+My new patch inverts this - when we go to allocate a bio and we're
+blocking another bio from being submitted, we punt the bio(s) that are
+being blocked off to a workqueue to be submitted. This means we only
+have to handle it in one place, in bio_alloc_bioset() - stack block
+drivers no longer have to do anything special (I got to delete some code
+from bcache, and dm wasn't handling this at all before).
 
-Henceforth I will rebase it to your tree.
+Other big change - I consolidated bio allocation. Now bio_alloc(),
+bio_kmalloc(), bio_clone(), and bio_clone_kmalloc() are all one line
+wrappers.
+
+Incorporated a bunch of review feedback, most of which I hopefully
+remembered to note in the patch descriptions this time.
+
+Kent Overstreet (13):
+  block: Generalized bio pool freeing
+  dm: Use bioset's front_pad for dm_rq_clone_bio_info
+  block: Add bio_reset()
+  pktcdvd: Switch to bio_kmalloc()
+  block: Kill bi_destructor
+  block: Consolidate bio_alloc_bioset(), bio_kmalloc()
+  block: Avoid deadlocks with bio allocation by stacking drivers
+  block: Add an explicit bio flag for bios that own their bvec
+  block: Rename bio_split() -> bio_pair_split()
+  block: Introduce new bio_split()
+  block: Rework bio_pair_split()
+  block: Add bio_clone_bioset(), bio_clone_kmalloc()
+  block: Only clone bio vecs that are in use
+
+ Documentation/block/biodoc.txt      |   5 -
+ block/blk-core.c                    |  10 +-
+ drivers/block/drbd/drbd_main.c      |  13 +-
+ drivers/block/drbd/drbd_req.c       |  18 +-
+ drivers/block/osdblk.c              |   3 +-
+ drivers/block/pktcdvd.c             |  73 ++-----
+ drivers/block/rbd.c                 |   8 +-
+ drivers/md/dm-crypt.c               |   9 -
+ drivers/md/dm-io.c                  |  11 -
+ drivers/md/dm.c                     |  68 ++----
+ drivers/md/linear.c                 |   6 +-
+ drivers/md/md.c                     |  44 +---
+ drivers/md/raid0.c                  |   8 +-
+ drivers/md/raid10.c                 |  23 +-
+ drivers/target/target_core_iblock.c |   9 -
+ fs/bio-integrity.c                  |  45 ----
+ fs/bio.c                            | 419 +++++++++++++++++++++++-------------
+ fs/exofs/ore.c                      |   5 +-
+ include/linux/bio.h                 | 155 +++++++------
+ include/linux/blk_types.h           |  16 +-
+ 20 files changed, 434 insertions(+), 514 deletions(-)
+
+-- 
+1.7.12
+
