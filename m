@@ -1,84 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab2HVKWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 06:22:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40818 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab2HVKWu (ORCPT
+	id S932296Ab2HVK0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 06:26:53 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:20214 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab2HVK0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 06:22:50 -0400
-Date: Wed, 22 Aug 2012 03:21:52 -0700
-From: tip-bot for Avi Kivity <avi@redhat.com>
-Message-ID: <tip-cb09cad44f07044d9810f18f6f9a6a6f3771f979@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, tracek@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, anthony@codemonkey.ws,
-        alan@lxorguk.ukuu.org.uk, mtosatti@redhat.com, tglx@linutronix.de,
-        mjt@tls.msk.ru, hpa@linux.intel.com, avi@redhat.com,
-        borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, tracek@redhat.com,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        anthony@codemonkey.ws, alan@lxorguk.ukuu.org.uk, mtosatti@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, mjt@tls.msk.ru,
-        borislav.petkov@amd.com, avi@redhat.com
-In-Reply-To: <5034AE84.90708@redhat.com>
-References: <5034AE84.90708@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/alternatives:
-  Fix p6 nops on non-modular kernels
-Git-Commit-ID: cb09cad44f07044d9810f18f6f9a6a6f3771f979
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Aug 2012 06:26:51 -0400
+X-IronPort-AV: E=Sophos;i="4.77,808,1336348800"; 
+   d="scan'208";a="14122351"
+Message-ID: <1345631207.6821.140.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] netvm: check for page == NULL when propogating the
+ skb->pfmemalloc flag
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: David Miller <davem@davemloft.net>
+CC: "mgorman@suse.de" <mgorman@suse.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad@darnok.org" <konrad@darnok.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Date: Wed, 22 Aug 2012 11:26:47 +0100
+In-Reply-To: <20120808.155046.820543563969484712.davem@davemloft.net>
+References: <20120807085554.GF29814@suse.de>
+	 <20120808.155046.820543563969484712.davem@davemloft.net>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Aug 2012 03:22:02 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb09cad44f07044d9810f18f6f9a6a6f3771f979
-Gitweb:     http://git.kernel.org/tip/cb09cad44f07044d9810f18f6f9a6a6f3771f979
-Author:     Avi Kivity <avi@redhat.com>
-AuthorDate: Wed, 22 Aug 2012 13:03:48 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 22 Aug 2012 12:09:49 +0200
+On Wed, 2012-08-08 at 23:50 +0100, David Miller wrote:
+> Just use something like a call to __pskb_pull_tail(skb, len) and all
+> that other crap around that area can simply be deleted.
 
-x86/alternatives: Fix p6 nops on non-modular kernels
+I think you mean something like this, which works for me, although I've
+only lightly tested it.
 
-Probably a leftover from the early days of self-patching, p6nops
-are marked __initconst_or_module, which causes them to be
-discarded in a non-modular kernel.  If something later triggers
-patching, it will overwrite kernel code with garbage.
+Ian.
 
-Reported-by: Tomas Racek <tracek@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: qemu-devel@nongnu.org
-Cc: Anthony Liguori <anthony@codemonkey.ws>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>
-Link: http://lkml.kernel.org/r/5034AE84.90708@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+8<----------------------------------------
+
+>From 9e47e3e87a33b45974448649a97859a479183041 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Wed, 22 Aug 2012 10:15:29 +0100
+Subject: [PATCH] xen-netfront: use __pskb_pull_tail to ensure linear area is big enough on RX
+
+I'm slightly concerned by the "only in exceptional circumstances"
+comment on __pskb_pull_tail but the structure of an skb just created
+by netfront shouldn't hit any of the especially slow cases.
+
+This approach still does slightly more work than the old way, since if
+we pull up the entire first frag we now have to shuffle everything
+down where before we just received into the right place in the first
+place.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: xen-devel@lists.xensource.com
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- arch/x86/kernel/alternative.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/xen-netfront.c |   39 ++++++++++-----------------------------
+ 1 files changed, 10 insertions(+), 29 deletions(-)
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index afb7ff7..ced4534 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -165,7 +165,7 @@ static const unsigned char * const k7_nops[ASM_NOP_MAX+2] =
- #endif
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 3089990..650f79a 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -57,8 +57,7 @@
+ static const struct ethtool_ops xennet_ethtool_ops;
  
- #ifdef P6_NOP1
--static const unsigned char  __initconst_or_module p6nops[] =
-+static const unsigned char p6nops[] =
- {
- 	P6_NOP1,
- 	P6_NOP2,
+ struct netfront_cb {
+-	struct page *page;
+-	unsigned offset;
++	int pull_to;
+ };
+ 
+ #define NETFRONT_SKB_CB(skb)	((struct netfront_cb *)((skb)->cb))
+@@ -867,15 +866,9 @@ static int handle_incoming_queue(struct net_device *dev,
+ 	struct sk_buff *skb;
+ 
+ 	while ((skb = __skb_dequeue(rxq)) != NULL) {
+-		struct page *page = NETFRONT_SKB_CB(skb)->page;
+-		void *vaddr = page_address(page);
+-		unsigned offset = NETFRONT_SKB_CB(skb)->offset;
+-
+-		memcpy(skb->data, vaddr + offset,
+-		       skb_headlen(skb));
++		int pull_to = NETFRONT_SKB_CB(skb)->pull_to;
+ 
+-		if (page != skb_frag_page(&skb_shinfo(skb)->frags[0]))
+-			__free_page(page);
++		__pskb_pull_tail(skb, pull_to - skb_headlen(skb));
+ 
+ 		/* Ethernet work: Delayed to here as it peeks the header. */
+ 		skb->protocol = eth_type_trans(skb, dev);
+@@ -913,7 +906,6 @@ static int xennet_poll(struct napi_struct *napi, int budget)
+ 	struct sk_buff_head errq;
+ 	struct sk_buff_head tmpq;
+ 	unsigned long flags;
+-	unsigned int len;
+ 	int err;
+ 
+ 	spin_lock(&np->rx_lock);
+@@ -955,24 +947,13 @@ err:
+ 			}
+ 		}
+ 
+-		NETFRONT_SKB_CB(skb)->page =
+-			skb_frag_page(&skb_shinfo(skb)->frags[0]);
+-		NETFRONT_SKB_CB(skb)->offset = rx->offset;
+-
+-		len = rx->status;
+-		if (len > RX_COPY_THRESHOLD)
+-			len = RX_COPY_THRESHOLD;
+-		skb_put(skb, len);
++		NETFRONT_SKB_CB(skb)->pull_to = rx->status;
++		if (NETFRONT_SKB_CB(skb)->pull_to > RX_COPY_THRESHOLD)
++			NETFRONT_SKB_CB(skb)->pull_to = RX_COPY_THRESHOLD;
+ 
+-		if (rx->status > len) {
+-			skb_shinfo(skb)->frags[0].page_offset =
+-				rx->offset + len;
+-			skb_frag_size_set(&skb_shinfo(skb)->frags[0], rx->status - len);
+-			skb->data_len = rx->status - len;
+-		} else {
+-			__skb_fill_page_desc(skb, 0, NULL, 0, 0);
+-			skb_shinfo(skb)->nr_frags = 0;
+-		}
++		skb_shinfo(skb)->frags[0].page_offset = rx->offset;
++		skb_frag_size_set(&skb_shinfo(skb)->frags[0], rx->status);
++		skb->data_len = rx->status;
+ 
+ 		i = xennet_fill_frags(np, skb, &tmpq);
+ 
+@@ -999,7 +980,7 @@ err:
+ 		 * receive throughout using the standard receive
+ 		 * buffer size was cut by 25%(!!!).
+ 		 */
+-		skb->truesize += skb->data_len - (RX_COPY_THRESHOLD - len);
++		skb->truesize += skb->data_len - RX_COPY_THRESHOLD;
+ 		skb->len += skb->data_len;
+ 
+ 		if (rx->flags & XEN_NETRXF_csum_blank)
+-- 
+1.7.2.5
+
+
+
