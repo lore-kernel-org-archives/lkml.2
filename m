@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab2HVP27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:28:59 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37533 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671Ab2HVP2z (ORCPT
+	id S932986Ab2HVP3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:29:22 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51196 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932913Ab2HVP3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:28:55 -0400
-Date: Wed, 22 Aug 2012 11:28:53 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+	Wed, 22 Aug 2012 11:29:19 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 22 Aug 2012 08:29:22 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: linux-media@vger.kernel.org, Mauro Carvalho Chehab <mchehab@infradead.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] [RFC] ARM: mass move of mach-*/plat-* header files
-In-Reply-To: <201208221256.35657.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.02.1208221126180.1754@xanadu.home>
-References: <201208221253.07278.arnd@arndb.de> <201208221256.35657.arnd@arndb.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Subject: Re: [PATCH] media/radio/shark2: Fix build error caused by missing
+ dependencies
+Message-ID: <20120822152922.GA6177@roeck-us.net>
+References: <1345648585-5176-1-git-send-email-linux@roeck-us.net>
+ <5034F932.4000405@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5034F932.4000405@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Aug 2012, Arnd Bergmann wrote:
-
-> This moves all <mach/*.h> headers to <mach-*/*.h>, and all
-> <plat/*.h> headers to <plat-*/*.h>, as another step closer
-> to building kernels for multiple platforms combined.
+On Wed, Aug 22, 2012 at 05:22:26PM +0200, Hans de Goede wrote:
+> Hi,
 > 
-> A script to generate headers with the traditional names including
-> the headers from the new place is already there, so this move
-> should be completely transparent.
+> I've a better fix for this here:
+> http://git.linuxtv.org/hgoede/gspca.git/shortlog/refs/heads/media-for_v3.6
 > 
-> This patch was created fully automated by a script and
-> should be redone if the headers change. Note that the
-> plat-mxc headers move to mach-imx in the process because
-> they don't follow the <plat/foo.h> naming convention:
+> I already send a pull-req for this to Mauro a while ago, Mauro?
 > 
-> for i in arch/arm/mach-* ; do git mv $i/include/mach $i/include/${i##*/} ; done
-> for i in arch/arm/plat-* ; do git mv $i/include/plat $i/include/${i##*/} ; done
-> git mv arch/arm/plat-mxc/include/mach/*.h arch/arm/mach-imx/include/mach-imx/
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Looks like it found its way into mainline in the last couple of days.
+Should have updated my tree first. Sorry for the noise.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-Ideally, files such as ...
-
-> rename from arch/arm/mach-at91/include/mach/at91_pio.h
-> rename to arch/arm/mach-at91/include/mach-at91/at91_pio.h
-
-should move next to the A91 GPIO driver file.  but that require manual 
-operations which can be done later.
-
-
-Nicolas
+Guenter
