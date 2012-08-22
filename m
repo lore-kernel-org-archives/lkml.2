@@ -1,185 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab2HVAkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 20:40:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56115 "EHLO mx1.redhat.com"
+	id S1753212Ab2HVAsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 20:48:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53887 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365Ab2HVAkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 20:40:35 -0400
-Date: Wed, 22 Aug 2012 03:41:38 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: avi@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+	id S1751632Ab2HVAsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 20:48:19 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Andre Przywara <andre.przywara@amd.com>
+Subject: Re: [PATCH 3/8] cpufreq: Add compatibility hack to powernow-k8
+Date: Wed, 22 Aug 2012 02:48:05 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34.10-0.4-desktop; KDE/4.4.4; x86_64; ; )
+Cc: cpufreq@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <mjg@redhat.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 1/2] kvm: Use a reserved IRQ source ID for irqfd
-Message-ID: <20120822004138.GM9027@redhat.com>
-References: <20120821190800.24958.74812.stgit@bling.home>
- <20120821192903.24958.90138.stgit@bling.home>
- <20120821195813.GD9027@redhat.com>
- <1345579579.29292.67.camel@ul30vt.home>
- <20120821204125.GF9027@redhat.com>
- <1345583694.29292.91.camel@ul30vt.home>
+References: <1343305724-2809-1-git-send-email-andre.przywara@amd.com> <1343305724-2809-4-git-send-email-andre.przywara@amd.com>
+In-Reply-To: <1343305724-2809-4-git-send-email-andre.przywara@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345583694.29292.91.camel@ul30vt.home>
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208220248.05674.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 03:14:54PM -0600, Alex Williamson wrote:
-> On Tue, 2012-08-21 at 23:41 +0300, Michael S. Tsirkin wrote:
-> > On Tue, Aug 21, 2012 at 02:06:19PM -0600, Alex Williamson wrote:
-> > > On Tue, 2012-08-21 at 22:58 +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Aug 21, 2012 at 01:29:06PM -0600, Alex Williamson wrote:
-> > > > > KVM_IRQFD currently uses the reserved KVM_USERSPACE_IRQ_SOURCE_ID
-> > > > > which is also shared with userspace injection methods like
-> > > > > KVM_IRQ_LINE.  This can cause a conflict if an irqfd triggers on
-> > > > > a GSI asserted through KVM_IRQ_LINE.
-> > > > 
-> > > > What kind of conflict do you envision?  Pls note level interrupts are
-> > > > unsupported ATM.
-> > > 
-> > > If KVM_IRQ_LINE asserts a level interrupt and KVM_IRQFD triggers on the
-> > > same GSI then the pin is no longer asserted as userspace thinks it is.
-> > > Do we just chalk this up to userspace error?
-> > 
-> > Yes: using a level GSI with current irqfd is a userspace error
-> > because you can lose interrupts anyway.
-> > 
-> > Are edge GSIs affected?
+On Thursday 26 July 2012 14:28:39 Andre Przywara wrote:
+> From: Matthew Garrett <mjg@redhat.com>
 > 
-> I wouldn't think so.
+> cpufreq modules are often loaded from init scripts that assume that all
+> recent AMD systems will use powernow-k8, so we should ensure that loading
+> it triggers a load of acpi-cpufreq if the latter is built as a module.
+> This avoids the problem of users ending up without any cpufreq support
+> after the transition.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+> ---
+>  drivers/cpufreq/powernow-k8.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index c0e8164..6e35ed2 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1567,8 +1567,12 @@ static int __cpuinit powernowk8_init(void)
+>  			supported_cpus++;
+>  	}
+>  
+> -	if (supported_cpus != num_online_cpus())
+> +	if (supported_cpus != num_online_cpus()) {
+> +		if (static_cpu_has(X86_FEATURE_HW_PSTATE))
+> +			request_module("acpi_cpufreq");
+> +
+>  		return -ENODEV;
+> +	}
+>  
+This is bad/wrong and the patch should simply be left out.
+cpufreq modules are autoloaded since some kernel versions and init
+scripts loading cpufreq drivers are not needed anymore. This is done
+by udev now.
 
-No? If userspace does
+Also request_module can have side effects and should get avoided if
+possible.
 
-. set line to 1
-. trigger irqfd
-. set line to 1
-. trigger irqfd
-. set line to 1
-. trigger irqfd
-. set line to 1
+I also wonder whether it's better to have the request_module() call,
+that loads acpi-cpufreq from processor module, get removed. I sent
+a patch a while ago to do that:
+[PATCH] X86 acpi_cpufreq: Do not use request_module for autoloading
 
-it gets 4 interrupts now
+Two reasons:
+  1) request_module (at least if called from another module) introduces
+     dependencies.
+     For example: We have fan.ko, thermal.ko and processor.ko in the initrd,
+     as some laptops needed CPU thermal management as early as possible.
+     If cpufreq acpi functions are available, it calls request_module(), but
+     acpi-cpufreq is not in the initrd and does never get loaded.
+  2) Most platforms with missing ACPI cpufreq functions for
+     processors with these X86 features:
+        X86_FEATURE_HW_PSTATE (AMD)
+        X86_FEATURE_EST (Intel)
+     can be considered to have buggy BIOSes.
+     Especially for AMD it helped people a lot to mention that they should
+     upgrade their BIOS in this case.
 
-With your patch it will get 1, right?
+If 2. is not relevant anymore, request_module() could stay in processor driver,
+but one should keep 1. in mind and best compile the processor driver into the
+kernel then.
 
-> > > > > Move irqfd to it's own reserved IRQ source ID.  Add a capability for
-> > > > > userspace to test for this fix.
-> > > > > 
-> > > > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > > > ---
-> > > > > 
-> > > > >  arch/x86/kvm/x86.c       |    3 +++
-> > > > >  include/linux/kvm.h      |    1 +
-> > > > >  include/linux/kvm_host.h |    1 +
-> > > > >  virt/kvm/eventfd.c       |    6 +++---
-> > > > >  4 files changed, 8 insertions(+), 3 deletions(-)
-> > > > > 
-> > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > > > index 42bce48..cd98673 100644
-> > > > > --- a/arch/x86/kvm/x86.c
-> > > > > +++ b/arch/x86/kvm/x86.c
-> > > > > @@ -2174,6 +2174,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> > > > >  	case KVM_CAP_GET_TSC_KHZ:
-> > > > >  	case KVM_CAP_PCI_2_3:
-> > > > >  	case KVM_CAP_KVMCLOCK_CTRL:
-> > > > > +	case KVM_CAP_IRQFD_IRQ_SOURCE_ID:
-> > > > >  		r = 1;
-> > > > >  		break;
-> > > > >  	case KVM_CAP_COALESCED_MMIO:
-> > > > > @@ -6258,6 +6259,8 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
-> > > > >  
-> > > > >  	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
-> > > > >  	set_bit(KVM_USERSPACE_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
-> > > > > +	/* Reserve bit 1 of irq_sources_bitmap for irqfd irq source */
-> > > > > +	set_bit(KVM_IRQFD_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
-> > > > >  
-> > > > >  	raw_spin_lock_init(&kvm->arch.tsc_write_lock);
-> > > > >  
-> > > > > diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> > > > > index 2ce09aa..ae66b9c 100644
-> > > > > --- a/include/linux/kvm.h
-> > > > > +++ b/include/linux/kvm.h
-> > > > > @@ -618,6 +618,7 @@ struct kvm_ppc_smmu_info {
-> > > > >  #define KVM_CAP_PPC_GET_SMMU_INFO 78
-> > > > >  #define KVM_CAP_S390_COW 79
-> > > > >  #define KVM_CAP_PPC_ALLOC_HTAB 80
-> > > > > +#define KVM_CAP_IRQFD_IRQ_SOURCE_ID 81
-> > > > >  
-> > > > >  #ifdef KVM_CAP_IRQ_ROUTING
-> > > > >  
-> > > > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > > > > index b70b48b..b763230 100644
-> > > > > --- a/include/linux/kvm_host.h
-> > > > > +++ b/include/linux/kvm_host.h
-> > > > > @@ -71,6 +71,7 @@
-> > > > >  #define KVM_REQ_PMI               17
-> > > > >  
-> > > > >  #define KVM_USERSPACE_IRQ_SOURCE_ID	0
-> > > > > +#define KVM_IRQFD_IRQ_SOURCE_ID		1
-> > > > >  
-> > > > >  struct kvm;
-> > > > >  struct kvm_vcpu;
-> > > > 
-> > > > Above looks fine but I'm not sure why is the below needed.
-> > > > This changes irqfd behaviour for edge GSIs slightly
-> > > > in a userspace-visible way. Maybe make it a separate patch
-> > > > so it can be considered on merits?
-> > > 
-> > > Hmm, the above does nothing without the below.
-> > 
-> > Yes. But you can use the above with the new irqfds you are adding.
-> 
-> Nope, racy.
-> 
-> > > I thought I was just
-> > > implementing your idea that IRQFDs should all share a single IRQ source
-> > > ID...
-> > 
-> > Sorry I only meant for level irqfds. You are changing edge here.
-> 
-> Ok, I misunderstood then.
-> 
-> > > why is that no longer a good idea?  Thanks,
-> > > 
-> > > Alex
-> > 
-> > Maybe it is a good idea. I am just asking for the motivation.
-> 
-> I assumed you were pointing out the level vs edge interaction.  If we
-> call that a userspace bug, I can just drop this.  Thanks,
-> 
-> Alex
+In any way, this patch should be left out, while the rest still works
+as expected.
 
-level is userspace bug I think :)
-
-> > > > > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > > > > index 7d7e2aa..2245cfa 100644
-> > > > > --- a/virt/kvm/eventfd.c
-> > > > > +++ b/virt/kvm/eventfd.c
-> > > > > @@ -67,8 +67,8 @@ irqfd_inject(struct work_struct *work)
-> > > > >  	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > > > >  	struct kvm *kvm = irqfd->kvm;
-> > > > >  
-> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > > > > -	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > > +	kvm_set_irq(kvm, KVM_IRQFD_IRQ_SOURCE_ID, irqfd->gsi, 1);
-> > > > > +	kvm_set_irq(kvm, KVM_IRQFD_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > >  }
-> > > > >  
-> > > > >  /*
-> > > > > @@ -138,7 +138,7 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
-> > > > >  		irq = rcu_dereference(irqfd->irq_entry);
-> > > > >  		/* An event has been signaled, inject an interrupt */
-> > > > >  		if (irq)
-> > > > > -			kvm_set_msi(irq, kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
-> > > > > +			kvm_set_msi(irq, kvm, KVM_IRQFD_IRQ_SOURCE_ID, 1);
-> > > > >  		else
-> > > > >  			schedule_work(&irqfd->inject);
-> > > > >  		rcu_read_unlock();
-> > > 
-> > > 
-> 
-> 
+   Thomas
