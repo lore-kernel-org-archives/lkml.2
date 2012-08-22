@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab2HVFzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 01:55:40 -0400
+	id S1756978Ab2HVFzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 01:55:38 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52603 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756861Ab2HVFz3 (ORCPT
+	with ESMTP id S1756699Ab2HVFz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 01:55:29 -0400
-X-AuditID: 9c930179-b7cc4ae00000134d-32-5034744d7941
+	Wed, 22 Aug 2012 01:55:27 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-2e-5034744deb5f
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 4/5] perf ui/browser: Use perf_hpp__format functions
-Date: Wed, 22 Aug 2012 14:48:36 +0900
-Message-Id: <1345614517-5753-5-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 2/5] perf hists: Handle field separator properly
+Date: Wed, 22 Aug 2012 14:48:34 +0900
+Message-Id: <1345614517-5753-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1345614517-5753-1-git-send-email-namhyung@kernel.org>
 References: <1345614517-5753-1-git-send-email-namhyung@kernel.org>
@@ -26,171 +26,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Override hpp->color functions for TUI. Because line coloring is done
-outside of the function, it just sets the percent value and pass it.
+When a field separator is given, the output format doesn't need to be
+fancy like aligning to column length, coloring the percent value and
+so on.  And since there's a slight difference to normal format, fix it
+not to break backward compatibility.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c | 94 ++++++++++++++++++++++++++++++++----------
- tools/perf/ui/tui/setup.c      |  4 ++
- 2 files changed, 76 insertions(+), 22 deletions(-)
+ tools/perf/ui/hist.c       | 75 ++++++++++++++++++++++++++++++----------------
+ tools/perf/ui/stdio/hist.c |  3 +-
+ 2 files changed, 51 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 81bd8c2af730..144d7be2872e 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -28,6 +28,8 @@ struct hist_browser {
- 	bool		     has_symbols;
- };
- 
-+extern void hist_browser__init_hpp(void);
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index c9a566cfd9c2..802a8659c15a 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -8,10 +8,9 @@
+ /* hist period print (hpp) functions */
+ static int hpp__header_overhead(struct perf_hpp *hpp)
+ {
+-	if (hpp->ptr)
+-		return scnprintf(hpp->buf, hpp->size, "Baseline");
+-	else
+-		return scnprintf(hpp->buf, hpp->size, "Overhead");
++	const char *fmt = hpp->ptr ? "Baseline" : "Overhead";
 +
- static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 				const char *ev_name);
- 
-@@ -563,14 +565,47 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 	return row - first_row;
++	return scnprintf(hpp->buf, hpp->size, fmt);
  }
  
-+#define HPP__COLOR_FN(_name, _field)					\
-+static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
-+					     struct hist_entry *he)	\
-+{									\
-+	double percent = 100.0 * he->_field / hpp->total_period;	\
-+	*(double *)hpp->ptr = percent;					\
-+	return scnprintf(hpp->buf, hpp->size, "%5.2f%%", percent);	\
-+}
-+
-+HPP__COLOR_FN(overhead, period)
-+HPP__COLOR_FN(overhead_sys, period_sys)
-+HPP__COLOR_FN(overhead_us, period_us)
-+HPP__COLOR_FN(overhead_guest_sys, period_guest_sys)
-+HPP__COLOR_FN(overhead_guest_us, period_guest_us)
-+
-+#undef HPP__COLOR_FN
-+
-+void hist_browser__init_hpp(void)
-+{
-+	perf_hpp__init(false, false);
-+
-+	perf_hpp__format[PERF_HPP__OVERHEAD].color =
-+				hist_browser__hpp_color_overhead;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_SYS].color =
-+				hist_browser__hpp_color_overhead_sys;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_US].color =
-+				hist_browser__hpp_color_overhead_us;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_SYS].color =
-+				hist_browser__hpp_color_overhead_guest_sys;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
-+				hist_browser__hpp_color_overhead_guest_us;
-+}
-+
- static int hist_browser__show_entry(struct hist_browser *browser,
- 				    struct hist_entry *entry,
- 				    unsigned short row)
+ static int hpp__width_overhead(struct perf_hpp *hpp __used)
+@@ -28,12 +27,16 @@ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
  {
- 	char s[256];
- 	double percent;
--	int printed = 0;
--	int width = browser->b.width - 6; /* The percentage */
-+	int i, printed = 0;
-+	int width = browser->b.width;
- 	char folded_sign = ' ';
- 	bool current_entry = ui_browser__is_current_entry(&browser->b, row);
- 	off_t row_offset = entry->row_offset;
-@@ -586,35 +621,50 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 	}
- 
- 	if (row_offset == 0) {
--		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
--		percent = (entry->period * 100.0) / browser->hists->stats.total_period;
-+		struct perf_hpp hpp = {
-+			.buf		= s,
-+			.size		= sizeof(s),
-+			.total_period	= browser->hists->stats.total_period,
-+		};
- 
--		ui_browser__set_percent_color(&browser->b, percent, current_entry);
- 		ui_browser__gotorc(&browser->b, row, 0);
--		if (symbol_conf.use_callchain) {
--			slsmg_printf("%c ", folded_sign);
--			width -= 2;
--		}
- 
--		slsmg_printf(" %5.2f%%", percent);
-+		for (i = 0; i < PERF_HPP__MAX_INDEX; i++) {
-+			if (!perf_hpp__format[i].cond)
-+				continue;
- 
--		/* The scroll bar isn't being used */
--		if (!browser->b.navkeypressed)
--			width += 1;
-+			if (i) {
-+				slsmg_printf("  ");
-+				width -= 2;
-+			}
- 
--		if (!current_entry || !browser->b.navkeypressed)
--			ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
-+			if (perf_hpp__format[i].color) {
-+				hpp.ptr = &percent;
-+				/* It will set percent for us. See HPP__COLOR_FN above. */
-+				width -= perf_hpp__format[i].color(&hpp, entry);
- 
--		if (symbol_conf.show_nr_samples) {
--			slsmg_printf(" %11u", entry->nr_events);
--			width -= 12;
--		}
-+				ui_browser__set_percent_color(&browser->b, percent, current_entry);
+ 	double percent = 100.0 * he->period / hpp->total_period;
+-	return scnprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%%";
 +
-+				if (i == 0 && symbol_conf.use_callchain) {
-+					slsmg_printf("%c ", folded_sign);
-+					width -= 2;
-+				}
-+
-+				slsmg_printf("%s", s);
- 
--		if (symbol_conf.show_total_period) {
--			slsmg_printf(" %12" PRIu64, entry->period);
--			width -= 13;
-+				if (!current_entry || !browser->b.navkeypressed)
-+					ui_browser__set_color(&browser->b, HE_COLORSET_NORMAL);
-+			} else {
-+				width -= perf_hpp__format[i].entry(&hpp, entry);
-+				slsmg_printf("%s", s);
-+			}
- 		}
- 
-+		/* The scroll bar isn't being used */
-+		if (!browser->b.navkeypressed)
-+			width += 1;
-+
-+		hist_entry__sort_snprintf(entry, s, sizeof(s), browser->hists);
- 		slsmg_write_nstring(s, width);
- 		++row;
- 		++printed;
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index 4c936e09931c..4dc0887c04f1 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -15,6 +15,8 @@ static volatile int ui__need_resize;
- 
- extern struct perf_error_ops perf_tui_eops;
- 
-+extern void hist_browser__init_hpp(void);
-+
- void ui__refresh_dimensions(bool force)
- {
- 	if (force || ui__need_resize) {
-@@ -124,6 +126,8 @@ int ui__init(void)
- 	signal(SIGTERM, ui__signal);
- 
- 	perf_error__register(&perf_tui_eops);
-+
-+	hist_browser__init_hpp();
- out:
- 	return err;
++	return scnprintf(hpp->buf, hpp->size, fmt, percent);
  }
+ 
+ static int hpp__header_overhead_sys(struct perf_hpp *hpp)
+ {
+-	return scnprintf(hpp->buf, hpp->size, " sys  ");
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, "sys");
+ }
+ 
+ static int hpp__width_overhead_sys(struct perf_hpp *hpp __used)
+@@ -50,12 +53,16 @@ static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_sys / hpp->total_period;
+-	return scnprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_overhead_us(struct perf_hpp *hpp)
+ {
+-	return scnprintf(hpp->buf, hpp->size, " user ");
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%6s";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, "user");
+ }
+ 
+ static int hpp__width_overhead_us(struct perf_hpp *hpp __used)
+@@ -72,7 +79,9 @@ static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_us / hpp->total_period;
+-	return scnprintf(hpp->buf, hpp->size, "%5.2f%%", percent);
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%5.2f%%";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_overhead_guest_sys(struct perf_hpp *hpp)
+@@ -96,7 +105,9 @@ static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
+ 					 struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_sys / hpp->total_period;
+-	return scnprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_overhead_guest_us(struct perf_hpp *hpp)
+@@ -120,12 +131,16 @@ static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
+ 					struct hist_entry *he)
+ {
+ 	double percent = 100.0 * he->period_guest_us / hpp->total_period;
+-	return scnprintf(hpp->buf, hpp->size, "  %5.2f%% ", percent);
++	const char *fmt = symbol_conf.field_sep ? "%.2f" : "  %5.2f%% ";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, percent);
+ }
+ 
+ static int hpp__header_samples(struct perf_hpp *hpp)
+ {
+-	return scnprintf(hpp->buf, hpp->size, "  Samples  ");
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%11s";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, "Samples");
+ }
+ 
+ static int hpp__width_samples(struct perf_hpp *hpp __used)
+@@ -135,12 +150,16 @@ static int hpp__width_samples(struct perf_hpp *hpp __used)
+ 
+ static int hpp__entry_samples(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+-	return scnprintf(hpp->buf, hpp->size, "%11" PRIu64, he->nr_events);
++	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%11" PRIu64;
++
++	return scnprintf(hpp->buf, hpp->size, fmt, he->nr_events);
+ }
+ 
+ static int hpp__header_period(struct perf_hpp *hpp)
+ {
+-	return scnprintf(hpp->buf, hpp->size, "   Period   ");
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%12s";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, "Period");
+ }
+ 
+ static int hpp__width_period(struct perf_hpp *hpp __used)
+@@ -150,12 +169,16 @@ static int hpp__width_period(struct perf_hpp *hpp __used)
+ 
+ static int hpp__entry_period(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+-	return scnprintf(hpp->buf, hpp->size, "%12" PRIu64, he->period);
++	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%12" PRIu64;
++
++	return scnprintf(hpp->buf, hpp->size, fmt, he->period);
+ }
+ 
+ static int hpp__header_delta(struct perf_hpp *hpp)
+ {
+-	return scnprintf(hpp->buf, hpp->size, " Delta ");
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, "Delta");
+ }
+ 
+ static int hpp__width_delta(struct perf_hpp *hpp __used)
+@@ -169,7 +192,8 @@ static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
+ 	u64 old_total, new_total;
+ 	double old_percent = 0, new_percent = 0;
+ 	double diff;
+-	char buf[32];
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%7.7s";
++	char buf[32] = " ";
+ 
+ 	old_total = pair_hists->stats.total_period;
+ 	if (old_total > 0)
+@@ -180,11 +204,10 @@ static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
+ 		new_percent = 100.0 * he->period / new_total;
+ 
+ 	diff = new_percent - old_percent;
+-	if (fabs(diff) < 0.01)
+-		return scnprintf(hpp->buf, hpp->size, "       ");
++	if (fabs(diff) >= 0.01)
++		scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
+ 
+-	scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
+-	return scnprintf(hpp->buf, hpp->size, "%7.7s", buf);
++	return scnprintf(hpp->buf, hpp->size, fmt, buf);
+ }
+ 
+ static int hpp__header_displ(struct perf_hpp *hpp)
+@@ -199,13 +222,13 @@ static int hpp__width_displ(struct perf_hpp *hpp __used)
+ 
+ static int hpp__entry_displ(struct perf_hpp *hpp, struct hist_entry *he __used)
+ {
+-	char buf[32];
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%6.6s";
++	char buf[32] = " ";
+ 
+-	if (!hpp->displacement)
+-		return scnprintf(hpp->buf, hpp->size, "     ");
++	if (hpp->displacement)
++		scnprintf(buf, sizeof(buf), "%+4ld", hpp->displacement);
+ 
+-	scnprintf(buf, sizeof(buf), "%+4ld", hpp->displacement);
+-	return scnprintf(hpp->buf, hpp->size, "%6.6s", buf);
++	return scnprintf(hpp->buf, hpp->size, fmt, buf);
+ }
+ 
+ #define HPP__COLOR_PRINT_FNS(_name)		\
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 4228b4c6b72d..882461a42830 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -319,11 +319,12 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 		.displacement	= displacement,
+ 		.ptr		= pair_hists,
+ 	};
++	bool color = !symbol_conf.field_sep;
+ 
+ 	if (size == 0 || size > sizeof(bf))
+ 		size = hpp.size = sizeof(bf);
+ 
+-	ret = hist_entry__period_snprintf(&hpp, he, true);
++	ret = hist_entry__period_snprintf(&hpp, he, color);
+ 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
+ 
+ 	ret = fprintf(fp, "%s\n", bf);
 -- 
 1.7.11.4
 
