@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab2HVMNe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 08:13:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36069 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab2HVMNa (ORCPT
+	id S1756539Ab2HVMT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 08:19:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47817 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755856Ab2HVMTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 08:13:30 -0400
-Message-ID: <5034CD02.2010103@gmail.com>
-Date: Wed, 22 Aug 2012 14:13:54 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Wed, 22 Aug 2012 08:19:55 -0400
+Message-ID: <5034CE65.7040607@suse.cz>
+Date: Wed, 22 Aug 2012 14:19:49 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120731 Thunderbird/15.0
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 13/17] lockd: use new hashtable implementation
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-14-git-send-email-levinsasha928@gmail.com> <20120822114752.GC20158@fieldses.org>
-In-Reply-To: <20120822114752.GC20158@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: shijie8@gmail.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: move the async flags from the serial code into the
+ tty includes
+References: <20120821133455.9090.24759.stgit@localhost.localdomain>
+In-Reply-To: <20120821133455.9090.24759.stgit@localhost.localdomain>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 01:47 PM, J. Bruce Fields wrote:
-> On Wed, Aug 22, 2012 at 04:27:08AM +0200, Sasha Levin wrote:
->> +static int __init nlm_init(void)
->> +{
->> +	hash_init(nlm_files);
->> +	return 0;
->> +}
->> +
->> +module_init(nlm_init);
+On 08/21/2012 03:35 PM, Alan Cox wrote:
+> From: Alan Cox <alan@linux.intel.com>
 > 
-> That's giving me:
-> 
-> fs/lockd/svcsubs.o: In function `nlm_init':
-> /home/bfields/linux-2.6/fs/lockd/svcsubs.c:454: multiple definition of `init_module'
-> fs/lockd/svc.o:/home/bfields/linux-2.6/fs/lockd/svc.c:606: first defined here
-> make[2]: *** [fs/lockd/lockd.o] Error 1
-> make[1]: *** [fs/lockd] Error 2
-> make[1]: *** Waiting for unfinished jobs....
+> These are used with the tty_port flags which are tty generic so move the
+> flags into a more sensible place. This then makes it possible to add
+> helpers such as those suggested by Huang Shijie.
 
-I tested this entire patch set both with linux-next and Linus' latest master,
-and it worked fine in both places.
+Yes, the idea looks good to me. I was actually thinking of the same.
 
-Is it possible that lockd has a -next tree which isn't pulled into linux-next?
-(there's nothing listed in MAINTAINERS that I could see).
+But there are two issues with this patch (see below).
+
+> --- a/include/linux/serial.h
+> +++ b/include/linux/serial.h
+> @@ -15,6 +15,8 @@
+>  #ifdef __KERNEL__
+>  #include <asm/page.h>
+>  
+> +#include <linux/tty_flags.h>
+> +
+
+There are no minus lines in serial.h -- we have two copies of the flags
+now? That looks insane.
+
+The flags are a user API. You concealed them by the #include inside the
+__KERNEL__ section (if I consider we do not have the flags defined twice).
+
+And if we move the include outside of the __KERNEL__ section, we shall
+update Kconfig, so that the new header is installed.
+
+>  /*
+>   * Counters of the input lines (CTS, DSR, RI, CD) interrupts
+>   */
+> diff --git a/include/linux/tty.h b/include/linux/tty.h
+> index 69a787f..dbebd1e 100644
+> --- a/include/linux/tty.h
+> +++ b/include/linux/tty.h
+> @@ -43,6 +43,7 @@
+>  #include <linux/tty_driver.h>
+>  #include <linux/tty_ldisc.h>
+>  #include <linux/mutex.h>
+> +#include <linux/tty_flags.h>
+
+thanks,
+-- 
+js
+suse labs
