@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab2HVKal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 06:30:41 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:30170 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab2HVKac (ORCPT
+	id S932348Ab2HVKeK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 06:34:10 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:33957 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753346Ab2HVKeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 06:30:32 -0400
-X-IronPort-AV: E=Sophos;i="4.77,808,1336348800"; 
-   d="scan'208";a="14122459"
-Date: Wed, 22 Aug 2012 11:30:09 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Attilio Rao <attilio.rao@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH v2 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
- and x86_init.paging.pagetable_setup_done setup functions and document its
- semantic
-In-Reply-To: <alpine.LFD.2.02.1208212315330.2856@ionos>
-Message-ID: <alpine.DEB.2.02.1208221129490.15568@kaball.uk.xensource.com>
-References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208212315330.2856@ionos>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 22 Aug 2012 06:34:08 -0400
+Date: Wed, 22 Aug 2012 06:33:40 -0400 (EDT)
+From: Tomas Racek <tracek@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Michael Tokarev <mjt@tls.msk.ru>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        kvm-devel <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Message-ID: <1406258973.2560632.1345631620655.JavaMail.root@redhat.com>
+In-Reply-To: <5034AE84.90708@redhat.com>
+Subject: Re: [PATCH] x86, alternative: fix p6 nops on non-modular kernels
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.34.27.4]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC20 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Aug 2012, Thomas Gleixner wrote:
-> On Tue, 21 Aug 2012, Attilio Rao wrote:
-> > Differences with v1:
-> > - The patch serie is re-arranged in a way that it helps reviews, following
-> >   a plan by Thomas Gleixner
-> > - The PVOPS nomenclature is not used as it is not correct
-> > - The front-end message is adjusted with feedback by Thomas Gleixner,
-> >   Stefano Stabellini and Konrad Rzeszutek Wilk 
+----- Original Message -----
+> On 08/22/2012 12:54 PM, Avi Kivity wrote:
+> > On 08/21/2012 12:28 PM, Tomas Racek wrote:
+> >> 
+> >> http://fi.muni.cz/~xracek/debian2.img.bz2
+> >> 
+> >> Other things are the same.
+> >> 
+> >> The runtest.sh sets environment for xfstests and runs test 285
+> >> which I wrote and and which should test if FS sends discard
+> >> requests only on free sectors:
+> >> 285:
+> >> 1. Create loop device and FS on it.
+> >> 2. Populate it with some garbage.
+> >> 3. Get free sectors from FS.
+> >> 4. Run fstrim and look for discard requests via blk tracer.
+> >> 5. Compare free sectors to discard requests.
+> >> 
+> >> The test itself can have some issues but I'm pretty sure it
+> >> shouldn't crash the system. ;-)
+> > 
+> > Does the following patch help?
+> > 
 > 
-> This is much simpler to read and review. Just have a look at the
-> diffstats of the two series:
+> It's obvious that it should.  You're running a non-modular kernel,
+> and those nops are discarded (probably a leftover from the days
+> patching was a boot-only activity), so the kernel patched garbage
+> over its own code.
 > 
->  6 files changed,  9 insertions(+),  8 deletions(-)
->  6 files changed, 11 insertions(+),  9 deletions(-)
->  5 files changed, 50 insertions(+),  2 deletions(-)
->  6 files changed,  2 insertions(+), 65 deletions(-)
->  1 files changed,  5 insertions(+),  0 deletions(-)
-> 
-> versus
-> 
->  6 files changed, 10 insertions(+),  9 deletions(-)
->  6 files changed, 11 insertions(+), 11 deletions(-)
->  5 files changed,  3 insertions(+),  3 deletions(-)
->  6 files changed,  4 insertions(+), 20 deletions(-)
->  1 files changed,  5 insertions(+),  0 deletions(-)
-> 
-> The overall result is basically the same, but it's way simpler to look
-> at obvious and well done patches than checking whether a subtle copy
-> and paste bug happened in 3/5 of the first version. Copy and paste is
-> the #1 cause for subtle bugs. :)
-> 
-> I'm waiting for the ack of Xen folks before taking it into tip.
 
-They are OK by me. Konrad?
+Works fine. Thank you!
+
+Tom
+
+
+> -------8<----cut-here-----8<-----------------------------------
+> 
+> From: Avi Kivity <avi@redhat.com>
+> Date: Wed, 22 Aug 2012 12:58:18 +0300
+> Subject: [PATCH] x86, alternative: fix p6 nops on non-modular kernels
+> 
+> Probably a leftover from the early days of self-patching, p6nops are
+> marked __initconst_or_module, which causes them to be discarded in a
+> non-modular kernel.  If something later triggers patching, it will
+> overwrite kernel code with garbage.
+> 
+> Reported-by: Tomas Racek <tracek@redhat.com>
+> Signed-off-by: Avi Kivity <avi@redhat.com>
+> 
+> diff --git a/arch/x86/kernel/alternative.c
+> b/arch/x86/kernel/alternative.c
+> index afb7ff7..ced4534 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -165,7 +165,7 @@ static int __init setup_noreplace_paravirt(char
+> *str)
+>  #endif
+>  
+>  #ifdef P6_NOP1
+> -static const unsigned char  __initconst_or_module p6nops[] =
+> +static const unsigned char p6nops[] =
+>  {
+>  	P6_NOP1,
+>  	P6_NOP2,
+> 
+> 
+> --
+> error compiling committee.c: too many arguments to function
+> 
