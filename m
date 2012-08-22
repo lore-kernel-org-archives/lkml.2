@@ -1,85 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab2HVQ0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:26:39 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48199 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933008Ab2HVQYF (ORCPT
+	id S1758217Ab2HVQ3Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:29:25 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51827 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755496Ab2HVQ3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:24:05 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Cris <linux-cris-kernel@axis.com>, "3.2.x.." <stable@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 02/10] cris: Add missing RCU idle APIs on idle loop
-Date: Wed, 22 Aug 2012 18:23:40 +0200
-Message-Id: <1345652628-15060-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
-References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+	Wed, 22 Aug 2012 12:29:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <A25F549E4D43CD42B4C02DF47A1913230FE50780@SHSMSX102.ccr.corp.intel.com>
+References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
+ <50325732.3000700@gmail.com> <CAErSpo4-SGH__kE5tPNzz+VO=V-GKOMdcKCqqy6s3=5sNKgG0w@mail.gmail.com>
+ <50325C18.9030207@gmail.com> <CAErSpo6t9m0xmWkXfmONtbicjqLR_z5dLsjKCLWQfcktzRKkUA@mail.gmail.com>
+ <CAErSpo5=OUM9veX8890USWegTG_Fhh10soxPJbjemd80bAO0qg@mail.gmail.com> <A25F549E4D43CD42B4C02DF47A1913230FE50780@SHSMSX102.ccr.corp.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 22 Aug 2012 09:28:58 -0700
+Message-ID: <CAErSpo5ftvKLF2=1ixzp1KroNLKh_s-b5hi9aFv3X7PpqisGwg@mail.gmail.com>
+Subject: Re: [PATCH v3 00/32] provide interfaces to access PCIe capabilities registers
+To: "Cui, Dexuan" <dexuan.cui@intel.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the old times, the whole idle task was considered
-as an RCU quiescent state. But as RCU became more and
-more successful overtime, some RCU read side critical
-section have been added even in the code of some
-architectures idle tasks, for tracing for example.
+On Mon, Aug 20, 2012 at 9:40 PM, Cui, Dexuan <dexuan.cui@intel.com> wrote:
+> Bjorn Helgaas wrote on 2012-08-21:
 
-So nowadays, rcu_idle_enter() and rcu_idle_exit() must
-be called by the architecture to tell RCU about the part
-in the idle loop that doesn't make use of rcu read side
-critical sections, typically the part that puts the CPU
-in low power mode.
+>> I am still concerned about reset_intel_82599_sfp_virtfn().  It looks
+>> wrong and possibly unnecessary.  It looks wrong because it sets
+>> PCI_EXP_DEVCTL_BCR_FLR and blindly clears all other bits in
+>> PCI_EXP_DEVCTL.  Most of the bits are probably cleared by the FLR
+>> anyway, but Aux Power PM Enable is RWS ("sticky"), so it is *not*
+>> modified by FLR.  Therefore, using reset_intel_82599_sfp_virtfn() has
+>> the probably unintended side effect of clearing Aux Power PM Enable.
+>>
+>> It looks possibly unnecessary because the generic pcie_flr() does
+>> essentially the same thing, so it's not clear why we need a special
+>> case for 82599.
 
-This is necessary for RCU to find the quiescent states in
-idle in order to complete grace periods.
+> I think reset_intel_82599_sfp_virtfn() is correct AND necessary.
+> (pcie_flr() doesn't work here)
+>
+> Please note the 82599 VF is a special PCIe device that doesn't report
+> PCIe FLR capability though actually it does support that.
+> That is why we put it in quirks.c. :-)
+>
+> The PCI_EXP_DEVCTL_AUX_PME bit of the 82599 VF is read-only and
+> always zero.
+>
+> Please see
+> http://www.intel.com/content/dam/doc/datasheet/82599-10-gbe-controller-datasheet.pdf
+> 9.5 Virtual Functions Configuration Space
+>   Table 9.7 VF PCIe Configuration Space
+>   9.5.2.2.1 VF Device Control Register (0xA8; RW)
 
-Add this missing pair of calls in the Cris's idle loop.
+Thanks, Dexuan!
 
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Cris <linux-cris-kernel@axis.com>
-Cc: 3.2.x.. <stable@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- arch/cris/kernel/process.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+The 82599 does report FLR in the DEVCAP for the PF (sec 9.3.10.4), but
+not in the DEVCAP for the VF (sec 9.5), which indeed means we can't
+use pcie_flr() on the VFs.  I wonder whether this error appears in any
+other devices.
 
-diff --git a/arch/cris/kernel/process.c b/arch/cris/kernel/process.c
-index 66fd017..7f65be6 100644
---- a/arch/cris/kernel/process.c
-+++ b/arch/cris/kernel/process.c
-@@ -25,6 +25,7 @@
- #include <linux/elfcore.h>
- #include <linux/mqueue.h>
- #include <linux/reboot.h>
-+#include <linux/rcupdate.h>
- 
- //#define DEBUG
- 
-@@ -74,6 +75,7 @@ void cpu_idle (void)
+The VF DEVCTL register (sec 9.5.2.2.1) is RO and zero except for
+"Initiate FLR" unlike the PF DEVCTL (sec 9.3.10.5).  The
+read/modify/write done by pcie_flr() would work on the VF but is not
+necessary.
+
+The VF DEVSTA register (sec 9.5.2.2.2) does have an active
+"Transaction Pending" bit.  That suggests to me that we should wait
+for it to be clear, as pcie_flr() does.
+
+What would you think of a patch like the following?  My idea is to
+make it the same as pcie_flr() except for the absolutely necessary
+differences.  With this patch, the only difference is that we don't
+look at the 82599 DEVCAP FLR bit.
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index aa77538..7a451ff 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3081,10 +3081,36 @@ static int reset_intel_generic_dev(struct
+pci_dev *dev, int probe)
+
+ static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
  {
- 	/* endless idle loop with no priority at all */
- 	while (1) {
-+		rcu_idle_enter();
- 		while (!need_resched()) {
- 			void (*idle)(void);
- 			/*
-@@ -86,6 +88,7 @@ void cpu_idle (void)
- 				idle = default_idle;
- 			idle();
- 		}
-+		rcu_idle_exit();
- 		schedule_preempt_disabled();
- 	}
- }
--- 
-1.7.5.4
++       int i;
++       u16 status;
++
++       /*
++        * http://www.intel.com/content/dam/doc/datasheet/82599-10-gbe-controller-datasheet.pdf
++        *
++        * The 82599 supports FLR on VFs, but FLR support is reported only
++        * in the PF DEVCAP (sec 9.3.10.4), not in the VF DEVCAP (sec 9.5).
++        * Therefore, we can't use pcie_flr(), which checks the VF DEVCAP.
++        */
++
+        if (probe)
+                return 0;
 
+-       pcie_capability_write_word(dev, PCI_EXP_DEVCTL, PCI_EXP_DEVCTL_BCR_FLR);
++       /* Wait for Transaction Pending bit clean */
++       for (i = 0; i < 4; i++) {
++               if (i)
++                       msleep((1 << (i - 1)) * 100);
++
++               pcie_capability_read_word(dev, PCI_EXP_DEVSTA, &status);
++               if (!(status & PCI_EXP_DEVSTA_TRPND))
++                       goto clear;
++       }
++
++       dev_err(&dev->dev, "transaction is not cleared; "
++                       "proceeding with reset anyway\n");
++
++clear:
++       pcie_capability_set_word(dev, PCI_EXP_DEVCTL, PCI_EXP_DEVCTL_BCR_FLR);
++
+        msleep(100);
+
+        return 0;
