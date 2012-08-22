@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744Ab2HVPA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:00:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8581 "EHLO mx1.redhat.com"
+	id S1757579Ab2HVPBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:01:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12408 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932678Ab2HVPAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:00:48 -0400
+	id S932746Ab2HVPBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 11:01:03 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -26,45 +26,56 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 17/36] autonuma: prevent select_task_rq_fair to return -1
-Date: Wed, 22 Aug 2012 16:59:01 +0200
-Message-Id: <1345647560-30387-18-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 13/36] autonuma: autonuma_enter/exit
+Date: Wed, 22 Aug 2012 16:58:57 +0200
+Message-Id: <1345647560-30387-14-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_idlest_cpu when run up on all domain levels shouldn't normally
-return -1. With the introduction of the NUMA affinity check that
-should be still true most of the time, but it's not guaranteed if the
-NUMA affinity of the task changes very fast. So better not to depend
-on timings.
+This is where we register (and unregister) an "mm" structure into
+AutoNUMA for knuma_scand to scan them.
 
+knuma_scand is the first gear in the whole AutoNUMA algorithm.
+knuma_scand is the daemon that scans the "mm" structures in the list
+and sets pmd_numa and pte_numa to allow the NUMA hinting page faults
+to start. All other actions follow after that. If knuma_scand doesn't
+run, AutoNUMA is fully bypassed. If knuma_scand is stopped, soon all
+other AutoNUMA gears will settle down too.
+
+Acked-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/sched/fair.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ kernel/fork.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 42a88fa..677b99e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2794,6 +2794,17 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- unlock:
- 	rcu_read_unlock();
+diff --git a/kernel/fork.c b/kernel/fork.c
+index f998e53..fbc67ee 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -70,6 +70,7 @@
+ #include <linux/khugepaged.h>
+ #include <linux/signalfd.h>
+ #include <linux/uprobes.h>
++#include <linux/autonuma.h>
  
-+#ifdef CONFIG_AUTONUMA
-+	if (new_cpu < 0)
-+		/*
-+		 * find_idlest_cpu() may return -1 if
-+		 * task_autonuma_cpu() changes all the time, it's very
-+		 * unlikely, but we must handle it if it ever happens.
-+		 */
-+		new_cpu = prev_cpu;
-+#endif
-+	BUG_ON(new_cpu < 0);
-+
- 	return new_cpu;
- }
- #endif /* CONFIG_SMP */
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -541,6 +542,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	if (likely(!mm_alloc_pgd(mm))) {
+ 		mm->def_flags = 0;
+ 		mmu_notifier_mm_init(mm);
++		autonuma_enter(mm);
+ 		return mm;
+ 	}
+ 
+@@ -609,6 +611,7 @@ void mmput(struct mm_struct *mm)
+ 		exit_aio(mm);
+ 		ksm_exit(mm);
+ 		khugepaged_exit(mm); /* must run before exit_mmap */
++		autonuma_exit(mm); /* must run before exit_mmap */
+ 		exit_mmap(mm);
+ 		set_mm_exe_file(mm, NULL);
+ 		if (!list_empty(&mm->mmlist)) {
