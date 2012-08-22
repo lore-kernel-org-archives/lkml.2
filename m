@@ -1,136 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580Ab2HVI4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:56:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:23852 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753195Ab2HVI41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:56:27 -0400
-X-IronPort-AV: E=Sophos;i="4.77,808,1336320000"; 
-   d="scan'208";a="5693817"
-Message-ID: <50349FF7.6030407@cn.fujitsu.com>
-Date: Wed, 22 Aug 2012 17:01:43 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1758605Ab2HVI6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:58:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49919 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab2HVI6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 04:58:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andi Kleen <andi@firstfloor.org>
+Subject: Re: RFC: Link Time Optimization support for the kernel
+Date: Wed, 22 Aug 2012 08:58:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, JBeulich@suse.com,
+        akpm@linux-foundation.org
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1345345030-22211-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-To: qiuxishi <qiuxishi@gmail.com>
-CC: akpm@linux-foundation.org, liuj97@gmail.com, paul.gortmaker@windriver.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        bessel.wang@huawei.com, wujianguo@huawei.com, qiuxishi@huawei.com,
-        jiang.liu@huawei.com, guohanjun@huawei.com, chenkeping@huawei.com,
-        yinghai@kernel.org
-Subject: Re: [PATCH] memory-hotplug: add build zonelists when offline pages
-References: <5033843E.8000902@gmail.com> <50347906.4030101@cn.fujitsu.com> <5034917E.2060800@gmail.com>
-In-Reply-To: <5034917E.2060800@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/22 16:56:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/22 16:56:26,
-	Serialize complete at 2012/08/22 16:56:26
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <201208220858.03227.arnd@arndb.de>
+X-Provags-ID: V02:K0:TYuOa+O/+4o3qoW/mjuCdMpUDQfd4Fa1wgzy2c1rPjF
+ L9ztmbrelY601sjqLo/vmDvh8/WENWqbb9+aQ5Abk0w47rZA6h
+ otR7RgFvbKkOQB4YNvyLMRTGpNLfLckJoFiBrKw+we+efPlodc
+ 1EW5PRpqA4y6HZvlF5zGDH5jPgHW2WPx2xh5VEjG8THpydkBxM
+ zanH0utEMsG1FiHaRtQD1UI/u5obrJBOLGSgUzx4VgQRxCQCCg
+ l2ZFeojKGqaiNdxcgtz4JHSdNVtI5ClkAlhbLC+S6WHDTHnj5X
+ n32are74S7tscHnBSvdnq+EbcxIXxoAcpBUcfkVWJ1Zb7oyyxe
+ HXkAXadamKlWoPi4yqs0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 08/22/2012 03:59 PM, qiuxishi Wrote:
-> On 2012-8-22 14:15, Wen Congyang wrote:
->> > At 08/21/2012 08:51 PM, qiuxishi Wrote:
->>> >> From: Xishi Qiu <qiuxishi@huawei.com>
->>> >>
->>> >> online_pages() does build_all_zonelists() and zone_pcp_update(),
->>> >> I think offline_pages() should do it too. The node has no memory
->>> >> to allocate, so remove this node's zones form other nodes' zonelists.
->>> >>
->>> >>
->>> >> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
->>> >> ---
->>> >>  mm/memory_hotplug.c |    6 +++++-
->>> >>  1 files changed, 5 insertions(+), 1 deletions(-)
->>> >>
->>> >> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->>> >> index bc7e7a2..5172bd4 100644
->>> >> --- a/mm/memory_hotplug.c
->>> >> +++ b/mm/memory_hotplug.c
->>> >> @@ -979,7 +979,11 @@ repeat:
->>> >>  	if (!node_present_pages(node)) {
->>> >>  		node_clear_state(node, N_HIGH_MEMORY);
->>> >>  		kswapd_stop(node);
->>> >> -	}
->>> >> +		mutex_lock(&zonelists_mutex);
->>> >> +		build_all_zonelists(NODE_DATA(node), NULL);
->> > 
->> > The node is still onlined now, so there is no need to pass
->> > this node's pgdat to build_all_zonelists().
->> > 
->> > I think we should build all zonelists when the zone has no
->> > pages.
->> > 
->>> >> +		mutex_unlock(&zonelists_mutex);
->>> >> +	} else
->>> >> +		zone_pcp_update(zone);
->> > 
->> > There is more than one zone in a node. So the zone can have
->> > no pages when the node has some pages.
->> > 
-> Yes, you are right. Here is the new patch,
+On Sunday 19 August 2012, Andi Kleen wrote:
+> 
+> This rather large patchkit enables gcc Link Time Optimization (LTO) 
+> support for the kernel. 
+> 
+> With LTO gcc will do whole program optimizations for
+> the whole kernel and each module. This increases compile time,
+> but can generate faster code.
+>     
+> LTO allows gcc to inline functions between different files and
+> do various other optimization across the whole binary.
 
-This version looks fine to me.
+This looks quite nice overall. Have you seen other disadvantages
+besides bugs and compile time? There are two possible issues that
+I can see happening:
 
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> ---
->  mm/memory_hotplug.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index bc7e7a2..5f6997f 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -973,8 +973,13 @@ repeat:
-> 
->  	init_per_zone_wmark_min();
-> 
-> -	if (!populated_zone(zone))
-> +	if (!populated_zone(zone)) {
->  		zone_pcp_reset(zone);
-> +		mutex_lock(&zonelists_mutex);
-> +		build_all_zonelists(NULL, NULL);
-> +		mutex_unlock(&zonelists_mutex);
-> +	} else
-> +		zone_pcp_update(zone);
-> 
->  	if (!node_present_pages(node)) {
->  		node_clear_state(node, N_HIGH_MEMORY);
-> -- 1.7.6.1
->> > And we have called drain_all_pages(), I think there is no need
->> > to call zone_pcp_update() here.
->> > 
->> > Thanks
->> > Wen Congyang
->> > 
-> In zone_pcp_update(), it calculates zone_batchsize() which does
-> not calculated in drain_all_pages().
+* Debuggability: When we get more aggressive optimizations, it
+often becomes harder to trace back object code to a specific source
+line, which may be a reason for distros not to enable it for their
+product kernels in the end because it can make the work of their
+support teams harder.
 
-Yes, zone_batchsize() depends on zone's present pages.
-If zone's present pages are changed, zone's pcp should be updated.
+* Stack consumption: If you do more inlining, the total stack usage
+of large functions can become higher than what the deepest path through
+the same code in the non-inlined version would be. This bites us
+more in the kernel than in user applications, which have much more
+stack space available.
 
-Thanks
-Wen Congyang
+Have you noticed problems with either of these so far? Do you think
+they are realistic concerns or is the LTO implementation good enough
+that they would rarely become an issue?
 
-> 
-> Thanks
-> Xishi Qiu
-> 
->>> >>
->>> >>  	vm_total_pages = nr_free_pagecache_pages();
->>> >>  	writeback_set_ratelimit();
->> > 
->> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+	Arnd
