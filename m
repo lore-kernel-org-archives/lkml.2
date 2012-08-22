@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab2HVMT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 08:19:57 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47817 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856Ab2HVMTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 08:19:55 -0400
-Message-ID: <5034CE65.7040607@suse.cz>
-Date: Wed, 22 Aug 2012 14:19:49 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120731 Thunderbird/15.0
+	id S1756367Ab2HVMWz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 08:22:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752648Ab2HVMWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 08:22:54 -0400
+Message-ID: <5034CF14.5020909@redhat.com>
+Date: Wed, 22 Aug 2012 15:22:44 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: shijie8@gmail.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: move the async flags from the serial code into the
- tty includes
-References: <20120821133455.9090.24759.stgit@localhost.localdomain>
-In-Reply-To: <20120821133455.9090.24759.stgit@localhost.localdomain>
-X-Enigmail-Version: 1.5a1pre
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] kvm: Fix nonsense handling of compat ioctl
+References: <20120820144330.6218.27112.stgit@localhost.localdomain>
+In-Reply-To: <20120820144330.6218.27112.stgit@localhost.localdomain>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 03:35 PM, Alan Cox wrote:
+On 08/20/2012 05:43 PM, Alan Cox wrote:
 > From: Alan Cox <alan@linux.intel.com>
 > 
-> These are used with the tty_port flags which are tty generic so move the
-> flags into a more sensible place. This then makes it possible to add
-> helpers such as those suggested by Huang Shijie.
+> KVM_SET_SIGNAL_MASK passed a NULL argument leaves the on stack signal
+> sets uninitialized. It then passes them through to
+> kvm_vcpu_ioctl_set_sigmask.
+> 
+> We should be passing a NULL in this case not translated garbage.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+> 
+>  virt/kvm/kvm_main.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index a2e85af..e47a7ca 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1975,9 +1975,10 @@ static long kvm_vcpu_compat_ioctl(struct file *filp,
+>  			if (copy_from_user(&csigset, sigmask_arg->sigset,
+>  					   sizeof csigset))
+>  				goto out;
+> -		}
+> -		sigset_from_compat(&sigset, &csigset);
+> -		r = kvm_vcpu_ioctl_set_sigmask(vcpu, &sigset);
+> +			sigset_from_compat(&sigset, &csigset);
+> +			r = kvm_vcpu_ioctl_set_sigmask(vcpu, &sigset);
+> +		} else
+> +			kvm_vcpu_ioctl_set_sigmask(vcpu, NULL);
+>  		break;
+>  	}
 
-Yes, the idea looks good to me. I was actually thinking of the same.
+Now r is uninitiali[sz]ed.
 
-But there are two issues with this patch (see below).
 
-> --- a/include/linux/serial.h
-> +++ b/include/linux/serial.h
-> @@ -15,6 +15,8 @@
->  #ifdef __KERNEL__
->  #include <asm/page.h>
->  
-> +#include <linux/tty_flags.h>
-> +
-
-There are no minus lines in serial.h -- we have two copies of the flags
-now? That looks insane.
-
-The flags are a user API. You concealed them by the #include inside the
-__KERNEL__ section (if I consider we do not have the flags defined twice).
-
-And if we move the include outside of the __KERNEL__ section, we shall
-update Kconfig, so that the new header is installed.
-
->  /*
->   * Counters of the input lines (CTS, DSR, RI, CD) interrupts
->   */
-> diff --git a/include/linux/tty.h b/include/linux/tty.h
-> index 69a787f..dbebd1e 100644
-> --- a/include/linux/tty.h
-> +++ b/include/linux/tty.h
-> @@ -43,6 +43,7 @@
->  #include <linux/tty_driver.h>
->  #include <linux/tty_ldisc.h>
->  #include <linux/mutex.h>
-> +#include <linux/tty_flags.h>
-
-thanks,
 -- 
-js
-suse labs
+error compiling committee.c: too many arguments to function
