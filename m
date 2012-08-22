@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab2HVPNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:13:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57091 "EHLO
+	id S1757570Ab2HVPNq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:13:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62807 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756430Ab2HVPNg (ORCPT
+	with ESMTP id S932671Ab2HVPNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:13:36 -0400
+	Wed, 22 Aug 2012 11:13:39 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Yong Shen <yong.shen@linaro.org>, Shawn Guo <shawn.guo@freescale.com>,
-        stable@vger.kernel.org
-Subject: [PATCH 5/6] ARM: imx: select CPU_FREQ_TABLE when needed
-Date: Wed, 22 Aug 2012 17:13:09 +0200
-Message-Id: <1345648390-4234-6-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/6] ARM: ux500: don't select LEDS_GPIO for snowball
+Date: Wed, 22 Aug 2012 17:13:05 +0200
+Message-Id: <1345648390-4234-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1345648390-4234-1-git-send-email-arnd@arndb.de>
 References: <1345648390-4234-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:ep2N/tGmTBp7/a1EBlIvHkFAlJ1HmtkwU8yJSgmeN3D
- Dov8OQFncSjj6eLUne9VHjJ59iZseFSTBMwCi0APtH8PXxBDUt
- pjOcFSJgqkJ2Wovfl9GHk8D0WgeYQYfqh/8IrdNAY77J5+BCzX
- BAV5CiGFP3UcOEUJslw6JTpxGEzTux7OGU9RMFwEZpaLPweu0R
- Ts7m4dPzSKNyGGnKzTufpsZ2mzhs/s7DSNaZ+whI6E/jF2vJzA
- XJPFcgpv2mwQP9RDZdUefiJQkGq+ULHxKBeEdxrxOyQxAtVSJT
- lVuQuyexdigtxg/hu/w9m6Y0IKcJxCAqojRE2NSuQRvoItTRin
- CNyFTk6YxMgO2/8FYOwkdVL9NOV6TIAdZgfTyXdT8cFhvMtd1c
- YNs56h2+2rXgg==
+X-Provags-ID: V02:K0:Y5kvlH3VNvcTPmjv21ZalAgS4o+wSe/DamZ0+PX/WB4
+ I8uz9CXEZ6TUt4hEMUwT6iU9BFzlts86KuZnP4hBgVmzDotK66
+ 2z99jERAZJy49TDbW6YAiiSjnwCivrMoHTOTIYU7YslfAEEle1
+ JF6AmkF6HS36+KeNHm6rAPHZYgBgkqgTmt81BX3ZIpGSMSjHsE
+ pag4Sb/D/jTQsp2mpEmderwvp/n/rrhlY3/SULJwLXVSZJMI9A
+ inbx9n1uUoICgnQHqo3M9IBnJFWKAqgMcrFd+mvLd6i58VpMZR
+ sfyPMSC6GMs1pFgWL+Ujk+wmArY2WFGe6lIyMuD5gKLGEbrSbh
+ MjNJ6VN3SRY/fxjYdBXtTnxCyp9tQz/MJWvnV/vHHD7MlSCH6V
+ +m7YBo0DTPEGg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i.MX cpufreq implementation uses the CPU_FREQ_TABLE helpers,
-so it needs to select that code to be built. This problem has
-apparently existed since the i.MX cpufreq code was first merged
-in v3.6.37.
+The gpio leds driver can only be built if the generic LED code is
+also enabled. Snowball selects LEDS_GPIO for an unknown reason
+but it does not select LEDS_CLASS and also does not really require
+the LED support at all, so we can just drop this dependency.
 
-Building IMX without CPU_FREQ_TABLE results in:
+Without this patch, building without LEDS_CLASS esults in:
 
-arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_exit':
-arch/arm/plat-mxc/cpufreq.c:173: undefined reference to `cpufreq_frequency_table_put_attr'
-arch/arm/plat-mxc/built-in.o: In function `mxc_set_target':
-arch/arm/plat-mxc/cpufreq.c:84: undefined reference to `cpufreq_frequency_table_target'
-arch/arm/plat-mxc/built-in.o: In function `mxc_verify_speed':
-arch/arm/plat-mxc/cpufreq.c:65: undefined reference to `cpufreq_frequency_table_verify'
-arch/arm/plat-mxc/built-in.o: In function `mxc_cpufreq_init':
-arch/arm/plat-mxc/cpufreq.c:154: undefined reference to `cpufreq_frequency_table_cpuinfo'
-arch/arm/plat-mxc/cpufreq.c:162: undefined reference to `cpufreq_frequency_table_get_attr'
+drivers/built-in.o: In function `create_gpio_led.part.2':
+governor_userspace.c:(.devinit.text+0x5a58): undefined reference to `led_classdev_register'
+drivers/built-in.o: In function `gpio_led_remove':
+governor_userspace.c:(.devexit.text+0x6b8): undefined reference to `led_classdev_unregister'
+
+This reverts 8733f53c6 "ARM: ux500: Kconfig: Compile in leds-gpio
+support for Snowball", which was not completely thought through.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Yong Shen <yong.shen@linaro.org>
-Cc: Shawn Guo <shawn.guo@freescale.com>
-Cc: stable@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-ux500/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index e91c7cd..84b5a0c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2150,6 +2150,7 @@ source "drivers/cpufreq/Kconfig"
- config CPU_FREQ_IMX
- 	tristate "CPUfreq driver for i.MX CPUs"
- 	depends on ARCH_MXC && CPU_FREQ
-+	select CPU_FREQ_TABLE
+diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
+index c013bbf..53d3d46 100644
+--- a/arch/arm/mach-ux500/Kconfig
++++ b/arch/arm/mach-ux500/Kconfig
+@@ -41,7 +41,6 @@ config MACH_HREFV60
+ config MACH_SNOWBALL
+ 	bool "U8500 Snowball platform"
+ 	select MACH_MOP500
+-	select LEDS_GPIO
  	help
- 	  This enables the CPUfreq driver for i.MX CPUs.
+ 	  Include support for the snowball development platform.
  
 -- 
 1.7.10
