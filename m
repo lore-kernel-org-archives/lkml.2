@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724Ab2HVQBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:01:06 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:58620 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754710Ab2HVQBB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:01:01 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: Doug Anderson <dianders@chromium.org>
-CC: Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Alim Akhtar <alim.akhtar@samsung.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Will Newton <will.newton@imgtec.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Date: Wed, 22 Aug 2012 09:00:43 -0700
-Subject: Re: [PATCH 1/2] mmc: core: Add a capability for disabling mmc cards
-Thread-Topic: [PATCH 1/2] mmc: core: Add a capability for disabling mmc cards
-Thread-Index: Ac2Af0kY4pNx+8hDTeOFeh5YtSaoWw==
-Message-ID: <5ED03810-753A-407D-A994-E1FD22BE45E6@marvell.com>
-References: <1345608318-15347-1-git-send-email-dianders@chromium.org>
- <50346181.3010406@samsung.com>
- <CAD=FV=UZM9b6++DkgemZA7qpAZgFN+NyyLjRecgSdjcEsu0YYA@mail.gmail.com>
-In-Reply-To: <CAD=FV=UZM9b6++DkgemZA7qpAZgFN+NyyLjRecgSdjcEsu0YYA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757214Ab2HVQCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:02:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43344 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752766Ab2HVQCn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:02:43 -0400
+Date: Wed, 22 Aug 2012 17:02:41 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, s.hauer@pengutronix.de,
+        shawn.guo@linaro.org, kernel@pengutronix.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, sameo@linux.intel.com, lrg@ti.com,
+        richard.zhao@freescale.com, devicetree-discuss@lists.ozlabs.org,
+        swarren@wwwdotorg.org, paul.liu@linaro.org
+Subject: Re: [PATCH 1/7] mfd: add imx syscon driver based on regmap
+Message-ID: <20120822160241.GR7995@opensource.wolfsonmicro.com>
+References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
+ <1345619928-15446-2-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q56cwELb5ReCVVQh"
+Content-Disposition: inline
+In-Reply-To: <1345619928-15446-2-git-send-email-b29396@freescale.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Aug 22, 2012, at 8:44 AM, Doug Anderson <dianders@chromium.org> wrote:
+--q56cwELb5ReCVVQh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Jaehoon,
-> 
-> On Tue, Aug 21, 2012 at 9:35 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->> 
->> Hi Doug,
->> 
->> I didn't know what purpose is.
->> Why need to add the MMC_CAP2_NO_MMC?
->> If card is SD or SDIO, mmc_attach_mmc(host) should not be entered.
->> Could you explain to me in more detail?
-> 
-> Thanks for your feedback.  In this case I have a card that is an MMC
-> card so mmc_attach_sdio() and mmc_attach_sd() will fail.  If I let
-> mmc_attach_mmc() run it will actually find the MMC card.  However, on
-> this platform it is not valid to recognize MMC cards.
-> 
+On Wed, Aug 22, 2012 at 03:18:42PM +0800, Dong Aisheng wrote:
 
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Understand.   
+> Add regmap based imx syscon driver.
 
-Can you explain why the change is needed.  Is it for technical 
-reasons that MMC is not allowed -- if so then I do not understand how SD can work
-and MMC cannot.
+Nice to see more regmap-mmio usage!
 
-If it is for marketing reasons -- then --- oh well .....
+Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
+=66rom a regmap point of view.
 
-Could you add some additional comments to the commit message.
-I think it makes sense to handle all 3 cases
-a) SDIO not allowed
-b) SD not allowed
-c) MMC not allowed
+> +int imx_syscon_write(struct device_node *np, u32 reg, u32 val)
+> +{
+> +	struct device *dev;
+> +	struct imx_syscon *syscon;
+> +	int ret =3D 0;
+> +
+> +	dev =3D driver_find_device(&imx_syscon_driver.driver, NULL, np,
+> +				 imx_syscon_match);
+> +	if (!dev)
+> +		return -EPROBE_DEFER;
+> +
+> +	syscon =3D dev_get_drvdata(dev);
+> +	ret =3D regmap_write(syscon->regmap, reg, val);
 
-> -Doug
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It'd be good to provide a way of retrieving the regmap so that drivers
+for subsystems with generic regmap code could use the framework features
+(regulator is one example that I just mentioned in my other mail).
 
+--q56cwELb5ReCVVQh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQNQKaAAoJEFJkBDiqVpZ49UgP+wWOKBCk9UOj5BNa76qKuj2K
+jinGoe/x7e9g7IF4Ni42PiVw2QyP/4aTist9vHB1tqK956K1Xvlhzets8PG+nL6P
+4Omflw/X8JEqCNxZB2N5kXHZd7F9fM6uiJtVh+zFFbI4JIAFTu0gNiAJl1PfP4pJ
+atSq1Fwn9FMCPog4mHTR0kvkrlBP1gDohe+1lfWnclP0FHSg5Ty2osYbsAqmas7J
+ccW3YWL+qEQwhfIDrZS65+t0+ujebtpv293m+GqgvA51gOBpSIuFiRQQhX2WvogX
+6xJfPlVDKtZBmw5XMgIh51sQsw341JbRjTGXaZNvcjt7zJEoUw9NFI8IPA3H6AIP
+sevpVo3JUvE1pvPLZupKLgL1ZPoMrIWgF+HCEmwMTUAuOfLNCCWIs34Pyx2B9AMc
+QoJOcB2n3BodxXlhZVnC+QRRQV+OYje33kei1cEP3ndlV8qFFAeOKUyITdjt4zgc
+Fif8Ykizm7m6L0t2n5yhe9N1tl5ZRDKqhTk1jXFrZxqvgWaKjb0dEWN2jDLGOJ0Q
+I6CXcdcXSVLVhBgOHwvi/tOFFaAAH/pSxwopiwwWoPmkedSuGCuzjx90mt+AvkXX
+v4/jiZCSrhe961omGOGt8vcvGU98wpgLtlqzDFsh5Kkrlxa/PDSOWK6SvU826oQH
+EXke92GKkMSmRUm8qHH3
+=/a7A
+-----END PGP SIGNATURE-----
+
+--q56cwELb5ReCVVQh--
