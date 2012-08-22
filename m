@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab2HVEiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 00:38:51 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48131 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752445Ab2HVEit (ORCPT
+	id S1753991Ab2HVEji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:39:38 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45845 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab2HVEjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 00:38:49 -0400
+	Wed, 22 Aug 2012 00:39:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYc-iMgKBNfRmxUFftK78G77qQ8h_Rr5td1-95NGo7wZg@mail.gmail.com>
+In-Reply-To: <CACRpkdaxSZZQwefN3FNvv3ctXFHqaLZoAZ5f8CVu7Tx9n6-v1Q@mail.gmail.com>
 References: <1345060656-32201-1-git-send-email-thomas.abraham@linaro.org>
-	<1345060656-32201-4-git-send-email-thomas.abraham@linaro.org>
-	<CACRpkdYc-iMgKBNfRmxUFftK78G77qQ8h_Rr5td1-95NGo7wZg@mail.gmail.com>
-Date: Wed, 22 Aug 2012 10:08:48 +0530
-Message-ID: <CAJuYYwSaV9=DiAnv_s0yJJGLYUQrEk+P4s0EyX00-P0ae-WEBQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] gpio: exynos4: skip gpiolib registration if
+	<1345060656-32201-5-git-send-email-thomas.abraham@linaro.org>
+	<CACRpkdaxSZZQwefN3FNvv3ctXFHqaLZoAZ5f8CVu7Tx9n6-v1Q@mail.gmail.com>
+Date: Wed, 22 Aug 2012 10:09:34 +0530
+Message-ID: <CAJuYYwTsYNWRo7uraELdv=KJvXm-7F9JFb9ZrFvEYrcwJvBMmA@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] ARM: EXYNOS: skip wakeup interrupt setup if
  pinctrl driver is used
 From: Thomas Abraham <thomas.abraham@linaro.org>
 To: Linus Walleij <linus.walleij@linaro.org>
@@ -26,23 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 August 2012 17:35, Linus Walleij <linus.walleij@linaro.org> wrote:
+On 21 August 2012 17:34, Linus Walleij <linus.walleij@linaro.org> wrote:
 > On Wed, Aug 15, 2012 at 9:57 PM, Thomas Abraham
 > <thomas.abraham@linaro.org> wrote:
 >
->> Pinctrl driver, when enabled, registers all the gpio pins and hence the
->> registration of gpio pins by this driver can be skipped.
+>> Pinctrl driver includes support for configuring the external wakeup
+>> interrupts. On exynos platforms that use pinctrl driver, the setup
+>> of wakeup interrupts in the exynos platform code can be skipped.
 >>
->> Acked-by: Grant Likely <grant.likely@secretlab.ca>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> Cc: Kukjin Kim <kgene.kim@samsung.com>
 >> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 >
 >> +#ifdef CONFIG_OF
 >
-> Wouldn't it be better to use
-> #ifdef CONFIG_PINCTRL_SAMSUNG?
+> Don't you actually want to use:
+>
+> #fidef CONFIG_PINCTRL_SAMSUNG
+>
+> here? CONFIG_OF is a bit vague.
 
-Yes, this would be better. I will fix this.
+Ok. I will use CONFIG_PINCTRL_SAMSUNG here.
 
 >
 > Yours,
