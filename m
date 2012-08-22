@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131Ab2HVQZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:25:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33198 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933080Ab2HVQYT (ORCPT
+	id S933122Ab2HVQ0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:26:00 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56995 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933053Ab2HVQYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:24:19 -0400
+	Wed, 22 Aug 2012 12:24:12 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        "3.2.x.." <stable@kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>, "3.2.x.." <stable@kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 07/10] mn10300: Add missing RCU idle APIs on idle loop
-Date: Wed, 22 Aug 2012 18:23:45 +0200
-Message-Id: <1345652628-15060-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 05/10] m32r: Add missing RCU idle APIs on idle loop
+Date: Wed, 22 Aug 2012 18:23:43 +0200
+Message-Id: <1345652628-15060-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
 References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
@@ -39,46 +37,45 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the mn10300's idle loop.
+Add this missing pair of calls in the m32r's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
 Cc: 3.2.x.. <stable@kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/mn10300/kernel/process.c |    3 +++
+ arch/m32r/kernel/process.c |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/mn10300/kernel/process.c b/arch/mn10300/kernel/process.c
-index 7dab0cd..e9cceba 100644
---- a/arch/mn10300/kernel/process.c
-+++ b/arch/mn10300/kernel/process.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/fs.h>
- #include <linux/slab.h>
+diff --git a/arch/m32r/kernel/process.c b/arch/m32r/kernel/process.c
+index 3a4a32b2..384e63f 100644
+--- a/arch/m32r/kernel/process.c
++++ b/arch/m32r/kernel/process.c
+@@ -26,6 +26,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/unistd.h>
+ #include <linux/hardirq.h>
 +#include <linux/rcupdate.h>
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
+ 
  #include <asm/io.h>
-@@ -107,6 +108,7 @@ void cpu_idle(void)
+ #include <asm/uaccess.h>
+@@ -82,6 +83,7 @@ void cpu_idle (void)
  {
  	/* endless idle loop with no priority at all */
- 	for (;;) {
+ 	while (1) {
 +		rcu_idle_enter();
  		while (!need_resched()) {
- 			void (*idle)(void);
+ 			void (*idle)(void) = pm_idle;
  
-@@ -121,6 +123,7 @@ void cpu_idle(void)
- 			}
+@@ -90,6 +92,7 @@ void cpu_idle (void)
+ 
  			idle();
  		}
 +		rcu_idle_exit();
- 
  		schedule_preempt_disabled();
  	}
+ }
 -- 
 1.7.5.4
 
