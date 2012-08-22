@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933166Ab2HVQzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:55:23 -0400
-Received: from mga05.intel.com ([192.55.52.89]:57640 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932992Ab2HVQzT (ORCPT
+	id S964813Ab2HVQ4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:56:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35922 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757794Ab2HVQ4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:55:19 -0400
+	Wed, 22 Aug 2012 12:56:20 -0400
+Message-ID: <50350F2D.6030408@gmail.com>
+Date: Wed, 22 Aug 2012 10:56:13 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <87628e5kve.fsf@rustcorp.com.au>
-References: <cover.1345055638.git.dmitry.kasatkin@intel.com>
-	<f5c7c0f9ef113263bf17c39e9b7927f085872107.1345055639.git.dmitry.kasatkin@intel.com>
-	<87628e5kve.fsf@rustcorp.com.au>
-Date: Wed, 22 Aug 2012 19:38:59 +0300
-Message-ID: <CALLzPKZhDg0b7XF7A_MH1gtXafe2OfKr=c5hH-KGM7J_oXXCrQ@mail.gmail.com>
-Subject: Re: [RFC v2 1/7] integrity: added digest calculation function
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: zohar@linux.vnet.ibm.com, jmorris@namei.org, dhowells@redhat.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Luigi Semenzato <semenzato@chromium.org>, Ingo Molnar <mingo@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
+        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
+Subject: Re: [PATCH] perf: do not flush maps on COMM for perf report
+References: <1345585940-6497-1-git-send-email-semenzato@chromium.org> <20120822072822.GA11042@gmail.com> <CAA25o9RJOre2mw4z7Mh94iRKcHVdby9RjLfP91far16me8_94Q@mail.gmail.com> <20120822162958.GA13623@infradead.org>
+In-Reply-To: <20120822162958.GA13623@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 5:59 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Wed, 15 Aug 2012 21:43:06 +0300, Dmitry Kasatkin <dmitry.kasatkin@intel.com> wrote:
->> +     } else {
->> +             struct {
->> +                     struct shash_desc shash;
->> +                     char ctx[crypto_shash_descsize(tfm)];
->> +             } desc;
->
-> Linus had a rant a while ago about using variable-sized stack vars in
-> the kernel (can't find a reference right now, sorry).
->
-> The problem is that either you know there's a limit to
-> crypto_shash_descsize(), in which case you can just use this here, or
-> you don't know, in which case, this risks a stack oveflow.
->
-> Cheers,
-> Rusty.
+On 8/22/12 10:29 AM, Arnaldo Carvalho de Melo wrote:
+> Adding the EXEC event, ditto. And I agree that while adding it we want
+> to do 1/2 as pre-requisite.
 
-Well... descriptor size is a algo specific but constant... just
-sizeof(some struct).
-So there is no possibility to force overflow unless someone implement
-some algo driver which
-uses too big descriptor size.
+maps should not be flushed on a COMM event, so that was a mistake. Given 
+that what new information does an EXEC event provide? Same process id. A 
+COMM event is generated on an exec, so the name change happens. Mappings 
+are dropped prior to that - and there is no unmap event. That seems to 
+be a missing piece. Maps are added which is handled by MMAP events. 
+After that why is an exec event relevant?
 
-- Dmitry
+David
