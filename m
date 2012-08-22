@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab2HVQaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 12:30:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164Ab2HVQaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 12:30:05 -0400
-Date: Wed, 22 Aug 2012 18:29:55 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between
- secondary MMU and host
-Message-ID: <20120822162955.GT29978@redhat.com>
-References: <503358FF.3030009@linux.vnet.ibm.com>
- <20120821150618.GJ27696@redhat.com>
- <5034763D.60508@linux.vnet.ibm.com>
+	id S933127Ab2HVQaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 12:30:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44434 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933021Ab2HVQaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 12:30:08 -0400
+Date: Wed, 22 Aug 2012 13:29:58 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Luigi Semenzato <semenzato@chromium.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
+        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
+Subject: Re: [PATCH] perf: do not flush maps on COMM for perf report
+Message-ID: <20120822162958.GA13623@infradead.org>
+References: <1345585940-6497-1-git-send-email-semenzato@chromium.org>
+ <20120822072822.GA11042@gmail.com>
+ <CAA25o9RJOre2mw4z7Mh94iRKcHVdby9RjLfP91far16me8_94Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5034763D.60508@linux.vnet.ibm.com>
+In-Reply-To: <CAA25o9RJOre2mw4z7Mh94iRKcHVdby9RjLfP91far16me8_94Q@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 02:03:41PM +0800, Xiao Guangrong wrote:
-> On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
-> > CPU0  		    	    	CPU1
-> > 				oldpage[1] == 0 (both guest & host)
-> > oldpage[0] = 1
-> > trigger do_wp_page
-> 
-> We always do ptep_clear_flush before set_pte_at_notify(),
-> at this point, we have done:
->   pte = 0 and flush all tlbs
-> > mmu_notifier_change_pte
-> > spte = newpage + writable
-> > 				guest does newpage[1] = 1
-> > 				vmexit
-> > 				host read oldpage[1] == 0
-> 
->                   It can not happen, at this point pte = 0, host can not
-> 		  access oldpage anymore, host read can generate #PF, it
->                   will be blocked on page table lock until CPU 0 release the lock.
+Em Wed, Aug 22, 2012 at 09:09:10AM -0700, Luigi Semenzato escreveu:
+> On Wed, Aug 22, 2012 at 12:28 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > * Luigi Semenzato <semenzato@chromium.org> wrote:
+> >> An alternative patch (which I proposed earlier) would be to
+> >> introduce a separate PERF_RECORD_EXEC type, but it is a much
+> >> larger change (about 300 lines) and is not necessary.
 
-Agreed, this is why your fix is safe.
+> > It would be nice to add that too - we already have FORK/EXIT,
+> > this seems like a natural extension.
 
-So the thing is, it is never safe to mangle the secondary MMU before
-the primary MMU. This is why your patch triggered all sort of alarm
-bells to me and I was tempted to suggest an obviously safe
-alternative.
+> Yes.  Adding PERF_RECORD_EXEC is/would be the right long-term
+> solution.  But there are two issues.
 
-The reason why your patch is safe, is that the required primary MMU
-pte mangling happens before the set_pte_at_notify is invoked.
+> 1. One nice aspect of perf is that perf.data files and "perf report"
+> are compatible across a large number of versions.  Adding
+> PERF_RECORD_EXEC breaks compatibility in a somewhat unpleasant manner.
+>  New perf.data files won't work with old versions of perf and *might*
+> fail poorly (segv) although this situation is difficult to analyze.
 
-Other details about change_pte:
+> 2. Adding a new record type is messy.  It replicates a lot of
+> boilerplate code, much of it in the kernel, and affects many parts of
+> the system.  It adds to size, complexity, and likelihood of new bugs.
 
-1) it is only safe to use on an already readonly pte if the pfn is
-   being altered
+> I would prioritize the "would be nice" category as follows.
 
-2) it is only safe to run on a read-write mapping to convert it to a
-   readonly mapping if the pfn doesn't change
+> 1. Improve the handling of unknown record types for future better
+> backward compatibility.  (Small change.)
 
-KSM uses it as 2) in page_write_protect.
+> 2. Refactor/cleanup code to improve readability and robustness.  (Big
+> change, but can be broken into many smaller pieces.)
 
-KSM uses it as 1) in replace_page and do_wp_page uses it as 1) too.
+> 3. Add PERF_RECORD_EXEC.
 
-The new constraint for its safety after your fix is that it must
-always be preceded by a ptep_clear_flush.
+> If there is consensus, I might be able to give a shot to 1 and 2
+> (courtesy of Google).
 
-Of course it's quite natural that it is preceded by a
-ptep_clear_flush, other things would risk to go wrong if
-ptep_clear_flush wasn't done, so there's little risk of getting it
-wrong.
+I think this is just common sense, i.e. I'd love to take patches that
+improve the robustness of the tools any day.
 
-I thought, maybe it would be clearer to do it as
-ptep_clear_flush_notify_at(pte). That would avoid having methods that
-rings the alarm bells. But the O_DIRECT check of KSM in
-page_write_protect prevents such a change (there we need to run a
-standalone ptep_clear_flush).
+Refactoring code to make it cleaner and possibly faster and/or smaller,
+ditto.
 
-I suggest only adding a comment to mention the real primary MMU pte
-update happens before set_pte_at_notify is invoked and we're not
-really doing secondary MMU updates before primary MMU updates which
-wouldn't never be safe.
+Adding the EXEC event, ditto. And I agree that while adding it we want
+to do 1/2 as pre-requisite.
 
-It never would be safe because the secondary MMU can be just a TLB and
-even the KSM sptes can be dropped at any time and refilled through
-secondary MMU page faults running gup_fast. The PT lock won't stop it.
-
-Thanks a lot for fixing this subtle race!
-Andrea
+- Arnaldo
