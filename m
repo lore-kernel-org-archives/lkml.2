@@ -1,171 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab2HVDv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 23:51:58 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56351 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab2HVDv4 (ORCPT
+	id S1750989Ab2HVEAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:00:30 -0400
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:54565 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850Ab2HVD76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 23:51:56 -0400
-Message-ID: <50345735.2000807@linux.vnet.ibm.com>
-Date: Wed, 22 Aug 2012 11:51:17 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 21 Aug 2012 23:59:58 -0400
+Message-ID: <5034593F.8010806@hardwarefreak.com>
+Date: Tue, 21 Aug 2012 22:59:59 -0500
+From: Stan Hoeppner <stan@hardwarefreak.com>
+Reply-To: stan@hardwarefreak.com
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between secondary
- MMU and host
-References: <503358FF.3030009@linux.vnet.ibm.com> <20120821150618.GJ27696@redhat.com>
-In-Reply-To: <20120821150618.GJ27696@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Miquel van Smoorenburg <mikevs@xs4all.net>
+CC: David Brown <david.brown@hesbynett.no>, Michael Tokarev <mjt@tls.msk.ru>,
+        Linux RAID <linux-raid@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: O_DIRECT to md raid 6 is slow
+References: <CALCETrWCu=UPATPdqWP=Gpvswv-RDwaxfr1W1jxYtUMZsqKgSQ@mail.gmail.com> <502B8D1F.7030706@anonymous.org.uk> <CALCETrX=mi92qwOAjt_7Qu-ho_Hdg_5SHX-_8nXYRer4JnzD0w@mail.gmail.com> <201208152307.q7FN7hMR008630@xs8.xs4all.nl> <502CD3F8.70001@hardwarefreak.com> <502D6B0A.6090508@xs4all.net> <502DF357.8090205@hardwarefreak.com> <502E2817.8040306@xs4all.net> <502F237D.6060806@hardwarefreak.com> <502F698C.9010507@msgid.tls.msk.ru> <50305AB9.5080302@hardwarefreak.com> <5030F1C6.90205@hesbynett.no> <50317804.9010701@hardwarefreak.com> <5033A06B.30508@xs4all.net>
+In-Reply-To: <5033A06B.30508@xs4all.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12082203-7014-0000-0000-000001C26961
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
-> On Tue, Aug 21, 2012 at 05:46:39PM +0800, Xiao Guangrong wrote:
->> There has a bug in set_pte_at_notify which always set the pte to the
->> new page before release the old page in secondary MMU, at this time,
->> the process will access on the new page, but the secondary MMU still
->> access on the old page, the memory is inconsistent between them
->>
->> Below scenario shows the bug more clearly:
->>
->> at the beginning: *p = 0, and p is write-protected by KSM or shared with
->> parent process
->>
->> CPU 0                                       CPU 1
->> write 1 to p to trigger COW,
->> set_pte_at_notify will be called:
->>   *pte = new_page + W; /* The W bit of pte is set */
->>
->>                                      *p = 1; /* pte is valid, so no #PF */
->>
->>                                      return back to secondary MMU, then
->>                                      the secondary MMU read p, but get:
->>                                      *p == 0;
->>
->>                          /*
->>                           * !!!!!!
->>                           * the host has already set p to 1, but the secondary
->>                           * MMU still get the old value 0
->>                           */
->>
->>   call mmu_notifier_change_pte to release
->>   old page in secondary MMU
+On 8/21/2012 9:51 AM, Miquel van Smoorenburg wrote:
+> On 08/20/2012 01:34 AM, Stan Hoeppner wrote:
+>> I'm glad you jumped in David.  You made a critical statement of fact
+>> below which clears some things up.  If you had stated it early on,
+>> before Miquel stole the thread and moved it to LKML proper, it would
+>> have short circuited a lot of this discussion.  Which is:
 > 
-> The KSM usage of it looks safe because it will only establish readonly
-> ptes with it.
+> I'm sorry about that, that's because of the software that I use to
+> follow most mailinglist. I didn't notice that the discussion was cc'ed
+> to both lkml and l-r. I should fix that.
 
-Hmm, in KSM code, i found this code in replace_page:
+Oh, my bad.  I thought it was intentional.
 
-set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+Don't feel too bad about it.  When I tried to copy lkml back in on the
+one message I screwed up as well.  I though Tbird had filled in the full
+address but it didn't.
 
-It is possible to establish a writable pte, no?
+>> Thus my original statement was correct, or at least half correct[1], as
+>> it pertained to md/RAID6.  Then Miquel switched the discussion to
+>> md/RAID5 and stated I was all wet.  I wasn't, and neither was Dave
+>> Chinner.  I was simply unaware of this md/RAID5 single block write RMW
+>> shortcut
+> 
+> Well, all I tried to say is that a small write of, say, 4K, to a
+> raid5/raid6 array does not need to re-write the whole stripe (i.e.
+> chunksize * nr_disks) but just 4K * nr_disks, or the RMW variant of that.
 
-> 
-> It seems a problem only for do_wp_page. It wasn't safe to setup
-> writable ptes with it. I guess we first introduced it for KSM and then
-> we added it to do_wp_page too by mistake.
-> 
-> The race window is really tiny, it's unlikely it has ever triggered,
-> however this one seem to be possible so it's slightly more serious
-> than the other race you recently found (the previous one in the exit
-> path I think it was impossible to trigger with KVM).
+And I'm glad you did.  Before that I didn't know about these efficiency
+shortcuts and exactly how md does writeback on partial stripe updates.
 
-Unfortunately, all these bugs are triggered by test cases.
+Even with these optimizations, a default 512KB chunk is too big, for the
+reasons I stated, the big one being the fact that you'll rarely fill a
+full stripe, meaning nearly every write will incur an RMW cycle.
 
-> 
->> We can fix it by release old page first, then set the pte to the new
->> page.
->>
->> Note, the new page will be firstly used in secondary MMU before it is
->> mapped into the page table of the process, but this is safe because it
->> is protected by the page table lock, there is no race to change the pte
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  include/linux/mmu_notifier.h |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
->> index 1d1b1e1..8c7435a 100644
->> --- a/include/linux/mmu_notifier.h
->> +++ b/include/linux/mmu_notifier.h
->> @@ -317,8 +317,8 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
->>  	unsigned long ___address = __address;				\
->>  	pte_t ___pte = __pte;						\
->>  									\
->> -	set_pte_at(___mm, ___address, __ptep, ___pte);			\
->>  	mmu_notifier_change_pte(___mm, ___address, ___pte);		\
->> +	set_pte_at(___mm, ___address, __ptep, ___pte);			\
->>  })
-> 
-> If we establish the spte on the new page, what will happen is the same
-> race in reverse. The fundamental problem is that the first guy that
-> writes to the "newpage" (guest or host) won't fault again and so it
-> will fail to serialize against the PT lock.
-> 
-> CPU0  		    	    	CPU1
-> 				oldpage[1] == 0 (both guest & host)
-> oldpage[0] = 1
-> trigger do_wp_page
-> mmu_notifier_change_pte
-> spte = newpage + writable
-> 				guest does newpage[1] = 1
-> 				vmexit
-> 				host read oldpage[1] == 0
-> pte = newpage + writable (too late)
-> 
-> I think the fix is to use ptep_clear_flush_notify whenever
-> set_pte_at_notify will establish a writable pte/spte. If the pte/spte
-> established by set_pte_at_notify/change_pte is readonly we don't need
-> to do the ptep_clear_flush_notify instead because when the host will
-> write to the page that will fault and serialize against the
-> PT lock (set_pte_at_notify must always run under the PT lock of course).
-> 
-> How about this:
-> 
-> =====
->>From 160a0b1b2be9bf96c45b30d9423f8196ecebe351 Mon Sep 17 00:00:00 2001
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> Date: Tue, 21 Aug 2012 16:48:11 +0200
-> Subject: [PATCH] mmu_notifier: fix race in set_pte_at_notify usage
-> 
-> Whenever we establish a writable spte with set_pte_at_notify the
-> ptep_clear_flush before it must be a _notify one that clears the spte
-> too.
-> 
-> The fundamental problem is that if the primary MMU that writes to the
-> "newpage" won't fault again if the pte established by
-> set_pte_at_notify is writable. And so it will fail to serialize
-> against the PT lock to wait the set_pte_at_notify to finish
-> updating all secondary MMUs before the write hits the newpage.
-> 
-> CPU0  		    	    	CPU1
-> 				oldpage[1] == 0 (all MMUs)
-> oldpage[0] = 1
-> trigger do_wp_page
-> take PT lock
-> ptep_clear_flush (secondary MMUs
-> still have read access to oldpage)
-> mmu_notifier_change_pte
-> pte = newpage + writable (primary MMU can write to
-> newpage)
-> 				host write newpage[1] == 1 (no fault,
-> 				failed to serialize against PT lock)
-> 				vmenter
-> 				guest read oldpage[1] == 0
-
-
-Why? Why guest can read the old page?
-
-Before you set the pte to be writable, mmu_notifier_change_pte is called
-that all old pages have been released.
+-- 
+Stan
 
