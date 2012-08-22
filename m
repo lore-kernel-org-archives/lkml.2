@@ -1,84 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab2HVTHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:07:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56041 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757355Ab2HVTHR (ORCPT
+	id S1758614Ab2HVTIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:08:07 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54218 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758623Ab2HVTIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:07:17 -0400
-Date: Wed, 22 Aug 2012 20:07:15 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] ARM: dt: tegra: harmony: add regulators
-Message-ID: <20120822190714.GF7995@opensource.wolfsonmicro.com>
-References: <1345186799-18229-1-git-send-email-ldewangan@nvidia.com>
- <502E9B09.3080800@wwwdotorg.org>
- <502EA1AC.4090205@wwwdotorg.org>
- <50327242.80103@nvidia.com>
- <50327897.5030601@wwwdotorg.org>
- <20120820175410.GI26991@opensource.wolfsonmicro.com>
- <50327D2D.6000509@wwwdotorg.org>
- <20120820181432.GJ26991@opensource.wolfsonmicro.com>
- <503283F8.4070808@wwwdotorg.org>
+	Wed, 22 Aug 2012 15:08:01 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="S3Smgu5mAIHx+YOO"
-Content-Disposition: inline
-In-Reply-To: <503283F8.4070808@wwwdotorg.org>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1345241877-16200-2-git-send-email-cheiny@synaptics.com>
+References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
+	<1345241877-16200-2-git-send-email-cheiny@synaptics.com>
+Date: Wed, 22 Aug 2012 21:08:00 +0200
+Message-ID: <CACRpkdbP1uTXC9jVNVG3es0KFRq+8MaUa6=6nPuG5WUz5jgiRQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/17] input: RMI4 public header file and documentation.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christopher Heiny <cheiny@synaptics.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Peichen Chang <peichen.chang@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 18, 2012 at 12:17 AM, Christopher Heiny
+<cheiny@synaptics.com> wrote:
 
---S3Smgu5mAIHx+YOO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+(...)
+> +#ifdef CONFIG_HAS_EARLYSUSPEND
+> +#include <linux/earlysuspend.h>
+> +#endif
 
-On Mon, Aug 20, 2012 at 12:37:44PM -0600, Stephen Warren wrote:
-> On 08/20/2012 12:14 PM, Mark Brown wrote:
+This does not exist in the mainline kernel, I can see you're having fun with
+Android ... check with Rafael on how to really handle this in a contemporary
+kernel.
 
-> > Why not just pull the patch in via the regulator tree?  The idea
-> > of merging the entire regulator drivers branch into the Tegra tree
-> > doesn't seem awesome...
+> +/**
+> + * struct rmi_f11_axis_alignment - target axis alignment
+> + * @swap_axes: set to TRUE if desired to swap x- and y-axis
+> + * @flip_x: set to TRUE if desired to flip direction on x-axis
+> + * @flip_y: set to TRUE if desired to flip direction on y-axis
 
-> I think that'd end up causing some annoying conflicts with other
-> changes that also touch arch/arm/match-tegra/board-dt-tegra20.c.
-> Perhaps they're manageable; they probably aren't that bad, but it
-> seems better to avoid them.
+This kerneldoc is quite incomplete. There is a *lot* of members below
+that are not documented.
 
-Ugh, right.  I guess I'd best rebase the commits out of the drivers
-branch.  Can you let me know what you depend on and I'll build a
-mergable branch for you to pull in?
+> + */
+> +struct rmi_f11_2d_axis_alignment {
+> +       bool swap_axes;
+> +       bool flip_x;
+> +       bool flip_y;
+> +       int clip_X_low;
+> +       int clip_Y_low;
+> +       int clip_X_high;
+> +       int clip_Y_high;
+> +       int offset_X;
+> +       int offset_Y;
+> +       int rel_report_enabled;
+> +
+> +#ifdef CONFIG_RMI4_DEBUG
+> +       struct dentry *debugfs_flip;
+> +       struct dentry *debugfs_clip;
+> +       struct dentry *debugfs_offset;
+> +       struct dentry *debugfs_swap;
+> +       u16 reg_debug_addr;
+> +       u8 reg_debug_size;
+> +#endif
+> +};
 
---S3Smgu5mAIHx+YOO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+(...)
+> +struct rmi_f11_virtualbutton_map {
+> +       u8 buttons;
+> +       struct virtualbutton_map *map;
+> +};
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+<newline> (nitpick)
 
-iQIcBAEBAgAGBQJQNS3QAAoJEFJkBDiqVpZ4NeUQAIQ26K+HJniVBP4D8OtQuJ99
-Xk9G6gmCb+3xC7X2FmfCwGNRJk6HLN2TN7Ll/bMB4UOe9jgrheZY8mS2ygKKmYZL
-GXxEiZHIZrZjzOh7+lWpekg0feKFKFjHUnHJX/KFdoVdwlM14n4N/FPvajxTKF5M
-Eue66FsGkeBgxnYg/CyLc951dz6ESIDbmQFkk0MWvkLoDT2K7StGftYmx7tCWpxY
-nPauc4av3XZI6v5n1Cfkhkcem6iPs6ej5RxT/LyYThoiS9LuQhFO15R40Vhyn9CX
-Y4yad42F8QsYKdUiVumJsfa/pxUa/Y0ZipOFNw57ByVyZ2FDQQxwMDW1qyG/pKEh
-WJJJh0+Ne+fCEnK/vYxuV/8O/J5pyQYXf2LgcvNJlCdQ00fqp/JnTlLU2e6luvr6
-nZ7daoVZ8aF4OpL/47xZBaIqWgnHlFI7TGSd9liq3nf7vTDxKk1U8cTkC+au0Szn
-/M1CuMmeG1kRPoIBov+Coc5pkWdFlf+hq/MJaSaTJEYYne/HFv2nRld/xJJTjGAT
-l0Ad4NK6Iuo3qxqYySnR0QX5iu6LjP2cd3y+ZIKsiIWEK2FtKHVZz7dUpxJGMpSK
-DpRk6IoqiY1Y7Uin2sycDebugoRej5e3DzBVHbi11BC3tpGFi2tKWAUg/ymlMkw2
-HchdMlul7L7B6s6QlVV5
-=5PqI
------END PGP SIGNATURE-----
+> +struct rmi_device_platform_data_spi {
+> +       int block_delay_us;
+> +       int split_read_block_delay_us;
+> +       int read_delay_us;
+> +       int write_delay_us;
+> +       int split_read_byte_delay_us;
+> +       int pre_delay_us;
+> +       int post_delay_us;
+> +
+> +       void *cs_assert_data;
+> +       int (*cs_assert) (const void *cs_assert_data, const bool assert);
+> +};
+> +
+> +/**
+> + * struct rmi_device_platform_data - system specific configuration info.
+> + *
+> + * @firmware_name - if specified will override default firmware name,
+> + * for reflashing.
+> + *
+> + * @f11_type_b - Force F11 to treat the sensor as a multitouch Type B sensor.
+> + * This is useful for older Type B RMI4 sensors that can't be queried for this
+> + * information, but will cause problems if you force a Type A sensor to be
+> + * treated as type_b.
+> + *
+> + * @pre_suspend - this will be called before any other suspend operations are
+> + * done.
+> + * @post_suspend - this will be called after all suspend operations are
+> + * completed.  This is the ONLY safe place to power off an RMI sensor
+> + * during the suspend process.
+> + * @pre_resume - this is called before any other resume operations.  If you
+> + * powered off the RMI4 sensor in post_suspend(), then you MUST power it back
+> + * here, and you MUST wait an appropriate time for the ASIC to come up
+> + * (100ms to 200ms, depending on the sensor) before returning.
+> + * @pm_data - this will be passed to the various (pre|post)_(suspend/resume)
+> + * functions.
 
---S3Smgu5mAIHx+YOO--
+This kerneldoc is incomplete, maybe intentional, I don't know...
+
+(...)
+> +struct rmi_function_handler {
+> +       int func;
+> +       int (*init)(struct rmi_function_container *fc);
+> +       int (*config)(struct rmi_function_container *fc);
+> +       int (*reset)(struct rmi_function_container *fc);
+> +       int (*attention)(struct rmi_function_container *fc, u8 *irq_bits);
+> +#ifdef CONFIG_PM
+> +       int (*suspend)(struct rmi_function_container *fc);
+> +       int (*resume)(struct rmi_function_container *fc);
+> +#if defined(CONFIG_HAS_EARLYSUSPEND) && \
+> +               !defined(CONFIG_RMI4_SPECIAL_EARLYSUSPEND)
+
+There is this earlysuspend again, now with some turbo-version
+which is "special" as well :-)
+
+> +       int (*early_suspend)(struct rmi_function_container *fc);
+> +       int (*late_resume)(struct rmi_function_container *fc);
+> +#endif
+> +#endif
+> +       void (*remove)(struct rmi_function_container *fc);
+> +};
+
+(...)
+> +/**
+> + * struct rmi_device - represents an RMI device
+> + * @dev: The device created for the RMI bus
+> + * @number: Unique number for the device on the bus.
+> + * @driver: Pointer to associated driver
+> + * @phys: Pointer to the physical interface
+> + * @early_suspend_handler: Pointers to early_suspend and late_resume, if
+> + * configured.
+> + *
+> + * This structs represent an RMI device.
+> + *
+> + */
+> +struct rmi_device {
+> +       struct device dev;
+> +       int number;
+> +
+> +       struct rmi_driver *driver;
+> +       struct rmi_phys_device *phys;
+> +
+> +#ifdef CONFIG_HAS_EARLYSUSPEND
+> +       struct early_suspend early_suspend_handler;
+> +#endif
+
+...and here...
+
+> +#ifdef CONFIG_RMI4_DEBUG
+> +       struct dentry *debugfs_root;
+> +#endif
+> +};
+
+(...)
+> +/* Helper fn to convert a byte array representing a short in the RMI
+> + * endian-ness to a short in the native processor's specific endianness.
+> + * We don't use ntohs/htons here because, well, we're not dealing with
+> + * a pair of shorts. And casting dest to short* wouldn't work, because
+> + * that would imply knowing the byte order of short in the first place.
+> + */
+> +static inline void batohs(unsigned short *dest, unsigned char *src)
+
+Change this prototype to use kernel-internal types, and what is
+wron with using the return value??
+
+static inline void batohs(unsigned short *dest, unsigned char *src)
+
+> +{
+> +       *dest = src[1] * 0x100 + src[0];
+> +}
+
+Doing this instead of casting is good style. But I would have done like this:
+
+static inline u16 batohs(u8 *src)
+{
+   return src[1] << 8 | src[0];
+}
+
+Which the compiler *hopufully will emit, but since we're doing
+arithmetic, not maths, please use shifts and OR:s.
+
+And at the call sites, instead of
+
+unsigned short mr16;
+unsigned char mr_arrary[2];
+batohs(&mr16, &mr_array[0]);
+
+Just:
+
+u16 mr16;
+u8 mr_array[2];
+
+mr16 = batohs(&mr_array[0]);
+
+> +/* Helper function to convert a short (in host processor endianess) to
+> + * a byte array in the RMI endianess for shorts.  See above comment for
+> + * why we dont us htons or something like that.
+> + */
+> +static inline void hstoba(unsigned char *dest, unsigned short src)
+
+Here yuou need to pass a pointer to the destination for sure.
+
+> +{
+> +       dest[0] = src % 0x100;
+> +       dest[1] = src / 0x100;
+> +}
+
+I would have done the above like this:
+
+static inline void hstoba(u8 *dest, u16 src)
+{
+  dest[0] = src & 0xFF;
+  dest[1] = src >> 8;
+}
+
+(...)
+> +/* utility function for bit access of u8*'s */
+
+No, do not reinvent the wheel. Use
+#include <linux/bitmap.h>
+(which in turn will include <linux/bitops.h> for you)
+Those bitmaps use unsigned int but that does not
+really matter, they should work just fine using the lower
+8 bits.
+
+> +void u8_set_bit(u8 *target, int pos);
+
+Use set_bit() from <linux/bitops.h>
+
+> +void u8_clear_bit(u8 *target, int pos);
+
+Use clear_bit() from <linux/bitops.h>
+
+> +bool u8_is_set(u8 *target, int pos);
+
+Use test_bit() from <linux/bitops.h>
+
+> +bool u8_is_any_set(u8 *target, int size);
+
+Use find_first_bit(), if this returns 0 none is set, !find_first_bit() for
+example serves the same purpose.
+
+> +void u8_or(u8 *dest, u8* target1, u8* target2, int size);
+
+Use bitmap_or()
+
+> +void u8_and(u8 *dest, u8* target1, u8* target2, int size);
+
+Use bitmap_and()
+
+Yours,
+Linus Walleij
