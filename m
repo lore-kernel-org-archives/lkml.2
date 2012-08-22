@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933478Ab2HVXHQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 19:07:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933219Ab2HVXHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 19:07:11 -0400
-Date: Thu, 23 Aug 2012 01:06:28 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>
-Subject: Re: [PATCH 33/36] autonuma: powerpc port
-Message-ID: <20120822230628.GL8107@redhat.com>
-References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
- <1345647560-30387-34-git-send-email-aarcange@redhat.com>
- <1345672907.2617.44.camel@pasglop>
- <1345676194.13399.1.camel@pasglop>
+	id S1753278Ab2HVXWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 19:22:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47333 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab2HVXWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 19:22:17 -0400
+Date: Wed, 22 Aug 2012 16:22:02 -0700
+From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
+Message-ID: <tip-36bf50d7697be18c6bfd0401e037df10bff1e573@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com,
+        borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andreas.herrmann3@amd.com, tglx@linutronix.de, hpa@linux.intel.com,
+        borislav.petkov@amd.com
+In-Reply-To: <1344361461-10076-1-git-send-email-bp@amd64.org>
+References: <1344361461-10076-1-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, microcode, AMD:
+  Fix broken ucode patch size check
+Git-Commit-ID: 36bf50d7697be18c6bfd0401e037df10bff1e573
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1345676194.13399.1.camel@pasglop>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Aug 2012 16:22:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Commit-ID:  36bf50d7697be18c6bfd0401e037df10bff1e573
+Gitweb:     http://git.kernel.org/tip/36bf50d7697be18c6bfd0401e037df10bff1e573
+Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
+AuthorDate: Tue, 31 Jul 2012 15:41:45 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 22 Aug 2012 16:10:41 -0700
 
-On Thu, Aug 23, 2012 at 08:56:34AM +1000, Benjamin Herrenschmidt wrote:
-> What I mean here is that it's fine as a proof of concept ;-) I don't
-> like it being in a series aimed at upstream...
-> 
-> We can try to flush out the issues, but as it is, the patch isn't
-> upstreamable imho.
+x86, microcode, AMD: Fix broken ucode patch size check
 
-Well there's no real urgency to merge the ppc64 support immediately. I
-will move it at the end of the patchset. Until the ppc64 patch is
-applied you simply cannot set AUTONUMA=y but there's no regression
-whatsoever.
+This issue was recently observed on an AMD C-50 CPU where a patch of
+maximum size was applied.
 
-> As for finding PTE bits, I have a few ideas we need to discuss, but
-> nothing simple I'm afraid.
+Commit be62adb49294 ("x86, microcode, AMD: Simplify ucode verification")
+added current_size in get_matching_microcode(). This is calculated as
+size of the ucode patch + 8 (ie. size of the header). Later this is
+compared against the maximum possible ucode patch size for a CPU family.
+And of course this fails if the patch has already maximum size.
 
-Sure we can discuss it.
+Cc: <stable@vger.kernel.org> [3.3+]
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Link: http://lkml.kernel.org/r/1344361461-10076-1-git-send-email-bp@amd64.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/microcode_amd.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index 8a2ce8f..82746f9 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -143,11 +143,12 @@ static int get_matching_microcode(int cpu, const u8 *ucode_ptr,
+ 				  unsigned int *current_size)
+ {
+ 	struct microcode_header_amd *mc_hdr;
+-	unsigned int actual_size;
++	unsigned int actual_size, patch_size;
+ 	u16 equiv_cpu_id;
+ 
+ 	/* size of the current patch we're staring at */
+-	*current_size = *(u32 *)(ucode_ptr + 4) + SECTION_HDR_SIZE;
++	patch_size = *(u32 *)(ucode_ptr + 4);
++	*current_size = patch_size + SECTION_HDR_SIZE;
+ 
+ 	equiv_cpu_id = find_equiv_id();
+ 	if (!equiv_cpu_id)
+@@ -174,7 +175,7 @@ static int get_matching_microcode(int cpu, const u8 *ucode_ptr,
+ 	/*
+ 	 * now that the header looks sane, verify its size
+ 	 */
+-	actual_size = verify_ucode_size(cpu, *current_size, leftover_size);
++	actual_size = verify_ucode_size(cpu, patch_size, leftover_size);
+ 	if (!actual_size)
+ 		return 0;
+ 
