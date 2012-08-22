@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab2HVORV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:17:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56018 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789Ab2HVORT (ORCPT
+	id S1756560Ab2HVOT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:19:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47095 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab2HVOTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:17:19 -0400
-Date: Wed, 22 Aug 2012 16:17:11 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf tools: Fix 'No libunwind found' make warning message
-Message-ID: <20120822141711.GA30317@gmail.com>
-References: <1345479985-18669-1-git-send-email-acme@infradead.org>
- <20120821093231.GA12385@gmail.com>
- <20120821093628.GA981@krava.brq.redhat.com>
- <20120822083812.GC1003@krava.brq.redhat.com>
- <20120822084017.GA21581@gmail.com>
- <1345642439.5069.27.camel@gandalf.local.home>
+	Wed, 22 Aug 2012 10:19:55 -0400
+Date: Wed, 22 Aug 2012 16:19:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: Attilio Rao <attilio.rao@citrix.com>, Ian.Campbell@citrix.com,
+        Stefano.Stabellini@eu.citrix.com, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH v2 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
+ and x86_init.paging.pagetable_setup_done setup functions and document its
+ semantic
+In-Reply-To: <20120822135753.GA30964@phenom.dumpdata.com>
+Message-ID: <alpine.LFD.2.02.1208221618380.2856@ionos>
+References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208212315330.2856@ionos> <20120822135753.GA30964@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345642439.5069.27.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Wed, 2012-08-22 at 10:40 +0200, Ingo Molnar wrote:
-> >  
-> > >  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-> > >  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-> > > -	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-> > > +	msg := $(warning No libunwind found, disables post unwind support. Please install libunwind-dev[el] >= 0.99);
+On Wed, 22 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> On Tue, Aug 21, 2012 at 11:22:03PM +0200, Thomas Gleixner wrote:
+> > On Tue, 21 Aug 2012, Attilio Rao wrote:
+> > > Differences with v1:
+> > > - The patch serie is re-arranged in a way that it helps reviews, following
+> > >   a plan by Thomas Gleixner
+> > > - The PVOPS nomenclature is not used as it is not correct
+> > > - The front-end message is adjusted with feedback by Thomas Gleixner,
+> > >   Stefano Stabellini and Konrad Rzeszutek Wilk 
 > > 
-> > s/disables/disable
+> > This is much simpler to read and review. Just have a look at the
+> > diffstats of the two series:
+> > 
+> >  6 files changed,  9 insertions(+),  8 deletions(-)
+> >  6 files changed, 11 insertions(+),  9 deletions(-)
+> >  5 files changed, 50 insertions(+),  2 deletions(-)
+> >  6 files changed,  2 insertions(+), 65 deletions(-)
+> >  1 files changed,  5 insertions(+),  0 deletions(-)
+> > 
+> > versus
+> > 
+> >  6 files changed, 10 insertions(+),  9 deletions(-)
+> >  6 files changed, 11 insertions(+), 11 deletions(-)
+> >  5 files changed,  3 insertions(+),  3 deletions(-)
+> >  6 files changed,  4 insertions(+), 20 deletions(-)
+> >  1 files changed,  5 insertions(+),  0 deletions(-)
+> > 
+> > The overall result is basically the same, but it's way simpler to look
+> > at obvious and well done patches than checking whether a subtle copy
+> > and paste bug happened in 3/5 of the first version. Copy and paste is
+> > the #1 cause for subtle bugs. :)
+> > 
+> > I'm waiting for the ack of Xen folks before taking it into tip.
 > 
-> Is it a command for the user to do, or something it is about to do for
-> the user? If the latter, then "disabling" may be the better word.
+> I've some extra patches that modify the new "paginig_init" in the Xen
+> code that I am going to propose for v3.7 - so will have some merge
+> conflicts. Let me figure that out and also run this set of patches
+> (and also the previous one .. which I think you didn't have a
+> chance to look since you were on vacation?) on an overnight
 
-Yeah, agreed 'disabling' is even better.
+Which previous one ?
+
+> test to make sure there are no fallout.
+> 
+> With the merge issues that are going to prop up (x86 tip tree
+> and my tree in linux-next) should I just take these patches
+> in my tree with your Ack? Or should I just ingest your tiptree
+> in my tree and that way solve the merge issue? What's your
+> preference!
+
+Having it in tip in an extra branch which you pull into your
+tree. That's the easiest one.
 
 Thanks,
 
-	Ingo
+	tglx
