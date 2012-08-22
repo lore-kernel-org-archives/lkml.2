@@ -1,143 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab2HVBKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 21:10:16 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:58548 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab2HVBKM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 21:10:12 -0400
+	id S1754731Ab2HVBM0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 21:12:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751862Ab2HVBMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 21:12:24 -0400
+Date: Wed, 22 Aug 2012 03:12:13 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, viro <viro@zeniv.linux.org.uk>,
+        oleg@redhat.com, "a.p.zijlstra" <a.p.zijlstra@chello.nl>,
+        mingo <mingo@kernel.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: mm: kernel BUG at mm/memory.c:1230
+Message-ID: <20120822011213.GM29978@redhat.com>
+References: <1337884054.3292.22.camel@lappy>
+ <20120524120727.6eab2f97.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20120821130458.GD22321@localhost>
-References: <1345283402-7889-1-git-send-email-linkinjeon@gmail.com>
-	<20120819025724.GC16796@localhost>
-	<CAKYAXd83r3RNi3Rn5s3DAEE=34YYbk_hUWcG6R3Zu3JwUw74aA@mail.gmail.com>
-	<20120820145032.GA7469@localhost>
-	<CAKYAXd9L5Kwj3SEHO=a60c65OXRt73q+-w-Uux6OJ=6Q-3jvYQ@mail.gmail.com>
-	<20120821130458.GD22321@localhost>
-Date: Wed, 22 Aug 2012 10:10:11 +0900
-Message-ID: <CAKYAXd-TTr7KWTpssn1aNrjKCp81=qP-X2RiKhhQ60RJdgA=tg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] writeback: add dirty_ratio_time per bdi variable (NFS
- write performance)
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524120727.6eab2f97.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/21, Fengguang Wu <fengguang.wu@intel.com>:
-> On Tue, Aug 21, 2012 at 03:00:13PM +0900, Namjae Jeon wrote:
->> 2012/8/20, Fengguang Wu <fengguang.wu@intel.com>:
->> > On Mon, Aug 20, 2012 at 09:48:42AM +0900, Namjae Jeon wrote:
->> >> 2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
->> >> > On Sat, Aug 18, 2012 at 05:50:02AM -0400, Namjae Jeon wrote:
->> >> >> From: Namjae Jeon <namjae.jeon@samsung.com>
->> >> >>
->> >> >> This patch is based on suggestion by Wu Fengguang:
->> >> >> https://lkml.org/lkml/2011/8/19/19
->> >> >>
->> >> >> kernel has mechanism to do writeback as per dirty_ratio and
->> >> >> dirty_background
->> >> >> ratio. It also maintains per task dirty rate limit to keep balance
->> >> >> of
->> >> >> dirty pages at any given instance by doing bdi bandwidth
->> >> >> estimation.
->> >> >>
->> >> >> Kernel also has max_ratio/min_ratio tunables to specify percentage
->> >> >> of
->> >> >> writecache
->> >> >> to control per bdi dirty limits and task throtelling.
->> >> >>
->> >> >> However, there might be a usecase where user wants a writeback
->> >> >> tuning
->> >> >> parameter to flush dirty data at desired/tuned time interval.
->> >> >>
->> >> >> dirty_background_time provides an interface where user can tune
->> >> >> background
->> >> >> writeback start time using /sys/block/sda/bdi/dirty_background_time
->> >> >>
->> >> >> dirty_background_time is used alongwith average bdi write bandwidth
->> >> >> estimation
->> >> >> to start background writeback.
->> >> >
->> >> > Here lies my major concern about dirty_background_time: the write
->> >> > bandwidth estimation is an _estimation_ and will sure become wildly
->> >> > wrong in some cases. So the dirty_background_time implementation
->> >> > based
->> >> > on it will not always work to the user expectations.
->> >> >
->> >> > One important case is, some users (eg. Dave Chinner) explicitly take
->> >> > advantage of the existing behavior to quickly create & delete a big
->> >> > 1GB temp file without worrying about triggering unnecessary IOs.
->> >> >
->> >> Hi. Wu.
->> >> Okay, I have a question.
->> >>
->> >> If making dirty_writeback_interval per bdi to tune short interval
->> >> instead of background_time, We can get similar performance
->> >> improvement.
->> >> /sys/block/<device>/bdi/dirty_writeback_interval
->> >> /sys/block/<device>/bdi/dirty_expire_interval
->> >>
->> >> NFS write performance improvement is just one usecase.
->> >>
->> >> If we can set interval/time per bdi,  other usecases will be created
->> >> by applying.
->> >
->> > Per-bdi interval/time tunables, if there comes such a need, will in
->> > essential be for data caching and safety. If turning them into some
->> > requirement for better performance, the users will potential be
->> > stretched on choosing the "right" value for balanced data cache,
->> > safety and performance.  Hmm, not a comfortable prospection.
->> Hi Wu.
->> First, Thanks for shared information.
->>
->> I change writeback interval on NFS server only.
->
-> OK..sorry for missing that part!
->
->> I think that this does not affect data cache/page behaviour(caching)
->> change on NFS client. NFS client will start sending write requests as
->> per default NFS/writeback logic. So, no change in NFS client data
->> caching behaviour.
->>
->> Also, on NFS server it does not make change in system-wide caching
->> behaviour. It only modifies caching/writeback behaviour of a
->> particular “bdi” on NFS server so that NFS client could see better
->> WRITE speed.
->
-> But would you default to dirty_background_time=0, where the special
-> value 0 means no change of the original behavior? That will address
-> David's very reasonable concern. Otherwise quite a few users are going
-> to be surprised by the new behavior after upgrading kernel.
-Hi. Wu.
-Okay, I will resend v2 patch included your
-comment(dirty_background_time=0 at default)
-Thanks a lot.
+Hi everyone,
 
->
->> I will share several performancetest results as Dave's opinion.
->>
->> >
->> >> >The numbers are impressive! FYI, I tried another NFS specific
->> >> > approach
->> >> >to avoid big NFS COMMITs, which achieved similar performance gains:
->> >>
->> >> >nfs: writeback pages wait queue
->> >> >https://lkml.org/lkml/2011/10/20/235
->> This patch looks client side optimization to me.(need to check more)
->
-> Yes.
->
->> Do we need the optimization of server side as Bruce's opinion ?
->
-> Sure.
->
-> Thanks,
-> Fengguang
->
+On Thu, May 24, 2012 at 12:07:27PM -0700, Andrew Morton wrote:
+> On Thu, 24 May 2012 20:27:34 +0200
+> Sasha Levin <levinsasha928@gmail.com> wrote:
+> 
+> > Hi all,
+> > 
+> > During fuzzing with trinity inside a KVM tools guest, using latest linux-next, I've stumbled on the following:
+> > 
+> > [ 2043.098949] ------------[ cut here ]------------
+> > [ 2043.099014] kernel BUG at mm/memory.c:1230!
+> 
+> That's
+> 
+> 	VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
+> 
+> in zap_pmd_range()?
+
+Originally split_huge_page_address didn't exist. If the vma was
+splitted at a not 2m aligned address by a syscall like madvise that
+would only mangle the vma and not touch the pagetables (munmap for
+example was safe), the THP would remain in place and it would lead to
+a BUG_ON in split_huge_page where the number of rmaps was different
+than the page_mapcount for a cascade of side effects of the above bug
+triggering. It was a the most more obscure BUG_ON I got in the whole
+THP development and the hardest bug to fix (it was not easily
+reproducible either, madvise not so common).
+
+After I fixed it adding split_huge_page_address, I also added this
+VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem)). So if I missed any
+split_huge_page_address invocation I would get a more meaningful
+VM_BUG_ON, closer to the actual bug, signaling problems in the vma
+layout and not anymore a misleading BUG_ON in the split_huge_page
+internals when in fact split_huge_page was perfectly fine.
+
+My previous theory was a bug in the vma mangling of mbind, it could
+still be it, I didn't review it closely yet. But mbind is one syscall
+that like madvise depends on split_huge_page_address when it does
+split_vma!
+
+So now I think I found the cause of the above
+VM_BUG_ON. split_huge_page_address uses pmd_present so it won't run if
+the hugepage is under splitting. So it's likely the below will fix the
+above VM_BUG_ON. The race condition is tiny, it's not a critical bug
+and it makes sense that only a syscall stresser like trinity can
+exercise it and not any real app.
+
+static void split_huge_page_address(struct mm_struct *mm,
+				    unsigned long address)
+{
+[..]
+	if (!pmd_present(*pmd))
+		return;
+	/*
+	 * Caller holds the mmap_sem write mode, so a huge pmd cannot
+	 * materialize from under us.
+	 */
+	split_huge_page_pmd(mm, pmd);
+}
+
+This time I think it is worth to fix pmd_present for good instead of
+converting it to !pmd_none like I did with most others.
+
+I'm well aware pmd_present wasn't ok during split_huge_page but most
+have been converted and I didn't change what wasn't absolutely
+necessary in case some lowlevel code depended on the lowlevel
+semantics of pmd_present (strict _PRESENT check) but now it looks to
+risky not to fix it.
+
+The below patch isn't well tested yet. Reviews welcome. Especially if
+you could test it again with trinity over the mbind syscall it'd be
+wonderful.
+
+Thanks,
+Andrea
+
+===
+>From 59af0d4348eb07087097e310f60422b994dd3a2c Mon Sep 17 00:00:00 2001
+From: Andrea Arcangeli <aarcange@redhat.com>
+Date: Tue, 21 Aug 2012 19:32:23 +0200
+Subject: [PATCH] thp: make pmd_present more accurate
+
+In many places !pmd_present has been converted to pmd_none. For pmds
+that's equivalent and pmd_none is quicker so using pmd_none is
+better.
+
+However we should provide a more accurate pmd_present too. This will
+avoid the risk of code thinking the pmd is non present because it's
+under __split_huge_page_map, see the pmd_mknotpresent there and the
+comment above it.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ arch/x86/include/asm/pgtable.h |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 49afb3f..b49e70d 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -415,7 +415,13 @@ static inline int pte_hidden(pte_t pte)
+ 
+ static inline int pmd_present(pmd_t pmd)
+ {
+-	return pmd_flags(pmd) & _PAGE_PRESENT;
++	/*
++	 * Checking for _PAGE_PSE is needed too because
++	 * split_huge_page will temporarily clear the present bit (but
++	 * the _PAGE_PSE flag will remain set at all times while the
++	 * _PAGE_PRESENT bit is clear).
++	 */
++	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+ }
+ 
+ static inline int pmd_none(pmd_t pmd)
+
+
