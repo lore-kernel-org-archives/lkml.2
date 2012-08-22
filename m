@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab2HVMti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 08:49:38 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:44987 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932431Ab2HVMtf (ORCPT
+	id S932452Ab2HVMuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 08:50:55 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58328 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757009Ab2HVMut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 08:49:35 -0400
-Message-ID: <5034D556.1080804@linux.vnet.ibm.com>
-Date: Wed, 22 Aug 2012 20:49:26 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 22 Aug 2012 08:50:49 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 01/12] KVM: x86: fix possible infinite loop caused
- by reexecute_instruction
-References: <5032F8FD.2020306@linux.vnet.ibm.com> <5032F926.7020801@linux.vnet.ibm.com> <5034CA2D.30903@redhat.com>
-In-Reply-To: <5034CA2D.30903@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082212-1396-0000-0000-000001BEDD4D
+In-Reply-To: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
+References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
+Date: Wed, 22 Aug 2012 14:50:48 +0200
+Message-ID: <CACRpkda6Aq_rmYjMx6fcYvPnEexZ47dhaiA3hsCozLyUT0Mikw@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/11] input: Synaptics RMI4 Touchscreen Driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Peichen Chang <peichen.chang@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 08:01 PM, Avi Kivity wrote:
-> On 08/21/2012 05:57 AM, Xiao Guangrong wrote:
->> Currently, we reexecute all unhandleable instructions if they do not
->> access on the mmio, however, it can not work if host map the readonly
->> memory to guest. If the instruction try to write this kind of memory,
->> it will fault again when guest retry it, then we will goto a infinite
->> loop: retry instruction -> write #PF -> emulation fail ->
->> retry instruction -> ...
->>
->> Fix it by retrying the instruction only when it faults on the writable
->> memory
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/x86.c |   12 +++++++++++-
->>  1 files changed, 11 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index fb0d937..704680d 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4473,6 +4473,7 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
->>  static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
->>  {
->>  	gpa_t gpa;
->> +	pfn_t pfn;
->>
->>  	if (tdp_enabled)
->>  		return false;
->> @@ -4490,8 +4491,17 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
->>  	if (gpa == UNMAPPED_GVA)
->>  		return true; /* let cpu generate fault */
->>
->> -	if (!kvm_is_error_hva(gfn_to_hva(vcpu->kvm, gpa >> PAGE_SHIFT)))
->> +	/*
->> +	 * Do not retry the unhandleable instruction if it faults on the
->> +	 * readonly host memory, otherwise it will goto a infinite loop:
->> +	 * retry instruction -> write #PF -> emulation fail -> retry
->> +	 * instruction -> ...
->> +	 */
->> +	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
->> +	if (!is_error_pfn(pfn)) {
->> +		kvm_release_pfn_clean(pfn);
->>  		return true;
->> +	}
->>
->>  	return false;
->>  }
->>
-> 
-> Good catch.  Did this actually happen or did you find it by code inspection?
-> 
+On Sat, Aug 18, 2012 at 12:17 AM, Christopher Heiny
+<cheiny@synaptics.com> wrote:
 
-It did not happen in my test. Actually, it is reported by Marcelo.
+> This patch implements a driver supporting Synaptics ClearPad and other
+> touchscreen sensors that use the RMI4 protocol, as defined here:
 
+Nice!
+
+> This patch is against the v2.6.38 tag of Linus' kernel tree, commit
+> 521cb40b0c44418a4fd36dc633f575813d59a43d.  This will be our last patch against
+> such an old kernel version, future patches will be against 3.x kernels.
+
+Please use the head of the subsystem tree to do this work.
+In this case, use Dmitry's git.
+
+Currently I just cannot test this because we have no such old codebase
+around.
+
+But I will attempt to review the patch set!
+
+Yours,
+Linus Walleij
