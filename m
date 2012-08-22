@@ -1,409 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab2HVEfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 00:35:20 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:39294 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2HVEfQ convert rfc822-to-8bit (ORCPT
+	id S1753760Ab2HVEgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:36:17 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:9364 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab2HVEf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 00:35:16 -0400
-Subject: Re: [PATCH] crypto: twofish - add x86_64/avx assembler implementation
-To: Borislav Petkov <bp@alien8.de>
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Cc: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
-        linux-crypto@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Tilo =?utf-8?q?M=C3=BCller?= 
-	<tilo.mueller@informatik.uni-erlangen.de>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 22 Aug 2012 07:35:12 +0300
-Message-ID: <20120822041825.12398.99246.stgit@localhost6.localdomain6>
-In-Reply-To: <20120820173213.GD4060@x1.osrc.amd.com>
-References: <20120820173213.GD4060@x1.osrc.amd.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Aug 2012 00:35:29 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-01-5034618f6a5f
+Message-id: <50346181.3010406@samsung.com>
+Date: Wed, 22 Aug 2012 13:35:13 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
+MIME-version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+Cc: linux-mmc@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 1/2] mmc: core: Add a capability for disabling mmc cards
+References: <1345608318-15347-1-git-send-email-dianders@chromium.org>
+In-reply-to: <1345608318-15347-1-git-send-email-dianders@chromium.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t9jAd3+RJMAgx/rhCwu75rDZnHkfz+j
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBlLdyUVvOWt2HOpi62BcRp3FyMnh4SAicTvv1MYIWwx
+	iQv31rN1MXJxCAksYpT4u/81M4TzklFi6Ya77CBVvAJaEhdfnAOzWQRUJbauX8sEYrMJ6Ehs
+	/3YczBYVCJG4vmcDI0S9oMSPyfdYQGwRAU2JZw0vwYYyC7xkljhx+QTYIGEBH4npSx6DNQsJ
+	uEr8+X+XtYuRg4NTwE3i+VJVkDAz0Pz9rdPYIGx5ic1r3jJPYBSYhWTFLCRls5CULWBkXsUo
+	mlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHIrPpHYwrmywOMQowMGoxMPrkWASIMSaWFZcmXuI
+	UYKDWUmEV++7cYAQb0piZVVqUX58UWlOavEhRmkOFiVxXv4+wwAhgfTEktTs1NSC1CKYLBMH
+	p1QD445Xd7Xl3z3gY1T33TZj+xqljif+gse5JpdzzqpZWSvsaR8le8UmcffnIMFD8xz3zFvi
+	+EvB0vjBOoONln73DA6uMlq0aurXWI2al6uLzjAyy3vzzX2SHVypyMW9pXzC1jWiteyNynPe
+	mO3Y+902KPC2tKtgktpNLrbH/2b/cf62t2vRSY5wdiWW4oxEQy3mouJEAK7nPUpBAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Borislav Petkov <bp@alien8.de>:
+Hi Doug,
 
+I didn't know what purpose is.
+Why need to add the MMC_CAP2_NO_MMC?
+If card is SD or SDIO, mmc_attach_mmc(host) should not be entered.
+Could you explain to me in more detail?
+
+Best Regards,
+Jaehoon Chung
+
+On 08/22/2012 01:05 PM, Doug Anderson wrote:
+> On some systems we need a way to disable MMC card support in a MMC/SD
+> card slot.  Add support in the core SD/MMC code to support this.
 > 
-> Here you go:
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
+> ---
+>  drivers/mmc/core/core.c  |    2 +-
+>  include/linux/mmc/host.h |    1 +
+>  2 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> [   52.282208]
-> [   52.282208] testing speed of async ecb(twofish) encryption
-
-Thanks!
-
-Looks that encryption lost ~0.4% while decryption gained ~1.8%.
-
-For 256 byte test, it's still slightly slower than twofish-3way (~3%). For 1k
-and 8k tests, it's ~5% faster.
-
-Here's very last test-patch, testing different ordering of fpu<->cpu reg
-instructions at few places.
-
----
- arch/x86/crypto/twofish-avx-x86_64-asm_64.S |  232 ++++++++++++++++++---------
- 1 file changed, 154 insertions(+), 78 deletions(-)
-
-diff --git a/arch/x86/crypto/twofish-avx-x86_64-asm_64.S b/arch/x86/crypto/twofish-avx-x86_64-asm_64.S
-index 35f4557..693963a 100644
---- a/arch/x86/crypto/twofish-avx-x86_64-asm_64.S
-+++ b/arch/x86/crypto/twofish-avx-x86_64-asm_64.S
-@@ -4,6 +4,8 @@
-  * Copyright (C) 2012 Johannes Goetzfried
-  *     <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-  *
-+ * Copyright © 2012 Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-+ *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation; either version 2 of the License, or
-@@ -47,16 +49,21 @@
- #define RC2 %xmm6
- #define RD2 %xmm7
- 
--#define RX %xmm8
--#define RY %xmm9
-+#define RX0 %xmm8
-+#define RY0 %xmm9
-+
-+#define RX1 %xmm10
-+#define RY1 %xmm11
-+
-+#define RK1 %xmm12
-+#define RK2 %xmm13
- 
--#define RK1 %xmm10
--#define RK2 %xmm11
-+#define RT %xmm14
- 
--#define RID1  %rax
--#define RID1b %al
--#define RID2  %rbx
--#define RID2b %bl
-+#define RID1  %rbp
-+#define RID1d %ebp
-+#define RID2  %rsi
-+#define RID2d %esi
- 
- #define RGI1   %rdx
- #define RGI1bl %dl
-@@ -65,6 +72,13 @@
- #define RGI2bl %cl
- #define RGI2bh %ch
- 
-+#define RGI3   %rax
-+#define RGI3bl %al
-+#define RGI3bh %ah
-+#define RGI4   %rbx
-+#define RGI4bl %bl
-+#define RGI4bh %bh
-+
- #define RGS1  %r8
- #define RGS1d %r8d
- #define RGS2  %r9
-@@ -73,40 +87,58 @@
- #define RGS3d %r10d
- 
- 
--#define lookup_32bit(t0, t1, t2, t3, src, dst) \
--	movb		src ## bl,        RID1b;     \
--	movb		src ## bh,        RID2b;     \
-+#define lookup_32bit(t0, t1, t2, t3, src, dst, interleave_op, il_reg) \
-+	movzbl		src ## bl,        RID1d;     \
-+	movzbl		src ## bh,        RID2d;     \
-+	shrq $16,	src;                         \
- 	movl		t0(CTX, RID1, 4), dst ## d;  \
- 	xorl		t1(CTX, RID2, 4), dst ## d;  \
--	shrq $16,	src;                         \
--	movb		src ## bl,        RID1b;     \
--	movb		src ## bh,        RID2b;     \
-+	movzbl		src ## bl,        RID1d;     \
-+	movzbl		src ## bh,        RID2d;     \
-+	interleave_op(il_reg);			     \
- 	xorl		t2(CTX, RID1, 4), dst ## d;  \
- 	xorl		t3(CTX, RID2, 4), dst ## d;
- 
--#define G(a, x, t0, t1, t2, t3) \
--	vmovq		a,    RGI1;               \
--	vpsrldq $8,	a,    x;                  \
--	vmovq		x,    RGI2;               \
--	\
--	lookup_32bit(t0, t1, t2, t3, RGI1, RGS1); \
--	shrq $16,	RGI1;                     \
--	lookup_32bit(t0, t1, t2, t3, RGI1, RGS2); \
--	shlq $32,	RGS2;                     \
--	orq		RGS1, RGS2;               \
--	\
--	lookup_32bit(t0, t1, t2, t3, RGI2, RGS1); \
--	shrq $16,	RGI2;                     \
--	lookup_32bit(t0, t1, t2, t3, RGI2, RGS3); \
--	shlq $32,	RGS3;                     \
--	orq		RGS1, RGS3;               \
--	\
--	vmovq		RGS2, x;                  \
--	vpinsrq $1,	RGS3, x, x;
-+#define dummy(d) /* do nothing */
- 
--#define encround(a, b, c, d, x, y) \
--	G(a, x, s0, s1, s2, s3);           \
--	G(b, y, s1, s2, s3, s0);           \
-+#define shr_next(reg) \
-+	shrq $16,	reg;
-+
-+#define G_enc(gi1, gi2, x, t0, t1, t2, t3) \
-+	lookup_32bit(t0, t1, t2, t3, ##gi1, RGS1, shr_next, ##gi1);  \
-+	lookup_32bit(t0, t1, t2, t3, ##gi1, RGS2, dummy, none);      \
-+	shlq $32,	RGS2;                                        \
-+	orq		RGS1, RGS2;                                  \
-+	\
-+	lookup_32bit(t0, t1, t2, t3, ##gi2, RGS3, shr_next, ##gi2);  \
-+	lookup_32bit(t0, t1, t2, t3, ##gi2, RGS1, dummy, none);      \
-+	shlq $32,	RGS1;                                        \
-+	orq		RGS1, RGS3;
-+
-+#define encround_head_2(a, b, c, d, x1, y1, x2, y2) \
-+	vmovq			b ## 1, RGI3;	\
-+	vpextrq $1,		b ## 1, RGI4;   \
-+	G_enc(RGI1, RGI2, x1, s0, s1, s2, s3);      \
-+	vmovq			a ## 2, RGI1;   \
-+	vpextrq $1,		a ## 2, RGI2;   \
-+	vmovq		RGS2, x1;                   \
-+	vpinsrq $1,	RGS3, x1, x1;               \
-+	G_enc(RGI3, RGI4, y1, s1, s2, s3, s0);      \
-+	vmovq			b ## 2, RGI3;   \
-+	vpextrq $1,		b ## 2, RGI4;   \
-+	vmovq		RGS2, y1;                   \
-+	vpinsrq $1,	RGS3, y1, y1;               \
-+	G_enc(RGI1, RGI2, x2, s0, s1, s2, s3);      \
-+	vmovq		RGS2, x2;                   \
-+	vpinsrq $1,	RGS3, x2, x2;               \
-+	G_enc(RGI3, RGI4, y2, s1, s2, s3, s0);      \
-+	vmovq		RGS2, y2;                   \
-+	vpinsrq $1,	RGS3, y2, y2;
-+
-+#define encround_tail(a, b, c, d, x, y) \
-+	vpslld $1,		d, RT;     \
-+	vpsrld $(32 - 1),	d, d;      \
-+	vpor			d, RT,  d; \
- 	vpaddd			x, y,   x; \
- 	vpaddd			y, x,   y; \
- 	vpaddd			x, RK1, x; \
-@@ -115,14 +147,40 @@
- 	vpsrld $1,		c, x;      \
- 	vpslld $(32 - 1),	c, c;      \
- 	vpor			c, x,   c; \
--	vpslld $1,		d, x;      \
--	vpsrld $(32 - 1),	d, d;      \
--	vpor			d, x,   d; \
- 	vpxor			d, y,   d;
- 
--#define decround(a, b, c, d, x, y) \
--	G(a, x, s0, s1, s2, s3);           \
--	G(b, y, s1, s2, s3, s0);           \
-+#define G_dec(gi1, gi2, x, t0, t1, t2, t3) \
-+	lookup_32bit(t0, t1, t2, t3, ##gi1, RGS1, shr_next, ##gi1);  \
-+	lookup_32bit(t0, t1, t2, t3, ##gi1, RGS2, dummy, none);      \
-+	shlq $32,	RGS2;                                        \
-+	orq		RGS1, RGS2;                                  \
-+	vmovq		RGS2, x;                                     \
-+	\
-+	lookup_32bit(t0, t1, t2, t3, ##gi2, RGS3, shr_next, ##gi2);  \
-+	lookup_32bit(t0, t1, t2, t3, ##gi2, RGS1, dummy, none);      \
-+	shlq $32,	RGS1;                                        \
-+	orq		RGS1, RGS3;
-+
-+#define decround_head_2(a, b, c, d, x1, y1, x2, y2) \
-+	vmovq			b ## 1, RGI3;   \
-+	vpextrq $1,		b ## 1, RGI4;   \
-+	G_dec(RGI1, RGI2, x1, s0, s1, s2, s3);      \
-+	vmovq			a ## 2, RGI1;   \
-+	vpextrq $1,		a ## 2, RGI2;   \
-+	vpinsrq $1,	RGS3, x1, x1;               \
-+	G_dec(RGI3, RGI4, y1, s1, s2, s3, s0);      \
-+	vmovq			b ## 2, RGI3;   \
-+	vpextrq $1,		b ## 2, RGI4;   \
-+	vpinsrq $1,	RGS3, y1, y1;               \
-+	G_dec(RGI1, RGI2, x2, s0, s1, s2, s3);      \
-+	vpinsrq $1,	RGS3, x2, x2;               \
-+	G_dec(RGI3, RGI4, y2, s1, s2, s3, s0);      \
-+	vpinsrq $1,	RGS3, y2, y2;
-+
-+#define decround_tail(a, b, c, d, x, y) \
-+	vpslld $1,		c, RT;     \
-+	vpsrld $(32 - 1),	c, c;      \
-+	vpor			c, RT,  c; \
- 	vpaddd			x, y,   x; \
- 	vpaddd			y, x,   y; \
- 	vpaddd			y, RK2, y; \
-@@ -130,32 +188,44 @@
- 	vpsrld $1,		d, y;      \
- 	vpslld $(32 - 1),	d, d;      \
- 	vpor			d, y,   d; \
--	vpslld $1,		c, y;      \
--	vpsrld $(32 - 1),	c, c;      \
--	vpor			c, y,   c; \
- 	vpaddd			x, RK1, x; \
- 	vpxor			x, c,   c;
- 
--#define encrypt_round(n, a, b, c, d) \
--	vbroadcastss (k+4*(2*(n)))(CTX),   RK1;           \
--	vbroadcastss (k+4*(2*(n)+1))(CTX), RK2;           \
--	encround(a ## 1, b ## 1, c ## 1, d ## 1, RX, RY); \
--	encround(a ## 2, b ## 2, c ## 2, d ## 2, RX, RY);
--
--#define decrypt_round(n, a, b, c, d) \
--	vbroadcastss (k+4*(2*(n)))(CTX),   RK1;           \
--	vbroadcastss (k+4*(2*(n)+1))(CTX), RK2;           \
--	decround(a ## 1, b ## 1, c ## 1, d ## 1, RX, RY); \
--	decround(a ## 2, b ## 2, c ## 2, d ## 2, RX, RY);
-+#define preload_rgi(c) \
-+	vmovq			c, RGI1; \
-+	vpextrq $1,		c, RGI2;
-+
-+#define encrypt_round(n, a, b, c, d, preload) \
-+	vbroadcastss (k+4*(2*(n)))(CTX),   RK1;                  \
-+	vbroadcastss (k+4*(2*(n)+1))(CTX), RK2;                  \
-+	encround_head_2(a, b, c, d, RX0, RY0, RX1, RY1);         \
-+	encround_tail(a ## 1, b ## 1, c ## 1, d ## 1, RX0, RY0); \
-+	preload(c ## 1);                                         \
-+	encround_tail(a ## 2, b ## 2, c ## 2, d ## 2, RX1, RY1);
-+
-+#define decrypt_round(n, a, b, c, d, preload) \
-+	vbroadcastss (k+4*(2*(n)))(CTX),   RK1;                  \
-+	vbroadcastss (k+4*(2*(n)+1))(CTX), RK2;                  \
-+	decround_head_2(a, b, c, d, RX0, RY0, RX1, RY1);         \
-+	decround_tail(a ## 1, b ## 1, c ## 1, d ## 1, RX0, RY0); \
-+	preload(c ## 1);                                         \
-+	decround_tail(a ## 2, b ## 2, c ## 2, d ## 2, RX1, RY1);
- 
- #define encrypt_cycle(n) \
--	encrypt_round((2*n), RA, RB, RC, RD);       \
--	encrypt_round(((2*n) + 1), RC, RD, RA, RB);
-+	encrypt_round((2*n), RA, RB, RC, RD, preload_rgi); \
-+	encrypt_round(((2*n) + 1), RC, RD, RA, RB, preload_rgi);
-+
-+#define encrypt_cycle_last(n) \
-+	encrypt_round((2*n), RA, RB, RC, RD, preload_rgi); \
-+	encrypt_round(((2*n) + 1), RC, RD, RA, RB, dummy);
- 
- #define decrypt_cycle(n) \
--	decrypt_round(((2*n) + 1), RC, RD, RA, RB); \
--	decrypt_round((2*n), RA, RB, RC, RD);
-+	decrypt_round(((2*n) + 1), RC, RD, RA, RB, preload_rgi); \
-+	decrypt_round((2*n), RA, RB, RC, RD, preload_rgi);
- 
-+#define decrypt_cycle_last(n) \
-+	decrypt_round(((2*n) + 1), RC, RD, RA, RB, preload_rgi); \
-+	decrypt_round((2*n), RA, RB, RC, RD, dummy);
- 
- #define transpose_4x4(x0, x1, x2, x3, t0, t1, t2) \
- 	vpunpckldq		x1, x0, t0; \
-@@ -216,17 +286,19 @@ __twofish_enc_blk_8way:
- 	 *	%rcx: bool, if true: xor output
- 	 */
- 
-+	pushq %rbp;
- 	pushq %rbx;
- 	pushq %rcx;
- 
- 	vmovdqu w(CTX), RK1;
- 
- 	leaq (4*4*4)(%rdx), %rax;
--	inpack_blocks(%rdx, RA1, RB1, RC1, RD1, RK1, RX, RY, RK2);
--	inpack_blocks(%rax, RA2, RB2, RC2, RD2, RK1, RX, RY, RK2);
-+	inpack_blocks(%rdx, RA1, RB1, RC1, RD1, RK1, RX0, RY0, RK2);
-+	vmovq		RA1, RGI1;
-+	vpextrq $1,	RA1, RGI2;
-+	inpack_blocks(%rax, RA2, RB2, RC2, RD2, RK1, RX0, RY0, RK2);
- 
--	xorq RID1, RID1;
--	xorq RID2, RID2;
-+	movq %rsi, %r11;
- 
- 	encrypt_cycle(0);
- 	encrypt_cycle(1);
-@@ -235,26 +307,27 @@ __twofish_enc_blk_8way:
- 	encrypt_cycle(4);
- 	encrypt_cycle(5);
- 	encrypt_cycle(6);
--	encrypt_cycle(7);
-+	encrypt_cycle_last(7);
- 
- 	vmovdqu (w+4*4)(CTX), RK1;
- 
- 	popq %rcx;
- 	popq %rbx;
-+	popq %rbp;
- 
--	leaq (4*4*4)(%rsi), %rax;
-+	leaq (4*4*4)(%r11), %rax;
- 
- 	testb %cl, %cl;
- 	jnz __enc_xor8;
- 
--	outunpack_blocks(%rsi, RC1, RD1, RA1, RB1, RK1, RX, RY, RK2);
--	outunpack_blocks(%rax, RC2, RD2, RA2, RB2, RK1, RX, RY, RK2);
-+	outunpack_blocks(%r11, RC1, RD1, RA1, RB1, RK1, RX0, RY0, RK2);
-+	outunpack_blocks(%rax, RC2, RD2, RA2, RB2, RK1, RX0, RY0, RK2);
- 
- 	ret;
- 
- __enc_xor8:
--	outunpack_xor_blocks(%rsi, RC1, RD1, RA1, RB1, RK1, RX, RY, RK2);
--	outunpack_xor_blocks(%rax, RC2, RD2, RA2, RB2, RK1, RX, RY, RK2);
-+	outunpack_xor_blocks(%r11, RC1, RD1, RA1, RB1, RK1, RX0, RY0, RK2);
-+	outunpack_xor_blocks(%rax, RC2, RD2, RA2, RB2, RK1, RX0, RY0, RK2);
- 
- 	ret;
- 
-@@ -269,16 +342,18 @@ twofish_dec_blk_8way:
- 	 *	%rdx: src
- 	 */
- 
-+	pushq %rbp;
- 	pushq %rbx;
- 
- 	vmovdqu (w+4*4)(CTX), RK1;
- 
- 	leaq (4*4*4)(%rdx), %rax;
--	inpack_blocks(%rdx, RC1, RD1, RA1, RB1, RK1, RX, RY, RK2);
--	inpack_blocks(%rax, RC2, RD2, RA2, RB2, RK1, RX, RY, RK2);
-+	inpack_blocks(%rdx, RC1, RD1, RA1, RB1, RK1, RX0, RY0, RK2);
-+	vmovq		RC1, RGI1;
-+	vpextrq $1,	RC1, RGI2;
-+	inpack_blocks(%rax, RC2, RD2, RA2, RB2, RK1, RX0, RY0, RK2);
- 
--	xorq RID1, RID1;
--	xorq RID2, RID2;
-+	movq %rsi, %r11;
- 
- 	decrypt_cycle(7);
- 	decrypt_cycle(6);
-@@ -287,14 +362,15 @@ twofish_dec_blk_8way:
- 	decrypt_cycle(3);
- 	decrypt_cycle(2);
- 	decrypt_cycle(1);
--	decrypt_cycle(0);
-+	decrypt_cycle_last(0);
- 
- 	vmovdqu (w)(CTX), RK1;
- 
- 	popq %rbx;
-+	popq %rbp;
- 
--	leaq (4*4*4)(%rsi), %rax;
--	outunpack_blocks(%rsi, RA1, RB1, RC1, RD1, RK1, RX, RY, RK2);
--	outunpack_blocks(%rax, RA2, RB2, RC2, RD2, RK1, RX, RY, RK2);
-+	leaq (4*4*4)(%r11), %rax;
-+	outunpack_blocks(%r11, RA1, RB1, RC1, RD1, RK1, RX0, RY0, RK2);
-+	outunpack_blocks(%rax, RA2, RB2, RC2, RD2, RK1, RX0, RY0, RK2);
- 
- 	ret;
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 8ac5246..3214972 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -1981,7 +1981,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
+>  		return 0;
+>  	if (!mmc_attach_sd(host))
+>  		return 0;
+> -	if (!mmc_attach_mmc(host))
+> +	if (!(host->caps2 & MMC_CAP2_NO_MMC) && !mmc_attach_mmc(host))
+>  		return 0;
+>  
+>  	mmc_power_off(host);
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index f578a71..f36370e 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -257,6 +257,7 @@ struct mmc_host {
+>  #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
+>  #define MMC_CAP2_CD_ACTIVE_HIGH	(1 << 10)	/* Card-detect signal active high */
+>  #define MMC_CAP2_RO_ACTIVE_HIGH	(1 << 11)	/* Write-protect signal active high */
+> +#define MMC_CAP2_NO_MMC		(1 << 12)	/* Only SD supported, not MMC */
+>  
+>  	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+>  	unsigned int        power_notify_type;
+> 
 
