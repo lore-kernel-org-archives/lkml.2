@@ -1,337 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759Ab2HVIDO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:03:14 -0400
-Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:1944 "EHLO
-	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832Ab2HVIC6 (ORCPT
+	id S1758770Ab2HVIGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:06:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62820 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757085Ab2HVIGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:02:58 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Volokh Konstantin <volokh84@gmail.com>
-Subject: Re: [PATCH 01/10] staging: media: go7007: Some additional code for TW2804 driver functionality
-Date: Wed, 22 Aug 2012 10:01:22 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, volokh@telros.ru
-References: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
-In-Reply-To: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Wed, 22 Aug 2012 04:06:44 -0400
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alex Bergmann <alex@linlab.net>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jerry Chu <hkchu@google.com>, Neal Cardwell <ncardwell@google.com>,
+        Nandita Dukkipati <nanditad@google.com>
+In-Reply-To: <503419D3.1080700@linlab.net>
+References: <503419D3.1080700@linlab.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Aug 2012 10:06:38 +0200
+Message-ID: <1345622798.5158.717.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208221001.22174.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Volokh!
-
-Thanks for working on this!
-
-I have some quick review notes below.
-
-On Wed August 22 2012 12:45:10 Volokh Konstantin wrote:
-> - using new v4l2 framework controls
-> - function for reading volatile controls via i2c bus
-> - separate V4L2_CID_ ctrls into each V4L2 calls
+On Wed, 2012-08-22 at 01:29 +0200, Alex Bergmann wrote:
+> Hi David,
 > 
-> Signed-off-by: Volokh Konstantin <volokh84@gmail.com>
+> I'm not 100% sure, but it looks like I found an RFC mismatch with the 
+> current default values of the TCP implementation.
+> 
+> Alex
+> 
+> From 8b854a525eb45f64ad29dfab16f9d9f681e84495 Mon Sep 17 00:00:00 2001
+> From: Alexander Bergmann <alex@linlab.net>
+> Date: Wed, 22 Aug 2012 00:29:08 +0200
+> Subject: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+> 
+> Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
+> RFC6298 (former RFC2988bis). This introduced a gap with RFC1122 that
+> defines a minimum retransmission window for SYN segments of at least
+> 180secs.
+> 
+> Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
+> a timeout of 63secs.
+> 
+>         ((2 << 5) - 1) * 3 secs = 189 secs
+>         ((2 << 5) - 1) * 1 secs = 63 secs
+
+Strange maths ... here I have :
+
+(1+2+4+8+16) * 3 = 93 secs
+vs
+(1+2+4+8+16) * 1 = 31 secs
+
+So even before said commit, we were not rfc1122 compliant.
+
+Using 7 retries would give 127 seconds, still not rfc compliant.
+
+> 
+> To fulfill the MUST constraint in RFC1122 section 4.2.3.5 about R2 for
+> SYN segments, the values of TCP_SYN_RETRIES and TCP_SYNACK_RETRIES must
+> be changed to 7 reties.
+> 
+>         ((2 << 7) - 1) * 1 secs = 255 secs
+> 
+> This would result in an ETIMEDOUT of 4 minutes 15 seconds.
+> 
+> Signed-off-by: Alexander Bergmann <alex@linlab.net>
 > ---
->  drivers/staging/media/go7007/wis-tw2804.c |  248 +++++++++++++++++++++++++++++
->  1 files changed, 248 insertions(+), 0 deletions(-)
+>  include/net/tcp.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/staging/media/go7007/wis-tw2804.c b/drivers/staging/media/go7007/wis-tw2804.c
-> index 9134f03..05851d3 100644
-> --- a/drivers/staging/media/go7007/wis-tw2804.c
-> +++ b/drivers/staging/media/go7007/wis-tw2804.c
-> @@ -21,10 +21,18 @@
->  #include <linux/videodev2.h>
->  #include <linux/ioctl.h>
->  #include <linux/slab.h>
-> +#include <media/v4l2-subdev.h>
-> +#include <media/v4l2-device.h>
-> +#include <media/v4l2-chip-ident.h>
-> +#include <media/v4l2-ctrls.h>
+> diff --git a/include/net/tcp.h b/include/net/tcp.h
+> index 1f000ff..7eaae19 100644
+> --- a/include/net/tcp.h
+> +++ b/include/net/tcp.h
+> @@ -98,10 +98,10 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
+>                                  * 15 is ~13-30min depending on RTO.
+>                                  */
 >  
->  #include "wis-i2c.h"
+> -#define TCP_SYN_RETRIES         5      /* number of times to retry active opening a
+> +#define TCP_SYN_RETRIES         7      /* number of times to retry active opening a
+>                                  * connection: ~180sec is RFC minimum   */
 >  
->  struct wis_tw2804 {
-> +	struct v4l2_subdev sd;
-> +	struct v4l2_ctrl_handler hdl;
-> +	u8 channel:2;
-> +	u8 input:1;
->  	int channel;
->  	int norm;
->  	int brightness;
-> @@ -116,9 +124,246 @@ static int write_regs(struct i2c_client *client, u8 *regs, int channel)
->  		if (i2c_smbus_write_byte_data(client,
->  				regs[i] | (channel << 6), regs[i + 1]) < 0)
->  			return -1;
-> +static s32 read_reg(struct i2c_client *client, u8 reg, u8 channel)
-> +{
-> +	return i2c_smbus_read_byte_data(client, (reg) | (channel << 6));
-> +}
-> +
-> +inline struct wis_tw2804 *to_state(struct v4l2_subdev *sd)
-> +{
-> +	return container_of(sd, struct wis_tw2804, sd);
-> +}
-> +
-> +inline struct wis_tw2804 *to_state_from_ctrl(struct v4l2_ctrl *ctrl)
-> +{
-> +	return container_of(ctrl->handler, struct wis_tw2804, hdl);
-> +}
-> +
-> +static int tw2804_log_status(struct v4l2_subdev *sd)
-> +{
-> +	struct wis_tw2804 *state = to_state(sd);
-> +	v4l2_info(sd, "Standard: %s\n",
-> +			state->norm == V4L2_STD_NTSC ? "NTSC" :
-> +			state->norm == V4L2_STD_PAL ? "PAL" : "unknown");
-> +	v4l2_info(sd, "Channel: %d\n", state->channel);
-> +	v4l2_info(sd, "Input: %d\n", state->input);
-> +	v4l2_ctrl_handler_log_status(&state->hdl, sd->name);
-> +	return 0;
-> +}
-> +
-> +static s32 get_ctrl_addr(int ctrl)
-> +{
-> +	switch (ctrl) {
-> +	case V4L2_CID_BRIGHTNESS:
-> +		return 0x12;
-> +	case V4L2_CID_CONTRAST:
-> +		return 0x11;
-> +	case V4L2_CID_SATURATION:
-> +		return 0x10;
-> +	case V4L2_CID_HUE:
-> +		return 0x0f;
-> +	case V4L2_CID_AUTOGAIN:
-> +		return 0x02;
-> +	case V4L2_CID_COLOR_KILLER:
-> +		return 0x14;
-> +	case V4L2_CID_GAIN:
-> +		return 0x3c;
-> +	case V4L2_CID_CHROMA_GAIN:
-> +		return 0x3d;
-> +	case V4L2_CID_RED_BALANCE:
-> +		return 0x3f;
-> +	case V4L2_CID_BLUE_BALANCE:
-> +		return 0x3e;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static int tw2804_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
-> +{
-> +	struct v4l2_subdev *sd = &to_state_from_ctrl(ctrl)->sd;
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	s32 addr = get_ctrl_addr(ctrl->id);
-> +
-> +	if (addr == -EINVAL)
-> +		return -EINVAL;
-> +
-> +	switch (ctrl->id) {
-> +	case V4L2_CID_GAIN:
-> +	case V4L2_CID_CHROMA_GAIN:
-> +	case V4L2_CID_RED_BALANCE:
-> +	case V4L2_CID_BLUE_BALANCE:
-> +		ctrl->cur.val = read_reg(client, addr, 0);
-
-That should be ctrl->val, not ctrl->cur.val.
-
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int tw2804_s_ctrl(struct v4l2_ctrl *ctrl)
-> +{
-> +	struct wis_tw2804 *state = to_state_from_ctrl(ctrl);
-> +	struct v4l2_subdev *sd = &state->sd;
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	s32 reg = ctrl->val;
-> +	s32 addr = get_ctrl_addr(ctrl->id);
-> +
-> +	if (addr == -EINVAL)
-> +		return -EINVAL;
-> +
-> +	switch (ctrl->id) {
-> +	case V4L2_CID_AUTOGAIN:
-> +		reg = read_reg(client, addr, state->channel);
-> +		if (reg > 0) {
-> +			if (ctrl->val == 0)
-> +				reg &= ~(1<<7);
-> +			else
-> +				reg |= 1<<7;
-> +		} else
-> +			return reg;
-> +		break;
-> +	case V4L2_CID_COLOR_KILLER:
-> +		reg = read_reg(client, addr, state->channel);
-> +		if (reg > 0)
-> +			reg = (reg & ~(0x03)) | (ctrl->val == 0 ? 0x02 : 0x03);
-> +		else
-> +			return reg;
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	reg = reg > 255 ? 255 : (reg < 0 ? 0 : reg);
-> +	reg = write_reg(client, addr, (u8)reg,
-> +			ctrl->id == V4L2_CID_GAIN ||
-> +			ctrl->id == V4L2_CID_CHROMA_GAIN ||
-> +			ctrl->id == V4L2_CID_RED_BALANCE ||
-> +			ctrl->id == V4L2_CID_BLUE_BALANCE ? 0 : state->channel);
-> +
-> +	if (reg < 0) {
-> +		v4l2_err(sd, "Can`t set_ctrl value:id=%d;value=%d\n", ctrl->id,
-> +								    ctrl->val);
-> +		return reg;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int tw2804_s_std(struct v4l2_subdev *sd, v4l2_std_id norm)
-> +{
-> +	struct wis_tw2804 *dec = to_state(sd);
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +
-> +	u8 regs[] = {
-> +		0x01, norm&V4L2_STD_NTSC ? 0xc4 : 0x84,
-
-I recommend creating a bool variable storing the result of norm & V4L2_STD_NTSC
-rather than repeating it.
-
-Also, do you really mean 'norm & V4L2_STD_NTSC', or do you mean
-'norm & V4L2_STD_525_60'?
-
-My guess is the latter.
-
-> +		0x09, norm&V4L2_STD_NTSC ? 0x07 : 0x04,
-> +		0x0a, norm&V4L2_STD_NTSC ? 0xf0 : 0x20,
-> +		0x0b, norm&V4L2_STD_NTSC ? 0x07 : 0x04,
-> +		0x0c, norm&V4L2_STD_NTSC ? 0xf0 : 0x20,
-> +		0x0d, norm&V4L2_STD_NTSC ? 0x40 : 0x4a,
-> +		0x16, norm&V4L2_STD_NTSC ? 0x00 : 0x40,
-> +		0x17, norm&V4L2_STD_NTSC ? 0x00 : 0x40,
-> +		0x20, norm&V4L2_STD_NTSC ? 0x07 : 0x0f,
-> +		0x21, norm&V4L2_STD_NTSC ? 0x07 : 0x0f,
-> +		0xff, 0xff,
-> +	};
-> +	write_regs(client, regs, dec->channel);
-> +	dec->norm = norm;
-> +	return 0;
-> +}
-> +
-> +static int tw2804_g_chip_ident(struct v4l2_subdev *sd,
-> +				struct v4l2_dbg_chip_ident *chip)
-> +{
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	return v4l2_chip_ident_i2c_client(client, chip,
-> +					V4L2_IDENT_TW2804, 0x0e);
-> +}
-> +
-> +static const struct v4l2_ctrl_ops tw2804_ctrl_ops = {
-> +	.g_volatile_ctrl = tw2804_g_volatile_ctrl,
-> +	.s_ctrl = tw2804_s_ctrl,
-> +};
-> +
-> +static const struct v4l2_subdev_core_ops tw2804_core_ops = {
-> +	.log_status = tw2804_log_status,
-> +	.g_chip_ident = tw2804_g_chip_ident,
-> +	.g_ext_ctrls = v4l2_subdev_g_ext_ctrls,
-> +	.try_ext_ctrls = v4l2_subdev_try_ext_ctrls,
-> +	.s_ext_ctrls = v4l2_subdev_s_ext_ctrls,
-> +	.g_ctrl = v4l2_subdev_g_ctrl,
-> +	.s_ctrl = v4l2_subdev_s_ctrl,
-> +	.queryctrl = v4l2_subdev_queryctrl,
-> +	.querymenu = v4l2_subdev_querymenu,
-> +	.s_std = tw2804_s_std,
-> +};
-> +
-> +static int tw2804_s_video_routing(struct v4l2_subdev *sd, u32 input, u32 output,
-> +	u32 config)
-> +{
-> +	struct wis_tw2804 *dec = to_state(sd);
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	s32 reg = 0;
-> +
-> +	if (0 > input || input > 1)
-> +		return -EINVAL;
-> +
-> +	if (input == dec->input)
-> +		return 0;
-> +
-> +	reg = read_reg(client, 0x22, dec->channel);
-> +
-> +	if (reg >= 0) {
-> +		if (input == 0)
-> +			reg &= ~(1<<2);
-> +		else
-> +			reg |= 1<<2;
-> +		reg = write_reg(client, 0x22, (u8)reg, dec->channel);
-> +	}
-> +
-> +	if (reg >= 0)
-> +		dec->input = input;
-> +	else
-> +		return reg;
->  	return 0;
->  }
+> -#define TCP_SYNACK_RETRIES 5   /* number of times to retry passive opening a
+> +#define TCP_SYNACK_RETRIES 7   /* number of times to retry passive opening a
+>                                  * connection: ~180sec is RFC minimum   */
 >  
-> +static int tw2804_s_mbus_fmt(struct v4l2_subdev *sd,
-> +	struct v4l2_mbus_framefmt *fmt)
-> +{
-> +	/*TODO need select between 3fmt:
-> +	 * bt_656,
-> +	 * bt_601_8bit,
-> +	 * bt_656_dual,
-> +	 */
-> +	return 0;
-> +}
-> +
-> +static int tw2804_s_stream(struct v4l2_subdev *sd, int enable)
-> +{
-> +	struct wis_tw2804 *dec = to_state(sd);
-> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
-> +	u32 reg = read_reg(client, 0x78, 0);
-> +
-> +	if (enable == 1)
-> +		write_reg(client, 0x78, reg & ~(1<<dec->channel), 0);
-> +	else
-> +		write_reg(client, 0x78, reg | (1<<dec->channel), 0);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct v4l2_subdev_video_ops tw2804_video_ops = {
-> +	.s_routing = tw2804_s_video_routing,
-> +	.s_mbus_fmt = tw2804_s_mbus_fmt,
-> +	.s_stream = tw2804_s_stream,
-> +};
-> +
-> +static const struct v4l2_subdev_ops tw2804_ops = {
-> +	.core = &tw2804_core_ops,
-> +	.video = &tw2804_video_ops,
-> +};
-> +
->  static int wis_tw2804_command(struct i2c_client *client,
->  				unsigned int cmd, void *arg)
->  {
-> @@ -355,3 +600,6 @@ module_init(wis_tw2804_init);
->  module_exit(wis_tw2804_cleanup);
->  
->  MODULE_LICENSE("GPL v2");
-> +MODULE_DESCRIPTION("TW2804/TW2802 V4L2 i2c driver");
-> +MODULE_AUTHOR("Volokh Konstantin <volokh84@gmail.com>");
-> +MODULE_AUTHOR("Micronas USA Inc");
-> 
+>  #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
 
-Regards,
+Nice catch !
 
-	Hans
+I kind of disagree with the SYNACK part.
+
+RFC 1122 says in 4.2.3.5 :
+
+  However, the values of R1 and R2 may be different for SYN
+  and data segments.  In particular, R2 for a SYN segment MUST
+  be set large enough to provide retransmission of the segment
+  for at least 3 minutes.  The application can close the
+  connection (i.e., give up on the open attempt) sooner, of
+  course.
+
+I am not sure SYNACK segments were considered as a 'SYN segment' in this
+section. (as the application cannot 'close' the connection on the passive
+side, only kernel is aware of a SYN_RECV socket)
+
+Increasing TCP_SYNACK_RETRIES from 5 to 7 or 8 amplifies the
+SYN/synflood problem.
+
+A valid client should retransmit its SYN packet for 180 seconds, I dont
+believe we should make sure the SYNACK will be sent for 180 seconds as
+well.
+
+If we _really_ want to have a 3 minutes R2 for SYNACK, I suggest
+changing things to that we dont send more than 5 SYNACKS, maybe using
+RTO=6 after one retransmit
+
+current situation :
+1 sec
+2 sec
+4 sec
+8 sec
+16 sec
+----
+total of 31 seconds
+
+
+1 sec
+12 sec  // switch to RTO = 6
+24 sec
+48 sec
+96 sec
+-----
+total of 181 seconds
+
+
+
