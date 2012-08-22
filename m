@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab2HVOaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:30:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59848 "EHLO
+	id S932588Ab2HVOaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:30:19 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52441 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab2HVOaI (ORCPT
+	with ESMTP id S1756799Ab2HVOaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:30:08 -0400
+	Wed, 22 Aug 2012 10:30:11 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 2/4] ARM: allow PID_IN_CONTEXTIDR only for ARMv7
-Date: Wed, 22 Aug 2012 16:29:38 +0200
-Message-Id: <1345645780-2749-3-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Magnus Damm <damm@opensource.se>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3/4] ARM: export set_irq_flags/irq_set_chip_and_handler
+Date: Wed, 22 Aug 2012 16:29:39 +0200
+Message-Id: <1345645780-2749-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1345645780-2749-1-git-send-email-arnd@arndb.de>
 References: <1345645780-2749-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:39epySVFofFwEtk6U40Voqvt3hnhyvYchW/XWNhCCAJ
- Zl/1jPEETAxb1Sad7ZWmnX6Tpx5ugtDXGKz0hQDsebMblTmyDd
- kelB2ElpcCtZga+ezHp7xmDVPwtu1kI/q+5OmEA9TcXNI9c2Ae
- qiKpABXyOh/YZFp9c9OQowD8QxSNgbP3urzLl7924cFCvPqvES
- NLwKreao/RlyhXdGwfVQBVuLFXcO0xqLeH75Pe/Zcb5Vv5MtDF
- vKkCcQMaUhray8T56aVKqbEKlrKu8/1B6euHP+FvKVuEKu7Bq1
- PnlbM3BznKVhfwrmPL0z556mbbTp7bIXQP0G9fXeFqtsVTGD/L
- 5hp1hgBXt4K97NURsNW+/cV5AZFmRJcjat/1P6nXqk18G08PK6
- hlaULMVZDv9iw==
+X-Provags-ID: V02:K0:EWdEv/4gQfVX8pc5MiApoTmorp5e3UR0kDbyDBe0ioC
+ YMQAfZc9NU6dsr5abhw6Vzo3aVA+kOCoWcCHpNnZuuqR5bpxlE
+ d1uHrJj/xyMnYL4iVmoRK6GDgLEcaeUak5vxhcZFR0PoKfGxyB
+ qbQoTPtAXClxxqL6nW2pOivPuCnKfKfc+jJb2+CjBZyXjq7Zk+
+ zKdqpDWsH73wJx+YukOqJ0yq/6voLwkAsNGsSJj7QpPC2FFWPd
+ bNbrnlKZzqbXMOxK/29MI86AsIuEm/zGL56Y2tzcvcbAp7wgZl
+ Rl1agphnGV0YrnErOZlfM/ZpPNDvnxfkrG8NgY04cfEU6P/B3E
+ mYao8jZOm1Ksma/O1Edvf7EnG0eEAoex7a/HZOu/My1QAPPoyU
+ tRfC5Ymy1mpnA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ARMv6 is enabled, we build the kernel with -march=armv6 or
--march=armv6k, which means the bfi instruction is not available.
-Instead, it only works with -march=armv6t2 or -march=armv7-a.
+The recently added Emma Mobile GPIO driver calls set_irq_flags
+and irq_set_chip_and_handler for the interrupts it exports and
+it can be built as a module, which currently fails with
 
-Without this patch, building rand-enIHAOL results in:
+ERROR: "set_irq_flags" [drivers/gpio/gpio-em.ko] undefined!
+ERROR: "irq_set_chip_and_handler_name" [drivers/gpio/gpio-em.ko] undefined!
 
-/tmp/ccwCsCXC.s: Assembler messages:
-/tmp/ccwCsCXC.s:49: Error: selected processor does not support ARM mode `bfi r3,r2,#0,#8'
+We either need to replace the call to set_irq_flags with something
+else or export that function. This patch does the latter.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Will Deacon <will.deacon@arm.com>
+Cc: Magnus Damm <damm@opensource.se>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- arch/arm/Kconfig.debug |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/kernel/irq.c |    2 ++
+ kernel/irq/chip.c     |    2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index f15f82b..11b9ff4 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -398,6 +398,7 @@ config ARM_KPROBES_TEST
- config PID_IN_CONTEXTIDR
- 	bool "Write the current PID to the CONTEXTIDR register"
- 	depends on CPU_COPY_V6
-+	depends on CPU_V7 && !CPU_V6
- 	help
- 	  Enabling this option causes the kernel to write the current PID to
- 	  the PROCID field of the CONTEXTIDR register, at the expense of some
+diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+index 16cedb4..8961650 100644
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -34,6 +34,7 @@
+ #include <linux/list.h>
+ #include <linux/kallsyms.h>
+ #include <linux/proc_fs.h>
++#include <linux/export.h>
+ 
+ #include <asm/exception.h>
+ #include <asm/mach/arch.h>
+@@ -109,6 +110,7 @@ void set_irq_flags(unsigned int irq, unsigned int iflags)
+ 	/* Order is clear bits in "clr" then set bits in "set" */
+ 	irq_modify_status(irq, clr, set & ~clr);
+ }
++EXPORT_SYMBOL_GPL(set_irq_flags);
+ 
+ void __init init_IRQ(void)
+ {
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index eebd6d5..3c3cea3 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -13,6 +13,7 @@
+ #include <linux/irq.h>
+ #include <linux/msi.h>
+ #include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/interrupt.h>
+ #include <linux/kernel_stat.h>
+ 
+@@ -671,6 +672,7 @@ irq_set_chip_and_handler_name(unsigned int irq, struct irq_chip *chip,
+ 	irq_set_chip(irq, chip);
+ 	__irq_set_handler(irq, handle, 0, name);
+ }
++EXPORT_SYMBOL_GPL(irq_set_chip_and_handler_name);
+ 
+ void irq_modify_status(unsigned int irq, unsigned long clr, unsigned long set)
+ {
 -- 
 1.7.10
 
