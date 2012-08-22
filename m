@@ -1,114 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab2HVAG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 20:06:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab2HVAGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 20:06:55 -0400
-Date: Wed, 22 Aug 2012 03:07:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120822000741.GI9027@redhat.com>
-References: <cover.1345519422.git.aquini@redhat.com>
- <e24f3073ef539985dea52943dcb84762213a0857.1345519422.git.aquini@redhat.com>
- <1345562411.23018.111.camel@twins>
- <20120821162432.GG2456@linux.vnet.ibm.com>
- <20120821172819.GA12294@t510.redhat.com>
- <20120821191330.GA8324@redhat.com>
- <20120821192357.GD12294@t510.redhat.com>
- <20120821193031.GC9027@redhat.com>
- <20120821204556.GF12294@t510.redhat.com>
+	id S1754201Ab2HVAIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 20:08:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54346 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab2HVAI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 20:08:27 -0400
+Date: Wed, 22 Aug 2012 01:08:22 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20120822000822.GL23464@ZenIV.linux.org.uk>
+References: <20120821.163823.1448570709635488157.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120821204556.GF12294@t510.redhat.com>
+In-Reply-To: <20120821.163823.1448570709635488157.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 05:45:56PM -0300, Rafael Aquini wrote:
-> On Tue, Aug 21, 2012 at 10:30:31PM +0300, Michael S. Tsirkin wrote:
-> > On Tue, Aug 21, 2012 at 04:23:58PM -0300, Rafael Aquini wrote:
-> > > On Tue, Aug 21, 2012 at 10:13:30PM +0300, Michael S. Tsirkin wrote:
-> > > > > 
-> > > > > I believe rcu_dereference_protected() is what I want/need here, since this code
-> > > > > is always called for pages which we hold locked (PG_locked bit).
-> > > > 
-> > > > It would only help if we locked the page while updating the mapping,
-> > > > as far as I can see we don't.
-> > > >
-> > > 
-> > > But we can do it. In fact, by doing it (locking the page) we can easily avoid
-> > > the nasty race balloon_isolate_page / leak_balloon, in a much simpler way, IMHO.
-> > 
-> > Absolutely. Further, we should look hard at whether most RCU uses
-> > in this patchset can be replaced with page lock.
-> >
-> 
-> Yeah, In fact, by testing/grabbing the page lock at leak_balloon() even the
-> module unload X migration / putback race seems to fade away, since migration
-> code holds the page locked all the way.
-> And that seems a quite easy task to be accomplished:
-> 
-> ....
-> @@ -169,21 +197,61 @@ static void leak_balloon(struct virtio_balloon *vb, size_t
-> num)
->         /* We can only do one array worth at a time. */
->         num = min(num, ARRAY_SIZE(vb->pfns));
-> 
-> +       mutex_lock(&vb->balloon_lock);
->         for (vb->num_pfns = 0; vb->num_pfns < num;
->              vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
-> +               spin_lock(&vb->pages_lock);
-> +               /*
-> +                * 'virtballoon_isolatepage()' can drain vb->pages list
-> +                * making us to stumble across a _temporarily_ empty list.
+On Tue, Aug 21, 2012 at 04:38:23PM -0700, David Miller wrote:
 
-This still worries me. If this happens we do not
-lock the page so module can go away?
-if not need to document why.
+> 8) Fix all the netprio file handling bugs found by Al Viro, from John
+>    Fastabend.
 
-> +                *
-> +                * Release the spinlock and resume from here in order to
-> +                * give page migration a shot to refill vb->pages list.
-> +                */
-> +               if (unlikely(list_empty(&vb->pages))) {
-> +                       spin_unlock(&vb->pages_lock);
-> +                       break;
-> +               }
-> +
->                 page = list_first_entry(&vb->pages, struct page, lru);
-> +
-> +               /*
-> +                * Grab the page lock to avoid racing against threads isolating
-> +                * pages from vb->pages list (it's done under page lock).
-> +                *
-> +                * Failing to grab the page lock here means this page has been
-> +                * selected for isolation already.
-> +                */
-> +               if (!trylock_page(page)) {
-> +                       spin_unlock(&vb->pages_lock);
-> +                       break;
-> +               }
-> +
-> +               clear_balloon_mapping(page);
->                 list_del(&page->lru);
->                 set_page_pfns(vb->pfns + vb->num_pfns, page);
->                 vb->num_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
-> +               unlock_page(page);
-> +               spin_unlock(&vb->pages_lock);
->         }
-> 
-> .....
+Great, I was just about to start figuring out how to deal with inter-tree
+dependencies; now I'll just rebase my internal queue ;-)  (I've added
+iterate_fd(files, from, callback) that goes through the descriptor
+table starting at given fd, calling the non-blocking callback for files in
+there until the callback returns 0; that kills open-coded loops of that
+kind in tty_io and netprio, as well as most of the crap in selinux
+flush_unauthorized_files(); for now I just have a copy of John's patch
+in my tree, but if it's about to go into the mainline - great, less
+potential PITA for me).
