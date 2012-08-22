@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab2HVMJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 08:09:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50325 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102Ab2HVMJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 08:09:40 -0400
-Message-ID: <5034CBFF.5020608@redhat.com>
-Date: Wed, 22 Aug 2012 15:09:35 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S932258Ab2HVMNe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 08:13:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36069 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab2HVMNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 08:13:30 -0400
+Message-ID: <5034CD02.2010103@gmail.com>
+Date: Wed, 22 Aug 2012 14:13:54 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 00/12] KVM: introduce readonly memslot
-References: <5032F8FD.2020306@linux.vnet.ibm.com>
-In-Reply-To: <5032F8FD.2020306@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 13/17] lockd: use new hashtable implementation
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-14-git-send-email-levinsasha928@gmail.com> <20120822114752.GC20158@fieldses.org>
+In-Reply-To: <20120822114752.GC20158@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 05:57 AM, Xiao Guangrong wrote:
-> Changelog:
-> - fix endless retrying for unhandleable instruction which accesses on readonly
->   host memory
-> - divide slot->flags by 16:16, the lower part is visible for userspace, the
->   reset is internally used in kvm, and document this in the code
-> - check slot->flags for gfn_to_hva_memslot
+On 08/22/2012 01:47 PM, J. Bruce Fields wrote:
+> On Wed, Aug 22, 2012 at 04:27:08AM +0200, Sasha Levin wrote:
+>> +static int __init nlm_init(void)
+>> +{
+>> +	hash_init(nlm_files);
+>> +	return 0;
+>> +}
+>> +
+>> +module_init(nlm_init);
 > 
-> The test case can be found at:
-> http://lkml.indiana.edu/hypermail/linux/kernel/1207.2/00819/migrate-perf.tar.bz2
+> That's giving me:
 > 
-> In current code, if we map a readonly memory space from host to guest
-> and the page is not currently mapped in the host, we will get a fault-pfn
-> and async is not allowed, then the vm will crash.
-> 
-> As Avi's suggestion, We introduce readonly memory region to map ROM/ROMD
-> to the guest, read access is happy for readonly memslot, write access on
-> readonly memslot will cause KVM_EXIT_MMIO exit.
+> fs/lockd/svcsubs.o: In function `nlm_init':
+> /home/bfields/linux-2.6/fs/lockd/svcsubs.c:454: multiple definition of `init_module'
+> fs/lockd/svc.o:/home/bfields/linux-2.6/fs/lockd/svc.c:606: first defined here
+> make[2]: *** [fs/lockd/lockd.o] Error 1
+> make[1]: *** [fs/lockd] Error 2
+> make[1]: *** Waiting for unfinished jobs....
 
-Thanks, applied 1-11.
+I tested this entire patch set both with linux-next and Linus' latest master,
+and it worked fine in both places.
 
-
--- 
-error compiling committee.c: too many arguments to function
+Is it possible that lockd has a -next tree which isn't pulled into linux-next?
+(there's nothing listed in MAINTAINERS that I could see).
