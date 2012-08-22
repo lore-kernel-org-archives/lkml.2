@@ -1,140 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2HVEGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 00:06:09 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:39019 "EHLO gir.skynet.ie"
+	id S1751806Ab2HVEHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 00:07:40 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:36593 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab2HVEGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 00:06:05 -0400
-Date: Wed, 22 Aug 2012 05:06:00 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes + one fbcon one
-Message-ID: <alpine.DEB.2.00.1208220501320.761@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1750825Ab2HVEHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 00:07:36 -0400
+X-ASG-Debug-ID: 1345608454-03d6a50cb5448830001-xx1T2L
+X-Barracuda-Envelope-From: ShLi@fusionio.com
+Message-ID: <50345AFE.1070700@fusionio.com>
+Date: Wed, 22 Aug 2012 12:07:26 +0800
+From: Shaohua Li <shli@fusionio.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-969739899-1345608360=:761"
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>, NeilBrown <neilb@suse.de>,
+        "Theodore Ts'o" <tytso@mit.edu>, Marti Raudsepp <marti@juffo.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>,
+        ext4 hackers <linux-ext4@vger.kernel.org>,
+        "maze@google.com" <maze@google.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>
+Subject: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
+References: <CABRT9RAOhaxcYdCxMn5neJ9WT85r=h=7WgZ2dmLaOs-MMqDW9A@mail.gmail.com> <20120816024654.GB3781@thunk.org> <20120816111051.GA16036@localhost> <20120816152513.GA31346@thunk.org> <20120817060915.GB28786@localhost> <20120817134039.GB11439@thunk.org> <20120817142526.GA1059@localhost> <20120822035702.GF2570@yliu-dev.sh.intel.com>
+X-ASG-Orig-Subj: Re: ext4 write performance regression in 3.6-rc1 on RAID0/5
+In-Reply-To: <20120822035702.GF2570@yliu-dev.sh.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1345608454
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -1.90
+X-Barracuda-Spam-Status: No, SCORE=-1.90 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.106352
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.12 CN_BODY_332            BODY: CN_BODY_332
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 8/22/12 11:57 AM, Yuanhan Liu wrote:
+>  On Fri, Aug 17, 2012 at 10:25:26PM +0800, Fengguang Wu wrote:
+> > [CC md list]
+> >
+> > On Fri, Aug 17, 2012 at 09:40:39AM -0400, Theodore Ts'o wrote:
+> >> On Fri, Aug 17, 2012 at 02:09:15PM +0800, Fengguang Wu wrote:
+> >>> Ted,
+> >>>
+> >>> I find ext4 write performance dropped by 3.3% on average in the
+> >>> 3.6-rc1 merge window. xfs and btrfs are fine.
+> >>>
+> >>> Two machines are tested. The performance regression happens in the
+> >>> lkp-nex04 machine, which is equipped with 12 SSD drives. lkp-st02 does
+> >>> not see regression, which is equipped with HDD drives. I'll continue
+> >>> to repeat the tests and report variations.
+> >>
+> >> Hmm... I've checked out the commits in "git log v3.5..v3.6-rc1 --
+> >> fs/ext4 fs/jbd2" and I don't see anything that I would expect would
+> >> cause that. The are the lock elimination changes for Direct I/O
+> >> overwrites, but that shouldn't matter for your tests which are
+> >> measuring buffered writes, correct?
+> >>
+> >> Is there any chance you could do me a favor and do a git bisect
+> >> restricted to commits involving fs/ext4 and fs/jbd2?
+> >
+> > I noticed that the regressions all happen in the RAID0/RAID5 cases.
+> > So it may be some interactions between the RAID/ext4 code?
+> >
+> > I'll try to get some ext2/3 numbers, which should have less changes 
+on the fs side.
+> >
+> > wfg@bee /export/writeback% ./compare -g ext4 
+lkp-nex04/*/*-{3.5.0,3.6.0-rc1+}
+> > 3.5.0 3.6.0-rc1+
+> > ------------------------ ------------------------
+> > 720.62 -1.5% 710.16 lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-100dd-1-3.5.0
+> > 706.04 -0.0% 705.86 lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-10dd-1-3.5.0
+> > 702.86 -0.2% 701.74 lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-1dd-1-3.5.0
+> > 702.41 -0.0% 702.06 lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-1dd-2-3.5.0
+> > 779.52 +6.5% 830.11 lkp-nex04/JBOD-12HDD-thresh=100M/ext4-100dd-1-3.5.0
+> > 646.70 +4.9% 678.59 lkp-nex04/JBOD-12HDD-thresh=100M/ext4-10dd-1-3.5.0
+> > 704.49 +2.6% 723.00 lkp-nex04/JBOD-12HDD-thresh=100M/ext4-1dd-1-3.5.0
+> > 704.21 +1.2% 712.47 lkp-nex04/JBOD-12HDD-thresh=100M/ext4-1dd-2-3.5.0
+> > 705.26 -1.2% 696.61 lkp-nex04/JBOD-12HDD-thresh=8G/ext4-100dd-1-3.5.0
+> > 703.37 +0.1% 703.76 lkp-nex04/JBOD-12HDD-thresh=8G/ext4-10dd-1-3.5.0
+> > 701.66 -0.1% 700.83 lkp-nex04/JBOD-12HDD-thresh=8G/ext4-1dd-1-3.5.0
+> > 701.17 +0.0% 701.36 lkp-nex04/JBOD-12HDD-thresh=8G/ext4-1dd-2-3.5.0
+> > 675.08 -10.5% 604.29 
+lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-100dd-1-3.5.0
+> > 676.52 -2.7% 658.38 lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-10dd-1-3.5.0
+> > 512.70 +4.0% 533.22 lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-1dd-1-3.5.0
+> > 524.61 -0.3% 522.90 lkp-nex04/RAID0-12HDD-thresh=1000M/ext4-1dd-2-3.5.0
+> > 709.76 -15.7% 598.44 lkp-nex04/RAID0-12HDD-thresh=100M/ext4-100dd-1-3.5.0
+> > 681.39 -2.1% 667.25 lkp-nex04/RAID0-12HDD-thresh=100M/ext4-10dd-1-3.5.0
+> > 524.16 +0.8% 528.25 lkp-nex04/RAID0-12HDD-thresh=100M/ext4-1dd-2-3.5.0
+> > 699.77 -19.2% 565.54 lkp-nex04/RAID0-12HDD-thresh=8G/ext4-100dd-1-3.5.0
+> > 675.79 -1.9% 663.17 lkp-nex04/RAID0-12HDD-thresh=8G/ext4-10dd-1-3.5.0
+> > 484.84 -7.4% 448.83 lkp-nex04/RAID0-12HDD-thresh=8G/ext4-1dd-1-3.5.0
+> > 470.40 -3.2% 455.31 lkp-nex04/RAID0-12HDD-thresh=8G/ext4-1dd-2-3.5.0
+> > 167.97 -38.7% 103.03 
+lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-100dd-1-3.5.0
+> > 243.67 -9.1% 221.41 lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-10dd-1-3.5.0
+> > 248.98 +12.2% 279.33 lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-1dd-1-3.5.0
+> > 208.45 +14.1% 237.86 lkp-nex04/RAID5-12HDD-thresh=1000M/ext4-1dd-2-3.5.0
+> > 71.18 -34.2% 46.82 lkp-nex04/RAID5-12HDD-thresh=100M/ext4-100dd-1-3.5.0
+> > 145.84 -7.3% 135.25 lkp-nex04/RAID5-12HDD-thresh=100M/ext4-10dd-1-3.5.0
+> > 255.22 +6.7% 272.35 lkp-nex04/RAID5-12HDD-thresh=100M/ext4-1dd-1-3.5.0
+> > 243.09 +20.7% 293.30 lkp-nex04/RAID5-12HDD-thresh=100M/ext4-1dd-2-3.5.0
+> > 209.24 -23.6% 159.96 lkp-nex04/RAID5-12HDD-thresh=8G/ext4-100dd-1-3.5.0
+> > 243.73 -10.9% 217.28 lkp-nex04/RAID5-12HDD-thresh=8G/ext4-10dd-1-3.5.0
+>
+>  Hi,
+>
+>  About this issue, I did some investigation. And found we are blocked at
+>  get_active_stripes() in most times. It's reasonable, since max_nr_stripes
+>  is set to 256 now. It's a kind of small value, thus I tried with
+>  different value. Please see the following patch for detailed numbers.
+>
+>  The test machine is same as above.
+>
+>  From 85c27fca12b770da5bc8ec9f26a22cb414e84c68 Mon Sep 17 00:00:00 2001
+>  From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+>  Date: Wed, 22 Aug 2012 10:51:48 +0800
+>  Subject: [RFC PATCH] md/raid5: increase NR_STRIPES to 1024
+>
+>  Stripe head is a must held resource before doing any IO. And it's
+>  limited to 256 by default. With 10dd case, we found that it is
+>  blocked at get_active_stripes() in most times(please see the ps
+>  output attached).
+>
+>  Thus I did some tries with different value set to NR_STRIPS, and
+>  here are some numbers(EXT4 only) I got with different NR_STRIPS set:
+>
+>  write bandwidth:
+>  ================
+>  3.5.0-rc1-256+: (Here 256 means with max strip head set to 256)
+>  write bandwidth: 280
+>  3.5.0-rc1-1024+:
+>  write bandwidth: 421 (+50.4%)
+>  3.5.0-rc1-4096+:
+>  write bandwidth: 506 (+80.7%)
+>  3.5.0-rc1-32768+:
+>  write bandwidth: 615 (+119.6%)
+>
+>  (Here 'sh' means with Shaohua's "multiple threads to handle strips" 
+patch [0])
+>  3.5.0-rc3-strip-sh+-256:
+>  write bandwidth: 465
+>
+>  3.5.0-rc3-strip-sh+-1024:
+>  write bandwidth: 599
+>
+>  3.5.0-rc3-strip-sh+-32768:
+>  write bandwidth: 615
+>
+>  The kernel maybe a bit older but I found that the data are still kind of
+>  valid. Though, I haven't tried Shaohua's latest patch.
+>
+>  As you can see from those data above: the write bandwidth is increased
+>  (a lot) as we increase NR_STRIPES. Thus the bigger NR_STRIPES set, the
+>  better write bandwidth we get. But we can't set NR_STRIPES with a too
+>  large number, especially by default, or it need lots of memory. Due to
+>  the number I got with Shaohua's patch applied, I guess 1024 would be
+>  nice value; it's not too big but we gain above 110% performance.
+>
+>  Comments? BTW, I have a more flexible(more stupid, in the meantime) way:
+>  change the max_nr_stripes dynamically based on need?
+>
+>  Here I also attached more data: the script I used to get those number,
+>  ps output, and iostat -kx 3 output.
+>
+>  The script does it's job in a straight way: start NR dd in background,
+>  trace the writeback/global_dirty_state event in background to count the
+>  write bandwidth, sample the ps out regularly.
+>
+>  ---
+>  [0]: patch: http://lwn.net/Articles/500200/
+>
+>  Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+>  ---
+>  drivers/md/raid5.c | 2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>  diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+>  index adda94d..82dca53 100644
+>  --- a/drivers/md/raid5.c
+>  +++ b/drivers/md/raid5.c
+>  @@ -62,7 +62,7 @@
+>  * Stripe cache
+>  */
+>
+>  -#define NR_STRIPES 256
+>  +#define NR_STRIPES 1024
+>  #define STRIPE_SIZE PAGE_SIZE
+>  #define STRIPE_SHIFT (PAGE_SHIFT - 9)
+>  #define STRIPE_SECTORS (STRIPE_SIZE>>9)
 
---29444707-969739899-1345608360=:761
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+does revert commit 8811b5968f6216e fix the problem?
 
+Thanks,
+Shaohua
 
-Hi Linus,
-
-Intel: edid fixes, power consumption fix, s/r fix, haswell fix
-radeon: BIOS loading fixes for UEFI and Thunderbolt machines, better MSAA 
-validation, lockup timeout fixes, modesetting fixes
-one udl dpms fix,
-one vmwgfx fix,
-couple of trivial core changes
-
-There is an export added to ACPI as part of the radeon bios fixes,
-
-I've also included the fbcon flashing cursor vs deinit race fix, that 
-seems the simplest place to start, so that distros can pick it up easier.
-
-Dave.
-
-The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
-
-  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
-
-for you to fetch changes up to d8636a2717bb3da2a7ce2154bf08de90bb8c87b0:
-
-  fbcon: fix race condition between console lock and cursor timer (v1.1) (2012-08-22 14:00:35 +1000)
-
-----------------------------------------------------------------
-Alan Cox (1):
-      drm: stop vmgfx driver explosion
-
-Alex Deucher (5):
-      ACPI: export symbol acpi_get_table_with_size
-      drm/radeon: convert radeon vfct code to use acpi_get_table_with_size
-      drm/radeon: split ATRM support out from the ATPX handler (v3)
-      Revert "drm/radeon: fix bo creation retry path"
-      drm/radeon/ss: use num_crtc rather than hardcoded 6
-
-Ben Widawsky (1):
-      drm/i915/contexts: fix list corruption
-
-Christian König (1):
-      drm/radeon: init lockup timeout on ring init
-
-Damien Lespiau (1):
-      drm: Remove two unused fields from struct drm_display_mode
-
-Daniel Vetter (2):
-      drm/i915: fix hsw uncached pte
-      drm/i915: use hsw rps tuning values everywhere on gen6+
-
-Dave Airlie (4):
-      Merge branch 'drm-fixes-3.6' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      drm/udl: dpms off the crtc when disabled.
-      fbcon: fix race condition between console lock and cursor timer (v1.1)
-
-David Lamparter (1):
-      drm/radeon: implement ACPI VFCT vbios fetch (v3)
-
-Jani Nikula (3):
-      drm/i915: fix EDID memory leak in SDVO
-      drm/i915: extract connector update from intel_ddc_get_modes() for reuse
-      drm/i915: fall back to bit-banging if GMBUS fails in CRT EDID reads
-
-Jerome Glisse (1):
-      drm/radeon: avoid turning off spread spectrum for used pll
-
-Marek Ol¨ák (2):
-      drm/radeon: allow CMASK and FMASK in the CS checker on r600-r700
-      drm/radeon: fix checking of MSAA renderbuffers on r600-r700
-
-Sachin Kamat (1):
-      drm: Add missing static storage class specifiers in drm_proc.c file
-
-Tvrtko Ursulin (1):
-      drm/radeon/kms: extend the Fujitsu D3003-S2 board connector quirk to cover later silicon stepping
-
- drivers/acpi/acpica/tbxface.c                |    1 +
- drivers/char/agp/intel-agp.h                 |    1 +
- drivers/char/agp/intel-gtt.c                 |  105 +++++++++++++-------
- drivers/gpu/drm/drm_modes.c                  |    3 -
- drivers/gpu/drm/drm_proc.c                   |    4 +-
- drivers/gpu/drm/i915/i915_gem.c              |    8 +-
- drivers/gpu/drm/i915/i915_gem_gtt.c          |    5 +-
- drivers/gpu/drm/i915/i915_reg.h              |    1 +
- drivers/gpu/drm/i915/intel_crt.c             |   36 ++++++-
- drivers/gpu/drm/i915/intel_drv.h             |    2 +
- drivers/gpu/drm/i915/intel_modes.c           |   31 ++++--
- drivers/gpu/drm/i915/intel_pm.c              |   15 +--
- drivers/gpu/drm/i915/intel_sdvo.c            |    1 +
- drivers/gpu/drm/radeon/atombios_crtc.c       |   25 ++++-
- drivers/gpu/drm/radeon/r600_cs.c             |  105 ++++++++++++++++----
- drivers/gpu/drm/radeon/r600d.h               |   17 ++++
- drivers/gpu/drm/radeon/radeon.h              |   15 ---
- drivers/gpu/drm/radeon/radeon_atombios.c     |    2 +-
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |   56 +----------
- drivers/gpu/drm/radeon/radeon_bios.c         |  138 +++++++++++++++++++++++++-
- drivers/gpu/drm/radeon/radeon_drv.c          |    3 +-
- drivers/gpu/drm/radeon/radeon_object.c       |    3 +-
- drivers/gpu/drm/radeon/radeon_ring.c         |    1 +
- drivers/gpu/drm/radeon/reg_srcs/r600         |    8 --
- drivers/gpu/drm/udl/udl_modeset.c            |    3 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c          |    6 +-
- drivers/video/console/fbcon.c                |    9 +-
- include/drm/drm_crtc.h                       |    2 -
- 28 files changed, 424 insertions(+), 182 deletions(-)
---29444707-969739899-1345608360=:761--
