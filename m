@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189Ab2HVTgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:36:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32682 "EHLO mga09.intel.com"
+	id S1757609Ab2HVTj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:39:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54195 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab2HVTgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:36:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,809,1344236400"; 
-   d="scan'208";a="190051780"
-Date: Wed, 22 Aug 2012 12:35:32 -0700
-From: Andi Kleen <ak@linux.intel.com>
+	id S1754200Ab2HVTjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 15:39:54 -0400
+Date: Wed, 22 Aug 2012 20:33:57 +0100
+From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+        Ben Hutchings <ben@decadent.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
 Subject: Re: [PATCH 2/5] mempolicy: Remove mempolicy sharing
-Message-ID: <20120822193532.GB12707@tassilo.jf.intel.com>
+Message-ID: <20120822193357.GE15058@suse.de>
 References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
  <1345480594-27032-3-git-send-email-mgorman@suse.de>
  <20120822120314.9fc30d47.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
 In-Reply-To: <20120822120314.9fc30d47.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
@@ -47,13 +44,11 @@ On Wed, Aug 22, 2012 at 12:03:14PM -0700, Andrew Morton wrote:
 > The patch dosn't apply to 3.5 at all well.  I don't see much point in
 > retaining the stable tag so I think I'll remove it, and suggest that
 > you prepare a fresh patch for Greg and explain the situation?
+> 
 
-Everything applies fine if you redo the revert manually.
-
-BTW we tested it now and the new patchkit indeed fixes the database.
-Please queue for 3.6 and 3.5 stable.
-
--Andi
+Sure. I'll do the backport at the time they get merged to mainline and
+jump through the hoops. Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Mel Gorman
+SUSE Labs
