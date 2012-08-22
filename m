@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401Ab2HVVxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 17:53:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46737 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932343Ab2HVVxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 17:53:11 -0400
-Message-ID: <503554AD.4010908@zytor.com>
-Date: Wed, 22 Aug 2012 14:52:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S933409Ab2HVVz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 17:55:58 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54495 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab2HVVzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 17:55:55 -0400
+Date: Wed, 22 Aug 2012 22:55:43 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Len Brown <len.brown@intel.com>, Feng Tang <feng.tang@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaron Sierra <asierra@xes-inc.com>, Bob Moore <robert.moore@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH] lpc_ich: Fix a 3.5 kernel regression for iTCO_wdt
+ driver
+Message-ID: <20120822215543.GA1954@srcf.ucam.org>
+References: <1344959772-23018-1-git-send-email-feng.tang@intel.com>
+ <20120822195512.GI27604@spo001.leaseweb.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] x86, microcode, AMD: Per-family patches cache
-References: <20120817143035.GA25700@aftab.osrc.amd.com> <5032C6DD.7060506@zytor.com>
-In-Reply-To: <5032C6DD.7060506@zytor.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822195512.GI27604@spo001.leaseweb.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2012 04:23 PM, H. Peter Anvin wrote:
-> On 08/17/2012 07:30 AM, Borislav Petkov wrote:
->> Hi guys,
->>
->> please pull, thanks.
->>
->> The following changes since commit
->> d9875690d9b89a866022ff49e3fcea892345ad92:
->>
->>    Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
->>
->> are available in the git repository at:
->>
->>    git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git
->> tags/microcode-updates-for-3.7
->>
->> for you to fetch changes up to cd692919bed1d59a440ffaed585ebc3c9d8c3406:
->>
->>    x86, microcode, AMD: Rewrite patch application procedure
->> (2012-08-17 14:17:42 +0200)
->>
-> 
-> Hmmm... this isn't actually present on git.kernel.org, and 01/12 is
-> missing from your "v0" patchset on LKML (nevermind that a "v0"
-> designator screams "don't apply"...)
-> 
+On Wed, Aug 22, 2012 at 09:55:12PM +0200, Wim Van Sebroeck wrote:
 
-Ping again?
+> Any idea why the acpi_check_resource_conflict() check gives a conflict?
 
-	-hpa
+Because the resource range is declared in ACPI and we assume that that 
+means the firmware wants to scribble on it. We'd need the output of 
+acpidump to work out whether that's safe or not.
 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
