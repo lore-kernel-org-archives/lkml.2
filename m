@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab2HVXwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 19:52:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60126 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932149Ab2HVXwP (ORCPT
+	id S1030198Ab2HVXyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 19:54:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40183 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932149Ab2HVXya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 19:52:15 -0400
-Date: Thu, 23 Aug 2012 09:52:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Tony Luck <tony.luck@intel.com>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>
-Subject: Re: linux-next: New tree -- linux-pstore.git
-Message-Id: <20120823095204.a8e288ddb46a9707000ac5c8@canb.auug.org.au>
-In-Reply-To: <20120822025037.GA18807@lizard>
-References: <20120822025037.GA18807@lizard>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN"
+	Wed, 22 Aug 2012 19:54:30 -0400
+Message-ID: <50357127.1000608@gmail.com>
+Date: Thu, 23 Aug 2012 09:54:15 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-2-git-send-email-levinsasha928@gmail.com> <20120822180138.GA19212@google.com>
+In-Reply-To: <20120822180138.GA19212@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 23/08/12 04:01, Tejun Heo wrote:
+> Hello, Sasha.
+> 
+> On Wed, Aug 22, 2012 at 04:26:56AM +0200, Sasha Levin wrote:
+>> +#define DEFINE_HASHTABLE(name, bits)					\
+>> +	struct hlist_head name[HASH_SIZE(bits)];
+> 
+> Shouldn't this be something like the following?
+> 
+> #define DEFINE_HASHTABLE(name, bits)					\
+> 	struct hlist_head name[HASH_SIZE(bits)] =			\
+> 		{ [0 ... HASH_SIZE(bits) - 1] = HLIST_HEAD_INIT };
+> 
+> Also, given that the declaration isn't non-trivial, you'll probably
+> want a matching DECLARE_HASHTABLE() macro too.
+> 
+>> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+>> +#define hash_min(val, bits) ((sizeof(val)==4) ? hash_32((val), (bits)) : hash_long((val), (bits)))
+> 
+> Why is the branching condition sizeof(val) == 4 instead of <= 4?
+> Also, no biggie but why isn't this macro in caps?
 
-Hi Anton,
+It should probably use gcc's statement expression extensions to prevent
+side-effect issues with the arguments:
 
-On Tue, 21 Aug 2012 19:50:37 -0700 Anton Vorontsov <cbouatmailru@gmail.com>=
- wrote:
->
-> Can you please add linux-pstore.git tree to the linux-next,
-> the repository address is as follows:
->=20
->   git://git.infradead.org/users/cbou/linux-pstore.git master
->=20
-> This tree is dedicated to track pstore infrastructure fixes and
-> enhancements, currently it holds these commits:
->=20
-> Anton Vorontsov (3):
->       pstore/ram: Fix possible NULL dereference
->       pstore/ram: Mark ramoops_pstore_write_buf() as notrace
->       MAINTAINERS: Add pstore maintainers
->=20
-> Jovi Zhang (1):
->       pstore/ram: Add missing platform_device_unregister
->=20
-> Randy Dunlap (1):
->       pstore/ram: Fix printk format warning
+  #define hash_min ({		\
+	sizeof(val) <= 4 ?	\
+	hash_32(val, bits) :	\
+	hash_long(val, bits));	\
+  })
 
-I have added this tree from today.  I note that Linus may require you to
-GPG sign a tag for him to fetch since your tree is not located on
-kernel.org (he likes them anyway).
+~Ryan
 
-I have put just you as the contact in case of problems - if anyone else
-should also be listed, just let me know.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQNXCkAAoJEECxmPOUX5FE9h8QAJExFxYIhi26ygMBulrhDV5X
-5lUL714kjNPb2NnLYZc4PlEt/s9Na3o/Us2eezQnwCkLQDoR4p3+QtXc19PKWN20
-/pV40k7C3SFL8Q8z5kHj4QUd8u7oFqbdu4JPYsEsvIsXoQqFsbKqrnBvHXyPgXFL
-E8nw/oAlGGiijsyVadcvAmHjDUm6g0beLG2/LVpSLZ1FJBgFdBJFtwmVqDGJqrYJ
-xLwvS5OvMy8MPez2p8iYscNYsZNEAgURJzdC0xWrWFOjff04jdsgpA7aMVLLaL9p
-HLufo6oBkxZF175WTAI9PqxbCA/K+BL7WHaDCfUX4Gq/pIcpV9rw9+XRZKYY4alV
-OAdWX6pLo4aefc+xhrxsV9xsdk53mmfD7CVOnBQL/rSApJ6A9/ZzKBjzK0oVXWk3
-5aaS0FU3vUSJFF1OdFxQo/1XR6t1aEG8Z1kCstBeo00aGe5mw17pCPhYgJ5RN3Nu
-Uhu5McWCwXsOA2vWSXaNWiv7CnDdSfT6viH7QgK4ZtgnXUH3TJYssKL/HJ/lUgOn
-0QQMP1WmCrCYEiFiddu4kYQV0hcpjO5guA8iIpaUXhWixKqt4rZZghwSHUVjGbE9
-RW51KXqbXPOMOrBvrNqX0ulWWfPDKMAiKfUB0z/9QkV0ovf1+0HBRuKNPq0CNT6b
-lATH0m3+uY26uKIyown5
-=899Q
------END PGP SIGNATURE-----
-
---Signature=_Thu__23_Aug_2012_09_52_04_+1000_s_rlucMAxztMSuMN--
