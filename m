@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab2HVTj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:39:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54195 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200Ab2HVTjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:39:54 -0400
-Date: Wed, 22 Aug 2012 20:33:57 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/5] mempolicy: Remove mempolicy sharing
-Message-ID: <20120822193357.GE15058@suse.de>
-References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
- <1345480594-27032-3-git-send-email-mgorman@suse.de>
- <20120822120314.9fc30d47.akpm@linux-foundation.org>
+	id S1753222Ab2HVToC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:44:02 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:36939 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab2HVTn7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 15:43:59 -0400
+Date: Wed, 22 Aug 2012 15:43:57 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Leif Lindholm <leif.lindholm@arm.com>, linux-kernel@vger.kernel.org,
+        Jon Medhurst <tixy@yxit.co.uk>
+Subject: Re: [PATCHv3 4/4] ARM: kprobes: make more tests conditional
+In-Reply-To: <201208221841.29645.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.02.1208221543240.1754@xanadu.home>
+References: <1345645780-2749-1-git-send-email-arnd@arndb.de> <201208221519.12056.arnd@arndb.de> <alpine.LFD.2.02.1208221136180.1754@xanadu.home> <201208221841.29645.arnd@arndb.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120822120314.9fc30d47.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 12:03:14PM -0700, Andrew Morton wrote:
-> On Mon, 20 Aug 2012 17:36:31 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > 
-> > Dave Jones' system call fuzz testing tool "trinity" triggered the following
-> > bug error with slab debugging enabled
-> > 
-> > ...
-> >
-> > Cc: <stable@vger.kernel.org>
-> 
-> The patch dosn't apply to 3.5 at all well.  I don't see much point in
-> retaining the stable tag so I think I'll remove it, and suggest that
-> you prepare a fresh patch for Greg and explain the situation?
-> 
+On Wed, 22 Aug 2012, Arnd Bergmann wrote:
 
-Sure. I'll do the backport at the time they get merged to mainline and
-jump through the hoops. Thanks.
+> On Wednesday 22 August 2012, Nicolas Pitre wrote:
+> > On Wed, 22 Aug 2012, Arnd Bergmann wrote:
+> > > > 
+> > > > The ldrex/strex instructions are available on ARMv6.  It's only the d 
+> > > > variants (strexd/ldrexd) which are only available from ARMv6k.
+> > > 
+> > > Ok. How is the version below then? I haven't tested this one yet.
+> > 
+> > In fact, I think the b variants are ARMv6k+ as well.  Only the plain 
+> > (non b non d) variants are available on ARMv6.
+> 
+> Ok, third attempt then. This leaves ldrex for ARMv6 but marks
+> {st,ld}rex{b,h,d} as V6K specific (which includes ARMv7).
+> 
+> 	Arnd
+> 
+> 8<-----
+> From 6eab418c61c18393006f30d189e2f28d6e403040 Mon Sep 17 00:00:00 2001
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Thu, 16 Aug 2012 07:49:31 +0000
+> Subject: [PATCH] ARM: kprobes: make more tests conditional
+> 
+> The mls instruction is not available in ARMv6K or below, so we
+> should make the test conditional on at least ARMv7. ldrexd/strexd
+> are available in ARMv6K or ARMv7, which we can test by checking
+> the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
+> 
+> /tmp/ccuMTZ8D.s: Assembler messages:
+> /tmp/ccuMTZ8D.s:22188: Error: selected processor does not support ARM mode `mls r0,r1,r2,r3'
+> /tmp/ccuMTZ8D.s:22222: Error: selected processor does not support ARM mode `mlshi r7,r8,r9,r10'
+> /tmp/ccuMTZ8D.s:22252: Error: selected processor does not support ARM mode `mls lr,r1,r2,r13'
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jon Medhurst <tixy@yxit.co.uk>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Cc: Leif Lindholm <leif.lindholm@arm.com>
 
--- 
-Mel Gorman
-SUSE Labs
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+
+> ---
+>  arch/arm/kernel/kprobes-test-arm.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
+> index 38c1a3b..58dd6c3 100644
+> --- a/arch/arm/kernel/kprobes-test-arm.c
+> +++ b/arch/arm/kernel/kprobes-test-arm.c
+> @@ -367,9 +367,11 @@ void kprobe_arm_test_cases(void)
+>  	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
+>  	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
+>  
+> +#if __LINUX_ARM_ARCH__ >= 7
+>  	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
+>  	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
+>  	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
+> +#endif
+>  	TEST_UNSUPPORTED(".word 0xe06f3291 @ mls pc, r1, r2, r3")
+>  	TEST_UNSUPPORTED(".word 0xe060329f @ mls r0, pc, r2, r3")
+>  	TEST_UNSUPPORTED(".word 0xe0603f91 @ mls r0, r1, pc, r3")
+> @@ -456,6 +458,7 @@ void kprobe_arm_test_cases(void)
+>  	TEST_UNSUPPORTED(".word	0xe1700090") /* Unallocated space */
+>  #if __LINUX_ARM_ARCH__ >= 6
+>  	TEST_UNSUPPORTED("ldrex	r2, [sp]")
+> +#ifdef CONFIG_CPU_32v6K
+>  	TEST_UNSUPPORTED("strexd	r0, r2, r3, [sp]")
+>  	TEST_UNSUPPORTED("ldrexd	r2, r3, [sp]")
+>  	TEST_UNSUPPORTED("strexb	r0, r2, [sp]")
+> @@ -463,6 +466,7 @@ void kprobe_arm_test_cases(void)
+>  	TEST_UNSUPPORTED("strexh	r0, r2, [sp]")
+>  	TEST_UNSUPPORTED("ldrexh	r2, [sp]")
+>  #endif
+> +#endif
+>  	TEST_GROUP("Extra load/store instructions")
+>  
+>  	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
+> -- 
+> 1.7.10
+> 
+> 
+> 
