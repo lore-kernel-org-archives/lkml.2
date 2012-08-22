@@ -1,300 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab2HVPTI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 11:19:08 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57091 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932871Ab2HVPTA (ORCPT
+	id S932959Ab2HVPT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 11:19:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51753 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932663Ab2HVPTX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 11:19:00 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [RF CPATCH] tty: Split the serial_core helpers for setserial into two
-To: greg@kroah.com, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 22 Aug 2012 16:36:26 +0100
-Message-ID: <20120822144611.27192.38862.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Wed, 22 Aug 2012 11:19:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH 4/4] ARM: kprobes: make more tests conditional
+Date: Wed, 22 Aug 2012 15:19:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jon Medhurst <tixy@yxit.co.uk>, Leif Lindholm <leif.lindholm@arm.com>
+References: <1345645780-2749-1-git-send-email-arnd@arndb.de> <1345645780-2749-5-git-send-email-arnd@arndb.de> <alpine.LFD.2.02.1208221040250.1754@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1208221040250.1754@xanadu.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201208221519.12056.arnd@arndb.de>
+X-Provags-ID: V02:K0:rGHplbfSHwMLSXnqV3cFblfHeCqy3ePDS+l8mkl8sB4
+ NDlkHo5B7KewIp4pPwXuVQ0y2GfPkck8r03ZMqv06Pj9eGRUm1
+ QMlSOYU0Z3Gr4hanEg4PKcpyHhD5SlryqlMnxMmsmkPfoNoxki
+ yTRlz26i9UJfduVEh/+d0xDmuWs8eWOTJpJhajbjYAD0aggZzE
+ +wTACDsGFoJyhPl54bS4PWdQasfo2L2phhnV8S7oB81TLbT6JF
+ 964KpaIGglrCaTRtHuQMYiWw22UEQRZ3ntTtpKIgRgf6/PcF2P
+ suFlcz1yFuJxifU7/DnFYqR4adglq4roCe2ZTz0tMmQ7H0LxQp
+ ym9zTl2mICXmTn3zywE0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the sysctl work we should I think do something like this. At that point the
-sysctl helpers can get/set values via the existing driver interfaces
+On Wednesday 22 August 2012, Nicolas Pitre wrote:
+> On Wed, 22 Aug 2012, Arnd Bergmann wrote:
+> 
+> > The mls instruction is not available in ARMv6K or below, so we
+> > should make the test conditional on at least ARMv7. ldrex/strex
+> > are available in ARMv6K or ARMv7, which we can test by checking
+> > the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
+> 
+> The ldrex/strex instructions are available on ARMv6.  It's only the d 
+> variants (strexd/ldrexd) which are only available from ARMv6k.
 
-From: Alan Cox <alan@linux.intel.com>
+Ok. How is the version below then? I haven't tested this one yet.
 
-We want them split so that we can call them from setserial functionality
-where we copy to/from user space and do the locking, but also from sysfs
-where in future we'll want to came them within a sysfs context.
+	Arnd
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+8<---
+>From d878ab212cf0ac1957be83ad80dc734ace2b476c Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 16 Aug 2012 07:49:31 +0000
+Subject: [PATCH] ARM: kprobes: make more tests conditional
+
+The mls instruction is not available in ARMv6K or below, so we
+should make the test conditional on at least ARMv7. ldrexd/strexd
+are available in ARMv6K or ARMv7, which we can test by checking
+the CONFIG_CPU_32v6K symbol. Just testing for ARMv6 is not enough.
+
+/tmp/ccuMTZ8D.s: Assembler messages:
+/tmp/ccuMTZ8D.s:22188: Error: selected processor does not support ARM mode `mls r0,r1,r2,r3'
+/tmp/ccuMTZ8D.s:22222: Error: selected processor does not support ARM mode `mlshi r7,r8,r9,r10'
+/tmp/ccuMTZ8D.s:22252: Error: selected processor does not support ARM mode `mls lr,r1,r2,r13'
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Jon Medhurst <tixy@yxit.co.uk>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Leif Lindholm <leif.lindholm@arm.com>
 ---
+ arch/arm/kernel/kprobes-test-arm.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
- drivers/tty/serial/serial_core.c |  158 +++++++++++++++++++++-----------------
- 1 file changed, 87 insertions(+), 71 deletions(-)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 5b308c8..bb5f236 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -634,38 +634,44 @@ static void uart_unthrottle(struct tty_struct *tty)
- 		uart_set_mctrl(port, TIOCM_RTS);
- }
+diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
+index 38c1a3b..fc9f6e0 100644
+--- a/arch/arm/kernel/kprobes-test-arm.c
++++ b/arch/arm/kernel/kprobes-test-arm.c
+@@ -367,9 +367,11 @@ void kprobe_arm_test_cases(void)
+ 	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
+ 	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
  
--static int uart_get_info(struct uart_state *state,
--			 struct serial_struct __user *retinfo)
-+static void uart_get_info(struct tty_port *port,
-+                        struct uart_state *state,
-+			struct serial_struct *retinfo)
- {
- 	struct uart_port *uport = state->uart_port;
--	struct tty_port *port = &state->port;
--	struct serial_struct tmp;
--
--	memset(&tmp, 0, sizeof(tmp));
- 
--	/* Ensure the state we copy is consistent and no hardware changes
--	   occur as we go */
--	mutex_lock(&port->mutex);
-+	memset(retinfo, 0, sizeof(retinfo));
- 
--	tmp.type	    = uport->type;
--	tmp.line	    = uport->line;
--	tmp.port	    = uport->iobase;
-+	retinfo->type	    = uport->type;
-+	retinfo->line	    = uport->line;
-+	retinfo->port	    = uport->iobase;
- 	if (HIGH_BITS_OFFSET)
--		tmp.port_high = (long) uport->iobase >> HIGH_BITS_OFFSET;
--	tmp.irq		    = uport->irq;
--	tmp.flags	    = uport->flags;
--	tmp.xmit_fifo_size  = uport->fifosize;
--	tmp.baud_base	    = uport->uartclk / 16;
--	tmp.close_delay	    = jiffies_to_msecs(port->close_delay) / 10;
--	tmp.closing_wait    = port->closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+		retinfo->port_high = (long) uport->iobase >> HIGH_BITS_OFFSET;
-+	retinfo->irq		    = uport->irq;
-+	retinfo->flags	    = uport->flags;
-+	retinfo->xmit_fifo_size  = uport->fifosize;
-+	retinfo->baud_base	    = uport->uartclk / 16;
-+	retinfo->close_delay	    = jiffies_to_msecs(port->close_delay) / 10;
-+	retinfo->closing_wait    = port->closing_wait == ASYNC_CLOSING_WAIT_NONE ?
- 				ASYNC_CLOSING_WAIT_NONE :
- 				jiffies_to_msecs(port->closing_wait) / 10;
--	tmp.custom_divisor  = uport->custom_divisor;
--	tmp.hub6	    = uport->hub6;
--	tmp.io_type         = uport->iotype;
--	tmp.iomem_reg_shift = uport->regshift;
--	tmp.iomem_base      = (void *)(unsigned long)uport->mapbase;
-+	retinfo->custom_divisor  = uport->custom_divisor;
-+	retinfo->hub6	    = uport->hub6;
-+	retinfo->io_type         = uport->iotype;
-+	retinfo->iomem_reg_shift = uport->regshift;
-+	retinfo->iomem_base      = (void *)(unsigned long)uport->mapbase;
-+}
-+
-+static int uart_get_info_user(struct uart_state *state,
-+			 struct serial_struct __user *retinfo)
-+{
-+	struct tty_port *port = &state->port;
-+	struct serial_struct tmp;
- 
-+	/* Ensure the state we copy is consistent and no hardware changes
-+	   occur as we go */
-+	mutex_lock(&port->mutex);
-+	uart_get_info(port, state, &tmp);
- 	mutex_unlock(&port->mutex);
- 
- 	if (copy_to_user(retinfo, &tmp, sizeof(*retinfo)))
-@@ -673,42 +679,30 @@ static int uart_get_info(struct uart_state *state,
- 	return 0;
- }
- 
--static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
--			 struct serial_struct __user *newinfo)
-+static int uart_set_info(struct tty_struct *tty, struct tty_port *port,
-+			 struct uart_state *state,
-+			 struct serial_struct *new_info)
- {
--	struct serial_struct new_serial;
- 	struct uart_port *uport = state->uart_port;
--	struct tty_port *port = &state->port;
- 	unsigned long new_port;
- 	unsigned int change_irq, change_port, closing_wait;
- 	unsigned int old_custom_divisor, close_delay;
- 	upf_t old_flags, new_flags;
- 	int retval = 0;
- 
--	if (copy_from_user(&new_serial, newinfo, sizeof(new_serial)))
--		return -EFAULT;
--
--	new_port = new_serial.port;
-+	new_port = new_info->port;
- 	if (HIGH_BITS_OFFSET)
--		new_port += (unsigned long) new_serial.port_high << HIGH_BITS_OFFSET;
-+		new_port += (unsigned long) new_info->port_high << HIGH_BITS_OFFSET;
- 
--	new_serial.irq = irq_canonicalize(new_serial.irq);
--	close_delay = msecs_to_jiffies(new_serial.close_delay * 10);
--	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
-+	new_info->irq = irq_canonicalize(new_info->irq);
-+	close_delay = msecs_to_jiffies(new_info->close_delay * 10);
-+	closing_wait = new_info->closing_wait == ASYNC_CLOSING_WAIT_NONE ?
- 			ASYNC_CLOSING_WAIT_NONE :
--			msecs_to_jiffies(new_serial.closing_wait * 10);
-+			msecs_to_jiffies(new_info->closing_wait * 10);
- 
--	/*
--	 * This semaphore protects port->count.  It is also
--	 * very useful to prevent opens.  Also, take the
--	 * port configuration semaphore to make sure that a
--	 * module insertion/removal doesn't change anything
--	 * under us.
--	 */
--	mutex_lock(&port->mutex);
- 
- 	change_irq  = !(uport->flags & UPF_FIXED_PORT)
--		&& new_serial.irq != uport->irq;
-+		&& new_info->irq != uport->irq;
- 
- 	/*
- 	 * Since changing the 'type' of the port changes its resource
-@@ -717,29 +711,29 @@ static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
- 	 */
- 	change_port = !(uport->flags & UPF_FIXED_PORT)
- 		&& (new_port != uport->iobase ||
--		    (unsigned long)new_serial.iomem_base != uport->mapbase ||
--		    new_serial.hub6 != uport->hub6 ||
--		    new_serial.io_type != uport->iotype ||
--		    new_serial.iomem_reg_shift != uport->regshift ||
--		    new_serial.type != uport->type);
-+		    (unsigned long)new_info->iomem_base != uport->mapbase ||
-+		    new_info->hub6 != uport->hub6 ||
-+		    new_info->io_type != uport->iotype ||
-+		    new_info->iomem_reg_shift != uport->regshift ||
-+		    new_info->type != uport->type);
- 
- 	old_flags = uport->flags;
--	new_flags = new_serial.flags;
-+	new_flags = new_info->flags;
- 	old_custom_divisor = uport->custom_divisor;
- 
- 	if (!capable(CAP_SYS_ADMIN)) {
- 		retval = -EPERM;
- 		if (change_irq || change_port ||
--		    (new_serial.baud_base != uport->uartclk / 16) ||
-+		    (new_info->baud_base != uport->uartclk / 16) ||
- 		    (close_delay != port->close_delay) ||
- 		    (closing_wait != port->closing_wait) ||
--		    (new_serial.xmit_fifo_size &&
--		     new_serial.xmit_fifo_size != uport->fifosize) ||
-+		    (new_info->xmit_fifo_size &&
-+		     new_info->xmit_fifo_size != uport->fifosize) ||
- 		    (((new_flags ^ old_flags) & ~UPF_USR_MASK) != 0))
- 			goto exit;
- 		uport->flags = ((uport->flags & ~UPF_USR_MASK) |
- 			       (new_flags & UPF_USR_MASK));
--		uport->custom_divisor = new_serial.custom_divisor;
-+		uport->custom_divisor = new_info->custom_divisor;
- 		goto check_and_exit;
- 	}
- 
-@@ -747,10 +741,10 @@ static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
- 	 * Ask the low level driver to verify the settings.
- 	 */
- 	if (uport->ops->verify_port)
--		retval = uport->ops->verify_port(uport, &new_serial);
-+		retval = uport->ops->verify_port(uport, new_info);
- 
--	if ((new_serial.irq >= nr_irqs) || (new_serial.irq < 0) ||
--	    (new_serial.baud_base < 9600))
-+	if ((new_info->irq >= nr_irqs) || (new_info->irq < 0) ||
-+	    (new_info->baud_base < 9600))
- 		retval = -EINVAL;
- 
- 	if (retval)
-@@ -790,11 +784,11 @@ static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
- 			uport->ops->release_port(uport);
- 
- 		uport->iobase = new_port;
--		uport->type = new_serial.type;
--		uport->hub6 = new_serial.hub6;
--		uport->iotype = new_serial.io_type;
--		uport->regshift = new_serial.iomem_reg_shift;
--		uport->mapbase = (unsigned long)new_serial.iomem_base;
-+		uport->type = new_info->type;
-+		uport->hub6 = new_info->hub6;
-+		uport->iotype = new_info->io_type;
-+		uport->regshift = new_info->iomem_reg_shift;
-+		uport->mapbase = (unsigned long)new_info->iomem_base;
- 
- 		/*
- 		 * Claim and map the new regions
-@@ -835,16 +829,16 @@ static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
- 	}
- 
- 	if (change_irq)
--		uport->irq      = new_serial.irq;
-+		uport->irq      = new_info->irq;
- 	if (!(uport->flags & UPF_FIXED_PORT))
--		uport->uartclk  = new_serial.baud_base * 16;
-+		uport->uartclk  = new_info->baud_base * 16;
- 	uport->flags            = (uport->flags & ~UPF_CHANGE_MASK) |
- 				 (new_flags & UPF_CHANGE_MASK);
--	uport->custom_divisor   = new_serial.custom_divisor;
-+	uport->custom_divisor   = new_info->custom_divisor;
- 	port->close_delay     = close_delay;
- 	port->closing_wait    = closing_wait;
--	if (new_serial.xmit_fifo_size)
--		uport->fifosize = new_serial.xmit_fifo_size;
-+	if (new_info->xmit_fifo_size)
-+		uport->fifosize = new_info->xmit_fifo_size;
- 	if (port->tty)
- 		port->tty->low_latency =
- 			(uport->flags & UPF_LOW_LATENCY) ? 1 : 0;
-@@ -873,6 +867,28 @@ static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
- 	} else
- 		retval = uart_startup(tty, state, 1);
-  exit:
-+	return retval;
-+}
-+
-+static int uart_set_info_user(struct tty_struct *tty, struct uart_state *state,
-+			 struct serial_struct __user *newinfo)
-+{
-+	struct serial_struct new_serial;
-+	struct tty_port *port = &state->port;
-+	int retval;
-+
-+	if (copy_from_user(&new_serial, newinfo, sizeof(new_serial)))
-+		return -EFAULT;
-+
-+	/*
-+	 * This semaphore protects port->count.  It is also
-+	 * very useful to prevent opens.  Also, take the
-+	 * port configuration semaphore to make sure that a
-+	 * module insertion/removal doesn't change anything
-+	 * under us.
-+	 */
-+	mutex_lock(&port->mutex);
-+	retval = uart_set_info(tty, port, state, &new_serial);
- 	mutex_unlock(&port->mutex);
- 	return retval;
- }
-@@ -1115,11 +1131,11 @@ uart_ioctl(struct tty_struct *tty, unsigned int cmd,
- 	 */
- 	switch (cmd) {
- 	case TIOCGSERIAL:
--		ret = uart_get_info(state, uarg);
-+		ret = uart_get_info_user(state, uarg);
- 		break;
- 
- 	case TIOCSSERIAL:
--		ret = uart_set_info(tty, state, uarg);
-+		ret = uart_set_info_user(tty, state, uarg);
- 		break;
- 
- 	case TIOCSERCONFIG:
++#if __LINUX_ARM_ARCH__ >= 7
+ 	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
+ 	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
+ 	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
++#endif
+ 	TEST_UNSUPPORTED(".word 0xe06f3291 @ mls pc, r1, r2, r3")
+ 	TEST_UNSUPPORTED(".word 0xe060329f @ mls r0, pc, r2, r3")
+ 	TEST_UNSUPPORTED(".word 0xe0603f91 @ mls r0, r1, pc, r3")
+@@ -456,8 +458,10 @@ void kprobe_arm_test_cases(void)
+ 	TEST_UNSUPPORTED(".word	0xe1700090") /* Unallocated space */
+ #if __LINUX_ARM_ARCH__ >= 6
+ 	TEST_UNSUPPORTED("ldrex	r2, [sp]")
++#ifdef CONFIG_CPU_32v6K
+ 	TEST_UNSUPPORTED("strexd	r0, r2, r3, [sp]")
+ 	TEST_UNSUPPORTED("ldrexd	r2, r3, [sp]")
++#endif
+ 	TEST_UNSUPPORTED("strexb	r0, r2, [sp]")
+ 	TEST_UNSUPPORTED("ldrexb	r2, [sp]")
+ 	TEST_UNSUPPORTED("strexh	r0, r2, [sp]")
+-- 
+1.7.10
 
