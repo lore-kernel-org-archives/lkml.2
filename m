@@ -1,192 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab2HVSBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 14:01:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55676 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755571Ab2HVSBo (ORCPT
+	id S1758303Ab2HVSDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 14:03:19 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38329 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755571Ab2HVSDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 14:01:44 -0400
-Date: Wed, 22 Aug 2012 11:01:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
- hashtable
-Message-ID: <20120822180138.GA19212@google.com>
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
- <1345602432-27673-2-git-send-email-levinsasha928@gmail.com>
+	Wed, 22 Aug 2012 14:03:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345602432-27673-2-git-send-email-levinsasha928@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120822154908.2e6ef3c0@feng-i7>
+References: <5017D19B.5080806@redhat.com> <1343738627.27983.30.camel@gandalf.stny.rr.com>
+ <5017D4AB.3090107@redhat.com> <1343740419.27983.33.camel@gandalf.stny.rr.com>
+ <20120731234336.GA5526@localhost> <1343778699.27983.70.camel@gandalf.stny.rr.com>
+ <20120731235705.GW2422@linux.vnet.ibm.com> <1343779778.27983.73.camel@gandalf.stny.rr.com>
+ <20120801001811.GX2422@linux.vnet.ibm.com> <20120801004319.GA7043@localhost>
+ <20120822025008.GA8066@localhost> <20120822154908.2e6ef3c0@feng-i7>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 22 Aug 2012 11:02:52 -0700
+Message-ID: <CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+Subject: Re: pci_get_subsys: GFP_KERNEL allocations with IRQs disabled
+To: Feng Tang <feng.tang@intel.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Sasha.
+On Wed, Aug 22, 2012 at 12:49 AM, Feng Tang <feng.tang@intel.com> wrote:
+> Hi Fengguang,
+>
+>
+> On Wed, 22 Aug 2012 10:50:08 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
+>
+>> Feng,
+>>
+>> > I think it's pci_get_subsys() triggered this assert:
+>> >
+>> >         /*
+>> >          * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
+>> >          */
+>> >         if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
+>> >                 return;
+>>
+>> It's bisected down to this commit:
+>>
+>> commit 55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
+>> Author:     Feng Tang <feng.tang@intel.com>
+>> AuthorDate: Wed May 30 23:15:41 2012 +0800
+>> Commit:     Ingo Molnar <mingo@kernel.org>
+>> CommitDate: Wed Jun 6 12:03:23 2012 +0200
+>>
+>>     x86/reboot: Fix a warning message triggered by stop_other_cpus()
+>>
+>> Thanks,
+>> Fengguang
+>
+> Thanks for the bisection.
+>
+> Revert my commit should be a solution, but can we simply make the pci_device_id
+> a local on stack one instead of using sleepable kmalloc for it, as this
+> sounds fragile when pci_get_subsys get called in a late system reboot stage?
 
-On Wed, Aug 22, 2012 at 04:26:56AM +0200, Sasha Levin wrote:
-> +#define DEFINE_HASHTABLE(name, bits)					\
-> +	struct hlist_head name[HASH_SIZE(bits)];
+I think this is a great idea.  Can you make this a real patch, with a
+changelog and Signed-off-by?
 
-Shouldn't this be something like the following?
+We should also remove the obsolete comment about early boot.  I'm not
+sure the no_pci_devices() check is needed, either.  And we can make
+the same simplification in pci_get_class().
 
-#define DEFINE_HASHTABLE(name, bits)					\
-	struct hlist_head name[HASH_SIZE(bits)] =			\
-		{ [0 ... HASH_SIZE(bits) - 1] = HLIST_HEAD_INIT };
+> ------------
+> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> index 993d4a0..e5ccede 100644
+> --- a/drivers/pci/search.c
+> +++ b/drivers/pci/search.c
+> @@ -246,7 +246,7 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+>                                struct pci_dev *from)
+>  {
+>         struct pci_dev *pdev;
+> -       struct pci_device_id *id;
+> +       struct pci_device_id id;
+>
+>         /*
+>          * pci_find_subsys() can be called on the ide_setup() path,
+> @@ -257,17 +257,12 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+>         if (unlikely(no_pci_devices()))
+>                 return NULL;
+>
+> -       id = kzalloc(sizeof(*id), GFP_KERNEL);
+> -       if (!id)
+> -               return NULL;
+> -       id->vendor = vendor;
+> -       id->device = device;
+> -       id->subvendor = ss_vendor;
+> -       id->subdevice = ss_device;
+> -
+> -       pdev = pci_get_dev_by_id(id, from);
+> -       kfree(id);
+> +       id.vendor = vendor;
+> +       id.device = device;
+> +       id.subvendor = ss_vendor;
+> +       id.subdevice = ss_device;
+>
+> +       pdev = pci_get_dev_by_id(&id, from);
 
-Also, given that the declaration isn't non-trivial, you'll probably
-want a matching DECLARE_HASHTABLE() macro too.
+No need for "pdev" here, since we don't have to free anything.
 
-> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
-> +#define hash_min(val, bits) ((sizeof(val)==4) ? hash_32((val), (bits)) : hash_long((val), (bits)))
-
-Why is the branching condition sizeof(val) == 4 instead of <= 4?
-Also, no biggie but why isn't this macro in caps?
-
-> +/**
-> + * hash_add_size - add an object to a hashtable
-> + * @hashtable: hashtable to add to
-> + * @bits: bit count used for hashing
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add_size(hashtable, bits, node, key)				\
-> +	hlist_add_head(node, &hashtable[hash_min(key, bits)]);
-> +
-> +/**
-> + * hash_add - add an object to a hashtable
-> + * @hashtable: hashtable to add to
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add(hashtable, node, key)						\
-> +	hash_add_size(hashtable, HASH_BITS(hashtable), node, key)
-
-It would be nice if the comments actually say something which can
-differentiate the two.  Ditto for rcu variants.
-
-> +/**
-> + * hash_add_rcu_size - add an object to a rcu enabled hashtable
-> + * @hashtable: hashtable to add to
-> + * @bits: bit count used for hashing
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add_rcu_size(hashtable, bits, node, key)				\
-> +	hlist_add_head_rcu(node, &hashtable[hash_min(key, bits)]);
-> +
-> +/**
-> + * hash_add_rcu - add an object to a rcu enabled hashtable
-> + * @hashtable: hashtable to add to
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add_rcu(hashtable, node, key)					\
-> +	hash_add_rcu_size(hashtable, HASH_BITS(hashtable), node, key)
-
-Or maybe we're better off with hash_head_size() and hash_head()?  I'll
-expand on it later.  Please bear with me.
-
-> +/**
-> + * hash_hashed - check whether an object is in any hashtable
-> + * @node: the &struct hlist_node of the object to be checked
-> + */
-> +#define hash_hashed(node) (!hlist_unhashed(node))
-
-As the 'h' in hlist* stand for hash anyway and I think this type of
-thin wrappers tend to obfuscate more than anything else.
-
-> +/**
-> + * hash_del - remove an object from a hashtable
-> + * @node: &struct hlist_node of the object to remove
-> + */
-> +static inline void hash_del(struct hlist_node *node)
-> +{
-> +	hlist_del_init(node);
-> +}
-> +
-> +/**
-> + * hash_del_rcu - remove an object from a rcu enabled hashtable
-> + * @node: &struct hlist_node of the object to remove
-> + */
-> +static inline void hash_del_rcu(struct hlist_node *node)
-> +{
-> +	hlist_del_init_rcu(node);
-> +}
-
-If we do that, we can remove all these thin wrappers.
-
-> +#define hash_for_each_size(name, bits, bkt, node, obj, member)			\
-> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)				\
-> +		hlist_for_each_entry(obj, node, &name[bkt], member)
-..
-> +#define hash_for_each(name, bkt, node, obj, member)				\
-> +	hash_for_each_size(name, HASH_BITS(name), bkt, node, obj, member)
-...
-> +#define hash_for_each_rcu_size(name, bits, bkt, node, obj, member)		\
-> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)				\
-> +		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
-...
-> +#define hash_for_each_rcu(name, bkt, node, obj, member)				\
-> +	hash_for_each_rcu_size(name, HASH_BITS(name), bkt, node, obj, member)
-...
-> +#define hash_for_each_safe_size(name, bits, bkt, node, tmp, obj, member)	\
-> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)                     	\
-> +		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
-...
-> +#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
-> +	hash_for_each_safe_size(name, HASH_BITS(name), bkt, node,		\
-> +				tmp, obj, member)
-...
-> +#define hash_for_each_possible_size(name, obj, bits, node, member, key)		\
-> +	hlist_for_each_entry(obj, node,	&name[hash_min(key, bits)], member)
-...
-> +#define hash_for_each_possible(name, obj, node, member, key)			\
-> +	hash_for_each_possible_size(name, obj, HASH_BITS(name), node, member, key)
-...
-> +#define hash_for_each_possible_rcu_size(name, obj, bits, node, member, key)	\
-> +	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, bits)], member)
-...
-> +#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
-> +	hash_for_each_possible_rcu_size(name, obj, HASH_BITS(name),		\
-...
-> +#define hash_for_each_possible_safe_size(name, obj, bits, node, tmp, member, key)\
-> +	hlist_for_each_entry_safe(obj, node, tmp,				\
-> +		&name[hash_min(key, bits)], member)
-...
-> +#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
-> +	hash_for_each_possible_safe_size(name, obj, HASH_BITS(name),		\
-
-And also all these.  We'd only need hash_for_each_head() and
-hash_head().  hash_for_each_possible*() could be nice for convenience,
-I suppose.
-
-I think the almost trivial nature of hlist hashtables makes this a bit
-tricky and I'm not very sure but having this combinatory explosion is
-a bit dazzling when the same functionality can be achieved by simply
-combining operations which are already defined and named considering
-hashtable.  I'm not feeling too strong about this tho.  What do others
-think?
-
-Also, can you please audit the comments on top of each macro?  They
-have wrong names and don't differentiate the different variants very
-well.
-
-Thanks.
-
--- 
-tejun
+>         return pdev;
+>  }
