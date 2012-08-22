@@ -1,52 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758756Ab2HVIAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 04:00:40 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33390 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832Ab2HVIAi (ORCPT
+	id S1758759Ab2HVIDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 04:03:14 -0400
+Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:1944 "EHLO
+	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756832Ab2HVIC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 04:00:38 -0400
+	Wed, 22 Aug 2012 04:02:58 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Volokh Konstantin <volokh84@gmail.com>
+Subject: Re: [PATCH 01/10] staging: media: go7007: Some additional code for TW2804 driver functionality
+Date: Wed, 22 Aug 2012 10:01:22 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, volokh@telros.ru
+References: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
+In-Reply-To: <1345632319-23224-1-git-send-email-volokh84@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201208220641.21891.arnd@arndb.de>
-References: <AAD1C6EB06EE3649B35B7E026785068D1A754366CB@SC-VEXCH2.marvell.com>
-	<CADApbehnsRzwu_LrAEMf+L7AvXv+JBtPBOzWHj578Vs6B_LrCw@mail.gmail.com>
-	<201208220641.21891.arnd@arndb.de>
-Date: Wed, 22 Aug 2012 16:00:36 +0800
-Message-ID: <CAN1soZxJ87=rL0Mq-3LFRXhqRGrKXcHS+rsMdVeM+yMK+WBCnQ@mail.gmail.com>
-Subject: Re: FW: [PATCH V5 0/5] clk: mmp: add clock framework for mmp
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Chao Xie <xiechao.mail@gmail.com>,
-        mturquette@ti.com, mturquette@linaro.org, viresh.linux@gmail.com,
-        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
-        chao.xie@marvell.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208221001.22174.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 2:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 22 August 2012, Chao Xie wrote:
->> >
->> > Reviewed-by: Arnd Bergmann <arnd@arndb.de>
->> >
->> >         Arnd
->>
->> Who will be responsible for merging these patches?
->>
->
-> They should go through Mike's tree, unless there is a reason why he
-> prefers them to go through arm-soc. It would be helpful to add
-> an 'Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>' line
-> and my 'Reviewed-by: Arnd Bergmann <arnd@arndb.de>' line to each
-> patch for that.
->
->         Arnd
+Hi Volokh!
 
-I'm OK on these patches.
+Thanks for working on this!
 
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+I have some quick review notes below.
 
-Regards
-Haojian
+On Wed August 22 2012 12:45:10 Volokh Konstantin wrote:
+> - using new v4l2 framework controls
+> - function for reading volatile controls via i2c bus
+> - separate V4L2_CID_ ctrls into each V4L2 calls
+> 
+> Signed-off-by: Volokh Konstantin <volokh84@gmail.com>
+> ---
+>  drivers/staging/media/go7007/wis-tw2804.c |  248 +++++++++++++++++++++++++++++
+>  1 files changed, 248 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/media/go7007/wis-tw2804.c b/drivers/staging/media/go7007/wis-tw2804.c
+> index 9134f03..05851d3 100644
+> --- a/drivers/staging/media/go7007/wis-tw2804.c
+> +++ b/drivers/staging/media/go7007/wis-tw2804.c
+> @@ -21,10 +21,18 @@
+>  #include <linux/videodev2.h>
+>  #include <linux/ioctl.h>
+>  #include <linux/slab.h>
+> +#include <media/v4l2-subdev.h>
+> +#include <media/v4l2-device.h>
+> +#include <media/v4l2-chip-ident.h>
+> +#include <media/v4l2-ctrls.h>
+>  
+>  #include "wis-i2c.h"
+>  
+>  struct wis_tw2804 {
+> +	struct v4l2_subdev sd;
+> +	struct v4l2_ctrl_handler hdl;
+> +	u8 channel:2;
+> +	u8 input:1;
+>  	int channel;
+>  	int norm;
+>  	int brightness;
+> @@ -116,9 +124,246 @@ static int write_regs(struct i2c_client *client, u8 *regs, int channel)
+>  		if (i2c_smbus_write_byte_data(client,
+>  				regs[i] | (channel << 6), regs[i + 1]) < 0)
+>  			return -1;
+> +static s32 read_reg(struct i2c_client *client, u8 reg, u8 channel)
+> +{
+> +	return i2c_smbus_read_byte_data(client, (reg) | (channel << 6));
+> +}
+> +
+> +inline struct wis_tw2804 *to_state(struct v4l2_subdev *sd)
+> +{
+> +	return container_of(sd, struct wis_tw2804, sd);
+> +}
+> +
+> +inline struct wis_tw2804 *to_state_from_ctrl(struct v4l2_ctrl *ctrl)
+> +{
+> +	return container_of(ctrl->handler, struct wis_tw2804, hdl);
+> +}
+> +
+> +static int tw2804_log_status(struct v4l2_subdev *sd)
+> +{
+> +	struct wis_tw2804 *state = to_state(sd);
+> +	v4l2_info(sd, "Standard: %s\n",
+> +			state->norm == V4L2_STD_NTSC ? "NTSC" :
+> +			state->norm == V4L2_STD_PAL ? "PAL" : "unknown");
+> +	v4l2_info(sd, "Channel: %d\n", state->channel);
+> +	v4l2_info(sd, "Input: %d\n", state->input);
+> +	v4l2_ctrl_handler_log_status(&state->hdl, sd->name);
+> +	return 0;
+> +}
+> +
+> +static s32 get_ctrl_addr(int ctrl)
+> +{
+> +	switch (ctrl) {
+> +	case V4L2_CID_BRIGHTNESS:
+> +		return 0x12;
+> +	case V4L2_CID_CONTRAST:
+> +		return 0x11;
+> +	case V4L2_CID_SATURATION:
+> +		return 0x10;
+> +	case V4L2_CID_HUE:
+> +		return 0x0f;
+> +	case V4L2_CID_AUTOGAIN:
+> +		return 0x02;
+> +	case V4L2_CID_COLOR_KILLER:
+> +		return 0x14;
+> +	case V4L2_CID_GAIN:
+> +		return 0x3c;
+> +	case V4L2_CID_CHROMA_GAIN:
+> +		return 0x3d;
+> +	case V4L2_CID_RED_BALANCE:
+> +		return 0x3f;
+> +	case V4L2_CID_BLUE_BALANCE:
+> +		return 0x3e;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +}
+> +
+> +static int tw2804_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
+> +{
+> +	struct v4l2_subdev *sd = &to_state_from_ctrl(ctrl)->sd;
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	s32 addr = get_ctrl_addr(ctrl->id);
+> +
+> +	if (addr == -EINVAL)
+> +		return -EINVAL;
+> +
+> +	switch (ctrl->id) {
+> +	case V4L2_CID_GAIN:
+> +	case V4L2_CID_CHROMA_GAIN:
+> +	case V4L2_CID_RED_BALANCE:
+> +	case V4L2_CID_BLUE_BALANCE:
+> +		ctrl->cur.val = read_reg(client, addr, 0);
+
+That should be ctrl->val, not ctrl->cur.val.
+
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int tw2804_s_ctrl(struct v4l2_ctrl *ctrl)
+> +{
+> +	struct wis_tw2804 *state = to_state_from_ctrl(ctrl);
+> +	struct v4l2_subdev *sd = &state->sd;
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	s32 reg = ctrl->val;
+> +	s32 addr = get_ctrl_addr(ctrl->id);
+> +
+> +	if (addr == -EINVAL)
+> +		return -EINVAL;
+> +
+> +	switch (ctrl->id) {
+> +	case V4L2_CID_AUTOGAIN:
+> +		reg = read_reg(client, addr, state->channel);
+> +		if (reg > 0) {
+> +			if (ctrl->val == 0)
+> +				reg &= ~(1<<7);
+> +			else
+> +				reg |= 1<<7;
+> +		} else
+> +			return reg;
+> +		break;
+> +	case V4L2_CID_COLOR_KILLER:
+> +		reg = read_reg(client, addr, state->channel);
+> +		if (reg > 0)
+> +			reg = (reg & ~(0x03)) | (ctrl->val == 0 ? 0x02 : 0x03);
+> +		else
+> +			return reg;
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	reg = reg > 255 ? 255 : (reg < 0 ? 0 : reg);
+> +	reg = write_reg(client, addr, (u8)reg,
+> +			ctrl->id == V4L2_CID_GAIN ||
+> +			ctrl->id == V4L2_CID_CHROMA_GAIN ||
+> +			ctrl->id == V4L2_CID_RED_BALANCE ||
+> +			ctrl->id == V4L2_CID_BLUE_BALANCE ? 0 : state->channel);
+> +
+> +	if (reg < 0) {
+> +		v4l2_err(sd, "Can`t set_ctrl value:id=%d;value=%d\n", ctrl->id,
+> +								    ctrl->val);
+> +		return reg;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int tw2804_s_std(struct v4l2_subdev *sd, v4l2_std_id norm)
+> +{
+> +	struct wis_tw2804 *dec = to_state(sd);
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +
+> +	u8 regs[] = {
+> +		0x01, norm&V4L2_STD_NTSC ? 0xc4 : 0x84,
+
+I recommend creating a bool variable storing the result of norm & V4L2_STD_NTSC
+rather than repeating it.
+
+Also, do you really mean 'norm & V4L2_STD_NTSC', or do you mean
+'norm & V4L2_STD_525_60'?
+
+My guess is the latter.
+
+> +		0x09, norm&V4L2_STD_NTSC ? 0x07 : 0x04,
+> +		0x0a, norm&V4L2_STD_NTSC ? 0xf0 : 0x20,
+> +		0x0b, norm&V4L2_STD_NTSC ? 0x07 : 0x04,
+> +		0x0c, norm&V4L2_STD_NTSC ? 0xf0 : 0x20,
+> +		0x0d, norm&V4L2_STD_NTSC ? 0x40 : 0x4a,
+> +		0x16, norm&V4L2_STD_NTSC ? 0x00 : 0x40,
+> +		0x17, norm&V4L2_STD_NTSC ? 0x00 : 0x40,
+> +		0x20, norm&V4L2_STD_NTSC ? 0x07 : 0x0f,
+> +		0x21, norm&V4L2_STD_NTSC ? 0x07 : 0x0f,
+> +		0xff, 0xff,
+> +	};
+> +	write_regs(client, regs, dec->channel);
+> +	dec->norm = norm;
+> +	return 0;
+> +}
+> +
+> +static int tw2804_g_chip_ident(struct v4l2_subdev *sd,
+> +				struct v4l2_dbg_chip_ident *chip)
+> +{
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	return v4l2_chip_ident_i2c_client(client, chip,
+> +					V4L2_IDENT_TW2804, 0x0e);
+> +}
+> +
+> +static const struct v4l2_ctrl_ops tw2804_ctrl_ops = {
+> +	.g_volatile_ctrl = tw2804_g_volatile_ctrl,
+> +	.s_ctrl = tw2804_s_ctrl,
+> +};
+> +
+> +static const struct v4l2_subdev_core_ops tw2804_core_ops = {
+> +	.log_status = tw2804_log_status,
+> +	.g_chip_ident = tw2804_g_chip_ident,
+> +	.g_ext_ctrls = v4l2_subdev_g_ext_ctrls,
+> +	.try_ext_ctrls = v4l2_subdev_try_ext_ctrls,
+> +	.s_ext_ctrls = v4l2_subdev_s_ext_ctrls,
+> +	.g_ctrl = v4l2_subdev_g_ctrl,
+> +	.s_ctrl = v4l2_subdev_s_ctrl,
+> +	.queryctrl = v4l2_subdev_queryctrl,
+> +	.querymenu = v4l2_subdev_querymenu,
+> +	.s_std = tw2804_s_std,
+> +};
+> +
+> +static int tw2804_s_video_routing(struct v4l2_subdev *sd, u32 input, u32 output,
+> +	u32 config)
+> +{
+> +	struct wis_tw2804 *dec = to_state(sd);
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	s32 reg = 0;
+> +
+> +	if (0 > input || input > 1)
+> +		return -EINVAL;
+> +
+> +	if (input == dec->input)
+> +		return 0;
+> +
+> +	reg = read_reg(client, 0x22, dec->channel);
+> +
+> +	if (reg >= 0) {
+> +		if (input == 0)
+> +			reg &= ~(1<<2);
+> +		else
+> +			reg |= 1<<2;
+> +		reg = write_reg(client, 0x22, (u8)reg, dec->channel);
+> +	}
+> +
+> +	if (reg >= 0)
+> +		dec->input = input;
+> +	else
+> +		return reg;
+>  	return 0;
+>  }
+>  
+> +static int tw2804_s_mbus_fmt(struct v4l2_subdev *sd,
+> +	struct v4l2_mbus_framefmt *fmt)
+> +{
+> +	/*TODO need select between 3fmt:
+> +	 * bt_656,
+> +	 * bt_601_8bit,
+> +	 * bt_656_dual,
+> +	 */
+> +	return 0;
+> +}
+> +
+> +static int tw2804_s_stream(struct v4l2_subdev *sd, int enable)
+> +{
+> +	struct wis_tw2804 *dec = to_state(sd);
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	u32 reg = read_reg(client, 0x78, 0);
+> +
+> +	if (enable == 1)
+> +		write_reg(client, 0x78, reg & ~(1<<dec->channel), 0);
+> +	else
+> +		write_reg(client, 0x78, reg | (1<<dec->channel), 0);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct v4l2_subdev_video_ops tw2804_video_ops = {
+> +	.s_routing = tw2804_s_video_routing,
+> +	.s_mbus_fmt = tw2804_s_mbus_fmt,
+> +	.s_stream = tw2804_s_stream,
+> +};
+> +
+> +static const struct v4l2_subdev_ops tw2804_ops = {
+> +	.core = &tw2804_core_ops,
+> +	.video = &tw2804_video_ops,
+> +};
+> +
+>  static int wis_tw2804_command(struct i2c_client *client,
+>  				unsigned int cmd, void *arg)
+>  {
+> @@ -355,3 +600,6 @@ module_init(wis_tw2804_init);
+>  module_exit(wis_tw2804_cleanup);
+>  
+>  MODULE_LICENSE("GPL v2");
+> +MODULE_DESCRIPTION("TW2804/TW2802 V4L2 i2c driver");
+> +MODULE_AUTHOR("Volokh Konstantin <volokh84@gmail.com>");
+> +MODULE_AUTHOR("Micronas USA Inc");
+> 
+
+Regards,
+
+	Hans
