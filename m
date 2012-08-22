@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab2HVNps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 09:45:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52721 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab2HVNpq (ORCPT
+	id S1753190Ab2HVNuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 09:50:03 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:51681 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751666Ab2HVNuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 09:45:46 -0400
-Date: Wed, 22 Aug 2012 21:45:19 +0800
-From: Adam Lee <adam8157@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "open list:KCONFIG" <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH] [Signed-off] kconfig: document oldnoconfig to what it
- really does in conf.c
-Message-ID: <20120822134519.GA5639@adam-laptop>
-References: <1345186649-17502-1-git-send-email-adam8157@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345186649-17502-1-git-send-email-adam8157@gmail.com>
-X-PGP-Key-ID: 2F39D84D
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 22 Aug 2012 09:50:01 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: linus.walleij@linaro.org, aletes.xgr@gmail.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        gabriel.fernandez@stericsson.com, lee.jones@linaro.org,
+        viresh.kumar@linaro.org, sachin.verma@st.co
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v6 3/3] DT bindings documentation: "num-cs" property for SPI controllers
+Date: Wed, 22 Aug 2012 15:49:19 +0200
+Message-Id: <1345643359-16584-3-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1345643359-16584-1-git-send-email-stigge@antcom.de>
+References: <1345643359-16584-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 02:57:28PM +0800, Adam Lee wrote:
-> As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, the make target
-> 'oldnoconfig' is a misnomer. It doesn't set new symbols to 'n', but
-> instead sets it to their default values.
-> 
-> This patch fixes the document in conf.c, and will submit another patch
-> to replace 'oldnoconfig' to 'olddefconfig'
-> 
-> Signed-off-by: Adam Lee <adam8157@gmail.com>
-> ---
->  scripts/kconfig/conf.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Several SPI controller drivers have defined differently named properties for
+the number of chip selects.  Now adding "num-cs" as a reference name for new
+bindings.
 
-Hi,
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-I think we should apply this patch, any comment?
+---
+ Documentation/devicetree/bindings/spi/spi-bus.txt |    3 +++
+ 1 file changed, 3 insertions(+)
 
-I was confused by the different documents of `make help` and usage of
-"scripts/kconfig/conf.c" before I got through conf.c and checked the git
-log. Others maybe confused too. So I think we really should apply this
-patch at least.
-
-As regards whether that target should be renamed to 'olddefconfig', we
-can discuss it at another thread.
-
-Thank you.
-
--- 
-Regards,
-Adam Lee
-http://adam8157.info
+--- linux-2.6.orig/Documentation/devicetree/bindings/spi/spi-bus.txt
++++ linux-2.6/Documentation/devicetree/bindings/spi/spi-bus.txt
+@@ -21,6 +21,9 @@ assumption that board specific platform
+ chip selects.  Individual drivers can define additional properties to
+ support describing the chip select layout.
+ 
++Optional property:
++- num-cs : total number of chipselects
++
+ SPI slave nodes must be children of the SPI master node and can
+ contain the following properties.
+ - reg             - (required) chip select address of device.
