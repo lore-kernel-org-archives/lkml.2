@@ -1,244 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab2HVTFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:05:11 -0400
-Received: from plane.gmane.org ([80.91.229.3]:38361 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754129Ab2HVTFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:05:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Koen Kooi <koen@dominion.thruhere.net>
-Subject: Re: [PATCH v2 2/3] mmc: davinci_mmc: convert to DMA engine API
-Date: Wed, 22 Aug 2012 20:53:43 +0200
-Message-ID: <k139rl$gbm$2@ger.gmane.org>
-References: <1345574589-24757-1-git-send-email-mporter@ti.com> <1345574589-24757-3-git-send-email-mporter@ti.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip4da2a5ae.direct-adsl.nl
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
-In-Reply-To: <1345574589-24757-3-git-send-email-mporter@ti.com>
-X-Enigmail-Version: 1.4.3
-Cc: spi-devel-general@lists.sourceforge.net,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: spi-devel-general@lists.sourceforge.net, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+	id S933249Ab2HVTFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:05:31 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64201 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933171Ab2HVTFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 15:05:24 -0400
+Date: Wed, 22 Aug 2012 14:55:19 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Q:pt_base in COMPAT mode offset by two pages.
+ Was:Re: [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive areas.
+Message-ID: <20120822185519.GA29609@phenom.dumpdata.com>
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+ <20120820141305.GA2713@phenom.dumpdata.com>
+ <20120821172732.GA23715@phenom.dumpdata.com>
+ <20120821190317.GA13035@phenom.dumpdata.com>
+ <50351DEF020000780009702A@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50351DEF020000780009702A@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Wed, Aug 22, 2012 at 04:59:11PM +0100, Jan Beulich wrote:
+> >>> On 21.08.12 at 21:03, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > On Tue, Aug 21, 2012 at 01:27:32PM -0400, Konrad Rzeszutek Wilk wrote:
+> >> On Mon, Aug 20, 2012 at 10:13:05AM -0400, Konrad Rzeszutek Wilk wrote:
+> >> > On Fri, Aug 17, 2012 at 06:35:12PM +0100, Stefano Stabellini wrote:
+> >> > > On Thu, 16 Aug 2012, Konrad Rzeszutek Wilk wrote:
+> >> > > > instead of a big memblock_reserve. This way we can be more
+> >> > > > selective in freeing regions (and it also makes it easier
+> >> > > > to understand where is what).
+> >> > > > 
+> >> > > > [v1: Move the auto_translate_physmap to proper line]
+> >> > > > [v2: Per Stefano suggestion add more comments]
+> >> > > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >> > > 
+> >> > > much better now!
+> >> > 
+> >> > Thought interestingly enough it breaks 32-bit dom0s (and only dom0s).
+> >> > Will have a revised patch posted shortly.
+> >> 
+> >> Jan, I thought something odd. Part of this code replaces this:
+> >> 
+> >> 	memblock_reserve(__pa(xen_start_info->mfn_list),
+> >> 		xen_start_info->pt_base - xen_start_info->mfn_list);
+> >> 
+> >> with a more region-by-region area. What I found out that if I boot this
+> >> as 32-bit guest with a 64-bit hypervisor the xen_start_info->pt_base is
+> >> actually wrong.
+> >> 
+> >> Specifically this is what bootup says:
+> >> 
+> >> (good working case - 32bit hypervisor with 32-bit dom0):
+> >> (XEN)  Loaded kernel: c1000000->c1a23000
+> >> (XEN)  Init. ramdisk: c1a23000->cf730e00
+> >> (XEN)  Phys-Mach map: cf731000->cf831000
+> >> (XEN)  Start info:    cf831000->cf83147c
+> >> (XEN)  Page tables:   cf832000->cf8b5000
+> >> (XEN)  Boot stack:    cf8b5000->cf8b6000
+> >> (XEN)  TOTAL:         c0000000->cfc00000
+> >> 
+> >> [    0.000000] PT: cf832000 (f832000)
+> >> [    0.000000] Reserving PT: f832000->f8b5000
+> >> 
+> >> And with a 64-bit hypervisor:
+> >> 
+> >> XEN) VIRTUAL MEMORY ARRANGEMENT:
+> >> (XEN)  Loaded kernel: 00000000c1000000->00000000c1a23000
+> >> (XEN)  Init. ramdisk: 00000000c1a23000->00000000cf730e00
+> >> (XEN)  Phys-Mach map: 00000000cf731000->00000000cf831000
+> >> (XEN)  Start info:    00000000cf831000->00000000cf8314b4
+> >> (XEN)  Page tables:   00000000cf832000->00000000cf8b6000
+> >> (XEN)  Boot stack:    00000000cf8b6000->00000000cf8b7000
+> >> (XEN)  TOTAL:         00000000c0000000->00000000cfc00000
+> >> (XEN)  ENTRY ADDRESS: 00000000c16bb22c
+> >> 
+> >> [    0.000000] PT: cf834000 (f834000)
+> >> [    0.000000] Reserving PT: f834000->f8b8000
+> >> 
+> >> So the pt_base is offset by two pages. And looking at c/s 13257
+> >> its not clear to me why this two page offset was added?
+> 
+> Actually, the adjustment turns out to be correct: The page
+> tables for a 32-on-64 dom0 get allocated in the order "first L1",
+> "first L2", "first L3", so the offset to the page table base is
+> indeed 2. When reading xen/include/public/xen.h's comment
+> very strictly, this is not a violation (since there nothing is said
+> that the first thing in the page table space is pointed to by
+> pt_base; I admit that this seems to be implied though, namely
+> do I think that it is implied that the page table space is the
+> range [pt_base, pt_base + nt_pt_frames), whereas that
+> range here indeed is [pt_base - 2, pt_base - 2 + nt_pt_frames),
+> which - without a priori knowledge - the kernel would have
+> difficulty to figure out).
+> 
+> Below is a debugging patch I used to see the full picture, if you
+> want to double check.
 
-Op 21-08-12 20:43, Matt Porter schreef:
-> Removes use of the DaVinci EDMA private DMA API and replaces it with use
-> of the DMA engine API.
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
+Thinking of just sticking this patch then:
 
-Runtime tested on hawkboard with 3.6.0-rc2 with rootfs on SD and running
-bonnie++ on it.
+>From 9aa58784b163ee435ff5596cf3ec059b57ab85e1 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 22 Aug 2012 13:00:10 -0400
+Subject: [PATCH] Revert "xen/x86: Workaround 64-bit hypervisor and 32-bit
+ initial domain." and "xen/x86: Use memblock_reserve for
+ sensitive areas."
 
-Tested-by: Koen Kooi <koen@dominion.thruhere.net>
+This reverts commit 806c312e50f122c47913145cf884f53dd09d9199 and
+commit 59b294403e9814e7c1154043567f0d71bac7a511.
 
-> --- drivers/mmc/host/davinci_mmc.c |  271
-> ++++++++++++---------------------------- 1 file changed, 82
-> insertions(+), 189 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/davinci_mmc.c
-> b/drivers/mmc/host/davinci_mmc.c index 7cf6c62..c5e1eeb 100644 ---
-> a/drivers/mmc/host/davinci_mmc.c +++ b/drivers/mmc/host/davinci_mmc.c @@
-> -30,11 +30,12 @@ #include <linux/io.h> #include <linux/irq.h> #include
-> <linux/delay.h> +#include <linux/dmaengine.h> #include
-> <linux/dma-mapping.h> +#include <linux/edma.h> #include
-> <linux/mmc/mmc.h>
-> 
-> #include <mach/mmc.h> -#include <mach/edma.h>
-> 
-> /* * Register Definitions @@ -200,21 +201,13 @@ struct mmc_davinci_host
-> { u32 bytes_left;
-> 
-> u32 rxdma, txdma; +	struct dma_chan *dma_tx; +	struct dma_chan *dma_rx; 
-> bool use_dma; bool do_dma; bool sdio_int; bool active_request;
-> 
-> -	/* Scatterlist DMA uses one or more parameter RAM entries: -	 * the
-> main one (associated with rxdma or txdma) plus zero or -	 * more links.
-> The entries for a given transfer differ only -	 * by memory buffer
-> (address, length) and link field. -	 */ -	struct edmacc_param
-> tx_template; -	struct edmacc_param	rx_template; -	unsigned		n_link; -	u32
-> links[MAX_NR_SG - 1]; - /* For PIO we walk scatterlists one segment at a
-> time. */ unsigned int		sg_len; struct scatterlist *sg; @@ -410,153
-> +403,74 @@ static void mmc_davinci_start_command(struct mmc_davinci_host
-> *host,
-> 
-> static void davinci_abort_dma(struct mmc_davinci_host *host) { -	int
-> sync_dev; +	struct dma_chan *sync_dev;
-> 
-> if (host->data_dir == DAVINCI_MMC_DATADIR_READ) -		sync_dev =
-> host->rxdma; +		sync_dev = host->dma_rx; else -		sync_dev = host->txdma; 
-> - -	edma_stop(sync_dev); -	edma_clean_channel(sync_dev); -} - -static
-> void -mmc_davinci_xfer_done(struct mmc_davinci_host *host, struct
-> mmc_data *data); - -static void mmc_davinci_dma_cb(unsigned channel, u16
-> ch_status, void *data) -{ -	if (DMA_COMPLETE != ch_status) { -		struct
-> mmc_davinci_host *host = data; - -		/* Currently means:  DMA Event
-> Missed, or "null" transfer -		 * request was seen.  In the future, TC
-> errors (like bad -		 * addresses) might be presented too. -		 */ -
-> dev_warn(mmc_dev(host->mmc), "DMA %s error\n", -			(host->data->flags &
-> MMC_DATA_WRITE) -				? "write" : "read"); -		host->data->error = -EIO; -
-> mmc_davinci_xfer_done(host, host->data); -	} -} - -/* Set up tx or rx
-> template, to be modified and updated later */ -static void __init
-> mmc_davinci_dma_setup(struct mmc_davinci_host *host, -		bool tx, struct
-> edmacc_param *template) -{ -	unsigned	sync_dev; -	const u16	acnt = 4; -
-> const u16	bcnt = rw_threshold >> 2; -	const u16	ccnt = 0; -	u32		src_port
-> = 0; -	u32		dst_port = 0; -	s16		src_bidx, dst_bidx; -	s16		src_cidx,
-> dst_cidx; - -	/* -	 * A-B Sync transfer:  each DMA request is for one
-> "frame" of -	 * rw_threshold bytes, broken into "acnt"-size chunks
-> repeated -	 * "bcnt" times.  Each segment needs "ccnt" such frames;
-> since -	 * we tell the block layer our mmc->max_seg_size limit, we can -
-> * trust (later) that it's within bounds. -	 * -	 * The FIFOs are
-> read/written in 4-byte chunks (acnt == 4) and -	 * EDMA will optimize
-> memory operations to use larger bursts. -	 */ -	if (tx) { -		sync_dev =
-> host->txdma; - -		/* src_prt, ccnt, and link to be set up later */ -
-> src_bidx = acnt; -		src_cidx = acnt * bcnt; - -		dst_port =
-> host->mem_res->start + DAVINCI_MMCDXR; -		dst_bidx = 0; -		dst_cidx = 0; 
-> -	} else { -		sync_dev = host->rxdma; - -		src_port =
-> host->mem_res->start + DAVINCI_MMCDRR; -		src_bidx = 0; -		src_cidx = 0; 
-> - -		/* dst_prt, ccnt, and link to be set up later */ -		dst_bidx =
-> acnt; -		dst_cidx = acnt * bcnt; -	} - -	/* -	 * We can't use FIFO mode
-> for the FIFOs because MMC FIFO addresses -	 * are not 256-bit (32-byte)
-> aligned.  So we use INCR, and the W8BIT -	 * parameter is ignored. -	 */ 
-> -	edma_set_src(sync_dev, src_port, INCR, W8BIT); -
-> edma_set_dest(sync_dev, dst_port, INCR, W8BIT); +		sync_dev =
-> host->dma_tx;
-> 
-> -	edma_set_src_index(sync_dev, src_bidx, src_cidx); -
-> edma_set_dest_index(sync_dev, dst_bidx, dst_cidx); - -
-> edma_set_transfer_params(sync_dev, acnt, bcnt, ccnt, 8, ABSYNC); - -
-> edma_read_slot(sync_dev, template); - -	/* don't bother with irqs or
-> chaining */ -	template->opt |= EDMA_CHAN_SLOT(sync_dev) << 12; +
-> dmaengine_terminate_all(sync_dev); }
-> 
-> -static void mmc_davinci_send_dma_request(struct mmc_davinci_host *host, 
-> +static int mmc_davinci_send_dma_request(struct mmc_davinci_host *host, 
-> struct mmc_data *data) { -	struct edmacc_param	*template; -	int
-> channel, slot; -	unsigned		link; -	struct scatterlist	*sg; -	unsigned
-> sg_len; -	unsigned		bytes_left = host->bytes_left; -	const unsigned
-> shift = ffs(rw_threshold) - 1; +	struct dma_chan *chan; +	struct
-> dma_async_tx_descriptor *desc; +	int ret = 0;
-> 
-> if (host->data_dir == DAVINCI_MMC_DATADIR_WRITE) { -		template =
-> &host->tx_template; -		channel = host->txdma; +		struct dma_slave_config
-> dma_tx_conf = { +			.direction = DMA_MEM_TO_DEV, +			.dst_addr =
-> host->mem_res->start + DAVINCI_MMCDXR, +			.dst_addr_width =
-> DMA_SLAVE_BUSWIDTH_4_BYTES, +			.dst_maxburst = +				rw_threshold /
-> DMA_SLAVE_BUSWIDTH_4_BYTES, +		}; +		chan = host->dma_tx; +
-> dmaengine_slave_config(host->dma_tx, &dma_tx_conf); + +		desc =
-> dmaengine_prep_slave_sg(host->dma_tx, +				data->sg, +				host->sg_len, +
-> DMA_MEM_TO_DEV, +				DMA_PREP_INTERRUPT | DMA_CTRL_ACK); +		if (!desc) { 
-> +			dev_dbg(mmc_dev(host->mmc), +				"failed to allocate DMA TX
-> descriptor"); +			ret = -1; +			goto out; +		} } else { -		template =
-> &host->rx_template; -		channel = host->rxdma; -	} - -	/* We know sg_len
-> and ccnt will never be out of range because -	 * we told the mmc layer
-> which in turn tells the block layer -	 * to ensure that it only hands us
-> one scatterlist segment -	 * per EDMA PARAM entry.  Update the PARAM -	 *
-> entries needed for each segment of this scatterlist. -	 */ -	for (slot =
-> channel, link = 0, sg = data->sg, sg_len = host->sg_len; -			sg_len-- !=
-> 0 && bytes_left; -			sg = sg_next(sg), slot = host->links[link++]) { -
-> u32		buf = sg_dma_address(sg); -		unsigned	count = sg_dma_len(sg); - -
-> template->link_bcntrld = sg_len -				? (EDMA_CHAN_SLOT(host->links[link])
-> << 5) -				: 0xffff; - -		if (count > bytes_left) -			count =
-> bytes_left; -		bytes_left -= count; - -		if (host->data_dir ==
-> DAVINCI_MMC_DATADIR_WRITE) -			template->src = buf; -		else -
-> template->dst = buf; -		template->ccnt = count >> shift; - -
-> edma_write_slot(slot, template); +		struct dma_slave_config dma_rx_conf =
-> { +			.direction = DMA_DEV_TO_MEM, +			.src_addr = host->mem_res->start +
-> DAVINCI_MMCDRR, +			.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES, +
-> .src_maxburst = +				rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES, +		}; +
-> chan = host->dma_rx; +		dmaengine_slave_config(host->dma_rx,
-> &dma_rx_conf); + +		desc = dmaengine_prep_slave_sg(host->dma_rx, +
-> data->sg, +				host->sg_len, +				DMA_DEV_TO_MEM, +				DMA_PREP_INTERRUPT
-> | DMA_CTRL_ACK); +		if (!desc) { +			dev_dbg(mmc_dev(host->mmc), +
-> "failed to allocate DMA RX descriptor"); +			ret = -1; +			goto out; +
-> } }
-> 
-> -	if (host->version == MMC_CTLR_VERSION_2) -		edma_clear_event(channel); 
-> +	dmaengine_submit(desc); +	dma_async_issue_pending(chan);
-> 
-> -	edma_start(channel); +out: +	return ret; }
-> 
-> static int mmc_davinci_start_dma_transfer(struct mmc_davinci_host *host, 
-> @@ -564,6 +478,7 @@ static int mmc_davinci_start_dma_transfer(struct
-> mmc_davinci_host *host, { int i; int mask = rw_threshold - 1; +	int ret =
-> 0;
-> 
-> host->sg_len = dma_map_sg(mmc_dev(host->mmc), data->sg, data->sg_len, 
-> ((data->flags & MMC_DATA_WRITE) @@ -583,70 +498,48 @@ static int
-> mmc_davinci_start_dma_transfer(struct mmc_davinci_host *host, }
-> 
-> host->do_dma = 1; -	mmc_davinci_send_dma_request(host, data); +	ret =
-> mmc_davinci_send_dma_request(host, data);
-> 
-> -	return 0; +	return ret; }
-> 
-> static void __init_or_module davinci_release_dma_channels(struct
-> mmc_davinci_host *host) { -	unsigned	i; - if (!host->use_dma) return;
-> 
-> -	for (i = 0; i < host->n_link; i++) -		edma_free_slot(host->links[i]); 
-> - -	edma_free_channel(host->txdma); -	edma_free_channel(host->rxdma); +
-> dma_release_channel(host->dma_tx); +	dma_release_channel(host->dma_rx); 
-> }
-> 
-> static int __init davinci_acquire_dma_channels(struct mmc_davinci_host
-> *host) { -	u32 link_size; -	int r, i; - -	/* Acquire master DMA write
-> channel */ -	r = edma_alloc_channel(host->txdma, mmc_davinci_dma_cb,
-> host, -			EVENTQ_DEFAULT); -	if (r < 0) { -		dev_warn(mmc_dev(host->mmc),
-> "alloc %s channel err %d\n", -				"tx", r); -		return r; -	} -
-> mmc_davinci_dma_setup(host, true, &host->tx_template); - -	/* Acquire
-> master DMA read channel */ -	r = edma_alloc_channel(host->rxdma,
-> mmc_davinci_dma_cb, host, -			EVENTQ_DEFAULT); -	if (r < 0) { -
-> dev_warn(mmc_dev(host->mmc), "alloc %s channel err %d\n", -				"rx", r); 
-> -		goto free_master_write; +	int r; +	dma_cap_mask_t mask; + +
-> dma_cap_zero(mask); +	dma_cap_set(DMA_SLAVE, mask); + +	host->dma_tx = +
-> dma_request_channel(mask, edma_filter_fn, &host->txdma); +	if
-> (!host->dma_tx) { +		dev_err(mmc_dev(host->mmc), "Can't get dma_tx
-> channel\n"); +		return -ENODEV; } -	mmc_davinci_dma_setup(host, false,
-> &host->rx_template);
-> 
-> -	/* Allocate parameter RAM slots, which will later be bound to a -	 *
-> channel as needed to handle a scatterlist. -	 */ -	link_size =
-> min_t(unsigned, host->nr_sg, ARRAY_SIZE(host->links)); -	for (i = 0; i <
-> link_size; i++) { -		r = edma_alloc_slot(EDMA_CTLR(host->txdma),
-> EDMA_SLOT_ANY); -		if (r < 0) { -			dev_dbg(mmc_dev(host->mmc), "dma
-> PaRAM alloc --> %d\n", -				r); -			break; -		} -		host->links[i] = r; +
-> host->dma_rx = +		dma_request_channel(mask, edma_filter_fn,
-> &host->rxdma); +	if (!host->dma_rx) { +		dev_err(mmc_dev(host->mmc),
-> "Can't get dma_rx channel\n"); +		r = -ENODEV; +		goto
-> free_master_write; } -	host->n_link = i;
-> 
-> return 0;
-> 
-> free_master_write: -	edma_free_channel(host->txdma); +
-> dma_release_channel(host->dma_tx);
-> 
-> return r; } @@ -1359,7 +1252,7 @@ static int __init
-> davinci_mmcsd_probe(struct platform_device *pdev) * Each hw_seg uses one
-> EDMA parameter RAM slot, always one * channel and then usually some
-> linked slots. */ -	mmc->max_segs		= 1 + host->n_link; +	mmc->max_segs		=
-> MAX_NR_SG;
-> 
-> /* EDMA limit per hw segment (one or two MBytes) */ mmc->max_seg_size	=
-> MAX_CCNT * rw_threshold;
-> 
+And also documents setup.c and why we want to do it that way, which
+is that we tried to make the the memblock_reserve more selective so
+that it would be clear what region is reserved. Sadly we ran
+in the problem wherein on a 64-bit hypervisor with a 32-bit
+initial domain, the pt_base has the cr3 value which is not
+neccessarily where the pagetable starts! As Jan put it: "
+Actually, the adjustment turns out to be correct: The page
+tables for a 32-on-64 dom0 get allocated in the order "first L1",
+"first L2", "first L3", so the offset to the page table base is
+indeed 2. When reading xen/include/public/xen.h's comment
+very strictly, this is not a violation (since there nothing is said
+that the first thing in the page table space is pointed to by
+pt_base; I admit that this seems to be implied though, namely
+do I think that it is implied that the page table space is the
+range [pt_base, pt_base + nt_pt_frames), whereas that
+range here indeed is [pt_base - 2, pt_base - 2 + nt_pt_frames),
+which - without a priori knowledge - the kernel would have
+difficulty to figure out)." - so lets just fall back to the
+easy way and reserve the whole region.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.5 (Darwin)
-Comment: GPGTools - http://gpgtools.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c |   60 ----------------------------------------------
+ arch/x86/xen/p2m.c       |    5 ----
+ arch/x86/xen/setup.c     |   27 ++++++++++++++++++++
+ 3 files changed, 27 insertions(+), 65 deletions(-)
 
-iD8DBQFQNSq3MkyGM64RGpERAtYeAKCAw+H7rVY1JjuI5sNTDXCpDRiYNgCeKhq/
-8QNkFCA4uG1wcb5cg7BjQl0=
-=XQE4
------END PGP SIGNATURE-----
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index c1e940d..d87a038 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -998,66 +998,7 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+ 
+ 	return ret;
+ }
+-/*
+- * If the MFN is not in the m2p (provided to us by the hypervisor) this
+- * function won't do anything. In practice this means that the XenBus
+- * MFN won't be available for the initial domain. */
+-static unsigned long __init xen_reserve_mfn(unsigned long mfn)
+-{
+-	unsigned long pfn, end_pfn = 0;
+-
+-	if (!mfn)
+-		return end_pfn;
+-
+-	pfn = mfn_to_pfn(mfn);
+-	if (phys_to_machine_mapping_valid(pfn)) {
+-		end_pfn = PFN_PHYS(pfn) + PAGE_SIZE;
+-		memblock_reserve(PFN_PHYS(pfn), end_pfn);
+-	}
+-	return end_pfn;
+-}
+-static void __init xen_reserve_internals(void)
+-{
+-	unsigned long size;
+-	unsigned long last_phys = 0;
+-
+-	if (!xen_pv_domain())
+-		return;
+-
+-	/* xen_start_info does not exist in the M2P, hence can't use
+-	 * xen_reserve_mfn. */
+-	memblock_reserve(__pa(xen_start_info), PAGE_SIZE);
+-	last_phys = __pa(xen_start_info) + PAGE_SIZE;
+-
+-	last_phys = max(xen_reserve_mfn(PFN_DOWN(xen_start_info->shared_info)), last_phys);
+-	last_phys = max(xen_reserve_mfn(xen_start_info->store_mfn), last_phys);
+ 
+-	if (!xen_initial_domain())
+-		last_phys = max(xen_reserve_mfn(xen_start_info->console.domU.mfn), last_phys);
+-
+-	if (xen_feature(XENFEAT_auto_translated_physmap))
+-		return;
+-
+-	/*
+-	 * ALIGN up to compensate for the p2m_page pointing to an array that
+-	 * can partially filled (look in xen_build_dynamic_phys_to_machine).
+-	 */
+-
+-	size = PAGE_ALIGN(xen_start_info->nr_pages * sizeof(unsigned long));
+-
+-	/* We could use xen_reserve_mfn here, but would end up looping quite
+-	 * a lot (and call memblock_reserve for each PAGE), so lets just use
+-	 * the easy way and reserve it wholesale. */
+-	memblock_reserve(__pa(xen_start_info->mfn_list), size);
+-	last_phys = max(__pa(xen_start_info->mfn_list) + size, last_phys);
+-	/* The pagetables are reserved in mmu.c */
+-
+-	/* Under 64-bit hypervisor with a 32-bit domain, the hypervisor
+-	 * offsets the pt_base by two pages. Hence the reservation that is done
+-	 * in mmu.c misses two pages. We correct it here if we detect this. */
+-	if (last_phys < __pa(xen_start_info->pt_base))
+-		memblock_reserve(last_phys, __pa(xen_start_info->pt_base) - last_phys);
+-}
+ void xen_setup_shared_info(void)
+ {
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+@@ -1418,7 +1359,6 @@ asmlinkage void __init xen_start_kernel(void)
+ 	xen_raw_console_write("mapping kernel into physical memory\n");
+ 	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
+ 
+-	xen_reserve_internals();
+ 	/* Allocate and initialize top and mid mfn levels for p2m structure */
+ 	xen_build_mfn_list_list();
+ 
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 95c3ea2..c3e9291 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -388,11 +388,6 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 	}
+ 
+ 	m2p_override_init();
+-
+-	/* NOTE: We cannot call memblock_reserve here for the mfn_list as there
+-	 * isn't enough pieces to make it work (for one - we are still using the
+-	 * Xen provided pagetable). Do it later in xen_reserve_internals.
+-	 */
+ }
+ #ifdef CONFIG_X86_64
+ #include <linux/bootmem.h>
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 9efca75..740517b 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -424,6 +424,33 @@ char * __init xen_memory_setup(void)
+ 	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
+ 			E820_RESERVED);
+ 
++	/*
++	 * Reserve Xen bits:
++	 *  - mfn_list
++	 *  - xen_start_info
++	 * See comment above "struct start_info" in <xen/interface/xen.h>
++	 * We tried to make the the memblock_reserve more selective so
++	 * that it would be clear what region is reserved. Sadly we ran
++	 * in the problem wherein on a 64-bit hypervisor with a 32-bit
++	 * initial domain, the pt_base has the cr3 value which is not
++	 * neccessarily where the pagetable starts! As Jan put it: "
++	 * Actually, the adjustment turns out to be correct: The page
++	 * tables for a 32-on-64 dom0 get allocated in the order "first L1",
++	 * "first L2", "first L3", so the offset to the page table base is
++	 * indeed 2. When reading xen/include/public/xen.h's comment
++	 * very strictly, this is not a violation (since there nothing is said
++	 * that the first thing in the page table space is pointed to by
++	 * pt_base; I admit that this seems to be implied though, namely
++	 * do I think that it is implied that the page table space is the
++	 * range [pt_base, pt_base + nt_pt_frames), whereas that
++	 * range here indeed is [pt_base - 2, pt_base - 2 + nt_pt_frames),
++	 * which - without a priori knowledge - the kernel would have
++	 * difficulty to figure out)." - so lets just fall back to the
++	 * easy way and reserve the whole region.
++	 */
++	memblock_reserve(__pa(xen_start_info->mfn_list),
++			 xen_start_info->pt_base - xen_start_info->mfn_list);
++
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ 
+ 	return "Xen";
+-- 
+1.7.7.6
 
