@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab2HVNeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 09:34:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6257 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab2HVNeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 09:34:06 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=S27OPPXCPnoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=DFDjzt-BLwoA:10 a=meVymXHHAAAA:8 a=swxe52V3TsgdCJ0XmMgA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1345642439.5069.27.camel@gandalf.local.home>
-Subject: Re: [PATCH] perf tools: Fix 'No libunwind found' make warning
- message
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Wed, 22 Aug 2012 09:33:59 -0400
-In-Reply-To: <20120822084017.GA21581@gmail.com>
-References: <1345479985-18669-1-git-send-email-acme@infradead.org>
-	 <20120821093231.GA12385@gmail.com>
-	 <20120821093628.GA981@krava.brq.redhat.com>
-	 <20120822083812.GC1003@krava.brq.redhat.com>
-	 <20120822084017.GA21581@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932604Ab2HVNgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 09:36:51 -0400
+Received: from 115-188-14-127.jetstream.xtra.co.nz ([115.188.14.127]:49502
+	"EHLO SERVER.prisktech.co.nz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932200Ab2HVNgr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 09:36:47 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "vt8500-wm8505-linux-kernel@googlegroup.com" 
+	<vt8500-wm8505-linux-kernel@googlegroup.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: RE: [rtc-linux] [PATCHv3 8/9] arm: vt8500: gpio: Devicetree support
+ for arch-vt8500
+Thread-Topic: [rtc-linux] [PATCHv3 8/9] arm: vt8500: gpio: Devicetree
+ support for arch-vt8500
+Thread-Index: AQHNgEchDVSh9DXJqUai2eYKY8yPZZdlzvKT
+Date: Wed, 22 Aug 2012 13:33:52 +0000
+Message-ID: <76F764B079F92A4E843589C893D0A022DAF67144@SERVER.prisktech.co.nz>
+References: <1345582058-2291-1-git-send-email-linux@prisktech.co.nz>
+	<1345582058-2291-9-git-send-email-linux@prisktech.co.nz>,<CACRpkdZnQyLSRQ6cRpFBurAv2cv44einGAsT86FLCqsj1euDMA@mail.gmail.com>
+In-Reply-To: <CACRpkdZnQyLSRQ6cRpFBurAv2cv44einGAsT86FLCqsj1euDMA@mail.gmail.com>
+Accept-Language: en-GB, en-NZ, en-US
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-22 at 10:40 +0200, Ingo Molnar wrote:
->  
-> >  FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-> >  ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-> > -	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-> > +	msg := $(warning No libunwind found, disables post unwind support. Please install libunwind-dev[el] >= 0.99);
-> 
-> s/disables/disable
+>> Converted the existing arch-vt8500 gpio to a platform_device.
+>> Added support for WM8505 and WM8650 GPIO controllers.
+>(...)
+>> +       unsigned val;
 
-Is it a command for the user to do, or something it is about to do for
-the user? If the latter, then "disabling" may be the better word.
+>I asked about the datatype for this "val", it sure isn't "unsigned".
 
--- Steve
+>I suspected the registers were only 8bit and so it should be u8.
+>But atleast use u32 if you must use all these bits.
+
+Sorry - missed adding this to my list of fixes. I've used u32 as the
+datasheet advises these are 32-bit registers and must be
+read/written as such.
+Changes included in v4.
+
+>(...)
+>> +       val = readl(vt8500_chip->base + vt8500_chip->regs->en);
+>> +       val |= BIT(offset);
+>> +       writel(val, vt8500_chip->base + vt8500_chip->regs->en);
+
+>BTW: have you considered [readl|writel]_relaxed?
+
+I haven't - and to be honest I didn't know what difference it would
+make until I read up on it.
+Most of this code already existed in mainline in
+arch/arm/mach-vt8500/gpio.c and I simply moved it across to
+drivers/gpio and made some changes/additions. Having looked,
+I don't see any reason why it can't use the _relaxed variants.
+Changes included in v4.
 
 
+I'll post up v4 for review when I get home in about 7 hours.
+
+Work always gets in the way of being productive :)
+
+
+Regards
+
+Tony Prisk
