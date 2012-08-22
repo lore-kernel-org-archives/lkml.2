@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2HVToQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:44:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45479 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754962Ab2HVToN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:44:13 -0400
-Message-ID: <50353689.6060404@wwwdotorg.org>
-Date: Wed, 22 Aug 2012 13:44:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754982Ab2HVTu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:50:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2643 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753541Ab2HVTus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 15:50:48 -0400
+Date: Wed, 22 Aug 2012 21:50:43 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: fix inconsistent memory between
+ secondary MMU and host
+Message-ID: <20120822195043.GA8107@redhat.com>
+References: <503358FF.3030009@linux.vnet.ibm.com>
+ <20120821150618.GJ27696@redhat.com>
+ <5034763D.60508@linux.vnet.ibm.com>
+ <20120822162955.GT29978@redhat.com>
+ <20120822121535.8be38858.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 0/4] [RFC] ARM: multiplatform: rename all mach headers
-References: <201208221253.07278.arnd@arndb.de>
-In-Reply-To: <201208221253.07278.arnd@arndb.de>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822121535.8be38858.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 06:53 AM, Arnd Bergmann wrote:
-> I've created this series some time ago, and updated it now to
-> v3.6-rc1. The idea is to get us a big step closer to the
-> single zImage kernel across multiple ARM platforms by
-> untangling the duplicate header file names.
+Hi Andrew,
+
+On Wed, Aug 22, 2012 at 12:15:35PM -0700, Andrew Morton wrote:
+> On Wed, 22 Aug 2012 18:29:55 +0200
+> Andrea Arcangeli <aarcange@redhat.com> wrote:
 > 
-> There are two branches available in the arm-soc tree:
+> > On Wed, Aug 22, 2012 at 02:03:41PM +0800, Xiao Guangrong wrote:
+> > > On 08/21/2012 11:06 PM, Andrea Arcangeli wrote:
+> > > > CPU0  		    	    	CPU1
+> > > > 				oldpage[1] == 0 (both guest & host)
+> > > > oldpage[0] = 1
+> > > > trigger do_wp_page
+> > > 
+> > > We always do ptep_clear_flush before set_pte_at_notify(),
+> > > at this point, we have done:
+> > >   pte = 0 and flush all tlbs
+> > > > mmu_notifier_change_pte
+> > > > spte = newpage + writable
+> > > > 				guest does newpage[1] = 1
+> > > > 				vmexit
+> > > > 				host read oldpage[1] == 0
+> > > 
+> > >                   It can not happen, at this point pte = 0, host can not
+> > > 		  access oldpage anymore, host read can generate #PF, it
+> > >                   will be blocked on page table lock until CPU 0 release the lock.
+> > 
+> > Agreed, this is why your fix is safe.
+> > 
+> > ...
+> >
+> > Thanks a lot for fixing this subtle race!
 > 
-> 1. This series,
->    http://git.kernel.org/?p=linux/kernel/git/arm/arm-soc.git;a=shortlog;h=refs/heads/testing/mach-headers
->    This just moves header files around and changes most of the
->    files including them. There are a few remaining drivers
->    and platform files that keep including a generic file name
->    like <mach/uncompress.h>....
+> I'll take that as an ack.
 
-FWIW, I merged this with next-20120820, ignored all the non-Tegra
-conflicts, and it built and ran just fine on Tegra. There were a lot of
-conflicts overall though...
+Yes thanks!
 
-...
-> I would like to get the first series merged in v3.7 if we can agree
-> on the general approach. So far, feedback in Linaro internal
-> meetings has been very positive, but Russell had concerns when
-> we first discussed it a few months ago.
-> 
-> A patch set this large means a lot of churn, and there are a few
-> ways we could deal with this:
-> 
-> a) Put the branch into linux-next now, and have everyone who
-> encounters conflicts pull it into their own branch to resolve
-> the conflicts. This can be a lot of work, and it means we
-> cannot rebase this branch any more.
+I'd also like a comment that explains why in that case the order is
+reversed. The reverse order immediately rings an alarm bell otherwise
+;). But the comment can be added with an incremental patch.
 
-I did a very quick test of rebasing all the Tegra branches onto this,
-and it worked out to be very easy; very few conflicts and mostly just
-files deleted in the Tegra tree this time around. One of the Tegra
-branches depends on v3.6-rc2 in order to pick up some changes that
-conflict with changes made there. If we convert to dmaengine in 3.7,
-then we'll probably depend on a later v3.6-rc for a dmaengine driver
-bug-fix. Does it make sense to rebase this mach-headers onto a later
-v3.6-rc? I suppose I could branch from v3.6-rc2, merge in mach-headers,
-and then build on that if needed.
+> Unfortunately we weren't told the user-visible effects of the bug,
+> which often makes it hard to determine which kernel versions should be
+> patched.  Please do always provide this information when fixing a bug.
 
-> b) Involve Linus Torvalds in the process and get him to
-> take the series at the end of the v3.7 merge window, after
-> rebasing it on top of all the other branches he merged.
-> This means it happens pretty much ad-hoc and there is little
-> testing on the patches that actually get merged.
+This is best answered by Xiao who said it's a testcase triggering
+this.
 
-Given the number of merge conflicts this has with next-20120820, that
-sounds like a lot of work you need to do at the end of the merge window,
-but I suppose if it's mostly scripted, it wouldn't be too hard to
-recreate the series in a short time.
+It requires the guest reading memory on CPU0 while the host writes to
+the same memory on CPU1, while CPU2 triggers the copy on write fault
+on another part of the same page (slightly before CPU1 writes). The
+host writes of CPU1 would need to happen in a microsecond window, and
+they wouldn't be immediately propagated to the guest in CPU0. They
+would still appear in the guest but with a microsecond delay (the
+guest has the spte mapped readonly when this happens so it's only a
+guest "microsecond delayed reading" problem as far as I can tell). I
+guess most of the time it would fall into the undefined by timing
+scenario so it's hard to tell how the side effect could escalate.
