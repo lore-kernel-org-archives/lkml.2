@@ -1,181 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2HVOhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:37:23 -0400
-Received: from mail-pb0-f66.google.com ([209.85.160.66]:42350 "EHLO
-	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756491Ab2HVOhU (ORCPT
+	id S1757437Ab2HVOkR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:40:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34577 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756491Ab2HVOkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 10:37:20 -0400
-Message-ID: <5034EE98.3070406@gmail.com>
-Date: Wed, 22 Aug 2012 22:37:12 +0800
-From: chenggang qin <chenggang.qin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Wed, 22 Aug 2012 10:40:13 -0400
+Date: Wed, 22 Aug 2012 15:39:46 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] ARM: allow PID_IN_CONTEXTIDR only for ARMv7
+Message-ID: <20120822143946.GM9093@mudshark.cambridge.arm.com>
+References: <1345645780-2749-1-git-send-email-arnd@arndb.de>
+ <1345645780-2749-3-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, acme@ghostprotocols.net,
-        namhyung.kim@lge.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        dsahern@gmail.com, nelhage@nelhage.com
-Subject: [PATCH]Perf top:  Add ability to detect new threads dynamically during
- 'perf top -p 'pid'' is running
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345645780-2749-3-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chenggang Qin <chenggang.qin@gmail.com>
+Hi Arnd,
 
-While we use "perf top -p 'pid'" to monitor the symbols of specified
-processes, some new threads would be created by the monitored processes 
-during "perf top" is running. In current version, these new threads and
-their symbols cannot be shown.
-This patch add ability to show these new threads.
+On Wed, Aug 22, 2012 at 03:29:38PM +0100, Arnd Bergmann wrote:
+> When ARMv6 is enabled, we build the kernel with -march=armv6 or
+> -march=armv6k, which means the bfi instruction is not available.
+> Instead, it only works with -march=armv6t2 or -march=armv7-a.
+> 
+> Without this patch, building rand-enIHAOL results in:
+> 
+> /tmp/ccwCsCXC.s: Assembler messages:
+> /tmp/ccwCsCXC.s:49: Error: selected processor does not support ARM mode `bfi r3,r2,#0,#8'
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> ---
+>  arch/arm/Kconfig.debug |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index f15f82b..11b9ff4 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -398,6 +398,7 @@ config ARM_KPROBES_TEST
+>  config PID_IN_CONTEXTIDR
+>  	bool "Write the current PID to the CONTEXTIDR register"
+>  	depends on CPU_COPY_V6
+> +	depends on CPU_V7 && !CPU_V6
+>  	help
+>  	  Enabling this option causes the kernel to write the current PID to
+>  	  the PROCID field of the CONTEXTIDR register, at the expense of some
 
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+Nah, I'll fix the contextidr_notifier instead. I forgot that this stuff gets
+used on non-SMP v6 platforms.
 
----
- tools/perf/builtin-top.c |   86 ++++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/util/evlist.c |    2 ++
- 2 files changed, 85 insertions(+), 3 deletions(-)
+Cheers,
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 68cd61e..54c9cc1 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -882,7 +882,7 @@ static void perf_top__mmap_read(struct perf_top *top)
- 		perf_top__mmap_read_idx(top, i);
- }
- 
--static void perf_top__start_counters(struct perf_top *top)
-+static int perf_top__start_counters(struct perf_top *top)
- {
- 	struct perf_evsel *counter, *first;
- 	struct perf_evlist *evlist = top->evlist;
-@@ -929,6 +929,10 @@ try_again:
- 				     group_fd) < 0) {
- 			int err = errno;
- 
-+			if (err == ESRCH) {
-+				return err;
-+			}
-+
- 			if (err == EPERM || err == EACCES) {
- 				ui__error_paranoid();
- 				goto out_err;
-@@ -994,7 +998,7 @@ try_again:
- 		goto out_err;
- 	}
- 
--	return;
-+	return 0;
- 
- out_err:
- 	exit_browser(0);
-@@ -1018,6 +1022,77 @@ static int perf_top__setup_sample_type(struct perf_top *top)
- 	return 0;
- }
- 
-+static int thread_map_cmp(struct thread_map *threads_a,
-+			  struct thread_map *threads_b)
-+{
-+	int i, j;
-+
-+	if (threads_a->nr != threads_b->nr) {
-+		return 1;
-+	} else {
-+		for (i = 0; i < threads_b->nr; i++) {
-+			for (j = 0; j < threads_a->nr; j++)
-+				if (threads_b->map[i] == threads_a->map[j])
-+					break;
-+
-+			if (j == threads_a->nr)
-+				return 1;
-+		}
-+
-+		return 0;
-+	}
-+}
-+
-+static void check_new_threads(struct perf_top *top)
-+{
-+	struct thread_map *new_thread_map;
-+	struct perf_evsel *counter;
-+	struct perf_evlist *evlist = top->evlist;
-+
-+retry:
-+	new_thread_map = thread_map__new_str(top->target.pid, top->target.tid,
-+					     top->target.uid);
-+	if (!new_thread_map)
-+		return;
-+
-+	if (thread_map_cmp(top->evlist->threads, new_thread_map) == 0) {
-+		free(new_thread_map);
-+		return;
-+	} else {
-+		list_for_each_entry(counter, &evlist->entries, node) {
-+			perf_evsel__close(counter, top->evlist->cpus->nr,
-+					  top->evlist->threads->nr);
-+		}
-+
-+		if (top->evlist->mmap)
-+			perf_evlist__munmap(top->evlist);
-+
-+		if (top->evlist->pollfd) {
-+			free(top->evlist->pollfd);
-+			top->evlist->pollfd = NULL;
-+		}
-+
-+		top->evlist->nr_fds = 0;
-+
-+		thread_map__delete(top->evlist->threads);
-+		top->evlist->threads = new_thread_map;
-+
-+		if (perf_top__start_counters(top) == ESRCH) {
-+			while (thread_map_cmp(top->evlist->threads,
-+					      new_thread_map) == 0) {
-+				new_thread_map = thread_map__new_str(top->target.pid,
-+								     top->target.tid,
-+								     top->target.uid);
-+				if (!new_thread_map)
-+					return;
-+			}
-+			goto retry;
-+		}
-+
-+		return;
-+	}
-+}
-+
- static int __cmd_top(struct perf_top *top)
- {
- 	pthread_t thread;
-@@ -1067,7 +1142,12 @@ static int __cmd_top(struct perf_top *top)
- 	}
- 
- 	while (1) {
--		u64 hits = top->samples;
-+		u64 hits;
-+
-+		if (perf_target__has_task(&top->target))
-+			check_new_threads(top);
-+
-+		hits = top->samples;
- 
- 		perf_top__mmap_read(top);
- 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 9b38681..293eca7 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -452,6 +452,8 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
- 
- 	free(evlist->mmap);
- 	evlist->mmap = NULL;
-+
-+	evlist->nr_mmaps = 0;
- }
- 
- static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
--- 
-1.7.9.7
-
+Will
