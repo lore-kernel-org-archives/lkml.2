@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2HVTfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 15:35:16 -0400
-Received: from fce.uncu.edu.ar ([190.220.130.146]:44541 "EHLO
-	mail.fce.uncu.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab2HVTfO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 15:35:14 -0400
-To: undisclosed-recipients:;
-Subject: Business Proposal.
-X-PHP-Originating-Script: 33:func.inc
+	id S1756189Ab2HVTgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 15:36:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32682 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634Ab2HVTgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 15:36:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,809,1344236400"; 
+   d="scan'208";a="190051780"
+Date: Wed, 22 Aug 2012 12:35:32 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/5] mempolicy: Remove mempolicy sharing
+Message-ID: <20120822193532.GB12707@tassilo.jf.intel.com>
+References: <1345480594-27032-1-git-send-email-mgorman@suse.de>
+ <1345480594-27032-3-git-send-email-mgorman@suse.de>
+ <20120822120314.9fc30d47.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Wed, 22 Aug 2012 20:36:15 +0100
-From: Subhash Deshpande <info@gmx.co.uk>
-Reply-To: <deshpande1884@9.cn>
-Mail-Reply-To: <deshpande1884@9.cn>
-Message-ID: <1f8ab3e2c257120425236c6a159c9fff@fce.uncu.edu.ar>
-User-Agent: Roundcube Webmail/0.5.3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822120314.9fc30d47.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good-day To You,
+On Wed, Aug 22, 2012 at 12:03:14PM -0700, Andrew Morton wrote:
+> On Mon, 20 Aug 2012 17:36:31 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > 
+> > Dave Jones' system call fuzz testing tool "trinity" triggered the following
+> > bug error with slab debugging enabled
+> > 
+> > ...
+> >
+> > Cc: <stable@vger.kernel.org>
+> 
+> The patch dosn't apply to 3.5 at all well.  I don't see much point in
+> retaining the stable tag so I think I'll remove it, and suggest that
+> you prepare a fresh patch for Greg and explain the situation?
 
+Everything applies fine if you redo the revert manually.
 
-It is understandable that you might be a little bit apprehensive 
-because you do not know me but I have a lucrative business proposal of 
-mutual interest to share with you. I got your reference in my search for 
-someone who suits my proposed business relationship. I am Mr. Subhash 
-Deshpande, officer with the International bank of Taipei (Bank SinoPac). 
-I will need you to assist me in executing a business project from Taiwan 
-to your country. It involves the transfer of money, Everything 
-concerning this transaction shall be legally done without hitch.
+BTW we tested it now and the new patchkit indeed fixes the database.
+Please queue for 3.6 and 3.5 stable.
 
+-Andi
 
-Once the funds have been successfully transferred into your account, we 
-shall share in the ratio to be agreed by both of us. I shall furnish you 
-with more information about this operation immediately I receive a 
-positive response from you.
-
-
-Kind Regards,
-Subhash Deshpande
+-- 
+ak@linux.intel.com -- Speaking for myself only
