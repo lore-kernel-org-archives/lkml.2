@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab2HVAbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Aug 2012 20:31:24 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:35764 "EHLO e5.ny.us.ibm.com"
+	id S1754945Ab2HVAbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Aug 2012 20:31:35 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:37636 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753191Ab2HVAbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Aug 2012 20:31:02 -0400
+	id S1753279Ab2HVAbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Aug 2012 20:31:15 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Andreas Schwab <schwab@linux-m68k.org>, Ingo Molnar <mingo@kernel.org>,
         Prarit Bhargava <prarit@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Schwab <schwab@linux-m68k.org>
-Subject: [PATCH 0/4] Time fixes for 3.6
-Date: Tue, 21 Aug 2012 20:30:45 -0400
-Message-Id: <1345595449-34965-1-git-send-email-john.stultz@linaro.org>
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 2/4] time: Fix casting issue in timekeeping_forward_now
+Date: Tue, 21 Aug 2012 20:30:47 -0400
+Message-Id: <1345595449-34965-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345595449-34965-1-git-send-email-john.stultz@linaro.org>
+References: <1345595449-34965-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082200-5930-0000-0000-00000B1E2249
+x-cbid: 12082200-3534-0000-0000-00000BBA96FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, Ingo,
-	Here are four small time fixes for 3.6
-that apply against tip/timers/urgent.
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-One patch resolves the suspend issue Andreas saw.
+arch_gettimeoffset returns a u32 value which when shifted by tk->shift can
+overflow.  Cast it to u64 first.
 
-The next two are casting fixes for potential overflows
-on 32bits, that Andreas found, but haven't been observed
-in the wild.
-
-Finally the last one fixes an issue I found in my own
-testing w/ the _COARSE clocksources.
-
-Please take a look at them and let me know if you have
-any thoughts or objections.
+This issue was introduced with 1e75fa8be9fb61e1af46b5b3b176347a4c958ca1
 
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ kernel/time/timekeeping.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Andreas Schwab (1):
-  time: Fix casting issue in timekeeping_forward_now
-
-John Stultz (3):
-  time: Ensure we normalize the timekeeper in tk_xtime_add
-  time: Avoid potential shift-overflow with large shift values
-  time: Avoid making adjustments if we havne't accumulated anything
-
- kernel/time/timekeeping.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 258164a..1dbf80e 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -277,7 +277,7 @@ static void timekeeping_forward_now(struct timekeeper *tk)
+ 	tk->xtime_nsec += cycle_delta * tk->mult;
+ 
+ 	/* If arch requires, add in gettimeoffset() */
+-	tk->xtime_nsec += arch_gettimeoffset() << tk->shift;
++	tk->xtime_nsec += (u64)arch_gettimeoffset() << tk->shift;
+ 
+ 	tk_normalize_xtime(tk);
+ 
 -- 
 1.7.9.5
 
