@@ -1,57 +1,7151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab2HWMXp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:23:45 -0400
-Received: from fieldses.org ([174.143.236.118]:36213 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab2HWMXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:23:20 -0400
-Date: Thu, 23 Aug 2012 08:23:18 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 0/9] extended fdinfo via procfs series, v7
-Message-ID: <20120823122318.GD29943@fieldses.org>
-References: <20120823104323.040550004@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823104323.040550004@openvz.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758433Ab2HWMYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:24:06 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:37226 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754112Ab2HWMX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:23:29 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        bigeasy@linutronix.de, arnd@arndb.de, aletes.xgr@gmail.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] ARM: mach-pnx4008: Remove architecture
+Date: Thu, 23 Aug 2012 14:22:28 +0200
+Message-Id: <1345724548-18130-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 02:43:23PM +0400, Cyrill Gorcunov wrote:
-> Hi guys,
-> 
-> here is updated version of the fdinfo via procfs series,
-> the changes from previous one are the following
-> 
->  - fhandle is carried inside inotify mark but this feature
->    is CONFIG dependent to not bloat the kernel for users
->    who don't need it
+This patch removes the ARM architecture mach-pnx4008. No direct support or user
+feedback since 2006. Acknowledgements from NXP/Philips and Linux arm-soc
+maintainers.
 
-As Al points out, this doesn't help much: if this feature is something a
-distro will want to provide, then in practice all their users are
-eventually going to end up with it turned on.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+---
+ arch/arm/Kconfig                                  |    8 
+ arch/arm/Makefile                                 |    1 
+ arch/arm/configs/pnx4008_defconfig                |  472 ---------
+ arch/arm/mach-pnx4008/Makefile                    |   12 
+ arch/arm/mach-pnx4008/Makefile.boot               |    4 
+ arch/arm/mach-pnx4008/clock.c                     | 1001 -------------------
+ arch/arm/mach-pnx4008/clock.h                     |   43 
+ arch/arm/mach-pnx4008/core.c                      |  290 -----
+ arch/arm/mach-pnx4008/dma.c                       | 1105 ----------------------
+ arch/arm/mach-pnx4008/gpio.c                      |  328 ------
+ arch/arm/mach-pnx4008/i2c.c                       |   86 -
+ arch/arm/mach-pnx4008/i2c.c.orig                  |   87 -
+ arch/arm/mach-pnx4008/include/mach/clock.h        |   62 -
+ arch/arm/mach-pnx4008/include/mach/debug-macro.S  |   21 
+ arch/arm/mach-pnx4008/include/mach/dma.h          |  160 ---
+ arch/arm/mach-pnx4008/include/mach/entry-macro.S  |  116 --
+ arch/arm/mach-pnx4008/include/mach/gpio-pnx4008.h |  241 ----
+ arch/arm/mach-pnx4008/include/mach/hardware.h     |   32 
+ arch/arm/mach-pnx4008/include/mach/irq.h          |   42 
+ arch/arm/mach-pnx4008/include/mach/irqs.h         |  215 ----
+ arch/arm/mach-pnx4008/include/mach/param.h        |   21 
+ arch/arm/mach-pnx4008/include/mach/platform.h     |   69 -
+ arch/arm/mach-pnx4008/include/mach/pm.h           |   33 
+ arch/arm/mach-pnx4008/include/mach/timex.h        |   19 
+ arch/arm/mach-pnx4008/include/mach/uncompress.h   |   46 
+ arch/arm/mach-pnx4008/irq.c                       |  121 --
+ arch/arm/mach-pnx4008/pm.c                        |  153 ---
+ arch/arm/mach-pnx4008/serial.c                    |   67 -
+ arch/arm/mach-pnx4008/sleep.S                     |  195 ---
+ arch/arm/mach-pnx4008/time.c                      |  134 --
+ arch/arm/mach-pnx4008/time.h                      |   70 -
+ arch/arm/tools/mach-types                         |    1 
+ drivers/i2c/busses/Kconfig                        |    2 
+ drivers/usb/Kconfig                               |    1 
+ drivers/usb/host/Kconfig                          |    2 
+ drivers/usb/host/ohci-hcd.c                       |    2 
+ drivers/usb/host/ohci-nxp.c                       |   84 -
+ drivers/video/Kconfig                             |   15 
+ drivers/video/Makefile                            |    2 
+ drivers/video/pnx4008/Makefile                    |    7 
+ drivers/video/pnx4008/dum.h                       |  211 ----
+ drivers/video/pnx4008/fbcommon.h                  |   43 
+ drivers/video/pnx4008/pnxrgbfb.c                  |  198 ---
+ drivers/video/pnx4008/sdum.c                      |  861 -----------------
+ drivers/video/pnx4008/sdum.h                      |  136 --
+ drivers/watchdog/Kconfig                          |    6 
+ 46 files changed, 7 insertions(+), 6818 deletions(-)
 
-Could you quantify the cost somehow?
-
-I wonder if you could get away with something less than MAX_HANDLE_SIZE?
-128 bytes is the maximum allowable by NFSv4.  In practice I don't think
-any of our filesystems need more than 40 or so right now.
-
---b.
-
-> 
->  - a small fix in exportfs code to prevent nil dereference
-> 
-> the comments would be appreciated.
+--- linux-2.6.orig/arch/arm/Kconfig
++++ linux-2.6/arch/arm/Kconfig
+@@ -709,14 +709,6 @@ config ARCH_PICOXCELL
+ 	  family of Femtocell devices.  The picoxcell support requires device tree
+ 	  for all boards.
+ 
+-config ARCH_PNX4008
+-	bool "Philips Nexperia PNX4008 Mobile"
+-	select CPU_ARM926T
+-	select CLKDEV_LOOKUP
+-	select ARCH_USES_GETTIMEOFFSET
+-	help
+-	  This enables support for Philips PNX4008 mobile platform.
+-
+ config ARCH_PXA
+ 	bool "PXA2xx/PXA3xx-based"
+ 	depends on MMU
+--- linux-2.6.orig/arch/arm/Makefile
++++ linux-2.6/arch/arm/Makefile
+@@ -167,7 +167,6 @@ machine-$(CONFIG_ARCH_OMAP1)		:= omap1
+ machine-$(CONFIG_ARCH_OMAP2PLUS)	:= omap2
+ machine-$(CONFIG_ARCH_ORION5X)		:= orion5x
+ machine-$(CONFIG_ARCH_PICOXCELL)	:= picoxcell
+-machine-$(CONFIG_ARCH_PNX4008)		:= pnx4008
+ machine-$(CONFIG_ARCH_PRIMA2)		:= prima2
+ machine-$(CONFIG_ARCH_PXA)		:= pxa
+ machine-$(CONFIG_ARCH_REALVIEW)		:= realview
+--- linux-2.6.orig/arch/arm/configs/pnx4008_defconfig
++++ /dev/null
+@@ -1,472 +0,0 @@
+-CONFIG_EXPERIMENTAL=y
+-CONFIG_SYSVIPC=y
+-CONFIG_POSIX_MQUEUE=y
+-CONFIG_BSD_PROCESS_ACCT=y
+-CONFIG_AUDIT=y
+-CONFIG_LOG_BUF_SHIFT=14
+-CONFIG_BLK_DEV_INITRD=y
+-CONFIG_EXPERT=y
+-CONFIG_SLAB=y
+-CONFIG_MODULES=y
+-CONFIG_MODULE_UNLOAD=y
+-CONFIG_MODULE_FORCE_UNLOAD=y
+-CONFIG_MODVERSIONS=y
+-CONFIG_MODULE_SRCVERSION_ALL=y
+-CONFIG_ARCH_PNX4008=y
+-CONFIG_PREEMPT=y
+-CONFIG_ZBOOT_ROM_TEXT=0x0
+-CONFIG_ZBOOT_ROM_BSS=0x0
+-CONFIG_CMDLINE="mem=64M console=ttyS0,115200"
+-CONFIG_FPE_NWFPE=y
+-CONFIG_BINFMT_AOUT=m
+-CONFIG_BINFMT_MISC=m
+-CONFIG_PM=y
+-CONFIG_PACKET=y
+-CONFIG_UNIX=y
+-CONFIG_INET=y
+-CONFIG_IP_MULTICAST=y
+-CONFIG_IP_ADVANCED_ROUTER=y
+-CONFIG_IP_MULTIPLE_TABLES=y
+-CONFIG_IP_ROUTE_MULTIPATH=y
+-CONFIG_IP_ROUTE_VERBOSE=y
+-CONFIG_IP_PNP=y
+-CONFIG_IP_PNP_DHCP=y
+-CONFIG_IP_PNP_BOOTP=y
+-CONFIG_IP_MROUTE=y
+-CONFIG_IP_PIMSM_V1=y
+-CONFIG_IP_PIMSM_V2=y
+-CONFIG_SYN_COOKIES=y
+-CONFIG_INET_AH=m
+-CONFIG_INET_ESP=m
+-CONFIG_INET_IPCOMP=m
+-CONFIG_IPV6_PRIVACY=y
+-CONFIG_INET6_AH=m
+-CONFIG_INET6_ESP=m
+-CONFIG_INET6_IPCOMP=m
+-CONFIG_IPV6_TUNNEL=m
+-CONFIG_NETFILTER=y
+-CONFIG_IP_VS=m
+-CONFIG_IP_VS_PROTO_TCP=y
+-CONFIG_IP_VS_PROTO_UDP=y
+-CONFIG_IP_VS_PROTO_ESP=y
+-CONFIG_IP_VS_PROTO_AH=y
+-CONFIG_IP_VS_RR=m
+-CONFIG_IP_VS_WRR=m
+-CONFIG_IP_VS_LC=m
+-CONFIG_IP_VS_WLC=m
+-CONFIG_IP_VS_LBLC=m
+-CONFIG_IP_VS_LBLCR=m
+-CONFIG_IP_VS_DH=m
+-CONFIG_IP_VS_SH=m
+-CONFIG_IP_VS_SED=m
+-CONFIG_IP_VS_NQ=m
+-CONFIG_IP_VS_FTP=m
+-CONFIG_IP_NF_QUEUE=m
+-CONFIG_IP6_NF_QUEUE=m
+-CONFIG_DECNET_NF_GRABULATOR=m
+-CONFIG_BRIDGE_NF_EBTABLES=m
+-CONFIG_BRIDGE_EBT_BROUTE=m
+-CONFIG_BRIDGE_EBT_T_FILTER=m
+-CONFIG_BRIDGE_EBT_T_NAT=m
+-CONFIG_BRIDGE_EBT_802_3=m
+-CONFIG_BRIDGE_EBT_AMONG=m
+-CONFIG_BRIDGE_EBT_ARP=m
+-CONFIG_BRIDGE_EBT_IP=m
+-CONFIG_BRIDGE_EBT_LIMIT=m
+-CONFIG_BRIDGE_EBT_MARK=m
+-CONFIG_BRIDGE_EBT_PKTTYPE=m
+-CONFIG_BRIDGE_EBT_STP=m
+-CONFIG_BRIDGE_EBT_VLAN=m
+-CONFIG_BRIDGE_EBT_ARPREPLY=m
+-CONFIG_BRIDGE_EBT_DNAT=m
+-CONFIG_BRIDGE_EBT_MARK_T=m
+-CONFIG_BRIDGE_EBT_REDIRECT=m
+-CONFIG_BRIDGE_EBT_SNAT=m
+-CONFIG_BRIDGE_EBT_LOG=m
+-CONFIG_IP_SCTP=m
+-CONFIG_ATM=y
+-CONFIG_ATM_CLIP=y
+-CONFIG_ATM_LANE=m
+-CONFIG_ATM_MPOA=m
+-CONFIG_ATM_BR2684=m
+-CONFIG_BRIDGE=m
+-CONFIG_VLAN_8021Q=m
+-CONFIG_DECNET=m
+-CONFIG_LLC2=m
+-CONFIG_IPX=m
+-CONFIG_ATALK=m
+-CONFIG_DEV_APPLETALK=m
+-CONFIG_IPDDP=m
+-CONFIG_IPDDP_ENCAP=y
+-CONFIG_IPDDP_DECAP=y
+-CONFIG_X25=m
+-CONFIG_LAPB=m
+-CONFIG_ECONET=m
+-CONFIG_ECONET_AUNUDP=y
+-CONFIG_ECONET_NATIVE=y
+-CONFIG_WAN_ROUTER=m
+-CONFIG_NET_SCHED=y
+-CONFIG_NET_SCH_CBQ=m
+-CONFIG_NET_SCH_HTB=m
+-CONFIG_NET_SCH_HFSC=m
+-CONFIG_NET_SCH_ATM=m
+-CONFIG_NET_SCH_PRIO=m
+-CONFIG_NET_SCH_RED=m
+-CONFIG_NET_SCH_SFQ=m
+-CONFIG_NET_SCH_TEQL=m
+-CONFIG_NET_SCH_TBF=m
+-CONFIG_NET_SCH_GRED=m
+-CONFIG_NET_SCH_DSMARK=m
+-CONFIG_NET_SCH_NETEM=m
+-CONFIG_NET_CLS_TCINDEX=m
+-CONFIG_NET_CLS_ROUTE4=m
+-CONFIG_NET_CLS_FW=m
+-CONFIG_NET_CLS_U32=m
+-CONFIG_NET_CLS_RSVP=m
+-CONFIG_NET_CLS_RSVP6=m
+-CONFIG_NET_PKTGEN=m
+-CONFIG_MTD=y
+-CONFIG_MTD_CONCAT=y
+-CONFIG_MTD_PARTITIONS=y
+-CONFIG_MTD_REDBOOT_PARTS=y
+-CONFIG_MTD_CHAR=y
+-CONFIG_MTD_BLOCK=y
+-CONFIG_MTD_SLRAM=m
+-CONFIG_MTD_PHRAM=m
+-CONFIG_MTD_MTDRAM=m
+-CONFIG_MTD_DOC2000=m
+-CONFIG_MTD_DOC2001=m
+-CONFIG_MTD_DOC2001PLUS=m
+-CONFIG_MTD_NAND=y
+-CONFIG_MTD_NAND_NANDSIM=m
+-CONFIG_BLK_DEV_LOOP=y
+-CONFIG_BLK_DEV_CRYPTOLOOP=y
+-CONFIG_BLK_DEV_NBD=y
+-CONFIG_BLK_DEV_RAM=y
+-CONFIG_BLK_DEV_RAM_SIZE=8192
+-CONFIG_CDROM_PKTCDVD=m
+-CONFIG_EEPROM_LEGACY=m
+-CONFIG_SCSI=m
+-CONFIG_BLK_DEV_SD=m
+-CONFIG_CHR_DEV_ST=m
+-CONFIG_CHR_DEV_OSST=m
+-CONFIG_BLK_DEV_SR=m
+-CONFIG_CHR_DEV_SG=m
+-CONFIG_CHR_DEV_SCH=m
+-CONFIG_SCSI_MULTI_LUN=y
+-CONFIG_SCSI_CONSTANTS=y
+-CONFIG_SCSI_LOGGING=y
+-CONFIG_SCSI_SPI_ATTRS=m
+-CONFIG_SCSI_FC_ATTRS=m
+-CONFIG_SCSI_DEBUG=m
+-CONFIG_NETDEVICES=y
+-CONFIG_DUMMY=m
+-CONFIG_BONDING=m
+-CONFIG_EQUALIZER=m
+-CONFIG_TUN=m
+-CONFIG_NET_ETHERNET=y
+-CONFIG_USB_CATC=m
+-CONFIG_USB_KAWETH=m
+-CONFIG_USB_PEGASUS=m
+-CONFIG_USB_RTL8150=m
+-CONFIG_USB_USBNET=m
+-# CONFIG_USB_NET_CDC_SUBSET is not set
+-CONFIG_WAN=y
+-CONFIG_HDLC=m
+-CONFIG_HDLC_RAW=m
+-CONFIG_HDLC_RAW_ETH=m
+-CONFIG_HDLC_CISCO=m
+-CONFIG_HDLC_FR=m
+-CONFIG_HDLC_PPP=m
+-CONFIG_HDLC_X25=m
+-CONFIG_DLCI=m
+-CONFIG_WAN_ROUTER_DRIVERS=m
+-CONFIG_LAPBETHER=m
+-CONFIG_X25_ASY=m
+-CONFIG_ATM_TCP=m
+-CONFIG_PPP=m
+-CONFIG_PPP_MULTILINK=y
+-CONFIG_PPP_FILTER=y
+-CONFIG_PPP_ASYNC=m
+-CONFIG_PPP_SYNC_TTY=m
+-CONFIG_PPP_DEFLATE=m
+-CONFIG_PPP_BSDCOMP=m
+-CONFIG_PPP_MPPE=m
+-CONFIG_PPPOE=m
+-CONFIG_PPPOATM=m
+-CONFIG_SLIP=m
+-CONFIG_SLIP_COMPRESSED=y
+-CONFIG_SLIP_SMART=y
+-CONFIG_SLIP_MODE_SLIP6=y
+-CONFIG_NETCONSOLE=m
+-# CONFIG_INPUT_MOUSEDEV is not set
+-CONFIG_INPUT_JOYDEV=m
+-CONFIG_INPUT_EVDEV=m
+-CONFIG_INPUT_EVBUG=m
+-CONFIG_KEYBOARD_LKKBD=m
+-CONFIG_KEYBOARD_NEWTON=m
+-CONFIG_KEYBOARD_SUNKBD=m
+-CONFIG_KEYBOARD_XTKBD=m
+-CONFIG_MOUSE_PS2=m
+-CONFIG_MOUSE_SERIAL=m
+-CONFIG_MOUSE_VSXXXAA=m
+-CONFIG_INPUT_JOYSTICK=y
+-CONFIG_JOYSTICK_ANALOG=m
+-CONFIG_JOYSTICK_A3D=m
+-CONFIG_JOYSTICK_ADI=m
+-CONFIG_JOYSTICK_COBRA=m
+-CONFIG_JOYSTICK_GF2K=m
+-CONFIG_JOYSTICK_GRIP=m
+-CONFIG_JOYSTICK_GRIP_MP=m
+-CONFIG_JOYSTICK_GUILLEMOT=m
+-CONFIG_JOYSTICK_INTERACT=m
+-CONFIG_JOYSTICK_SIDEWINDER=m
+-CONFIG_JOYSTICK_TMDC=m
+-CONFIG_JOYSTICK_IFORCE=m
+-CONFIG_JOYSTICK_IFORCE_USB=y
+-CONFIG_JOYSTICK_IFORCE_232=y
+-CONFIG_JOYSTICK_WARRIOR=m
+-CONFIG_JOYSTICK_MAGELLAN=m
+-CONFIG_JOYSTICK_SPACEORB=m
+-CONFIG_JOYSTICK_SPACEBALL=m
+-CONFIG_JOYSTICK_STINGER=m
+-CONFIG_JOYSTICK_JOYDUMP=m
+-CONFIG_INPUT_TOUCHSCREEN=y
+-CONFIG_TOUCHSCREEN_GUNZE=m
+-CONFIG_INPUT_MISC=y
+-CONFIG_INPUT_UINPUT=m
+-CONFIG_SERIO_SERPORT=m
+-CONFIG_SERIO_RAW=m
+-CONFIG_GAMEPORT_NS558=m
+-CONFIG_GAMEPORT_L4=m
+-CONFIG_SERIAL_8250=y
+-CONFIG_SERIAL_8250_CONSOLE=y
+-CONFIG_SERIAL_8250_EXTENDED=y
+-CONFIG_SERIAL_8250_MANY_PORTS=y
+-CONFIG_SERIAL_8250_SHARE_IRQ=y
+-CONFIG_SERIAL_8250_RSA=y
+-CONFIG_HW_RANDOM=y
+-CONFIG_I2C=y
+-CONFIG_I2C_CHARDEV=y
+-CONFIG_SPI=y
+-CONFIG_SPI_BITBANG=y
+-# CONFIG_HWMON is not set
+-CONFIG_WATCHDOG=y
+-CONFIG_SOFT_WATCHDOG=m
+-CONFIG_USBPCWATCHDOG=m
+-# CONFIG_VGA_CONSOLE is not set
+-CONFIG_SOUND=m
+-CONFIG_SND=m
+-CONFIG_SND_SEQUENCER=m
+-CONFIG_SND_SEQ_DUMMY=m
+-CONFIG_SND_MIXER_OSS=m
+-CONFIG_SND_PCM_OSS=m
+-CONFIG_SND_SEQUENCER_OSS=y
+-CONFIG_SND_DUMMY=m
+-CONFIG_SND_VIRMIDI=m
+-CONFIG_SND_MTPAV=m
+-CONFIG_SND_SERIAL_U16550=m
+-CONFIG_SND_MPU401=m
+-CONFIG_SND_USB_AUDIO=m
+-CONFIG_SOUND_PRIME=m
+-CONFIG_USB_HID=m
+-CONFIG_USB_HIDDEV=y
+-CONFIG_USB_KBD=m
+-CONFIG_USB_MOUSE=m
+-CONFIG_USB=y
+-CONFIG_USB_DEVICEFS=y
+-CONFIG_USB_MON=y
+-CONFIG_USB_SL811_HCD=m
+-CONFIG_USB_ACM=m
+-CONFIG_USB_PRINTER=m
+-CONFIG_USB_STORAGE=m
+-CONFIG_USB_STORAGE_DATAFAB=m
+-CONFIG_USB_STORAGE_FREECOM=m
+-CONFIG_USB_STORAGE_USBAT=m
+-CONFIG_USB_STORAGE_SDDR09=m
+-CONFIG_USB_STORAGE_SDDR55=m
+-CONFIG_USB_STORAGE_JUMPSHOT=m
+-CONFIG_USB_MDC800=m
+-CONFIG_USB_MICROTEK=m
+-CONFIG_USB_SERIAL=m
+-CONFIG_USB_SERIAL_GENERIC=y
+-CONFIG_USB_SERIAL_BELKIN=m
+-CONFIG_USB_SERIAL_WHITEHEAT=m
+-CONFIG_USB_SERIAL_DIGI_ACCELEPORT=m
+-CONFIG_USB_SERIAL_CYPRESS_M8=m
+-CONFIG_USB_SERIAL_EMPEG=m
+-CONFIG_USB_SERIAL_FTDI_SIO=m
+-CONFIG_USB_SERIAL_VISOR=m
+-CONFIG_USB_SERIAL_IPAQ=m
+-CONFIG_USB_SERIAL_IR=m
+-CONFIG_USB_SERIAL_EDGEPORT=m
+-CONFIG_USB_SERIAL_EDGEPORT_TI=m
+-CONFIG_USB_SERIAL_IPW=m
+-CONFIG_USB_SERIAL_KEYSPAN_PDA=m
+-CONFIG_USB_SERIAL_KEYSPAN=m
+-CONFIG_USB_SERIAL_KLSI=m
+-CONFIG_USB_SERIAL_KOBIL_SCT=m
+-CONFIG_USB_SERIAL_MCT_U232=m
+-CONFIG_USB_SERIAL_PL2303=m
+-CONFIG_USB_SERIAL_SAFE=m
+-CONFIG_USB_SERIAL_CYBERJACK=m
+-CONFIG_USB_SERIAL_XIRCOM=m
+-CONFIG_USB_SERIAL_OMNINET=m
+-CONFIG_USB_RIO500=m
+-CONFIG_USB_LEGOTOWER=m
+-CONFIG_USB_LCD=m
+-CONFIG_USB_LED=m
+-CONFIG_USB_CYTHERM=m
+-CONFIG_USB_TEST=m
+-CONFIG_USB_ATM=m
+-CONFIG_USB_SPEEDTOUCH=m
+-CONFIG_USB_GADGET=m
+-CONFIG_USB_GADGET_DUMMY_HCD=y
+-CONFIG_USB_ZERO=m
+-CONFIG_USB_ETH=m
+-CONFIG_USB_GADGETFS=m
+-CONFIG_USB_FILE_STORAGE=m
+-CONFIG_USB_G_SERIAL=m
+-CONFIG_MMC=m
+-CONFIG_EXT2_FS=y
+-CONFIG_EXT2_FS_XATTR=y
+-CONFIG_EXT2_FS_POSIX_ACL=y
+-CONFIG_EXT2_FS_SECURITY=y
+-CONFIG_EXT3_FS=m
+-CONFIG_EXT3_FS_POSIX_ACL=y
+-CONFIG_EXT3_FS_SECURITY=y
+-CONFIG_REISERFS_FS=m
+-CONFIG_REISERFS_FS_XATTR=y
+-CONFIG_REISERFS_FS_POSIX_ACL=y
+-CONFIG_REISERFS_FS_SECURITY=y
+-CONFIG_JFS_FS=m
+-CONFIG_JFS_POSIX_ACL=y
+-CONFIG_JFS_STATISTICS=y
+-CONFIG_XFS_FS=m
+-CONFIG_XFS_QUOTA=y
+-CONFIG_XFS_POSIX_ACL=y
+-CONFIG_XFS_RT=y
+-CONFIG_INOTIFY=y
+-CONFIG_QUOTA=y
+-CONFIG_QFMT_V1=m
+-CONFIG_QFMT_V2=m
+-CONFIG_AUTOFS_FS=m
+-CONFIG_AUTOFS4_FS=m
+-CONFIG_ISO9660_FS=m
+-CONFIG_JOLIET=y
+-CONFIG_ZISOFS=y
+-CONFIG_UDF_FS=m
+-CONFIG_MSDOS_FS=m
+-CONFIG_VFAT_FS=m
+-CONFIG_NTFS_FS=m
+-CONFIG_TMPFS=y
+-CONFIG_ADFS_FS=m
+-CONFIG_AFFS_FS=m
+-CONFIG_HFS_FS=m
+-CONFIG_HFSPLUS_FS=m
+-CONFIG_BEFS_FS=m
+-CONFIG_BFS_FS=m
+-CONFIG_EFS_FS=m
+-CONFIG_JFFS2_FS=m
+-CONFIG_CRAMFS=y
+-CONFIG_VXFS_FS=m
+-CONFIG_MINIX_FS=m
+-CONFIG_HPFS_FS=m
+-CONFIG_QNX4FS_FS=m
+-CONFIG_ROMFS_FS=m
+-CONFIG_SYSV_FS=m
+-CONFIG_UFS_FS=m
+-CONFIG_NFS_FS=y
+-CONFIG_NFS_V3=y
+-CONFIG_NFS_V4=y
+-CONFIG_ROOT_NFS=y
+-CONFIG_NFSD=m
+-CONFIG_NFSD_V4=y
+-CONFIG_RPCSEC_GSS_SPKM3=m
+-CONFIG_SMB_FS=m
+-CONFIG_CIFS=m
+-CONFIG_NCP_FS=m
+-CONFIG_NCPFS_PACKET_SIGNING=y
+-CONFIG_NCPFS_IOCTL_LOCKING=y
+-CONFIG_NCPFS_STRONG=y
+-CONFIG_NCPFS_NFS_NS=y
+-CONFIG_NCPFS_OS2_NS=y
+-CONFIG_NCPFS_NLS=y
+-CONFIG_NCPFS_EXTRAS=y
+-CONFIG_CODA_FS=m
+-CONFIG_AFS_FS=m
+-CONFIG_PARTITION_ADVANCED=y
+-CONFIG_ACORN_PARTITION=y
+-CONFIG_ACORN_PARTITION_ICS=y
+-CONFIG_ACORN_PARTITION_RISCIX=y
+-CONFIG_OSF_PARTITION=y
+-CONFIG_AMIGA_PARTITION=y
+-CONFIG_ATARI_PARTITION=y
+-CONFIG_MAC_PARTITION=y
+-CONFIG_BSD_DISKLABEL=y
+-CONFIG_MINIX_SUBPARTITION=y
+-CONFIG_SOLARIS_X86_PARTITION=y
+-CONFIG_UNIXWARE_DISKLABEL=y
+-CONFIG_LDM_PARTITION=y
+-CONFIG_SGI_PARTITION=y
+-CONFIG_ULTRIX_PARTITION=y
+-CONFIG_SUN_PARTITION=y
+-CONFIG_NLS_DEFAULT="cp437"
+-CONFIG_NLS_CODEPAGE_437=m
+-CONFIG_NLS_CODEPAGE_737=m
+-CONFIG_NLS_CODEPAGE_775=m
+-CONFIG_NLS_CODEPAGE_850=m
+-CONFIG_NLS_CODEPAGE_852=m
+-CONFIG_NLS_CODEPAGE_855=m
+-CONFIG_NLS_CODEPAGE_857=m
+-CONFIG_NLS_CODEPAGE_860=m
+-CONFIG_NLS_CODEPAGE_861=m
+-CONFIG_NLS_CODEPAGE_862=m
+-CONFIG_NLS_CODEPAGE_863=m
+-CONFIG_NLS_CODEPAGE_864=m
+-CONFIG_NLS_CODEPAGE_865=m
+-CONFIG_NLS_CODEPAGE_866=m
+-CONFIG_NLS_CODEPAGE_869=m
+-CONFIG_NLS_CODEPAGE_936=m
+-CONFIG_NLS_CODEPAGE_950=m
+-CONFIG_NLS_CODEPAGE_932=m
+-CONFIG_NLS_CODEPAGE_949=m
+-CONFIG_NLS_CODEPAGE_874=m
+-CONFIG_NLS_ISO8859_8=m
+-CONFIG_NLS_CODEPAGE_1250=m
+-CONFIG_NLS_CODEPAGE_1251=m
+-CONFIG_NLS_ASCII=m
+-CONFIG_NLS_ISO8859_1=m
+-CONFIG_NLS_ISO8859_2=m
+-CONFIG_NLS_ISO8859_3=m
+-CONFIG_NLS_ISO8859_4=m
+-CONFIG_NLS_ISO8859_5=m
+-CONFIG_NLS_ISO8859_6=m
+-CONFIG_NLS_ISO8859_7=m
+-CONFIG_NLS_ISO8859_9=m
+-CONFIG_NLS_ISO8859_13=m
+-CONFIG_NLS_ISO8859_14=m
+-CONFIG_NLS_ISO8859_15=m
+-CONFIG_NLS_KOI8_R=m
+-CONFIG_NLS_KOI8_U=m
+-CONFIG_MAGIC_SYSRQ=y
+-CONFIG_DEBUG_KERNEL=y
+-CONFIG_DEBUG_MUTEXES=y
+-# CONFIG_DEBUG_BUGVERBOSE is not set
+-CONFIG_SECURITY=y
+-CONFIG_CRYPTO_NULL=m
+-CONFIG_CRYPTO_TEST=m
+-CONFIG_CRYPTO_HMAC=y
+-CONFIG_CRYPTO_MD4=m
+-CONFIG_CRYPTO_MICHAEL_MIC=m
+-CONFIG_CRYPTO_SHA256=m
+-CONFIG_CRYPTO_SHA512=m
+-CONFIG_CRYPTO_WP512=m
+-CONFIG_CRYPTO_ANUBIS=m
+-CONFIG_CRYPTO_BLOWFISH=m
+-CONFIG_CRYPTO_CAST6=m
+-CONFIG_CRYPTO_KHAZAD=m
+-CONFIG_CRYPTO_SERPENT=m
+-CONFIG_CRYPTO_TEA=m
+-CONFIG_CRYPTO_TWOFISH=m
+-CONFIG_CRC16=m
+--- linux-2.6.orig/arch/arm/mach-pnx4008/Makefile
++++ /dev/null
+@@ -1,12 +0,0 @@
+-#
+-# Makefile for the linux kernel.
+-#
+-
+-obj-y			:= core.o irq.o time.o clock.o gpio.o serial.o dma.o i2c.o
+-obj-m			:=
+-obj-n			:=
+-obj-			:=
+-
+-# Power Management
+-obj-$(CONFIG_PM) += pm.o sleep.o
+-
+--- linux-2.6.orig/arch/arm/mach-pnx4008/Makefile.boot
++++ /dev/null
+@@ -1,4 +0,0 @@
+-   zreladdr-y		+= 0x80008000
+-params_phys-y		:= 0x80000100
+-initrd_phys-y		:= 0x80800000
+-
+--- linux-2.6.orig/arch/arm/mach-pnx4008/clock.c
++++ /dev/null
+@@ -1,1001 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/clock.c
+- *
+- * Clock control driver for PNX4008
+- *
+- * Authors: Vitaly Wool, Dmitry Chigirev <source@mvista.com>
+- * Generic clock management functions are partially based on:
+- *  linux/arch/arm/mach-omap/clock.c
+- *
+- * 2005-2006 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/list.h>
+-#include <linux/errno.h>
+-#include <linux/device.h>
+-#include <linux/err.h>
+-#include <linux/delay.h>
+-#include <linux/io.h>
+-#include <linux/clkdev.h>
+-
+-#include <mach/hardware.h>
+-#include <mach/clock.h>
+-#include "clock.h"
+-
+-/*forward declaration*/
+-static struct clk per_ck;
+-static struct clk hclk_ck;
+-static struct clk ck_1MHz;
+-static struct clk ck_13MHz;
+-static struct clk ck_pll1;
+-static int local_set_rate(struct clk *clk, u32 rate);
+-
+-static inline void clock_lock(void)
+-{
+-	local_irq_disable();
+-}
+-
+-static inline void clock_unlock(void)
+-{
+-	local_irq_enable();
+-}
+-
+-static void propagate_rate(struct clk *clk)
+-{
+-	struct clk *tmp_clk;
+-
+-	tmp_clk = clk;
+-	while (tmp_clk->propagate_next) {
+-		tmp_clk = tmp_clk->propagate_next;
+-		local_set_rate(tmp_clk, tmp_clk->user_rate);
+-	}
+-}
+-
+-static void clk_reg_disable(struct clk *clk)
+-{
+-	if (clk->enable_reg)
+-		__raw_writel(__raw_readl(clk->enable_reg) &
+-			     ~(1 << clk->enable_shift), clk->enable_reg);
+-}
+-
+-static int clk_reg_enable(struct clk *clk)
+-{
+-	if (clk->enable_reg)
+-		__raw_writel(__raw_readl(clk->enable_reg) |
+-			     (1 << clk->enable_shift), clk->enable_reg);
+-	return 0;
+-}
+-
+-static inline void clk_reg_disable1(struct clk *clk)
+-{
+-	if (clk->enable_reg1)
+-		__raw_writel(__raw_readl(clk->enable_reg1) &
+-			     ~(1 << clk->enable_shift1), clk->enable_reg1);
+-}
+-
+-static inline void clk_reg_enable1(struct clk *clk)
+-{
+-	if (clk->enable_reg1)
+-		__raw_writel(__raw_readl(clk->enable_reg1) |
+-			     (1 << clk->enable_shift1), clk->enable_reg1);
+-}
+-
+-static int clk_wait_for_pll_lock(struct clk *clk)
+-{
+-	int i;
+-	i = 0;
+-	while (i++ < 0xFFF && !(__raw_readl(clk->scale_reg) & 1)) ;	/*wait for PLL to lock */
+-
+-	if (!(__raw_readl(clk->scale_reg) & 1)) {
+-		printk(KERN_ERR
+-		       "%s ERROR: failed to lock, scale reg data: %x\n",
+-		       clk->name, __raw_readl(clk->scale_reg));
+-		return -1;
+-	}
+-	return 0;
+-}
+-
+-static int switch_to_dirty_13mhz(struct clk *clk)
+-{
+-	int i;
+-	int ret;
+-	u32 tmp_reg;
+-
+-	ret = 0;
+-
+-	if (!clk->rate)
+-		clk_reg_enable1(clk);
+-
+-	tmp_reg = __raw_readl(clk->parent_switch_reg);
+-	/*if 13Mhz clock selected, select 13'MHz (dirty) source from OSC */
+-	if (!(tmp_reg & 1)) {
+-		tmp_reg |= (1 << 1);	/* Trigger switch to 13'MHz (dirty) clock */
+-		__raw_writel(tmp_reg, clk->parent_switch_reg);
+-		i = 0;
+-		while (i++ < 0xFFF && !(__raw_readl(clk->parent_switch_reg) & 1)) ;	/*wait for 13'MHz selection status */
+-
+-		if (!(__raw_readl(clk->parent_switch_reg) & 1)) {
+-			printk(KERN_ERR
+-			       "%s ERROR: failed to select 13'MHz, parent sw reg data: %x\n",
+-			       clk->name, __raw_readl(clk->parent_switch_reg));
+-			ret = -1;
+-		}
+-	}
+-
+-	if (!clk->rate)
+-		clk_reg_disable1(clk);
+-
+-	return ret;
+-}
+-
+-static int switch_to_clean_13mhz(struct clk *clk)
+-{
+-	int i;
+-	int ret;
+-	u32 tmp_reg;
+-
+-	ret = 0;
+-
+-	if (!clk->rate)
+-		clk_reg_enable1(clk);
+-
+-	tmp_reg = __raw_readl(clk->parent_switch_reg);
+-	/*if 13'Mhz clock selected, select 13MHz (clean) source from OSC */
+-	if (tmp_reg & 1) {
+-		tmp_reg &= ~(1 << 1);	/* Trigger switch to 13MHz (clean) clock */
+-		__raw_writel(tmp_reg, clk->parent_switch_reg);
+-		i = 0;
+-		while (i++ < 0xFFF && (__raw_readl(clk->parent_switch_reg) & 1)) ;	/*wait for 13MHz selection status */
+-
+-		if (__raw_readl(clk->parent_switch_reg) & 1) {
+-			printk(KERN_ERR
+-			       "%s ERROR: failed to select 13MHz, parent sw reg data: %x\n",
+-			       clk->name, __raw_readl(clk->parent_switch_reg));
+-			ret = -1;
+-		}
+-	}
+-
+-	if (!clk->rate)
+-		clk_reg_disable1(clk);
+-
+-	return ret;
+-}
+-
+-static int set_13MHz_parent(struct clk *clk, struct clk *parent)
+-{
+-	int ret = -EINVAL;
+-
+-	if (parent == &ck_13MHz)
+-		ret = switch_to_clean_13mhz(clk);
+-	else if (parent == &ck_pll1)
+-		ret = switch_to_dirty_13mhz(clk);
+-
+-	return ret;
+-}
+-
+-#define PLL160_MIN_FCCO 156000
+-#define PLL160_MAX_FCCO 320000
+-
+-/*
+- * Calculate pll160 settings.
+- * Possible input: up to 320MHz with step of clk->parent->rate.
+- * In PNX4008 parent rate for pll160s may be either 1 or 13MHz.
+- * Ignored paths: "feedback" (bit 13 set), "div-by-N".
+- * Setting ARM PLL4 rate to 0 will put CPU into direct run mode.
+- * Setting PLL5 and PLL3 rate to 0 will disable USB and DSP clock input.
+- * Please refer to PNX4008 IC manual for details.
+- */
+-
+-static int pll160_set_rate(struct clk *clk, u32 rate)
+-{
+-	u32 tmp_reg, tmp_m, tmp_2p, i;
+-	u32 parent_rate;
+-	int ret = -EINVAL;
+-
+-	parent_rate = clk->parent->rate;
+-
+-	if (!parent_rate)
+-		goto out;
+-
+-	/* set direct run for ARM or disable output for others  */
+-	clk_reg_disable(clk);
+-
+-	/* disable source input as well (ignored for ARM) */
+-	clk_reg_disable1(clk);
+-
+-	tmp_reg = __raw_readl(clk->scale_reg);
+-	tmp_reg &= ~0x1ffff;	/*clear all settings, power down */
+-	__raw_writel(tmp_reg, clk->scale_reg);
+-
+-	rate -= rate % parent_rate;	/*round down the input */
+-
+-	if (rate > PLL160_MAX_FCCO)
+-		rate = PLL160_MAX_FCCO;
+-
+-	if (!rate) {
+-		clk->rate = 0;
+-		ret = 0;
+-		goto out;
+-	}
+-
+-	clk_reg_enable1(clk);
+-	tmp_reg = __raw_readl(clk->scale_reg);
+-
+-	if (rate == parent_rate) {
+-		/*enter direct bypass mode */
+-		tmp_reg |= ((1 << 14) | (1 << 15));
+-		__raw_writel(tmp_reg, clk->scale_reg);
+-		clk->rate = parent_rate;
+-		clk_reg_enable(clk);
+-		ret = 0;
+-		goto out;
+-	}
+-
+-	i = 0;
+-	for (tmp_2p = 1; tmp_2p < 16; tmp_2p <<= 1) {
+-		if (rate * tmp_2p >= PLL160_MIN_FCCO)
+-			break;
+-		i++;
+-	}
+-
+-	if (tmp_2p > 1)
+-		tmp_reg |= ((i - 1) << 11);
+-	else
+-		tmp_reg |= (1 << 14);	/*direct mode, no divide */
+-
+-	tmp_m = rate * tmp_2p;
+-	tmp_m /= parent_rate;
+-
+-	tmp_reg |= (tmp_m - 1) << 1;	/*calculate M */
+-	tmp_reg |= (1 << 16);	/*power up PLL */
+-	__raw_writel(tmp_reg, clk->scale_reg);
+-
+-	if (clk_wait_for_pll_lock(clk) < 0) {
+-		clk_reg_disable(clk);
+-		clk_reg_disable1(clk);
+-
+-		tmp_reg = __raw_readl(clk->scale_reg);
+-		tmp_reg &= ~0x1ffff;	/*clear all settings, power down */
+-		__raw_writel(tmp_reg, clk->scale_reg);
+-		clk->rate = 0;
+-		ret = -EFAULT;
+-		goto out;
+-	}
+-
+-	clk->rate = (tmp_m * parent_rate) / tmp_2p;
+-
+-	if (clk->flags & RATE_PROPAGATES)
+-		propagate_rate(clk);
+-
+-	clk_reg_enable(clk);
+-	ret = 0;
+-
+-out:
+-	return ret;
+-}
+-
+-/*configure PER_CLK*/
+-static int per_clk_set_rate(struct clk *clk, u32 rate)
+-{
+-	u32 tmp;
+-
+-	tmp = __raw_readl(clk->scale_reg);
+-	tmp &= ~(0x1f << 2);
+-	tmp |= ((clk->parent->rate / clk->rate) - 1) << 2;
+-	__raw_writel(tmp, clk->scale_reg);
+-	clk->rate = rate;
+-	return 0;
+-}
+-
+-/*configure HCLK*/
+-static int hclk_set_rate(struct clk *clk, u32 rate)
+-{
+-	u32 tmp;
+-	tmp = __raw_readl(clk->scale_reg);
+-	tmp = tmp & ~0x3;
+-	switch (rate) {
+-	case 1:
+-		break;
+-	case 2:
+-		tmp |= 1;
+-		break;
+-	case 4:
+-		tmp |= 2;
+-		break;
+-	}
+-
+-	__raw_writel(tmp, clk->scale_reg);
+-	clk->rate = rate;
+-	return 0;
+-}
+-
+-static u32 hclk_round_rate(struct clk *clk, u32 rate)
+-{
+-	switch (rate) {
+-	case 1:
+-	case 4:
+-		return rate;
+-	}
+-	return 2;
+-}
+-
+-static u32 per_clk_round_rate(struct clk *clk, u32 rate)
+-{
+-	return CLK_RATE_13MHZ;
+-}
+-
+-static int on_off_set_rate(struct clk *clk, u32 rate)
+-{
+-	if (rate) {
+-		clk_reg_enable(clk);
+-		clk->rate = 1;
+-	} else {
+-		clk_reg_disable(clk);
+-		clk->rate = 0;
+-	}
+-	return 0;
+-}
+-
+-static int on_off_inv_set_rate(struct clk *clk, u32 rate)
+-{
+-	if (rate) {
+-		clk_reg_disable(clk);	/*enable bit is inverted */
+-		clk->rate = 1;
+-	} else {
+-		clk_reg_enable(clk);
+-		clk->rate = 0;
+-	}
+-	return 0;
+-}
+-
+-static u32 on_off_round_rate(struct clk *clk, u32 rate)
+-{
+-	return (rate ? 1 : 0);
+-}
+-
+-static u32 pll4_round_rate(struct clk *clk, u32 rate)
+-{
+-	if (rate > CLK_RATE_208MHZ)
+-		rate = CLK_RATE_208MHZ;
+-	if (rate == CLK_RATE_208MHZ && hclk_ck.user_rate == 1)
+-		rate = CLK_RATE_208MHZ - CLK_RATE_13MHZ;
+-	return (rate - (rate % (hclk_ck.user_rate * CLK_RATE_13MHZ)));
+-}
+-
+-static u32 pll3_round_rate(struct clk *clk, u32 rate)
+-{
+-	if (rate > CLK_RATE_208MHZ)
+-		rate = CLK_RATE_208MHZ;
+-	return (rate - rate % CLK_RATE_13MHZ);
+-}
+-
+-static u32 pll5_round_rate(struct clk *clk, u32 rate)
+-{
+-	return (rate ? CLK_RATE_48MHZ : 0);
+-}
+-
+-static u32 ck_13MHz_round_rate(struct clk *clk, u32 rate)
+-{
+-	return (rate ? CLK_RATE_13MHZ : 0);
+-}
+-
+-static int ck_13MHz_set_rate(struct clk *clk, u32 rate)
+-{
+-	if (rate) {
+-		clk_reg_disable(clk);	/*enable bit is inverted */
+-		udelay(500);
+-		clk->rate = CLK_RATE_13MHZ;
+-		ck_1MHz.rate = CLK_RATE_1MHZ;
+-	} else {
+-		clk_reg_enable(clk);
+-		clk->rate = 0;
+-		ck_1MHz.rate = 0;
+-	}
+-	return 0;
+-}
+-
+-static int pll1_set_rate(struct clk *clk, u32 rate)
+-{
+-#if 0 /* doesn't work on some boards, probably a HW BUG */
+-	if (rate) {
+-		clk_reg_disable(clk);	/*enable bit is inverted */
+-		if (!clk_wait_for_pll_lock(clk)) {
+-			clk->rate = CLK_RATE_13MHZ;
+-		} else {
+-			clk_reg_enable(clk);
+-			clk->rate = 0;
+-		}
+-
+-	} else {
+-		clk_reg_enable(clk);
+-		clk->rate = 0;
+-	}
+-#endif
+-	return 0;
+-}
+-
+-/* Clock sources */
+-
+-static struct clk osc_13MHz = {
+-	.name = "osc_13MHz",
+-	.flags = FIXED_RATE,
+-	.rate = CLK_RATE_13MHZ,
+-};
+-
+-static struct clk ck_13MHz = {
+-	.name = "ck_13MHz",
+-	.parent = &osc_13MHz,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &ck_13MHz_round_rate,
+-	.set_rate = &ck_13MHz_set_rate,
+-	.enable_reg = OSC13CTRL_REG,
+-	.enable_shift = 0,
+-	.rate = CLK_RATE_13MHZ,
+-};
+-
+-static struct clk osc_32KHz = {
+-	.name = "osc_32KHz",
+-	.flags = FIXED_RATE,
+-	.rate = CLK_RATE_32KHZ,
+-};
+-
+-/*attached to PLL5*/
+-static struct clk ck_1MHz = {
+-	.name = "ck_1MHz",
+-	.flags = FIXED_RATE | PARENT_SET_RATE,
+-	.parent = &ck_13MHz,
+-};
+-
+-/* PLL1 (397) - provides 13' MHz clock */
+-static struct clk ck_pll1 = {
+-	.name = "ck_pll1",
+-	.parent = &osc_32KHz,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &ck_13MHz_round_rate,
+-	.set_rate = &pll1_set_rate,
+-	.enable_reg = PLLCTRL_REG,
+-	.enable_shift = 1,
+-	.scale_reg = PLLCTRL_REG,
+-	.rate = CLK_RATE_13MHZ,
+-};
+-
+-/* CPU/Bus PLL */
+-static struct clk ck_pll4 = {
+-	.name = "ck_pll4",
+-	.parent = &ck_pll1,
+-	.flags = RATE_PROPAGATES | NEEDS_INITIALIZATION,
+-	.propagate_next = &per_ck,
+-	.round_rate = &pll4_round_rate,
+-	.set_rate = &pll160_set_rate,
+-	.rate = CLK_RATE_208MHZ,
+-	.scale_reg = HCLKPLLCTRL_REG,
+-	.enable_reg = PWRCTRL_REG,
+-	.enable_shift = 2,
+-	.parent_switch_reg = SYSCLKCTRL_REG,
+-	.set_parent = &set_13MHz_parent,
+-};
+-
+-/* USB PLL */
+-static struct clk ck_pll5 = {
+-	.name = "ck_pll5",
+-	.parent = &ck_1MHz,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &pll5_round_rate,
+-	.set_rate = &pll160_set_rate,
+-	.scale_reg = USBCTRL_REG,
+-	.enable_reg = USBCTRL_REG,
+-	.enable_shift = 18,
+-	.enable_reg1 = USBCTRL_REG,
+-	.enable_shift1 = 17,
+-};
+-
+-/* XPERTTeak DSP PLL */
+-static struct clk ck_pll3 = {
+-	.name = "ck_pll3",
+-	.parent = &ck_pll1,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &pll3_round_rate,
+-	.set_rate = &pll160_set_rate,
+-	.scale_reg = DSPPLLCTRL_REG,
+-	.enable_reg = DSPCLKCTRL_REG,
+-	.enable_shift = 3,
+-	.enable_reg1 = DSPCLKCTRL_REG,
+-	.enable_shift1 = 2,
+-	.parent_switch_reg = DSPCLKCTRL_REG,
+-	.set_parent = &set_13MHz_parent,
+-};
+-
+-static struct clk hclk_ck = {
+-	.name = "hclk_ck",
+-	.parent = &ck_pll4,
+-	.flags = PARENT_SET_RATE,
+-	.set_rate = &hclk_set_rate,
+-	.round_rate = &hclk_round_rate,
+-	.scale_reg = HCLKDIVCTRL_REG,
+-	.rate = 2,
+-	.user_rate = 2,
+-};
+-
+-static struct clk per_ck = {
+-	.name = "per_ck",
+-	.parent = &ck_pll4,
+-	.flags = FIXED_RATE,
+-	.propagate_next = &hclk_ck,
+-	.set_rate = &per_clk_set_rate,
+-	.round_rate = &per_clk_round_rate,
+-	.scale_reg = HCLKDIVCTRL_REG,
+-	.rate = CLK_RATE_13MHZ,
+-	.user_rate = CLK_RATE_13MHZ,
+-};
+-
+-static struct clk m2hclk_ck = {
+-	.name = "m2hclk_ck",
+-	.parent = &hclk_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_inv_set_rate,
+-	.rate = 1,
+-	.enable_shift = 6,
+-	.enable_reg = PWRCTRL_REG,
+-};
+-
+-static struct clk vfp9_ck = {
+-	.name = "vfp9_ck",
+-	.parent = &ck_pll4,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.rate = 1,
+-	.enable_shift = 4,
+-	.enable_reg = VFP9CLKCTRL_REG,
+-};
+-
+-static struct clk keyscan_ck = {
+-	.name = "keyscan_ck",
+-	.parent = &osc_32KHz,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 0,
+-	.enable_reg = KEYCLKCTRL_REG,
+-};
+-
+-static struct clk touch_ck = {
+-	.name = "touch_ck",
+-	.parent = &osc_32KHz,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 0,
+-	.enable_reg = TSCLKCTRL_REG,
+-};
+-
+-static struct clk pwm1_ck = {
+-	.name = "pwm1_ck",
+-	.parent = &osc_32KHz,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 0,
+-	.enable_reg = PWMCLKCTRL_REG,
+-};
+-
+-static struct clk pwm2_ck = {
+-	.name = "pwm2_ck",
+-	.parent = &osc_32KHz,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 2,
+-	.enable_reg = PWMCLKCTRL_REG,
+-};
+-
+-static struct clk jpeg_ck = {
+-	.name = "jpeg_ck",
+-	.parent = &hclk_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 0,
+-	.enable_reg = JPEGCLKCTRL_REG,
+-};
+-
+-static struct clk ms_ck = {
+-	.name = "ms_ck",
+-	.parent = &ck_pll4,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 5,
+-	.enable_reg = MSCTRL_REG,
+-};
+-
+-static struct clk dum_ck = {
+-	.name = "dum_ck",
+-	.parent = &hclk_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 0,
+-	.enable_reg = DUMCLKCTRL_REG,
+-};
+-
+-static struct clk flash_ck = {
+-	.name = "flash_ck",
+-	.parent = &hclk_ck,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 1,	/* Only MLC clock supported */
+-	.enable_reg = FLASHCLKCTRL_REG,
+-};
+-
+-static struct clk i2c0_ck = {
+-	.name = "i2c0_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION | FIXED_RATE,
+-	.enable_shift = 0,
+-	.enable_reg = I2CCLKCTRL_REG,
+-	.rate = 13000000,
+-	.enable = clk_reg_enable,
+-	.disable = clk_reg_disable,
+-};
+-
+-static struct clk i2c1_ck = {
+-	.name = "i2c1_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION | FIXED_RATE,
+-	.enable_shift = 1,
+-	.enable_reg = I2CCLKCTRL_REG,
+-	.rate = 13000000,
+-	.enable = clk_reg_enable,
+-	.disable = clk_reg_disable,
+-};
+-
+-static struct clk i2c2_ck = {
+-	.name = "i2c2_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION | FIXED_RATE,
+-	.enable_shift = 2,
+-	.enable_reg = USB_OTG_CLKCTRL_REG,
+-	.rate = 13000000,
+-	.enable = clk_reg_enable,
+-	.disable = clk_reg_disable,
+-};
+-
+-static struct clk spi0_ck = {
+-	.name = "spi0_ck",
+-	.parent = &hclk_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 0,
+-	.enable_reg = SPICTRL_REG,
+-};
+-
+-static struct clk spi1_ck = {
+-	.name = "spi1_ck",
+-	.parent = &hclk_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 4,
+-	.enable_reg = SPICTRL_REG,
+-};
+-
+-static struct clk dma_ck = {
+-	.name = "dma_ck",
+-	.parent = &hclk_ck,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 0,
+-	.enable_reg = DMACLKCTRL_REG,
+-};
+-
+-static struct clk uart3_ck = {
+-	.name = "uart3_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.rate = 1,
+-	.enable_shift = 0,
+-	.enable_reg = UARTCLKCTRL_REG,
+-};
+-
+-static struct clk uart4_ck = {
+-	.name = "uart4_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 1,
+-	.enable_reg = UARTCLKCTRL_REG,
+-};
+-
+-static struct clk uart5_ck = {
+-	.name = "uart5_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.rate = 1,
+-	.enable_shift = 2,
+-	.enable_reg = UARTCLKCTRL_REG,
+-};
+-
+-static struct clk uart6_ck = {
+-	.name = "uart6_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.round_rate = &on_off_round_rate,
+-	.set_rate = &on_off_set_rate,
+-	.enable_shift = 3,
+-	.enable_reg = UARTCLKCTRL_REG,
+-};
+-
+-static struct clk wdt_ck = {
+-	.name = "wdt_ck",
+-	.parent = &per_ck,
+-	.flags = NEEDS_INITIALIZATION,
+-	.enable_shift = 0,
+-	.enable_reg = TIMCLKCTRL_REG,
+-	.enable = clk_reg_enable,
+-	.disable = clk_reg_disable,
+-};
+-
+-/* These clocks are visible outside this module
+- * and can be initialized
+- */
+-static struct clk *onchip_clks[] __initdata = {
+-	&ck_13MHz,
+-	&ck_pll1,
+-	&ck_pll4,
+-	&ck_pll5,
+-	&ck_pll3,
+-	&vfp9_ck,
+-	&m2hclk_ck,
+-	&hclk_ck,
+-	&dma_ck,
+-	&flash_ck,
+-	&dum_ck,
+-	&keyscan_ck,
+-	&pwm1_ck,
+-	&pwm2_ck,
+-	&jpeg_ck,
+-	&ms_ck,
+-	&touch_ck,
+-	&i2c0_ck,
+-	&i2c1_ck,
+-	&i2c2_ck,
+-	&spi0_ck,
+-	&spi1_ck,
+-	&uart3_ck,
+-	&uart4_ck,
+-	&uart5_ck,
+-	&uart6_ck,
+-	&wdt_ck,
+-};
+-
+-static struct clk_lookup onchip_clkreg[] = {
+-	{ .clk = &ck_13MHz,	.con_id = "ck_13MHz"	},
+-	{ .clk = &ck_pll1,	.con_id = "ck_pll1"	},
+-	{ .clk = &ck_pll4,	.con_id = "ck_pll4"	},
+-	{ .clk = &ck_pll5,	.con_id = "ck_pll5"	},
+-	{ .clk = &ck_pll3,	.con_id = "ck_pll3"	},
+-	{ .clk = &vfp9_ck,	.con_id = "vfp9_ck"	},
+-	{ .clk = &m2hclk_ck,	.con_id = "m2hclk_ck"	},
+-	{ .clk = &hclk_ck,	.con_id = "hclk_ck"	},
+-	{ .clk = &dma_ck,	.con_id = "dma_ck"	},
+-	{ .clk = &flash_ck,	.con_id = "flash_ck"	},
+-	{ .clk = &dum_ck,	.con_id = "dum_ck"	},
+-	{ .clk = &keyscan_ck,	.con_id = "keyscan_ck"	},
+-	{ .clk = &pwm1_ck,	.con_id = "pwm1_ck"	},
+-	{ .clk = &pwm2_ck,	.con_id = "pwm2_ck"	},
+-	{ .clk = &jpeg_ck,	.con_id = "jpeg_ck"	},
+-	{ .clk = &ms_ck,	.con_id = "ms_ck"	},
+-	{ .clk = &touch_ck,	.con_id = "touch_ck"	},
+-	{ .clk = &i2c0_ck,	.dev_id = "pnx-i2c.0"	},
+-	{ .clk = &i2c1_ck,	.dev_id = "pnx-i2c.1"	},
+-	{ .clk = &i2c2_ck,	.dev_id = "pnx-i2c.2"	},
+-	{ .clk = &spi0_ck,	.con_id = "spi0_ck"	},
+-	{ .clk = &spi1_ck,	.con_id = "spi1_ck"	},
+-	{ .clk = &uart3_ck,	.con_id = "uart3_ck"	},
+-	{ .clk = &uart4_ck,	.con_id = "uart4_ck"	},
+-	{ .clk = &uart5_ck,	.con_id = "uart5_ck"	},
+-	{ .clk = &uart6_ck,	.con_id = "uart6_ck"	},
+-	{ .clk = &wdt_ck,	.dev_id = "pnx4008-watchdog" },
+-};
+-
+-static void local_clk_disable(struct clk *clk)
+-{
+-	if (WARN_ON(clk->usecount == 0))
+-		return;
+-
+-	if (!(--clk->usecount)) {
+-		if (clk->disable)
+-			clk->disable(clk);
+-		else if (!(clk->flags & FIXED_RATE) && clk->rate && clk->set_rate)
+-			clk->set_rate(clk, 0);
+-		if (clk->parent)
+-			local_clk_disable(clk->parent);
+-	}
+-}
+-
+-static int local_clk_enable(struct clk *clk)
+-{
+-	int ret = 0;
+-
+-	if (clk->usecount == 0) {
+-		if (clk->parent) {
+-			ret = local_clk_enable(clk->parent);
+-			if (ret != 0)
+-				goto out;
+-		}
+-
+-		if (clk->enable)
+-			ret = clk->enable(clk);
+-		else if (!(clk->flags & FIXED_RATE) && !clk->rate && clk->set_rate
+-			    && clk->user_rate)
+-			ret = clk->set_rate(clk, clk->user_rate);
+-
+-		if (ret != 0 && clk->parent) {
+-			local_clk_disable(clk->parent);
+-			goto out;
+-		}
+-
+-		clk->usecount++;
+-	}
+-out:
+-	return ret;
+-}
+-
+-static int local_set_rate(struct clk *clk, u32 rate)
+-{
+-	int ret = -EINVAL;
+-	if (clk->set_rate) {
+-
+-		if (clk->user_rate == clk->rate && clk->parent->rate) {
+-			/* if clock enabled or rate not set */
+-			clk->user_rate = clk->round_rate(clk, rate);
+-			ret = clk->set_rate(clk, clk->user_rate);
+-		} else
+-			clk->user_rate = clk->round_rate(clk, rate);
+-		ret = 0;
+-	}
+-	return ret;
+-}
+-
+-int clk_set_rate(struct clk *clk, unsigned long rate)
+-{
+-	int ret = -EINVAL;
+-
+-	if (clk->flags & FIXED_RATE)
+-		goto out;
+-
+-	clock_lock();
+-	if ((clk->flags & PARENT_SET_RATE) && clk->parent) {
+-
+-		clk->user_rate = clk->round_rate(clk, rate);
+-		/* parent clock needs to be refreshed
+-		   for the setting to take effect */
+-	} else {
+-		ret = local_set_rate(clk, rate);
+-	}
+-	ret = 0;
+-	clock_unlock();
+-
+-out:
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(clk_set_rate);
+-
+-unsigned long clk_get_rate(struct clk *clk)
+-{
+-	unsigned long ret;
+-	clock_lock();
+-	ret = clk->rate;
+-	clock_unlock();
+-	return ret;
+-}
+-EXPORT_SYMBOL(clk_get_rate);
+-
+-int clk_enable(struct clk *clk)
+-{
+-	int ret;
+-
+-	clock_lock();
+-	ret = local_clk_enable(clk);
+-	clock_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(clk_enable);
+-
+-void clk_disable(struct clk *clk)
+-{
+-	clock_lock();
+-	local_clk_disable(clk);
+-	clock_unlock();
+-}
+-
+-EXPORT_SYMBOL(clk_disable);
+-
+-long clk_round_rate(struct clk *clk, unsigned long rate)
+-{
+-	long ret;
+-	clock_lock();
+-	if (clk->round_rate)
+-		ret = clk->round_rate(clk, rate);
+-	else
+-		ret = clk->rate;
+-	clock_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(clk_round_rate);
+-
+-int clk_set_parent(struct clk *clk, struct clk *parent)
+-{
+-	int ret = -ENODEV;
+-	if (!clk->set_parent)
+-		goto out;
+-
+-	clock_lock();
+-	ret = clk->set_parent(clk, parent);
+-	if (!ret)
+-		clk->parent = parent;
+-	clock_unlock();
+-
+-out:
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(clk_set_parent);
+-
+-static int __init clk_init(void)
+-{
+-	struct clk **clkp;
+-
+-	/* Disable autoclocking, as it doesn't seem to work */
+-	__raw_writel(0xff, AUTOCLK_CTRL);
+-
+-	for (clkp = onchip_clks; clkp < onchip_clks + ARRAY_SIZE(onchip_clks);
+-	     clkp++) {
+-		struct clk *clk = *clkp;
+-		if (clk->flags & NEEDS_INITIALIZATION) {
+-			if (clk->set_rate) {
+-				clk->user_rate = clk->rate;
+-				local_set_rate(clk, clk->user_rate);
+-				if (clk->set_parent)
+-					clk->set_parent(clk, clk->parent);
+-			}
+-			if (clk->enable && clk->usecount)
+-				clk->enable(clk);
+-			if (clk->disable && !clk->usecount)
+-				clk->disable(clk);
+-		}
+-		pr_debug("%s: clock %s, rate %ld\n",
+-			__func__, clk->name, clk->rate);
+-	}
+-
+-	local_clk_enable(&ck_pll4);
+-
+-	/* if ck_13MHz is not used, disable it. */
+-	if (ck_13MHz.usecount == 0)
+-		local_clk_disable(&ck_13MHz);
+-
+-	/* Disable autoclocking */
+-	__raw_writeb(0xff, AUTOCLK_CTRL);
+-
+-	clkdev_add_table(onchip_clkreg, ARRAY_SIZE(onchip_clkreg));
+-
+-	return 0;
+-}
+-
+-arch_initcall(clk_init);
+--- linux-2.6.orig/arch/arm/mach-pnx4008/clock.h
++++ /dev/null
+@@ -1,43 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/clock.h
+- *
+- * Clock control driver for PNX4008 - internal header file
+- *
+- * Author: Vitaly Wool <source@mvista.com>
+- *
+- * 2006 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-#ifndef __ARCH_ARM_PNX4008_CLOCK_H__
+-#define __ARCH_ARM_PNX4008_CLOCK_H__
+-
+-struct clk {
+-	const char *name;
+-	struct clk *parent;
+-	struct clk *propagate_next;
+-	u32 rate;
+-	u32 user_rate;
+-	s8 usecount;
+-	u32 flags;
+-	u32 scale_reg;
+-	u8 enable_shift;
+-	u32 enable_reg;
+-	u8 enable_shift1;
+-	u32 enable_reg1;
+-	u32 parent_switch_reg;
+-	u32(*round_rate) (struct clk *, u32);
+-	int (*set_rate) (struct clk *, u32);
+-	int (*set_parent) (struct clk * clk, struct clk * parent);
+-	int (*enable)(struct clk *);
+-	void (*disable)(struct clk *);
+-};
+-
+-/* Flags */
+-#define RATE_PROPAGATES      (1<<0)
+-#define NEEDS_INITIALIZATION (1<<1)
+-#define PARENT_SET_RATE      (1<<2)
+-#define FIXED_RATE           (1<<3)
+-
+-#endif
+--- linux-2.6.orig/arch/arm/mach-pnx4008/core.c
++++ /dev/null
+@@ -1,290 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/core.c
+- *
+- * PNX4008 core startup code
+- *
+- * Authors: Vitaly Wool, Dmitry Chigirev,
+- * Grigory Tolstolytkin, Dmitry Pervushin <source@mvista.com>
+- *
+- * Based on reference code received from Philips:
+- * Copyright (C) 2003 Philips Semiconductors
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/types.h>
+-#include <linux/mm.h>
+-#include <linux/interrupt.h>
+-#include <linux/list.h>
+-#include <linux/init.h>
+-#include <linux/ioport.h>
+-#include <linux/serial_8250.h>
+-#include <linux/device.h>
+-#include <linux/spi/spi.h>
+-#include <linux/io.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/mach-types.h>
+-#include <asm/pgtable.h>
+-#include <asm/page.h>
+-#include <asm/system_misc.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/time.h>
+-
+-#include <mach/irq.h>
+-#include <mach/clock.h>
+-#include <mach/dma.h>
+-
+-struct resource spipnx_0_resources[] = {
+-	{
+-		.start = PNX4008_SPI1_BASE,
+-		.end = PNX4008_SPI1_BASE + SZ_4K,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = PER_SPI1_REC_XMIT,
+-		.flags = IORESOURCE_DMA,
+-	}, {
+-		.start = SPI1_INT,
+-		.flags = IORESOURCE_IRQ,
+-	}, {
+-		.flags = 0,
+-	},
+-};
+-
+-struct resource spipnx_1_resources[] = {
+-	{
+-		.start = PNX4008_SPI2_BASE,
+-		.end = PNX4008_SPI2_BASE + SZ_4K,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = PER_SPI2_REC_XMIT,
+-		.flags = IORESOURCE_DMA,
+-	}, {
+-		.start = SPI2_INT,
+-		.flags = IORESOURCE_IRQ,
+-	}, {
+-		.flags = 0,
+-	}
+-};
+-
+-static struct spi_board_info spi_board_info[] __initdata = {
+-	{
+-		.modalias	= "m25p80",
+-		.max_speed_hz	= 1000000,
+-		.bus_num	= 1,
+-		.chip_select	= 0,
+-	},
+-};
+-
+-static struct platform_device spipnx_1 = {
+-	.name = "spipnx",
+-	.id = 1,
+-	.num_resources = ARRAY_SIZE(spipnx_0_resources),
+-	.resource = spipnx_0_resources,
+-	.dev = {
+-		.coherent_dma_mask = 0xFFFFFFFF,
+-		},
+-};
+-
+-static struct platform_device spipnx_2 = {
+-	.name = "spipnx",
+-	.id = 2,
+-	.num_resources = ARRAY_SIZE(spipnx_1_resources),
+-	.resource = spipnx_1_resources,
+-	.dev = {
+-		.coherent_dma_mask = 0xFFFFFFFF,
+-		},
+-};
+-
+-static struct plat_serial8250_port platform_serial_ports[] = {
+-	{
+-		.membase = (void *)__iomem(IO_ADDRESS(PNX4008_UART5_BASE)),
+-		.mapbase = (unsigned long)PNX4008_UART5_BASE,
+-		.irq = IIR5_INT,
+-		.uartclk = PNX4008_UART_CLK,
+-		.regshift = 2,
+-		.iotype = UPIO_MEM,
+-		.flags = UPF_BOOT_AUTOCONF | UPF_BUGGY_UART | UPF_SKIP_TEST,
+-	},
+-	{
+-		.membase = (void *)__iomem(IO_ADDRESS(PNX4008_UART3_BASE)),
+-		.mapbase = (unsigned long)PNX4008_UART3_BASE,
+-		.irq = IIR3_INT,
+-		.uartclk = PNX4008_UART_CLK,
+-		.regshift = 2,
+-		.iotype = UPIO_MEM,
+-		.flags = UPF_BOOT_AUTOCONF | UPF_BUGGY_UART | UPF_SKIP_TEST,
+-	 },
+-	{}
+-};
+-
+-static struct platform_device serial_device = {
+-	.name = "serial8250",
+-	.id = PLAT8250_DEV_PLATFORM,
+-	.dev = {
+-		.platform_data = &platform_serial_ports,
+-	},
+-};
+-
+-static struct platform_device nand_flash_device = {
+-	.name = "pnx4008-flash",
+-	.id = -1,
+-	.dev = {
+-		.coherent_dma_mask = 0xFFFFFFFF,
+-	},
+-};
+-
+-/* The dmamask must be set for OHCI to work */
+-static u64 ohci_dmamask = ~(u32) 0;
+-
+-static struct resource ohci_resources[] = {
+-	{
+-		.start = IO_ADDRESS(PNX4008_USB_CONFIG_BASE),
+-		.end = IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0x100),
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = USB_HOST_INT,
+-		.flags = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct platform_device ohci_device = {
+-	.name = "pnx4008-usb-ohci",
+-	.id = -1,
+-	.dev = {
+-		.dma_mask = &ohci_dmamask,
+-		.coherent_dma_mask = 0xffffffff,
+-		},
+-	.num_resources = ARRAY_SIZE(ohci_resources),
+-	.resource = ohci_resources,
+-};
+-
+-static struct platform_device sdum_device = {
+-	.name = "pnx4008-sdum",
+-	.id = 0,
+-	.dev = {
+-		.coherent_dma_mask = 0xffffffff,
+-	},
+-};
+-
+-static struct platform_device rgbfb_device = {
+-	.name = "pnx4008-rgbfb",
+-	.id = 0,
+-	.dev = {
+-		.coherent_dma_mask = 0xffffffff,
+-	}
+-};
+-
+-struct resource watchdog_resources[] = {
+-	{
+-		.start = PNX4008_WDOG_BASE,
+-		.end = PNX4008_WDOG_BASE + SZ_4K - 1,
+-		.flags = IORESOURCE_MEM,
+-	},
+-};
+-
+-static struct platform_device watchdog_device = {
+-	.name = "pnx4008-watchdog",
+-	.id = -1,
+-	.num_resources = ARRAY_SIZE(watchdog_resources),
+-	.resource = watchdog_resources,
+-};
+-
+-static struct platform_device *devices[] __initdata = {
+-	&spipnx_1,
+-	&spipnx_2,
+-	&serial_device,
+-	&ohci_device,
+-	&nand_flash_device,
+-	&sdum_device,
+-	&rgbfb_device,
+-	&watchdog_device,
+-};
+-
+-
+-extern void pnx4008_uart_init(void);
+-
+-static void __init pnx4008_init(void)
+-{
+-	/*disable all START interrupt sources,
+-	   and clear all START interrupt flags */
+-	__raw_writel(0, START_INT_ER_REG(SE_PIN_BASE_INT));
+-	__raw_writel(0, START_INT_ER_REG(SE_INT_BASE_INT));
+-	__raw_writel(0xffffffff, START_INT_RSR_REG(SE_PIN_BASE_INT));
+-	__raw_writel(0xffffffff, START_INT_RSR_REG(SE_INT_BASE_INT));
+-
+-	platform_add_devices(devices, ARRAY_SIZE(devices));
+-	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+-	/* Switch on the UART clocks */
+-	pnx4008_uart_init();
+-}
+-
+-static struct map_desc pnx4008_io_desc[] __initdata = {
+-	{
+-		.virtual 	= IO_ADDRESS(PNX4008_IRAM_BASE),
+-		.pfn 		= __phys_to_pfn(PNX4008_IRAM_BASE),
+-		.length		= SZ_64K,
+-		.type 		= MT_DEVICE,
+-	}, {
+-		.virtual 	= IO_ADDRESS(PNX4008_NDF_FLASH_BASE),
+-		.pfn 		= __phys_to_pfn(PNX4008_NDF_FLASH_BASE),
+-		.length		= SZ_1M - SZ_128K,
+-		.type 		= MT_DEVICE,
+-	}, {
+-		.virtual 	= IO_ADDRESS(PNX4008_JPEG_CONFIG_BASE),
+-		.pfn 		= __phys_to_pfn(PNX4008_JPEG_CONFIG_BASE),
+-		.length		= SZ_128K * 3,
+-		.type 		= MT_DEVICE,
+-	}, {
+-		.virtual 	= IO_ADDRESS(PNX4008_DMA_CONFIG_BASE),
+-		.pfn 		= __phys_to_pfn(PNX4008_DMA_CONFIG_BASE),
+-		.length		= SZ_1M,
+-		.type 		= MT_DEVICE,
+-	}, {
+-		.virtual 	= IO_ADDRESS(PNX4008_AHB2FAB_BASE),
+-		.pfn 		= __phys_to_pfn(PNX4008_AHB2FAB_BASE),
+-		.length		= SZ_1M,
+-		.type 		= MT_DEVICE,
+-	},
+-};
+-
+-void __init pnx4008_map_io(void)
+-{
+-	iotable_init(pnx4008_io_desc, ARRAY_SIZE(pnx4008_io_desc));
+-}
+-
+-static void pnx4008_restart(char mode, const char *cmd)
+-{
+-	soft_restart(0);
+-}
+-
+-#ifdef CONFIG_PM
+-extern int pnx4008_pm_init(void);
+-#else
+-static inline int pnx4008_pm_init(void) { return 0; }
+-#endif
+-
+-void __init pnx4008_init_late(void)
+-{
+-	pnx4008_pm_init();
+-}
+-
+-extern struct sys_timer pnx4008_timer;
+-
+-MACHINE_START(PNX4008, "Philips PNX4008")
+-	/* Maintainer: MontaVista Software Inc. */
+-	.atag_offset		= 0x100,
+-	.map_io 		= pnx4008_map_io,
+-	.init_irq 		= pnx4008_init_irq,
+-	.init_machine 		= pnx4008_init,
+-	.init_late		= pnx4008_init_late,
+-	.timer 			= &pnx4008_timer,
+-	.restart		= pnx4008_restart,
+-MACHINE_END
+--- linux-2.6.orig/arch/arm/mach-pnx4008/dma.c
++++ /dev/null
+@@ -1,1105 +0,0 @@
+-/*
+- *  linux/arch/arm/mach-pnx4008/dma.c
+- *
+- *  PNX4008 DMA registration and IRQ dispatching
+- *
+- *  Author:	Vitaly Wool
+- *  Copyright:	MontaVista Software Inc. (c) 2005
+- *
+- *  Based on the code from Nicolas Pitre
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License version 2 as
+- *  published by the Free Software Foundation.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/kernel.h>
+-#include <linux/interrupt.h>
+-#include <linux/errno.h>
+-#include <linux/err.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/clk.h>
+-#include <linux/io.h>
+-#include <linux/gfp.h>
+-
+-#include <mach/hardware.h>
+-#include <mach/dma.h>
+-#include <asm/dma-mapping.h>
+-#include <mach/clock.h>
+-
+-static struct dma_channel {
+-	char *name;
+-	void (*irq_handler) (int, int, void *);
+-	void *data;
+-	struct pnx4008_dma_ll *ll;
+-	u32 ll_dma;
+-	void *target_addr;
+-	int target_id;
+-} dma_channels[MAX_DMA_CHANNELS];
+-
+-static struct ll_pool {
+-	void *vaddr;
+-	void *cur;
+-	dma_addr_t dma_addr;
+-	int count;
+-} ll_pool;
+-
+-static DEFINE_SPINLOCK(ll_lock);
+-
+-struct pnx4008_dma_ll *pnx4008_alloc_ll_entry(dma_addr_t * ll_dma)
+-{
+-	struct pnx4008_dma_ll *ll = NULL;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&ll_lock, flags);
+-	if (ll_pool.count > 4) { /* can give one more */
+-		ll = *(struct pnx4008_dma_ll **) ll_pool.cur;
+-		*ll_dma = ll_pool.dma_addr + ((void *)ll - ll_pool.vaddr);
+-		*(void **)ll_pool.cur = **(void ***)ll_pool.cur;
+-		memset(ll, 0, sizeof(*ll));
+-		ll_pool.count--;
+-	}
+-	spin_unlock_irqrestore(&ll_lock, flags);
+-
+-	return ll;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_alloc_ll_entry);
+-
+-void pnx4008_free_ll_entry(struct pnx4008_dma_ll * ll, dma_addr_t ll_dma)
+-{
+-	unsigned long flags;
+-
+-	if (ll) {
+-		if ((unsigned long)((long)ll - (long)ll_pool.vaddr) > 0x4000) {
+-			printk(KERN_ERR "Trying to free entry not allocated by DMA\n");
+-			BUG();
+-		}
+-
+-		if (ll->flags & DMA_BUFFER_ALLOCATED)
+-			ll->free(ll->alloc_data);
+-
+-		spin_lock_irqsave(&ll_lock, flags);
+-		*(long *)ll = *(long *)ll_pool.cur;
+-		*(long *)ll_pool.cur = (long)ll;
+-		ll_pool.count++;
+-		spin_unlock_irqrestore(&ll_lock, flags);
+-	}
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_free_ll_entry);
+-
+-void pnx4008_free_ll(u32 ll_dma, struct pnx4008_dma_ll * ll)
+-{
+-	struct pnx4008_dma_ll *ptr;
+-	u32 dma;
+-
+-	while (ll) {
+-		dma = ll->next_dma;
+-		ptr = ll->next;
+-		pnx4008_free_ll_entry(ll, ll_dma);
+-
+-		ll_dma = dma;
+-		ll = ptr;
+-	}
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_free_ll);
+-
+-static int dma_channels_requested = 0;
+-
+-static inline void dma_increment_usage(void)
+-{
+-	if (!dma_channels_requested++) {
+-		struct clk *clk = clk_get(0, "dma_ck");
+-		if (!IS_ERR(clk)) {
+-			clk_set_rate(clk, 1);
+-			clk_put(clk);
+-		}
+-		pnx4008_config_dma(-1, -1, 1);
+-	}
+-}
+-static inline void dma_decrement_usage(void)
+-{
+-	if (!--dma_channels_requested) {
+-		struct clk *clk = clk_get(0, "dma_ck");
+-		if (!IS_ERR(clk)) {
+-			clk_set_rate(clk, 0);
+-			clk_put(clk);
+-		}
+-		pnx4008_config_dma(-1, -1, 0);
+-
+-	}
+-}
+-
+-static DEFINE_SPINLOCK(dma_lock);
+-
+-static inline void pnx4008_dma_lock(void)
+-{
+-	spin_lock_irq(&dma_lock);
+-}
+-
+-static inline void pnx4008_dma_unlock(void)
+-{
+-	spin_unlock_irq(&dma_lock);
+-}
+-
+-#define VALID_CHANNEL(c)	(((c) >= 0) && ((c) < MAX_DMA_CHANNELS))
+-
+-int pnx4008_request_channel(char *name, int ch,
+-			    void (*irq_handler) (int, int, void *), void *data)
+-{
+-	int i, found = 0;
+-
+-	/* basic sanity checks */
+-	if (!name || (ch != -1 && !VALID_CHANNEL(ch)))
+-		return -EINVAL;
+-
+-	pnx4008_dma_lock();
+-
+-	/* try grabbing a DMA channel with the requested priority */
+-	for (i = MAX_DMA_CHANNELS - 1; i >= 0; i--) {
+-		if (!dma_channels[i].name && (ch == -1 || ch == i)) {
+-			found = 1;
+-			break;
+-		}
+-	}
+-
+-	if (found) {
+-		dma_increment_usage();
+-		dma_channels[i].name = name;
+-		dma_channels[i].irq_handler = irq_handler;
+-		dma_channels[i].data = data;
+-		dma_channels[i].ll = NULL;
+-		dma_channels[i].ll_dma = 0;
+-	} else {
+-		printk(KERN_WARNING "No more available DMA channels for %s\n",
+-		       name);
+-		i = -ENODEV;
+-	}
+-
+-	pnx4008_dma_unlock();
+-	return i;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_request_channel);
+-
+-void pnx4008_free_channel(int ch)
+-{
+-	if (!dma_channels[ch].name) {
+-		printk(KERN_CRIT
+-		       "%s: trying to free channel %d which is already freed\n",
+-		       __func__, ch);
+-		return;
+-	}
+-
+-	pnx4008_dma_lock();
+-	pnx4008_free_ll(dma_channels[ch].ll_dma, dma_channels[ch].ll);
+-	dma_channels[ch].ll = NULL;
+-	dma_decrement_usage();
+-
+-	dma_channels[ch].name = NULL;
+-	pnx4008_dma_unlock();
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_free_channel);
+-
+-int pnx4008_config_dma(int ahb_m1_be, int ahb_m2_be, int enable)
+-{
+-	unsigned long dma_cfg = __raw_readl(DMAC_CONFIG);
+-
+-	switch (ahb_m1_be) {
+-	case 0:
+-		dma_cfg &= ~(1 << 1);
+-		break;
+-	case 1:
+-		dma_cfg |= (1 << 1);
+-		break;
+-	default:
+-		break;
+-	}
+-
+-	switch (ahb_m2_be) {
+-	case 0:
+-		dma_cfg &= ~(1 << 2);
+-		break;
+-	case 1:
+-		dma_cfg |= (1 << 2);
+-		break;
+-	default:
+-		break;
+-	}
+-
+-	switch (enable) {
+-	case 0:
+-		dma_cfg &= ~(1 << 0);
+-		break;
+-	case 1:
+-		dma_cfg |= (1 << 0);
+-		break;
+-	default:
+-		break;
+-	}
+-
+-	pnx4008_dma_lock();
+-	__raw_writel(dma_cfg, DMAC_CONFIG);
+-	pnx4008_dma_unlock();
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_config_dma);
+-
+-int pnx4008_dma_pack_control(const struct pnx4008_dma_ch_ctrl * ch_ctrl,
+-			     unsigned long *ctrl)
+-{
+-	int i = 0, dbsize, sbsize, err = 0;
+-
+-	if (!ctrl || !ch_ctrl) {
+-		err = -EINVAL;
+-		goto out;
+-	}
+-
+-	*ctrl = 0;
+-
+-	switch (ch_ctrl->tc_mask) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 31);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-
+-	switch (ch_ctrl->cacheable) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 30);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->bufferable) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 29);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->priv_mode) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 28);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->di) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 27);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->si) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 26);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->dest_ahb1) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 25);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->src_ahb1) {
+-	case 0:
+-		break;
+-	case 1:
+-		*ctrl |= (1 << 24);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->dwidth) {
+-	case WIDTH_BYTE:
+-		*ctrl &= ~(7 << 21);
+-		break;
+-	case WIDTH_HWORD:
+-		*ctrl &= ~(7 << 21);
+-		*ctrl |= (1 << 21);
+-		break;
+-	case WIDTH_WORD:
+-		*ctrl &= ~(7 << 21);
+-		*ctrl |= (2 << 21);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_ctrl->swidth) {
+-	case WIDTH_BYTE:
+-		*ctrl &= ~(7 << 18);
+-		break;
+-	case WIDTH_HWORD:
+-		*ctrl &= ~(7 << 18);
+-		*ctrl |= (1 << 18);
+-		break;
+-	case WIDTH_WORD:
+-		*ctrl &= ~(7 << 18);
+-		*ctrl |= (2 << 18);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	dbsize = ch_ctrl->dbsize;
+-	while (!(dbsize & 1)) {
+-		i++;
+-		dbsize >>= 1;
+-	}
+-	if (ch_ctrl->dbsize != 1 || i > 8 || i == 1) {
+-		err = -EINVAL;
+-		goto out;
+-	} else if (i > 1)
+-		i--;
+-	*ctrl &= ~(7 << 15);
+-	*ctrl |= (i << 15);
+-
+-	sbsize = ch_ctrl->sbsize;
+-	while (!(sbsize & 1)) {
+-		i++;
+-		sbsize >>= 1;
+-	}
+-	if (ch_ctrl->sbsize != 1 || i > 8 || i == 1) {
+-		err = -EINVAL;
+-		goto out;
+-	} else if (i > 1)
+-		i--;
+-	*ctrl &= ~(7 << 12);
+-	*ctrl |= (i << 12);
+-
+-	if (ch_ctrl->tr_size > 0x7ff) {
+-		err = -E2BIG;
+-		goto out;
+-	}
+-	*ctrl &= ~0x7ff;
+-	*ctrl |= ch_ctrl->tr_size & 0x7ff;
+-
+-out:
+-	return err;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_pack_control);
+-
+-int pnx4008_dma_parse_control(unsigned long ctrl,
+-			      struct pnx4008_dma_ch_ctrl * ch_ctrl)
+-{
+-	int err = 0;
+-
+-	if (!ch_ctrl) {
+-		err = -EINVAL;
+-		goto out;
+-	}
+-
+-	ch_ctrl->tr_size = ctrl & 0x7ff;
+-	ctrl >>= 12;
+-
+-	ch_ctrl->sbsize = 1 << (ctrl & 7);
+-	if (ch_ctrl->sbsize > 1)
+-		ch_ctrl->sbsize <<= 1;
+-	ctrl >>= 3;
+-
+-	ch_ctrl->dbsize = 1 << (ctrl & 7);
+-	if (ch_ctrl->dbsize > 1)
+-		ch_ctrl->dbsize <<= 1;
+-	ctrl >>= 3;
+-
+-	switch (ctrl & 7) {
+-	case 0:
+-		ch_ctrl->swidth = WIDTH_BYTE;
+-		break;
+-	case 1:
+-		ch_ctrl->swidth = WIDTH_HWORD;
+-		break;
+-	case 2:
+-		ch_ctrl->swidth = WIDTH_WORD;
+-		break;
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	ctrl >>= 3;
+-
+-	switch (ctrl & 7) {
+-	case 0:
+-		ch_ctrl->dwidth = WIDTH_BYTE;
+-		break;
+-	case 1:
+-		ch_ctrl->dwidth = WIDTH_HWORD;
+-		break;
+-	case 2:
+-		ch_ctrl->dwidth = WIDTH_WORD;
+-		break;
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	ctrl >>= 3;
+-
+-	ch_ctrl->src_ahb1 = ctrl & 1;
+-	ctrl >>= 1;
+-
+-	ch_ctrl->dest_ahb1 = ctrl & 1;
+-	ctrl >>= 1;
+-
+-	ch_ctrl->si = ctrl & 1;
+-	ctrl >>= 1;
+-
+-	ch_ctrl->di = ctrl & 1;
+-	ctrl >>= 1;
+-
+-	ch_ctrl->priv_mode = ctrl & 1;
+-	ctrl >>= 1;
+-
+-	ch_ctrl->bufferable = ctrl & 1;
+-	ctrl >>= 1;
+-
+-	ch_ctrl->cacheable = ctrl & 1;
+-	ctrl >>= 1;
+-
+-	ch_ctrl->tc_mask = ctrl & 1;
+-
+-out:
+-	return err;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_parse_control);
+-
+-int pnx4008_dma_pack_config(const struct pnx4008_dma_ch_config * ch_cfg,
+-			    unsigned long *cfg)
+-{
+-	int err = 0;
+-
+-	if (!cfg || !ch_cfg) {
+-		err = -EINVAL;
+-		goto out;
+-	}
+-
+-	*cfg = 0;
+-
+-	switch (ch_cfg->halt) {
+-	case 0:
+-		break;
+-	case 1:
+-		*cfg |= (1 << 18);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_cfg->active) {
+-	case 0:
+-		break;
+-	case 1:
+-		*cfg |= (1 << 17);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_cfg->lock) {
+-	case 0:
+-		break;
+-	case 1:
+-		*cfg |= (1 << 16);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_cfg->itc) {
+-	case 0:
+-		break;
+-	case 1:
+-		*cfg |= (1 << 15);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_cfg->ie) {
+-	case 0:
+-		break;
+-	case 1:
+-		*cfg |= (1 << 14);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	switch (ch_cfg->flow_cntrl) {
+-	case FC_MEM2MEM_DMA:
+-		*cfg &= ~(7 << 11);
+-		break;
+-	case FC_MEM2PER_DMA:
+-		*cfg &= ~(7 << 11);
+-		*cfg |= (1 << 11);
+-		break;
+-	case FC_PER2MEM_DMA:
+-		*cfg &= ~(7 << 11);
+-		*cfg |= (2 << 11);
+-		break;
+-	case FC_PER2PER_DMA:
+-		*cfg &= ~(7 << 11);
+-		*cfg |= (3 << 11);
+-		break;
+-	case FC_PER2PER_DPER:
+-		*cfg &= ~(7 << 11);
+-		*cfg |= (4 << 11);
+-		break;
+-	case FC_MEM2PER_PER:
+-		*cfg &= ~(7 << 11);
+-		*cfg |= (5 << 11);
+-		break;
+-	case FC_PER2MEM_PER:
+-		*cfg &= ~(7 << 11);
+-		*cfg |= (6 << 11);
+-		break;
+-	case FC_PER2PER_SPER:
+-		*cfg |= (7 << 11);
+-		break;
+-
+-	default:
+-		err = -EINVAL;
+-		goto out;
+-	}
+-	*cfg &= ~(0x1f << 6);
+-	*cfg |= ((ch_cfg->dest_per & 0x1f) << 6);
+-
+-	*cfg &= ~(0x1f << 1);
+-	*cfg |= ((ch_cfg->src_per & 0x1f) << 1);
+-
+-out:
+-	return err;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_pack_config);
+-
+-int pnx4008_dma_parse_config(unsigned long cfg,
+-			     struct pnx4008_dma_ch_config * ch_cfg)
+-{
+-	int err = 0;
+-
+-	if (!ch_cfg) {
+-		err = -EINVAL;
+-		goto out;
+-	}
+-
+-	cfg >>= 1;
+-
+-	ch_cfg->src_per = cfg & 0x1f;
+-	cfg >>= 5;
+-
+-	ch_cfg->dest_per = cfg & 0x1f;
+-	cfg >>= 5;
+-
+-	switch (cfg & 7) {
+-	case 0:
+-		ch_cfg->flow_cntrl = FC_MEM2MEM_DMA;
+-		break;
+-	case 1:
+-		ch_cfg->flow_cntrl = FC_MEM2PER_DMA;
+-		break;
+-	case 2:
+-		ch_cfg->flow_cntrl = FC_PER2MEM_DMA;
+-		break;
+-	case 3:
+-		ch_cfg->flow_cntrl = FC_PER2PER_DMA;
+-		break;
+-	case 4:
+-		ch_cfg->flow_cntrl = FC_PER2PER_DPER;
+-		break;
+-	case 5:
+-		ch_cfg->flow_cntrl = FC_MEM2PER_PER;
+-		break;
+-	case 6:
+-		ch_cfg->flow_cntrl = FC_PER2MEM_PER;
+-		break;
+-	case 7:
+-		ch_cfg->flow_cntrl = FC_PER2PER_SPER;
+-	}
+-	cfg >>= 3;
+-
+-	ch_cfg->ie = cfg & 1;
+-	cfg >>= 1;
+-
+-	ch_cfg->itc = cfg & 1;
+-	cfg >>= 1;
+-
+-	ch_cfg->lock = cfg & 1;
+-	cfg >>= 1;
+-
+-	ch_cfg->active = cfg & 1;
+-	cfg >>= 1;
+-
+-	ch_cfg->halt = cfg & 1;
+-
+-out:
+-	return err;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_parse_config);
+-
+-void pnx4008_dma_split_head_entry(struct pnx4008_dma_config * config,
+-				  struct pnx4008_dma_ch_ctrl * ctrl)
+-{
+-	int new_len = ctrl->tr_size, num_entries = 0;
+-	int old_len = new_len;
+-	int src_width, dest_width, count = 1;
+-
+-	switch (ctrl->swidth) {
+-	case WIDTH_BYTE:
+-		src_width = 1;
+-		break;
+-	case WIDTH_HWORD:
+-		src_width = 2;
+-		break;
+-	case WIDTH_WORD:
+-		src_width = 4;
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	switch (ctrl->dwidth) {
+-	case WIDTH_BYTE:
+-		dest_width = 1;
+-		break;
+-	case WIDTH_HWORD:
+-		dest_width = 2;
+-		break;
+-	case WIDTH_WORD:
+-		dest_width = 4;
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	while (new_len > 0x7FF) {
+-		num_entries++;
+-		new_len = (ctrl->tr_size + num_entries) / (num_entries + 1);
+-	}
+-	if (num_entries != 0) {
+-		struct pnx4008_dma_ll *ll = NULL;
+-		config->ch_ctrl &= ~0x7ff;
+-		config->ch_ctrl |= new_len;
+-		if (!config->is_ll) {
+-			config->is_ll = 1;
+-			while (num_entries) {
+-				if (!ll) {
+-					config->ll =
+-					    pnx4008_alloc_ll_entry(&config->
+-								   ll_dma);
+-					ll = config->ll;
+-				} else {
+-					ll->next =
+-					    pnx4008_alloc_ll_entry(&ll->
+-								   next_dma);
+-					ll = ll->next;
+-				}
+-
+-				if (ctrl->si)
+-					ll->src_addr =
+-					    config->src_addr +
+-					    src_width * new_len * count;
+-				else
+-					ll->src_addr = config->src_addr;
+-				if (ctrl->di)
+-					ll->dest_addr =
+-					    config->dest_addr +
+-					    dest_width * new_len * count;
+-				else
+-					ll->dest_addr = config->dest_addr;
+-				ll->ch_ctrl = config->ch_ctrl & 0x7fffffff;
+-				ll->next_dma = 0;
+-				ll->next = NULL;
+-				num_entries--;
+-				count++;
+-			}
+-		} else {
+-			struct pnx4008_dma_ll *ll_old = config->ll;
+-			unsigned long ll_dma_old = config->ll_dma;
+-			while (num_entries) {
+-				if (!ll) {
+-					config->ll =
+-					    pnx4008_alloc_ll_entry(&config->
+-								   ll_dma);
+-					ll = config->ll;
+-				} else {
+-					ll->next =
+-					    pnx4008_alloc_ll_entry(&ll->
+-								   next_dma);
+-					ll = ll->next;
+-				}
+-
+-				if (ctrl->si)
+-					ll->src_addr =
+-					    config->src_addr +
+-					    src_width * new_len * count;
+-				else
+-					ll->src_addr = config->src_addr;
+-				if (ctrl->di)
+-					ll->dest_addr =
+-					    config->dest_addr +
+-					    dest_width * new_len * count;
+-				else
+-					ll->dest_addr = config->dest_addr;
+-				ll->ch_ctrl = config->ch_ctrl & 0x7fffffff;
+-				ll->next_dma = 0;
+-				ll->next = NULL;
+-				num_entries--;
+-				count++;
+-			}
+-			ll->next_dma = ll_dma_old;
+-			ll->next = ll_old;
+-		}
+-		/* adjust last length/tc */
+-		ll->ch_ctrl = config->ch_ctrl & (~0x7ff);
+-		ll->ch_ctrl |= old_len - new_len * (count - 1);
+-		config->ch_ctrl &= 0x7fffffff;
+-	}
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_split_head_entry);
+-
+-void pnx4008_dma_split_ll_entry(struct pnx4008_dma_ll * cur_ll,
+-				struct pnx4008_dma_ch_ctrl * ctrl)
+-{
+-	int new_len = ctrl->tr_size, num_entries = 0;
+-	int old_len = new_len;
+-	int src_width, dest_width, count = 1;
+-
+-	switch (ctrl->swidth) {
+-	case WIDTH_BYTE:
+-		src_width = 1;
+-		break;
+-	case WIDTH_HWORD:
+-		src_width = 2;
+-		break;
+-	case WIDTH_WORD:
+-		src_width = 4;
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	switch (ctrl->dwidth) {
+-	case WIDTH_BYTE:
+-		dest_width = 1;
+-		break;
+-	case WIDTH_HWORD:
+-		dest_width = 2;
+-		break;
+-	case WIDTH_WORD:
+-		dest_width = 4;
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	while (new_len > 0x7FF) {
+-		num_entries++;
+-		new_len = (ctrl->tr_size + num_entries) / (num_entries + 1);
+-	}
+-	if (num_entries != 0) {
+-		struct pnx4008_dma_ll *ll = NULL;
+-		cur_ll->ch_ctrl &= ~0x7ff;
+-		cur_ll->ch_ctrl |= new_len;
+-		if (!cur_ll->next) {
+-			while (num_entries) {
+-				if (!ll) {
+-					cur_ll->next =
+-					    pnx4008_alloc_ll_entry(&cur_ll->
+-								   next_dma);
+-					ll = cur_ll->next;
+-				} else {
+-					ll->next =
+-					    pnx4008_alloc_ll_entry(&ll->
+-								   next_dma);
+-					ll = ll->next;
+-				}
+-
+-				if (ctrl->si)
+-					ll->src_addr =
+-					    cur_ll->src_addr +
+-					    src_width * new_len * count;
+-				else
+-					ll->src_addr = cur_ll->src_addr;
+-				if (ctrl->di)
+-					ll->dest_addr =
+-					    cur_ll->dest_addr +
+-					    dest_width * new_len * count;
+-				else
+-					ll->dest_addr = cur_ll->dest_addr;
+-				ll->ch_ctrl = cur_ll->ch_ctrl & 0x7fffffff;
+-				ll->next_dma = 0;
+-				ll->next = NULL;
+-				num_entries--;
+-				count++;
+-			}
+-		} else {
+-			struct pnx4008_dma_ll *ll_old = cur_ll->next;
+-			unsigned long ll_dma_old = cur_ll->next_dma;
+-			while (num_entries) {
+-				if (!ll) {
+-					cur_ll->next =
+-					    pnx4008_alloc_ll_entry(&cur_ll->
+-								   next_dma);
+-					ll = cur_ll->next;
+-				} else {
+-					ll->next =
+-					    pnx4008_alloc_ll_entry(&ll->
+-								   next_dma);
+-					ll = ll->next;
+-				}
+-
+-				if (ctrl->si)
+-					ll->src_addr =
+-					    cur_ll->src_addr +
+-					    src_width * new_len * count;
+-				else
+-					ll->src_addr = cur_ll->src_addr;
+-				if (ctrl->di)
+-					ll->dest_addr =
+-					    cur_ll->dest_addr +
+-					    dest_width * new_len * count;
+-				else
+-					ll->dest_addr = cur_ll->dest_addr;
+-				ll->ch_ctrl = cur_ll->ch_ctrl & 0x7fffffff;
+-				ll->next_dma = 0;
+-				ll->next = NULL;
+-				num_entries--;
+-				count++;
+-			}
+-
+-			ll->next_dma = ll_dma_old;
+-			ll->next = ll_old;
+-		}
+-		/* adjust last length/tc */
+-		ll->ch_ctrl = cur_ll->ch_ctrl & (~0x7ff);
+-		ll->ch_ctrl |= old_len - new_len * (count - 1);
+-		cur_ll->ch_ctrl &= 0x7fffffff;
+-	}
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_split_ll_entry);
+-
+-int pnx4008_config_channel(int ch, struct pnx4008_dma_config * config)
+-{
+-	if (!VALID_CHANNEL(ch) || !dma_channels[ch].name)
+-		return -EINVAL;
+-
+-	pnx4008_dma_lock();
+-	__raw_writel(config->src_addr, DMAC_Cx_SRC_ADDR(ch));
+-	__raw_writel(config->dest_addr, DMAC_Cx_DEST_ADDR(ch));
+-
+-	if (config->is_ll)
+-		__raw_writel(config->ll_dma, DMAC_Cx_LLI(ch));
+-	else
+-		__raw_writel(0, DMAC_Cx_LLI(ch));
+-
+-	__raw_writel(config->ch_ctrl, DMAC_Cx_CONTROL(ch));
+-	__raw_writel(config->ch_cfg, DMAC_Cx_CONFIG(ch));
+-	pnx4008_dma_unlock();
+-
+-	return 0;
+-
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_config_channel);
+-
+-int pnx4008_channel_get_config(int ch, struct pnx4008_dma_config * config)
+-{
+-	if (!VALID_CHANNEL(ch) || !dma_channels[ch].name || !config)
+-		return -EINVAL;
+-
+-	pnx4008_dma_lock();
+-	config->ch_cfg = __raw_readl(DMAC_Cx_CONFIG(ch));
+-	config->ch_ctrl = __raw_readl(DMAC_Cx_CONTROL(ch));
+-
+-	config->ll_dma = __raw_readl(DMAC_Cx_LLI(ch));
+-	config->is_ll = config->ll_dma ? 1 : 0;
+-
+-	config->src_addr = __raw_readl(DMAC_Cx_SRC_ADDR(ch));
+-	config->dest_addr = __raw_readl(DMAC_Cx_DEST_ADDR(ch));
+-	pnx4008_dma_unlock();
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_channel_get_config);
+-
+-int pnx4008_dma_ch_enable(int ch)
+-{
+-	unsigned long ch_cfg;
+-
+-	if (!VALID_CHANNEL(ch) || !dma_channels[ch].name)
+-		return -EINVAL;
+-
+-	pnx4008_dma_lock();
+-	ch_cfg = __raw_readl(DMAC_Cx_CONFIG(ch));
+-	ch_cfg |= 1;
+-	__raw_writel(ch_cfg, DMAC_Cx_CONFIG(ch));
+-	pnx4008_dma_unlock();
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_ch_enable);
+-
+-int pnx4008_dma_ch_disable(int ch)
+-{
+-	unsigned long ch_cfg;
+-
+-	if (!VALID_CHANNEL(ch) || !dma_channels[ch].name)
+-		return -EINVAL;
+-
+-	pnx4008_dma_lock();
+-	ch_cfg = __raw_readl(DMAC_Cx_CONFIG(ch));
+-	ch_cfg &= ~1;
+-	__raw_writel(ch_cfg, DMAC_Cx_CONFIG(ch));
+-	pnx4008_dma_unlock();
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_ch_disable);
+-
+-int pnx4008_dma_ch_enabled(int ch)
+-{
+-	unsigned long ch_cfg;
+-
+-	if (!VALID_CHANNEL(ch) || !dma_channels[ch].name)
+-		return -EINVAL;
+-
+-	pnx4008_dma_lock();
+-	ch_cfg = __raw_readl(DMAC_Cx_CONFIG(ch));
+-	pnx4008_dma_unlock();
+-
+-	return ch_cfg & 1;
+-}
+-
+-EXPORT_SYMBOL_GPL(pnx4008_dma_ch_enabled);
+-
+-static irqreturn_t dma_irq_handler(int irq, void *dev_id)
+-{
+-	int i;
+-	unsigned long dint = __raw_readl(DMAC_INT_STAT);
+-	unsigned long tcint = __raw_readl(DMAC_INT_TC_STAT);
+-	unsigned long eint = __raw_readl(DMAC_INT_ERR_STAT);
+-	unsigned long i_bit;
+-
+-	for (i = MAX_DMA_CHANNELS - 1; i >= 0; i--) {
+-		i_bit = 1 << i;
+-		if (dint & i_bit) {
+-			struct dma_channel *channel = &dma_channels[i];
+-
+-			if (channel->name && channel->irq_handler) {
+-				int cause = 0;
+-
+-				if (eint & i_bit)
+-					cause |= DMA_ERR_INT;
+-				if (tcint & i_bit)
+-					cause |= DMA_TC_INT;
+-				channel->irq_handler(i, cause, channel->data);
+-			} else {
+-				/*
+-				 * IRQ for an unregistered DMA channel
+-				 */
+-				printk(KERN_WARNING
+-				       "spurious IRQ for DMA channel %d\n", i);
+-			}
+-			if (tcint & i_bit)
+-				__raw_writel(i_bit, DMAC_INT_TC_CLEAR);
+-			if (eint & i_bit)
+-				__raw_writel(i_bit, DMAC_INT_ERR_CLEAR);
+-		}
+-	}
+-	return IRQ_HANDLED;
+-}
+-
+-static int __init pnx4008_dma_init(void)
+-{
+-	int ret, i;
+-
+-	ret = request_irq(DMA_INT, dma_irq_handler, 0, "DMA", NULL);
+-	if (ret) {
+-		printk(KERN_CRIT "Wow!  Can't register IRQ for DMA\n");
+-		goto out;
+-	}
+-
+-	ll_pool.count = 0x4000 / sizeof(struct pnx4008_dma_ll);
+-	ll_pool.cur = ll_pool.vaddr =
+-	    dma_alloc_coherent(NULL, ll_pool.count * sizeof(struct pnx4008_dma_ll),
+-			       &ll_pool.dma_addr, GFP_KERNEL);
+-
+-	if (!ll_pool.vaddr) {
+-		ret = -ENOMEM;
+-		free_irq(DMA_INT, NULL);
+-		goto out;
+-	}
+-
+-	for (i = 0; i < ll_pool.count - 1; i++) {
+-		void **addr = ll_pool.vaddr + i * sizeof(struct pnx4008_dma_ll);
+-		*addr = (void *)addr + sizeof(struct pnx4008_dma_ll);
+-	}
+-	*(long *)(ll_pool.vaddr +
+-		  (ll_pool.count - 1) * sizeof(struct pnx4008_dma_ll)) =
+-	    (long)ll_pool.vaddr;
+-
+-	__raw_writel(1, DMAC_CONFIG);
+-
+-out:
+-	return ret;
+-}
+-arch_initcall(pnx4008_dma_init);
+--- linux-2.6.orig/arch/arm/mach-pnx4008/gpio.c
++++ /dev/null
+@@ -1,328 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/gpio.c
+- *
+- * PNX4008 GPIO driver
+- *
+- * Author: Dmitry Chigirev <source@mvista.com>
+- *
+- * Based on reference code by Iwo Mergler and Z.Tabaaloute from Philips:
+- * Copyright (c) 2005 Koninklijke Philips Electronics N.V.
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-#include <linux/types.h>
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/io.h>
+-#include <mach/hardware.h>
+-#include <mach/platform.h>
+-#include <mach/gpio-pnx4008.h>
+-
+-/* register definitions */
+-#define PIO_VA_BASE	IO_ADDRESS(PNX4008_PIO_BASE)
+-
+-#define PIO_INP_STATE	(0x00U)
+-#define PIO_OUTP_SET	(0x04U)
+-#define PIO_OUTP_CLR	(0x08U)
+-#define PIO_OUTP_STATE	(0x0CU)
+-#define PIO_DRV_SET	(0x10U)
+-#define PIO_DRV_CLR	(0x14U)
+-#define PIO_DRV_STATE	(0x18U)
+-#define PIO_SDINP_STATE	(0x1CU)
+-#define PIO_SDOUTP_SET	(0x20U)
+-#define PIO_SDOUTP_CLR	(0x24U)
+-#define PIO_MUX_SET	(0x28U)
+-#define PIO_MUX_CLR	(0x2CU)
+-#define PIO_MUX_STATE	(0x30U)
+-
+-static inline void gpio_lock(void)
+-{
+-	local_irq_disable();
+-}
+-
+-static inline void gpio_unlock(void)
+-{
+-	local_irq_enable();
+-}
+-
+-/* Inline functions */
+-static inline int gpio_read_bit(u32 reg, int gpio)
+-{
+-	u32 bit, val;
+-	int ret = -EFAULT;
+-
+-	if (gpio < 0)
+-		goto out;
+-
+-	bit = GPIO_BIT(gpio);
+-	if (bit) {
+-		val = __raw_readl(PIO_VA_BASE + reg);
+-		ret = (val & bit) ? 1 : 0;
+-	}
+-out:
+-	return ret;
+-}
+-
+-static inline int gpio_set_bit(u32 reg, int gpio)
+-{
+-	u32 bit, val;
+-	int ret = -EFAULT;
+-
+-	if (gpio < 0)
+-		goto out;
+-
+-	bit = GPIO_BIT(gpio);
+-	if (bit) {
+-		val = __raw_readl(PIO_VA_BASE + reg);
+-		val |= bit;
+-		__raw_writel(val, PIO_VA_BASE + reg);
+-		ret = 0;
+-	}
+-out:
+-	return ret;
+-}
+-
+-/* Very simple access control, bitmap for allocated/free */
+-static unsigned long access_map[4];
+-#define INP_INDEX	0
+-#define OUTP_INDEX	1
+-#define GPIO_INDEX	2
+-#define MUX_INDEX	3
+-
+-/*GPIO to Input Mapping */
+-static short gpio_to_inp_map[32] = {
+-	-1, -1, -1, -1, -1, -1, -1, -1,
+-	-1, -1, -1, -1, -1, -1, -1, -1,
+-	-1, -1, -1, -1, -1, -1, -1, -1,
+-	-1, 10, 11, 12, 13, 14, 24, -1
+-};
+-
+-/*GPIO to Mux Mapping */
+-static short gpio_to_mux_map[32] = {
+-	-1, -1, -1, -1, -1, -1, -1, -1,
+-	-1, -1, -1, -1, -1, -1, -1, -1,
+-	-1, -1, -1, -1, -1, -1, -1, -1,
+-	-1, -1, -1, 0, 1, 4, 5, -1
+-};
+-
+-/*Output to Mux Mapping */
+-static short outp_to_mux_map[32] = {
+-	-1, -1, -1, 6, -1, -1, -1, -1,
+-	-1, -1, -1, -1, -1, -1, -1, -1,
+-	-1, -1, -1, -1, -1, 2, -1, -1,
+-	-1, -1, -1, -1, -1, -1, -1, -1
+-};
+-
+-int pnx4008_gpio_register_pin(unsigned short pin)
+-{
+-	unsigned long bit = GPIO_BIT(pin);
+-	int ret = -EBUSY;	/* Already in use */
+-
+-	gpio_lock();
+-
+-	if (GPIO_ISBID(pin)) {
+-		if (access_map[GPIO_INDEX] & bit)
+-			goto out;
+-		access_map[GPIO_INDEX] |= bit;
+-
+-	} else if (GPIO_ISRAM(pin)) {
+-		if (access_map[GPIO_INDEX] & bit)
+-			goto out;
+-		access_map[GPIO_INDEX] |= bit;
+-
+-	} else if (GPIO_ISMUX(pin)) {
+-		if (access_map[MUX_INDEX] & bit)
+-			goto out;
+-		access_map[MUX_INDEX] |= bit;
+-
+-	} else if (GPIO_ISOUT(pin)) {
+-		if (access_map[OUTP_INDEX] & bit)
+-			goto out;
+-		access_map[OUTP_INDEX] |= bit;
+-
+-	} else if (GPIO_ISIN(pin)) {
+-		if (access_map[INP_INDEX] & bit)
+-			goto out;
+-		access_map[INP_INDEX] |= bit;
+-	} else
+-		goto out;
+-	ret = 0;
+-
+-out:
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_register_pin);
+-
+-int pnx4008_gpio_unregister_pin(unsigned short pin)
+-{
+-	unsigned long bit = GPIO_BIT(pin);
+-	int ret = -EFAULT;	/* Not registered */
+-
+-	gpio_lock();
+-
+-	if (GPIO_ISBID(pin)) {
+-		if (~access_map[GPIO_INDEX] & bit)
+-			goto out;
+-		access_map[GPIO_INDEX] &= ~bit;
+-	} else if (GPIO_ISRAM(pin)) {
+-		if (~access_map[GPIO_INDEX] & bit)
+-			goto out;
+-		access_map[GPIO_INDEX] &= ~bit;
+-	} else if (GPIO_ISMUX(pin)) {
+-		if (~access_map[MUX_INDEX] & bit)
+-			goto out;
+-		access_map[MUX_INDEX] &= ~bit;
+-	} else if (GPIO_ISOUT(pin)) {
+-		if (~access_map[OUTP_INDEX] & bit)
+-			goto out;
+-		access_map[OUTP_INDEX] &= ~bit;
+-	} else if (GPIO_ISIN(pin)) {
+-		if (~access_map[INP_INDEX] & bit)
+-			goto out;
+-		access_map[INP_INDEX] &= ~bit;
+-	} else
+-		goto out;
+-	ret = 0;
+-
+-out:
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_unregister_pin);
+-
+-unsigned long pnx4008_gpio_read_pin(unsigned short pin)
+-{
+-	unsigned long ret = -EFAULT;
+-	int gpio = GPIO_BIT_MASK(pin);
+-	gpio_lock();
+-	if (GPIO_ISOUT(pin)) {
+-		ret = gpio_read_bit(PIO_OUTP_STATE, gpio);
+-	} else if (GPIO_ISRAM(pin)) {
+-		if (gpio_read_bit(PIO_DRV_STATE, gpio) == 0) {
+-			ret = gpio_read_bit(PIO_SDINP_STATE, gpio);
+-		}
+-	} else if (GPIO_ISBID(pin)) {
+-		ret = gpio_read_bit(PIO_DRV_STATE, gpio);
+-		if (ret > 0)
+-			ret = gpio_read_bit(PIO_OUTP_STATE, gpio);
+-		else if (ret == 0)
+-			ret =
+-			    gpio_read_bit(PIO_INP_STATE, gpio_to_inp_map[gpio]);
+-	} else if (GPIO_ISIN(pin)) {
+-		ret = gpio_read_bit(PIO_INP_STATE, gpio);
+-	}
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_read_pin);
+-
+-/* Write Value to output */
+-int pnx4008_gpio_write_pin(unsigned short pin, int output)
+-{
+-	int gpio = GPIO_BIT_MASK(pin);
+-	int ret = -EFAULT;
+-
+-	gpio_lock();
+-	if (GPIO_ISOUT(pin)) {
+-		printk( "writing '%x' to '%x'\n",
+-				gpio, output ? PIO_OUTP_SET : PIO_OUTP_CLR );
+-		ret = gpio_set_bit(output ? PIO_OUTP_SET : PIO_OUTP_CLR, gpio);
+-	} else if (GPIO_ISRAM(pin)) {
+-		if (gpio_read_bit(PIO_DRV_STATE, gpio) > 0)
+-			ret = gpio_set_bit(output ? PIO_SDOUTP_SET :
+-					   PIO_SDOUTP_CLR, gpio);
+-	} else if (GPIO_ISBID(pin)) {
+-		if (gpio_read_bit(PIO_DRV_STATE, gpio) > 0)
+-			ret = gpio_set_bit(output ? PIO_OUTP_SET :
+-					   PIO_OUTP_CLR, gpio);
+-	}
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_write_pin);
+-
+-/* Value = 1 : Set GPIO pin as output */
+-/* Value = 0 : Set GPIO pin as input */
+-int pnx4008_gpio_set_pin_direction(unsigned short pin, int output)
+-{
+-	int gpio = GPIO_BIT_MASK(pin);
+-	int ret = -EFAULT;
+-
+-	gpio_lock();
+-	if (GPIO_ISBID(pin) || GPIO_ISRAM(pin)) {
+-		ret = gpio_set_bit(output ? PIO_DRV_SET : PIO_DRV_CLR, gpio);
+-	}
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_set_pin_direction);
+-
+-/* Read GPIO pin direction: 0= pin used as input, 1= pin used as output*/
+-int pnx4008_gpio_read_pin_direction(unsigned short pin)
+-{
+-	int gpio = GPIO_BIT_MASK(pin);
+-	int ret = -EFAULT;
+-
+-	gpio_lock();
+-	if (GPIO_ISBID(pin) || GPIO_ISRAM(pin)) {
+-		ret = gpio_read_bit(PIO_DRV_STATE, gpio);
+-	}
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_read_pin_direction);
+-
+-/* Value = 1 : Set pin to muxed function  */
+-/* Value = 0 : Set pin as GPIO */
+-int pnx4008_gpio_set_pin_mux(unsigned short pin, int output)
+-{
+-	int gpio = GPIO_BIT_MASK(pin);
+-	int ret = -EFAULT;
+-
+-	gpio_lock();
+-	if (GPIO_ISBID(pin)) {
+-		ret =
+-		    gpio_set_bit(output ? PIO_MUX_SET : PIO_MUX_CLR,
+-				 gpio_to_mux_map[gpio]);
+-	} else if (GPIO_ISOUT(pin)) {
+-		ret =
+-		    gpio_set_bit(output ? PIO_MUX_SET : PIO_MUX_CLR,
+-				 outp_to_mux_map[gpio]);
+-	} else if (GPIO_ISMUX(pin)) {
+-		ret = gpio_set_bit(output ? PIO_MUX_SET : PIO_MUX_CLR, gpio);
+-	}
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_set_pin_mux);
+-
+-/* Read pin mux function: 0= pin used as GPIO, 1= pin used for muxed function*/
+-int pnx4008_gpio_read_pin_mux(unsigned short pin)
+-{
+-	int gpio = GPIO_BIT_MASK(pin);
+-	int ret = -EFAULT;
+-
+-	gpio_lock();
+-	if (GPIO_ISBID(pin)) {
+-		ret = gpio_read_bit(PIO_MUX_STATE, gpio_to_mux_map[gpio]);
+-	} else if (GPIO_ISOUT(pin)) {
+-		ret = gpio_read_bit(PIO_MUX_STATE, outp_to_mux_map[gpio]);
+-	} else if (GPIO_ISMUX(pin)) {
+-		ret = gpio_read_bit(PIO_MUX_STATE, gpio);
+-	}
+-	gpio_unlock();
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_gpio_read_pin_mux);
+--- linux-2.6.orig/arch/arm/mach-pnx4008/i2c.c
++++ /dev/null
+@@ -1,86 +0,0 @@
+-/*
+- * I2C initialization for PNX4008.
+- *
+- * Author: Vitaly Wool <vitalywool@gmail.com>
+- *
+- * 2005-2006 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/clk.h>
+-#include <linux/i2c.h>
+-#include <linux/i2c-pnx.h>
+-#include <linux/platform_device.h>
+-#include <linux/err.h>
+-#include <mach/platform.h>
+-#include <mach/irqs.h>
+-
+-static struct resource i2c0_resources[] = {
+-	{
+-		.start = PNX4008_I2C1_BASE,
+-		.end = PNX4008_I2C1_BASE + SZ_4K - 1,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = I2C_1_INT,
+-		.end = I2C_1_INT,
+-		.flags = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct resource i2c1_resources[] = {
+-	{
+-		.start = PNX4008_I2C2_BASE,
+-		.end = PNX4008_I2C2_BASE + SZ_4K - 1,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = I2C_2_INT,
+-		.end = I2C_2_INT,
+-		.flags = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct resource i2c2_resources[] = {
+-	{
+-		.start = PNX4008_USB_CONFIG_BASE + 0x300,
+-		.end = PNX4008_USB_CONFIG_BASE + 0x300 + SZ_4K - 1,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = USB_I2C_INT,
+-		.end = USB_I2C_INT,
+-		.flags = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct platform_device i2c0_device = {
+-	.name = "pnx-i2c.0",
+-	.id = 0,
+-	.resource = i2c0_resources,
+-	.num_resources = ARRAY_SIZE(i2c0_resources),
+-};
+-
+-static struct platform_device i2c1_device = {
+-	.name = "pnx-i2c.1",
+-	.id = 1,
+-	.resource = i2c1_resources,
+-	.num_resources = ARRAY_SIZE(i2c1_resources),
+-};
+-
+-static struct platform_device i2c2_device = {
+-	.name = "pnx-i2c.2",
+-	.id = 2,
+-	.resource = i2c2_resources,
+-	.num_resources = ARRAY_SIZE(i2c2_resources),
+-};
+-
+-static struct platform_device *devices[] __initdata = {
+-	&i2c0_device,
+-	&i2c1_device,
+-	&i2c2_device,
+-};
+-
+-void __init pnx4008_register_i2c_devices(void)
+-{
+-	platform_add_devices(devices, ARRAY_SIZE(devices));
+-}
+--- linux-2.6.orig/arch/arm/mach-pnx4008/i2c.c.orig
++++ /dev/null
+@@ -1,87 +0,0 @@
+-/*
+- * I2C initialization for PNX4008.
+- *
+- * Author: Vitaly Wool <vitalywool@gmail.com>
+- *
+- * 2005-2006 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/clk.h>
+-#include <linux/i2c.h>
+-#include <linux/i2c-pnx.h>
+-#include <linux/platform_device.h>
+-#include <linux/err.h>
+-#include <mach/platform.h>
+-#include <mach/irqs.h>
+-#include <mach/i2c.h>
+-
+-static struct resource i2c0_resources[] = {
+-	{
+-		.start = PNX4008_I2C1_BASE,
+-		.end = PNX4008_I2C1_BASE + SZ_4K - 1,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = I2C_1_INT,
+-		.end = I2C_1_INT,
+-		.flags = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct resource i2c1_resources[] = {
+-	{
+-		.start = PNX4008_I2C2_BASE,
+-		.end = PNX4008_I2C2_BASE + SZ_4K - 1,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = I2C_2_INT,
+-		.end = I2C_2_INT,
+-		.flags = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct resource i2c2_resources[] = {
+-	{
+-		.start = PNX4008_USB_CONFIG_BASE + 0x300,
+-		.end = PNX4008_USB_CONFIG_BASE + 0x300 + SZ_4K - 1,
+-		.flags = IORESOURCE_MEM,
+-	}, {
+-		.start = USB_I2C_INT,
+-		.end = USB_I2C_INT,
+-		.flags = IORESOURCE_IRQ,
+-	},
+-};
+-
+-static struct platform_device i2c0_device = {
+-	.name = "pnx-i2c",
+-	.id = 0,
+-	.resource = i2c0_resources,
+-	.num_resources = ARRAY_SIZE(i2c0_resources),
+-};
+-
+-static struct platform_device i2c1_device = {
+-	.name = "pnx-i2c",
+-	.id = 1,
+-	.resource = i2c1_resources,
+-	.num_resources = ARRAY_SIZE(i2c1_resources),
+-};
+-
+-static struct platform_device i2c2_device = {
+-	.name = "pnx-i2c",
+-	.id = 2,
+-	.resource = i2c2_resources,
+-	.num_resources = ARRAY_SIZE(i2c2_resources),
+-};
+-
+-static struct platform_device *devices[] __initdata = {
+-	&i2c0_device,
+-	&i2c1_device,
+-	&i2c2_device,
+-};
+-
+-void __init pnx4008_register_i2c_devices(void)
+-{
+-	platform_add_devices(devices, ARRAY_SIZE(devices));
+-}
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/clock.h
++++ /dev/null
+@@ -1,62 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/clock.h
+- *
+- * Clock control driver for PNX4008 - header file
+- *
+- * Authors: Vitaly Wool, Dmitry Chigirev <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-#ifndef __PNX4008_CLOCK_H__
+-#define __PNX4008_CLOCK_H__
+-
+-struct module;
+-struct clk;
+-
+-#define PWRMAN_VA_BASE		IO_ADDRESS(PNX4008_PWRMAN_BASE)
+-#define HCLKDIVCTRL_REG		(PWRMAN_VA_BASE + 0x40)
+-#define PWRCTRL_REG		(PWRMAN_VA_BASE + 0x44)
+-#define PLLCTRL_REG		(PWRMAN_VA_BASE + 0x48)
+-#define OSC13CTRL_REG		(PWRMAN_VA_BASE + 0x4c)
+-#define SYSCLKCTRL_REG		(PWRMAN_VA_BASE + 0x50)
+-#define HCLKPLLCTRL_REG		(PWRMAN_VA_BASE + 0x58)
+-#define USBCTRL_REG		(PWRMAN_VA_BASE + 0x64)
+-#define SDRAMCLKCTRL_REG	(PWRMAN_VA_BASE + 0x68)
+-#define MSCTRL_REG		(PWRMAN_VA_BASE + 0x80)
+-#define BTCLKCTRL		(PWRMAN_VA_BASE + 0x84)
+-#define DUMCLKCTRL_REG		(PWRMAN_VA_BASE + 0x90)
+-#define I2CCLKCTRL_REG		(PWRMAN_VA_BASE + 0xac)
+-#define KEYCLKCTRL_REG		(PWRMAN_VA_BASE + 0xb0)
+-#define TSCLKCTRL_REG		(PWRMAN_VA_BASE + 0xb4)
+-#define PWMCLKCTRL_REG		(PWRMAN_VA_BASE + 0xb8)
+-#define TIMCLKCTRL_REG		(PWRMAN_VA_BASE + 0xbc)
+-#define SPICTRL_REG		(PWRMAN_VA_BASE + 0xc4)
+-#define FLASHCLKCTRL_REG	(PWRMAN_VA_BASE + 0xc8)
+-#define UART3CLK_REG		(PWRMAN_VA_BASE + 0xd0)
+-#define UARTCLKCTRL_REG		(PWRMAN_VA_BASE + 0xe4)
+-#define DMACLKCTRL_REG		(PWRMAN_VA_BASE + 0xe8)
+-#define AUTOCLK_CTRL		(PWRMAN_VA_BASE + 0xec)
+-#define JPEGCLKCTRL_REG		(PWRMAN_VA_BASE + 0xfc)
+-
+-#define AUDIOCONFIG_VA_BASE	IO_ADDRESS(PNX4008_AUDIOCONFIG_BASE)
+-#define DSPPLLCTRL_REG		(AUDIOCONFIG_VA_BASE + 0x60)
+-#define DSPCLKCTRL_REG		(AUDIOCONFIG_VA_BASE + 0x64)
+-#define AUDIOCLKCTRL_REG	(AUDIOCONFIG_VA_BASE + 0x68)
+-#define AUDIOPLLCTRL_REG	(AUDIOCONFIG_VA_BASE + 0x6C)
+-
+-#define USB_OTG_CLKCTRL_REG	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0xff4)
+-
+-#define VFP9CLKCTRL_REG		IO_ADDRESS(PNX4008_DEBUG_BASE)
+-
+-#define CLK_RATE_13MHZ 13000
+-#define CLK_RATE_1MHZ 1000
+-#define CLK_RATE_208MHZ 208000
+-#define CLK_RATE_48MHZ 48000
+-#define CLK_RATE_32KHZ 32
+-
+-#define PNX4008_UART_CLK CLK_RATE_13MHZ * 1000 /* in MHz */
+-
+-#endif
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/debug-macro.S
++++ /dev/null
+@@ -1,21 +0,0 @@
+-/* arch/arm/mach-pnx4008/include/mach/debug-macro.S
+- *
+- * Debugging macro include header
+- *
+- *  Copyright (C) 1994-1999 Russell King
+- *  Moved from linux/arch/arm/kernel/debug.S by Ben Dooks
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+-*/
+-
+-		.macro	addruart, rp, rv, tmp
+-		mov	\rp, #0x00090000
+-		add	\rv, \rp, #0xf4000000	@ virtual
+-		add	\rp, \rp, #0x40000000	@ physical
+-		.endm
+-
+-#define UART_SHIFT	2
+-#include <asm/hardware/debug-8250.S>
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/dma.h
++++ /dev/null
+@@ -1,160 +0,0 @@
+-/*
+- *  arch/arm/mach-pnx4008/include/mach/dma.h
+- *
+- *  PNX4008 DMA header file
+- *
+- *  Author:	Vitaly Wool
+- *  Copyright:	MontaVista Software Inc. (c) 2005
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License version 2 as
+- *  published by the Free Software Foundation.
+- */
+-
+-#ifndef __ASM_ARCH_DMA_H
+-#define __ASM_ARCH_DMA_H
+-
+-#include "platform.h"
+-
+-#define MAX_DMA_CHANNELS	8
+-
+-#define DMAC_BASE		IO_ADDRESS(PNX4008_DMA_CONFIG_BASE)
+-#define DMAC_INT_STAT		(DMAC_BASE + 0x0000)
+-#define DMAC_INT_TC_STAT	(DMAC_BASE + 0x0004)
+-#define DMAC_INT_TC_CLEAR	(DMAC_BASE + 0x0008)
+-#define DMAC_INT_ERR_STAT	(DMAC_BASE + 0x000c)
+-#define DMAC_INT_ERR_CLEAR	(DMAC_BASE + 0x0010)
+-#define DMAC_SOFT_SREQ		(DMAC_BASE + 0x0024)
+-#define DMAC_CONFIG		(DMAC_BASE + 0x0030)
+-#define DMAC_Cx_SRC_ADDR(c)	(DMAC_BASE + 0x0100 + (c) * 0x20)
+-#define DMAC_Cx_DEST_ADDR(c)	(DMAC_BASE + 0x0104 + (c) * 0x20)
+-#define DMAC_Cx_LLI(c)		(DMAC_BASE + 0x0108 + (c) * 0x20)
+-#define DMAC_Cx_CONTROL(c)	(DMAC_BASE + 0x010c + (c) * 0x20)
+-#define DMAC_Cx_CONFIG(c)	(DMAC_BASE + 0x0110 + (c) * 0x20)
+-
+-enum {
+-	WIDTH_BYTE = 0,
+-	WIDTH_HWORD,
+-	WIDTH_WORD
+-};
+-
+-enum {
+-	FC_MEM2MEM_DMA,
+-	FC_MEM2PER_DMA,
+-	FC_PER2MEM_DMA,
+-	FC_PER2PER_DMA,
+-	FC_PER2PER_DPER,
+-	FC_MEM2PER_PER,
+-	FC_PER2MEM_PER,
+-	FC_PER2PER_SPER
+-};
+-
+-enum {
+-	DMA_INT_UNKNOWN = 0,
+-	DMA_ERR_INT = 1,
+-	DMA_TC_INT = 2,
+-};
+-
+-enum {
+-	DMA_BUFFER_ALLOCATED = 1,
+-	DMA_HAS_LL = 2,
+-};
+-
+-enum {
+-	PER_CAM_DMA_1 = 0,
+-	PER_NDF_FLASH = 1,
+-	PER_MBX_SLAVE_FIFO = 2,
+-	PER_SPI2_REC_XMIT = 3,
+-	PER_MS_SD_RX_XMIT = 4,
+-	PER_HS_UART_1_XMIT = 5,
+-	PER_HS_UART_1_RX = 6,
+-	PER_HS_UART_2_XMIT = 7,
+-	PER_HS_UART_2_RX = 8,
+-	PER_HS_UART_7_XMIT = 9,
+-	PER_HS_UART_7_RX = 10,
+-	PER_SPI1_REC_XMIT = 11,
+-	PER_MLC_NDF_SREC = 12,
+-	PER_CAM_DMA_2 = 13,
+-	PER_PRNG_INFIFO = 14,
+-	PER_PRNG_OUTFIFO = 15,
+-};
+-
+-struct pnx4008_dma_ch_ctrl {
+-	int tc_mask;
+-	int cacheable;
+-	int bufferable;
+-	int priv_mode;
+-	int di;
+-	int si;
+-	int dest_ahb1;
+-	int src_ahb1;
+-	int dwidth;
+-	int swidth;
+-	int dbsize;
+-	int sbsize;
+-	int tr_size;
+-};
+-
+-struct pnx4008_dma_ch_config {
+-	int halt;
+-	int active;
+-	int lock;
+-	int itc;
+-	int ie;
+-	int flow_cntrl;
+-	int dest_per;
+-	int src_per;
+-};
+-
+-struct pnx4008_dma_ll {
+-	unsigned long src_addr;
+-	unsigned long dest_addr;
+-	u32 next_dma;
+-	unsigned long ch_ctrl;
+-	struct pnx4008_dma_ll *next;
+-	int flags;
+-	void *alloc_data;
+-	int (*free) (void *);
+-};
+-
+-struct pnx4008_dma_config {
+-	int is_ll;
+-	unsigned long src_addr;
+-	unsigned long dest_addr;
+-	unsigned long ch_ctrl;
+-	unsigned long ch_cfg;
+-	struct pnx4008_dma_ll *ll;
+-	u32 ll_dma;
+-	int flags;
+-	void *alloc_data;
+-	int (*free) (void *);
+-};
+-
+-extern struct pnx4008_dma_ll *pnx4008_alloc_ll_entry(dma_addr_t *);
+-extern void pnx4008_free_ll_entry(struct pnx4008_dma_ll *, dma_addr_t);
+-extern void pnx4008_free_ll(u32 ll_dma, struct pnx4008_dma_ll *);
+-
+-extern int pnx4008_request_channel(char *, int,
+-				   void (*)(int, int, void *),
+-				   void *);
+-extern void pnx4008_free_channel(int);
+-extern int pnx4008_config_dma(int, int, int);
+-extern int pnx4008_dma_pack_control(const struct pnx4008_dma_ch_ctrl *,
+-				    unsigned long *);
+-extern int pnx4008_dma_parse_control(unsigned long,
+-				     struct pnx4008_dma_ch_ctrl *);
+-extern int pnx4008_dma_pack_config(const struct pnx4008_dma_ch_config *,
+-				   unsigned long *);
+-extern int pnx4008_dma_parse_config(unsigned long,
+-				    struct pnx4008_dma_ch_config *);
+-extern int pnx4008_config_channel(int, struct pnx4008_dma_config *);
+-extern int pnx4008_channel_get_config(int, struct pnx4008_dma_config *);
+-extern int pnx4008_dma_ch_enable(int);
+-extern int pnx4008_dma_ch_disable(int);
+-extern int pnx4008_dma_ch_enabled(int);
+-extern void pnx4008_dma_split_head_entry(struct pnx4008_dma_config *,
+-					 struct pnx4008_dma_ch_ctrl *);
+-extern void pnx4008_dma_split_ll_entry(struct pnx4008_dma_ll *,
+-				       struct pnx4008_dma_ch_ctrl *);
+-
+-#endif				/* _ASM_ARCH_DMA_H */
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/entry-macro.S
++++ /dev/null
+@@ -1,116 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/entry-macro.S
+- *
+- * Low-level IRQ helper macros for PNX4008-based platforms
+- *
+- * 2005-2006 (c) MontaVista Software, Inc.
+- * Author: Vitaly Wool <vwool@ru.mvista.com>
+- * This file is licensed under  the terms of the GNU General Public
+- * License version 2. This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- */
+-
+-#include "platform.h"
+-
+-#define IO_BASE         0xF0000000
+-#define IO_ADDRESS(x)  (((((x) & 0xff000000) >> 4) | ((x) & 0xfffff)) | IO_BASE)
+-
+-#define INTRC_MASK			0x00
+-#define INTRC_RAW_STAT			0x04
+-#define INTRC_STAT			0x08
+-#define INTRC_POLAR			0x0C
+-#define INTRC_ACT_TYPE			0x10
+-#define INTRC_TYPE			0x14
+-
+-#define SIC1_BASE_INT   32
+-#define SIC2_BASE_INT   64
+-
+-		.macro  get_irqnr_preamble, base, tmp
+-		.endm
+-
+-		.macro	get_irqnr_and_base, irqnr, irqstat, base, tmp
+-/* decode the MIC interrupt numbers */
+-		ldr	\base, =IO_ADDRESS(PNX4008_INTCTRLMIC_BASE)
+-		ldr	\irqstat, [\base, #INTRC_STAT]
+-
+-		cmp	\irqstat,#1<<16
+-		movhs	\irqnr,#16
+-		movlo	\irqnr,#0
+-		movhs	\irqstat,\irqstat,lsr#16
+-		cmp	\irqstat,#1<<8
+-		addhs	\irqnr,\irqnr,#8
+-		movhs	\irqstat,\irqstat,lsr#8
+-		cmp	\irqstat,#1<<4
+-		addhs	\irqnr,\irqnr,#4
+-		movhs	\irqstat,\irqstat,lsr#4
+-		cmp	\irqstat,#1<<2
+-		addhs	\irqnr,\irqnr,#2
+-		movhs	\irqstat,\irqstat,lsr#2
+-		cmp	\irqstat,#1<<1
+-		addhs	\irqnr,\irqnr,#1
+-
+-/* was there an interrupt ? if not then drop out with EQ status */
+-		teq	\irqstat,#0
+-		beq	1003f
+-
+-/* and now check for extended IRQ reasons */
+-		cmp	\irqnr,#1
+-		bls	1003f
+-		cmp	\irqnr,#30
+-		blo	1002f
+-
+-/* IRQ 31,30  : High priority cascade IRQ handle */
+-/* read the correct SIC */
+-/* decoding status after compare : eq is 30 (SIC1) , ne is 31 (SIC2) */
+-/* set the base IRQ number */
+-		ldreq	\base, =IO_ADDRESS(PNX4008_INTCTRLSIC1_BASE)
+-		moveq  \irqnr,#SIC1_BASE_INT
+-		ldrne	\base, =IO_ADDRESS(PNX4008_INTCTRLSIC2_BASE)
+-		movne   \irqnr,#SIC2_BASE_INT
+-		ldr	\irqstat, [\base, #INTRC_STAT]
+-		ldr	\tmp,	  [\base, #INTRC_TYPE]
+-/* and with inverted mask : low priority interrupts  */
+-		and	\irqstat,\irqstat,\tmp
+-		b	1004f
+-
+-1003:
+-/* IRQ 1,0  : Low priority cascade IRQ handle */
+-/* read the correct SIC */
+-/* decoding status after compare : eq is 1 (SIC2) , ne is 0 (SIC1)*/
+-/* read the correct SIC */
+-/* set the base IRQ number  */
+-		ldrne	\base, =IO_ADDRESS(PNX4008_INTCTRLSIC1_BASE)
+-		movne   \irqnr,#SIC1_BASE_INT
+-		ldreq	\base, =IO_ADDRESS(PNX4008_INTCTRLSIC2_BASE)
+-		moveq   \irqnr,#SIC2_BASE_INT
+-		ldr	\irqstat, [\base, #INTRC_STAT]
+-		ldr	\tmp,	  [\base, #INTRC_TYPE]
+-/* and with inverted mask : low priority interrupts  */
+-		bic	\irqstat,\irqstat,\tmp
+-
+-1004:
+-
+-		cmp	\irqstat,#1<<16
+-		addhs	\irqnr,\irqnr,#16
+-		movhs	\irqstat,\irqstat,lsr#16
+-		cmp	\irqstat,#1<<8
+-		addhs	\irqnr,\irqnr,#8
+-		movhs	\irqstat,\irqstat,lsr#8
+-		cmp	\irqstat,#1<<4
+-		addhs	\irqnr,\irqnr,#4
+-		movhs	\irqstat,\irqstat,lsr#4
+-		cmp	\irqstat,#1<<2
+-		addhs	\irqnr,\irqnr,#2
+-		movhs	\irqstat,\irqstat,lsr#2
+-		cmp	\irqstat,#1<<1
+-		addhs	\irqnr,\irqnr,#1
+-
+-
+-/* is irqstat not zero */
+-
+-1002:
+-/* we assert that irqstat is not equal to zero and return ne status if true*/
+-		teq	\irqstat,#0
+-1003:
+-		.endm
+-
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/gpio-pnx4008.h
++++ /dev/null
+@@ -1,241 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/gpio-pnx4008.h
+- *
+- * PNX4008 GPIO driver - header file
+- *
+- * Author: Dmitry Chigirev <source@mvista.com>
+- *
+- * Based on reference code by Iwo Mergler and Z.Tabaaloute from Philips:
+- * Copyright (c) 2005 Koninklijke Philips Electronics N.V.
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#ifndef _PNX4008_GPIO_H_
+-#define _PNX4008_GPIO_H_
+-
+-
+-/* Block numbers */
+-#define GPIO_IN		(0)
+-#define GPIO_OUT		(0x100)
+-#define GPIO_BID		(0x200)
+-#define GPIO_RAM		(0x300)
+-#define GPIO_MUX		(0x400)
+-
+-#define GPIO_TYPE_MASK(K) ((K) & 0x700)
+-
+-/* INPUT GPIOs */
+-/* GPI */
+-#define GPI_00		(GPIO_IN | 0)
+-#define GPI_01		(GPIO_IN | 1)
+-#define GPI_02   	(GPIO_IN | 2)
+-#define GPI_03 	 	(GPIO_IN | 3)
+-#define GPI_04   	(GPIO_IN | 4)
+-#define GPI_05   	(GPIO_IN | 5)
+-#define GPI_06   	(GPIO_IN | 6)
+-#define GPI_07   	(GPIO_IN | 7)
+-#define GPI_08   	(GPIO_IN | 8)
+-#define GPI_09   	(GPIO_IN | 9)
+-#define U1_RX 		(GPIO_IN | 15)
+-#define U2_HTCS 	(GPIO_IN | 16)
+-#define U2_RX	 	(GPIO_IN | 17)
+-#define U3_RX		(GPIO_IN | 18)
+-#define U4_RX		(GPIO_IN | 19)
+-#define U5_RX		(GPIO_IN | 20)
+-#define U6_IRRX 	(GPIO_IN | 21)
+-#define U7_HCTS 	(GPIO_IN | 22)
+-#define U7_RX		(GPIO_IN | 23)
+-/* MISC IN */
+-#define SPI1_DATIN	(GPIO_IN | 25)
+-#define DISP_SYNC	(GPIO_IN | 26)
+-#define SPI2_DATIN	(GPIO_IN | 27)
+-#define GPI_11  	(GPIO_IN | 28)
+-
+-#define GPIO_IN_MASK   0x1eff83ff
+-
+-/* OUTPUT GPIOs */
+-/* GPO */
+-#define GPO_00		(GPIO_OUT | 0)
+-#define GPO_01   	(GPIO_OUT | 1)
+-#define GPO_02   	(GPIO_OUT | 2)
+-#define GPO_03 	 	(GPIO_OUT | 3)
+-#define GPO_04   	(GPIO_OUT | 4)
+-#define GPO_05   	(GPIO_OUT | 5)
+-#define GPO_06   	(GPIO_OUT | 6)
+-#define GPO_07   	(GPIO_OUT | 7)
+-#define GPO_08		(GPIO_OUT | 8)
+-#define GPO_09   	(GPIO_OUT | 9)
+-#define GPO_10   	(GPIO_OUT | 10)
+-#define GPO_11 	 	(GPIO_OUT | 11)
+-#define GPO_12   	(GPIO_OUT | 12)
+-#define GPO_13   	(GPIO_OUT | 13)
+-#define GPO_14   	(GPIO_OUT | 14)
+-#define GPO_15   	(GPIO_OUT | 15)
+-#define GPO_16  	(GPIO_OUT | 16)
+-#define GPO_17 	 	(GPIO_OUT | 17)
+-#define GPO_18   	(GPIO_OUT | 18)
+-#define GPO_19   	(GPIO_OUT | 19)
+-#define GPO_20   	(GPIO_OUT | 20)
+-#define GPO_21   	(GPIO_OUT | 21)
+-#define GPO_22   	(GPIO_OUT | 22)
+-#define GPO_23   	(GPIO_OUT | 23)
+-
+-#define GPIO_OUT_MASK   0xffffff
+-
+-/* BIDIRECTIONAL GPIOs */
+-/* RAM pins */
+-#define RAM_D19		(GPIO_RAM | 0)
+-#define RAM_D20  	(GPIO_RAM | 1)
+-#define RAM_D21  	(GPIO_RAM | 2)
+-#define RAM_D22 	(GPIO_RAM | 3)
+-#define RAM_D23  	(GPIO_RAM | 4)
+-#define RAM_D24  	(GPIO_RAM | 5)
+-#define RAM_D25  	(GPIO_RAM | 6)
+-#define RAM_D26  	(GPIO_RAM | 7)
+-#define RAM_D27		(GPIO_RAM | 8)
+-#define RAM_D28  	(GPIO_RAM | 9)
+-#define RAM_D29  	(GPIO_RAM | 10)
+-#define RAM_D30 	(GPIO_RAM | 11)
+-#define RAM_D31  	(GPIO_RAM | 12)
+-
+-#define GPIO_RAM_MASK   0x1fff
+-
+-/* I/O pins */
+-#define GPIO_00  	(GPIO_BID | 25)
+-#define GPIO_01 	(GPIO_BID | 26)
+-#define GPIO_02  	(GPIO_BID | 27)
+-#define GPIO_03  	(GPIO_BID | 28)
+-#define GPIO_04 	(GPIO_BID | 29)
+-#define GPIO_05  	(GPIO_BID | 30)
+-
+-#define GPIO_BID_MASK   0x7e000000
+-
+-/* Non-GPIO multiplexed PIOs. For multiplexing with GPIO, please use GPIO macros */
+-#define GPIO_SDRAM_SEL 	(GPIO_MUX | 3)
+-
+-#define GPIO_MUX_MASK   0x8
+-
+-/* Extraction/assembly macros */
+-#define GPIO_BIT_MASK(K) ((K) & 0x1F)
+-#define GPIO_BIT(K) (1 << GPIO_BIT_MASK(K))
+-#define GPIO_ISMUX(K) ((GPIO_TYPE_MASK(K) == GPIO_MUX) && (GPIO_BIT(K) & GPIO_MUX_MASK))
+-#define GPIO_ISRAM(K) ((GPIO_TYPE_MASK(K) == GPIO_RAM) && (GPIO_BIT(K) & GPIO_RAM_MASK))
+-#define GPIO_ISBID(K) ((GPIO_TYPE_MASK(K) == GPIO_BID) && (GPIO_BIT(K) & GPIO_BID_MASK))
+-#define GPIO_ISOUT(K) ((GPIO_TYPE_MASK(K) == GPIO_OUT) && (GPIO_BIT(K) & GPIO_OUT_MASK))
+-#define GPIO_ISIN(K)  ((GPIO_TYPE_MASK(K) == GPIO_IN) && (GPIO_BIT(K) & GPIO_IN_MASK))
+-
+-/* Start Enable Pin Interrupts - table 58 page 66 */
+-
+-#define SE_PIN_BASE_INT   32
+-
+-#define SE_U7_RX_INT            63
+-#define SE_U7_HCTS_INT          62
+-#define SE_BT_CLKREQ_INT        61
+-#define SE_U6_IRRX_INT          60
+-/*59 unused*/
+-#define SE_U5_RX_INT            58
+-#define SE_GPI_11_INT           57
+-#define SE_U3_RX_INT            56
+-#define SE_U2_HCTS_INT          55
+-#define SE_U2_RX_INT            54
+-#define SE_U1_RX_INT            53
+-#define SE_DISP_SYNC_INT        52
+-/*51 unused*/
+-#define SE_SDIO_INT_N           50
+-#define SE_MSDIO_START_INT      49
+-#define SE_GPI_06_INT           48
+-#define SE_GPI_05_INT           47
+-#define SE_GPI_04_INT           46
+-#define SE_GPI_03_INT           45
+-#define SE_GPI_02_INT           44
+-#define SE_GPI_01_INT           43
+-#define SE_GPI_00_INT           42
+-#define SE_SYSCLKEN_PIN_INT     41
+-#define SE_SPI1_DATAIN_INT      40
+-#define SE_GPI_07_INT           39
+-#define SE_SPI2_DATAIN_INT      38
+-#define SE_GPI_10_INT           37
+-#define SE_GPI_09_INT           36
+-#define SE_GPI_08_INT           35
+-/*34-32 unused*/
+-
+-/* Start Enable Internal Interrupts - table 57 page 65 */
+-
+-#define SE_INT_BASE_INT   0
+-
+-#define SE_TS_IRQ               31
+-#define SE_TS_P_INT             30
+-#define SE_TS_AUX_INT           29
+-/*27-28 unused*/
+-#define SE_USB_AHB_NEED_CLK_INT 26
+-#define SE_MSTIMER_INT          25
+-#define SE_RTC_INT              24
+-#define SE_USB_NEED_CLK_INT     23
+-#define SE_USB_INT              22
+-#define SE_USB_I2C_INT          21
+-#define SE_USB_OTG_TIMER_INT    20
+-#define SE_USB_OTG_ATX_INT_N    19
+-/*18 unused*/
+-#define SE_DSP_GPIO4_INT        17
+-#define SE_KEY_IRQ              16
+-#define SE_DSP_SLAVEPORT_INT    15
+-#define SE_DSP_GPIO1_INT        14
+-#define SE_DSP_GPIO0_INT        13
+-#define SE_DSP_AHB_INT          12
+-/*11-6 unused*/
+-#define SE_GPIO_05_INT          5
+-#define SE_GPIO_04_INT          4
+-#define SE_GPIO_03_INT          3
+-#define SE_GPIO_02_INT          2
+-#define SE_GPIO_01_INT          1
+-#define SE_GPIO_00_INT          0
+-
+-#define START_INT_REG_BIT(irq) (1<<((irq)&0x1F))
+-
+-#define START_INT_ER_REG(irq)     IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x20 + (((irq)&(0x1<<5))>>1)))
+-#define START_INT_RSR_REG(irq)    IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x24 + (((irq)&(0x1<<5))>>1)))
+-#define START_INT_SR_REG(irq)     IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x28 + (((irq)&(0x1<<5))>>1)))
+-#define START_INT_APR_REG(irq)    IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x2C + (((irq)&(0x1<<5))>>1)))
+-
+-extern int pnx4008_gpio_register_pin(unsigned short pin);
+-extern int pnx4008_gpio_unregister_pin(unsigned short pin);
+-extern unsigned long pnx4008_gpio_read_pin(unsigned short pin);
+-extern int pnx4008_gpio_write_pin(unsigned short pin, int output);
+-extern int pnx4008_gpio_set_pin_direction(unsigned short pin, int output);
+-extern int pnx4008_gpio_read_pin_direction(unsigned short pin);
+-extern int pnx4008_gpio_set_pin_mux(unsigned short pin, int output);
+-extern int pnx4008_gpio_read_pin_mux(unsigned short pin);
+-
+-static inline void start_int_umask(u8 irq)
+-{
+-	__raw_writel(__raw_readl(START_INT_ER_REG(irq)) |
+-		     START_INT_REG_BIT(irq), START_INT_ER_REG(irq));
+-}
+-
+-static inline void start_int_mask(u8 irq)
+-{
+-	__raw_writel(__raw_readl(START_INT_ER_REG(irq)) &
+-		     ~START_INT_REG_BIT(irq), START_INT_ER_REG(irq));
+-}
+-
+-static inline void start_int_ack(u8 irq)
+-{
+-	__raw_writel(START_INT_REG_BIT(irq), START_INT_RSR_REG(irq));
+-}
+-
+-static inline void start_int_set_falling_edge(u8 irq)
+-{
+-	__raw_writel(__raw_readl(START_INT_APR_REG(irq)) &
+-		     ~START_INT_REG_BIT(irq), START_INT_APR_REG(irq));
+-}
+-
+-static inline void start_int_set_rising_edge(u8 irq)
+-{
+-	__raw_writel(__raw_readl(START_INT_APR_REG(irq)) |
+-		     START_INT_REG_BIT(irq), START_INT_APR_REG(irq));
+-}
+-
+-#endif				/* _PNX4008_GPIO_H_ */
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/hardware.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/hardware.h
+- *
+- * Copyright (c) 2005 MontaVista Software, Inc. <source@mvista.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-#ifndef __ASM_ARCH_HARDWARE_H
+-#define __ASM_ARCH_HARDWARE_H
+-
+-#include <asm/sizes.h>
+-#include <mach/platform.h>
+-
+-/* Start of virtual addresses for IO devices */
+-#define IO_BASE         0xF0000000
+-
+-/* This macro relies on fact that for all HW i/o addresses bits 20-23 are 0 */
+-#define IO_ADDRESS(x)  (((((x) & 0xff000000) >> 4) | ((x) & 0xfffff)) | IO_BASE)
+-
+-#endif
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/irq.h
++++ /dev/null
+@@ -1,42 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/irq.h
+- *
+- * PNX4008 IRQ controller driver - header file
+- * this one is used in entry-arnv.S as well so it cannot contain C code
+- *
+- * Copyright (c) 2005 Philips Semiconductors
+- * Copyright (c) 2005 MontaVista Software, Inc.
+- *
+- *  This program is free software; you can redistribute  it and/or modify it
+- *  under  the terms of  the GNU General  Public License as published by the
+- *  Free Software Foundation;  either version 2 of the  License, or (at your
+- *  option) any later version.
+- */
+-#ifndef __PNX4008_IRQ_H__
+-#define __PNX4008_IRQ_H__
+-
+-#define MIC_VA_BASE             IO_ADDRESS(PNX4008_INTCTRLMIC_BASE)
+-#define SIC1_VA_BASE            IO_ADDRESS(PNX4008_INTCTRLSIC1_BASE)
+-#define SIC2_VA_BASE            IO_ADDRESS(PNX4008_INTCTRLSIC2_BASE)
+-
+-/* Manual: Chapter 20, page 195 */
+-
+-#define INTC_BIT(irq) (1<< ((irq) & 0x1F))
+-
+-#define INTC_ER(irq)    IO_ADDRESS((PNX4008_INTCTRLMIC_BASE + 0x0 + (((irq)&(0x3<<5))<<9)))
+-#define INTC_RSR(irq)   IO_ADDRESS((PNX4008_INTCTRLMIC_BASE + 0x4 + (((irq)&(0x3<<5))<<9)))
+-#define INTC_SR(irq)    IO_ADDRESS((PNX4008_INTCTRLMIC_BASE + 0x8 + (((irq)&(0x3<<5))<<9)))
+-#define INTC_APR(irq)   IO_ADDRESS((PNX4008_INTCTRLMIC_BASE + 0xC + (((irq)&(0x3<<5))<<9)))
+-#define INTC_ATR(irq)   IO_ADDRESS((PNX4008_INTCTRLMIC_BASE + 0x10 + (((irq)&(0x3<<5))<<9)))
+-#define INTC_ITR(irq)   IO_ADDRESS((PNX4008_INTCTRLMIC_BASE + 0x14 + (((irq)&(0x3<<5))<<9)))
+-
+-#define START_INT_REG_BIT(irq) (1<<((irq)&0x1F))
+-
+-#define START_INT_ER_REG(irq)     IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x20 + (((irq)&(0x1<<5))>>1)))
+-#define START_INT_RSR_REG(irq)    IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x24 + (((irq)&(0x1<<5))>>1)))
+-#define START_INT_SR_REG(irq)     IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x28 + (((irq)&(0x1<<5))>>1)))
+-#define START_INT_APR_REG(irq)    IO_ADDRESS((PNX4008_PWRMAN_BASE + 0x2C + (((irq)&(0x1<<5))>>1)))
+-
+-extern void __init pnx4008_init_irq(void);
+-
+-#endif /* __PNX4008_IRQ_H__ */
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/irqs.h
++++ /dev/null
+@@ -1,215 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/irqs.h
+- *
+- * PNX4008 IRQ controller driver - header file
+- *
+- * Author: Dmitry Chigirev <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-#ifndef __PNX4008_IRQS_h__
+-#define __PNX4008_IRQS_h__
+-
+-#define NR_IRQS         96
+-
+-/*Manual: table 259, page 199*/
+-
+-/*SUB2 Interrupt Routing (SIC2)*/
+-
+-#define SIC2_BASE_INT   64
+-
+-#define CLK_SWITCH_ARM_INT 95	/*manual: Clkswitch ARM  */
+-#define CLK_SWITCH_DSP_INT 94	/*manual: ClkSwitch DSP  */
+-#define CLK_SWITCH_AUD_INT 93	/*manual: Clkswitch AUD  */
+-#define GPI_06_INT         92
+-#define GPI_05_INT         91
+-#define GPI_04_INT         90
+-#define GPI_03_INT         89
+-#define GPI_02_INT         88
+-#define GPI_01_INT         87
+-#define GPI_00_INT         86
+-#define BT_CLKREQ_INT      85
+-#define SPI1_DATIN_INT     84
+-#define U5_RX_INT          83
+-#define SDIO_INT_N         82
+-#define CAM_HS_INT         81
+-#define CAM_VS_INT         80
+-#define GPI_07_INT         79
+-#define DISP_SYNC_INT      78
+-#define DSP_INT8           77
+-#define U7_HCTS_INT        76
+-#define GPI_10_INT         75
+-#define GPI_09_INT         74
+-#define GPI_08_INT         73
+-#define DSP_INT7           72
+-#define U2_HCTS_INT        71
+-#define SPI2_DATIN_INT     70
+-#define GPIO_05_INT        69
+-#define GPIO_04_INT        68
+-#define GPIO_03_INT        67
+-#define GPIO_02_INT        66
+-#define GPIO_01_INT        65
+-#define GPIO_00_INT        64
+-
+-/*Manual: table 258, page 198*/
+-
+-/*SUB1 Interrupt Routing (SIC1)*/
+-
+-#define SIC1_BASE_INT   32
+-
+-#define USB_I2C_INT        63
+-#define USB_DEV_HP_INT     62
+-#define USB_DEV_LP_INT     61
+-#define USB_DEV_DMA_INT    60
+-#define USB_HOST_INT       59
+-#define USB_OTG_ATX_INT_N  58
+-#define USB_OTG_TIMER_INT  57
+-#define SW_INT             56
+-#define SPI1_INT           55
+-#define KEY_IRQ            54
+-#define DSP_M_INT          53
+-#define RTC_INT            52
+-#define I2C_1_INT          51
+-#define I2C_2_INT          50
+-#define PLL1_LOCK_INT      49
+-#define PLL2_LOCK_INT      48
+-#define PLL3_LOCK_INT      47
+-#define PLL4_LOCK_INT      46
+-#define PLL5_LOCK_INT      45
+-#define SPI2_INT           44
+-#define DSP_INT1           43
+-#define DSP_INT2           42
+-#define DSP_TDM_INT2       41
+-#define TS_AUX_INT         40
+-#define TS_IRQ             39
+-#define TS_P_INT           38
+-#define UOUT1_TO_PAD_INT   37
+-#define GPI_11_INT         36
+-#define DSP_INT4           35
+-#define JTAG_COMM_RX_INT   34
+-#define JTAG_COMM_TX_INT   33
+-#define DSP_INT3           32
+-
+-/*Manual: table 257, page 197*/
+-
+-/*MAIN Interrupt Routing*/
+-
+-#define MAIN_BASE_INT   0
+-
+-#define SUB2_FIQ_N         31	/*active low */
+-#define SUB1_FIQ_N         30	/*active low */
+-#define JPEG_INT           29
+-#define DMA_INT            28
+-#define MSTIMER_INT        27
+-#define IIR1_INT           26
+-#define IIR2_INT           25
+-#define IIR7_INT           24
+-#define DSP_TDM_INT0       23
+-#define DSP_TDM_INT1       22
+-#define DSP_P_INT          21
+-#define DSP_INT0           20
+-#define DUM_INT            19
+-#define UOUT0_TO_PAD_INT   18
+-#define MP4_ENC_INT        17
+-#define MP4_DEC_INT        16
+-#define SD0_INT            15
+-#define MBX_INT            14
+-#define SD1_INT            13
+-#define MS_INT_N           12
+-#define FLASH_INT          11 /*NAND*/
+-#define IIR6_INT           10
+-#define IIR5_INT           9
+-#define IIR4_INT           8
+-#define IIR3_INT           7
+-#define WATCH_INT          6
+-#define HSTIMER_INT        5
+-#define ARCH_TIMER_IRQ     HSTIMER_INT
+-#define CAM_INT            4
+-#define PRNG_INT           3
+-#define CRYPTO_INT         2
+-#define SUB2_IRQ_N         1	/*active low */
+-#define SUB1_IRQ_N         0	/*active low */
+-
+-#define PNX4008_IRQ_TYPES \
+-{                                           /*IRQ #'s: */         \
+-IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_HIGH, /*  0, 1, 2, 3 */     \
+-IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /*  4, 5, 6, 7 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /*  8, 9,10,11 */     \
+-IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 12,13,14,15 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 16,17,18,19 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 20,21,22,23 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 24,25,26,27 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_LOW,  /* 28,29,30,31 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 32,33,34,35 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_EDGE_FALLING, IRQ_TYPE_LEVEL_HIGH, /* 36,37,38,39 */  \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 40,41,42,43 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 44,45,46,47 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_LOW,  /* 48,49,50,51 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 52,53,54,55 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_LOW,  IRQ_TYPE_LEVEL_HIGH, /* 56,57,58,59 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 60,61,62,63 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 64,65,66,67 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 68,69,70,71 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 72,73,74,75 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 76,77,78,79 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 80,81,82,83 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 84,85,86,87 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 88,89,90,91 */     \
+-IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, IRQ_TYPE_LEVEL_HIGH, /* 92,93,94,95 */     \
+-}
+-
+-/* Start Enable Pin Interrupts - table 58 page 66 */
+-
+-#define SE_PIN_BASE_INT   32
+-
+-#define SE_U7_RX_INT            63
+-#define SE_U7_HCTS_INT          62
+-#define SE_BT_CLKREQ_INT        61
+-#define SE_U6_IRRX_INT          60
+-/*59 unused*/
+-#define SE_U5_RX_INT            58
+-#define SE_GPI_11_INT           57
+-#define SE_U3_RX_INT            56
+-#define SE_U2_HCTS_INT          55
+-#define SE_U2_RX_INT            54
+-#define SE_U1_RX_INT            53
+-#define SE_DISP_SYNC_INT        52
+-/*51 unused*/
+-#define SE_SDIO_INT_N           50
+-#define SE_MSDIO_START_INT      49
+-#define SE_GPI_06_INT           48
+-#define SE_GPI_05_INT           47
+-#define SE_GPI_04_INT           46
+-#define SE_GPI_03_INT           45
+-#define SE_GPI_02_INT           44
+-#define SE_GPI_01_INT           43
+-#define SE_GPI_00_INT           42
+-#define SE_SYSCLKEN_PIN_INT     41
+-#define SE_SPI1_DATAIN_INT      40
+-#define SE_GPI_07_INT           39
+-#define SE_SPI2_DATAIN_INT      38
+-#define SE_GPI_10_INT           37
+-#define SE_GPI_09_INT           36
+-#define SE_GPI_08_INT           35
+-/*34-32 unused*/
+-
+-/* Start Enable Internal Interrupts - table 57 page 65 */
+-
+-#define SE_INT_BASE_INT   0
+-
+-#define SE_TS_IRQ               31
+-#define SE_TS_P_INT             30
+-#define SE_TS_AUX_INT           29
+-/*27-28 unused*/
+-#define SE_USB_AHB_NEED_CLK_INT 26
+-#define SE_MSTIMER_INT          25
+-#define SE_RTC_INT              24
+-#define SE_USB_NEED_CLK_INT     23
+-#define SE_USB_INT              22
+-#define SE_USB_I2C_INT          21
+-#define SE_USB_OTG_TIMER_INT    20
+-
+-#endif /* __PNX4008_IRQS_h__ */
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/param.h
++++ /dev/null
+@@ -1,21 +0,0 @@
+-/*
+- *  arch/arm/mach-pnx4008/include/mach/param.h
+- *
+- *  Copyright (C) 1999 ARM Limited
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#define HZ 100
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/platform.h
++++ /dev/null
+@@ -1,69 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/platform.h
+- *
+- * PNX4008 Base addresses - header file
+- *
+- * Author: Dmitry Chigirev <source@mvista.com>
+- *
+- * Based on reference code received from Philips:
+- * Copyright (C) 2003 Philips Semiconductors
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-
+-#ifndef __ASM_ARCH_PLATFORM_H__
+-#define __ASM_ARCH_PLATFORM_H__
+-
+-#define PNX4008_IRAM_BASE		0x08000000
+-#define PNX4008_IRAM_SIZE		0x00010000
+-#define PNX4008_YUV_SLAVE_BASE		0x10000000
+-#define PNX4008_DUM_SLAVE_BASE		0x18000000
+-#define PNX4008_NDF_FLASH_BASE		0x20020000
+-#define PNX4008_SPI1_BASE		0x20088000
+-#define PNX4008_SPI2_BASE		0x20090000
+-#define PNX4008_SD_CONFIG_BASE		0x20098000
+-#define PNX4008_FLASH_DATA		0x200B0000
+-#define PNX4008_MLC_FLASH_BASE		0x200B8000
+-#define PNX4008_JPEG_CONFIG_BASE	0x300A0000
+-#define PNX4008_DMA_CONFIG_BASE		0x31000000
+-#define PNX4008_USB_CONFIG_BASE		0x31020000
+-#define PNX4008_SDRAM_CFG_BASE		0x31080000
+-#define PNX4008_AHB2FAB_BASE		0x40000000
+-#define PNX4008_PWRMAN_BASE		0x40004000
+-#define PNX4008_INTCTRLMIC_BASE		0x40008000
+-#define PNX4008_INTCTRLSIC1_BASE	0x4000C000
+-#define PNX4008_INTCTRLSIC2_BASE	0x40010000
+-#define PNX4008_HSUART1_BASE		0x40014000
+-#define PNX4008_HSUART2_BASE		0x40018000
+-#define PNX4008_HSUART7_BASE		0x4001C000
+-#define PNX4008_RTC_BASE		0x40024000
+-#define PNX4008_PIO_BASE		0x40028000
+-#define PNX4008_MSTIMER_BASE		0x40034000
+-#define PNX4008_HSTIMER_BASE		0x40038000
+-#define PNX4008_WDOG_BASE		0x4003C000
+-#define PNX4008_DEBUG_BASE		0x40040000
+-#define PNX4008_TOUCH1_BASE		0x40048000
+-#define PNX4008_KEYSCAN_BASE		0x40050000
+-#define PNX4008_UARTCTRL_BASE		0x40054000
+-#define PNX4008_PWM_BASE		0x4005C000
+-#define PNX4008_UART3_BASE		0x40080000
+-#define PNX4008_UART4_BASE		0x40088000
+-#define PNX4008_UART5_BASE		0x40090000
+-#define PNX4008_UART6_BASE		0x40098000
+-#define PNX4008_I2C1_BASE		0x400A0000
+-#define PNX4008_I2C2_BASE		0x400A8000
+-#define PNX4008_MAGICGATE_BASE		0x400B0000
+-#define PNX4008_DUMCONF_BASE		0x400B8000
+-#define PNX4008_DUM_MAINCFG_BASE       	0x400BC000
+-#define PNX4008_DSP_BASE		0x400C0000
+-#define PNX4008_PROFCOUNTER_BASE	0x400C8000
+-#define PNX4008_CRYPTO_BASE		0x400D0000
+-#define PNX4008_CAMIFCONF_BASE		0x400D8000
+-#define PNX4008_YUV2RGB_BASE		0x400E0000
+-#define PNX4008_AUDIOCONFIG_BASE	0x400E8000
+-
+-#endif
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/pm.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/pm.h
+- *
+- * PNX4008 Power Management Routiness - header file
+- *
+- * Authors: Vitaly Wool, Dmitry Chigirev <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#ifndef __ASM_ARCH_PNX4008_PM_H
+-#define __ASM_ARCH_PNX4008_PM_H
+-
+-#ifndef __ASSEMBLER__
+-#include "irq.h"
+-#include "irqs.h"
+-#include "clock.h"
+-
+-extern void pnx4008_pm_idle(void);
+-extern void pnx4008_pm_suspend(void);
+-extern unsigned int pnx4008_cpu_suspend_sz;
+-extern void pnx4008_cpu_suspend(void);
+-extern unsigned int pnx4008_cpu_standby_sz;
+-extern void pnx4008_cpu_standby(void);
+-
+-extern int pnx4008_startup_pll(struct clk *);
+-extern int pnx4008_shutdown_pll(struct clk *);
+-
+-#endif				/* ASSEMBLER */
+-#endif				/* __ASM_ARCH_PNX4008_PM_H */
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/timex.h
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/timex.h
+- *
+- * PNX4008 timers header file
+- *
+- * Author: Dmitry Chigirev <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#ifndef __PNX4008_TIMEX_H
+-#define __PNX4008_TIMEX_H
+-
+-#define CLOCK_TICK_RATE		1000000
+-
+-#endif
+--- linux-2.6.orig/arch/arm/mach-pnx4008/include/mach/uncompress.h
++++ /dev/null
+@@ -1,46 +0,0 @@
+-/*
+- *  arch/arm/mach-pnx4008/include/mach/uncompress.h
+- *
+- *  Copyright (C) 1999 ARM Limited
+- *  Copyright (C) 2006 MontaVista Software, Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#define UART5_BASE 0x40090000
+-
+-#define UART5_DR    (*(volatile unsigned char *) (UART5_BASE))
+-#define UART5_FR    (*(volatile unsigned char *) (UART5_BASE + 18))
+-
+-static __inline__ void putc(char c)
+-{
+-	while (UART5_FR & (1 << 5))
+-		barrier();
+-
+-	UART5_DR = c;
+-}
+-
+-/*
+- * This does not append a newline
+- */
+-static inline void flush(void)
+-{
+-}
+-
+-/*
+- * nothing to do
+- */
+-#define arch_decomp_setup()
+-#define arch_decomp_wdog()
+--- linux-2.6.orig/arch/arm/mach-pnx4008/irq.c
++++ /dev/null
+@@ -1,121 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/irq.c
+- *
+- * PNX4008 IRQ controller driver
+- *
+- * Author: Dmitry Chigirev <source@mvista.com>
+- *
+- * Based on reference code received from Philips:
+- * Copyright (C) 2003 Philips Semiconductors
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/types.h>
+-#include <linux/mm.h>
+-#include <linux/interrupt.h>
+-#include <linux/list.h>
+-#include <linux/init.h>
+-#include <linux/ioport.h>
+-#include <linux/device.h>
+-#include <linux/irq.h>
+-#include <linux/io.h>
+-#include <mach/hardware.h>
+-#include <asm/setup.h>
+-#include <asm/pgtable.h>
+-#include <asm/page.h>
+-#include <asm/mach/arch.h>
+-#include <asm/mach/irq.h>
+-#include <asm/mach/map.h>
+-#include <mach/irq.h>
+-
+-static u8 pnx4008_irq_type[NR_IRQS] = PNX4008_IRQ_TYPES;
+-
+-static void pnx4008_mask_irq(struct irq_data *d)
+-{
+-	__raw_writel(__raw_readl(INTC_ER(d->irq)) & ~INTC_BIT(d->irq), INTC_ER(d->irq));	/* mask interrupt */
+-}
+-
+-static void pnx4008_unmask_irq(struct irq_data *d)
+-{
+-	__raw_writel(__raw_readl(INTC_ER(d->irq)) | INTC_BIT(d->irq), INTC_ER(d->irq));	/* unmask interrupt */
+-}
+-
+-static void pnx4008_mask_ack_irq(struct irq_data *d)
+-{
+-	__raw_writel(__raw_readl(INTC_ER(d->irq)) & ~INTC_BIT(d->irq), INTC_ER(d->irq));	/* mask interrupt */
+-	__raw_writel(INTC_BIT(d->irq), INTC_SR(d->irq));	/* clear interrupt status */
+-}
+-
+-static int pnx4008_set_irq_type(struct irq_data *d, unsigned int type)
+-{
+-	switch (type) {
+-	case IRQ_TYPE_EDGE_RISING:
+-		__raw_writel(__raw_readl(INTC_ATR(d->irq)) | INTC_BIT(d->irq), INTC_ATR(d->irq));	/*edge sensitive */
+-		__raw_writel(__raw_readl(INTC_APR(d->irq)) | INTC_BIT(d->irq), INTC_APR(d->irq));	/*rising edge */
+-		irq_set_handler(d->irq, handle_edge_irq);
+-		break;
+-	case IRQ_TYPE_EDGE_FALLING:
+-		__raw_writel(__raw_readl(INTC_ATR(d->irq)) | INTC_BIT(d->irq), INTC_ATR(d->irq));	/*edge sensitive */
+-		__raw_writel(__raw_readl(INTC_APR(d->irq)) & ~INTC_BIT(d->irq), INTC_APR(d->irq));	/*falling edge */
+-		irq_set_handler(d->irq, handle_edge_irq);
+-		break;
+-	case IRQ_TYPE_LEVEL_LOW:
+-		__raw_writel(__raw_readl(INTC_ATR(d->irq)) & ~INTC_BIT(d->irq), INTC_ATR(d->irq));	/*level sensitive */
+-		__raw_writel(__raw_readl(INTC_APR(d->irq)) & ~INTC_BIT(d->irq), INTC_APR(d->irq));	/*low level */
+-		irq_set_handler(d->irq, handle_level_irq);
+-		break;
+-	case IRQ_TYPE_LEVEL_HIGH:
+-		__raw_writel(__raw_readl(INTC_ATR(d->irq)) & ~INTC_BIT(d->irq), INTC_ATR(d->irq));	/*level sensitive */
+-		__raw_writel(__raw_readl(INTC_APR(d->irq)) | INTC_BIT(d->irq), INTC_APR(d->irq));	/* high level */
+-		irq_set_handler(d->irq, handle_level_irq);
+-		break;
+-
+-	/* IRQ_TYPE_EDGE_BOTH is not supported */
+-	default:
+-		printk(KERN_ERR "PNX4008 IRQ: Unsupported irq type %d\n", type);
+-		return -1;
+-	}
+-	return 0;
+-}
+-
+-static struct irq_chip pnx4008_irq_chip = {
+-	.irq_ack = pnx4008_mask_ack_irq,
+-	.irq_mask = pnx4008_mask_irq,
+-	.irq_unmask = pnx4008_unmask_irq,
+-	.irq_set_type = pnx4008_set_irq_type,
+-};
+-
+-void __init pnx4008_init_irq(void)
+-{
+-	unsigned int i;
+-
+-	/* configure IRQ's */
+-	for (i = 0; i < NR_IRQS; i++) {
+-		set_irq_flags(i, IRQF_VALID);
+-		irq_set_chip(i, &pnx4008_irq_chip);
+-		pnx4008_set_irq_type(irq_get_irq_data(i), pnx4008_irq_type[i]);
+-	}
+-
+-	/* configure and enable IRQ 0,1,30,31 (cascade interrupts) */
+-	pnx4008_set_irq_type(irq_get_irq_data(SUB1_IRQ_N),
+-			     pnx4008_irq_type[SUB1_IRQ_N]);
+-	pnx4008_set_irq_type(irq_get_irq_data(SUB2_IRQ_N),
+-			     pnx4008_irq_type[SUB2_IRQ_N]);
+-	pnx4008_set_irq_type(irq_get_irq_data(SUB1_FIQ_N),
+-			     pnx4008_irq_type[SUB1_FIQ_N]);
+-	pnx4008_set_irq_type(irq_get_irq_data(SUB2_FIQ_N),
+-			     pnx4008_irq_type[SUB2_FIQ_N]);
+-
+-	/* mask all others */
+-	__raw_writel((1 << SUB2_FIQ_N) | (1 << SUB1_FIQ_N) |
+-			(1 << SUB2_IRQ_N) | (1 << SUB1_IRQ_N),
+-		INTC_ER(MAIN_BASE_INT));
+-	__raw_writel(0, INTC_ER(SIC1_BASE_INT));
+-	__raw_writel(0, INTC_ER(SIC2_BASE_INT));
+-}
+-
+--- linux-2.6.orig/arch/arm/mach-pnx4008/pm.c
++++ /dev/null
+@@ -1,153 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/pm.c
+- *
+- * Power Management driver for PNX4008
+- *
+- * Authors: Vitaly Wool, Dmitry Chigirev <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/pm.h>
+-#include <linux/rtc.h>
+-#include <linux/sched.h>
+-#include <linux/proc_fs.h>
+-#include <linux/suspend.h>
+-#include <linux/delay.h>
+-#include <linux/clk.h>
+-#include <linux/io.h>
+-#include <linux/slab.h>
+-
+-#include <asm/cacheflush.h>
+-
+-#include <mach/hardware.h>
+-#include <mach/pm.h>
+-#include <mach/clock.h>
+-
+-#define SRAM_VA IO_ADDRESS(PNX4008_IRAM_BASE)
+-
+-static void *saved_sram;
+-
+-static struct clk *pll4_clk;
+-
+-static inline void pnx4008_standby(void)
+-{
+-	void (*pnx4008_cpu_standby_ptr) (void);
+-
+-	local_irq_disable();
+-	local_fiq_disable();
+-
+-	clk_disable(pll4_clk);
+-
+-	/*saving portion of SRAM to be used by suspend function. */
+-	memcpy(saved_sram, (void *)SRAM_VA, pnx4008_cpu_standby_sz);
+-
+-	/*make sure SRAM copy gets physically written into SDRAM.
+-	   SDRAM will be placed into self-refresh during power down */
+-	flush_cache_all();
+-
+-	/*copy suspend function into SRAM */
+-	memcpy((void *)SRAM_VA, pnx4008_cpu_standby, pnx4008_cpu_standby_sz);
+-
+-	/*do suspend */
+-	pnx4008_cpu_standby_ptr = (void *)SRAM_VA;
+-	pnx4008_cpu_standby_ptr();
+-
+-	/*restoring portion of SRAM that was used by suspend function */
+-	memcpy((void *)SRAM_VA, saved_sram, pnx4008_cpu_standby_sz);
+-
+-	clk_enable(pll4_clk);
+-
+-	local_fiq_enable();
+-	local_irq_enable();
+-}
+-
+-static inline void pnx4008_suspend(void)
+-{
+-	void (*pnx4008_cpu_suspend_ptr) (void);
+-
+-	local_irq_disable();
+-	local_fiq_disable();
+-
+-	clk_disable(pll4_clk);
+-
+-	__raw_writel(0xffffffff, START_INT_RSR_REG(SE_PIN_BASE_INT));
+-	__raw_writel(0xffffffff, START_INT_RSR_REG(SE_INT_BASE_INT));
+-
+-	/*saving portion of SRAM to be used by suspend function. */
+-	memcpy(saved_sram, (void *)SRAM_VA, pnx4008_cpu_suspend_sz);
+-
+-	/*make sure SRAM copy gets physically written into SDRAM.
+-	   SDRAM will be placed into self-refresh during power down */
+-	flush_cache_all();
+-
+-	/*copy suspend function into SRAM */
+-	memcpy((void *)SRAM_VA, pnx4008_cpu_suspend, pnx4008_cpu_suspend_sz);
+-
+-	/*do suspend */
+-	pnx4008_cpu_suspend_ptr = (void *)SRAM_VA;
+-	pnx4008_cpu_suspend_ptr();
+-
+-	/*restoring portion of SRAM that was used by suspend function */
+-	memcpy((void *)SRAM_VA, saved_sram, pnx4008_cpu_suspend_sz);
+-
+-	clk_enable(pll4_clk);
+-
+-	local_fiq_enable();
+-	local_irq_enable();
+-}
+-
+-static int pnx4008_pm_enter(suspend_state_t state)
+-{
+-	switch (state) {
+-	case PM_SUSPEND_STANDBY:
+-		pnx4008_standby();
+-		break;
+-	case PM_SUSPEND_MEM:
+-		pnx4008_suspend();
+-		break;
+-	}
+-	return 0;
+-}
+-
+-static int pnx4008_pm_valid(suspend_state_t state)
+-{
+-	return (state == PM_SUSPEND_STANDBY) ||
+-	       (state == PM_SUSPEND_MEM);
+-}
+-
+-static const struct platform_suspend_ops pnx4008_pm_ops = {
+-	.enter = pnx4008_pm_enter,
+-	.valid = pnx4008_pm_valid,
+-};
+-
+-int __init pnx4008_pm_init(void)
+-{
+-	u32 sram_size_to_allocate;
+-
+-	pll4_clk = clk_get(0, "ck_pll4");
+-	if (IS_ERR(pll4_clk)) {
+-		printk(KERN_ERR
+-		       "PM Suspend cannot acquire ARM(PLL4) clock control\n");
+-		return PTR_ERR(pll4_clk);
+-	}
+-
+-	if (pnx4008_cpu_standby_sz > pnx4008_cpu_suspend_sz)
+-		sram_size_to_allocate = pnx4008_cpu_standby_sz;
+-	else
+-		sram_size_to_allocate = pnx4008_cpu_suspend_sz;
+-
+-	saved_sram = kmalloc(sram_size_to_allocate, GFP_ATOMIC);
+-	if (!saved_sram) {
+-		printk(KERN_ERR
+-		       "PM Suspend: cannot allocate memory to save portion of SRAM\n");
+-		clk_put(pll4_clk);
+-		return -ENOMEM;
+-	}
+-
+-	suspend_set_ops(&pnx4008_pm_ops);
+-	return 0;
+-}
+--- linux-2.6.orig/arch/arm/mach-pnx4008/serial.c
++++ /dev/null
+@@ -1,67 +0,0 @@
+-/*
+- *  linux/arch/arm/mach-pnx4008/serial.c
+- *
+- *  PNX4008 UART initialization
+- *
+- *  Copyright:	MontaVista Software Inc. (c) 2005
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License version 2 as
+- *  published by the Free Software Foundation.
+- */
+-#include <linux/kernel.h>
+-#include <linux/types.h>
+-#include <linux/io.h>
+-
+-#include <mach/platform.h>
+-#include <mach/hardware.h>
+-
+-#include <linux/serial_core.h>
+-#include <linux/serial_reg.h>
+-
+-#include <mach/gpio-pnx4008.h>
+-#include <mach/clock.h>
+-
+-#define UART_3		0
+-#define UART_4		1
+-#define UART_5		2
+-#define UART_6		3
+-#define UART_UNKNOWN	(-1)
+-
+-#define UART3_BASE_VA	IO_ADDRESS(PNX4008_UART3_BASE)
+-#define UART4_BASE_VA	IO_ADDRESS(PNX4008_UART4_BASE)
+-#define UART5_BASE_VA	IO_ADDRESS(PNX4008_UART5_BASE)
+-#define UART6_BASE_VA	IO_ADDRESS(PNX4008_UART6_BASE)
+-
+-#define UART_FCR_OFFSET		8
+-#define UART_FIFO_SIZE		64
+-
+-void pnx4008_uart_init(void)
+-{
+-	u32 tmp;
+-	int i = UART_FIFO_SIZE;
+-
+-	__raw_writel(0xC1, UART5_BASE_VA + UART_FCR_OFFSET);
+-	__raw_writel(0xC1, UART3_BASE_VA + UART_FCR_OFFSET);
+-
+-	/* Send a NULL to fix the UART HW bug */
+-	__raw_writel(0x00, UART5_BASE_VA);
+-	__raw_writel(0x00, UART3_BASE_VA);
+-
+-	while (i--) {
+-		tmp = __raw_readl(UART5_BASE_VA);
+-		tmp = __raw_readl(UART3_BASE_VA);
+-	}
+-	__raw_writel(0, UART5_BASE_VA + UART_FCR_OFFSET);
+-	__raw_writel(0, UART3_BASE_VA + UART_FCR_OFFSET);
+-
+-	/* setup wakeup interrupt */
+-	start_int_set_rising_edge(SE_U3_RX_INT);
+-	start_int_ack(SE_U3_RX_INT);
+-	start_int_umask(SE_U3_RX_INT);
+-
+-	start_int_set_rising_edge(SE_U5_RX_INT);
+-	start_int_ack(SE_U5_RX_INT);
+-	start_int_umask(SE_U5_RX_INT);
+-}
+-
+--- linux-2.6.orig/arch/arm/mach-pnx4008/sleep.S
++++ /dev/null
+@@ -1,195 +0,0 @@
+-/*
+- * linux/arch/arm/mach-pnx4008/sleep.S
+- *
+- * PNX4008 support for STOP mode and SDRAM self-refresh
+- *
+- * Authors: Dmitry Chigirev, Vitaly Wool <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/linkage.h>
+-#include <asm/assembler.h>
+-#include <mach/hardware.h>
+-
+-#define PWRMAN_VA_BASE IO_ADDRESS(PNX4008_PWRMAN_BASE)
+-#define PWR_CTRL_REG_OFFS 0x44
+-
+-#define SDRAM_CFG_VA_BASE IO_ADDRESS(PNX4008_SDRAM_CFG_BASE)
+-#define MPMC_STATUS_REG_OFFS 0x4
+-
+-		.text
+-
+-ENTRY(pnx4008_cpu_suspend)
+-	@this function should be entered in Direct run mode.
+-
+-	@ save registers on stack
+-	stmfd	sp!, {r0 - r6, lr}
+-
+-	@ setup Power Manager base address in r4
+-	@ and put it's value in r5
+-	mov	r4, #(PWRMAN_VA_BASE & 0xff000000)
+-	orr	r4, r4, #(PWRMAN_VA_BASE & 0x00ff0000)
+-	orr	r4, r4, #(PWRMAN_VA_BASE & 0x0000ff00)
+-	orr	r4, r4, #(PWRMAN_VA_BASE & 0x000000ff)
+-	ldr	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ setup SDRAM controller base address in r2
+-	@ and put it's value in r3
+-	mov	r2, #(SDRAM_CFG_VA_BASE & 0xff000000)
+-	orr	r2, r2, #(SDRAM_CFG_VA_BASE & 0x00ff0000)
+-	orr	r2, r2, #(SDRAM_CFG_VA_BASE & 0x0000ff00)
+-	orr	r2, r2, #(SDRAM_CFG_VA_BASE & 0x000000ff)
+-	ldr	r3, [r2, #MPMC_STATUS_REG_OFFS] @extra read - HW bug workaround
+-
+-	@ clear SDRAM self-refresh bit latch
+-	and	r5, r5, #(~(1 << 8))
+-	@ clear SDRAM self-refresh bit
+-	and	r5, r5, #(~(1 << 9))
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ do save current bit settings in r1
+-	mov	r1, r5
+-
+-	@ set SDRAM self-refresh bit
+-	orr	r5, r5, #(1 << 9)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ set SDRAM self-refresh bit latch
+-	orr	r5, r5, #(1 << 8)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ clear SDRAM self-refresh bit latch
+-	and	r5, r5, #(~(1 << 8))
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ clear SDRAM self-refresh bit
+-	and	r5, r5, #(~(1 << 9))
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ wait for SDRAM to get into self-refresh mode
+-2:	ldr	r3, [r2, #MPMC_STATUS_REG_OFFS]
+-	tst	r3, #(1 << 2)
+-	beq	2b
+-
+-	@ to prepare SDRAM to get out of self-refresh mode after wakeup
+-	orr	r5, r5, #(1 << 7)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ do enter stop mode
+-	orr	r5, r5, #(1 << 0)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-	nop
+-	nop
+-	nop
+-	nop
+-	nop
+-	nop
+-	nop
+-	nop
+-	nop
+-
+-	@ sleeping now...
+-
+-	@ coming out of STOP mode into Direct Run mode
+-	@ clear STOP mode and SDRAM self-refresh bits
+-	str	r1, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ wait for SDRAM to get out self-refresh mode
+-3:	ldr	r3, [r2, #MPMC_STATUS_REG_OFFS]
+-	tst	r3, #5
+-	bne	3b
+-
+-	@ restore regs and return
+-	ldmfd   sp!, {r0 - r6, pc}
+-
+-ENTRY(pnx4008_cpu_suspend_sz)
+-	.word	. - pnx4008_cpu_suspend
+-
+-ENTRY(pnx4008_cpu_standby)
+-	@ save registers on stack
+-	stmfd	sp!, {r0 - r6, lr}
+-
+-	@ setup Power Manager base address in r4
+-	@ and put it's value in r5
+-	mov	r4, #(PWRMAN_VA_BASE & 0xff000000)
+-	orr	r4, r4, #(PWRMAN_VA_BASE & 0x00ff0000)
+-	orr	r4, r4, #(PWRMAN_VA_BASE & 0x0000ff00)
+-	orr	r4, r4, #(PWRMAN_VA_BASE & 0x000000ff)
+-	ldr	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ setup SDRAM controller base address in r2
+-	@ and put it's value in r3
+-	mov	r2, #(SDRAM_CFG_VA_BASE & 0xff000000)
+-	orr	r2, r2, #(SDRAM_CFG_VA_BASE & 0x00ff0000)
+-	orr	r2, r2, #(SDRAM_CFG_VA_BASE & 0x0000ff00)
+-	orr	r2, r2, #(SDRAM_CFG_VA_BASE & 0x000000ff)
+-	ldr	r3, [r2, #MPMC_STATUS_REG_OFFS] @extra read - HW bug workaround
+-
+-	@ clear SDRAM self-refresh bit latch
+-	and	r5, r5, #(~(1 << 8))
+-	@ clear SDRAM self-refresh bit
+-	and	r5, r5, #(~(1 << 9))
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ do save current bit settings in r1
+-	mov	r1, r5
+-
+-	@ set SDRAM self-refresh bit
+-	orr	r5, r5, #(1 << 9)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ set SDRAM self-refresh bit latch
+-	orr	r5, r5, #(1 << 8)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ clear SDRAM self-refresh bit latch
+-	and	r5, r5, #(~(1 << 8))
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ clear SDRAM self-refresh bit
+-	and	r5, r5, #(~(1 << 9))
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ wait for SDRAM to get into self-refresh mode
+-2:	ldr	r3, [r2, #MPMC_STATUS_REG_OFFS]
+-	tst	r3, #(1 << 2)
+-	beq	2b
+-
+-	@ set 'get out of self-refresh mode after wakeup' bit
+-	orr	r5, r5, #(1 << 7)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	mcr     p15, 0, r0, c7, c0, 4	@ kinda sleeping now...
+-
+-	@ set SDRAM self-refresh bit latch
+-	orr	r5, r5, #(1 << 8)
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ clear SDRAM self-refresh bit latch
+-	and	r5, r5, #(~(1 << 8))
+-	str	r5, [r4, #PWR_CTRL_REG_OFFS]
+-
+-	@ wait for SDRAM to get out self-refresh mode
+-3:	ldr	r3, [r2, #MPMC_STATUS_REG_OFFS]
+-	tst	r3, #5
+-	bne	3b
+-
+-	@ restore regs and return
+-	ldmfd   sp!, {r0 - r6, pc}
+-
+-ENTRY(pnx4008_cpu_standby_sz)
+-	.word	. - pnx4008_cpu_standby
+-
+-ENTRY(pnx4008_cache_clean_invalidate)
+-	stmfd	sp!, {r0 - r6, lr}
+-#ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
+-	mcr	p15, 0, ip, c7, c6, 0		@ invalidate D cache
+-#else
+-1:	mrc	p15, 0, r15, c7, c14, 3		@ test,clean,invalidate
+-	bne     1b
+-#endif
+-	ldmfd   sp!, {r0 - r6, pc}
+--- linux-2.6.orig/arch/arm/mach-pnx4008/time.c
++++ /dev/null
+@@ -1,134 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/time.c
+- *
+- * PNX4008 Timers
+- *
+- * Authors: Vitaly Wool, Dmitry Chigirev, Grigory Tolstolytkin <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/delay.h>
+-#include <linux/interrupt.h>
+-#include <linux/sched.h>
+-#include <linux/spinlock.h>
+-#include <linux/module.h>
+-#include <linux/kallsyms.h>
+-#include <linux/time.h>
+-#include <linux/timex.h>
+-#include <linux/irq.h>
+-#include <linux/io.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-#include <asm/mach/time.h>
+-#include <asm/errno.h>
+-
+-#include "time.h"
+-
+-/*! Note: all timers are UPCOUNTING */
+-
+-/*!
+- * Returns number of us since last clock interrupt.  Note that interrupts
+- * will have been disabled by do_gettimeoffset()
+- */
+-static unsigned long pnx4008_gettimeoffset(void)
+-{
+-	u32 ticks_to_match =
+-	    __raw_readl(HSTIM_MATCH0) - __raw_readl(HSTIM_COUNTER);
+-	u32 elapsed = LATCH - ticks_to_match;
+-	return (elapsed * (tick_nsec / 1000)) / LATCH;
+-}
+-
+-/*!
+- * IRQ handler for the timer
+- */
+-static irqreturn_t pnx4008_timer_interrupt(int irq, void *dev_id)
+-{
+-	if (__raw_readl(HSTIM_INT) & MATCH0_INT) {
+-
+-		do {
+-			timer_tick();
+-
+-			/*
+-			 * this algorithm takes care of possible delay
+-			 * for this interrupt handling longer than a normal
+-			 * timer period
+-			 */
+-			__raw_writel(__raw_readl(HSTIM_MATCH0) + LATCH,
+-				     HSTIM_MATCH0);
+-			__raw_writel(MATCH0_INT, HSTIM_INT);	/* clear interrupt */
+-
+-			/*
+-			 * The goal is to keep incrementing HSTIM_MATCH0
+-			 * register until HSTIM_MATCH0 indicates time after
+-			 * what HSTIM_COUNTER indicates.
+-			 */
+-		} while ((signed)
+-			 (__raw_readl(HSTIM_MATCH0) -
+-			  __raw_readl(HSTIM_COUNTER)) < 0);
+-	}
+-
+-	return IRQ_HANDLED;
+-}
+-
+-static struct irqaction pnx4008_timer_irq = {
+-	.name = "PNX4008 Tick Timer",
+-	.flags = IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
+-	.handler = pnx4008_timer_interrupt
+-};
+-
+-/*!
+- * Set up timer and timer interrupt.
+- */
+-static __init void pnx4008_setup_timer(void)
+-{
+-	__raw_writel(RESET_COUNT, MSTIM_CTRL);
+-	while (__raw_readl(MSTIM_COUNTER)) ;	/* wait for reset to complete. 100% guarantee event */
+-	__raw_writel(0, MSTIM_CTRL);	/* stop the timer */
+-	__raw_writel(0, MSTIM_MCTRL);
+-
+-	__raw_writel(RESET_COUNT, HSTIM_CTRL);
+-	while (__raw_readl(HSTIM_COUNTER)) ;	/* wait for reset to complete. 100% guarantee event */
+-	__raw_writel(0, HSTIM_CTRL);
+-	__raw_writel(0, HSTIM_MCTRL);
+-	__raw_writel(0, HSTIM_CCR);
+-	__raw_writel(12, HSTIM_PMATCH);	/* scale down to 1 MHZ */
+-	__raw_writel(LATCH, HSTIM_MATCH0);
+-	__raw_writel(MR0_INT, HSTIM_MCTRL);
+-
+-	setup_irq(HSTIMER_INT, &pnx4008_timer_irq);
+-
+-	__raw_writel(COUNT_ENAB | DEBUG_EN, HSTIM_CTRL);	/*start timer, stop when JTAG active */
+-}
+-
+-/* Timer Clock Control in PM register */
+-#define TIMCLK_CTRL_REG  IO_ADDRESS((PNX4008_PWRMAN_BASE + 0xBC))
+-#define WATCHDOG_CLK_EN                   1
+-#define TIMER_CLK_EN                      2	/* HS and MS timers? */
+-
+-static u32 timclk_ctrl_reg_save;
+-
+-void pnx4008_timer_suspend(void)
+-{
+-	timclk_ctrl_reg_save = __raw_readl(TIMCLK_CTRL_REG);
+-	__raw_writel(0, TIMCLK_CTRL_REG);	/* disable timers */
+-}
+-
+-void pnx4008_timer_resume(void)
+-{
+-	__raw_writel(timclk_ctrl_reg_save, TIMCLK_CTRL_REG);	/* enable timers */
+-}
+-
+-struct sys_timer pnx4008_timer = {
+-	.init = pnx4008_setup_timer,
+-	.offset = pnx4008_gettimeoffset,
+-	.suspend = pnx4008_timer_suspend,
+-	.resume = pnx4008_timer_resume,
+-};
+-
+--- linux-2.6.orig/arch/arm/mach-pnx4008/time.h
++++ /dev/null
+@@ -1,70 +0,0 @@
+-/*
+- * arch/arm/mach-pnx4008/include/mach/timex.h
+- *
+- * PNX4008 timers header file
+- *
+- * Author: Dmitry Chigirev <source@mvista.com>
+- *
+- * 2005 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-#ifndef PNX_TIME_H
+-#define PNX_TIME_H
+-
+-#include <linux/io.h>
+-#include <mach/hardware.h>
+-
+-#define TICKS2USECS(x)	(x)
+-
+-/* MilliSecond Timer - Chapter 21 Page 202 */
+-
+-#define MSTIM_INT     IO_ADDRESS((PNX4008_MSTIMER_BASE + 0x0))
+-#define MSTIM_CTRL    IO_ADDRESS((PNX4008_MSTIMER_BASE + 0x4))
+-#define MSTIM_COUNTER IO_ADDRESS((PNX4008_MSTIMER_BASE + 0x8))
+-#define MSTIM_MCTRL   IO_ADDRESS((PNX4008_MSTIMER_BASE + 0x14))
+-#define MSTIM_MATCH0  IO_ADDRESS((PNX4008_MSTIMER_BASE + 0x18))
+-#define MSTIM_MATCH1  IO_ADDRESS((PNX4008_MSTIMER_BASE + 0x1c))
+-
+-/* High Speed Timer - Chpater 22, Page 205 */
+-
+-#define HSTIM_INT     IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x0))
+-#define HSTIM_CTRL    IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x4))
+-#define HSTIM_COUNTER IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x8))
+-#define HSTIM_PMATCH  IO_ADDRESS((PNX4008_HSTIMER_BASE + 0xC))
+-#define HSTIM_PCOUNT  IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x10))
+-#define HSTIM_MCTRL   IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x14))
+-#define HSTIM_MATCH0  IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x18))
+-#define HSTIM_MATCH1  IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x1c))
+-#define HSTIM_MATCH2  IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x20))
+-#define HSTIM_CCR     IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x28))
+-#define HSTIM_CR0     IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x2C))
+-#define HSTIM_CR1     IO_ADDRESS((PNX4008_HSTIMER_BASE + 0x30))
+-
+-/* IMPORTANT: both timers are UPCOUNTING */
+-
+-/* xSTIM_MCTRL bit definitions */
+-#define MR0_INT        1
+-#define RESET_COUNT0   (1<<1)
+-#define STOP_COUNT0    (1<<2)
+-#define MR1_INT        (1<<3)
+-#define RESET_COUNT1   (1<<4)
+-#define STOP_COUNT1    (1<<5)
+-#define MR2_INT        (1<<6)
+-#define RESET_COUNT2   (1<<7)
+-#define STOP_COUNT2    (1<<8)
+-
+-/* xSTIM_CTRL bit definitions */
+-#define COUNT_ENAB     1
+-#define RESET_COUNT    (1<<1)
+-#define DEBUG_EN       (1<<2)
+-
+-/* xSTIM_INT bit definitions */
+-#define MATCH0_INT     1
+-#define MATCH1_INT     (1<<1)
+-#define MATCH2_INT     (1<<2)
+-#define RTC_TICK0      (1<<4)
+-#define RTC_TICK1      (1<<5)
+-
+-#endif
+--- linux-2.6.orig/arch/arm/tools/mach-types
++++ linux-2.6/arch/arm/tools/mach-types
+@@ -158,7 +158,6 @@ edb9315a		MACH_EDB9315A		EDB9315A		772
+ stargate2		MACH_STARGATE2		STARGATE2		774
+ intelmote2		MACH_INTELMOTE2		INTELMOTE2		775
+ trizeps4		MACH_TRIZEPS4		TRIZEPS4		776
+-pnx4008			MACH_PNX4008		PNX4008			782
+ cpuat91			MACH_CPUAT91		CPUAT91			787
+ iq81340sc		MACH_IQ81340SC		IQ81340SC		799
+ iq81340mc		MACH_IQ81340MC		IQ81340MC		801
+--- linux-2.6.orig/drivers/i2c/busses/Kconfig
++++ linux-2.6/drivers/i2c/busses/Kconfig
+@@ -545,7 +545,7 @@ config I2C_PMCMSP
+ 
+ config I2C_PNX
+ 	tristate "I2C bus support for Philips PNX and NXP LPC targets"
+-	depends on ARCH_PNX4008 || ARCH_LPC32XX
++	depends on ARCH_LPC32XX
+ 	help
+ 	  This driver supports the Philips IP3204 I2C IP block master and/or
+ 	  slave controller
+--- linux-2.6.orig/drivers/usb/Kconfig
++++ linux-2.6/drivers/usb/Kconfig
+@@ -13,7 +13,6 @@ config USB_ARCH_HAS_OHCI
+ 	default y if PXA3xx
+ 	default y if ARCH_EP93XX
+ 	default y if ARCH_AT91
+-	default y if ARCH_PNX4008
+ 	default y if MFD_TC6393XB
+ 	default y if ARCH_W90X900
+ 	default y if ARCH_DAVINCI_DA8XX
+--- linux-2.6.orig/drivers/usb/host/Kconfig
++++ linux-2.6/drivers/usb/host/Kconfig
+@@ -292,7 +292,7 @@ config USB_OHCI_HCD
+ 	depends on USB && USB_ARCH_HAS_OHCI
+ 	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3
+ 	select USB_OTG_UTILS if ARCH_OMAP
+-	select USB_ISP1301 if ARCH_LPC32XX || ARCH_PNX4008
++	select USB_ISP1301 if ARCH_LPC32XX
+ 	---help---
+ 	  The Open Host Controller Interface (OHCI) is a standard for accessing
+ 	  USB 1.1 host controller hardware.  It does more in hardware than Intel's
+--- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
++++ linux-2.6/drivers/usb/host/ohci-hcd.c
+@@ -1049,7 +1049,7 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ohci_hcd_at91_driver
+ #endif
+ 
+-#if defined(CONFIG_ARCH_PNX4008) || defined(CONFIG_ARCH_LPC32XX)
++#ifdef CONFIG_ARCH_LPC32XX
+ #include "ohci-nxp.c"
+ #define PLATFORM_DRIVER		usb_hcd_nxp_driver
+ #endif
+--- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
++++ linux-2.6/drivers/usb/host/ohci-nxp.c
+@@ -2,7 +2,6 @@
+  * driver for NXP USB Host devices
+  *
+  * Currently supported OHCI host devices:
+- * - Philips PNX4008
+  * - NXP LPC32xx
+  *
+  * Authors: Dmitry Chigirev <source@mvista.com>
+@@ -66,38 +65,6 @@ static struct clk *usb_pll_clk;
+ static struct clk *usb_dev_clk;
+ static struct clk *usb_otg_clk;
+ 
+-static void isp1301_configure_pnx4008(void)
+-{
+-	/* PNX4008 only supports DAT_SE0 USB mode */
+-	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
+-	/* Power up externel charge-pump */
+-
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_MODE_CONTROL_1, MC1_DAT_SE0 | MC1_SPEED_REG);
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_MODE_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR,
+-		~(MC1_DAT_SE0 | MC1_SPEED_REG));
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_MODE_CONTROL_2,
+-		MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL);
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR,
+-		~(MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL));
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_OTG_CONTROL_1, OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN);
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR,
+-		~(OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN));
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR, 0xFF);
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR,
+-		0xFF);
+-	i2c_smbus_write_byte_data(isp1301_i2c_client,
+-		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR,
+-		0xFF);
+-}
+-
+ static void isp1301_configure_lpc32xx(void)
+ {
+ 	/* LPC32XX only supports DAT_SE0 USB mode */
+@@ -149,10 +116,7 @@ static void isp1301_configure_lpc32xx(vo
+ 
+ static void isp1301_configure(void)
+ {
+-	if (machine_is_pnx4008())
+-		isp1301_configure_pnx4008();
+-	else
+-		isp1301_configure_lpc32xx();
++	isp1301_configure_lpc32xx();
+ }
+ 
+ static inline void isp1301_vbus_on(void)
+@@ -241,47 +205,6 @@ static const struct hc_driver ohci_nxp_h
+ 	.start_port_reset = ohci_start_port_reset,
+ };
+ 
+-static void nxp_set_usb_bits(void)
+-{
+-	if (machine_is_pnx4008()) {
+-		start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
+-		start_int_ack(SE_USB_OTG_ATX_INT_N);
+-		start_int_umask(SE_USB_OTG_ATX_INT_N);
+-
+-		start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
+-		start_int_ack(SE_USB_OTG_TIMER_INT);
+-		start_int_umask(SE_USB_OTG_TIMER_INT);
+-
+-		start_int_set_rising_edge(SE_USB_I2C_INT);
+-		start_int_ack(SE_USB_I2C_INT);
+-		start_int_umask(SE_USB_I2C_INT);
+-
+-		start_int_set_rising_edge(SE_USB_INT);
+-		start_int_ack(SE_USB_INT);
+-		start_int_umask(SE_USB_INT);
+-
+-		start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
+-		start_int_ack(SE_USB_NEED_CLK_INT);
+-		start_int_umask(SE_USB_NEED_CLK_INT);
+-
+-		start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
+-		start_int_ack(SE_USB_AHB_NEED_CLK_INT);
+-		start_int_umask(SE_USB_AHB_NEED_CLK_INT);
+-	}
+-}
+-
+-static void nxp_unset_usb_bits(void)
+-{
+-	if (machine_is_pnx4008()) {
+-		start_int_mask(SE_USB_OTG_ATX_INT_N);
+-		start_int_mask(SE_USB_OTG_TIMER_INT);
+-		start_int_mask(SE_USB_I2C_INT);
+-		start_int_mask(SE_USB_INT);
+-		start_int_mask(SE_USB_NEED_CLK_INT);
+-		start_int_mask(SE_USB_AHB_NEED_CLK_INT);
+-	}
+-}
+-
+ static int __devinit usb_hcd_nxp_probe(struct platform_device *pdev)
+ {
+ 	struct usb_hcd *hcd = 0;
+@@ -376,9 +299,6 @@ static int __devinit usb_hcd_nxp_probe(s
+ 		goto out8;
+ 	}
+ 
+-	/* Set all USB bits in the Start Enable register */
+-	nxp_set_usb_bits();
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "Failed to get MEM resource\n");
+@@ -413,7 +333,6 @@ static int __devinit usb_hcd_nxp_probe(s
+ 
+ 	nxp_stop_hc();
+ out8:
+-	nxp_unset_usb_bits();
+ 	usb_put_hcd(hcd);
+ out7:
+ 	clk_disable(usb_otg_clk);
+@@ -441,7 +360,6 @@ static int usb_hcd_nxp_remove(struct pla
+ 	nxp_stop_hc();
+ 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ 	usb_put_hcd(hcd);
+-	nxp_unset_usb_bits();
+ 	clk_disable(usb_pll_clk);
+ 	clk_put(usb_pll_clk);
+ 	clk_disable(usb_dev_clk);
+--- linux-2.6.orig/drivers/video/Kconfig
++++ linux-2.6/drivers/video/Kconfig
+@@ -2151,21 +2151,6 @@ config FB_UDL
+ 	  mplayer -vo fbdev. Supports all USB 2.0 era DisplayLink devices.
+ 	  To compile as a module, choose M here: the module name is udlfb.
+ 
+-config FB_PNX4008_DUM
+-	tristate "Display Update Module support on Philips PNX4008 board"
+-	depends on FB && ARCH_PNX4008
+-	---help---
+-	  Say Y here to enable support for PNX4008 Display Update Module (DUM)
+-
+-config FB_PNX4008_DUM_RGB
+-	tristate "RGB Framebuffer support on Philips PNX4008 board"
+-	depends on FB_PNX4008_DUM
+-	select FB_CFB_FILLRECT
+-	select FB_CFB_COPYAREA
+-	select FB_CFB_IMAGEBLIT
+-	---help---
+-	  Say Y here to enable support for PNX4008 RGB Framebuffer
+-
+ config FB_IBM_GXT4500
+ 	tristate "Framebuffer support for IBM GXT4500P adaptor"
+ 	depends on FB && PPC
+--- linux-2.6.orig/drivers/video/Makefile
++++ linux-2.6/drivers/video/Makefile
+@@ -128,8 +128,6 @@ obj-$(CONFIG_FB_S3C)		  += s3c-fb.o
+ obj-$(CONFIG_FB_S3C2410)	  += s3c2410fb.o
+ obj-$(CONFIG_FB_FSL_DIU)	  += fsl-diu-fb.o
+ obj-$(CONFIG_FB_COBALT)           += cobalt_lcdfb.o
+-obj-$(CONFIG_FB_PNX4008_DUM)	  += pnx4008/
+-obj-$(CONFIG_FB_PNX4008_DUM_RGB)  += pnx4008/
+ obj-$(CONFIG_FB_IBM_GXT4500)	  += gxt4500.o
+ obj-$(CONFIG_FB_PS3)		  += ps3fb.o
+ obj-$(CONFIG_FB_SM501)            += sm501fb.o
+--- linux-2.6.orig/drivers/video/pnx4008/Makefile
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#
+-# Makefile for the new PNX4008 framebuffer device driver
+-#
+-
+-obj-$(CONFIG_FB_PNX4008_DUM) += sdum.o
+-obj-$(CONFIG_FB_PNX4008_DUM_RGB) += pnxrgbfb.o
+-
+--- linux-2.6.orig/drivers/video/pnx4008/dum.h
++++ /dev/null
+@@ -1,211 +0,0 @@
+-/*
+- * linux/drivers/video/pnx4008/dum.h
+- *
+- * Internal header for SDUM
+- *
+- * 2005 (c) Koninklijke Philips N.V. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#ifndef __PNX008_DUM_H__
+-#define __PNX008_DUM_H__
+-
+-#include <mach/platform.h>
+-
+-#define PNX4008_DUMCONF_VA_BASE		IO_ADDRESS(PNX4008_DUMCONF_BASE)
+-#define PNX4008_DUM_MAIN_VA_BASE	IO_ADDRESS(PNX4008_DUM_MAINCFG_BASE)
+-
+-/* DUM CFG ADDRESSES */
+-#define DUM_CH_BASE_ADR		(PNX4008_DUMCONF_VA_BASE + 0x00)
+-#define DUM_CH_MIN_ADR		(PNX4008_DUMCONF_VA_BASE + 0x00)
+-#define DUM_CH_MAX_ADR		(PNX4008_DUMCONF_VA_BASE + 0x04)
+-#define DUM_CH_CONF_ADR		(PNX4008_DUMCONF_VA_BASE + 0x08)
+-#define DUM_CH_STAT_ADR		(PNX4008_DUMCONF_VA_BASE + 0x0C)
+-#define DUM_CH_CTRL_ADR		(PNX4008_DUMCONF_VA_BASE + 0x10)
+-
+-#define CH_MARG		(0x100 / sizeof(u32))
+-#define DUM_CH_MIN(i)	(*((volatile u32 *)DUM_CH_MIN_ADR + (i) * CH_MARG))
+-#define DUM_CH_MAX(i)	(*((volatile u32 *)DUM_CH_MAX_ADR + (i) * CH_MARG))
+-#define DUM_CH_CONF(i)	(*((volatile u32 *)DUM_CH_CONF_ADR + (i) * CH_MARG))
+-#define DUM_CH_STAT(i)	(*((volatile u32 *)DUM_CH_STAT_ADR + (i) * CH_MARG))
+-#define DUM_CH_CTRL(i)	(*((volatile u32 *)DUM_CH_CTRL_ADR + (i) * CH_MARG))
+-
+-#define DUM_CONF_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x00)
+-#define DUM_CTRL_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x04)
+-#define DUM_STAT_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x08)
+-#define DUM_DECODE_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x0C)
+-#define DUM_COM_BASE_ADR      (PNX4008_DUM_MAIN_VA_BASE + 0x10)
+-#define DUM_SYNC_C_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x14)
+-#define DUM_CLK_DIV_ADR       (PNX4008_DUM_MAIN_VA_BASE + 0x18)
+-#define DUM_DIRTY_LOW_ADR     (PNX4008_DUM_MAIN_VA_BASE + 0x20)
+-#define DUM_DIRTY_HIGH_ADR    (PNX4008_DUM_MAIN_VA_BASE + 0x24)
+-#define DUM_FORMAT_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x28)
+-#define DUM_WTCFG1_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x30)
+-#define DUM_RTCFG1_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x34)
+-#define DUM_WTCFG2_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x38)
+-#define DUM_RTCFG2_ADR        (PNX4008_DUM_MAIN_VA_BASE + 0x3C)
+-#define DUM_TCFG_ADR          (PNX4008_DUM_MAIN_VA_BASE + 0x40)
+-#define DUM_OUTP_FORMAT1_ADR  (PNX4008_DUM_MAIN_VA_BASE + 0x44)
+-#define DUM_OUTP_FORMAT2_ADR  (PNX4008_DUM_MAIN_VA_BASE + 0x48)
+-#define DUM_SYNC_MODE_ADR     (PNX4008_DUM_MAIN_VA_BASE + 0x4C)
+-#define DUM_SYNC_OUT_C_ADR    (PNX4008_DUM_MAIN_VA_BASE + 0x50)
+-
+-#define DUM_CONF              (*(volatile u32 *)(DUM_CONF_ADR))
+-#define DUM_CTRL              (*(volatile u32 *)(DUM_CTRL_ADR))
+-#define DUM_STAT              (*(volatile u32 *)(DUM_STAT_ADR))
+-#define DUM_DECODE            (*(volatile u32 *)(DUM_DECODE_ADR))
+-#define DUM_COM_BASE          (*(volatile u32 *)(DUM_COM_BASE_ADR))
+-#define DUM_SYNC_C            (*(volatile u32 *)(DUM_SYNC_C_ADR))
+-#define DUM_CLK_DIV           (*(volatile u32 *)(DUM_CLK_DIV_ADR))
+-#define DUM_DIRTY_LOW         (*(volatile u32 *)(DUM_DIRTY_LOW_ADR))
+-#define DUM_DIRTY_HIGH        (*(volatile u32 *)(DUM_DIRTY_HIGH_ADR))
+-#define DUM_FORMAT            (*(volatile u32 *)(DUM_FORMAT_ADR))
+-#define DUM_WTCFG1            (*(volatile u32 *)(DUM_WTCFG1_ADR))
+-#define DUM_RTCFG1            (*(volatile u32 *)(DUM_RTCFG1_ADR))
+-#define DUM_WTCFG2            (*(volatile u32 *)(DUM_WTCFG2_ADR))
+-#define DUM_RTCFG2            (*(volatile u32 *)(DUM_RTCFG2_ADR))
+-#define DUM_TCFG              (*(volatile u32 *)(DUM_TCFG_ADR))
+-#define DUM_OUTP_FORMAT1      (*(volatile u32 *)(DUM_OUTP_FORMAT1_ADR))
+-#define DUM_OUTP_FORMAT2      (*(volatile u32 *)(DUM_OUTP_FORMAT2_ADR))
+-#define DUM_SYNC_MODE         (*(volatile u32 *)(DUM_SYNC_MODE_ADR))
+-#define DUM_SYNC_OUT_C        (*(volatile u32 *)(DUM_SYNC_OUT_C_ADR))
+-
+-/* DUM SLAVE ADDRESSES */
+-#define DUM_SLAVE_WRITE_ADR      (PNX4008_DUM_MAINCFG_BASE + 0x0000000)
+-#define DUM_SLAVE_READ1_I_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x1000000)
+-#define DUM_SLAVE_READ1_R_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x1000004)
+-#define DUM_SLAVE_READ2_I_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x1000008)
+-#define DUM_SLAVE_READ2_R_ADR    (PNX4008_DUM_MAINCFG_BASE + 0x100000C)
+-
+-#define DUM_SLAVE_WRITE_W  ((volatile u32 *)(DUM_SLAVE_WRITE_ADR))
+-#define DUM_SLAVE_WRITE_HW ((volatile u16 *)(DUM_SLAVE_WRITE_ADR))
+-#define DUM_SLAVE_READ1_I  ((volatile u8 *)(DUM_SLAVE_READ1_I_ADR))
+-#define DUM_SLAVE_READ1_R  ((volatile u16 *)(DUM_SLAVE_READ1_R_ADR))
+-#define DUM_SLAVE_READ2_I  ((volatile u8 *)(DUM_SLAVE_READ2_I_ADR))
+-#define DUM_SLAVE_READ2_R  ((volatile u16 *)(DUM_SLAVE_READ2_R_ADR))
+-
+-/* Sony display register addresses */
+-#define DISP_0_REG            (0x00)
+-#define DISP_1_REG            (0x01)
+-#define DISP_CAL_REG          (0x20)
+-#define DISP_ID_REG           (0x2A)
+-#define DISP_XMIN_L_REG       (0x30)
+-#define DISP_XMIN_H_REG       (0x31)
+-#define DISP_YMIN_REG         (0x32)
+-#define DISP_XMAX_L_REG       (0x34)
+-#define DISP_XMAX_H_REG       (0x35)
+-#define DISP_YMAX_REG         (0x36)
+-#define DISP_SYNC_EN_REG      (0x38)
+-#define DISP_SYNC_RISE_L_REG  (0x3C)
+-#define DISP_SYNC_RISE_H_REG  (0x3D)
+-#define DISP_SYNC_FALL_L_REG  (0x3E)
+-#define DISP_SYNC_FALL_H_REG  (0x3F)
+-#define DISP_PIXEL_REG        (0x0B)
+-#define DISP_DUMMY1_REG       (0x28)
+-#define DISP_DUMMY2_REG       (0x29)
+-#define DISP_TIMING_REG       (0x98)
+-#define DISP_DUMP_REG         (0x99)
+-
+-/* Sony display constants */
+-#define SONY_ID1              (0x22)
+-#define SONY_ID2              (0x23)
+-
+-/* Philips display register addresses */
+-#define PH_DISP_ORIENT_REG    (0x003)
+-#define PH_DISP_YPOINT_REG    (0x200)
+-#define PH_DISP_XPOINT_REG    (0x201)
+-#define PH_DISP_PIXEL_REG     (0x202)
+-#define PH_DISP_YMIN_REG      (0x406)
+-#define PH_DISP_YMAX_REG      (0x407)
+-#define PH_DISP_XMIN_REG      (0x408)
+-#define PH_DISP_XMAX_REG      (0x409)
+-
+-/* Misc constants */
+-#define NO_VALID_DISPLAY_FOUND      (0)
+-#define DISPLAY2_IS_NOT_CONNECTED   (0)
+-
+-/* register values */
+-#define V_BAC_ENABLE		(BIT(0))
+-#define V_BAC_DISABLE_IDLE	(BIT(1))
+-#define V_BAC_DISABLE_TRIG	(BIT(2))
+-#define V_DUM_RESET		(BIT(3))
+-#define V_MUX_RESET		(BIT(4))
+-#define BAC_ENABLED		(BIT(0))
+-#define BAC_DISABLED		0
+-
+-/* Sony LCD commands */
+-#define V_LCD_STANDBY_OFF	((BIT(25)) | (0 << 16) | DISP_0_REG)
+-#define V_LCD_USE_9BIT_BUS	((BIT(25)) | (2 << 16) | DISP_1_REG)
+-#define V_LCD_SYNC_RISE_L	((BIT(25)) | (0 << 16) | DISP_SYNC_RISE_L_REG)
+-#define V_LCD_SYNC_RISE_H	((BIT(25)) | (0 << 16) | DISP_SYNC_RISE_H_REG)
+-#define V_LCD_SYNC_FALL_L	((BIT(25)) | (160 << 16) | DISP_SYNC_FALL_L_REG)
+-#define V_LCD_SYNC_FALL_H	((BIT(25)) | (0 << 16) | DISP_SYNC_FALL_H_REG)
+-#define V_LCD_SYNC_ENABLE	((BIT(25)) | (128 << 16) | DISP_SYNC_EN_REG)
+-#define V_LCD_DISPLAY_ON	((BIT(25)) | (64 << 16) | DISP_0_REG)
+-
+-enum {
+-	PAD_NONE,
+-	PAD_512,
+-	PAD_1024
+-};
+-
+-enum {
+-	RGB888,
+-	RGB666,
+-	RGB565,
+-	BGR565,
+-	ARGB1555,
+-	ABGR1555,
+-	ARGB4444,
+-	ABGR4444
+-};
+-
+-struct dum_setup {
+-	int sync_neg_edge;
+-	int round_robin;
+-	int mux_int;
+-	int synced_dirty_flag_int;
+-	int dirty_flag_int;
+-	int error_int;
+-	int pf_empty_int;
+-	int sf_empty_int;
+-	int bac_dis_int;
+-	u32 dirty_base_adr;
+-	u32 command_base_adr;
+-	u32 sync_clk_div;
+-	int sync_output;
+-	u32 sync_restart_val;
+-	u32 set_sync_high;
+-	u32 set_sync_low;
+-};
+-
+-struct dum_ch_setup {
+-	int disp_no;
+-	u32 xmin;
+-	u32 ymin;
+-	u32 xmax;
+-	u32 ymax;
+-	int xmirror;
+-	int ymirror;
+-	int rotate;
+-	u32 minadr;
+-	u32 maxadr;
+-	u32 dirtybuffer;
+-	int pad;
+-	int format;
+-	int hwdirty;
+-	int slave_trans;
+-};
+-
+-struct disp_window {
+-	u32 xmin_l;
+-	u32 xmin_h;
+-	u32 ymin;
+-	u32 xmax_l;
+-	u32 xmax_h;
+-	u32 ymax;
+-};
+-
+-#endif				/* #ifndef __PNX008_DUM_H__ */
+--- linux-2.6.orig/drivers/video/pnx4008/fbcommon.h
++++ /dev/null
+@@ -1,43 +0,0 @@
+-/*
+- * Copyright (C) 2005 Philips Semiconductors
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; see the file COPYING.  If not, write to
+- * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+- * Boston, MA 02111-1307, USA, or http://www.gnu.org/licenses/gpl.html
+-*/
+-
+-#define QCIF_W  (176)
+-#define QCIF_H  (144)
+-
+-#define CIF_W   (352)
+-#define CIF_H   (288)
+-
+-#define LCD_X_RES	208
+-#define LCD_Y_RES	320
+-#define LCD_X_PAD	256
+-#define LCD_BBP		4	/* Bytes Per Pixel */
+-
+-#define DISP_MAX_X_SIZE     (320)
+-#define DISP_MAX_Y_SIZE     (208)
+-
+-#define RETURNVAL_BASE (0x400)
+-
+-enum fb_ioctl_returntype {
+-	ENORESOURCESLEFT = RETURNVAL_BASE,
+-	ERESOURCESNOTFREED,
+-	EPROCNOTOWNER,
+-	EFBNOTOWNER,
+-	ECOPYFAILED,
+-	EIOREMAPFAILED,
+-};
+--- linux-2.6.orig/drivers/video/pnx4008/pnxrgbfb.c
++++ /dev/null
+@@ -1,198 +0,0 @@
+-/*
+- * drivers/video/pnx4008/pnxrgbfb.c
+- *
+- * PNX4008's framebuffer support
+- *
+- * Author: Grigory Tolstolytkin <gtolstolytkin@ru.mvista.com>
+- * Based on Philips Semiconductors's code
+- *
+- * Copyrght (c) 2005 MontaVista Software, Inc.
+- * Copyright (c) 2005 Philips Semiconductors
+- * This file is licensed under the terms of the GNU General Public License
+- * version 2. This program is licensed "as is" without any warranty of any
+- * kind, whether express or implied.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/errno.h>
+-#include <linux/string.h>
+-#include <linux/mm.h>
+-#include <linux/vmalloc.h>
+-#include <linux/delay.h>
+-#include <linux/interrupt.h>
+-#include <linux/fb.h>
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-
+-#include "sdum.h"
+-#include "fbcommon.h"
+-
+-static u32 colreg[16];
+-
+-static struct fb_var_screeninfo rgbfb_var __initdata = {
+-	.xres = LCD_X_RES,
+-	.yres = LCD_Y_RES,
+-	.xres_virtual = LCD_X_RES,
+-	.yres_virtual = LCD_Y_RES,
+-	.bits_per_pixel = 32,
+-	.red.offset = 16,
+-	.red.length = 8,
+-	.green.offset = 8,
+-	.green.length = 8,
+-	.blue.offset = 0,
+-	.blue.length = 8,
+-	.left_margin = 0,
+-	.right_margin = 0,
+-	.upper_margin = 0,
+-	.lower_margin = 0,
+-	.vmode = FB_VMODE_NONINTERLACED,
+-};
+-static struct fb_fix_screeninfo rgbfb_fix __initdata = {
+-	.id = "RGBFB",
+-	.line_length = LCD_X_RES * LCD_BBP,
+-	.type = FB_TYPE_PACKED_PIXELS,
+-	.visual = FB_VISUAL_TRUECOLOR,
+-	.xpanstep = 0,
+-	.ypanstep = 0,
+-	.ywrapstep = 0,
+-	.accel = FB_ACCEL_NONE,
+-};
+-
+-static int channel_owned;
+-
+-static int no_cursor(struct fb_info *info, struct fb_cursor *cursor)
+-{
+-	return 0;
+-}
+-
+-static int rgbfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
+-			   u_int transp, struct fb_info *info)
+-{
+-	if (regno > 15)
+-		return 1;
+-
+-	colreg[regno] = ((red & 0xff00) << 8) | (green & 0xff00) |
+-	    ((blue & 0xff00) >> 8);
+-	return 0;
+-}
+-
+-static int rgbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+-{
+-	return pnx4008_sdum_mmap(info, vma, NULL);
+-}
+-
+-static struct fb_ops rgbfb_ops = {
+-	.fb_mmap = rgbfb_mmap,
+-	.fb_setcolreg = rgbfb_setcolreg,
+-	.fb_fillrect = cfb_fillrect,
+-	.fb_copyarea = cfb_copyarea,
+-	.fb_imageblit = cfb_imageblit,
+-};
+-
+-static int rgbfb_remove(struct platform_device *pdev)
+-{
+-	struct fb_info *info = platform_get_drvdata(pdev);
+-
+-	if (info) {
+-		unregister_framebuffer(info);
+-		fb_dealloc_cmap(&info->cmap);
+-		framebuffer_release(info);
+-		platform_set_drvdata(pdev, NULL);
+-	}
+-
+-	pnx4008_free_dum_channel(channel_owned, pdev->id);
+-	pnx4008_set_dum_exit_notification(pdev->id);
+-
+-	return 0;
+-}
+-
+-static int __devinit rgbfb_probe(struct platform_device *pdev)
+-{
+-	struct fb_info *info;
+-	struct dumchannel_uf chan_uf;
+-	int ret;
+-	char *option;
+-
+-	info = framebuffer_alloc(sizeof(u32) * 16, &pdev->dev);
+-	if (!info) {
+-		ret = -ENOMEM;
+-		goto err;
+-	}
+-
+-	pnx4008_get_fb_addresses(FB_TYPE_RGB, (void **)&info->screen_base,
+-				 (dma_addr_t *) &rgbfb_fix.smem_start,
+-				 &rgbfb_fix.smem_len);
+-
+-	if ((ret = pnx4008_alloc_dum_channel(pdev->id)) < 0)
+-		goto err0;
+-	else {
+-		channel_owned = ret;
+-		chan_uf.channelnr = channel_owned;
+-		chan_uf.dirty = (u32 *) NULL;
+-		chan_uf.source = (u32 *) rgbfb_fix.smem_start;
+-		chan_uf.x_offset = 0;
+-		chan_uf.y_offset = 0;
+-		chan_uf.width = LCD_X_RES;
+-		chan_uf.height = LCD_Y_RES;
+-
+-		if ((ret = pnx4008_put_dum_channel_uf(chan_uf, pdev->id))< 0)
+-			goto err1;
+-
+-		if ((ret =
+-		     pnx4008_set_dum_channel_sync(channel_owned, CONF_SYNC_ON,
+-						  pdev->id)) < 0)
+-			goto err1;
+-
+-		if ((ret =
+-		     pnx4008_set_dum_channel_dirty_detect(channel_owned,
+-							 CONF_DIRTYDETECTION_ON,
+-							 pdev->id)) < 0)
+-			goto err1;
+-	}
+-
+-	if (!fb_get_options("pnxrgbfb", &option) && option &&
+-			!strcmp(option, "nocursor"))
+-		rgbfb_ops.fb_cursor = no_cursor;
+-
+-	info->node = -1;
+-	info->flags = FBINFO_FLAG_DEFAULT;
+-	info->fbops = &rgbfb_ops;
+-	info->fix = rgbfb_fix;
+-	info->var = rgbfb_var;
+-	info->screen_size = rgbfb_fix.smem_len;
+-	info->pseudo_palette = info->par;
+-	info->par = NULL;
+-
+-	ret = fb_alloc_cmap(&info->cmap, 256, 0);
+-	if (ret < 0)
+-		goto err1;
+-
+-	ret = register_framebuffer(info);
+-	if (ret < 0)
+-		goto err2;
+-	platform_set_drvdata(pdev, info);
+-
+-	return 0;
+-
+-err2:
+-	fb_dealloc_cmap(&info->cmap);
+-err1:
+-	pnx4008_free_dum_channel(channel_owned, pdev->id);
+-err0:
+-	framebuffer_release(info);
+-err:
+-	return ret;
+-}
+-
+-static struct platform_driver rgbfb_driver = {
+-	.driver = {
+-		.name = "pnx4008-rgbfb",
+-	},
+-	.probe = rgbfb_probe,
+-	.remove = rgbfb_remove,
+-};
+-
+-module_platform_driver(rgbfb_driver);
+-
+-MODULE_LICENSE("GPL");
+--- linux-2.6.orig/drivers/video/pnx4008/sdum.c
++++ /dev/null
+@@ -1,861 +0,0 @@
+-/*
+- * drivers/video/pnx4008/sdum.c
+- *
+- * Display Update Master support
+- *
+- * Authors: Grigory Tolstolytkin <gtolstolytkin@ru.mvista.com>
+- *          Vitaly Wool <vitalywool@gmail.com>
+- * Based on Philips Semiconductors's code
+- *
+- * Copyrght (c) 2005-2006 MontaVista Software, Inc.
+- * Copyright (c) 2005 Philips Semiconductors
+- * This file is licensed under the terms of the GNU General Public License
+- * version 2. This program is licensed "as is" without any warranty of any
+- * kind, whether express or implied.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/errno.h>
+-#include <linux/string.h>
+-#include <linux/mm.h>
+-#include <linux/tty.h>
+-#include <linux/vmalloc.h>
+-#include <linux/delay.h>
+-#include <linux/interrupt.h>
+-#include <linux/platform_device.h>
+-#include <linux/fb.h>
+-#include <linux/init.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/clk.h>
+-#include <linux/gfp.h>
+-#include <asm/uaccess.h>
+-#include <asm/gpio.h>
+-
+-#include "sdum.h"
+-#include "fbcommon.h"
+-#include "dum.h"
+-
+-/* Framebuffers we have */
+-
+-static struct pnx4008_fb_addr {
+-	int fb_type;
+-	long addr_offset;
+-	long fb_length;
+-} fb_addr[] = {
+-	[0] = {
+-		FB_TYPE_YUV, 0, 0xB0000
+-	},
+-	[1] = {
+-		FB_TYPE_RGB, 0xB0000, 0x50000
+-	},
+-};
+-
+-static struct dum_data {
+-	u32 lcd_phys_start;
+-	u32 lcd_virt_start;
+-	u32 slave_phys_base;
+-	u32 *slave_virt_base;
+-	int fb_owning_channel[MAX_DUM_CHANNELS];
+-	struct dumchannel_uf chan_uf_store[MAX_DUM_CHANNELS];
+-} dum_data;
+-
+-/* Different local helper functions */
+-
+-static u32 nof_pixels_dx(struct dum_ch_setup *ch_setup)
+-{
+-	return (ch_setup->xmax - ch_setup->xmin + 1);
+-}
+-
+-static u32 nof_pixels_dy(struct dum_ch_setup *ch_setup)
+-{
+-	return (ch_setup->ymax - ch_setup->ymin + 1);
+-}
+-
+-static u32 nof_pixels_dxy(struct dum_ch_setup *ch_setup)
+-{
+-	return (nof_pixels_dx(ch_setup) * nof_pixels_dy(ch_setup));
+-}
+-
+-static u32 nof_bytes(struct dum_ch_setup *ch_setup)
+-{
+-	u32 r = nof_pixels_dxy(ch_setup);
+-	switch (ch_setup->format) {
+-	case RGB888:
+-	case RGB666:
+-		r *= 4;
+-		break;
+-
+-	default:
+-		r *= 2;
+-		break;
+-	}
+-	return r;
+-}
+-
+-static u32 build_command(int disp_no, u32 reg, u32 val)
+-{
+-	return ((disp_no << 26) | BIT(25) | (val << 16) | (disp_no << 10) |
+-		(reg << 0));
+-}
+-
+-static u32 build_double_index(int disp_no, u32 val)
+-{
+-	return ((disp_no << 26) | (val << 16) | (disp_no << 10) | (val << 0));
+-}
+-
+-static void build_disp_window(struct dum_ch_setup * ch_setup, struct disp_window * dw)
+-{
+-	dw->ymin = ch_setup->ymin;
+-	dw->ymax = ch_setup->ymax;
+-	dw->xmin_l = ch_setup->xmin & 0xFF;
+-	dw->xmin_h = (ch_setup->xmin & BIT(8)) >> 8;
+-	dw->xmax_l = ch_setup->xmax & 0xFF;
+-	dw->xmax_h = (ch_setup->xmax & BIT(8)) >> 8;
+-}
+-
+-static int put_channel(struct dumchannel chan)
+-{
+-	int i = chan.channelnr;
+-
+-	if (i < 0 || i > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else {
+-		DUM_CH_MIN(i) = chan.dum_ch_min;
+-		DUM_CH_MAX(i) = chan.dum_ch_max;
+-		DUM_CH_CONF(i) = chan.dum_ch_conf;
+-		DUM_CH_CTRL(i) = chan.dum_ch_ctrl;
+-	}
+-
+-	return 0;
+-}
+-
+-static void clear_channel(int channr)
+-{
+-	struct dumchannel chan;
+-
+-	chan.channelnr = channr;
+-	chan.dum_ch_min = 0;
+-	chan.dum_ch_max = 0;
+-	chan.dum_ch_conf = 0;
+-	chan.dum_ch_ctrl = 0;
+-
+-	put_channel(chan);
+-}
+-
+-static int put_cmd_string(struct cmdstring cmds)
+-{
+-	u16 *cmd_str_virtaddr;
+-	u32 *cmd_ptr0_virtaddr;
+-	u32 cmd_str_physaddr;
+-
+-	int i = cmds.channelnr;
+-
+-	if (i < 0 || i > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else if ((cmd_ptr0_virtaddr =
+-		  (int *)ioremap_nocache(DUM_COM_BASE,
+-					 sizeof(int) * MAX_DUM_CHANNELS)) ==
+-		 NULL)
+-		return -EIOREMAPFAILED;
+-	else {
+-		cmd_str_physaddr = ioread32(&cmd_ptr0_virtaddr[cmds.channelnr]);
+-		if ((cmd_str_virtaddr =
+-		     (u16 *) ioremap_nocache(cmd_str_physaddr,
+-					     sizeof(cmds))) == NULL) {
+-			iounmap(cmd_ptr0_virtaddr);
+-			return -EIOREMAPFAILED;
+-		} else {
+-			int t;
+-			for (t = 0; t < 8; t++)
+-				iowrite16(*((u16 *)&cmds.prestringlen + t),
+-					  cmd_str_virtaddr + t);
+-
+-			for (t = 0; t < cmds.prestringlen / 2; t++)
+-				 iowrite16(*((u16 *)&cmds.precmd + t),
+-					   cmd_str_virtaddr + t + 8);
+-
+-			for (t = 0; t < cmds.poststringlen / 2; t++)
+-				iowrite16(*((u16 *)&cmds.postcmd + t),
+-					  cmd_str_virtaddr + t + 8 +
+-					  	cmds.prestringlen / 2);
+-
+-			iounmap(cmd_ptr0_virtaddr);
+-			iounmap(cmd_str_virtaddr);
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+-static u32 dum_ch_setup(int ch_no, struct dum_ch_setup * ch_setup)
+-{
+-	struct cmdstring cmds_c;
+-	struct cmdstring *cmds = &cmds_c;
+-	struct disp_window dw;
+-	int standard;
+-	u32 orientation = 0;
+-	struct dumchannel chan = { 0 };
+-	int ret;
+-
+-	if ((ch_setup->xmirror) || (ch_setup->ymirror) || (ch_setup->rotate)) {
+-		standard = 0;
+-
+-		orientation = BIT(1);	/* always set 9-bit-bus */
+-		if (ch_setup->xmirror)
+-			orientation |= BIT(4);
+-		if (ch_setup->ymirror)
+-			orientation |= BIT(3);
+-		if (ch_setup->rotate)
+-			orientation |= BIT(0);
+-	} else
+-		standard = 1;
+-
+-	cmds->channelnr = ch_no;
+-
+-	/* build command string header */
+-	if (standard) {
+-		cmds->prestringlen = 32;
+-		cmds->poststringlen = 0;
+-	} else {
+-		cmds->prestringlen = 48;
+-		cmds->poststringlen = 16;
+-	}
+-
+-	cmds->format =
+-	    (u16) ((ch_setup->disp_no << 4) | (BIT(3)) | (ch_setup->format));
+-	cmds->reserved = 0x0;
+-	cmds->startaddr_low = (ch_setup->minadr & 0xFFFF);
+-	cmds->startaddr_high = (ch_setup->minadr >> 16);
+-
+-	if ((ch_setup->minadr == 0) && (ch_setup->maxadr == 0)
+-	    && (ch_setup->xmin == 0)
+-	    && (ch_setup->ymin == 0) && (ch_setup->xmax == 0)
+-	    && (ch_setup->ymax == 0)) {
+-		cmds->pixdatlen_low = 0;
+-		cmds->pixdatlen_high = 0;
+-	} else {
+-		u32 nbytes = nof_bytes(ch_setup);
+-		cmds->pixdatlen_low = (nbytes & 0xFFFF);
+-		cmds->pixdatlen_high = (nbytes >> 16);
+-	}
+-
+-	if (ch_setup->slave_trans)
+-		cmds->pixdatlen_high |= BIT(15);
+-
+-	/* build pre-string */
+-	build_disp_window(ch_setup, &dw);
+-
+-	if (standard) {
+-		cmds->precmd[0] =
+-		    build_command(ch_setup->disp_no, DISP_XMIN_L_REG, 0x99);
+-		cmds->precmd[1] =
+-		    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
+-				  dw.xmin_l);
+-		cmds->precmd[2] =
+-		    build_command(ch_setup->disp_no, DISP_XMIN_H_REG,
+-				  dw.xmin_h);
+-		cmds->precmd[3] =
+-		    build_command(ch_setup->disp_no, DISP_YMIN_REG, dw.ymin);
+-		cmds->precmd[4] =
+-		    build_command(ch_setup->disp_no, DISP_XMAX_L_REG,
+-				  dw.xmax_l);
+-		cmds->precmd[5] =
+-		    build_command(ch_setup->disp_no, DISP_XMAX_H_REG,
+-				  dw.xmax_h);
+-		cmds->precmd[6] =
+-		    build_command(ch_setup->disp_no, DISP_YMAX_REG, dw.ymax);
+-		cmds->precmd[7] =
+-		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
+-	} else {
+-		if (dw.xmin_l == ch_no)
+-			cmds->precmd[0] =
+-			    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
+-					  0x99);
+-		else
+-			cmds->precmd[0] =
+-			    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
+-					  ch_no);
+-
+-		cmds->precmd[1] =
+-		    build_command(ch_setup->disp_no, DISP_XMIN_L_REG,
+-				  dw.xmin_l);
+-		cmds->precmd[2] =
+-		    build_command(ch_setup->disp_no, DISP_XMIN_H_REG,
+-				  dw.xmin_h);
+-		cmds->precmd[3] =
+-		    build_command(ch_setup->disp_no, DISP_YMIN_REG, dw.ymin);
+-		cmds->precmd[4] =
+-		    build_command(ch_setup->disp_no, DISP_XMAX_L_REG,
+-				  dw.xmax_l);
+-		cmds->precmd[5] =
+-		    build_command(ch_setup->disp_no, DISP_XMAX_H_REG,
+-				  dw.xmax_h);
+-		cmds->precmd[6] =
+-		    build_command(ch_setup->disp_no, DISP_YMAX_REG, dw.ymax);
+-		cmds->precmd[7] =
+-		    build_command(ch_setup->disp_no, DISP_1_REG, orientation);
+-		cmds->precmd[8] =
+-		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
+-		cmds->precmd[9] =
+-		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
+-		cmds->precmd[0xA] =
+-		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
+-		cmds->precmd[0xB] =
+-		    build_double_index(ch_setup->disp_no, DISP_PIXEL_REG);
+-		cmds->postcmd[0] =
+-		    build_command(ch_setup->disp_no, DISP_1_REG, BIT(1));
+-		cmds->postcmd[1] =
+-		    build_command(ch_setup->disp_no, DISP_DUMMY1_REG, 1);
+-		cmds->postcmd[2] =
+-		    build_command(ch_setup->disp_no, DISP_DUMMY1_REG, 2);
+-		cmds->postcmd[3] =
+-		    build_command(ch_setup->disp_no, DISP_DUMMY1_REG, 3);
+-	}
+-
+-	if ((ret = put_cmd_string(cmds_c)) != 0) {
+-		return ret;
+-	}
+-
+-	chan.channelnr = cmds->channelnr;
+-	chan.dum_ch_min = ch_setup->dirtybuffer + ch_setup->minadr;
+-	chan.dum_ch_max = ch_setup->dirtybuffer + ch_setup->maxadr;
+-	chan.dum_ch_conf = 0x002;
+-	chan.dum_ch_ctrl = 0x04;
+-
+-	put_channel(chan);
+-
+-	return 0;
+-}
+-
+-static u32 display_open(int ch_no, int auto_update, u32 * dirty_buffer,
+-			u32 * frame_buffer, u32 xpos, u32 ypos, u32 w, u32 h)
+-{
+-
+-	struct dum_ch_setup k;
+-	int ret;
+-
+-	/* keep width & height within display area */
+-	if ((xpos + w) > DISP_MAX_X_SIZE)
+-		w = DISP_MAX_X_SIZE - xpos;
+-
+-	if ((ypos + h) > DISP_MAX_Y_SIZE)
+-		h = DISP_MAX_Y_SIZE - ypos;
+-
+-	/* assume 1 display only */
+-	k.disp_no = 0;
+-	k.xmin = xpos;
+-	k.ymin = ypos;
+-	k.xmax = xpos + (w - 1);
+-	k.ymax = ypos + (h - 1);
+-
+-	/* adjust min and max values if necessary */
+-	if (k.xmin > DISP_MAX_X_SIZE - 1)
+-		k.xmin = DISP_MAX_X_SIZE - 1;
+-	if (k.ymin > DISP_MAX_Y_SIZE - 1)
+-		k.ymin = DISP_MAX_Y_SIZE - 1;
+-
+-	if (k.xmax > DISP_MAX_X_SIZE - 1)
+-		k.xmax = DISP_MAX_X_SIZE - 1;
+-	if (k.ymax > DISP_MAX_Y_SIZE - 1)
+-		k.ymax = DISP_MAX_Y_SIZE - 1;
+-
+-	k.xmirror = 0;
+-	k.ymirror = 0;
+-	k.rotate = 0;
+-	k.minadr = (u32) frame_buffer;
+-	k.maxadr = (u32) frame_buffer + (((w - 1) << 10) | ((h << 2) - 2));
+-	k.pad = PAD_1024;
+-	k.dirtybuffer = (u32) dirty_buffer;
+-	k.format = RGB888;
+-	k.hwdirty = 0;
+-	k.slave_trans = 0;
+-
+-	ret = dum_ch_setup(ch_no, &k);
+-
+-	return ret;
+-}
+-
+-static void lcd_reset(void)
+-{
+-	u32 *dum_pio_base = (u32 *)IO_ADDRESS(PNX4008_PIO_BASE);
+-
+-	udelay(1);
+-	iowrite32(BIT(19), &dum_pio_base[2]);
+-	udelay(1);
+-	iowrite32(BIT(19), &dum_pio_base[1]);
+-	udelay(1);
+-}
+-
+-static int dum_init(struct platform_device *pdev)
+-{
+-	struct clk *clk;
+-
+-	/* enable DUM clock */
+-	clk = clk_get(&pdev->dev, "dum_ck");
+-	if (IS_ERR(clk)) {
+-		printk(KERN_ERR "pnx4008_dum: Unable to access DUM clock\n");
+-		return PTR_ERR(clk);
+-	}
+-
+-	clk_set_rate(clk, 1);
+-	clk_put(clk);
+-
+-	DUM_CTRL = V_DUM_RESET;
+-
+-	/* set priority to "round-robin". All other params to "false" */
+-	DUM_CONF = BIT(9);
+-
+-	/* Display 1 */
+-	DUM_WTCFG1 = PNX4008_DUM_WT_CFG;
+-	DUM_RTCFG1 = PNX4008_DUM_RT_CFG;
+-	DUM_TCFG = PNX4008_DUM_T_CFG;
+-
+-	return 0;
+-}
+-
+-static void dum_chan_init(void)
+-{
+-	int i = 0, ch = 0;
+-	u32 *cmdptrs;
+-	u32 *cmdstrings;
+-
+-	DUM_COM_BASE =
+-		CMDSTRING_BASEADDR + BYTES_PER_CMDSTRING * NR_OF_CMDSTRINGS;
+-
+-	if ((cmdptrs =
+-	     (u32 *) ioremap_nocache(DUM_COM_BASE,
+-				     sizeof(u32) * NR_OF_CMDSTRINGS)) == NULL)
+-		return;
+-
+-	for (ch = 0; ch < NR_OF_CMDSTRINGS; ch++)
+-		iowrite32(CMDSTRING_BASEADDR + BYTES_PER_CMDSTRING * ch,
+-			  cmdptrs + ch);
+-
+-	for (ch = 0; ch < MAX_DUM_CHANNELS; ch++)
+-		clear_channel(ch);
+-
+-	/* Clear the cmdstrings */
+-	cmdstrings =
+-	    (u32 *)ioremap_nocache(*cmdptrs,
+-				   BYTES_PER_CMDSTRING * NR_OF_CMDSTRINGS);
+-
+-	if (!cmdstrings)
+-		goto out;
+-
+-	for (i = 0; i < NR_OF_CMDSTRINGS * BYTES_PER_CMDSTRING / sizeof(u32);
+-	     i++)
+-		iowrite32(0, cmdstrings + i);
+-
+-	iounmap((u32 *)cmdstrings);
+-
+-out:
+-	iounmap((u32 *)cmdptrs);
+-}
+-
+-static void lcd_init(void)
+-{
+-	lcd_reset();
+-
+-	DUM_OUTP_FORMAT1 = 0; /* RGB666 */
+-
+-	udelay(1);
+-	iowrite32(V_LCD_STANDBY_OFF, dum_data.slave_virt_base);
+-	udelay(1);
+-	iowrite32(V_LCD_USE_9BIT_BUS, dum_data.slave_virt_base);
+-	udelay(1);
+-	iowrite32(V_LCD_SYNC_RISE_L, dum_data.slave_virt_base);
+-	udelay(1);
+-	iowrite32(V_LCD_SYNC_RISE_H, dum_data.slave_virt_base);
+-	udelay(1);
+-	iowrite32(V_LCD_SYNC_FALL_L, dum_data.slave_virt_base);
+-	udelay(1);
+-	iowrite32(V_LCD_SYNC_FALL_H, dum_data.slave_virt_base);
+-	udelay(1);
+-	iowrite32(V_LCD_SYNC_ENABLE, dum_data.slave_virt_base);
+-	udelay(1);
+-	iowrite32(V_LCD_DISPLAY_ON, dum_data.slave_virt_base);
+-	udelay(1);
+-}
+-
+-/* Interface exported to framebuffer drivers */
+-
+-int pnx4008_get_fb_addresses(int fb_type, void **virt_addr,
+-			     dma_addr_t *phys_addr, int *fb_length)
+-{
+-	int i;
+-	int ret = -1;
+-	for (i = 0; i < ARRAY_SIZE(fb_addr); i++)
+-		if (fb_addr[i].fb_type == fb_type) {
+-			*virt_addr = (void *)(dum_data.lcd_virt_start +
+-					fb_addr[i].addr_offset);
+-			*phys_addr =
+-			    dum_data.lcd_phys_start + fb_addr[i].addr_offset;
+-			*fb_length = fb_addr[i].fb_length;
+-			ret = 0;
+-			break;
+-		}
+-
+-	return ret;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_get_fb_addresses);
+-
+-int pnx4008_alloc_dum_channel(int dev_id)
+-{
+-	int i = 0;
+-
+-	while ((i < MAX_DUM_CHANNELS) && (dum_data.fb_owning_channel[i] != -1))
+-		i++;
+-
+-	if (i == MAX_DUM_CHANNELS)
+-		return -ENORESOURCESLEFT;
+-	else {
+-		dum_data.fb_owning_channel[i] = dev_id;
+-		return i;
+-	}
+-}
+-
+-EXPORT_SYMBOL(pnx4008_alloc_dum_channel);
+-
+-int pnx4008_free_dum_channel(int channr, int dev_id)
+-{
+-	if (channr < 0 || channr > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else if (dum_data.fb_owning_channel[channr] != dev_id)
+-		return -EFBNOTOWNER;
+-	else {
+-		clear_channel(channr);
+-		dum_data.fb_owning_channel[channr] = -1;
+-	}
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_free_dum_channel);
+-
+-int pnx4008_put_dum_channel_uf(struct dumchannel_uf chan_uf, int dev_id)
+-{
+-	int i = chan_uf.channelnr;
+-	int ret;
+-
+-	if (i < 0 || i > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else if (dum_data.fb_owning_channel[i] != dev_id)
+-		return -EFBNOTOWNER;
+-	else if ((ret =
+-		  display_open(chan_uf.channelnr, 0, chan_uf.dirty,
+-			       chan_uf.source, chan_uf.y_offset,
+-			       chan_uf.x_offset, chan_uf.height,
+-			       chan_uf.width)) != 0)
+-		return ret;
+-	else {
+-		dum_data.chan_uf_store[i].dirty = chan_uf.dirty;
+-		dum_data.chan_uf_store[i].source = chan_uf.source;
+-		dum_data.chan_uf_store[i].x_offset = chan_uf.x_offset;
+-		dum_data.chan_uf_store[i].y_offset = chan_uf.y_offset;
+-		dum_data.chan_uf_store[i].width = chan_uf.width;
+-		dum_data.chan_uf_store[i].height = chan_uf.height;
+-	}
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_put_dum_channel_uf);
+-
+-int pnx4008_set_dum_channel_sync(int channr, int val, int dev_id)
+-{
+-	if (channr < 0 || channr > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else if (dum_data.fb_owning_channel[channr] != dev_id)
+-		return -EFBNOTOWNER;
+-	else {
+-		if (val == CONF_SYNC_ON) {
+-			DUM_CH_CONF(channr) |= CONF_SYNCENABLE;
+-			DUM_CH_CONF(channr) |= DUM_CHANNEL_CFG_SYNC_MASK |
+-				DUM_CHANNEL_CFG_SYNC_MASK_SET;
+-		} else if (val == CONF_SYNC_OFF)
+-			DUM_CH_CONF(channr) &= ~CONF_SYNCENABLE;
+-		else
+-			return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_set_dum_channel_sync);
+-
+-int pnx4008_set_dum_channel_dirty_detect(int channr, int val, int dev_id)
+-{
+-	if (channr < 0 || channr > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else if (dum_data.fb_owning_channel[channr] != dev_id)
+-		return -EFBNOTOWNER;
+-	else {
+-		if (val == CONF_DIRTYDETECTION_ON)
+-			DUM_CH_CONF(channr) |= CONF_DIRTYENABLE;
+-		else if (val == CONF_DIRTYDETECTION_OFF)
+-			DUM_CH_CONF(channr) &= ~CONF_DIRTYENABLE;
+-		else
+-			return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_set_dum_channel_dirty_detect);
+-
+-#if 0 /* Functions not used currently, but likely to be used in future */
+-
+-static int get_channel(struct dumchannel *p_chan)
+-{
+-	int i = p_chan->channelnr;
+-
+-	if (i < 0 || i > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else {
+-		p_chan->dum_ch_min = DUM_CH_MIN(i);
+-		p_chan->dum_ch_max = DUM_CH_MAX(i);
+-		p_chan->dum_ch_conf = DUM_CH_CONF(i);
+-		p_chan->dum_ch_stat = DUM_CH_STAT(i);
+-		p_chan->dum_ch_ctrl = 0;	/* WriteOnly control register */
+-	}
+-
+-	return 0;
+-}
+-
+-int pnx4008_get_dum_channel_uf(struct dumchannel_uf *p_chan_uf, int dev_id)
+-{
+-	int i = p_chan_uf->channelnr;
+-
+-	if (i < 0 || i > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else if (dum_data.fb_owning_channel[i] != dev_id)
+-		return -EFBNOTOWNER;
+-	else {
+-		p_chan_uf->dirty = dum_data.chan_uf_store[i].dirty;
+-		p_chan_uf->source = dum_data.chan_uf_store[i].source;
+-		p_chan_uf->x_offset = dum_data.chan_uf_store[i].x_offset;
+-		p_chan_uf->y_offset = dum_data.chan_uf_store[i].y_offset;
+-		p_chan_uf->width = dum_data.chan_uf_store[i].width;
+-		p_chan_uf->height = dum_data.chan_uf_store[i].height;
+-	}
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_get_dum_channel_uf);
+-
+-int pnx4008_get_dum_channel_config(int channr, int dev_id)
+-{
+-	int ret;
+-	struct dumchannel chan;
+-
+-	if (channr < 0 || channr > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-	else if (dum_data.fb_owning_channel[channr] != dev_id)
+-		return -EFBNOTOWNER;
+-	else {
+-		chan.channelnr = channr;
+-		if ((ret = get_channel(&chan)) != 0)
+-			return ret;
+-	}
+-
+-	return (chan.dum_ch_conf & DUM_CHANNEL_CFG_MASK);
+-}
+-
+-EXPORT_SYMBOL(pnx4008_get_dum_channel_config);
+-
+-int pnx4008_force_update_dum_channel(int channr, int dev_id)
+-{
+-	if (channr < 0 || channr > MAX_DUM_CHANNELS)
+-		return -EINVAL;
+-
+-	else if (dum_data.fb_owning_channel[channr] != dev_id)
+-		return -EFBNOTOWNER;
+-	else
+-		DUM_CH_CTRL(channr) = CTRL_SETDIRTY;
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_force_update_dum_channel);
+-
+-#endif
+-
+-int pnx4008_sdum_mmap(struct fb_info *info, struct vm_area_struct *vma,
+-		      struct device *dev)
+-{
+-	unsigned long off = vma->vm_pgoff << PAGE_SHIFT;
+-
+-	if (off < info->fix.smem_len) {
+-		vma->vm_pgoff += 1;
+-		return dma_mmap_writecombine(dev, vma,
+-				(void *)dum_data.lcd_virt_start,
+-				dum_data.lcd_phys_start,
+-				FB_DMA_SIZE);
+-	}
+-	return -EINVAL;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_sdum_mmap);
+-
+-int pnx4008_set_dum_exit_notification(int dev_id)
+-{
+-	int i;
+-
+-	for (i = 0; i < MAX_DUM_CHANNELS; i++)
+-		if (dum_data.fb_owning_channel[i] == dev_id)
+-			return -ERESOURCESNOTFREED;
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(pnx4008_set_dum_exit_notification);
+-
+-/* Platform device driver for DUM */
+-
+-static int sdum_suspend(struct platform_device *pdev, pm_message_t state)
+-{
+-	int retval = 0;
+-	struct clk *clk;
+-
+-	clk = clk_get(0, "dum_ck");
+-	if (!IS_ERR(clk)) {
+-		clk_set_rate(clk, 0);
+-		clk_put(clk);
+-	} else
+-		retval = PTR_ERR(clk);
+-
+-	/* disable BAC */
+-	DUM_CTRL = V_BAC_DISABLE_IDLE;
+-
+-	/* LCD standby & turn off display */
+-	lcd_reset();
+-
+-	return retval;
+-}
+-
+-static int sdum_resume(struct platform_device *pdev)
+-{
+-	int retval = 0;
+-	struct clk *clk;
+-
+-	clk = clk_get(0, "dum_ck");
+-	if (!IS_ERR(clk)) {
+-		clk_set_rate(clk, 1);
+-		clk_put(clk);
+-	} else
+-		retval = PTR_ERR(clk);
+-
+-	/* wait for BAC disable */
+-	DUM_CTRL = V_BAC_DISABLE_TRIG;
+-
+-	while (DUM_CTRL & BAC_ENABLED)
+-		udelay(10);
+-
+-	/* re-init LCD */
+-	lcd_init();
+-
+-	/* enable BAC and reset MUX */
+-	DUM_CTRL = V_BAC_ENABLE;
+-	udelay(1);
+-	DUM_CTRL = V_MUX_RESET;
+-	return 0;
+-}
+-
+-static int __devinit sdum_probe(struct platform_device *pdev)
+-{
+-	int ret = 0, i = 0;
+-
+-	/* map frame buffer */
+-	dum_data.lcd_virt_start = (u32) dma_alloc_writecombine(&pdev->dev,
+-						       FB_DMA_SIZE,
+-						       &dum_data.lcd_phys_start,
+-						       GFP_KERNEL);
+-
+-	if (!dum_data.lcd_virt_start) {
+-		ret = -ENOMEM;
+-		goto out_3;
+-	}
+-
+-	/* map slave registers */
+-	dum_data.slave_phys_base = PNX4008_DUM_SLAVE_BASE;
+-	dum_data.slave_virt_base =
+-	    (u32 *) ioremap_nocache(dum_data.slave_phys_base, sizeof(u32));
+-
+-	if (dum_data.slave_virt_base == NULL) {
+-		ret = -ENOMEM;
+-		goto out_2;
+-	}
+-
+-	/* initialize DUM and LCD display */
+-	ret = dum_init(pdev);
+-	if (ret)
+-		goto out_1;
+-
+-	dum_chan_init();
+-	lcd_init();
+-
+-	DUM_CTRL = V_BAC_ENABLE;
+-	udelay(1);
+-	DUM_CTRL = V_MUX_RESET;
+-
+-	/* set decode address and sync clock divider */
+-	DUM_DECODE = dum_data.lcd_phys_start & DUM_DECODE_MASK;
+-	DUM_CLK_DIV = PNX4008_DUM_CLK_DIV;
+-
+-	for (i = 0; i < MAX_DUM_CHANNELS; i++)
+-		dum_data.fb_owning_channel[i] = -1;
+-
+-	/*setup wakeup interrupt */
+-	start_int_set_rising_edge(SE_DISP_SYNC_INT);
+-	start_int_ack(SE_DISP_SYNC_INT);
+-	start_int_umask(SE_DISP_SYNC_INT);
+-
+-	return 0;
+-
+-out_1:
+-	iounmap((void *)dum_data.slave_virt_base);
+-out_2:
+-	dma_free_writecombine(&pdev->dev, FB_DMA_SIZE,
+-			(void *)dum_data.lcd_virt_start,
+-			dum_data.lcd_phys_start);
+-out_3:
+-	return ret;
+-}
+-
+-static int sdum_remove(struct platform_device *pdev)
+-{
+-	struct clk *clk;
+-
+-	start_int_mask(SE_DISP_SYNC_INT);
+-
+-	clk = clk_get(0, "dum_ck");
+-	if (!IS_ERR(clk)) {
+-		clk_set_rate(clk, 0);
+-		clk_put(clk);
+-	}
+-
+-	iounmap((void *)dum_data.slave_virt_base);
+-
+-	dma_free_writecombine(&pdev->dev, FB_DMA_SIZE,
+-			(void *)dum_data.lcd_virt_start,
+-			dum_data.lcd_phys_start);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver sdum_driver = {
+-	.driver = {
+-		.name = "pnx4008-sdum",
+-	},
+-	.probe = sdum_probe,
+-	.remove = sdum_remove,
+-	.suspend = sdum_suspend,
+-	.resume = sdum_resume,
+-};
+-
+-module_platform_driver(sdum_driver);
+-
+-MODULE_LICENSE("GPL");
+--- linux-2.6.orig/drivers/video/pnx4008/sdum.h
++++ /dev/null
+@@ -1,136 +0,0 @@
+-/*
+- * Copyright (C) 2005 Philips Semiconductors
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2, or (at your option)
+- * any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; see the file COPYING.  If not, write to
+- * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+- * Boston, MA 02111-1307, USA, or http://www.gnu.org/licenses/gpl.html
+-*/
+-
+-#define MAX_DUM_CHANNELS	64
+-
+-#define RGB_MEM_WINDOW(x) (0x10000000 + (x)*0x00100000)
+-
+-#define QCIF_OFFSET(x) (((x) == 0) ? 0x00000: ((x) == 1) ? 0x30000: -1)
+-#define CIF_OFFSET(x)  (((x) == 0) ? 0x00000: ((x) == 1) ? 0x60000: -1)
+-
+-#define CTRL_SETDIRTY	 	(0x00000001)
+-#define CONF_DIRTYENABLE	(0x00000020)
+-#define CONF_SYNCENABLE		(0x00000004)
+-
+-#define DIRTY_ENABLED(conf)	((conf) & 0x0020)
+-#define SYNC_ENABLED(conf) 	((conf) & 0x0004)
+-
+-/* Display 1 & 2 Write Timing Configuration */
+-#define PNX4008_DUM_WT_CFG		0x00372000
+-
+-/* Display 1 & 2 Read Timing Configuration */
+-#define PNX4008_DUM_RT_CFG		0x00003A47
+-
+-/* DUM Transit State Timing Configuration */
+-#define PNX4008_DUM_T_CFG		0x1D	/* 29 HCLK cycles */
+-
+-/* DUM Sync count clock divider */
+-#define PNX4008_DUM_CLK_DIV		0x02DD
+-
+-/* Memory size for framebuffer, allocated through dma_alloc_writecombine().
+- * Must be PAGE aligned
+- */
+-#define FB_DMA_SIZE (PAGE_ALIGN(SZ_1M + PAGE_SIZE))
+-
+-#define OFFSET_RGBBUFFER (0xB0000)
+-#define OFFSET_YUVBUFFER (0x00000)
+-
+-#define YUVBUFFER (lcd_video_start + OFFSET_YUVBUFFER)
+-#define RGBBUFFER (lcd_video_start + OFFSET_RGBBUFFER)
+-
+-#define CMDSTRING_BASEADDR	(0x00C000)	/* iram */
+-#define BYTES_PER_CMDSTRING	(0x80)
+-#define NR_OF_CMDSTRINGS	(64)
+-
+-#define MAX_NR_PRESTRINGS (0x40)
+-#define MAX_NR_POSTSTRINGS (0x40)
+-
+-/* various mask definitions */
+-#define DUM_CLK_ENABLE 0x01
+-#define DUM_CLK_DISABLE 0
+-#define DUM_DECODE_MASK 0x1FFFFFFF
+-#define DUM_CHANNEL_CFG_MASK 0x01FF
+-#define DUM_CHANNEL_CFG_SYNC_MASK 0xFFFE00FF
+-#define DUM_CHANNEL_CFG_SYNC_MASK_SET 0x0CA00
+-
+-#define SDUM_RETURNVAL_BASE (0x500)
+-
+-#define CONF_SYNC_OFF		(0x602)
+-#define CONF_SYNC_ON		(0x603)
+-
+-#define CONF_DIRTYDETECTION_OFF	(0x600)
+-#define CONF_DIRTYDETECTION_ON	(0x601)
+-
+-struct dumchannel_uf {
+-	int channelnr;
+-	u32 *dirty;
+-	u32 *source;
+-	u32 x_offset;
+-	u32 y_offset;
+-	u32 width;
+-	u32 height;
+-};
+-
+-enum {
+-	FB_TYPE_YUV,
+-	FB_TYPE_RGB
+-};
+-
+-struct cmdstring {
+-	int channelnr;
+-	uint16_t prestringlen;
+-	uint16_t poststringlen;
+-	uint16_t format;
+-	uint16_t reserved;
+-	uint16_t startaddr_low;
+-	uint16_t startaddr_high;
+-	uint16_t pixdatlen_low;
+-	uint16_t pixdatlen_high;
+-	u32 precmd[MAX_NR_PRESTRINGS];
+-	u32 postcmd[MAX_NR_POSTSTRINGS];
+-
+-};
+-
+-struct dumchannel {
+-	int channelnr;
+-	int dum_ch_min;
+-	int dum_ch_max;
+-	int dum_ch_conf;
+-	int dum_ch_stat;
+-	int dum_ch_ctrl;
+-};
+-
+-int pnx4008_alloc_dum_channel(int dev_id);
+-int pnx4008_free_dum_channel(int channr, int dev_id);
+-
+-int pnx4008_get_dum_channel_uf(struct dumchannel_uf *pChan_uf, int dev_id);
+-int pnx4008_put_dum_channel_uf(struct dumchannel_uf chan_uf, int dev_id);
+-
+-int pnx4008_set_dum_channel_sync(int channr, int val, int dev_id);
+-int pnx4008_set_dum_channel_dirty_detect(int channr, int val, int dev_id);
+-
+-int pnx4008_force_dum_update_channel(int channr, int dev_id);
+-
+-int pnx4008_get_dum_channel_config(int channr, int dev_id);
+-
+-int pnx4008_sdum_mmap(struct fb_info *info, struct vm_area_struct *vma, struct device *dev);
+-int pnx4008_set_dum_exit_notification(int dev_id);
+-
+-int pnx4008_get_fb_addresses(int fb_type, void **virt_addr,
+-			     dma_addr_t * phys_addr, int *fb_length);
+--- linux-2.6.orig/drivers/watchdog/Kconfig
++++ linux-2.6/drivers/watchdog/Kconfig
+@@ -237,12 +237,12 @@ config OMAP_WATCHDOG
+ 	  here to enable the OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430 watchdog timer.
+ 
+ config PNX4008_WATCHDOG
+-	tristate "PNX4008 and LPC32XX Watchdog"
+-	depends on ARCH_PNX4008 || ARCH_LPC32XX
++	tristate "LPC32XX Watchdog"
++	depends on ARCH_LPC32XX
+ 	select WATCHDOG_CORE
+ 	help
+ 	  Say Y here if to include support for the watchdog timer
+-	  in the PNX4008 or LPC32XX processor.
++	  in the LPC32XX processor.
+ 	  This driver can be built as a module by choosing M. The module
+ 	  will be called pnx4008_wdt.
+ 
