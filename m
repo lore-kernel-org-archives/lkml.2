@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab2HWCCC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 22:02:02 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:38830 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab2HWCB6 (ORCPT
+	id S1754440Ab2HWCCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 22:02:10 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:41753 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753839Ab2HWCCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 22:01:58 -0400
-X-AuditID: b753bd60-94360ba000007c38-b7-50358f13443f
-X-AuditID: b753bd60-94360ba000007c38-b7-50358f13443f
-Message-ID: <50358F13.1030607@hitachi.com>
-Date: Thu, 23 Aug 2012 11:01:55 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 22 Aug 2012 22:02:05 -0400
+Message-ID: <50358D6E.20209@windriver.com>
+Date: Thu, 23 Aug 2012 09:54:54 +0800
+From: "tiejun.chen" <tiejun.chen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Amit Shah <amit.shah@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>, Arnd Bergmann <arnd@arndb.de>,
-        Borislav Petkov <bp@amd64.org>, "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 2/5] trace-cmd: Use tracing directory to count CPUs
-References: <20120822084251.17293.69086.stgit@ltc189.sdl.hitachi.co.jp>  <20120822084312.17293.47596.stgit@ltc189.sdl.hitachi.co.jp> <1345642893.5069.31.camel@gandalf.local.home>
-In-Reply-To: <1345642893.5069.31.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Tabi Timur-B04825 <B04825@freescale.com>
+CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] powerpc: Bail out of KGDB when we've been triggered
+References: <1345632192-19810-1-git-send-email-tiejun.chen@windriver.com> <1345632192-19810-2-git-send-email-tiejun.chen@windriver.com> <6AE080B68D46FC4BA2D2769E68D765B7059AE7E7@039-SN2MPN1-022.039d.mgd.msft.net>
+In-Reply-To: <6AE080B68D46FC4BA2D2769E68D765B7059AE7E7@039-SN2MPN1-022.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/22 22:41), Steven Rostedt wrote:
-> On Wed, 2012-08-22 at 17:43 +0900, Yoshihiro YUNOMAE wrote:
->> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>
->> Count debugfs/tracing/per_cpu/cpu* to determine the
->> number of CPUs.
+On 08/22/2012 11:07 PM, Tabi Timur-B04825 wrote:
+> On Wed, Aug 22, 2012 at 5:43 AM, Tiejun Chen <tiejun.chen@windriver.com> wrote:
 > 
-> I'm curious, do you find that sysconf doesn't return the # of CPUs the
-> system has?
+>> +int kgdb_skipexception(int exception, struct pt_regs *regs)
+>> +{
+>> +       if (kgdb_isremovedbreak(regs->nip))
+>> +               return 1;
+>> +
+>> +       return 0;
+>> +}
+> 
+> int kgdb_skipexception(int exception, struct pt_regs *regs)
+> {
+>         return !!kgdb_isremovedbreak(regs->nip));
+> }
+> 
+> If the caller only cares about zero vs. non-zero, you can drop the !!.
 
-No, sysconf returns the number of hosts CPUs, not guests.
+Yes, so 'return kgdb_isremovedbreak(regs->nip);' is already fine and simple.
 
-> I've had boxes where the per_cpu/cpu* had more cpus than the
-> box actually holds. But this was a bug in the kernel, not the tool. This
-> change log needs to have rational instead of just explaining what the
-> patch does.
+I'll update this as v2 so thanks your comment.
 
-Ah, I see. Hmm, then this should be enabled by a command line
-option or an environment variable.
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Tiejun
