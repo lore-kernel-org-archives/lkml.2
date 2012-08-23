@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab2HWHFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:05:37 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:57400 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755593Ab2HWHFc (ORCPT
+	id S1758108Ab2HWHJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:09:45 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:27935 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755864Ab2HWHJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:05:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208221722.06775.arnd@arndb.de>
-References: <1345648390-4234-1-git-send-email-arnd@arndb.de>
- <1345648390-4234-3-git-send-email-arnd@arndb.de> <CAMQu2gw0x6saWrK-M3teu49tJDGvS8RhGrVSh6JTs5DEy+22pA@mail.gmail.com>
- <201208221722.06775.arnd@arndb.de>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Thu, 23 Aug 2012 12:35:08 +0530
-Message-ID: <CAMQu2gw_090MiWxs6m=5o0wQhL=ovmN1Y_7DUVhTbJU6mHPS5Q@mail.gmail.com>
-Subject: Re: [PATCH 2/6] ARM: omap: allow building omap44xx without SMP
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 23 Aug 2012 03:09:43 -0400
+X-AuditID: cbfee612-b7f1f6d000006c4c-3d-5035d7369fa1
+Date: Thu, 23 Aug 2012 07:09:42 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH 1/2] devfreq: Add sysfs node for representing frequency
+ transition information.
+To: =?euc-kr?Q?=C0=CC=C1=BE=C8=AD?= <jonghwa3.lee@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        Mike Turquette <mturquette@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Xiaoguang Chen <chenxg@marvell.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120823070910673@myungjoo.ham
+Msgkey: 20120823070910673@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120823070910673@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <29487551.308151345705782211.JavaMail.weblogic@epml13>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/tmbpm100DDK5eULC4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZr779YS3oYqnYe/EAYwPjD+YuRk4OIQF1iUVLTrKB2BICJhLr
+	Dp9khrDFJC7cWw8U5wKqmc8o8XH6a9YuRg4OFgFVieWHpEFMNgE9iZmfk0HKhQWSJV5uvs4K
+	Ui4isItR4sWrL8wgDrPAdkaJ0yf+skAsU5JYs+8VmM0rIChxcuYTFohlqhKN//5DxdUktm34
+	BxWXkJg1/QIrhM0rMaP9KVRcTmLa1zVQh0pLnJ+1gRHm6MXfH0PF+SWO3d7BBHIoSO+T+8Ew
+	Y3Zv/gL1r4DE1DMHoVq1JM7d3wwV55NYs/AtC8yYXaeWM8P03t8ylwnEZhZQlJjS/ZAdwtaS
+	+PJjHxuqtziAbCeJI2ckJjDKzUKSmYWkexaSbmQ1CxhZVjGKphYkFxQnpada6BUn5haX5qXr
+	JefnbmIER/kzoR2MyxosDjEKcDAq8fBmxJoGCLEmlhVX5h5ilOBgVhLhDZ8HFOJNSaysSi3K
+	jy8qzUktPsQozcGiJM4758UXfyGB9MSS1OzU1ILUIpgsEwenVANjXliUo2OUcIBVnkXxp4+P
+	i++rbU1Qsgy1O7Ft8eN79Vur3/P/Y5ztJvyIdWu27tmYHMHkHw8nRoU98ls2X3l2RpYmv9qf
+	+nCXf+euqiZeyfj7XUXs38Vv6h72f/MffLpyv7/cueXsG8UdK7IOGac4+R7XntGVO4kjqXP3
+	hbe6eWUCej9rnzIqsRRnJBpqMRcVJwIA+yJWJu4CAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7N79nV2028934
 
-On Wed, Aug 22, 2012 at 10:52 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->
-> On Wednesday 22 August 2012, Shilimkar, Santosh wrote:
->
-> > Was just thinking whether we should just take care of it at
-> > core cpuidle level itself. Will below be enough to kill the build
-> > error what you mentioned in the change log ?
-> >
-> > diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-> > index 2c9bf26..df34534 100644
-> > --- a/drivers/cpuidle/coupled.c
-> > +++ b/drivers/cpuidle/coupled.c
-> > @@ -314,7 +314,9 @@ static void cpuidle_coupled_poke(int cpu)
-> >         struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb,
-> > cpu);
-> >
-> >         if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
-> > +#ifdef CONFIG_SMP
-> >                 __smp_call_function_single(cpu, csd, 0);
-> > +#endif
-> >  }
-> >
->
-> That would work, but isn't the entire concept of the cpuidle-coupled
-> driver
-> dependent on SMP? If this driver makes no sense on UP, I think we should
-> not attempt to build it.
->
-I see your point but alternate patch is pushing down the fix to the low
-level driver and that means you end up patching more drivers when they
-use COUPLE idle infrastructure. That was the only reason I was thinking
-of suppressing the error at the source.
+> This patch adds sysfs node which can be used to get information of frequency
+> transition. It represents transition table which contains total number of transition of
+> each freqeuncy state and time spent. It is inspired CPUFREQ's status driver.
+> 
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> 
 
-Since it is just for the random builds and actually doesn't impact the real
-functionality as such, I am fine with your proposed patch too.
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Regards
-santosh
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
