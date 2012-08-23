@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab2HWWKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 18:10:16 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59957 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2HWWKK (ORCPT
+	id S1751796Ab2HWWLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 18:11:06 -0400
+Received: from mail.gmmpfaudler.co.in ([202.71.136.97]:47938 "EHLO
+	mail.gmmpfaudler.co.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab2HWWLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 18:10:10 -0400
-Message-ID: <5036AA38.6010400@linux.vnet.ibm.com>
-Date: Thu, 23 Aug 2012 17:10:00 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH 0/2] revert changes to zcache_do_preload()
-References: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120823205648.GA2066@barrios>
-In-Reply-To: <20120823205648.GA2066@barrios>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 23 Aug 2012 18:11:01 -0400
+Reply-To: <s.vandermerwe@rocketmail.com>
+From: "MS SUSAN VAN DER MER WE" <sales.vad@gmmpfaudler.com>
+Subject: WAITING FOR YOUR RESPONSE
+Date: Fri, 24 Aug 2012 06:09:37 +0800
+Message-ID: <OF081C4DA5.322FD761-ON65257A63.0079D187@LocalDomain>
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082322-7408-0000-0000-000007DFC6E9
+Content-Type: text/plain;
+	charset="Windows-1251"
+MIME-Version: 1.0
+X-Priority: 3 (Normal)
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-MIMETrack: Itemize by SMTP Server on GMMPFAUDLER/GMM(Release 8.5.1FP4|July 25, 2010) at
+ 08/24/2012 03:40:34 AM
+X-Disclaimed: 56887
+X-Cyberoam-smtpxy-version: 1.0.6.3
+X-Cyberoam-AV-Policy: default
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Bulk
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A150206.5036AA62.00C6,ss=3,pt=DBB_66867,fgs=0
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 221.134.137.107
+X-SA-Exim-Mail-From: sales.vad@gmmpfaudler.com
+X-SA-Exim-Scanned: No (on mail.gmmpfaudler.co.in); SAEximRunCond expanded to false
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 03:56 PM, Minchan Kim wrote:
-> Hi Seth,
-> 
-> On Thu, Aug 23, 2012 at 10:33:09AM -0500, Seth Jennings wrote:
->> This patchset fixes a regression in 3.6 by reverting two dependent
->> commits that made changes to zcache_do_preload().
->>
->> The commits undermine an assumption made by tmem_put() in
->> the cleancache path that preemption is disabled.  This change
->> introduces a race condition that can result in the wrong page
->> being returned by tmem_get(), causing assorted errors (segfaults,
->> apparent file corruption, etc) in userspace.
->>
->> The corruption was discussed in this thread:
->> https://lkml.org/lkml/2012/8/17/494
-> 
-> I think changelog isn't enough to explain what's the race.
-> Could you write it down in detail?
 
-I didn't come upon this solution via code inspection, but
-rather through discovering that the issue didn't exist in
-v3.5 and just looking at the changes since then.
 
-> And you should Cc'ed Xiao who is author of reverted patch.
+Please can you assist me to receive and invest this US$20,000,000,00 Million, I will give you details as soon as I hear from you.
 
-Thanks for adding Xiao.  I meant to do this. For some reason
-I thought that you submitted that patchset :-/
-My bad.
+Regard,
 
-Seth
+Ms.Susan van der Merwe
 
+
+
+This message is confidential and may be privileged. If you have received it by mistake please notify the sender by return e-mail and delete this message from your system. Please note that e-mails are susceptible to change. GMM Pfaudler Ltd shall not be liable for the improper or incomplete transmission of the information contained in this communication nor for any delay in its receipt or damage to your system. GMM Pfaudler does not guarantee that the integrity of this communication has been maintained nor that this communication is free of viruses, interceptions or interference.
+
+Please do not print this mail unless you need to!
