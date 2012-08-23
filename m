@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344Ab2HWUmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:42:17 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:48985 "HELO
+	id S934341Ab2HWUnh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:43:37 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:52940 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932284Ab2HWUmN (ORCPT
+	with SMTP id S932259Ab2HWUne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:42:13 -0400
+	Thu, 23 Aug 2012 16:43:34 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18WpH1+HqgWBGWP7qdSoCcpPPtaaThJef5/829QgM
-	QdVOn1jeJj2npf
-Message-ID: <5036959F.4010506@gmx.de>
-Date: Thu, 23 Aug 2012 20:42:07 +0000
+X-Provags-ID: V01U2FsdGVkX19d+M0WGBpdLN7lrZQkUH3LwJyXxtwis2u1K1lJ40
+	SDOoGtQN5Vof2v
+Message-ID: <503695F1.50207@gmx.de>
+Date: Thu, 23 Aug 2012 20:43:29 +0000
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-To: Damien Cassou <damien.cassou@lifl.fr>
-CC: David Brown <davidb@codeaurora.org>, kernel-janitors@vger.kernel.org,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] drivers/video/msm/mddi_client_nt35399.c: use devm_
- functions
-References: <1344008414-2894-1-git-send-email-damien.cassou@lifl.fr> <1344008414-2894-5-git-send-email-damien.cassou@lifl.fr>
-In-Reply-To: <1344008414-2894-5-git-send-email-damien.cassou@lifl.fr>
+To: Wang YanQing <udknight@gmail.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spock@gentoo.org
+Subject: Re: [PATCH] video:uvesafb: check the return value of kzalloc
+References: <20120813100232.GA16363@udknight>
+In-Reply-To: <20120813100232.GA16363@udknight>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Y-GMX-Trusted: 0
@@ -31,16 +27,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2012 03:40 PM, Damien Cassou wrote:
-> From: Damien Cassou <damien.cassou@lifl.fr>
+On 08/13/2012 10:02 AM, Wang YanQing wrote:
 > 
-> The various devm_ functions allocate memory that is released when a driver
-> detaches. This patch replaces the use of kzalloc by devm_kzalloc.
+> Michal maybe forgot it merely, we should add code
+> to check the return value of kzalloc to make the
+> code more robust.
 > 
-> Additionally, this patch fixes a memory leak: some memory was allocated for
-> 'panel' but not released when the subsequent call to setup_vsync fails.
-> 
-> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
 
 Applied.
 
@@ -49,33 +42,21 @@ Thanks,
 
 Florian Tobias Schandinat
 
-> 
 > ---
->  drivers/video/msm/mddi_client_nt35399.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+>  drivers/video/uvesafb.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> diff --git a/drivers/video/msm/mddi_client_nt35399.c b/drivers/video/msm/mddi_client_nt35399.c
-> index 7fcd67e..66b314e 100644
-> --- a/drivers/video/msm/mddi_client_nt35399.c
-> +++ b/drivers/video/msm/mddi_client_nt35399.c
-> @@ -189,8 +189,9 @@ static int mddi_nt35399_probe(struct platform_device *pdev)
-> 
->  	int ret;
-> 
-> -	struct panel_info *panel = kzalloc(sizeof(struct panel_info),
-> -					   GFP_KERNEL);
-> +	struct panel_info *panel = devm_kzalloc(&pdev->dev,
-> +						sizeof(struct panel_info),
-> +						GFP_KERNEL);
-> 
->  	printk(KERN_DEBUG "%s: enter.\n", __func__);
-> 
-> @@ -233,7 +234,6 @@ static int mddi_nt35399_remove(struct platform_device *pdev)
->  	struct panel_info *panel = platform_get_drvdata(pdev);
-> 
->  	setup_vsync(panel, 0);
-> -	kfree(panel);
->  	return 0;
->  }
-> 
+> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+> index b0e2a42..2f8f82d 100644
+> --- a/drivers/video/uvesafb.c
+> +++ b/drivers/video/uvesafb.c
+> @@ -659,6 +659,8 @@ static int __devinit uvesafb_vbe_getedid(struct uvesafb_ktask *task,
+>  	task->t.flags = TF_BUF_RET | TF_BUF_ESDI;
+>  	task->t.buf_len = EDID_LENGTH;
+>  	task->buf = kzalloc(EDID_LENGTH, GFP_KERNEL);
+> +	if (!task->buf)
+> +		return -ENOMEM;
+>  
+>  	err = uvesafb_exec(task);
+>  
 
