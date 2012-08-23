@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759260Ab2HWVc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:32:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56430 "EHLO
+	id S1759273Ab2HWVfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:35:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43937 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947Ab2HWVcy (ORCPT
+	with ESMTP id S1754134Ab2HWVfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:32:54 -0400
-Message-ID: <5036A182.7030707@gmail.com>
-Date: Thu, 23 Aug 2012 15:32:50 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 23 Aug 2012 17:35:34 -0400
+Date: Thu, 23 Aug 2012 14:35:29 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pci: rewrite pci_call_probe() to use workqueue instead of
+ work_on_cpu()
+Message-ID: <20120823213529.GH14962@google.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>,
-        Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv2 1/1] perf: Port to Android
-References: <1408973.PFKjjaXiS1@localhost.localdomain> <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
-In-Reply-To: <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/12 2:51 PM, Pekka Enberg wrote:
->> +#ifdef ANDROID
->> +/* While stdlib.h has a prototype for it,
->> +   Bionic doesn't actually implement on_exit() */
->> +#ifndef ATEXIT_MAX
->> +#define ATEXIT_MAX 32
->> +#endif
->> +static int __on_exit_count = 0;
->> +typedef void (*on_exit_func_t)(int, void*);
->> +static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
->> +static void *__on_exit_args[ATEXIT_MAX];
->> +static int __exitcode = 0;
->> +static void __handle_on_exit_funcs();
->> +static int on_exit(on_exit_func_t function, void *arg);
->> +#define exit(x) (exit)(__exitcode = (x))
->> +
->> +static int on_exit(on_exit_func_t function, void *arg) {
->> +       if(__on_exit_count == ATEXIT_MAX)
->> +               return ENOMEM;
->> +       else if(__on_exit_count == 0)
->> +               atexit(__handle_on_exit_funcs);
->> +       __on_exit_funcs[__on_exit_count] = function;
->> +       __on_exit_args[__on_exit_count++] = arg;
->> +       return 0;
->> +}
->> +
->> +static void __handle_on_exit_funcs() {
->> +       for(int i=0; i<__on_exit_count; i++) {
->> +               __on_exit_funcs[i](__exitcode, __on_exit_args[i]);
->> +       }
->> +}
->> +#endif
->> +
+pci_call_probe() uses work_on_cpu(), which creates and tears down a
+full kthread on each call, to invoke ->probe() on node local CPU for
+allocation affinity.
 
-Why not add support for the missing functions (on_exit, getsid, psignal 
-and getline) to Bionic instead of perf?
+The same goal can easily be achieved using a work item.  This patch
+rewrites pci_call_probe() so that it uses a work item instead of
+work_on_cpu().
 
+Note that the function is restructured for simplicity.  This adds
+get/put_online_cpus() pair for devices without node but the overhead
+of doing so isn't anything material at this level.
 
->> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
->> index 0f99f39..77c5ced 100644
->> --- a/tools/perf/util/util.h
->> +++ b/tools/perf/util/util.h
->> @@ -70,15 +70,19 @@
->>   #include <sys/socket.h>
->>   #include <sys/ioctl.h>
->>   #include <sys/select.h>
->> +#ifndef ANDROID
->>   #include <netinet/in.h>
->>   #include <netinet/tcp.h>
->>   #include <arpa/inet.h>
->> +#endif
->>   #include <netdb.h>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+I tested both paths but had to simulate device on foreign node.
 
-netinet/*, arpa/inet.h,netdb.h and sys/socket.h can be removed from util.h
+Thanks.
 
-David
+ drivers/pci/pci-driver.c |   48 +++++++++++++++++++++++++++--------------------
+ 1 file changed, 28 insertions(+), 20 deletions(-)
 
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 5270f1a..554c15a 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -274,11 +274,14 @@ struct drv_dev_and_id {
+ 	struct pci_driver *drv;
+ 	struct pci_dev *dev;
+ 	const struct pci_device_id *id;
++	struct work_struct work;
++	int error;
+ };
+ 
+-static long local_pci_probe(void *_ddi)
++static void pci_probe_fn(struct work_struct *work)
+ {
+-	struct drv_dev_and_id *ddi = _ddi;
++	struct drv_dev_and_id *ddi = container_of(work, struct drv_dev_and_id,
++						  work);
+ 	struct device *dev = &ddi->dev->dev;
+ 	int rc;
+ 
+@@ -298,33 +301,38 @@ static long local_pci_probe(void *_ddi)
+ 		pm_runtime_set_suspended(dev);
+ 		pm_runtime_put_noidle(dev);
+ 	}
+-	return rc;
++
++	ddi->error = rc;
+ }
+ 
+ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+ 			  const struct pci_device_id *id)
+ {
+-	int error, node;
++	int node;
++	int cpu = nr_cpu_ids;
+ 	struct drv_dev_and_id ddi = { drv, dev, id };
+ 
+-	/* Execute driver initialization on node where the device's
+-	   bus is attached to.  This way the driver likely allocates
+-	   its local memory on the right node without any need to
+-	   change it. */
+-	node = dev_to_node(&dev->dev);
+-	if (node >= 0) {
+-		int cpu;
++	/*
++	 * Execute driver initialization on node where the device's bus is
++	 * attached to.  This way the driver likely allocates its local
++	 * memory on the right node without any need to change it.
++	 */
++	get_online_cpus();
+ 
+-		get_online_cpus();
++	node = dev_to_node(&dev->dev);
++	if (node >= 0)
+ 		cpu = cpumask_any_and(cpumask_of_node(node), cpu_online_mask);
+-		if (cpu < nr_cpu_ids)
+-			error = work_on_cpu(cpu, local_pci_probe, &ddi);
+-		else
+-			error = local_pci_probe(&ddi);
+-		put_online_cpus();
+-	} else
+-		error = local_pci_probe(&ddi);
+-	return error;
++
++	if (cpu < nr_cpu_ids) {
++		INIT_WORK_ONSTACK(&ddi.work, pci_probe_fn);
++		schedule_work_on(cpu, &ddi.work);
++		flush_work(&ddi.work);
++	} else {
++		pci_probe_fn(&ddi.work);
++	}
++
++	put_online_cpus();
++	return ddi.error;
+ }
+ 
+ /**
