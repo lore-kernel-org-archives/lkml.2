@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab2HWUWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:22:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:36418 "EHLO
+	id S1756806Ab2HWUXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:23:31 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40437 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab2HWUWc (ORCPT
+	with ESMTP id S1753069Ab2HWUXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:22:32 -0400
-Date: Thu, 23 Aug 2012 16:12:25 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
-        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 3/4] x86: Only direct map addresses that are marked as
- E820_RAM
-Message-ID: <20120823201224.GA24203@phenom.dumpdata.com>
-References: <1344983957-4996-1-git-send-email-jacob.shin@amd.com>
- <1344983957-4996-4-git-send-email-jacob.shin@amd.com>
- <50356BA9.5030906@zytor.com>
- <20120823145043.GA4671@jshin-Toonie>
- <50364E9E.6020104@zytor.com>
+	Thu, 23 Aug 2012 16:23:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50364E9E.6020104@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120823110157.GC18835@somewhere.redhat.com>
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+	<CAMuHMdUt62GsYsPMAPbUWZUtFL=c2VmYFintpDAQmSwQrWriuA@mail.gmail.com>
+	<20120823110157.GC18835@somewhere.redhat.com>
+Date: Thu, 23 Aug 2012 22:23:22 +0200
+X-Google-Sender-Auth: NKe6i4PuuOzn9LDmPcmRErIQTEo
+Message-ID: <CAMuHMdX5R_7EBGDu00zdy_P3q65BzKJbNeRwFcuwij8eHavTYQ@mail.gmail.com>
+Subject: Re: [PATCH 00/10] rcu: Add missing RCU idle APIs on idle loop
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Chris Zankel <chris@zankel.net>, "3.2.x.." <stable@kernel.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 08:39:10AM -0700, H. Peter Anvin wrote:
-> On 08/23/2012 07:50 AM, Jacob Shin wrote:
-> >>
-> >>I have one concern with this, which is that it leaves in place mapping
-> >>below the initial max_pfn_mapped.  Although that neatly resolves the
-> >>legacy area (0-1 MiB) issues, it really isn't right above the 1 MiB
-> >>point.  Any way I could get you to seek out and unmap any such ranges?
-> >>We have already seen some Dell machines which put memory holes in low
-> >>RAM, and perhaps there are still some machines out there with an I/O
-> >>hole at 15 MiB.
-> >
-> >So I believe in V2 of the patchset this was done, however, Dave Young
-> >from redhat reported that it broke their KVM guest with a user supplied
-> >memory map that looked like this:
-> >
-> >>>[    0.000000] e820: user-defined physical RAM map:
-> >>>[    0.000000] user: [mem 0x0000000000010000-0x000000000009dbff] usable
-> >>>[    0.000000] user: [mem 0x0000000024000000-0x0000000033f6bfff] usable
-> >
-> >And looking into that scenario, the early boot code seems to allocates
-> >space for fixmap right under initial max_pfn_mapped, which is no longer
-> >direct mapped with my patch, and that seems to cause problems for later
-> >APIC code that initializes APIC base address into the fixmap area.
-> >
-> >So I guess to address your concern, we need to go back to V2 and try to
-> >resolve the fixmap problem with user supplied memory map that reserves
-> >memory below initial max_pfn_mapped ?
-> >
-> 
-> Okay... I think I need to grok that a bit better.  For memory
-> allocations, we probably should just use brk allocations, for
-> virtual space allocations it is called the fixmap for a reason (even
-> though the Xen people managed to break that on 32 bits, sigh!)
+Hi Frederic,
 
-Can you rope me in on that? Was that added ooh years ago ?
-> 
-> I guess I need to go back and look at David's bug report...
-> 
-> 	-hpa
-> 
-> 
-> -- 
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+On Thu, Aug 23, 2012 at 1:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Aug 22, 2012 at 07:18:04PM +0200, Geert Uytterhoeven wrote:
+>> On Wed, Aug 22, 2012 at 6:23 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > So this fixes some potential RCU stalls in a bunch of architectures.
+>> > When rcu_idle_enter()/rcu_idle_exit() became a requirement, we forgot
+>> > to handle the architectures that don't support CONFIG_NO_HZ.
+>> >
+>> > I guess the set should be dispatched into arch maintainer trees.
+>>
+>> I can take the m68k version, but are you sure you want it this way?
+>> Each of them must be in mainline before they can enter stable.
+>
+> Yeah, I was thinking the right route is for these patches to be
+> carried by arch maintainer who then push to Linus and then this goes
+> to stable.
+>
+> Is that ok for you?
+>
+> Otherwise I can carry the patches myself. In a tree of my own, or
+> Paul's or mmotm. As long as I have your ack.
+
+I applied your patch to the m68k for-3.6/for-linus branch.
+I'll ask Linus to pull later in the rc cycle (right now I don't have
+anything else
+queued for 3.6).
+Still, I think it's better to just collect acks and send it to Linus
+in one shot,
+so it can go into stable in one shot too.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
