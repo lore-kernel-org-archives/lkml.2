@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030618Ab2HWR25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:28:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54720 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755128Ab2HWR2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:28:53 -0400
-Date: Thu, 23 Aug 2012 21:28:49 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
+	id S1030655Ab2HWR3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:29:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030624Ab2HWR3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 13:29:18 -0400
+Date: Thu, 23 Aug 2012 14:28:45 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 0/9] extended fdinfo via procfs series, v7
-Message-ID: <20120823172849.GA15362@moon>
-References: <20120823104323.040550004@openvz.org>
- <20120823122318.GD29943@fieldses.org>
- <20120823124427.GD1992@moon>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120823172844.GC10777@t510.redhat.com>
+References: <20120822000741.GI9027@redhat.com>
+ <20120822011930.GA23753@t510.redhat.com>
+ <20120822093317.GC10680@redhat.com>
+ <20120823021903.GA23660@x61.redhat.com>
+ <20120823100107.GA17409@redhat.com>
+ <20120823121338.GA3062@t510.redhat.com>
+ <20120823123432.GA25659@redhat.com>
+ <20120823130606.GB3746@t510.redhat.com>
+ <20120823135328.GB25709@redhat.com>
+ <20120823162504.GA1522@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120823124427.GD1992@moon>
+In-Reply-To: <20120823162504.GA1522@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 04:44:27PM +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 23, 2012 at 08:23:18AM -0400, J. Bruce Fields wrote:
-> > On Thu, Aug 23, 2012 at 02:43:23PM +0400, Cyrill Gorcunov wrote:
-> > > Hi guys,
-> > > 
-> > > here is updated version of the fdinfo via procfs series,
-> > > the changes from previous one are the following
-> > > 
-> > >  - fhandle is carried inside inotify mark but this feature
-> > >    is CONFIG dependent to not bloat the kernel for users
-> > >    who don't need it
+On Thu, Aug 23, 2012 at 07:25:05PM +0300, Michael S. Tsirkin wrote:
+> On Thu, Aug 23, 2012 at 04:53:28PM +0300, Michael S. Tsirkin wrote:
+> > Basically it was very simple: we assumed page->lru was never
+> > touched for an allocated page, so it's safe to use it for
+> > internal book-keeping by the driver.
 > > 
-> > As Al points out, this doesn't help much: if this feature is something a
-> > distro will want to provide, then in practice all their users are
-> > eventually going to end up with it turned on.
-> > 
+> > Now, this is not the case anymore, you add some logic in mm/ that might
+> > or might not touch page->lru depending on things like reference count.
 > 
-> Yes, I remember what Al has said, the problem is that this data attached
-> to inotify mark is not just a couple of bytes but rather about 136 bytes
-> per mark, and encoding this fhandle will take some cycles on mark creation
-> as well. Thus when in a sake of c/r we simply have no other way and are
-> to pay some trade off cost for c/r functionality, i don't think the
-> regular users (and note that CONFIG_CHECKPOINT_RESTORE is off by default)
-> should pay same cost for nothing. That's why I made it config dependant.
-> Again if you still think that making it config-option is a bad idea I'll
-> rip this symbols off, it's not a problem.
+> Another thought: would the issue go away if balloon used
+> page->private to link pages instead of LRU?
+> mm core could keep a reference on page to avoid it
+> being used while mm handles it (maybe it does already?).
+>
+I don't think so. That would be a lot more trikier and complex, IMHO.
+ 
+> If we do this, will not the only change to balloon be to tell mm that it
+> can use compaction for these pages when it allocates the page: using
+> some GPF flag or a new API?
+> 
 
-Btw, Bruce, I forgot to mention that Linus and Andrew asked us to wrap
-all code related to c/r we bring in with CONFIG_CHECKPOINT_RESTORE symbol.
-So while wrapping show_fdinfo member in file_operations with CONFIG might
-be an overhead (as Al and Pavel pointed me) the fhandle in mark is reverse,
-a good candidate for CONFIG wrapping I think.
+What about keep a conter at virtio_balloon structure on how much pages are
+isolated from balloon's list and check it at leak time?
+if the counter gets > 0 than we can safely put leak_balloon() to wait until
+balloon page list gets completely refilled. I guess that is simple to get
+accomplished and potentially addresses all your concerns on this issue.
 
-	Cyrill
+Cheers!
+
