@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab2HWXOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 19:14:30 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:52793 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab2HWXO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 19:14:28 -0400
-Subject: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
+	id S1756638Ab2HWXOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 19:14:47 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:36382 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756150Ab2HWXOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 19:14:41 -0400
+Subject: [PATCH RFC 1/3] Add a sysctl interface to control and report the cpu
+ entitlement setting.
 To: linux-kernel@vger.kernel.org
 From: Michael Wolf <mjw@linux.vnet.ibm.com>
 Cc: kvm@vger.kernel.org, peterz@infradead.org, mtosatti@redhat.com,
         glommer@parallels.com, mingo@redhat.com, avi@redhat.com
-Date: Thu, 23 Aug 2012 18:14:20 -0500
-Message-ID: <20120823231346.11681.1502.stgit@lambeau>
+Date: Thu, 23 Aug 2012 18:14:26 -0500
+Message-ID: <20120823231426.11681.93873.stgit@lambeau>
+In-Reply-To: <20120823231346.11681.1502.stgit@lambeau>
+References: <20120823231346.11681.1502.stgit@lambeau>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082323-9360-0000-0000-000009C7DC72
+x-cbid: 12082323-5518-0000-0000-000007130E2A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an RFC regarding the reporting of stealtime.  In the case of
-where you have a system that is running with partial processors such as
-KVM the user may see steal time being reported in accounting tools such
-as top or vmstat.  This can cause confusion for the end user.  To
-ease the confusion this patch set adds a sysctl interface to set the
-cpu entitlement.  This is the percentage of cpu that the guest system is
- expected to receive.  As long as the steal time is within its expected
-range it will show up as 0 in /proc/stat.  The user will then see in the
-accounting tools that they are getting a full utilization of the cpu
-resources assigned to them.
+This setting will later be used to compute an expected steal time.
 
-This patchset is changing the contents/output of /proc/stat and could affect 
-user tools.  However the default setting is that the cpu is entitled to 100% 
-so the code will act as before.  Also another field could be added to the 
-/proc/stat output and show the unaltered steal time. Since this additional 
-field could cause more confusion than it would clear up I have left it out 
-for now.
-                
-Michael Wolf (3):
-      Add a sysctl interface to control the cpu entitlement setting.
-      Add a hypercall to retrieve the cpu entitlement value from the host.
-      Modify the amount of stealtime that the kernel reports via the /proc
-
+Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
 ---
-Documentation/sysctl/kernel.txt |   14 +++++++
- arch/x86/kvm/x86.c              |    8 ++++
- fs/proc/stat.c                  |   80 ++++++++++++++++++++++++++++++++++++++-
- include/linux/kernel_stat.h     |    2 +
- include/linux/kvm.h             |    3 ++
- include/linux/kvm_host.h        |    3 ++
- include/linux/kvm_para.h        |    1 +
- kernel/sysctl.c                 |   10 +++++
- virt/kvm/kvm_main.c             |    7 ++++
- 9 files changed, 126 insertions(+), 2 deletions(-)
+ Documentation/sysctl/kernel.txt |   14 ++++++++++++++
+ fs/proc/stat.c                  |    1 +
+ kernel/sysctl.c                 |   10 ++++++++++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 6d78841..0f617dc 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -28,6 +28,7 @@ show up in /proc/sys/kernel:
+ - core_pattern
+ - core_pipe_limit
+ - core_uses_pid
++- cpu_entitlement
+ - ctrl-alt-del
+ - dmesg_restrict
+ - domainname
+@@ -226,6 +227,19 @@ the filename.
+ 
+ ==============================================================
+ 
++cpu_entitlement:
++
++The cpu_entitlement is the percentage of cpu utilization that
++the system expects to receive.  By default this is set to 100,
++in a guest system this could be set to a value between 0 and 100.
++This value is used to adjust the amount of steal time that
++process accounting code in the guest will display. The end effect
++will be is that steal time will only be reported if the
++percentage of steal time is greater than 100 - cpu_entitlement
++value.
++
++==============================================================
++
+ ctrl-alt-del:
+ 
+ When the value in this file is 0, ctrl-alt-del is trapped and
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 64c3b31..14e26c8 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -12,6 +12,7 @@
+ #include <asm/cputime.h>
+ #include <linux/tick.h>
+ 
++int cpu_entitlement = 100;
+ #ifndef arch_irq_stat_cpu
+ #define arch_irq_stat_cpu(cpu) 0
+ #endif
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 87174ef..85efbc2 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -109,6 +109,7 @@ extern int percpu_pagelist_fraction;
+ extern int compat_log;
+ extern int latencytop_enabled;
+ extern int sysctl_nr_open_min, sysctl_nr_open_max;
++extern int cpu_entitlement;
+ #ifndef CONFIG_MMU
+ extern int sysctl_nr_trim_pages;
+ #endif
+@@ -673,6 +674,15 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++	{
++		.procname	= "cpu_entitlement",
++		.data		= &cpu_entitlement,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one_hundred,
++	},
+ #if defined CONFIG_PRINTK
+ 	{
+ 		.procname	= "printk",
 
