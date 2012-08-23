@@ -1,79 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757695Ab2HWJIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 05:08:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27501 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab2HWJIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 05:08:09 -0400
-X-Authority-Analysis: v=2.0 cv=A87uztqG c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YOaqkLwX9aQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=7mug7doFhEcA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=xcmSSfFKk9aoRfOygJgA:9 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=2E9KpQmbqmkee8fr:21 a=23-myU_EOx042zky:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1345712886.5069.41.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/5] trace-cmd: Use tracing directory to count CPUs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Amit Shah <amit.shah@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>, Arnd Bergmann <arnd@arndb.de>,
-        Borislav Petkov <bp@amd64.org>, "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Date: Thu, 23 Aug 2012 05:08:06 -0400
-In-Reply-To: <50359CE9.3000509@hitachi.com>
-References: <20120822084251.17293.69086.stgit@ltc189.sdl.hitachi.co.jp>
-	  <20120822084312.17293.47596.stgit@ltc189.sdl.hitachi.co.jp>
-	 <1345642893.5069.31.camel@gandalf.local.home>
-	 <50358F13.1030607@hitachi.com> <50359CE9.3000509@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932204Ab2HWJLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 05:11:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:19975 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756743Ab2HWJLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 05:11:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
+   d="scan'208";a="184047544"
+Date: Thu, 23 Aug 2012 17:11:25 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep
+ AS_HWPOISON sticky
+Message-ID: <20120823091125.GA12745@localhost>
+References: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1345648655-4497-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345648655-4497-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-23 at 12:00 +0900, Masami Hiramatsu wrote:
-> (2012/08/23 11:01), Masami Hiramatsu wrote:
-> > (2012/08/22 22:41), Steven Rostedt wrote:
-> >> On Wed, 2012-08-22 at 17:43 +0900, Yoshihiro YUNOMAE wrote:
-> >>> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> >>>
-> >>> Count debugfs/tracing/per_cpu/cpu* to determine the
-> >>> number of CPUs.
-> >>
-> >> I'm curious, do you find that sysconf doesn't return the # of CPUs the
-> >> system has?
-> > 
-> > No, sysconf returns the number of hosts CPUs, not guests.
-> > 
-> >> I've had boxes where the per_cpu/cpu* had more cpus than the
-> >> box actually holds. But this was a bug in the kernel, not the tool. This
-> >> change log needs to have rational instead of just explaining what the
-> >> patch does.
-> > 
-> > Ah, I see. Hmm, then this should be enabled by a command line
-> > option or an environment variable.
+On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
+> "HWPOISON: report sticky EIO for poisoned file" still has a corner case
+> where we have possibilities of data lost. This is because in this fix
+> AS_HWPOISON is cleared when the inode cache is dropped.
 > 
-> Oops, I misunderstood. I'll add more comment for why this
-> should be tried instead of sysconf.
+> For example, consider an application in which a process periodically
+> (every 10 minutes) writes some logs on a file (and closes it after
+> each writes,) and at the end of each day some batch programs run using
+> the log file. If a memory error hits on dirty pagecache of this log file
+> just after periodic write/close and the inode cache is cleared before the
+> next write, then this application is not aware of the error and the batch
+> programs will work wrongly.
+> 
+> To avoid this, this patch makes us pin the hwpoisoned inode on memory
+> until we remove or completely truncate the hwpoisoned file.
 
-And now that I understand why you are doing this, why not only do this
-if the TRACE_AGENT or DEBUG_TRACING_DIR is defined. That is, if we are
-doing it against a bare metal system, then sysconf should suffice, but
-if we are tracing against a guest, then it should use the tracing
-directory to determine the buffers.
+Good point!
+ 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  fs/inode.c              | 12 ++++++++++++
+>  include/linux/pagemap.h | 11 +++++++++++
+>  mm/memory-failure.c     |  2 +-
+>  mm/truncate.c           |  2 ++
+>  4 files changed, 26 insertions(+), 1 deletion(-)
+> 
+> diff --git v3.6-rc1.orig/fs/inode.c v3.6-rc1/fs/inode.c
+> index ac8d904..8742397 100644
+> --- v3.6-rc1.orig/fs/inode.c
+> +++ v3.6-rc1/fs/inode.c
+> @@ -717,6 +717,15 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+>  		}
+>  
+>  		/*
+> +		 * Keep inode caches on memory for user processes to certainly
+> +		 * be aware of memory errors.
+> +		 */
+> +		if (unlikely(mapping_hwpoison(inode->i_mapping))) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+> +		}
 
-We could add options to override this, but I would think the default
-should just Do The Right Thing(tm).
+That chunk prevents reclaiming all the cached pages. However the intention
+is only to keep the struct inode together with the hwpoison bit?
 
--- Steve
+> +		/*
+>  		 * Referenced or dirty inodes are still in use. Give them
+>  		 * another pass through the LRU as we canot reclaim them now.
+>  		 */
+> @@ -1405,6 +1414,9 @@ static void iput_final(struct inode *inode)
+>  		inode->i_state &= ~I_WILL_FREE;
+>  	}
+>  
+> +	if (unlikely(mapping_hwpoison(inode->i_mapping) && drop))
+> +		mapping_clear_hwpoison(inode->i_mapping);
 
+Is that clear necessary? Because the bit will be gone with the inode
+struct: it's going to be de-allocated anyway.
 
+>  	inode->i_state |= I_FREEING;
+>  	if (!list_empty(&inode->i_lru))
+>  		inode_lru_list_del(inode);
+> diff --git v3.6-rc1.orig/include/linux/pagemap.h v3.6-rc1/include/linux/pagemap.h
+> index 4d8d821..9fce4e4 100644
+> --- v3.6-rc1.orig/include/linux/pagemap.h
+> +++ v3.6-rc1/include/linux/pagemap.h
+> @@ -59,11 +59,22 @@ static inline int mapping_hwpoison(struct address_space *mapping)
+>  {
+>  	return test_bit(AS_HWPOISON, &mapping->flags);
+>  }
+> +static inline void mapping_set_hwpoison(struct address_space *mapping)
+> +{
+> +	set_bit(AS_HWPOISON, &mapping->flags);
+> +}
+> +static inline void mapping_clear_hwpoison(struct address_space *mapping)
+> +{
+> +	clear_bit(AS_HWPOISON, &mapping->flags);
+> +}
+>  #else
+>  static inline int mapping_hwpoison(struct address_space *mapping)
+>  {
+>  	return 0;
+>  }
+> +static inline void mapping_clear_hwpoison(struct address_space *mapping)
+> +{
+> +}
+>  #endif
+>  
+>  static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+> diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
+> index a1e7e00..ca064c6 100644
+> --- v3.6-rc1.orig/mm/memory-failure.c
+> +++ v3.6-rc1/mm/memory-failure.c
+> @@ -652,7 +652,7 @@ static int me_pagecache_dirty(struct page *p, unsigned long pfn)
+>  		 * the first EIO, but we're not worse than other parts
+>  		 * of the kernel.
+>  		 */
+> -		set_bit(AS_HWPOISON, &mapping->flags);
+> +		mapping_set_hwpoison(mapping);
+>  	}
+>  
+>  	return me_pagecache_clean(p, pfn);
+> diff --git v3.6-rc1.orig/mm/truncate.c v3.6-rc1/mm/truncate.c
+> index 75801ac..82a994f 100644
+> --- v3.6-rc1.orig/mm/truncate.c
+> +++ v3.6-rc1/mm/truncate.c
+> @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
+>  
+>  	oldsize = inode->i_size;
+>  	i_size_write(inode, newsize);
+> +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
+
+It might be a bit better to test !newsize first.
+
+> +		mapping_clear_hwpoison(inode->i_mapping);
+>  
+>  	truncate_pagecache(inode, oldsize, newsize);
+>  }
+> -- 
+> 1.7.11.4
