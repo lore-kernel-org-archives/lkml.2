@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933550Ab2HWAL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 20:11:56 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:25614 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243Ab2HWALs (ORCPT
+	id S933575Ab2HWAMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 20:12:07 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:55856 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933542Ab2HWAL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 20:11:48 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-a7-503575439a09
+	Wed, 22 Aug 2012 20:11:56 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-b3-50357546acbc
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: gregkh@linuxfoundation.org
 Cc: pmeerw@pmeerw.net, myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, trivial@kernelg.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 1/4] extcon: fix typos in sys-class-extcon
-Date: Thu, 23 Aug 2012 09:11:43 +0900
-Message-id: <1345680703-5872-1-git-send-email-cw00.choi@samsung.com>
+        linux-kernel@vger.kernel.org, trivial@kernelg.org
+Subject: [PATCH 2/4] extcon: fix typos in max77693 driver
+Date: Thu, 23 Aug 2012 09:11:47 +0900
+Message-id: <1345680707-5906-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jAV3nUtMAg57r2haXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugStj0qq3rAWLJSvWbv/C2MC4VKSLkZNDQsBE4uuEHSwQtpjEhXvr
-	2boYuTiEBBYxSpx/3ckK4Sxlkvi85iMTSBWbgJbE/hc32EBsEQE5iSe3/zCDFDELLGeUaL31
-	HiwhLGAlcXjPdbAGFgFViSXz2sFsXgEXidnLz7FCrFOQaF12iH0CI/cCRoZVjKKpBckFxUnp
-	uUZ6xYm5xaV56XrJ+bmbGMFefCa9g3FVg8UhRgEORiUe3oxY0wAh1sSy4srcQ4wSHMxKIrxd
-	RUAh3pTEyqrUovz4otKc1OJDjNIcLErivPx9hgFCAumJJanZqakFqUUwWSYOTqkGRonJD2dM
-	PL7TRuV4YuvCh1qrbG3/uTywFHH06BGtldq1UFngHj+LWmBoI8uLpZoPwi7d+/Gu21Te6kDZ
-	T9svHId25rwxbX5tkaq/1n/LOv31ZudPN/1WzWiVmfZx8cGzfjf+hXw6uVGg2/He67srWbSs
-	TKrK1bnnp8kcCJst8OqRstXnEzc5KpRYijMSDbWYi4oTAZDQdsveAQAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBJMWRmVeSWpSXmKPExsVy+t9jAV33UtMAg5nFFpd3zWFzYPT4vEku
+	gDGKyyYlNSezLLVI3y6BK+PKpg72gv88Fc9f32dqYHzM1cXIySEhYCJx73w/C4QtJnHh3nq2
+	LkYuDiGBRYwSSx7OY4FwljJJHHzcyQZSxSagJbH/xQ0wW0RATuLJ7T/MIDazQL3E/B3zGEFs
+	YQFLiU0LdwLVcHCwCKhK7LpQChLmFXCRWLvnP9QyBYnWZYfYJzByL2BkWMUomlqQXFCclJ5r
+	qFecmFtcmpeul5yfu4kR7L9nUjsYVzZYHGIU4GBU4uHNiDUNEGJNLCuuzD3EKMHBrCTC21UE
+	FOJNSaysSi3Kjy8qzUktPsQozcGiJM7L32cYICSQnliSmp2aWpBaBJNl4uCUamCcylQ7j+9f
+	vWfHJeGyH0kX/n3m4vvxafVsiw49X8fJW03CBVaKtYXIBD3lslgT9UQr+VZuEm+/S60vP5NK
+	4+Rv0/yTdwscPR78POv8+oivbSfyLctKZU0s2OWWqUbbON3r4GStq57y2pWn+XfZmz8Pnjtk
+	vip/WFxYt/7a66VaJrU6h3c3iiuxFGckGmoxFxUnAgDdo4eG2wEAAA==
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,79 +33,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Peter Meerwald <pmeerw@pmeerw.net>
 
 Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 ---
- Documentation/ABI/testing/sysfs-class-extcon |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/extcon/extcon-max77693.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-class-extcon b/Documentation/ABI/testing/sysfs-class-extcon
-index 20ab361..57a7262 100644
---- a/Documentation/ABI/testing/sysfs-class-extcon
-+++ b/Documentation/ABI/testing/sysfs-class-extcon
-@@ -13,7 +13,7 @@ Description:
- 		accessory cables have such capability. For example,
- 		the 30-pin port of Nuri board (/arch/arm/mach-exynos)
- 		may have both HDMI and Charger attached, or analog audio,
--		video, and USB cables attached simulteneously.
-+		video, and USB cables attached simultaneously.
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 920a609..8bb438b 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -356,7 +356,7 @@ static int max77693_muic_adc_ground_handler(struct max77693_muic_info *info,
+ 		extcon_set_cable_state(info->edev, "MHL", attached);
+ 		break;
+ 	default:
+-		dev_err(info->dev, "faild to detect %s accessory\n",
++		dev_err(info->dev, "failed to detect %s accessory\n",
+ 			attached ? "attached" : "detached");
+ 		dev_err(info->dev, "- adc:0x%x, adclow:0x%x, adc1k:0x%x\n",
+ 			adc, adclow, adc1k);
+@@ -548,7 +548,7 @@ static void max77693_muic_irq_work(struct work_struct *work)
+ 		curr_adc = info->status[0] & STATUS1_ADC_MASK;
+ 		curr_adc >>= STATUS1_ADC_SHIFT;
  
- 		If there are cables mutually exclusive with each other,
- 		such binary relations may be expressed with extcon_dev's
-@@ -35,7 +35,7 @@ Description:
- 		The /sys/class/extcon/.../state shows and stores the cable
- 		attach/detach information of the corresponding extcon object.
- 		If the extcon object has an optional callback "show_state"
--		defined, the showing function is overriden with the optional
-+		defined, the showing function is overridden with the optional
- 		callback.
+-		/* Check accossory state which is either detached or attached */
++		/* Check accessory state which is either detached or attached */
+ 		if (curr_adc == MAX77693_MUIC_ADC_OPEN)
+ 			attached = false;
  
- 		If the default callback for showing function is used, the
-@@ -46,19 +46,19 @@ Description:
- 		TA=1
- 		EAR_JACK=0
- 		#
--		In this example, the extcon device have USB_OTG and TA
-+		In this example, the extcon device has USB_OTG and TA
- 		cables attached and HDMI and EAR_JACK cables detached.
+@@ -564,7 +564,7 @@ static void max77693_muic_irq_work(struct work_struct *work)
+ 		curr_chg_type = info->status[1] & STATUS2_CHGTYP_MASK;
+ 		curr_chg_type >>= STATUS2_CHGTYP_SHIFT;
  
- 		In order to update the state of an extcon device, enter a hex
--		state number starting with 0x.
--		 echo 0xHEX > state
-+		state number starting with 0x:
-+		# echo 0xHEX > state
- 
--		This updates the whole state of the extcon dev.
-+		This updates the whole state of the extcon device.
- 		Inputs of all the methods are required to meet the
--		mutually_exclusive contidions if they exist.
-+		mutually_exclusive conditions if they exist.
- 
- 		It is recommended to use this "global" state interface if
--		you need to enter the value atomically. The later state
-+		you need to set the value atomically. The later state
- 		interface associated with each cable cannot update
- 		multiple cable states of an extcon device simultaneously.
- 
-@@ -73,7 +73,7 @@ What:		/sys/class/extcon/.../cable.x/state
- Date:		February 2012
- Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
- Description:
--		The /sys/class/extcon/.../cable.x/name shows and stores the
-+		The /sys/class/extcon/.../cable.x/state shows and stores the
- 		state of cable "x" (integer between 0 and 31) of an extcon
- 		device. The state value is either 0 (detached) or 1
- 		(attached).
-@@ -83,8 +83,8 @@ Date:		December 2011
- Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
- Description:
- 		Shows the relations of mutually exclusiveness. For example,
--		if the mutually_exclusive array of extcon_dev is
--		{0x3, 0x5, 0xC, 0x0}, the, the output is:
-+		if the mutually_exclusive array of extcon device is
-+		{0x3, 0x5, 0xC, 0x0}, then the output is:
- 		# ls mutually_exclusive/
- 		0x3
- 		0x5
+-		/* Check charger accossory state which
++		/* Check charger accessory state which
+ 		   is either detached or attached */
+ 		if (curr_chg_type == MAX77693_CHARGER_TYPE_NONE)
+ 			attached = false;
 -- 
 1.7.0.4
 
