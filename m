@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab2HWQTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 12:19:47 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:33784 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab2HWQT1 (ORCPT
+	id S1752222Ab2HWQVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:21:05 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49685 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2HWQVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 12:19:27 -0400
-Date: Thu, 23 Aug 2012 21:47:37 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Michael Ellerman <michael@ellerman.id.au>, ananth@in.ibm.com,
-        ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, peterz@infradead.org,
-        oleg@redhat.com, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120823161737.GG25338@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120822082205.GA29216@in.ibm.com>
- <20120822082708.GB29216@in.ibm.com>
- <1345696100.3338.21.camel@concordia>
- <20120823053234.GE25338@linux.vnet.ibm.com>
- <1345716378.29170.4.camel@pasglop>
+	Thu, 23 Aug 2012 12:21:01 -0400
+Date: Thu, 23 Aug 2012 18:20:54 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2012-08-13-16-55 uploaded
+Message-ID: <20120823162050.GB19305@somewhere.redhat.com>
+References: <20120813235651.00A13100047@wpzn3.hot.corp.google.com>
+ <20120814105349.GA6905@dhcp22.suse.cz>
+ <502A4410.6070201@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345716378.29170.4.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12082316-0260-0000-0000-000001B9748C
+In-Reply-To: <502A4410.6070201@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Herrenschmidt <benh@kernel.crashing.org> [2012-08-23 20:06:18]:
-
-> On Thu, 2012-08-23 at 11:02 +0530, Srikar Dronamraju wrote:
-> > > 
+On Tue, Aug 14, 2012 at 04:26:56PM +0400, Glauber Costa wrote:
+> On 08/14/2012 02:53 PM, Michal Hocko wrote:
+> > On Mon 13-08-12 16:56:50, Andrew Morton wrote:
+> >> > The mm-of-the-moment snapshot 2012-08-13-16-55 has been uploaded to
+> >> > 
+> >> >    http://www.ozlabs.org/~akpm/mmotm/
+> > -mm git tree has been updated as well. You can find the tree at
+> > https://github.com/mstsxfx/memcg-devel.git since-3.5
 > > 
-> > insn is updated/accessed in the arch independent code. Size of
-> > uprobe_opcode_t could be different for different archs.
-> > uprobe_opcode_t
-> > represents the size of the smallest breakpoint instruction for an
-> > arch.
+> > tagged as mmotm-2012-08-13-16-55
 > > 
-> > Hence u8 works out the best. I know we could still use uprobe_opcode_t
-> > and achieve the same. In which case, we would have to interpret
-> > MAX_UINSN_BYTES differently. Do you see any advantages of using
-> > uprobe_opcode_t instead of u8 across archs?
 > 
-> But don't you actively rely on the fact that on powerpc, unlike x86, you
-> -can- atomically replace an instruction with a single 32-bit store ?
+> On top of this tree, people following the kmemcg development may also
+> want to checkout
 > 
-
-We are not doing a replace here, we are only copying from the ->vm_file
-for the largest size instruction possible for that instruction. For
-powerpc, this is easy because of fixed size instructions.  
-
-On other archs, at this point, we dont even know the length of the
-underlying instruction.
-
-Now there are 3 ways to handle this:
-1. use arch independent copy_insn() (current.) (handles if the
-instruction spreads across multiple pages on non fixed instruction
-archs). 
-
-2. make the copy_insn() arch specific, that would mean every arch will
-have to do read_mapping_page etc.
-
-3. have a arch specific hook in arch independent copy_insn code that
-either does a memcpy for non fixed instruction archs or does an
-assignment in archs like powerpc.
-
-I think you are suggesting option 3.
-But instead of adding another call that does the arch specific stuff, we
-are probably be better of doing a memcpy. Right?
-
-For all powerpc references to insn we could refer to it as u32 as
-suggested by Oleg.
-
--- 
-Thanks and Regards
-Srikar
-
-
-> If you don't you should consider it, and that makes defining this as a
-> u8 array non-sensical (as is using memcpy)
+>    git://github.com/glommer/linux.git memcg-3.5/kmemcg-stack
 > 
-> Ben.
-> 
-> 
+> A branch called memcg-3.5/kmemcg-slab is also available with the slab
+> changes ontop.
 
+I tested it successfully to stop a forkbomb in a container.
+One may need the following fix as well: http://marc.info/?l=linux-kernel&m=134573636430031&w=2
+
+Andrew, others, what is your opinion on this patchset?
+
+Thanks.
