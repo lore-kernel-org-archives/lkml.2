@@ -1,89 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030663Ab2HWQEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 12:04:38 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34443 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934124Ab2HWQEe (ORCPT
+	id S1759063Ab2HWQG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:06:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63892 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030574Ab2HWQGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 12:04:34 -0400
+	Thu, 23 Aug 2012 12:06:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP13LBR6GD=VomBPim3mDPy1bJ=eFBZ=oDaKZCjEo=Xp94Q@mail.gmail.com>
-References: <CACVXFVNYCZqxt9B=9F_71KP0gdinGbNXd_ePQ10NKsCGd1dY4g@mail.gmail.com>
-	<CACVXFVOMdWQSutkBzdcLJ-ozmecq_p-yzYJbtoLVUafz5KV=KQ@mail.gmail.com>
-	<CAPXgP13LBR6GD=VomBPim3mDPy1bJ=eFBZ=oDaKZCjEo=Xp94Q@mail.gmail.com>
-Date: Fri, 24 Aug 2012 00:04:32 +0800
-Message-ID: <CACVXFVMFKGPv9Am0KzKSVsRamcA8EMMnD0kQO40MJ6OsjK4Eow@mail.gmail.com>
-Subject: Re: udev 182: response timeout for request_firmware in module_probe path
-From: Ming Lei <tom.leiming@gmail.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        systemd-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120823154346.GB2465@linux.vnet.ibm.com>
+References: <CA+icZUW2aUP=vjBeoksFU=NAVFMJEiBQy6sNKZczzRPEP9kOfw@mail.gmail.com>
+	<alpine.LFD.2.02.1208231245510.2856@ionos>
+	<20120823154346.GB2465@linux.vnet.ibm.com>
+Date: Thu, 23 Aug 2012 18:06:23 +0200
+Message-ID: <CA+icZUXq9p4yOuse5dzCb2FGmgSKdU8ufDkDcTjWJ0dE79tvUg@mail.gmail.com>
+Subject: Re: [next-20120823] NOHZ: local_softirq_pending 200 on s/r
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 11:31 PM, Kay Sievers <kay@vrfy.org> wrote:
-> On Thu, Aug 23, 2012 at 5:16 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->> On Tue, Aug 21, 2012 at 1:34 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->
->>> I found that udev 182 doesn't response for the request_firmware in
->>> module_probe path until 30sec later after the 'ADD' event of firmware
->>> device, but no such problem in udev175, sounds like a regression of udev?
+On Thu, Aug 23, 2012 at 5:43 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, Aug 23, 2012 at 12:46:37PM +0200, Thomas Gleixner wrote:
+>> On Thu, 23 Aug 2012, Sedat Dilek wrote:
 >>
->> Looks udevd is capable of handling the firmware ADD event even though
->> the device ADD event is being processed( modprobe is triggered by device
->> ADD event).
+>> > Hi,
+>> >
+>> > this week I was seeing the below NOHZ messages in my logs especially
+>> > when suspending and resuming.
+>> >
+>> > Currently, I am using linux-next (next-20120823) on Ubuntu/precise
+>> > AMD64 with a Intel S(a)N(dy)B(ridge)-CPU.
+>> >
+>> > $ dmesg | grep -A1 -B1 -i nohz
+>> > [  720.331819] Disabling non-boot CPUs ...
+>> > [  720.332035] NOHZ: local_softirq_pending 200
+>> > [  720.434312] smpboot: CPU 1 is now offline
+>> > [  720.434825] NOHZ: local_softirq_pending 200
+>> > [  720.538237] smpboot: CPU 2 is now offline
+>> > [  720.538676] NOHZ: local_softirq_pending 200
+>> > [  720.642162] smpboot: CPU 3 is now offline
+>> >
+>> > If I manually disable the cpuX... First I did not see NOHZ messages
+>> > but then there were some lines seen especially when cpuX went offline
+>> > (here: cpu1)
+>> >
+>> > # echo 0 >/sys/devices/system/cpu/cpu1/online
+>> >
+>> > [ dmeg ]
+>> > [ 2605.515771] smpboot: CPU 1 is now offline
+>> >
+>> > The same with cpu2 and cpu3.
 >
-> Calling out from inside the kernel and blocking in a firmware loading
-> userspace transaction during module_init() is kind of weird.
-
-Strictly speaking, the request_firmware is not called by module_init()
-directly, but called by driver .probe() which is triggered inside module_init().
-
-I admit that it is weird if the driver is built in kernel. But considered that
-most of drivers are built as module, it should be workable since the
-userspace is already ready during module probing.
-
-Also from the viewpoint of device driver, loading driver inside .probe()
-is reasonable since the device may be powered on just now and
-can't work further without the firmware.
-
-Finally, the reality is that hundreds of drivers call request_firmware()
-inside their.probe(), and converting them into its asynchronous pair
-will introduce much much works, :-(
-
+> Hmmm...  RCU is actually relying on being able to prevent entry into idle
+> by raising softirq.  This is needed for the aggressive energy-efficiency
+> CONFIG_RCU_FAST_NO_HZ feature of RCU.  Therefore, I propose the patch
+> shown below.
 >
-> The firmware loading call should not rely on a fully functional
-> userspace, and modprobe should not hang and block until the firmware
-> request is handled.
-
-IMO, the driver probing path is allowed to sleep, so looks request firmware
-should be allowed inside .probe().
-
-In the patch I posted, it will make the situation workable at least.
-
->From udevd code, the firmware ADD event isn't run until its parent
-device has been handled. IMO,  looks like there is no obvious side
-effect to loose the constraint for firmware device.
-
-Correct me if it is wrong, and I am not familiar with udev.
-
+> Sedat, does this patch help?
 >
-> The firmware should be requested asynchronously or from a different
-> context as module_init(). It depends on the type of driver/hardware
-> what's the best approach here.
+>                                                         Thanx, Paul
+>
+>> > Jack Winter confirmed to see similiar NOHZ messages also on
+>> > v3.4.9-rt17 kernel (CPU: Core2Duo when no suspend performed):
+>> >
+>> > [15223.171585] NOHZ: local_softirq_pending 08
+>>
+>> That's a different issue. That's a pending networking softirq when we
+>> go idle. Unrelated to the RCU / hotplug issue you are observing.
+>>
+>> > So, the issue is seen on linux-next and -rt kernels.
+>> >
+>> > According to Thomas "softirq 0x200 is the RCU one" and he requested me
+>> > to address the issue to Paul on #linux-rt.
+>> >
+>> > Regards,
+>> > - Sedat -
+>
+> time: RCU permitted to stop idle entry via softirq
+>
+> RCU needs to be able to use softirq to stop idle entry in order to
+> be able to drain RCU callbacks from the current CPU, which in turn
+> enables faster entry into dyntick-idle mode, which in turn reduces power
+> consumption.  This commit therefore silences the error message that is
+> sometimes produced when the going-idle CPU suddenly finds that it has
+> an RCU_SOFTIRQ to process.
+>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index c5f856a..c0359d2 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -430,6 +430,8 @@ enum
+>         NR_SOFTIRQS
+>  };
+>
+> +const int softirq_stop_idle_mask = (~(1 << RCU_SOFTIRQ));
+> +
+>  /* map softirq index to softirq name. update 'softirq_to_name' in
+>   * kernel/softirq.c when adding a new softirq.
+>   */
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 024540f..84932cf 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -436,7 +436,8 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+>         if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
+>                 static int ratelimit;
+>
+> -               if (ratelimit < 10) {
+> +               if (ratelimit < 10 &&
+> +                   (local_softirq_pending() & softirq_stop_idle_mask)) {
+>                         printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
+>                                (unsigned int) local_softirq_pending());
+>                         ratelimit++;
+>
 
-Requesting firmware asynchronously should be better, but may
-introduce some complexity to drivers, for example, race between
-request/release firmware context and hotplug contexts.
+Applying this patch on top of my local GIT tree results in error-messages:
 
+[...]
+  CC      kernel/rcupdate.o
+  AS      arch/x86/platform/efi/efi_stub_64.o
+  CC      arch/x86/kernel/irqinit.o
+  LD      arch/x86/platform/efi/built-in.o
+arch/x86/platform/efi/efi_64.o:(.rodata+0x0): multiple definition of
+`softirq_stop_idle_mask'
+arch/x86/platform/efi/efi.o:(.rodata+0x50): first defined here
+make[5]: *** [arch/x86/platform/efi/built-in.o] Error 1
+make[4]: *** [arch/x86/platform/efi] Error 2
+make[3]: *** [arch/x86/platform] Error 2
+make[3]: *** Waiting for unfinished jobs....
+[...]
 
-Thanks,
--- 
-Ming Lei
+$ LC_ALL=C grep softirq_stop_idle_mask -nr linux-next/arch/x86/platform/efi/
+Binary file linux-next/arch/x86/platform/efi/efi.o matches
+Binary file linux-next/arch/x86/platform/efi/efi_64.o matches
+
+- Sedat -
