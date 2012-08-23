@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933540Ab2HWJdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 05:33:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29163 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933397Ab2HWJdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 05:33:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
-   d="scan'208";a="212827610"
-Date: Thu, 23 Aug 2012 17:33:30 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi.kleen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] HWPOISON: fix action_result() to print out
- dirty/clean
-Message-ID: <20120823093330.GC12745@localhost>
-References: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1345648655-4497-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S933772Ab2HWJmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 05:42:07 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:24741 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933425Ab2HWJmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 05:42:05 -0400
+X-IronPort-AV: E=Sophos;i="4.80,299,1344211200"; 
+   d="scan'208";a="14142447"
+Message-ID: <5035F7BD.6090205@citrix.com>
+Date: Thu, 23 Aug 2012 10:28:29 +0100
+From: Attilio Rao <attilio.rao@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345648655-4497-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "x86@kernel.org" <x86@kernel.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
+ and x86_init.paging.pagetable_setup_done setup functions and document its
+ semantic
+References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>	<alpine.LFD.2.02.1208212315330.2856@ionos>	<20120822135753.GA30964@phenom.dumpdata.com>	<alpine.LFD.2.02.1208221618380.2856@ionos> <5034F0FD.8040902@citrix.com>
+In-Reply-To: <5034F0FD.8040902@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 11:17:33AM -0400, Naoya Horiguchi wrote:
-> action_result() fails to print out "dirty" even if an error occurred on a
-> dirty pagecache, because when we check PageDirty in action_result() it was
-> cleared after page isolation even if it's dirty before error handling. This
-> can break some applications that monitor this message, so should be fixed.
-> 
-> There are several callers of action_result() except page_action(), but
-> either of them are not for LRU pages but for free pages or kernel pages,
-> so we don't have to consider dirty or not for them.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Reviewed-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  mm/memory-failure.c | 22 +++++++++-------------
->  1 file changed, 9 insertions(+), 13 deletions(-)
-> 
-> diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
-> index a6e2141..79dfb2f 100644
-> --- v3.6-rc1.orig/mm/memory-failure.c
-> +++ v3.6-rc1/mm/memory-failure.c
-> @@ -779,16 +779,16 @@ static struct page_state {
->  	{ compound,	compound,	"huge",		me_huge_page },
->  #endif
->  
-> -	{ sc|dirty,	sc|dirty,	"swapcache",	me_swapcache_dirty },
-> -	{ sc|dirty,	sc,		"swapcache",	me_swapcache_clean },
-> +	{ sc|dirty,	sc|dirty,	"dirty swapcache",	me_swapcache_dirty },
-> +	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
->  
-> -	{ unevict|dirty, unevict|dirty,	"unevictable LRU", me_pagecache_dirty},
-> -	{ unevict,	unevict,	"unevictable LRU", me_pagecache_clean},
-> +	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
-> +	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
->  
-> -	{ mlock|dirty,	mlock|dirty,	"mlocked LRU",	me_pagecache_dirty },
-> -	{ mlock,	mlock,		"mlocked LRU",	me_pagecache_clean },
-> +	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
-> +	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
->  
-> -	{ lru|dirty,	lru|dirty,	"LRU",		me_pagecache_dirty },
-> +	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
->  	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
+On 22/08/12 15:47, Attilio Rao wrote:
+> On 22/08/12 15:19, Thomas Gleixner wrote:
+>    
+>> On Wed, 22 Aug 2012, Konrad Rzeszutek Wilk wrote:
+>>
+>>      
+>>> On Tue, Aug 21, 2012 at 11:22:03PM +0200, Thomas Gleixner wrote:
+>>>
+>>>        
+>>>> On Tue, 21 Aug 2012, Attilio Rao wrote:
+>>>>
+>>>>          
+>>>>> Differences with v1:
+>>>>> - The patch serie is re-arranged in a way that it helps reviews, following
+>>>>>     a plan by Thomas Gleixner
+>>>>> - The PVOPS nomenclature is not used as it is not correct
+>>>>> - The front-end message is adjusted with feedback by Thomas Gleixner,
+>>>>>     Stefano Stabellini and Konrad Rzeszutek Wilk
+>>>>>
+>>>>>            
+>>>> This is much simpler to read and review. Just have a look at the
+>>>> diffstats of the two series:
+>>>>
+>>>>    6 files changed,  9 insertions(+),  8 deletions(-)
+>>>>    6 files changed, 11 insertions(+),  9 deletions(-)
+>>>>    5 files changed, 50 insertions(+),  2 deletions(-)
+>>>>    6 files changed,  2 insertions(+), 65 deletions(-)
+>>>>    1 files changed,  5 insertions(+),  0 deletions(-)
+>>>>
+>>>> versus
+>>>>
+>>>>    6 files changed, 10 insertions(+),  9 deletions(-)
+>>>>    6 files changed, 11 insertions(+), 11 deletions(-)
+>>>>    5 files changed,  3 insertions(+),  3 deletions(-)
+>>>>    6 files changed,  4 insertions(+), 20 deletions(-)
+>>>>    1 files changed,  5 insertions(+),  0 deletions(-)
+>>>>
+>>>> The overall result is basically the same, but it's way simpler to look
+>>>> at obvious and well done patches than checking whether a subtle copy
+>>>> and paste bug happened in 3/5 of the first version. Copy and paste is
+>>>> the #1 cause for subtle bugs. :)
+>>>>
+>>>> I'm waiting for the ack of Xen folks before taking it into tip.
+>>>>
+>>>>          
+>>> I've some extra patches that modify the new "paginig_init" in the Xen
+>>> code that I am going to propose for v3.7 - so will have some merge
+>>> conflicts. Let me figure that out and also run this set of patches
+>>> (and also the previous one .. which I think you didn't have a
+>>> chance to look since you were on vacation?) on an overnight
+>>>
+>>>        
+>> Which previous one ?
+>>
+>>      
+> This one:
+> https://lkml.org/lkml/2012/8/21/369
+>
+> but I would like to repost the patch serie skipping the referral to
+> PVOPS in the commit logs, I will do so right now, so please wait for
+> another patch serie.
+>    
 
-According to the set_page_dirty() comment, the dirty bit might be set
-outside the page lock (however I don't know any concrete examples).
-That means the word "clean" is not 100% right.  That's probably why we
-only report "dirty LRU" and didn't say "clean LRU".
+For your convenience:
+http://lkml.org/lkml/2012/8/22/450
 
-Thanks,
-Fengguang
-
->  	/*
-> @@ -812,12 +812,8 @@ static struct page_state {
->  
->  static void action_result(unsigned long pfn, char *msg, int result)
->  {
-> -	struct page *page = pfn_to_page(pfn);
-> -
-> -	printk(KERN_ERR "MCE %#lx: %s%s page recovery: %s\n",
-> -		pfn,
-> -		PageDirty(page) ? "dirty " : "",
-> -		msg, action_name[result]);
-> +	pr_err("MCE %#lx: %s page recovery: %s\n",
-> +		pfn, msg, action_name[result]);
->  }
->  
->  static int page_action(struct page_state *ps, struct page *p,
-> -- 
-> 1.7.11.4
+Attilio
