@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab2HWCXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 22:23:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49331 "EHLO song.cn.fujitsu.com"
+	id S1756922Ab2HWCYr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 22:24:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:4551 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054Ab2HWCXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 22:23:39 -0400
+	id S1755796Ab2HWCYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 22:24:44 -0400
 X-IronPort-AV: E=Sophos;i="4.77,812,1336320000"; 
-   d="scan'208";a="5700297"
-Message-ID: <50359561.9070001@cn.fujitsu.com>
-Date: Thu, 23 Aug 2012 10:28:49 +0800
+   d="scan'208";a="5700313"
+Message-ID: <503595A9.6080505@cn.fujitsu.com>
+Date: Thu, 23 Aug 2012 10:30:01 +0800
 From: Wen Congyang <wency@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -22,292 +22,92 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
         Andrew Jones <drjones@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH v9] kvm: notify host when the guest is panicked
+Subject: [PATCH v9 1/6] start vm after reseting it
+References: <50359561.9070001@cn.fujitsu.com>
+In-Reply-To: <50359561.9070001@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/23 10:23:29,
+ 2012/08/23 10:24:40,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/23 10:23:36,
-	Serialize complete at 2012/08/23 10:23:36
+ 2012/08/23 10:24:41,
+	Serialize complete at 2012/08/23 10:24:41
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can know the guest is panicked when the guest runs on xen.
-But we do not have such feature on kvm.
+The guest should run after reseting it, but it does not run if its
+old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
 
-Another purpose of this feature is: management app(for example:
-libvirt) can do auto dump when the guest is panicked. If management
-app does not do auto dump, the guest's user can do dump by hand if
-he sees the guest is panicked.
-
-We have three solutions to implement this feature:
-1. use vmcall
-2. use I/O port
-3. use virtio-serial.
-
-We have decided to avoid touching hypervisor. The reason why I choose
-choose the I/O port is:
-1. it is easier to implememt
-2. it does not depend any virtual device
-3. it can work when starting the kernel
+We don't set runstate to RUN_STATE_PAUSED when reseting the guest,
+so the runstate will be changed from RUN_STATE_INTERNAL_ERROR or
+RUN_STATE_PAUSED to RUN_STATE_RUNNING(not RUN_STATE_PAUSED).
 
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- Documentation/virtual/kvm/pv_event.txt |   32 ++++++++++++++++++++++++++++++++
- arch/ia64/include/asm/kvm_para.h       |   14 ++++++++++++++
- arch/powerpc/include/asm/kvm_para.h    |   14 ++++++++++++++
- arch/s390/include/asm/kvm_para.h       |   14 ++++++++++++++
- arch/x86/include/asm/kvm_para.h        |   27 +++++++++++++++++++++++++++
- arch/x86/kernel/kvm.c                  |   25 +++++++++++++++++++++++++
- include/linux/kvm_para.h               |   23 +++++++++++++++++++++++
- 7 files changed, 149 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/virtual/kvm/pv_event.txt
+ block.h |    2 ++
+ qmp.c   |    2 +-
+ vl.c    |    7 ++++---
+ 3 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/virtual/kvm/pv_event.txt b/Documentation/virtual/kvm/pv_event.txt
-new file mode 100644
-index 0000000..1b9fc4c
---- /dev/null
-+++ b/Documentation/virtual/kvm/pv_event.txt
-@@ -0,0 +1,32 @@
-+The KVM paravirtual event interface
-+=================================
-+
-+Initializing the paravirtual event interface
-+======================
-+kvm_pv_event_init()
-+Argiments:
-+	None
-+
-+Return Value:
-+	0 : The guest kernel can use paravirtual event interface.
-+	-1: The guest kernel can't use paravirtual event interface.
-+
-+Querying whether the event can be ejected
-+======================
-+kvm_pv_has_feature()
-+Arguments:
-+	feature: The bit value of this paravirtual event to query
-+
-+Return Value:
-+	0: The guest kernel can't eject this paravirtual event.
-+	1: The guest kernel can eject this paravirtual event.
-+
-+
-+Ejecting paravirtual event
-+======================
-+kvm_pv_eject_event()
-+Arguments:
-+	event: The event to be ejected.
-+
-+Return Value:
-+	None
-diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
-index 2019cb9..b5ec658 100644
---- a/arch/ia64/include/asm/kvm_para.h
-+++ b/arch/ia64/include/asm/kvm_para.h
-@@ -31,6 +31,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
- 	return false;
- }
+diff --git a/block.h b/block.h
+index 2e2be11..c3265c2 100644
+--- a/block.h
++++ b/block.h
+@@ -339,6 +339,8 @@ void bdrv_disable_copy_on_read(BlockDriverState *bs);
+ void bdrv_set_in_use(BlockDriverState *bs, int in_use);
+ int bdrv_in_use(BlockDriverState *bs);
  
-+static inline int kvm_arch_pv_event_init(void)
-+{
-+	return 0;
-+}
++void iostatus_bdrv_it(void *opaque, BlockDriverState *bs);
 +
-+static inline unsigned int kvm_arch_pv_features(void)
-+{
-+	return 0;
-+}
-+
-+static inline void kvm_arch_pv_eject_event(unsigned int event)
-+{
-+}
-+
- #endif
- 
- #endif
-diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
-index c18916b..01b98c7 100644
---- a/arch/powerpc/include/asm/kvm_para.h
-+++ b/arch/powerpc/include/asm/kvm_para.h
-@@ -211,6 +211,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
- 	return false;
- }
- 
-+static inline int kvm_arch_pv_event_init(void)
-+{
-+	return 0;
-+}
-+
-+static inline unsigned int kvm_arch_pv_features(void)
-+{
-+	return 0;
-+}
-+
-+static inline void kvm_arch_pv_eject_event(unsigned int event)
-+{
-+}
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __POWERPC_KVM_PARA_H__ */
-diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
-index da44867..00ce058 100644
---- a/arch/s390/include/asm/kvm_para.h
-+++ b/arch/s390/include/asm/kvm_para.h
-@@ -154,6 +154,20 @@ static inline bool kvm_check_and_clear_guest_paused(void)
- 	return false;
- }
- 
-+static inline int kvm_arch_pv_event_init(void)
-+{
-+	return 0;
-+}
-+
-+static inline unsigned int kvm_arch_pv_features(void)
-+{
-+	return 0;
-+}
-+
-+static inline void kvm_arch_pv_eject_event(unsigned int event)
-+{
-+}
-+
- #endif
- 
- #endif /* __S390_KVM_PARA_H */
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 2f7712e..7d297f0 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -96,8 +96,11 @@ struct kvm_vcpu_pv_apf_data {
- #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
- #define KVM_PV_EOI_DISABLED 0x0
- 
-+#define KVM_PV_EVENT_PORT	(0x505UL)
-+
- #ifdef __KERNEL__
- #include <asm/processor.h>
-+#include <linux/ioport.h>
- 
- extern void kvmclock_init(void);
- extern int kvm_register_clock(char *txt);
-@@ -228,6 +231,30 @@ static inline void kvm_disable_steal_time(void)
- }
- #endif
- 
-+static inline int kvm_arch_pv_event_init(void)
-+{
-+	if (!request_region(KVM_PV_EVENT_PORT, 1, "KVM_PV_EVENT"))
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static inline unsigned int kvm_arch_pv_features(void)
-+{
-+	unsigned int features = inl(KVM_PV_EVENT_PORT);
-+
-+	/* Reading from an invalid I/O port will return -1 */
-+	if (features == ~0)
-+		features = 0;
-+
-+	return features;
-+}
-+
-+static inline void kvm_arch_pv_eject_event(unsigned int event)
-+{
-+	outl(event, KVM_PV_EVENT_PORT);
-+}
-+
- #endif /* __KERNEL__ */
- 
- #endif /* _ASM_X86_KVM_PARA_H */
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index c1d61ee..6129459 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -368,6 +368,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
- 	.notifier_call = kvm_pv_reboot_notify,
+ enum BlockAcctType {
+     BDRV_ACCT_READ,
+     BDRV_ACCT_WRITE,
+diff --git a/qmp.c b/qmp.c
+index 8463922..c5a20f1 100644
+--- a/qmp.c
++++ b/qmp.c
+@@ -125,7 +125,7 @@ SpiceInfo *qmp_query_spice(Error **errp)
  };
+ #endif
  
-+static int
-+kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
-+{
-+	kvm_pv_eject_event(KVM_PV_EVENT_PANICKED);
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block kvm_pv_panic_nb = {
-+	.notifier_call = kvm_pv_panic_notify,
-+};
-+
- static u64 kvm_steal_clock(int cpu)
+-static void iostatus_bdrv_it(void *opaque, BlockDriverState *bs)
++void iostatus_bdrv_it(void *opaque, BlockDriverState *bs)
  {
- 	u64 steal;
-@@ -447,6 +458,20 @@ static void __init kvm_apf_trap_init(void)
- 	set_intr_gate(14, &async_page_fault);
+     bdrv_iostatus_reset(bs);
  }
+diff --git a/vl.c b/vl.c
+index 7c577fa..316a977 100644
+--- a/vl.c
++++ b/vl.c
+@@ -343,7 +343,7 @@ static const RunStateTransition runstate_transitions_def[] = {
+     { RUN_STATE_INMIGRATE, RUN_STATE_RUNNING },
+     { RUN_STATE_INMIGRATE, RUN_STATE_PRELAUNCH },
  
-+static void __init kvm_pv_panicked_event_init(void)
-+{
-+	if (!kvm_para_available())
-+		return;
-+
-+	if (kvm_pv_event_init())
-+		return;
-+
-+	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
-+		atomic_notifier_chain_register(&panic_notifier_list,
-+			&kvm_pv_panic_nb);
-+}
-+arch_initcall(kvm_pv_panicked_event_init);
-+
- void __init kvm_guest_init(void)
- {
- 	int i;
-diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
-index ff476dd..8e0fb81 100644
---- a/include/linux/kvm_para.h
-+++ b/include/linux/kvm_para.h
-@@ -20,6 +20,12 @@
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+-    { RUN_STATE_INTERNAL_ERROR, RUN_STATE_PAUSED },
++    { RUN_STATE_INTERNAL_ERROR, RUN_STATE_RUNNING },
+     { RUN_STATE_INTERNAL_ERROR, RUN_STATE_FINISH_MIGRATE },
  
-+/* The bit of supported pv event */
-+#define KVM_PV_FEATURE_PANICKED	0
-+
-+/* The pv event value */
-+#define KVM_PV_EVENT_PANICKED	1
-+
- /*
-  * hypercalls use architecture specific
-  */
-@@ -33,5 +39,22 @@ static inline int kvm_para_has_feature(unsigned int feature)
- 		return 1;
- 	return 0;
- }
-+
-+static inline int kvm_pv_event_init(void)
-+{
-+	return kvm_arch_pv_event_init();
-+}
-+
-+static inline int kvm_pv_has_feature(unsigned int feature)
-+{
-+	if (kvm_arch_pv_features() & (1UL << feature))
-+		return 1;
-+	return 0;
-+}
-+
-+static inline void kvm_pv_eject_event(unsigned int event)
-+{
-+	kvm_arch_pv_eject_event(event);
-+}
- #endif /* __KERNEL__ */
- #endif /* __LINUX_KVM_PARA_H */
+     { RUN_STATE_IO_ERROR, RUN_STATE_RUNNING },
+@@ -376,7 +376,7 @@ static const RunStateTransition runstate_transitions_def[] = {
+ 
+     { RUN_STATE_SAVE_VM, RUN_STATE_RUNNING },
+ 
+-    { RUN_STATE_SHUTDOWN, RUN_STATE_PAUSED },
++    { RUN_STATE_SHUTDOWN, RUN_STATE_RUNNING },
+     { RUN_STATE_SHUTDOWN, RUN_STATE_FINISH_MIGRATE },
+ 
+     { RUN_STATE_DEBUG, RUN_STATE_SUSPENDED },
+@@ -1608,7 +1608,8 @@ static bool main_loop_should_exit(void)
+         resume_all_vcpus();
+         if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+             runstate_check(RUN_STATE_SHUTDOWN)) {
+-            runstate_set(RUN_STATE_PAUSED);
++            bdrv_iterate(iostatus_bdrv_it, NULL);
++            vm_start();
+         }
+     }
+     if (qemu_wakeup_requested()) {
 -- 
 1.7.1
 
