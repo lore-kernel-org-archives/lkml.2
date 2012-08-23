@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759053Ab2HWPZT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:25:19 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44141 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756004Ab2HWPZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:25:14 -0400
+	id S934069Ab2HWPZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:25:51 -0400
+Received: from fieldses.org ([174.143.236.118]:57164 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932199Ab2HWPZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:25:47 -0400
+Date: Thu, 23 Aug 2012 11:25:45 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: [patch 0/9] extended fdinfo via procfs series, v7
+Message-ID: <20120823152545.GC6923@fieldses.org>
+References: <20120823104323.040550004@openvz.org>
+ <20120823122318.GD29943@fieldses.org>
+ <20120823124427.GD1992@moon>
+ <20120823135234.GE29943@fieldses.org>
+ <20120823135606.GE1992@moon>
 MIME-Version: 1.0
-In-Reply-To: <5036234A.7060102@snapgear.com>
-References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com>
-	<CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
-	<5036234A.7060102@snapgear.com>
-Date: Thu, 23 Aug 2012 17:25:12 +0200
-X-Google-Sender-Auth: oDntKQ9lfG8OvwWcAed35QNQzRI
-Message-ID: <CA+mBkFUzvcMLpSCMVuUfexOML5Nwoi45ZK=iS1gh2sRLR1mK_Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Add support to broadcom 5222 PHY
-From: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120823135606.GE1992@moon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 2:34 PM, Greg Ungerer <gerg@snapgear.com> wrote:
-> Hi Stany,
->
->
-> On 08/23/2012 08:47 PM, Geert Uytterhoeven wrote:
->>
->> On Tue, Aug 21, 2012 at 2:18 PM, Stany MARCEL
->> <stany.marcel@novasys-ingenierie.com> wrote:
->>>
->>> Signed-off-by: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
->>> ---
->>>
->>>   This driver is an adaption of the one given by freescale for kernel
->>> 2.6.25.
->>>
->>>   Tested with kernel 3.4.8 with arch/m68k backported from linux-m68k head
->>>   2 FEC configured with shared phy
->>>
->>>   drivers/net/phy/Kconfig        |    7 +-
->>>   drivers/net/phy/Makefile       |    1 +
->>>   drivers/net/phy/broadcom522x.c |  171
->>> ++++++++++++++++++++++++++++++++++++++++
->>
->>
->> This patch and "[PATCH 3/3] Add support to M54xx DMA FEC Driver" need to
->> go
->> through the netdev tree, or collect acks there.
->
->
-> And patch 2/3 never made it to the linux-m68k list. Though I can see
-> that it made it onto the linux-kernel list.
->
-> I would suggest running them through checkpatch, there is a number of
-> formating and the like issues that need cleaning up.
->
-> Also you will want to break up patch 2. It is a bit large to be reviewed
-> the way it is.
->
-> Regards
-> Greg
+On Thu, Aug 23, 2012 at 05:56:06PM +0400, Cyrill Gorcunov wrote:
+> On Thu, Aug 23, 2012 at 09:52:34AM -0400, J. Bruce Fields wrote:
+> > 
+> > I don't have any opinion on whether there should be a configuration
+> > option.  Just want to make sure the cost when it's turned on is still
+> > taken seriously.
+> 
+> I see. So, does the rest of series looks fine for you (except this config
+> moment)?
 
-Hi Greg
+You're using the common filehandle code instead of encoding your own
+from scratch, which was my only serious objection.
 
-I will rework my patches and resend them.
+I haven't reviewed the rest of it carefully.
 
-Regards,
-
-Stany
+--b.
