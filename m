@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759019Ab2HWPC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:02:59 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17790 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab2HWPCq (ORCPT
+	id S1754468Ab2HWPDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:03:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53236 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2HWPDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:02:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 23 Aug 2012 08:02:43 -0700
-Message-ID: <50364179.6070304@nvidia.com>
-Date: Thu, 23 Aug 2012 20:13:05 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 23 Aug 2012 11:03:41 -0400
+Message-ID: <50364641.8010000@gmail.com>
+Date: Thu, 23 Aug 2012 23:03:29 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "rabin.vincent@gmail.com" <rabin.vincent@gmail.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled
- for boot-on
-References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com> <5034AA28.5050306@nvidia.com> <20120823145308.GA28328@sirena.org.uk>
-In-Reply-To: <20120823145308.GA28328@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Unable to mount NFSROOT: pcie change breaks e1000?
+References: <20120823004604.GA2882@localhost> <503587F4.3090907@huawei.com>
+In-Reply-To: <503587F4.3090907@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 August 2012 08:23 PM, Mark Brown wrote:
-> On Wed, Aug 22, 2012 at 03:15:12PM +0530, Laxman Dewangan wrote:
->> Hi Rabin,
->> Is it resolved the issue you mentioned?
-> He replied to your mail pointing out that it generated a lockdep issue.
-Thanks Mark for letting me know. The mail transfer to some other folder 
-of my mail due to some issue in outlook.
-Let me create some more scenario to reproduce this.
+Hi Bjorn,
+	Could you please help to fold this small patch into 
+"[5/40] PCI/core: Use PCI Express Capability accessors"?
+It fixes a bug reported by Fengguang.
+	Thanks!
+	Gerry
 
+On 08/23/2012 09:31 AM, Jiang Liu wrote:
+> Hi Fengguang,
+> 	Could you please help to verify whether following patch
+> fixes the issue?
+> 	Thanks!
+> 
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index f6b491b..fac08f5 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -842,6 +842,9 @@ static int pci_save_pcie_state(struct pci_dev *dev)
+>         struct pci_cap_saved_state *save_state;
+>         u16 *cap;
+> 
+> +       if (!pci_is_pcie(dev))
+> +               return 0;
+> +
+>         save_state = pci_find_saved_cap(dev, PCI_CAP_ID_EXP);
+>         if (!save_state) {
+>                 dev_err(&dev->dev, "buffer not found in %s\n", __func__);
+> 
+> On 2012-8-23 8:46, Fengguang Wu wrote:
+>> buffer not found
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
