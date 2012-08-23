@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab2HWDBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 23:01:06 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:36361 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756653Ab2HWDBD (ORCPT
+	id S933183Ab2HWDBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 23:01:21 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55605 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757302Ab2HWDBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 23:01:03 -0400
-Date: Wed, 22 Aug 2012 19:58:24 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power_supply: Add new power supply AUTHENTIC property
-Message-ID: <20120823025821.GA12673@lizard>
-References: <1345684821-13890-1-git-send-email-ramakrishna.pallala@intel.com>
+	Wed, 22 Aug 2012 23:01:11 -0400
+X-AuditID: b753bd60-90ac1ba0000047ca-24-50359cf4acab
+X-AuditID: b753bd60-90ac1ba0000047ca-24-50359cf4acab
+Message-ID: <50359CE9.3000509@hitachi.com>
+Date: Thu, 23 Aug 2012 12:00:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1345684821-13890-1-git-send-email-ramakrishna.pallala@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>, Arnd Bergmann <arnd@arndb.de>,
+        Borislav Petkov <bp@amd64.org>, "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 2/5] trace-cmd: Use tracing directory to count CPUs
+References: <20120822084251.17293.69086.stgit@ltc189.sdl.hitachi.co.jp>  <20120822084312.17293.47596.stgit@ltc189.sdl.hitachi.co.jp> <1345642893.5069.31.camel@gandalf.local.home> <50358F13.1030607@hitachi.com>
+In-Reply-To: <50358F13.1030607@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 06:50:21AM +0530, Ramakrishna Pallala wrote:
-> It is possible that users can use non-standard chargers
-> or use invalid batteries especially with mobile devices.
+(2012/08/23 11:01), Masami Hiramatsu wrote:
+> (2012/08/22 22:41), Steven Rostedt wrote:
+>> On Wed, 2012-08-22 at 17:43 +0900, Yoshihiro YUNOMAE wrote:
+>>> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>
+>>> Count debugfs/tracing/per_cpu/cpu* to determine the
+>>> number of CPUs.
+>>
+>> I'm curious, do you find that sysconf doesn't return the # of CPUs the
+>> system has?
 > 
-> This patch adds a new power supply property called 'AUTHENTIC' to
-> indicate this to the user(user space).
+> No, sysconf returns the number of hosts CPUs, not guests.
 > 
-> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> ---
-
-Applied, thanks a lot!
-
->  Documentation/power/power_supply_class.txt |    3 +++
->  drivers/power/power_supply_sysfs.c         |    1 +
->  include/linux/power_supply.h               |    1 +
->  3 files changed, 5 insertions(+), 0 deletions(-)
+>> I've had boxes where the per_cpu/cpu* had more cpus than the
+>> box actually holds. But this was a bug in the kernel, not the tool. This
+>> change log needs to have rational instead of just explaining what the
+>> patch does.
 > 
-> diff --git a/Documentation/power/power_supply_class.txt b/Documentation/power/power_supply_class.txt
-> index 2f0ddc1..29a1fcd 100644
-> --- a/Documentation/power/power_supply_class.txt
-> +++ b/Documentation/power/power_supply_class.txt
-> @@ -81,6 +81,9 @@ This defines trickle and fast charges.  For batteries that
->  are already charged or discharging, 'n/a' can be displayed (or
->  'unknown', if the status is not known).
->  
-> +AUTHENTIC - indicates the power supp(battery or charger) connected
+> Ah, I see. Hmm, then this should be enabled by a command line
+> option or an environment variable.
 
-Had to fix s/supp/supply/
+Oops, I misunderstood. I'll add more comment for why this
+should be tried instead of sysconf.
+
+Thank you,
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
