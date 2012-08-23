@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab2HWPBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:01:12 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:64622 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab2HWO65 (ORCPT
+	id S1030551Ab2HWPBS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:01:18 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:45198 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2HWO67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:58:57 -0400
+	Thu, 23 Aug 2012 10:58:59 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        David Howells <dhowells@redhat.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
         "3.2.x.." <stable@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 04/11] frv: Add missing RCU idle APIs on idle loop
-Date: Thu, 23 Aug 2012 16:58:28 +0200
-Message-Id: <1345733915-20040-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 05/11] h8300: Add missing RCU idle APIs on idle loop
+Date: Thu, 23 Aug 2012 16:58:29 +0200
+Message-Id: <1345733915-20040-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
 References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
@@ -38,44 +38,40 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the Frv's idle loop.
+Add this missing pair of calls in the h8300's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
 Cc: 3.2.x.. <stable@vger.kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/frv/kernel/process.c |    3 +++
+ arch/h8300/kernel/process.c |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/frv/kernel/process.c b/arch/frv/kernel/process.c
-index ff95f50..2eb7fa5 100644
---- a/arch/frv/kernel/process.c
-+++ b/arch/frv/kernel/process.c
-@@ -25,6 +25,7 @@
+diff --git a/arch/h8300/kernel/process.c b/arch/h8300/kernel/process.c
+index 0e9c315..f153ed1 100644
+--- a/arch/h8300/kernel/process.c
++++ b/arch/h8300/kernel/process.c
+@@ -36,6 +36,7 @@
  #include <linux/reboot.h>
- #include <linux/interrupt.h>
- #include <linux/pagemap.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
 +#include <linux/rcupdate.h>
  
- #include <asm/asm-offsets.h>
  #include <asm/uaccess.h>
-@@ -69,12 +70,14 @@ void cpu_idle(void)
+ #include <asm/traps.h>
+@@ -78,8 +79,10 @@ void (*idle)(void) = default_idle;
+ void cpu_idle(void)
  {
- 	/* endless idle loop with no priority at all */
  	while (1) {
 +		rcu_idle_enter();
- 		while (!need_resched()) {
- 			check_pgt_cache();
- 
- 			if (!frv_dma_inprogress && idle)
- 				idle();
- 		}
+ 		while (!need_resched())
+ 			idle();
 +		rcu_idle_exit();
- 
  		schedule_preempt_disabled();
  	}
+ }
 -- 
 1.7.5.4
 
