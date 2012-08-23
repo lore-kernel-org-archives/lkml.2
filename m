@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815Ab2HWOKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:10:17 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:50599 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932730Ab2HWOKM (ORCPT
+	id S1758951Ab2HWOPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 10:15:39 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:39869 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756567Ab2HWOPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:10:12 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>
-Subject: [PATCH] driver core: Check if r->name is valid in platform_get_resource_byname()
-Date: Thu, 23 Aug 2012 17:10:00 +0300
-Message-Id: <1345731000-12768-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
+	Thu, 23 Aug 2012 10:15:31 -0400
+Message-Id: <20120823141422.444396696@google.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 23 Aug 2012 07:14:22 -0700
+From: pjt@google.com
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ben Segall <bsegall@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [patch 00/16] sched: per-entity load-tracking
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Safety check for the validity of the resource name before calling strcmp().
-If the resource name is NULL do not compare it, just skip it.
+Hi all,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
+Please find attached the latest version for CFS load-tracking.
 
-Hi Greg,
+It implements load-tracking on a per-sched_entity (currently SCHED_NORMAL, but
+could be extended to RT as well) basis. This results in a bottom-up
+load-computation in which entities contribute to their parents' load, as
+opposed to the current top-down where the parent averages its children.  In
+particular this allows us to correctly migrate load with their accompanying
+entities and provides the necessary inputs for intelligent load-balancing and
+power-management.
 
-I have experienced with a kernel crash because the r->name was NULL when booting
-OMAP4+ kernel with devicetree.
-I have sent a separate patch for the OMAP specific root (with analysis of the
-issue):
-http://marc.info/?l=linux-omap&m=134573006327647&w=2
+We've been running this internally for some time now and modulo any gremlins
+from rebasing it, I think things have been shaken out and we're touching
+mergeable state.
 
-I agree that it is unlikely to have the name NULL, but I think it does not hurt
-if we do a safety check before comparing the strings.
+Special thanks to Namhyung Kim and Peter Zijlstra for comments on the last
+round series.
 
-Best Regards,
-Peter
+For more background and prior discussion please review the previous posting:
+https://lkml.org/lkml/2012/6/27/644
 
- drivers/base/platform.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index a1a7225..d717c2b 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -99,6 +99,9 @@ struct resource *platform_get_resource_byname(struct platform_device *dev,
- 	for (i = 0; i < dev->num_resources; i++) {
- 		struct resource *r = &dev->resource[i];
- 
-+		if (unlikely(!r->name))
-+			continue;
-+
- 		if (type == resource_type(r) && !strcmp(r->name, name))
- 			return r;
- 	}
--- 
-1.7.8.6
+- Paul
 
