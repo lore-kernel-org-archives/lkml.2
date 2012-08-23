@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030536Ab2HWO7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:59:23 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:64622 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030478Ab2HWO7R (ORCPT
+	id S1030543Ab2HWO7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 10:59:43 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:45198 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab2HWO7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:59:17 -0400
+	Thu, 23 Aug 2012 10:59:14 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Chris Zankel <chris@zankel.net>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
         "3.2.x.." <stable@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 11/11] xtensa: Add missing RCU idle APIs on idle loop
-Date: Thu, 23 Aug 2012 16:58:35 +0200
-Message-Id: <1345733915-20040-12-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 10/11] score: Add missing RCU idle APIs on idle loop
+Date: Thu, 23 Aug 2012 16:58:34 +0200
+Message-Id: <1345733915-20040-11-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
 References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
@@ -37,36 +38,38 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the xtensa's idle loop.
+Add this missing pair of calls in the scores's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Chris Zankel <chris@zankel.net>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
 Cc: 3.2.x.. <stable@vger.kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/xtensa/kernel/process.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/score/kernel/process.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/xtensa/kernel/process.c b/arch/xtensa/kernel/process.c
-index 2c8d6a3..bc44311 100644
---- a/arch/xtensa/kernel/process.c
-+++ b/arch/xtensa/kernel/process.c
-@@ -31,6 +31,7 @@
- #include <linux/mqueue.h>
- #include <linux/fs.h>
- #include <linux/slab.h>
+diff --git a/arch/score/kernel/process.c b/arch/score/kernel/process.c
+index 2707023..637970c 100644
+--- a/arch/score/kernel/process.c
++++ b/arch/score/kernel/process.c
+@@ -27,6 +27,7 @@
+ #include <linux/reboot.h>
+ #include <linux/elfcore.h>
+ #include <linux/pm.h>
 +#include <linux/rcupdate.h>
  
- #include <asm/pgtable.h>
- #include <asm/uaccess.h>
-@@ -110,8 +111,10 @@ void cpu_idle(void)
- 
+ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
+@@ -50,9 +51,10 @@ void __noreturn cpu_idle(void)
+ {
  	/* endless idle loop with no priority at all */
  	while (1) {
 +		rcu_idle_enter();
  		while (!need_resched())
- 			platform_idle();
+ 			barrier();
+-
 +		rcu_idle_exit();
  		schedule_preempt_disabled();
  	}
