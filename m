@@ -1,92 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030561Ab2HWPBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:01:50 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56817 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755307Ab2HWPBn (ORCPT
+	id S1759028Ab2HWPBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:01:48 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52191 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab2HWPBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:01:43 -0400
+	Thu, 23 Aug 2012 11:01:40 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, w.sang@pengutronix.de, Lee Jones <lee.jones@linaro.org>,
-        linux-i2c@vger.kernel.org
-Subject: [PATCH 3/3] i2c: nomadik: Add Device Tree support to the Nomadik I2C driver
-Date: Thu, 23 Aug 2012 16:01:27 +0100
-Message-Id: <1345734087-21803-3-git-send-email-lee.jones@linaro.org>
+        arnd@arndb.de, w.sang@pengutronix.de, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/3] ARM: ux500: Add i2c configurations to the Device Tree for DB8500 based devices
+Date: Thu, 23 Aug 2012 16:01:25 +0100
+Message-Id: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
-References: <1345734087-21803-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we apply the bindings required for successful Device Tree
-probing of the i2c-nomadik driver.
+Since initial support was provided for the Nomadik I2C driver, it
+has been converted to an AMBA device. AMBA devices are probed in
+a slightly different way to other devices, so we have to identify
+them using an "arm,primecell" compatible string. As well as doing
+just that, this patch specifies which regulators the controller
+should use and requests a clock-speed. The latter is provided as
+more of an example, as it's the same as the recently changed
+default configuration.
 
-Cc: linux-i2c@vger.kernel.org
-Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/i2c/busses/i2c-nomadik.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ arch/arm/boot/dts/dbx5x0.dtsi |   25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-index 61b00ed..8168389 100644
---- a/drivers/i2c/busses/i2c-nomadik.c
-+++ b/drivers/i2c/busses/i2c-nomadik.c
-@@ -25,6 +25,7 @@
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
- #include <linux/platform_data/i2c-nomadik.h>
-+#include <linux/of.h>
+diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+index 51209a8..3708a6b 100644
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@ -480,43 +480,58 @@
+ 		};
  
- #define DRIVER_NAME "nmk-i2c"
- 
-@@ -920,15 +921,42 @@ static struct nmk_i2c_controller u8500_i2c = {
- 	.sm             = I2C_FREQ_MODE_FAST,
- };
- 
-+static void nmk_i2c_of_probe(struct device_node *np,
-+			struct nmk_i2c_controller *pdata)
-+{
-+	/* Provide the default configuration as a base. */
-+	pdata = &u8500_i2c;
+ 		i2c@80004000 {
+-			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
++			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c", "arm,primecell";
+ 			reg = <0x80004000 0x1000>;
+ 			interrupts = <0 21 0x4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			v-i2c-supply = <&db8500_vape_reg>;
 +
-+	of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
-+
-+	/* This driver only supports 'standard' and 'fast' modes of operation. */
-+	if (pdata->clk_freq <= 100000)
-+		pdata->sm = I2C_FREQ_MODE_STANDARD;
-+	else
-+		pdata->sm = I2C_FREQ_MODE_FAST;
-+}
-+
- static atomic_t adapter_id = ATOMIC_INIT(0);
++			clock-frequency = <400000>;
+ 		};
  
- static int nmk_i2c_probe(struct amba_device *adev, const struct amba_id *id)
- {
- 	int ret = 0;
- 	struct nmk_i2c_controller *pdata = adev->dev.platform_data;
-+	struct device_node *np = adev->dev.of_node;
- 	struct nmk_i2c_dev	*dev;
- 	struct i2c_adapter *adap;
- 
-+	if (np) {
-+		if (!pdata) {
-+			pdata = devm_kzalloc(&adev->dev, sizeof(*pdata), GFP_KERNEL);
-+			if (!pdata) {
-+				ret = -ENOMEM;
-+				goto err_no_mem;
-+			}
-+		}
-+		nmk_i2c_of_probe(np, pdata);
-+	}
+ 		i2c@80122000 {
+-			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
++			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c", "arm,primecell";
+ 			reg = <0x80122000 0x1000>;
+ 			interrupts = <0 22 0x4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			v-i2c-supply = <&db8500_vape_reg>;
 +
- 	if (!pdata)
- 		/* No i2c configuration found, using the default. */
- 		pdata = &u8500_i2c;
++			clock-frequency = <400000>;
+ 		};
+ 
+ 		i2c@80128000 {
+-			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
++			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c", "arm,primecell";
+ 			reg = <0x80128000 0x1000>;
+ 			interrupts = <0 55 0x4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			v-i2c-supply = <&db8500_vape_reg>;
++
++			clock-frequency = <400000>;
+ 		};
+ 
+ 		i2c@80110000 {
+-			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
++			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c", "arm,primecell";
+ 			reg = <0x80110000 0x1000>;
+ 			interrupts = <0 12 0x4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			v-i2c-supply = <&db8500_vape_reg>;
++
++			clock-frequency = <400000>;
+ 		};
+ 
+ 		i2c@8012a000 {
+-			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
++			compatible = "stericsson,db8500-i2c", "st,nomadik-i2c", "arm,primecell";
+ 			reg = <0x8012a000 0x1000>;
+ 			interrupts = <0 51 0x4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			v-i2c-supply = <&db8500_vape_reg>;
++
++			clock-frequency = <400000>;
+ 		};
+ 
+ 		ssp@80002000 {
 -- 
 1.7.9.5
 
