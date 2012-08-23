@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030438Ab2HWKtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:49:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37439 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933890Ab2HWKra (ORCPT
+	id S1030367Ab2HWKwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:52:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60475 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933164Ab2HWKwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:47:30 -0400
-Message-Id: <20120823104725.758120342@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 23 Aug 2012 14:43:26 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [patch 3/9] procfs: Add ability to plug in auxiliary fdinfo providers
-References: <20120823104323.040550004@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-seq-ops-helpers-11
+	Thu, 23 Aug 2012 06:52:09 -0400
+Date: Thu, 23 Aug 2012 12:52:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: linux-next: manual merge of the tip tree with the rr tree
+Message-ID: <20120823105200.GA18835@somewhere.redhat.com>
+References: <20120823124348.831760a775f7bcb9c8e26219@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120823124348.831760a775f7bcb9c8e26219@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch brings ability to print out auxiliary data associated
-with file in procfs interface /proc/pid/fdinfo/fd.
+On Thu, Aug 23, 2012 at 12:43:48PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the tip tree got a conflict in arch/Kconfig
+> between commit bd029f48459a ("Make most arch asm/module.h files use
+> asm-generic/module.h") from the rr tree and commit b952741c8079
+> ("cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING") from the tip tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-In particular further patches make eventfd, evenpoll, signalfd
-and fsnotify to print additional information complete enough
-to restore these objects after checkpoint.
+Looks good, thanks!
 
-To simplify the code we add show_fdinfo callback inside
-struct file_operations (as Al and Pavel are proposing).
+> 
+> diff --cc arch/Kconfig
+> index 3450115,ea5feb6..0000000
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@@ -281,23 -294,7 +294,26 @@@ config SECCOMP_FILTE
+>   
+>   	  See Documentation/prctl/seccomp_filter.txt for details.
+>   
+>  +config HAVE_MOD_ARCH_SPECIFIC
+>  +	bool
+>  +	help
+>  +	  The arch uses struct mod_arch_specific to store data.  Many arches
+>  +	  just need a simple module loader without arch specific data - those
+>  +	  should not enable this.
+>  +
+>  +config MODULES_USE_ELF_RELA
+>  +	bool
+>  +	help
+>  +	  Modules only use ELF RELA relocations.  Modules with ELF REL
+>  +	  relocations will give an error.
+>  +
+>  +config MODULES_USE_ELF_REL
+>  +	bool
+>  +	help
+>  +	  Modules only use ELF REL relocations.  Modules with ELF RELA
+>  +	  relocations will give an error.
+>  +
+> + config HAVE_VIRT_CPU_ACCOUNTING
+> + 	bool
+> + 
+>   source "kernel/gcov/Kconfig"
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: James Bottomley <jbottomley@parallels.com>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Matthew Helsley <matt.helsley@gmail.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/proc/fd.c       |    5 +++++
- include/linux/fs.h |    3 +++
- 2 files changed, 8 insertions(+)
-
-Index: linux-2.6.git/fs/proc/fd.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/fd.c
-+++ linux-2.6.git/fs/proc/fd.c
-@@ -23,8 +23,13 @@ struct proc_fdinfo {
- static int seq_show(struct seq_file *m, void *v)
- {
- 	struct proc_fdinfo *fdinfo = container_of(m, struct proc_fdinfo, m);
-+
- 	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
- 		   (long long)fdinfo->fd_file->f_pos, fdinfo->f_flags);
-+
-+	if (fdinfo->fd_file->f_op->show_fdinfo)
-+		return fdinfo->fd_file->f_op->show_fdinfo(m, fdinfo->fd_file);
-+
- 	return 0;
- }
- 
-Index: linux-2.6.git/include/linux/fs.h
-===================================================================
---- linux-2.6.git.orig/include/linux/fs.h
-+++ linux-2.6.git/include/linux/fs.h
-@@ -1775,6 +1775,8 @@ struct block_device_operations;
- #define HAVE_COMPAT_IOCTL 1
- #define HAVE_UNLOCKED_IOCTL 1
- 
-+struct seq_file;
-+
- struct file_operations {
- 	struct module *owner;
- 	loff_t (*llseek) (struct file *, loff_t, int);
-@@ -1803,6 +1805,7 @@ struct file_operations {
- 	int (*setlease)(struct file *, long, struct file_lock **);
- 	long (*fallocate)(struct file *file, int mode, loff_t offset,
- 			  loff_t len);
-+	int (*show_fdinfo)(struct seq_file *m, struct file *f);
- };
- 
- struct inode_operations {
 
