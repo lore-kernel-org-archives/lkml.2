@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933521Ab2HWRM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:12:26 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43232 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933061Ab2HWRMX (ORCPT
+	id S964776Ab2HWRPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:15:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56534 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758810Ab2HWRPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:12:23 -0400
-Message-ID: <50366464.4070801@metafoo.de>
-Date: Thu, 23 Aug 2012 19:12:04 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
+	Thu, 23 Aug 2012 13:15:08 -0400
+Date: Thu, 23 Aug 2012 19:14:59 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Attilio Rao <attilio.rao@citrix.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v4 1/2] XEN/X86: Improve semantic support for
+ x86_init.mapping.pagetable_reserve
+In-Reply-To: <50364FE5.1070608@citrix.com>
+Message-ID: <alpine.LFD.2.02.1208231800530.2856@ionos>
+References: <1345648122-11935-1-git-send-email-attilio.rao@citrix.com> <1345648122-11935-2-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208231722040.2856@ionos> <50364FE5.1070608@citrix.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: =?UTF-8?B?QmVub8OudCBUaMOpYmF1ZGVhdQ==?= 
-	<benoit.thebaudeau@advansee.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, Bryan Wu <bryan.wu@canonical.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] pwm: Call pwm_enable() before pwm_config()
-References: <36966374.2768747.1345741025741.JavaMail.root@advansee.com>
-In-Reply-To: <36966374.2768747.1345741025741.JavaMail.root@advansee.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 06:57 PM, Benoît Thébaudeau wrote:
-> On Thursday, August 23, 2012 5:43:32 PM, Lars-Peter Clausen wrote:
->> On 08/23/2012 04:19 PM, Benoît Thébaudeau wrote:
->>> Some PWM drivers enable the clock of the PWM peripheral in
->>> pwm_enable(). Hence,
->>> for these drivers, a call to pwm_config() does not have any effect
->>> before
->>> pwm_enable() has been called.
->>>
->>> This patch fixes the PWM users to make sure that they call
->>> pwm_enable() before
->>> pwm_config().
->>>
->>> This fixes the first setting of brightness through sysfs that had
->>> no effect with
->>> leds-pwm and the i.MX PWM driver.
->>
->> But isn't this a bug in the PWM peripheral driver? With this change
->> the PWM
->> will start with the old settings first. While this is not so much of
->> a problem
->> for a backlight (although it might cause a short flickering) it might
->> cause
->> problems for other applications, like using the PWM pin as a timing
->> generator.
->> In my opinion it's better to fix the PWM peripheral drivers which
->> have this
->> problem instead of trying to work around it in every user of the PWM
->> API.
+On Thu, 23 Aug 2012, Attilio Rao wrote:
+> On 23/08/12 16:46, Thomas Gleixner wrote:
+> > On Wed, 22 Aug 2012, Attilio Rao wrote:
+> > 
+> >    
+> > > - Allow xen_mapping_pagetable_reserve() to handle a start different from
+> > >    pgt_buf_start, but still bigger than it.
+> > >      
+> > What's the purpose of this and how is this going to be used and how is
+> > it useful at all?
+> >    
 > 
-> I don't know. See my detailed description of this issue here:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-August/115667.html
+> (Just replying here as all the other your comments are derivative)
+> Looks like you are missing the whole point of the patch.
+> What the patch is supposed to do is just to "enforce a correct semantic for
+> the setup function" and not fix an actual problem found in the code.
+> This means that after the patch you know exactly what expect in terms of
+> semantic by the function and the callers will work following it.
 > 
-> Where the bug is depends on the detailed definition of the PWM API, which I
-> don't find documented anywhere.
-> 
-> If pwm_enable() means "start PWM timer with the configured settings", then the
-> bug is in the drivers. If it means "enable the PWM peripheral so that we can
-> work with it", then the bug is in the PWM users.
+> Otherwise, what could happen is that if one day for a reason or another begin
+> start being different from pgt_buf_start this function will just break
+> silently, reintroducing the original problem in a different form.
 
-It really is the former. See the description of pwm_enable() in drivers/pwm/core.c
+Which original problem?
 
-> 
-> I don't really have time to work on this, so I suggested this patch as a simple
-> solution. Otherwise, it means reworking several PWM drivers for different
-> hardware that is not available to everyone for testing.
-> 
-> If we decide to only change the i.MX PWM driver, the fix would be:
-> pwm_config()
-> {
->         save passed config in private data;
->         if (pwm enabled)
->                 apply passed config;
-> }
-> 
-> pwm_enable()
-> {
->         if (!(pwm enabled)) {
->                 enable pwm ip clk;
->                 apply config from private data;
->         }
-> }
+> I think this was clarified by the 0/2 but evidently you completely missed it.
 
-Another option is to enable the clock if it is disabled when the device is
-configured. E.g. that's what tegra does.
+No, I did not miss it. And it's still not telling what the whole thing
+is about. 
 
-> 
-> If we fix only this driver, we must not forget that the same issue probably
-> exists with several other PWM drivers.
-> 
+There is no reason why start should ever be different. So your whole
+argument is that someone might change the call site of
+x86_init.mapping.pagetable_reserve().
 
-Since this seems to be a common pattern in a number of PWM drivers it might
-make sense to simply add support for enabling/disabling a clk to the pwm core.
-Or maybe just use the runtime pm API for this. This probably makes even more
-sense and grab a reference to the pm context when the enable() is called,
-release it when disable() is called and also grab it before calling the
-device's config callback and release it afterward.
+And then you tell in 1/2 changelog:
 
-- Lars
+ - Allow xen_mapping_pagetable_reserve() to handle a start different from
+   pgt_buf_start, but still bigger than it.
+
+without giving a rationale why this is necessary and why this can ever
+happen. It's wrong to begin with to feed that function something else
+than pgt_buf_start, period.
+
+Don't misunderstand me. I'm not against documenting and not against
+making code safe and less error prone, but we do not add checks just
+because some moron might change the callee arguments to random
+nonsense or because some tinkerer might use the same function for
+something else.
+
+Following your argumentation we'd need to plaster the kernel code with
+sanity checks. This is not a random Java API used by a gazillion of
+code monkeys; it's low level architecture code and not a driver
+API. People who touch that code should better know what they are
+doing.
+
+What you are doing is actively wrong. You suggest that it's fine to
+call that function with something different than pgt_buf_start as the
+start argument. That's complete nonsense. The early pages are
+allocated bottom up beginning at pgt_buf_start. So what the heck would
+make it sane to change that argument ever?
+
+Thanks,
+
+	tglx
+
