@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030254Ab2HWKAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:00:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758280Ab2HWKAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:00:39 -0400
-Date: Thu, 23 Aug 2012 13:01:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120823100107.GA17409@redhat.com>
-References: <20120821162432.GG2456@linux.vnet.ibm.com>
- <20120821172819.GA12294@t510.redhat.com>
- <20120821191330.GA8324@redhat.com>
- <20120821192357.GD12294@t510.redhat.com>
- <20120821193031.GC9027@redhat.com>
- <20120821204556.GF12294@t510.redhat.com>
- <20120822000741.GI9027@redhat.com>
- <20120822011930.GA23753@t510.redhat.com>
- <20120822093317.GC10680@redhat.com>
- <20120823021903.GA23660@x61.redhat.com>
+	id S933777Ab2HWKBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:01:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36149 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133Ab2HWKBR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 06:01:17 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Chinmay V S <cvs268@gmail.com>,
+        "carmine.iascone@st.com" <carmine.iascone@st.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
+ accelerometer
+Thread-Topic: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
+ accelerometer
+Thread-Index: AQHNgC+0NDpTyonaHU+HVTncuJ8wyZdlGIEAgAAPuoCAAFzA0P//wzoAgADFFbiAAQcWsA==
+Date: Thu, 23 Aug 2012 10:00:54 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA1EA53@DBDE01.ent.ti.com>
+References: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
+ <201208220748.39106.arnd@arndb.de>
+ <CAK-9PRBy0PCQ4XAVZzQpWv5rnT8A9f6F=qxT=pJEaioN7RN_5w@mail.gmail.com>
+ <331ABD5ECB02734CA317220B2BBEABC13EA1B975@DBDE01.ent.ti.com>
+ <CAK-9PRBDpxtrxZWL_x9Uz--GMWDN5anyB_fuKtLrvZcLoRR+FQ@mail.gmail.com>
+ <331ABD5ECB02734CA317220B2BBEABC13EA1BDA9@DBDE01.ent.ti.com>
+ <CAK-9PRD6FH=5g0SrVcw+81Witpo8zRfvnsmGaePaA4swjHWkSw@mail.gmail.com>
+In-Reply-To: <CAK-9PRD6FH=5g0SrVcw+81Witpo8zRfvnsmGaePaA4swjHWkSw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.132.219]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823021903.GA23660@x61.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 11:19:04PM -0300, Rafael Aquini wrote:
-> On Wed, Aug 22, 2012 at 12:33:17PM +0300, Michael S. Tsirkin wrote:
-> > Hmm, so this will busy wait which is unelegant.
-> > We need some event IMO.
+On Wed, Aug 22, 2012 at 22:24:10, Chinmay V S wrote:
+> > Look at this application note which talks about the outdata values
+> > for 2G range (page 12/31) http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/APPLICATION_NOTE/CD00215823.pdf
 > 
-> No, it does not busy wait. leak_balloon() is mutual exclusive with migration
-> steps, so for the case we have one racing against the other, we really want
-> leak_balloon() dropping the mutex temporarily to allow migration complete its
-> work of refilling vb->pages list. Also, leak_balloon() calls tell_host(), which
-> will potentially make it to schedule for each round of vb->pfns leak_balloon()
-> will release.
-
-tell_host might not even cause an exit to host. Even if it does
-it does not involve guest scheduler.
-
-> So, when remove_common() calls leak_balloon() looping on
-> vb->num_pages, that won't become a tight loop. 
-> The scheme was apparently working before this series, and it will remain working
-> after it.
-
-It seems that before we would always leak all requested memory
-in one go. I can't tell why we have a while loop there at all.
-Rusty, could you clarify please?
-
+> Had been through the application note earlier. The table5 (on page 12)
+> that you refer to, does NOT contradict either 12/16bit, as in all the
+> examples the lower 4 bits are zero. So i don't see how one can assume
+> from these examples that for +/-2G they one should consider 12/16bits.
+> A nice side-effect of using 12|13|14bits for +/-2|4|8G is that the
+> values returned by the driver are in mG in all the 3 modes.
 > 
-> > Also, reading num_pages without a lock here
-> > which seems wrong.
+> > Corresponding to the 4G and 8G I got the details form older
+> > patches (SHIFT_ADJ_4G and SHIFT_ADJ_8G).
+> > http://driverdev.linuxdriverproject.org/pipermail/devel/2010-November/009685.html
+> >
+> > We can easily interpret number of bits for 4G and 8G from 2G
+> > information.
 > 
-> I'll protect it with vb->balloon_lock mutex. That will be consistent with the
-> lock protection scheme this patch is introducing for struct virtio_balloon
-> elements.
+> Going through the code of this driver i can see what you are talking
+> about. Depending on the full-scale-range the device is being
+> configured for, the number of bits used to represent acceleration in
+> the driver is changed.
 > 
+> Again judging from the code, the driver is always returning
+> acceleration at a constant accuracy i.e. 1mG in all the 3 modes
+> (+/-2|4|8G)i.e.
+> +/-2G is mode means value can be anywhere from +/-2048mG,
+> (requiring 12bits.)
+> +/-4G in the range of +/-4096mG, requiring 13bits.
+> +/-8G i.e. +/-8192mG, requiring 14bits.
 > 
-> > A similar concern applies to normal leaking
-> > of the balloon: here we might leak less than
-> > required, then wait for the next config change
-> > event.
+> Was this done...
 > 
-> Just as before, same thing here. If you leaked less than required, balloon()
-> will keep calling leak_balloon() until the balloon target is reached. This
-> scheme was working before, and it will keep working after this patch.
->
+> a. ...because LIS331DLH's theoretical MAX accuracy is ~1mG
+> If yes, then using 12bits is fine.
+> 
 
-IIUC we never hit this path before.
- 
-> > How about we signal config_change
-> > event when pages are back to pages_list?
-> 
-> I really don't know what to tell you here, but, to me, it seems like an
-> overcomplication that isn't directly entangled with this patch purposes.
-> Besides, you cannot expect compation / migration happening and racing against
-> leak_balloon() all the time to make them signal events to the later, so we might
-> just be creating a wait-forever condition for leak_balloon(), IMHO.
+Note from datasheet, "1LSb=4g/4096 at 12bit representation,
+±2g Full-scale"
 
-So use wait_event or similar, check for existance of isolated pages.
+>From this I understood that ±2G full scale value is 12 bits.
+That is one more reason to take 12bit value.
 
-> Cheers!
+Regards
+AnilKumar
