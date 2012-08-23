@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759062Ab2HWPgZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:36:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754082Ab2HWPgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:36:21 -0400
-Date: Thu, 23 Aug 2012 11:02:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>, ananth@in.ibm.com,
-        ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, peterz@infradead.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120823090209.GA4630@redhat.com>
-References: <20120822082205.GA29216@in.ibm.com> <20120822082708.GB29216@in.ibm.com> <1345696100.3338.21.camel@concordia> <20120823053234.GE25338@linux.vnet.ibm.com> <1345716378.29170.4.camel@pasglop>
+	id S1030564Ab2HWPhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:37:25 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38418 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab2HWPhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:37:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345716378.29170.4.camel@pasglop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+mBkFXnOB9hPoJVf6c92UuemqtLJwc2KW-G-ja6cG8VqLPZdw@mail.gmail.com>
+References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com>
+	<CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
+	<CA+mBkFXnOB9hPoJVf6c92UuemqtLJwc2KW-G-ja6cG8VqLPZdw@mail.gmail.com>
+Date: Thu, 23 Aug 2012 17:37:19 +0200
+X-Google-Sender-Auth: NElAsvp1T_sqdhyiltGJdBCABsw
+Message-ID: <CAMuHMdXSikK0CVs2M+mGGQ4+uwLVCb=wDUWFX9UDTYvt_F58Nw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Add support to broadcom 5222 PHY
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23, Benjamin Herrenschmidt wrote:
+Hi Stany,
+
+On Thu, Aug 23, 2012 at 5:21 PM, Stany MARCEL
+<stany.marcel@novasys-ingenierie.com> wrote:
+> On Thu, Aug 23, 2012 at 12:47 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On Tue, Aug 21, 2012 at 2:18 PM, Stany MARCEL
+>> <stany.marcel@novasys-ingenierie.com> wrote:
+>>> Signed-off-by: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
+>>> ---
+>>>
+>>>  This driver is an adaption of the one given by freescale for kernel 2.6.25.
+>>>
+>>>  Tested with kernel 3.4.8 with arch/m68k backported from linux-m68k head
+>>>  2 FEC configured with shared phy
+>>>
+>>>  drivers/net/phy/Kconfig        |    7 +-
+>>>  drivers/net/phy/Makefile       |    1 +
+>>>  drivers/net/phy/broadcom522x.c |  171 ++++++++++++++++++++++++++++++++++++++++
+>>
+>> This patch and "[PATCH 3/3] Add support to M54xx DMA FEC Driver" need to go
+>> through the netdev tree, or collect acks there.
 >
-> On Thu, 2012-08-23 at 11:02 +0530, Srikar Dronamraju wrote:
-> > >
-> >
-> > insn is updated/accessed in the arch independent code. Size of
-> > uprobe_opcode_t could be different for different archs.
-> > uprobe_opcode_t
-> > represents the size of the smallest breakpoint instruction for an
-> > arch.
-> >
-> > Hence u8 works out the best. I know we could still use uprobe_opcode_t
-> > and achieve the same. In which case, we would have to interpret
-> > MAX_UINSN_BYTES differently. Do you see any advantages of using
-> > uprobe_opcode_t instead of u8 across archs?
+> Please, what is the good process to follow as patch 3 depends on patch 1 ?
 >
-> But don't you actively rely on the fact that on powerpc, unlike x86, you
-> -can- atomically replace an instruction with a single 32-bit store ?
+> Submit 1 to m68k tree and wait for it to be pulled on mainline then
+> push 3 to netdev tree ?
 
-I must have missed something...
+Just make sure to add netdev@vger.kernel.org to the CC list, and mention in the
+introductory email that you want to collect acks from the netdev maintainer
+for patches 1 and 3. After that all 3 patches can go via Greg's m68knommu
+tree (for Coldfire).
 
-But powerpc does not replace an instruction, the arch independent code
-does this and it assumes that uprobe->arch.insn is u8[MAX_UINSN_BYTES].
+Thanks!
 
-Perhaps you meant that on powerpc it is "safe" to replace the insn
-even if this can race with some CPU executing this code? But uprobes
-has to replace the original page anyway, we should not write to
-->vm_file.
+Gr{oetje,eeting}s,
 
-I agree that memcpy() in arch_uprobe_analyze_insn() and
-arch_uprobe_skip_sstep() looks a bit strange. May be powerpc can do
+                        Geert
 
-	struct arch_uprobe {
-		union {
-			u8		insn[MAX_UINSN_BYTES];
-			u32		ainsn;
-		};
-	};
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-and use auprobe->ainsn directly, I dunno.
-
-But probably I misunderstood you.
-
-Oleg.
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
