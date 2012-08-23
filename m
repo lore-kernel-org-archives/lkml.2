@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab2HWQVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 12:21:05 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49685 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2HWQVB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 12:21:01 -0400
-Date: Thu, 23 Aug 2012 18:20:54 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2012-08-13-16-55 uploaded
-Message-ID: <20120823162050.GB19305@somewhere.redhat.com>
-References: <20120813235651.00A13100047@wpzn3.hot.corp.google.com>
- <20120814105349.GA6905@dhcp22.suse.cz>
- <502A4410.6070201@parallels.com>
+	id S1752575Ab2HWQYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:24:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751767Ab2HWQYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 12:24:15 -0400
+Date: Thu, 23 Aug 2012 19:25:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120823162504.GA1522@redhat.com>
+References: <20120821204556.GF12294@t510.redhat.com>
+ <20120822000741.GI9027@redhat.com>
+ <20120822011930.GA23753@t510.redhat.com>
+ <20120822093317.GC10680@redhat.com>
+ <20120823021903.GA23660@x61.redhat.com>
+ <20120823100107.GA17409@redhat.com>
+ <20120823121338.GA3062@t510.redhat.com>
+ <20120823123432.GA25659@redhat.com>
+ <20120823130606.GB3746@t510.redhat.com>
+ <20120823135328.GB25709@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <502A4410.6070201@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120823135328.GB25709@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 04:26:56PM +0400, Glauber Costa wrote:
-> On 08/14/2012 02:53 PM, Michal Hocko wrote:
-> > On Mon 13-08-12 16:56:50, Andrew Morton wrote:
-> >> > The mm-of-the-moment snapshot 2012-08-13-16-55 has been uploaded to
-> >> > 
-> >> >    http://www.ozlabs.org/~akpm/mmotm/
-> > -mm git tree has been updated as well. You can find the tree at
-> > https://github.com/mstsxfx/memcg-devel.git since-3.5
-> > 
-> > tagged as mmotm-2012-08-13-16-55
-> > 
+On Thu, Aug 23, 2012 at 04:53:28PM +0300, Michael S. Tsirkin wrote:
+> Basically it was very simple: we assumed page->lru was never
+> touched for an allocated page, so it's safe to use it for
+> internal book-keeping by the driver.
 > 
-> On top of this tree, people following the kmemcg development may also
-> want to checkout
-> 
->    git://github.com/glommer/linux.git memcg-3.5/kmemcg-stack
-> 
-> A branch called memcg-3.5/kmemcg-slab is also available with the slab
-> changes ontop.
+> Now, this is not the case anymore, you add some logic in mm/ that might
+> or might not touch page->lru depending on things like reference count.
 
-I tested it successfully to stop a forkbomb in a container.
-One may need the following fix as well: http://marc.info/?l=linux-kernel&m=134573636430031&w=2
+Another thought: would the issue go away if balloon used
+page->private to link pages instead of LRU?
+mm core could keep a reference on page to avoid it
+being used while mm handles it (maybe it does already?).
 
-Andrew, others, what is your opinion on this patchset?
+If we do this, will not the only change to balloon be to tell mm that it
+can use compaction for these pages when it allocates the page: using
+some GPF flag or a new API?
 
-Thanks.
+-- 
+MST
