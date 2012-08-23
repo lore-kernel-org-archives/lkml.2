@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758917Ab2HWRCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:02:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56901 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab2HWRCp (ORCPT
+	id S1759067Ab2HWRDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:03:38 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54249 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab2HWRDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:02:45 -0400
-Date: Thu, 23 Aug 2012 21:02:39 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 0/9] extended fdinfo via procfs series, v7
-Message-ID: <20120823170239.GF1992@moon>
-References: <20120823104323.040550004@openvz.org>
- <20120823122318.GD29943@fieldses.org>
- <20120823124427.GD1992@moon>
- <20120823135234.GE29943@fieldses.org>
- <20120823135606.GE1992@moon>
- <20120823152545.GC6923@fieldses.org>
+	Thu, 23 Aug 2012 13:03:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823152545.GC6923@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120823174613.0489837d@pyramind.ukuu.org.uk>
+References: <CACVXFVNYCZqxt9B=9F_71KP0gdinGbNXd_ePQ10NKsCGd1dY4g@mail.gmail.com>
+	<CACVXFVOMdWQSutkBzdcLJ-ozmecq_p-yzYJbtoLVUafz5KV=KQ@mail.gmail.com>
+	<CAPXgP13LBR6GD=VomBPim3mDPy1bJ=eFBZ=oDaKZCjEo=Xp94Q@mail.gmail.com>
+	<CACVXFVMFKGPv9Am0KzKSVsRamcA8EMMnD0kQO40MJ6OsjK4Eow@mail.gmail.com>
+	<20120823174613.0489837d@pyramind.ukuu.org.uk>
+Date: Fri, 24 Aug 2012 01:03:32 +0800
+Message-ID: <CACVXFVOCXQnciE1GymwvuX2gQ4pm4wBhc2GmHN7AMDchcT8_qw@mail.gmail.com>
+Subject: Re: udev 182: response timeout for request_firmware in module_probe path
+From: Ming Lei <tom.leiming@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Kay Sievers <kay@vrfy.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        systemd-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 11:25:45AM -0400, J. Bruce Fields wrote:
-> On Thu, Aug 23, 2012 at 05:56:06PM +0400, Cyrill Gorcunov wrote:
-> > On Thu, Aug 23, 2012 at 09:52:34AM -0400, J. Bruce Fields wrote:
-> > > 
-> > > I don't have any opinion on whether there should be a configuration
-> > > option.  Just want to make sure the cost when it's turned on is still
-> > > taken seriously.
-> > 
-> > I see. So, does the rest of series looks fine for you (except this config
-> > moment)?
-> 
-> You're using the common filehandle code instead of encoding your own
-> from scratch, which was my only serious objection.
-> 
+On Fri, Aug 24, 2012 at 12:46 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> IMO, the driver probing path is allowed to sleep, so looks request firmware
+>> should be allowed inside .probe().
+>
+> I'm not convinced about that. It can sleep but its holding various locks
+> in most cases, and it looks like that can end up in a complete heap.
 
-Wait, Bruce, now I'm confused, if I understand all correctly
-using common filehandle code from exportfs is preferred, or
-not? What you mean by "encoding your own from scratch"? Could
-you please clarify?
+Currently, only wait_for_completion() pends in the path of request_firmware
+without holding other locks.
 
-> I haven't reviewed the rest of it carefully.
+>
+> By all means *request* the firmware asynchronously in the probe, but
+> there needs to be a seperate method somewhere after the probe to finish
+> the job once the firmware appears.
 
-ok
+Yes, request asynchronously will work and introduce a bit complexity
+(but it is not a big deal)
 
-	Cyrill
+Looks the focus is that why request_firmware can't be used in driver
+.probe().
+
+IMO, we should consider that most of drivers call request_firmware
+inside its .probe(), and maybe udev need to support the usage.
+
+
+Thanks,
+-- 
+Ming Lei
