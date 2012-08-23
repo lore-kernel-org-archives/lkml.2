@@ -1,114 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490Ab2HWOVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:21:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63354 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab2HWOVA convert rfc822-to-8bit (ORCPT
+	id S932797Ab2HWOVy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 10:21:54 -0400
+Received: from zose-mta15.web4all.fr ([176.31.217.11]:40920 "EHLO
+	zose-mta15.web4all.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756610Ab2HWOVu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:21:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH 6/6] ARM: imx: select ARM_CPU_SUSPEND when necessary
-Date: Thu, 23 Aug 2012 14:20:50 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
-        stable@vger.kernel.org
-References: <1345648390-4234-1-git-send-email-arnd@arndb.de> <1345648390-4234-7-git-send-email-arnd@arndb.de> <20120823024119.GD24242@S2101-09.ap.freescale.net>
-In-Reply-To: <20120823024119.GD24242@S2101-09.ap.freescale.net>
+	Thu, 23 Aug 2012 10:21:50 -0400
+X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Aug 2012 10:21:50 EDT
+Date: Thu, 23 Aug 2012 16:19:47 +0200 (CEST)
+From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Bryan Wu <bryan.wu@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Cc: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+Message-ID: <217877237.2758643.1345731587941.JavaMail.root@advansee.com>
+In-Reply-To: <320569847.2756382.1345729013971.JavaMail.root@advansee.com>
+Subject: [PATCH] pwm: Call pwm_enable() before pwm_config()
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201208231420.50247.arnd@arndb.de>
-X-Provags-ID: V02:K0:Ea+8QMtC5+40fMHpyfTEMVAIXYHRPAeAjTx4LT/dhBg
- 8AwdWt+mm7oBpghqnCQ5XGLljnHg1+dW3NDC70F45EjhnA5Omf
- eXJWT3b71VUokcEaoaKIem8MtwqRK3D+HcpGKXlo0Bamkkev9n
- EgqLTL5YXzQTC/g1LSFR9F4MmRFPdg2DboWnM6Y5p5o7er7aWE
- U0O053A1eU6p1evJzuIGvcQZcDmpp65oNCBLqH4wKzNN7cEoJn
- xXraLNTqysmXfSjMtQ3j304ri06/bGCbIPIG7NK3N31O82NHtb
- XqwXngDNRB1oLn+EHbgyXoO4T99FqQY121P2wSeKwUy3opbpOd
- rk0PUdNP/oK0Ji5V5n6A=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.188.188.98]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 August 2012, Shawn Guo wrote:
-> On Wed, Aug 22, 2012 at 05:13:10PM +0200, Arnd Bergmann wrote:
-> > On i.MX6, we select ARM_CPU_SUSPEND when building with power management
-> > support, but for some reason this was omitted on i.MX5. Normally we
-> > build kernels for both together so the error only showed up in
-> > randconfig tests.
-> > 
-> > Without this patch, building imx5 standalone results in:
-> > 
-> > arch/arm/mach-imx/built-in.o: In function `v7_cpu_resume':
-> > arch/arm/mach-imx/head-v7.S:104: undefined reference to `cpu_resume'
-> > 
-> So far, none of the functions in head-v7.S is used on imx5.  Also
-> since imx5 SoCs implement State Retention Power Gating in hardware,
-> ARM_CPU_SUSPEND support will never be used on imx5.
-> 
-> Maybe we should make head-v7.S only compile for imx6?
+Some PWM drivers enable the clock of the PWM peripheral in pwm_enable(). Hence,
+for these drivers, a call to pwm_config() does not have any effect before
+pwm_enable() has been called.
 
-In tegra and shmobile, the respective file is called headsmp.S, so
-I would suggest we rename it to the same here and only build it when
-CONFIG_SMP is set, which comes down to imx6 at the moment.
+This patch fixes the PWM users to make sure that they call pwm_enable() before
+pwm_config().
 
-How is this version?
+This fixes the first setting of brightness through sysfs that had no effect with
+leds-pwm and the i.MX PWM driver.
 
-	Arnd
+Cc: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: <linux-kernel@vger.kernel.org>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: <linux-arm-kernel@lists.infradead.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: <linux-input@vger.kernel.org>
+Cc: Bryan Wu <bryan.wu@canonical.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: <linux-leds@vger.kernel.org>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: <linux-fbdev@vger.kernel.org>
+Cc: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
+Signed-off-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
+---
+ .../drivers/input/misc/pwm-beeper.c                |    6 +++---
+ .../drivers/leds/leds-pwm.c                        |    2 +-
+ .../drivers/video/backlight/pwm_bl.c               |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
->From 4036e8f292887e7b1abc8eacec7d619abd608178 Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Fri, 17 Aug 2012 00:16:08 +0000
-Subject: [PATCH] ARM: imx: build i.MX6 functions only when needed
-
-The head-v7.S contains a call to the generic cpu_suspend function,
-which is only available when selected by the i.MX6 code. As
-pointed out by Shawn Guo, i.MX does not actually use any
-functions defined in head-v7.S. It is also needed only for
-the i.MX6 power management code and for the SMP code, so
-we can restrict building this file to situations in which
-at least one of those two is present.
-
-Finally, other platforms with a similar file call it headsmp.S,
-so we can rename it to the same for consistency.
-
-Without this patch, building imx5 standalone results in:
-
-arch/arm/mach-imx/built-in.o: In function `v7_cpu_resume':
-arch/arm/mach-imx/head-v7.S:104: undefined reference to `cpu_resume'
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Eric Miao <eric.miao@linaro.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: stable@vger.kernel.org
-
-diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
-index e08adb7..d004d37 100644
---- a/arch/arm/mach-imx/Makefile
-+++ b/arch/arm/mach-imx/Makefile
-@@ -71,14 +71,13 @@ obj-$(CONFIG_DEBUG_LL) += lluart.o
- obj-$(CONFIG_HAVE_IMX_GPC) += gpc.o
- obj-$(CONFIG_HAVE_IMX_MMDC) += mmdc.o
- obj-$(CONFIG_HAVE_IMX_SRC) += src.o
--obj-$(CONFIG_CPU_V7) += head-v7.o
--AFLAGS_head-v7.o :=-Wa,-march=armv7-a
--obj-$(CONFIG_SMP) += platsmp.o
-+AFLAGS_headsmp.o :=-Wa,-march=armv7-a
-+obj-$(CONFIG_SMP) += headsmp.o platsmp.o
- obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
- obj-$(CONFIG_SOC_IMX6Q) += clk-imx6q.o mach-imx6q.o
+diff --git linux-next-c94456b.orig/drivers/input/misc/pwm-beeper.c linux-next-c94456b/drivers/input/misc/pwm-beeper.c
+index fc84c8a..97d322b 100644
+--- linux-next-c94456b.orig/drivers/input/misc/pwm-beeper.c
++++ linux-next-c94456b/drivers/input/misc/pwm-beeper.c
+@@ -53,10 +53,10 @@ static int pwm_beeper_event(struct input_dev *input,
+ 		pwm_disable(beeper->pwm);
+ 	} else {
+ 		period = HZ_TO_NANOSECONDS(value);
+-		ret = pwm_config(beeper->pwm, period / 2, period);
++		ret = pwm_enable(beeper->pwm);
+ 		if (ret)
+ 			return ret;
+-		ret = pwm_enable(beeper->pwm);
++		ret = pwm_config(beeper->pwm, period / 2, period);
+ 		if (ret)
+ 			return ret;
+ 		beeper->period = period;
+@@ -156,8 +156,8 @@ static int pwm_beeper_resume(struct device *dev)
+ 	struct pwm_beeper *beeper = dev_get_drvdata(dev);
  
- ifeq ($(CONFIG_PM),y)
--obj-$(CONFIG_SOC_IMX6Q) += pm-imx6q.o
-+obj-$(CONFIG_SOC_IMX6Q) += pm-imx6q.o headsmp.o
- endif
+ 	if (beeper->period) {
+-		pwm_config(beeper->pwm, beeper->period / 2, beeper->period);
+ 		pwm_enable(beeper->pwm);
++		pwm_config(beeper->pwm, beeper->period / 2, beeper->period);
+ 	}
  
- # i.MX5 based machines
-diff --git a/arch/arm/mach-imx/head-v7.S b/arch/arm/mach-imx/headsmp.S
-similarity index 100%
-rename from arch/arm/mach-imx/head-v7.S
-rename to arch/arm/mach-imx/headsmp.S
+ 	return 0;
+diff --git linux-next-c94456b.orig/drivers/leds/leds-pwm.c linux-next-c94456b/drivers/leds/leds-pwm.c
+index f2e44c7..c2e0c22 100644
+--- linux-next-c94456b.orig/drivers/leds/leds-pwm.c
++++ linux-next-c94456b/drivers/leds/leds-pwm.c
+@@ -42,8 +42,8 @@ static void led_pwm_set(struct led_classdev *led_cdev,
+ 		pwm_config(led_dat->pwm, 0, period);
+ 		pwm_disable(led_dat->pwm);
+ 	} else {
+-		pwm_config(led_dat->pwm, brightness * period / max, period);
+ 		pwm_enable(led_dat->pwm);
++		pwm_config(led_dat->pwm, brightness * period / max, period);
+ 	}
+ }
+ 
+diff --git linux-next-c94456b.orig/drivers/video/backlight/pwm_bl.c linux-next-c94456b/drivers/video/backlight/pwm_bl.c
+index 995f016..a4bb95c 100644
+--- linux-next-c94456b.orig/drivers/video/backlight/pwm_bl.c
++++ linux-next-c94456b/drivers/video/backlight/pwm_bl.c
+@@ -65,8 +65,8 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+ 
+ 		duty_cycle = pb->lth_brightness +
+ 		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
+-		pwm_config(pb->pwm, duty_cycle, pb->period);
+ 		pwm_enable(pb->pwm);
++		pwm_config(pb->pwm, duty_cycle, pb->period);
+ 	}
+ 
+ 	if (pb->notify_after)
