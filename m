@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789Ab2HWK3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:29:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42081 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab2HWK3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:29:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120823.001342.959509094678320374.davem@davemloft.net>
-References: <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
- <20120822.234019.1546353507351890178.davem@davemloft.net> <157393863283F442885425D2C45428562A4F519A@nasanexd02f.na.qualcomm.com>
- <20120823.001342.959509094678320374.davem@davemloft.net>
-From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Date: Thu, 23 Aug 2012 15:28:55 +0500
-X-Google-Sender-Auth: i1WrXDEdE1IVAs1-h3H23P_aeR0
-Message-ID: <CAB=NE6V1yC-0pXPBXrObepJ7CkBPeynHZ3YJYf0ZGpqrCUPBUA@mail.gmail.com>
-Subject: Re: [PATCH v2] net: add new QCA alx ethernet driver
-To: David Miller <davem@davemloft.net>
-Cc: xiong@qca.qualcomm.com, cjren@qca.qualcomm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qca-linux-team@qualcomm.com,
-        nic-devel@qualcomm.com, Adrian Chadd <adrian@freebsd.org>,
-        Vinod Nagarajan <Vinod.Nagarajan@qca.qualcomm.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, Lisong Guo <livesogood@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S933399Ab2HWKfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:35:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40250 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932718Ab2HWKf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 06:35:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
+   d="scan'208";a="184460023"
+Date: Thu, 23 Aug 2012 11:53:00 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCHv4 3/9] serial: vt8500: Add devicetree support for
+ vt8500-serial
+Message-ID: <20120823115300.5fdb5cd1@bob.linux.org.uk>
+In-Reply-To: <1345707346-9035-4-git-send-email-linux@prisktech.co.nz>
+References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
+	<1345707346-9035-4-git-send-email-linux@prisktech.co.nz>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 11:13 AM, David Miller <davem@davemloft.net> wrote:
-> From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-> Date: Thu, 23 Aug 2012 06:56:51 +0000
->
->> I'm afraid someone also rejects my request to add such operation to
->> ethtool
->
-> If you don't design it properly, we certainly will ask you to make
-> changes.
->
-> But it stands a chance of actually being accepted, whereas your
-> debugfs thing absolutely does not.
+On Thu, 23 Aug 2012 19:35:39 +1200
+Tony Prisk <linux@prisktech.co.nz> wrote:
 
-Xiong, you can dump that poo and put it into crap/ in compat-drivers
-until you find a resolution to properly address that properly.
+> Increase vt8500_max_ports to 6 as the WM8505 as 6 available uarts.
+> Use devicetree port id as primary addressing for ports but allow
+> auto-allocation if id not specified.
 
-FWIW... if we give a rats ass on trying to put an end typical internal
-proprietary development trees to port drivers to different OSes [0]
-here's a cheesy attempt to try address this with a target for Linux
-and FreeBSD as a first objective:
+Acked-by: Alan Cox <alan@linux.intel.com>
 
-https://github.com/mcgrof/alx
-
-The goal would be to push companies to do their bringup development
-*openly* and even if they do have support for other OSes, for that poo
-to also be public. The alx driver is a dead simple so my if at all
-possible to show a *different* community-lead way to port drivers and
-for this poo to be public my hope is that the alx driver can be the
-test case for us to try it on.
-
-Xiong, and whoever cares please think about it. I welcome feedback from others.
-
-[0] http://www.youtube.com/watch?v=9P-r3H0bY8c
-
-  Luis
+for the serial bits
