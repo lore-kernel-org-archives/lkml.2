@@ -1,116 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030346Ab2HWKnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:43:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42608 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030270Ab2HWKnZ (ORCPT
+	id S1030373Ab2HWKn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:43:59 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:45079 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933808Ab2HWKhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:43:25 -0400
-Date: Thu, 23 Aug 2012 11:42:52 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Thu, 23 Aug 2012 06:37:23 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: alan@linux.intel.com
+Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, "x86@kernel.org" <x86@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andi Kleen <andi@firstfloor.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: PER_LINUX32, Was: [PATCH v2 21/31] arm64: 32-bit (compat)
- applications support
-Message-ID: <20120823104252.GA7585@arm.com>
-References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
- <201208151434.05145.arnd@arndb.de>
- <20120816102808.GH31784@mudshark.cambridge.arm.com>
- <201208230646.31276.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208230646.31276.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v3 06/23] serial: omap: simplify IRQ handling
+Date: Thu, 23 Aug 2012 13:32:46 +0300
+Message-Id: <1345717983-18179-7-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.12.rc3
+In-Reply-To: <1345717983-18179-1-git-send-email-balbi@ti.com>
+References: <1345717983-18179-1-git-send-email-balbi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 07:46:30AM +0100, Arnd Bergmann wrote:
-> On Thursday 16 August 2012, Will Deacon wrote:
-> > On Wed, Aug 15, 2012 at 03:34:04PM +0100, Arnd Bergmann wrote:
-> > > On Tuesday 14 August 2012, Catalin Marinas wrote:
-> > > > +asmlinkage int compat_sys_personality(compat_ulong_t personality)
-> > > > +{
-> > > > +	int ret;
-> > > > +
-> > > > +	if (personality(current->personality) == PER_LINUX32 &&
-> > > > +		personality == PER_LINUX)
-> > > > +		personality = PER_LINUX32;
-> > > > +	ret = sys_personality(personality);
-> > > > +	if (ret == PER_LINUX32)
-> > > > +		ret = PER_LINUX;
-> > > > +	return ret;
-> > > > +}
-> > > 
-> > > Where did you get this from?
-> > > 
-> > > You should not need compat_sys_personality, just call the native function.
-> > 
-> > Hmm, but in that case an aarch32 application doing a personality(PER_LINUX)
-> > syscall will start seeing the wrong uname.
-> 
-> Coming back at this topic, I noticed another issue. Jiri Kosina
-> has recently posted patches to fix this function in the other architectures
-> in order to mask out the other personality bits, which is a correct fix,
-> but the above function is odd for other reasons.
-> 
-> * On MIPS, it is used only for compat tasks, like you have it above.
-> * On PA-RISC, it is used for native 32 bit tasks and for compat 32 bit tasks,
->   but not for native 64 bit ones.
-> * On IA64, it was used for compat tasks (support for which has since
->   been removed from the kernel), plus all 32 bit tasks would start with
->   PER_LINUX32.
-> * On PowerPC, Sparc and s390, it is used for native 64 bit tasks and for
->   compat 32 bit tasks, but not for native 32 bit ones.
-> * On Tile, it was never used.
-> * On x86_64, it used to be defined (copied from ia64) but not used
->   throughout the git history.
-> 
-> The semantics of the function are also interesting: The intention seems
-> to be that to a compat task, PER_LINUX32 would appear as PER_LINUX.
-> The effect is that any process can set PER_LINUX32 but it can never
-> be unset except by a 64 bit MIPS or PA-RISC task.
+quite a few changes here, though they are
+pretty obvious. In summary we're making sure
+to detect which interrupt type we need to
+handle before calling the underlying interrupt
+handling procedure.
 
-IMHO, it makes sense to keep the compat_sys_personality() as implemented
-above. You may want to start a chroot ARMv7 environment using "linux32"
-but don't want some 32-bit app calling personality(PER_LINUX) (as that's
-the default personality on an ARMv7 system) and unknowingly changing the
-personality that you wanted to enforce via "linux32".
+Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/tty/serial/omap-serial.c | 51 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 38 insertions(+), 13 deletions(-)
 
-I agree with not setting the personality based on the ELF type, but
-that's different from the compat_sys_personality().
-
-> Since x86_64 does not implement this behavior at all, I suspect that
-> there are now lots of things depending on not having it, while all
-> the other architectures might also have some (even predating the
-> x86_64 port) use cases that depend on depend on not being able to
-> observe PER_LINUX32 in 32 bit compat tasks.
-> 
-> I think we should try to agree on how this is all supposed to work
-> and use common code, either put the ppc/sparc/s390 version into
-> sys_personality, or remove all of them and just do what x86 and tile
-> do, using the regular sys_personality for all tasks.
-
-Late topic for the KS :).
-
-I don't think we can move this behaviour to sys_personality. We may want
-to add a generic compat_sys_personality() if we agree on the above
-use-case.
-
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 16808b6..1e91ca6 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -350,33 +350,58 @@ static inline irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ {
+ 	struct uart_omap_port *up = dev_id;
+ 	unsigned int iir, lsr;
++	unsigned int type;
+ 	unsigned long flags;
++	irqreturn_t ret = IRQ_NONE;
+ 
++	spin_lock_irqsave(&up->port.lock, flags);
+ 	pm_runtime_get_sync(up->dev);
+ 	iir = serial_in(up, UART_IIR);
+-	if (iir & UART_IIR_NO_INT) {
+-		pm_runtime_mark_last_busy(up->dev);
+-		pm_runtime_put_autosuspend(up->dev);
+-		return IRQ_NONE;
+-	}
++again:
++	if (iir & UART_IIR_NO_INT)
++		goto out;
+ 
+-	spin_lock_irqsave(&up->port.lock, flags);
++	ret = IRQ_HANDLED;
+ 	lsr = serial_in(up, UART_LSR);
+-	if (iir & UART_IIR_RLSI) {
++
++	/* extract IRQ type from IIR register */
++	type = iir & 0x3e;
++
++	switch (type) {
++	case UART_IIR_MSI:
++		check_modem_status(up);
++		break;
++	case UART_IIR_THRI:
++		if (lsr & UART_LSR_THRE)
++			transmit_chars(up);
++		break;
++	case UART_IIR_RDI:
+ 		if (lsr & UART_LSR_DR)
+ 			receive_chars(up, &lsr);
++		break;
++	case UART_IIR_RLSI:
++		if (lsr & UART_LSR_BRK_ERROR_BITS)
++			receive_chars(up, &lsr);
++		break;
++	case UART_IIR_RX_TIMEOUT:
++		receive_chars(up, &lsr);
++		break;
++	case UART_IIR_CTS_RTS_DSR:
++		iir = serial_in(up, UART_IIR);
++		goto again;
++	case UART_IIR_XOFF:
++		/* FALLTHROUGH */
++	default:
++		break;
+ 	}
+ 
+-	check_modem_status(up);
+-	if ((lsr & UART_LSR_THRE) && (iir & UART_IIR_THRI))
+-		transmit_chars(up);
+-
++out:
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ 	pm_runtime_mark_last_busy(up->dev);
+ 	pm_runtime_put_autosuspend(up->dev);
+-
+ 	up->port_activity = jiffies;
+-	return IRQ_HANDLED;
++
++	return ret;
+ }
+ 
+ static unsigned int serial_omap_tx_empty(struct uart_port *port)
 -- 
-Catalin
+1.7.12.rc3
+
