@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2HWWBS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 18:01:18 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:59414 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab2HWWBQ (ORCPT
+	id S1754734Ab2HWWKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 18:10:16 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59957 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab2HWWKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 18:01:16 -0400
+	Thu, 23 Aug 2012 18:10:10 -0400
+Message-ID: <5036AA38.6010400@linux.vnet.ibm.com>
+Date: Thu, 23 Aug 2012 17:10:00 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120823160255.GA32671@frolo.macqel>
-References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com>
-	<CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
-	<CA+mBkFXnOB9hPoJVf6c92UuemqtLJwc2KW-G-ja6cG8VqLPZdw@mail.gmail.com>
-	<20120823160255.GA32671@frolo.macqel>
-Date: Fri, 24 Aug 2012 00:01:14 +0200
-Message-ID: <CA+mBkFUuAuRS3+QcHG_HBCVrY6TGaEBOhuRtGD-ZzxjKLh7y2w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Add support to broadcom 5222 PHY
-From: Stany MARCEL <stanypub@gmail.com>
-To: Philippe De Muyter <phdm@macqel.be>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH 0/2] revert changes to zcache_do_preload()
+References: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120823205648.GA2066@barrios>
+In-Reply-To: <20120823205648.GA2066@barrios>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082322-7408-0000-0000-000007DFC6E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 6:02 PM, Philippe De Muyter <phdm@macqel.be> wrote:
-> On Thu, Aug 23, 2012 at 05:21:23PM +0200, Stany MARCEL wrote:
->> On Thu, Aug 23, 2012 at 12:47 PM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->> > On Tue, Aug 21, 2012 at 2:18 PM, Stany MARCEL
->> > <stany.marcel@novasys-ingenierie.com> wrote:
->> >> Signed-off-by: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
->> >> ---
->> >>
->> >>  This driver is an adaption of the one given by freescale for kernel 2.6.25.
->> >>
->> >>  Tested with kernel 3.4.8 with arch/m68k backported from linux-m68k head
->> >>  2 FEC configured with shared phy
->> >>
->> >>  drivers/net/phy/Kconfig        |    7 +-
->> >>  drivers/net/phy/Makefile       |    1 +
->> >>  drivers/net/phy/broadcom522x.c |  171 ++++++++++++++++++++++++++++++++++++++++
->> >
->> > This patch and "[PATCH 3/3] Add support to M54xx DMA FEC Driver" need to go
->> > through the netdev tree, or collect acks there.
->> >
->> > Gr{oetje,eeting}s,
->> >
->> >                         Geert
->> >
+On 08/23/2012 03:56 PM, Minchan Kim wrote:
+> Hi Seth,
+> 
+> On Thu, Aug 23, 2012 at 10:33:09AM -0500, Seth Jennings wrote:
+>> This patchset fixes a regression in 3.6 by reverting two dependent
+>> commits that made changes to zcache_do_preload().
 >>
->> Hello Geert,
+>> The commits undermine an assumption made by tmem_put() in
+>> the cleancache path that preemption is disabled.  This change
+>> introduces a race condition that can result in the wrong page
+>> being returned by tmem_get(), causing assorted errors (segfaults,
+>> apparent file corruption, etc) in userspace.
 >>
->> Please, what is the good process to follow as patch 3 depends on patch 1 ?
->
-> Actually, IMHO patch 3 does not depend on patch 1, and I even think that
-> patch 1 is not needed, except to get a message with "BCM5222" instead
-> of "Generic PHY" in the kernel log.
->
-> AFAIK the phy interface is standardized.
->
-> Philippe
+>> The corruption was discussed in this thread:
+>> https://lkml.org/lkml/2012/8/17/494
+> 
+> I think changelog isn't enough to explain what's the race.
+> Could you write it down in detail?
 
-I meant patch 3 depends on patch 2 (multi channel dma api)
+I didn't come upon this solution via code inspection, but
+rather through discovering that the issue didn't exist in
+v3.5 and just looking at the changes since then.
+
+> And you should Cc'ed Xiao who is author of reverted patch.
+
+Thanks for adding Xiao.  I meant to do this. For some reason
+I thought that you submitted that patchset :-/
+My bad.
+
+Seth
+
