@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab2HWMhl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:37:41 -0400
-Received: from mail.linlab.net ([89.244.147.154]:45000 "EHLO mail.linlab.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab2HWMhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:37:38 -0400
-X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7NCbQXG023914
-Message-ID: <50362407.9070805@linlab.net>
-Date: Thu, 23 Aug 2012 14:37:27 +0200
-From: Alex Bergmann <alex@linlab.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S933000Ab2HWMh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:37:57 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:22265 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932916Ab2HWMht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:37:49 -0400
+Message-ID: <50362417.9070600@atmel.com>
+Date: Thu, 23 Aug 2012 14:37:43 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-References: <503419D3.1080700@linlab.net>  <CAFbMe2M7ekc94bQk7vTS1LhScPd49VZ-zKOCUXhqwxXtL-nkuA@mail.gmail.com>  <50361AEA.6010807@linlab.net> <1345724123.5904.756.camel@edumazet-glaptop>
-In-Reply-To: <1345724123.5904.756.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linaro-kernel@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more mach-*/*.h
+ includes
+References: <201208221253.07278.arnd@arndb.de> <201208221301.19439.arnd@arndb.de> <20120822214323.GA12255@n2100.arm.linux.org.uk> <201208231135.11688.arnd@arndb.de>
+In-Reply-To: <201208231135.11688.arnd@arndb.de>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.6 (mail.linlab.net [IPv6:2001:470:7142:a0::3]); Thu, 23 Aug 2012 14:37:32 +0200 (CEST)
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 02:15 PM, Eric Dumazet wrote:
-> On Thu, 2012-08-23 at 13:58 +0200, Alex Bergmann wrote:
->> On 08/22/2012 06:41 PM, H.K. Jerry Chu wrote:
-> 
->>> This issue occurred to me right after I submitted the patch for RFC6298.
->>> I did not commit any more change because RFC compliance aside, 180secs
->>> just seem like eternity in the Internet age.
->>>
->>> (See my past post on this at
->>> http://marc.info/?l=linux-netdev&m=130759078118866&w=2)
+On 08/23/2012 01:35 PM, Arnd Bergmann :
+> On Wednesday 22 August 2012, Russell King - ARM Linux wrote:
 >>
->> Okay, I missed that post during my search about the current situation.
+>> On Wed, Aug 22, 2012 at 01:01:19PM +0000, Arnd Bergmann wrote:
+>>> These are lots of device drivers that include machine
+>>> specific header files from ARM platforms and that are
+>>> not easily scriptable. The changes have been found through
+>>> manual inspection and should cause no visible changes
+>>> because of the build script that maps the old names to the
+>>> new ones.
+
+[..]
+
+> How about I move all the pure platform data definition files now and
+> rebase the other patches on top of that. Here is a list of suggested
+> file names in include/linux/platform_data/:
 > 
-> I would suggest to increase TCP_SYN_RETRIES from 5 to 6.
-> 
-> 180 secs is eternity, but 31 secs is too small.
-> 
-> Can you repost a v2, only changing TCP_SYN_RETRIES ?
+> mach-at91/at_hdmac.h		-> dma-atmel.h
 
-I hope the description is good enough.
+Fine with me. Maybe atmel-dma.h can better match what we already have in
+this directory, but I do not know what is the policy in this directory...
 
-Alex
+[..]
 
 
->From be551f82499112e4775b6d579d58967510b6d492 Mon Sep 17 00:00:00 2001
-From: Alexander Bergmann <alex@linlab.net>
-Date: Thu, 23 Aug 2012 14:33:35 +0200
-Subject: [PATCH 1/1] tcp: Increase timeout for SYN segments
+> ** list of mach/* inclusions that I could not match with
+> ** exactly one ARM platform:
 
-Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
-RFC6298 (former RFC2988bis). This reduced the time till the last SYN
-retransmission packet gets sent from 93secs to 31secs.
+In fact, for "*atmel*" type of files, they usually match *both* AVR32
+and ARM/AT91 devices: so, we have to be careful about them...
 
-RFC1122 is stating that the retransmission should be done for at least 3
-minutes, but this seems to be quite high.[1]
-
-This patch increases the value of TCP_SYN_RETRIES to the value of 6,
-providing a retransmission window of 63secs.
-
-[1] RFC 1122 - 4.2.3.5 TCP Connection Failures
-
-Signed-off-by: Alexander Bergmann <alex@linlab.net>
----
- include/net/tcp.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 1f000ff..f309e93 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -98,7 +98,7 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
-                                 * 15 is ~13-30min depending on RTO.
-                                 */
- 
--#define TCP_SYN_RETRIES         5      /* number of times to retry active opening a
-+#define TCP_SYN_RETRIES         6      /* number of times to retry active opening a
-                                 * connection: ~180sec is RFC minimum   */
- 
- #define TCP_SYNACK_RETRIES 5   /* number of times to retry passive opening a
+Best regards,
 -- 
-1.7.8.6
-
+Nicolas Ferre
