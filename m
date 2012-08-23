@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab2HWVvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:51:10 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47798 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab2HWVvE (ORCPT
+	id S1754422Ab2HWVwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:52:11 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52741 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab2HWVwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:51:04 -0400
-Date: Thu, 23 Aug 2012 23:50:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Chris Zankel <chris@zankel.net>, "3.2.x.." <stable@kernel.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        m68k <linux-m68k@vger.kernel.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>
-Subject: Re: [PATCH 00/10] rcu: Add missing RCU idle APIs on idle loop
-Message-ID: <20120823215052.GC19305@somewhere.redhat.com>
-References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
- <CAMuHMdUt62GsYsPMAPbUWZUtFL=c2VmYFintpDAQmSwQrWriuA@mail.gmail.com>
- <20120823110157.GC18835@somewhere.redhat.com>
- <CAMuHMdX5R_7EBGDu00zdy_P3q65BzKJbNeRwFcuwij8eHavTYQ@mail.gmail.com>
+	Thu, 23 Aug 2012 17:52:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdX5R_7EBGDu00zdy_P3q65BzKJbNeRwFcuwij8eHavTYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 23 Aug 2012 14:51:45 -0700
+Message-ID: <CALCETrU=tTvgdbxSORWLUidmY9m5BRHvBLj=2U1-jqbsBqNLZw@mail.gmail.com>
+Subject: mgag200 hang on boot
+To: DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 10:23:22PM +0200, Geert Uytterhoeven wrote:
-> Hi Frederic,
-> 
-> On Thu, Aug 23, 2012 at 1:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Wed, Aug 22, 2012 at 07:18:04PM +0200, Geert Uytterhoeven wrote:
-> >> On Wed, Aug 22, 2012 at 6:23 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> > So this fixes some potential RCU stalls in a bunch of architectures.
-> >> > When rcu_idle_enter()/rcu_idle_exit() became a requirement, we forgot
-> >> > to handle the architectures that don't support CONFIG_NO_HZ.
-> >> >
-> >> > I guess the set should be dispatched into arch maintainer trees.
-> >>
-> >> I can take the m68k version, but are you sure you want it this way?
-> >> Each of them must be in mainline before they can enter stable.
-> >
-> > Yeah, I was thinking the right route is for these patches to be
-> > carried by arch maintainer who then push to Linus and then this goes
-> > to stable.
-> >
-> > Is that ok for you?
-> >
-> > Otherwise I can carry the patches myself. In a tree of my own, or
-> > Paul's or mmotm. As long as I have your ack.
-> 
-> I applied your patch to the m68k for-3.6/for-linus branch.
-> I'll ask Linus to pull later in the rc cycle (right now I don't have
-> anything else
-> queued for 3.6).
-> Still, I think it's better to just collect acks and send it to Linus
-> in one shot,
-> so it can go into stable in one shot too.
+mgag200 hangs like this on startup, on a Dell PowerEdge 12g box.  The
+serial console says:
 
-Sure I can do that if you prefer.
+[    4.399184] [drm] Initialized drm 1.1.0 20060810
+[    4.444054] [TTM] Zone  kernel: Available graphics memory: 16452270 kiB
+[    4.459610] [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
+[    4.466893] [TTM] Initializing pool allocator
+[    4.471768] [TTM] Initializing DMA pool allocator
+[    4.543626] fbcon: mgadrmfb (fb0) is primary device
+udevadm settle - timeout of 120 seconds reached, the event queue contains:
+  /sys/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/0000:09:00.0/0000:0a:00.0/0000:0b:00.0
+(1431)
+  /sys/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/0000:09:00.0/0000:0a:00.0/0000:0b:00.0/drm/controlD64
+(2238)
+  /sys/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/0000:09:00.0/0000:0a:00.0/0000:0b:00.0/drm/card0
+(2239)
+  /sys/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/0000:09:00.0/0000:0a:00.0/0000:0b:00.0/i2c-0
+(2245)
+  /sys/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/0000:09:00.0/0000:0a:00.0/0000:0b:00.0/graphics/fb0
+(2249)
 
-Thanks.
 
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+This is 3.5.0, but the bug is not fixed in 3.5.2.  When the hang
+happened, the actual vga output declared that it had no signal,
+according to the iDRAC remote management.
+
+The hang is:
+
+[  579.919114] insmod          R  running task        0  8873   8872 0x00000000
+[  579.919117]  ffff8807af15b2b8 ffffffff814ff9d7 0000000000000001
+ffffffffa01461a0
+[  579.919123]  ffff880809665a80 ffff8807af15bfd8 ffff8807af15bfd8
+ffff8807af15bfd8
+[  579.919129]  ffff8808028116a0 ffff8808028116a0 0000000010000000
+ffff8807af15bfd8
+[  579.919135] Call Trace:
+[  579.919136]  [<ffffffff814ff9d7>] ? __schedule+0x3b7/0x7c0
+[  579.919140]  [<ffffffff81500215>] preempt_schedule_irq+0x45/0x60
+[  579.919144]  [<ffffffff81501796>] retint_kernel+0x26/0x30
+[  579.919149]  [<ffffffffa01435d8>] ? mga_crtc_mode_set+0x1e38/0x1ee0 [mgag200]
+[  579.919158]  [<ffffffffa014226c>] ? mga_crtc_mode_set+0xacc/0x1ee0 [mgag200]
+[  579.919165]  [<ffffffff8127c340>] ? idr_get_new_above+0x10/0x40
+[  579.919177]  [<ffffffffa0035e5e>]
+drm_crtc_helper_set_mode+0x36e/0x4f0 [drm_kms_helper]
+[  579.919189]  [<ffffffffa0036e8f>]
+drm_crtc_helper_set_config+0x84f/0xb00 [drm_kms_helper]
+[  579.919195]  [<ffffffff81500215>] ? preempt_schedule_irq+0x45/0x60
+[  579.919200]  [<ffffffffa0034ab8>] drm_fb_helper_set_par+0x78/0xf0
+[drm_kms_helper]
+[  579.919206]  [<ffffffff812c6b3c>] fbcon_init+0x52c/0x5b0
+[  579.919211]  [<ffffffff8131ea5c>] visual_init+0xbc/0x120
+[  579.919215]  [<ffffffff813200dc>] bind_con_driver+0x19c/0x330
+[  579.919220]  [<ffffffff813202d1>] take_over_console+0x61/0x70
+[  579.919224]  [<ffffffff812c4e7b>] fbcon_takeover+0x5b/0xb0
+[  579.919227]  [<ffffffff812c9a8a>] fbcon_event_notify+0x76a/0x870
+[  579.919232]  [<ffffffff8150482d>] notifier_call_chain+0x4d/0x70
+[  579.919236]  [<ffffffff8106e418>] __blocking_notifier_call_chain+0x58/0x80
+[  579.919240]  [<ffffffff8106e456>] blocking_notifier_call_chain+0x16/0x20
+[  579.919244]  [<ffffffff812ba6eb>] fb_notifier_call_chain+0x1b/0x20
+[  579.919250]  [<ffffffff812bbc2a>] register_framebuffer+0x1ba/0x2f0
+[  579.919256]  [<ffffffffa0034d13>]
+drm_fb_helper_single_fb_probe+0x1e3/0x300 [drm_kms_helper]
+[  579.919262]  [<ffffffffa003500b>]
+drm_fb_helper_initial_config+0x1db/0x250 [drm_kms_helper]
+[  579.919268]  [<ffffffff8113a85b>] ? __kmalloc+0x16b/0x1b0
+[  579.919272]  [<ffffffffa0035198>] ? drm_fb_helper_init+0x118/0x1f0
+[drm_kms_helper]
+[  579.919278]  [<ffffffff8113ad03>] ? kmem_cache_alloc_trace+0x143/0x170
+[  579.919282]  [<ffffffffa0143f94>] mgag200_fbdev_init+0x84/0xb0 [mgag200]
+[  579.919290]  [<ffffffffa01438d7>] mgag200_modeset_init+0x1b7/0x230 [mgag200]
+[  579.919297]  [<ffffffffa01406e1>] mgag200_driver_load+0x3e1/0x4b0 [mgag200]
+[  579.919305]  [<ffffffffa0158f31>] drm_get_pci_dev+0x191/0x2b0 [drm]
+[  579.919324]  [<ffffffffa01450a0>] mga_pci_probe+0xac/0xb4 [mgag200]
+[  579.919332]  [<ffffffff812a36fc>] local_pci_probe+0x5c/0xd0
+[  579.919339]  [<ffffffff812a41d9>] pci_device_probe+0x109/0x130
+[  579.919345]  [<ffffffff81345b8e>] driver_probe_device+0x7e/0x220
+[  579.919353]  [<ffffffff81345ddb>] __driver_attach+0xab/0xb0
+[  579.919358]  [<ffffffff81345d30>] ? driver_probe_device+0x220/0x220
+[  579.919363]  [<ffffffff81343fb6>] bus_for_each_dev+0x56/0x90
+[  579.919369]  [<ffffffff8134569e>] driver_attach+0x1e/0x20
+[  579.919373]  [<ffffffff81345250>] bus_add_driver+0x1a0/0x270
+[  579.919379]  [<ffffffff81346106>] driver_register+0x76/0x130
+[  579.919382]  [<ffffffff812a3ea6>] __pci_register_driver+0x56/0xd0
+[  579.919387]  [<ffffffff8150482d>] ? notifier_call_chain+0x4d/0x70
+[  579.919393]  [<ffffffffa015916a>] drm_pci_init+0x11a/0x130 [drm]
+[  579.919406]  [<ffffffffa00d8000>] ? 0xffffffffa00d7fff
+[  579.919413]  [<ffffffffa00d803c>] mgag200_init+0x3c/0x1000 [mgag200]
+[  579.919419]  [<ffffffff810001bf>] do_one_initcall+0x3f/0x170
+[  579.919424]  [<ffffffff8109a1ee>] sys_init_module+0xbe/0x230
+[  579.919430]  [<ffffffff815083d2>] system_call_fastpath+0x16/0x1b'
+
+insmod is taking 100% cpu.
+
+Is there anything I can do to debug this?  I don't really need
+mgag200, since I do pretty much everything via serial console.
+
+--Andy
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
