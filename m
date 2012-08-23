@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab2HWRFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:05:36 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61032 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab2HWRFd (ORCPT
+	id S933157Ab2HWRKn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:10:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41986 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341Ab2HWRKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:05:33 -0400
+	Thu, 23 Aug 2012 13:10:41 -0400
 MIME-Version: 1.0
-Date: Thu, 23 Aug 2012 22:35:32 +0530
-Message-ID: <CAG6PDMa6OR4eqckoUwuHcv7om2j5qsYx9mPx4_Z+Bzr8nxaMLA@mail.gmail.com>
+Date: Thu, 23 Aug 2012 22:40:41 +0530
+Message-ID: <CADArhcAGV0iTAGirT6XPcVCwOKu-yg_MThk2J+ViK46CLL6Xkw@mail.gmail.com>
 Subject: [Memory Leak] free kprobe before optimized_kprobe free
-From: akhilesh kumar <kumarakhilesh479@gmail.com>
+From: Akhilesh Kumar <akhilesh.lxr@gmail.com>
 To: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
         masami.hiramatsu.pt@hitachi.com
 Cc: linux-kernel@vger.kernel.org
