@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934425Ab2HWUyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:54:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8358 "EHLO mx1.redhat.com"
+	id S934446Ab2HWUyW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:54:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19093 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934288Ab2HWUxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:53:42 -0400
-Message-Id: <20120823205327.613311683@napanee.usersys.redhat.com>
+	id S934368Ab2HWUxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 16:53:33 -0400
+Message-Id: <20120823205328.203219708@napanee.usersys.redhat.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 23 Aug 2012 16:53:28 -0400
+Date: Thu, 23 Aug 2012 16:53:30 -0400
 From: aris@redhat.com
 To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
 Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
         Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
         Lennart Poettering <lpoetter@redhat.com>
-Subject: [PATCH v7 1/4] xattr: extract simple_xattr code from tmpfs
+Subject: [PATCH v7 3/4] cgroup: add xattr support
 References: <20120823205327.237533518@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=cgroup1.patch
+Content-Disposition: inline; filename=cgroup3.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Li Zefan <lizefan@huawei.com>
 
-Extract in-memory xattr APIs from tmpfs. Will be used by cgroup.
+This is one of the items in the plumber's wish list.
 
-$ size vmlinux.o
-   text    data     bss     dec     hex filename
-4658782  880729 5195032 10734543         a3cbcf vmlinux.o
-$ size vmlinux.o
-   text    data     bss     dec     hex filename
-4658957  880729 5195032 10734718         a3cc7e vmlinux.o
+For use cases:
+
+>> What would the use case be for this?
+>
+> Attaching meta information to services, in an easily discoverable
+> way. For example, in systemd we create one cgroup for each service, and
+> could then store data like the main pid of the specific service as an
+> xattr on the cgroup itself. That way we'd have almost all service state
+> in the cgroupfs, which would make it possible to terminate systemd and
+> later restart it without losing any state information. But there's more:
+> for example, some very peculiar services cannot be terminated on
+> shutdown (i.e. fakeraid DM stuff) and it would be really nice if the
+> services in question could just mark that on their cgroup, by setting an
+> xattr. On the more desktopy side of things there are other
+> possibilities: for example there are plans defining what an application
+> is along the lines of a cgroup (i.e. an app being a collection of
+> processes). With xattrs one could then attach an icon or human readable
+> program name on the cgroup.
+>
+> The key idea is that this would allow attaching runtime meta information
+> to cgroups and everything they model (services, apps, vms), that doesn't
+> need any complex userspace infrastructure, has good access control
+> (i.e. because the file system enforces that anyway, and there's the
+> "trusted." xattr namespace), notifications (inotify), and can easily be
+> shared among applications.
+>
+> Lennart
 
 v7:
-- checkpatch warnings fixed
-- Implement the changes requested by Hugh Dickins:
-	- make simple_xattrs_init and simple_xattrs_free inline
-	- get rid of locking and list reinitialization in simple_xattrs_free,
-	  they're not needed
+- no changes
 v6:
-- no changes
+- remove user xattr namespace, only allow trusted and security
 v5:
-- no changes
+- check for capabilities before setting/removing xattrs
 v4:
-- move simple_xattrs_free() to fs/xattr.c
+- no changes
 v3:
-- in kmem_xattrs_free(), reinitialize the list
-- use simple_xattr_* prefix
-- introduce simple_xattr_add() to prevent direct list usage
+- instead of config option, use mount option to enable xattr support
 
 Cc: Li Zefan <lizefan@huawei.com>
 Cc: Tejun Heo <tj@kernel.org>
@@ -58,546 +73,284 @@ Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
 ---
- fs/xattr.c               |  167 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/shmem_fs.h |    3 
- include/linux/xattr.h    |   48 +++++++++++++
- mm/shmem.c               |  171 +++--------------------------------------------
- 4 files changed, 230 insertions(+), 159 deletions(-)
+ include/linux/cgroup.h |   13 ++++--
+ kernel/cgroup.c        |  100 +++++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 103 insertions(+), 10 deletions(-)
 
-Index: github/fs/xattr.c
+Index: github/include/linux/cgroup.h
 ===================================================================
---- github.orig/fs/xattr.c	2012-08-23 15:43:44.305129707 -0400
-+++ github/fs/xattr.c	2012-08-23 15:43:45.477161661 -0400
-@@ -791,3 +791,170 @@
- EXPORT_SYMBOL(generic_listxattr);
- EXPORT_SYMBOL(generic_setxattr);
- EXPORT_SYMBOL(generic_removexattr);
-+
-+/*
-+ * Allocate new xattr and copy in the value; but leave the name to callers.
-+ */
-+struct simple_xattr *simple_xattr_alloc(const void *value, size_t size)
-+{
-+	struct simple_xattr *new_xattr;
-+	size_t len;
-+
-+	/* wrap around? */
-+	len = sizeof(*new_xattr) + size;
-+	if (len <= sizeof(*new_xattr))
-+		return NULL;
-+
-+	new_xattr = kmalloc(len, GFP_KERNEL);
-+	if (!new_xattr)
-+		return NULL;
-+
-+	new_xattr->size = size;
-+	memcpy(new_xattr->value, value, size);
-+	return new_xattr;
-+}
-+
-+/*
-+ * xattr GET operation for in-memory/pseudo filesystems
-+ */
-+int simple_xattr_get(struct simple_xattrs *xattrs, const char *name,
-+		     void *buffer, size_t size)
-+{
-+	struct simple_xattr *xattr;
-+	int ret = -ENODATA;
-+
-+	spin_lock(&xattrs->lock);
-+	list_for_each_entry(xattr, &xattrs->head, list) {
-+		if (strcmp(name, xattr->name))
-+			continue;
-+
-+		ret = xattr->size;
-+		if (buffer) {
-+			if (size < xattr->size)
-+				ret = -ERANGE;
-+			else
-+				memcpy(buffer, xattr->value, xattr->size);
-+		}
-+		break;
-+	}
-+	spin_unlock(&xattrs->lock);
-+	return ret;
-+}
-+
-+static int __simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
-+			      const void *value, size_t size, int flags)
-+{
-+	struct simple_xattr *xattr;
-+	struct simple_xattr *new_xattr = NULL;
-+	int err = 0;
-+
-+	/* value == NULL means remove */
-+	if (value) {
-+		new_xattr = simple_xattr_alloc(value, size);
-+		if (!new_xattr)
-+			return -ENOMEM;
-+
-+		new_xattr->name = kstrdup(name, GFP_KERNEL);
-+		if (!new_xattr->name) {
-+			kfree(new_xattr);
-+			return -ENOMEM;
-+		}
-+	}
-+
-+	spin_lock(&xattrs->lock);
-+	list_for_each_entry(xattr, &xattrs->head, list) {
-+		if (!strcmp(name, xattr->name)) {
-+			if (flags & XATTR_CREATE) {
-+				xattr = new_xattr;
-+				err = -EEXIST;
-+			} else if (new_xattr) {
-+				list_replace(&xattr->list, &new_xattr->list);
-+			} else {
-+				list_del(&xattr->list);
-+			}
-+			goto out;
-+		}
-+	}
-+	if (flags & XATTR_REPLACE) {
-+		xattr = new_xattr;
-+		err = -ENODATA;
-+	} else {
-+		list_add(&new_xattr->list, &xattrs->head);
-+		xattr = NULL;
-+	}
-+out:
-+	spin_unlock(&xattrs->lock);
-+	if (xattr) {
-+		kfree(xattr->name);
-+		kfree(xattr);
-+	}
-+	return err;
-+
-+}
-+
-+/*
-+ * xattr SET operation for in-memory/pseudo filesystems
-+ */
-+int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
-+		     const void *value, size_t size, int flags)
-+{
-+	if (size == 0)
-+		value = ""; /* empty EA, do not remove */
-+	return __simple_xattr_set(xattrs, name, value, size, flags);
-+}
-+
-+/*
-+ * xattr REMOVE operation for in-memory/pseudo filesystems
-+ */
-+int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
-+{
-+	return __simple_xattr_set(xattrs, name, NULL, 0, XATTR_REPLACE);
-+}
-+
-+static bool xattr_is_trusted(const char *name)
-+{
-+	return !strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN);
-+}
-+
-+/*
-+ * xattr LIST operation for in-memory/pseudo filesystems
-+ */
-+ssize_t simple_xattr_list(struct simple_xattrs *xattrs, char *buffer,
-+			  size_t size)
-+{
-+	bool trusted = capable(CAP_SYS_ADMIN);
-+	struct simple_xattr *xattr;
-+	size_t used = 0;
-+
-+	spin_lock(&xattrs->lock);
-+	list_for_each_entry(xattr, &xattrs->head, list) {
-+		size_t len;
-+
-+		/* skip "trusted." attributes for unprivileged callers */
-+		if (!trusted && xattr_is_trusted(xattr->name))
-+			continue;
-+
-+		len = strlen(xattr->name) + 1;
-+		used += len;
-+		if (buffer) {
-+			if (size < used) {
-+				used = -ERANGE;
-+				break;
-+			}
-+			memcpy(buffer, xattr->name, len);
-+			buffer += len;
-+		}
-+	}
-+	spin_unlock(&xattrs->lock);
-+
-+	return used;
-+}
-+
-+void simple_xattr_list_add(struct simple_xattrs *xattrs,
-+			   struct simple_xattr *new_xattr)
-+{
-+	spin_lock(&xattrs->lock);
-+	list_add(&new_xattr->list, &xattrs->head);
-+	spin_unlock(&xattrs->lock);
-+}
-+
-Index: github/include/linux/shmem_fs.h
-===================================================================
---- github.orig/include/linux/shmem_fs.h	2012-08-23 15:43:44.305129707 -0400
-+++ github/include/linux/shmem_fs.h	2012-08-23 15:43:45.477161661 -0400
-@@ -5,6 +5,7 @@
- #include <linux/mempolicy.h>
- #include <linux/pagemap.h>
- #include <linux/percpu_counter.h>
+--- github.orig/include/linux/cgroup.h	2012-08-23 15:46:12.465169082 -0400
++++ github/include/linux/cgroup.h	2012-08-23 15:48:42.485258910 -0400
+@@ -17,6 +17,7 @@
+ #include <linux/rwsem.h>
+ #include <linux/idr.h>
+ #include <linux/workqueue.h>
 +#include <linux/xattr.h>
  
- /* inode in-kernel data */
+ #ifdef CONFIG_CGROUPS
  
-@@ -18,7 +19,7 @@
- 	};
- 	struct shared_policy	policy;		/* NUMA memory alloc policy */
- 	struct list_head	swaplist;	/* chain of maybes on swap */
--	struct list_head	xattr_list;	/* list of shmem_xattr */
-+	struct simple_xattrs	xattrs;		/* list of xattrs */
- 	struct inode		vfs_inode;
+@@ -216,6 +217,9 @@
+ 	/* List of events which userspace want to receive */
+ 	struct list_head event_list;
+ 	spinlock_t event_list_lock;
++
++	/* directory xattrs */
++	struct simple_xattrs xattrs;
  };
  
-Index: github/include/linux/xattr.h
-===================================================================
---- github.orig/include/linux/xattr.h	2012-08-23 15:43:44.305129707 -0400
-+++ github/include/linux/xattr.h	2012-08-23 15:43:45.477161661 -0400
-@@ -59,7 +59,9 @@
- 
- #ifdef  __KERNEL__
- 
-+#include <linux/slab.h>
- #include <linux/types.h>
-+#include <linux/spinlock.h>
- 
- struct inode;
- struct dentry;
-@@ -96,6 +98,52 @@
- 			   char **xattr_value, size_t size, gfp_t flags);
- int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
- 		  const char *value, size_t size, gfp_t flags);
-+
-+struct simple_xattrs {
-+	struct list_head head;
-+	spinlock_t lock;
-+};
-+
-+struct simple_xattr {
-+	struct list_head list;
-+	char *name;
-+	size_t size;
-+	char value[0];
-+};
-+
-+/*
-+ * initialize the simple_xattrs structure
-+ */
-+static inline void simple_xattrs_init(struct simple_xattrs *xattrs)
-+{
-+	INIT_LIST_HEAD(&xattrs->head);
-+	spin_lock_init(&xattrs->lock);
-+}
-+
-+/*
-+ * free all the xattrs
-+ */
-+static inline void simple_xattrs_free(struct simple_xattrs *xattrs)
-+{
-+	struct simple_xattr *xattr, *node;
-+
-+	list_for_each_entry_safe(xattr, node, &xattrs->head, list) {
-+		kfree(xattr->name);
-+		kfree(xattr);
-+	}
-+}
-+
-+struct simple_xattr *simple_xattr_alloc(const void *value, size_t size);
-+int simple_xattr_get(struct simple_xattrs *xattrs, const char *name,
-+		     void *buffer, size_t size);
-+int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
-+		     const void *value, size_t size, int flags);
-+int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name);
-+ssize_t simple_xattr_list(struct simple_xattrs *xattrs, char *buffer,
-+			  size_t size);
-+void simple_xattr_list_add(struct simple_xattrs *xattrs,
-+			   struct simple_xattr *new_xattr);
-+
- #endif  /*  __KERNEL__  */
- 
- #endif	/* _LINUX_XATTR_H */
-Index: github/mm/shmem.c
-===================================================================
---- github.orig/mm/shmem.c	2012-08-23 15:43:44.305129707 -0400
-+++ github/mm/shmem.c	2012-08-23 15:43:45.477161661 -0400
-@@ -77,13 +77,6 @@
- /* Symlink up to this size is kmalloc'ed instead of using a swappable page */
- #define SHORT_SYMLINK_LEN 128
- 
--struct shmem_xattr {
--	struct list_head list;	/* anchored by shmem_inode_info->xattr_list */
--	char *name;		/* xattr name */
--	size_t size;
--	char value[0];
--};
--
  /*
-  * shmem_fallocate and shmem_writepage communicate via inode->i_private
-  * (with i_mutex making sure that it has only one user at a time):
-@@ -636,7 +629,6 @@
- static void shmem_evict_inode(struct inode *inode)
- {
- 	struct shmem_inode_info *info = SHMEM_I(inode);
--	struct shmem_xattr *xattr, *nxattr;
+@@ -309,6 +313,9 @@
+ 	/* CFTYPE_* flags */
+ 	unsigned int flags;
  
- 	if (inode->i_mapping->a_ops == &shmem_aops) {
- 		shmem_unacct_size(info->flags, inode->i_size);
-@@ -650,10 +642,7 @@
- 	} else
- 		kfree(info->symlink);
- 
--	list_for_each_entry_safe(xattr, nxattr, &info->xattr_list, list) {
--		kfree(xattr->name);
--		kfree(xattr);
--	}
-+	simple_xattrs_free(&info->xattrs);
- 	BUG_ON(inode->i_blocks);
- 	shmem_free_inode(inode->i_sb);
- 	clear_inode(inode);
-@@ -1377,7 +1366,7 @@
- 		spin_lock_init(&info->lock);
- 		info->flags = flags & VM_NORESERVE;
- 		INIT_LIST_HEAD(&info->swaplist);
--		INIT_LIST_HEAD(&info->xattr_list);
-+		simple_xattrs_init(&info->xattrs);
- 		cache_no_acl(inode);
- 
- 		switch (mode & S_IFMT) {
-@@ -2060,28 +2049,6 @@
++	/* file xattrs */
++	struct simple_xattrs xattrs;
++
+ 	int (*open)(struct inode *inode, struct file *file);
+ 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
+ 			struct file *file,
+@@ -394,7 +401,7 @@
   */
+ struct cftype_set {
+ 	struct list_head		node;	/* chained at subsys->cftsets */
+-	const struct cftype		*cfts;
++	struct cftype			*cfts;
+ };
  
- /*
-- * Allocate new xattr and copy in the value; but leave the name to callers.
-- */
--static struct shmem_xattr *shmem_xattr_alloc(const void *value, size_t size)
--{
--	struct shmem_xattr *new_xattr;
--	size_t len;
--
--	/* wrap around? */
--	len = sizeof(*new_xattr) + size;
--	if (len <= sizeof(*new_xattr))
--		return NULL;
--
--	new_xattr = kmalloc(len, GFP_KERNEL);
--	if (!new_xattr)
--		return NULL;
--
--	new_xattr->size = size;
--	memcpy(new_xattr->value, value, size);
--	return new_xattr;
--}
--
--/*
-  * Callback for security_inode_init_security() for acquiring xattrs.
-  */
- static int shmem_initxattrs(struct inode *inode,
-@@ -2090,11 +2057,11 @@
- {
- 	struct shmem_inode_info *info = SHMEM_I(inode);
- 	const struct xattr *xattr;
--	struct shmem_xattr *new_xattr;
-+	struct simple_xattr *new_xattr;
- 	size_t len;
+ struct cgroup_scanner {
+@@ -406,8 +413,8 @@
+ 	void *data;
+ };
  
- 	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
--		new_xattr = shmem_xattr_alloc(xattr->value, xattr->value_len);
-+		new_xattr = simple_xattr_alloc(xattr->value, xattr->value_len);
- 		if (!new_xattr)
- 			return -ENOMEM;
+-int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
+-int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts);
++int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
++int cgroup_rm_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
  
-@@ -2111,91 +2078,12 @@
- 		memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
- 		       xattr->name, len);
+ int cgroup_is_removed(const struct cgroup *cgrp);
  
--		spin_lock(&info->lock);
--		list_add(&new_xattr->list, &info->xattr_list);
--		spin_unlock(&info->lock);
-+		simple_xattr_list_add(&info->xattrs, new_xattr);
+Index: github/kernel/cgroup.c
+===================================================================
+--- github.orig/kernel/cgroup.c	2012-08-23 15:48:33.577016061 -0400
++++ github/kernel/cgroup.c	2012-08-23 15:48:42.485258910 -0400
+@@ -276,7 +276,8 @@
+ 
+ /* bits in struct cgroupfs_root flags field */
+ enum {
+-	ROOT_NOPREFIX, /* mounted subsystems have no named prefix */
++	ROOT_NOPREFIX,	/* mounted subsystems have no named prefix */
++	ROOT_XATTR,	/* supports extended attributes */
+ };
+ 
+ static int cgroup_is_releasable(const struct cgroup *cgrp)
+@@ -913,15 +914,19 @@
+ 		 */
+ 		BUG_ON(!list_empty(&cgrp->pidlists));
+ 
++		simple_xattrs_free(&cgrp->xattrs);
++
+ 		kfree_rcu(cgrp, rcu_head);
+ 	} else {
+ 		struct cfent *cfe = __d_cfe(dentry);
+ 		struct cgroup *cgrp = dentry->d_parent->d_fsdata;
++		struct cftype *cft = cfe->type;
+ 
+ 		WARN_ONCE(!list_empty(&cfe->node) &&
+ 			  cgrp != &cgrp->root->top_cgroup,
+ 			  "cfe still linked for %s\n", cfe->type->name);
+ 		kfree(cfe);
++		simple_xattrs_free(&cft->xattrs);
  	}
- 
- 	return 0;
+ 	iput(inode);
+ }
+@@ -1140,6 +1145,8 @@
+ 		seq_printf(seq, ",%s", ss->name);
+ 	if (test_bit(ROOT_NOPREFIX, &root->flags))
+ 		seq_puts(seq, ",noprefix");
++	if (test_bit(ROOT_XATTR, &root->flags))
++		seq_puts(seq, ",xattr");
+ 	if (strlen(root->release_agent_path))
+ 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
+ 	if (clone_children(&root->top_cgroup))
+@@ -1208,6 +1215,10 @@
+ 			opts->clone_children = true;
+ 			continue;
+ 		}
++		if (!strcmp(token, "xattr")) {
++			set_bit(ROOT_XATTR, &opts->flags);
++			continue;
++		}
+ 		if (!strncmp(token, "release_agent=", 14)) {
+ 			/* Specifying two release agents is forbidden */
+ 			if (opts->release_agent)
+@@ -1425,6 +1436,7 @@
+ 	mutex_init(&cgrp->pidlist_mutex);
+ 	INIT_LIST_HEAD(&cgrp->event_list);
+ 	spin_lock_init(&cgrp->event_list_lock);
++	simple_xattrs_init(&cgrp->xattrs);
  }
  
--static int shmem_xattr_get(struct dentry *dentry, const char *name,
--			   void *buffer, size_t size)
--{
--	struct shmem_inode_info *info;
--	struct shmem_xattr *xattr;
--	int ret = -ENODATA;
--
--	info = SHMEM_I(dentry->d_inode);
--
--	spin_lock(&info->lock);
--	list_for_each_entry(xattr, &info->xattr_list, list) {
--		if (strcmp(name, xattr->name))
--			continue;
--
--		ret = xattr->size;
--		if (buffer) {
--			if (size < xattr->size)
--				ret = -ERANGE;
--			else
--				memcpy(buffer, xattr->value, xattr->size);
--		}
--		break;
--	}
--	spin_unlock(&info->lock);
--	return ret;
--}
--
--static int shmem_xattr_set(struct inode *inode, const char *name,
--			   const void *value, size_t size, int flags)
--{
--	struct shmem_inode_info *info = SHMEM_I(inode);
--	struct shmem_xattr *xattr;
--	struct shmem_xattr *new_xattr = NULL;
--	int err = 0;
--
--	/* value == NULL means remove */
--	if (value) {
--		new_xattr = shmem_xattr_alloc(value, size);
--		if (!new_xattr)
--			return -ENOMEM;
--
--		new_xattr->name = kstrdup(name, GFP_KERNEL);
--		if (!new_xattr->name) {
--			kfree(new_xattr);
--			return -ENOMEM;
--		}
--	}
--
--	spin_lock(&info->lock);
--	list_for_each_entry(xattr, &info->xattr_list, list) {
--		if (!strcmp(name, xattr->name)) {
--			if (flags & XATTR_CREATE) {
--				xattr = new_xattr;
--				err = -EEXIST;
--			} else if (new_xattr) {
--				list_replace(&xattr->list, &new_xattr->list);
--			} else {
--				list_del(&xattr->list);
--			}
--			goto out;
--		}
--	}
--	if (flags & XATTR_REPLACE) {
--		xattr = new_xattr;
--		err = -ENODATA;
--	} else {
--		list_add(&new_xattr->list, &info->xattr_list);
--		xattr = NULL;
--	}
--out:
--	spin_unlock(&info->lock);
--	if (xattr)
--		kfree(xattr->name);
--	kfree(xattr);
--	return err;
--}
--
- static const struct xattr_handler *shmem_xattr_handlers[] = {
- #ifdef CONFIG_TMPFS_POSIX_ACL
- 	&generic_acl_access_handler,
-@@ -2226,6 +2114,7 @@
- static ssize_t shmem_getxattr(struct dentry *dentry, const char *name,
- 			      void *buffer, size_t size)
+ static void init_cgroup_root(struct cgroupfs_root *root)
+@@ -1769,6 +1781,8 @@
+ 	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 
++	simple_xattrs_free(&cgrp->xattrs);
++
+ 	kill_litter_super(sb);
+ 	cgroup_drop_root(root);
+ }
+@@ -2575,6 +2589,64 @@
+ 	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
+ }
+ 
++static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
++{
++	if (S_ISDIR(dentry->d_inode->i_mode))
++		return &__d_cgrp(dentry)->xattrs;
++	else
++		return &__d_cft(dentry)->xattrs;
++}
++
++static inline int xattr_enabled(struct dentry *dentry)
++{
++	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
++	return test_bit(ROOT_XATTR, &root->flags);
++}
++
++static bool is_valid_xattr(const char *name)
++{
++	if (!strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) ||
++	    !strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN))
++		return true;
++	return false;
++}
++
++static int cgroup_setxattr(struct dentry *dentry, const char *name,
++			   const void *val, size_t size, int flags)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return simple_xattr_set(__d_xattrs(dentry), name, val, size, flags);
++}
++
++static int cgroup_removexattr(struct dentry *dentry, const char *name)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return simple_xattr_remove(__d_xattrs(dentry), name);
++}
++
++static ssize_t cgroup_getxattr(struct dentry *dentry, const char *name,
++			       void *buf, size_t size)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return simple_xattr_get(__d_xattrs(dentry), name, buf, size);
++}
++
++static ssize_t cgroup_listxattr(struct dentry *dentry, char *buf, size_t size)
++{
++	if (!xattr_enabled(dentry))
++		return -EOPNOTSUPP;
++	return simple_xattr_list(__d_xattrs(dentry), buf, size);
++}
++
+ static const struct file_operations cgroup_file_operations = {
+ 	.read = cgroup_file_read,
+ 	.write = cgroup_file_write,
+@@ -2583,11 +2655,22 @@
+ 	.release = cgroup_file_release,
+ };
+ 
++static const struct inode_operations cgroup_file_inode_operations = {
++	.setxattr = cgroup_setxattr,
++	.getxattr = cgroup_getxattr,
++	.listxattr = cgroup_listxattr,
++	.removexattr = cgroup_removexattr,
++};
++
+ static const struct inode_operations cgroup_dir_inode_operations = {
+ 	.lookup = cgroup_lookup,
+ 	.mkdir = cgroup_mkdir,
+ 	.rmdir = cgroup_rmdir,
+ 	.rename = cgroup_rename,
++	.setxattr = cgroup_setxattr,
++	.getxattr = cgroup_getxattr,
++	.listxattr = cgroup_listxattr,
++	.removexattr = cgroup_removexattr,
+ };
+ 
+ static struct dentry *cgroup_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
+@@ -2635,6 +2718,7 @@
+ 	} else if (S_ISREG(mode)) {
+ 		inode->i_size = 0;
+ 		inode->i_fop = &cgroup_file_operations;
++		inode->i_op = &cgroup_file_inode_operations;
+ 	}
+ 	d_instantiate(dentry, inode);
+ 	dget(dentry);	/* Extra count - pin the dentry in core */
+@@ -2695,7 +2779,7 @@
+ }
+ 
+ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+-			   const struct cftype *cft)
++			   struct cftype *cft)
  {
-+	struct shmem_inode_info *info = SHMEM_I(dentry->d_inode);
- 	int err;
+ 	struct dentry *dir = cgrp->dentry;
+ 	struct cgroup *parent = __d_cgrp(dir);
+@@ -2705,6 +2789,8 @@
+ 	umode_t mode;
+ 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
  
- 	/*
-@@ -2240,12 +2129,13 @@
- 	if (err)
- 		return err;
- 
--	return shmem_xattr_get(dentry, name, buffer, size);
-+	return simple_xattr_get(&info->xattrs, name, buffer, size);
++	simple_xattrs_init(&cft->xattrs);
++
+ 	/* does @cft->flags tell us to skip creation on @cgrp? */
+ 	if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
+ 		return 0;
+@@ -2745,9 +2831,9 @@
  }
  
- static int shmem_setxattr(struct dentry *dentry, const char *name,
- 			  const void *value, size_t size, int flags)
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+-			      const struct cftype cfts[], bool is_add)
++			      struct cftype cfts[], bool is_add)
  {
-+	struct shmem_inode_info *info = SHMEM_I(dentry->d_inode);
- 	int err;
+-	const struct cftype *cft;
++	struct cftype *cft;
+ 	int err, ret = 0;
  
- 	/*
-@@ -2260,15 +2150,12 @@
- 	if (err)
- 		return err;
- 
--	if (size == 0)
--		value = "";  /* empty EA, do not remove */
--
--	return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
--
-+	return simple_xattr_set(&info->xattrs, name, value, size, flags);
+ 	for (cft = cfts; cft->name[0] != '\0'; cft++) {
+@@ -2781,7 +2867,7 @@
  }
  
- static int shmem_removexattr(struct dentry *dentry, const char *name)
+ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
+-			       const struct cftype *cfts, bool is_add)
++			       struct cftype *cfts, bool is_add)
+ 	__releases(&cgroup_mutex) __releases(&cgroup_cft_mutex)
  {
-+	struct shmem_inode_info *info = SHMEM_I(dentry->d_inode);
- 	int err;
- 
- 	/*
-@@ -2283,45 +2170,13 @@
- 	if (err)
- 		return err;
- 
--	return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
--}
--
--static bool xattr_is_trusted(const char *name)
--{
--	return !strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN);
-+	return simple_xattr_remove(&info->xattrs, name);
- }
- 
- static ssize_t shmem_listxattr(struct dentry *dentry, char *buffer, size_t size)
+ 	LIST_HEAD(pending);
+@@ -2832,7 +2918,7 @@
+  * function currently returns 0 as long as @cfts registration is successful
+  * even if some file creation attempts on existing cgroups fail.
+  */
+-int cgroup_add_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
++int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
  {
--	bool trusted = capable(CAP_SYS_ADMIN);
--	struct shmem_xattr *xattr;
--	struct shmem_inode_info *info;
--	size_t used = 0;
--
--	info = SHMEM_I(dentry->d_inode);
--
--	spin_lock(&info->lock);
--	list_for_each_entry(xattr, &info->xattr_list, list) {
--		size_t len;
--
--		/* skip "trusted." attributes for unprivileged callers */
--		if (!trusted && xattr_is_trusted(xattr->name))
--			continue;
--
--		len = strlen(xattr->name) + 1;
--		used += len;
--		if (buffer) {
--			if (size < used) {
--				used = -ERANGE;
--				break;
--			}
--			memcpy(buffer, xattr->name, len);
--			buffer += len;
--		}
--	}
--	spin_unlock(&info->lock);
--
--	return used;
-+	struct shmem_inode_info *info = SHMEM_I(dentry->d_inode);
-+	return simple_xattr_list(&info->xattrs, buffer, size);
- }
- #endif /* CONFIG_TMPFS_XATTR */
+ 	struct cftype_set *set;
+ 
+@@ -2862,7 +2948,7 @@
+  * Returns 0 on successful unregistration, -ENOENT if @cfts is not
+  * registered with @ss.
+  */
+-int cgroup_rm_cftypes(struct cgroup_subsys *ss, const struct cftype *cfts)
++int cgroup_rm_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
+ {
+ 	struct cftype_set *set;
  
 
