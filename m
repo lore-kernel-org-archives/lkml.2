@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2HWO7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:59:01 -0400
+	id S934043Ab2HWO7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 10:59:16 -0400
 Received: from mail-qa0-f46.google.com ([209.85.216.46]:64622 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370Ab2HWO6y (ORCPT
+	with ESMTP id S1755081Ab2HWO7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:58:54 -0400
+	Thu, 23 Aug 2012 10:59:08 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Cris <linux-cris-kernel@axis.com>, "3.2.x.." <stable@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        "3.2.x.." <stable@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 03/11] cris: Add missing RCU idle APIs on idle loop
-Date: Thu, 23 Aug 2012 16:58:27 +0200
-Message-Id: <1345733915-20040-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/11] mn10300: Add missing RCU idle APIs on idle loop
+Date: Thu, 23 Aug 2012 16:58:32 +0200
+Message-Id: <1345733915-20040-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
 References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
@@ -39,47 +39,46 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the Cris's idle loop.
+Add this missing pair of calls in the mn10300's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Cris <linux-cris-kernel@axis.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
 Cc: 3.2.x.. <stable@vger.kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/cris/kernel/process.c |    3 +++
+ arch/mn10300/kernel/process.c |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/cris/kernel/process.c b/arch/cris/kernel/process.c
-index 66fd017..7f65be6 100644
---- a/arch/cris/kernel/process.c
-+++ b/arch/cris/kernel/process.c
+diff --git a/arch/mn10300/kernel/process.c b/arch/mn10300/kernel/process.c
+index 7dab0cd..e9cceba 100644
+--- a/arch/mn10300/kernel/process.c
++++ b/arch/mn10300/kernel/process.c
 @@ -25,6 +25,7 @@
- #include <linux/elfcore.h>
- #include <linux/mqueue.h>
- #include <linux/reboot.h>
+ #include <linux/err.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
 +#include <linux/rcupdate.h>
- 
- //#define DEBUG
- 
-@@ -74,6 +75,7 @@ void cpu_idle (void)
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ #include <asm/io.h>
+@@ -107,6 +108,7 @@ void cpu_idle(void)
  {
  	/* endless idle loop with no priority at all */
- 	while (1) {
+ 	for (;;) {
 +		rcu_idle_enter();
  		while (!need_resched()) {
  			void (*idle)(void);
- 			/*
-@@ -86,6 +88,7 @@ void cpu_idle (void)
- 				idle = default_idle;
+ 
+@@ -121,6 +123,7 @@ void cpu_idle(void)
+ 			}
  			idle();
  		}
 +		rcu_idle_exit();
+ 
  		schedule_preempt_disabled();
  	}
- }
 -- 
 1.7.5.4
 
