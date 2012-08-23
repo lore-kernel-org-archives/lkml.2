@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2HWGkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 02:40:22 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33820 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab2HWGkU (ORCPT
+	id S1756479Ab2HWGkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 02:40:33 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51343 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755799Ab2HWGk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 02:40:20 -0400
-Date: Wed, 22 Aug 2012 23:40:19 -0700 (PDT)
-Message-Id: <20120822.234019.1546353507351890178.davem@davemloft.net>
-To: xiong@qca.qualcomm.com
-Cc: cjren@qca.qualcomm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qca-linux-team@qualcomm.com,
-        nic-devel@qualcomm.com, rodrigue@qca.qualcomm.com
-Subject: Re: [PATCH v2] net: add new QCA alx ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
-References: <1345480949-14800-1-git-send-email-cjren@qca.qualcomm.com>
-	<20120822.225700.714020017287504609.davem@davemloft.net>
-	<157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Aug 2012 02:40:29 -0400
+MIME-Version: 1.0
+Date: Thu, 23 Aug 2012 14:40:28 +0800
+Message-ID: <CAPgLHd86=bmD30y6h0UT5ZM7mBgg6BNv2KNdvq5sHOqrO1dnsw@mail.gmail.com>
+Subject: [PATCH] staging: r8712u: use is_zero_ether_addr() instead of memcmp()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-Date: Thu, 23 Aug 2012 06:35:40 +0000
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
->> This is why we require that portable, sane, interfaces are added to ethtool for
->> driver diagnostics.  That way users can perform a task in the same way
->> regardless of what hardware and driver are underneath.
-> 
-> I quite agree you on using ethtool to implement it. we did consider it. 
-> But ethtool has some limitation, for example, the NIC has built-in OTP (TWSI interface)
-> And Flash (External SPI interface),  their properties are quite different with EEPROM which
-> Ethtool supports.
-> To support such memory (OTP/Flash), we need additional input parameters.
+Using is_zero_ether_addr() instead of directly use
+memcmp(addr, "\x00\x00\x00\x00\x00\x00", ETH_ALEN)
+to determine if the ethernet address is all zeros.
 
-Then add a new ethtool operation to support your use case, that's
-exactly what I was telling you to do.
+spatch with a semantic match is used to found this problem.
+(http://coccinelle.lip6.fr/)
 
-Did it really not occur to you that you perhaps you should extend
-existing generic facilities to suit your needs instead of creating
-private facilities that no other driver can use?
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/rtl8712/rtl871x_recv.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/rtl8712/rtl871x_recv.c b/drivers/staging/rtl8712/rtl871x_recv.c
+index c9d1743..23ec684 100644
+--- a/drivers/staging/rtl8712/rtl871x_recv.c
++++ b/drivers/staging/rtl8712/rtl871x_recv.c
+@@ -32,6 +32,7 @@
+ #include <linux/slab.h>
+ #include <linux/if_ether.h>
+ #include <linux/kmemleak.h>
++#include <linux/etherdevice.h>
+ 
+ #include "osdep_service.h"
+ #include "drv_types.h"
+@@ -331,8 +332,8 @@ static sint sta2sta_data_frame(struct _adapter *adapter,
+ 			return _FAIL;
+ 		if ((memcmp(myhwaddr, pattrib->dst, ETH_ALEN)) && (!bmcast))
+ 			return _FAIL;
+-		if (!memcmp(pattrib->bssid, "\x0\x0\x0\x0\x0\x0", ETH_ALEN) ||
+-		    !memcmp(mybssid, "\x0\x0\x0\x0\x0\x0", ETH_ALEN) ||
++		if (is_zero_ether_addr(pattrib->bssid) ||
++		    is_zero_ether_addr(mybssid) ||
+ 		    (memcmp(pattrib->bssid, mybssid, ETH_ALEN)))
+ 			return _FAIL;
+ 		sta_addr = pattrib->src;
+@@ -409,8 +410,8 @@ static sint ap2sta_data_frame(struct _adapter *adapter,
+ 		if ((memcmp(myhwaddr, pattrib->dst, ETH_ALEN)) && (!bmcast))
+ 			return _FAIL;
+ 		/* check BSSID */
+-		if (!memcmp(pattrib->bssid, "\x0\x0\x0\x0\x0\x0", ETH_ALEN) ||
+-		     !memcmp(mybssid, "\x0\x0\x0\x0\x0\x0", ETH_ALEN) ||
++		if (is_zero_ether_addr(pattrib->bssid) ||
++		     is_zero_ether_addr(mybssid) ||
+ 		     (memcmp(pattrib->bssid, mybssid, ETH_ALEN)))
+ 			return _FAIL;
+ 		if (bmcast)
 
