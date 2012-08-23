@@ -1,43 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759187Ab2HWRz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:55:29 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:41496 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752692Ab2HWRz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:55:27 -0400
-Message-ID: <50366E70.1020109@sgi.com>
-Date: Thu, 23 Aug 2012 12:54:56 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
+	id S933879Ab2HWR5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:57:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33089 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759154Ab2HWR5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 13:57:03 -0400
+Message-ID: <50366EEA.2070200@wwwdotorg.org>
+Date: Thu, 23 Aug 2012 11:56:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <adobriyan@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] fs/proc: Move kfree outside pde_unload_lock
-References: <n>  <1345653510-22000-1-git-send-email-nzimmer@sgi.com>  <1345660110.5158.1969.camel@edumazet-glaptop> <1345671778.5158.2369.camel@edumazet-glaptop>
-In-Reply-To: <1345671778.5158.2369.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Richard Zhao <richard.zhao@freescale.com>
+CC: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        s.hauer@pengutronix.de, shawn.guo@linaro.org, kernel@pengutronix.de,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        sameo@linux.intel.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        devicetree-discuss@lists.ozlabs.org, paul.liu@linaro.org
+Subject: Re: [PATCH 4/7] regulator: anatop-regulator: convert to use imx-syscon
+ to access anatop register
+References: <1345619928-15446-1-git-send-email-b29396@freescale.com> <1345619928-15446-5-git-send-email-b29396@freescale.com> <5035BDBF.9020602@wwwdotorg.org> <20120823061202.GM4011@b20223-02.ap.freescale.net>
+In-Reply-To: <20120823061202.GM4011@b20223-02.ap.freescale.net>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.156]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 04:42 PM, Eric Dumazet wrote:
-> On Wed, 2012-08-22 at 20:28 +0200, Eric Dumazet wrote:
->
->> Thats interesting, but if you really want this to fly, one RCU
->> conversion would be much better ;)
+On 08/23/2012 12:12 AM, Richard Zhao wrote:
+> On Wed, Aug 22, 2012 at 11:21:03PM -0600, Stephen Warren wrote:
+>> On 08/22/2012 01:18 AM, Dong Aisheng wrote:
+>>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 >>
->> pde_users would be an atomic_t and you would avoid the spinlock
->> contention.
-> Here is what I had in mind, I would be interested to know how it helps a 512 core machine ;)
+>>> diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+>>
+>>> @@ -109,7 +110,11 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
+>>>  	rdesc->ops = &anatop_rops;
+>>>  	rdesc->type = REGULATOR_VOLTAGE;
+>>>  	rdesc->owner = THIS_MODULE;
+>>> -	sreg->mfd = anatopmfd;
+>>> +
+>>> +	sreg->anatop = of_parse_phandle(np, "fsl,anatop", 0);
+>>> +	if (!sreg->anatop)
+>>> +		return -ENODEV;
+>>
+>> In fact, that imx_syscon_lookup function I proposed could even do the
+>> of_parse_phandle() internally, so perhaps:
+>>
+>> foo->syscon_dev = imx_syscon_lookup(np, "fsl,anatop", 0);
+>> if (IS_ERR(foo->syscon_dev))
+>>     return PTR_ERR(foo->syscon_dev);
+>>
+>> with imx_syscon_lookup() internally knowing when to return EPROBE_DEFER
+>> rather than any other permanent error code (e.g. for missing property,
+>> bad phandle, etc.)
 >
-Thanks, I knew if I just took my time and read the rcu documentation
-thoroughly that the answer would be forthcoming. ;)
+> In some case that we access register in machine code, we don't have any
+> phandle. The node is got by find compatible or by path.
 
-Unfortunately I have to wait till tomorrow to get big box and test it.
+That sounds a little odd; why not just use a phandle consistently
+everywhere?
 
+Either way though, I could imagine still putting all the lookup code
+into the syscon driver; just have different functions for the different
+lookup methods:
 
+imx_syscon_lookup_by_phandle(np, char *property_name)
+imx_syscon_lookup_by_compatible(char *compatible
+imx_syscon_lookup_by_path(char *node_path)
