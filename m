@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934295Ab2HWS4G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:56:06 -0400
+	id S934303Ab2HWS4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:56:14 -0400
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:37344 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934224Ab2HWSz7 (ORCPT
+	with ESMTP id S934227Ab2HWS4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 14:55:59 -0400
+	Thu, 23 Aug 2012 14:56:01 -0400
 From: Benjamin Poirier <bpoirier@suse.de>
 To: Michal Marek <mmarek@suse.cz>
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         Davidlohr Bueso <dave@gnu.org>, Wang YanQing <udknight@gmail.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Cheng Renquan <crquan@gmail.com>
-Subject: [PATCH v2 4/6] menuconfig: Add jump keys to search results
-Date: Thu, 23 Aug 2012 14:55:06 -0400
-Message-Id: <1345748108-12206-5-git-send-email-bpoirier@suse.de>
+Subject: [PATCH v2 5/6] menuconfig: Do not open code textbox scroll up/down
+Date: Thu, 23 Aug 2012 14:55:07 -0400
+Message-Id: <1345748108-12206-6-git-send-email-bpoirier@suse.de>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1345748108-12206-1-git-send-email-bpoirier@suse.de>
 References: <1345748108-12206-1-git-send-email-bpoirier@suse.de>
@@ -27,324 +27,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-makes it possible to jump directly to the menu for a configuration entry after
-having searched for it with '/'. If this menu is not currently accessible we
-jump to the nearest accessible parent instead. After exiting this menu, the
-user is returned to the search results where he may jump further in or
-elsewhere.
+We don't need to explicitely use ncurses' scroll(). ncurses performs
+vertical-motion optimization at wrefresh() time.
+
+Using strace I confirmed that with the following patch curses still sends only
+the new line of text to the terminal when scrolling up/down one line at a
+time.
 
 Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 ---
- scripts/kconfig/expr.h      |    2 +
- scripts/kconfig/lkc_proto.h |    6 +++-
- scripts/kconfig/mconf.c     |   64 +++++++++++++++++++++++++++++--------------
- scripts/kconfig/menu.c      |   55 +++++++++++++++++++++++++++++-------
- scripts/kconfig/nconf.c     |    2 +-
- 5 files changed, 94 insertions(+), 35 deletions(-)
+ scripts/kconfig/lxdialog/textbox.c |   55 +++++++----------------------------
+ 1 files changed, 11 insertions(+), 44 deletions(-)
 
-diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
-index d4ecce8..52f4246 100644
---- a/scripts/kconfig/expr.h
-+++ b/scripts/kconfig/expr.h
-@@ -173,6 +173,8 @@ struct menu {
- #define MENU_CHANGED		0x0001
- #define MENU_ROOT		0x0002
+diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
+index 506a095..3b3c5c4 100644
+--- a/scripts/kconfig/lxdialog/textbox.c
++++ b/scripts/kconfig/lxdialog/textbox.c
+@@ -166,40 +166,12 @@ do_resize:
+ 		case 'K':	/* Previous line */
+ 		case 'k':
+ 		case KEY_UP:
+-			if (!begin_reached) {
+-				int passed_end = 0;
+-
+-				back_lines(page_length + 1);
+-
+-				/* We don't call print_page() here but use
+-				 * scrolling to ensure faster screen update.
+-				 * However, 'end_reached' and 'page_length'
+-				 * should still be updated, and 'page' should
+-				 * point to start of next page. This is done
+-				 * by calling get_line() in the following
+-				 * 'for' loop. */
+-				scrollok(box, TRUE);
+-				wscrl(box, -1);	/* Scroll box region down one line */
+-				scrollok(box, FALSE);
+-				page_length = 0;
+-				for (i = 0; i < boxh; i++) {
+-					if (!i) {
+-						/* print first line of page */
+-						print_line(box, 0, boxw);
+-						wnoutrefresh(box);
+-					} else
+-						/* Called to update 'end_reached' and 'page' */
+-						get_line();
+-					if (!passed_end)
+-						page_length++;
+-					if (end_reached && !passed_end)
+-						passed_end = 1;
+-				}
++			if (begin_reached)
++				break;
  
-+#define JUMP_NB			9
-+
- extern struct file *file_list;
- extern struct file *current_file;
- struct file *lookup_file(const char *name);
-diff --git a/scripts/kconfig/lkc_proto.h b/scripts/kconfig/lkc_proto.h
-index 47fe9c3..946c2cb3 100644
---- a/scripts/kconfig/lkc_proto.h
-+++ b/scripts/kconfig/lkc_proto.h
-@@ -21,8 +21,10 @@ P(menu_get_root_menu,struct menu *,(struct menu *menu));
- P(menu_get_parent_menu,struct menu *,(struct menu *menu));
- P(menu_has_help,bool,(struct menu *menu));
- P(menu_get_help,const char *,(struct menu *menu));
--P(get_symbol_str, void, (struct gstr *r, struct symbol *sym));
--P(get_relations_str, struct gstr, (struct symbol **sym_arr));
-+P(get_symbol_str, int, (struct gstr *r, struct symbol *sym, struct menu
-+			**jumps, int jump_nb));
-+P(get_relations_str, struct gstr, (struct symbol **sym_arr, struct menu
-+				   **jumps));
- P(menu_get_ext_help,void,(struct menu *menu, struct gstr *help));
- 
- /* symbol.c */
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index c57cc6a..b389e47 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -236,16 +236,19 @@ search_help[] = N_(
- 	"Result:\n"
- 	"-----------------------------------------------------------------\n"
- 	"Symbol: FOO [=m]\n"
-+	"Type  : tristate\n"
- 	"Prompt: Foo bus is used to drive the bar HW\n"
--	"Defined at drivers/pci/Kconfig:47\n"
--	"Depends on: X86_LOCAL_APIC && X86_IO_APIC || IA64\n"
--	"Location:\n"
--	"  -> Bus options (PCI, PCMCIA, EISA, ISA)\n"
--	"    -> PCI support (PCI [=y])\n"
--	"      -> PCI access mode (<choice> [=y])\n"
--	"Selects: LIBCRC32\n"
--	"Selected by: BAR\n"
-+	"  Defined at drivers/pci/Kconfig:47\n"
-+	"  Depends on: X86_LOCAL_APIC && X86_IO_APIC || IA64\n"
-+	"  Location:\n"
-+	"    -> Bus options (PCI, PCMCIA, EISA, ISA)\n"
-+	"      -> PCI support (PCI [=y])\n"
-+	"(1)     -> PCI access mode (<choice> [=y])\n"
-+	"  Selects: LIBCRC32\n"
-+	"  Selected by: BAR\n"
- 	"-----------------------------------------------------------------\n"
-+	"o The line 'Type:' shows the type of the configuration option for\n"
-+	"  this symbol (boolean, tristate, string, ...)\n"
- 	"o The line 'Prompt:' shows the text used in the menu structure for\n"
- 	"  this symbol\n"
- 	"o The 'Defined at' line tell at what file / line number the symbol\n"
-@@ -254,8 +257,12 @@ search_help[] = N_(
- 	"  this symbol to be visible in the menu (selectable)\n"
- 	"o The 'Location:' lines tell where in the menu structure this symbol\n"
- 	"  is located\n"
--	"    A location followed by a [=y] indicate that this is a selectable\n"
--	"    menu item - and current value is displayed inside brackets.\n"
-+	"    A location followed by a [=y] indicates that this is a\n"
-+	"    selectable menu item - and the current value is displayed inside\n"
-+	"    brackets.\n"
-+	"    Press the key in the (#) prefix to jump directly to that\n"
-+	"    location. You will be returned to the current search results\n"
-+	"    after exiting this new menu.\n"
- 	"o The 'Selects:' line tell what symbol will be automatically\n"
- 	"  selected if this symbol is selected (y or m)\n"
- 	"o The 'Selected by' line tell what symbol has selected this symbol\n"
-@@ -275,7 +282,7 @@ static int single_menu_mode;
- static int show_all_options;
- static int saved_x, saved_y;
- 
--static void conf(struct menu *menu);
-+static void conf(struct menu *menu, struct menu *active_menu);
- static void conf_choice(struct menu *menu);
- static void conf_string(struct menu *menu);
- static void conf_load(void);
-@@ -309,7 +316,9 @@ static void search_conf(void)
- 	struct symbol **sym_arr;
- 	struct gstr res;
- 	char *dialog_input;
--	int dres;
-+	int dres, vscroll = 0, hscroll = 0;
-+	bool again;
-+
- again:
- 	dialog_clear();
- 	dres = dialog_inputbox(_("Search Configuration Parameter"),
-@@ -332,10 +341,24 @@ again:
- 		dialog_input += strlen(CONFIG_);
- 
- 	sym_arr = sym_re_search(dialog_input);
--	res = get_relations_str(sym_arr);
-+	do {
-+		struct menu *jumps[JUMP_NB] = {0};
-+		int keys[JUMP_NB + 1] = {0}, i;
-+
-+		res = get_relations_str(sym_arr, jumps);
-+		for (i = 0; i < JUMP_NB && jumps[i]; i++)
-+			keys[i] = '1' + i;
-+		dres = show_textbox_ext(_("Search Results"), str_get(&res), 0,
-+					0, keys, &vscroll, &hscroll);
-+		again = false;
-+		for (i = 0; i < JUMP_NB && jumps[i]; i++)
-+			if (dres == keys[i]) {
-+				conf(jumps[i]->parent, jumps[i]);
-+				again = true;
-+			}
-+		str_free(&res);
-+	} while (again);
- 	free(sym_arr);
--	show_textbox(_("Search Results"), str_get(&res), 0, 0);
--	str_free(&res);
- }
- 
- static void build_conf(struct menu *menu)
-@@ -516,12 +539,11 @@ conf_childs:
- 	indent -= doint;
- }
- 
--static void conf(struct menu *menu)
-+static void conf(struct menu *menu, struct menu *active_menu)
- {
- 	struct menu *submenu;
- 	const char *prompt = menu_get_prompt(menu);
- 	struct symbol *sym;
--	struct menu *active_menu = NULL;
- 	int res;
- 	int s_scroll = 0;
- 
-@@ -564,13 +586,13 @@ static void conf(struct menu *menu)
- 				if (single_menu_mode)
- 					submenu->data = (void *) (long) !submenu->data;
- 				else
--					conf(submenu);
-+					conf(submenu, NULL);
- 				break;
- 			case 't':
- 				if (sym_is_choice(sym) && sym_get_tristate_value(sym) == yes)
- 					conf_choice(submenu);
- 				else if (submenu->prompt->type == P_MENU)
--					conf(submenu);
-+					conf(submenu, NULL);
- 				break;
- 			case 's':
- 				conf_string(submenu);
-@@ -609,7 +631,7 @@ static void conf(struct menu *menu)
- 			if (item_is_tag('t'))
- 				sym_toggle_tristate_value(sym);
- 			else if (item_is_tag('m'))
--				conf(submenu);
-+				conf(submenu, NULL);
+-				print_position(dialog);
+-				wmove(dialog, cur_y, cur_x);	/* Restore cursor position */
+-				wrefresh(dialog);
+-			}
++			back_lines(page_length + 1);
++			refresh_text_box(dialog, box, boxh, boxw, cur_y,
++					 cur_x);
  			break;
- 		case 7:
- 			search_conf();
-@@ -881,7 +903,7 @@ int main(int ac, char **av)
- 
- 	set_config_filename(conf_get_configname());
- 	do {
--		conf(&rootmenu);
-+		conf(&rootmenu, NULL);
- 		res = handle_exit();
- 	} while (res == KEY_ESC);
- 
-diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-index 8c2a97e..a524185 100644
---- a/scripts/kconfig/menu.c
-+++ b/scripts/kconfig/menu.c
-@@ -507,10 +507,12 @@ const char *menu_get_help(struct menu *menu)
- 		return "";
- }
- 
--static void get_prompt_str(struct gstr *r, struct property *prop)
-+static int get_prompt_str(struct gstr *r, struct property *prop, struct menu
-+			  **jumps, int jump_nb)
- {
- 	int i, j;
--	struct menu *submenu[8], *menu;
-+	char header[4];
-+	struct menu *submenu[8], *menu, *location = NULL;
- 
- 	str_printf(r, _("Prompt: %s\n"), _(prop->text));
- 	str_printf(r, _("  Defined at %s:%d\n"), prop->menu->file->name,
-@@ -521,13 +523,34 @@ static void get_prompt_str(struct gstr *r, struct property *prop)
- 		str_append(r, "\n");
- 	}
- 	menu = prop->menu->parent;
--	for (i = 0; menu != &rootmenu && i < 8; menu = menu->parent)
-+	for (i = 0; menu != &rootmenu && i < 8; menu = menu->parent) {
-+		bool accessible = menu_is_visible(menu);
+ 		case 'B':	/* Previous page */
+ 		case 'b':
+@@ -214,17 +186,12 @@ do_resize:
+ 		case 'J':	/* Next line */
+ 		case 'j':
+ 		case KEY_DOWN:
+-			if (!end_reached) {
+-				begin_reached = 0;
+-				scrollok(box, TRUE);
+-				scroll(box);	/* Scroll box region up one line */
+-				scrollok(box, FALSE);
+-				print_line(box, boxh - 1, boxw);
+-				wnoutrefresh(box);
+-				print_position(dialog);
+-				wmove(dialog, cur_y, cur_x);	/* Restore cursor position */
+-				wrefresh(dialog);
+-			}
++			if (end_reached)
++				break;
 +
- 		submenu[i++] = menu;
-+		if (location == NULL && accessible)
-+			location = menu;
-+	}
-+	if (jumps && jump_nb < JUMP_NB && location) {
-+		if (menu_is_visible(prop->menu)) {
-+			/*
-+			 * There is not enough room to put the hint at the
-+			 * beginning of the "Prompt" line. Put the hint on the
-+			 * last "Location" line even when it would belong on
-+			 * the former.
-+			 */
-+			jumps[jump_nb] = prop->menu;
-+		} else
-+			jumps[jump_nb] = location;
-+		snprintf(header, 4, "(%d)", jump_nb + 1);
-+	} else
-+		location = NULL;
-+
- 	if (i > 0) {
- 		str_printf(r, _("  Location:\n"));
--		for (j = 4; --i >= 0; j += 2) {
-+		for (j = 1; --i >= 0; j += 2) {
- 			menu = submenu[i];
--			str_printf(r, "%*c-> %s", j, ' ', _(menu_get_prompt(menu)));
-+			str_printf(r, "%s%*c-> %s", menu == location ? header
-+				   : "   ", j, ' ', _(menu_get_prompt(menu)));
- 			if (menu->sym) {
- 				str_printf(r, " (%s [=%s])", menu->sym->name ?
- 					menu->sym->name : _("<choice>"),
-@@ -536,12 +559,20 @@ static void get_prompt_str(struct gstr *r, struct property *prop)
- 			str_append(r, "\n");
- 		}
- 	}
-+
-+	return location ? 1 : 0;
- }
- 
--void get_symbol_str(struct gstr *r, struct symbol *sym)
-+/*
-+ * jumps is optional and may be NULL
-+ * returns the number of jumps inserted
-+ */
-+int get_symbol_str(struct gstr *r, struct symbol *sym, struct menu **jumps,
-+		   int jump_nb)
- {
- 	bool hit;
- 	struct property *prop;
-+	int i = 0;
- 
- 	if (sym && sym->name) {
- 		str_printf(r, "Symbol: %s [=%s]\n", sym->name,
-@@ -557,7 +588,7 @@ void get_symbol_str(struct gstr *r, struct symbol *sym)
- 		}
- 	}
- 	for_all_prompts(sym, prop)
--		get_prompt_str(r, prop);
-+		i += get_prompt_str(r, prop, jumps, jump_nb + i);
- 	hit = false;
- 	for_all_properties(sym, prop, P_SELECT) {
- 		if (!hit) {
-@@ -575,16 +606,18 @@ void get_symbol_str(struct gstr *r, struct symbol *sym)
- 		str_append(r, "\n");
- 	}
- 	str_append(r, "\n\n");
-+
-+	return i;
- }
- 
--struct gstr get_relations_str(struct symbol **sym_arr)
-+struct gstr get_relations_str(struct symbol **sym_arr, struct menu **jumps)
- {
- 	struct symbol *sym;
- 	struct gstr res = str_new();
--	int i;
-+	int i, jump_nb = 0;
- 
- 	for (i = 0; sym_arr && (sym = sym_arr[i]); i++)
--		get_symbol_str(&res, sym);
-+		jump_nb += get_symbol_str(&res, sym, jumps, jump_nb);
- 	if (!i)
- 		str_append(&res, _("No matches found.\n"));
- 	return res;
-@@ -603,5 +636,5 @@ void menu_get_ext_help(struct menu *menu, struct gstr *help)
- 	}
- 	str_printf(help, "%s\n", _(help_text));
- 	if (sym)
--		get_symbol_str(help, sym);
-+		get_symbol_str(help, sym, NULL, 0);
- }
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
-index 1704a85..87d4b15 100644
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -721,7 +721,7 @@ again:
- 		dialog_input += strlen(CONFIG_);
- 
- 	sym_arr = sym_re_search(dialog_input);
--	res = get_relations_str(sym_arr);
-+	res = get_relations_str(sym_arr, NULL);
- 	free(sym_arr);
- 	show_scroll_win(main_window,
- 			_("Search Results"), str_get(&res));
++			back_lines(page_length - 1);
++			refresh_text_box(dialog, box, boxh, boxw, cur_y,
++					 cur_x);
+ 			break;
+ 		case KEY_NPAGE:	/* Next page */
+ 		case ' ':
 -- 
 1.7.7
 
