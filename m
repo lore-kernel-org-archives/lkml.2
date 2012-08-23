@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938Ab2HWKj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:39:27 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:44271 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933831Ab2HWKiA (ORCPT
+	id S1030284Ab2HWKjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:39:31 -0400
+Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:53148 "EHLO
+	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933885Ab2HWKh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:38:00 -0400
+	Thu, 23 Aug 2012 06:37:58 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: alan@linux.intel.com
 Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
@@ -17,12 +17,10 @@ Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Vikram Pandita <vikram.pandita@ti.com>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 20/23] serial: omap: fix software flow control
-Date: Thu, 23 Aug 2012 13:33:00 +0300
-Message-Id: <1345717983-18179-21-git-send-email-balbi@ti.com>
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v3 19/23] serial: omap: make sure to put() on poll_get_char
+Date: Thu, 23 Aug 2012 13:32:59 +0300
+Message-Id: <1345717983-18179-20-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.12.rc3
 In-Reply-To: <1345717983-18179-1-git-send-email-balbi@ti.com>
 References: <1345717983-18179-1-git-send-email-balbi@ti.com>
@@ -30,69 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vikram Pandita <vikram.pandita@ti.com>
+if we would reach serial_omap_get_char() while
+Data Ready bit isn't set, we would return from
+it without kicking our pm timer. This would mean
+we would, eventually, have an unbalanced
+pm_runtime_get on our device which would prevent
+it from ever sleeping again.
 
-Software flow control register bits were not defined correctly.
-
-Also clarify the IXON and IXOFF logic to reflect what userspace wants.
-
-Cc: stable@vger.kernel.org
 Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/plat-omap/include/plat/omap-serial.h |  4 ++--
- drivers/tty/serial/omap-serial.c              | 12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/tty/serial/omap-serial.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-omap/include/plat/omap-serial.h
-index 743ac80..12e6805 100644
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -42,10 +42,10 @@
- #define OMAP_UART_WER_MOD_WKUP	0X7F
- 
- /* Enable XON/XOFF flow control on output */
--#define OMAP_UART_SW_TX		0x04
-+#define OMAP_UART_SW_TX		0x8
- 
- /* Enable XON/XOFF flow control on input */
--#define OMAP_UART_SW_RX		0x04
-+#define OMAP_UART_SW_RX		0x2
- 
- #define OMAP_UART_SYSC_RESET	0X07
- #define OMAP_UART_TCR_TRIG	0X0F
 diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index c3579c0..d49981d 100644
+index d6f5eed..c3579c0 100644
 --- a/drivers/tty/serial/omap-serial.c
 +++ b/drivers/tty/serial/omap-serial.c
-@@ -606,19 +606,19 @@ serial_omap_configure_xonxoff
+@@ -991,12 +991,17 @@ static int serial_omap_poll_get_char(struct uart_port *port)
  
- 	/*
- 	 * IXON Flag:
--	 * Enable XON/XOFF flow control on output.
--	 * Transmit XON1, XOFF1
-+	 * Flow control for OMAP.TX
-+	 * OMAP.RX should listen for XON/XOFF
- 	 */
- 	if (termios->c_iflag & IXON)
--		up->efr |= OMAP_UART_SW_TX;
-+		up->efr |= OMAP_UART_SW_RX;
+ 	pm_runtime_get_sync(up->dev);
+ 	status = serial_in(up, UART_LSR);
+-	if (!(status & UART_LSR_DR))
+-		return NO_POLL_CHAR;
++	if (!(status & UART_LSR_DR)) {
++		status = NO_POLL_CHAR;
++		goto out;
++	}
  
- 	/*
- 	 * IXOFF Flag:
--	 * Enable XON/XOFF flow control on input.
--	 * Receiver compares XON1, XOFF1.
-+	 * Flow control for OMAP.RX
-+	 * OMAP.TX should send XON/XOFF
- 	 */
- 	if (termios->c_iflag & IXOFF)
--		up->efr |= OMAP_UART_SW_RX;
-+		up->efr |= OMAP_UART_SW_TX;
+ 	status = serial_in(up, UART_RX);
++
++out:
+ 	pm_runtime_mark_last_busy(up->dev);
+ 	pm_runtime_put_autosuspend(up->dev);
++
+ 	return status;
+ }
  
- 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
- 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
 -- 
 1.7.12.rc3
 
