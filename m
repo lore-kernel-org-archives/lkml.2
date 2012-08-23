@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759077Ab2HWPdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:33:51 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58296 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752524Ab2HWPdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:33:49 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+	id S934094Ab2HWPeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:34:00 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:61866 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932613Ab2HWPdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:33:55 -0400
+X-IronPort-AV: E=Sophos;i="4.80,300,1344211200"; 
+   d="scan'208";a="14150754"
+Message-ID: <50364A30.2040008@citrix.com>
+Date: Thu, 23 Aug 2012 16:20:16 +0100
+From: Attilio Rao <attilio.rao@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "x86@kernel.org" <x86@kernel.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 1/2] Revert "staging: zcache: cleanup zcache_do_preload and zcache_put_page"
-Date: Thu, 23 Aug 2012 10:33:10 -0500
-Message-Id: <1345735991-6995-2-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082315-5806-0000-0000-000018B80997
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
+ and x86_init.paging.pagetable_setup_done setup functions and document its
+ semantic
+References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208212315330.2856@ionos> <20120822135753.GA30964@phenom.dumpdata.com> <alpine.LFD.2.02.1208221618380.2856@ionos> <5034F0FD.8040902@citrix.com> <5035F7BD.6090205@citrix.com> <alpine.LFD.2.02.1208231714450.2856@ionos>
+In-Reply-To: <alpine.LFD.2.02.1208231714450.2856@ionos>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit b71f3bcc5ab5e76a22d7ad82b3795602fcf0e0af.
+On 23/08/12 16:15, Thomas Gleixner wrote:
+> On Thu, 23 Aug 2012, Attilio Rao wrote:
+>    
+>> On 22/08/12 15:47, Attilio Rao wrote:
+>>      
+>>> but I would like to repost the patch serie skipping the referral to
+>>> PVOPS in the commit logs, I will do so right now, so please wait for
+>>> another patch serie.
+>>>
+>>>        
+>> For your convenience:
+>> http://lkml.org/lkml/2012/8/22/450
+>>      
+> Not very convenient. I really prefer e-mail :)
+>    
 
-This commit is resulting  memory corruption in the cleancache case
+Actually you are in the "to" line for that patch serie.
+Can you see the e-mail?
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Reported-by: Dan Magenheimer <dan.magenheimer@oracle.com>
----
- drivers/staging/zcache/zcache-main.c |   37 +++++++++++++++++++---------------
- 1 file changed, 21 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index c214977..8a335b9 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1048,24 +1048,29 @@ static int zcache_do_preload(struct tmem_pool *pool)
- 		kp->objnodes[kp->nr++] = objnode;
- 	}
- 
--	if (!kp->obj) {
--		obj = kmem_cache_alloc(zcache_obj_cache, ZCACHE_GFP_MASK);
--		if (unlikely(obj == NULL)) {
--			zcache_failed_alloc++;
--			goto out;
--		}
--		kp->obj = obj;
-+	obj = kmem_cache_alloc(zcache_obj_cache, ZCACHE_GFP_MASK);
-+	if (unlikely(obj == NULL)) {
-+		zcache_failed_alloc++;
-+		goto out;
- 	}
- 
--	if (!kp->page) {
--		page = (void *)__get_free_page(ZCACHE_GFP_MASK);
--		if (unlikely(page == NULL)) {
--			zcache_failed_get_free_pages++;
--			goto out;
--		}
--		kp->page =  page;
-+	page = (void *)__get_free_page(ZCACHE_GFP_MASK);
-+	if (unlikely(page == NULL)) {
-+		zcache_failed_get_free_pages++;
-+		kmem_cache_free(zcache_obj_cache, obj);
-+		goto out;
- 	}
- 
-+	if (kp->obj == NULL)
-+		kp->obj = obj;
-+	else
-+		kmem_cache_free(zcache_obj_cache, obj);
-+
-+	if (kp->page == NULL)
-+		kp->page = page;
-+	else
-+		free_page((unsigned long)page);
-+
- 	ret = 0;
- out:
- 	return ret;
-@@ -1575,14 +1580,14 @@ static int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- 			else
- 				zcache_failed_pers_puts++;
- 		}
-+		zcache_put_pool(pool);
- 	} else {
- 		zcache_put_to_flush++;
- 		if (atomic_read(&pool->obj_count) > 0)
- 			/* the put fails whether the flush succeeds or not */
- 			(void)tmem_flush_page(pool, oidp, index);
-+		zcache_put_pool(pool);
- 	}
--
--	zcache_put_pool(pool);
- out:
- 	return ret;
- }
--- 
-1.7.9.5
-
+Attilio
