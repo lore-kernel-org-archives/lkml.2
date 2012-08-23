@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab2HWIn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 04:43:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:54427 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756619Ab2HWInK (ORCPT
+	id S1756786Ab2HWIuR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 04:50:17 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:59996 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab2HWIuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 04:43:10 -0400
-Date: Thu, 23 Aug 2012 10:43:25 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Tejun Heo <tj@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] i915: use alloc_ordered_workqueue() instead of explicit
- UNBOUND w/ max_active = 1
-Message-ID: <20120823084325.GA5418@phenom.ffwll.local>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Tejun Heo <tj@kernel.org>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <20120822234057.GR19212@google.com>
- <1345708607_3773@CP5-2952>
+	Thu, 23 Aug 2012 04:50:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345708607_3773@CP5-2952>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 23 Aug 2012 16:50:12 +0800
+Message-ID: <CAPgLHd8oxAGS+F3xhjjBJs2r5hZGYNqwrYQUcJgjCVwfr3xTqA@mail.gmail.com>
+Subject: [PATCH v2] staging: rtl8192e: use is_zero_ether_addr() instead of memcmp()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, eric.dumazet@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 08:56:37AM +0100, Chris Wilson wrote:
-> On Wed, 22 Aug 2012 16:40:57 -0700, Tejun Heo <tj@kernel.org> wrote:
-> > This is an equivalent conversion and will ease scheduled removal of
-> > WQ_NON_REENTRANT.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch> for merging through any
-tree that pleases you (if it makes merging easier for WQ_NON_REENTRANT
-removal). Or should I just merge this through drm-intel-next?
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Using is_zero_ether_addr() instead of directly use
+memcmp() to determine if the ethernet address is all
+zeros.
+
+spatch with a semantic match is used to found this problem.
+(http://coccinelle.lip6.fr/)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/rtl8192e/rtllib_softmac_wx.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/rtl8192e/rtllib_softmac_wx.c b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+index 1bb6b52..3cedfd9 100644
+--- a/drivers/staging/rtl8192e/rtllib_softmac_wx.c
++++ b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+@@ -14,6 +14,8 @@
+  */
+ 
+ 
++#include <linux/etherdevice.h>
++
+ #include "rtllib.h"
+ #include "dot11d.h"
+ /* FIXME: add A freqs */
+@@ -137,7 +139,6 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
+ {
+ 
+ 	int ret = 0;
+-	u8 zero[] = {0, 0, 0, 0, 0, 0};
+ 	unsigned long flags;
+ 
+ 	short ifup = ieee->proto_started;
+@@ -157,7 +158,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
+ 		goto out;
+ 	}
+ 
+-	if (memcmp(temp->sa_data, zero, ETH_ALEN) == 0) {
++	if (is_zero_ether_addr(temp->sa_data)) {
+ 		spin_lock_irqsave(&ieee->lock, flags);
+ 		memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
+ 		ieee->wap_set = 0;
+@@ -177,7 +178,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
+ 
+ 	ieee->cannot_notify = false;
+ 	memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
+-	ieee->wap_set = (memcmp(temp->sa_data, zero, ETH_ALEN) != 0);
++	ieee->wap_set = !is_zero_ether_addr(temp->sa_data);
+ 
+ 	spin_unlock_irqrestore(&ieee->lock, flags);
+ 
+
+
