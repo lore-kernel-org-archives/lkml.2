@@ -1,93 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934385Ab2HWUu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:50:28 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48704 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934359Ab2HWUuW (ORCPT
+	id S934378Ab2HWUwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:52:06 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39208 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934288Ab2HWUwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:50:22 -0400
+	Thu, 23 Aug 2012 16:52:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <1345754768-4634-1-git-send-email-geert@linux-m68k.org>
-References: <1345754768-4634-1-git-send-email-geert@linux-m68k.org>
-Date: Thu, 23 Aug 2012 22:50:22 +0200
-X-Google-Sender-Auth: gRpBwmqEgQSN410y7bDAZzPXNJY
-Message-ID: <CAMuHMdWFY_iOXTfLO7zCm_RTdkEjj7BpT5o9pJ6cu3LdT8JsYQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.6-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: "the arch/x86 maintainers" <x86@kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-xtensa@linux-xtensa.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1408973.PFKjjaXiS1@localhost.localdomain>
+References: <1408973.PFKjjaXiS1@localhost.localdomain>
+Date: Thu, 23 Aug 2012 23:51:59 +0300
+X-Google-Sender-Auth: Cv5pMQtGR8YZVMfpfPzCqx4aiwo
+Message-ID: <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
+Subject: Re: [PATCHv2 1/1] perf: Port to Android
+From: Pekka Enberg <penberg@kernel.org>
+To: Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 10:46 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.6-rc3 to v3.6-rc2[3], the summaries are:
->   - build errors: +13/-9
+Hi Bernard,
 
-  + arch/x86/include/asm/uaccess_32.h: error: call to
-'copy_from_user_overflow' declared with attribute error:
-copy_from_user() buffer size is not provably correct:  => 211:26
+(You didn't CC perf maintainers.)
 
-i386_defconfig, i386-randconfig, x86_64_defconfig
+On Thu, Aug 23, 2012 at 6:01 PM, Bernhard Rosenkraenzer
+<bernhard.rosenkranzer@linaro.org> wrote:
+> commit 4dc79eed16e3bb03b3cf92fcc6127e107e7537aa
+> Author: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+> Date:   Sat Jun 23 06:18:05 2012 +0200
+>
+>     perf: Port to Android
+>
+>     Adapt perf to deal with some missing functions in Bionic etc.
+>
+>     Change-Id: I0cda2aad3edba26e1be3aebc9475a229ea9e8356
+>     Signed-off-by: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+>
 
-  + drivers/extcon/extcon_gpio.c: error: implicit declaration of
-function 'devm_gpio_request_one'
-[-Werror=implicit-function-declaration]:  => 110:2
+Your patch changelog format is pretty funky.
 
-xtensa-allmodconfig
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 92271d3..d15cdae 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
 
-  + error: No rule to make target drivers/scsi/aic7xxx/aicasm/*.[chyl]:  => N/A
+Whoa! I had no idea Android userspace was f*cked up...
 
-i386-randconfig
-
-  + error: eni.c: relocation truncated to fit: R_PPC64_REL24 against
-symbol `._raw_read_lock' defined in .spinlock.text section in
-kernel/built-in.o:  => (.text+0x1ff91bc)
-  + error: eni.c: relocation truncated to fit: R_PPC64_REL24 against
-symbol `.sprintf' defined in .text section in lib/lib.a(vsprintf.o):
-=> (.text+0x1ff940c)
-  + error: eni.c: relocation truncated to fit: R_PPC64_REL24 against
-symbol `_restgpr0_16' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o:  => (.text+0x1ffa6e8)
-  + error: eni.c: relocation truncated to fit: R_PPC64_REL24 against
-symbol `_savegpr0_27' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o:  => (.text+0x1ff9854)
-  + error: eni.c: relocation truncated to fit: R_PPC64_REL24 against
-symbol `_savegpr0_30' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o:  => (.text+0x1ff8eb4), (.text+0x1ff8e80)
-  + error: fore200e.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `._raw_spin_unlock_irqrestore' defined in
-.spinlock.text section in kernel/built-in.o:  => (.text+0x1ff82cc),
-(.text+0x1ff8278)
-  + error: fore200e.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `.mutex_unlock' defined in .sched.text section in
-kernel/built-in.o:  => (.text+0x1ff83fc), (.text+0x1ff83a8)
-
-powerpc-allyesconfig
-
-  + error: via-pmu-event.c: undefined reference to
-`.input_allocate_device':  => .init.text+0xdfbc)
-  + error: via-pmu-event.c: undefined reference to
-`.input_free_device':  => .init.text+0xe084)
-  + error: via-pmu-event.c: undefined reference to
-`.input_register_device':  => .init.text+0xe06c)
-
-powerpc-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5359/ (all 116 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/5338/ (all 116 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> @@ -117,7 +117,7 @@ ifndef PERF_DEBUG
+>  endif
+>
+>  CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99
+> $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS)
+> $(EXTRA_CFLAGS)
+> -EXTLIBS = -lpthread -lrt -lelf -lm
+> +EXTLIBS = -lpthread -lelf -lm
+>  ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -
+> D_GNU_SOURCE
+>  ALL_LDFLAGS = $(LDFLAGS)
+>  STRIP ?= strip
+> @@ -474,12 +474,23 @@ FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+>  ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
+>         FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
+>         ifneq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
+> -               msg := $(error No gnu/libc-version.h found, please install glibc-
+> dev[el]/glibc-static);
+> +               ifeq ($(call try-cc,$(SOURCE_BIONIC),$(FLAGS_GLIBC)),y)
+> +                       # Found Bionic instead of glibc...
+> +                       # That works too, but needs a bit of special treatment
+> +                       BASIC_CFLAGS += -DANDROID -include compat-android.h
+> +                       ANDROID := 1
+> +               else
+> +                       msg := $(error No gnu/libc-version.h found, please install glibc-
+> dev[el]/glibc-static);
+> +               endif
+>         else
+>                 msg := $(error No libelf.h/libelf found, please install libelf-
+> dev/elfutils-libelf-devel);
+>         endif
+>  endif
+>
+> +ifneq ($(ANDROID),1)
+> +EXTLIBS += -lrt
+> +endif
+> +
+>  ifneq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
+>         BASIC_CFLAGS += -DLIBELF_NO_MMAP
+>  endif
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index be4e1ee..3a1d0cc 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -27,10 +27,43 @@
+>  #include "util/cpumap.h"
+>  #include "util/thread_map.h"
+>
+> +#include <stdlib.h>
+>  #include <unistd.h>
+>  #include <sched.h>
+>  #include <sys/mman.h>
+>
+> +#ifdef ANDROID
+> +/* While stdlib.h has a prototype for it,
+> +   Bionic doesn't actually implement on_exit() */
+> +#ifndef ATEXIT_MAX
+> +#define ATEXIT_MAX 32
+> +#endif
+> +static int __on_exit_count = 0;
+> +typedef void (*on_exit_func_t)(int, void*);
+> +static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
+> +static void *__on_exit_args[ATEXIT_MAX];
+> +static int __exitcode = 0;
+> +static void __handle_on_exit_funcs();
+> +static int on_exit(on_exit_func_t function, void *arg);
+> +#define exit(x) (exit)(__exitcode = (x))
+> +
+> +static int on_exit(on_exit_func_t function, void *arg) {
+> +       if(__on_exit_count == ATEXIT_MAX)
+> +               return ENOMEM;
+> +       else if(__on_exit_count == 0)
+> +               atexit(__handle_on_exit_funcs);
+> +       __on_exit_funcs[__on_exit_count] = function;
+> +       __on_exit_args[__on_exit_count++] = arg;
+> +       return 0;
+> +}
+> +
+> +static void __handle_on_exit_funcs() {
+> +       for(int i=0; i<__on_exit_count; i++) {
+> +               __on_exit_funcs[i](__exitcode, __on_exit_args[i]);
+> +       }
+> +}
+> +#endif
+> +
+>  enum write_mode_t {
+>         WRITE_FORCE,
+>         WRITE_APPEND
+> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+> index 223ffdc..6dbd2ee 100644
+> --- a/tools/perf/builtin-test.c
+> +++ b/tools/perf/builtin-test.c
+> @@ -469,10 +469,17 @@ static int test__basic_mmap(void)
+>                 .watermark      = 0,
+>         };
+>         cpu_set_t cpu_set;
+> +#ifndef ANDROID
+>         const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
+>                                         "getpgid", };
+>         pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
+>                                       (void*)getpgid };
+> +#else
+> +       /* No getsid() on Android */
+> +       const char *syscall_names[] = { "getppid", "getpgrp",
+> +                                       "getpgid", };
+> +       pid_t (*syscalls[])(void) = { getppid, getpgrp, (void*)getpgid };
+> +#endif
+>  #define nsyscalls ARRAY_SIZE(syscall_names)
+>         int ids[nsyscalls];
+>         unsigned int nr_events[nsyscalls],
+> diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+> index b382bd5..1521a275 100644
+> --- a/tools/perf/builtin.h
+> +++ b/tools/perf/builtin.h
+> @@ -1,6 +1,7 @@
+>  #ifndef BUILTIN_H
+>  #define BUILTIN_H
+>
+> +#include "compat-android.h"
+>  #include "util/util.h"
+>  #include "util/strbuf.h"
+>
+> diff --git a/tools/perf/compat-android.h b/tools/perf/compat-android.h
+> new file mode 100644
+> index 0000000..9a33f49
+> --- /dev/null
+> +++ b/tools/perf/compat-android.h
+> @@ -0,0 +1,96 @@
+> +/* Android compatibility header
+> + * Provides missing bits in Bionic on Android, ignored
+> + * on regular Linux.
+> + *
+> + * Written by Bernhard.Rosenkranzer@linaro.org
+> + *
+> + * Released into the public domain. Do with this file
+> + * whatever you want.
+> + */
+> +#ifdef ANDROID
+> +/* Bionic has its own idea about ALIGN, and kills other definitions.
+> + * Done outside the multiple-inclusion wrapper to make sure we
+> + * can override Bionic's ALIGN by simply including compat-android.h
+> + * again after including Bionic headers.
+> + */
+> +#undef ALIGN
+> +#undef __ALIGN_MASK
+> +#define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
+> +#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+> +
+> +#ifndef _COMPAT_ANDROID_H_
+> +#define _COMPAT_ANDROID_H_ 1
+> +#include <stdio.h>
+> +#include <signal.h>
+> +#include <asm/page.h> /* for PAGE_SIZE */
+> +#include <asm/termios.h> /* for winsize */
+> +
+> +#ifndef __WORDSIZE
+> +#include <stdint.h>
+> +#define __WORDSIZE _BITSIZE
+> +#endif
+> +
+> +#ifndef roundup
+> +#define roundup(x, y)   ((((x)+((y)-1))/(y))*(y))
+> +#endif
+> +
+> +#ifndef __force
+> +#define __force
+> +#endif
+> +
+> +#ifndef __le32
+> +#define __le32 uint32_t
+> +#endif
+> +
+> +/* Assorted functions that are missing from Bionic */
+> +static void psignal(int sig, const char *s)
+> +{
+> +       if(sig >= 0 && sig < NSIG) {
+> +               if(s)
+> +                       fprintf(stderr, "%s: %s\n", s, sys_siglist[sig]);
+> +               else
+> +                       fprintf(stderr, "%s\n", sys_siglist[sig]);
+> +       } else {
+> +               if(s)
+> +                       fprintf(stderr, "%s: invalid signal\n", s);
+> +               else
+> +                       fputs("invalid signal\n", stderr);
+> +       }
+> +}
+> +
+> +static ssize_t getline(char **lineptr, size_t *n, FILE *stream)
+> +{
+> +       size_t ret = 0;
+> +
+> +       if (!lineptr || !n || !stream)
+> +               return -1;
+> +
+> +       if(!*lineptr) {
+> +               *n = 128;
+> +               *lineptr = (char*)malloc(*n);
+> +               if(!*lineptr)
+> +                       return -1;
+> +       }
+> +
+> +       while(!feof(stream) && !ferror(stream)) {
+> +               int c;
+> +               if(ret == *n) {
+> +                       *n += 128;
+> +                       *lineptr = (char*)realloc(*lineptr, *n);
+> +                       if(!*lineptr) {
+> +                               *n = 0;
+> +                               return -1;
+> +                       }
+> +               }
+> +               c = fgetc(stream);
+> +               if(c == EOF)
+> +                       break;
+> +               *lineptr[ret++] = c;
+> +               if(c == '\n')
+> +                       break;
+> +       }
+> +       *lineptr[ret] = 0;
+> +       return ret;
+> +}
+> +#endif
+> +#endif
+> diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-
+> tests.mak
+> index d9084e0..498cd4d 100644
+> --- a/tools/perf/config/feature-tests.mak
+> +++ b/tools/perf/config/feature-tests.mak
+> @@ -43,6 +43,19 @@ int main(void)
+>  }
+>  endef
+>
+> +define SOURCE_BIONIC
+> +#include <android/api-level.h>
+> +
+> +int main(void)
+> +{
+> +#ifndef __ANDROID_API__
+> +       error out
+> +#else
+> +       return 0;
+> +#endif
+> +}
+> +endef
+> +
+>  define SOURCE_ELF_MMAP
+>  #include <libelf.h>
+>  int main(void)
+> diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+> index efa5dc8..ead88ea 100644
+> --- a/tools/perf/util/annotate.h
+> +++ b/tools/perf/util/annotate.h
+> @@ -6,6 +6,7 @@
+>  #include "symbol.h"
+>  #include <linux/list.h>
+>  #include <linux/rbtree.h>
+> +#include <pthread.h>
+>
+>  struct objdump_line {
+>         struct list_head node;
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index 2a6f33c..867415a 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -6,6 +6,7 @@
+>  #include "strlist.h"
+>  #include "thread.h"
+>  #include "thread_map.h"
+> +#include "../compat-android.h"
+>
+>  static const char *perf_event__names[] = {
+>         [0]                                     = "TOTAL",
+> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> index 1b19728..2b0554b 100644
+> --- a/tools/perf/util/event.h
+> +++ b/tools/perf/util/event.h
+> @@ -6,6 +6,7 @@
+>
+>  #include "../perf.h"
+>  #include "map.h"
+> +#include "../compat-android.h"
+>
+>  /*
+>   * PERF_SAMPLE_IP | PERF_SAMPLE_TID | *
+> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+> index 0f99f39..77c5ced 100644
+> --- a/tools/perf/util/util.h
+> +++ b/tools/perf/util/util.h
+> @@ -70,15 +70,19 @@
+>  #include <sys/socket.h>
+>  #include <sys/ioctl.h>
+>  #include <sys/select.h>
+> +#ifndef ANDROID
+>  #include <netinet/in.h>
+>  #include <netinet/tcp.h>
+>  #include <arpa/inet.h>
+> +#endif
+>  #include <netdb.h>
+>  #include <pwd.h>
+>  #include <inttypes.h>
+>  #include "../../../include/linux/magic.h"
+>  #include "types.h"
+> +#ifndef ANDROID
+>  #include <sys/ttydefaults.h>
+> +#endif
+>
+>  extern const char *graph_line;
+>  extern const char *graph_dotted_line;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
