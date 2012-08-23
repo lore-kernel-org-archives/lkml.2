@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab2HWV6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:58:35 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36668 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab2HWV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:58:31 -0400
-Message-ID: <1345759045.29170.12.camel@pasglop>
-Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>, ananth@in.ibm.com,
-        ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, peterz@infradead.org,
-        oleg@redhat.com, Ingo Molnar <mingo@elte.hu>
-Date: Fri, 24 Aug 2012 07:57:25 +1000
-In-Reply-To: <20120823161737.GG25338@linux.vnet.ibm.com>
-References: <20120822082205.GA29216@in.ibm.com>
-	 <20120822082708.GB29216@in.ibm.com> <1345696100.3338.21.camel@concordia>
-	 <20120823053234.GE25338@linux.vnet.ibm.com>
-	 <1345716378.29170.4.camel@pasglop>
-	 <20120823161737.GG25338@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753568Ab2HWWBS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 18:01:18 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:59414 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab2HWWBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 18:01:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120823160255.GA32671@frolo.macqel>
+References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com>
+	<CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
+	<CA+mBkFXnOB9hPoJVf6c92UuemqtLJwc2KW-G-ja6cG8VqLPZdw@mail.gmail.com>
+	<20120823160255.GA32671@frolo.macqel>
+Date: Fri, 24 Aug 2012 00:01:14 +0200
+Message-ID: <CA+mBkFUuAuRS3+QcHG_HBCVrY6TGaEBOhuRtGD-ZzxjKLh7y2w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Add support to broadcom 5222 PHY
+From: Stany MARCEL <stanypub@gmail.com>
+To: Philippe De Muyter <phdm@macqel.be>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-23 at 21:47 +0530, Srikar Dronamraju wrote:
-> * Benjamin Herrenschmidt <benh@kernel.crashing.org> [2012-08-23 20:06:18]:
-> 
-> > On Thu, 2012-08-23 at 11:02 +0530, Srikar Dronamraju wrote:
-> > > > 
-> > > 
-> > > insn is updated/accessed in the arch independent code. Size of
-> > > uprobe_opcode_t could be different for different archs.
-> > > uprobe_opcode_t
-> > > represents the size of the smallest breakpoint instruction for an
-> > > arch.
-> > > 
-> > > Hence u8 works out the best. I know we could still use uprobe_opcode_t
-> > > and achieve the same. In which case, we would have to interpret
-> > > MAX_UINSN_BYTES differently. Do you see any advantages of using
-> > > uprobe_opcode_t instead of u8 across archs?
-> > 
-> > But don't you actively rely on the fact that on powerpc, unlike x86, you
-> > -can- atomically replace an instruction with a single 32-bit store ?
-> > 
-> 
-> We are not doing a replace here, we are only copying from the ->vm_file
-> for the largest size instruction possible for that instruction. For
-> powerpc, this is easy because of fixed size instructions.  
-> 
-> On other archs, at this point, we dont even know the length of the
-> underlying instruction.
-> 
-> Now there are 3 ways to handle this:
-> 1. use arch independent copy_insn() (current.) (handles if the
-> instruction spreads across multiple pages on non fixed instruction
-> archs). 
-> 
-> 2. make the copy_insn() arch specific, that would mean every arch will
-> have to do read_mapping_page etc.
-> 
-> 3. have a arch specific hook in arch independent copy_insn code that
-> either does a memcpy for non fixed instruction archs or does an
-> assignment in archs like powerpc.
+On Thu, Aug 23, 2012 at 6:02 PM, Philippe De Muyter <phdm@macqel.be> wrote:
+> On Thu, Aug 23, 2012 at 05:21:23PM +0200, Stany MARCEL wrote:
+>> On Thu, Aug 23, 2012 at 12:47 PM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>> > On Tue, Aug 21, 2012 at 2:18 PM, Stany MARCEL
+>> > <stany.marcel@novasys-ingenierie.com> wrote:
+>> >> Signed-off-by: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
+>> >> ---
+>> >>
+>> >>  This driver is an adaption of the one given by freescale for kernel 2.6.25.
+>> >>
+>> >>  Tested with kernel 3.4.8 with arch/m68k backported from linux-m68k head
+>> >>  2 FEC configured with shared phy
+>> >>
+>> >>  drivers/net/phy/Kconfig        |    7 +-
+>> >>  drivers/net/phy/Makefile       |    1 +
+>> >>  drivers/net/phy/broadcom522x.c |  171 ++++++++++++++++++++++++++++++++++++++++
+>> >
+>> > This patch and "[PATCH 3/3] Add support to M54xx DMA FEC Driver" need to go
+>> > through the netdev tree, or collect acks there.
+>> >
+>> > Gr{oetje,eeting}s,
+>> >
+>> >                         Geert
+>> >
+>>
+>> Hello Geert,
+>>
+>> Please, what is the good process to follow as patch 3 depends on patch 1 ?
 >
-> I think you are suggesting option 3.
-> But instead of adding another call that does the arch specific stuff, we
-> are probably be better of doing a memcpy. Right?
-> 
-> For all powerpc references to insn we could refer to it as u32 as
-> suggested by Oleg.
+> Actually, IMHO patch 3 does not depend on patch 1, and I even think that
+> patch 1 is not needed, except to get a message with "BCM5222" instead
+> of "Generic PHY" in the kernel log.
+>
+> AFAIK the phy interface is standardized.
+>
+> Philippe
 
-Ok, doens't matter much either way, it's just odd and inefficient.
-
-Cheers,
-Ben.
-
-
+I meant patch 3 depends on patch 2 (multi channel dma api)
