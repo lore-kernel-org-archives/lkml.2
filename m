@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933840Ab2HWRUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:20:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59814 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964899Ab2HWRT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:19:56 -0400
+	id S964882Ab2HWRUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:20:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4616 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933866Ab2HWRUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 13:20:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
+   d="scan'208";a="213059293"
+Date: Thu, 23 Aug 2012 19:18:15 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: Peter Tyser <ptyser@xes-inc.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Aaron Sierra <asierra@xes-inc.com>, Guenter Roeck <linux@roeck-us.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-watchdog@vger.kernel.org,
+        Tobias Powalowski <tpowa@archlinux.org>
+Subject: Re: Serious regression in 3.5's iTCO_wdt, does anyone care?
+Message-ID: <20120823171815.GE9889@sortiz-mobl>
+References: <50363B12.4060009@archlinux.org>
 MIME-Version: 1.0
-In-Reply-To: <CADArhcAGV0iTAGirT6XPcVCwOKu-yg_MThk2J+ViK46CLL6Xkw@mail.gmail.com>
-References: <CADArhcAGV0iTAGirT6XPcVCwOKu-yg_MThk2J+ViK46CLL6Xkw@mail.gmail.com>
-Date: Thu, 23 Aug 2012 23:19:55 +0600
-Message-ID: <CADZ9YHjp63UP7Oc2nitGsQB=fAJjGZqSp9P0zDQAA1U+=Q0UJQ@mail.gmail.com>
-Subject: Re: [Memory Leak] free kprobe before optimized_kprobe free
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Akhilesh Kumar <akhilesh.lxr@gmail.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50363B12.4060009@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/12, Akhilesh Kumar <akhilesh.lxr@gmail.com> wrote:
-> From a77438899c7295299b59cdca8d1816ea69d6ed8e Mon Sep 17 00:00:00 2001
-> From: Akhilesh Kumar <akhilesh.lxr@gmail.com>
-> Date: Fri, 10 Aug 2012 14:02:07 +0530
-> Subject:[Memory Leak] free kprobe before optimized_kprobe free
->
-> Free *ap before *op otherwise ap pointer will be Dangling
->
-> Signed-off-by: Akhilesh Kumar <akhilesh.lxr@gmail.com>
+Hi Thomas,
 
-An usual way to submit a patch is to mark the subject line with
-[patch] tag, not [memory leak].
+On Thu, Aug 23, 2012 at 04:15:46PM +0200, Thomas Bächler wrote:
+> This regards the following commit in the Linus tree:
+> 
+> commit 887c8ec7219fc8eba78bb8f44a74c660934e9b98
+> Author: Aaron Sierra <asierra@xes-inc.com>
+> Date:   Fri Apr 20 14:14:11 2012 -0500
+> 
+>     watchdog: Convert iTCO_wdt driver to mfd model
+> 
+> Ever since the Linux 3.5 update, the iTCO_wdt driver has been completely
+> non-functional on every machine I encountered due to the above
+> conversion. A bug report for this problem has been open at
+> https://bugzilla.kernel.org/show_bug.cgi?id=44991 for over a month.
+Cc'ing the relevant maintainers usually helps...
 
-Thanks,
-Rakib
 
-> ---
->  kernel/kprobes.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index c62b854..ff0a97b 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -767,6 +767,7 @@ static __kprobes void
-> try_to_optimize_kprobe(struct kprobe *p)
->  	if (!arch_prepared_optinsn(&op->optinsn)) {
->  		/* If failed to setup optimizing, fallback to kprobe */
->  		arch_remove_optimized_kprobe(op);
-> +		kfree(ap);
->  		kfree(op);
->  		return;
->  	}
-> --
-> 1.7.8.4
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> Yet, neither the author of the commit, nor the people who signed off on
+> it have reacted to the bug report.
+> 
+> At this point, I believe that none of you are actually aware of the
+> problem and I write you to change that unfortunate situation.
+I applied Feng's patch to my for-linus branch and I'll send a pull request
+soon. It should be part of the 3.6 kernel.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
