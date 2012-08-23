@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030208Ab2HWHwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:52:30 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45073 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab2HWHw0 (ORCPT
+	id S933644Ab2HWHyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:54:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51715 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab2HWHyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:52:26 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-3b-5035e138152a
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Hiroshi Doyu'" <hdoyu@nvidia.com>
-Cc: pullip.cho@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com, arnd@arndb.de,
-        linux@arm.linux.org.uk, chunsang.jeong@linaro.org,
-        "'Krishna Reddy'" <vdumpa@nvidia.com>, konrad.wilk@oracle.com,
-        subashrp@gmail.com, minchan@kernel.org
-References: <1345630830-9586-1-git-send-email-hdoyu@nvidia.com>
- <1345630830-9586-3-git-send-email-hdoyu@nvidia.com>
- <CAHQjnOOF7Ca-Dz8K_zcS=gxQsJvKYaWA3tqUeK1RSd-wLYZ44w@mail.gmail.com>
- <20120822.163648.3800987367886904.hdoyu@nvidia.com>
- <012401cd80f4$59727020$0c575060$%szyprowski@samsung.com>
- <20120823091519.804aeae4ba93bcfe011e787c@nvidia.com>
-In-reply-to: <20120823091519.804aeae4ba93bcfe011e787c@nvidia.com>
-Subject: RE: [RFC 2/4] ARM: dma-mapping: IOMMU allocates pages from pool with
- GFP_ATOMIC
-Date: Thu, 23 Aug 2012 09:52:07 +0200
-Organization: SPRC
-Message-id: <014501cd8104$35a8ce40$a0fa6ac0$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2A9v9424aRo/HsRP+UPIS0bLlkOQADPung
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t9jQV2Lh6YBBlN2W1pc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MMzufMhXs4ql42/6MsYHxBmcXIyeHhICJxIZ/75khbDGJC/fW
-	s3UxcnEICUxnlPi7exGUM4tJ4sO990wgVWwChhJdb7uAEhwcIgKqEk/nMoLUMAvcY5Jo+7qE
-	BaLhCZPE5KnfWUEaOAUcJT5vWADWICwQJXF/aihImAWot+vTelaQML+AkMTEWQogYV4BF4n9
-	G7exQtiCEj8m32MBsZkFtCTW7zzOBGHLS2xe85YZpFVCQF3i0V9dkLCIgJHEpunzGCFKRCTu
-	NjxnncAoPAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYLD+5n0
-	DsZVDRaHGAU4GJV4eAPumQYIsSaWFVfmHmKU4GBWEuENnwcU4k1JrKxKLcqPLyrNSS0+xCjN
-	waIkzsvfZxggJJCeWJKanZpakFoEk2Xi4JRqYNy8J+O7/BzmfT/WP5+jbpvWKXL+eMmd950b
-	29+aOm+dqRYxt+ji/S2LwnawX5hu98bndhezht7M+v2tfmknX7olJVrseyH899/xvoVl1VL2
-	K3a9MvxxfW3R3k8ammKnzi3/5bl720GFy32vdL4nHhKeviROZ+lZLqO5ZlcnJ+gw3T9yKW13
-	3A8+JZbijERDLeai4kQAiiFL1WsCAAA=
-X-TM-AS-MML: No
+	Thu, 23 Aug 2012 03:54:09 -0400
+Subject: Re: [PATCH] staging: rtl8192e: use is_zero_ether_addr() instead of
+ memcmp()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CAPgLHd-VLPp-tpF77tTc9aj8-VO30jy2yhsi7KyW_NFQOqNqag@mail.gmail.com>
+References: <CAPgLHd-VLPp-tpF77tTc9aj8-VO30jy2yhsi7KyW_NFQOqNqag@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Aug 2012 09:54:03 +0200
+Message-ID: <1345708443.5904.186.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hiroshi,
-
-On Thursday, August 23, 2012 8:15 AM Hiroshi Doyu wrote:
-
-> On Thu, 23 Aug 2012 07:58:34 +0200
-> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On Thu, 2012-08-23 at 15:19 +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> > Hello,
-> >
-> > On Wednesday, August 22, 2012 3:37 PM Hiroshi Doyu wrote:
-> >
-> > > KyongHo Cho <pullip.cho@samsung.com> wrote @ Wed, 22 Aug 2012 14:47:00 +0200:
-> > >
-> > > > vzalloc() call in __iommu_alloc_buffer() also causes BUG() in atomic context.
-> > >
-> > > Right.
-> > >
-> > > I've been thinking that kzalloc() may be enough here, since
-> > > vzalloc() was introduced to avoid allocation failure for big chunk of
-> > > memory, but I think that it's unlikely that the number of page array
-> > > can be so big. So I propose to drop vzalloc() here, and just simply to
-> > > use kzalloc only as below(*1).
-> >
-> > We already had a discussion about this, so I don't think it makes much sense to
-> > change it back to kzalloc. This vmalloc() call won't hurt anyone. It should not
-> > be considered a problem for atomic allocations, because no sane driver will try
-> > to allocate buffers larger than a dozen KiB with GFP_ATOMIC flag. I would call
-> > such try a serious bug, which we should not care here.
+> Using is_zero_ether_addr() instead of directly use
+> memcmp() to determine if the ethernet address is all
+> zeros.
 > 
-> Ok, I've already sent v2 just now, where, instead of changing it back,
-> just with GFP_ATOMIC, kzalloc() would be selected, just in case. I guess
-> that this would be ok(a bit safer?)
+> spatch with a semantic match is used to found this problem.
+> (http://coccinelle.lip6.fr/)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/staging/rtl8192e/rtllib_softmac_wx.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8192e/rtllib_softmac_wx.c b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+> index 1bb6b52..3cedfd9 100644
+> --- a/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+> +++ b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+> @@ -14,6 +14,8 @@
+>   */
+>  
+> 
+> +#include <linux/etherdevice.h>
+> +
+>  #include "rtllib.h"
+>  #include "dot11d.h"
+>  /* FIXME: add A freqs */
+> @@ -137,7 +139,6 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
+>  {
+>  
+>  	int ret = 0;
+> -	u8 zero[] = {0, 0, 0, 0, 0, 0};
+>  	unsigned long flags;
+>  
+>  	short ifup = ieee->proto_started;
+> @@ -157,7 +158,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
+>  		goto out;
+>  	}
+>  
+> -	if (memcmp(temp->sa_data, zero, ETH_ALEN) == 0) {
+> +	if (is_zero_ether_addr(temp->sa_data)) {
+>  		spin_lock_irqsave(&ieee->lock, flags);
+>  		memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
 
-I've posted some comments to v2. If you agree with my suggestion, no changes around
-those vmalloc() calls will be needed.
+BTW this looks suspicious : Why is it using memcpy() if temp->sa_data is
+known to be zero ?
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+>  		ieee->wap_set = 0;
+> @@ -177,7 +178,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
+>  
+>  	ieee->cannot_notify = false;
+>  	memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
+> -	ieee->wap_set = (memcmp(temp->sa_data, zero, ETH_ALEN) != 0);
+> +	ieee->wap_set = (!is_zero_ether_addr(temp->sa_data));
+>  
+	ieee->wap_set = !is_zero_ether_addr(temp->sa_data);
 
+>  	spin_unlock_irqrestore(&ieee->lock, flags);
+>  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
