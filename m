@@ -1,82 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab2HWSA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:00:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab2HWSAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 14:00:51 -0400
-Date: Thu, 23 Aug 2012 14:00:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tj@kernel.org, mpatocka@redhat.com,
-        bharrosh@panasas.com
-Subject: Re: [PATCH v6 00/13] Block cleanups
-Message-ID: <20120823180041.GK12232@redhat.com>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
+	id S1759165Ab2HWSCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:02:18 -0400
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:47182 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752336Ab2HWSCP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 14:02:15 -0400
+Date: Thu, 23 Aug 2012 12:02:13 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-pci@vger.kernel.org, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Robert Hancock <hancockrwd@gmail.com>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 1/2] PCI: leave MEM and IO decoding disabled during
+ 64-bit BAR sizing, too
+Message-ID: <20120823180213.GA31462@google.com>
+References: <20120709181745.18165.93914.stgit@bhelgaas.mtv.corp.google.com>
+ <20120709182018.18165.98339.stgit@bhelgaas.mtv.corp.google.com>
+ <CAOesGMgUGUG9Z=x6ssumVkAxN6fHoeyAJ3-P8CoaNTGas7-vmg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345655050-28199-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMgUGUG9Z=x6ssumVkAxN6fHoeyAJ3-P8CoaNTGas7-vmg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 10:03:57AM -0700, Kent Overstreet wrote:
+On Thu, Aug 23, 2012 at 12:28:23AM -0700, Olof Johansson wrote:
+> Hi,
+> 
+> On Mon, Jul 9, 2012 at 11:20 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > After 253d2e5498, we disable MEM and IO decoding for most devices while we
+> > size 32-bit BARs.  However, we restore the original COMMAND register before
+> > we size the upper 32 bits of 64-bit BARs, so we can still cause a conflict.
+> >
+> > This patch waits to restore the original COMMAND register until we're
+> > completely finished sizing the BAR.
+> >
+> > Reference: https://lkml.org/lkml/2007/8/25/154
+> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> This patch causes boot lockup on PA Semi hardware, since it disables
+> the bar on the UART that is used for console, and it has printks
+> between the old and the new re-enable location. If I boot with 'debug'
+> level for printk, I hit this. If I boot with just regular console
+> args, I don't.
+> 
+> I'm guessing any other platform that uses MMIO-based UART on PCI for
+> console will have similar issues. I can verify on Chrome OS x86
+> hardware tomorrow if legacy powerpc isn't important enough to care
+> about. :-)
+> 
+> I have no proposal for a fix for this. Can you please consider
+> reverting for 3.6 unless someone has a better idea?
 
-[..]
-> Kent Overstreet (13):
->   block: Generalized bio pool freeing
->   dm: Use bioset's front_pad for dm_rq_clone_bio_info
->   block: Add bio_reset()
->   pktcdvd: Switch to bio_kmalloc()
->   block: Kill bi_destructor
->   block: Consolidate bio_alloc_bioset(), bio_kmalloc()
+Thanks a lot for finding and debugging this!
 
-This patch series says "Block Cleanups" in the subject. I think that
-it can be divided in two parts. First part seems to be cleanup where
-we get rid of ->bi_destructor and merge kmalloc() and allocation 
-from bio_set.
+Can you try the patch below?
 
-Second part seems to be more of enhancing bio splitting functionality
-and not necessarily a cleanup. So may be breaking this series in two
-parts makes sense. First part is cleanup and second part is enhanced
-bio splitting capabilities of block layer.
 
-Thanks
-Vivek
+commit cfc29ece86d648e63fb46de81b2bf8e3e107672c
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Thu Aug 23 10:53:08 2012 -0600
+
+    PCI: Don't print anything while decoding is disabled
+    
+    If we try to print to the console device while its decoding is disabled,
+    the system will hang.
+    
+    Reported-by: Olof Johansson <olof@lixom.net>
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 6c143b4..9f8a6b7 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -144,15 +144,13 @@ static inline unsigned long decode_bar(struct pci_dev *dev, u32 bar)
+ 	case PCI_BASE_ADDRESS_MEM_TYPE_32:
+ 		break;
+ 	case PCI_BASE_ADDRESS_MEM_TYPE_1M:
+-		dev_info(&dev->dev, "1M mem BAR treated as 32-bit BAR\n");
++		/* 1M mem BAR treated as 32-bit BAR */
+ 		break;
+ 	case PCI_BASE_ADDRESS_MEM_TYPE_64:
+ 		flags |= IORESOURCE_MEM_64;
+ 		break;
+ 	default:
+-		dev_warn(&dev->dev,
+-			 "mem unknown type %x treated as 32-bit BAR\n",
+-			 mem_type);
++		/* mem unknown type treated as 32-bit BAR */
+ 		break;
+ 	}
+ 	return flags;
+@@ -173,9 +171,11 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 	u32 l, sz, mask;
+ 	u16 orig_cmd;
+ 	struct pci_bus_region region;
++	bool bar_too_big = false, bar_disabled = false;
  
->   block: Avoid deadlocks with bio allocation by stacking drivers
->   block: Add an explicit bio flag for bios that own their bvec
->   block: Rename bio_split() -> bio_pair_split()
->   block: Introduce new bio_split()
->   block: Rework bio_pair_split()
->   block: Add bio_clone_bioset(), bio_clone_kmalloc()
->   block: Only clone bio vecs that are in use
-> 
->  Documentation/block/biodoc.txt      |   5 -
->  block/blk-core.c                    |  10 +-
->  drivers/block/drbd/drbd_main.c      |  13 +-
->  drivers/block/drbd/drbd_req.c       |  18 +-
->  drivers/block/osdblk.c              |   3 +-
->  drivers/block/pktcdvd.c             |  73 ++-----
->  drivers/block/rbd.c                 |   8 +-
->  drivers/md/dm-crypt.c               |   9 -
->  drivers/md/dm-io.c                  |  11 -
->  drivers/md/dm.c                     |  68 ++----
->  drivers/md/linear.c                 |   6 +-
->  drivers/md/md.c                     |  44 +---
->  drivers/md/raid0.c                  |   8 +-
->  drivers/md/raid10.c                 |  23 +-
->  drivers/target/target_core_iblock.c |   9 -
->  fs/bio-integrity.c                  |  45 ----
->  fs/bio.c                            | 419 +++++++++++++++++++++++-------------
->  fs/exofs/ore.c                      |   5 +-
->  include/linux/bio.h                 | 155 +++++++------
->  include/linux/blk_types.h           |  16 +-
->  20 files changed, 434 insertions(+), 514 deletions(-)
-> 
-> -- 
-> 1.7.12
+ 	mask = type ? PCI_ROM_ADDRESS_MASK : ~0;
+ 
++	/* No printks while decoding is disabled! */
+ 	if (!dev->mmio_always_on) {
+ 		pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
+ 		pci_write_config_word(dev, PCI_COMMAND,
+@@ -240,8 +240,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 			goto fail;
+ 
+ 		if ((sizeof(resource_size_t) < 8) && (sz64 > 0x100000000ULL)) {
+-			dev_err(&dev->dev, "reg %x: can't handle 64-bit BAR\n",
+-				pos);
++			bar_too_big = true;
+ 			goto fail;
+ 		}
+ 
+@@ -252,12 +251,11 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 			region.start = 0;
+ 			region.end = sz64;
+ 			pcibios_bus_to_resource(dev, res, &region);
++			bar_disabled = true;
+ 		} else {
+ 			region.start = l64;
+ 			region.end = l64 + sz64;
+ 			pcibios_bus_to_resource(dev, res, &region);
+-			dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n",
+-				   pos, res);
+ 		}
+ 	} else {
+ 		sz = pci_size(l, sz, mask);
+@@ -268,18 +266,23 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 		region.start = l;
+ 		region.end = l + sz;
+ 		pcibios_bus_to_resource(dev, res, &region);
+-
+-		dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n", pos, res);
+ 	}
+ 
+- out:
++	goto out;
++
++
++fail:
++	res->flags = 0;
++out:
+ 	if (!dev->mmio_always_on)
+ 		pci_write_config_word(dev, PCI_COMMAND, orig_cmd);
+ 
++	if (bar_too_big)
++		dev_err(&dev->dev, "reg %x: can't handle 64-bit BAR\n", pos);
++	if (res->flags && !bar_disabled)
++		dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n", pos, res);
++
+ 	return (res->flags & IORESOURCE_MEM_64) ? 1 : 0;
+- fail:
+-	res->flags = 0;
+-	goto out;
+ }
+ 
+ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
