@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab2HWMZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:25:43 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:53130 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab2HWMZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:25:39 -0400
-Date: Thu, 23 Aug 2012 05:25:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
-        "3.2.x.." <stable@kernel.org>
-Subject: Re: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
-Message-ID: <20120823122521.GF31059@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
- <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
- <20120822171930.GE2447@linux.vnet.ibm.com>
- <20120822173542.GD13674@somewhere>
- <20120822190109.GH2447@linux.vnet.ibm.com>
- <20120823104201.GA18251@somewhere.redhat.com>
+	id S1757557Ab2HWM0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:26:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46065 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755377Ab2HWM0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:26:06 -0400
+Date: Thu, 23 Aug 2012 13:25:49 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Tixy <tixy@yxit.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Leif Lindholm <Leif.Lindholm@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 4/4] ARM: kprobes: make more tests conditional
+Message-ID: <20120823122549.GD13622@mudshark.cambridge.arm.com>
+References: <1345645780-2749-1-git-send-email-arnd@arndb.de>
+ <201208221519.12056.arnd@arndb.de>
+ <alpine.LFD.2.02.1208221136180.1754@xanadu.home>
+ <201208221841.29645.arnd@arndb.de>
+ <1345679461.3601.20.camel@computer5.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120823104201.GA18251@somewhere.redhat.com>
+In-Reply-To: <1345679461.3601.20.camel@computer5.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082312-1976-0000-0000-0000107DCB59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 12:42:11PM +0200, Frederic Weisbecker wrote:
-> On Wed, Aug 22, 2012 at 12:01:09PM -0700, Paul E. McKenney wrote:
-> > > The current code is preemptable, at least it appears so because it calls
-> > > schedule() directly. And if I call rcu_idle_enter() in a preemptable section,
-> > > I'm in trouble because I'll schedule while in extended QS.
-> > > 
-> > > Thus I need to disable preemption here at least until I call rcu_idle_exit().
-> > > 
-> > > Now this is an endless loop so there is no need to re-enable
-> > > preemption after the loop. And schedule_preempt_disabled()
-> > > takes care of enabling preemption before schedule() and redisabling
-> > > it afterward.
-> > > 
-> > > 
-> > > > 
-> > > > 							Thanx, Paul
-> > > > 
-> > > > >  	while (1) {
-> > > > >  		/* FIXME -- EV6 and LCA45 know how to power down
-> > > > >  		   the CPU.  */
+On Thu, Aug 23, 2012 at 12:51:01AM +0100, Tixy wrote:
+> On Wed, 2012-08-22 at 18:41 +0000, Arnd Bergmann wrote:
+> > On Wednesday 22 August 2012, Nicolas Pitre wrote:
+> > > On Wed, 22 Aug 2012, Arnd Bergmann wrote:
 > > > > > 
-> > > > > +		rcu_idle_enter();
-> > > > >  		while (!need_resched())
-> > > > >  			cpu_relax();
-> > > > > -		schedule();
-> > > > > +		rcu_idle_exit();
-> > > > > +		schedule_preempt_disabled();
-> > > > >  	}
+> > > > > The ldrex/strex instructions are available on ARMv6.  It's only the d 
+> > > > > variants (strexd/ldrexd) which are only available from ARMv6k.
+> > > > 
+> > > > Ok. How is the version below then? I haven't tested this one yet.
+> > > 
+> > > In fact, I think the b variants are ARMv6k+ as well.  Only the plain 
+> > > (non b non d) variants are available on ARMv6.
 > > 
-> > Understood, but what I don't understand is why you don't need a
-> > preempt_enable() right here.
+> > Ok, third attempt then. This leaves ldrex for ARMv6 but marks
+> > {st,ld}rex{b,h,d} as V6K specific (which includes ARMv7).
 > 
-> Look, let's inline the content of schedule_preempt_disabled(), the code
-> then looks like:
+> ARMv7 does set CPU_32v6K, because arch/arm/mm/Kconfig has
 > 
-> void cpu_idle(void)
-> {
-> 	set_thread_flag(TIF_POLLING_NRFLAG);
+> config CPU_V7
+> 	bool "Support ARM V7 processor" if ARCH_INTEGRATOR || MACH_REALVIEW_EB || MACH_REALVIEW_PBX
+> 	select CPU_32v6K
+> 	select CPU_32v7
 > 
-> 	preempt_disable();
-> 	while (1) {
-> 		/* FIXME -- EV6 and LCA45 know how to power down
-> 		   the CPU.  */
+> but this seems more for peripheral reasons not because all the various
+> CPU configs systematically select the earlier architecture variants,
+> e.g. CPU_V7 doesn't select CPU_32v6.
 > 
-> 		rcu_idle_enter();
-> 		while (!need_resched())
-> 			cpu_relax();
-> 		rcu_idle_exit();
+> So I would have been inclined to test for
 > 
-> 		sched_preempt_enable_no_resched();
-> 	        schedule();
-> 	        preempt_disable();
-> 	}
+> #if defined(CONFIG_CPU_32v6K) || (__LINUX_ARM_ARCH__ >= 7) 
 
-	preempt_enable();  /* Why is this not needed? */
+FWIW, the selection of the optimised atomic64 implementation for ARM (which
+uses the double-word exclusive instructions) boils down to CONFIG_CPU_32v6K,
+so I think the additional __LINUX_ARM_ARCH__ check is probably overkill.
 
-> }
-> 
-> So there is a preempt_enable() before we schedule, then we re-disable
-> preemption after schedule.
-> 
-> Now I realize cpu_idle() is supposed to be called with preemption disabled
-> already so I shouldn't add an explicit preempt_disable() or it's going to be worse.
-> But that means there is an existing bug here in alpha, it should call schedule_preempt_disabled()
-> instead of schedule(). cpu_idle() is called with preemption disabled on the boot CPU.
-> And it should as well from the secondary CPUs entry but alpha doesn't seem to do that.
-> 
-> So I need to fix that first. I'll respin.
-
-OK, look forward to seeing the respin.
-
-							Thanx, Paul
-
+Will
