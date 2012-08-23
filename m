@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab2H0Ems (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 00:42:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37424 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab2H0Emq (ORCPT
+	id S1751877Ab2H0E6C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 00:58:02 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33687 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab2H0E6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 00:42:46 -0400
-Date: Sun, 26 Aug 2012 21:42:42 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jani Nikula <jani.nikula@intel.com>,
-        Yang Guang <guang.a.yang@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [ 08/32] drm/i915: correctly order the ring init sequence
-Message-ID: <20120827044242.GA1874@kroah.com>
-References: <20120820035647.862247088@linuxfoundation.org>
- <20120820035649.020303468@linuxfoundation.org>
- <20120824230313.GD3072@herton-Z68MA-D2H-B3>
+	Mon, 27 Aug 2012 00:58:00 -0400
+Message-ID: <50361A59.2020308@linux.vnet.ibm.com>
+Date: Thu, 23 Aug 2012 17:26:09 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824230313.GD3072@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org, ananth@in.ibm.com,
+        Chris McDermott <lcm@us.ibm.com>, masbock@linux.vnet.ibm.com
+Subject: Re: [PATCH] x86: mce: Honour bios-set CMCI threshold
+References: <20120822123054.29238.3864.stgit@localhost.localdomain> <20120822124649.GD5817@aftab.osrc.amd.com>
+In-Reply-To: <20120822124649.GD5817@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082704-9264-0000-0000-00000237D6EA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 08:03:14PM -0300, Herton Ronaldo Krzesinski wrote:
-> On Sun, Aug 19, 2012 at 08:57:04PM -0700, Greg Kroah-Hartman wrote:
-> > From: Greg KH <gregkh@linuxfoundation.org>
-> > 
-> > 3.4-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > 
-> > commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 upstream.
-> > 
-> > We may only start to set up the new register values after having
-> > confirmed that the ring is truely off. Otherwise the hw might lose the
-> > newly written register values. This is caught later on in the init
-> > sequence, when we check whether the register writes have stuck.
-> > 
-> > Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-> > Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50522
-> > Tested-by: Yang Guang <guang.a.yang@intel.com>
-> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> I think with this commit also the following commits should be picked for
-> 3.4 right? (as suggested for 3.0):
-> 
-> f01db988ef6f6c70a6cc36ee71e4a98a68901229
-> b7884eb45ec98c0d34c7f49005ae9d4b4b4e38f6
-> 
-> Just reporting that I tested this 3.4.10 proposed update with the two
-> commits above cherry-picked/backported applied, and worked ok.
+On 08/22/2012 06:16 PM, Borislav Petkov wrote:
+> On Wed, Aug 22, 2012 at 06:00:54PM +0530, Naveen N. Rao wrote:
+>> The ACPI spec doesn't provide for a way for the bios to pass down
+>> recommended thresholds to the OS on a _per-bank_ basis. This patch adds
+>> a new boot option, which if passed, allows bios to initialize the CMCI
+>> threshold. In such a case, we simply skip programming any threshold
+>> value.
+>>
+>> As fail-safe, we initialize threshold to 1 if some banks have not been
+>> initialized by the bios and warn the user.
+>>
+>> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+>> ---
+>>   Documentation/x86/x86_64/boot-options.txt |    5 ++++
+>>   arch/x86/include/asm/mce.h                |    1 +
+>>   arch/x86/kernel/cpu/mcheck/mce.c          |    4 +++
+>>   arch/x86/kernel/cpu/mcheck/mce_intel.c    |   39 +++++++++++++++++++++++++++--
+>>   4 files changed, 46 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+>> index c54b4f5..ec92540 100644
+>> --- a/Documentation/x86/x86_64/boot-options.txt
+>> +++ b/Documentation/x86/x86_64/boot-options.txt
+>> @@ -50,6 +50,11 @@ Machine check
+>>   		monarchtimeout:
+>>   		Sets the time in us to wait for other CPUs on machine checks. 0
+>>   		to disable.
+>> +   mce=bios_cmci_threshold
+>> +		Don't overwrite the bios-set CMCI threshold. This boot option
+>> +		prevents Linux from overwriting the CMCI threshold set by the
+>> +		bios. Without this option, Linux always sets the CMCI
+>> +		threshold to 1.
+>>
+>>      nomce (for compatibility with i386): same as mce=off
+>>
+>> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+>> index a3ac52b..8ad5078 100644
+>> --- a/arch/x86/include/asm/mce.h
+>> +++ b/arch/x86/include/asm/mce.h
+>> @@ -171,6 +171,7 @@ DECLARE_PER_CPU(struct device *, mce_device);
+>>   #ifdef CONFIG_X86_MCE_INTEL
+>>   extern int mce_cmci_disabled;
+>>   extern int mce_ignore_ce;
+>> +extern int mce_bios_cmci_threshold;
+>>   void mce_intel_feature_init(struct cpuinfo_x86 *c);
+>>   void cmci_clear(void);
+>>   void cmci_reenable(void);
+>> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+>> index 292d025..401359d 100644
+>> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+>> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+>> @@ -82,6 +82,7 @@ static int			mce_panic_timeout	__read_mostly;
+>>   static int			mce_dont_log_ce		__read_mostly;
+>>   int				mce_cmci_disabled	__read_mostly;
+>>   int				mce_ignore_ce		__read_mostly;
+>> +int				mce_bios_cmci_threshold	__read_mostly;
+>>   int				mce_ser			__read_mostly;
+>
+> AFAICT, this is actually a single-bit flag but we're using a whole
+> integer for it and from looking at the other boot options a couple of
+> them are used as flags too.
+>
+> Care to define a
+>
+> struct boot_flags {
+> 	__u64 	mce_bios_cmci_threshold : 1,
+> 		__reserved		: 63;
+> };
+>
+> and use
+>
+> 	boot_flags.mce_bios_cmci_threshold
+>
+> in the conditionals below instead?
 
-3.4.10 as-is works fine for me, so I'm a bit leary of wanting to add
-more patches to it (or 3.0.42), until I get some kind of confirmation
-that these two patches are really needed.
+Sure - sounds like a good idea. Further, a #define could eliminate the 
+need to change other references, but I'm not sure that's GENERALLacceptable
 
-Anyone else having problems here?
+#define mce_bios_cmci_threshold boot_flags.mce_bios_cmci_threshold
 
-thanks,
+could eliminate the need to change other references, but I'm not sure 
+that's acceptable
 
-greg k-h
+But, I just had a quick look and it seems to me that these were defined 
+as integers since they are exposed via sysfs. For instance:
+
+static struct dev_ext_attribute dev_attr_cmci_disabled = {
+         __ATTR(cmci_disabled, 0644, device_show_int, set_cmci_disabled),
+         &mce_cmci_disabled
+};
+
+Converting mce_cmci_disabled to a bit-field doesn't work since we take 
+its address above. We could ignore and not set the second field at all 
+(dev_ext_attribute->var) and define our own callbacks, but that'll be 
+more work and I'm not sure if we work fine without
+
+
+>
+> I'll try to convert the rest of them to that struct and thus save some
+> more space...
+>
+> Thanks.
+>
+
