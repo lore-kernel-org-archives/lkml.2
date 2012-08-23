@@ -1,126 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030483Ab2HWN5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 09:57:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30314 "EHLO mx1.redhat.com"
+	id S1030527Ab2HWN6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 09:58:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35198 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030266Ab2HWN5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 09:57:30 -0400
-Date: Thu, 23 Aug 2012 10:08:14 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, f@amt.cnet
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: trace the events of mmu_notifier
-Message-ID: <20120823130814.GA11915@amt.cnet>
-References: <50335A27.2070306@linux.vnet.ibm.com>
- <20120823092405.GB32710@amt.cnet>
- <50362257.6060006@linux.vnet.ibm.com>
+	id S1030212Ab2HWN6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 09:58:45 -0400
+Date: Thu, 23 Aug 2012 15:58:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Li Haifeng <omycle@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fixup the page of buddy_higher address's calculation
+Message-ID: <20120823135839.GB19968@dhcp22.suse.cz>
+References: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
+ <20120823095022.GB10685@dhcp22.suse.cz>
+ <CAFNq8R5pY0yPp-LQYNywpMhVtXgqPSy3RYqHVTVpPXs52kOmJw@mail.gmail.com>
+ <20120823123034.GA3793@shangw.(null)>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50362257.6060006@linux.vnet.ibm.com>
+In-Reply-To: <20120823123034.GA3793@shangw.(null)>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 08:30:15PM +0800, Xiao Guangrong wrote:
-> On 08/23/2012 05:24 PM, Marcelo Tosatti wrote:
-> > On Tue, Aug 21, 2012 at 05:51:35PM +0800, Xiao Guangrong wrote:
-> >> mmu_notifier is the interface to broadcast the mm events to KVM, the
-> >> tracepoints introduced in this patch can trace all these events, it is
-> >> very helpful for us to notice and fix the bug caused by mm
+On Thu 23-08-12 20:30:34, Gavin Shan wrote:
+> On Thu, Aug 23, 2012 at 06:21:06PM +0800, Li Haifeng wrote:
+[...]
+> >>> From d7cd78f9d71a5c9ddeed02724558096f0bb4508a Mon Sep 17 00:00:00 2001
+> >>> From: Haifeng Li <omycle@gmail.com>
+> >>> Date: Thu, 23 Aug 2012 16:27:19 +0800
+> >>> Subject: [PATCH] Fixup the page of buddy_higher address's calculation
 > >>
-> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >> ---
-> >>  include/trace/events/kvm.h |  121 ++++++++++++++++++++++++++++++++++++++++++++
-> >>  virt/kvm/kvm_main.c        |   19 +++++++
-> >>  2 files changed, 140 insertions(+), 0 deletions(-)
+> >> Some general questions:
+> >> Any word about the change? Is it really that obvious? Why do you think the
+> >> current state is incorrect? How did you find out?
 > >>
-> >> diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
-> >> index 7ef9e75..a855ff9 100644
-> >> --- a/include/trace/events/kvm.h
-> >> +++ b/include/trace/events/kvm.h
-> >> @@ -309,6 +309,127 @@ TRACE_EVENT(
+> >> And more specific below:
 > >>
-> >>  #endif
-> >>
-> >> +#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
-> >> +DECLARE_EVENT_CLASS(mmu_notifier_address_class,
-> >> +
-> >> +	TP_PROTO(struct kvm *kvm, unsigned long address),
-> >> +
-> >> +	TP_ARGS(kvm, address),
-> >> +
-> >> +	TP_STRUCT__entry(
-> >> +		__field(struct kvm *, kvm)
-> >> +		__field(unsigned long, address)
-> >> +	),
-> >> +
-> >> +	TP_fast_assign(
-> >> +		__entry->kvm = kvm;
-> >> +		__entry->address = address;
-> >> +	),
-> >> +
-> >> +	TP_printk("kvm %p address %lx", __entry->kvm, __entry->address)
-> > 
-> > 
-> > Perhaps the pointer was useful for debugging, but otherwise, i don't
-> > think it should be printed.
+> >>> Signed-off-by: Haifeng Li <omycle@gmail.com>
+> >>> ---
+> >>>  mm/page_alloc.c |    2 +-
+> >>>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>>
+> >>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >>> index ddbc17d..5588f68 100644
+> >>> --- a/mm/page_alloc.c
+> >>> +++ b/mm/page_alloc.c
+> >>> @@ -579,7 +579,7 @@ static inline void __free_one_page(struct page *page,
+> >>>                 combined_idx = buddy_idx & page_idx;
+> >>>                 higher_page = page + (combined_idx - page_idx);
+> >>>                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
+> >>> -               higher_buddy = page + (buddy_idx - combined_idx);
+> >>> +               higher_buddy = page + (buddy_idx - page_idx);
 > 
-> But this is the only information to identify the guest if may guest
-> are running.
+> Haifeng, Not sure it would be better? At least, the expression
+> would be more explicitly meaningful than yours.
+> 
+> 		    higher_buddy = higher_page + (buddy_idx - combined_idx);
 
-Can't you get to task_struct, then pid?
+Yes, indeed. It would be also good to mention that this is a regression
+since 43506fad (mm/page_alloc.c: simplify calculation of combined index
+of adjacent buddy lists). IIUC this basically disables the heuristic
+because page_is_buddy will fail for order+1, right?
 
-A kernel pointer to identify a task is really weird (and not consistent 
-with the other tracepoints).
+Maybe 2.6.38+ stable candidate, then.
 
-> >> +	TP_ARGS(kvm, address, pte),
-> >> +
-> >> +	TP_STRUCT__entry(
-> >> +		__field(struct kvm *, kvm)
-> >> +		__field(unsigned long, address)
-> >> +		__field(unsigned long, pte)
-> >> +	),
-> >> +
-> >> +	TP_fast_assign(
-> >> +		__entry->kvm = kvm;
-> >> +		__entry->address = address;
-> >> +		__entry->pte = pte.pte;
-> >> +	),
-> >> +
-> >> +	TP_printk("kvm %p address %lx pte %lx", __entry->kvm, __entry->address,
-> >> +		  __entry->pte)
-> > 
-> > The pte bits can be spelled out? (see __print_symbolic).
-> 
-> This tracepoint is put in kvm.h which can be used on different architectures
-> which have different pte decode. I will try to find a way to show more
-> readable format.
-> >>  	spin_lock(&kvm->mmu_lock);
-> >>
-> >> +	trace_kvm_mmu_notifier_clear_flush_young(kvm, address);
-> >> +
-> >>  	young = kvm_age_hva(kvm, address);
-> >>  	if (young)
-> >>  		kvm_flush_remote_tlbs(kvm);
-> >> @@ -394,6 +407,9 @@ static int kvm_mmu_notifier_test_young(struct mmu_notifier *mn,
-> >>
-> >>  	idx = srcu_read_lock(&kvm->srcu);
-> >>  	spin_lock(&kvm->mmu_lock);
-> >> +
-> >> +	trace_kvm_mmu_notifier_test_young(kvm, address);
-> >> +
-> > 
-> > can print young information?
-> 
-> Okay, will do it in next version.
-> 
-> Thanks for your review, Marcelo!
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Could you repost with the full changelog, please?
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
