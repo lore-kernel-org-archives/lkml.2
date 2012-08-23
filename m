@@ -1,92 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab2HWQiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 12:38:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453Ab2HWQhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 12:37:22 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pci@vger.kernel.org, linux-efi@vger.kernel.org, mfleming@intel.com,
-        dwmw2@infradead.org, bhelgaas@google.com,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH V3 2/4] PCI: Add pcibios_add_device
-Date: Thu, 23 Aug 2012 12:36:41 -0400
-Message-Id: <1345739803-21017-3-git-send-email-mjg@redhat.com>
-In-Reply-To: <1345739803-21017-1-git-send-email-mjg@redhat.com>
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.206
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1756832Ab2HWQid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:38:33 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56247 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755285Ab2HWQh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 12:37:58 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org, Will Deacon <will.deacon@arm.com>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH v2] mm: hugetlb: add arch hook for clearing page flags before entering pool
+Date: Thu, 23 Aug 2012 17:37:13 +0100
+Message-Id: <1345739833-25008-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platforms may want to provide architecture-specific functionality during
-PCI enumeration. Add a pcibios_add_device() call that architectures can
-override to do so.
+The core page allocator ensures that page flags are zeroed when freeing
+pages via free_pages_check. A number of architectures (ARM, PPC, MIPS)
+rely on this property to treat new pages as dirty with respect to the
+data cache and perform the appropriate flushing before mapping the pages
+into userspace.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+This can lead to cache synchronisation problems when using hugepages,
+since the allocator keeps its own pool of pages above the usual page
+allocator and does not reset the page flags when freeing a page into
+the pool.
+
+This patch adds a new architecture hook, arch_clear_hugepage_flags, so
+that architectures which rely on the page flags being in a particular
+state for fresh allocations can adjust the flags accordingly when a
+page is freed into the pool.
+
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
- drivers/pci/bus.c   |  5 +++++
- drivers/pci/pci.c   | 13 +++++++++++++
- include/linux/pci.h |  1 +
- 3 files changed, 19 insertions(+)
 
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 4b0970b..e2f447e 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -166,6 +166,11 @@ int pci_bus_add_device(struct pci_dev *dev)
- 	int retval;
- 
- 	pci_fixup_device(pci_fixup_final, dev);
-+
-+	retval = pcibios_add_device(dev);
-+	if (retval)
-+		return retval;
-+
- 	retval = device_add(&dev->dev);
- 	if (retval)
- 		return retval;
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index f3ea977..5a9a4d8 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1385,6 +1385,19 @@ void pcim_pin_device(struct pci_dev *pdev)
- 		dr->pinned = 1;
+v2: Made ia64 and powerpc code a nop, moved hook to free_huge_page
+
+ arch/ia64/include/asm/hugetlb.h    |    4 ++++
+ arch/mips/include/asm/hugetlb.h    |    4 ++++
+ arch/powerpc/include/asm/hugetlb.h |    4 ++++
+ arch/s390/include/asm/hugetlb.h    |    1 +
+ arch/sh/include/asm/hugetlb.h      |    6 ++++++
+ arch/sparc/include/asm/hugetlb.h   |    4 ++++
+ arch/tile/include/asm/hugetlb.h    |    4 ++++
+ arch/x86/include/asm/hugetlb.h     |    4 ++++
+ mm/hugetlb.c                       |    1 +
+ 9 files changed, 32 insertions(+), 0 deletions(-)
+
+diff --git a/arch/ia64/include/asm/hugetlb.h b/arch/ia64/include/asm/hugetlb.h
+index da55c63..94eaa5b 100644
+--- a/arch/ia64/include/asm/hugetlb.h
++++ b/arch/ia64/include/asm/hugetlb.h
+@@ -77,4 +77,8 @@ static inline void arch_release_hugepage(struct page *page)
+ {
  }
  
-+/*
-+ * pcibios_add_device - provide arch specific hooks when adding device dev
-+ * @dev: the PCI device being added
-+ *
-+ * Permits the platform to provide architecture specific functionality when
-+ * devices are added. This is the default implementation. Architecture
-+ * implementations can override this.
-+ */
-+int __attribute__ ((weak)) pcibios_add_device (struct pci_dev *dev)
++static inline void arch_clear_hugepage_flags(struct page *page)
 +{
-+	return 0;
 +}
 +
- /**
-  * pcibios_disable_device - disable arch specific PCI resources for device dev
-  * @dev: the PCI device to disable
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5faa831..6a2625c 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1582,6 +1582,7 @@ void pcibios_disable_device(struct pci_dev *dev);
- void pcibios_set_master(struct pci_dev *dev);
- int pcibios_set_pcie_reset_state(struct pci_dev *dev,
- 				 enum pcie_reset_state state);
-+int pcibios_add_device(struct pci_dev *dev);
+ #endif /* _ASM_IA64_HUGETLB_H */
+diff --git a/arch/mips/include/asm/hugetlb.h b/arch/mips/include/asm/hugetlb.h
+index 58d3688..bd94946 100644
+--- a/arch/mips/include/asm/hugetlb.h
++++ b/arch/mips/include/asm/hugetlb.h
+@@ -112,4 +112,8 @@ static inline void arch_release_hugepage(struct page *page)
+ {
+ }
  
- #ifdef CONFIG_PCI_MMCONFIG
- extern void __init pci_mmcfg_early_init(void);
++static inline void arch_clear_hugepage_flags(struct page *page)
++{
++}
++
+ #endif /* __ASM_HUGETLB_H */
+diff --git a/arch/powerpc/include/asm/hugetlb.h b/arch/powerpc/include/asm/hugetlb.h
+index dfdb95b..62e11a3 100644
+--- a/arch/powerpc/include/asm/hugetlb.h
++++ b/arch/powerpc/include/asm/hugetlb.h
+@@ -151,6 +151,10 @@ static inline void arch_release_hugepage(struct page *page)
+ {
+ }
+ 
++static inline void arch_clear_hugepage_flags(struct page *page)
++{
++}
++
+ #else /* ! CONFIG_HUGETLB_PAGE */
+ static inline void flush_hugetlb_page(struct vm_area_struct *vma,
+ 				      unsigned long vmaddr)
+diff --git a/arch/s390/include/asm/hugetlb.h b/arch/s390/include/asm/hugetlb.h
+index 799ed0f..faa7655 100644
+--- a/arch/s390/include/asm/hugetlb.h
++++ b/arch/s390/include/asm/hugetlb.h
+@@ -33,6 +33,7 @@ static inline int prepare_hugepage_range(struct file *file,
+ }
+ 
+ #define hugetlb_prefault_arch_hook(mm)		do { } while (0)
++#define arch_clear_hugepage_flags(page)		do { } while (0)
+ 
+ int arch_prepare_hugepage(struct page *page);
+ void arch_release_hugepage(struct page *page);
+diff --git a/arch/sh/include/asm/hugetlb.h b/arch/sh/include/asm/hugetlb.h
+index 967068f..b3808c7 100644
+--- a/arch/sh/include/asm/hugetlb.h
++++ b/arch/sh/include/asm/hugetlb.h
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_SH_HUGETLB_H
+ #define _ASM_SH_HUGETLB_H
+ 
++#include <asm/cacheflush.h>
+ #include <asm/page.h>
+ 
+ 
+@@ -89,4 +90,9 @@ static inline void arch_release_hugepage(struct page *page)
+ {
+ }
+ 
++static inline void arch_clear_hugepage_flags(struct page *page)
++{
++	clear_bit(PG_dcache_clean, &page->flags);
++}
++
+ #endif /* _ASM_SH_HUGETLB_H */
+diff --git a/arch/sparc/include/asm/hugetlb.h b/arch/sparc/include/asm/hugetlb.h
+index 1770610..e7927c9 100644
+--- a/arch/sparc/include/asm/hugetlb.h
++++ b/arch/sparc/include/asm/hugetlb.h
+@@ -82,4 +82,8 @@ static inline void arch_release_hugepage(struct page *page)
+ {
+ }
+ 
++static inline void arch_clear_hugepage_flags(struct page *page)
++{
++}
++
+ #endif /* _ASM_SPARC64_HUGETLB_H */
+diff --git a/arch/tile/include/asm/hugetlb.h b/arch/tile/include/asm/hugetlb.h
+index b204238..0f885af 100644
+--- a/arch/tile/include/asm/hugetlb.h
++++ b/arch/tile/include/asm/hugetlb.h
+@@ -106,6 +106,10 @@ static inline void arch_release_hugepage(struct page *page)
+ {
+ }
+ 
++static inline void arch_clear_hugepage_flags(struct page *page)
++{
++}
++
+ #ifdef CONFIG_HUGETLB_SUPER_PAGES
+ static inline pte_t arch_make_huge_pte(pte_t entry, struct vm_area_struct *vma,
+ 				       struct page *page, int writable)
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index 439a9ac..bdd35db 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -90,4 +90,8 @@ static inline void arch_release_hugepage(struct page *page)
+ {
+ }
+ 
++static inline void arch_clear_hugepage_flags(struct page *page)
++{
++}
++
+ #endif /* _ASM_X86_HUGETLB_H */
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index bc72712..f1bb534 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -637,6 +637,7 @@ static void free_huge_page(struct page *page)
+ 		h->surplus_huge_pages--;
+ 		h->surplus_huge_pages_node[nid]--;
+ 	} else {
++		arch_clear_hugepage_flags(page);
+ 		enqueue_huge_page(h, page);
+ 	}
+ 	spin_unlock(&hugetlb_lock);
 -- 
-1.7.11.2
+1.7.4.1
 
