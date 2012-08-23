@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2HWPKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:10:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57459 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab2HWPK0 (ORCPT
+	id S932515Ab2HWPL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:11:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50194 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756191Ab2HWPKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:10:26 -0400
+	Thu, 23 Aug 2012 11:10:38 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
         Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/12] tools lib traceevent: Fix strerror_r() use in pevent_strerror
-Date: Thu, 23 Aug 2012 12:09:55 -0300
-Message-Id: <1345734596-7601-12-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/12] perf tools: Fix 'No libunwind found' make warning message
+Date: Thu, 23 Aug 2012 12:09:45 -0300
+Message-Id: <1345734596-7601-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1345734596-7601-1-git-send-email-acme@infradead.org>
 References: <1345734596-7601-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-glibc-2.16 starts to mark the function with attribute warn_unused_result
-so that it can cause a build warning.
+Changing error message when libunwind support is not found to inform
+properly to install libunwind-dev[el] package.
 
-Since GNU version of strerror_r() can return a pointer to a string
-without setting @buf, check the return value and copy/truncate it to our
-buffer if needed.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Feng Tang <feng.tang@intel.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1345618831-9148-5-git-send-email-namhyung@kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ulrich Drepper <drepper@gmail.com>
+Link: http://lkml.kernel.org/r/20120822083812.GC1003@krava.brq.redhat.com
+[ committer note: s/disable/disabling/g rewording suggested by Steven Rostedt ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c |    7 ++++++-
- tools/lib/traceevent/event-utils.h |    6 ++++++
- 2 files changed, 12 insertions(+), 1 deletions(-)
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 1373e4c..f978c59 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -4809,7 +4809,12 @@ int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
- 	const char *msg;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 6bd888d..722ddee 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -493,7 +493,7 @@ endif
  
- 	if (errnum >= 0) {
--		strerror_r(errnum, buf, buflen);
-+		msg = strerror_r(errnum, buf, buflen);
-+		if (msg != buf) {
-+			size_t len = strlen(msg);
-+			char *c = mempcpy(buf, msg, min(buflen-1, len));
-+			*c = '\0';
-+		}
- 		return 0;
- 	}
- 
-diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
-index 0829638..bc07500 100644
---- a/tools/lib/traceevent/event-utils.h
-+++ b/tools/lib/traceevent/event-utils.h
-@@ -39,6 +39,12 @@ void __vdie(const char *fmt, ...);
- void __vwarning(const char *fmt, ...);
- void __vpr_stat(const char *fmt, ...);
- 
-+#define min(x, y) ({				\
-+	typeof(x) _min1 = (x);			\
-+	typeof(y) _min2 = (y);			\
-+	(void) (&_min1 == &_min2);		\
-+	_min1 < _min2 ? _min1 : _min2; })
-+
- static inline char *strim(char *string)
- {
- 	char *ret;
+ FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
+-	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
++	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+ 	NO_LIBUNWIND := 1
+ endif # Libunwind support
+ endif # NO_LIBUNWIND
 -- 
 1.7.1
 
