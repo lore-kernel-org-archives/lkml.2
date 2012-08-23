@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab2HWGnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 02:43:33 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48903 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245Ab2HWGn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 02:43:29 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-28-5035d10fa38e
-Date: Thu, 23 Aug 2012 15:43:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: m.szyprowski@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com, arnd@arndb.de,
-        linux@arm.linux.org.uk, chunsang.jeong@linaro.org, vdumpa@nvidia.com,
-        konrad.wilk@oracle.com, subashrp@gmail.com, pullip.cho@samsung.com
-Subject: Re: [v2 0/4] ARM: dma-mapping: IOMMU atomic allocation
-Message-ID: <20120823064357.GD5369@bbox>
-References: <1345702229-9539-1-git-send-email-hdoyu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345702229-9539-1-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S932198Ab2HWGui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 02:50:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64390 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751877Ab2HWGue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 02:50:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,298,1344236400"; 
+   d="asc'?scan'208";a="184016887"
+Message-ID: <1345704908.2848.202.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBIFS fixes for 3.6-rc3
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>
+Date: Thu, 23 Aug 2012 09:55:08 +0300
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-5MC7wlDKSaZt2X01cAPj"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 09:10:25AM +0300, Hiroshi Doyu wrote:
-> Hi,
-> 
-> The commit e9da6e9 "ARM: dma-mapping: remove custom consistent dma
-> region" breaks the compatibility with existing drivers. This causes
-> the following kernel oops(*1). That driver has called dma_pool_alloc()
-> to allocate memory from the interrupt context, and it hits
-> BUG_ON(in_interrpt()) in "get_vm_area_caller()". This patch seris
-> fixes this problem with making use of the pre-allocate atomic memory
-> pool which DMA is using in the same way as DMA does now.
-> 
-> Any comment would be really appreciated.
-> 
-> v2:
-> Don't modify attrs(DMA_ATTR_NO_KERNEL_MAPPING) for atomic allocation. (Marek)
-> Skip vzalloc (KyongHo, Minchan)
 
-Huh? I would like to correct exactly. I didn't say that kzalloc unify is okay.
-As KyongHo said, there are other usecases for allocating big buffer but
-I can't agree his opinion that it's system memory shortage if the allocation
-fails. Because there are lots of freeable pages(cached page + anon pages
-with swap , shrinkable slab and so on). But as I said early, VM can't do
-anything except relying on kswapd in atomic context while there are a ton
-of freeable pages in system and we can't gaurantee kswapd will do something
-for us before seeing the page allocation failure in process context.
-Especially, UP is more problem. So, it never indicate system needs more memory.
+--=-5MC7wlDKSaZt2X01cAPj
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Atomic high order allocation is very fragile in VM POV
-so caller should have fallback mechanism. Otherwise, don't do that.
+Hi Linus,
 
--- 
-Kind regards,
-Minchan Kim
+The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92=
+:
+
+  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
+
+are available in the git repository at:
+
+  git://git.infradead.org/linux-ubifs.git tags/upstream-3.6-rc3
+
+for you to fetch changes up to 69f9025894c391fec2f7c7ea9150203418454915:
+
+  UBIFS: fix error messages spelling (2012-08-22 17:41:09 +0300)
+
+----------------------------------------------------------------
+UBIFS fixes for 3.6:
+1. Fix crash on error which prevents emulated power-cut testing.
+2. Fix log reply regression introduced in 3.6-rc1.
+3. Fix UBIFS complaints about too small debug buffer size which.
+4. Fix error message spelling, and remove incorrect commentary.
+
+----------------------------------------------------------------
+Artem Bityutskiy (5):
+      UBIFS: remove stale commentary
+      UBIFS: fix crash on error path
+      UBIFS: fix replay regression
+      UBIFS: fix complaints about too small debug buffer size
+      UBIFS: fix error messages spelling
+
+ fs/ubifs/debug.h    |    2 +-
+ fs/ubifs/lpt.c      |    5 ++++-
+ fs/ubifs/recovery.c |    2 +-
+ fs/ubifs/replay.c   |    3 +--
+ fs/ubifs/super.c    |    3 ---
+ 5 files changed, 7 insertions(+), 8 deletions(-)
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-5MC7wlDKSaZt2X01cAPj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQNdPMAAoJECmIfjd9wqK0f2MP/jYbC6kGArBSrt7siASvHZJ+
+5hsa/1f4fCCFZOYgARonTkDkO8iWpH/Sf5Qs22pubVMaRiemjuD7O0MhSCTgbBcr
+w8Lc2lmGKcmvirjpJzv5h9+WMRlEjm4s8zz1IZs6LIy4k75A9JUyar3F3+PaRcB8
+3fy7tBtlX+e2fwMJSEUuwPeXmXf3AUll/8Gef3t5UtjdIa9K3/yUTedCl9ugZqBV
+DBzpMfQyGfUDQfD1RhAKRSOHiNzyl+Yer6+7vTgiSbggcICKRk7b8B2zmPZG7Ak0
+FulszZJgiytRI1VEHiL+y7PRuuu8q4/BcJChVtOIgJhWC+COta1eR7XNB47UlC7K
+Cr3HytSzMqKWqIdUvouZB2Vwgyjb3Anx8z3Ts6UutHVaFAEiGZKZW49txs/h2Jrb
+GkFkFV0tKBwF3dzW/ft8fLVzruIZnMOGeqEwP8dYX3k9Fi4yXm5cfXVWFQiQ1JLN
+pAFgDnHDhPRwIqy6DOC5IVyJAk/CqRUFop1SBzXJvmbhIwraznZKXlZ+Ac09zdq1
+5CuFuGttQiAvOqGRFTgM3puVOJqJDyDs9Kf3Oaxh+Jaym5j4pMqR9O0ez3kZlEBB
+EDqtHFmzY6a+JckWVYlxf2DtZjIsYHPnw9OXbI1Fs6sfeOcvaMCD39bbBTwDuAod
+ac7d41hodKVlNGjG9uln
+=am7i
+-----END PGP SIGNATURE-----
+
+--=-5MC7wlDKSaZt2X01cAPj--
+
