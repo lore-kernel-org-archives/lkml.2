@@ -1,53 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968Ab2HWPbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:31:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39105 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab2HWPb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:31:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACVXFVOMdWQSutkBzdcLJ-ozmecq_p-yzYJbtoLVUafz5KV=KQ@mail.gmail.com>
-References: <CACVXFVNYCZqxt9B=9F_71KP0gdinGbNXd_ePQ10NKsCGd1dY4g@mail.gmail.com>
- <CACVXFVOMdWQSutkBzdcLJ-ozmecq_p-yzYJbtoLVUafz5KV=KQ@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 23 Aug 2012 17:31:08 +0200
-Message-ID: <CAPXgP13LBR6GD=VomBPim3mDPy1bJ=eFBZ=oDaKZCjEo=Xp94Q@mail.gmail.com>
-Subject: Re: udev 182: response timeout for request_firmware in module_probe path
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        systemd-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
+	id S932396Ab2HWPcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:32:23 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:33458 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753936Ab2HWPcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:32:20 -0400
+Date: Thu, 23 Aug 2012 17:32:12 +0200
+Message-Id: <201208231532.q7NFWCQZ023407@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [PATCH] hwmon/lm70: adding support for NS LM74 chip
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 5:16 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> On Tue, Aug 21, 2012 at 1:34 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+Hello,
 
->> I found that udev 182 doesn't response for the request_firmware in
->> module_probe path until 30sec later after the 'ADD' event of firmware
->> device, but no such problem in udev175, sounds like a regression of udev?
->
-> Looks udevd is capable of handling the firmware ADD event even though
-> the device ADD event is being processed( modprobe is triggered by device
-> ADD event).
+This Patch adds support for the LM74 chip from National Semiconductor (NS) 
+in the lm70 driver
 
-Calling out from inside the kernel and blocking in a firmware loading
-userspace transaction during module_init() is kind of weird.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-The firmware loading call should not rely on a fully functional
-userspace, and modprobe should not hang and block until the firmware
-request is handled.
-
-The firmware should be requested asynchronously or from a different
-context as module_init(). It depends on the type of driver/hardware
-what's the best approach here.
-
-Thanks,
-Kay
+diff -u linux-3.5-vanilla/drivers/hwmon/Kconfig linux-3.5/drivers/hwmon/Kconfig
+--- linux-3.5-vanilla/drivers/hwmon/Kconfig	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/drivers/hwmon/Kconfig	2012-08-21 13:46:47.000000000 +0200
+@@ -530,11 +530,11 @@
+ 	  will be called lm63.
+ 
+ config SENSORS_LM70
+-	tristate "National Semiconductor LM70 / Texas Instruments TMP121"
++	tristate "National Semiconductor LM70&LM74 / Texas Instruments TMP121"
+ 	depends on SPI_MASTER
+ 	help
+ 	  If you say yes here you get support for the National Semiconductor
+-	  LM70 and Texas Instruments TMP121/TMP123 digital temperature
++	  LM70 and LM74 and Texas Instruments TMP121/TMP123 digital temperature
+ 	  sensor chips.
+ 
+ 	  This driver can also be built as a module.  If so, the module
+diff -u linux-3.5-vanilla/drivers/hwmon/lm70.c linux-3.5/drivers/hwmon/lm70.c
+--- linux-3.5-vanilla/drivers/hwmon/lm70.c	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/drivers/hwmon/lm70.c	2012-08-21 13:46:31.000000000 +0200
+@@ -3,11 +3,12 @@
+  *
+  * The LM70 is a temperature sensor chip from National Semiconductor (NS).
+  * Copyright (C) 2006 Kaiwan N Billimoria <kaiwan@designergraphix.com>
++ * Copyright (C) 2012 Christophe Leroy <christophe.leroy@c-s.fr>
+  *
+  * The LM70 communicates with a host processor via an SPI/Microwire Bus
+  * interface. The complete datasheet is available at National's website
+  * here:
+- * http://www.national.com/pf/LM/LM70.html
++ * http://www.ti.com/product/LM70
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -43,6 +44,7 @@
+ 
+ #define LM70_CHIP_LM70		0	/* original NS LM70 */
+ #define LM70_CHIP_TMP121	1	/* TI TMP121/TMP123 */
++#define LM70_CHIP_LM74		2	/* original NS LM74 */
+ 
+ struct lm70 {
+ 	struct device *hwmon_dev;
+@@ -98,6 +100,7 @@
+ 		break;
+ 
+ 	case LM70_CHIP_TMP121:
++	case LM70_CHIP_LM74:
+ 		val = ((int)raw / 8) * 625 / 10;
+ 		break;
+ 	}
+@@ -123,6 +126,9 @@
+ 	case LM70_CHIP_TMP121:
+ 		ret = sprintf(buf, "tmp121\n");
+ 		break;
++	case LM70_CHIP_LM74:
++		ret = sprintf(buf, "lm74\n");
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
+@@ -139,12 +145,13 @@
+ 	struct lm70 *p_lm70;
+ 	int status;
+ 
+-	/* signaling is SPI_MODE_0 for both LM70 and TMP121 */
++	/* signaling is SPI_MODE_0 for LM70, LM74 and TMP121 */
+ 	if (spi->mode & (SPI_CPOL | SPI_CPHA))
+ 		return -EINVAL;
+ 
+-	/* 3-wire link (shared SI/SO) for LM70 */
+-	if (chip == LM70_CHIP_LM70 && !(spi->mode & SPI_3WIRE))
++	/* 3-wire link (shared SI/SO) for LM70 and LM74 */
++	if ((chip == LM70_CHIP_LM70 || chip == LM70_CHIP_LM74)
++			&& !(spi->mode & SPI_3WIRE))
+ 		return -EINVAL;
+ 
+ 	/* NOTE:  we assume 8-bit words, and convert to 16 bits manually */
+@@ -202,6 +209,7 @@
+ static const struct spi_device_id lm70_ids[] = {
+ 	{ "lm70",   LM70_CHIP_LM70 },
+ 	{ "tmp121", LM70_CHIP_TMP121 },
++	{ "lm74",   LM70_CHIP_LM74 },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(spi, lm70_ids);
+@@ -219,5 +227,5 @@
+ module_spi_driver(lm70_driver);
+ 
+ MODULE_AUTHOR("Kaiwan N Billimoria");
+-MODULE_DESCRIPTION("NS LM70 / TI TMP121/TMP123 Linux driver");
++MODULE_DESCRIPTION("NS LM70 & LM74 / TI TMP121/TMP123 Linux driver");
+ MODULE_LICENSE("GPL");
+diff -u linux-3.5-vanilla/Documentation/hwmon/lm70 linux-3.5/Documentation/hwmon/lm70
+--- linux-3.5-vanilla/Documentation/hwmon/lm70	2012-07-21 22:58:29.000000000 +0200
++++ linux-3.5/Documentation/hwmon/lm70	2012-08-21 13:38:24.000000000 +0200
+@@ -3,7 +3,9 @@
+ 
+ Supported chips:
+   * National Semiconductor LM70
+-    Datasheet: http://www.national.com/pf/LM/LM70.html
++    Datasheet: http://www.ti.com/product/LM70
++  * National Semiconductor LM74
++    Datasheet: http://www.ti.com/product/LM74
+   * Texas Instruments TMP121/TMP123
+     Information: http://focus.ti.com/docs/prod/folders/print/tmp121.html
+ 
+@@ -31,9 +33,11 @@
+ with a "SPI master controller driver", see drivers/spi/spi_lm70llp.c
+ and its associated documentation.
+ 
+-The TMP121/TMP123 are very similar; main differences are 4 wire SPI inter-
+-face (read only) and 13-bit temperature data (0.0625 degrees celsius reso-
+-lution).
++The LM74 is very similar; main differences is 13-bit temperature data 
++(0.0625 degrees celsius resolution).
++
++The TMP121/TMP123 are very similar to the LM74; main difference is 4 wire
++SPI interface (read only).
+ 
+ Thanks to
+ ---------
