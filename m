@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab2HWCNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 22:13:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48472 "EHLO mga02.intel.com"
+	id S1755575Ab2HWCO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 22:14:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48534 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab2HWCNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 22:13:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,297,1344236400"; 
-   d="scan'208";a="183970922"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] power_supply: Add new power supply VALID property
-Thread-Topic: [PATCH] power_supply: Add new power supply VALID property
-Thread-Index: AQHNgNNXLK7g3wcSsUiuUMSTS2XyJpdmp3BQ
-Date: Thu, 23 Aug 2012 02:13:40 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD23C04A@BGSMSX102.gar.corp.intel.com>
-References: <1343532714-28040-1-git-send-email-ramakrishna.pallala@intel.com>
- <20120823015828.GB24471@lizard>
-In-Reply-To: <20120823015828.GB24471@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1754717Ab2HWCOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 22:14:52 -0400
+Message-ID: <503591F9.7050506@zytor.com>
+Date: Wed, 22 Aug 2012 19:14:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org, JBeulich@suse.com,
+        akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 74/74] lto, workaround: Mark do_futex noinline to prevent
+ clobbering ebp
+References: <1345345030-22211-1-git-send-email-andi@firstfloor.org> <1345345030-22211-75-git-send-email-andi@firstfloor.org> <503576AB.5030208@zytor.com>
+In-Reply-To: <503576AB.5030208@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7N2DrIB027919
 
-> On Sun, Jul 29, 2012 at 09:01:54AM +0530, Ramakrishna Pallala wrote:
-> > It is possible that users can use non-standard chargers or use invalid
-> > batteries especially with mobile devices.
-> 
-> Maybe 'original' or 'authentic' would be a better term for this?
-> For me, 'valid' is kind of too broad and confusing. :-/
-> 
-> [...]
-> > +VALID - indicates the power supply connected is valid(1) or
-> > +invalid(0)
-> > +
-> 
-> But if you still think that 'valid' is a better term, can you please document it in
-> more detail?
+On 08/22/2012 05:17 PM, H. Peter Anvin wrote:
+> On 08/18/2012 07:57 PM, Andi Kleen wrote:
+>> From: Andi Kleen <ak@linux.intel.com>
+>>
+>> On a 32bit build gcc 4.7 with LTO decides to clobber the 6th argument on the
+>> stack.  Unfortunately this corrupts the user EBP and leads to later crashes.
+>> For now mark do_futex noinline to prevent this.
+>>
+>> I wish there was a generic way to handle this. Seems like a ticking time
+>> bomb problem.
+>>
+>
+> There is a generic way to handle this.  This is actually a bug in Linux
+> that has been known for at least 15 years and which we keep hacking around.
+>
+> The right thing to do is to change head_32.S to not violate the i386
+> ABI.  Arguments pushed (by value) on the stack are property of the
+> callee, that is, they are volatile, so the hack of making them do double
+> duty as both being saved and passed as arguments is just plain bogus.
+> The problem is that it works "just well enough" that people (including
+> myself) keep hacking around it with hacks like this, with assembly
+> macros, and whatnot instead of fixing the root cause.
+>
+> 	-hpa
+>
 
-Authentic looks fine too. I will resubmit the patch with more details.
+Just a clarification (Andi knows this, I'm sure, but others might not): 
+this wasn't done the way it is for no reason; back when Linus originally 
+wrote the code, i386 passed *all* arguments on the stack, and we still 
+do that for "asmlinkage" functions on i386.  Since gcc back then rarely 
+if ever mucked with the stack arguments, it made sense to make them 
+"double duty."  Fixing this really should entail changing the invocation 
+of system calls on i386 to use the regparm convention, which means we 
+only need to push three arguments twice, rather than six.
 
-Thanks,
-Ram
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
