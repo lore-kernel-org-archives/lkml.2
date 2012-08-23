@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526Ab2HWUg6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:36:58 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57487 "HELO
+	id S933714Ab2HWUh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:37:29 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:57553 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932738Ab2HWUgy (ORCPT
+	with SMTP id S932738Ab2HWUhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:36:54 -0400
+	Thu, 23 Aug 2012 16:37:23 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/mtyU5SD/mZ1zjbmerLMxPhKEKEGgkpQyDdXSpIx
-	H45dMjOsHEQ9jR
-Message-ID: <50369460.7010303@gmx.de>
-Date: Thu, 23 Aug 2012 20:36:48 +0000
+X-Provags-ID: V01U2FsdGVkX18kZpdwyZ8k9nhiUwuXhs9Uwt0J/FzKfTFAmu01yC
+	KRudGbXvSVy6bD
+Message-ID: <5036947E.3040707@gmx.de>
+Date: Thu, 23 Aug 2012 20:37:18 +0000
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
 To: Damien Cassou <damien.cassou@lifl.fr>
 CC: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] drivers/video/bf537-lq035.c: use devm_ functions
-References: <1343742860-16213-1-git-send-email-damien.cassou@lifl.fr> <1343742860-16213-6-git-send-email-damien.cassou@lifl.fr>
-In-Reply-To: <1343742860-16213-6-git-send-email-damien.cassou@lifl.fr>
+Subject: Re: [PATCH 3/5] drivers/video/mbx/mbxfb.c: use devm_ functions
+References: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr> <1343752762-16861-2-git-send-email-damien.cassou@lifl.fr>
+In-Reply-To: <1343752762-16861-2-git-send-email-damien.cassou@lifl.fr>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Y-GMX-Trusted: 0
@@ -28,7 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 01:54 PM, Damien Cassou wrote:
+On 07/31/2012 04:39 PM, Damien Cassou wrote:
 > From: Damien Cassou <damien.cassou@lifl.fr>
 > 
 > The various devm_ functions allocate memory that is released when a driver
@@ -47,55 +47,73 @@ Florian Tobias Schandinat
 
 > 
 > ---
->  drivers/video/bf537-lq035.c |   12 +++++-------
->  1 file changed, 5 insertions(+), 7 deletions(-)
+>  drivers/video/mbx/mbxfb.c |   22 ++++++++--------------
+>  1 file changed, 8 insertions(+), 14 deletions(-)
 > 
-> diff --git a/drivers/video/bf537-lq035.c b/drivers/video/bf537-lq035.c
-> index befbc80..7347aa1 100644
-> --- a/drivers/video/bf537-lq035.c
-> +++ b/drivers/video/bf537-lq035.c
-> @@ -760,18 +760,20 @@ static int __devinit bfin_lq035_probe(struct platform_device *pdev)
->  	bfin_lq035_fb.flags = FBINFO_DEFAULT;
+> diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
+> index 85e4f44..9229acf 100644
+> --- a/drivers/video/mbx/mbxfb.c
+> +++ b/drivers/video/mbx/mbxfb.c
+> @@ -939,8 +939,9 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
+>  	}
+>  	mfbi->reg_phys_addr = mfbi->reg_res->start;
 >  
+> -	mfbi->reg_virt_addr = ioremap_nocache(mfbi->reg_phys_addr,
+> -					      res_size(mfbi->reg_req));
+> +	mfbi->reg_virt_addr = devm_ioremap_nocache(&dev->dev,
+> +						   mfbi->reg_phys_addr,
+> +						   res_size(mfbi->reg_req));
+>  	if (!mfbi->reg_virt_addr) {
+>  		dev_err(&dev->dev, "failed to ioremap Marathon registers\n");
+>  		ret = -EINVAL;
+> @@ -948,12 +949,12 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
+>  	}
+>  	virt_base_2700 = mfbi->reg_virt_addr;
 >  
-> -	bfin_lq035_fb.pseudo_palette = kzalloc(sizeof(u32) * 16, GFP_KERNEL);
-> +	bfin_lq035_fb.pseudo_palette = devm_kzalloc(&pdev->dev,
-> +						    sizeof(u32) * 16,
-> +						    GFP_KERNEL);
->  	if (bfin_lq035_fb.pseudo_palette == NULL) {
->  		pr_err("failed to allocate pseudo_palette\n");
->  		ret = -ENOMEM;
-> -		goto out_palette;
-> +		goto out_table;
+> -	mfbi->fb_virt_addr = ioremap_nocache(mfbi->fb_phys_addr,
+> -					     res_size(mfbi->fb_req));
+> +	mfbi->fb_virt_addr = devm_ioremap_nocache(&dev->dev, mfbi->fb_phys_addr,
+> +						  res_size(mfbi->fb_req));
+>  	if (!mfbi->fb_virt_addr) {
+>  		dev_err(&dev->dev, "failed to ioremap frame buffer\n");
+>  		ret = -EINVAL;
+> -		goto err4;
+> +		goto err3;
 >  	}
 >  
->  	if (fb_alloc_cmap(&bfin_lq035_fb.cmap, NBR_PALETTE, 0) < 0) {
->  		pr_err("failed to allocate colormap (%d entries)\n",
->  			NBR_PALETTE);
->  		ret = -EFAULT;
-> -		goto out_cmap;
-> +		goto out_table;
+>  	fbi->screen_base = (char __iomem *)(mfbi->fb_virt_addr + 0x60000);
+> @@ -971,7 +972,7 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
+>  	if (ret < 0) {
+>  		dev_err(&dev->dev, "fb_alloc_cmap failed\n");
+>  		ret = -EINVAL;
+> -		goto err5;
+> +		goto err3;
 >  	}
 >  
->  	if (register_framebuffer(&bfin_lq035_fb) < 0) {
-> @@ -804,9 +806,6 @@ out_lcd:
->  	unregister_framebuffer(&bfin_lq035_fb);
->  out_reg:
->  	fb_dealloc_cmap(&bfin_lq035_fb.cmap);
-> -out_cmap:
-> -	kfree(bfin_lq035_fb.pseudo_palette);
-> -out_palette:
->  out_table:
->  	dma_free_coherent(NULL, TOTAL_VIDEO_MEM_SIZE, fb_buffer, 0);
->  	fb_buffer = NULL;
-> @@ -834,7 +833,6 @@ static int __devexit bfin_lq035_remove(struct platform_device *pdev)
->  	free_dma(CH_PPI);
+>  	platform_set_drvdata(dev, fbi);
+> @@ -996,10 +997,6 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
 >  
+>  err6:
+>  	fb_dealloc_cmap(&fbi->cmap);
+> -err5:
+> -	iounmap(mfbi->fb_virt_addr);
+> -err4:
+> -	iounmap(mfbi->reg_virt_addr);
+>  err3:
+>  	release_mem_region(mfbi->reg_res->start, res_size(mfbi->reg_res));
+>  err2:
+> @@ -1026,10 +1023,7 @@ static int __devexit mbxfb_remove(struct platform_device *dev)
+>  			if (mfbi->platform_remove)
+>  				mfbi->platform_remove(fbi);
 >  
-> -	kfree(bfin_lq035_fb.pseudo_palette);
->  	fb_dealloc_cmap(&bfin_lq035_fb.cmap);
->  
->  
+> -			if (mfbi->fb_virt_addr)
+> -				iounmap(mfbi->fb_virt_addr);
+> -			if (mfbi->reg_virt_addr)
+> -				iounmap(mfbi->reg_virt_addr);
+> +
+>  			if (mfbi->reg_req)
+>  				release_mem_region(mfbi->reg_req->start,
+>  						   res_size(mfbi->reg_req));
 > 
 > 
 
