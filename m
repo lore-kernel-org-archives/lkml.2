@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934469Ab2HWVLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:11:46 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:54692 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934412Ab2HWVLn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:11:43 -0400
-Date: Thu, 23 Aug 2012 23:11:40 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, joro@8bytes.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 03/19] x86, io_apic: Introduce x86_io_apic_ops.disable()
-Message-ID: <20120823211140.GB7120@breakpoint.cc>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-4-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1345470965-24410-4-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934477Ab2HWVNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:13:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34539 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934412Ab2HWVNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 17:13:43 -0400
+Date: Thu, 23 Aug 2012 17:13:56 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, ShuoX Liu <shuox.liu@intel.com>,
+        mjg59@srcf.ucam.org, Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Len Brown <len.brown@intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: [RFC][PATCH 3/3] cpuidle: count double the exit latency
+Message-ID: <20120823171356.32d3a807@cuia.bos.redhat.com>
+In-Reply-To: <20120823171104.38574add@cuia.bos.redhat.com>
+References: <20120823171104.38574add@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 03:55:49PM +0200, Joerg Roedel wrote:
-> This function pointer is used to call a system-specific
-> function for disabling the IO-APIC. Currently this is used
-> for IRQ remapping which has its own disable routine.
+In some workloads, for example web servers talking to database servers,
+a task on one CPU will wake up a task on another CPU, wait for that
+other CPU to handle the job, and get the result back.  Each of those
+wakeups is likely to incur the c-state exit latency.
 
-What I miss here is the fact that you extract irq-mapping specific bits from
-disable_IO_APIC() and put them in a separate function named
-irq_remapping_disable_io_apic(). And having a big if in this function probably
-didn't look that sexy so you decided to use function op. Nice move, no
-question but not abvious from the description here and it took a while to figure
-it out based on the code. Well, maybe it is late…
+By only counting the exit latency once, even though the round trip
+involves two c-state exits, we can end up going into too deep a
+c-state for the workload.
 
-> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-> index 283a43f..f72a5e8 100644
-> --- a/drivers/iommu/irq_remapping.c
-> +++ b/drivers/iommu/irq_remapping.c
-> @@ -17,6 +21,24 @@ int no_x2apic_optout;
-<snip>
-> +static void __init irq_remapping_modify_x86_ops(void)
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ drivers/cpuidle/governors/menu.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-I don't want sound to picky here but the term 'modify' is bad I think. Would
-'overwrite' fit better here? Is 'modify' used someplace else in x86 so you
-follow a common pattern here? Maybe it is just me.
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 47b1150..ccdb348 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -378,10 +378,13 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	/*
+ 	 * We correct for the exit latency; we are assuming here that the
+ 	 * exit latency happens after the event that we're interested in.
++	 * Pessimistically assume that we got woken up by another CPU,
++	 * so we count its exit latency, too.
+ 	 */
+-	if (measured_us > data->exit_us)
+-		measured_us -= data->exit_us;
+-
++	if (measured_us > 2 * data->exit_us)
++		measured_us -= 2 * data->exit_us;
++	else
++		measured_us = 0;
+ 
+ 	/* update our correction ratio */
+ 
 
-> +{
-> +	x86_io_apic_ops.disable	=	irq_remapping_disable_io_apic;
-> +}
-> +
-
-Sebastian
