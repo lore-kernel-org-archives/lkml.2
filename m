@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030543Ab2HWO7n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:59:43 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45198 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab2HWO7O (ORCPT
+	id S1030523Ab2HWPAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:00:08 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40650 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab2HWO7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:59:14 -0400
+	Thu, 23 Aug 2012 10:59:11 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
         "3.2.x.." <stable@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 10/11] score: Add missing RCU idle APIs on idle loop
-Date: Thu, 23 Aug 2012 16:58:34 +0200
-Message-Id: <1345733915-20040-11-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 09/11] parisc: Add missing RCU idle APIs on idle loop
+Date: Thu, 23 Aug 2012 16:58:33 +0200
+Message-Id: <1345733915-20040-10-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
 References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
@@ -38,42 +39,42 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the scores's idle loop.
+Add this missing pair of calls in the parisc's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
+Cc: James E.J. Bottomley <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: Parisc <linux-parisc@vger.kernel.org>
 Cc: 3.2.x.. <stable@vger.kernel.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/score/kernel/process.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ arch/parisc/kernel/process.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/score/kernel/process.c b/arch/score/kernel/process.c
-index 2707023..637970c 100644
---- a/arch/score/kernel/process.c
-+++ b/arch/score/kernel/process.c
-@@ -27,6 +27,7 @@
- #include <linux/reboot.h>
- #include <linux/elfcore.h>
- #include <linux/pm.h>
+diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
+index d4b94b3..c54a4db 100644
+--- a/arch/parisc/kernel/process.c
++++ b/arch/parisc/kernel/process.c
+@@ -48,6 +48,7 @@
+ #include <linux/unistd.h>
+ #include <linux/kallsyms.h>
+ #include <linux/uaccess.h>
 +#include <linux/rcupdate.h>
  
- void (*pm_power_off)(void);
- EXPORT_SYMBOL(pm_power_off);
-@@ -50,9 +51,10 @@ void __noreturn cpu_idle(void)
- {
+ #include <asm/io.h>
+ #include <asm/asm-offsets.h>
+@@ -69,8 +70,10 @@ void cpu_idle(void)
+ 
  	/* endless idle loop with no priority at all */
  	while (1) {
 +		rcu_idle_enter();
  		while (!need_resched())
  			barrier();
--
 +		rcu_idle_exit();
  		schedule_preempt_disabled();
+ 		check_pgt_cache();
  	}
- }
 -- 
 1.7.5.4
 
