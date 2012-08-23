@@ -1,88 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932684Ab2HWMa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:30:59 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:33702 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab2HWMay (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:30:54 -0400
-X-AuditID: b753bd60-91b5cba000007c38-16-5036227b09f2
-X-AuditID: b753bd60-91b5cba000007c38-16-5036227b09f2
-Message-ID: <5036224F.3060706@hitachi.com>
-Date: Thu, 23 Aug 2012 21:30:07 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Amit Shah <amit.shah@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>, Arnd Bergmann <arnd@arndb.de>,
-        Borislav Petkov <bp@amd64.org>, "Franch Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH 2/5] trace-cmd: Use tracing directory to count
- CPUs
-References: <20120822084251.17293.69086.stgit@ltc189.sdl.hitachi.co.jp>   <20120822084312.17293.47596.stgit@ltc189.sdl.hitachi.co.jp>  <1345642893.5069.31.camel@gandalf.local.home>  <50358F13.1030607@hitachi.com> <50359CE9.3000509@hitachi.com> <1345712886.5069.41.camel@gandalf.local.home>
-In-Reply-To: <1345712886.5069.41.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1755138Ab2HWMc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:32:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47339 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632Ab2HWMcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:32:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,300,1344236400"; 
+   d="asc'?scan'208";a="190403572"
+Message-ID: <1345725459.2848.238.camel@sauron.fi.intel.com>
+Subject: Re: JFFS2 issue with v3.5.x and later on Atmel chips at least
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: "ludovic.desroches" <ludovic.desroches@atmel.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 23 Aug 2012 15:37:39 +0300
+In-Reply-To: <5035F266.2040909@atmel.com>
+References: <5034B45A.5060107@atmel.com> <5034F3F8.9080802@atmel.com>
+	 <1345707689.2848.203.camel@sauron.fi.intel.com>
+	 <5035F266.2040909@atmel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-NKqctdvarn3rrrpHr4wR"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/08/23 18:08), Steven Rostedt wrote:
-> On Thu, 2012-08-23 at 12:00 +0900, Masami Hiramatsu wrote:
->> (2012/08/23 11:01), Masami Hiramatsu wrote:
->>> (2012/08/22 22:41), Steven Rostedt wrote:
->>>> On Wed, 2012-08-22 at 17:43 +0900, Yoshihiro YUNOMAE wrote:
->>>>> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>>>>
->>>>> Count debugfs/tracing/per_cpu/cpu* to determine the
->>>>> number of CPUs.
->>>>
->>>> I'm curious, do you find that sysconf doesn't return the # of CPUs the
->>>> system has?
->>>
->>> No, sysconf returns the number of hosts CPUs, not guests.
->>>
->>>> I've had boxes where the per_cpu/cpu* had more cpus than the
->>>> box actually holds. But this was a bug in the kernel, not the tool. This
->>>> change log needs to have rational instead of just explaining what the
->>>> patch does.
->>>
->>> Ah, I see. Hmm, then this should be enabled by a command line
->>> option or an environment variable.
->>
->> Oops, I misunderstood. I'll add more comment for why this
->> should be tried instead of sysconf.
-> 
-> And now that I understand why you are doing this, why not only do this
-> if the TRACE_AGENT or DEBUG_TRACING_DIR is defined. That is, if we are
-> doing it against a bare metal system, then sysconf should suffice, but
-> if we are tracing against a guest, then it should use the tracing
-> directory to determine the buffers.
-> 
-> We could add options to override this, but I would think the default
-> should just Do The Right Thing(tm).
 
-Yeah, so I'd like to push this is the default method, and fix
-the kernel bug (but I'm not sure that is a bug).
+--=-NKqctdvarn3rrrpHr4wR
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thank you,
+On Thu, 2012-08-23 at 11:05 +0200, ludovic.desroches wrote:
+>=20
+> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>=20
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Thanks, pushed to l2-mtd.git tree a bit modified patch. Will ping dwmw2
+about merging it to Linus.
 
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Date: Thu, 23 Aug 2012 10:10:07 +0300
+Subject: [PATCH] JFFS2: fix unmount regression
+
+This patch fixes regression introduced by
+"8bdc81c jffs2: get rid of jffs2_sync_super". We submit a delayed work in o=
+rder
+to make sure the write-buffer is synchronized at some point. But we do not
+flush it when we unmount, which causes an oops when we unmount the file-sys=
+tem
+and then the delayed work is executed.
+
+This patch fixes the issue by adding a "cancel_delayed_work_sync()" infocat=
+ion
+in the '->sync_fs()' handler. This will make sure the delayed work is cance=
+led
+on sync, unmount and re-mount. And because VFS always callse 'sync_fs()' be=
+fore
+unmounting or remounting, this fixes the issue.
+
+Reported-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Cc: stable@vger.kernel.org [3.5+]
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+---
+ fs/jffs2/super.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
+index 61ea413..1224d6b 100644
+--- a/fs/jffs2/super.c
++++ b/fs/jffs2/super.c
+@@ -100,6 +100,10 @@ static int jffs2_sync_fs(struct super_block *sb, int w=
+ait)
+ {
+ 	struct jffs2_sb_info *c =3D JFFS2_SB_INFO(sb);
+=20
++#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
++	cancel_delayed_work_sync(&c->wbuf_dwork);
++#endif
++
+ 	mutex_lock(&c->alloc_sem);
+ 	jffs2_flush_wbuf_pad(c);
+ 	mutex_unlock(&c->alloc_sem);
+--=20
+1.7.10.4
+
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-NKqctdvarn3rrrpHr4wR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQNiQTAAoJECmIfjd9wqK0IYYP/jj2A+YDjzZ2LeyXuyglDLsO
+N06W9VF2F5QLiSQiVWW9fgTKl3j7kJ2qKIXBwNc2SHscYOWcxzjhXEH/OAspzW2i
+8O9X4ygkLj6lMqUs8btOYnA58rSm0PT3DoUq0TIcwqcx8oTR8zuuV4pcA04G3lUr
+fxEo237poeI1DxsCV/x6ezOvM8pmy9jjlXwpOT0yHn5EqPOsyQBdmeHUy+NfJuSv
+U68A50Ha4nvCY4gi1dxqGgljXma5pgrEGbG6O+Z4oec3QmbFbBsUUzMFqQOO1Hpr
+a3FRh+9P8aFdl7ufefH9D0g9thY6Voqc5v1k4Jeu4W9YteyhGqUdMjC8mcClPZtR
+tv3pID00zMlM6vd13Tt+jfBily6rOJQUR5JuNOixZ8aFHW5vnkZzP7FShun1l6ix
+A2IqAGEwGdSuampROTCWPUsPge2xMcJPWHOOqwdbVbATqcbcI6rBdBdqSCE8VcYe
+U54N5bRYvrTcP6kPPZnORM+rMOV8l8PrcyOydtlJA2gcIerb1a3SlR8eNcUNX4LV
+bJv31Ey1nrUFnYxm4H6PugqpIwbvj81Umpv9/b9wvk7gaddVq09pZqJnM136ruxw
+h2tOYDBalePs5WcvtwWUbxeZsGfVpuJO0X1laH9vuKWZtxwKpJ1Qxp7dLTA9ZfCw
+rsdwdWtRQ2SMFhy/KCTm
+=s9s3
+-----END PGP SIGNATURE-----
+
+--=-NKqctdvarn3rrrpHr4wR--
 
