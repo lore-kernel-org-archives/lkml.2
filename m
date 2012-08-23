@@ -1,52 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab2HWM3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:29:35 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:44582 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356Ab2HWM3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:29:31 -0400
-Date: Thu, 23 Aug 2012 14:29:20 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@amd64.org>, tony.luck@intel.com, andi@firstfloor.org,
-        gong.chen@linux.intel.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        linux-edac@vger.kernel.org, ananth@in.ibm.com,
-        Chris McDermott <lcm@us.ibm.com>, masbock@linux.vnet.ibm.com
-Subject: Re: [PATCH] x86: mce: Honour bios-set CMCI threshold
-Message-ID: <20120823122919.GB18279@aftab.osrc.amd.com>
-References: <20120822123054.29238.3864.stgit@localhost.localdomain>
- <20120822124649.GD5817@aftab.osrc.amd.com>
- <50361D25.5020704@linux.vnet.ibm.com>
+	id S1758107Ab2HWMaa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:30:30 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50128 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753356Ab2HWMa1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:30:27 -0400
+Message-ID: <50362257.6060006@linux.vnet.ibm.com>
+Date: Thu, 23 Aug 2012 20:30:15 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50361D25.5020704@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: trace the events of mmu_notifier
+References: <50335A27.2070306@linux.vnet.ibm.com> <20120823092405.GB32710@amt.cnet>
+In-Reply-To: <20120823092405.GB32710@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082312-5564-0000-0000-000004254EAF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 05:38:05PM +0530, Naveen N. Rao wrote:
-> Sure - that sounds like a good idea. Further, a #define can be used to
-> avoid the need to change other references, though I'm not sure it's
-> considered good practice:
->
-> #define mce_bios_cmci_threshold boot_flags.mce_bios_cmci_threshold
+On 08/23/2012 05:24 PM, Marcelo Tosatti wrote:
+> On Tue, Aug 21, 2012 at 05:51:35PM +0800, Xiao Guangrong wrote:
+>> mmu_notifier is the interface to broadcast the mm events to KVM, the
+>> tracepoints introduced in this patch can trace all these events, it is
+>> very helpful for us to notice and fix the bug caused by mm
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  include/trace/events/kvm.h |  121 ++++++++++++++++++++++++++++++++++++++++++++
+>>  virt/kvm/kvm_main.c        |   19 +++++++
+>>  2 files changed, 140 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+>> index 7ef9e75..a855ff9 100644
+>> --- a/include/trace/events/kvm.h
+>> +++ b/include/trace/events/kvm.h
+>> @@ -309,6 +309,127 @@ TRACE_EVENT(
+>>
+>>  #endif
+>>
+>> +#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
+>> +DECLARE_EVENT_CLASS(mmu_notifier_address_class,
+>> +
+>> +	TP_PROTO(struct kvm *kvm, unsigned long address),
+>> +
+>> +	TP_ARGS(kvm, address),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(struct kvm *, kvm)
+>> +		__field(unsigned long, address)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->kvm = kvm;
+>> +		__entry->address = address;
+>> +	),
+>> +
+>> +	TP_printk("kvm %p address %lx", __entry->kvm, __entry->address)
+> 
+> 
+> Perhaps the pointer was useful for debugging, but otherwise, i don't
+> think it should be printed.
 
-That would hide the fact that this flag is part of the boot_flags struct
-and would obfuscate the code. We can always add it later though, if it
-makes sense.
+But this is the only information to identify the guest if may guest
+are running.
 
-Thanks.
+> 
+>> +	TP_ARGS(kvm, address, pte),
+>> +
+>> +	TP_STRUCT__entry(
+>> +		__field(struct kvm *, kvm)
+>> +		__field(unsigned long, address)
+>> +		__field(unsigned long, pte)
+>> +	),
+>> +
+>> +	TP_fast_assign(
+>> +		__entry->kvm = kvm;
+>> +		__entry->address = address;
+>> +		__entry->pte = pte.pte;
+>> +	),
+>> +
+>> +	TP_printk("kvm %p address %lx pte %lx", __entry->kvm, __entry->address,
+>> +		  __entry->pte)
+> 
+> The pte bits can be spelled out? (see __print_symbolic).
 
--- 
-Regards/Gruss,
-Boris.
+This tracepoint is put in kvm.h which can be used on different architectures
+which have different pte decode. I will try to find a way to show more
+readable format.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> 
+>>  	spin_lock(&kvm->mmu_lock);
+>>
+>> +	trace_kvm_mmu_notifier_clear_flush_young(kvm, address);
+>> +
+>>  	young = kvm_age_hva(kvm, address);
+>>  	if (young)
+>>  		kvm_flush_remote_tlbs(kvm);
+>> @@ -394,6 +407,9 @@ static int kvm_mmu_notifier_test_young(struct mmu_notifier *mn,
+>>
+>>  	idx = srcu_read_lock(&kvm->srcu);
+>>  	spin_lock(&kvm->mmu_lock);
+>> +
+>> +	trace_kvm_mmu_notifier_test_young(kvm, address);
+>> +
+> 
+> can print young information?
+
+Okay, will do it in next version.
+
+Thanks for your review, Marcelo!
+
