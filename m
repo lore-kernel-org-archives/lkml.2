@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab2HWCSI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 22:18:08 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35291 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754Ab2HWCRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 22:17:38 -0400
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <benh@kernel.crashing.org>
-CC: <jason.wessel@windriver.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [v2][PATCH 3/3] powerpc/kgdb: restore current_thread_info properly
-Date: Thu, 23 Aug 2012 10:10:20 +0800
-Message-ID: <1345687820-5248-3-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.5.6
-In-Reply-To: <1345687820-5248-1-git-send-email-tiejun.chen@windriver.com>
-References: <1345687820-5248-1-git-send-email-tiejun.chen@windriver.com>
+	id S1756028Ab2HWCTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 22:19:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42226 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754031Ab2HWCTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 22:19:37 -0400
+Date: Wed, 22 Aug 2012 23:19:04 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120823021903.GA23660@x61.redhat.com>
+References: <1345562411.23018.111.camel@twins>
+ <20120821162432.GG2456@linux.vnet.ibm.com>
+ <20120821172819.GA12294@t510.redhat.com>
+ <20120821191330.GA8324@redhat.com>
+ <20120821192357.GD12294@t510.redhat.com>
+ <20120821193031.GC9027@redhat.com>
+ <20120821204556.GF12294@t510.redhat.com>
+ <20120822000741.GI9027@redhat.com>
+ <20120822011930.GA23753@t510.redhat.com>
+ <20120822093317.GC10680@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822093317.GC10680@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For powerpc BooKE and e200, singlestep is handled on the critical/dbg
-exception stack. This causes current_thread_info() to fail for kgdb
-internal, so previously We work around this issue by copying
-the thread_info from the kernel stack before calling kgdb_handle_exception,
-and copying it back afterwards.
+On Wed, Aug 22, 2012 at 12:33:17PM +0300, Michael S. Tsirkin wrote:
+> Hmm, so this will busy wait which is unelegant.
+> We need some event IMO.
 
-But actually we don't do this properly. We should backup current_thread_info
-then restore that when exit.
+No, it does not busy wait. leak_balloon() is mutual exclusive with migration
+steps, so for the case we have one racing against the other, we really want
+leak_balloon() dropping the mutex temporarily to allow migration complete its
+work of refilling vb->pages list. Also, leak_balloon() calls tell_host(), which
+will potentially make it to schedule for each round of vb->pfns leak_balloon()
+will release. So, when remove_common() calls leak_balloon() looping on
+vb->num_pages, that won't become a tight loop. 
+The scheme was apparently working before this series, and it will remain working
+after it.
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
----
-v2: fix a typo in patch head description.
 
- arch/powerpc/kernel/kgdb.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+> Also, reading num_pages without a lock here
+> which seems wrong.
 
-diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-index 05adb69..c470a40 100644
---- a/arch/powerpc/kernel/kgdb.c
-+++ b/arch/powerpc/kernel/kgdb.c
-@@ -25,6 +25,7 @@
- #include <asm/processor.h>
- #include <asm/machdep.h>
- #include <asm/debug.h>
-+#include <linux/slab.h>
- 
- /*
-  * This table contains the mapping between PowerPC hardware trap types, and
-@@ -153,6 +154,8 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
- static int kgdb_singlestep(struct pt_regs *regs)
- {
- 	struct thread_info *thread_info, *exception_thread_info;
-+	struct thread_info *backup_current_thread_info = \
-+		(struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
- 
- 	if (user_mode(regs))
- 		return 0;
-@@ -170,13 +173,17 @@ static int kgdb_singlestep(struct pt_regs *regs)
- 	thread_info = (struct thread_info *)(regs->gpr[1] & ~(THREAD_SIZE-1));
- 	exception_thread_info = current_thread_info();
- 
--	if (thread_info != exception_thread_info)
-+	if (thread_info != exception_thread_info) {
-+		/* Save the original current_thread_info. */
-+		memcpy(backup_current_thread_info, exception_thread_info, sizeof *thread_info);
- 		memcpy(exception_thread_info, thread_info, sizeof *thread_info);
-+	}
- 
- 	kgdb_handle_exception(0, SIGTRAP, 0, regs);
- 
- 	if (thread_info != exception_thread_info)
--		memcpy(thread_info, exception_thread_info, sizeof *thread_info);
-+		/* Restore current_thread_info lastly. */
-+		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
- 
- 	return 1;
- }
--- 
-1.5.6
+I'll protect it with vb->balloon_lock mutex. That will be consistent with the
+lock protection scheme this patch is introducing for struct virtio_balloon
+elements.
+
+
+> A similar concern applies to normal leaking
+> of the balloon: here we might leak less than
+> required, then wait for the next config change
+> event.
+
+Just as before, same thing here. If you leaked less than required, balloon()
+will keep calling leak_balloon() until the balloon target is reached. This
+scheme was working before, and it will keep working after this patch.
+
+
+> How about we signal config_change
+> event when pages are back to pages_list?
+
+I really don't know what to tell you here, but, to me, it seems like an
+overcomplication that isn't directly entangled with this patch purposes.
+Besides, you cannot expect compation / migration happening and racing against
+leak_balloon() all the time to make them signal events to the later, so we might
+just be creating a wait-forever condition for leak_balloon(), IMHO.
+
+Cheers!
 
