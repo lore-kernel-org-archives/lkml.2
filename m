@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab2HWG45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 02:56:57 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:57449 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763Ab2HWG4x convert rfc822-to-8bit (ORCPT
+	id S932389Ab2HWHCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:02:05 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11637 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab2HWHCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 02:56:53 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6812"; a="226185892"
-X-IronPort-AV: E=Sophos;i="4.80,298,1344236400"; 
-   d="scan'208";a="160690290"
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-To: David Miller <davem@davemloft.net>
-CC: "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
-Subject: RE: [PATCH v2] net: add new QCA alx ethernet driver
-Thread-Topic: [PATCH v2] net: add new QCA alx ethernet driver
-Thread-Index: AQHNfq/QcigpFEkeAUuvSgE/Sf2tgZdnYDEA//+NnwCAAH58gP//i4Mw
-Date: Thu, 23 Aug 2012 06:56:51 +0000
-Message-ID: <157393863283F442885425D2C45428562A4F519A@nasanexd02f.na.qualcomm.com>
-References: <1345480949-14800-1-git-send-email-cjren@qca.qualcomm.com>
-	<20120822.225700.714020017287504609.davem@davemloft.net>
-	<157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
- <20120822.234019.1546353507351890178.davem@davemloft.net>
-In-Reply-To: <20120822.234019.1546353507351890178.davem@davemloft.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.48.1]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Aug 2012 03:02:02 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 23 Aug 2012 00:02:02 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <linux-kernel@vger.kernel.org>, Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] mfd: rc5t583: Fix warning messages
+Date: Thu, 23 Aug 2012 12:21:16 +0530
+Message-ID: <1345704676-25778-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Then add a new ethtool operation to support your use case, that's exactly
-> what I was telling you to do.
-> 
-> Did it really not occur to you that you perhaps you should extend existing
-> generic facilities to suit your needs instead of creating private facilities that no
-> other driver can use?
+Two variables named master_int and sleepseq_val, were just
+declared without initialization. Pointers to these variables
+were passed to mfd read function. After that these variables
+were used for some of the logical operations.
 
-I'm afraid someone also rejects my request to add such operation to ethtool 
-By your same reason.
-before adding this interface, we had searched the kernel, marvell driver also 
-Uses it, we had thought could be ok.
+Though logically there is nothing wrong, compiler is complaining
+that the variables may be used uninitialized.
 
-Of course, we will respect your opinion if it's not appropriated.
+Hence fixing these warning messages by initializing them.
 
-Thanks
-Xiong
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+ drivers/mfd/rc5t583-irq.c |    2 +-
+ drivers/mfd/rc5t583.c     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/rc5t583-irq.c b/drivers/mfd/rc5t583-irq.c
+index fa6f80f..fe00cdd 100644
+--- a/drivers/mfd/rc5t583-irq.c
++++ b/drivers/mfd/rc5t583-irq.c
+@@ -255,7 +255,7 @@ static irqreturn_t rc5t583_irq(int irq, void *data)
+ {
+ 	struct rc5t583 *rc5t583 = data;
+ 	uint8_t int_sts[RC5T583_MAX_INTERRUPT_MASK_REGS];
+-	uint8_t master_int;
++	uint8_t master_int = 0;
+ 	int i;
+ 	int ret;
+ 	unsigned int rtc_int_sts = 0;
+diff --git a/drivers/mfd/rc5t583.c b/drivers/mfd/rc5t583.c
+index cdc1df7..ce7c1c9 100644
+--- a/drivers/mfd/rc5t583.c
++++ b/drivers/mfd/rc5t583.c
+@@ -85,7 +85,7 @@ static int __rc5t583_set_ext_pwrreq1_control(struct device *dev,
+ 	int id, int ext_pwr, int slots)
+ {
+ 	int ret;
+-	uint8_t sleepseq_val;
++	uint8_t sleepseq_val = 0;
+ 	unsigned int en_bit;
+ 	unsigned int slot_bit;
+ 
+-- 
+1.7.1.1
+
