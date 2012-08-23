@@ -1,151 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934241Ab2HWUi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:38:58 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:42562 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932284Ab2HWUix (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:38:53 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/bgaFPtjrboUaJAoNleQ3IwIJiNnztCR7vVg64bY
-	10Q9zZUgz9eG+J
-Message-ID: <503694D7.9060407@gmx.de>
-Date: Thu, 23 Aug 2012 20:38:47 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
+	id S1030210Ab2HWUkY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:40:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932137Ab2HWUkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 16:40:22 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Richard W.M. Jones" <rjones@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: replace __getblk_slow misfix by grow_dev_page fix
+References: <alpine.LSU.2.00.1208211826270.2488@eggly.anvils>
+	<20120822115243.GU1448@rhmail.home.annexia.org>
+	<alpine.LSU.2.00.1208222143440.1917@eggly.anvils>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 23 Aug 2012 16:40:11 -0400
+In-Reply-To: <alpine.LSU.2.00.1208222143440.1917@eggly.anvils> (Hugh Dickins's
+	message of "Wed, 22 Aug 2012 21:56:12 -0700 (PDT)")
+Message-ID: <x49obm1fil0.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Damien Cassou <damien.cassou@gmail.com>
-CC: Jingoo Han <jg1.han@samsung.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v2] video: exynos_dp: use devm_clk_get function
-References: <877gti1t48.fsf@gmail.com>
-In-Reply-To: <877gti1t48.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2012 04:20 PM, Damien Cassou wrote:
-> From: Damien Cassou <damien.cassou@lifl.fr>
-> 
-> The devm_clk_get function allocates memory that is released when a driver
-> detaches. This patch uses this function for data that is allocated in the probe
-> function of a platform device and is only freed in the remove function.
-> 
-> Additionally, this patch removes a null check after platform_get_resource that
-> is redundant with the one done by devm_request_and_ioremap.
-> 
-> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
+Hugh Dickins <hughd@google.com> writes:
 
-Applied.
+> [PATCH] block: replace __getblk_slow misfix by grow_dev_page fix
+>
+> Commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow")
+> is not good: a successful call to grow_buffers() cannot guarantee
+> that the page won't be reclaimed before the immediate next call to
+> __find_get_block(), which is why there was always a loop there.
+[snip]
+> Revert 91f68c89d8f3, restoring __getblk_slow() to how it was (plus
+> a checkpatch nitfix).  Simplify the interface between grow_buffers()
+> and grow_dev_page(), and avoid the infinite loop beyond end of device
+> by instead checking init_page_buffers()'s end_block there (I presume
+> that's more efficient than a repeated call to blkdev_max_block()),
+> returning -ENXIO to __getblk_slow() in that case.
+>
+> And remove akpm's ten-year-old "__getblk() cannot fail ... weird"
+> comment, but that is worrying: are all users of __getblk() really
+> now prepared for a NULL bh beyond end of device, or will some oops??
 
+Hi, Hugh,
 
-Thanks,
+Thanks for digging into this.  I had wondered whether that loop was
+required for other purposes, and you've verified that it was.  I mostly
+like your fix.  Returning end_block from init_page_buffers is a little
+strange, but I understand not wanting to redo the call to
+blkdev_max_block.
 
-Florian Tobias Schandinat
+I went ahead to re-tested with the reproducer that I had, and your patch
+works fine.  Thanks again for tracking this down, and sorry I wasn't
+more diligent to begin with.
 
-> 
-> ---
-> Changed subject line and description
->  drivers/video/exynos/exynos_dp_core.c |   27 +++++++--------------------
->  1 file changed, 7 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-> index c6c016a..00fe4f0 100644
-> --- a/drivers/video/exynos/exynos_dp_core.c
-> +++ b/drivers/video/exynos/exynos_dp_core.c
-> @@ -872,7 +872,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  
->  	dp->dev = &pdev->dev;
->  
-> -	dp->clock = clk_get(&pdev->dev, "dp");
-> +	dp->clock = devm_clk_get(&pdev->dev, "dp");
->  	if (IS_ERR(dp->clock)) {
->  		dev_err(&pdev->dev, "failed to get clock\n");
->  		return PTR_ERR(dp->clock);
-> @@ -881,31 +881,24 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	clk_enable(dp->clock);
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res) {
-> -		dev_err(&pdev->dev, "failed to get registers\n");
-> -		ret = -EINVAL;
-> -		goto err_clock;
-> -	}
->  
->  	dp->reg_base = devm_request_and_ioremap(&pdev->dev, res);
->  	if (!dp->reg_base) {
->  		dev_err(&pdev->dev, "failed to ioremap\n");
-> -		ret = -ENOMEM;
-> -		goto err_clock;
-> +		return -ENOMEM;
->  	}
->  
->  	dp->irq = platform_get_irq(pdev, 0);
->  	if (!dp->irq) {
->  		dev_err(&pdev->dev, "failed to get irq\n");
-> -		ret = -ENODEV;
-> -		goto err_clock;
-> +		return -ENODEV;
->  	}
->  
->  	ret = devm_request_irq(&pdev->dev, dp->irq, exynos_dp_irq_handler, 0,
->  				"exynos-dp", dp);
->  	if (ret) {
->  		dev_err(&pdev->dev, "failed to request irq\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
->  
->  	dp->video_info = pdata->video_info;
-> @@ -917,7 +910,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	ret = exynos_dp_detect_hpd(dp);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to detect hpd\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
->  
->  	exynos_dp_handle_edid(dp);
-> @@ -926,7 +919,7 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  				dp->video_info->link_rate);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to do link train\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
->  
->  	exynos_dp_enable_scramble(dp, 1);
-> @@ -940,17 +933,12 @@ static int __devinit exynos_dp_probe(struct platform_device *pdev)
->  	ret = exynos_dp_config_video(dp, dp->video_info);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to config video\n");
-> -		goto err_clock;
-> +		return ret;
->  	}
->  
->  	platform_set_drvdata(pdev, dp);
->  
->  	return 0;
-> -
-> -err_clock:
-> -	clk_put(dp->clock);
-> -
-> -	return ret;
->  }
->  
->  static int __devexit exynos_dp_remove(struct platform_device *pdev)
-> @@ -962,7 +950,6 @@ static int __devexit exynos_dp_remove(struct platform_device *pdev)
->  		pdata->phy_exit();
->  
->  	clk_disable(dp->clock);
-> -	clk_put(dp->clock);
->  
->  	return 0;
->  }
-> 
-> 
-
+Reviewed-and-Tested-by: Jeff Moyer <jmoyer@redhat.com>
