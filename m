@@ -1,203 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934434Ab2HWUyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:54:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934380Ab2HWUxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:53:34 -0400
-Message-Id: <20120823205327.919315135@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 23 Aug 2012 16:53:29 -0400
-From: aris@redhat.com
-To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>,
-        Lennart Poettering <lpoetter@redhat.com>
-Subject: [PATCH v7 2/4] cgroup: revise how we re-populate root directory
-References: <20120823205327.237533518@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=cgroup2.patch
+	id S1030431Ab2HWU5C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:57:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63293 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030270Ab2HWU47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 16:56:59 -0400
+Date: Fri, 24 Aug 2012 05:56:48 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH 0/2] revert changes to zcache_do_preload()
+Message-ID: <20120823205648.GA2066@barrios>
+References: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizefan@huawei.com>
+Hi Seth,
 
-When remounting cgroupfs with some subsystems added to it and some
-removed, cgroup will remove all the files in root directory and then
-re-popluate it.
+On Thu, Aug 23, 2012 at 10:33:09AM -0500, Seth Jennings wrote:
+> This patchset fixes a regression in 3.6 by reverting two dependent
+> commits that made changes to zcache_do_preload().
+> 
+> The commits undermine an assumption made by tmem_put() in
+> the cleancache path that preemption is disabled.  This change
+> introduces a race condition that can result in the wrong page
+> being returned by tmem_get(), causing assorted errors (segfaults,
+> apparent file corruption, etc) in userspace.
+> 
+> The corruption was discussed in this thread:
+> https://lkml.org/lkml/2012/8/17/494
 
-What I'm doing here is, only remove files which belong to subsystems that
-are to be unbinded, and only create files for newly-added subsystems.
-The purpose is to have all other files untouched.
+I think changelog isn't enough to explain what's the race.
+Could you write it down in detail?
 
-This is a preparation for cgroup xattr support.
+And you should Cc'ed Xiao who is author of reverted patch.
 
-v7:
-- checkpatch warnings fixed
-v6:
-- no changes
-v5:
-- no changes
-v4:
-- refactored cgroup_clear_directory() to not use cgroup_rm_file()
-- instead of going thru the list of files, get the file list using the
-  subsystems
-- use 'subsys_mask' instead of {added,removed}_bits and made
-  cgroup_populate_dir() to match the parameters with cgroup_clear_directory()
-v3:
-- refresh patches after recent refactoring
-
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Lennart Poettering <lpoetter@redhat.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
----
- kernel/cgroup.c |   61 ++++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 48 insertions(+), 13 deletions(-)
-
-Index: github/kernel/cgroup.c
-===================================================================
---- github.orig/kernel/cgroup.c	2012-08-23 15:46:12.557171590 -0400
-+++ github/kernel/cgroup.c	2012-08-23 15:48:33.577016061 -0400
-@@ -824,7 +824,8 @@
- static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode);
- static struct dentry *cgroup_lookup(struct inode *, struct dentry *, unsigned int);
- static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry);
--static int cgroup_populate_dir(struct cgroup *cgrp);
-+static int cgroup_populate_dir(struct cgroup *cgrp, bool base_files,
-+			       unsigned long subsys_mask);
- static const struct inode_operations cgroup_dir_inode_operations;
- static const struct file_operations proc_cgroupstats_operations;
- 
-@@ -963,12 +964,29 @@
- 	return -ENOENT;
- }
- 
--static void cgroup_clear_directory(struct dentry *dir)
-+/**
-+ * cgroup_clear_directory - selective removal of base and subsystem files
-+ * @dir: directory containing the files
-+ * @base_files: true if the base files should be removed
-+ * @subsys_mask: mask of the subsystem ids whose files should be removed
-+ */
-+static void cgroup_clear_directory(struct dentry *dir, bool base_files,
-+				   unsigned long subsys_mask)
- {
- 	struct cgroup *cgrp = __d_cgrp(dir);
-+	struct cgroup_subsys *ss;
- 
--	while (!list_empty(&cgrp->files))
--		cgroup_rm_file(cgrp, NULL);
-+	for_each_subsys(cgrp->root, ss) {
-+		struct cftype_set *set;
-+		if (!test_bit(ss->subsys_id, &subsys_mask))
-+			continue;
-+		list_for_each_entry(set, &ss->cftsets, node)
-+			cgroup_rm_file(cgrp, set->cfts);
-+	}
-+	if (base_files) {
-+		while (!list_empty(&cgrp->files))
-+			cgroup_rm_file(cgrp, NULL);
-+	}
- }
- 
- /*
-@@ -977,8 +995,9 @@
- static void cgroup_d_remove_dir(struct dentry *dentry)
- {
- 	struct dentry *parent;
-+	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
- 
--	cgroup_clear_directory(dentry);
-+	cgroup_clear_directory(dentry, true, root->subsys_bits);
- 
- 	parent = dentry->d_parent;
- 	spin_lock(&parent->d_lock);
-@@ -1339,6 +1358,7 @@
- 	struct cgroupfs_root *root = sb->s_fs_info;
- 	struct cgroup *cgrp = &root->top_cgroup;
- 	struct cgroup_sb_opts opts;
-+	unsigned long added_bits, removed_bits;
- 
- 	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
- 	mutex_lock(&cgroup_mutex);
-@@ -1354,6 +1374,9 @@
- 		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
- 			   task_tgid_nr(current), current->comm);
- 
-+	added_bits = opts.subsys_bits & ~root->subsys_bits;
-+	removed_bits = root->subsys_bits & ~opts.subsys_bits;
-+
- 	/* Don't allow flags or name to change at remount */
- 	if (opts.flags != root->flags ||
- 	    (opts.name && strcmp(opts.name, root->name))) {
-@@ -1369,8 +1392,9 @@
- 	}
- 
- 	/* clear out any existing files and repopulate subsystem files */
--	cgroup_clear_directory(cgrp->dentry);
--	cgroup_populate_dir(cgrp);
-+	cgroup_clear_directory(cgrp->dentry, false, removed_bits);
-+	/* re-populate subsystem files */
-+	cgroup_populate_dir(cgrp, false, added_bits);
- 
- 	if (opts.release_agent)
- 		strcpy(root->release_agent_path, opts.release_agent);
-@@ -1669,7 +1693,7 @@
- 		BUG_ON(root->number_of_cgroups != 1);
- 
- 		cred = override_creds(&init_cred);
--		cgroup_populate_dir(root_cgrp);
-+		cgroup_populate_dir(root_cgrp, true, root->subsys_bits);
- 		revert_creds(cred);
- 		mutex_unlock(&cgroup_root_mutex);
- 		mutex_unlock(&cgroup_mutex);
-@@ -3843,18 +3867,29 @@
- 	{ }	/* terminate */
- };
- 
--static int cgroup_populate_dir(struct cgroup *cgrp)
-+/**
-+ * cgroup_populate_dir - selectively creation of files in a directory
-+ * @cgrp: target cgroup
-+ * @base_files: true if the base files should be added
-+ * @subsys_mask: mask of the subsystem ids whose files should be added
-+ */
-+static int cgroup_populate_dir(struct cgroup *cgrp, bool base_files,
-+			       unsigned long subsys_mask)
- {
- 	int err;
- 	struct cgroup_subsys *ss;
- 
--	err = cgroup_addrm_files(cgrp, NULL, files, true);
--	if (err < 0)
--		return err;
-+	if (base_files) {
-+		err = cgroup_addrm_files(cgrp, NULL, files, true);
-+		if (err < 0)
-+			return err;
-+	}
- 
- 	/* process cftsets of each subsystem */
- 	for_each_subsys(cgrp->root, ss) {
- 		struct cftype_set *set;
-+		if (!test_bit(ss->subsys_id, &subsys_mask))
-+			continue;
- 
- 		list_for_each_entry(set, &ss->cftsets, node)
- 			cgroup_addrm_files(cgrp, ss, set->cfts, true);
-@@ -3988,7 +4023,7 @@
- 
- 	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
- 
--	err = cgroup_populate_dir(cgrp);
-+	err = cgroup_populate_dir(cgrp, true, root->subsys_bits);
- 	/* If err < 0, we have a half-filled directory - oh well ;) */
- 
- 	mutex_unlock(&cgroup_mutex);
-
+> 
+> Please apply this patchset to 3.6.  This problem didn't exist
+> in previous releases so nothing need be done for the stable trees.
+> 
+> Seth Jennings (2):
+>   Revert "staging: zcache: cleanup zcache_do_preload and
+>     zcache_put_page"
+>   Revert "staging: zcache: optimize zcache_do_preload"
+> 
+>  drivers/staging/zcache/zcache-main.c |   54 +++++++++++++++++++---------------
+>  1 file changed, 31 insertions(+), 23 deletions(-)
+> 
+> -- 
+> 1.7.9.5
+> 
