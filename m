@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab2HWEQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 00:16:34 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:40636 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2HWEQa (ORCPT
+	id S1751713Ab2HWEX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 00:23:59 -0400
+Received: from relmlor1.renesas.com ([210.160.252.171]:50319 "EHLO
+	relmlor1.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab2HWEXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 00:16:30 -0400
-Date: Thu, 23 Aug 2012 09:45:57 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 33/36] autonuma: powerpc port
-Message-ID: <20120823041557.GA24519@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
- <1345647560-30387-34-git-send-email-aarcange@redhat.com>
- <1345672907.2617.44.camel@pasglop>
- <1345676194.13399.1.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1345676194.13399.1.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12082304-5564-0000-0000-00000423AC80
+	Thu, 23 Aug 2012 00:23:55 -0400
+X-IronPort-AV: E=Sophos;i="4.77,813,1336316400";   d="scan'208";a="94979182"
+Message-id: <5035B05C.4020104@renesas.com>
+Date: Thu, 23 Aug 2012 13:23:56 +0900
+From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713
+ Thunderbird/14.0
+MIME-version: 1.0
+To: will.deacon@arm.com
+Cc: sboyd@codeaurora.org, arnd@arndb.de, rmk+kernel@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] ARM: export read_current_timer
+References: <1345645780-2749-1-git-send-email-arnd@arndb.de>
+ <1345645780-2749-2-git-send-email-arnd@arndb.de>
+ <503513A2.1030002@codeaurora.org>
+ <20120822174945.GS9093@mudshark.cambridge.arm.com>
+ <50351D80.6010600@codeaurora.org>
+ <20120822175810.GT9093@mudshark.cambridge.arm.com>
+In-reply-to: <20120822175810.GT9093@mudshark.cambridge.arm.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Herrenschmidt <benh@kernel.crashing.org> [2012-08-23 08:56:34]:
+On 8/23/2012 2:58 AM, Will Deacon wrote:
+> On Wed, Aug 22, 2012 at 06:57:20PM +0100, Stephen Boyd wrote:
+>> On 08/22/12 10:49, Will Deacon wrote:
+>>> On the topic of the timer stuff: Shinya/Stephen, did you have a chance to
+>>> look at the registration stuff that was proposed? I'm happy to push it if
+>>> people will actually use it.
+>>
+>> Yes I have tested it on our internal trees and it looks good. I plan to
+>> send a patch to move MSM's timers over to it later this week so that we
+>> have at least two users upstream.
 
-> On Thu, 2012-08-23 at 08:01 +1000, Benjamin Herrenschmidt wrote:
-> > On Wed, 2012-08-22 at 16:59 +0200, Andrea Arcangeli wrote:
-> > > From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> > > 
-> > >     * PMD flaging is not required in powerpc since large pages
-> > >       are tracked in ptes.
-> > >     * Yet to be tested with large pages
-> > >     * This is an initial patch that partially works
-> > >     * knuma_scand and numa hinting page faults works
-> > >     * Page migration is yet to be observed/verified
-> > > 
-> > > Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> > I don't like this.
-> 
-> What I mean here is that it's fine as a proof of concept ;-) I don't
-> like it being in a series aimed at upstream...
+And I think other A9 MPcore platforms, namely OMAP and EXYNOS, would
+also be candidates, who tried to skip calibrate_delay() in the past
+(OMAP) or currently provide non-smp_twd timers as localtimers (EXYNOS).
+I may miss the latest status of those BSPs, but believe that we would
+have more users (>2) in the future.
 
-I agree.  My intend was to get the ppc64 discussions started and also
-see what it takes to get autonuma to a new arch.
+> Awesome, I'll dust that series off at -rc3 then.
 
-> We can try to flush out the issues, but as it is, the patch isn't
-> upstreamable imho.
-
-Yes.  The patch is still in RFC phase and good only for
-review/testing.
-
-> As for finding PTE bits, I have a few ideas we need to discuss, but
-> nothing simple I'm afraid.
-
-Sure Ben, lets try them and find the better fit.
-
---Vaidy
-
+It works for me for weeks without troubles, looking forward to it.
+--
+Shinya Kuribayashi
+Renesas Electronics
