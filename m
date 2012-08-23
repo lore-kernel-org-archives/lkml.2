@@ -1,221 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569Ab2HWAYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 20:24:11 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35087 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab2HWAYG (ORCPT
+	id S1758138Ab2HWA05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 20:26:57 -0400
+Received: from us-mx3.synaptics.com ([12.239.217.85]:15747 "EHLO
+	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757736Ab2HWA0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 20:24:06 -0400
-Message-ID: <50357840.5020201@gmail.com>
-Date: Thu, 23 Aug 2012 02:24:32 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120730 Thunderbird/14.0
+	Wed, 22 Aug 2012 20:26:54 -0400
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Wed, 22 Aug 2012 17:00:11 -0700
+Message-ID: <503578CC.801@synaptics.com>
+Date: Wed, 22 Aug 2012 17:26:52 -0700
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-2-git-send-email-levinsasha928@gmail.com> <20120822180138.GA19212@google.com>
-In-Reply-To: <20120822180138.GA19212@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Peichen Chang <peichen.chang@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: [RFC PATCH 1/17] input: RMI4 public header file and documentation.
+References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com> <1345241877-16200-2-git-send-email-cheiny@synaptics.com> <CACRpkdbP1uTXC9jVNVG3es0KFRq+8MaUa6=6nPuG5WUz5jgiRQ@mail.gmail.com> <1965688.fPKEQJnVvJ@dtor-d630.eng.vmware.com>
+In-Reply-To: <1965688.fPKEQJnVvJ@dtor-d630.eng.vmware.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On 08/22/2012 02:45 PM, Dmitry Torokhov wrote:
+> On Wednesday, August 22, 2012 09:08:00 PM Linus Walleij wrote:
+>> >On Sat, Aug 18, 2012 at 12:17 AM, Christopher Heiny
+>> ><cheiny@synaptics.com>  wrote:
+>> >
+>>> > >+/* Helper fn to convert a byte array representing a short in the RMI
+>>> > >+ * endian-ness to a short in the native processor's specific endianness.
+> Is RMI-endiannes different from BE and LE (joking)? Please simply state what
+> on-wire endianness is and use xx_to_cpu() or cpu_to_xx() as needed. I think I
+> mentioned it about a year ago already...
 
-On 08/22/2012 08:01 PM, Tejun Heo wrote:
-> Hello, Sasha.
-> 
-> On Wed, Aug 22, 2012 at 04:26:56AM +0200, Sasha Levin wrote:
->> +#define DEFINE_HASHTABLE(name, bits)					\
->> +	struct hlist_head name[HASH_SIZE(bits)];
-> 
-> Shouldn't this be something like the following?
-> 
-> #define DEFINE_HASHTABLE(name, bits)					\
-> 	struct hlist_head name[HASH_SIZE(bits)] =			\
-> 		{ [0 ... HASH_SIZE(bits) - 1] = HLIST_HEAD_INIT };
-> 
-> Also, given that the declaration isn't non-trivial, you'll probably
-> want a matching DECLARE_HASHTABLE() macro too.
+Gronk. I thought I'd killed that.  But obviously didn't do a thorough job.
 
-I figured we might do a DEFINE_HASHTABLE() to prevent the need from using
-hash_init() on hashtables defined this way, but I preferred not to since we may
-end up wanting a more complex initialization (I'll explain why extensively below).
-
->> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
->> +#define hash_min(val, bits) ((sizeof(val)==4) ? hash_32((val), (bits)) : hash_long((val), (bits)))
-> 
-> Why is the branching condition sizeof(val) == 4 instead of <= 4?
-
-No reason, will fix.
-
-> Also, no biggie but why isn't this macro in caps?
-
-I had this plan in my mind to move it into linux/hash.h at some stage later, and
-the API there uses low caps even for macros (hash_long()).
-
->> +/**
->> + * hash_add_rcu_size - add an object to a rcu enabled hashtable
->> + * @hashtable: hashtable to add to
->> + * @bits: bit count used for hashing
->> + * @node: the &struct hlist_node of the object to be added
->> + * @key: the key of the object to be added
->> + */
->> +#define hash_add_rcu_size(hashtable, bits, node, key)				\
->> +	hlist_add_head_rcu(node, &hashtable[hash_min(key, bits)]);
->> +
->> +/**
->> + * hash_add_rcu - add an object to a rcu enabled hashtable
->> + * @hashtable: hashtable to add to
->> + * @node: the &struct hlist_node of the object to be added
->> + * @key: the key of the object to be added
->> + */
->> +#define hash_add_rcu(hashtable, node, key)					\
->> +	hash_add_rcu_size(hashtable, HASH_BITS(hashtable), node, key)
-> 
-> Or maybe we're better off with hash_head_size() and hash_head()?  I'll
-> expand on it later.  Please bear with me.
-> 
->> +/**
->> + * hash_hashed - check whether an object is in any hashtable
->> + * @node: the &struct hlist_node of the object to be checked
->> + */
->> +#define hash_hashed(node) (!hlist_unhashed(node))
-> 
-> As the 'h' in hlist* stand for hash anyway and I think this type of
-> thin wrappers tend to obfuscate more than anything else.
-> 
->> +/**
->> + * hash_del - remove an object from a hashtable
->> + * @node: &struct hlist_node of the object to remove
->> + */
->> +static inline void hash_del(struct hlist_node *node)
->> +{
->> +	hlist_del_init(node);
->> +}
->> +
->> +/**
->> + * hash_del_rcu - remove an object from a rcu enabled hashtable
->> + * @node: &struct hlist_node of the object to remove
->> + */
->> +static inline void hash_del_rcu(struct hlist_node *node)
->> +{
->> +	hlist_del_init_rcu(node);
->> +}
-> 
-> If we do that, we can remove all these thin wrappers.
-> 
->> +#define hash_for_each_size(name, bits, bkt, node, obj, member)			\
->> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)				\
->> +		hlist_for_each_entry(obj, node, &name[bkt], member)
-> ..
->> +#define hash_for_each(name, bkt, node, obj, member)				\
->> +	hash_for_each_size(name, HASH_BITS(name), bkt, node, obj, member)
-> ...
->> +#define hash_for_each_rcu_size(name, bits, bkt, node, obj, member)		\
->> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)				\
->> +		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
-> ...
->> +#define hash_for_each_rcu(name, bkt, node, obj, member)				\
->> +	hash_for_each_rcu_size(name, HASH_BITS(name), bkt, node, obj, member)
-> ...
->> +#define hash_for_each_safe_size(name, bits, bkt, node, tmp, obj, member)	\
->> +	for (bkt = 0; bkt < HASH_SIZE(bits); bkt++)                     	\
->> +		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
-> ...
->> +#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
->> +	hash_for_each_safe_size(name, HASH_BITS(name), bkt, node,		\
->> +				tmp, obj, member)
-> ...
->> +#define hash_for_each_possible_size(name, obj, bits, node, member, key)		\
->> +	hlist_for_each_entry(obj, node,	&name[hash_min(key, bits)], member)
-> ...
->> +#define hash_for_each_possible(name, obj, node, member, key)			\
->> +	hash_for_each_possible_size(name, obj, HASH_BITS(name), node, member, key)
-> ...
->> +#define hash_for_each_possible_rcu_size(name, obj, bits, node, member, key)	\
->> +	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, bits)], member)
-> ...
->> +#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
->> +	hash_for_each_possible_rcu_size(name, obj, HASH_BITS(name),		\
-> ...
->> +#define hash_for_each_possible_safe_size(name, obj, bits, node, tmp, member, key)\
->> +	hlist_for_each_entry_safe(obj, node, tmp,				\
->> +		&name[hash_min(key, bits)], member)
-> ...
->> +#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
->> +	hash_for_each_possible_safe_size(name, obj, HASH_BITS(name),		\
-> 
-> And also all these.  We'd only need hash_for_each_head() and
-> hash_head().  hash_for_each_possible*() could be nice for convenience,
-> I suppose.
-> 
-> I think the almost trivial nature of hlist hashtables makes this a bit
-> tricky and I'm not very sure but having this combinatory explosion is
-> a bit dazzling when the same functionality can be achieved by simply
-> combining operations which are already defined and named considering
-> hashtable.  I'm not feeling too strong about this tho.  What do others
-> think?
-
-I'm thinking that this hashtable API will have 2 purposes: First, it would
-prevent the excessive duplication of hashtable implementations all around the code.
-
-Second, it will allow more easily interchangeable hashtable implementations to
-find their way into the kernel. There are several maintainers who would be happy
-to see dynamically sized RCU hashtable, and I'm guessing that several more
-variants could be added based on needs in specific modules.
-
-The second reason is why several things you've mentioned look the way they are:
-
- - No DEFINE_HASHTABLE(): I wanted to force the use of hash_init() since
-initialization for other hashtables may be more complicated than the static
-initialization for this implementation, which means that any place that used
-DEFINE_HASHTABLE() and didn't do hash_init() will be buggy.
-
- - hash_hashed(): Different hashtable implementations may not use hlist, so
-letting them assume that doing hlist operations on hashtable objects is wrong.
-
- - Lack of hash_head(): I didn't want to expose the internal structure of the
-hashtable to the user. This might make it hard to implement hashtables that
-resize themselves if we let the user hold a bucket in his hands.
-
-I'm actually tempted in hiding hlist completely from hashtable users, probably
-by simply defining a hash_head/hash_node on top of the hlist_ counterparts.
-
-Now, I know that I mention a lot of these hashtables that might or might not be
-added later on in the kernel, this is mostly due to the interest in dynamic
-resizable hashtables which was shown during the RFC, and the fact that there is
-a solid implementation of a dynamic RCU hashtable in urcu which might be a great
-benefit in the kernel as well (I'm also looking at it while working on this
-hashtable to verify that both could share an API in the future).
-
-Regarding the amount of new macros, we can address this by splitting off any
-dynamic elements into a new hashtable type. This will let us reduce quite a lot
-of macros (removing all the _size() ones at least).
-
-> Also, can you please audit the comments on top of each macro?  They
-> have wrong names and don't differentiate the different variants very
-> well.
-
-Sure, sorry about that.
-
-Thanks,
-Sasha
-
-> Thanks.
-> 
-
+[Slinks off in embarrassment.]
