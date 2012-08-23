@@ -1,82 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030314Ab2HWNwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 09:52:45 -0400
-Received: from fieldses.org ([174.143.236.118]:48684 "EHLO fieldses.org"
+	id S1030428Ab2HWNw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 09:52:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52330 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934010Ab2HWNwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 09:52:42 -0400
-Date: Thu, 23 Aug 2012 09:52:34 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
+	id S1030334Ab2HWNwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 09:52:50 -0400
+Date: Thu, 23 Aug 2012 16:53:29 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 0/9] extended fdinfo via procfs series, v7
-Message-ID: <20120823135234.GE29943@fieldses.org>
-References: <20120823104323.040550004@openvz.org>
- <20120823122318.GD29943@fieldses.org>
- <20120823124427.GD1992@moon>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120823135328.GB25709@redhat.com>
+References: <20120821193031.GC9027@redhat.com>
+ <20120821204556.GF12294@t510.redhat.com>
+ <20120822000741.GI9027@redhat.com>
+ <20120822011930.GA23753@t510.redhat.com>
+ <20120822093317.GC10680@redhat.com>
+ <20120823021903.GA23660@x61.redhat.com>
+ <20120823100107.GA17409@redhat.com>
+ <20120823121338.GA3062@t510.redhat.com>
+ <20120823123432.GA25659@redhat.com>
+ <20120823130606.GB3746@t510.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120823124427.GD1992@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120823130606.GB3746@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 04:44:27PM +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 23, 2012 at 08:23:18AM -0400, J. Bruce Fields wrote:
-> > On Thu, Aug 23, 2012 at 02:43:23PM +0400, Cyrill Gorcunov wrote:
-> > > Hi guys,
+On Thu, Aug 23, 2012 at 10:06:07AM -0300, Rafael Aquini wrote:
+> On Thu, Aug 23, 2012 at 03:34:32PM +0300, Michael S. Tsirkin wrote:
+> > > So, nothing has changed here.
+> > 
+> > Yes, your patch does change things:
+> > leak_balloon now might return without freeing any pages.
+> > In that case we will not be making any progress, and just
+> > spin, pinning CPU.
+> 
+> That's a transitory condition, that migh happen if leak_balloon() takes place
+> when compaction, or migration are under their way and it might only affects the
+> module unload case.
+
+Regular operation seems even more broken: host might ask
+you to leak memory but because it is under compaction
+you might leak nothing. No?
+
+> Also it won't pin CPU because it keeps releasing the locks
+> it grabs, as it loops.
+
+What has releazing locks have to do with it?
+
+> So, we are locubrating about rarities, IMHO. 
+> > 
+> > >  
+> > > > > Just as before, same thing here. If you leaked less than required, balloon()
+> > > > > will keep calling leak_balloon() until the balloon target is reached. This
+> > > > > scheme was working before, and it will keep working after this patch.
+> > > > >
+> > > > 
+> > > > IIUC we never hit this path before.
+> > > >  
+> > > So, how does balloon() works then?
 > > > 
-> > > here is updated version of the fdinfo via procfs series,
-> > > the changes from previous one are the following
-> > > 
-> > >  - fhandle is carried inside inotify mark but this feature
-> > >    is CONFIG dependent to not bloat the kernel for users
-> > >    who don't need it
 > > 
-> > As Al points out, this doesn't help much: if this feature is something a
-> > distro will want to provide, then in practice all their users are
-> > eventually going to end up with it turned on.
-> > 
+> > It gets a request to leak a given number of pages
+> > and executes it, then tells host that it is done.
+> > It never needs to spin busy-waiting on a CPU for this.
+> >
 > 
-> Yes, I remember what Al has said, the problem is that this data attached
-> to inotify mark is not just a couple of bytes but rather about 136 bytes
-> per mark, and encoding this fhandle will take some cycles on mark creation
-> as well. Thus when in a sake of c/r we simply have no other way and are
-> to pay some trade off cost for c/r functionality, i don't think the
-> regular users (and note that CONFIG_CHECKPOINT_RESTORE is off by default)
-> should pay same cost for nothing. That's why I made it config dependant.
-> Again if you still think that making it config-option is a bad idea I'll
-> rip this symbols off, it's not a problem.
+> So, what this patch changes for the ordinary leak_balloon() case?
+> 
 
-I don't have any opinion on whether there should be a configuration
-option.  Just want to make sure the cost when it's turned on is still
-taken seriously.
+That not all pages used by balloon are on &vb->pages list.
 
---b.
+> > Well busy wait pinning CPU is ugly.  Instead we should block thread and
+> > wake it up when done.  I don't mind how we fix it specifically.
+> >
+> 
+> I already told you that we do not do that by any mean introduced by this patch.
+> You're just being stubborn here. If those bits are broken, they were already
+> broken before I did come up with this proposal.
 
-> 
-> > Could you quantify the cost somehow?
-> > 
-> 
-> About 136 bytes per inotify mark.
-> 
-> > I wonder if you could get away with something less than MAX_HANDLE_SIZE?
-> > 128 bytes is the maximum allowable by NFSv4.  In practice I don't think
-> > any of our filesystems need more than 40 or so right now.
-> 
-> Look, Bruce, I would like to follow the limits we have #define'd in kernel,
-> because it makes code easier to support. I can #define some limit for
-> inotify fhandle but what should I print in fdinfo if say there is no
-> space left in buffer?
-> 
-> 	Cyrill
+Sorry you don't address the points I am making.  Maybe there are no
+bugs. But it looks like there are.  And assuming I am just seeing things
+this just means patch needs more comments, in commit log and in
+code to explain the design so that it stops looking like that.
+
+Basically it was very simple: we assumed page->lru was never
+touched for an allocated page, so it's safe to use it for
+internal book-keeping by the driver.
+
+Now, this is not the case anymore, you add some logic in mm/ that might
+or might not touch page->lru depending on things like reference count.
+And you are asking why things break even though you change very little
+in balloon itself?  Because the interface between balloon and mm is now
+big, fragile and largely undocumented.
+
+Another strangeness I just noticed: if we ever do an extra get_page in
+balloon, compaction logic in mm will break, yes?  But one expects to be
+able to do get_page after alloc_page without ill effects
+as long as one does put_page before free.
+
+Just a thought: maybe it is cleaner to move all balloon page tracking
+into mm/?  Implement alloc_balloon/free_balloon with methods to fill and
+leak pages, and callbacks to invoke when done.  This should be good for
+other hypervisors too. If you like this idea, I can even try to help out
+by refactoring current code in this way, so that you can build on it.
+But this is just a thought, not a must.
+
+-- 
+MST
