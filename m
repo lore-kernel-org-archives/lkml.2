@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933961Ab2HWKrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:47:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36681 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933811Ab2HWKra (ORCPT
+	id S1030364Ab2HWKrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:47:55 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36874 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933948Ab2HWKrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:47:30 -0400
-Message-Id: <20120823104323.040550004@openvz.org>
+	Thu, 23 Aug 2012 06:47:33 -0400
+Message-Id: <20120823104726.078379536@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 23 Aug 2012 14:43:23 +0400
+Date: Thu, 23 Aug 2012 14:43:30 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
@@ -17,21 +17,75 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Alexey Dobriyan <adobriyan@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         James Bottomley <jbottomley@parallels.com>,
         Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: [patch 0/9] extended fdinfo via procfs series, v7
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [patch 7/9] fs, eventfd: Add procfs fdinfo helper
+References: <20120823104323.040550004@openvz.org>
+Content-Disposition: inline; filename=seq-fdinfo-eventfd-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+This allow us to print out raw counter value.
+The /proc/pid/fdinfo/fd output is
 
-here is updated version of the fdinfo via procfs series,
-the changes from previous one are the following
+ | pos:	0
+ | flags:	04002
+ | eventfd-count:               5a
 
- - fhandle is carried inside inotify mark but this feature
-   is CONFIG dependent to not bloat the kernel for users
-   who don't need it
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <jbottomley@parallels.com>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Matthew Helsley <matt.helsley@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/eventfd.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
- - a small fix in exportfs code to prevent nil dereference
+Index: linux-2.6.git/fs/eventfd.c
+===================================================================
+--- linux-2.6.git.orig/fs/eventfd.c
++++ linux-2.6.git/fs/eventfd.c
+@@ -19,6 +19,8 @@
+ #include <linux/export.h>
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
+ 
+ struct eventfd_ctx {
+ 	struct kref kref;
+@@ -284,7 +286,25 @@ static ssize_t eventfd_write(struct file
+ 	return res;
+ }
+ 
++#ifdef CONFIG_PROC_FS
++static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
++{
++	struct eventfd_ctx *ctx = f->private_data;
++	int ret;
++
++	spin_lock_irq(&ctx->wqh.lock);
++	ret = seq_printf(m, "eventfd-count: %16llx\n",
++			 (unsigned long long)ctx->count);
++	spin_unlock_irq(&ctx->wqh.lock);
++
++	return ret;
++}
++#endif
++
+ static const struct file_operations eventfd_fops = {
++#ifdef CONFIG_PROC_FS
++	.show_fdinfo	= eventfd_show_fdinfo,
++#endif
+ 	.release	= eventfd_release,
+ 	.poll		= eventfd_poll,
+ 	.read		= eventfd_read,
 
-the comments would be appreciated.
