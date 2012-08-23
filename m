@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933589Ab2HWHTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:19:08 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:57089 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab2HWHTA (ORCPT
+	id S933595Ab2HWHTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:19:39 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64283 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139Ab2HWHTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:19:00 -0400
+	Thu, 23 Aug 2012 03:19:37 -0400
 MIME-Version: 1.0
-Date: Thu, 23 Aug 2012 15:19:00 +0800
-Message-ID: <CAPgLHd-VLPp-tpF77tTc9aj8-VO30jy2yhsi7KyW_NFQOqNqag@mail.gmail.com>
-Subject: [PATCH] staging: rtl8192e: use is_zero_ether_addr() instead of memcmp()
+Date: Thu, 23 Aug 2012 15:19:37 +0800
+Message-ID: <CAPgLHd_3TGQDN3o-y8Kc=7wFjSYPWkLkBqi26fyckp4JY7YQ7Q@mail.gmail.com>
+Subject: [PATCH] Staging: rtl8192u: use is_zero_ether_addr() instead of memcmp()
 From: Wei Yongjun <weiyj.lk@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
@@ -31,45 +31,36 @@ spatch with a semantic match is used to found this problem.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/staging/rtl8192e/rtllib_softmac_wx.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/rtl8192e/rtllib_softmac_wx.c b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
-index 1bb6b52..3cedfd9 100644
---- a/drivers/staging/rtl8192e/rtllib_softmac_wx.c
-+++ b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
+index cb5a3c3..421da8a 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
 @@ -14,6 +14,8 @@
   */
  
  
 +#include <linux/etherdevice.h>
 +
- #include "rtllib.h"
+ #include "ieee80211.h"
  #include "dot11d.h"
  /* FIXME: add A freqs */
-@@ -137,7 +139,6 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
+@@ -136,7 +138,6 @@ int ieee80211_wx_set_wap(struct ieee80211_device *ieee,
  {
  
  	int ret = 0;
--	u8 zero[] = {0, 0, 0, 0, 0, 0};
+-	u8 zero[] = {0,0,0,0,0,0};
  	unsigned long flags;
  
- 	short ifup = ieee->proto_started;
-@@ -157,7 +158,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
- 		goto out;
- 	}
+ 	short ifup = ieee->proto_started;//dev->flags & IFF_UP;
+@@ -165,7 +166,7 @@ int ieee80211_wx_set_wap(struct ieee80211_device *ieee,
+ 	spin_lock_irqsave(&ieee->lock, flags);
  
--	if (memcmp(temp->sa_data, zero, ETH_ALEN) == 0) {
-+	if (is_zero_ether_addr(temp->sa_data)) {
- 		spin_lock_irqsave(&ieee->lock, flags);
- 		memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
- 		ieee->wap_set = 0;
-@@ -177,7 +178,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
- 
- 	ieee->cannot_notify = false;
  	memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
--	ieee->wap_set = (memcmp(temp->sa_data, zero, ETH_ALEN) != 0);
-+	ieee->wap_set = (!is_zero_ether_addr(temp->sa_data));
+-	ieee->wap_set = memcmp(temp->sa_data, zero,ETH_ALEN)!=0;
++	ieee->wap_set = !is_zero_ether_addr(temp->sa_data);
  
  	spin_unlock_irqrestore(&ieee->lock, flags);
  
