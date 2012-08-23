@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab2HWWQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 18:16:07 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55427 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab2HWWQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 18:16:01 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: Re: [PATCH 2/2] devfreq: exynos4: Support initialization of freq_table and max_state of devfreq's profile.
-Date: Fri, 24 Aug 2012 00:22:04 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mike Turquette <mturquette@ti.com>,
-        Xiaoguang Chen <chenxg@marvell.com>
-References: <1345099767-13467-1-git-send-email-jonghwa3.lee@samsung.com> <1345099767-13467-3-git-send-email-jonghwa3.lee@samsung.com>
-In-Reply-To: <1345099767-13467-3-git-send-email-jonghwa3.lee@samsung.com>
+	id S1755494Ab2HWWSV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 18:18:21 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:54806 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754115Ab2HWWSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 18:18:17 -0400
+Message-ID: <5036AC23.8020309@xenotime.net>
+Date: Thu, 23 Aug 2012 15:18:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>
+Subject: Re: Build regressions/improvements in v3.6-rc3
+References: <1345754768-4634-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1345754768-4634-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201208240022.04846.rjw@sisk.pl>
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 16, 2012, Jonghwa Lee wrote:
-> This patch initializes freq_table and max_state of devfreq's profile.
-> They will be used for creating transition table.
+On 08/23/2012 01:46 PM, Geert Uytterhoeven wrote:
+
+> *** ERRORS ***
 > 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-
-Does that depend on [1/2]?
-
-Rafael
+> 54 regressions:
 
 
-> ---
->  drivers/devfreq/exynos4_bus.c |   30 +++++++++++++++++++++++++++++-
->  1 files changed, 29 insertions(+), 1 deletions(-)
+>   + drivers/net/can/usb/peak_usb/pcan_usb_core.c: error: conflicting types for 'dump_mem':  => 56:6
+>   + drivers/net/can/usb/peak_usb/pcan_usb_core.h: error: conflicting types for 'dump_mem':  => 134:6
+
+Anyone see what causes this?  I looked but failed to see
+the problem.
+
+
+
+> *** WARNINGS ***
 > 
-> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> index 88ddc77..9c08855 100644
-> --- a/drivers/devfreq/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos4_bus.c
-> @@ -985,7 +985,8 @@ static __devinit int exynos4_busfreq_probe(struct platform_device *pdev)
->  	struct busfreq_data *data;
->  	struct opp *opp;
->  	struct device *dev = &pdev->dev;
-> -	int err = 0;
-> +	int err = 0, i;
-> +	unsigned int *freq_table;
->  
->  	data = kzalloc(sizeof(struct busfreq_data), GFP_KERNEL);
->  	if (data == NULL) {
-> @@ -1042,6 +1043,33 @@ static __devinit int exynos4_busfreq_probe(struct platform_device *pdev)
->  
->  	platform_set_drvdata(pdev, data);
->  
-> +	switch (data->type) {
-> +	case TYPE_BUSF_EXYNOS4210:
-> +		freq_table = devm_kzalloc(&pdev->dev, sizeof(unsigned int) * EX4210_LV_NUM,
-> +					GFP_KERNEL);
-> +
-> +		for (i = 0; i < EX4210_LV_NUM; i++)
-> +			freq_table[i] = exynos4210_busclk_table[i].clk;
-> +
-> +		exynos4_devfreq_profile.max_state = EX4210_LV_NUM;
-> +		break;
-> +	case TYPE_BUSF_EXYNOS4x12:
-> +		freq_table = devm_kzalloc(&pdev->dev, sizeof(unsigned int) * EX4x12_LV_NUM,
-> +					GFP_KERNEL);
-> +
-> +		for (i = 0; i < EX4x12_LV_NUM; i++)
-> +			freq_table[i] = exynos4x12_mifclk_table[i].clk;
-> +
-> +		exynos4_devfreq_profile.max_state = EX4x12_LV_NUM;
-> +		break;
-> +	default:
-> +		dev_err(dev, "Cannot determine the device id %d\n", data->type);
-> +		err = -EINVAL;
-> +		goto err_opp_add;
-> +	}
-> +
-> +	exynos4_devfreq_profile.freq_table = freq_table;
-> +
->  	busfreq_mon_reset(data);
->  
->  	data->devfreq = devfreq_add_device(dev, &exynos4_devfreq_profile,
-> 
+> 6202 regressions:
+>   + Documentation/watchdog/src/watchdog-test.c: warning: no previous prototype for 'term' [-Wmissing-prototypes]:  => 34:6
 
+
+patch posted by me... not merged anywhere AFAIK.
+
+
+>   + fs/pstore/ram.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 2 has type 'size_t' [-Wformat]:  => 409:3
+
+
+patch posted by me.  Should be in the new linux-pstore.git tree.
+
+-- 
+~Randy
