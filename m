@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab2HWGXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 02:23:50 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56907 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab2HWGXq convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 23 Aug 2012 02:23:46 -0400
-Message-Id: <5035DA7E020000780008A5E6@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 23 Aug 2012 07:23:42 +0100
-From: "Jan Beulich" <jbeulich@suse.com>
-To: <konrad@kernel.org>
-Cc: <stefano.stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Q:pt_base in COMPAT mode offset by two pages.
- Was:Re: [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive
- areas.
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
- <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
- <20120820141305.GA2713@phenom.dumpdata.com>
- <20120821172732.GA23715@phenom.dumpdata.com>
- <20120821190317.GA13035@phenom.dumpdata.com>
- <50351DEF020000780009702A@nat28.tlf.novell.com>
- <20120822185519.GA29609@phenom.dumpdata.com>
-In-Reply-To: <20120822185519.GA29609@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752182Ab2HWG1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 02:27:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43155 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750976Ab2HWG1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 02:27:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,298,1344236400"; 
+   d="scan'208";a="137012599"
+Date: Thu, 23 Aug 2012 09:30:05 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH v2] smb347_charger: fix battery status reporting logic
+ for charger faults
+Message-ID: <20120823063005.GL15548@intel.com>
+References: <1345686558-16512-1-git-send-email-ramakrishna.pallala@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1345686558-16512-1-git-send-email-ramakrishna.pallala@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Konrad Rzeszutek Wilk <konrad@kernel.org> 08/22/12 9:05 PM >>>
->Thinking of just sticking this patch then:
+On Thu, Aug 23, 2012 at 07:19:18AM +0530, Ramakrishna Pallala wrote:
+> This patch checks for charger status register for determining the
+> battery charging status and reports Discharing/Charging/Not Charging/Full
+> accordingly.
+> 
+> This patch also adds the interrupt support for Safety Timer Expiration.
+> This interrupt is helpful in debugging the cause for charger fault.
+> 
+> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
 
-Yeah, that may be best for the moment. Albeit I see no reason why you
-shouldn't be able to use your more selective logic, just making it either
-deal with only the pt_base == start-of-page-tables case (and fall back to
-the current logic alternatively), or figure out the true range.
-
-I'm nevertheless considering to re-arrange the allocation order in the
-hypervisor (and to remove the superfluously reserved page covering
-what would be the L4), so going with the former, simpler case for the
-kernel would be a reasonable option.
-
-Jan
-
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
