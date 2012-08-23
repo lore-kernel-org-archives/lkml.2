@@ -1,56 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab2HWVYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:24:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57454 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756045Ab2HWVYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:24:06 -0400
-Message-ID: <50369F67.8040101@zytor.com>
-Date: Thu, 23 Aug 2012 14:23:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1759229Ab2HWV0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:26:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43935 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab2HWV0M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 17:26:12 -0400
+Message-ID: <50369FEE.8000003@wwwdotorg.org>
+Date: Thu, 23 Aug 2012 15:26:06 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Jacob Shin <jacob.shin@amd.com>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
-        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 3/4] x86: Only direct map addresses that are marked as
- E820_RAM
-References: <1344983957-4996-1-git-send-email-jacob.shin@amd.com> <1344983957-4996-4-git-send-email-jacob.shin@amd.com> <50356BA9.5030906@zytor.com> <20120823145043.GA4671@jshin-Toonie> <50364E9E.6020104@zytor.com> <20120823201224.GA24203@phenom.dumpdata.com>
-In-Reply-To: <20120823201224.GA24203@phenom.dumpdata.com>
-X-Enigmail-Version: 1.4.3
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com> <5035445B.6000500@wwwdotorg.org> <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com> <50366E44.4030606@wwwdotorg.org> <50369305.6050304@gmail.com>
+In-Reply-To: <50369305.6050304@gmail.com>
+X-Enigmail-Version: 1.5a1pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 01:12 PM, Konrad Rzeszutek Wilk wrote:
+On 08/23/2012 02:31 PM, Sebastian Hesselbarth wrote:
+> On 08/23/2012 07:54 PM, Stephen Warren wrote:
+>>> dt_parse() and dt_parse_function() build up structs that get used
+>>> later on
+>>> in mvebu_pinmux_ops that require indexed functions. I can join them with
+>>> dt_node_to_map() but that would require incremental kzalloc for the
+>>> corresponding array. Or I could (functionally) leave dt_parse() to
+>>> allocate
+>>> the array and only join dt_parse_function() with dt_node_to_map().
 >>
->> Okay... I think I need to grok that a bit better.  For memory
->> allocations, we probably should just use brk allocations, for
->> virtual space allocations it is called the fixmap for a reason (even
->> though the Xen people managed to break that on 32 bits, sigh!)
+>> So everything you said makes sense, in that the core driver is
+>> parameterizable and receives data from a SoC-variant-specific driver
+>> indicating which pins/groups/functions are available. I'm still not sure
+>> though why the translation of the pin/group/function structures passed
+>> to probe into other data structures requires accessing the DT at all;
+>> the set of available pins/groups/functions isn't configured through DT,
+>> and doesn't need to be limited to only those options actually used in
+>> DT, so can't you just process all the data that's passed to probe
+>> without interaction with the DT?
 > 
-> Can you rope me in on that? Was that added ooh years ago ?
+> Hmm, maybe I still don't quite understand the terminology of pinctrl/pinmux
+> core completely. What exactly should mvebu_pinmux_get_funcs_count return
+> if not the number of DT node children?
 
-Yeah, it dates back to the original paravirt work.
+In HW, you have:
 
-The issue is that Xen likes to live at the top of the virtual address
-space, which is where the fixmap lives.  Suddenly the fixmap is no
-longer at a fixed address, which was sort of the whole idea.
+* A number of pins
 
-The problem is that on i386 there are very few unmovable boundaries left
-in the virtual address space.  The only other one left, really, is at
-the very beginning of kernel space.
+* In some cases, multiple pins are controlled by a single register
+field, so there are groups of pins, whose pins all get mux'd at once.
 
-At this point people's appetite for large changes on 32 bits is limited,
-of course.
+* In some cases, SW chooses to control multiple pins at once even if the
+HW allows otherwise, and these are also represented as groups.
 
-	-hpa
+* A (mux) function represents what options (signals, modules, ...) are
+available to be mux'd onto any given pin or group of pins.
 
+If all of your pins/groups can support 4 different mux choices 0..3
+(even though the interpretation of values 0..3 may differ per pin/group)
+you may simply have functions 0, 1, 2, 3 exposed by your driver.
 
+Alternatively, you may define a function for each logical HW module
+(e.g. UART1, UART2, SPI1, SPI2, MMC1...) that exists in your SoC, or
+even per each separate subset of signals (e.g. UART1 RX/TX, UART 1
+RTS/CTS, UART 2 RX/TX/RTS/CTS, ...).
+
+In a driver where the set of pins, groups, and functions known to the
+driver is defined as static data in the driver itself (which I believe
+covers your driver; IIRC I saw all those tables in the patch), then
+you'd simply count up all the defined function names/IDs available, and
+return that from pinmux_ops.get_functions_count(). In this case, the
+number of functions is entirely static, being defined by the SoC HW
+design, and hence DT content has absolutely no impact on it. For
+reference, this is how the Tegra pinctrl drivers work.
+
+In a driver where the set of pins, groups, and functions known to the
+driver is not hard-coded into the driver itself, but instead derived
+from DT content (which is useful for a driver that works for say 10
+different similar SoCs, each with slightly different sets of actual
+pins/groups/functions, but where you don't want to hard-code all the
+tables into the driver), then you may need to parse DT to extract the
+definitions of those pins/groups/functions. Then, there's the question
+of how to represent the set of known pins/groups/function in DT; do you
+have explicit tables for this, or reverse engineer the tables based on
+whichever pins/groups/function just happen to be used by the board
+you're running on, in which cases the reverse-engineered lists will
+probably not include all options the HW could support, given one
+particular DT file. Anyway, as I said, I don't think this approach
+applies to your driver anyway since IIRC I did see all the data tables
+in the patch.
+
+As you may have guessed, I strongly prefer the hard-coded static table
+based approach, or at least separating the definition of known
+pins/groups/functions from the configuration nodes that define which
+particular mux settings to actually use.
+
+Puting this all a little more simply, the pinctrl core wants to generate
+a list of all known functions. It is a single global/unified list. It
+first calls pinmux_ops.get_functions_count() to find out how many
+functions there are in the list, then pinmux_ops.get_function_name() for
+each one to find its name, then pinmux_ops.get_function_groups() to find
+out which groups allow that function to be mux'd onto them.
