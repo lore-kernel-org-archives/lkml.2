@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030487Ab2HWK6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:58:30 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:34740 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030301Ab2HWK6Z (ORCPT
+	id S1030452Ab2HWK6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:58:11 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:47842 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030276Ab2HWK6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:58:25 -0400
-Date: Thu, 23 Aug 2012 12:58:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: LKML <linux-kernel@vger.kernel.org>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "3.2.x.." <stable@kernel.org>
-Subject: Re: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
-Message-ID: <20120823105816.GB18835@somewhere.redhat.com>
-References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
- <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
- <5035F8A2.1070702@orcon.net.nz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5035F8A2.1070702@orcon.net.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Aug 2012 06:58:03 -0400
+X-AuditID: cbfee61b-b7faf6d00000476a-c6-50360cbad24a
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linus.walleij@linaro.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, kgene.kim@samsung.com,
+        dong.aisheng@linaro.org, swarren@wwwdotorg.org, patches@linaro.org
+Subject: [PATCH v3 3/4] gpio: exynos4: skip gpiolib registration if pinctrl
+ driver is used
+Date: Thu, 23 Aug 2012 16:45:28 +0530
+Message-id: <1345720529-32315-4-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+In-reply-to: <1345720529-32315-1-git-send-email-thomas.abraham@linaro.org>
+References: <1345720529-32315-1-git-send-email-thomas.abraham@linaro.org>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t9jQd1dPGYBBjvmsltc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGV867zFWnCXt6Ll5AfmBsbJ3F2MnBwSAiYSWx9PY4Gw
+	xSQu3FvP1sXIxSEkMJ1RomVhOxNIQkigjUli3d1YEJtNwEDi0cJ37CC2iICrxPEXZxlBGpgF
+	fjFKvN6yCaxBWCBGomPTItYuRg4OFgFViTl3TUDCvAKeEldeXGCHWKYksaH3KFg5p4CXxK6v
+	q5ghdnlKrN56jmUCI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMG+fya9g3FVg8Uh
+	RgEORiUe3oB7pgFCrIllxZW5hxglOJiVRHi9OM0ChHhTEiurUovy44tKc1KLDzFKc7AoifPy
+	9xkGCAmkJ5akZqemFqQWwWSZODilGhgXWJs632+7VpepsGh2ydqJufNvW4S6TVj1nXGy/CLh
+	1yJakrGl528F7tD6/e5OZE3U0ot/17KU3Sm/VTtl3XeLjpfCq7NSDvTe2XJviamB7I56nh0Z
+	6ufPv3jINV8t5//2/NrpPteSAzl9LzHs5WcUn+3ypyclnvtcwueQ+XqGE+ub+PTWdKxTYinO
+	SDTUYi4qTgQAAAxw+PkBAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 09:32:18PM +1200, Michael Cree wrote:
-> On 23/08/12 04:23, Frederic Weisbecker wrote:
-> > In the old times, the whole idle task was considered
-> > as an RCU quiescent state. But as RCU became more and
-> > more successful overtime, some RCU read side critical
-> > section have been added even in the code of some
-> > architectures idle tasks, for tracing for example.
-> 
-> Fantastic!  It fixes RCU CPU stalls that we were seeing on the SMP
-> kernel when built for generic Alpha.
-> 
-> A build of glibc and running its test suite reliably triggers RCU CPU
-> stalls when running a kernel built for generic Alpha.  I have just built
-> glibc and ran its test suite twice with no RCU CPU stalls with this
-> patch against a 3.5.2 kernel!  Nice.  Very nice.
-> 
-> I see the stable queue is CCed but I note the patch does not apply
-> cleanly to the 3.2.y kernel.  It would be nice to have a backport of the
-> patches for the 3.2 stable kernel.
+Pinctrl driver, when enabled, registers all the gpio pins and hence the
+registration of gpio pins by this driver can be skipped.
 
-Sure.
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/gpio-samsung.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
-> 
-> So feel free to add:
-> 
-> Tested-by:  Michael Cree <mcree@orcon.net.nz>
+diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+index ba126cc..41ab7f6 100644
+--- a/drivers/gpio/gpio-samsung.c
++++ b/drivers/gpio/gpio-samsung.c
+@@ -2734,6 +2734,27 @@ static __init void exynos4_gpiolib_init(void)
+ 	int group = 0;
+ 	void __iomem *gpx_base;
+ 
++#ifdef CONFIG_PINCTRL_SAMSUNG
++		/*
++		 * This gpio driver includes support for device tree support and
++		 * there are platforms using it. In order to maintain
++		 * compatibility with those platforms, and to allow non-dt
++		 * Exynos4210 platforms to use this gpiolib support, a check
++		 * is added to find out if there is a active pin-controller
++		 * driver support available. If it is available, this gpiolib
++		 * support is ignored and the gpiolib support available in
++		 * pin-controller driver is used. This is a temporary check and
++		 * will go away when all of the Exynos4210 platforms have
++		 * switched to using device tree and the pin-ctrl driver.
++		 */
++		struct device_node *pctrl_np;
++		const char *pctrl_compat = "samsung,pinctrl-exynos4210";
++		pctrl_np = of_find_compatible_node(NULL, NULL, pctrl_compat);
++		if (pctrl_np)
++			if (of_device_is_available(pctrl_np))
++				return;
++#endif
++
+ 	/* gpio part1 */
+ 	gpio_base1 = ioremap(EXYNOS4_PA_GPIO1, SZ_4K);
+ 	if (gpio_base1 == NULL) {
+-- 
+1.6.6.rc2
 
-Thanks, but I need to refactor the patch, I suspect a problem with CONFIG_PREEMPT.
