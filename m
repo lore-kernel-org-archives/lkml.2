@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab2HWBKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 21:10:45 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37554 "EHLO
+	id S1753461Ab2HWBKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 21:10:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45221 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab2HWBJl (ORCPT
+	with ESMTP id S1751452Ab2HWBJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 21:09:41 -0400
+	Wed, 22 Aug 2012 21:09:37 -0400
 From: Matt Porter <mporter@ti.com>
 To: vinod.koul@intel.com, cjb@laptop.org, grant.likely@secretlab.ca
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux DaVinci Kernel List 
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Sekhar Nori <nsekhar@ti.com>
-Subject: [PATCH v3 3/3] spi: spi-davinci: convert to DMA engine API
-Date: Wed, 22 Aug 2012 21:09:36 -0400
-Message-Id: <1345684176-21472-4-git-send-email-mporter@ti.com>
+Subject: [PATCH v3 1/3] dmaengine: add TI EDMA DMA engine driver
+Date: Wed, 22 Aug 2012 21:09:34 -0400
+Message-Id: <1345684176-21472-2-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345684176-21472-1-git-send-email-mporter@ti.com>
 References: <1345684176-21472-1-git-send-email-mporter@ti.com>
@@ -27,433 +27,767 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes use of the DaVinci EDMA private DMA API and replaces
-it with use of the DMA engine API.
+Add a DMA engine driver for the TI EDMA controller. This driver
+is implemented as a wrapper around the existing DaVinci private
+DMA implementation. This approach allows for incremental conversion
+of each peripheral driver to the DMA engine API. The EDMA driver
+supports slave transfers but does not yet support cyclic transfers.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- drivers/spi/spi-davinci.c |  292 ++++++++++++++++++++-------------------------
- 1 file changed, 130 insertions(+), 162 deletions(-)
+ drivers/dma/Kconfig  |   10 +
+ drivers/dma/Makefile |    1 +
+ drivers/dma/edma.c   |  671 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/edma.h |   29 +++
+ 4 files changed, 711 insertions(+)
+ create mode 100644 drivers/dma/edma.c
+ create mode 100644 include/linux/edma.h
 
-diff --git a/drivers/spi/spi-davinci.c b/drivers/spi/spi-davinci.c
-index 9b2901f..c1ec52d 100644
---- a/drivers/spi/spi-davinci.c
-+++ b/drivers/spi/spi-davinci.c
-@@ -25,13 +25,14 @@
- #include <linux/platform_device.h>
- #include <linux/err.h>
- #include <linux/clk.h>
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index d06ea29..0351719 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -208,6 +208,16 @@ config SIRF_DMA
+ 	help
+ 	  Enable support for the CSR SiRFprimaII DMA engine.
+ 
++config TI_EDMA
++	tristate "TI EDMA support"
++	depends on ARCH_DAVINCI
++	select DMA_ENGINE
++	select DMA_VIRTUAL_CHANNELS
++	default n
++	help
++	  Enable support for the TI EDMA controller. This DMA
++	  engine is found on TI DaVinci and AM33xx parts.
++
+ config ARCH_HAS_ASYNC_TX_FIND_CHANNEL
+ 	bool
+ 
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index 4cf6b12..f5cf310 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -23,6 +23,7 @@ obj-$(CONFIG_IMX_DMA) += imx-dma.o
+ obj-$(CONFIG_MXS_DMA) += mxs-dma.o
+ obj-$(CONFIG_TIMB_DMA) += timb_dma.o
+ obj-$(CONFIG_SIRF_DMA) += sirf-dma.o
++obj-$(CONFIG_TI_EDMA) += edma.o
+ obj-$(CONFIG_STE_DMA40) += ste_dma40.o ste_dma40_ll.o
+ obj-$(CONFIG_TEGRA20_APB_DMA) += tegra20-apb-dma.o
+ obj-$(CONFIG_PL330_DMA) += pl330.o
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+new file mode 100644
+index 0000000..05aea3c
+--- /dev/null
++++ b/drivers/dma/edma.c
+@@ -0,0 +1,671 @@
++/*
++ * TI EDMA DMA engine driver
++ *
++ * Copyright 2012 Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
 +#include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
-+#include <linux/edma.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/spi_bitbang.h>
- #include <linux/slab.h>
- 
- #include <mach/spi.h>
--#include <mach/edma.h>
- 
- #define SPI_NO_RESOURCE		((resource_size_t)-1)
- 
-@@ -113,14 +114,6 @@
- #define SPIDEF		0x4c
- #define SPIFMT0		0x50
- 
--/* We have 2 DMA channels per CS, one for RX and one for TX */
--struct davinci_spi_dma {
--	int			tx_channel;
--	int			rx_channel;
--	int			dummy_param_slot;
--	enum dma_event_q	eventq;
--};
--
- /* SPI Controller driver's private data. */
- struct davinci_spi {
- 	struct spi_bitbang	bitbang;
-@@ -134,11 +127,14 @@ struct davinci_spi {
- 
- 	const void		*tx;
- 	void			*rx;
--#define SPI_TMP_BUFSZ	(SMP_CACHE_BYTES + 1)
--	u8			rx_tmp_buf[SPI_TMP_BUFSZ];
- 	int			rcount;
- 	int			wcount;
--	struct davinci_spi_dma	dma;
++#include <linux/dma-mapping.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/list.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
 +
-+	struct dma_chan		*dma_rx;
-+	struct dma_chan		*dma_tx;
-+	int			dma_rx_chnum;
-+	int			dma_tx_chnum;
++#include <mach/edma.h>
 +
- 	struct davinci_spi_platform_data *pdata;
- 
- 	void			(*get_rx)(u32 rx_data, struct davinci_spi *);
-@@ -496,21 +492,23 @@ out:
- 	return errors;
- }
- 
--static void davinci_spi_dma_callback(unsigned lch, u16 status, void *data)
-+static void davinci_spi_dma_rx_callback(void *data)
- {
--	struct davinci_spi *dspi = data;
--	struct davinci_spi_dma *dma = &dspi->dma;
-+	struct davinci_spi *dspi = (struct davinci_spi *)data;
- 
--	edma_stop(lch);
-+	dspi->rcount = 0;
- 
--	if (status == DMA_COMPLETE) {
--		if (lch == dma->rx_channel)
--			dspi->rcount = 0;
--		if (lch == dma->tx_channel)
--			dspi->wcount = 0;
--	}
-+	if (!dspi->wcount && !dspi->rcount)
-+		complete(&dspi->done);
-+}
- 
--	if ((!dspi->wcount && !dspi->rcount) || (status != DMA_COMPLETE))
-+static void davinci_spi_dma_tx_callback(void *data)
++#include "dmaengine.h"
++#include "virt-dma.h"
++
++/*
++ * This will go away when the private EDMA API is folded
++ * into this driver and the platform device(s) are
++ * instantiated in the arch code. We can only get away
++ * with this simplification because DA8XX may not be built
++ * in the same kernel image with other DaVinci parts. This
++ * avoids having to sprinkle dmaengine driver platform devices
++ * and data throughout all the existing board files.
++ */
++#ifdef CONFIG_ARCH_DAVINCI_DA8XX
++#define EDMA_CTLRS	2
++#define EDMA_CHANS	32
++#else
++#define EDMA_CTLRS	1
++#define EDMA_CHANS	64
++#endif /* CONFIG_ARCH_DAVINCI_DA8XX */
++
++/* Max of 16 segments per channel to conserve PaRAM slots */
++#define MAX_NR_SG		16
++#define EDMA_MAX_SLOTS		MAX_NR_SG
++#define EDMA_DESCRIPTORS	16
++
++struct edma_desc {
++	struct virt_dma_desc		vdesc;
++	struct list_head		node;
++	int				absync;
++	int				pset_nr;
++	struct edmacc_param		pset[0];
++};
++
++struct edma_cc;
++
++struct edma_chan {
++	struct virt_dma_chan		vchan;
++	struct list_head		node;
++	struct edma_desc		*edesc;
++	struct edma_cc			*ecc;
++	int				ch_num;
++	bool				alloced;
++	int				slot[EDMA_MAX_SLOTS];
++	dma_addr_t			addr;
++	int				addr_width;
++	int				maxburst;
++};
++
++struct edma_cc {
++	int				ctlr;
++	struct dma_device		dma_slave;
++	struct edma_chan		slave_chans[EDMA_CHANS];
++	int				num_slave_chans;
++	int				dummy_slot;
++};
++
++static inline struct edma_cc *to_edma_cc(struct dma_device *d)
 +{
-+	struct davinci_spi *dspi = (struct davinci_spi *)data;
++	return container_of(d, struct edma_cc, dma_slave);
++}
 +
-+	dspi->wcount = 0;
++static inline struct edma_chan *to_edma_chan(struct dma_chan *c)
++{
++	return container_of(c, struct edma_chan, vchan.chan);
++}
 +
-+	if (!dspi->wcount && !dspi->rcount)
- 		complete(&dspi->done);
- }
- 
-@@ -526,20 +524,20 @@ static void davinci_spi_dma_callback(unsigned lch, u16 status, void *data)
- static int davinci_spi_bufs(struct spi_device *spi, struct spi_transfer *t)
- {
- 	struct davinci_spi *dspi;
--	int data_type, ret;
-+	int data_type, ret = -ENOMEM;
- 	u32 tx_data, spidat1;
- 	u32 errors = 0;
- 	struct davinci_spi_config *spicfg;
- 	struct davinci_spi_platform_data *pdata;
- 	unsigned uninitialized_var(rx_buf_count);
--	struct device *sdev;
-+	void *dummy_buf = NULL;
-+	struct scatterlist sg_rx, sg_tx;
- 
- 	dspi = spi_master_get_devdata(spi->master);
- 	pdata = dspi->pdata;
- 	spicfg = (struct davinci_spi_config *)spi->controller_data;
- 	if (!spicfg)
- 		spicfg = &davinci_spi_default_cfg;
--	sdev = dspi->bitbang.master->dev.parent;
- 
- 	/* convert len to words based on bits_per_word */
- 	data_type = dspi->bytes_per_word[spi->chip_select];
-@@ -567,112 +565,83 @@ static int davinci_spi_bufs(struct spi_device *spi, struct spi_transfer *t)
- 		spidat1 |= tx_data & 0xFFFF;
- 		iowrite32(spidat1, dspi->base + SPIDAT1);
- 	} else {
--		struct davinci_spi_dma *dma;
--		unsigned long tx_reg, rx_reg;
--		struct edmacc_param param;
--		void *rx_buf;
--		int b, c;
--
--		dma = &dspi->dma;
--
--		tx_reg = (unsigned long)dspi->pbase + SPIDAT1;
--		rx_reg = (unsigned long)dspi->pbase + SPIBUF;
--
--		/*
--		 * Transmit DMA setup
--		 *
--		 * If there is transmit data, map the transmit buffer, set it
--		 * as the source of data and set the source B index to data
--		 * size. If there is no transmit data, set the transmit register
--		 * as the source of data, and set the source B index to zero.
--		 *
--		 * The destination is always the transmit register itself. And
--		 * the destination never increments.
--		 */
--
--		if (t->tx_buf) {
--			t->tx_dma = dma_map_single(&spi->dev, (void *)t->tx_buf,
--						t->len, DMA_TO_DEVICE);
--			if (dma_mapping_error(&spi->dev, t->tx_dma)) {
--				dev_dbg(sdev, "Unable to DMA map %d bytes"
--						"TX buffer\n", t->len);
--				return -ENOMEM;
--			}
--		}
--
--		/*
--		 * If number of words is greater than 65535, then we need
--		 * to configure a 3 dimension transfer.  Use the BCNTRLD
--		 * feature to allow for transfers that aren't even multiples
--		 * of 65535 (or any other possible b size) by first transferring
--		 * the remainder amount then grabbing the next N blocks of
--		 * 65535 words.
--		 */
--
--		c = dspi->wcount / (SZ_64K - 1);	/* N 65535 Blocks */
--		b = dspi->wcount - c * (SZ_64K - 1);	/* Remainder */
--		if (b)
--			c++;
-+		struct dma_slave_config dma_rx_conf = {
-+			.direction = DMA_DEV_TO_MEM,
-+			.src_addr = (unsigned long)dspi->pbase + SPIBUF,
-+			.src_addr_width = data_type,
-+			.src_maxburst = 1,
-+		};
-+		struct dma_slave_config dma_tx_conf = {
-+			.direction = DMA_MEM_TO_DEV,
-+			.dst_addr = (unsigned long)dspi->pbase + SPIDAT1,
-+			.dst_addr_width = data_type,
-+			.dst_maxburst = 1,
-+		};
-+		struct dma_async_tx_descriptor *rxdesc;
-+		struct dma_async_tx_descriptor *txdesc;
-+		void *buf;
++static inline struct edma_desc
++*to_edma_desc(struct dma_async_tx_descriptor *tx)
++{
++	return container_of(tx, struct edma_desc, vdesc.tx);
++}
 +
-+		dummy_buf = kzalloc(t->len, GFP_KERNEL);
-+		if (!dummy_buf)
-+			goto err_alloc_dummy_buf;
++static void edma_desc_free(struct virt_dma_desc *vdesc)
++{
++	kfree(container_of(vdesc, struct edma_desc, vdesc));
++}
 +
-+		dmaengine_slave_config(dspi->dma_rx, &dma_rx_conf);
-+		dmaengine_slave_config(dspi->dma_tx, &dma_tx_conf);
++/* Dispatch a queued descriptor to the controller (caller holds lock) */
++static void edma_execute(struct edma_chan *echan)
++{
++	struct virt_dma_desc *vdesc = vchan_next_desc(&echan->vchan);
++	struct edma_desc *edesc;
++	int i;
 +
-+		sg_init_table(&sg_rx, 1);
-+		if (!t->rx_buf)
-+			buf = dummy_buf;
- 		else
--			b = SZ_64K - 1;
--
--		param.opt = TCINTEN | EDMA_TCC(dma->tx_channel);
--		param.src = t->tx_buf ? t->tx_dma : tx_reg;
--		param.a_b_cnt = b << 16 | data_type;
--		param.dst = tx_reg;
--		param.src_dst_bidx = t->tx_buf ? data_type : 0;
--		param.link_bcntrld = 0xffffffff;
--		param.src_dst_cidx = t->tx_buf ? data_type : 0;
--		param.ccnt = c;
--		edma_write_slot(dma->tx_channel, &param);
--		edma_link(dma->tx_channel, dma->dummy_param_slot);
--
--		/*
--		 * Receive DMA setup
--		 *
--		 * If there is receive buffer, use it to receive data. If there
--		 * is none provided, use a temporary receive buffer. Set the
--		 * destination B index to 0 so effectively only one byte is used
--		 * in the temporary buffer (address does not increment).
--		 *
--		 * The source of receive data is the receive data register. The
--		 * source address never increments.
--		 */
--
--		if (t->rx_buf) {
--			rx_buf = t->rx_buf;
--			rx_buf_count = t->len;
--		} else {
--			rx_buf = dspi->rx_tmp_buf;
--			rx_buf_count = sizeof(dspi->rx_tmp_buf);
-+			buf = t->rx_buf;
-+		t->rx_dma = dma_map_single(&spi->dev, buf,
-+				t->len, DMA_FROM_DEVICE);
-+		if (!t->rx_dma) {
-+			ret = -EFAULT;
-+			goto err_rx_map;
- 		}
-+		sg_dma_address(&sg_rx) = t->rx_dma;
-+		sg_dma_len(&sg_rx) = t->len;
- 
--		t->rx_dma = dma_map_single(&spi->dev, rx_buf, rx_buf_count,
--							DMA_FROM_DEVICE);
--		if (dma_mapping_error(&spi->dev, t->rx_dma)) {
--			dev_dbg(sdev, "Couldn't DMA map a %d bytes RX buffer\n",
--								rx_buf_count);
--			if (t->tx_buf)
--				dma_unmap_single(&spi->dev, t->tx_dma, t->len,
--								DMA_TO_DEVICE);
--			return -ENOMEM;
-+		sg_init_table(&sg_tx, 1);
-+		if (!t->tx_buf)
-+			buf = dummy_buf;
++	if (!vdesc) {
++		echan->edesc = NULL;
++		return;
++	}
++
++	list_del(&vdesc->node);
++
++	echan->edesc = edesc = to_edma_desc(&vdesc->tx);
++
++	/* Write descriptor PaRAM set(s) */
++	for (i = 0; i < edesc->pset_nr; i++) {
++		edma_write_slot(echan->slot[i], &edesc->pset[i]);
++		dev_dbg(echan->vchan.chan.device->dev,
++			"\n pset[%d]:\n"
++			"  chnum\t%d\n"
++			"  slot\t%d\n"
++			"  opt\t%08x\n"
++			"  src\t%08x\n"
++			"  dst\t%08x\n"
++			"  abcnt\t%08x\n"
++			"  ccnt\t%08x\n"
++			"  bidx\t%08x\n"
++			"  cidx\t%08x\n"
++			"  lkrld\t%08x\n",
++			i, echan->ch_num, echan->slot[i],
++			edesc->pset[i].opt,
++			edesc->pset[i].src,
++			edesc->pset[i].dst,
++			edesc->pset[i].a_b_cnt,
++			edesc->pset[i].ccnt,
++			edesc->pset[i].src_dst_bidx,
++			edesc->pset[i].src_dst_cidx,
++			edesc->pset[i].link_bcntrld);
++		/* Link to the previous slot if not the last set */
++		if (i != (edesc->pset_nr - 1))
++			edma_link(echan->slot[i], echan->slot[i+1]);
++		/* Final pset links to the dummy pset */
 +		else
-+			buf = (void *)t->tx_buf;
-+		t->tx_dma = dma_map_single(&spi->dev, buf,
-+				t->len, DMA_FROM_DEVICE);
-+		if (!t->tx_dma) {
-+			ret = -EFAULT;
-+			goto err_tx_map;
- 		}
--
--		param.opt = TCINTEN | EDMA_TCC(dma->rx_channel);
--		param.src = rx_reg;
--		param.a_b_cnt = b << 16 | data_type;
--		param.dst = t->rx_dma;
--		param.src_dst_bidx = (t->rx_buf ? data_type : 0) << 16;
--		param.link_bcntrld = 0xffffffff;
--		param.src_dst_cidx = (t->rx_buf ? data_type : 0) << 16;
--		param.ccnt = c;
--		edma_write_slot(dma->rx_channel, &param);
-+		sg_dma_address(&sg_tx) = t->tx_dma;
-+		sg_dma_len(&sg_tx) = t->len;
++			edma_link(echan->slot[i], echan->ecc->dummy_slot);
++	}
 +
-+		rxdesc = dmaengine_prep_slave_sg(dspi->dma_rx,
-+				&sg_rx, 1, DMA_DEV_TO_MEM,
-+				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+		if (!rxdesc)
-+			goto err_desc;
++	edma_start(echan->ch_num);
++}
 +
-+		txdesc = dmaengine_prep_slave_sg(dspi->dma_tx,
-+				&sg_tx, 1, DMA_MEM_TO_DEV,
-+				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+		if (!txdesc)
-+			goto err_desc;
++static int edma_terminate_all(struct edma_chan *echan)
++{
++	unsigned long flags;
++	LIST_HEAD(head);
 +
-+		rxdesc->callback = davinci_spi_dma_rx_callback;
-+		rxdesc->callback_param = (void *)dspi;
-+		txdesc->callback = davinci_spi_dma_tx_callback;
-+		txdesc->callback_param = (void *)dspi;
- 
- 		if (pdata->cshold_bug)
- 			iowrite16(spidat1 >> 16, dspi->base + SPIDAT1 + 2);
- 
--		edma_start(dma->rx_channel);
--		edma_start(dma->tx_channel);
-+		dmaengine_submit(rxdesc);
-+		dmaengine_submit(txdesc);
++	spin_lock_irqsave(&echan->vchan.lock, flags);
 +
-+		dma_async_issue_pending(dspi->dma_rx);
-+		dma_async_issue_pending(dspi->dma_tx);
++	/*
++	 * Stop DMA activity: we assume the callback will not be called
++	 * after edma_dma() returns (even if it does, it will see
++	 * echan->edesc is NULL and exit.)
++	 */
++	if (echan->edesc) {
++		echan->edesc = NULL;
++		edma_stop(echan->ch_num);
++	}
 +
- 		set_io_bits(dspi->base + SPIINT, SPIINT_DMA_REQ_EN);
- 	}
- 
-@@ -690,15 +659,13 @@ static int davinci_spi_bufs(struct spi_device *spi, struct spi_transfer *t)
- 
- 	clear_io_bits(dspi->base + SPIINT, SPIINT_MASKALL);
- 	if (spicfg->io_type == SPI_IO_TYPE_DMA) {
--
--		if (t->tx_buf)
--			dma_unmap_single(&spi->dev, t->tx_dma, t->len,
--								DMA_TO_DEVICE);
--
--		dma_unmap_single(&spi->dev, t->rx_dma, rx_buf_count,
--							DMA_FROM_DEVICE);
--
- 		clear_io_bits(dspi->base + SPIINT, SPIINT_DMA_REQ_EN);
++	vchan_get_all_descriptors(&echan->vchan, &head);
++	spin_unlock_irqrestore(&echan->vchan.lock, flags);
++	vchan_dma_desc_free_list(&echan->vchan, &head);
 +
-+		dma_unmap_single(&spi->dev, t->rx_dma,
-+				t->len, DMA_FROM_DEVICE);
-+		dma_unmap_single(&spi->dev, t->tx_dma,
-+				t->len, DMA_TO_DEVICE);
-+		kfree(dummy_buf);
- 	}
- 
- 	clear_io_bits(dspi->base + SPIGCR1, SPIGCR1_SPIENA_MASK);
-@@ -716,11 +683,20 @@ static int davinci_spi_bufs(struct spi_device *spi, struct spi_transfer *t)
- 	}
- 
- 	if (dspi->rcount != 0 || dspi->wcount != 0) {
--		dev_err(sdev, "SPI data transfer error\n");
-+		dev_err(&spi->dev, "SPI data transfer error\n");
- 		return -EIO;
- 	}
- 
- 	return t->len;
++	return 0;
++}
 +
-+err_desc:
-+	dma_unmap_single(&spi->dev, t->tx_dma, t->len, DMA_TO_DEVICE);
-+err_tx_map:
-+	dma_unmap_single(&spi->dev, t->rx_dma, t->len, DMA_FROM_DEVICE);
-+err_rx_map:
-+	kfree(dummy_buf);
-+err_alloc_dummy_buf:
++
++static int edma_slave_config(struct edma_chan *echan,
++	struct dma_slave_config *config)
++{
++	if ((config->src_addr_width > DMA_SLAVE_BUSWIDTH_4_BYTES) ||
++	    (config->dst_addr_width > DMA_SLAVE_BUSWIDTH_4_BYTES))
++		return -EINVAL;
++
++	if (config->direction == DMA_MEM_TO_DEV) {
++		if (config->dst_addr)
++			echan->addr = config->dst_addr;
++		if (config->dst_addr_width)
++			echan->addr_width = config->dst_addr_width;
++		if (config->dst_maxburst)
++			echan->maxburst = config->dst_maxburst;
++	} else if (config->direction == DMA_DEV_TO_MEM) {
++		if (config->src_addr)
++			echan->addr = config->src_addr;
++		if (config->src_addr_width)
++			echan->addr_width = config->src_addr_width;
++		if (config->src_maxburst)
++			echan->maxburst = config->src_maxburst;
++	}
++
++	return 0;
++}
++
++static int edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
++			unsigned long arg)
++{
++	int ret = 0;
++	struct dma_slave_config *config;
++	struct edma_chan *echan = to_edma_chan(chan);
++
++	switch (cmd) {
++	case DMA_TERMINATE_ALL:
++		edma_terminate_all(echan);
++		break;
++	case DMA_SLAVE_CONFIG:
++		config = (struct dma_slave_config *)arg;
++		ret = edma_slave_config(echan, config);
++		break;
++	default:
++		ret = -ENOSYS;
++	}
++
 +	return ret;
- }
- 
- /**
-@@ -751,39 +727,33 @@ static irqreturn_t davinci_spi_irq(s32 irq, void *data)
- 
- static int davinci_spi_request_dma(struct davinci_spi *dspi)
- {
-+	dma_cap_mask_t mask;
-+	struct device *sdev = dspi->bitbang.master->dev.parent;
- 	int r;
--	struct davinci_spi_dma *dma = &dspi->dma;
- 
--	r = edma_alloc_channel(dma->rx_channel, davinci_spi_dma_callback, dspi,
--								dma->eventq);
--	if (r < 0) {
--		pr_err("Unable to request DMA channel for SPI RX\n");
--		r = -EAGAIN;
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_SLAVE, mask);
++}
 +
-+	dspi->dma_rx = dma_request_channel(mask, edma_filter_fn,
-+					   &dspi->dma_rx_chnum);
-+	if (!dspi->dma_rx) {
-+		dev_err(sdev, "request RX DMA channel failed\n");
-+		r = -ENODEV;
- 		goto rx_dma_failed;
- 	}
- 
--	r = edma_alloc_channel(dma->tx_channel, davinci_spi_dma_callback, dspi,
--								dma->eventq);
--	if (r < 0) {
--		pr_err("Unable to request DMA channel for SPI TX\n");
--		r = -EAGAIN;
-+	dspi->dma_tx = dma_request_channel(mask, edma_filter_fn,
-+					   &dspi->dma_tx_chnum);
-+	if (!dspi->dma_tx) {
-+		dev_err(sdev, "request TX DMA channel failed\n");
-+		r = -ENODEV;
- 		goto tx_dma_failed;
- 	}
- 
--	r = edma_alloc_slot(EDMA_CTLR(dma->tx_channel), EDMA_SLOT_ANY);
--	if (r < 0) {
--		pr_err("Unable to request SPI TX DMA param slot\n");
--		r = -EAGAIN;
--		goto param_failed;
--	}
--	dma->dummy_param_slot = r;
--	edma_link(dma->dummy_param_slot, dma->dummy_param_slot);
--
- 	return 0;
--param_failed:
--	edma_free_channel(dma->tx_channel);
++static struct dma_async_tx_descriptor *edma_prep_slave_sg(
++	struct dma_chan *chan, struct scatterlist *sgl,
++	unsigned int sg_len, enum dma_transfer_direction direction,
++	unsigned long tx_flags, void *context)
++{
++	struct edma_chan *echan = to_edma_chan(chan);
++	struct device *dev = chan->device->dev;
++	struct edma_desc *edesc;
++	struct scatterlist *sg;
++	int i;
++	int acnt, bcnt, ccnt, src, dst, cidx;
++	int src_bidx, dst_bidx, src_cidx, dst_cidx;
 +
- tx_dma_failed:
--	edma_free_channel(dma->rx_channel);
-+	dma_release_channel(dspi->dma_rx);
- rx_dma_failed:
- 	return r;
- }
-@@ -898,9 +868,8 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
- 	dspi->bitbang.txrx_bufs = davinci_spi_bufs;
- 	if (dma_rx_chan != SPI_NO_RESOURCE &&
- 	    dma_tx_chan != SPI_NO_RESOURCE) {
--		dspi->dma.rx_channel = dma_rx_chan;
--		dspi->dma.tx_channel = dma_tx_chan;
--		dspi->dma.eventq = pdata->dma_event_q;
-+		dspi->dma_rx_chnum = dma_rx_chan;
-+		dspi->dma_tx_chnum = dma_tx_chan;
- 
- 		ret = davinci_spi_request_dma(dspi);
- 		if (ret)
-@@ -955,9 +924,8 @@ static int __devinit davinci_spi_probe(struct platform_device *pdev)
- 	return ret;
- 
- free_dma:
--	edma_free_channel(dspi->dma.tx_channel);
--	edma_free_channel(dspi->dma.rx_channel);
--	edma_free_slot(dspi->dma.dummy_param_slot);
-+	dma_release_channel(dspi->dma_rx);
-+	dma_release_channel(dspi->dma_tx);
- free_clk:
- 	clk_disable(dspi->clk);
- 	clk_put(dspi->clk);
++	if (unlikely(!echan || !sgl || !sg_len))
++		return NULL;
++
++	if (echan->addr_width == DMA_SLAVE_BUSWIDTH_UNDEFINED) {
++		dev_err(dev, "Undefined slave buswidth\n");
++		return NULL;
++	}
++
++	if (sg_len > MAX_NR_SG) {
++		dev_err(dev, "Exceeded max SG segments %d > %d\n",
++			sg_len, MAX_NR_SG);
++		return NULL;
++	}
++
++	edesc = kzalloc(sizeof(*edesc) + sg_len *
++		sizeof(edesc->pset[0]), GFP_ATOMIC);
++	if (!edesc) {
++		dev_dbg(dev, "Failed to allocate a descriptor\n");
++		return NULL;
++	}
++
++	edesc->pset_nr = sg_len;
++
++	for_each_sg(sgl, sg, sg_len, i) {
++		/* Allocate a PaRAM slot, if needed */
++		if (echan->slot[i] < 0) {
++			echan->slot[i] =
++				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
++						EDMA_SLOT_ANY);
++			if (echan->slot[i] < 0) {
++				dev_err(dev, "Failed to allocate slot\n");
++				return NULL;
++			}
++		}
++
++		acnt = echan->addr_width;
++
++		/*
++		 * If the maxburst is equal to the fifo width, use
++		 * A-synced transfers. This allows for large contiguous
++		 * buffer transfers using only one PaRAM set.
++		 */
++		if (echan->maxburst == 1) {
++			edesc->absync = false;
++			ccnt = sg_dma_len(sg) / acnt / (SZ_64K - 1);
++			bcnt = sg_dma_len(sg) / acnt - ccnt * (SZ_64K - 1);
++			if (bcnt)
++				ccnt++;
++			else
++				bcnt = SZ_64K - 1;
++			cidx = acnt;
++		/*
++		 * If maxburst is greater than the fifo address_width,
++		 * use AB-synced transfers where A count is the fifo
++		 * address_width and B count is the maxburst. In this
++		 * case, we are limited to transfers of C count frames
++		 * of (address_width * maxburst) where C count is limited
++		 * to SZ_64K-1. This places an upper bound on the length
++		 * of an SG segment that can be handled.
++		 */
++		} else {
++			edesc->absync = true;
++			bcnt = echan->maxburst;
++			ccnt = sg_dma_len(sg) / (acnt * bcnt);
++			if (ccnt > (SZ_64K - 1)) {
++				dev_err(dev, "Exceeded max SG segment size\n");
++				return NULL;
++			}
++			cidx = acnt * bcnt;
++		}
++
++		if (direction == DMA_MEM_TO_DEV) {
++			src = sg_dma_address(sg);
++			dst = echan->addr;
++			src_bidx = acnt;
++			src_cidx = cidx;
++			dst_bidx = 0;
++			dst_cidx = 0;
++		} else {
++			src = echan->addr;
++			dst = sg_dma_address(sg);
++			src_bidx = 0;
++			src_cidx = 0;
++			dst_bidx = acnt;
++			dst_cidx = cidx;
++		}
++
++		edesc->pset[i].opt = EDMA_TCC(EDMA_CHAN_SLOT(echan->ch_num));
++		/* Configure A or AB synchronized transfers */
++		if (edesc->absync)
++			edesc->pset[i].opt |= SYNCDIM;
++		/* If this is the last set, enable completion interrupt flag */
++		if (i == sg_len - 1)
++			edesc->pset[i].opt |= TCINTEN;
++
++		edesc->pset[i].src = src;
++		edesc->pset[i].dst = dst;
++
++		edesc->pset[i].src_dst_bidx = (dst_bidx << 16) | src_bidx;
++		edesc->pset[i].src_dst_cidx = (dst_cidx << 16) | src_cidx;
++
++		edesc->pset[i].a_b_cnt = bcnt << 16 | acnt;
++		edesc->pset[i].ccnt = ccnt;
++		edesc->pset[i].link_bcntrld = 0xffffffff;
++
++	}
++
++	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
++}
++
++static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
++{
++	struct edma_chan *echan = data;
++	struct device *dev = echan->vchan.chan.device->dev;
++	struct edma_desc *edesc;
++	unsigned long flags;
++
++	/* Stop the channel */
++	edma_stop(echan->ch_num);
++
++	switch (ch_status) {
++	case DMA_COMPLETE:
++		dev_dbg(dev, "transfer complete on channel %d\n", ch_num);
++
++		spin_lock_irqsave(&echan->vchan.lock, flags);
++
++		edesc = echan->edesc;
++		if (edesc) {
++			edma_execute(echan);
++			vchan_cookie_complete(&edesc->vdesc);
++		}
++
++		spin_unlock_irqrestore(&echan->vchan.lock, flags);
++
++		break;
++	case DMA_CC_ERROR:
++		dev_dbg(dev, "transfer error on channel %d\n", ch_num);
++		break;
++	default:
++		break;
++	}
++}
++
++/* Alloc channel resources */
++static int edma_alloc_chan_resources(struct dma_chan *chan)
++{
++	struct edma_chan *echan = to_edma_chan(chan);
++	struct device *dev = chan->device->dev;
++	int ret;
++	int a_ch_num;
++	LIST_HEAD(descs);
++
++	a_ch_num = edma_alloc_channel(echan->ch_num, edma_callback,
++					chan, EVENTQ_DEFAULT);
++
++	if (a_ch_num < 0) {
++		ret = -ENODEV;
++		goto err_no_chan;
++	}
++
++	if (a_ch_num != echan->ch_num) {
++		dev_err(dev, "failed to allocate requested channel %u:%u\n",
++			EDMA_CTLR(echan->ch_num),
++			EDMA_CHAN_SLOT(echan->ch_num));
++		ret = -ENODEV;
++		goto err_wrong_chan;
++	}
++
++	echan->alloced = true;
++	echan->slot[0] = echan->ch_num;
++
++	dev_info(dev, "allocated channel for %u:%u\n",
++		 EDMA_CTLR(echan->ch_num), EDMA_CHAN_SLOT(echan->ch_num));
++
++	return 0;
++
++err_wrong_chan:
++	edma_free_channel(a_ch_num);
++err_no_chan:
++	return ret;
++}
++
++/* Free channel resources */
++static void edma_free_chan_resources(struct dma_chan *chan)
++{
++	struct edma_chan *echan = to_edma_chan(chan);
++	struct device *dev = chan->device->dev;
++	int i;
++
++	/* Terminate transfers */
++	edma_stop(echan->ch_num);
++
++	vchan_free_chan_resources(&echan->vchan);
++
++	/* Free EDMA PaRAM slots */
++	for (i = 1; i < EDMA_MAX_SLOTS; i++) {
++		if (echan->slot[i] >= 0) {
++			edma_free_slot(echan->slot[i]);
++			echan->slot[i] = -1;
++		}
++	}
++
++	/* Free EDMA channel */
++	if (echan->alloced) {
++		edma_free_channel(echan->ch_num);
++		echan->alloced = false;
++	}
++
++	dev_info(dev, "freeing channel for %u\n", echan->ch_num);
++}
++
++/* Send pending descriptor to hardware */
++static void edma_issue_pending(struct dma_chan *chan)
++{
++	struct edma_chan *echan = to_edma_chan(chan);
++	unsigned long flags;
++
++	spin_lock_irqsave(&echan->vchan.lock, flags);
++	if (vchan_issue_pending(&echan->vchan) && !echan->edesc)
++		edma_execute(echan);
++	spin_unlock_irqrestore(&echan->vchan.lock, flags);
++}
++
++static size_t edma_desc_size(struct edma_desc *edesc)
++{
++	int i;
++	size_t size;
++
++	if (edesc->absync)
++		for (size = i = 0; i < edesc->pset_nr; i++)
++			size += (edesc->pset[i].a_b_cnt & 0xffff) *
++				(edesc->pset[i].a_b_cnt >> 16) *
++				 edesc->pset[i].ccnt;
++	else
++		size = (edesc->pset[0].a_b_cnt & 0xffff) *
++			(edesc->pset[0].a_b_cnt >> 16) +
++			(edesc->pset[0].a_b_cnt & 0xffff) *
++			(SZ_64K - 1) * edesc->pset[0].ccnt;
++
++	return size;
++}
++
++/* Check request completion status */
++static enum dma_status edma_tx_status(struct dma_chan *chan,
++				      dma_cookie_t cookie,
++				      struct dma_tx_state *txstate)
++{
++	struct edma_chan *echan = to_edma_chan(chan);
++	struct virt_dma_desc *vdesc;
++	enum dma_status ret;
++	unsigned long flags;
++
++	ret = dma_cookie_status(chan, cookie, txstate);
++	if (ret == DMA_SUCCESS || !txstate)
++		return ret;
++
++	spin_lock_irqsave(&echan->vchan.lock, flags);
++	vdesc = vchan_find_desc(&echan->vchan, cookie);
++	if (vdesc) {
++		txstate->residue = edma_desc_size(to_edma_desc(&vdesc->tx));
++	} else if (echan->edesc && echan->edesc->vdesc.tx.cookie == cookie) {
++		struct edma_desc *edesc = echan->edesc;
++		txstate->residue = edma_desc_size(edesc);
++	} else {
++		txstate->residue = 0;
++	}
++	spin_unlock_irqrestore(&echan->vchan.lock, flags);
++
++	return ret;
++}
++
++static void __init edma_chan_init(struct edma_cc *ecc,
++				  struct dma_device *dma,
++				  struct edma_chan *echans)
++{
++	int i, j;
++
++	for (i = 0; i < EDMA_CHANS; i++) {
++		struct edma_chan *echan = &echans[i];
++		echan->ch_num = EDMA_CTLR_CHAN(ecc->ctlr, i);
++		echan->ecc = ecc;
++		echan->vchan.desc_free = edma_desc_free;
++
++		vchan_init(&echan->vchan, dma);
++
++		INIT_LIST_HEAD(&echan->node);
++		for (j = 0; j < EDMA_MAX_SLOTS; j++)
++			echan->slot[j] = -1;
++	}
++}
++
++static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
++			  struct device *dev)
++{
++	dma->device_prep_slave_sg = edma_prep_slave_sg;
++	dma->device_alloc_chan_resources = edma_alloc_chan_resources;
++	dma->device_free_chan_resources = edma_free_chan_resources;
++	dma->device_issue_pending = edma_issue_pending;
++	dma->device_tx_status = edma_tx_status;
++	dma->device_control = edma_control;
++	dma->dev = dev;
++
++	INIT_LIST_HEAD(&dma->channels);
++}
++
++static int __devinit edma_probe(struct platform_device *pdev)
++{
++	struct edma_cc *ecc;
++	int ret;
++
++	ecc = devm_kzalloc(&pdev->dev, sizeof(*ecc), GFP_KERNEL);
++	if (!ecc) {
++		dev_err(&pdev->dev, "Can't allocate controller\n");
++		return -ENOMEM;
++	}
++
++	ecc->ctlr = pdev->id;
++	ecc->dummy_slot = edma_alloc_slot(ecc->ctlr, EDMA_SLOT_ANY);
++	if (ecc->dummy_slot < 0) {
++		dev_err(&pdev->dev, "Can't allocate PaRAM dummy slot\n");
++		return -EIO;
++	}
++
++	dma_cap_zero(ecc->dma_slave.cap_mask);
++	dma_cap_set(DMA_SLAVE, ecc->dma_slave.cap_mask);
++
++	edma_dma_init(ecc, &ecc->dma_slave, &pdev->dev);
++
++	edma_chan_init(ecc, &ecc->dma_slave, ecc->slave_chans);
++
++	ret = dma_async_device_register(&ecc->dma_slave);
++	if (ret)
++		goto err_reg1;
++
++	platform_set_drvdata(pdev, ecc);
++
++	dev_info(&pdev->dev, "TI EDMA DMA engine driver\n");
++
++	return 0;
++
++err_reg1:
++	edma_free_slot(ecc->dummy_slot);
++	return ret;
++}
++
++static int __devexit edma_remove(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct edma_cc *ecc = dev_get_drvdata(dev);
++
++	dma_async_device_unregister(&ecc->dma_slave);
++	edma_free_slot(ecc->dummy_slot);
++
++	return 0;
++}
++
++static struct platform_driver edma_driver = {
++	.probe		= edma_probe,
++	.remove		= __devexit_p(edma_remove),
++	.driver = {
++		.name = "edma-dma-engine",
++		.owner = THIS_MODULE,
++	},
++};
++
++bool edma_filter_fn(struct dma_chan *chan, void *param)
++{
++	if (chan->device->dev->driver == &edma_driver.driver) {
++		struct edma_chan *echan = to_edma_chan(chan);
++		unsigned ch_req = *(unsigned *)param;
++		return ch_req == echan->ch_num;
++	}
++	return false;
++}
++EXPORT_SYMBOL(edma_filter_fn);
++
++static struct platform_device *pdev0, *pdev1;
++
++static const struct platform_device_info edma_dev_info0 = {
++	.name = "edma-dma-engine",
++	.id = 0,
++	.dma_mask = DMA_BIT_MASK(32),
++};
++
++static const struct platform_device_info edma_dev_info1 = {
++	.name = "edma-dma-engine",
++	.id = 1,
++	.dma_mask = DMA_BIT_MASK(32),
++};
++
++static int edma_init(void)
++{
++	int ret = platform_driver_register(&edma_driver);
++
++	if (ret == 0) {
++		pdev0 = platform_device_register_full(&edma_dev_info0);
++		if (IS_ERR(pdev0)) {
++			platform_driver_unregister(&edma_driver);
++			ret = PTR_ERR(pdev0);
++			goto out;
++		}
++	}
++
++	if (EDMA_CTLRS == 2) {
++		pdev1 = platform_device_register_full(&edma_dev_info1);
++		if (IS_ERR(pdev1)) {
++			platform_driver_unregister(&edma_driver);
++			platform_device_unregister(pdev0);
++			ret = PTR_ERR(pdev1);
++		}
++	}
++
++out:
++	return ret;
++}
++subsys_initcall(edma_init);
++
++static void __exit edma_exit(void)
++{
++	platform_device_unregister(pdev0);
++	if (pdev1)
++		platform_device_unregister(pdev1);
++	platform_driver_unregister(&edma_driver);
++}
++module_exit(edma_exit);
++
++MODULE_AUTHOR("Matt Porter <mporter@ti.com>");
++MODULE_DESCRIPTION("TI EDMA DMA engine driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/edma.h b/include/linux/edma.h
+new file mode 100644
+index 0000000..a1307e7
+--- /dev/null
++++ b/include/linux/edma.h
+@@ -0,0 +1,29 @@
++/*
++ * TI EDMA DMA engine driver
++ *
++ * Copyright 2012 Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#ifndef __LINUX_EDMA_H
++#define __LINUX_EDMA_H
++
++struct dma_chan;
++
++#if defined(CONFIG_TI_EDMA) || defined(CONFIG_TI_EDMA_MODULE)
++bool edma_filter_fn(struct dma_chan *, void *);
++#else
++static inline bool edma_filter_fn(struct dma_chan *chan, void *param)
++{
++	return false;
++}
++#endif
++
++#endif
 -- 
 1.7.9.5
 
