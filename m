@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab2HWJu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 05:50:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53274 "EHLO mx2.suse.de"
+	id S933672Ab2HWJvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 05:51:36 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:43610 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753700Ab2HWJuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 05:50:25 -0400
-Date: Thu, 23 Aug 2012 11:50:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Haifeng <omycle@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Fixup the page of buddy_higher address's calculation
-Message-ID: <20120823095022.GB10685@dhcp22.suse.cz>
-References: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
+	id S1753700Ab2HWJvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 05:51:33 -0400
+Date: Thu, 23 Aug 2012 11:51:22 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] x86, microcode, AMD: Per-family patches cache
+Message-ID: <20120823095122.GB16781@aftab.osrc.amd.com>
+References: <20120817143035.GA25700@aftab.osrc.amd.com>
+ <5032C6DD.7060506@zytor.com>
+ <20120821091639.GA20468@aftab.osrc.amd.com>
+ <503561A1.2040007@zytor.com>
+ <50356AA1.1030503@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
+In-Reply-To: <50356AA1.1030503@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 23-08-12 16:40:13, Li Haifeng wrote:
-> From d7cd78f9d71a5c9ddeed02724558096f0bb4508a Mon Sep 17 00:00:00 2001
-> From: Haifeng Li <omycle@gmail.com>
-> Date: Thu, 23 Aug 2012 16:27:19 +0800
-> Subject: [PATCH] Fixup the page of buddy_higher address's calculation
+On Wed, Aug 22, 2012 at 04:26:25PM -0700, H. Peter Anvin wrote:
+> On 08/22/2012 03:48 PM, H. Peter Anvin wrote:
+> > 
+> > Weird.  I have never had to git fetch --tags before...
 
-Some general questions:
-Any word about the change? Is it really that obvious? Why do you think the
-current state is incorrect? How did you find out?
+So why did you have to fetch the tags this time?
 
-And more specific below:
+> OK, sorted. Next complaint... please don't mix urgent (for the current
+> version) and non-urgent (for next) in the same pull request.
 
-> Signed-off-by: Haifeng Li <omycle@gmail.com>
-> ---
->  mm/page_alloc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index ddbc17d..5588f68 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -579,7 +579,7 @@ static inline void __free_one_page(struct page *page,
->                 combined_idx = buddy_idx & page_idx;
->                 higher_page = page + (combined_idx - page_idx);
->                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
-> -               higher_buddy = page + (buddy_idx - combined_idx);
-> +               higher_buddy = page + (buddy_idx - page_idx);
+Ok, urgent goes out as urgently as possible. Got it.
 
-We are finding buddy index for combined_idx so why should we use
-page_idx here?
+> I have sorted it out, but it made things take a lot longer on my part.
 
->                 if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
->                         list_add_tail(&page->lru,
->                                 &zone->free_area[order].free_list[migratetype]);
-> --
-> 1.7.5.4
+Thanks. I'd consider this whole deal done now :).
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
