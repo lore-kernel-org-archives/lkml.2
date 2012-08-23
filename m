@@ -1,123 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab2HWUfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:35:52 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57612 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932795Ab2HWUft (ORCPT
+	id S933563Ab2HWUgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:36:00 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:44630 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932542Ab2HWUfz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:35:49 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX197Bx5nnph7R9fRy203kvATI4BWmQTCcla+DNqZV2
-	9Clvr2jYExDK1R
-Message-ID: <5036941F.2070305@gmx.de>
-Date: Thu, 23 Aug 2012 20:35:43 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
+	Thu, 23 Aug 2012 16:35:55 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [REGRESSION] 3.6-rc2 and 3.6-rc3: TCP/IP network connection hang
+Date: Thu, 23 Aug 2012 22:35:53 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.2-tp520; KDE/4.8.4; x86_64; ; )
 MIME-Version: 1.0
-To: Damien Cassou <damien.cassou@lifl.fr>
-CC: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] drivers/video/ep93xx-fb.c: use devm_ functions
-References: <1343742860-16213-1-git-send-email-damien.cassou@lifl.fr> <1343742860-16213-2-git-send-email-damien.cassou@lifl.fr>
-In-Reply-To: <1343742860-16213-2-git-send-email-damien.cassou@lifl.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201208232235.53312.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2012 01:54 PM, Damien Cassou wrote:
-> From: Damien Cassou <damien.cassou@lifl.fr>
-> 
-> The various devm_ functions allocate memory that is released when a driver
-> detaches.  This patch uses these functions for data that is allocated in
-> the probe function of a platform device and is only freed in the remove
-> function.
-> 
-> Signed-off-by: Damien Cassou <damien.cassou@lifl.fr>
+Hi!
 
-Applied.
+Its a bit difficult to describe. With 3.6-rc2 and 3.6-rc3 on an Lenovo
+ThinkPad T520 from Linus git, I get occasional network hangs:
 
+On for example sending a small mail via SMTP to my Debian Squeeze
+based server via a ASUS WL-500gP Router with
+Debian Squeeze and some 2.6.34 kernel KMail hangs.
+
+It just doesn´t complete sending out the mail.
+
+I have seen this once with 3.6-rc2 and now also with 3.6-rc3 that I
+tried cause it had quite some network fixes.
+
+Notebook: 10.0.0.10 (IP and MAC changed)
+Gateway:  10.0.0.1 (IP and MAC changed)
+Server: 194.150.191.11
+
+
+Below is a tshark capture of such an occurence.
+
+I had a network hang with 3.6-rc2 with something else as well, but I do
+not remember what it was and whether it was upload or download.
+
+This is upload.
+
+
+I never seen this with any previous kernel upto 3.5.2 from Greg K.H. git.
+
+
+merkaba:~> tshark -ni eth0
+tshark: Lua: Error during loading:
+ [string "/usr/share/wireshark/init.lua"]:45: dofile has been disabled
+Running as user "root" and group "root". This could be dangerous.
+Capturing on eth0
+  0.000000    10.0.0.10 -> 194.150.191.11 TCP 74 58915 > 25 [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 
+TSval=15189797 TSecr=0 WS=128
+  0.025222 194.150.191.11 -> 10.0.0.10    TCP 74 25 > 58915 [SYN, ACK] Seq=0 Ack=1 Win=5792 Len=0 MSS=1460 
+SACK_PERM=1 TSval=108848542 TSecr=15189797 WS=16
+  0.025309    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=1 Ack=1 Win=14720 Len=0 TSval=15189822 
+TSecr=108848542
+  0.066680 194.150.191.11 -> 10.0.0.10    SMTP 116 S: 220 mail.lichtvoll.de ESMTP Postfix (Debian/GNU)
+  0.066745    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=1 Ack=51 Win=14720 Len=0 TSval=15189864 
+TSecr=108848553
+  0.066881    10.0.0.10 -> 194.150.191.11 SMTP 89 C: EHLO merkaba.localnet
+  0.092287 194.150.191.11 -> 10.0.0.10    TCP 66 25 > 58915 [ACK] Seq=51 Ack=24 Win=5792 Len=0 TSval=108848559 
+TSecr=15189864
+  0.092351 194.150.191.11 -> 10.0.0.10    SMTP 206 S: 250-mail.lichtvoll.de | 250-PIPELINING | 250-SIZE 20000000 | 250-VRFY | 
+250-ETRN | 250-STARTTLS | 250-ENHANCEDSTATUSCODES | 250-8BITMIME | 250 DSN
+  0.092485    10.0.0.10 -> 194.150.191.11 SMTP 76 C: STARTTLS
+  0.118043 194.150.191.11 -> 10.0.0.10    SMTP 96 S: 220 2.0.0 Ready to start TLS
+  0.157589    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=34 Ack=221 Win=15744 Len=0 TSval=15189955 
+TSecr=108848566
+  0.166043    10.0.0.10 -> 194.150.191.11 SSL 292 Client Hello
+  0.214300 194.150.191.11 -> 10.0.0.10    TLSv1 1510 Server Hello, Certificate, Server Key Exchange, Server Hello Done
+  0.214389    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=260 Ack=1665 Win=18688 Len=0 TSval=15190011 
+TSecr=108848589
+  0.218072    10.0.0.10 -> 194.150.191.11 TLSv1 264 Client Key Exchange, Change Cipher Spec, Encrypted Handshake Message
+  0.254985 194.150.191.11 -> 10.0.0.10    TLSv1 316 New Session Ticket, Change Cipher Spec, Encrypted Handshake Message
+  0.258463    10.0.0.10 -> 194.150.191.11 TLSv1 135 Application Data
+  0.285463 194.150.191.11 -> 10.0.0.10    TLSv1 215 Application Data
+  0.287155    10.0.0.10 -> 194.150.191.11 TLSv1 151 Application Data
+  0.313450 194.150.191.11 -> 10.0.0.10    TLSv1 135 Application Data
+  0.313706    10.0.0.10 -> 194.150.191.11 TLSv1 183 Application Data
+  0.347362 194.150.191.11 -> 10.0.0.10    TLSv1 151 Application Data
+  0.349485    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP segment of a reassembled PDU]
+  0.349522    10.0.0.10 -> 194.150.191.11 TLSv1 1327 Application Data
+  0.350700     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+  0.384716 194.150.191.11 -> 10.0.0.10    TCP 78 [TCP Dup ACK 22#1] 25 > 58915 [ACK] Seq=2218 Ack=729 Win=7936 Len=0 
+TSval=108848632 TSecr=15190111 SLE=2177 SRE=3438
+  0.392573    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15190190 TSecr=108848632
+  0.393809     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+  0.624613    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15190422 TSecr=108848632
+  0.625846     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+  1.089586    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15190887 TSecr=108848632
+  1.090836     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+  2.018584    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15191816 TSecr=108848632
+  2.019846     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+  3.878591    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15193676 TSecr=108848632
+  3.879797     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+  5.022069 10:00:00:01:aa:bb -> 10:00:00:10:cc:dd ARP 60 Who has 10.0.0.10?  Tell 10.0.0.1
+  5.022115 10:00:00:10:cc:dd -> 10:00:00:01:aa:bb ARP 42 10.0.0.10 is at 10:00:00:10:cc:dd
+  7.594598    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15197392 TSecr=108848632
+  7.595882     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+ 15.034613    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15204832 TSecr=108848632
+ 15.035919     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+ 29.914590    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+Len=1448 TSval=15219712 TSecr=108848632
+ 29.915903     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+ 34.922706 10:00:00:10:cc:dd -> 10:00:00:01:aa:bb ARP 42 Who has 10.0.0.1?  Tell 10.0.0.10
+ 34.923296 10:00:00:01:aa:bb -> 10:00:00:10:cc:dd ARP 60 10.0.0.1 is at 10:00:00:01:aa:bb
+
+
+Thats it. Nothing more is happening.
+
+
+Notebook:
+
+martin@merkaba:~> lspci -nn | grep Ethernet 
+00:19.0 Ethernet controller [0200]: Intel Corporation 82579LM Gigabit Network Connection [8086:1502] (rev 04)
+
+martin@merkaba:~> cat /proc/version
+Linux version 3.5.2-tp520 (martin@merkaba) (gcc version 4.7.1 (Debian 4.7.1-7) ) #1 SMP PREEMPT Sun Aug 19 12:39:04 CEST 2012
+
+
+ASUS WL-500gP Premium:
+
+gayatri:~# lspci -nn
+00:00.0 Host bridge [0600]: Broadcom Corporation BCM4704 PCI to SB Bridge [14e4:4704] (rev 09)
+00:02.0 Network controller [0280]: Broadcom Corporation BCM4318 [AirForce One 54g] 802.11g Wireless LAN Controller 
+[14e4:4318] (rev 02)
+00:03.0 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
+00:03.1 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
+00:03.2 USB Controller [0c03]: VIA Technologies, Inc. USB 2.0 [1106:3104] (rev 65)
+
+gayatri:~# cat /proc/version
+Linux version 2.6.34.5 (amain@amain-laptop) (gcc version 4.3.3 (GCC) ) #1 Sun Sep 26 18:20:27 CEST 2010
+
+(I tried to compile my own, but it didn´t work out.)
+
+The ethernet seems to be missing from above. I am using 100 MBit wire based
+ethernet port. Wireless is disabled.
+
+
+Server is VMware ESX on some FSC server.
 
 Thanks,
-
-Florian Tobias Schandinat
-
-> 
-> ---
->  drivers/video/ep93xx-fb.c |   17 ++++++-----------
->  1 file changed, 6 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
-> index 345d962..69c89f2 100644
-> --- a/drivers/video/ep93xx-fb.c
-> +++ b/drivers/video/ep93xx-fb.c
-> @@ -529,7 +529,8 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
->  	 * any of the framebuffer registers.
->  	 */
->  	fbi->res = res;
-> -	fbi->mmio_base = ioremap(res->start, resource_size(res));
-> +	fbi->mmio_base = devm_ioremap(&pdev->dev, res->start,
-> +				      resource_size(res));
->  	if (!fbi->mmio_base) {
->  		err = -ENXIO;
->  		goto failed_resource;
-> @@ -553,20 +554,20 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
->  	if (err == 0) {
->  		dev_err(info->dev, "No suitable video mode found\n");
->  		err = -EINVAL;
-> -		goto failed_mode;
-> +		goto failed_resource;
->  	}
->  
->  	if (mach_info->setup) {
->  		err = mach_info->setup(pdev);
->  		if (err)
-> -			goto failed_mode;
-> +			goto failed_resource;
->  	}
->  
->  	err = ep93xxfb_check_var(&info->var, info);
->  	if (err)
->  		goto failed_check;
->  
-> -	fbi->clk = clk_get(info->dev, NULL);
-> +	fbi->clk = devm_clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(fbi->clk)) {
->  		err = PTR_ERR(fbi->clk);
->  		fbi->clk = NULL;
-> @@ -578,19 +579,15 @@ static int __devinit ep93xxfb_probe(struct platform_device *pdev)
->  
->  	err = register_framebuffer(info);
->  	if (err)
-> -		goto failed;
-> +		goto failed_check;
->  
->  	dev_info(info->dev, "registered. Mode = %dx%d-%d\n",
->  		 info->var.xres, info->var.yres, info->var.bits_per_pixel);
->  	return 0;
->  
-> -failed:
-> -	clk_put(fbi->clk);
->  failed_check:
->  	if (fbi->mach_info->teardown)
->  		fbi->mach_info->teardown(pdev);
-> -failed_mode:
-> -	iounmap(fbi->mmio_base);
->  failed_resource:
->  	ep93xxfb_dealloc_videomem(info);
->  failed_videomem:
-> @@ -609,8 +606,6 @@ static int __devexit ep93xxfb_remove(struct platform_device *pdev)
->  
->  	unregister_framebuffer(info);
->  	clk_disable(fbi->clk);
-> -	clk_put(fbi->clk);
-> -	iounmap(fbi->mmio_base);
->  	ep93xxfb_dealloc_videomem(info);
->  	fb_dealloc_cmap(&info->cmap);
->  
-> 
-> 
-
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
