@@ -1,127 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030578Ab2HWPpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:45:07 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51621 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757078Ab2HWPpB (ORCPT
+	id S934118Ab2HWPq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:46:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56136 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757078Ab2HWPqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:45:01 -0400
-Date: Thu, 23 Aug 2012 08:43:46 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [next-20120823] NOHZ: local_softirq_pending 200 on s/r
-Message-ID: <20120823154346.GB2465@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+icZUW2aUP=vjBeoksFU=NAVFMJEiBQy6sNKZczzRPEP9kOfw@mail.gmail.com>
- <alpine.LFD.2.02.1208231245510.2856@ionos>
+	Thu, 23 Aug 2012 11:46:25 -0400
+Date: Thu, 23 Aug 2012 17:46:21 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Attilio Rao <attilio.rao@citrix.com>
+cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, Stefano.Stabellini@eu.citrix.com,
+        konrad.wilk@oracle.com
+Subject: Re: [PATCH v4 1/2] XEN/X86: Improve semantic support for
+ x86_init.mapping.pagetable_reserve
+In-Reply-To: <1345648122-11935-2-git-send-email-attilio.rao@citrix.com>
+Message-ID: <alpine.LFD.2.02.1208231722040.2856@ionos>
+References: <1345648122-11935-1-git-send-email-attilio.rao@citrix.com> <1345648122-11935-2-git-send-email-attilio.rao@citrix.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1208231245510.2856@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082315-7282-0000-0000-00000C3B8F36
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 12:46:37PM +0200, Thomas Gleixner wrote:
-> On Thu, 23 Aug 2012, Sedat Dilek wrote:
-> 
-> > Hi,
-> > 
-> > this week I was seeing the below NOHZ messages in my logs especially
-> > when suspending and resuming.
-> > 
-> > Currently, I am using linux-next (next-20120823) on Ubuntu/precise
-> > AMD64 with a Intel S(a)N(dy)B(ridge)-CPU.
-> > 
-> > $ dmesg | grep -A1 -B1 -i nohz
-> > [  720.331819] Disabling non-boot CPUs ...
-> > [  720.332035] NOHZ: local_softirq_pending 200
-> > [  720.434312] smpboot: CPU 1 is now offline
-> > [  720.434825] NOHZ: local_softirq_pending 200
-> > [  720.538237] smpboot: CPU 2 is now offline
-> > [  720.538676] NOHZ: local_softirq_pending 200
-> > [  720.642162] smpboot: CPU 3 is now offline
-> > 
-> > If I manually disable the cpuX... First I did not see NOHZ messages
-> > but then there were some lines seen especially when cpuX went offline
-> > (here: cpu1)
-> > 
-> > # echo 0 >/sys/devices/system/cpu/cpu1/online
-> > 
-> > [ dmeg ]
-> > [ 2605.515771] smpboot: CPU 1 is now offline
-> > 
-> > The same with cpu2 and cpu3.
+On Wed, 22 Aug 2012, Attilio Rao wrote:
 
-Hmmm...  RCU is actually relying on being able to prevent entry into idle
-by raising softirq.  This is needed for the aggressive energy-efficiency
-CONFIG_RCU_FAST_NO_HZ feature of RCU.  Therefore, I propose the patch
-shown below.
+> - Allow xen_mapping_pagetable_reserve() to handle a start different from
+>   pgt_buf_start, but still bigger than it.
 
-Sedat, does this patch help?
+What's the purpose of this and how is this going to be used and how is
+it useful at all?
 
-							Thanx, Paul
+> - Add checks to xen_mapping_pagetable_reserve() and native_pagetable_reserve()
+>   for verifying start and end are contained in the range
+>   [pgt_buf_start, pgt_buf_top].
+> - In xen_mapping_pagetable_reserve(), change printk into pr_debug.
+> - In xen_mapping_pagetable_reserve(), print out diagnostic only if there is
+>   an actual need to do that (or, in other words, if there are actually some
+>   pages going to switch from RO to RW).
 
-> > Jack Winter confirmed to see similiar NOHZ messages also on
-> > v3.4.9-rt17 kernel (CPU: Core2Duo when no suspend performed):
-> > 
-> > [15223.171585] NOHZ: local_softirq_pending 08
-> 
-> That's a different issue. That's a pending networking softirq when we
-> go idle. Unrelated to the RCU / hotplug issue you are observing.
-> 
-> > So, the issue is seen on linux-next and -rt kernels.
-> > 
-> > According to Thomas "softirq 0x200 is the RCU one" and he requested me
-> > to address the issue to Paul on #linux-rt.
-> > 
-> > Regards,
-> > - Sedat -
-
-time: RCU permitted to stop idle entry via softirq
-
-RCU needs to be able to use softirq to stop idle entry in order to
-be able to drain RCU callbacks from the current CPU, which in turn
-enables faster entry into dyntick-idle mode, which in turn reduces power
-consumption.  This commit therefore silences the error message that is
-sometimes produced when the going-idle CPU suddenly finds that it has
-an RCU_SOFTIRQ to process.
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index c5f856a..c0359d2 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -430,6 +430,8 @@ enum
- 	NR_SOFTIRQS
- };
+Please stop telling what the patch is doing. I can read that from the
+patch itself. Please tell _WHY_ it is doing it.
  
-+const int softirq_stop_idle_mask = (~(1 << RCU_SOFTIRQ));
-+
- /* map softirq index to softirq name. update 'softirq_to_name' in
-  * kernel/softirq.c when adding a new softirq.
-  */
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 024540f..84932cf 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -436,7 +436,8 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
- 		static int ratelimit;
- 
--		if (ratelimit < 10) {
-+		if (ratelimit < 10 &&
-+		    (local_softirq_pending() & softirq_stop_idle_mask)) {
- 			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
- 			       (unsigned int) local_softirq_pending());
- 			ratelimit++;
+> Signed-off-by: Attilio Rao <attilio.rao@citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/mm/init.c |    4 ++++
+>  arch/x86/xen/mmu.c |   22 ++++++++++++++++++++--
+>  2 files changed, 24 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index e0e6990..f4b750d 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -92,6 +92,10 @@ static void __init find_early_table_space(struct map_range *mr, unsigned long en
+>  
+>  void __init native_pagetable_reserve(u64 start, u64 end)
+>  {
+> +	if (start < PFN_PHYS(pgt_buf_start) || end > PFN_PHYS(pgt_buf_top))
 
+This check is useless. We initialize pgt_buf_start,end,top to:
+
+        pgt_buf_start = base >> PAGE_SHIFT;
+        pgt_buf_end = pgt_buf_start;
+        pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+
+in find_early_table_space(). pgt_buf_end gets modified only in
+alloc_low_page()
+
+        unsigned long pfn = pgt_buf_end++;
+
+And both implementations (32/64bit) have the following check:
+
+        if (pfn >= pgt_buf_top)
+                panic("alloc_low_page: ran out of memory");
+
+So we panic way before we reach this check. Extra panic safety or what
+are you trying to do here? 
+
+I also have a hard time to understand the first part of the check.
+There is only one callsite which feeds PFN_PHYS(pgt_buf_start) as
+first argument. And as long as you don't explain WHY it would be
+useful and a good idea to change that, this is pointless.
+
+> +		panic("Invalid address range: [%#llx-%#llx] should be a subset of [%#llx-%#llx]\n",
+> +			start, end, (u64)PFN_PHYS(pgt_buf_start),
+> +			(u64)PFN_PHYS(pgt_buf_top));
+>  	memblock_reserve(start, end - start);
+>  }
+>  
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index b65a761..dfae43a 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1180,12 +1180,30 @@ static void __init xen_pagetable_setup_start(pgd_t *base)
+>  
+>  static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+>  {
+> +	u64 begin;
+> +
+> +	begin = PFN_PHYS(pgt_buf_start);
+> +
+> +	if (start < begin || end > PFN_PHYS(pgt_buf_top))
+> +		panic("Invalid address range: [%#llx-%#llx] should be a subset of [%#llx-%#llx]\n",
+> +			start, end, begin, (u64)PFN_PHYS(pgt_buf_top));
+> +
+> +	/* set RW the initial range */
+> +	if  (start != begin)
+
+And how does this happen? Again, that function is called from one
+place and start _IS_ equal to PFN_PHYS(pgt_buf_start).
+
+> +		pr_debug("xen: setting RW the range [%#llx-%#llx]\n",
+> +			begin, start);
+> +	while (begin < start) {
+> +		make_lowmem_page_readwrite(__va(begin));
+> +		begin += PAGE_SIZE;
+> +	}
+> +
+>  	/* reserve the range used */
+>  	native_pagetable_reserve(start, end);
+>  
+>  	/* set as RW the rest */
+> -	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
+> -			PFN_PHYS(pgt_buf_top));
+> +	if (end != PFN_PHYS(pgt_buf_top))
+
+So this check is the only useful addition of this patch so far, unless
+you come up with some useful explanations.
+
+> +		pr_debug("xen: setting RW the range [%#llx-%#llx]\n",
+> +			end, (u64)PFN_PHYS(pgt_buf_top));
+
+Thanks,
+
+	tglx
