@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934455Ab2HWU7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:59:08 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:54822 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934398Ab2HWU7D convert rfc822-to-8bit (ORCPT
+	id S934467Ab2HWVJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:09:11 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:65090 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934412Ab2HWVJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:59:03 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [REGRESSION] 3.6-rc2 and 3.6-rc3: TCP/IP network connection hang
-Date: Thu, 23 Aug 2012 22:59:02 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.2-tp520; KDE/4.8.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <201208232235.53312.Martin@lichtvoll.de> <1345755161.5904.1816.camel@edumazet-glaptop> (sfid-20120823_225518_692005_FCE4613B)
-In-Reply-To: <1345755161.5904.1816.camel@edumazet-glaptop>
+	Thu, 23 Aug 2012 17:09:07 -0400
+Message-ID: <1345756142.2579.16.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: RE: [PATCH v2] net: add new QCA alx ethernet driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Huang, Xiong" <xiong@qca.qualcomm.com>
+CC: David Miller <davem@davemloft.net>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+Date: Thu, 23 Aug 2012 22:09:02 +0100
+In-Reply-To: <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
+References: <1345480949-14800-1-git-send-email-cjren@qca.qualcomm.com>
+	 <20120822.225700.714020017287504609.davem@davemloft.net>
+	 <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201208232259.02249.Martin@lichtvoll.de>
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 23. August 2012 schrieb Eric Dumazet:
-> On Thu, 2012-08-23 at 22:35 +0200, Martin Steigerwald wrote:
-> > Hi!
-> > 
-> > Its a bit difficult to describe. With 3.6-rc2 and 3.6-rc3 on an
-> > Lenovo ThinkPad T520 from Linus git, I get occasional network hangs:
-> > 
-> > On for example sending a small mail via SMTP to my Debian Squeeze
-> > based server via a ASUS WL-500gP Router with
-> > Debian Squeeze and some 2.6.34 kernel KMail hangs.
-> > 
-> > It just doesn´t complete sending out the mail.
-> > 
-> > I have seen this once with 3.6-rc2 and now also with 3.6-rc3 that I
-> > tried cause it had quite some network fixes.
-> > 
-> > Notebook: 10.0.0.10 (IP and MAC changed)
-> > Gateway:  10.0.0.1 (IP and MAC changed)
-> > Server: 194.150.191.11
-> > 
-> > 
-> > Below is a tshark capture of such an occurence.
-[…]
-
-> Fix is under way :
+On Thu, 2012-08-23 at 06:35 +0000, Huang, Xiong wrote:
+> > This is why we require that portable, sane, interfaces are added to ethtool for
+> > driver diagnostics.  That way users can perform a task in the same way
+> > regardless of what hardware and driver are underneath.
 > 
-> http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=commit;h=9b04
-> f350057863d1fad1ba071e09362a1da3503e
+> I quite agree you on using ethtool to implement it. we did consider it. 
+> But ethtool has some limitation, for example, the NIC has built-in OTP (TWSI interface)
+> And Flash (External SPI interface),  their properties are quite different with EEPROM which
+> Ethtool supports.
+> To support such memory (OTP/Flash), we need additional input parameters.
 
-Thanks.
+You have two reasonable options for this:
+1. The ETHTOOL_FLASHDEV command takes a partition ID and filename to
+write.  The driver is supposed to load the file through the firmware
+loader and then rewrite the partition completely (erasing if necessary).
+Example: be2net.
+2. For a more flexible interface, implement an MTD driver as part of
+your net driver.  Example: sfc.
 
-I think I will wait until Linus takes it into his tree and compile a new 
-kernel then. Unless you express interest that I test it more quickly. Then 
-I may consider doing just that given that the fix applies cleanly to 3.6-
-rc3.
+> Same situation exists in diagnostic utility. Ethtool only provide two options : offline & online
+> That's too gross to locate which part/module of the chip is malfunction. we also need 
+> more options to detect it.
+
+That's absolute nonsense, you can run as many sub-tests as you want and
+provide separate results for each of them.
+
+Ben.
+
+> that's why we finally selected a custom debugfs interface. 
 
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
