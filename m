@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933768Ab2HWIe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 04:34:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34597 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933726Ab2HWIeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 04:34:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
-   d="scan'208";a="184039674"
-Date: Thu, 23 Aug 2012 16:28:52 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: Re: i2c-eg20t: regression since i2c_add_numbered_adapter change
-Message-ID: <20120823162852.29243e9c@feng-i7>
-In-Reply-To: <24029861.U7thTLuEmC@ws-stein>
-References: <4401854.hVfHzgeqjT@ws-stein>
-	<3514180.RWySLZuOJm@ws-stein>
-	<20120822160439.62c619bf@feng-i7>
-	<24029861.U7thTLuEmC@ws-stein>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754849Ab2HWIkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 04:40:22 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47964 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752801Ab2HWIkP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 04:40:15 -0400
+MIME-Version: 1.0
+Date: Thu, 23 Aug 2012 16:40:13 +0800
+Message-ID: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
+Subject: Fixup the page of buddy_higher address's calculation
+From: Li Haifeng <omycle@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>From d7cd78f9d71a5c9ddeed02724558096f0bb4508a Mon Sep 17 00:00:00 2001
+From: Haifeng Li <omycle@gmail.com>
+Date: Thu, 23 Aug 2012 16:27:19 +0800
+Subject: [PATCH] Fixup the page of buddy_higher address's calculation
 
-On Wed, 22 Aug 2012 11:17:51 +0200
-Alexander Stein <alexander.stein@systec-electronic.com> wrote:
+Signed-off-by: Haifeng Li <omycle@gmail.com>
+---
+ mm/page_alloc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Hello,
-> 
-> Am Mittwoch, 22. August 2012, 16:04:39 schrieb Feng Tang:
-> > > Why use a fixed one? Give the driver (and maybe every i2c bus driver) a parameter which sets the base bus number it should use.
-> > > E.g. i2c-eg20t.base-bus-num=2 so it will register the bus numbers starting from 2. If this parameter is unset. It would use the first free one, thus simply using i2c_add_adapter.
-> > 
-> > The reason we need a fixed number is it is easier for platform code
-> > which needs to register dozens of i2c devices to different controllers
-> > with i2c_register_board_info, and they need provide a bus number for
-> > each i2c device, this _binding_ info is not detectable but have to
-> > be fixed.
-> 
-> Yes, I'm aware of that. With "Why use a fixed one?" I meant why hard-code it into the driver. I should be changeable.
-> Because this is/was not possible in general to use i2c_register_board_info, so we used an echo to /sys/bus/i2c/devices/i2c-0/new_device or /sys/bus/i2c/devices/i2c-1/new_device.
-
-Yeah, our EG20T kernel used to use the same "echo /sys/bus/i2c/devices/i2c-x/new_device"
-way, but we found out it is not convenient for:
-1. needs extra user space script, why not make it just work in kernel after
-boot? We have several i2c devices like touchscreen/radio which we wants them
-just work without depending user space action.
-2. The i2c bus number is not fixed, which make the user space script even
-harder, as that number depends whether we compile into kernel all the i2c
-controllers (eg20t and isch) and whether these driver are compiled as
-modules and their loading order.
-
-Thus we come out with this fixed bus number registering.
-
-As I said before, either your module parameter "base_bus_num" solution
-or my fixed bus number offset are ok to me. Will you cook a patch?
-
-Thanks,
-Feng
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ddbc17d..5588f68 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -579,7 +579,7 @@ static inline void __free_one_page(struct page *page,
+                combined_idx = buddy_idx & page_idx;
+                higher_page = page + (combined_idx - page_idx);
+                buddy_idx = __find_buddy_index(combined_idx, order + 1);
+-               higher_buddy = page + (buddy_idx - combined_idx);
++               higher_buddy = page + (buddy_idx - page_idx);
+                if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+                        list_add_tail(&page->lru,
+                                &zone->free_area[order].free_list[migratetype]);
+--
+1.7.5.4
