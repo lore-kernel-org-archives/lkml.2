@@ -1,138 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2HWE3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 00:29:30 -0400
-Received: from bosmailout20.eigbox.net ([66.96.185.20]:45084 "EHLO
-	bosmailout20.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2HWE31 (ORCPT
+	id S1752823Ab2HWEax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 00:30:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65373 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2HWEau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 00:29:27 -0400
-X-Greylist: delayed 2461 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Aug 2012 00:29:26 EDT
-X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
- a=Ag8sXjOgi3ulG269ENDe/w==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
- a=TNaJx8l5llIA:10 a=8nJEP1OIZ-IA:10 a=ZbotsqAEwLAA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=KKAkSRfTAAAA:8 a=wFaEK3txAAAA:8
- a=99Kj4SjmDi-KjNA3bPwA:9 a=wPNLvfGTeEIA:10 a=Zg8YByZ41L0A:10
- a=WwgC8nHKvroA:10 a=aq7iBExxaGnQUwH9:21 a=hzGulCorWicnVxCw:21
- a=jcMFiYeD4Gz02xRQ37rMPA==:117
-X-EN-OrigOutIP: 10.20.18.4
-X-EN-IMPSID: q3oN1j00305GATN013oN5G
-Message-ID: <5035A7B4.8040309@yahoo.es>
-Date: Thu, 23 Aug 2012 11:47:00 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Thu, 23 Aug 2012 00:30:50 -0400
+Message-ID: <5035B1F6.3030703@gmail.com>
+Date: Wed, 22 Aug 2012 22:30:46 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Havard Skinnemoen <havard@skinnemoen.net>
-CC: Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>, egtvedt@samfundet.no,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH] Fixes for dw_dmac and atmel-mci for AP700x
-References: <502BC31E.4070200@yahoo.es> <201208210744.53370.arnd.bergmann@linaro.org> <CAKohpo=DyQajiE-DmpMiv=gVOVOep1OEECVuw83D2u4VJisEsw@mail.gmail.com> <201208210831.32771.arnd.bergmann@linaro.org> <CACiLriQPs5torFCG8PuwY5nZmw86SzJTNT4-Vt2tSLJHnF8iuw@mail.gmail.com>
-In-Reply-To: <CACiLriQPs5torFCG8PuwY5nZmw86SzJTNT4-Vt2tSLJHnF8iuw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Denis Turischev <denis@compulab.co.il>, linux-usb@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFT] xhci: Switch PPT ports to EHCI on shutdown.
+References: <20120807173532.GD10298@xanatos> <20120807173922.GA12037@xanatos>
+In-Reply-To: <20120807173922.GA12037@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.60.202
-X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/21/2012 10:15 PM, Havard Skinnemoen wrote:
-> On Tue, Aug 21, 2012 at 1:31 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
->> On Tuesday 21 August 2012, Viresh Kumar wrote:
->>>> Is AVR32 a big-endian system? Probably big-endian, that's why values are
->>>>> getting
->>>>> swapped. And dw_dmac is the standard one, can call it little endian for
->>>> the
->>>>> time being.
->>>>>
->>>>> @Arnd: What should we do here?
->>>> Yes, AVR32 is big-endian. I assume that dw_dmac can be either configured
->>>> as little-endian or big-endian and that it is configured as big-endian
->>>> on AVR32.
->>>>
->>> Just to understand a bit more on this always confusing endianess concept:
->>> - For AVR32, readl is calling swab everytime. So whatever we write will get
->>> swapped.
->>> - What are the implications of dw_dmac configured in little/big endian?
->>>
->>> When we write something to register of a peripheral, whose endianess
->>> property decides how it will get written. Processor or Peripheral?
->> The device decides which accessor we need to use (readl, ioread, ioread_be,
->> in_be, in_le, ...). The architecture code must ensure that this is
->> implemented properly based on the CPU endianess. We don't have a proper
->> accessor function that implements "device has same endianess as CPU".
->> Using __raw_* is not a replacement for that.
->>
->> I don't mind adding such an accessor at all, and a number people have
->> complained about the lack of this for some time, but you should be
->> aware that a lot of peripherals that are intended to be used in
->> "CPU-endian" mode eventually end up getting used in "wrong-endian"
->> mode, e.g. when someone decides to put that peripheral on a PCI
->> card and someone else sticks it into a machine that has a CPU
->> with the opposed (or configurable) endianess. It would be nice if
->> the likes of designware could at least pick one endianess per
->> device they do, but the reality is that we have to deal with both
->> variants and only the device driver can find out what it is.
-> A native-endian accessor would really help in this case. Back in 2006
-> when I did the AVR32 port, that's what I thought __raw_ was, but I
-> suspect I was both wrong, and the semantics of the I/O accessors have
-> changed slightly over time. But since __raw_ did exactly what was
-> needed on both AVR32 (big endian) and AT91 ARM (little endian)
-> devices, I ended up using it for all on-chip devices.
+On 08/07/2012 11:39 AM, Sarah Sharp wrote:
+> The Intel desktop boards DH77EB and DH77DF have a hardware issue that
+> can be worked around by BIOS.  If the USB ports are switched to xHCI on
+> shutdown, the xHCI host will send a spurious interrupt, which will wake
+> the system.  Some BIOS will work around this, but not all.
 >
-> read[bwl] on the other hand was implemented for external device
-> access. Since the SMC controller on AP7000 is really bizarre
-> (basically big endian data with little endian addressing), these
-> accessors became pretty weird too.
+> The bug can be avoided if the USB ports are switched back to EHCI on
+> shutdown.  The Intel Windows driver switches the ports back to EHCI, so
+> change the Linux xHCI driver to do the same.
 >
-> Anyway, if we want to purge all those inappropriate __raw accesses
-> from the Atmel drivers, we're going to need a replacement for internal
-> native-endian access. Right now, we don't have any.
+> Unfortunately, we can't tell the two effected boards apart from other
+> working motherboards, because the vendors will change the DMI strings
+> for the DH77EB and DH77DF boards to their own custom names.  One example
+> is Compulab's mini-desktop, the Intense-PC.  Instead, key off the
+> Panther Point xHCI host PCI vendor and device ID, and switch the ports
+> over for all PPT xHCI hosts.
+>
+> The only impact this will have on non-effected boards is to add a couple
+> hundred milliseconds delay on boot when the BIOS has to switch the ports
+> over from EHCI to xHCI.
+>
+> This patch should be backported to kernels as old as 3.0, that contain
+> the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+> EHCI/xHCI port switching."
+>
+> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Reported-by: Denis Turischev <denis@compulab.co.il>
+> Cc: stable@vger.kernel.org
+> ---
+>   drivers/usb/host/pci-quirks.c |    7 +++++++
+>   drivers/usb/host/pci-quirks.h |    1 +
+>   drivers/usb/host/xhci-pci.c   |    9 +++++++++
+>   drivers/usb/host/xhci.c       |    3 +++
+>   drivers/usb/host/xhci.h       |    1 +
+>   5 files changed, 21 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+> index df0828c..c5e9e4a 100644
+> --- a/drivers/usb/host/pci-quirks.c
+> +++ b/drivers/usb/host/pci-quirks.c
+> @@ -800,6 +800,13 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
+>   }
+>   EXPORT_SYMBOL_GPL(usb_enable_xhci_ports);
+>
+> +void usb_disable_xhci_ports(struct pci_dev *xhci_pdev)
+> +{
+> +	pci_write_config_dword(xhci_pdev, USB_INTEL_USB3_PSSEN, 0x0);
+> +	pci_write_config_dword(xhci_pdev, USB_INTEL_XUSB2PR, 0x0);
+> +}
+> +EXPORT_SYMBOL_GPL(usb_disable_xhci_ports);
+> +
+>   /**
+>    * PCI Quirks for xHCI.
+>    *
+> diff --git a/drivers/usb/host/pci-quirks.h b/drivers/usb/host/pci-quirks.h
+> index b1002a8..ef004a5 100644
+> --- a/drivers/usb/host/pci-quirks.h
+> +++ b/drivers/usb/host/pci-quirks.h
+> @@ -10,6 +10,7 @@ void usb_amd_quirk_pll_disable(void);
+>   void usb_amd_quirk_pll_enable(void);
+>   bool usb_is_intel_switchable_xhci(struct pci_dev *pdev);
+>   void usb_enable_xhci_ports(struct pci_dev *xhci_pdev);
+> +void usb_disable_xhci_ports(struct pci_dev *xhci_pdev);
+>   #else
+>   static inline void usb_amd_quirk_pll_disable(void) {}
+>   static inline void usb_amd_quirk_pll_enable(void) {}
+> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> index 92eaff6..9bfd4ca11 100644
+> --- a/drivers/usb/host/xhci-pci.c
+> +++ b/drivers/usb/host/xhci-pci.c
+> @@ -94,6 +94,15 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+>   		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+>   		xhci->limit_active_eps = 64;
+>   		xhci->quirks |= XHCI_SW_BW_CHECKING;
+> +		/*
+> +		 * PPT desktop boards DH77EB and DH77DF will power back on after
+> +		 * a few seconds of being shutdown.  The fix for this is to
+> +		 * switch the ports from xHCI to EHCI on shutdown.  We can't use
+> +		 * DMI information to find those particular boards (since each
+> +		 * vendor will change the board name), so we have to key off all
+> +		 * PPT chipsets.
+> +		 */
+> +		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
+>   	}
+>   	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+>   			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 95394e5..81aa10c 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -659,6 +659,9 @@ void xhci_shutdown(struct usb_hcd *hcd)
+>   {
+>   	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+>
+> +	if (xhci->quirks && XHCI_SPURIOUS_REBOOT)
+> +		usb_disable_xhci_ports(to_pci_dev(hcd->self.controller));
 
-If I may summarize: Viresh replaced the __raw* accessor functions with
-readl/writel, because they will enforce a correct ordering of instructions
-exchanged with the peripheral.
+This looks like a typo, think it should be & not &&. With this code, it 
+appears the quirk will always be triggered since XHCI_SPURIOUS_REBOOT is 
+non-zero.
 
-On the ARM configurations this worked ok, because both the device and the
-CPU are little endian.
+> +
+>   	spin_lock_irq(&xhci->lock);
+>   	xhci_halt(xhci);
+>   	spin_unlock_irq(&xhci->lock);
+> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+> index 96f49db..c713256 100644
+> --- a/drivers/usb/host/xhci.h
+> +++ b/drivers/usb/host/xhci.h
+> @@ -1494,6 +1494,7 @@ struct xhci_hcd {
+>   #define XHCI_TRUST_TX_LENGTH	(1 << 10)
+>   #define XHCI_LPM_SUPPORT	(1 << 11)
+>   #define XHCI_INTEL_HOST		(1 << 12)
+> +#define XHCI_SPURIOUS_REBOOT	(1 << 13)
+>   	unsigned int		num_active_eps;
+>   	unsigned int		limit_active_eps;
+>   	/* There are two roothubs to keep track of bus suspend info for */
+>
 
-However, for AVR32 the driver got broken: readl/writel are little endian
-accessors.
-
-I looked up an earlier thread "MMIO and gcc re-ordering issue"*, in which
-Havard wrote:
-
-> <cut> I don't think adding barriers is the
-> right thing to do because they won't do anything useful in practice, so
-> it's hard to tell whether they are used "correctly". And it will hurt
-> performance at least on AVR32 since wmb() evaluates to a "sync"
-> instruction, which flushes the write buffer to RAM. Since MMIO writes
-> are unbuffered, that's pure overhead.
-
-Four years later, we still don't have a generic native-endian MMIO-access
-API which also introduce proper memory barriers.
-
-So for the moment, do we have a better solution than this:
-
-#ifdef CONFIG_AVR32
-+#define dma_readl(dw, name) \
-+	__raw_readl(&(__dw_regs(dw)->name))
-+#define dma_writel(dw, name, val) \
-+	__raw_writel((val), &(__dw_regs(dw)->name))
-+#else
- #define dma_readl(dw, name) \
- 	readl(&(__dw_regs(dw)->name))
- #define dma_writel(dw, name, val) \
- 	writel((val), &(__dw_regs(dw)->name))
-+#endif
-
-and do the same for channel_readl/writel ?
-
-Hein
-
-*http://linux.derkeiler.com/Mailing-Lists/Kernel/2008-05/msg13776.html
