@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265Ab2HWV3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:29:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60534 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756045Ab2HWV3o (ORCPT
+	id S1759260Ab2HWVc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:32:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56430 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752947Ab2HWVcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:29:44 -0400
-Message-ID: <5036A0C1.4030209@landley.net>
-Date: Thu, 23 Aug 2012 16:29:37 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 23 Aug 2012 17:32:54 -0400
+Message-ID: <5036A182.7030707@gmail.com>
+Date: Thu, 23 Aug 2012 15:32:50 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, Tony Prisk <linux@prisktech.co.nz>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-fbdev@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-usb@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroup.com,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-serial@vger.kernel.org,
-        rtc-linux@googlegroups.com, Stephen Warren <swarren@nvidia.com>,
-        Alan Cox <alan@linux.intel.com>, Mike Turquette <mturquette@ti.com>
-Subject: Re: [PATCHv3 3/9] serial: vt8500: Add devicetree support for
-References: <1345582058-2291-1-git-send-email-linux@prisktech.co.nz> <20120821231255.71a7515a@pyramind.ukuu.org.uk> <1345617278.7491.4.camel@gitbox> <201208220644.18059.arnd@arndb.de>
-In-Reply-To: <201208220644.18059.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Pekka Enberg <penberg@kernel.org>,
+        Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv2 1/1] perf: Port to Android
+References: <1408973.PFKjjaXiS1@localhost.localdomain> <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
+In-Reply-To: <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 01:44 AM, Arnd Bergmann wrote:
-> On Wednesday 22 August 2012, Tony Prisk wrote:
->> The original patch was very simple, but I revisited it to fix other
->> issues and forgot to add the relevant comments.
->>
->> Port size is changed to fix a problem - WM8505 actually had 6 uart's
->> defined in platform data but the vt8500_ports variable was only 4.
->>
->> I have added devicetree port id support as well.
-> 
-> If you do multiple things in one driver, you should normally send multiple
-> patches as well, each with a description why that change is done.
-> It may seem silly at first to send out a one-line patch next to a 100-line
-> patch for the same file, but those cases are actually the ones where it's
-> most important.
+On 8/23/12 2:51 PM, Pekka Enberg wrote:
+>> +#ifdef ANDROID
+>> +/* While stdlib.h has a prototype for it,
+>> +   Bionic doesn't actually implement on_exit() */
+>> +#ifndef ATEXIT_MAX
+>> +#define ATEXIT_MAX 32
+>> +#endif
+>> +static int __on_exit_count = 0;
+>> +typedef void (*on_exit_func_t)(int, void*);
+>> +static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
+>> +static void *__on_exit_args[ATEXIT_MAX];
+>> +static int __exitcode = 0;
+>> +static void __handle_on_exit_funcs();
+>> +static int on_exit(on_exit_func_t function, void *arg);
+>> +#define exit(x) (exit)(__exitcode = (x))
+>> +
+>> +static int on_exit(on_exit_func_t function, void *arg) {
+>> +       if(__on_exit_count == ATEXIT_MAX)
+>> +               return ENOMEM;
+>> +       else if(__on_exit_count == 0)
+>> +               atexit(__handle_on_exit_funcs);
+>> +       __on_exit_funcs[__on_exit_count] = function;
+>> +       __on_exit_args[__on_exit_count++] = arg;
+>> +       return 0;
+>> +}
+>> +
+>> +static void __handle_on_exit_funcs() {
+>> +       for(int i=0; i<__on_exit_count; i++) {
+>> +               __on_exit_funcs[i](__exitcode, __on_exit_args[i]);
+>> +       }
+>> +}
+>> +#endif
+>> +
 
-Think of us poor git-bisect monkeys who have no idea why something broke
-but can (purely mechanically) figure out which commit did it. If it's a
-patch that does three unrelated things, we're kinda stuck.
+Why not add support for the missing functions (on_exit, getsid, psignal 
+and getline) to Bionic instead of perf?
 
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+
+>> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+>> index 0f99f39..77c5ced 100644
+>> --- a/tools/perf/util/util.h
+>> +++ b/tools/perf/util/util.h
+>> @@ -70,15 +70,19 @@
+>>   #include <sys/socket.h>
+>>   #include <sys/ioctl.h>
+>>   #include <sys/select.h>
+>> +#ifndef ANDROID
+>>   #include <netinet/in.h>
+>>   #include <netinet/tcp.h>
+>>   #include <arpa/inet.h>
+>> +#endif
+>>   #include <netdb.h>
+
+netinet/*, arpa/inet.h,netdb.h and sys/socket.h can be removed from util.h
+
+David
+
