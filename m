@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab2HWGRk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 02:17:40 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2016 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab2HWGRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 02:17:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 22 Aug 2012 23:17:29 -0700
-Date: Thu, 23 Aug 2012 09:15:19 +0300
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "minchan@kernel.org" <minchan@kernel.org>
-Subject: Re: [RFC 2/4] ARM: dma-mapping: IOMMU allocates pages from pool
- with GFP_ATOMIC
-Message-ID: <20120823091519.804aeae4ba93bcfe011e787c@nvidia.com>
-In-Reply-To: <012401cd80f4$59727020$0c575060$%szyprowski@samsung.com>
-References: <1345630830-9586-1-git-send-email-hdoyu@nvidia.com>
-	<1345630830-9586-3-git-send-email-hdoyu@nvidia.com>
-	<CAHQjnOOF7Ca-Dz8K_zcS=gxQsJvKYaWA3tqUeK1RSd-wLYZ44w@mail.gmail.com>
-	<20120822.163648.3800987367886904.hdoyu@nvidia.com>
-	<012401cd80f4$59727020$0c575060$%szyprowski@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+	id S1753595Ab2HWGXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 02:23:50 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:56907 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab2HWGXq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 23 Aug 2012 02:23:46 -0400
+Message-Id: <5035DA7E020000780008A5E6@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 23 Aug 2012 07:23:42 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <konrad@kernel.org>
+Cc: <stefano.stabellini@eu.citrix.com>, <xen-devel@lists.xensource.com>,
+        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Q:pt_base in COMPAT mode offset by two pages.
+ Was:Re: [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive
+ areas.
+References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
+ <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
+ <20120820141305.GA2713@phenom.dumpdata.com>
+ <20120821172732.GA23715@phenom.dumpdata.com>
+ <20120821190317.GA13035@phenom.dumpdata.com>
+ <50351DEF020000780009702A@nat28.tlf.novell.com>
+ <20120822185519.GA29609@phenom.dumpdata.com>
+In-Reply-To: <20120822185519.GA29609@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>>> Konrad Rzeszutek Wilk <konrad@kernel.org> 08/22/12 9:05 PM >>>
+>Thinking of just sticking this patch then:
 
-On Thu, 23 Aug 2012 07:58:34 +0200
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+Yeah, that may be best for the moment. Albeit I see no reason why you
+shouldn't be able to use your more selective logic, just making it either
+deal with only the pt_base == start-of-page-tables case (and fall back to
+the current logic alternatively), or figure out the true range.
 
-> Hello,
-> 
-> On Wednesday, August 22, 2012 3:37 PM Hiroshi Doyu wrote:
-> 
-> > KyongHo Cho <pullip.cho@samsung.com> wrote @ Wed, 22 Aug 2012 14:47:00 +0200:
-> > 
-> > > vzalloc() call in __iommu_alloc_buffer() also causes BUG() in atomic context.
-> > 
-> > Right.
-> > 
-> > I've been thinking that kzalloc() may be enough here, since
-> > vzalloc() was introduced to avoid allocation failure for big chunk of
-> > memory, but I think that it's unlikely that the number of page array
-> > can be so big. So I propose to drop vzalloc() here, and just simply to
-> > use kzalloc only as below(*1).
-> 
-> We already had a discussion about this, so I don't think it makes much sense to
-> change it back to kzalloc. This vmalloc() call won't hurt anyone. It should not
-> be considered a problem for atomic allocations, because no sane driver will try
-> to allocate buffers larger than a dozen KiB with GFP_ATOMIC flag. I would call
-> such try a serious bug, which we should not care here.
+I'm nevertheless considering to re-arrange the allocation order in the
+hypervisor (and to remove the superfluously reserved page covering
+what would be the L4), so going with the former, simpler case for the
+kernel would be a reasonable option.
 
-Ok, I've already sent v2 just now, where, instead of changing it back,
-just with GFP_ATOMIC, kzalloc() would be selected, just in case. I guess
-that this would be ok(a bit safer?)
+Jan
+
