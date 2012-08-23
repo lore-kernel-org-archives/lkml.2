@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab2HWJBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 05:01:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54091 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab2HWJBR (ORCPT
+	id S1757695Ab2HWJIO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 05:08:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27501 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab2HWJIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 05:01:17 -0400
-Message-ID: <5035EFD4.7090404@gmail.com>
-Date: Thu, 23 Aug 2012 10:54:44 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120601 Thunderbird/13.0
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-References: <20120815092409.591460800@openvz.org> <87fw7habo4.fsf@skywalker.in.ibm.com> <20120820163338.GN23596@moon> <20120820183225.GB4911@fieldses.org> <20120820190606.GE27443@moon> <20120820193204.GD5779@fieldses.org> <50335261.5090504@parallels.com> <87wr0sle4v.fsf@skywalker.in.ibm.com> <503367CB.9080609@parallels.com> <87zk5nsch8.fsf@skywalker.in.ibm.com> <20120823080627.GA1992@moon>
-In-Reply-To: <20120823080627.GA1992@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 23 Aug 2012 05:08:09 -0400
+X-Authority-Analysis: v=2.0 cv=A87uztqG c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YOaqkLwX9aQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=7mug7doFhEcA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=xcmSSfFKk9aoRfOygJgA:9 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=2E9KpQmbqmkee8fr:21 a=23-myU_EOx042zky:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1345712886.5069.41.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/5] trace-cmd: Use tracing directory to count CPUs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>, Arnd Bergmann <arnd@arndb.de>,
+        Borislav Petkov <bp@amd64.org>, "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com
+Date: Thu, 23 Aug 2012 05:08:06 -0400
+In-Reply-To: <50359CE9.3000509@hitachi.com>
+References: <20120822084251.17293.69086.stgit@ltc189.sdl.hitachi.co.jp>
+	  <20120822084312.17293.47596.stgit@ltc189.sdl.hitachi.co.jp>
+	 <1345642893.5069.31.camel@gandalf.local.home>
+	 <50358F13.1030607@hitachi.com> <50359CE9.3000509@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/08/2012 10:06, Cyrill Gorcunov ha scritto:
-> On Wed, Aug 22, 2012 at 11:19:07AM +0530, Aneesh Kumar K.V wrote:
->> Pavel Emelyanov <xemul@parallels.com> writes:
->>
->>> Why? For e.g. ext4 you can construct a handle in userspace and open by
->>> it.
->>
->> open_by_handle use exportfs_decode_fh which use file system specific
->> fh_to_dentry
->>
->> foe ext4 we require a generation number
->>
->> 		inode = get_inode(sb, fid->i32.ino, fid->i32.gen);
->>
->
-> Hi Aneesh, yes we need i_generation but for ext3/4 it could be
-> fetched with ioctl as far as i see.
->
->> For brtfs
->>
->> 	objectid = fid->objectid;
->> 	root_objectid = fid->root_objectid;
->> 	generation = fid->gen;
->>
->> 	return btrfs_get_dentry(sb, objectid, root_objectid, generation, 1);
->
-> For btrfs it become more complex. But still the last version I'm about
-> to send for review today (once everything get tested) will provide
-> fhandle carried with inotify mark _and_ inode number and device. This
-> information should be enough for us. After all having inode and device
-> should allow us to figure out the fs used on inotify target.
->
-> 	Cyrill
-> --
+On Thu, 2012-08-23 at 12:00 +0900, Masami Hiramatsu wrote:
+> (2012/08/23 11:01), Masami Hiramatsu wrote:
+> > (2012/08/22 22:41), Steven Rostedt wrote:
+> >> On Wed, 2012-08-22 at 17:43 +0900, Yoshihiro YUNOMAE wrote:
+> >>> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >>>
+> >>> Count debugfs/tracing/per_cpu/cpu* to determine the
+> >>> number of CPUs.
+> >>
+> >> I'm curious, do you find that sysconf doesn't return the # of CPUs the
+> >> system has?
+> > 
+> > No, sysconf returns the number of hosts CPUs, not guests.
+> > 
+> >> I've had boxes where the per_cpu/cpu* had more cpus than the
+> >> box actually holds. But this was a bug in the kernel, not the tool. This
+> >> change log needs to have rational instead of just explaining what the
+> >> patch does.
+> > 
+> > Ah, I see. Hmm, then this should be enabled by a command line
+> > option or an environment variable.
+> 
+> Oops, I misunderstood. I'll add more comment for why this
+> should be tried instead of sysconf.
 
-Sorry if it's a really stupid question but I didn't follow deeply the 
-thread. How can you provide a device if the fs is mounted on "none" (ex 
-tmpfs)? In this case you can't associate device <=> fs, because you 
-haven't got a /dev/something.
+And now that I understand why you are doing this, why not only do this
+if the TRACE_AGENT or DEBUG_TRACING_DIR is defined. That is, if we are
+doing it against a bare metal system, then sysconf should suffice, but
+if we are tracing against a guest, then it should use the tracing
+directory to determine the buffers.
 
-Marco
+We could add options to override this, but I would think the default
+should just Do The Right Thing(tm).
+
+-- Steve
+
+
