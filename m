@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759284Ab2HWVg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:36:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51282 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab2HWVgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:36:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="190651727"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: fix max number of open handles
-Date: Fri, 24 Aug 2012 00:35:58 +0300
-Message-Id: <1345757758-3329-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1759294Ab2HWVnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:43:14 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57619 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758304Ab2HWVnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 17:43:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <87sjbfy0ue.wl%kuninori.morimoto.gx@renesas.com>
+References: <20120706161455.dd899154fbc8a79ee530572f@canb.auug.org.au>
+	<CACRpkdbZddOBf0PXFJjr_aRD3TEa9hSvXjAjf3--8Ko_W0zZcg@mail.gmail.com>
+	<w3psjd55kwl.wl%kuninori.morimoto.gx@renesas.com>
+	<CACRpkdb=bg7fc1HEW5U2PBjs_hLDRgGUNP=O6BEJRmYfCiSWpA@mail.gmail.com>
+	<87r4slg063.wl%kuninori.morimoto.gx@renesas.com>
+	<CACRpkdYSLRiAQd3kGGv8xktAvi+YbBSe1hGqMX2y7fFXQOHPXQ@mail.gmail.com>
+	<87sjbfy0ue.wl%kuninori.morimoto.gx@renesas.com>
+Date: Thu, 23 Aug 2012 23:43:10 +0200
+Message-ID: <CACRpkdaOyA2jPLkimQEtPFVYyRpxQGV7nV+6kiZ5_+mV827ytw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the gpio-lw tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was internal confusion in wether bus message
-clinet (0) is counted in or not
+On Wed, Aug 22, 2012 at 7:03 AM, Kuninori Morimoto
+<kuninori.morimoto.gx@renesas.com> wrote:
 
-The bitmap me_clients_map that accomodate
-was initialized w/o it (255) but later on it
-the clinet 0 was reserved
+> Now, these fixup patches were accepted.
+>   http://git.kernel.org/tip/17d83127d4c2b322dd8f217e0ac08c66eb403779
+>   http://git.kernel.org/tip/b3ae66f209e8929db62b5a5f874ab2cdcf5ef1d4
+>
+> Could you please re-check this dropped patch ?
 
-Thus were able to open only 252 instead of 253 clients
+Yes! I've applied it. Check that it lands nicely in -next.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/mei_dev.h |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index ad6c9d5..96d3e79 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -56,19 +56,21 @@ extern const uuid_le mei_wd_guid;
- extern const u8 mei_wd_state_independence_msg[3][4];
- 
- /*
-+ * Number of Maximum MEI Clients
-+ */
-+#define MEI_CLIENTS_MAX 256
-+
-+/*
-  * Number of File descriptors/handles
-  * that can be opened to the driver.
-  *
-- * Limit to 253: 255 Total Clients
-+ * Limit to 253: 256 Total Clients
-+ * minus internal client for MEI Bus Messags
-  * minus internal client for AMTHI
-  * minus internal client for Watchdog
-  */
--#define  MEI_MAX_OPEN_HANDLE_COUNT	253
-+#define  MEI_MAX_OPEN_HANDLE_COUNT (MEI_CLIENTS_MAX - 3)
- 
--/*
-- * Number of Maximum MEI Clients
-- */
--#define MEI_CLIENTS_MAX 255
- 
- /* File state */
- enum file_state {
--- 
-1.7.4.4
-
+Yours,
+Linus Walleij
