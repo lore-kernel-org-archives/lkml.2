@@ -1,184 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030241Ab2HWHhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:37:55 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:16641 "EHLO mta02.xtra.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933621Ab2HWHgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:36:12 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mike Turquette <mturquette@ti.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCHv4 3/9] serial: vt8500: Add devicetree support for vt8500-serial
-Date: Thu, 23 Aug 2012 19:35:39 +1200
-Message-Id: <1345707346-9035-4-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
-References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
+	id S933628Ab2HWHkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:40:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63975 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab2HWHkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:40:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: PER_LINUX32, Was: [PATCH v2 21/31] arm64: 32-bit (compat) applications support
+Date: Thu, 23 Aug 2012 06:46:30 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, x86@kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com> <201208151434.05145.arnd@arndb.de> <20120816102808.GH31784@mudshark.cambridge.arm.com>
+In-Reply-To: <20120816102808.GH31784@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208230646.31276.arnd@arndb.de>
+X-Provags-ID: V02:K0:fPTD3QvgNZIRTwTUrkvDVVZFVqOBQWZH8EgQA2/bwPb
+ LH2JNX28mU7qBkxwAtI7wSppRKgCnvIiw+hjhb2F2/RimEGJdr
+ 97di3Uon+PVDDYdp2WZicIaopEc7QmQaYuwl3DO5CKwU6Us0yR
+ AB0w8yryWFuDWrQNEYzDGO2UJpcXpI08ItNz0TqXuHjrnq5/+h
+ /sfFzAgNF0NKfAnySvyfu35eknfLlT8OSah0ELinXN5z1RBgjI
+ EPDNz9jT26Mgm6n+CrVIPS6zi4Q/8aU4c7ll94iY+kzNESwb7K
+ QhcctR3c8MOHJWWd5GzYRpyC9m1aLfBXodc4+Pnt7fleM9nFG5
+ kFFlVQSe5ngbJtwHCeHc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase vt8500_max_ports to 6 as the WM8505 as 6 available uarts.
-Use devicetree port id as primary addressing for ports but allow
-auto-allocation if id not specified.
+On Thursday 16 August 2012, Will Deacon wrote:
+> On Wed, Aug 15, 2012 at 03:34:04PM +0100, Arnd Bergmann wrote:
+> > On Tuesday 14 August 2012, Catalin Marinas wrote:
+> > > +asmlinkage int compat_sys_personality(compat_ulong_t personality)
+> > > +{
+> > > +	int ret;
+> > > +
+> > > +	if (personality(current->personality) == PER_LINUX32 &&
+> > > +		personality == PER_LINUX)
+> > > +		personality = PER_LINUX32;
+> > > +	ret = sys_personality(personality);
+> > > +	if (ret == PER_LINUX32)
+> > > +		ret = PER_LINUX;
+> > > +	return ret;
+> > > +}
+> > 
+> > Where did you get this from?
+> > 
+> > You should not need compat_sys_personality, just call the native function.
+> 
+> Hmm, but in that case an aarch32 application doing a personality(PER_LINUX)
+> syscall will start seeing the wrong uname.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/tty/serial/vt8500_serial.c |   58 ++++++++++++++++++++++++++++++++----
- 1 file changed, 53 insertions(+), 5 deletions(-)
+Coming back at this topic, I noticed another issue. Jiri Kosina
+has recently posted patches to fix this function in the other architectures
+in order to mask out the other personality bits, which is a correct fix,
+but the above function is odd for other reasons.
 
-diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
-index 2be006f..205d4cf 100644
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -34,6 +34,7 @@
- #include <linux/slab.h>
- #include <linux/clk.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
- 
- /*
-  * UART Register offsets
-@@ -76,6 +77,8 @@
- #define RX_FIFO_INTS	(RXFAF | RXFF | RXOVER | PER | FER | RXTOUT)
- #define TX_FIFO_INTS	(TXFAE | TXFE | TXUDR)
- 
-+#define VT8500_MAX_PORTS	6
-+
- struct vt8500_port {
- 	struct uart_port	uart;
- 	char			name[16];
-@@ -83,6 +86,13 @@ struct vt8500_port {
- 	unsigned int		ier;
- };
- 
-+/*
-+ * we use this variable to keep track of which ports
-+ * have been allocated as we can't use pdev->id in
-+ * devicetree
-+ */
-+static unsigned long vt8500_ports_in_use;
-+
- static inline void vt8500_write(struct uart_port *port, unsigned int val,
- 			     unsigned int off)
- {
-@@ -431,7 +441,7 @@ static int vt8500_verify_port(struct uart_port *port,
- 	return 0;
- }
- 
--static struct vt8500_port *vt8500_uart_ports[4];
-+static struct vt8500_port *vt8500_uart_ports[VT8500_MAX_PORTS];
- static struct uart_driver vt8500_uart_driver;
- 
- #ifdef CONFIG_SERIAL_VT8500_CONSOLE
-@@ -548,7 +558,9 @@ static int __devinit vt8500_serial_probe(struct platform_device *pdev)
- {
- 	struct vt8500_port *vt8500_port;
- 	struct resource *mmres, *irqres;
-+	struct device_node *np = pdev->dev.of_node;
- 	int ret;
-+	int port;
- 
- 	mmres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	irqres = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-@@ -559,16 +571,46 @@ static int __devinit vt8500_serial_probe(struct platform_device *pdev)
- 	if (!vt8500_port)
- 		return -ENOMEM;
- 
-+	if (np)
-+		port = of_alias_get_id(np, "serial");
-+		if (port > VT8500_MAX_PORTS)
-+			port = -1;
-+	else
-+		port = -1;
-+
-+	if (port < 0) {
-+		/* calculate the port id */
-+		port = find_first_zero_bit(&vt8500_ports_in_use,
-+					sizeof(vt8500_ports_in_use));
-+	}
-+
-+	if (port > VT8500_MAX_PORTS)
-+		return -ENODEV;
-+
-+	/* reserve the port id */
-+	if (test_and_set_bit(port, &vt8500_ports_in_use)) {
-+		/* port already in use - shouldn't really happen */
-+		return -EBUSY;
-+	}
-+
- 	vt8500_port->uart.type = PORT_VT8500;
- 	vt8500_port->uart.iotype = UPIO_MEM;
- 	vt8500_port->uart.mapbase = mmres->start;
- 	vt8500_port->uart.irq = irqres->start;
- 	vt8500_port->uart.fifosize = 16;
- 	vt8500_port->uart.ops = &vt8500_uart_pops;
--	vt8500_port->uart.line = pdev->id;
-+	vt8500_port->uart.line = port;
- 	vt8500_port->uart.dev = &pdev->dev;
- 	vt8500_port->uart.flags = UPF_IOREMAP | UPF_BOOT_AUTOCONF;
--	vt8500_port->uart.uartclk = 24000000;
-+
-+	vt8500_port->clk = of_clk_get(pdev->dev.of_node, 0);
-+	if (vt8500_port->clk) {
-+		vt8500_port->uart.uartclk = clk_get_rate(vt8500_port->clk);
-+	} else {
-+		/* use the default of 24Mhz if not specified and warn */
-+		pr_warn("%s: serial clock source not specified\n", __func__);
-+		vt8500_port->uart.uartclk = 24000000;
-+	}
- 
- 	snprintf(vt8500_port->name, sizeof(vt8500_port->name),
- 		 "VT8500 UART%d", pdev->id);
-@@ -579,7 +621,7 @@ static int __devinit vt8500_serial_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	vt8500_uart_ports[pdev->id] = vt8500_port;
-+	vt8500_uart_ports[port] = vt8500_port;
- 
- 	uart_add_one_port(&vt8500_uart_driver, &vt8500_port->uart);
- 
-@@ -603,12 +645,18 @@ static int __devexit vt8500_serial_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id wmt_dt_ids[] = {
-+	{ .compatible = "via,vt8500-uart", },
-+	{}
-+};
-+
- static struct platform_driver vt8500_platform_driver = {
- 	.probe  = vt8500_serial_probe,
- 	.remove = __devexit_p(vt8500_serial_remove),
- 	.driver = {
- 		.name = "vt8500_serial",
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(wmt_dt_ids),
- 	},
- };
- 
-@@ -642,4 +690,4 @@ module_exit(vt8500_serial_exit);
- 
- MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
- MODULE_DESCRIPTION("Driver for vt8500 serial device");
--MODULE_LICENSE("GPL");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+* On MIPS, it is used only for compat tasks, like you have it above.
+* On PA-RISC, it is used for native 32 bit tasks and for compat 32 bit tasks,
+  but not for native 64 bit ones.
+* On IA64, it was used for compat tasks (support for which has since
+  been removed from the kernel), plus all 32 bit tasks would start with
+  PER_LINUX32.
+* On PowerPC, Sparc and s390, it is used for native 64 bit tasks and for
+  compat 32 bit tasks, but not for native 32 bit ones.
+* On Tile, it was never used.
+* On x86_64, it used to be defined (copied from ia64) but not used
+  throughout the git history.
 
+The semantics of the function are also interesting: The intention seems
+to be that to a compat task, PER_LINUX32 would appear as PER_LINUX.
+The effect is that any process can set PER_LINUX32 but it can never
+be unset except by a 64 bit MIPS or PA-RISC task.
+
+Since x86_64 does not implement this behavior at all, I suspect that
+there are now lots of things depending on not having it, while all
+the other architectures might also have some (even predating the
+x86_64 port) use cases that depend on depend on not being able to
+observe PER_LINUX32 in 32 bit compat tasks.
+
+I think we should try to agree on how this is all supposed to work
+and use common code, either put the ppc/sparc/s390 version into
+sys_personality, or remove all of them and just do what x86 and tile
+do, using the regular sys_personality for all tasks.
+
+	Arnd
