@@ -1,112 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030691Ab2HWS5O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:57:14 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:48570 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934243Ab2HWS4x convert rfc822-to-8bit (ORCPT
+	id S934307Ab2HWS5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:57:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37320 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934168Ab2HWSzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 14:56:53 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        Mike Waychison <mikew@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC][PATCH v4 0/3] make efivars/efi_pstore interrupt-safe
-Thread-Topic: [RFC][PATCH v4 0/3] make efivars/efi_pstore interrupt-safe
-Thread-Index: Ac1/3B4XXy3iKFABRLu93LVB8DzCQQBhKvgw
-Date: Thu, 23 Aug 2012 18:56:38 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413808D80@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-08-23_06:2012-08-23,2012-08-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=2 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1208230193
+	Thu, 23 Aug 2012 14:55:55 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Borislav Petkov <bp@alien8.de>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Davidlohr Bueso <dave@gnu.org>, Wang YanQing <udknight@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Cheng Renquan <crquan@gmail.com>
+Subject: [PATCH v2 2/6] menuconfig: Extend dialog_textbox so that it can exit on arbitrary keypresses
+Date: Thu, 23 Aug 2012 14:55:04 -0400
+Message-Id: <1345748108-12206-3-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1345748108-12206-1-git-send-email-bpoirier@suse.de>
+References: <1345748108-12206-1-git-send-email-bpoirier@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony,
+The caller will be able to perform actions based on hotkeys in the displayed
+text.
 
-Cloud you please review this patchset?
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+---
+ scripts/kconfig/lxdialog/dialog.h  |    3 ++-
+ scripts/kconfig/lxdialog/textbox.c |   31 +++++++++++++++++++++----------
+ scripts/kconfig/mconf.c            |   12 ++++++++++--
+ 3 files changed, 33 insertions(+), 13 deletions(-)
 
-Seiji
-
-> -----Original Message-----
-> From: Seiji Aguchi
-> Sent: Tuesday, August 21, 2012 4:35 PM
-> To: 'Mike Waychison'; 'linux-kernel@vger.kernel.org'; 'Luck, Tony (tony.luck@intel.com)'; 'Matthew Garrett (mjg@redhat.com)';
-> 'dzickus@redhat.com'
-> Cc: 'dle-develop@lists.sourceforge.net'; Satoru Moriya
-> Subject: [RFC][PATCH v4 0/3] make efivars/efi_pstore interrupt-safe
-> 
-> Changelog
-> v3 -> v4
->   - Patch 2/3
->     Move cancel_work_sync() above an efi_enabled test in efivars_exit().
-> 
-> v2 -> v3
->   - Patch 1/3
->     Replace spin_lock_irqsave/spin_unlock_irqrestore with spin_lock_irq/spin_unlock_irq in efivars_unregister(),
->     efivar_create(), efivar_store_raw() and efivar_delete() which are called in a process context.
-> 
->  - Patch 2/3
->     Change a name of delete_sysfs_entry() to delete_all_stale_sysfs_entries().
->     Also, don't release an efivar->lock while searching efivar->list in delete_all_stale_sysfs_entries().
-> 
->  - Patch 3/3
->     Remove a logic in efi_pstore_erase() which freshly created in patch v2.
-> 
-> v1 -> v2
->  - Patch 1/3
->     Add spin_lock_irq/spin_unlock_irq to open/close callbacks of efi_pstore
->     instead of moving spin_locks to a read callback.
-> 
->  - Patch 2/3
->     Replace a periodical timer with schedule_work().
-> 
->  - Patch 3/3
->     freshly create to kick a workqueue in oops case only.
-> 
-> [Problem]
->  There are following problems related to an interrupt context in efivar/efi_pstore.
-> 
->  Currently, efivars enables interrupt while taking efivars->lock.
->  So, there is a risk to be deadlocking in a write callback of efi_pstore if kernel panics  in interrupt context while taking efi_lock.
-> 
->  Also, efi_pstore creates sysfs entries ,which enable users to access to NVRAM, in a write callback.
->  If a kernel panic happens in interrupt contexts, pstore may fail because it could sleep due to dynamic  memory allocations during
-> creating sysfs entries.
-> 
-> To resolve the problems above, a goal of this patchset is making efivars/efi_pstore interrupt-safe.
-> 
-> [Patch Description]
->  Patch 1/3 efivars: Disable external interrupt while holding efivars->lock
->    This patch replaces spin_lock/spin_unlock with spin_lock_irqsave/spin_lock_irqrestore to make efivars interrupt safe
-> 
->  Patch 2/3 efi_pstore: Introducing workqueue updating sysfs entries
->    This patch removes sysfs operations from write callback by introducing a workqueue updating sysfs entries
-> 
->  Patch 3/3 efi_pstore: Skiping scheduling a workqueue in cases other than oops
->    This patch restricts a schedule of a workqueue in case where users erase entries or oops happen which is truly needed for users.
-> 
->  drivers/firmware/efivars.c |  167 +++++++++++++++++++++++++++++++++++--------
->  include/linux/efi.h        |    3 +-
->  2 files changed, 138 insertions(+), 32 deletions(-)
-> 
-> 
-> 
+diff --git a/scripts/kconfig/lxdialog/dialog.h b/scripts/kconfig/lxdialog/dialog.h
+index b5211fc..014c029 100644
+--- a/scripts/kconfig/lxdialog/dialog.h
++++ b/scripts/kconfig/lxdialog/dialog.h
+@@ -209,7 +209,8 @@ int first_alpha(const char *string, const char *exempt);
+ int dialog_yesno(const char *title, const char *prompt, int height, int width);
+ int dialog_msgbox(const char *title, const char *prompt, int height,
+ 		  int width, int pause);
+-int dialog_textbox(const char *title, const char *file, int height, int width);
++int dialog_textbox(const char *title, const char *file, int height, int width,
++		   int *keys);
+ int dialog_menu(const char *title, const char *prompt,
+ 		const void *selected, int *s_scroll);
+ int dialog_checklist(const char *title, const char *prompt, int height,
+diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
+index 264a2b9..eb4ee92 100644
+--- a/scripts/kconfig/lxdialog/textbox.c
++++ b/scripts/kconfig/lxdialog/textbox.c
+@@ -47,14 +47,16 @@ static void refresh_text_box(WINDOW *dialog, WINDOW *box, int boxh, int boxw,
+ 
+ /*
+  * Display text from a file in a dialog box.
++ *
++ * keys is a null-terminated array
+  */
+-int dialog_textbox(const char *title, const char *tbuf,
+-		   int initial_height, int initial_width)
++int dialog_textbox(const char *title, const char *tbuf, int initial_height,
++		   int initial_width, int *keys)
+ {
+ 	int i, x, y, cur_x, cur_y, key = 0;
+ 	int height, width, boxh, boxw;
+-	int passed_end;
+ 	WINDOW *dialog, *box;
++	bool done = false;
+ 
+ 	begin_reached = 1;
+ 	end_reached = 0;
+@@ -122,7 +124,7 @@ do_resize:
+ 	attr_clear(box, boxh, boxw, dlg.dialog.atr);
+ 	refresh_text_box(dialog, box, boxh, boxw, cur_y, cur_x);
+ 
+-	while ((key != KEY_ESC) && (key != '\n')) {
++	while (!done) {
+ 		key = wgetch(dialog);
+ 		switch (key) {
+ 		case 'E':	/* Exit */
+@@ -130,9 +132,9 @@ do_resize:
+ 		case 'X':
+ 		case 'x':
+ 		case 'q':
+-			delwin(box);
+-			delwin(dialog);
+-			return 0;
++		case '\n':
++			done = true;
++			break;
+ 		case 'g':	/* First page */
+ 		case KEY_HOME:
+ 			if (!begin_reached) {
+@@ -156,6 +158,8 @@ do_resize:
+ 		case 'k':
+ 		case KEY_UP:
+ 			if (!begin_reached) {
++				int passed_end = 0;
++
+ 				back_lines(page_length + 1);
+ 
+ 				/* We don't call print_page() here but use
+@@ -169,7 +173,6 @@ do_resize:
+ 				wscrl(box, -1);	/* Scroll box region down one line */
+ 				scrollok(box, FALSE);
+ 				page_length = 0;
+-				passed_end = 0;
+ 				for (i = 0; i < boxh; i++) {
+ 					if (!i) {
+ 						/* print first line of page */
+@@ -252,7 +255,8 @@ do_resize:
+ 					 cur_y, cur_x);
+ 			break;
+ 		case KEY_ESC:
+-			key = on_key_esc(dialog);
++			if (on_key_esc(dialog) == KEY_ESC)
++				done = true;
+ 			break;
+ 		case KEY_RESIZE:
+ 			back_lines(height);
+@@ -260,11 +264,18 @@ do_resize:
+ 			delwin(dialog);
+ 			on_key_resize();
+ 			goto do_resize;
++		default:
++			for (i = 0; keys[i]; i++) {
++				if (key == keys[i]) {
++					done = true;
++					break;
++				}
++			}
+ 		}
+ 	}
+ 	delwin(box);
+ 	delwin(dialog);
+-	return key;		/* ESC pressed */
++	return key;
+ }
+ 
+ /*
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index f584a28..116e5da 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -280,6 +280,8 @@ static void conf_choice(struct menu *menu);
+ static void conf_string(struct menu *menu);
+ static void conf_load(void);
+ static void conf_save(void);
++static int show_textbox_ext(const char *title, const char *text, int r, int c,
++			    int *keys);
+ static void show_textbox(const char *title, const char *text, int r, int c);
+ static void show_helptext(const char *title, const char *text);
+ static void show_help(struct menu *menu);
+@@ -619,10 +621,16 @@ static void conf(struct menu *menu)
+ 	}
+ }
+ 
+-static void show_textbox(const char *title, const char *text, int r, int c)
++static int show_textbox_ext(const char *title, const char *text, int r, int c,
++			    int *keys)
+ {
+ 	dialog_clear();
+-	dialog_textbox(title, text, r, c);
++	return dialog_textbox(title, text, r, c, keys);
++}
++
++static void show_textbox(const char *title, const char *text, int r, int c)
++{
++	show_textbox_ext(title, text, r, c, (int []) {0});
+ }
+ 
+ static void show_helptext(const char *title, const char *text)
+-- 
+1.7.7
 
