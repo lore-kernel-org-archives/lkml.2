@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab2HWGBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 02:01:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52509 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab2HWGB2 (ORCPT
+	id S932269Ab2HWGJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 02:09:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40995 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab2HWGJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 02:01:28 -0400
-Date: Wed, 22 Aug 2012 23:01:23 -0700
-From: Tom Rini <trini@ti.com>
-To: Matt Porter <mporter@ti.com>
-Cc: vinod.koul@intel.com, cjb@laptop.org, grant.likely@secretlab.ca,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH v3 0/3] DaVinci DMA engine conversion
-Message-ID: <20120823060123.GA12312@bill-the-cat>
-References: <1345684176-21472-1-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-In-Reply-To: <1345684176-21472-1-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Aug 2012 02:09:26 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: rob@landley.net, linux-kernel@vger.kernel.org
+Cc: linux-doc@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] documentation: virtual: Fix typo in Documentations/virtual
+Date: Thu, 23 Aug 2012 15:09:19 +0900
+Message-Id: <1345702159-9178-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.12.rc3.4.g91e4bfe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix spelling typo in Documentations/virtual
 
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/virtual/kvm/api.txt     | 6 +++---
+ Documentation/virtual/virtio-spec.txt | 8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-On Wed, Aug 22, 2012 at 09:09:33PM -0400, Matt Porter wrote:
+diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+index a37ec45..50c217e 100644
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -1666,7 +1666,7 @@ The parameter is defined like this:
+ 
+ This ioctl maps the memory at "user_addr" with the length "length" to
+ the vcpu's address space starting at "vcpu_addr". All parameters need to
+-be alligned by 1 megabyte.
++be aligned by 1 megabyte.
+ 
+ 
+ 4.66 KVM_S390_UCAS_UNMAP
+@@ -1686,7 +1686,7 @@ The parameter is defined like this:
+ 
+ This ioctl unmaps the memory in the vcpu's address space starting at
+ "vcpu_addr" with the length "length". The field "user_addr" is ignored.
+-All parameters need to be alligned by 1 megabyte.
++All parameters need to be aligned by 1 megabyte.
+ 
+ 
+ 4.67 KVM_S390_VCPU_FAULT
+@@ -1920,7 +1920,7 @@ be OR'ed into the "vsid" argument of the slbmte instruction.
+ The "enc" array is a list which for each of those segment base page
+ size provides the list of supported actual page sizes (which can be
+ only larger or equal to the base page size), along with the
+-corresponding encoding in the hash PTE. Similarily, the array is
++corresponding encoding in the hash PTE. Similarly, the array is
+ 8 entries sorted by increasing sizes and an entry with a "0" shift
+ is an empty entry and a terminator:
+ 
+diff --git a/Documentation/virtual/virtio-spec.txt b/Documentation/virtual/virtio-spec.txt
+index 0d6ec85..260e384 100644
+--- a/Documentation/virtual/virtio-spec.txt
++++ b/Documentation/virtual/virtio-spec.txt
+@@ -1389,7 +1389,7 @@ segmentation, if both guests are amenable.
+ 
+ Packets are transmitted by placing them in the transmitq, and
+ buffers for incoming packets are placed in the receiveq. In each
+-case, the packet itself is preceeded by a header:
++case, the packet itself is preceded by a header:
+ 
+ struct virtio_net_hdr {
+ 
+@@ -1631,7 +1631,7 @@ struct virtio_net_ctrl_mac {
+ 
+ The device can filter incoming packets by any number of
+ destination MAC addresses.[footnote:
+-Since there are no guarentees, it can use a hash filter
++Since there are no guarantees, it can use a hash filter
+ orsilently switch to allmulti or promiscuous mode if it is given
+ too many addresses.
+ ] This table is set using the class VIRTIO_NET_CTRL_MAC and the
+@@ -1822,7 +1822,7 @@ the FLUSH and FLUSH_OUT types are equivalent, the device does not
+ distinguish between them
+ ]). If the device has VIRTIO_BLK_F_BARRIER feature the high bit
+ (VIRTIO_BLK_T_BARRIER) indicates that this request acts as a
+-barrier and that all preceeding requests must be complete before
++barrier and that all preceding requests must be complete before
+ this one, and all following requests must not be started until
+ this is complete. Note that a barrier does not flush caches in
+ the underlying backend device in host, and thus does not serve as
+@@ -2135,7 +2135,7 @@ This is historical, and independent of the guest page size
+ 
+   Otherwise, the guest may begin to re-use pages previously given
+     to the balloon before the device has acknowledged their
+-    withdrawl. [footnote:
++    withdrawal. [footnote:
+ In this case, deflation advice is merely a courtesy
+ ]
+ 
+-- 
+1.7.12.rc3.4.g91e4bfe
 
-[snip]
-> Matt Porter (3):
->   dmaengine: add TI EDMA DMA engine driver
->   mmc: davinci_mmc: convert to DMA engine API
->   spi: spi-davinci: convert to DMA engine API
->=20
->  drivers/dma/Kconfig            |   10 +
->  drivers/dma/Makefile           |    1 +
->  drivers/dma/edma.c             |  671 ++++++++++++++++++++++++++++++++++=
-++++++
->  drivers/mmc/host/davinci_mmc.c |  271 +++++-----------
->  drivers/spi/spi-davinci.c      |  292 ++++++++---------
->  include/linux/edma.h           |   29 ++
->  6 files changed, 923 insertions(+), 351 deletions(-)
->  create mode 100644 drivers/dma/edma.c
->  create mode 100644 include/linux/edma.h
-
-On the Logic PD AM1808 EVM:
-mmc0 rootfs: http://pastebin.com/HKVdmA0G
-jffs2 on the SPI flash rootfs: http://pastebin.com/cpAHgdug
-
-Tested-by: Tom Rini <trini@ti.com>
-
---=20
-Tom
-
---AhhlLboLdkugWU4S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQNcczAAoJENk4IS6UOR1WbKoP/27KgPYRsTGlN4Rlg3nu0M2v
-9lUG+/eG8IvOBRWILROIsS4StIeK9NjswsrGT9WJLzJvZCsRBkOYXqanMDYr9VES
-4S56uwMsa7r/oYbi1OHEJSKfMqovHUB8PTw8BnDAGHgsB00kOefcuTYHtK6NROJI
-4lhNar82jHSdRPZ+hb6+pcxrHAOu0RqZHuJJ0vyH4NE5jv2iUhI7VmPyivlU3SOe
-J0LagMFEEl8Bnk0DsuZbjQh1aajjK3toKrapannnP6RUCcYzKx/6i2mdICINgl2t
-v+uWcsoRvVahNB0TSLhyBJydqn/LqEehdEe4EYzFOBBLUi2aVSU/+oaov8rfQzBx
-Iv821ti9P6FvKBWoFG4kPX5ITzVJ9cpaOcW/Zi8B4gF5MuzDz5zjjVSv10stRjSK
-ySAv5YzRBXrykYb+DQvdz1FLqQdfF6/5QWU+kRSucgetjN7kXJlkE2aOy4JvTAVt
-s+XQL+wxwOKz8SfU1JPpUFo7xOJvfbAVRCBDVC1MRrcJ9H8fjI/wYeVgoVVqMOk2
-nxTaqz2j5pNfJaXuijHzofNfqh5QpHVIAfQgw239/BqzXUnXD2EvLnURfJjRf2aR
-iZ4vBABR5U9gFCg5OcLKeEfmEOnyZ7VW6ameCZwJB6yFWTJikWvxU+wCyPdgSrGP
-e2Av2e1OEnvmVGKs5AME
-=YRVJ
------END PGP SIGNATURE-----
-
---AhhlLboLdkugWU4S--
