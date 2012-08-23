@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030185Ab2HWHgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:36:38 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:16614 "EHLO mta02.xtra.co.nz"
+	id S933653Ab2HWHgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:36:32 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:16612 "EHLO mta02.xtra.co.nz"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933618Ab2HWHgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:36:10 -0400
+	id S933619Ab2HWHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:36:11 -0400
 From: Tony Prisk <linux@prisktech.co.nz>
 To: vt8500-wm8505-linux-kernel@googlegroups.com
 Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
@@ -23,9 +23,9 @@ Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
         linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCHv4 7/9] arm: vt8500: doc: Add device tree bindings for arch-vt8500 devices
-Date: Thu, 23 Aug 2012 19:35:43 +1200
-Message-Id: <1345707346-9035-8-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCHv4 8/9] arm: vt8500: gpio: Devicetree support for arch-vt8500
+Date: Thu, 23 Aug 2012 19:35:44 +1200
+Message-Id: <1345707346-9035-9-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
 References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
@@ -33,434 +33,370 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bindings for gpio, interrupt controller, power management controller,
-timer, realtime clock, serial uart, ehci and uhci controllers and
-framebuffer controllers used on the arch-vt8500 platform.
-
-Framebuffer binding also specifies a 'display' node which is required
-for determining the lcd panel data.
+Converted the existing arch-vt8500 gpio to a platform_device.
+Added support for WM8505 and WM8650 GPIO controllers.
+Replaced existing readl/writel calls with _relaxed variants.
+Replaced existing unsigned variables with u32 to match register size.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- Documentation/devicetree/bindings/arm/vt8500.txt   |   15 ++++
- .../bindings/arm/vt8500/via,vt8500-intc.txt        |   16 +++++
- .../bindings/arm/vt8500/via,vt8500-pmc.txt         |   13 ++++
- .../bindings/arm/vt8500/via,vt8500-timer.txt       |   15 ++++
- Documentation/devicetree/bindings/clock/vt8500.txt |   72 ++++++++++++++++++++
- .../devicetree/bindings/gpio/gpio-vt8500.txt       |   24 +++++++
- .../devicetree/bindings/rtc/via,vt8500-rtc.txt     |   15 ++++
- .../bindings/tty/serial/via,vt8500-uart.txt        |   17 +++++
- .../devicetree/bindings/usb/platform-uhci.txt      |   15 ++++
- .../devicetree/bindings/usb/via,vt8500-ehci.txt    |   15 ++++
- .../devicetree/bindings/vendor-prefixes.txt        |    2 +
- .../devicetree/bindings/video/via,vt8500-fb.txt    |   48 +++++++++++++
- .../devicetree/bindings/video/wm,prizm-ge-rops.txt |   13 ++++
- .../devicetree/bindings/video/wm,wm8505-fb.txt     |   22 ++++++
- 14 files changed, 302 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500.txt
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
- create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
- create mode 100644 Documentation/devicetree/bindings/clock/vt8500.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
- create mode 100644 Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
- create mode 100644 Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
- create mode 100644 Documentation/devicetree/bindings/usb/platform-uhci.txt
- create mode 100644 Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
- create mode 100644 Documentation/devicetree/bindings/video/via,vt8500-fb.txt
- create mode 100644 Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
- create mode 100644 Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+ drivers/gpio/Kconfig       |    6 +
+ drivers/gpio/Makefile      |    1 +
+ drivers/gpio/gpio-vt8500.c |  316 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 323 insertions(+)
+ create mode 100644 drivers/gpio/gpio-vt8500.c
 
-diff --git a/Documentation/devicetree/bindings/arm/vt8500.txt b/Documentation/devicetree/bindings/arm/vt8500.txt
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 542f0c0..3c8897a 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -183,6 +183,12 @@ config GPIO_STA2X11
+ 	  Say yes here to support the STA2x11/ConneXt GPIO device.
+ 	  The GPIO module has 128 GPIO pins with alternate functions.
+ 
++config GPIO_VT8500
++	bool "VIA/Wondermedia SoC GPIO Support"
++	depends on ARCH_VT8500
++	help
++	  Say yes here to support the VT8500/WM8505/WM8650 GPIO controller.
++
+ config GPIO_XILINX
+ 	bool "Xilinx GPIO support"
+ 	depends on PPC_OF || MICROBLAZE
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 0f55662..2c014b9 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -66,6 +66,7 @@ obj-$(CONFIG_GPIO_TPS65912)	+= gpio-tps65912.o
+ obj-$(CONFIG_GPIO_TWL4030)	+= gpio-twl4030.o
+ obj-$(CONFIG_GPIO_UCB1400)	+= gpio-ucb1400.o
+ obj-$(CONFIG_GPIO_VR41XX)	+= gpio-vr41xx.o
++obj-$(CONFIG_GPIO_VT8500)	+= gpio-vt8500.o
+ obj-$(CONFIG_GPIO_VX855)	+= gpio-vx855.o
+ obj-$(CONFIG_GPIO_WM831X)	+= gpio-wm831x.o
+ obj-$(CONFIG_GPIO_WM8350)	+= gpio-wm8350.o
+diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
 new file mode 100644
-index 0000000..1b3b187
+index 0000000..bcd8e4a
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/vt8500.txt
-@@ -0,0 +1,15 @@
-+VIA/Wondermedia VT8500 Platforms Device Tree Bindings
-+---------------------------------------
++++ b/drivers/gpio/gpio-vt8500.c
+@@ -0,0 +1,316 @@
++/* drivers/gpio/gpio-vt8500.c
++ *
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ * Based on arch/arm/mach-vt8500/gpio.c:
++ * - Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
 +
-+Boards with the VIA VT8500 SoC shall have the following properties:
-+Required root node property:
-+compatible = "via,vt8500";
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/gpio.h>
++#include <linux/platform_device.h>
++#include <linux/bitops.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/of_device.h>
 +
-+Boards with the Wondermedia WM8505 SoC shall have the following properties:
-+Required root node property:
-+compatible = "wm,wm8505";
++/*
++	We handle GPIOs by bank, each bank containing up to 32 GPIOs covered
++	by one set of registers (although not all may be valid).
 +
-+Boards with the Wondermedia WM8650 SoC shall have the following properties:
-+Required root node property:
-+compatible = "wm,wm8650";
++	Because different SoC's have different register offsets, we pass the
++	register offsets as data in vt8500_gpio_dt_ids[].
 +
-diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
-new file mode 100644
-index 0000000..0a4ce10
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
-@@ -0,0 +1,16 @@
-+VIA/Wondermedia VT8500 Interrupt Controller
-+-----------------------------------------------------
++	A value of NO_REG is used to indicate that this register is not
++	supported. Only used for ->en at the moment.
++*/
 +
-+Required properties:
-+- compatible : "via,vt8500-intc"
-+- reg : Should contain 1 register ranges(address and length)
-+- #interrupt-cells : should be <1>
++#define NO_REG	0xFFFF
 +
-+Example:
++/*
++ * struct vt8500_gpio_bank_regoffsets
++ * @en: offset to enable register of the bank
++ * @dir: offset to direction register of the bank
++ * @data_out: offset to the data out register of the bank
++ * @data_in: offset to the data in register of the bank
++ * @ngpio: highest valid pin in this bank
++ */
 +
-+	intc: interrupt-controller@d8140000 {
-+		compatible = "via,vt8500-intc";
-+		interrupt-controller;
-+		reg = <0xd8140000 0x10000>;
-+		#interrupt-cells = <1>;
-+	};
-diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
-new file mode 100644
-index 0000000..521b9c7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
-@@ -0,0 +1,13 @@
-+VIA/Wondermedia VT8500 Power Management Controller
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "via,vt8500-pmc"
-+- reg : Should contain 1 register ranges(address and length)
-+
-+Example:
-+
-+	pmc@d8130000 {
-+		compatible = "via,vt8500-pmc";
-+		reg = <0xd8130000 0x1000>;
-+	};
-diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
-new file mode 100644
-index 0000000..901c73f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
-@@ -0,0 +1,15 @@
-+VIA/Wondermedia VT8500 Timer
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "via,vt8500-timer"
-+- reg : Should contain 1 register ranges(address and length)
-+- interrupts : interrupt for the timer
-+
-+Example:
-+
-+	timer@d8130100 {
-+		compatible = "via,vt8500-timer";
-+		reg = <0xd8130100 0x28>;
-+		interrupts = <36>;
-+	};
-diff --git a/Documentation/devicetree/bindings/clock/vt8500.txt b/Documentation/devicetree/bindings/clock/vt8500.txt
-new file mode 100644
-index 0000000..a880c70
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/vt8500.txt
-@@ -0,0 +1,72 @@
-+Device Tree Clock bindings for arch-vt8500
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be one of the following:
-+	"via,vt8500-pll-clock" - for a VT8500/WM8505 PLL clock
-+	"wm,wm8650-pll-clock" - for a WM8650 PLL clock
-+	"via,vt8500-device-clock" - for a VT/WM device clock
-+
-+Required properties for PLL clocks:
-+- reg : shall be the control register offset from PMC base for the pll clock.
-+- clocks : shall be the input parent clock phandle for the clock. This should
-+	be the reference clock.
-+- #clock-cells : from common clock binding; shall be set to 0.
-+
-+Required properties for device clocks:
-+- clocks : shall be the input parent clock phandle for the clock. This should
-+	be a pll output.
-+- #clock-cells : from common clock binding; shall be set to 0.
-+
-+
-+Device Clocks
-+
-+Device clocks are required to have one or both of the following sets of
-+properties:
-+
-+
-+Gated device clocks:
-+
-+Required properties:
-+- enable-reg : shall be the register offset from PMC base for the enable
-+	register.
-+- enable-bit : shall be the bit within enable-reg to enable/disable the clock.
-+
-+
-+Divisor device clocks:
-+
-+Required property:
-+- divisor-reg : shall be the register offset from PMC base for the divisor
-+	register.
-+Optional property:
-+- divisor-mask : shall be the mask for the divisor register. Defaults to 0x1f
-+	if not specified.
-+
-+
-+For example:
-+
-+ref25: ref25M {
-+	#clock-cells = <0>;
-+	compatible = "fixed-clock";
-+	clock-frequency = <25000000>;
++struct vt8500_gpio_bank_regoffsets {
++	unsigned int	en;
++	unsigned int	dir;
++	unsigned int	data_out;
++	unsigned int	data_in;
++	unsigned char	ngpio;
 +};
 +
-+plla: plla {
-+	#clock-cells = <0>;
-+	compatible = "wm,wm8650-pll-clock";
-+	clocks = <&ref25>;
-+	reg = <0x200>;
++struct vt8500_gpio_data {
++	unsigned int				num_banks;
++	struct vt8500_gpio_bank_regoffsets	banks[];
 +};
 +
-+sdhc: sdhc {
-+	#clock-cells = <0>;
-+	compatible = "via,vt8500-device-clock";
-+	clocks = <&pllb>;
-+	divisor-reg = <0x328>;
-+	divisor-mask = <0x3f>;
-+	enable-reg = <0x254>;
-+	enable-bit = <18>;
++#define VT8500_BANK(__en, __dir, __out, __in, __ngpio)		\
++{								\
++	.en = __en,						\
++	.dir = __dir,						\
++	.data_out = __out,					\
++	.data_in = __in,					\
++	.ngpio = __ngpio,					\
++}
++
++static struct vt8500_gpio_data vt8500_data = {
++	.num_banks	= 7,
++	.banks	= {
++		VT8500_BANK(0x00, 0x20, 0x40, 0x60, 26),
++		VT8500_BANK(0x04, 0x24, 0x44, 0x64, 28),
++		VT8500_BANK(0x08, 0x28, 0x48, 0x68, 31),
++		VT8500_BANK(0x0C, 0x2C, 0x4C, 0x6C, 19),
++		VT8500_BANK(0x10, 0x30, 0x50, 0x70, 19),
++		VT8500_BANK(0x14, 0x34, 0x54, 0x74, 23),
++		VT8500_BANK(NO_REG, 0x3C, 0x5C, 0x7C, 9),
++	},
 +};
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-vt8500.txt b/Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
-new file mode 100644
-index 0000000..f4dc523
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
-@@ -0,0 +1,24 @@
-+VIA/Wondermedia VT8500 GPIO Controller
-+-----------------------------------------------------
 +
-+Required properties:
-+- compatible : "via,vt8500-gpio", "wm,wm8505-gpio"
-+	or "wm,wm8650-gpio" depending on your SoC
-+- reg : Should contain 1 register range (address and length)
-+- #gpio-cells : should be <3>.
-+	1) bank
-+	2) pin number
-+	3) flags - should be 0
++static struct vt8500_gpio_data wm8505_data = {
++	.num_banks	= 10,
++	.banks	= {
++		VT8500_BANK(0x40, 0x68, 0x90, 0xB8, 8),
++		VT8500_BANK(0x44, 0x6C, 0x94, 0xBC, 32),
++		VT8500_BANK(0x48, 0x70, 0x98, 0xC0, 6),
++		VT8500_BANK(0x4C, 0x74, 0x9C, 0xC4, 16),
++		VT8500_BANK(0x50, 0x78, 0xA0, 0xC8, 25),
++		VT8500_BANK(0x54, 0x7C, 0xA4, 0xCC, 5),
++		VT8500_BANK(0x58, 0x80, 0xA8, 0xD0, 5),
++		VT8500_BANK(0x5C, 0x84, 0xAC, 0xD4, 12),
++		VT8500_BANK(0x60, 0x88, 0xB0, 0xD8, 16),
++		VT8500_BANK(0x64, 0x8C, 0xB4, 0xDC, 22),
++	},
++};
 +
-+Example:
++/*
++ * No information about which bits are valid so we just make
++ * them all available until its figured out.
++ */
++static struct vt8500_gpio_data wm8650_data = {
++	.num_banks	= 9,
++	.banks	= {
++		VT8500_BANK(0x40, 0x80, 0xC0, 0x00, 32),
++		VT8500_BANK(0x44, 0x84, 0xC4, 0x04, 32),
++		VT8500_BANK(0x48, 0x88, 0xC8, 0x08, 32),
++		VT8500_BANK(0x4C, 0x8C, 0xCC, 0x0C, 32),
++		VT8500_BANK(0x50, 0x90, 0xD0, 0x10, 32),
++		VT8500_BANK(0x54, 0x94, 0xD4, 0x14, 32),
++		VT8500_BANK(0x58, 0x98, 0xD8, 0x18, 32),
++		VT8500_BANK(0x5C, 0x9C, 0xDC, 0x1C, 32),
++		VT8500_BANK(0x7C, 0xBC, 0xFC, 0x3C, 32),
++	},
++};
 +
-+	gpio: gpio-controller@d8110000 {
-+		compatible = "via,vt8500-gpio";
-+		gpio-controller;
-+		reg = <0xd8110000 0x10000>;
-+		#gpio-cells = <3>;
-+	};
++struct vt8500_gpio_chip {
++	struct gpio_chip		chip;
 +
-+	vibrate {
-+		gpios = <&gpio 0 1 0>; /* Bank 0, Pin 1, No flags */
-+	};
-diff --git a/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt b/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
-new file mode 100644
-index 0000000..3c0484c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
-@@ -0,0 +1,15 @@
-+VIA/Wondermedia VT8500 Realtime Clock Controller
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "via,vt8500-rtc"
-+- reg : Should contain 1 register ranges(address and length)
-+- interrupts : alarm interrupt
-+
-+Example:
-+
-+	rtc@d8100000 {
-+		compatible = "via,vt8500-rtc";
-+		reg = <0xd8100000 0x10000>;
-+		interrupts = <48>;
-+	};
-diff --git a/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt b/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
-new file mode 100644
-index 0000000..5feef1e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
-@@ -0,0 +1,17 @@
-+VIA/Wondermedia VT8500 UART Controller
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "via,vt8500-uart"
-+- reg : Should contain 1 register ranges(address and length)
-+- interrupts : UART interrupt
-+- clocks : phandle to the uart source clock (usually a 24Mhz fixed clock)
-+
-+Example:
-+
-+	uart@d8210000 {
-+		compatible = "via,vt8500-uart";
-+		reg = <0xd8210000 0x1040>;
-+		interrupts = <47>;
-+		clocks = <&ref24>;
-+	};
-diff --git a/Documentation/devicetree/bindings/usb/platform-uhci.txt b/Documentation/devicetree/bindings/usb/platform-uhci.txt
-new file mode 100644
-index 0000000..a4fb071
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/platform-uhci.txt
-@@ -0,0 +1,15 @@
-+Generic Platform UHCI Controller
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "platform-uhci"
-+- reg : Should contain 1 register ranges(address and length)
-+- interrupts : UHCI controller interrupt
-+
-+Example:
-+
-+	uhci@d8007b00 {
-+		compatible = "platform-uhci";
-+		reg = <0xd8007b00 0x200>;
-+		interrupts = <43>;
-+	};
-diff --git a/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt b/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
-new file mode 100644
-index 0000000..17b3ad1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
-@@ -0,0 +1,15 @@
-+VIA/Wondermedia VT8500 EHCI Controller
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "via,vt8500-ehci"
-+- reg : Should contain 1 register ranges(address and length)
-+- interrupts : ehci controller interrupt
-+
-+Example:
-+
-+	ehci@d8007900 {
-+		compatible = "via,vt8500-ehci";
-+		reg = <0xd8007900 0x200>;
-+		interrupts = <43>;
-+	};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index db4d3af..5c63da2 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -47,5 +47,7 @@ sirf	SiRF Technology, Inc.
- st	STMicroelectronics
- stericsson	ST-Ericsson
- ti	Texas Instruments
-+via	VIA Technologies, Inc.
- wlf	Wolfson Microelectronics
-+wm	Wondermedia Technologies, Inc.
- xlnx	Xilinx
-diff --git a/Documentation/devicetree/bindings/video/via,vt8500-fb.txt b/Documentation/devicetree/bindings/video/via,vt8500-fb.txt
-new file mode 100644
-index 0000000..98ad14c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/via,vt8500-fb.txt
-@@ -0,0 +1,48 @@
-+VIA VT8500 Framebuffer
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "via,vt8500-fb"
-+- reg : Should contain 1 register ranges(address and length)
-+- interrupts : framebuffer controller interrupt
-+- via,display: a phandle pointing to the display node
-+
-+Required nodes:
-+- display: a display node is required to initialize the lcd panel
-+	This should be in the board dts.
-+
-+Example:
-+
-+	fb@d800e400 {
-+		compatible = "via,vt8500-fb";
-+		reg = <0xd800e400 0x400>;
-+		interrupts = <12>;
-+		via,display = <&display>;
-+	};
-+
-+VIA VT8500 Display
-+-----------------------------------------------------
-+Required properties:
-+- xres : lcd panel horizontal resolution
-+- yres : lcd panel vertical resolution
-+- left-margin,
-+- right-margin,
-+- hsync-len: lcd panel horizontal timings in pixels
-+- upper-margin,
-+- lower-margin,
-+- vsync-len: lcd panel verticals timings in pixels
-+- bpp: lcd panel bit-depth.
-+	<16> for RGB565, <32> for RGB888
-+
-+Example:
-+	display {
-+		xres = <800>;
-+		yres = <480>;
-+		left-margin = <88>;
-+		right-margin = <40>;
-+		hsync-len = <0>;
-+		upper-margin = <32>;
-+		lower-margin = <11>;
-+		vsync-len = <1>;
-+		bpp = <16>;
-+	};
-diff --git a/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt b/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
-new file mode 100644
-index 0000000..a850fa0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
-@@ -0,0 +1,13 @@
-+VIA/Wondermedia Graphics Engine Controller
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "wm,prizm-ge-rops"
-+- reg : Should contain 1 register ranges(address and length)
-+
-+Example:
-+
-+	ge_rops@d8050400 {
-+		compatible = "wm,prizm-ge-rops";
-+		reg = <0xd8050400 0x100>;
-+	};
-diff --git a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
-new file mode 100644
-index 0000000..64f016a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
-@@ -0,0 +1,22 @@
-+Wondermedia WM8505 Framebuffer
-+-----------------------------------------------------
-+
-+Required properties:
-+- compatible : "wm,wm8505-fb"
-+- reg : Should contain 1 register ranges(address and length)
-+- via,display: a phandle pointing to the display node
-+
-+Required nodes:
-+- display: a display node is required to initialize the lcd panel
-+	This should be in the board dts. See definition in
-+	Documentation/devicetree/bindings/video/via,vt8500-fb.txt
++	const struct vt8500_gpio_bank_regoffsets *regs;
++	void __iomem	*base;
++};
 +
 +
-+Example:
++#define to_vt8500(__chip) container_of(__chip, struct vt8500_gpio_chip, chip)
 +
-+	fb@d8050800 {
-+		compatible = "wm,wm8505-fb";
-+		reg = <0xd8050800 0x200>;
-+		via,display = <&display>;
-+	};
++static int vt8500_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	u32 val;
++	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
 +
++	if (vt8500_chip->regs->en == NO_REG)
++		return 0;
++
++	val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->en);
++	val |= BIT(offset);
++	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->en);
++
++	return 0;
++}
++
++static void vt8500_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
++	u32 val;
++
++	if (vt8500_chip->regs->en == NO_REG)
++		return;
++
++	val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->en);
++	val &= ~BIT(offset);
++	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->en);
++}
++
++static int vt8500_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
++
++	u32 val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->dir);
++	val &= ~BIT(offset);
++	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->dir);
++
++	return 0;
++}
++
++static int vt8500_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
++								int value)
++{
++	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
++
++	u32 val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->dir);
++	val |= BIT(offset);
++	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->dir);
++
++	if (value) {
++		val = readl_relaxed(vt8500_chip->base +
++						vt8500_chip->regs->data_out);
++		val |= BIT(offset);
++		writel_relaxed(val, vt8500_chip->base +
++						vt8500_chip->regs->data_out);
++	}
++	return 0;
++}
++
++static int vt8500_gpio_get_value(struct gpio_chip *chip, unsigned offset)
++{
++	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
++
++	return (readl_relaxed(vt8500_chip->base + vt8500_chip->regs->data_in) >>
++								offset) & 1;
++}
++
++static void vt8500_gpio_set_value(struct gpio_chip *chip, unsigned offset,
++								int value)
++{
++	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
++
++	u32 val = readl_relaxed(vt8500_chip->base +
++						vt8500_chip->regs->data_out);
++	if (value)
++		val |= BIT(offset);
++	else
++		val &= ~BIT(offset);
++
++	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->data_out);
++}
++
++static int vt8500_of_xlate(struct gpio_chip *gc,
++			    const struct of_phandle_args *gpiospec, u32 *flags)
++{
++	/* bank if specificed in gpiospec->args[0] */
++	if (flags)
++		*flags = gpiospec->args[2];
++
++	return gpiospec->args[1];
++}
++
++static int vt8500_add_chips(struct platform_device *pdev, void __iomem *base,
++				const struct vt8500_gpio_data *data)
++{
++	struct vt8500_gpio_chip *vtchip;
++	struct gpio_chip *chip;
++	int i;
++	int pin_cnt = 0;
++
++	vtchip = devm_kzalloc(&pdev->dev,
++			sizeof(struct vt8500_gpio_chip) * data->num_banks,
++			GFP_KERNEL);
++	if (!vtchip) {
++		pr_err("%s: failed to allocate chip memory\n", __func__);
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < data->num_banks; i++) {
++		vtchip[i].base = base;
++		vtchip[i].regs = &data->banks[i];
++
++		chip = &vtchip[i].chip;
++
++		chip->of_xlate = vt8500_of_xlate;
++		chip->of_gpio_n_cells = 3;
++		chip->of_node = pdev->dev.of_node;
++
++		chip->request = vt8500_gpio_request;
++		chip->free = vt8500_gpio_free;
++		chip->direction_input = vt8500_gpio_direction_input;
++		chip->direction_output = vt8500_gpio_direction_output;
++		chip->get = vt8500_gpio_get_value;
++		chip->set = vt8500_gpio_set_value;
++		chip->can_sleep = 0;
++		chip->base = pin_cnt;
++		chip->ngpio = data->banks[i].ngpio;
++
++		pin_cnt += data->banks[i].ngpio;
++
++		gpiochip_add(chip);
++	}
++	return 0;
++}
++
++static struct of_device_id vt8500_gpio_dt_ids[] = {
++	{ .compatible = "via,vt8500-gpio", .data = &vt8500_data, },
++	{ .compatible = "wm,wm8505-gpio", .data = &wm8505_data, },
++	{ .compatible = "wm,wm8650-gpio", .data = &wm8650_data, },
++	{ /* Sentinel */ },
++};
++
++static int __devinit vt8500_gpio_probe(struct platform_device *pdev)
++{
++	void __iomem *gpio_base;
++	struct device_node *np;
++	const struct of_device_id *of_id =
++				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
++
++	if (!of_id) {
++		dev_err(&pdev->dev, "Failed to find gpio controller\n");
++		return -ENODEV;
++	}
++
++	np = pdev->dev.of_node;
++	if (!np) {
++		dev_err(&pdev->dev, "Missing GPIO description in devicetree\n");
++		return -EFAULT;
++	}
++
++	gpio_base = of_iomap(np, 0);
++	if (!gpio_base) {
++		dev_err(&pdev->dev, "Unable to map GPIO registers\n");
++		of_node_put(np);
++		return -ENOMEM;
++	}
++
++	vt8500_add_chips(pdev, gpio_base, of_id->data);
++
++	return 0;
++}
++
++static struct platform_driver vt8500_gpio_driver = {
++	.probe		= vt8500_gpio_probe,
++	.driver		= {
++		.name	= "vt8500-gpio",
++		.owner	= THIS_MODULE,
++		.of_match_table = vt8500_gpio_dt_ids,
++	},
++};
++
++module_platform_driver(vt8500_gpio_driver);
++
++MODULE_DESCRIPTION("VT8500 GPIO Driver");
++MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
++MODULE_LICENSE("GPL v2");
++MODULE_DEVICE_TABLE(of, vt8500_gpio_dt_ids);
 -- 
 1.7.9.5
 
