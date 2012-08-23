@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241Ab2HWTWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 15:22:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36504 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758133Ab2HWTWc (ORCPT
+	id S1759246Ab2HWTfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 15:35:23 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53721 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754506Ab2HWTfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 15:22:32 -0400
-Date: Thu, 23 Aug 2012 12:22:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] i915: use alloc_ordered_workqueue() instead of
- explicit UNBOUND w/ max_active = 1
-Message-ID: <20120823192227.GB14962@google.com>
-References: <20120822234057.GR19212@google.com>
- <1345708607_3773@CP5-2952>
- <20120823084325.GA5418@phenom.ffwll.local>
+	Thu, 23 Aug 2012 15:35:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823084325.GA5418@phenom.ffwll.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAJ7jCmkxS4Bor+XXvhh0Mpx5ZNyL8j8kED9KpbgMFJXED1ZoLw@mail.gmail.com>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+	<201208231814.21168.tweek@tweek.dk>
+	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
+	<CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
+	<CAJ7jCmntV8kTup0=yLEmaGLP_vUDk4or3=UTWzODREO-pH8YxQ@mail.gmail.com>
+	<CAMzpN2h8XCmEh2Xsw07_aYsW5yv87BmXNk-e6sb6gUg3eptoJw@mail.gmail.com>
+	<CAJ7jCmkxS4Bor+XXvhh0Mpx5ZNyL8j8kED9KpbgMFJXED1ZoLw@mail.gmail.com>
+Date: Thu, 23 Aug 2012 15:35:19 -0400
+Message-ID: <CAMzpN2hfYzNwRR8o7Kz0qsuAo6JP1iSA91x=-DJP1tBz-smgTw@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+From: Brian Gerst <brgerst@gmail.com>
+To: wbrana <wbrana@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Aug 23, 2012 at 3:08 PM, wbrana <wbrana@gmail.com> wrote:
+> On 8/23/12, Brian Gerst <brgerst@gmail.com> wrote:
+>> Nobody here cares about closed source drivers.
+> There are also open source software which don't support X32 like
+> Oracle Java, VirtualBox, Mozilla Firefox, Google Chrome.
 
-On Thu, Aug 23, 2012 at 10:43:25AM +0200, Daniel Vetter wrote:
-> On Thu, Aug 23, 2012 at 08:56:37AM +0100, Chris Wilson wrote:
-> > On Wed, 22 Aug 2012 16:40:57 -0700, Tejun Heo <tj@kernel.org> wrote:
-> > > This is an equivalent conversion and will ease scheduled removal of
-> > > WQ_NON_REENTRANT.
-> > > 
-> > > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-> 
-> Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch> for merging through any
-> tree that pleases you (if it makes merging easier for WQ_NON_REENTRANT
-> removal). Or should I just merge this through drm-intel-next?
+As I said before, X32 is an optional ABI in 64-bit kernels, for 64-bit
+userspace code using 32-bit pointers to save memory.  Userspace
+software doesn't have to support it, it can just go full 64-bit.  Any
+kernel that supports X32 also supports the full 64-bit ABI.
 
-I think it would be better to route this one through drm-intel-next.
-WQ_NON_REENTRANT won't be deprecated until after the next -rc1 anyway.
-
-Thanks!
-
--- 
-tejun
+--
+Brian Gerst
