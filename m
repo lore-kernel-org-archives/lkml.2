@@ -1,102 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab2HWGJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 02:09:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40995 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab2HWGJ0 (ORCPT
+	id S932670Ab2HWGJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 02:09:45 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:35721
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932275Ab2HWGJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 02:09:26 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: rob@landley.net, linux-kernel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] documentation: virtual: Fix typo in Documentations/virtual
-Date: Thu, 23 Aug 2012 15:09:19 +0900
-Message-Id: <1345702159-9178-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.12.rc3.4.g91e4bfe
+	Thu, 23 Aug 2012 02:09:39 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI98dI9371I146fI1432Izz1202hzzz2dh2a8h668h839h944hd25hf0ah107ah1155h)
+Date: Thu, 23 Aug 2012 14:09:38 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Dong Aisheng <b29396@freescale.com>,
+        Zhao Richard-B20223 <B20223@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "paul.liu@linaro.org" <paul.liu@linaro.org>
+Subject: Re: [PATCH 1/7] mfd: add imx syscon driver based on regmap
+Message-ID: <20120823060937.GL4011@b20223-02.ap.freescale.net>
+References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
+ <1345619928-15446-2-git-send-email-b29396@freescale.com>
+ <20120822082940.GJ4011@b20223-02.ap.freescale.net>
+ <20120822105729.GB10057@shlinux2.ap.freescale.net>
+ <5035BCB1.8000801@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5035BCB1.8000801@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix spelling typo in Documentations/virtual
+On Wed, Aug 22, 2012 at 11:16:33PM -0600, Stephen Warren wrote:
+> On 08/22/2012 04:57 AM, Dong Aisheng wrote:
+> > On Wed, Aug 22, 2012 at 04:29:41PM +0800, Zhao Richard-B20223 wrote:
+> >> On Wed, Aug 22, 2012 at 03:18:42PM +0800, Dong Aisheng wrote:
+> >>> Add regmap based imx syscon driver.
+> >>> This is usually used for access misc bits in registers which does not belong
+> >>> to a specific module, for example, IOMUXC GPR and ANATOP.
+> >>> With this driver, we provide a standard API for client driver to call to
+> >>> access registers which are registered into syscon.
+> 
+> >>> +static int imx_syscon_match(struct device *dev, void *data)
+> >>> +{
+> >>> +	struct imx_syscon *syscon = dev_get_drvdata(dev);
+> >>> +	struct device_node *dn = data;
+> >>> +
+> >>> +	return (syscon->dev->of_node == dn) ? 1 : 0;
+> >>> +}
+> >>> +
+> >>> +int imx_syscon_write(struct device_node *np, u32 reg, u32 val)
+> >>
+> >> For API function, is it better to use struct device rather not np?
+> >>  - it won't need to search dev in below code every time it access
+> >>    registers.
+> >
+> > The purpose is not require client driver to know the implementation details
+> > of imx_syscon_{read/write} API, it's more easy to use since client only
+> > needs pass the device node to which it wants to read/write.
+> > 
+> > For search dev, it doesn't look like a big issue since it only search devices
+> > attached on the driver which is very quick.
+> > And hide it in common API does not require every client driver to write
+> > duplicated codes.
+> 
+> You could still implement a function:
+> 
+> struct device *imx_syscon_lookup(struct device_node *np)
+> 
+> ... and require all clients to call that, and pass the dev to the other
+> functions. That'd still keep all the lookup code in one place, but
+> prevent it having to run every time, no matter how small it is.
+> 
+> I think such an API is required anyway, since client drivers need some
+> way to determine whether the imx_syscon driver is available yet, and if
+> not defer their probe until it is.
+> 
+> So, clients would do:
+> 
+> foo->syscon_dev = imx_syscon_lookup(np);
+> if (!foo->syscon_dev)
+>     return -EPROBE_DEFER;
+> 
+> rather than:
+> 
+> foo->syscon_np = np;
+> 
+> Not too much overhead/boiler-plate in each client driver.
+I think it's good idea.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- Documentation/virtual/kvm/api.txt     | 6 +++---
- Documentation/virtual/virtio-spec.txt | 8 ++++----
- 2 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index a37ec45..50c217e 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1666,7 +1666,7 @@ The parameter is defined like this:
- 
- This ioctl maps the memory at "user_addr" with the length "length" to
- the vcpu's address space starting at "vcpu_addr". All parameters need to
--be alligned by 1 megabyte.
-+be aligned by 1 megabyte.
- 
- 
- 4.66 KVM_S390_UCAS_UNMAP
-@@ -1686,7 +1686,7 @@ The parameter is defined like this:
- 
- This ioctl unmaps the memory in the vcpu's address space starting at
- "vcpu_addr" with the length "length". The field "user_addr" is ignored.
--All parameters need to be alligned by 1 megabyte.
-+All parameters need to be aligned by 1 megabyte.
- 
- 
- 4.67 KVM_S390_VCPU_FAULT
-@@ -1920,7 +1920,7 @@ be OR'ed into the "vsid" argument of the slbmte instruction.
- The "enc" array is a list which for each of those segment base page
- size provides the list of supported actual page sizes (which can be
- only larger or equal to the base page size), along with the
--corresponding encoding in the hash PTE. Similarily, the array is
-+corresponding encoding in the hash PTE. Similarly, the array is
- 8 entries sorted by increasing sizes and an entry with a "0" shift
- is an empty entry and a terminator:
- 
-diff --git a/Documentation/virtual/virtio-spec.txt b/Documentation/virtual/virtio-spec.txt
-index 0d6ec85..260e384 100644
---- a/Documentation/virtual/virtio-spec.txt
-+++ b/Documentation/virtual/virtio-spec.txt
-@@ -1389,7 +1389,7 @@ segmentation, if both guests are amenable.
- 
- Packets are transmitted by placing them in the transmitq, and
- buffers for incoming packets are placed in the receiveq. In each
--case, the packet itself is preceeded by a header:
-+case, the packet itself is preceded by a header:
- 
- struct virtio_net_hdr {
- 
-@@ -1631,7 +1631,7 @@ struct virtio_net_ctrl_mac {
- 
- The device can filter incoming packets by any number of
- destination MAC addresses.[footnote:
--Since there are no guarentees, it can use a hash filter
-+Since there are no guarantees, it can use a hash filter
- orsilently switch to allmulti or promiscuous mode if it is given
- too many addresses.
- ] This table is set using the class VIRTIO_NET_CTRL_MAC and the
-@@ -1822,7 +1822,7 @@ the FLUSH and FLUSH_OUT types are equivalent, the device does not
- distinguish between them
- ]). If the device has VIRTIO_BLK_F_BARRIER feature the high bit
- (VIRTIO_BLK_T_BARRIER) indicates that this request acts as a
--barrier and that all preceeding requests must be complete before
-+barrier and that all preceding requests must be complete before
- this one, and all following requests must not be started until
- this is complete. Note that a barrier does not flush caches in
- the underlying backend device in host, and thus does not serve as
-@@ -2135,7 +2135,7 @@ This is historical, and independent of the guest page size
- 
-   Otherwise, the guest may begin to re-use pages previously given
-     to the balloon before the device has acknowledged their
--    withdrawl. [footnote:
-+    withdrawal. [footnote:
- In this case, deflation advice is merely a courtesy
- ]
- 
--- 
-1.7.12.rc3.4.g91e4bfe
+Thanks
+Richard
 
