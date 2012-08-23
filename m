@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab2HWUFF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:05:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39908 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab2HWUFB (ORCPT
+	id S1753598Ab2HWUJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:09:03 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:44829 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752479Ab2HWUJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:05:01 -0400
-Date: Thu, 23 Aug 2012 13:04:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
- hashtable
-Message-ID: <20120823200456.GD14962@google.com>
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
- <1345602432-27673-2-git-send-email-levinsasha928@gmail.com>
- <20120822180138.GA19212@google.com>
- <50357840.5020201@gmail.com>
+	Thu, 23 Aug 2012 16:09:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50357840.5020201@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120822234944.GS19212@google.com>
+References: <20120822234944.GS19212@google.com>
+Date: Thu, 23 Aug 2012 15:08:59 -0500
+Message-ID: <CAO8GWqmBakf9gLmFh7q3DWWkAzSiUoa09F2dP8MJ2B5E_66fRA@mail.gmail.com>
+Subject: Re: [PATCH] omapdrm: use alloc_ordered_workqueue() instead of UNBOUND
+ w/ max_active = 1
+From: "Clark, Rob" <rob@ti.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Sasha.
+On Wed, Aug 22, 2012 at 6:49 PM, Tejun Heo <tj@kernel.org> wrote:
+> This is an equivalent conversion and will ease scheduled removal of
+> WQ_NON_REENTRANT.
+>
+> Only compile tested.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-On Thu, Aug 23, 2012 at 02:24:32AM +0200, Sasha Levin wrote:
-> > I think the almost trivial nature of hlist hashtables makes this a bit
-> > tricky and I'm not very sure but having this combinatory explosion is
-> > a bit dazzling when the same functionality can be achieved by simply
-> > combining operations which are already defined and named considering
-> > hashtable.  I'm not feeling too strong about this tho.  What do others
-> > think?
-> 
-> I'm thinking that this hashtable API will have 2 purposes: First, it would
-> prevent the excessive duplication of hashtable implementations all around the code.
-> 
-> Second, it will allow more easily interchangeable hashtable implementations to
-> find their way into the kernel. There are several maintainers who would be happy
-> to see dynamically sized RCU hashtable, and I'm guessing that several more
-> variants could be added based on needs in specific modules.
-> 
-> The second reason is why several things you've mentioned look the way they are:
-> 
->  - No DEFINE_HASHTABLE(): I wanted to force the use of hash_init() since
-> initialization for other hashtables may be more complicated than the static
-> initialization for this implementation, which means that any place that used
-> DEFINE_HASHTABLE() and didn't do hash_init() will be buggy.
+I've tested it
 
-I think this is problematic.  It looks exactly like other existing
-DEFINE macros yet what its semantics is different.  I don't think
-that's a good idea.
+Signed-off-by: Rob Clark <rob@ti.com>
 
-> I'm actually tempted in hiding hlist completely from hashtable users, probably
-> by simply defining a hash_head/hash_node on top of the hlist_ counterparts.
-
-I think that it would be best to keep this one simple & obvious, which
-already has enough in-kernel users to justify its existence.  There
-are significant benefits in being trivially understandable and
-expectable.  If we want more advanced ones - say resizing, hybrid or
-what not, let's make that a separate one.  No need to complicate the
-common straight-forward case for that.
-
-So, I think it would be best to keep this one as straight-forward and
-trivial as possible.  Helper macros to help its users are fine but
-let's please not go for full encapsulation.
-
-Thanks.
-
--- 
-tejun
+> ---
+>  drivers/staging/omapdrm/omap_drv.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/omapdrm/omap_drv.c b/drivers/staging/omapdrm/omap_drv.c
+> index 4beab94..672cb3a 100644
+> --- a/drivers/staging/omapdrm/omap_drv.c
+> +++ b/drivers/staging/omapdrm/omap_drv.c
+> @@ -571,8 +571,7 @@ static int dev_load(struct drm_device *dev, unsigned long flags)
+>
+>         dev->dev_private = priv;
+>
+> -       priv->wq = alloc_workqueue("omapdrm",
+> -                       WQ_UNBOUND | WQ_NON_REENTRANT, 1);
+> +       priv->wq = alloc_ordered_workqueue("omapdrm", 0);
+>
+>         INIT_LIST_HEAD(&priv->obj_list);
+>
