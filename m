@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115Ab2HWPj2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:39:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54728 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934059Ab2HWPjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:39:15 -0400
-Message-ID: <50364E9E.6020104@zytor.com>
-Date: Thu, 23 Aug 2012 08:39:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S934106Ab2HWPoO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:44:14 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:34948 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757078Ab2HWPoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:44:11 -0400
+Message-ID: <50364FA4.7000401@metafoo.de>
+Date: Thu, 23 Aug 2012 17:43:32 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
 MIME-Version: 1.0
-To: Jacob Shin <jacob.shin@amd.com>
-CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
-        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 3/4] x86: Only direct map addresses that are marked as
- E820_RAM
-References: <1344983957-4996-1-git-send-email-jacob.shin@amd.com> <1344983957-4996-4-git-send-email-jacob.shin@amd.com> <50356BA9.5030906@zytor.com> <20120823145043.GA4671@jshin-Toonie>
-In-Reply-To: <20120823145043.GA4671@jshin-Toonie>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?QmVub8OudCBUaMOpYmF1ZGVhdQ==?= 
+	<benoit.thebaudeau@advansee.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Bryan Wu <bryan.wu@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] pwm: Call pwm_enable() before pwm_config()
+References: <217877237.2758643.1345731587941.JavaMail.root@advansee.com>
+In-Reply-To: <217877237.2758643.1345731587941.JavaMail.root@advansee.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 07:50 AM, Jacob Shin wrote:
->>
->> I have one concern with this, which is that it leaves in place mapping
->> below the initial max_pfn_mapped.  Although that neatly resolves the
->> legacy area (0-1 MiB) issues, it really isn't right above the 1 MiB
->> point.  Any way I could get you to seek out and unmap any such ranges?
->> We have already seen some Dell machines which put memory holes in low
->> RAM, and perhaps there are still some machines out there with an I/O
->> hole at 15 MiB.
->
-> So I believe in V2 of the patchset this was done, however, Dave Young
-> from redhat reported that it broke their KVM guest with a user supplied
-> memory map that looked like this:
->
->>> [    0.000000] e820: user-defined physical RAM map:
->>> [    0.000000] user: [mem 0x0000000000010000-0x000000000009dbff] usable
->>> [    0.000000] user: [mem 0x0000000024000000-0x0000000033f6bfff] usable
->
-> And looking into that scenario, the early boot code seems to allocates
-> space for fixmap right under initial max_pfn_mapped, which is no longer
-> direct mapped with my patch, and that seems to cause problems for later
-> APIC code that initializes APIC base address into the fixmap area.
->
-> So I guess to address your concern, we need to go back to V2 and try to
-> resolve the fixmap problem with user supplied memory map that reserves
-> memory below initial max_pfn_mapped ?
->
+On 08/23/2012 04:19 PM, Benoît Thébaudeau wrote:
+> Some PWM drivers enable the clock of the PWM peripheral in pwm_enable(). Hence,
+> for these drivers, a call to pwm_config() does not have any effect before
+> pwm_enable() has been called.
+> 
+> This patch fixes the PWM users to make sure that they call pwm_enable() before
+> pwm_config().
+> 
+> This fixes the first setting of brightness through sysfs that had no effect with
+> leds-pwm and the i.MX PWM driver.
 
-Okay... I think I need to grok that a bit better.  For memory 
-allocations, we probably should just use brk allocations, for virtual 
-space allocations it is called the fixmap for a reason (even though the 
-Xen people managed to break that on 32 bits, sigh!)
+But isn't this a bug in the PWM peripheral driver? With this change the PWM
+will start with the old settings first. While this is not so much of a problem
+for a backlight (although it might cause a short flickering) it might cause
+problems for other applications, like using the PWM pin as a timing generator.
+In my opinion it's better to fix the PWM peripheral drivers which have this
+problem instead of trying to work around it in every user of the PWM API.
 
-I guess I need to go back and look at David's bug report...
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+- Lars
