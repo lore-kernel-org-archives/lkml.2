@@ -1,105 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab2HVOMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 10:12:23 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41473 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756455Ab2HVOMF convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 22 Aug 2012 10:12:05 -0400
-Message-Id: <503504FE0200007800096F08@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 22 Aug 2012 15:12:46 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Q:pt_base in COMPAT mode offset by two pages. Was:Re:
- [Xen-devel] [PATCH 02/11] xen/x86: Use memblock_reserve for sensitive
- areas.
-References: <1345133009-21941-1-git-send-email-konrad.wilk@oracle.com>
- <1345133009-21941-3-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1208171835010.15568@kaball.uk.xensource.com>
- <20120820141305.GA2713@phenom.dumpdata.com>
- <20120821172732.GA23715@phenom.dumpdata.com>
- <20120821190317.GA13035@phenom.dumpdata.com>
-In-Reply-To: <20120821190317.GA13035@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932544Ab2HVOMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 10:12:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44393 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab2HVOMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 10:12:38 -0400
+From: Huang Shijie <shijie8@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, netdev@vger.kernel.org,
+        b32955@freescale.com, Huang Shijie <shijie8@gmail.com>
+Subject: [PATCH v3] serial: add a new helper function
+Date: Wed, 22 Aug 2012 22:13:36 -0400
+Message-Id: <1345688016-27506-1-git-send-email-shijie8@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 21.08.12 at 21:03, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Tue, Aug 21, 2012 at 01:27:32PM -0400, Konrad Rzeszutek Wilk wrote:
->> Jan, I thought something odd. Part of this code replaces this:
->> 
->> 	memblock_reserve(__pa(xen_start_info->mfn_list),
->> 		xen_start_info->pt_base - xen_start_info->mfn_list);
->> 
->> with a more region-by-region area. What I found out that if I boot this
->> as 32-bit guest with a 64-bit hypervisor the xen_start_info->pt_base is
->> actually wrong.
->> 
->> Specifically this is what bootup says:
->> 
->> (good working case - 32bit hypervisor with 32-bit dom0):
->> (XEN)  Loaded kernel: c1000000->c1a23000
->> (XEN)  Init. ramdisk: c1a23000->cf730e00
->> (XEN)  Phys-Mach map: cf731000->cf831000
->> (XEN)  Start info:    cf831000->cf83147c
->> (XEN)  Page tables:   cf832000->cf8b5000
->> (XEN)  Boot stack:    cf8b5000->cf8b6000
->> (XEN)  TOTAL:         c0000000->cfc00000
->> 
->> [    0.000000] PT: cf832000 (f832000)
->> [    0.000000] Reserving PT: f832000->f8b5000
->> 
->> And with a 64-bit hypervisor:
->> 
->> XEN) VIRTUAL MEMORY ARRANGEMENT:
->> (XEN)  Loaded kernel: 00000000c1000000->00000000c1a23000
->> (XEN)  Init. ramdisk: 00000000c1a23000->00000000cf730e00
->> (XEN)  Phys-Mach map: 00000000cf731000->00000000cf831000
->> (XEN)  Start info:    00000000cf831000->00000000cf8314b4
->> (XEN)  Page tables:   00000000cf832000->00000000cf8b6000
->> (XEN)  Boot stack:    00000000cf8b6000->00000000cf8b7000
->> (XEN)  TOTAL:         00000000c0000000->00000000cfc00000
->> (XEN)  ENTRY ADDRESS: 00000000c16bb22c
->> 
->> [    0.000000] PT: cf834000 (f834000)
->> [    0.000000] Reserving PT: f834000->f8b8000
->> 
->> So the pt_base is offset by two pages. And looking at c/s 13257
->> its not clear to me why this two page offset was added?
+In most of the time, the driver needs to check if the cts flow control
+is enabled. But now, the driver checks the ASYNC_CTS_FLOW flag manually,
+which is not a grace way. So add a new wraper function to make the code
+tidy and clean.
 
-Honestly, without looking through this in greater detail I don't
-recall. That'll have to wait possibly until after the summit, though.
-I can't exclude that this is just a forgotten leftover from an earlier
-version of the patch. I would have thought this was to account
-for the L4 tables that the guest doesn't see, but
-- this should only be a single page
-- this should then also (or rather instead) be subtracted from
-  nr_pt_frames
-so that's likely not it.
+Signed-off-by: Huang Shijie <shijie8@gmail.com>
+---
+v2 --> v3:
+	this patch is based on Alan's "tty: move the async flags from the seria.."
 
->> The toolstack works fine - so launching 32-bit guests either
->> under a 32-bit hypervisor or 64-bit works fine:
->> ] domainbuilder: detail: xc_dom_alloc_segment:   page tables  : 0xcf805000 -> 
-> 0xcf885000  (pfn 0xf805 + 0x80 pages)
->> [    0.000000] PT: cf805000 (f805000)
->> 
-> 
-> And this patch on top of the others fixes this..
+v1 --> v2:
+	move the function tty.h to serial.h
+---
+ drivers/char/pcmcia/synclink_cs.c   |    2 +-
+ drivers/tty/amiserial.c             |    2 +-
+ drivers/tty/cyclades.c              |    2 +-
+ drivers/tty/isicom.c                |    2 +-
+ drivers/tty/mxser.c                 |    2 +-
+ drivers/tty/serial/mxs-auart.c      |    2 +-
+ drivers/tty/serial/serial_core.c    |    4 ++--
+ drivers/tty/synclink.c              |    2 +-
+ drivers/tty/synclink_gt.c           |    2 +-
+ drivers/tty/synclinkmp.c            |    2 +-
+ include/linux/tty.h                 |    6 ++++++
+ net/irda/ircomm/ircomm_tty.c        |    4 ++--
+ net/irda/ircomm/ircomm_tty_attach.c |    2 +-
+ 13 files changed, 20 insertions(+), 14 deletions(-)
 
-I didn't look at this in too close detail, but I started to get
-afraid that you might be making the code dependent on
-many hypervisor implementation details. And should the
-above turn out to be a bug in the hypervisor, I hope your
-kernel side changes won't make it impossible to fix that bug.
-
-Jan
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index 5db08c7..3f57d5de 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -1050,7 +1050,7 @@ static void cts_change(MGSLPC_INFO *info, struct tty_struct *tty)
+ 	wake_up_interruptible(&info->status_event_wait_q);
+ 	wake_up_interruptible(&info->event_wait_q);
+ 
+-	if (info->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&info->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (info->serial_signals & SerialSignal_CTS) {
+ 				if (debug_level >= DEBUG_LEVEL_ISR)
+diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
+index 2b7535d..42d0a25 100644
+--- a/drivers/tty/amiserial.c
++++ b/drivers/tty/amiserial.c
+@@ -420,7 +420,7 @@ static void check_modem_status(struct serial_state *info)
+ 				tty_hangup(port->tty);
+ 		}
+ 	}
+-	if (port->flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(port)) {
+ 		if (port->tty->hw_stopped) {
+ 			if (!(status & SER_CTS)) {
+ #if (defined(SERIAL_DEBUG_INTR) || defined(SERIAL_DEBUG_FLOW))
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index e3954da..0a6a0bc 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -727,7 +727,7 @@ static void cyy_chip_modem(struct cyclades_card *cinfo, int chip,
+ 		else
+ 			tty_hangup(tty);
+ 	}
+-	if ((mdm_change & CyCTS) && (info->port.flags & ASYNC_CTS_FLOW)) {
++	if ((mdm_change & CyCTS) && tty_port_cts_enabled(&info->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (mdm_status & CyCTS) {
+ 				/* cy_start isn't used
+diff --git a/drivers/tty/isicom.c b/drivers/tty/isicom.c
+index 99cf22e..d7492e1 100644
+--- a/drivers/tty/isicom.c
++++ b/drivers/tty/isicom.c
+@@ -600,7 +600,7 @@ static irqreturn_t isicom_interrupt(int irq, void *dev_id)
+ 					port->status &= ~ISI_DCD;
+ 			}
+ 
+-			if (port->port.flags & ASYNC_CTS_FLOW) {
++			if (tty_port_cts_enabled(&port->port)) {
+ 				if (tty->hw_stopped) {
+ 					if (header & ISI_CTS) {
+ 						port->port.tty->hw_stopped = 0;
+diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
+index bb2da4c..cfda47d 100644
+--- a/drivers/tty/mxser.c
++++ b/drivers/tty/mxser.c
+@@ -830,7 +830,7 @@ static void mxser_check_modem_status(struct tty_struct *tty,
+ 			wake_up_interruptible(&port->port.open_wait);
+ 	}
+ 
+-	if (port->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&port->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (status & UART_MSR_CTS) {
+ 				tty->hw_stopped = 0;
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index 3a667ee..dafeef2 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -262,7 +262,7 @@ static void mxs_auart_set_mctrl(struct uart_port *u, unsigned mctrl)
+ 
+ 	ctrl &= ~AUART_CTRL2_RTSEN;
+ 	if (mctrl & TIOCM_RTS) {
+-		if (u->state->port.flags & ASYNC_CTS_FLOW)
++		if (tty_port_cts_enabled(&u->state->port))
+ 			ctrl |= AUART_CTRL2_RTSEN;
+ 	}
+ 
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 5b308c8..1920e5c 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -176,7 +176,7 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+ 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+ 		}
+ 
+-		if (port->flags & ASYNC_CTS_FLOW) {
++		if (tty_port_cts_enabled(port)) {
+ 			spin_lock_irq(&uport->lock);
+ 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+ 				tty->hw_stopped = 1;
+@@ -2493,7 +2493,7 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+ 
+ 	uport->icount.cts++;
+ 
+-	if (port->flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(port)) {
+ 		if (tty->hw_stopped) {
+ 			if (status) {
+ 				tty->hw_stopped = 0;
+diff --git a/drivers/tty/synclink.c b/drivers/tty/synclink.c
+index 666aa14..70e3a52 100644
+--- a/drivers/tty/synclink.c
++++ b/drivers/tty/synclink.c
+@@ -1359,7 +1359,7 @@ static void mgsl_isr_io_pin( struct mgsl_struct *info )
+ 			}
+ 		}
+ 	
+-		if ( (info->port.flags & ASYNC_CTS_FLOW) && 
++		if (tty_port_cts_enabled(&info->port) &&
+ 		     (status & MISCSTATUS_CTS_LATCHED) ) {
+ 			if (info->port.tty->hw_stopped) {
+ 				if (status & MISCSTATUS_CTS) {
+diff --git a/drivers/tty/synclink_gt.c b/drivers/tty/synclink_gt.c
+index 45f6136..b38e954 100644
+--- a/drivers/tty/synclink_gt.c
++++ b/drivers/tty/synclink_gt.c
+@@ -2053,7 +2053,7 @@ static void cts_change(struct slgt_info *info, unsigned short status)
+ 	wake_up_interruptible(&info->event_wait_q);
+ 	info->pending_bh |= BH_STATUS;
+ 
+-	if (info->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&info->port)) {
+ 		if (info->port.tty) {
+ 			if (info->port.tty->hw_stopped) {
+ 				if (info->signals & SerialSignal_CTS) {
+diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
+index 53429c8..f17d9f3 100644
+--- a/drivers/tty/synclinkmp.c
++++ b/drivers/tty/synclinkmp.c
+@@ -2500,7 +2500,7 @@ static void isr_io_pin( SLMP_INFO *info, u16 status )
+ 			}
+ 		}
+ 
+-		if ( (info->port.flags & ASYNC_CTS_FLOW) &&
++		if (tty_port_cts_enabled(&info->port) &&
+ 		     (status & MISCSTATUS_CTS_LATCHED) ) {
+ 			if ( info->port.tty ) {
+ 				if (info->port.tty->hw_stopped) {
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index dbebd1e..9892121 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -514,6 +514,12 @@ static inline struct tty_port *tty_port_get(struct tty_port *port)
+ 	return port;
+ }
+ 
++/* If the cts flow control is enabled, return true. */
++static inline bool tty_port_cts_enabled(struct tty_port *port)
++{
++	return port->flags & ASYNC_CTS_FLOW;
++}
++
+ extern struct tty_struct *tty_port_tty_get(struct tty_port *port);
+ extern void tty_port_tty_set(struct tty_port *port, struct tty_struct *tty);
+ extern int tty_port_carrier_raised(struct tty_port *port);
+diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
+index 9668990..95a3a7a 100644
+--- a/net/irda/ircomm/ircomm_tty.c
++++ b/net/irda/ircomm/ircomm_tty.c
+@@ -1070,7 +1070,7 @@ void ircomm_tty_check_modem_status(struct ircomm_tty_cb *self)
+ 			goto put;
+ 		}
+ 	}
+-	if (tty && self->port.flags & ASYNC_CTS_FLOW) {
++	if (tty && tty_port_cts_enabled(&self->port)) {
+ 		if (tty->hw_stopped) {
+ 			if (status & IRCOMM_CTS) {
+ 				IRDA_DEBUG(2,
+@@ -1313,7 +1313,7 @@ static void ircomm_tty_line_info(struct ircomm_tty_cb *self, struct seq_file *m)
+ 
+ 	seq_puts(m, "Flags:");
+ 	sep = ' ';
+-	if (self->port.flags & ASYNC_CTS_FLOW) {
++	if (tty_port_cts_enabled(&self->port)) {
+ 		seq_printf(m, "%cASYNC_CTS_FLOW", sep);
+ 		sep = '|';
+ 	}
+diff --git a/net/irda/ircomm/ircomm_tty_attach.c b/net/irda/ircomm/ircomm_tty_attach.c
+index 3ab70e7..edab393 100644
+--- a/net/irda/ircomm/ircomm_tty_attach.c
++++ b/net/irda/ircomm/ircomm_tty_attach.c
+@@ -578,7 +578,7 @@ void ircomm_tty_link_established(struct ircomm_tty_cb *self)
+ 	 * will have to wait for the peer device (DCE) to raise the CTS
+ 	 * line.
+ 	 */
+-	if ((self->port.flags & ASYNC_CTS_FLOW) &&
++	if (tty_port_cts_enabled(&self->port) &&
+ 			((self->settings.dce & IRCOMM_CTS) == 0)) {
+ 		IRDA_DEBUG(0, "%s(), waiting for CTS ...\n", __func__ );
+ 		goto put;
+-- 
+1.7.4.4
 
