@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759135Ab2HWRhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:37:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab2HWRh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:37:28 -0400
-Message-ID: <50366A64.8030203@redhat.com>
-Date: Thu, 23 Aug 2012 13:37:40 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1759102Ab2HWRkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:40:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60812 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754993Ab2HWRkj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 13:40:39 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <kishon@ti.com>, <rdunlap@xenotime.net>, <sfr@canb.auug.org.au>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers: bus: omap-ocp2scp: Fix compile error
+Date: Thu, 23 Aug 2012 23:10:26 +0530
+Message-ID: <1345743626-28364-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH 1/5] vmscan: Fix obsolete comment of balance_pgdat
-References: <1345619717-5322-1-git-send-email-minchan@kernel.org> <1345619717-5322-2-git-send-email-minchan@kernel.org>
-In-Reply-To: <1345619717-5322-2-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 03:15 AM, Minchan Kim wrote:
-> This patch correct obsolete comment caused by [1] and [2].
->
-> [1] 7ac6218, kswapd lockup fix
-> [2] 32a4330, mm: prevent kswapd from freeing excessive amounts of lowmem
->
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+Fixes
+CC [M]  drivers/bus/omap-ocp2scp.o
+drivers/bus/omap-ocp2scp.c:70:1: error: '__mod_of_device_table' aliased to
+undefined symbol 'omap_usb2_id_table'
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/bus/omap-ocp2scp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/bus/omap-ocp2scp.c b/drivers/bus/omap-ocp2scp.c
+index 9075ef8..ff63560 100644
+--- a/drivers/bus/omap-ocp2scp.c
++++ b/drivers/bus/omap-ocp2scp.c
+@@ -67,7 +67,7 @@ static const struct of_device_id omap_ocp2scp_id_table[] = {
+ 	{ .compatible = "ti,omap-ocp2scp" },
+ 	{}
+ };
+-MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
++MODULE_DEVICE_TABLE(of, omap_ocp2scp_id_table);
+ #endif
+ 
+ static struct platform_driver omap_ocp2scp_driver = {
+-- 
+1.7.9.5
+
