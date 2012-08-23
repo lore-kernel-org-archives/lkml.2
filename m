@@ -1,321 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030408Ab2HWKw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:52:28 -0400
-Received: from david.siemens.de ([192.35.17.14]:24258 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030369Ab2HWKwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:52:23 -0400
-Message-ID: <50360B4D.5070403@siemens.com>
-Date: Thu, 23 Aug 2012 12:51:57 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S964892Ab2HWKxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:53:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52407 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964776Ab2HWKxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 06:53:36 -0400
+Date: Thu, 23 Aug 2012 03:53:03 -0700
+From: tip-bot for Rusty Russell <rusty@rustcorp.com.au>
+Message-ID: <tip-816afe4ff98ee10b1d30fd66361be132a0a5cee6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        rusty@rustcorp.com.au, paul.mckenney@us.ibm.com,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, paul.mckenney@us.ibm.com,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de
+In-Reply-To: <87vcgwwive.fsf@rustcorp.com.au>
+References: <87vcgwwive.fsf@rustcorp.com.au>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86/smp: Don'
+ t ever patch back to UP if we unplug cpus
+Git-Commit-ID: 816afe4ff98ee10b1d30fd66361be132a0a5cee6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH v9 5/6] introduce a new qom device to deal with panicked
- event
-References: <50359561.9070001@cn.fujitsu.com> <5035962D.8050907@cn.fujitsu.com>
-In-Reply-To: <5035962D.8050907@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 23 Aug 2012 03:53:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-08-23 04:32, Wen Congyang wrote:
-> If the target is x86/x86_64, the guest's kernel will write 0x01 to the
-> port KVM_PV_EVENT_PORT when it is panciked. This patch introduces a new
-> qom device kvm_pv_ioport to listen this I/O port, and deal with panicked
-> event according to panicked_action's value. The possible actions are:
-> 1. emit QEVENT_GUEST_PANICKED only
-> 2. emit QEVENT_GUEST_PANICKED and pause the guest
-> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
-> 4. emit QEVENT_GUEST_PANICKED and reset the guest
-> 
-> I/O ports does not work for some targets(for example: s390). And you
-> can implement another qom device, and include it's code into pv_event.c
-> for such target.
-> 
-> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
-> application does not receive this event(the management may not
-> run when the event is emitted), the management won't know the
-> guest is panicked.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  hw/kvm/Makefile.objs |    2 +-
->  hw/kvm/pv_event.c    |  190 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  hw/pc_piix.c         |    9 +++
->  kvm.h                |    2 +
->  4 files changed, 202 insertions(+), 1 deletions(-)
->  create mode 100644 hw/kvm/pv_event.c
-> 
-> diff --git a/hw/kvm/Makefile.objs b/hw/kvm/Makefile.objs
-> index 226497a..23e3b30 100644
-> --- a/hw/kvm/Makefile.objs
-> +++ b/hw/kvm/Makefile.objs
-> @@ -1 +1 @@
-> -obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o
-> +obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o pv_event.o
-> diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
-> new file mode 100644
-> index 0000000..c03dd22
-> --- /dev/null
-> +++ b/hw/kvm/pv_event.c
-> @@ -0,0 +1,190 @@
-> +/*
-> + * QEMU KVM support, paravirtual event device
-> + *
-> + * Copyright Fujitsu, Corp. 2012
-> + *
-> + * Authors:
-> + *     Wen Congyang <wency@cn.fujitsu.com>
-> + *
-> + * This work is licensed under the terms of the GNU GPL, version 2 or later.
-> + * See the COPYING file in the top-level directory.
-> + *
-> + */
-> +
-> +#include <linux/kvm_para.h>
-> +#include <asm/kvm_para.h>
-> +#include <qobject.h>
-> +#include <qjson.h>
-> +#include <monitor.h>
-> +#include <sysemu.h>
-> +#include <kvm.h>
-> +
-> +/* Possible values for action parameter. */
-> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
-> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
-> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
-> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
-> +
-> +#define PV_EVENT_DRIVER     "kvm_pv_event"
-> +
-> +struct PVEventAction {
-> +    char *panicked_action;
-> +    int panicked_action_value;
-> +};
-> +
-> +#define DEFINE_PV_EVENT_PROPERTIES(_state, _conf)   \
-> +    DEFINE_PROP_STRING("panicked_action", _state, _conf.panicked_action)
-> +
-> +static void panicked_mon_event(const char *action)
-> +{
-> +    QObject *data;
-> +
-> +    data = qobject_from_jsonf("{ 'action': %s }", action);
-> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
-> +    qobject_decref(data);
-> +}
-> +
-> +static void panicked_perform_action(uint32_t panicked_action)
-> +{
-> +    switch (panicked_action) {
-> +    case PANICKED_REPORT:
-> +        panicked_mon_event("report");
-> +        break;
-> +
-> +    case PANICKED_PAUSE:
-> +        panicked_mon_event("pause");
-> +        vm_stop(RUN_STATE_GUEST_PANICKED);
-> +        break;
-> +
-> +    case PANICKED_POWEROFF:
-> +        panicked_mon_event("poweroff");
-> +        qemu_system_shutdown_request();
-> +        break;
-> +
-> +    case PANICKED_RESET:
-> +        panicked_mon_event("reset");
-> +        qemu_system_reset_request();
-> +        break;
-> +    }
-> +}
-> +
-> +static uint64_t supported_event(void)
-> +{
-> +    return 1 << KVM_PV_FEATURE_PANICKED;
-> +}
-> +
-> +static void handle_event(int event, struct PVEventAction *conf)
-> +{
-> +    if (event == KVM_PV_EVENT_PANICKED) {
-> +        panicked_perform_action(conf->panicked_action_value);
-> +    }
-> +}
-> +
-> +static int pv_event_init(struct PVEventAction *conf)
-> +{
-> +    if (!conf->panicked_action) {
-> +        conf->panicked_action_value = PANICKED_REPORT;
-> +    } else if (strcasecmp(conf->panicked_action, "none") == 0) {
-> +        conf->panicked_action_value = PANICKED_REPORT;
-> +    } else if (strcasecmp(conf->panicked_action, "pause") == 0) {
-> +        conf->panicked_action_value = PANICKED_PAUSE;
-> +    } else if (strcasecmp(conf->panicked_action, "poweroff") == 0) {
-> +        conf->panicked_action_value = PANICKED_POWEROFF;
-> +    } else if (strcasecmp(conf->panicked_action, "reset") == 0) {
-> +        conf->panicked_action_value = PANICKED_RESET;
-> +    } else {
-> +        return -1;
-> +    }
-> +
-> +    return 0;
-> +}
-> +
-> +#if defined(KVM_PV_EVENT_PORT)
-> +
-> +#include "hw/isa.h"
-> +
-> +typedef struct {
-> +    ISADevice dev;
-> +    struct PVEventAction conf;
-> +    MemoryRegion ioport;
-> +} PVIOPortState;
-> +
-> +static uint64_t pv_io_read(void *opaque, target_phys_addr_t addr, unsigned size)
-> +{
-> +    return supported_event();
-> +}
-> +
-> +static void pv_io_write(void *opaque, target_phys_addr_t addr, uint64_t val,
-> +                        unsigned size)
-> +{
-> +    PVIOPortState *s = opaque;
-> +
-> +    handle_event(val, &s->conf);
-> +}
-> +
-> +static const MemoryRegionOps pv_io_ops = {
-> +    .read = pv_io_read,
-> +    .write = pv_io_write,
-> +    .impl = {
-> +        .min_access_size = 4,
-> +        .max_access_size = 4,
-> +    },
-> +};
-> +
-> +static int pv_ioport_initfn(ISADevice *dev)
-> +{
-> +    PVIOPortState *s = DO_UPCAST(PVIOPortState, dev, dev);
-> +
-> +    if (pv_event_init(&s->conf) < 0) {
-> +        return -1;
-> +    }
-> +
-> +    memory_region_init_io(&s->ioport, &pv_io_ops, s, "pv_event", 1);
-> +    isa_register_ioport(dev, &s->ioport, KVM_PV_EVENT_PORT);
-> +
-> +    return 0;
-> +}
-> +
-> +static Property pv_ioport_properties[] = {
-> +    DEFINE_PV_EVENT_PROPERTIES(PVIOPortState, conf),
-> +    DEFINE_PROP_END_OF_LIST(),
-> +};
-> +
-> +static void pv_ioport_class_init(ObjectClass *klass, void *data)
-> +{
-> +    DeviceClass *dc = DEVICE_CLASS(klass);
-> +    ISADeviceClass *ic = ISA_DEVICE_CLASS(klass);
-> +
-> +    ic->init = pv_ioport_initfn;
-> +    dc->no_user = 1;
-> +    dc->props = pv_ioport_properties;
-> +}
-> +
-> +static TypeInfo pv_ioport_info = {
-> +    .name          = PV_EVENT_DRIVER,
-> +    .parent        = TYPE_ISA_DEVICE,
-> +    .instance_size = sizeof(PVIOPortState),
-> +    .class_init    = pv_ioport_class_init,
-> +};
-> +
-> +static void pv_ioport_register_types(void)
-> +{
-> +    type_register_static(&pv_ioport_info);
-> +}
-> +
-> +type_init(pv_ioport_register_types)
-> +
-> +void kvm_pv_event_init(void *opaque)
-> +{
-> +    ISABus *bus = opaque;
-> +    ISADevice *dev;
-> +
-> +    dev = isa_create(bus, PV_EVENT_DRIVER);
-> +    qdev_init_nofail(&dev->qdev);
-> +}
-> +
-> +#else
-> +void kvm_pv_event_init(void *opaque)
-> +{
+Commit-ID:  816afe4ff98ee10b1d30fd66361be132a0a5cee6
+Gitweb:     http://git.kernel.org/tip/816afe4ff98ee10b1d30fd66361be132a0a5cee6
+Author:     Rusty Russell <rusty@rustcorp.com.au>
+AuthorDate: Mon, 6 Aug 2012 17:29:49 +0930
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 23 Aug 2012 10:45:13 +0200
 
-Some comment that this stub requires an implementation whenever it is
-actually built would be helpful. Something that explains a different
-transport than PIO will be needed.
+x86/smp: Don't ever patch back to UP if we unplug cpus
 
-> +}
-> +#endif
-> diff --git a/hw/pc_piix.c b/hw/pc_piix.c
-> index 88ff041..f73fb85 100644
-> --- a/hw/pc_piix.c
-> +++ b/hw/pc_piix.c
-> @@ -46,6 +46,9 @@
->  #ifdef CONFIG_XEN
->  #  include <xen/hvm/hvm_info_table.h>
->  #endif
-> +#ifdef CONFIG_KVM
-> +#   include <asm/kvm_para.h>
-> +#endif
->  
->  #define MAX_IDE_BUS 2
->  
-> @@ -285,6 +288,12 @@ static void pc_init1(MemoryRegion *system_memory,
->      if (pci_enabled) {
->          pc_pci_device_init(pci_bus);
->      }
-> +
-> +#ifdef KVM_PV_EVENT_PORT
+We still patch SMP instructions to UP variants if we boot with a
+single CPU, but not at any other time.  In particular, not if we
+unplug CPUs to return to a single cpu.
 
-This file is x86-only, and there we have KVM_PV_EVENT_PORT
-unconditionally. So drop the #ifdef.
+Paul McKenney points out:
 
-> +    if (kvm_enabled()) {
-> +        kvm_pv_event_init(isa_bus);
+ mean offline overhead is 6251/48=130.2 milliseconds.
 
-But you are missing a kvm-stub entry for kvm_pv_event_init. A
---disable-kvm build should be broken for that reason.
+ If I remove the alternatives_smp_switch() from the offline
+ path [...] the mean offline overhead is 550/42=13.1 milliseconds
 
-> +    }
-> +#endif
->  }
->  
->  static void pc_init_pci(ram_addr_t ram_size,
-> diff --git a/kvm.h b/kvm.h
-> index 5b8f588..41ce1b2 100644
-> --- a/kvm.h
-> +++ b/kvm.h
-> @@ -276,4 +276,6 @@ int kvm_irqchip_add_irqfd(KVMState *s, int fd, int virq);
->  int kvm_irqchip_remove_irqfd(KVMState *s, int fd, int virq);
->  int kvm_irqchip_add_irq_notifier(KVMState *s, EventNotifier *n, int virq);
->  int kvm_irqchip_remove_irq_notifier(KVMState *s, EventNotifier *n, int virq);
-> +
-> +void kvm_pv_event_init(void *opaque);
->  #endif
-> 
+Basically, we're never going to get those 120ms back, and the
+code is pretty messy.
 
-Jan
+We get rid of:
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+ 1) The "smp-alt-once" boot option. It's actually "smp-alt-boot", the
+    documentation is wrong. It's now the default.
+
+ 2) The skip_smp_alternatives flag used by suspend.
+
+ 3) arch_disable_nonboot_cpus_begin() and arch_disable_nonboot_cpus_end()
+    which were only used to set this one flag.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paul McKenney <paul.mckenney@us.ibm.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/87vcgwwive.fsf@rustcorp.com.au
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ Documentation/kernel-parameters.txt |    3 -
+ arch/x86/include/asm/alternative.h  |    4 +-
+ arch/x86/kernel/alternative.c       |  107 +++++++++--------------------------
+ arch/x86/kernel/smpboot.c           |   20 +------
+ arch/x86/xen/smp.c                  |    6 +-
+ kernel/cpu.c                        |   11 ----
+ 6 files changed, 32 insertions(+), 119 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index ad7e2e5..7aef334 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2638,9 +2638,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	smart2=		[HW]
+ 			Format: <io1>[,<io2>[,...,<io8>]]
+ 
+-	smp-alt-once	[X86-32,SMP] On a hotplug CPU system, only
+-			attempt to substitute SMP alternatives once at boot.
+-
+ 	smsc-ircc2.nopnp	[HW] Don't use PNP to discover SMC devices
+ 	smsc-ircc2.ircc_cfg=	[HW] Device configuration I/O port
+ 	smsc-ircc2.ircc_sir=	[HW] SIR base I/O port
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 7078068..444704c 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -60,7 +60,7 @@ extern void alternatives_smp_module_add(struct module *mod, char *name,
+ 					void *locks, void *locks_end,
+ 					void *text, void *text_end);
+ extern void alternatives_smp_module_del(struct module *mod);
+-extern void alternatives_smp_switch(int smp);
++extern void alternatives_enable_smp(void);
+ extern int alternatives_text_reserved(void *start, void *end);
+ extern bool skip_smp_alternatives;
+ #else
+@@ -68,7 +68,7 @@ static inline void alternatives_smp_module_add(struct module *mod, char *name,
+ 					       void *locks, void *locks_end,
+ 					       void *text, void *text_end) {}
+ static inline void alternatives_smp_module_del(struct module *mod) {}
+-static inline void alternatives_smp_switch(int smp) {}
++static inline void alternatives_enable_smp(void) {}
+ static inline int alternatives_text_reserved(void *start, void *end)
+ {
+ 	return 0;
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index afb7ff7..af1f326 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -23,19 +23,6 @@
+ 
+ #define MAX_PATCH_LEN (255-1)
+ 
+-#ifdef CONFIG_HOTPLUG_CPU
+-static int smp_alt_once;
+-
+-static int __init bootonly(char *str)
+-{
+-	smp_alt_once = 1;
+-	return 1;
+-}
+-__setup("smp-alt-boot", bootonly);
+-#else
+-#define smp_alt_once 1
+-#endif
+-
+ static int __initdata_or_module debug_alternative;
+ 
+ static int __init debug_alt(char *str)
+@@ -326,9 +313,6 @@ static void alternatives_smp_unlock(const s32 *start, const s32 *end,
+ {
+ 	const s32 *poff;
+ 
+-	if (noreplace_smp)
+-		return;
+-
+ 	mutex_lock(&text_mutex);
+ 	for (poff = start; poff < end; poff++) {
+ 		u8 *ptr = (u8 *)poff + *poff;
+@@ -359,7 +343,7 @@ struct smp_alt_module {
+ };
+ static LIST_HEAD(smp_alt_modules);
+ static DEFINE_MUTEX(smp_alt);
+-static int smp_mode = 1;	/* protected by smp_alt */
++static bool uniproc_patched = false;	/* protected by smp_alt */
+ 
+ void __init_or_module alternatives_smp_module_add(struct module *mod,
+ 						  char *name,
+@@ -368,19 +352,18 @@ void __init_or_module alternatives_smp_module_add(struct module *mod,
+ {
+ 	struct smp_alt_module *smp;
+ 
+-	if (noreplace_smp)
+-		return;
++	mutex_lock(&smp_alt);
++	if (!uniproc_patched)
++		goto unlock;
+ 
+-	if (smp_alt_once) {
+-		if (boot_cpu_has(X86_FEATURE_UP))
+-			alternatives_smp_unlock(locks, locks_end,
+-						text, text_end);
+-		return;
+-	}
++	if (num_possible_cpus() == 1)
++		/* Don't bother remembering, we'll never have to undo it. */
++		goto smp_unlock;
+ 
+ 	smp = kzalloc(sizeof(*smp), GFP_KERNEL);
+ 	if (NULL == smp)
+-		return; /* we'll run the (safe but slow) SMP code then ... */
++		/* we'll run the (safe but slow) SMP code then ... */
++		goto unlock;
+ 
+ 	smp->mod	= mod;
+ 	smp->name	= name;
+@@ -392,11 +375,10 @@ void __init_or_module alternatives_smp_module_add(struct module *mod,
+ 		__func__, smp->locks, smp->locks_end,
+ 		smp->text, smp->text_end, smp->name);
+ 
+-	mutex_lock(&smp_alt);
+ 	list_add_tail(&smp->next, &smp_alt_modules);
+-	if (boot_cpu_has(X86_FEATURE_UP))
+-		alternatives_smp_unlock(smp->locks, smp->locks_end,
+-					smp->text, smp->text_end);
++smp_unlock:
++	alternatives_smp_unlock(locks, locks_end, text, text_end);
++unlock:
+ 	mutex_unlock(&smp_alt);
+ }
+ 
+@@ -404,24 +386,18 @@ void __init_or_module alternatives_smp_module_del(struct module *mod)
+ {
+ 	struct smp_alt_module *item;
+ 
+-	if (smp_alt_once || noreplace_smp)
+-		return;
+-
+ 	mutex_lock(&smp_alt);
+ 	list_for_each_entry(item, &smp_alt_modules, next) {
+ 		if (mod != item->mod)
+ 			continue;
+ 		list_del(&item->next);
+-		mutex_unlock(&smp_alt);
+-		DPRINTK("%s: %s\n", __func__, item->name);
+ 		kfree(item);
+-		return;
++		break;
+ 	}
+ 	mutex_unlock(&smp_alt);
+ }
+ 
+-bool skip_smp_alternatives;
+-void alternatives_smp_switch(int smp)
++void alternatives_enable_smp(void)
+ {
+ 	struct smp_alt_module *mod;
+ 
+@@ -436,34 +412,21 @@ void alternatives_smp_switch(int smp)
+ 	pr_info("lockdep: fixing up alternatives\n");
+ #endif
+ 
+-	if (noreplace_smp || smp_alt_once || skip_smp_alternatives)
+-		return;
+-	BUG_ON(!smp && (num_online_cpus() > 1));
++	/* Why bother if there are no other CPUs? */
++	BUG_ON(num_possible_cpus() == 1);
+ 
+ 	mutex_lock(&smp_alt);
+ 
+-	/*
+-	 * Avoid unnecessary switches because it forces JIT based VMs to
+-	 * throw away all cached translations, which can be quite costly.
+-	 */
+-	if (smp == smp_mode) {
+-		/* nothing */
+-	} else if (smp) {
++	if (uniproc_patched) {
+ 		pr_info("switching to SMP code\n");
++		BUG_ON(num_online_cpus() != 1);
+ 		clear_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+ 		clear_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+ 		list_for_each_entry(mod, &smp_alt_modules, next)
+ 			alternatives_smp_lock(mod->locks, mod->locks_end,
+ 					      mod->text, mod->text_end);
+-	} else {
+-		pr_info("switching to UP code\n");
+-		set_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+-		set_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+-		list_for_each_entry(mod, &smp_alt_modules, next)
+-			alternatives_smp_unlock(mod->locks, mod->locks_end,
+-						mod->text, mod->text_end);
++		uniproc_patched = false;
+ 	}
+-	smp_mode = smp;
+ 	mutex_unlock(&smp_alt);
+ }
+ 
+@@ -540,40 +503,22 @@ void __init alternative_instructions(void)
+ 
+ 	apply_alternatives(__alt_instructions, __alt_instructions_end);
+ 
+-	/* switch to patch-once-at-boottime-only mode and free the
+-	 * tables in case we know the number of CPUs will never ever
+-	 * change */
+-#ifdef CONFIG_HOTPLUG_CPU
+-	if (num_possible_cpus() < 2)
+-		smp_alt_once = 1;
+-#endif
+-
+ #ifdef CONFIG_SMP
+-	if (smp_alt_once) {
+-		if (1 == num_possible_cpus()) {
+-			pr_info("switching to UP code\n");
+-			set_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+-			set_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+-
+-			alternatives_smp_unlock(__smp_locks, __smp_locks_end,
+-						_text, _etext);
+-		}
+-	} else {
++	/* Patch to UP if other cpus not imminent. */
++	if (!noreplace_smp && (num_present_cpus() == 1 || setup_max_cpus <= 1)) {
++		uniproc_patched = true;
+ 		alternatives_smp_module_add(NULL, "core kernel",
+ 					    __smp_locks, __smp_locks_end,
+ 					    _text, _etext);
+-
+-		/* Only switch to UP mode if we don't immediately boot others */
+-		if (num_present_cpus() == 1 || setup_max_cpus <= 1)
+-			alternatives_smp_switch(0);
+ 	}
+-#endif
+- 	apply_paravirt(__parainstructions, __parainstructions_end);
+ 
+-	if (smp_alt_once)
++	if (!uniproc_patched || num_possible_cpus() == 1)
+ 		free_init_pages("SMP alternatives",
+ 				(unsigned long)__smp_locks,
+ 				(unsigned long)__smp_locks_end);
++#endif
++
++	apply_paravirt(__parainstructions, __parainstructions_end);
+ 
+ 	restart_nmi();
+ }
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 7c5a8c3..c80a33b 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -665,7 +665,8 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	unsigned long boot_error = 0;
+ 	int timeout;
+ 
+-	alternatives_smp_switch(1);
++	/* Just in case we booted with a single CPU. */
++	alternatives_enable_smp();
+ 
+ 	idle->thread.sp = (unsigned long) (((struct pt_regs *)
+ 			  (THREAD_SIZE +  task_stack_page(idle))) - 1);
+@@ -1053,20 +1054,6 @@ out:
+ 	preempt_enable();
+ }
+ 
+-void arch_disable_nonboot_cpus_begin(void)
+-{
+-	/*
+-	 * Avoid the smp alternatives switch during the disable_nonboot_cpus().
+-	 * In the suspend path, we will be back in the SMP mode shortly anyways.
+-	 */
+-	skip_smp_alternatives = true;
+-}
+-
+-void arch_disable_nonboot_cpus_end(void)
+-{
+-	skip_smp_alternatives = false;
+-}
+-
+ void arch_enable_nonboot_cpus_begin(void)
+ {
+ 	set_mtrr_aps_delayed_init();
+@@ -1256,9 +1243,6 @@ void native_cpu_die(unsigned int cpu)
+ 		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+ 			if (system_state == SYSTEM_RUNNING)
+ 				pr_info("CPU %u is now offline\n", cpu);
+-
+-			if (1 == num_online_cpus())
+-				alternatives_smp_switch(0);
+ 			return;
+ 		}
+ 		msleep(100);
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index f58dca7..353c50f 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -377,7 +377,8 @@ static int __cpuinit xen_cpu_up(unsigned int cpu, struct task_struct *idle)
+ 		return rc;
+ 
+ 	if (num_online_cpus() == 1)
+-		alternatives_smp_switch(1);
++		/* Just in case we booted with a single CPU. */
++		alternatives_enable_smp();
+ 
+ 	rc = xen_smp_intr_init(cpu);
+ 	if (rc)
+@@ -424,9 +425,6 @@ static void xen_cpu_die(unsigned int cpu)
+ 	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+ 	xen_uninit_lock_cpu(cpu);
+ 	xen_teardown_timer(cpu);
+-
+-	if (num_online_cpus() == 1)
+-		alternatives_smp_switch(0);
+ }
+ 
+ static void __cpuinit xen_play_dead(void) /* used only with HOTPLUG_CPU */
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 14d3258..f6bfe3e 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -439,14 +439,6 @@ EXPORT_SYMBOL_GPL(cpu_up);
+ #ifdef CONFIG_PM_SLEEP_SMP
+ static cpumask_var_t frozen_cpus;
+ 
+-void __weak arch_disable_nonboot_cpus_begin(void)
+-{
+-}
+-
+-void __weak arch_disable_nonboot_cpus_end(void)
+-{
+-}
+-
+ int disable_nonboot_cpus(void)
+ {
+ 	int cpu, first_cpu, error = 0;
+@@ -458,7 +450,6 @@ int disable_nonboot_cpus(void)
+ 	 * with the userspace trying to use the CPU hotplug at the same time
+ 	 */
+ 	cpumask_clear(frozen_cpus);
+-	arch_disable_nonboot_cpus_begin();
+ 
+ 	printk("Disabling non-boot CPUs ...\n");
+ 	for_each_online_cpu(cpu) {
+@@ -474,8 +465,6 @@ int disable_nonboot_cpus(void)
+ 		}
+ 	}
+ 
+-	arch_disable_nonboot_cpus_end();
+-
+ 	if (!error) {
+ 		BUG_ON(num_online_cpus() > 1);
+ 		/* Make sure the CPUs won't be enabled by someone else */
