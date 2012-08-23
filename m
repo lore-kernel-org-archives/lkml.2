@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964882Ab2HWRUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:20:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4616 "EHLO mga01.intel.com"
+	id S933940Ab2HWRUq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:20:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48047 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933866Ab2HWRUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:20:15 -0400
+	id S964857Ab2HWRUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 13:20:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="213059293"
-Date: Thu, 23 Aug 2012 19:18:15 +0200
+   d="scan'208";a="190540608"
+Date: Thu, 23 Aug 2012 19:13:15 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
-Cc: Peter Tyser <ptyser@xes-inc.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Aaron Sierra <asierra@xes-inc.com>, Guenter Roeck <linux@roeck-us.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org,
-        Tobias Powalowski <tpowa@archlinux.org>
-Subject: Re: Serious regression in 3.5's iTCO_wdt, does anyone care?
-Message-ID: <20120823171815.GE9889@sortiz-mobl>
-References: <50363B12.4060009@archlinux.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Len Brown <len.brown@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Sierra <asierra@xes-inc.com>,
+        Bob Moore <robert.moore@intel.com>, Guenter Roeck <linux@roeck-us.net>,
+        rui.zhang@intel.com
+Subject: Re: [PATCH] lpc_ich: Fix a 3.5 kernel regression for iTCO_wdt driver
+Message-ID: <20120823171315.GD9889@sortiz-mobl>
+References: <1344959772-23018-1-git-send-email-feng.tang@intel.com>
+ <20120822195512.GI27604@spo001.leaseweb.com>
+ <20120822215543.GA1954@srcf.ucam.org>
+ <20120823130814.6ba359e9@feng-i7>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50363B12.4060009@archlinux.org>
+In-Reply-To: <20120823130814.6ba359e9@feng-i7>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Hi Feng,
 
-On Thu, Aug 23, 2012 at 04:15:46PM +0200, Thomas Bächler wrote:
-> This regards the following commit in the Linus tree:
+On Thu, Aug 23, 2012 at 01:08:14PM +0800, Feng Tang wrote:
+> On Wed, 22 Aug 2012 22:55:43 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 > 
-> commit 887c8ec7219fc8eba78bb8f44a74c660934e9b98
-> Author: Aaron Sierra <asierra@xes-inc.com>
-> Date:   Fri Apr 20 14:14:11 2012 -0500
+> > On Wed, Aug 22, 2012 at 09:55:12PM +0200, Wim Van Sebroeck wrote:
+> > 
+> > > Any idea why the acpi_check_resource_conflict() check gives a conflict?
+> > 
+> > Because the resource range is declared in ACPI and we assume that that 
+> > means the firmware wants to scribble on it. We'd need the output of 
+> > acpidump to work out whether that's safe or not.
 > 
->     watchdog: Convert iTCO_wdt driver to mfd model
+> Good point, I checked the conflict for iTCO_wdt, the conflict exists on
+> almost all the machines I have.
 > 
-> Ever since the Linux 3.5 update, the iTCO_wdt driver has been completely
-> non-functional on every machine I encountered due to the above
-> conversion. A bug report for this problem has been open at
-> https://bugzilla.kernel.org/show_bug.cgi?id=44991 for over a month.
-Cc'ing the relevant maintainers usually helps...
-
-
-> Yet, neither the author of the commit, nor the people who signed off on
-> it have reacted to the bug report.
+> According to ICH (7/8/9 etc)spec, the TCO watchdog has a 32 bytes long IO 
+> space resource, and the bit 9 of TCO1_STS register is "DMISCI_STS", which
+>  indicates whether a SCI happens, and will be cleared by writing 1
+> to it. Most of DSDT table will claim a TCO op region only for one bit:
+> "DMISCI_STS" , as some method may need to access that bit. 
 > 
-> At this point, I believe that none of you are actually aware of the
-> problem and I write you to change that unfortunate situation.
-I applied Feng's patch to my for-linus branch and I'll send a pull request
-soon. It should be part of the 3.6 kernel.
+> I think there is some risk, but it's quite safe as the DMISCI_STS bit has
+> nothing to do with TCO driver itself, and TCO driver never access it, also
+> this TCO driver has been there for years, and this resource conflict also
+> exists for many generations hardware. 
+Makes sense to me.
+I'm queueing this one to my for-linus branch, I'll send a pull request soon.
 
 Cheers,
 Samuel.
