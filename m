@@ -1,201 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab2HWRMC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 13:12:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47464 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932996Ab2HWRL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 13:11:59 -0400
-Date: Thu, 23 Aug 2012 19:11:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH v2] mm: hugetlb: add arch hook for clearing page flags
- before entering pool
-Message-ID: <20120823171156.GE19968@dhcp22.suse.cz>
-References: <1345739833-25008-1-git-send-email-will.deacon@arm.com>
+	id S933521Ab2HWRM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 13:12:26 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:43232 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933061Ab2HWRMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 13:12:23 -0400
+Message-ID: <50366464.4070801@metafoo.de>
+Date: Thu, 23 Aug 2012 19:12:04 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345739833-25008-1-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?QmVub8OudCBUaMOpYmF1ZGVhdQ==?= 
+	<benoit.thebaudeau@advansee.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, Bryan Wu <bryan.wu@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] pwm: Call pwm_enable() before pwm_config()
+References: <36966374.2768747.1345741025741.JavaMail.root@advansee.com>
+In-Reply-To: <36966374.2768747.1345741025741.JavaMail.root@advansee.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 23-08-12 17:37:13, Will Deacon wrote:
-> The core page allocator ensures that page flags are zeroed when freeing
-> pages via free_pages_check. A number of architectures (ARM, PPC, MIPS)
-> rely on this property to treat new pages as dirty with respect to the
-> data cache and perform the appropriate flushing before mapping the pages
-> into userspace.
+On 08/23/2012 06:57 PM, Benoît Thébaudeau wrote:
+> On Thursday, August 23, 2012 5:43:32 PM, Lars-Peter Clausen wrote:
+>> On 08/23/2012 04:19 PM, Benoît Thébaudeau wrote:
+>>> Some PWM drivers enable the clock of the PWM peripheral in
+>>> pwm_enable(). Hence,
+>>> for these drivers, a call to pwm_config() does not have any effect
+>>> before
+>>> pwm_enable() has been called.
+>>>
+>>> This patch fixes the PWM users to make sure that they call
+>>> pwm_enable() before
+>>> pwm_config().
+>>>
+>>> This fixes the first setting of brightness through sysfs that had
+>>> no effect with
+>>> leds-pwm and the i.MX PWM driver.
+>>
+>> But isn't this a bug in the PWM peripheral driver? With this change
+>> the PWM
+>> will start with the old settings first. While this is not so much of
+>> a problem
+>> for a backlight (although it might cause a short flickering) it might
+>> cause
+>> problems for other applications, like using the PWM pin as a timing
+>> generator.
+>> In my opinion it's better to fix the PWM peripheral drivers which
+>> have this
+>> problem instead of trying to work around it in every user of the PWM
+>> API.
 > 
-> This can lead to cache synchronisation problems when using hugepages,
-> since the allocator keeps its own pool of pages above the usual page
-> allocator and does not reset the page flags when freeing a page into
-> the pool.
+> I don't know. See my detailed description of this issue here:
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-August/115667.html
 > 
-> This patch adds a new architecture hook, arch_clear_hugepage_flags, so
-> that architectures which rely on the page flags being in a particular
-> state for fresh allocations can adjust the flags accordingly when a
-> page is freed into the pool.
+> Where the bug is depends on the detailed definition of the PWM API, which I
+> don't find documented anywhere.
 > 
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> If pwm_enable() means "start PWM timer with the configured settings", then the
+> bug is in the drivers. If it means "enable the PWM peripheral so that we can
+> work with it", then the bug is in the PWM users.
 
-Looks good to me
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+It really is the former. See the description of pwm_enable() in drivers/pwm/core.c
 
-Thanks!
+> 
+> I don't really have time to work on this, so I suggested this patch as a simple
+> solution. Otherwise, it means reworking several PWM drivers for different
+> hardware that is not available to everyone for testing.
+> 
+> If we decide to only change the i.MX PWM driver, the fix would be:
+> pwm_config()
+> {
+>         save passed config in private data;
+>         if (pwm enabled)
+>                 apply passed config;
+> }
+> 
+> pwm_enable()
+> {
+>         if (!(pwm enabled)) {
+>                 enable pwm ip clk;
+>                 apply config from private data;
+>         }
+> }
 
-> ---
+Another option is to enable the clock if it is disabled when the device is
+configured. E.g. that's what tegra does.
+
 > 
-> v2: Made ia64 and powerpc code a nop, moved hook to free_huge_page
-> 
->  arch/ia64/include/asm/hugetlb.h    |    4 ++++
->  arch/mips/include/asm/hugetlb.h    |    4 ++++
->  arch/powerpc/include/asm/hugetlb.h |    4 ++++
->  arch/s390/include/asm/hugetlb.h    |    1 +
->  arch/sh/include/asm/hugetlb.h      |    6 ++++++
->  arch/sparc/include/asm/hugetlb.h   |    4 ++++
->  arch/tile/include/asm/hugetlb.h    |    4 ++++
->  arch/x86/include/asm/hugetlb.h     |    4 ++++
->  mm/hugetlb.c                       |    1 +
->  9 files changed, 32 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/hugetlb.h b/arch/ia64/include/asm/hugetlb.h
-> index da55c63..94eaa5b 100644
-> --- a/arch/ia64/include/asm/hugetlb.h
-> +++ b/arch/ia64/include/asm/hugetlb.h
-> @@ -77,4 +77,8 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +}
-> +
->  #endif /* _ASM_IA64_HUGETLB_H */
-> diff --git a/arch/mips/include/asm/hugetlb.h b/arch/mips/include/asm/hugetlb.h
-> index 58d3688..bd94946 100644
-> --- a/arch/mips/include/asm/hugetlb.h
-> +++ b/arch/mips/include/asm/hugetlb.h
-> @@ -112,4 +112,8 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +}
-> +
->  #endif /* __ASM_HUGETLB_H */
-> diff --git a/arch/powerpc/include/asm/hugetlb.h b/arch/powerpc/include/asm/hugetlb.h
-> index dfdb95b..62e11a3 100644
-> --- a/arch/powerpc/include/asm/hugetlb.h
-> +++ b/arch/powerpc/include/asm/hugetlb.h
-> @@ -151,6 +151,10 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +}
-> +
->  #else /* ! CONFIG_HUGETLB_PAGE */
->  static inline void flush_hugetlb_page(struct vm_area_struct *vma,
->  				      unsigned long vmaddr)
-> diff --git a/arch/s390/include/asm/hugetlb.h b/arch/s390/include/asm/hugetlb.h
-> index 799ed0f..faa7655 100644
-> --- a/arch/s390/include/asm/hugetlb.h
-> +++ b/arch/s390/include/asm/hugetlb.h
-> @@ -33,6 +33,7 @@ static inline int prepare_hugepage_range(struct file *file,
->  }
->  
->  #define hugetlb_prefault_arch_hook(mm)		do { } while (0)
-> +#define arch_clear_hugepage_flags(page)		do { } while (0)
->  
->  int arch_prepare_hugepage(struct page *page);
->  void arch_release_hugepage(struct page *page);
-> diff --git a/arch/sh/include/asm/hugetlb.h b/arch/sh/include/asm/hugetlb.h
-> index 967068f..b3808c7 100644
-> --- a/arch/sh/include/asm/hugetlb.h
-> +++ b/arch/sh/include/asm/hugetlb.h
-> @@ -1,6 +1,7 @@
->  #ifndef _ASM_SH_HUGETLB_H
->  #define _ASM_SH_HUGETLB_H
->  
-> +#include <asm/cacheflush.h>
->  #include <asm/page.h>
->  
->  
-> @@ -89,4 +90,9 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +	clear_bit(PG_dcache_clean, &page->flags);
-> +}
-> +
->  #endif /* _ASM_SH_HUGETLB_H */
-> diff --git a/arch/sparc/include/asm/hugetlb.h b/arch/sparc/include/asm/hugetlb.h
-> index 1770610..e7927c9 100644
-> --- a/arch/sparc/include/asm/hugetlb.h
-> +++ b/arch/sparc/include/asm/hugetlb.h
-> @@ -82,4 +82,8 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +}
-> +
->  #endif /* _ASM_SPARC64_HUGETLB_H */
-> diff --git a/arch/tile/include/asm/hugetlb.h b/arch/tile/include/asm/hugetlb.h
-> index b204238..0f885af 100644
-> --- a/arch/tile/include/asm/hugetlb.h
-> +++ b/arch/tile/include/asm/hugetlb.h
-> @@ -106,6 +106,10 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +}
-> +
->  #ifdef CONFIG_HUGETLB_SUPER_PAGES
->  static inline pte_t arch_make_huge_pte(pte_t entry, struct vm_area_struct *vma,
->  				       struct page *page, int writable)
-> diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
-> index 439a9ac..bdd35db 100644
-> --- a/arch/x86/include/asm/hugetlb.h
-> +++ b/arch/x86/include/asm/hugetlb.h
-> @@ -90,4 +90,8 @@ static inline void arch_release_hugepage(struct page *page)
->  {
->  }
->  
-> +static inline void arch_clear_hugepage_flags(struct page *page)
-> +{
-> +}
-> +
->  #endif /* _ASM_X86_HUGETLB_H */
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index bc72712..f1bb534 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -637,6 +637,7 @@ static void free_huge_page(struct page *page)
->  		h->surplus_huge_pages--;
->  		h->surplus_huge_pages_node[nid]--;
->  	} else {
-> +		arch_clear_hugepage_flags(page);
->  		enqueue_huge_page(h, page);
->  	}
->  	spin_unlock(&hugetlb_lock);
-> -- 
-> 1.7.4.1
+> If we fix only this driver, we must not forget that the same issue probably
+> exists with several other PWM drivers.
 > 
 
--- 
-Michal Hocko
-SUSE Labs
+Since this seems to be a common pattern in a number of PWM drivers it might
+make sense to simply add support for enabling/disabling a clk to the pwm core.
+Or maybe just use the runtime pm API for this. This probably makes even more
+sense and grab a reference to the pm context when the enable() is called,
+release it when disable() is called and also grab it before calling the
+device's config callback and release it afterward.
+
+- Lars
