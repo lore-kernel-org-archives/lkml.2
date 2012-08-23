@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132Ab2HWHNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:13:51 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34162 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593Ab2HWHNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:13:46 -0400
-Date: Thu, 23 Aug 2012 00:13:42 -0700 (PDT)
-Message-Id: <20120823.001342.959509094678320374.davem@davemloft.net>
-To: xiong@qca.qualcomm.com
-Cc: cjren@qca.qualcomm.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qca-linux-team@qualcomm.com,
-        nic-devel@qualcomm.com, rodrigue@qca.qualcomm.com
-Subject: Re: [PATCH v2] net: add new QCA alx ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <157393863283F442885425D2C45428562A4F519A@nasanexd02f.na.qualcomm.com>
-References: <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
-	<20120822.234019.1546353507351890178.davem@davemloft.net>
-	<157393863283F442885425D2C45428562A4F519A@nasanexd02f.na.qualcomm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1758205Ab2HWHQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:16:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43273 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755593Ab2HWHQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:16:03 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH] pwm: pwm-tiecap: Disable APWM mode after configure
+Date: Thu, 23 Aug 2012 12:29:46 +0530
+Message-ID: <1345705186-10543-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-Date: Thu, 23 Aug 2012 06:56:51 +0000
+APWM mode is enabled while configuring PWM device. This was done to
+handle shadow & immediate mode update of period and compare registers.
+However, leaving it enabled after configuring will cause APWM output on
+PWM pin even before enabling PWM device.
+Fix the same by disabling APWM mode after configuring if PWM device is
+not running.
 
-> I'm afraid someone also rejects my request to add such operation to
-> ethtool
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+:100644 100644 0b66d0f... 4b66889... M	drivers/pwm/pwm-tiecap.c
+ drivers/pwm/pwm-tiecap.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-If you don't design it properly, we certainly will ask you to make
-changes.
+diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+index 0b66d0f..4b66889 100644
+--- a/drivers/pwm/pwm-tiecap.c
++++ b/drivers/pwm/pwm-tiecap.c
+@@ -100,6 +100,13 @@ static int ecap_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 		writel(period_cycles, pc->mmio_base + CAP3);
+ 	}
+ 
++	if (!test_bit(PWMF_ENABLED, &pwm->flags)) {
++		reg_val = readw(pc->mmio_base + ECCTL2);
++		/* Disable APWM mode to put APWM output Low */
++		reg_val &= ~ECCTL2_APWM_MODE;
++		writew(reg_val, pc->mmio_base + ECCTL2);
++	}
++
+ 	pm_runtime_put_sync(pc->chip.dev);
+ 	return 0;
+ }
+-- 
+1.7.1
 
-But it stands a chance of actually being accepted, whereas your
-debugfs thing absolutely does not.
