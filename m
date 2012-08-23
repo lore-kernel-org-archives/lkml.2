@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280Ab2HWVgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:36:38 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60519 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab2HWVgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:36:35 -0400
-Message-ID: <5036A25D.40700@landley.net>
-Date: Thu, 23 Aug 2012 16:36:29 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Oskar Schirmer <oskar@scara.com>
-CC: trivial@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, John Anthony Kazos Jr <jakj@j-a-k-j.com>
-Subject: Re: [PATCH] Documentation: fix broken utf8 encoding
-References: <1345542849-13621-1-git-send-email-oskar@scara.com>
-In-Reply-To: <1345542849-13621-1-git-send-email-oskar@scara.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759284Ab2HWVg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:36:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51282 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932083Ab2HWVgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 17:36:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
+   d="scan'208";a="190651727"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next] mei: fix max number of open handles
+Date: Fri, 24 Aug 2012 00:35:58 +0300
+Message-Id: <1345757758-3329-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2012 04:54 AM, Oskar Schirmer wrote:
-> conversion to utf8 left some extra control character here,
-> remove it.
-> 
-> Signed-off-by: Oskar Schirmer <oskar@scara.com>
-> Cc: John Anthony Kazos Jr <jakj@j-a-k-j.com>
-> Cc: Rob Landley <rob@landley.net>
+There was internal confusion in wether bus message
+clinet (0) is counted in or not
 
-Acked-by: Rob Landley <rob@landley.net>
+The bitmap me_clients_map that accomodate
+was initialized w/o it (255) but later on it
+the clinet 0 was reserved
 
-And it's a job for trivial@.
+Thus were able to open only 252 instead of 253 clients
 
-Rob
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/mei_dev.h |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index ad6c9d5..96d3e79 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -56,19 +56,21 @@ extern const uuid_le mei_wd_guid;
+ extern const u8 mei_wd_state_independence_msg[3][4];
+ 
+ /*
++ * Number of Maximum MEI Clients
++ */
++#define MEI_CLIENTS_MAX 256
++
++/*
+  * Number of File descriptors/handles
+  * that can be opened to the driver.
+  *
+- * Limit to 253: 255 Total Clients
++ * Limit to 253: 256 Total Clients
++ * minus internal client for MEI Bus Messags
+  * minus internal client for AMTHI
+  * minus internal client for Watchdog
+  */
+-#define  MEI_MAX_OPEN_HANDLE_COUNT	253
++#define  MEI_MAX_OPEN_HANDLE_COUNT (MEI_CLIENTS_MAX - 3)
+ 
+-/*
+- * Number of Maximum MEI Clients
+- */
+-#define MEI_CLIENTS_MAX 255
+ 
+ /* File state */
+ enum file_state {
 -- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+1.7.4.4
+
