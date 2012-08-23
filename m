@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030519Ab2HWPXa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:23:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54237 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab2HWPXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:23:25 -0400
-Message-ID: <50364AE9.7070600@lwfinger.net>
-Date: Thu, 23 Aug 2012 10:23:21 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1758901Ab2HWPYn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:24:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755098Ab2HWPYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:24:40 -0400
+Date: Thu, 23 Aug 2012 17:23:31 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>, Tony Breeds <tbreeds@au1.ibm.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: Re: [PATCH 33/36] autonuma: powerpc port
+Message-ID: <20120823152331.GF3570@redhat.com>
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+ <1345647560-30387-34-git-send-email-aarcange@redhat.com>
+ <1345672907.2617.44.camel@pasglop>
+ <20120822223542.GG8107@redhat.com>
+ <1345698660.13399.23.camel@pasglop>
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
-        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl871x_mlme.c: use is_zero_ether_addr() instead
- of memcmp()
-References: <CAPgLHd-SdeouStUf=2C-cmtn-UC-ckt7CUBfUNZBCHm-vB6=TQ@mail.gmail.com>
-In-Reply-To: <CAPgLHd-SdeouStUf=2C-cmtn-UC-ckt7CUBfUNZBCHm-vB6=TQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345698660.13399.23.camel@pasglop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 02:20 AM, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Using is_zero_ether_addr() instead of directly use
-> memcmp() to determine if the ethernet address is
-> all zeros.
->
-> spatch with a semantic match is used to found this problem.
-> (http://coccinelle.lip6.fr/)
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->   drivers/staging/rtl8712/rtl871x_mlme.c | 5 +++--
->   1 file changed, 3 insertions(+), 2 deletions(-)
+Hi Benjamin,
 
-The content of this patch is OK, but the subject line needs to be "staging: 
-r8712u: rtl871x_mlme.c" use ....". Without that "r8712u" addition, searching the 
-git log for all changes to r8712u is a lot harder.
+On Thu, Aug 23, 2012 at 03:11:00PM +1000, Benjamin Herrenschmidt wrote:
+> Basically PROT_NONE turns into _PAGE_PRESENT without _PAGE_USER for us.
 
-With that change: ACKED-by: Larry Finger <Larry.Finger@lwfinger.net>
+Maybe the simplest is to implement pte_numa as !_PAGE_USER too. No
+need to clear the _PAGE_PRESENT bit and to alter pte_present() if
+clearing _PAGE_USER already achieves it.
 
-> diff --git a/drivers/staging/rtl8712/rtl871x_mlme.c b/drivers/staging/rtl8712/rtl871x_mlme.c
-> index dc7adc1..c51ad9e 100644
-> --- a/drivers/staging/rtl8712/rtl871x_mlme.c
-> +++ b/drivers/staging/rtl8712/rtl871x_mlme.c
-> @@ -28,6 +28,8 @@
->
->   #define _RTL871X_MLME_C_
->
-> +#include <linux/etherdevice.h>
-> +
->   #include "osdep_service.h"
->   #include "drv_types.h"
->   #include "recv_osdep.h"
-> @@ -146,9 +148,8 @@ static struct wlan_network *_r8712_find_network(struct  __queue *scanned_queue,
->   	unsigned long irqL;
->   	struct list_head *phead, *plist;
->   	struct wlan_network *pnetwork = NULL;
-> -	u8 zero_addr[ETH_ALEN] = {0, 0, 0, 0, 0, 0};
->
-> -	if (!memcmp(zero_addr, addr, ETH_ALEN))
-> +	if (is_zero_ether_addr(addr))
->   		return NULL;
->   	spin_lock_irqsave(&scanned_queue->lock, irqL);
->   	phead = get_list_head(scanned_queue);
->
->
->
+It should be trivial to add the vma parameter to pte_numa(pte, vma) so
+you can implement pte_numa by checking the vma->vm_page_prot in the
+inline pte_numa function, to be able to tell if it's a real prot none
+(in which case pte_numa return false) or if it's the NUMA hinting page
+fault. In the latter case pte_numa will return true.
 
+> However, the embedded ppc situation is more interesting... and it looks
+> like it is indeed broken, meaning that a user can coerce the kernel into
+> accessing PROT_NONE on its behalf with copy_from_user & co (though read
+> only really).
+> 
+> Looks like the SW TLB handlers used on embedded should also check
+> whether the address is a user or kernel address, and enforce _PAGE_USER
+> in the former case. They might have done in the past, it's possible that
+> it's code we lost, but as it is, it's broken.
+> 
+> The case of HW loaded TLB embedded will need a different definition of
+> PAGE_NONE as well I suspect. Kumar, can you have a look ?
+
+Even if we can't track copy-user accesses with the NUMA
+hinting page faults, AUTONUMA should still work fairly well. The
+flakey PROTNONE on embedded, is more a problem in itself than it would
+be for pte_numa on embedded.
+
+OTOH AutoNUMA working on embedded isn't important so it may be just
+better to disable it until !_PAGE_USER is reliable.
+
+> I wasn't especially thinking of ppc32... there's also hash64-4k or
+> embedded 64... Also pgtable.h is common, so all those added uses of
+> _PAGE_NUMA_PTE to static inline functions are going to break the build
+> unless _PAGE_NUMA_PTE is #defined to 0 when not used (we do that for a
+> bunch of bits in pte-common.h already).
+
+It'd be actually worse if it would build ;). But I guess using
+_PAGE_USER to implement pte_numa will solve the problem for 4k page
+size too.
+
+We can discuss this during kernel summit ;).
+
+Thanks a lot!
+Andrea
