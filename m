@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030452Ab2HWK6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:58:11 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:47842 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030276Ab2HWK6D (ORCPT
+	id S1030500Ab2HWK67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:58:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13174 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030431Ab2HWK6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:58:03 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-c6-50360cbad24a
+	Thu, 23 Aug 2012 06:58:08 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-e8-50360cbc3321
 From: Thomas Abraham <thomas.abraham@linaro.org>
 To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         linus.walleij@linaro.org, grant.likely@secretlab.ca,
         rob.herring@calxeda.com, kgene.kim@samsung.com,
         dong.aisheng@linaro.org, swarren@wwwdotorg.org, patches@linaro.org
-Subject: [PATCH v3 3/4] gpio: exynos4: skip gpiolib registration if pinctrl
+Subject: [PATCH v3 4/4] ARM: EXYNOS: skip wakeup interrupt setup if pinctrl
  driver is used
-Date: Thu, 23 Aug 2012 16:45:28 +0530
-Message-id: <1345720529-32315-4-git-send-email-thomas.abraham@linaro.org>
+Date: Thu, 23 Aug 2012 16:45:29 +0530
+Message-id: <1345720529-32315-5-git-send-email-thomas.abraham@linaro.org>
 X-Mailer: git-send-email 1.6.6.rc2
 In-reply-to: <1345720529-32315-1-git-send-email-thomas.abraham@linaro.org>
 References: <1345720529-32315-1-git-send-email-thomas.abraham@linaro.org>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t9jQd1dPGYBBjvmsltc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGV867zFWnCXt6Ll5AfmBsbJ3F2MnBwSAiYSWx9PY4Gw
-	xSQu3FvP1sXIxSEkMJ1RomVhOxNIQkigjUli3d1YEJtNwEDi0cJ37CC2iICrxPEXZxlBGpgF
-	fjFKvN6yCaxBWCBGomPTItYuRg4OFgFViTl3TUDCvAKeEldeXGCHWKYksaH3KFg5p4CXxK6v
-	q5ghdnlKrN56jmUCI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMG+fya9g3FVg8Uh
-	RgEORiUe3oB7pgFCrIllxZW5hxglOJiVRHi9OM0ChHhTEiurUovy44tKc1KLDzFKc7AoifPy
-	9xkGCAmkJ5akZqemFqQWwWSZODilGhgXWJs632+7VpepsGh2ydqJufNvW4S6TVj1nXGy/CLh
-	1yJakrGl528F7tD6/e5OZE3U0ot/17KU3Sm/VTtl3XeLjpfCq7NSDvTe2XJviamB7I56nh0Z
-	6ufPv3jINV8t5//2/NrpPteSAzl9LzHs5WcUn+3ypyclnvtcwueQ+XqGE+ub+PTWdKxTYinO
-	SDTUYi4qTgQAAAxw+PkBAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsVy+t9jQd09PGYBBtNXKFhc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGUcPrKUseAFX8XpH0+ZGhhn8XQxcnJICJhIbLq9lxHC
+	FpO4cG89WxcjF4eQwHRGifmHm9ghnDYmiYmnt7KBVLEJGEg8WviOHcQWEXCVOP7iLCNIEbPA
+	L0aJ11s2MYEkhAViJPbMegk2lkVAVWLV0m/MIDavgKfEwq5nzBDrlCQ29B4Fq+cU8JLY9XUV
+	WFwIqGb11nMsExh5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQI9v8zqR2MKxssDjEK
+	cDAq8fBmxJoGCLEmlhVX5h5ilOBgVhLh9eI0CxDiTUmsrEotyo8vKs1JLT7EKM3BoiTOy99n
+	GCAkkJ5YkpqdmlqQWgSTZeLglGpg1Fs+/bPHnFt71sz/Gfvy/EpHT8udprwTcz491Yrvu9Y0
+	ZfLuCxKagcsn+/JpxaYy2LwSCd6+XmltZcaKREaDDtnp+/dz9ootrls2iXNH+RyDVq5Ph7a2
+	/9x8iGXyp/p5da4Jl7l3KOZc1tif13y6+4Smx1mGFJP+10ckjFZb1gfFta3fsy/mmBJLcUai
+	oRZzUXEiAButdYL7AQAA
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pinctrl driver, when enabled, registers all the gpio pins and hence the
-registration of gpio pins by this driver can be skipped.
+Pinctrl driver includes support for configuring the external wakeup
+interrupts. On exynos platforms that use pinctrl driver, the setup
+of wakeup interrupts in the exynos platform code can be skipped.
 
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/gpio/gpio-samsung.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ arch/arm/mach-exynos/common.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index ba126cc..41ab7f6 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -2734,6 +2734,27 @@ static __init void exynos4_gpiolib_init(void)
- 	int group = 0;
- 	void __iomem *gpx_base;
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index 4eb39cd..715b690 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -980,6 +980,32 @@ static int __init exynos_init_irq_eint(void)
+ {
+ 	int irq;
  
 +#ifdef CONFIG_PINCTRL_SAMSUNG
-+		/*
-+		 * This gpio driver includes support for device tree support and
-+		 * there are platforms using it. In order to maintain
-+		 * compatibility with those platforms, and to allow non-dt
-+		 * Exynos4210 platforms to use this gpiolib support, a check
-+		 * is added to find out if there is a active pin-controller
-+		 * driver support available. If it is available, this gpiolib
-+		 * support is ignored and the gpiolib support available in
-+		 * pin-controller driver is used. This is a temporary check and
-+		 * will go away when all of the Exynos4210 platforms have
-+		 * switched to using device tree and the pin-ctrl driver.
-+		 */
-+		struct device_node *pctrl_np;
-+		const char *pctrl_compat = "samsung,pinctrl-exynos4210";
-+		pctrl_np = of_find_compatible_node(NULL, NULL, pctrl_compat);
-+		if (pctrl_np)
-+			if (of_device_is_available(pctrl_np))
-+				return;
++	/*
++	 * The Samsung pinctrl driver provides an integrated gpio/pinmux/pinconf
++	 * functionality along with support for external gpio and wakeup
++	 * interrupts. If the samsung pinctrl driver is enabled and includes
++	 * the wakeup interrupt support, then the setting up external wakeup
++	 * interrupts here can be skipped. This check here is temporary to
++	 * allow exynos4 platforms that do not use Samsung pinctrl driver to
++	 * co-exist with platforms that do. When all of the Samsung Exynos4
++	 * platforms switch over to using the pinctrl driver, the wakeup
++	 * interrupt support code here can be completely removed.
++	 */
++	struct device_node *pctrl_np, *wkup_np;
++	const char *pctrl_compat = "samsung,pinctrl-exynos4210";
++	const char *wkup_compat = "samsung,exynos4210-wakeup-eint";
++
++	for_each_compatible_node(pctrl_np, NULL, pctrl_compat) {
++		if (of_device_is_available(pctrl_np)) {
++			wkup_np = of_find_compatible_node(pctrl_np, NULL,
++							wkup_compat);
++			if (wkup_np)
++				return -ENODEV;
++		}
++	}
 +#endif
 +
- 	/* gpio part1 */
- 	gpio_base1 = ioremap(EXYNOS4_PA_GPIO1, SZ_4K);
- 	if (gpio_base1 == NULL) {
+ 	if (soc_is_exynos5250())
+ 		exynos_eint_base = ioremap(EXYNOS5_PA_GPIO1, SZ_4K);
+ 	else
 -- 
 1.6.6.rc2
 
