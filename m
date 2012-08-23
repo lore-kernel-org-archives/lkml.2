@@ -1,124 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab2HWMc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:32:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47339 "EHLO mga02.intel.com"
+	id S1756741Ab2HWMdy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:33:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54303 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632Ab2HWMcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:32:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,300,1344236400"; 
-   d="asc'?scan'208";a="190403572"
-Message-ID: <1345725459.2848.238.camel@sauron.fi.intel.com>
-Subject: Re: JFFS2 issue with v3.5.x and later on Atmel chips at least
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: "ludovic.desroches" <ludovic.desroches@atmel.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 23 Aug 2012 15:37:39 +0300
-In-Reply-To: <5035F266.2040909@atmel.com>
-References: <5034B45A.5060107@atmel.com> <5034F3F8.9080802@atmel.com>
-	 <1345707689.2848.203.camel@sauron.fi.intel.com>
-	 <5035F266.2040909@atmel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-NKqctdvarn3rrrpHr4wR"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753390Ab2HWMdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:33:51 -0400
+Date: Thu, 23 Aug 2012 15:34:32 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120823123432.GA25659@redhat.com>
+References: <20120821191330.GA8324@redhat.com>
+ <20120821192357.GD12294@t510.redhat.com>
+ <20120821193031.GC9027@redhat.com>
+ <20120821204556.GF12294@t510.redhat.com>
+ <20120822000741.GI9027@redhat.com>
+ <20120822011930.GA23753@t510.redhat.com>
+ <20120822093317.GC10680@redhat.com>
+ <20120823021903.GA23660@x61.redhat.com>
+ <20120823100107.GA17409@redhat.com>
+ <20120823121338.GA3062@t510.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120823121338.GA3062@t510.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 23, 2012 at 09:13:39AM -0300, Rafael Aquini wrote:
+> On Thu, Aug 23, 2012 at 01:01:07PM +0300, Michael S. Tsirkin wrote:
+> > > So, when remove_common() calls leak_balloon() looping on
+> > > vb->num_pages, that won't become a tight loop. 
+> > > The scheme was apparently working before this series, and it will remain working
+> > > after it.
+> > 
+> > It seems that before we would always leak all requested memory
+> > in one go. I can't tell why we have a while loop there at all.
+> > Rusty, could you clarify please?
+> >
+> 
+> It seems that your claim isn't right. leak_balloon() cannot do it all at once,
+> as for each round it only releases 256 pages, at most; and the 'one go' would
+> require a couple of loop rounds at remove_common().
 
---=-NKqctdvarn3rrrpHr4wR
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+You are right in this respect.
 
-On Thu, 2012-08-23 at 11:05 +0200, ludovic.desroches wrote:
->=20
-> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>=20
+> So, nothing has changed here.
 
-Thanks, pushed to l2-mtd.git tree a bit modified patch. Will ping dwmw2
-about merging it to Linus.
+Yes, your patch does change things:
+leak_balloon now might return without freeing any pages.
+In that case we will not be making any progress, and just
+spin, pinning CPU.
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Thu, 23 Aug 2012 10:10:07 +0300
-Subject: [PATCH] JFFS2: fix unmount regression
+>  
+> > > Just as before, same thing here. If you leaked less than required, balloon()
+> > > will keep calling leak_balloon() until the balloon target is reached. This
+> > > scheme was working before, and it will keep working after this patch.
+> > >
+> > 
+> > IIUC we never hit this path before.
+> >  
+> So, how does balloon() works then?
+> 
 
-This patch fixes regression introduced by
-"8bdc81c jffs2: get rid of jffs2_sync_super". We submit a delayed work in o=
-rder
-to make sure the write-buffer is synchronized at some point. But we do not
-flush it when we unmount, which causes an oops when we unmount the file-sys=
-tem
-and then the delayed work is executed.
+It gets a request to leak a given number of pages
+and executes it, then tells host that it is done.
+It never needs to spin busy-waiting on a CPU for this.
 
-This patch fixes the issue by adding a "cancel_delayed_work_sync()" infocat=
-ion
-in the '->sync_fs()' handler. This will make sure the delayed work is cance=
-led
-on sync, unmount and re-mount. And because VFS always callse 'sync_fs()' be=
-fore
-unmounting or remounting, this fixes the issue.
+> > > > How about we signal config_change
+> > > > event when pages are back to pages_list?
+> > > 
+> > > I really don't know what to tell you here, but, to me, it seems like an
+> > > overcomplication that isn't directly entangled with this patch purposes.
+> > > Besides, you cannot expect compation / migration happening and racing against
+> > > leak_balloon() all the time to make them signal events to the later, so we might
+> > > just be creating a wait-forever condition for leak_balloon(), IMHO.
+> > 
+> > So use wait_event or similar, check for existance of isolated pages.
+> > 
+> 
+> The thing here is expecting compaction as being an external event to signal
+> actions to the balloon driver won't work as you desire. Also, as far as the
+> balloon driver is concerned, it's only a matter of time to accomplish a total,
+> or partial, balloon leak, even when we have some pages isolated from balloon's
+> page list.
+> 
+> IMHO, you're attempting to complicate a simple thing that is already working
+> well. As said before, there are no guarantees you'll have isolated pages 
+> by the time you're leaking the balloon, so you might leave it waiting forever
+> on something that will not happen. And if there are isolated pages while balloon
+> is leaking, they'll have their chance to get back to the list before the device
+> finishes its leaking job.
 
-Reported-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: stable@vger.kernel.org [3.5+]
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
----
- fs/jffs2/super.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Well busy wait pinning CPU is ugly.  Instead we should block thread and
+wake it up when done.  I don't mind how we fix it specifically.
 
-diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
-index 61ea413..1224d6b 100644
---- a/fs/jffs2/super.c
-+++ b/fs/jffs2/super.c
-@@ -100,6 +100,10 @@ static int jffs2_sync_fs(struct super_block *sb, int w=
-ait)
- {
- 	struct jffs2_sb_info *c =3D JFFS2_SB_INFO(sb);
-=20
-+#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
-+	cancel_delayed_work_sync(&c->wbuf_dwork);
-+#endif
-+
- 	mutex_lock(&c->alloc_sem);
- 	jffs2_flush_wbuf_pad(c);
- 	mutex_unlock(&c->alloc_sem);
---=20
-1.7.10.4
-
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-NKqctdvarn3rrrpHr4wR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQNiQTAAoJECmIfjd9wqK0IYYP/jj2A+YDjzZ2LeyXuyglDLsO
-N06W9VF2F5QLiSQiVWW9fgTKl3j7kJ2qKIXBwNc2SHscYOWcxzjhXEH/OAspzW2i
-8O9X4ygkLj6lMqUs8btOYnA58rSm0PT3DoUq0TIcwqcx8oTR8zuuV4pcA04G3lUr
-fxEo237poeI1DxsCV/x6ezOvM8pmy9jjlXwpOT0yHn5EqPOsyQBdmeHUy+NfJuSv
-U68A50Ha4nvCY4gi1dxqGgljXma5pgrEGbG6O+Z4oec3QmbFbBsUUzMFqQOO1Hpr
-a3FRh+9P8aFdl7ufefH9D0g9thY6Voqc5v1k4Jeu4W9YteyhGqUdMjC8mcClPZtR
-tv3pID00zMlM6vd13Tt+jfBily6rOJQUR5JuNOixZ8aFHW5vnkZzP7FShun1l6ix
-A2IqAGEwGdSuampROTCWPUsPge2xMcJPWHOOqwdbVbATqcbcI6rBdBdqSCE8VcYe
-U54N5bRYvrTcP6kPPZnORM+rMOV8l8PrcyOydtlJA2gcIerb1a3SlR8eNcUNX4LV
-bJv31Ey1nrUFnYxm4H6PugqpIwbvj81Umpv9/b9wvk7gaddVq09pZqJnM136ruxw
-h2tOYDBalePs5WcvtwWUbxeZsGfVpuJO0X1laH9vuKWZtxwKpJ1Qxp7dLTA9ZfCw
-rsdwdWtRQ2SMFhy/KCTm
-=s9s3
------END PGP SIGNATURE-----
-
---=-NKqctdvarn3rrrpHr4wR--
-
+-- 
+MST
