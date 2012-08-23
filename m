@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab2HWSSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:18:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6349 "EHLO
+	id S1759227Ab2HWSSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:18:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14745 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759177Ab2HWSRE (ORCPT
+	with ESMTP id S1756327Ab2HWSRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 14:17:04 -0400
-X-Authority-Analysis: v=2.0 cv=cpwZYiEi c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Krgf46sFzE0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=Lc250oefTfEA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=WfulkdPnAAAA:8 a=GBehT7mxifjpgzMjUDMA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=EvKJbDF4Ut8A:10 a=l29vjEC0CZ8A:10 a=xBBInulKeHQwFRfo9uEA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 23 Aug 2012 14:17:01 -0400
+X-Authority-Analysis: v=2.0 cv=A87uztqG c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=UCMUalGl3i8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=wMe5GXdBbtQA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=WfulkdPnAAAA:8 a=PbXrVSnWgJJwXRCFfZkA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=l29vjEC0CZ8A:10 a=CfryDDMzqY5Dg-3vOOsA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20120823181659.800413190@goodmis.org>
+Message-Id: <20120823181659.369170242@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 23 Aug 2012 14:15:41 -0400
+Date: Thu, 23 Aug 2012 14:15:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 4/4] ftrace/x86: Add support for -mfentry to x86_64
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 2/4] ftrace: Add -mfentry to Makefile on function tracer
 References: <20120823181537.510961094@goodmis.org>
-Content-Disposition: inline; filename=0004-ftrace-x86-Add-support-for-mfentry-to-x86_64.patch
+Content-Disposition: inline; filename=0002-ftrace-Add-mfentry-to-Makefile-on-function-tracer.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,197 +33,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
-then use that instead of mcount.
+Thanks to Andi Kleen, gcc 4.6.0 now supports -mfentry for x86
+(and hopefully soon for other archs). What this does is to have
+the function profiler start at the beginning of the function
+instead of after the stack is set up. As plain -pg (mcount) is
+called after the stack is set up, and in some cases can have issues
+with the function graph tracer. It also requires frame pointers to
+be enabled.
 
-With mcount, frame pointers are forced with the -pg option and we
-get something like:
+The -mfentry now calls __fentry__ at the beginning of the function.
+This allows for compiling without frame pointers and even has the
+ability to access parameters if needed.
 
-<can_vma_merge_before>:
-       55                      push   %rbp
-       48 89 e5                mov    %rsp,%rbp
-       53                      push   %rbx
-       41 51                   push   %r9
-       e8 fe 6a 39 00          callq  ffffffff81483d00 <mcount>
-       31 c0                   xor    %eax,%eax
-       48 89 fb                mov    %rdi,%rbx
-       48 89 d7                mov    %rdx,%rdi
-       48 33 73 30             xor    0x30(%rbx),%rsi
-       48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+If the architecture and the compiler both support -mfentry then
+use that instead.
 
-With -mfentry, frame pointers are no longer forced and the call looks
-like this:
+Link: http://lkml.kernel.org/r/20120807194059.392617243@goodmis.org
 
-<can_vma_merge_before>:
-       e8 33 af 37 00          callq  ffffffff81461b40 <__fentry__>
-       53                      push   %rbx
-       48 89 fb                mov    %rdi,%rbx
-       31 c0                   xor    %eax,%eax
-       48 89 d7                mov    %rdx,%rdi
-       41 51                   push   %r9
-       48 33 73 30             xor    0x30(%rbx),%rsi
-       48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
-
-This adds the ftrace hook at the beginning of the function before a
-frame is set up, and allows the function callbacks to be able to access
-parameters. As kprobes now can use function tracing (at least on x86)
-this speeds up the kprobe hooks that are at the beginning of the
-function.
-
-Link: http://lkml.kernel.org/r/20120807194100.130477900@goodmis.org
-
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
 Acked-by: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Michal Marek <mmarek@suse.cz>
 Cc: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/Kconfig                 |    1 +
- arch/x86/include/asm/ftrace.h    |    7 ++++++-
- arch/x86/kernel/entry_64.S       |   32 +++++++++++++++++++++++++++-----
- arch/x86/kernel/x8664_ksyms_64.c |    6 +++++-
- 4 files changed, 39 insertions(+), 7 deletions(-)
+ Makefile             |    6 +++++-
+ kernel/trace/Kconfig |    5 +++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a2d19ee..28dd891 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -36,6 +36,7 @@ config X86
- 	select HAVE_KRETPROBES
- 	select HAVE_OPTPROBES
- 	select HAVE_FTRACE_MCOUNT_RECORD
-+	select HAVE_FENTRY if X86_64
- 	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FUNCTION_TRACER
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index a6cae0c..9a25b52 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -35,7 +35,11 @@
- #endif
+diff --git a/Makefile b/Makefile
+index ddf5be9..e7ca93f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -609,7 +609,11 @@ KBUILD_CFLAGS 	+=3D $(call cc-option, -femit-struct-de=
+bug-baseonly)
+ endif
 =20
- #ifdef CONFIG_FUNCTION_TRACER
--#define MCOUNT_ADDR		((long)(mcount))
-+#ifdef CC_USING_FENTRY
-+# define MCOUNT_ADDR		((long)(__fentry__))
-+#else
-+# define MCOUNT_ADDR		((long)(mcount))
-+#endif
- #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
+ ifdef CONFIG_FUNCTION_TRACER
+-KBUILD_CFLAGS	+=3D -pg
++ifdef CONFIG_HAVE_FENTRY
++CC_USING_FENTRY	:=3D $(call cc-option, -mfentry -DCC_USING_FENTRY)
++endif
++KBUILD_CFLAGS	+=3D -pg $(CC_USING_FENTRY)
++KBUILD_AFLAGS	+=3D $(CC_USING_FENTRY)
+ ifdef CONFIG_DYNAMIC_FTRACE
+ 	ifdef CONFIG_HAVE_C_RECORDMCOUNT
+ 		BUILD_C_RECORDMCOUNT :=3D y
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 8c4c070..9301a0e 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -49,6 +49,11 @@ config HAVE_SYSCALL_TRACEPOINTS
+ 	help
+ 	  See Documentation/trace/ftrace-design.txt
 =20
- #ifdef CONFIG_DYNAMIC_FTRACE
-@@ -46,6 +50,7 @@
- #ifndef __ASSEMBLY__
- extern void mcount(void);
- extern atomic_t modifying_ftrace_code;
-+extern void __fentry__(void);
-=20
- static inline unsigned long ftrace_call_adjust(unsigned long addr)
- {
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b7a81dc..ed767b7 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -68,10 +68,18 @@
- 	.section .entry.text, "ax"
-=20
- #ifdef CONFIG_FUNCTION_TRACER
++config HAVE_FENTRY
++	bool
++	help
++	  Arch supports the gcc options -pg with -mfentry
 +
-+#ifdef CC_USING_FENTRY
-+# define function_hook	__fentry__
-+#else
-+# define function_hook	mcount
-+#endif
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
--ENTRY(mcount)
-+
-+ENTRY(function_hook)
- 	retq
--END(mcount)
-+END(function_hook)
-=20
- /* skip is set if stack has been adjusted */
- .macro ftrace_caller_setup skip=3D0
-@@ -84,7 +92,11 @@ END(mcount)
- 	movq RIP(%rsp), %rdi
- 	subq $MCOUNT_INSN_SIZE, %rdi
- 	/* Load the parent_ip into the second parameter */
-+#ifdef CC_USING_FENTRY
-+	movq SS+16(%rsp), %rsi
-+#else
- 	movq 8(%rbp), %rsi
-+#endif
- .endm
-=20
- ENTRY(ftrace_caller)
-@@ -177,7 +189,8 @@ END(ftrace_regs_caller)
-=20
-=20
- #else /* ! CONFIG_DYNAMIC_FTRACE */
--ENTRY(mcount)
-+
-+ENTRY(function_hook)
- 	cmpl $0, function_trace_stop
- 	jne  ftrace_stub
-=20
-@@ -199,7 +212,11 @@ trace:
- 	MCOUNT_SAVE_FRAME
-=20
- 	movq RIP(%rsp), %rdi
-+#ifdef CC_USING_FENTRY
-+	movq SS+16(%rsp), %rsi
-+#else
- 	movq 8(%rbp), %rsi
-+#endif
- 	subq $MCOUNT_INSN_SIZE, %rdi
-=20
- 	call   *ftrace_trace_function
-@@ -207,7 +224,7 @@ trace:
- 	MCOUNT_RESTORE_FRAME
-=20
- 	jmp ftrace_stub
--END(mcount)
-+END(function_hook)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- #endif /* CONFIG_FUNCTION_TRACER */
-=20
-@@ -215,9 +232,14 @@ END(mcount)
- ENTRY(ftrace_graph_caller)
- 	MCOUNT_SAVE_FRAME
-=20
-+#ifdef CC_USING_FENTRY
-+	leaq SS+16(%rsp), %rdi
-+	movq $0, %rdx	/* No framepointers needed */
-+#else
- 	leaq 8(%rbp), %rdi
--	movq RIP(%rsp), %rsi
- 	movq (%rbp), %rdx
-+#endif
-+	movq RIP(%rsp), %rsi
- 	subq $MCOUNT_INSN_SIZE, %rsi
-=20
- 	call	prepare_ftrace_return
-diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms=
-_64.c
-index 6020f6f..1330dd1 100644
---- a/arch/x86/kernel/x8664_ksyms_64.c
-+++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -13,9 +13,13 @@
- #include <asm/ftrace.h>
-=20
- #ifdef CONFIG_FUNCTION_TRACER
--/* mcount is defined in assembly */
-+/* mcount and __fentry__ are defined in assembly */
-+#ifdef CC_USING_FENTRY
-+EXPORT_SYMBOL(__fentry__);
-+#else
- EXPORT_SYMBOL(mcount);
- #endif
-+#endif
-=20
- EXPORT_SYMBOL(__get_user_1);
- EXPORT_SYMBOL(__get_user_2);
+ config HAVE_C_RECORDMCOUNT
+ 	bool
+ 	help
 --=20
 1.7.10.4
 
@@ -235,19 +106,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJQNnObAAoJEIy3vGnGbaoAI/sP/ijwrJ8bW95qCXQUX+eE0/lN
-JYMKy7TjI3Stlz+EHC+JtJVz4hbuOeWToZssbllWl2a1LDuHK63J8yRk2P3gGzMm
-1CuKTfcIaU/Rpr+mgCuwK2y8lnvzIeTL0JiaQtusM87pPGej9TtShKVZMIYcCA9D
-QvHQXYCA6k/W9QI22HPeAAVxHRx9a/N0o+yPwUJMUApseztcPmORCY/g9zz4qdl4
-2sdPpLEocwfGWbUw/ewP2XF0WM7BCtwlajZpQt2EOJI7e9ojgFEuLMYm5Lc1rQjU
-T0Lul8ZClhC+RGM2ZkfzEL2WsoGfwyS69NkSCW05BpAOwgsakyPQtov5PBnQQwxP
-O6D/L6kyhh6+/D1jWd0UT9VYYh7PxmgBnds2ReqPm1GdCiiMxZahM6SlNR4BLxv0
-p64n1oNlXi2Cm6IYS8OiSFFVdp80VTNWOkH3AyVTgbiz34KC8kenm0LXnY2jVait
-LTactmagpVVpQ7Jp0j9nBBie1GQW21/ARyU1bt+x1qeo0GNSDdnfUEtTUtF+xRv7
-tmnf3NhyC5ANs3pVe1IP2OPcn4HJs7xrzGKEvuxJ7UbBc7RwusNaGXT2VxUqlzcd
-SzlKW7pt91ER2tIxDxb25aLj7SRO1iC1qQXBJH50WVEW5Q2vYshY36fM/W8uCxup
-jfF+JxBz0DG2rgR+8HJ9
-=pDf5
+iQIcBAABAgAGBQJQNnObAAoJEIy3vGnGbaoA3/8P/2D6c3zsxxNUSvEl4jCLR1Ex
+EgUFQbK4rcVzbJDPQItXrAvw4eIAkr0gyKegQKRG5RMpUVGkLq3SJVuRwrL8MXnO
+ZnEDyylV/WEox99IjIbpsOZrE9LJF/nqA5sOKYyYtB+bfvUNUvuibVDEHfxku0uJ
+3Ww8oFXSwt9FrtkxY67foOYgRb1tg0Z1IcSu67q8kFXDlAEzt2QyCSUcRNKYTCS8
+eBNN6Kfo4uen0pRp/uZmi/5b/8FQxI61JIYYFf4xa5H1WrCdxaFrfIlFMxODu3YT
+6DR+rY74eaGwy8vEZGZFiLRAsxTSoNB3yFReChlm/yecCV+RefOK+Df4SCwVrJTl
+VJEUwJ++jPFTNhdvcL236Ssv9g6POCOr9sXMQIf7fn39KaxHEDK21HAiaDhLS6+q
+9FYjFFpefOWrCfFD8xbYKVPLQ/gVD2YWI64s3IkkTO9O2yTzHjKR6yzT1m6cPHB8
+jq05a1I1857E5TRSLL2e+uRnQ4MXFTfXabCnaQEqa5KAAH+mFraX7NY12CevsmWk
+ShQFl8Ao1f8WYRGWFDNxCY19swcVZZMiX/bCK6GXdDLxDQj/9H4/yU5qsaQ+RRFs
+Z8vAK7QCKY/otfIzx6+Hc18VWGzR5TdGQHYOJwSQtZ9Kn2K+oG1CgfuAqTrjcMmY
+SvR1UtIuvMIyxSsEcffC
+=2uOA
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
