@@ -1,101 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933772Ab2HWJmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 05:42:07 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:24741 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933425Ab2HWJmF (ORCPT
+	id S933398Ab2HWJpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 05:45:33 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47335 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab2HWJp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 05:42:05 -0400
-X-IronPort-AV: E=Sophos;i="4.80,299,1344211200"; 
-   d="scan'208";a="14142447"
-Message-ID: <5035F7BD.6090205@citrix.com>
-Date: Thu, 23 Aug 2012 10:28:29 +0100
-From: Attilio Rao <attilio.rao@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Thu, 23 Aug 2012 05:45:28 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "x86@kernel.org" <x86@kernel.org>, Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2 0/5] X86/XEN: Merge x86_init.paging.pagetable_setup_start
- and x86_init.paging.pagetable_setup_done setup functions and document its
- semantic
-References: <1345580561-8506-1-git-send-email-attilio.rao@citrix.com>	<alpine.LFD.2.02.1208212315330.2856@ionos>	<20120822135753.GA30964@phenom.dumpdata.com>	<alpine.LFD.2.02.1208221618380.2856@ionos> <5034F0FD.8040902@citrix.com>
-In-Reply-To: <5034F0FD.8040902@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5035445B.6000500@wwwdotorg.org>
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	<5035445B.6000500@wwwdotorg.org>
+Date: Thu, 23 Aug 2012 11:45:27 +0200
+Message-ID: <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/12 15:47, Attilio Rao wrote:
-> On 22/08/12 15:19, Thomas Gleixner wrote:
->    
->> On Wed, 22 Aug 2012, Konrad Rzeszutek Wilk wrote:
->>
->>      
->>> On Tue, Aug 21, 2012 at 11:22:03PM +0200, Thomas Gleixner wrote:
->>>
->>>        
->>>> On Tue, 21 Aug 2012, Attilio Rao wrote:
->>>>
->>>>          
->>>>> Differences with v1:
->>>>> - The patch serie is re-arranged in a way that it helps reviews, following
->>>>>     a plan by Thomas Gleixner
->>>>> - The PVOPS nomenclature is not used as it is not correct
->>>>> - The front-end message is adjusted with feedback by Thomas Gleixner,
->>>>>     Stefano Stabellini and Konrad Rzeszutek Wilk
->>>>>
->>>>>            
->>>> This is much simpler to read and review. Just have a look at the
->>>> diffstats of the two series:
->>>>
->>>>    6 files changed,  9 insertions(+),  8 deletions(-)
->>>>    6 files changed, 11 insertions(+),  9 deletions(-)
->>>>    5 files changed, 50 insertions(+),  2 deletions(-)
->>>>    6 files changed,  2 insertions(+), 65 deletions(-)
->>>>    1 files changed,  5 insertions(+),  0 deletions(-)
->>>>
->>>> versus
->>>>
->>>>    6 files changed, 10 insertions(+),  9 deletions(-)
->>>>    6 files changed, 11 insertions(+), 11 deletions(-)
->>>>    5 files changed,  3 insertions(+),  3 deletions(-)
->>>>    6 files changed,  4 insertions(+), 20 deletions(-)
->>>>    1 files changed,  5 insertions(+),  0 deletions(-)
->>>>
->>>> The overall result is basically the same, but it's way simpler to look
->>>> at obvious and well done patches than checking whether a subtle copy
->>>> and paste bug happened in 3/5 of the first version. Copy and paste is
->>>> the #1 cause for subtle bugs. :)
->>>>
->>>> I'm waiting for the ack of Xen folks before taking it into tip.
->>>>
->>>>          
->>> I've some extra patches that modify the new "paginig_init" in the Xen
->>> code that I am going to propose for v3.7 - so will have some merge
->>> conflicts. Let me figure that out and also run this set of patches
->>> (and also the previous one .. which I think you didn't have a
->>> chance to look since you were on vacation?) on an overnight
->>>
->>>        
->> Which previous one ?
->>
->>      
-> This one:
-> https://lkml.org/lkml/2012/8/21/369
+On 8/22/12, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/22/2012 02:22 AM, Sebastian Hesselbarth wrote:
+>> +++ b/drivers/pinctrl/pinctrl-mvebu.c
 >
-> but I would like to repost the patch serie skipping the referral to
-> PVOPS in the commit logs, I will do so right now, so please wait for
-> another patch serie.
->    
+>> +static int mvebu_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
+>
+>> +	of_property_for_each_string(np, "marvell,pins", prop, group) {
+>> +		struct mvebu_pinctrl_group *grp =
+>> +			mvebu_pinctrl_find_group_by_name(pctl, group);
+>> +
+>> +		if (!grp) {
+>> +			dev_err(pctl->dev, "unknown pin %s", group);
+>> +			continue;
+>> +		}
+>> +
+>> +		if (!mvebu_pinctrl_find_setting_by_name(pctl, grp, function)) {
+>> +			dev_err(pctl->dev, "unsupported function %s on pin %s",
+>> +				function, group);
+>> +			continue;
+>> +		}
+>
+> The error-checking here isn't strictly necessary; the pinctrl core will
+> error-check all the names if/when the map entries are used. So, you
+> could probably get away with just assigning the pin/function names
+> directly into (*map) and hence remove some code here. Still, it's not a
+> big deal either way.
 
-For your convenience:
-http://lkml.org/lkml/2012/8/22/450
+Hi Stephen,
 
-Attilio
+as these error checks are only performed once, I'd like to have them there
+as they give hints when someone uses wrong marvell,pins/function names
+in DT.
+
+>> +static int __devinit mvebu_pinctrl_dt_parse_function(struct mvebu_pinctrl
+>> *pctl,
+>
+>> +static int __devinit mvebu_pinctrl_dt_parse(struct platform_device
+>> *pdev,
+>> +					struct mvebu_pinctrl *pctl)
+>
+> I don't understand what those two functions do, or a good chunk of
+> probe(). It seems like they're setting up the ability to get/set pin
+> configrations in addition to pin muxing, although if that's so, it seems
+> odd that none of the binding documents specify any way of controlling
+> pin configuration from device tree. Are you expecting drivers to call
+> APIs such as pin_config_set() directly, rather than controlling pin
+> config through DT?
+
+probe() receives some structs from the SoC specific driver stubs that
+describe, e.g. how many muxable pins are available, which pingroup they
+belong to (marvell,pins), what valid register values are and how they are
+named (marvell,function). Although, all mvebu SoC share a good part of
+pinmux register layout, there are especially for dove some very different
+ways to mux pins. As mvebu pinctrl is a true mux-only driver, i.e. no
+pin drive strength or pin direction configuration, we decided not to have
+single pins controlable but only pingroups even if they comprise only a
+single pin.
+
+dt_parse() and dt_parse_function() build up structs that get used later on
+in mvebu_pinmux_ops that require indexed functions. I can join them with
+dt_node_to_map() but that would require incremental kzalloc for the
+corresponding array. Or I could (functionally) leave dt_parse() to allocate
+the array and only join dt_parse_function() with dt_node_to_map().
+
+There is an example of how to use pinctrl in marvell.mvebu-pinctrl.txt:
+uart1: serial@12100 {
+	compatible = "ns16550a";
+	reg = <0x12100 0x100>;
+	reg-shift = <2>;
+	interrupts = <7>;
+
+	pinctrl-0 = <&pmx_uart1_sw>;
+};
+
+pinctrl: pinctrl@d0200 {
+	compatible = "marvell,dove-pinctrl";
+	reg = <0xd0200 0x20>;
+
+	pmx_uart1_sw: pmx-uart1-sw {
+		marvell,pins = "mpp_uart1";
+		marvell,function = "uart1";
+	};
+};
+
+In my understanding this will allow uart1 to switch the pingroup "mpp_uart1"
+to the function "uart1". The pinctrl core driver is taking care of
+translating mpp_uart1
+to the corresponding pingroup and mvebu core driver of translating
+uart1 into the required
+register values to set the requested function. Is it so odd, that we
+use names instead
+of direct register values in DT? I agree, that maybe picking an example for dove
+that is a little bit different in pingroup naming isn't the best
+choice but it still gives
+you an idea how to use it.
+
+Consider this (virtual) example:
+Muxing some SATA functions to pins 24 and 37 would require to set
+register values
+to 0x3 on pin 24 and 0x6 on pin 37. The proposed driver still allows
+us to have a DT
+description of
+
+pmx_sata_example: pmx-sata-example {
+	marvell,pins = "mpp24", "mpp37";
+	marvell,function = "sata";
+};
+
+because the SoC specific driver passes function "sata" on pins 24 and
+37 with the
+corresponding register values. These are fed by the mvebu core driver
+that builds
+up all required pins, pingroups, and pinmux functions.
+
+Sebastian
