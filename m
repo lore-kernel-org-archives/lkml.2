@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933639Ab2HWHvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:51:19 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:59835
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933178Ab2HWHvR (ORCPT
+	id S933661Ab2HWHvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:51:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16167 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176Ab2HWHve convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:51:17 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zzbb2dI98dI9371I1432Izz1202h1082kzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah1155h)
-Date: Thu, 23 Aug 2012 15:32:04 +0800
-From: Dong Aisheng <b29396@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Zhao Richard-B20223 <B20223@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "paul.liu@linaro.org" <paul.liu@linaro.org>
-Subject: Re: [PATCH 4/7] regulator: anatop-regulator: convert to use
- imx-syscon to access anatop register
-Message-ID: <20120823073203.GH10057@shlinux2.ap.freescale.net>
-References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
- <1345619928-15446-5-git-send-email-b29396@freescale.com>
- <5035BDBF.9020602@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5035BDBF.9020602@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Thu, 23 Aug 2012 03:51:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
+   d="scan'208,223";a="184404905"
+Date: Thu, 23 Aug 2012 15:45:47 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, <linux-pci@vger.kernel.org>,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org
+Subject: [PATCH 2/2] PCI: Remove the obsolete no_pci_devices() check
+Message-ID: <20120823154547.40d07cd0@feng-i7>
+In-Reply-To: <CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+References: <5017D19B.5080806@redhat.com>
+	<1343738627.27983.30.camel@gandalf.stny.rr.com>
+	<5017D4AB.3090107@redhat.com>
+	<1343740419.27983.33.camel@gandalf.stny.rr.com>
+	<20120731234336.GA5526@localhost>
+	<1343778699.27983.70.camel@gandalf.stny.rr.com>
+	<20120731235705.GW2422@linux.vnet.ibm.com>
+	<1343779778.27983.73.camel@gandalf.stny.rr.com>
+	<20120801001811.GX2422@linux.vnet.ibm.com>
+	<20120801004319.GA7043@localhost>
+	<20120822025008.GA8066@localhost>
+	<20120822154908.2e6ef3c0@feng-i7>
+	<CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 01:21:03PM +0800, Stephen Warren wrote:
-> On 08/22/2012 01:18 AM, Dong Aisheng wrote:
-> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> > diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-> 
-> > @@ -109,7 +110,11 @@ static int __devinit anatop_regulator_probe(struct platform_device *pdev)
-> >  	rdesc->ops = &anatop_rops;
-> >  	rdesc->type = REGULATOR_VOLTAGE;
-> >  	rdesc->owner = THIS_MODULE;
-> > -	sreg->mfd = anatopmfd;
-> > +
-> > +	sreg->anatop = of_parse_phandle(np, "fsl,anatop", 0);
-> > +	if (!sreg->anatop)
-> > +		return -ENODEV;
-> 
-> In fact, that imx_syscon_lookup function I proposed could even do the
-> of_parse_phandle() internally, so perhaps:
-> 
-> foo->syscon_dev = imx_syscon_lookup(np, "fsl,anatop", 0);
-> if (IS_ERR(foo->syscon_dev))
->     return PTR_ERR(foo->syscon_dev);
-> 
-> with imx_syscon_lookup() internally knowing when to return EPROBE_DEFER
-> rather than any other permanent error code (e.g. for missing property,
-> bad phandle, etc.)
-> 
-This also looks reasonable to me.
-btw, see my last reply to mark in another mail.
-I'm not sure but Mark may want something slightly different as this one,
-imx_syscon_lookup directly return regmap rather than dev, then we do not
-need implement any register read/write API in imx-syscon driver, just
-using the exist regmap r/w API is ok.
+>From 9f2f3bbdf65f669e091c72b9648a4a0394ce28f5 Mon Sep 17 00:00:00 2001
+From: Feng Tang <feng.tang@intel.com>
+Date: Thu, 23 Aug 2012 14:55:48 +0800
+Subject: [PATCH 2/2] PCI: Remove the obsolete no_pci_devices() check
 
-Regards
-Dong Aisheng
+In function pci_get_subsys() there is a check:
 
+	/*
+	 * pci_find_subsys() can be called on the ide_setup() path,
+	 * super-early in boot.  But the down_read() will enable local
+	 * interrupts, which can cause some machines to crash.  So here we
+	 * detect and flag that situation and bail out early.
+	 */
+	if (unlikely(no_pci_devices()))
+		return NULL;
+
+But there is no ide_setup() now, and no down_read() either, which
+makes the check absolete. So remove it.
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/pci/search.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index 78a08b1..e6e604f 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -247,15 +247,6 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+ {
+ 	struct pci_device_id id;
+ 
+-	/*
+-	 * pci_find_subsys() can be called on the ide_setup() path,
+-	 * super-early in boot.  But the down_read() will enable local
+-	 * interrupts, which can cause some machines to crash.  So here we
+-	 * detect and flag that situation and bail out early.
+-	 */
+-	if (unlikely(no_pci_devices()))
+-		return NULL;
+-
+ 	id.vendor = vendor;
+ 	id.device = device;
+ 	id.subvendor = ss_vendor;
+-- 
+1.7.1
