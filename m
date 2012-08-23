@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300Ab2HWJ35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 05:29:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39847 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932365Ab2HWJ3w (ORCPT
+	id S933443Ab2HWJa3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 05:30:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31994 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab2HWJaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 05:29:52 -0400
-Date: Thu, 23 Aug 2012 13:29:47 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>
-Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
-Message-ID: <20120823092947.GC1992@moon>
-References: <20120820163338.GN23596@moon>
- <20120820183225.GB4911@fieldses.org>
- <20120820190606.GE27443@moon>
- <20120820193204.GD5779@fieldses.org>
- <50335261.5090504@parallels.com>
- <87wr0sle4v.fsf@skywalker.in.ibm.com>
- <503367CB.9080609@parallels.com>
- <87zk5nsch8.fsf@skywalker.in.ibm.com>
- <20120823080627.GA1992@moon>
- <5035EFD4.7090404@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5035EFD4.7090404@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Aug 2012 05:30:25 -0400
+X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CnhymWjh_EAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=elah4ftNUEAA:10 a=meVymXHHAAAA:8 a=57SyGIRnAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=gu6fZOg2AAAA:8 a=hps_UrdzcsAUvVNZuwEA:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=GC8p-B92FUEA:10 a=NWVoK91CQyQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1345714223.5069.45.camel@gandalf.local.home>
+Subject: Re: [PATCH] tools lib traceevent: Fix off-by-one bug in
+ pevent_strerror()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Thu, 23 Aug 2012 05:30:23 -0400
+In-Reply-To: <1345707420-21767-1-git-send-email-namhyung@kernel.org>
+References: <1345707420-21767-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 10:54:44AM +0200, Marco Stornelli wrote:
-> >>For brtfs
-> >>
-> >>	objectid = fid->objectid;
-> >>	root_objectid = fid->root_objectid;
-> >>	generation = fid->gen;
-> >>
-> >>	return btrfs_get_dentry(sb, objectid, root_objectid, generation, 1);
-> >
-> >For btrfs it become more complex. But still the last version I'm about
-> >to send for review today (once everything get tested) will provide
-> >fhandle carried with inotify mark _and_ inode number and device. This
-> >information should be enough for us. After all having inode and device
-> >should allow us to figure out the fs used on inotify target.
+On Thu, 2012-08-23 at 16:37 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Sorry if it's a really stupid question but I didn't follow deeply
-> the thread. How can you provide a device if the fs is mounted on
-> "none" (ex tmpfs)? In this case you can't associate device <=> fs,
-> because you haven't got a /dev/something.
+> As pevent_errno is defined using PEVENT_ERRORS which uses _PE macro
+> magic, the first errno is bigger than __PEVENT_ERRNO_START by 1. So we
+> need to subtract the 1 also when calculating the index of the error
+> strings.
+> 
+> Cc: Fredereic Weisbecker <fweisbec@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/lib/traceevent/event-parse.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index f978c59f67bf..b5b4d806ffa2 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -4822,7 +4822,7 @@ int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
+>  	    errnum >= __PEVENT_ERRNO__END)
+>  		return -1;
+>  
+> -	idx = errnum - __PEVENT_ERRNO__START;
+> +	idx = errnum - __PEVENT_ERRNO__START - 1;
+>  	msg = pevent_error_str[idx];
+>  
 
-That's ::s_dev from superblock, together with parsing /proc/$pid/mountinfo
-and /proc/mounts you can figure out anything you need.
+Note, if you had kept my original way, you wouldn't have this bug ;-)
 
-	Cyrill
+http://marc.info/?l=linux-kernel&m=133976417632111
+
+-- Steve
+
+>  	switch (errnum) {
+
+
