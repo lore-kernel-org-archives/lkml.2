@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab2HWJcZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 05:32:25 -0400
-Received: from nctlincom02.orcon.net.nz ([60.234.4.75]:49288 "EHLO
-	nctlincom02.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758286Ab2HWJcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 05:32:22 -0400
-Message-ID: <5035F8A2.1070702@orcon.net.nz>
-Date: Thu, 23 Aug 2012 21:32:18 +1200
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
+	id S933540Ab2HWJdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 05:33:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29163 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933397Ab2HWJdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 05:33:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
+   d="scan'208";a="212827610"
+Date: Thu, 23 Aug 2012 17:33:30 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] HWPOISON: fix action_result() to print out
+ dirty/clean
+Message-ID: <20120823093330.GC12745@localhost>
+References: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1345648655-4497-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "3.2.x.." <stable@kernel.org>
-Subject: Re: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
-References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com> <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx6.orcon.net.nz on Thu, 23 Aug 2012 21:32:19 +1200
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Aug 23 21:32:20 2012
-X-DSPAM-Confidence: 0.5539
-X-DSPAM-Probability: 0.0000
-X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
-X-Spam-Score: 0.00 () [Hold at 5.50] 
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=G2; city=Porirua; latitude=-41.1333; longitude=174.8500; http://maps.google.com/maps?q=-41.1333,174.8500&z=6
-X-CanItPRO-Stream: base:default
-X-Canit-Stats-ID: 05HO9Gr6D - 19534831fb8f - 20120823
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345648655-4497-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/08/12 04:23, Frederic Weisbecker wrote:
-> In the old times, the whole idle task was considered
-> as an RCU quiescent state. But as RCU became more and
-> more successful overtime, some RCU read side critical
-> section have been added even in the code of some
-> architectures idle tasks, for tracing for example.
+On Wed, Aug 22, 2012 at 11:17:33AM -0400, Naoya Horiguchi wrote:
+> action_result() fails to print out "dirty" even if an error occurred on a
+> dirty pagecache, because when we check PageDirty in action_result() it was
+> cleared after page isolation even if it's dirty before error handling. This
+> can break some applications that monitor this message, so should be fixed.
+> 
+> There are several callers of action_result() except page_action(), but
+> either of them are not for LRU pages but for free pages or kernel pages,
+> so we don't have to consider dirty or not for them.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Reviewed-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  mm/memory-failure.c | 22 +++++++++-------------
+>  1 file changed, 9 insertions(+), 13 deletions(-)
+> 
+> diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
+> index a6e2141..79dfb2f 100644
+> --- v3.6-rc1.orig/mm/memory-failure.c
+> +++ v3.6-rc1/mm/memory-failure.c
+> @@ -779,16 +779,16 @@ static struct page_state {
+>  	{ compound,	compound,	"huge",		me_huge_page },
+>  #endif
+>  
+> -	{ sc|dirty,	sc|dirty,	"swapcache",	me_swapcache_dirty },
+> -	{ sc|dirty,	sc,		"swapcache",	me_swapcache_clean },
+> +	{ sc|dirty,	sc|dirty,	"dirty swapcache",	me_swapcache_dirty },
+> +	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
+>  
+> -	{ unevict|dirty, unevict|dirty,	"unevictable LRU", me_pagecache_dirty},
+> -	{ unevict,	unevict,	"unevictable LRU", me_pagecache_clean},
+> +	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
+> +	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
+>  
+> -	{ mlock|dirty,	mlock|dirty,	"mlocked LRU",	me_pagecache_dirty },
+> -	{ mlock,	mlock,		"mlocked LRU",	me_pagecache_clean },
+> +	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
+> +	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
+>  
+> -	{ lru|dirty,	lru|dirty,	"LRU",		me_pagecache_dirty },
+> +	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
+>  	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
 
-Fantastic!  It fixes RCU CPU stalls that we were seeing on the SMP
-kernel when built for generic Alpha.
+According to the set_page_dirty() comment, the dirty bit might be set
+outside the page lock (however I don't know any concrete examples).
+That means the word "clean" is not 100% right.  That's probably why we
+only report "dirty LRU" and didn't say "clean LRU".
 
-A build of glibc and running its test suite reliably triggers RCU CPU
-stalls when running a kernel built for generic Alpha.  I have just built
-glibc and ran its test suite twice with no RCU CPU stalls with this
-patch against a 3.5.2 kernel!  Nice.  Very nice.
+Thanks,
+Fengguang
 
-I see the stable queue is CCed but I note the patch does not apply
-cleanly to the 3.2.y kernel.  It would be nice to have a backport of the
-patches for the 3.2 stable kernel.
-
-So feel free to add:
-
-Tested-by:  Michael Cree <mcree@orcon.net.nz>
-
-Cheers
-Michael.
+>  	/*
+> @@ -812,12 +812,8 @@ static struct page_state {
+>  
+>  static void action_result(unsigned long pfn, char *msg, int result)
+>  {
+> -	struct page *page = pfn_to_page(pfn);
+> -
+> -	printk(KERN_ERR "MCE %#lx: %s%s page recovery: %s\n",
+> -		pfn,
+> -		PageDirty(page) ? "dirty " : "",
+> -		msg, action_name[result]);
+> +	pr_err("MCE %#lx: %s page recovery: %s\n",
+> +		pfn, msg, action_name[result]);
+>  }
+>  
+>  static int page_action(struct page_state *ps, struct page *p,
+> -- 
+> 1.7.11.4
