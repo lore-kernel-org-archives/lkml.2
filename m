@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab2HWBAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 21:00:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63221 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475Ab2HWBAo convert rfc822-to-8bit (ORCPT
+	id S1752054Ab2HWBJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 21:09:39 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45221 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab2HWBJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 21:00:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,297,1344236400"; 
-   d="scan'208";a="212662681"
-From: "Cui, Dexuan" <dexuan.cui@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: RE: [PATCH v3 00/32] provide interfaces to access PCIe capabilities
- registers
-Thread-Topic: [PATCH v3 00/32] provide interfaces to access PCIe
- capabilities registers
-Thread-Index: AQHNfyEpc1sbAquqAkWs79W2HpqffZdjqchAgAHYTwCAARPj4A==
-Date: Thu, 23 Aug 2012 01:00:40 +0000
-Message-ID: <A25F549E4D43CD42B4C02DF47A1913230FE53087@SHSMSX102.ccr.corp.intel.com>
-References: <1343836477-7287-1-git-send-email-jiang.liu@huawei.com>
- <CAErSpo7WoEeWayMQ__H4jiKKmMdNgyLMYdRmJ0Nf0LoEKjFRmA@mail.gmail.com>
- <50325732.3000700@gmail.com>
- <CAErSpo4-SGH__kE5tPNzz+VO=V-GKOMdcKCqqy6s3=5sNKgG0w@mail.gmail.com>
- <50325C18.9030207@gmail.com>
- <CAErSpo6t9m0xmWkXfmONtbicjqLR_z5dLsjKCLWQfcktzRKkUA@mail.gmail.com>
- <CAErSpo5=OUM9veX8890USWegTG_Fhh10soxPJbjemd80bAO0qg@mail.gmail.com>
- <A25F549E4D43CD42B4C02DF47A1913230FE50780@SHSMSX102.ccr.corp.intel.com>
- <CAErSpo5ftvKLF2=1ixzp1KroNLKh_s-b5hi9aFv3X7PpqisGwg@mail.gmail.com>
-In-Reply-To: <CAErSpo5ftvKLF2=1ixzp1KroNLKh_s-b5hi9aFv3X7PpqisGwg@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 22 Aug 2012 21:09:35 -0400
+From: Matt Porter <mporter@ti.com>
+To: vinod.koul@intel.com, cjb@laptop.org, grant.likely@secretlab.ca
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: [PATCH v3 0/3] DaVinci DMA engine conversion
+Date: Wed, 22 Aug 2012 21:09:33 -0400
+Message-Id: <1345684176-21472-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas wrote on 2012-08-23:
-> On Mon, Aug 20, 2012 at 9:40 PM, Cui, Dexuan <dexuan.cui@intel.com>
-> wrote:
->> Bjorn Helgaas wrote on 2012-08-21:
-> 
->>> I am still concerned about reset_intel_82599_sfp_virtfn().  It looks
->>> wrong and possibly unnecessary.  It looks wrong because it sets
->>> PCI_EXP_DEVCTL_BCR_FLR and blindly clears all other bits in
->>> PCI_EXP_DEVCTL.  Most of the bits are probably cleared by the FLR
->>> anyway, but Aux Power PM Enable is RWS ("sticky"), so it is *not*
->>> modified by FLR.  Therefore, using reset_intel_82599_sfp_virtfn() has
->>> the probably unintended side effect of clearing Aux Power PM Enable.
->>> 
->>> It looks possibly unnecessary because the generic pcie_flr() does
->>> essentially the same thing, so it's not clear why we need a special
->>> case for 82599.
-> 
->> I think reset_intel_82599_sfp_virtfn() is correct AND necessary.
->> (pcie_flr() doesn't work here)
->> 
->> Please note the 82599 VF is a special PCIe device that doesn't report
->> PCIe FLR capability though actually it does support that.
->> That is why we put it in quirks.c. :-)
->> 
->> The PCI_EXP_DEVCTL_AUX_PME bit of the 82599 VF is read-only and
->> always zero.
->> 
->> Please see
->> 
-> http://www.intel.com/content/dam/doc/datasheet/82599-10-gbe-controller-
-> datasheet.pdf
->> 9.5 Virtual Functions Configuration Space
->>   Table 9.7 VF PCIe Configuration Space
->>   9.5.2.2.1 VF Device Control Register (0xA8; RW)
-> 
-> Thanks, Dexuan!
-> 
-> The 82599 does report FLR in the DEVCAP for the PF (sec 9.3.10.4), but
-> not in the DEVCAP for the VF (sec 9.5), which indeed means we can't
-> use pcie_flr() on the VFs.  I wonder whether this error appears in any
-> other devices.
-> 
-> The VF DEVCTL register (sec 9.5.2.2.1) is RO and zero except for
-> "Initiate FLR" unlike the PF DEVCTL (sec 9.3.10.5).  The
-> read/modify/write done by pcie_flr() would work on the VF but is not
-> necessary.
-> 
-> The VF DEVSTA register (sec 9.5.2.2.2) does have an active
-> "Transaction Pending" bit.  That suggests to me that we should wait
-> for it to be clear, as pcie_flr() does.
-I agree.
+Changes since v1:
+	- Add virt-dma support. Better error checks
+	  and simplified descriptor handling.
+	- Fix support for multiple EDMA controllers
+	  Tested on AM18x EVM with WL12xx on MMC1
 
-> 
-> What would you think of a patch like the following?  My idea is to
-> make it the same as pcie_flr() except for the absolutely necessary
-> differences.  With this patch, the only difference is that we don't
-> look at the 82599 DEVCAP FLR bit.
-Hi Bjorn,
-Thanks for the patch!
-It seems good to me (BTW, I don't have such a device at
-hand to test)
+Changes since v2:
+	- Set default Kconfig state to off
+	- Fix whitespace and indent issues
+	- Simplify struct device * assignments
+	- Remove unneeded chcnt in edma_chan_init
+	- Remove unneeded conditional assignment of prep_slave_sg
+	- Fix devm_* usage
 
-Thanks,
--- Dexuan
+This series begins the conversion of the DaVinci private EDMA API
+implementation to a DMA engine driver and converts two of the three
+in-kernel users of the private EDMA API to DMA engine.
+
+The approach taken is similar to the recent OMAP DMA Engine
+conversion. The EDMA DMA Engine driver is a wrapper around the existing
+private EDMA implementation and registers the platform device within
+the driver.  This allows the conversion series to stand alone with just
+the drivers and no changes to platform code. It also allows peripheral
+drivers to continue to use the private EDMA implementation until they
+are converted.
+
+The EDMA DMA Engine driver supports slave transfers only at this time. It
+is planned to add cyclic transfers in support of audio peripherals.
+
+There are three users of the private EDMA API in the kernel now:
+davinci_mmc, spi-davinci, and davinci-mcasp.  This series provides DMA
+Engine conversions for the davinci_mmc and spi-davinci drivers which
+use the supported slave transfers.
+
+This series has been tested on an AM18x EVM and Hawkboard with
+driver performance comparable to that of the private EDMA API
+implementations. Both MMC0 and MMC1 are tested which handles the
+DA850/OMAP-L138/AM18x specific case where MMC1 uses DMA channels on
+a second EDMA channel controller.  All other platforms have a simpler
+design with just a single EDMA channel controller.
+
+For those wanting to easily test this series, I've pushed a branch for
+each version to my github tree at https://github.com/ohporter/linux. The
+current branch is edma-dmaengine-v3.
+
+After this series, the current plan is to complete the mcasp driver
+conversion which includes adding cyclic dma support. This will then
+enable the removal and refactoring of the private EDMA API functionality
+into the EDMA DMA Engine driver.  Since EDMA is also used on the AM33xx
+family of parts in mach-omap2/, the plan is to enable this driver on
+that platform as well.
+
+Matt Porter (3):
+  dmaengine: add TI EDMA DMA engine driver
+  mmc: davinci_mmc: convert to DMA engine API
+  spi: spi-davinci: convert to DMA engine API
+
+ drivers/dma/Kconfig            |   10 +
+ drivers/dma/Makefile           |    1 +
+ drivers/dma/edma.c             |  671 ++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/davinci_mmc.c |  271 +++++-----------
+ drivers/spi/spi-davinci.c      |  292 ++++++++---------
+ include/linux/edma.h           |   29 ++
+ 6 files changed, 923 insertions(+), 351 deletions(-)
+ create mode 100644 drivers/dma/edma.c
+ create mode 100644 include/linux/edma.h
+
+-- 
+1.7.9.5
 
