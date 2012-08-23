@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933653Ab2HWHgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:36:32 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:16612 "EHLO mta02.xtra.co.nz"
+	id S1030273Ab2HWHiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:38:11 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:16611 "EHLO mta02.xtra.co.nz"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933619Ab2HWHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:36:11 -0400
+	id S933616Ab2HWHgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:36:08 -0400
 From: Tony Prisk <linux@prisktech.co.nz>
 To: vt8500-wm8505-linux-kernel@googlegroups.com
 Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
@@ -23,9 +23,9 @@ Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
         linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCHv4 8/9] arm: vt8500: gpio: Devicetree support for arch-vt8500
-Date: Thu, 23 Aug 2012 19:35:44 +1200
-Message-Id: <1345707346-9035-9-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCHv4 5/9] video: vt8500: Add devicetree support for vt8500-fb and wm8505-fb
+Date: Thu, 23 Aug 2012 19:35:41 +1200
+Message-Id: <1345707346-9035-6-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
 References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
@@ -33,370 +33,376 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converted the existing arch-vt8500 gpio to a platform_device.
-Added support for WM8505 and WM8650 GPIO controllers.
-Replaced existing readl/writel calls with _relaxed variants.
-Replaced existing unsigned variables with u32 to match register size.
+Update vt8500-fb, wm8505-fb and wmt-ge-rops to support device
+tree bindings.
+Small change in wm8505-fb.c to support WM8650 framebuffer color
+format.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/gpio/Kconfig       |    6 +
- drivers/gpio/Makefile      |    1 +
- drivers/gpio/gpio-vt8500.c |  316 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 323 insertions(+)
- create mode 100644 drivers/gpio/gpio-vt8500.c
+ drivers/video/Kconfig       |    6 +--
+ drivers/video/vt8500lcdfb.c |   79 ++++++++++++++++++++++++++++++-----
+ drivers/video/wm8505fb.c    |   97 ++++++++++++++++++++++++++++++++++++-------
+ drivers/video/wmt_ge_rops.c |    9 +++-
+ 4 files changed, 161 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 542f0c0..3c8897a 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -183,6 +183,12 @@ config GPIO_STA2X11
- 	  Say yes here to support the STA2x11/ConneXt GPIO device.
- 	  The GPIO module has 128 GPIO pins with alternate functions.
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 0217f74..b66d951 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -1788,7 +1788,7 @@ config FB_AU1200
  
-+config GPIO_VT8500
-+	bool "VIA/Wondermedia SoC GPIO Support"
-+	depends on ARCH_VT8500
-+	help
-+	  Say yes here to support the VT8500/WM8505/WM8650 GPIO controller.
-+
- config GPIO_XILINX
- 	bool "Xilinx GPIO support"
- 	depends on PPC_OF || MICROBLAZE
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 0f55662..2c014b9 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -66,6 +66,7 @@ obj-$(CONFIG_GPIO_TPS65912)	+= gpio-tps65912.o
- obj-$(CONFIG_GPIO_TWL4030)	+= gpio-twl4030.o
- obj-$(CONFIG_GPIO_UCB1400)	+= gpio-ucb1400.o
- obj-$(CONFIG_GPIO_VR41XX)	+= gpio-vr41xx.o
-+obj-$(CONFIG_GPIO_VT8500)	+= gpio-vt8500.o
- obj-$(CONFIG_GPIO_VX855)	+= gpio-vx855.o
- obj-$(CONFIG_GPIO_WM831X)	+= gpio-wm831x.o
- obj-$(CONFIG_GPIO_WM8350)	+= gpio-wm8350.o
-diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
-new file mode 100644
-index 0000000..bcd8e4a
---- /dev/null
-+++ b/drivers/gpio/gpio-vt8500.c
-@@ -0,0 +1,316 @@
-+/* drivers/gpio/gpio-vt8500.c
-+ *
-+ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
-+ * Based on arch/arm/mach-vt8500/gpio.c:
-+ * - Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/bitops.h>
+ config FB_VT8500
+ 	bool "VT8500 LCD Driver"
+-	depends on (FB = y) && ARM && ARCH_VT8500 && VTWM_VERSION_VT8500
++	depends on (FB = y) && ARM && ARCH_VT8500
+ 	select FB_WMT_GE_ROPS
+ 	select FB_SYS_IMAGEBLIT
+ 	help
+@@ -1797,11 +1797,11 @@ config FB_VT8500
+ 
+ config FB_WM8505
+ 	bool "WM8505 frame buffer support"
+-	depends on (FB = y) && ARM && ARCH_VT8500 && VTWM_VERSION_WM8505
++	depends on (FB = y) && ARM && ARCH_VT8500
+ 	select FB_WMT_GE_ROPS
+ 	select FB_SYS_IMAGEBLIT
+ 	help
+-	  This is the framebuffer driver for WonderMedia WM8505
++	  This is the framebuffer driver for WonderMedia WM8505/WM8650
+ 	  integrated LCD controller.
+ 
+ source "drivers/video/geode/Kconfig"
+diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
+index 2a5fe6e..758e359 100644
+--- a/drivers/video/vt8500lcdfb.c
++++ b/drivers/video/vt8500lcdfb.c
+@@ -35,6 +35,13 @@
+ #include "vt8500lcdfb.h"
+ #include "wmt_ge_rops.h"
+ 
++#ifdef CONFIG_OF
 +#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_device.h>
-+
-+/*
-+	We handle GPIOs by bank, each bank containing up to 32 GPIOs covered
-+	by one set of registers (although not all may be valid).
-+
-+	Because different SoC's have different register offsets, we pass the
-+	register offsets as data in vt8500_gpio_dt_ids[].
-+
-+	A value of NO_REG is used to indicate that this register is not
-+	supported. Only used for ->en at the moment.
-+*/
-+
-+#define NO_REG	0xFFFF
-+
-+/*
-+ * struct vt8500_gpio_bank_regoffsets
-+ * @en: offset to enable register of the bank
-+ * @dir: offset to direction register of the bank
-+ * @data_out: offset to the data out register of the bank
-+ * @data_in: offset to the data in register of the bank
-+ * @ngpio: highest valid pin in this bank
-+ */
-+
-+struct vt8500_gpio_bank_regoffsets {
-+	unsigned int	en;
-+	unsigned int	dir;
-+	unsigned int	data_out;
-+	unsigned int	data_in;
-+	unsigned char	ngpio;
-+};
-+
-+struct vt8500_gpio_data {
-+	unsigned int				num_banks;
-+	struct vt8500_gpio_bank_regoffsets	banks[];
-+};
-+
-+#define VT8500_BANK(__en, __dir, __out, __in, __ngpio)		\
-+{								\
-+	.en = __en,						\
-+	.dir = __dir,						\
-+	.data_out = __out,					\
-+	.data_in = __in,					\
-+	.ngpio = __ngpio,					\
-+}
-+
-+static struct vt8500_gpio_data vt8500_data = {
-+	.num_banks	= 7,
-+	.banks	= {
-+		VT8500_BANK(0x00, 0x20, 0x40, 0x60, 26),
-+		VT8500_BANK(0x04, 0x24, 0x44, 0x64, 28),
-+		VT8500_BANK(0x08, 0x28, 0x48, 0x68, 31),
-+		VT8500_BANK(0x0C, 0x2C, 0x4C, 0x6C, 19),
-+		VT8500_BANK(0x10, 0x30, 0x50, 0x70, 19),
-+		VT8500_BANK(0x14, 0x34, 0x54, 0x74, 23),
-+		VT8500_BANK(NO_REG, 0x3C, 0x5C, 0x7C, 9),
-+	},
-+};
-+
-+static struct vt8500_gpio_data wm8505_data = {
-+	.num_banks	= 10,
-+	.banks	= {
-+		VT8500_BANK(0x40, 0x68, 0x90, 0xB8, 8),
-+		VT8500_BANK(0x44, 0x6C, 0x94, 0xBC, 32),
-+		VT8500_BANK(0x48, 0x70, 0x98, 0xC0, 6),
-+		VT8500_BANK(0x4C, 0x74, 0x9C, 0xC4, 16),
-+		VT8500_BANK(0x50, 0x78, 0xA0, 0xC8, 25),
-+		VT8500_BANK(0x54, 0x7C, 0xA4, 0xCC, 5),
-+		VT8500_BANK(0x58, 0x80, 0xA8, 0xD0, 5),
-+		VT8500_BANK(0x5C, 0x84, 0xAC, 0xD4, 12),
-+		VT8500_BANK(0x60, 0x88, 0xB0, 0xD8, 16),
-+		VT8500_BANK(0x64, 0x8C, 0xB4, 0xDC, 22),
-+	},
-+};
-+
-+/*
-+ * No information about which bits are valid so we just make
-+ * them all available until its figured out.
-+ */
-+static struct vt8500_gpio_data wm8650_data = {
-+	.num_banks	= 9,
-+	.banks	= {
-+		VT8500_BANK(0x40, 0x80, 0xC0, 0x00, 32),
-+		VT8500_BANK(0x44, 0x84, 0xC4, 0x04, 32),
-+		VT8500_BANK(0x48, 0x88, 0xC8, 0x08, 32),
-+		VT8500_BANK(0x4C, 0x8C, 0xCC, 0x0C, 32),
-+		VT8500_BANK(0x50, 0x90, 0xD0, 0x10, 32),
-+		VT8500_BANK(0x54, 0x94, 0xD4, 0x14, 32),
-+		VT8500_BANK(0x58, 0x98, 0xD8, 0x18, 32),
-+		VT8500_BANK(0x5C, 0x9C, 0xDC, 0x1C, 32),
-+		VT8500_BANK(0x7C, 0xBC, 0xFC, 0x3C, 32),
-+	},
-+};
-+
-+struct vt8500_gpio_chip {
-+	struct gpio_chip		chip;
-+
-+	const struct vt8500_gpio_bank_regoffsets *regs;
-+	void __iomem	*base;
-+};
++#include <linux/of_fdt.h>
++#include <linux/memblock.h>
++#endif
 +
 +
-+#define to_vt8500(__chip) container_of(__chip, struct vt8500_gpio_chip, chip)
+ #define to_vt8500lcd_info(__info) container_of(__info, \
+ 						struct vt8500lcd_info, fb)
+ 
+@@ -270,15 +277,21 @@ static int __devinit vt8500lcd_probe(struct platform_device *pdev)
+ {
+ 	struct vt8500lcd_info *fbi;
+ 	struct resource *res;
+-	struct vt8500fb_platform_data *pdata = pdev->dev.platform_data;
+ 	void *addr;
+ 	int irq, ret;
+ 
++	struct fb_videomode	of_mode;
++	struct device_node	*np;
++	u32			bpp;
++	dma_addr_t fb_mem_phys;
++	unsigned long fb_mem_len;
++	void *fb_mem_virt;
 +
-+static int vt8500_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	u32 val;
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
-+
-+	if (vt8500_chip->regs->en == NO_REG)
-+		return 0;
-+
-+	val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->en);
-+	val |= BIT(offset);
-+	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->en);
-+
-+	return 0;
-+}
-+
-+static void vt8500_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
-+	u32 val;
-+
-+	if (vt8500_chip->regs->en == NO_REG)
-+		return;
-+
-+	val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->en);
-+	val &= ~BIT(offset);
-+	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->en);
-+}
-+
-+static int vt8500_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
-+
-+	u32 val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->dir);
-+	val &= ~BIT(offset);
-+	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->dir);
-+
-+	return 0;
-+}
-+
-+static int vt8500_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
-+								int value)
-+{
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
-+
-+	u32 val = readl_relaxed(vt8500_chip->base + vt8500_chip->regs->dir);
-+	val |= BIT(offset);
-+	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->dir);
-+
-+	if (value) {
-+		val = readl_relaxed(vt8500_chip->base +
-+						vt8500_chip->regs->data_out);
-+		val |= BIT(offset);
-+		writel_relaxed(val, vt8500_chip->base +
-+						vt8500_chip->regs->data_out);
-+	}
-+	return 0;
-+}
-+
-+static int vt8500_gpio_get_value(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
-+
-+	return (readl_relaxed(vt8500_chip->base + vt8500_chip->regs->data_in) >>
-+								offset) & 1;
-+}
-+
-+static void vt8500_gpio_set_value(struct gpio_chip *chip, unsigned offset,
-+								int value)
-+{
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
-+
-+	u32 val = readl_relaxed(vt8500_chip->base +
-+						vt8500_chip->regs->data_out);
-+	if (value)
-+		val |= BIT(offset);
-+	else
-+		val &= ~BIT(offset);
-+
-+	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->data_out);
-+}
-+
-+static int vt8500_of_xlate(struct gpio_chip *gc,
-+			    const struct of_phandle_args *gpiospec, u32 *flags)
-+{
-+	/* bank if specificed in gpiospec->args[0] */
-+	if (flags)
-+		*flags = gpiospec->args[2];
-+
-+	return gpiospec->args[1];
-+}
-+
-+static int vt8500_add_chips(struct platform_device *pdev, void __iomem *base,
-+				const struct vt8500_gpio_data *data)
-+{
-+	struct vt8500_gpio_chip *vtchip;
-+	struct gpio_chip *chip;
-+	int i;
-+	int pin_cnt = 0;
-+
-+	vtchip = devm_kzalloc(&pdev->dev,
-+			sizeof(struct vt8500_gpio_chip) * data->num_banks,
-+			GFP_KERNEL);
-+	if (!vtchip) {
-+		pr_err("%s: failed to allocate chip memory\n", __func__);
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < data->num_banks; i++) {
-+		vtchip[i].base = base;
-+		vtchip[i].regs = &data->banks[i];
-+
-+		chip = &vtchip[i].chip;
-+
-+		chip->of_xlate = vt8500_of_xlate;
-+		chip->of_gpio_n_cells = 3;
-+		chip->of_node = pdev->dev.of_node;
-+
-+		chip->request = vt8500_gpio_request;
-+		chip->free = vt8500_gpio_free;
-+		chip->direction_input = vt8500_gpio_direction_input;
-+		chip->direction_output = vt8500_gpio_direction_output;
-+		chip->get = vt8500_gpio_get_value;
-+		chip->set = vt8500_gpio_set_value;
-+		chip->can_sleep = 0;
-+		chip->base = pin_cnt;
-+		chip->ngpio = data->banks[i].ngpio;
-+
-+		pin_cnt += data->banks[i].ngpio;
-+
-+		gpiochip_add(chip);
-+	}
-+	return 0;
-+}
-+
-+static struct of_device_id vt8500_gpio_dt_ids[] = {
-+	{ .compatible = "via,vt8500-gpio", .data = &vt8500_data, },
-+	{ .compatible = "wm,wm8505-gpio", .data = &wm8505_data, },
-+	{ .compatible = "wm,wm8650-gpio", .data = &wm8650_data, },
-+	{ /* Sentinel */ },
-+};
-+
-+static int __devinit vt8500_gpio_probe(struct platform_device *pdev)
-+{
-+	void __iomem *gpio_base;
-+	struct device_node *np;
-+	const struct of_device_id *of_id =
-+				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
-+
-+	if (!of_id) {
-+		dev_err(&pdev->dev, "Failed to find gpio controller\n");
-+		return -ENODEV;
-+	}
-+
-+	np = pdev->dev.of_node;
+ 	ret = -ENOMEM;
+ 	fbi = NULL;
+ 
+-	fbi = kzalloc(sizeof(struct vt8500lcd_info) + sizeof(u32) * 16,
+-							GFP_KERNEL);
++	fbi = devm_kzalloc(&pdev->dev, sizeof(struct vt8500lcd_info)
++			+ sizeof(u32) * 16, GFP_KERNEL);
+ 	if (!fbi) {
+ 		dev_err(&pdev->dev, "Failed to initialize framebuffer device\n");
+ 		ret = -ENOMEM;
+@@ -333,9 +346,45 @@ static int __devinit vt8500lcd_probe(struct platform_device *pdev)
+ 		goto failed_free_res;
+ 	}
+ 
+-	fbi->fb.fix.smem_start	= pdata->video_mem_phys;
+-	fbi->fb.fix.smem_len	= pdata->video_mem_len;
+-	fbi->fb.screen_base	= pdata->video_mem_virt;
++	np = of_parse_phandle(pdev->dev.of_node, "via,display", 0);
 +	if (!np) {
-+		dev_err(&pdev->dev, "Missing GPIO description in devicetree\n");
-+		return -EFAULT;
++		pr_err("%s: No display description in Device Tree\n", __func__);
++		ret = -EINVAL;
++		goto failed_free_res;
 +	}
 +
-+	gpio_base = of_iomap(np, 0);
-+	if (!gpio_base) {
-+		dev_err(&pdev->dev, "Unable to map GPIO registers\n");
-+		of_node_put(np);
++	/*
++	 * This code is copied from Sascha Hauer's of_videomode helper
++	 * and can be replaced with a call to the helper once mainlined
++	 */
++	ret = 0;
++	ret |= of_property_read_u32(np, "xres", &of_mode.xres);
++	ret |= of_property_read_u32(np, "yres", &of_mode.yres);
++	ret |= of_property_read_u32(np, "left-margin", &of_mode.left_margin);
++	ret |= of_property_read_u32(np, "right-margin", &of_mode.right_margin);
++	ret |= of_property_read_u32(np, "hsync-len", &of_mode.hsync_len);
++	ret |= of_property_read_u32(np, "upper-margin", &of_mode.upper_margin);
++	ret |= of_property_read_u32(np, "lower-margin", &of_mode.lower_margin);
++	ret |= of_property_read_u32(np, "vsync-len", &of_mode.vsync_len);
++	ret |= of_property_read_u32(np, "bpp", &bpp);
++	if (ret) {
++		pr_err("%s: Unable to read display properties\n", __func__);
++		goto failed_free_res;
++	}
++	of_mode.vmode = FB_VMODE_NONINTERLACED;
++
++	/* try allocating the framebuffer */
++	fb_mem_len = of_mode.xres * of_mode.yres * 2 * (bpp / 8);
++	fb_mem_virt = dma_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
++				GFP_KERNEL);
++	if (!fb_mem_virt) {
++		pr_err("%s: Failed to allocate framebuffer\n", __func__);
 +		return -ENOMEM;
-+	}
++	};
 +
-+	vt8500_add_chips(pdev, gpio_base, of_id->data);
++	fbi->fb.fix.smem_start	= fb_mem_phys;
++	fbi->fb.fix.smem_len	= fb_mem_len;
++	fbi->fb.screen_base	= fb_mem_virt;
+ 
+ 	fbi->palette_size	= PAGE_ALIGN(512);
+ 	fbi->palette_cpu	= dma_alloc_coherent(&pdev->dev,
+@@ -370,10 +419,11 @@ static int __devinit vt8500lcd_probe(struct platform_device *pdev)
+ 		goto failed_free_irq;
+ 	}
+ 
+-	fb_videomode_to_var(&fbi->fb.var, &pdata->mode);
+-	fbi->fb.var.bits_per_pixel	= pdata->bpp;
+-	fbi->fb.var.xres_virtual	= pdata->xres_virtual;
+-	fbi->fb.var.yres_virtual	= pdata->yres_virtual;
++	fb_videomode_to_var(&fbi->fb.var, &of_mode);
 +
-+	return 0;
-+}
-+
-+static struct platform_driver vt8500_gpio_driver = {
-+	.probe		= vt8500_gpio_probe,
-+	.driver		= {
-+		.name	= "vt8500-gpio",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = vt8500_gpio_dt_ids,
-+	},
++	fbi->fb.var.xres_virtual	= of_mode.xres;
++	fbi->fb.var.yres_virtual	= of_mode.yres * 2;
++	fbi->fb.var.bits_per_pixel	= bpp;
+ 
+ 	ret = vt8500lcd_set_par(&fbi->fb);
+ 	if (ret) {
+@@ -448,12 +498,18 @@ static int __devexit vt8500lcd_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id via_dt_ids[] = {
++	{ .compatible = "via,vt8500-fb", },
++	{}
 +};
 +
-+module_platform_driver(vt8500_gpio_driver);
-+
-+MODULE_DESCRIPTION("VT8500 GPIO Driver");
-+MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
+ static struct platform_driver vt8500lcd_driver = {
+ 	.probe		= vt8500lcd_probe,
+ 	.remove		= __devexit_p(vt8500lcd_remove),
+ 	.driver		= {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "vt8500-lcd",
++		.of_match_table = of_match_ptr(via_dt_ids),
+ 	},
+ };
+ 
+@@ -461,4 +517,5 @@ module_platform_driver(vt8500lcd_driver);
+ 
+ MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
+ MODULE_DESCRIPTION("LCD controller driver for VIA VT8500");
+-MODULE_LICENSE("GPL");
 +MODULE_LICENSE("GPL v2");
-+MODULE_DEVICE_TABLE(of, vt8500_gpio_dt_ids);
++MODULE_DEVICE_TABLE(of, via_dt_ids);
+diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+index c8703bd..d4448b0 100644
+--- a/drivers/video/wm8505fb.c
++++ b/drivers/video/wm8505fb.c
+@@ -28,6 +28,9 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/platform_device.h>
+ #include <linux/wait.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/memblock.h>
+ 
+ #include <mach/vt8500fb.h>
+ 
+@@ -59,8 +62,12 @@ static int wm8505fb_init_hw(struct fb_info *info)
+ 	writel(fbi->fb.fix.smem_start, fbi->regbase + WMT_GOVR_FBADDR);
+ 	writel(fbi->fb.fix.smem_start, fbi->regbase + WMT_GOVR_FBADDR1);
+ 
+-	/* Set in-memory picture format to RGB 32bpp */
+-	writel(0x1c,		       fbi->regbase + WMT_GOVR_COLORSPACE);
++	/*
++	 * Set in-memory picture format to RGB
++	 * 0x31C sets the correct color mode (RGB565) for WM8650
++	 * Bit 8+9 (0x300) are ignored on WM8505 as reserved
++	 */
++	writel(0x31c,		       fbi->regbase + WMT_GOVR_COLORSPACE);
+ 	writel(1,		       fbi->regbase + WMT_GOVR_COLORSPACE1);
+ 
+ 	/* Virtual buffer size */
+@@ -127,6 +134,18 @@ static int wm8505fb_set_par(struct fb_info *info)
+ 		info->var.blue.msb_right = 0;
+ 		info->fix.visual = FB_VISUAL_TRUECOLOR;
+ 		info->fix.line_length = info->var.xres_virtual << 2;
++	} else if (info->var.bits_per_pixel == 16) {
++		info->var.red.offset = 11;
++		info->var.red.length = 5;
++		info->var.red.msb_right = 0;
++		info->var.green.offset = 5;
++		info->var.green.length = 6;
++		info->var.green.msb_right = 0;
++		info->var.blue.offset = 0;
++		info->var.blue.length = 5;
++		info->var.blue.msb_right = 0;
++		info->fix.visual = FB_VISUAL_TRUECOLOR;
++		info->fix.line_length = info->var.xres_virtual << 1;
+ 	}
+ 
+ 	wm8505fb_set_timing(info);
+@@ -246,16 +265,20 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 	struct wm8505fb_info	*fbi;
+ 	struct resource		*res;
+ 	void			*addr;
+-	struct vt8500fb_platform_data *pdata;
+ 	int ret;
+ 
+-	pdata = pdev->dev.platform_data;
++	struct fb_videomode	of_mode;
++	struct device_node	*np;
++	u32			bpp;
++	dma_addr_t fb_mem_phys;
++	unsigned long fb_mem_len;
++	void *fb_mem_virt;
+ 
+ 	ret = -ENOMEM;
+ 	fbi = NULL;
+ 
+-	fbi = kzalloc(sizeof(struct wm8505fb_info) + sizeof(u32) * 16,
+-							GFP_KERNEL);
++	fbi = devm_kzalloc(&pdev->dev, sizeof(struct wm8505fb_info) +
++			sizeof(u32) * 16, GFP_KERNEL);
+ 	if (!fbi) {
+ 		dev_err(&pdev->dev, "Failed to initialize framebuffer device\n");
+ 		ret = -ENOMEM;
+@@ -305,21 +328,58 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
+ 		goto failed_free_res;
+ 	}
+ 
+-	fb_videomode_to_var(&fbi->fb.var, &pdata->mode);
++	np = of_parse_phandle(pdev->dev.of_node, "via,display", 0);
++	if (!np) {
++		pr_err("%s: No display description in Device Tree\n", __func__);
++		ret = -EINVAL;
++		goto failed_free_res;
++	}
++
++	/*
++	 * This code is copied from Sascha Hauer's of_videomode helper
++	 * and can be replaced with a call to the helper once mainlined
++	 */
++	ret = 0;
++	ret |= of_property_read_u32(np, "xres", &of_mode.xres);
++	ret |= of_property_read_u32(np, "yres", &of_mode.yres);
++	ret |= of_property_read_u32(np, "left-margin", &of_mode.left_margin);
++	ret |= of_property_read_u32(np, "right-margin", &of_mode.right_margin);
++	ret |= of_property_read_u32(np, "hsync-len", &of_mode.hsync_len);
++	ret |= of_property_read_u32(np, "upper-margin", &of_mode.upper_margin);
++	ret |= of_property_read_u32(np, "lower-margin", &of_mode.lower_margin);
++	ret |= of_property_read_u32(np, "vsync-len", &of_mode.vsync_len);
++	ret |= of_property_read_u32(np, "bpp", &bpp);
++	if (ret) {
++		pr_err("%s: Unable to read display properties\n", __func__);
++		goto failed_free_res;
++	}
++
++	of_mode.vmode = FB_VMODE_NONINTERLACED;
++	fb_videomode_to_var(&fbi->fb.var, &of_mode);
+ 
+ 	fbi->fb.var.nonstd		= 0;
+ 	fbi->fb.var.activate		= FB_ACTIVATE_NOW;
+ 
+ 	fbi->fb.var.height		= -1;
+ 	fbi->fb.var.width		= -1;
+-	fbi->fb.var.xres_virtual	= pdata->xres_virtual;
+-	fbi->fb.var.yres_virtual	= pdata->yres_virtual;
+-	fbi->fb.var.bits_per_pixel	= pdata->bpp;
+ 
+-	fbi->fb.fix.smem_start	= pdata->video_mem_phys;
+-	fbi->fb.fix.smem_len	= pdata->video_mem_len;
+-	fbi->fb.screen_base	= pdata->video_mem_virt;
+-	fbi->fb.screen_size	= pdata->video_mem_len;
++	/* try allocating the framebuffer */
++	fb_mem_len = of_mode.xres * of_mode.yres * 2 * (bpp / 8);
++	fb_mem_virt = dma_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
++				GFP_KERNEL);
++	if (!fb_mem_virt) {
++		pr_err("%s: Failed to allocate framebuffer\n", __func__);
++		return -ENOMEM;
++	};
++
++	fbi->fb.var.xres_virtual	= of_mode.xres;
++	fbi->fb.var.yres_virtual	= of_mode.yres * 2;
++	fbi->fb.var.bits_per_pixel	= bpp;
++
++	fbi->fb.fix.smem_start		= fb_mem_phys;
++	fbi->fb.fix.smem_len		= fb_mem_len;
++	fbi->fb.screen_base		= fb_mem_virt;
++	fbi->fb.screen_size		= fb_mem_len;
+ 
+ 	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
+ 		dev_err(&pdev->dev, "Failed to allocate color map\n");
+@@ -395,12 +455,18 @@ static int __devexit wm8505fb_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id wmt_dt_ids[] = {
++	{ .compatible = "wm,wm8505-fb", },
++	{}
++};
++
+ static struct platform_driver wm8505fb_driver = {
+ 	.probe		= wm8505fb_probe,
+ 	.remove		= __devexit_p(wm8505fb_remove),
+ 	.driver		= {
+ 		.owner	= THIS_MODULE,
+ 		.name	= DRIVER_NAME,
++		.of_match_table = of_match_ptr(wmt_dt_ids),
+ 	},
+ };
+ 
+@@ -408,4 +474,5 @@ module_platform_driver(wm8505fb_driver);
+ 
+ MODULE_AUTHOR("Ed Spiridonov <edo.rus@gmail.com>");
+ MODULE_DESCRIPTION("Framebuffer driver for WMT WM8505");
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("GPL v2");
++MODULE_DEVICE_TABLE(of, wmt_dt_ids);
+diff --git a/drivers/video/wmt_ge_rops.c b/drivers/video/wmt_ge_rops.c
+index 55be386..ba025b4 100644
+--- a/drivers/video/wmt_ge_rops.c
++++ b/drivers/video/wmt_ge_rops.c
+@@ -158,12 +158,18 @@ static int __devexit wmt_ge_rops_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id wmt_dt_ids[] = {
++	{ .compatible = "wm,prizm-ge-rops", },
++	{ /* sentinel */ }
++};
++
+ static struct platform_driver wmt_ge_rops_driver = {
+ 	.probe		= wmt_ge_rops_probe,
+ 	.remove		= __devexit_p(wmt_ge_rops_remove),
+ 	.driver		= {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "wmt_ge_rops",
++		.of_match_table = of_match_ptr(wmt_dt_ids),
+ 	},
+ };
+ 
+@@ -172,4 +178,5 @@ module_platform_driver(wmt_ge_rops_driver);
+ MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com");
+ MODULE_DESCRIPTION("Accelerators for raster operations using "
+ 		   "WonderMedia Graphics Engine");
+-MODULE_LICENSE("GPL");
++MODULE_LICENSE("GPL v2");
++MODULE_DEVICE_TABLE(of, wmt_dt_ids);
 -- 
 1.7.9.5
 
