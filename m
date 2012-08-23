@@ -1,368 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934378Ab2HWUwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:52:06 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39208 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934288Ab2HWUwB (ORCPT
+	id S934390Ab2HWUwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:52:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38031 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934288Ab2HWUwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:52:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408973.PFKjjaXiS1@localhost.localdomain>
-References: <1408973.PFKjjaXiS1@localhost.localdomain>
-Date: Thu, 23 Aug 2012 23:51:59 +0300
-X-Google-Sender-Auth: Cv5pMQtGR8YZVMfpfPzCqx4aiwo
-Message-ID: <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
-Subject: Re: [PATCHv2 1/1] perf: Port to Android
-From: Pekka Enberg <penberg@kernel.org>
-To: Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 23 Aug 2012 16:52:46 -0400
+Subject: Re: [REGRESSION] 3.6-rc2 and 3.6-rc3: TCP/IP network connection
+ hang
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <201208232235.53312.Martin@lichtvoll.de>
+References: <201208232235.53312.Martin@lichtvoll.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Aug 2012 22:52:41 +0200
+Message-ID: <1345755161.5904.1816.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bernard,
+On Thu, 2012-08-23 at 22:35 +0200, Martin Steigerwald wrote:
+> Hi!
+> 
+> Its a bit difficult to describe. With 3.6-rc2 and 3.6-rc3 on an Lenovo
+> ThinkPad T520 from Linus git, I get occasional network hangs:
+> 
+> On for example sending a small mail via SMTP to my Debian Squeeze
+> based server via a ASUS WL-500gP Router with
+> Debian Squeeze and some 2.6.34 kernel KMail hangs.
+> 
+> It just doesn´t complete sending out the mail.
+> 
+> I have seen this once with 3.6-rc2 and now also with 3.6-rc3 that I
+> tried cause it had quite some network fixes.
+> 
+> Notebook: 10.0.0.10 (IP and MAC changed)
+> Gateway:  10.0.0.1 (IP and MAC changed)
+> Server: 194.150.191.11
+> 
+> 
+> Below is a tshark capture of such an occurence.
+> 
+> I had a network hang with 3.6-rc2 with something else as well, but I do
+> not remember what it was and whether it was upload or download.
+> 
+> This is upload.
+> 
+> 
+> I never seen this with any previous kernel upto 3.5.2 from Greg K.H. git.
+> 
+> 
+> merkaba:~> tshark -ni eth0
+> tshark: Lua: Error during loading:
+>  [string "/usr/share/wireshark/init.lua"]:45: dofile has been disabled
+> Running as user "root" and group "root". This could be dangerous.
+> Capturing on eth0
+>   0.000000    10.0.0.10 -> 194.150.191.11 TCP 74 58915 > 25 [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 
+> TSval=15189797 TSecr=0 WS=128
+>   0.025222 194.150.191.11 -> 10.0.0.10    TCP 74 25 > 58915 [SYN, ACK] Seq=0 Ack=1 Win=5792 Len=0 MSS=1460 
+> SACK_PERM=1 TSval=108848542 TSecr=15189797 WS=16
+>   0.025309    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=1 Ack=1 Win=14720 Len=0 TSval=15189822 
+> TSecr=108848542
+>   0.066680 194.150.191.11 -> 10.0.0.10    SMTP 116 S: 220 mail.lichtvoll.de ESMTP Postfix (Debian/GNU)
+>   0.066745    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=1 Ack=51 Win=14720 Len=0 TSval=15189864 
+> TSecr=108848553
+>   0.066881    10.0.0.10 -> 194.150.191.11 SMTP 89 C: EHLO merkaba.localnet
+>   0.092287 194.150.191.11 -> 10.0.0.10    TCP 66 25 > 58915 [ACK] Seq=51 Ack=24 Win=5792 Len=0 TSval=108848559 
+> TSecr=15189864
+>   0.092351 194.150.191.11 -> 10.0.0.10    SMTP 206 S: 250-mail.lichtvoll.de | 250-PIPELINING | 250-SIZE 20000000 | 250-VRFY | 
+> 250-ETRN | 250-STARTTLS | 250-ENHANCEDSTATUSCODES | 250-8BITMIME | 250 DSN
+>   0.092485    10.0.0.10 -> 194.150.191.11 SMTP 76 C: STARTTLS
+>   0.118043 194.150.191.11 -> 10.0.0.10    SMTP 96 S: 220 2.0.0 Ready to start TLS
+>   0.157589    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=34 Ack=221 Win=15744 Len=0 TSval=15189955 
+> TSecr=108848566
+>   0.166043    10.0.0.10 -> 194.150.191.11 SSL 292 Client Hello
+>   0.214300 194.150.191.11 -> 10.0.0.10    TLSv1 1510 Server Hello, Certificate, Server Key Exchange, Server Hello Done
+>   0.214389    10.0.0.10 -> 194.150.191.11 TCP 66 58915 > 25 [ACK] Seq=260 Ack=1665 Win=18688 Len=0 TSval=15190011 
+> TSecr=108848589
+>   0.218072    10.0.0.10 -> 194.150.191.11 TLSv1 264 Client Key Exchange, Change Cipher Spec, Encrypted Handshake Message
+>   0.254985 194.150.191.11 -> 10.0.0.10    TLSv1 316 New Session Ticket, Change Cipher Spec, Encrypted Handshake Message
+>   0.258463    10.0.0.10 -> 194.150.191.11 TLSv1 135 Application Data
+>   0.285463 194.150.191.11 -> 10.0.0.10    TLSv1 215 Application Data
+>   0.287155    10.0.0.10 -> 194.150.191.11 TLSv1 151 Application Data
+>   0.313450 194.150.191.11 -> 10.0.0.10    TLSv1 135 Application Data
+>   0.313706    10.0.0.10 -> 194.150.191.11 TLSv1 183 Application Data
+>   0.347362 194.150.191.11 -> 10.0.0.10    TLSv1 151 Application Data
+>   0.349485    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP segment of a reassembled PDU]
+>   0.349522    10.0.0.10 -> 194.150.191.11 TLSv1 1327 Application Data
+>   0.350700     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>   0.384716 194.150.191.11 -> 10.0.0.10    TCP 78 [TCP Dup ACK 22#1] 25 > 58915 [ACK] Seq=2218 Ack=729 Win=7936 Len=0 
+> TSval=108848632 TSecr=15190111 SLE=2177 SRE=3438
+>   0.392573    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15190190 TSecr=108848632
+>   0.393809     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>   0.624613    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15190422 TSecr=108848632
+>   0.625846     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>   1.089586    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15190887 TSecr=108848632
+>   1.090836     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>   2.018584    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15191816 TSecr=108848632
+>   2.019846     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>   3.878591    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15193676 TSecr=108848632
+>   3.879797     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>   5.022069 10:00:00:01:aa:bb -> 10:00:00:10:cc:dd ARP 60 Who has 10.0.0.10?  Tell 10.0.0.1
+>   5.022115 10:00:00:10:cc:dd -> 10:00:00:01:aa:bb ARP 42 10.0.0.10 is at 10:00:00:10:cc:dd
+>   7.594598    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15197392 TSecr=108848632
+>   7.595882     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>  15.034613    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15204832 TSecr=108848632
+>  15.035919     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>  29.914590    10.0.0.10 -> 194.150.191.11 TCP 1514 [TCP Retransmission] 58915 > 25 [ACK] Seq=729 Ack=2218 Win=24448 
+> Len=1448 TSval=15219712 TSecr=108848632
+>  29.915903     10.0.0.1 -> 10.0.0.10    ICMP 590 Destination unreachable (Fragmentation needed)
+>  34.922706 10:00:00:10:cc:dd -> 10:00:00:01:aa:bb ARP 42 Who has 10.0.0.1?  Tell 10.0.0.10
+>  34.923296 10:00:00:01:aa:bb -> 10:00:00:10:cc:dd ARP 60 10.0.0.1 is at 10:00:00:01:aa:bb
+> 
+> 
+> Thats it. Nothing more is happening.
+> 
+> 
+> Notebook:
+> 
+> martin@merkaba:~> lspci -nn | grep Ethernet 
+> 00:19.0 Ethernet controller [0200]: Intel Corporation 82579LM Gigabit Network Connection [8086:1502] (rev 04)
+> 
+> martin@merkaba:~> cat /proc/version
+> Linux version 3.5.2-tp520 (martin@merkaba) (gcc version 4.7.1 (Debian 4.7.1-7) ) #1 SMP PREEMPT Sun Aug 19 12:39:04 CEST 2012
+> 
+> 
+> ASUS WL-500gP Premium:
+> 
+> gayatri:~# lspci -nn
+> 00:00.0 Host bridge [0600]: Broadcom Corporation BCM4704 PCI to SB Bridge [14e4:4704] (rev 09)
+> 00:02.0 Network controller [0280]: Broadcom Corporation BCM4318 [AirForce One 54g] 802.11g Wireless LAN Controller 
+> [14e4:4318] (rev 02)
+> 00:03.0 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
+> 00:03.1 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
+> 00:03.2 USB Controller [0c03]: VIA Technologies, Inc. USB 2.0 [1106:3104] (rev 65)
+> 
+> gayatri:~# cat /proc/version
+> Linux version 2.6.34.5 (amain@amain-laptop) (gcc version 4.3.3 (GCC) ) #1 Sun Sep 26 18:20:27 CEST 2010
+> 
+> (I tried to compile my own, but it didn´t work out.)
+> 
+> The ethernet seems to be missing from above. I am using 100 MBit wire based
+> ethernet port. Wireless is disabled.
+> 
+> 
+> Server is VMware ESX on some FSC server.
+> 
+> Thanks,
 
-(You didn't CC perf maintainers.)
+Fix is under way : 
 
-On Thu, Aug 23, 2012 at 6:01 PM, Bernhard Rosenkraenzer
-<bernhard.rosenkranzer@linaro.org> wrote:
-> commit 4dc79eed16e3bb03b3cf92fcc6127e107e7537aa
-> Author: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
-> Date:   Sat Jun 23 06:18:05 2012 +0200
->
->     perf: Port to Android
->
->     Adapt perf to deal with some missing functions in Bionic etc.
->
->     Change-Id: I0cda2aad3edba26e1be3aebc9475a229ea9e8356
->     Signed-off-by: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
->
+http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=commit;h=9b04f350057863d1fad1ba071e09362a1da3503e
 
-Your patch changelog format is pretty funky.
+Thanks
 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 92271d3..d15cdae 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
 
-Whoa! I had no idea Android userspace was f*cked up...
-
-> @@ -117,7 +117,7 @@ ifndef PERF_DEBUG
->  endif
->
->  CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99
-> $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS)
-> $(EXTRA_CFLAGS)
-> -EXTLIBS = -lpthread -lrt -lelf -lm
-> +EXTLIBS = -lpthread -lelf -lm
->  ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -
-> D_GNU_SOURCE
->  ALL_LDFLAGS = $(LDFLAGS)
->  STRIP ?= strip
-> @@ -474,12 +474,23 @@ FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
->  ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
->         FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
->         ifneq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
-> -               msg := $(error No gnu/libc-version.h found, please install glibc-
-> dev[el]/glibc-static);
-> +               ifeq ($(call try-cc,$(SOURCE_BIONIC),$(FLAGS_GLIBC)),y)
-> +                       # Found Bionic instead of glibc...
-> +                       # That works too, but needs a bit of special treatment
-> +                       BASIC_CFLAGS += -DANDROID -include compat-android.h
-> +                       ANDROID := 1
-> +               else
-> +                       msg := $(error No gnu/libc-version.h found, please install glibc-
-> dev[el]/glibc-static);
-> +               endif
->         else
->                 msg := $(error No libelf.h/libelf found, please install libelf-
-> dev/elfutils-libelf-devel);
->         endif
->  endif
->
-> +ifneq ($(ANDROID),1)
-> +EXTLIBS += -lrt
-> +endif
-> +
->  ifneq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
->         BASIC_CFLAGS += -DLIBELF_NO_MMAP
->  endif
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index be4e1ee..3a1d0cc 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -27,10 +27,43 @@
->  #include "util/cpumap.h"
->  #include "util/thread_map.h"
->
-> +#include <stdlib.h>
->  #include <unistd.h>
->  #include <sched.h>
->  #include <sys/mman.h>
->
-> +#ifdef ANDROID
-> +/* While stdlib.h has a prototype for it,
-> +   Bionic doesn't actually implement on_exit() */
-> +#ifndef ATEXIT_MAX
-> +#define ATEXIT_MAX 32
-> +#endif
-> +static int __on_exit_count = 0;
-> +typedef void (*on_exit_func_t)(int, void*);
-> +static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
-> +static void *__on_exit_args[ATEXIT_MAX];
-> +static int __exitcode = 0;
-> +static void __handle_on_exit_funcs();
-> +static int on_exit(on_exit_func_t function, void *arg);
-> +#define exit(x) (exit)(__exitcode = (x))
-> +
-> +static int on_exit(on_exit_func_t function, void *arg) {
-> +       if(__on_exit_count == ATEXIT_MAX)
-> +               return ENOMEM;
-> +       else if(__on_exit_count == 0)
-> +               atexit(__handle_on_exit_funcs);
-> +       __on_exit_funcs[__on_exit_count] = function;
-> +       __on_exit_args[__on_exit_count++] = arg;
-> +       return 0;
-> +}
-> +
-> +static void __handle_on_exit_funcs() {
-> +       for(int i=0; i<__on_exit_count; i++) {
-> +               __on_exit_funcs[i](__exitcode, __on_exit_args[i]);
-> +       }
-> +}
-> +#endif
-> +
->  enum write_mode_t {
->         WRITE_FORCE,
->         WRITE_APPEND
-> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-> index 223ffdc..6dbd2ee 100644
-> --- a/tools/perf/builtin-test.c
-> +++ b/tools/perf/builtin-test.c
-> @@ -469,10 +469,17 @@ static int test__basic_mmap(void)
->                 .watermark      = 0,
->         };
->         cpu_set_t cpu_set;
-> +#ifndef ANDROID
->         const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
->                                         "getpgid", };
->         pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
->                                       (void*)getpgid };
-> +#else
-> +       /* No getsid() on Android */
-> +       const char *syscall_names[] = { "getppid", "getpgrp",
-> +                                       "getpgid", };
-> +       pid_t (*syscalls[])(void) = { getppid, getpgrp, (void*)getpgid };
-> +#endif
->  #define nsyscalls ARRAY_SIZE(syscall_names)
->         int ids[nsyscalls];
->         unsigned int nr_events[nsyscalls],
-> diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-> index b382bd5..1521a275 100644
-> --- a/tools/perf/builtin.h
-> +++ b/tools/perf/builtin.h
-> @@ -1,6 +1,7 @@
->  #ifndef BUILTIN_H
->  #define BUILTIN_H
->
-> +#include "compat-android.h"
->  #include "util/util.h"
->  #include "util/strbuf.h"
->
-> diff --git a/tools/perf/compat-android.h b/tools/perf/compat-android.h
-> new file mode 100644
-> index 0000000..9a33f49
-> --- /dev/null
-> +++ b/tools/perf/compat-android.h
-> @@ -0,0 +1,96 @@
-> +/* Android compatibility header
-> + * Provides missing bits in Bionic on Android, ignored
-> + * on regular Linux.
-> + *
-> + * Written by Bernhard.Rosenkranzer@linaro.org
-> + *
-> + * Released into the public domain. Do with this file
-> + * whatever you want.
-> + */
-> +#ifdef ANDROID
-> +/* Bionic has its own idea about ALIGN, and kills other definitions.
-> + * Done outside the multiple-inclusion wrapper to make sure we
-> + * can override Bionic's ALIGN by simply including compat-android.h
-> + * again after including Bionic headers.
-> + */
-> +#undef ALIGN
-> +#undef __ALIGN_MASK
-> +#define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
-> +#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
-> +
-> +#ifndef _COMPAT_ANDROID_H_
-> +#define _COMPAT_ANDROID_H_ 1
-> +#include <stdio.h>
-> +#include <signal.h>
-> +#include <asm/page.h> /* for PAGE_SIZE */
-> +#include <asm/termios.h> /* for winsize */
-> +
-> +#ifndef __WORDSIZE
-> +#include <stdint.h>
-> +#define __WORDSIZE _BITSIZE
-> +#endif
-> +
-> +#ifndef roundup
-> +#define roundup(x, y)   ((((x)+((y)-1))/(y))*(y))
-> +#endif
-> +
-> +#ifndef __force
-> +#define __force
-> +#endif
-> +
-> +#ifndef __le32
-> +#define __le32 uint32_t
-> +#endif
-> +
-> +/* Assorted functions that are missing from Bionic */
-> +static void psignal(int sig, const char *s)
-> +{
-> +       if(sig >= 0 && sig < NSIG) {
-> +               if(s)
-> +                       fprintf(stderr, "%s: %s\n", s, sys_siglist[sig]);
-> +               else
-> +                       fprintf(stderr, "%s\n", sys_siglist[sig]);
-> +       } else {
-> +               if(s)
-> +                       fprintf(stderr, "%s: invalid signal\n", s);
-> +               else
-> +                       fputs("invalid signal\n", stderr);
-> +       }
-> +}
-> +
-> +static ssize_t getline(char **lineptr, size_t *n, FILE *stream)
-> +{
-> +       size_t ret = 0;
-> +
-> +       if (!lineptr || !n || !stream)
-> +               return -1;
-> +
-> +       if(!*lineptr) {
-> +               *n = 128;
-> +               *lineptr = (char*)malloc(*n);
-> +               if(!*lineptr)
-> +                       return -1;
-> +       }
-> +
-> +       while(!feof(stream) && !ferror(stream)) {
-> +               int c;
-> +               if(ret == *n) {
-> +                       *n += 128;
-> +                       *lineptr = (char*)realloc(*lineptr, *n);
-> +                       if(!*lineptr) {
-> +                               *n = 0;
-> +                               return -1;
-> +                       }
-> +               }
-> +               c = fgetc(stream);
-> +               if(c == EOF)
-> +                       break;
-> +               *lineptr[ret++] = c;
-> +               if(c == '\n')
-> +                       break;
-> +       }
-> +       *lineptr[ret] = 0;
-> +       return ret;
-> +}
-> +#endif
-> +#endif
-> diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-
-> tests.mak
-> index d9084e0..498cd4d 100644
-> --- a/tools/perf/config/feature-tests.mak
-> +++ b/tools/perf/config/feature-tests.mak
-> @@ -43,6 +43,19 @@ int main(void)
->  }
->  endef
->
-> +define SOURCE_BIONIC
-> +#include <android/api-level.h>
-> +
-> +int main(void)
-> +{
-> +#ifndef __ANDROID_API__
-> +       error out
-> +#else
-> +       return 0;
-> +#endif
-> +}
-> +endef
-> +
->  define SOURCE_ELF_MMAP
->  #include <libelf.h>
->  int main(void)
-> diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-> index efa5dc8..ead88ea 100644
-> --- a/tools/perf/util/annotate.h
-> +++ b/tools/perf/util/annotate.h
-> @@ -6,6 +6,7 @@
->  #include "symbol.h"
->  #include <linux/list.h>
->  #include <linux/rbtree.h>
-> +#include <pthread.h>
->
->  struct objdump_line {
->         struct list_head node;
-> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-> index 2a6f33c..867415a 100644
-> --- a/tools/perf/util/event.c
-> +++ b/tools/perf/util/event.c
-> @@ -6,6 +6,7 @@
->  #include "strlist.h"
->  #include "thread.h"
->  #include "thread_map.h"
-> +#include "../compat-android.h"
->
->  static const char *perf_event__names[] = {
->         [0]                                     = "TOTAL",
-> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-> index 1b19728..2b0554b 100644
-> --- a/tools/perf/util/event.h
-> +++ b/tools/perf/util/event.h
-> @@ -6,6 +6,7 @@
->
->  #include "../perf.h"
->  #include "map.h"
-> +#include "../compat-android.h"
->
->  /*
->   * PERF_SAMPLE_IP | PERF_SAMPLE_TID | *
-> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> index 0f99f39..77c5ced 100644
-> --- a/tools/perf/util/util.h
-> +++ b/tools/perf/util/util.h
-> @@ -70,15 +70,19 @@
->  #include <sys/socket.h>
->  #include <sys/ioctl.h>
->  #include <sys/select.h>
-> +#ifndef ANDROID
->  #include <netinet/in.h>
->  #include <netinet/tcp.h>
->  #include <arpa/inet.h>
-> +#endif
->  #include <netdb.h>
->  #include <pwd.h>
->  #include <inttypes.h>
->  #include "../../../include/linux/magic.h"
->  #include "types.h"
-> +#ifndef ANDROID
->  #include <sys/ttydefaults.h>
-> +#endif
->
->  extern const char *graph_line;
->  extern const char *graph_dotted_line;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
