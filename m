@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab2HWAAD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 20:00:03 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:20579 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab2HWAAA (ORCPT
+	id S1757978Ab2HWADJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 20:03:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47935 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752177Ab2HWADG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 20:00:00 -0400
-X-AuditID: cbfee61b-b7faf6d00000476a-01-5035727e6fb0
-Message-id: <5035727D.9080001@samsung.com>
-Date: Thu, 23 Aug 2012 08:59:57 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Peter Meerwald <pmeerw@pmeerw.net>, Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
-        broonie@opensource.wolfsonmicro.com, trivial@kernel.org
-Subject: Re: [PATCH RESEND] extcon: fix typos in extcon-arizona
-References: <1345663663-4790-1-git-send-email-pmeerw@pmeerw.net>
- <1345663663-4790-4-git-send-email-pmeerw@pmeerw.net>
-In-reply-to: <1345663663-4790-4-git-send-email-pmeerw@pmeerw.net>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jAd36ItMAg1nPmS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGxDP+BUe4KvZv62VpYLzB0cXIySEhYCJx5WQLE4QtJnHh3nq2
-	LkYuDiGBRYwSv2ZfZYVwupgkTn/aAFbFK6Al8bH1KCOIzSKgKnHs3Sd2EJsNKL7/xQ2gbg4O
-	UYEIiV/9HBDlghI/Jt9jAQmLCPhIHHpUChJmFiiVeLTvAthEYQF7ib8P/rCA2EIC5RKXN3wB
-	m8gp4Cjxd/ckJoh6HYn9rdPYIGx5ic1r3jJPYBSYhWTDLCRls5CULWBkXsUomlqQXFCclJ5r
-	pFecmFtcmpeul5yfu4kRHHzPpHcwrmqwOMQowMGoxMObEWsaIMSaWFZcmXuIUYKDWUmE94YB
-	UIg3JbGyKrUoP76oNCe1+BCjNAeLkjgvf59hgJBAemJJanZqakFqEUyWiYNTqoFx5be7G98W
-	dx3fzvf6yH3lXKaE06a7Px1/1bV+p0fDVJM1sXMdmRyr5R/x26yRKTb65/vx2Ae9+5mT2m7d
-	n1mRKnPbJ2bhrhlSd/xyp21UcmDxXPdV2+N4HsttlrOxHofcqw5s6w5u7O+K2XBpS+hGngnx
-	35Ie1Zk19sp6HdXey7x9waqy9OMvlFiKMxINtZiLihMB9hRnFjoCAAA=
-X-TM-AS-MML: No
+	Wed, 22 Aug 2012 20:03:06 -0400
+Message-ID: <1345680175.15245.15.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 40/46] KVM: PIC: call ack notifiers for irqs that are dropped
+ form irr
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
+Date: Thu, 23 Aug 2012 01:02:55 +0100
+In-Reply-To: <20120820035837.834733550@linuxfoundation.org>
+References: <20120820035832.274275502@linuxfoundation.org>
+	 <20120820035837.834733550@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-1IEaPjov3KXVaK1XJMSq"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 04:27 AM, Peter Meerwald wrote:
 
-> Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
-> ---
->  drivers/extcon/extcon-arizona.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> index 427a289..6d24822 100644
-> --- a/drivers/extcon/extcon-arizona.c
-> +++ b/drivers/extcon/extcon-arizona.c
-> @@ -313,7 +313,7 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
->  
->  	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
->  	if (!info) {
-> -		dev_err(&pdev->dev, "failed to allocate memory\n");
-> +		dev_err(&pdev->dev, "Failed to allocate memory\n");
->  		ret = -ENOMEM;
->  		goto err;
->  	}
-> @@ -350,7 +350,7 @@ static int __devinit arizona_extcon_probe(struct platform_device *pdev)
->  
->  	ret = extcon_dev_register(&info->edev, arizona->dev);
->  	if (ret < 0) {
-> -		dev_err(arizona->dev, "extcon_dev_regster() failed: %d\n",
-> +		dev_err(arizona->dev, "extcon_dev_register() failed: %d\n",
->  			ret);
->  		goto err;
->  	}
+--=-1IEaPjov3KXVaK1XJMSq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, 2012-08-19 at 20:59 -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+>=20
+> 3.5-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Gleb Natapov <gleb@redhat.com>
+>=20
+> (cherry picked from commit aea218f3cbbcaac249b6b2c98930a00d6d931f1e)
+>=20
+> After commit 242ec97c358256 PIT interrupts are no longer delivered after
+> PIC reset. It happens because PIT injects interrupt only if previous one
+> was acked, but since on PIC reset it is dropped from irr it will never
+> be delivered and hence acknowledged. Fix that by calling ack notifier on
+> PIC reset.
+[...]
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Based on the commit blamed for the regression, I think this is needed
+for 3.4 as well.
 
-I will apply this patch to
-http://10.90.51.51/cgi-bin/gitweb.cgi?p=linux-samsung;a=shortlog;h=refs/heads/extcon-for-next
-and you can check it after some hours.
+Ben.
 
-Thank you
-Chanwoo Choi
+--=20
+Ben Hutchings
+Experience is what causes a person to make new mistakes instead of old ones=
+.
+
+--=-1IEaPjov3KXVaK1XJMSq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUDVzL+e/yOyVhhEJAQqpKxAAqWdcjV4EFhZMkbBpw4r60W95lOZ0EghL
+ytGbQSCqdGhLd+HixOzIr83JhqwrW+FgOCCszEkrvFg4ruOf/VCNpnb6xy6UHHbJ
+Q30HDtbiRnW4Ux86VTQ3MsHYFT6NYvuU3oEYW73cAt316jWeCne7ePp3j3m458Kd
+zzlQo30jC6Vc0UzQLjtvnUoG8mYfrLs0Txqx2o8dv52A5QoirRI5mKVZSmD15Wpf
+7/IklxpLkQ6rBlYJN5QOXNWBeM/qvWbX5Ihpl3f3jsButLRNri0pYhi9jTuyqCyw
+j5P7EX6aKa9K5lcYnUwnsfVZYKz6qfsXeQLZXIRLAML5c87XULAzqDLBfVYO3VvK
+U2M8URnmozNROvQXchb8Y/imYwqLDCGDMGinAVXuOIdhsyH3wR28oBANyVRlAxgX
+Q74iahTchttCzktN8bktzr8NWETmXPXmbBHCdZAx8Ls3JA77+HZPFaO9LsbQXIL0
+EACFDWNidAbPxF451WrmEZUghMEZmMkBc9AFJHqv2tYmLT5wFrnOXRiCBwYebqaQ
+i4tgjswTMH5HZO7We2NzmvEv+hmyJoCw8pgCwIRi4w9hS/QV2Ux6KFy7vS/9ytcq
+tQ/25EjgGgolRpCmvrIYn+jjMGJPbvN2Aj2c4UlQDCaZbGWnu3CqY1xVfSZQeMD6
+hwzz0uDMc4A=
+=8+7D
+-----END PGP SIGNATURE-----
+
+--=-1IEaPjov3KXVaK1XJMSq--
