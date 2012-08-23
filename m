@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667Ab2HWH6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:58:18 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:34103 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab2HWH6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:58:15 -0400
-Message-ID: <5035E1D6.6010503@parallels.com>
-Date: Thu, 23 Aug 2012 11:55:02 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+	id S1030235Ab2HWIGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 04:06:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39667 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933677Ab2HWIGd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 04:06:33 -0400
+Date: Thu, 23 Aug 2012 12:06:27 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v2 09/11] memcg: propagate kmem limiting information to
- children
-References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-10-git-send-email-glommer@parallels.com> <20120817090005.GC18600@dhcp22.suse.cz> <502E0BC3.8090204@parallels.com> <20120817093504.GE18600@dhcp22.suse.cz> <502E17C4.7060204@parallels.com> <20120817103550.GF18600@dhcp22.suse.cz> <502E1E90.1080805@parallels.com> <20120821075430.GA19797@dhcp22.suse.cz> <50335341.6010400@parallels.com> <20120821100007.GE19797@dhcp22.suse.cz> <xr93fw7fbumo.fsf@gthelen.mtv.corp.google.com> <503496D9.3020806@parallels.com> <xr93a9xmwly7.fsf@gthelen.mtv.corp.google.com>
-In-Reply-To: <xr93a9xmwly7.fsf@gthelen.mtv.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>
+Subject: Re: [patch 4/8] fs, exportfs: Add export_encode_inode_fh helper
+Message-ID: <20120823080627.GA1992@moon>
+References: <20120815092409.591460800@openvz.org>
+ <87fw7habo4.fsf@skywalker.in.ibm.com>
+ <20120820163338.GN23596@moon>
+ <20120820183225.GB4911@fieldses.org>
+ <20120820190606.GE27443@moon>
+ <20120820193204.GD5779@fieldses.org>
+ <50335261.5090504@parallels.com>
+ <87wr0sle4v.fsf@skywalker.in.ibm.com>
+ <503367CB.9080609@parallels.com>
+ <87zk5nsch8.fsf@skywalker.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zk5nsch8.fsf@skywalker.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 03:23 AM, Greg Thelen wrote:
-> On Wed, Aug 22 2012, Glauber Costa wrote:
+On Wed, Aug 22, 2012 at 11:19:07AM +0530, Aneesh Kumar K.V wrote:
+> Pavel Emelyanov <xemul@parallels.com> writes:
 > 
->>>>>
->>>>> I am fine with either, I just need a clear sign from you guys so I don't
->>>>> keep deimplementing and reimplementing this forever.
->>>>
->>>> I would be for make it simple now and go with additional features later
->>>> when there is a demand for them. Maybe we will have runtimg switch for
->>>> user memory accounting as well one day.
->>>>
->>>> But let's see what others think?
->>>
->>> In my use case memcg will either be disable or (enabled and kmem
->>> limiting enabled).
->>>
->>> I'm not sure I follow the discussion about history.  Are we saying that
->>> once a kmem limit is set then kmem will be accounted/charged to memcg.
->>> Is this discussion about the static branches/etc that are autotuned the
->>> first time is enabled?  
->>
->> No, the question is about when you unlimit a former kmem-limited memcg.
->>
->>> The first time its set there parts of the system
->>> will be adjusted in such a way that may impose a performance overhead
->>> (static branches, etc).  Thereafter the performance cannot be regained
->>> without a reboot.  This makes sense to me.  Are we saying that
->>> kmem.limit_in_bytes will have three states?
->>
->> It is not about performance, about interface.
->>
->> Michal says that once a particular memcg was kmem-limited, it will keep
->> accounting pages, even if you make it unlimited. The limits won't be
->> enforced, for sure - there is no limit, but pages will still be accounted.
->>
->> This simplifies the code galore, but I worry about the interface: A
->> person looking at the current status of the files only, without
->> knowledge of past history, can't tell if allocations will be tracked or not.
+> > Why? For e.g. ext4 you can construct a handle in userspace and open by
+> > it.
 > 
-> In the current patch set we've conflating enabling kmem accounting with
-> the kmem limit value (RESOURCE_MAX=disabled, all_other_values=enabled).
+> open_by_handle use exportfs_decode_fh which use file system specific
+> fh_to_dentry
 > 
-> I see no problem with simpling the kernel code with the requirement that
-> once a particular memcg enables kmem accounting that it cannot be
-> disabled for that memcg.
+> foe ext4 we require a generation number
 > 
-> The only question is the user space interface.  Two options spring to
-> mind:
-> a) Close to current code.  Once kmem.limit_in_bytes is set to
->    non-RESOURCE_MAX, then kmem accounting is enabled and cannot be
->    disabled.  Therefore the limit cannot be set to RESOURCE_MAX
->    thereafter.  The largest value would be something like
->    RESOURCE_MAX-PAGE_SIZE.  An admin wondering if kmem is enabled only
->    has to cat kmem.limit_in_bytes - if it's less than RESOURCE_MAX, then
->    kmem is enabled.
+> 		inode = get_inode(sb, fid->i32.ino, fid->i32.gen);
 > 
 
-If we need to choose between them, I like this better than your (b).
-At least it is all clear, and "fix" the history problem, since it is
-possible to look up the status of the files and figure it out.
+Hi Aneesh, yes we need i_generation but for ext3/4 it could be
+fetched with ioctl as far as i see.
 
-> b) Or, if we could introduce a separate sticky kmem.enabled file.  Once
->    set it could not be unset.  Kmem accounting would only be enabled if
->    kmem.enabled=1.
+> For brtfs
 > 
-> I think (b) is clearer.
+> 	objectid = fid->objectid;
+> 	root_objectid = fid->root_objectid;
+> 	generation = fid->gen;
 > 
-Depends on your definition of clearer. We had a knob for
-kmem_independent in the beginning if you remember, and it was removed.
-The main reason being knobs complicate minds, and we happen to have a
-very natural signal for this. I believe the same reasoning applies here.
+> 	return btrfs_get_dentry(sb, objectid, root_objectid, generation, 1);
 
+For btrfs it become more complex. But still the last version I'm about
+to send for review today (once everything get tested) will provide
+fhandle carried with inotify mark _and_ inode number and device. This
+information should be enough for us. After all having inode and device
+should allow us to figure out the fs used on inotify target.
+
+	Cyrill
