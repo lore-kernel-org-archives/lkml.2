@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933777Ab2HWKBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:01:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36149 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932133Ab2HWKBR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:01:17 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Chinmay V S <cvs268@gmail.com>,
-        "carmine.iascone@st.com" <carmine.iascone@st.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "greg@kroah.com" <greg@kroah.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
- accelerometer
-Thread-Topic: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
- accelerometer
-Thread-Index: AQHNgC+0NDpTyonaHU+HVTncuJ8wyZdlGIEAgAAPuoCAAFzA0P//wzoAgADFFbiAAQcWsA==
-Date: Thu, 23 Aug 2012 10:00:54 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA1EA53@DBDE01.ent.ti.com>
-References: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
- <201208220748.39106.arnd@arndb.de>
- <CAK-9PRBy0PCQ4XAVZzQpWv5rnT8A9f6F=qxT=pJEaioN7RN_5w@mail.gmail.com>
- <331ABD5ECB02734CA317220B2BBEABC13EA1B975@DBDE01.ent.ti.com>
- <CAK-9PRBDpxtrxZWL_x9Uz--GMWDN5anyB_fuKtLrvZcLoRR+FQ@mail.gmail.com>
- <331ABD5ECB02734CA317220B2BBEABC13EA1BDA9@DBDE01.ent.ti.com>
- <CAK-9PRD6FH=5g0SrVcw+81Witpo8zRfvnsmGaePaA4swjHWkSw@mail.gmail.com>
-In-Reply-To: <CAK-9PRD6FH=5g0SrVcw+81Witpo8zRfvnsmGaePaA4swjHWkSw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.132.219]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S933763Ab2HWKEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:04:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752847Ab2HWKEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 06:04:06 -0400
+Message-ID: <50360051.9050908@redhat.com>
+Date: Thu, 23 Aug 2012 12:05:05 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Guenter Roeck <linux@roeck-us.net>, linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] media/radio/shark2: Fix build error caused by missing
+ dependencies
+References: <1345648585-5176-1-git-send-email-linux@roeck-us.net> <5034F932.4000405@redhat.com> <20120822152922.GA6177@roeck-us.net> <201208221857.01527.arnd@arndb.de>
+In-Reply-To: <201208221857.01527.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 22:24:10, Chinmay V S wrote:
-> > Look at this application note which talks about the outdata values
-> > for 2G range (page 12/31) http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/APPLICATION_NOTE/CD00215823.pdf
-> 
-> Had been through the application note earlier. The table5 (on page 12)
-> that you refer to, does NOT contradict either 12/16bit, as in all the
-> examples the lower 4 bits are zero. So i don't see how one can assume
-> from these examples that for +/-2G they one should consider 12/16bits.
-> A nice side-effect of using 12|13|14bits for +/-2|4|8G is that the
-> values returned by the driver are in mG in all the 3 modes.
-> 
-> > Corresponding to the 4G and 8G I got the details form older
-> > patches (SHIFT_ADJ_4G and SHIFT_ADJ_8G).
-> > http://driverdev.linuxdriverproject.org/pipermail/devel/2010-November/009685.html
-> >
-> > We can easily interpret number of bits for 4G and 8G from 2G
-> > information.
-> 
-> Going through the code of this driver i can see what you are talking
-> about. Depending on the full-scale-range the device is being
-> configured for, the number of bits used to represent acceleration in
-> the driver is changed.
-> 
-> Again judging from the code, the driver is always returning
-> acceleration at a constant accuracy i.e. 1mG in all the 3 modes
-> (+/-2|4|8G)i.e.
-> +/-2G is mode means value can be anywhere from +/-2048mG,
-> (requiring 12bits.)
-> +/-4G in the range of +/-4096mG, requiring 13bits.
-> +/-8G i.e. +/-8192mG, requiring 14bits.
-> 
-> Was this done...
-> 
-> a. ...because LIS331DLH's theoretical MAX accuracy is ~1mG
-> If yes, then using 12bits is fine.
-> 
+Hi,
 
-Note from datasheet, "1LSb=4g/4096 at 12bit representation,
-±2g Full-scale"
+On 08/22/2012 08:57 PM, Arnd Bergmann wrote:
+> On Wednesday 22 August 2012, Guenter Roeck wrote:
+>> On Wed, Aug 22, 2012 at 05:22:26PM +0200, Hans de Goede wrote:
+>>> Hi,
+>>>
+>>> I've a better fix for this here:
+>>> http://git.linuxtv.org/hgoede/gspca.git/shortlog/refs/heads/media-for_v3.6
+>>>
+>>> I already send a pull-req for this to Mauro a while ago, Mauro?
+>>>
+>> Looks like it found its way into mainline in the last couple of days.
+>> Should have updated my tree first. Sorry for the noise.
+>>
+>
+> I found another issue with the shark driver while doing randconfig tests.
+> Here is my semi-automated log file for the problem. Has this also made
+> it in already?
 
->From this I understood that ±2G full scale value is 12 bits.
-That is one more reason to take 12bit value.
+No,
 
-Regards
-AnilKumar
+Mauro, can you please add Arnd's fix for this to 3.6 ?
+
+Thanks,
+
+Hans
