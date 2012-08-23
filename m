@@ -1,126 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab2HWL6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 07:58:51 -0400
-Received: from mail.linlab.net ([89.244.147.154]:43371 "EHLO mail.linlab.net"
+	id S1758166Ab2HWMC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:02:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44304 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab2HWL6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 07:58:47 -0400
-X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7NBwXaj023354
-Message-ID: <50361AEA.6010807@linlab.net>
-Date: Thu, 23 Aug 2012 13:58:34 +0200
-From: Alex Bergmann <alex@linlab.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1755796Ab2HWMC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:02:27 -0400
+Date: Thu, 23 Aug 2012 06:24:05 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: trace the events of mmu_notifier
+Message-ID: <20120823092405.GB32710@amt.cnet>
+References: <50335A27.2070306@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-References: <503419D3.1080700@linlab.net> <CAFbMe2M7ekc94bQk7vTS1LhScPd49VZ-zKOCUXhqwxXtL-nkuA@mail.gmail.com>
-In-Reply-To: <CAFbMe2M7ekc94bQk7vTS1LhScPd49VZ-zKOCUXhqwxXtL-nkuA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.6 (mail.linlab.net [IPv6:2001:470:7142:a0::3]); Thu, 23 Aug 2012 13:58:39 +0200 (CEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50335A27.2070306@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 06:41 PM, H.K. Jerry Chu wrote:
-> On Tue, Aug 21, 2012 at 4:29 PM, Alex Bergmann <alex@linlab.net
-> <mailto:alex@linlab.net>> wrote:
->
->     Hi David,
->
->     I'm not 100% sure, but it looks like I found an RFC mismatch with the
->     current default values of the TCP implementation.
->
->     Alex
->
->      From 8b854a525eb45f64ad29dfab16f9d9f681e84495 Mon Sep 17 00:00:00 2001
->     From: Alexander Bergmann <alex@linlab.net <mailto:alex@linlab.net>>
->     Date: Wed, 22 Aug 2012 00:29:08 +0200
->     Subject: [PATCH 1/1] tcp: Wrong timeout for SYN segments
->
->     Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
->     RFC6298 (former RFC2988bis). This introduced a gap with RFC1122 that
->     defines a minimum retransmission window for SYN segments of at least
->     180secs.
->
->     Prior to 9ad7c049 the timeout was defined with 189secs. Now we have only
->     a timeout of 63secs.
->
->              ((2 << 5) - 1) * 3 secs = 189 secs
->              ((2 << 5) - 1) * 1 secs = 63 secs
->
->     To fulfill the MUST constraint in RFC1122 section 4.2.3.5 about R2 for
->     SYN segments, the values of TCP_SYN_RETRIES and TCP_SYNACK_RETRIES must
->     be changed to 7 reties.
->
->              ((2 << 7) - 1) * 1 secs = 255 secs
->
->     This would result in an ETIMEDOUT of 4 minutes 15 seconds.
->
->
-> This issue occurred to me right after I submitted the patch for RFC6298.
-> I did not commit any more change because RFC compliance aside, 180secs
-> just seem like eternity in the Internet age.
->
-> (See my past post on this at
-> http://marc.info/?l=linux-netdev&m=130759078118866&w=2)
-
-Okay, I missed that post during my search about the current situation.
-
-Thanks,
-Alex
+On Tue, Aug 21, 2012 at 05:51:35PM +0800, Xiao Guangrong wrote:
+> mmu_notifier is the interface to broadcast the mm events to KVM, the
+> tracepoints introduced in this patch can trace all these events, it is
+> very helpful for us to notice and fix the bug caused by mm
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  include/trace/events/kvm.h |  121 ++++++++++++++++++++++++++++++++++++++++++++
+>  virt/kvm/kvm_main.c        |   19 +++++++
+>  2 files changed, 140 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+> index 7ef9e75..a855ff9 100644
+> --- a/include/trace/events/kvm.h
+> +++ b/include/trace/events/kvm.h
+> @@ -309,6 +309,127 @@ TRACE_EVENT(
+> 
+>  #endif
+> 
+> +#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
+> +DECLARE_EVENT_CLASS(mmu_notifier_address_class,
+> +
+> +	TP_PROTO(struct kvm *kvm, unsigned long address),
+> +
+> +	TP_ARGS(kvm, address),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct kvm *, kvm)
+> +		__field(unsigned long, address)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->kvm = kvm;
+> +		__entry->address = address;
+> +	),
+> +
+> +	TP_printk("kvm %p address %lx", __entry->kvm, __entry->address)
 
 
-> Jerry
->
->
->     Signed-off-by: Alexander Bergmann <alex@linlab.net
->     <mailto:alex@linlab.net>>
->     ---
->       include/net/tcp.h |    4 ++--
->       1 files changed, 2 insertions(+), 2 deletions(-)
->
->     diff --git a/include/net/tcp.h b/include/net/tcp.h
->     index 1f000ff..7eaae19 100644
->     --- a/include/net/tcp.h
->     +++ b/include/net/tcp.h
->     @@ -98,10 +98,10 @@ extern void tcp_time_wait(struct sock *sk, int
->     state, int timeo);
->                                       * 15 is ~13-30min depending on RTO.
->                                       */
->
->     -#define TCP_SYN_RETRIES         5      /* number of times to retry
->     active opening a
->     +#define TCP_SYN_RETRIES         7      /* number of times to retry
->     active opening a
->                                       * connection: ~180sec is RFC
->     minimum   */
->
->     -#define TCP_SYNACK_RETRIES 5   /* number of times to retry passive
->     opening a
->     +#define TCP_SYNACK_RETRIES 7   /* number of times to retry passive
->     opening a
->                                       * connection: ~180sec is RFC
->     minimum   */
->
->       #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy
->     TIME-WAIT
->     --
->     1.7.8.6
->
->     --
->     To unsubscribe from this list: send the line "unsubscribe netdev" in
->     the body of a message to majordomo@vger.kernel.org
->     <mailto:majordomo@vger.kernel.org>
->     More majordomo info at http://vger.kernel.org/majordomo-info.html
->
->
+Perhaps the pointer was useful for debugging, but otherwise, i don't
+think it should be printed.
+
+> +	TP_ARGS(kvm, address, pte),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct kvm *, kvm)
+> +		__field(unsigned long, address)
+> +		__field(unsigned long, pte)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->kvm = kvm;
+> +		__entry->address = address;
+> +		__entry->pte = pte.pte;
+> +	),
+> +
+> +	TP_printk("kvm %p address %lx pte %lx", __entry->kvm, __entry->address,
+> +		  __entry->pte)
+
+The pte bits can be spelled out? (see __print_symbolic).
+
+>  	spin_lock(&kvm->mmu_lock);
+> 
+> +	trace_kvm_mmu_notifier_clear_flush_young(kvm, address);
+> +
+>  	young = kvm_age_hva(kvm, address);
+>  	if (young)
+>  		kvm_flush_remote_tlbs(kvm);
+> @@ -394,6 +407,9 @@ static int kvm_mmu_notifier_test_young(struct mmu_notifier *mn,
+> 
+>  	idx = srcu_read_lock(&kvm->srcu);
+>  	spin_lock(&kvm->mmu_lock);
+> +
+> +	trace_kvm_mmu_notifier_test_young(kvm, address);
+> +
+
+can print young information?
+
+>  	young = kvm_test_age_hva(kvm, address);
+>  	spin_unlock(&kvm->mmu_lock);
+>  	srcu_read_unlock(&kvm->srcu, idx);
+> @@ -408,6 +424,9 @@ static void kvm_mmu_notifier_release(struct mmu_notifier *mn,
+>  	int idx;
+> 
+>  	idx = srcu_read_lock(&kvm->srcu);
+> +
+> +	trace_kvm_mmu_notifier_release(kvm);
+> +
+>  	kvm_arch_flush_shadow(kvm);
+>  	srcu_read_unlock(&kvm->srcu, idx);
+>  }
 
 
--- 
-|. _ | _ |_   _  _ _|_
-||| ||(_||_).| |(/_ |
-email/sip/xmpp: alex@linlab.net
-phone/enum: +49 2871 2355378
