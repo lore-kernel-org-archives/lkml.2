@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab2HWOy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:54:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33758 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab2HWOy4 (ORCPT
+	id S1754313Ab2HWO6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 10:58:49 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40650 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2HWO6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:54:56 -0400
-Date: Thu, 23 Aug 2012 22:55:27 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 6/6] ARM: imx: select ARM_CPU_SUSPEND when necessary
-Message-ID: <20120823145524.GM24242@S2101-09.ap.freescale.net>
-References: <1345648390-4234-1-git-send-email-arnd@arndb.de>
- <1345648390-4234-7-git-send-email-arnd@arndb.de>
- <20120823024119.GD24242@S2101-09.ap.freescale.net>
- <201208231420.50247.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208231420.50247.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Aug 2012 10:58:45 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Chris Zankel <chris@zankel.net>, "3.2.x.." <stable@vger.kernel.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        Michael Cree <mcree@orcon.net.nz>
+Subject: [PATCH 00/11] rcu: Add missing RCU idle APIs on idle loop v2
+Date: Thu, 23 Aug 2012 16:58:24 +0200
+Message-Id: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 02:20:50PM +0000, Arnd Bergmann wrote:
-> From 4036e8f292887e7b1abc8eacec7d619abd608178 Mon Sep 17 00:00:00 2001
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Fri, 17 Aug 2012 00:16:08 +0000
-> Subject: [PATCH] ARM: imx: build i.MX6 functions only when needed
-> 
-> The head-v7.S contains a call to the generic cpu_suspend function,
-> which is only available when selected by the i.MX6 code. As
-> pointed out by Shawn Guo, i.MX does not actually use any
+Hi,
 
-s/i.MX/i.MX5
+Changes since v1:
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+- Fixed preempt handling in alpha idle loop
+- added ack from Geert
+- fixed stable email address, sorry :-/
 
-> functions defined in head-v7.S. It is also needed only for
-> the i.MX6 power management code and for the SMP code, so
-> we can restrict building this file to situations in which
-> at least one of those two is present.
-> 
-> Finally, other platforms with a similar file call it headsmp.S,
-> so we can rename it to the same for consistency.
-> 
-> Without this patch, building imx5 standalone results in:
-> 
-> arch/arm/mach-imx/built-in.o: In function `v7_cpu_resume':
-> arch/arm/mach-imx/head-v7.S:104: undefined reference to `cpu_resume'
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Eric Miao <eric.miao@linaro.org>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: stable@vger.kernel.org
-> 
-> diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
-> index e08adb7..d004d37 100644
-> --- a/arch/arm/mach-imx/Makefile
-> +++ b/arch/arm/mach-imx/Makefile
-> @@ -71,14 +71,13 @@ obj-$(CONFIG_DEBUG_LL) += lluart.o
->  obj-$(CONFIG_HAVE_IMX_GPC) += gpc.o
->  obj-$(CONFIG_HAVE_IMX_MMDC) += mmdc.o
->  obj-$(CONFIG_HAVE_IMX_SRC) += src.o
-> -obj-$(CONFIG_CPU_V7) += head-v7.o
-> -AFLAGS_head-v7.o :=-Wa,-march=armv7-a
-> -obj-$(CONFIG_SMP) += platsmp.o
-> +AFLAGS_headsmp.o :=-Wa,-march=armv7-a
-> +obj-$(CONFIG_SMP) += headsmp.o platsmp.o
->  obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
->  obj-$(CONFIG_SOC_IMX6Q) += clk-imx6q.o mach-imx6q.o
->  
->  ifeq ($(CONFIG_PM),y)
-> -obj-$(CONFIG_SOC_IMX6Q) += pm-imx6q.o
-> +obj-$(CONFIG_SOC_IMX6Q) += pm-imx6q.o headsmp.o
->  endif
->  
->  # i.MX5 based machines
-> diff --git a/arch/arm/mach-imx/head-v7.S b/arch/arm/mach-imx/headsmp.S
-> similarity index 100%
-> rename from arch/arm/mach-imx/head-v7.S
-> rename to arch/arm/mach-imx/headsmp.S
+This time I built tested everywhere but: h8300 (compiler internal error),
+and mn10300, parisc, score (cross compilers not available in
+ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/)
+
+For testing, you can pull from:
+
+git://github.com/fweisbec/linux-dynticks.git
+	rcu/idle-fix-v2 
+
+Thanks.
+
+Frederic Weisbecker (11):
+  alpha: Fix preemption handling in idle loop
+  alpha: Add missing RCU idle APIs on idle loop
+  cris: Add missing RCU idle APIs on idle loop
+  frv: Add missing RCU idle APIs on idle loop
+  h8300: Add missing RCU idle APIs on idle loop
+  m32r: Add missing RCU idle APIs on idle loop
+  m68k: Add missing RCU idle APIs on idle loop
+  mn10300: Add missing RCU idle APIs on idle loop
+  parisc: Add missing RCU idle APIs on idle loop
+  score: Add missing RCU idle APIs on idle loop
+  xtensa: Add missing RCU idle APIs on idle loop
+
+ arch/alpha/kernel/process.c   |    6 +++++-
+ arch/alpha/kernel/smp.c       |    1 +
+ arch/cris/kernel/process.c    |    3 +++
+ arch/frv/kernel/process.c     |    3 +++
+ arch/h8300/kernel/process.c   |    3 +++
+ arch/m32r/kernel/process.c    |    3 +++
+ arch/m68k/kernel/process.c    |    3 +++
+ arch/mn10300/kernel/process.c |    3 +++
+ arch/parisc/kernel/process.c  |    3 +++
+ arch/score/kernel/process.c   |    4 +++-
+ arch/xtensa/kernel/process.c  |    3 +++
+ 11 files changed, 33 insertions(+), 2 deletions(-)
 
 -- 
-Regards,
-Shawn
+1.7.5.4
+
