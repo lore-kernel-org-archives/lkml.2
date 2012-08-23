@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab2HWD5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 23:57:07 -0400
-Received: from relmlor1.renesas.com ([210.160.252.171]:47308 "EHLO
-	relmlor1.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab2HWD5B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 23:57:01 -0400
-X-IronPort-AV: E=Sophos;i="4.77,813,1336316400";   d="scan'208";a="94973752"
-Message-id: <5035AA0B.7090003@renesas.com>
-Date: Thu, 23 Aug 2012 12:56:59 +0900
-From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713
- Thunderbird/14.0
-MIME-version: 1.0
-To: will.deacon@arm.com
-Cc: sboyd@codeaurora.org, arnd@arndb.de, rmk+kernel@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] ARM: export read_current_timer
-References: <1345645780-2749-1-git-send-email-arnd@arndb.de>
- <1345645780-2749-2-git-send-email-arnd@arndb.de>
- <503513A2.1030002@codeaurora.org>
- <20120822174945.GS9093@mudshark.cambridge.arm.com>
-In-reply-to: <20120822174945.GS9093@mudshark.cambridge.arm.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
+	id S1758336Ab2HWD5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Aug 2012 23:57:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57674 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758281Ab2HWD5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Aug 2012 23:57:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,298,1344236400"; 
+   d="scan'208";a="212720314"
+Subject: Re: [PATCH v2 3/3] spi: spi-davinci: convert to DMA engine API
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Matt Porter <mporter@ti.com>
+Cc: cjb@laptop.org, grant.likely@secretlab.ca,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20120822160417.GA27758@beef>
+References: <1345574589-24757-1-git-send-email-mporter@ti.com>
+	 <1345574589-24757-4-git-send-email-mporter@ti.com>
+	 <1345607122.1895.44.camel@vkoul-udesk3>  <20120822160417.GA27758@beef>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Aug 2012 09:29:40 +0530
+Message-ID: <1345694380.1895.87.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/2012 2:49 AM, Will Deacon wrote:
-> On Wed, Aug 22, 2012 at 06:15:14PM +0100, Stephen Boyd wrote:
->> On 08/22/12 07:29, Arnd Bergmann wrote:
->>> read_current_timer is used in the get_cycles() function when
->>> ARM_ARCH_TIMER is set, and that function can be inlined into
->>> driver modules, so we should export the function to avoid
->>> errors like
->>>
->>> ERROR: "read_current_timer" [drivers/video/udlfb.ko] undefined!
->>> ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
->>>
->>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->>> Cc: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
->>
->> Acked-by: Stephen Boyd <sboyd@codeaurora.org>
->>
->> I ran into this last week but forgot to send the patch. Thanks.
-> 
-> Looks good to me, thanks Arnd:
-> 
-> Acked-by: Will Deacon <will.deacon@arm.com>
+On Wed, 2012-08-22 at 12:04 -0400, Matt Porter wrote:
+> for querying of these types of limitations. Right now, the
+> mmc driver implicitly knows that EDMA needs this restriction
+> but it's something that should be queried before calling
+> prep_slave().
+that's something we need to add; exporting channel capabilities. We only
+tell that it slave or memcpy today, but we need to tell clients what are
+channel supported parameter ranges.
 
-I haven't hit with this so far with our configs though, but why not?
+-- 
+~Vinod
 
-Acked-by: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
