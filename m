@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab2HWQvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 12:51:47 -0400
-Received: from zose-mta15.web4all.fr ([176.31.217.11]:44211 "EHLO
-	zose-mta15.web4all.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab2HWQvm convert rfc822-to-8bit (ORCPT
+	id S1756441Ab2HWQvz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:51:55 -0400
+Received: from nm19-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.25]:41862
+	"HELO nm19-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752323Ab2HWQvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 12:51:42 -0400
-Date: Thu, 23 Aug 2012 18:57:05 +0200 (CEST)
-From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, Bryan Wu <bryan.wu@canonical.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Message-ID: <36966374.2768747.1345741025741.JavaMail.root@advansee.com>
-In-Reply-To: <50364FA4.7000401@metafoo.de>
-Subject: Re: [PATCH] pwm: Call pwm_enable() before pwm_config()
+	Thu, 23 Aug 2012 12:51:43 -0400
+X-Yahoo-Newman-Id: 805366.81415.bm@smtp103.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: heNTjHoVM1nD19vyRsIxnYkBa1hAjF5TbFmD2hGqZV.yYDl
+ ZoQeQ1Qu7zSHWmZm9AetKLiym1OwxeEKpp99B_OSbbI4WrDxSKGVM.iyp35s
+ jhABfQVavpxxGedLDTxhhjJ7l8Q3lkjkwIdIxhy1lhXREfFzlhjVTd1AXyyn
+ d6Z5qU9Kz173VZaOXFAmwzr074sTLZHMu3CviO7DEwUC8AuPKy7n6UH7L6JD
+ dG7FMCDs0Nsxzpc43HlcE4ENUJUnRj.EqDS2Ufz2HCRp.XEA_XNMzmZ5CBfh
+ bTJmc9CWdb6qkoRwLkzwB1ts8aqWmfgyvGPBVxduepWmfDEDOu9IFD788qLb
+ LCRhapbukF_W.lbKrkqDm3mEJ4ytJmBhSGJ7ZkC.NA5AaIg05wSyeWsl03Eg
+ om2E_SShadrfIcpJD2utQJi5SQsgul5wIsvvvsX2b11FVHutgcP4lZo_hCYy
+ FwsatdlKOJ23VqP3rOMEVO7W2nryl10vrwJ.6f1KrJfts1h6dkVayFSh3IzD
+ C_133XaXWXP9hrDLayYgmxpVCQwXfu8a37uH0SymwDFe2xGduDmA-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50365F9F.7020308@schaufler-ca.com>
+Date: Thu, 23 Aug 2012 09:51:43 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [88.188.188.98]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
+To: LSM <linux-security-module@vger.kernel.org>
+CC: Casey Schaufler <casey@schaufler-ca.com>,
+        LKLM <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] Smack: setprocattr memory leak fix
+References: <50352873.9070706@schaufler-ca.com>
+In-Reply-To: <50352873.9070706@schaufler-ca.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 23, 2012 5:43:32 PM, Lars-Peter Clausen wrote:
-> On 08/23/2012 04:19 PM, Benoît Thébaudeau wrote:
-> > Some PWM drivers enable the clock of the PWM peripheral in
-> > pwm_enable(). Hence,
-> > for these drivers, a call to pwm_config() does not have any effect
-> > before
-> > pwm_enable() has been called.
-> > 
-> > This patch fixes the PWM users to make sure that they call
-> > pwm_enable() before
-> > pwm_config().
-> > 
-> > This fixes the first setting of brightness through sysfs that had
-> > no effect with
-> > leds-pwm and the i.MX PWM driver.
-> 
-> But isn't this a bug in the PWM peripheral driver? With this change
-> the PWM
-> will start with the old settings first. While this is not so much of
-> a problem
-> for a backlight (although it might cause a short flickering) it might
-> cause
-> problems for other applications, like using the PWM pin as a timing
-> generator.
-> In my opinion it's better to fix the PWM peripheral drivers which
-> have this
-> problem instead of trying to work around it in every user of the PWM
-> API.
+On 8/22/2012 11:44 AM, Casey Schaufler wrote:
 
-I don't know. See my detailed description of this issue here:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-August/115667.html
+> From: Casey Schaufler <casey@schaufler-ca.com>
+> Subject: [PATCH] Smack: setprocattr memory leak fix
+>
+> The data structure allocations being done in prepare_creds
+> are duplicated in smack_setprocattr. This results in the
+> structure allocated in prepare_creds being orphaned and
+> never freed. The duplicate code is removed from
+> smack_setprocattr.
+>
+> Targeted for git://git.gitorious.org/smack-next/kernel.git
+>
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
 
-Where the bug is depends on the detailed definition of the PWM API, which I
-don't find documented anywhere.
+Applied to git://git.gitorious.org/smack-next/kernel.git
 
-If pwm_enable() means "start PWM timer with the configured settings", then the
-bug is in the drivers. If it means "enable the PWM peripheral so that we can
-work with it", then the bug is in the PWM users.
+ 
 
-I don't really have time to work on this, so I suggested this patch as a simple
-solution. Otherwise, it means reworking several PWM drivers for different
-hardware that is not available to everyone for testing.
-
-If we decide to only change the i.MX PWM driver, the fix would be:
-pwm_config()
-{
-        save passed config in private data;
-        if (pwm enabled)
-                apply passed config;
-}
-
-pwm_enable()
-{
-        if (!(pwm enabled)) {
-                enable pwm ip clk;
-                apply config from private data;
-        }
-}
-
-If we fix only this driver, we must not forget that the same issue probably
-exists with several other PWM drivers.
-
-As I said in my bug description, the PWM users set the duty cycle to 0 before
-calling pwm_disable(), so fixing the PWM users should not be an issue, even in
-the timing generator use case you're talking about.
-
-I don't have a strong opinion about what should be fixed here.
-
-Best regards,
-Benoît
+>
+> ---
+>
+>  security/smack/smack_lsm.c |   14 ++------------
+>  1 files changed, 2 insertions(+), 12 deletions(-)
+>
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index ce9273a..2874c73 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -2684,9 +2684,7 @@ static int smack_getprocattr(struct task_struct *p, char *name, char **value)
+>  static int smack_setprocattr(struct task_struct *p, char *name,
+>  			     void *value, size_t size)
+>  {
+> -	int rc;
+>  	struct task_smack *tsp;
+> -	struct task_smack *oldtsp;
+>  	struct cred *new;
+>  	char *newsmack;
+>  
+> @@ -2716,21 +2714,13 @@ static int smack_setprocattr(struct task_struct *p, char *name,
+>  	if (newsmack == smack_known_web.smk_known)
+>  		return -EPERM;
+>  
+> -	oldtsp = p->cred->security;
+>  	new = prepare_creds();
+>  	if (new == NULL)
+>  		return -ENOMEM;
+>  
+> -	tsp = new_task_smack(newsmack, oldtsp->smk_forked, GFP_KERNEL);
+> -	if (tsp == NULL) {
+> -		kfree(new);
+> -		return -ENOMEM;
+> -	}
+> -	rc = smk_copy_rules(&tsp->smk_rules, &oldtsp->smk_rules, GFP_KERNEL);
+> -	if (rc != 0)
+> -		return rc;
+> +	tsp = new->security;
+> +	tsp->smk_task = newsmack;
+>  
+> -	new->security = tsp;
+>  	commit_creds(new);
+>  	return size;
+>  }
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
