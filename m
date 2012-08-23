@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab2HWMe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:34:29 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56620 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753390Ab2HWMe0 (ORCPT
+	id S1757411Ab2HWMgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:36:24 -0400
+Received: from dnvwsmailout1.mcafee.com ([161.69.31.173]:61980 "EHLO
+	DNVWSMAILOUT1.mcafee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab2HWMgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:34:26 -0400
-Date: Thu, 23 Aug 2012 16:34:22 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 4/9] fs, exportfs: Fix nil dereference if no s_export_op
- present
-Message-ID: <20120823123422.GB9112@moon>
-References: <20120823104323.040550004@openvz.org>
- <20120823104725.830795272@openvz.org>
- <20120823121230.GC29943@fieldses.org>
+	Thu, 23 Aug 2012 08:36:21 -0400
+Message-ID: <5036234A.7060102@snapgear.com>
+Date: Thu, 23 Aug 2012 22:34:18 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823121230.GC29943@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] Add support to broadcom 5222 PHY
+References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com> <CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
+In-Reply-To: <CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 08:12:30AM -0400, J. Bruce Fields wrote:
-> On Thu, Aug 23, 2012 at 02:43:27PM +0400, Cyrill Gorcunov wrote:
-> > If there is no s_export_op present in a target superblock
-> > we might have nil dereference.
-> 
-> Is that NULL dereference possible with current code, or is it a check
-> you're adding to account for a new caller that you're about to add?
-> 
-> I believe it's the latter, but this would be a good thing to make clear
-> in the changelog.
+Hi Stany,
 
-With the current code it seems to be impossible (well, i can't be sure
-about nfs caller) because do_sys_name_to_handle does check for s_export_op
-to exist. Updated changelog below. After all I think not checking
-s_export_op was a mistake in general -- this routine is exported to
-other modules but has no a single line of comment about possibility
-of nil dereference.
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: fs, exportfs: Escape nil dereference if no s_export_op present
+On 08/23/2012 08:47 PM, Geert Uytterhoeven wrote:
+> On Tue, Aug 21, 2012 at 2:18 PM, Stany MARCEL
+> <stany.marcel@novasys-ingenierie.com> wrote:
+>> Signed-off-by: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
+>> ---
+>>
+>>   This driver is an adaption of the one given by freescale for kernel 2.6.25.
+>>
+>>   Tested with kernel 3.4.8 with arch/m68k backported from linux-m68k head
+>>   2 FEC configured with shared phy
+>>
+>>   drivers/net/phy/Kconfig        |    7 +-
+>>   drivers/net/phy/Makefile       |    1 +
+>>   drivers/net/phy/broadcom522x.c |  171 ++++++++++++++++++++++++++++++++++++++++
+>
+> This patch and "[PATCH 3/3] Add support to M54xx DMA FEC Driver" need to go
+> through the netdev tree, or collect acks there.
 
-This routine will be used to generate a file handle in fdinfo
-output for inotify subsystem, where if no s_export_op present
-the general export_encode_fh should be used. Thus add
-a test if s_export_op present inside exportfs_encode_fh itself.
+And patch 2/3 never made it to the linux-m68k list. Though I can see
+that it made it onto the linux-kernel list.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: James Bottomley <jbottomley@parallels.com>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Matthew Helsley <matt.helsley@gmail.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/exportfs/expfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I would suggest running them through checkpatch, there is a number of
+formating and the like issues that need cleaning up.
 
-Index: linux-2.6.git/fs/exportfs/expfs.c
-===================================================================
---- linux-2.6.git.orig/fs/exportfs/expfs.c
-+++ linux-2.6.git/fs/exportfs/expfs.c
-@@ -357,7 +357,7 @@ int exportfs_encode_fh(struct dentry *de
- 		 */
- 		parent = p->d_inode;
- 	}
--	if (nop->encode_fh)
-+	if (nop && nop->encode_fh)
- 		error = nop->encode_fh(inode, fid->raw, max_len, parent);
- 	else
- 		error = export_encode_fh(inode, fid, max_len, parent);
+Also you will want to break up patch 2. It is a bit large to be reviewed
+the way it is.
+
+Regards
+Greg
+
+
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-m68k" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close,                            FAX:         +61 7 3891 3630
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
