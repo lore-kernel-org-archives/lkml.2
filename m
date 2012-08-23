@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934141Ab2HWP60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:58:26 -0400
-Received: from nm5.access.bullet.mail.mud.yahoo.com ([66.94.237.206]:33279
-	"HELO nm5.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1030605Ab2HWP6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:58:22 -0400
-X-Yahoo-Newman-Id: 366311.24195.bm@smtp109.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: qb2RUUYVM1mM7d.7oTMIgCWYNihgftILQSyqPesR5GoWuW8
- CKMtrBlv_a4cCH0J.WnqBEIkekp2PgasHxZu0Uq4t1E4rIpeIGIZHskz8c0x
- IWua_evhMoj6rWaWdtK3liaP7.uXrg_UBwd2xkWum0bBLzgECOEXdbt64dsr
- zQQ45KuknNHuBz64VuYyi3odhqjPVkJQY1lpqWJXa2DsDmPd_WHlXhjqcpOt
- EUUMXh6fVA.TSLP2WxBLs8StiHpAq9IlkBBq.9GuUc0u2MpZyXQSsbhsm9px
- xVucDMiR_YdG.EiAzoyBhLQR0ab8JlVYdY.T.Xy8qc0YwtzbbtwPMm1yk0GG
- KfF3P5AOx2mZL9nk4Ak468WcliQzsXOY2iLptYG8UgLs6LXnclCiV5CSqnNY
- mlYXizixjGNu_unWpz73SnkzV5CFx.MAc7XAJyQYyi5lWfX_L0IWycGimBB6
- GtOys1euGL3pO3kn1dC4J.bgLH0mbGehRQ9jklNOVlXTKhv53PuGUW1g71JC
- Ie0EiVV2xpahUrR80VK9GhvM-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <5036531A.7030207@schaufler-ca.com>
-Date: Thu, 23 Aug 2012 08:58:18 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S934147Ab2HWQAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:00:07 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:42941 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934130Ab2HWQAD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 12:00:03 -0400
+X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Aug 2012 12:00:02 EDT
+From: "Banerjee, Debabrata" <dbanerje@akamai.com>
+To: Lin Ming <mlin@ss.pku.edu.cn>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Hunt, Joshua" <johunt@akamai.com>,
+        "dbavatar@gmail.com" <dbavatar@gmail.com>,
+        "Lubashev, Igor" <ilubashe@akamai.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 23 Aug 2012 11:51:41 -0400
+Subject: Re: IPv6 deadlock with CONFIG_IPV6_ROUTER_PREF
+Thread-Topic: IPv6 deadlock with CONFIG_IPV6_ROUTER_PREF
+Thread-Index: Ac2BRzEv9xaZyHhNQMusGx+mNMzIIA==
+Message-ID: <19507780-1BF1-48B1-A2FE-6B44B6110D76@akamai.com>
+References: <CC52AD11.7CC2%dbanerje@akamai.com>
+ <CAF1ivSZN8PyPhAkyaFL-GsTbnr4uwP=zzzjZbgqOKts_wgngYA@mail.gmail.com>
+In-Reply-To: <CAF1ivSZN8PyPhAkyaFL-GsTbnr4uwP=zzzjZbgqOKts_wgngYA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Smack: setprocattr memory leak fix
-References: <50352873.9070706@schaufler-ca.com> <27988.1345726117@warthog.procyon.org.uk>
-In-Reply-To: <27988.1345726117@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/2012 5:48 AM, David Howells wrote:
-> Casey Schaufler <casey@schaufler-ca.com> wrote:
->
->> From: Casey Schaufler <casey@schaufler-ca.com>
->> Subject: [PATCH] Smack: setprocattr memory leak fix
->>
->> The data structure allocations being done in prepare_creds
->> are duplicated in smack_setprocattr. This results in the
->> structure allocated in prepare_creds being orphaned and
->> never freed. The duplicate code is removed from
->> smack_setprocattr.
->>
->> Targeted for git://git.gitorious.org/smack-next/kernel.git
->>
->> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> Acked-by: David Howells <dhowells@redhat.com>
+On Aug 23, 2012, at 11:11 AM, "Lin Ming" <mlin@ss.pku.edu.cn> wrote:
 
-Thanks for the review.
+> On Fri, Aug 17, 2012 at 1:58 AM, Banerjee, Debabrata
+> <dbanerje@akamai.com> wrote:
+>> This code tries to send a neighbor discovery ICMPv6 packet for router
+>> reachability while read_lock(tb6_lock) is held. The send may want to cause
+>> a fib6_clean_all() garbage collection, which will try to take
+>> write_lock(tb6_lock), resulting in deadlock. Garbage collection becomes
+>> more likely under high load of cloned routes, so this is exploitable as a
+>> DDOS attack, given enough attack hosts in relation max_size of the route
+>> table (default of 4k). I checked from 3.6-rc1 back to 2.6.32, it is
+>> present everywhere.
+> 
+> How about moving the garbage collection to a kernel thread?
+> Then the write_lock(tb6_lock) in this kernel thread won't cause such
+> kind of dead lock with other threads.
+> 
+> Lin Ming
 
-> Note that I do have a patch to make Smack share rule lists - I've posted it a
-> number of times, but I take it you're not interested.
+It already runs in a thread, this is a forced gc because we are over the gc threshold, and this thread deadlocks with itself. I thing Cong Wang is on the right track with his patch. The implementation of this RFC must be fixed.
 
-The patch is a big chunk of code and the feature isn't getting
-used to the extent that the people who requested it seemed
-certain it would be. I don't see there being value in optimizing
-the per-task rule lists given the amount of use they get.
-
->
->   5707  06/13 [To:casey@schauf]  [PATCH 1/3] Smack: Constify some pointers<<Mak
->   5708  06/13   [To:casey@schauf]  [PATCH 2/3] Smack: Further constification<<M
->   5709  06/13   [To:casey@schauf]  [PATCH 3/3] Smack: Use rule list tail sharin
->
-> David
->
-
+-Debabrata
