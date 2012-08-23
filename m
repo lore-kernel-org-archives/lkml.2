@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab2HWSDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:03:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52112 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab2HWSDi (ORCPT
+	id S932412Ab2HWSE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:04:27 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:55666 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250Ab2HWSEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 14:03:38 -0400
-Date: Thu, 23 Aug 2012 22:03:34 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 0/9] extended fdinfo via procfs series, v7
-Message-ID: <20120823180334.GG1992@moon>
-References: <20120823104323.040550004@openvz.org>
- <20120823122318.GD29943@fieldses.org>
- <20120823124427.GD1992@moon>
- <20120823135234.GE29943@fieldses.org>
- <20120823135606.GE1992@moon>
- <20120823152545.GC6923@fieldses.org>
- <20120823170239.GF1992@moon>
- <20120823175901.GA8591@fieldses.org>
+	Thu, 23 Aug 2012 14:04:24 -0400
+Date: Thu, 23 Aug 2012 14:04:21 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Tixy <tixy@yxit.co.uk>, linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Leif Lindholm <leif.lindholm@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 4/4] ARM: kprobes: make more tests conditional
+In-Reply-To: <201208231209.26707.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.02.1208231403440.1754@xanadu.home>
+References: <1345645780-2749-1-git-send-email-arnd@arndb.de> <201208221841.29645.arnd@arndb.de> <1345679461.3601.20.camel@computer5.home> <201208231209.26707.arnd@arndb.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823175901.GA8591@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 01:59:01PM -0400, J. Bruce Fields wrote:
-> > > You're using the common filehandle code instead of encoding your own
-> > > from scratch, which was my only serious objection.
-> > > 
-> > 
-> > Wait, Bruce, now I'm confused, if I understand all correctly
-> > using common filehandle code from exportfs is preferred,
+On Thu, 23 Aug 2012, Arnd Bergmann wrote:
+
+> On Wednesday 22 August 2012, Tixy wrote:
 > 
-> Right, that's what I meant, sorry if I was unclear.
+> > If you do feel so inclined for a v4 however ;-) you could also make the
+> > mls part of the patch tidier by moving the added #endif to instead
+> > terminate the preceding "#if __LINUX_ARM_ARCH__ >= 6", i.e.
+> > 
+> > @@ -367,8 +367,10 @@ void kprobe_arm_test_cases(void)
+> >  	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
+> >  	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
+> > +#endif
+> >  
+> > +#if __LINUX_ARM_ARCH__ >= 7
+> >  	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
+> >  	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
+> >  	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
+> > 
+> > 
+> > this looks funny in patch form, but the resulting source file is more
+> > consistent with other conditional tests.
+> 
+> Ok, here we go.
+> 
+> 	Arnd
+> 
+> 
+> commit abfef4db8731591fbb721262bd4712662aaa6d14
+> Author: Arnd Bergmann <arnd@arndb.de>
+> Date:   Thu Aug 16 07:49:31 2012 +0000
+> 
+>     ARM: kprobes: make more tests conditional
+>     
+>     The mls instruction is not available in ARMv6K or below, so we
+>     should make the test conditional on at least ARMv7. ldrexd/strexd
+>     are available in ARMv6K or ARMv7, which we can test by checking
+>     the CONFIG_CPU_32v6K symbol.
+>     
+>     /tmp/ccuMTZ8D.s: Assembler messages:
+>     /tmp/ccuMTZ8D.s:22188: Error: selected processor does not support ARM mode `mls r0,r1,r2,r3'
+>     /tmp/ccuMTZ8D.s:22222: Error: selected processor does not support ARM mode `mlshi r7,r8,r9,r10'
+>     /tmp/ccuMTZ8D.s:22252: Error: selected processor does not support ARM mode `mls lr,r1,r2,r13'
+>     
+>     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>     Cc: Jon Medhurst <tixy@yxit.co.uk>
+>     Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+>     Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+>     Cc: Leif Lindholm <leif.lindholm@arm.com>
 
-I might be simply translating it wrong ;) Thanks Bruce!
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
-	Cyrill
+
+> 
+> diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
+> index 38c1a3b..8393129 100644
+> --- a/arch/arm/kernel/kprobes-test-arm.c
+> +++ b/arch/arm/kernel/kprobes-test-arm.c
+> @@ -366,7 +366,9 @@ void kprobe_arm_test_cases(void)
+>  	TEST_UNSUPPORTED(".word 0xe04f0392 @ umaal r0, pc, r2, r3")
+>  	TEST_UNSUPPORTED(".word 0xe0500090 @ undef")
+>  	TEST_UNSUPPORTED(".word 0xe05fff9f @ undef")
+> +#endif
+>  
+> +#if __LINUX_ARM_ARCH__ >= 7
+>  	TEST_RRR(  "mls		r0, r",1, VAL1,", r",2, VAL2,", r",3,  VAL3,"")
+>  	TEST_RRR(  "mlshi	r7, r",8, VAL3,", r",9, VAL1,", r",10, VAL2,"")
+>  	TEST_RR(   "mls		lr, r",1, VAL2,", r",2, VAL3,", r13")
+> @@ -456,6 +458,8 @@ void kprobe_arm_test_cases(void)
+>  	TEST_UNSUPPORTED(".word	0xe1700090") /* Unallocated space */
+>  #if __LINUX_ARM_ARCH__ >= 6
+>  	TEST_UNSUPPORTED("ldrex	r2, [sp]")
+> +#endif
+> +#if (__LINUX_ARM_ARCH__ >= 7) || defined(CONFIG_CPU_32v6K)
+>  	TEST_UNSUPPORTED("strexd	r0, r2, r3, [sp]")
+>  	TEST_UNSUPPORTED("ldrexd	r2, r3, [sp]")
+>  	TEST_UNSUPPORTED("strexb	r0, r2, [sp]")
+> 
