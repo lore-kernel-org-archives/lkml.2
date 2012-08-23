@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab2HWMMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:12:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56284 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2HWMMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:12:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH 2/6] ARM: omap: allow building omap44xx without SMP
-Date: Thu, 23 Aug 2012 12:12:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-References: <1345648390-4234-1-git-send-email-arnd@arndb.de> <201208221722.06775.arnd@arndb.de> <CAMQu2gw_090MiWxs6m=5o0wQhL=ovmN1Y_7DUVhTbJU6mHPS5Q@mail.gmail.com>
-In-Reply-To: <CAMQu2gw_090MiWxs6m=5o0wQhL=ovmN1Y_7DUVhTbJU6mHPS5Q@mail.gmail.com>
+	id S933583Ab2HWMMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:12:37 -0400
+Received: from fieldses.org ([174.143.236.118]:41068 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932925Ab2HWMMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:12:33 -0400
+Date: Thu, 23 Aug 2012 08:12:30 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: [patch 4/9] fs, exportfs: Fix nil dereference if no
+ s_export_op present
+Message-ID: <20120823121230.GC29943@fieldses.org>
+References: <20120823104323.040550004@openvz.org>
+ <20120823104725.830795272@openvz.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208231212.04869.arnd@arndb.de>
-X-Provags-ID: V02:K0:3vixn4csy06Ssy2ypfy+ZauwIpFSrzmZilMAd4KD8oa
- oeHLQEUbrRIWsTHgRU7akx2vDFIHASrihZOlda6IZGCueGRz3b
- oJm8L7Q60pDRe9XVB+WmvlgG/LoJWkLhvgOavdMqzwueoFkryb
- Qo5y5QLFwXOCBLcgZzm+f9z+drG5uzpK61ScamBmrczpQXATxp
- kN1qsQD4Xrns7wHq+KkzO5zppoRn7UzDNCJZYBMevsXlA17/Lt
- u1pt1J4BK2F/BrHLBcrgB6Eh0k+U9CxkiNHfs6RLZP8RYrTFb3
- k/FGnnHqXM9GXFbzVPNBvlw1ZG5f/RmO57+fai3qpfK/GvYiq0
- IDfZv89LkEnsHiydWOfM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120823104725.830795272@openvz.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 August 2012, Shilimkar, Santosh wrote:
-> I see your point but alternate patch is pushing down the fix to the low
-> level driver and that means you end up patching more drivers when they
-> use COUPLE idle infrastructure. That was the only reason I was thinking
-> of suppressing the error at the source.
+On Thu, Aug 23, 2012 at 02:43:27PM +0400, Cyrill Gorcunov wrote:
+> If there is no s_export_op present in a target superblock
+> we might have nil dereference.
+
+Is that NULL dereference possible with current code, or is it a check
+you're adding to account for a new caller that you're about to add?
+
+I believe it's the latter, but this would be a good thing to make clear
+in the changelog.
+
+--b.
+
+> Fix it with eplicit test
+> if s_export_op is provided.
 > 
-> Since it is just for the random builds and actually doesn't impact the real
-> functionality as such, I am fine with your proposed patch too.
-
-Ok. It would be nice of course to test if this actually works on uniprocessor
-configurations.
-
-	Arnd
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: Al Viro <viro@ZenIV.linux.org.uk>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: James Bottomley <jbottomley@parallels.com>
+> CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Matthew Helsley <matt.helsley@gmail.com>
+> CC: "J. Bruce Fields" <bfields@fieldses.org>
+> CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  fs/exportfs/expfs.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-2.6.git/fs/exportfs/expfs.c
+> ===================================================================
+> --- linux-2.6.git.orig/fs/exportfs/expfs.c
+> +++ linux-2.6.git/fs/exportfs/expfs.c
+> @@ -357,7 +357,7 @@ int exportfs_encode_fh(struct dentry *de
+>  		 */
+>  		parent = p->d_inode;
+>  	}
+> -	if (nop->encode_fh)
+> +	if (nop && nop->encode_fh)
+>  		error = nop->encode_fh(inode, fid->raw, max_len, parent);
+>  	else
+>  		error = export_encode_fh(inode, fid, max_len, parent);
+> 
