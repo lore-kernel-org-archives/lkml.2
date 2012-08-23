@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab2HWSWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 14:22:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33952 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756766Ab2HWSWn (ORCPT
+	id S934155Ab2HWSXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 14:23:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51920 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932582Ab2HWSXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 14:22:43 -0400
+	Thu, 23 Aug 2012 14:23:13 -0400
+Message-ID: <5036750A.301@gmail.com>
+Date: Thu, 23 Aug 2012 11:23:06 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CAJ7jCmnX17MLoHe9=bL-A2ja_qyfMw2Pa4x9oOj7TCX6rjCDgQ@mail.gmail.com>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208231814.21168.tweek@tweek.dk>
-	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
-	<20120823180839.GR23464@ZenIV.linux.org.uk>
-	<CAJ7jCmnX17MLoHe9=bL-A2ja_qyfMw2Pa4x9oOj7TCX6rjCDgQ@mail.gmail.com>
-Date: Thu, 23 Aug 2012 21:22:41 +0300
-X-Google-Sender-Auth: yTOgsWtrEhm2wLXpz3Ofz4RsWms
-Message-ID: <CAOJsxLHY4PzV9r1z0ZA0oua_PP83YM+UGi-9j7kQf9ssSWDdAQ@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: Pekka Enberg <penberg@kernel.org>
 To: wbrana <wbrana@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Martin Nybo Andersen <tweek@tweek.dk>,
+CC: Al Viro <viro@zeniv.linux.org.uk>, Martin Nybo Andersen <tweek@tweek.dk>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: Drop support for x86-32
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208231814.21168.tweek@tweek.dk> <CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com> <20120823180839.GR23464@ZenIV.linux.org.uk> <CAJ7jCmnX17MLoHe9=bL-A2ja_qyfMw2Pa4x9oOj7TCX6rjCDgQ@mail.gmail.com>
+In-Reply-To: <CAJ7jCmnX17MLoHe9=bL-A2ja_qyfMw2Pa4x9oOj7TCX6rjCDgQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear "wbrana",
-
-On Thu, Aug 23, 2012 at 9:17 PM, wbrana <wbrana@gmail.com> wrote:
+On 08/23/2012 11:17 AM, wbrana wrote:
+> On 8/23/12, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> How much of your time is being wasted?  I don't remember any patches
+>> from you.  If you mean to say that we are losing your future valuable
+>> contributions that would happen otherwise...  I think you'll find that
+>> we will manage to muddle through, even without a visionary of such
+>> magnitude.
 > I'm user space developer. User space software also needs more time if
 > more ABIs are supported.
 
-I feel your pain.
+Just to keep feeding the troll:
 
-As much as I appreciate your contribution here on LKML, I can't help
-thinking that this discussion would be best continued on the
-"linux-visionaries" mailing list.
+Exactly what part of your user-space code requires special handling to 
+accommodate the differences between the two 32-bit x86 ABIs?  Please be 
+specific.
 
-Your pal,
+David Daney
 
-			Pekka
+
