@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab2HWWrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 18:47:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36653 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab2HWWrF (ORCPT
+	id S1752939Ab2HWXBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 19:01:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38694 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2HWXBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 18:47:05 -0400
-Date: Thu, 23 Aug 2012 15:46:19 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: "Richard W.M. Jones" <rjones@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Torsten Hilbrich <torsten.hilbrich@secunet.com>,
-        Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: replace __getblk_slow misfix by grow_dev_page
- fix
-In-Reply-To: <x49obm1fil0.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <alpine.LSU.2.00.1208231527150.5852@eggly.anvils>
-References: <alpine.LSU.2.00.1208211826270.2488@eggly.anvils> <20120822115243.GU1448@rhmail.home.annexia.org> <alpine.LSU.2.00.1208222143440.1917@eggly.anvils> <x49obm1fil0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 23 Aug 2012 19:01:18 -0400
+Message-ID: <5036B639.20608@gmail.com>
+Date: Fri, 24 Aug 2012 01:01:13 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com> <5035445B.6000500@wwwdotorg.org> <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com> <50366E44.4030606@wwwdotorg.org> <50369305.6050304@gmail.com> <50369FEE.8000003@wwwdotorg.org>
+In-Reply-To: <50369FEE.8000003@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Aug 2012, Jeff Moyer wrote:
-> Hugh Dickins <hughd@google.com> writes:
-> 
-> > [PATCH] block: replace __getblk_slow misfix by grow_dev_page fix
-> >
-> > Commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow")
-> > is not good: a successful call to grow_buffers() cannot guarantee
-> > that the page won't be reclaimed before the immediate next call to
-> > __find_get_block(), which is why there was always a loop there.
-> [snip]
-> > Revert 91f68c89d8f3, restoring __getblk_slow() to how it was (plus
-> > a checkpatch nitfix).  Simplify the interface between grow_buffers()
-> > and grow_dev_page(), and avoid the infinite loop beyond end of device
-> > by instead checking init_page_buffers()'s end_block there (I presume
-> > that's more efficient than a repeated call to blkdev_max_block()),
-> > returning -ENXIO to __getblk_slow() in that case.
-> >
-> > And remove akpm's ten-year-old "__getblk() cannot fail ... weird"
-> > comment, but that is worrying: are all users of __getblk() really
-> > now prepared for a NULL bh beyond end of device, or will some oops??
-> 
-> Hi, Hugh,
-> 
-> Thanks for digging into this.  I had wondered whether that loop was
-> required for other purposes, and you've verified that it was.  I mostly
-> like your fix.  Returning end_block from init_page_buffers is a little
-> strange,
+On 08/23/2012 11:26 PM, Stephen Warren wrote:
+> As you may have guessed, I strongly prefer the hard-coded static table
+> based approach, or at least separating the definition of known
+> pins/groups/functions from the configuration nodes that define which
+> particular mux settings to actually use.
+>
+> Puting this all a little more simply, the pinctrl core wants to generate
+> a list of all known functions. It is a single global/unified list. It
+> first calls pinmux_ops.get_functions_count() to find out how many
+> functions there are in the list, then pinmux_ops.get_function_name() for
+> each one to find its name, then pinmux_ops.get_function_groups() to find
+> out which groups allow that function to be mux'd onto them.
 
-It is a little strange, I agree.  I wrestled a lot with the way block
-and end_block were known at opposite ends of the callstack, and needed
-to be brought together for the check.
+Ok, now this becomes a little bit more clear to me.
 
-If you think it would be better to move the blkdev_max_block()
-lookup up a level into grow_dev_page(), then pass end_block down to
-init_page_buffers(), that could work as well; though we'd then still
-need to report "failure" from init_page_buffers().
+Consider uart1 on dove is muxable to:
+mpp2 uart1(rts), mpp3 uart1(cts), mpp21 uart1(rts), mpp22 uart1(cts),
+and finally mpp_uart1(rx and tx).
 
-I was inclined to leave it precisely where you had sited it, with that
-comment on passing it back up; but could change it around if preferred.
+So possible, valid combinations for uart1 would be:
+(a) mpp_uart1;
+(b) mpp_uart1, mpp2, mpp3;
+(c) mpp_uart1, mpp21, mpp22;
+(d) mpp_uart1, mpp2, mpp22;
+(e) mpp_uart1, mpp21, mpp3;
 
-> but I understand not wanting to redo the call to blkdev_max_block.
-> 
-> I went ahead to re-tested with the reproducer that I had, and your patch
-> works fine.  Thanks again for tracking this down, and sorry I wasn't
-> more diligent to begin with.
-> 
-> Reviewed-and-Tested-by: Jeff Moyer <jmoyer@redhat.com>
+Now what we currently do is, use DT to setup all known functions with e.g.
+marvell,pins = "mpp_uart1", "mpp2", "mpp22" and marvell,function = "uart1".
+This requires to count all pinctrl DT node children to count the known
+functions that can ever be muxed to. It will never allow to mux uart1 to sw
+flow control during run-time when there was no DT child node for it.
 
-Great, thanks a lot.  It (but equally its incorrect earlier version)
-have been running fine at home under my swapping load.  I'm confident
-that it fixes the issues I had been seeing, although, strictly speaking,
-it'll take another two or three days to reach bisection confidence level.
+But you are proposing to scan the list passed from SoC specific driver for all
+possible marvell,function ("uart1", "uart2", "sdio0", ...) and build up lists
+of pingroups that can be used with this specific marvell,function; or even build
+up lists of pingroups that allow uart1(rts), and another one for uart1(cts), ...?
 
-Hugh
+Sebastian
