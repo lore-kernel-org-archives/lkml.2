@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758157Ab2HWVT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:19:28 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:32114 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab2HWVTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:19:25 -0400
-Date: Thu, 23 Aug 2012 17:09:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] (xen) stable/for-linus-3.6-rc3-tag
-Message-ID: <20120823210915.GA25652@phenom.dumpdata.com>
+	id S1758296Ab2HWVYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:24:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57454 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756045Ab2HWVYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 17:24:06 -0400
+Message-ID: <50369F67.8040101@zytor.com>
+Date: Thu, 23 Aug 2012 14:23:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Jacob Shin <jacob.shin@amd.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
+        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 3/4] x86: Only direct map addresses that are marked as
+ E820_RAM
+References: <1344983957-4996-1-git-send-email-jacob.shin@amd.com> <1344983957-4996-4-git-send-email-jacob.shin@amd.com> <50356BA9.5030906@zytor.com> <20120823145043.GA4671@jshin-Toonie> <50364E9E.6020104@zytor.com> <20120823201224.GA24203@phenom.dumpdata.com>
+In-Reply-To: <20120823201224.GA24203@phenom.dumpdata.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/23/2012 01:12 PM, Konrad Rzeszutek Wilk wrote:
+>>
+>> Okay... I think I need to grok that a bit better.  For memory
+>> allocations, we probably should just use brk allocations, for
+>> virtual space allocations it is called the fixmap for a reason (even
+>> though the Xen people managed to break that on 32 bits, sigh!)
+> 
+> Can you rope me in on that? Was that added ooh years ago ?
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yeah, it dates back to the original paravirt work.
 
-Hey Linus,
+The issue is that Xen likes to live at the top of the virtual address
+space, which is where the fixmap lives.  Suddenly the fixmap is no
+longer at a fixed address, which was sort of the whole idea.
 
-Please pull this following git tag:
+The problem is that on i386 there are very few unmovable boundaries left
+in the virtual address space.  The only other one left, really, is at
+the very beginning of kernel space.
 
-git pull  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.6-rc3-tag
+At this point people's appetite for large changes on 32 bits is limited,
+of course.
 
-which has three bug-fixes. The tag has a brief writeup of what they are - but
-basically one is a revert for a that went in v3.6 and is not yet ready. The
-other two are fixes  - one for a one-off bug that has been for some time in the
-kernel. The other is a fix for code that went in v3.5.
-
-Please pull and here is an double-checked output:
-
-
- arch/x86/xen/enlighten.c   |  118 ++++---------------------------------------
- arch/x86/xen/p2m.c         |   95 ++++++++++++++++++++++++++++++++++-
- arch/x86/xen/setup.c       |    9 +++-
- arch/x86/xen/suspend.c     |    2 +-
- arch/x86/xen/xen-ops.h     |    2 +-
- drivers/xen/platform-pci.c |   15 ------
- include/xen/events.h       |    2 -
- 7 files changed, 113 insertions(+), 130 deletions(-)
-
-Konrad Rzeszutek Wilk (3):
-      Revert "xen PVonHVM: move shared_info to MMIO before kexec"
-      xen/p2m: Reuse existing P2M leafs if they are filled with 1:1 PFNs or INVALID.
-      xen/setup: Fix one-off error when adding for-balloon PFNs to the P2M.
+	-hpa
 
 
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQNpvsAAoJEFjIrFwIi8fJAOYH+wYTi6aVft6X3MeWRaNZFkBs
-ZtlK0NZGmT7Mv57LeLN/6GzFRVA/jD28z3khNOJMTcbwA6sx4I1c1fdcFY37ZZ02
-1/nnKSRvFvAR9aiuUr8pRbJ2rmXBd5mQuQACzLSlKCqL0slqyaiIkZjhMcxfzBBa
-bCTpVj3g6LJAL3XefHpP9MwkEszqHDj9aJFjzOIp3lOdih+SV52pqmpGKZUeLXv3
-MUZME+D/A67HVVgSYGkBf245bqGaQq3me683W5VBc4Q+/5UTB3vXJOmw6wYhyida
-UJFrJT258Ib0IvQW1wAAOOIbnPOpSHqDy+1RMrc6+5ytXlayaXLDsRdfKFO7M4c=
-=nohE
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
