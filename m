@@ -1,153 +1,466 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030228Ab2HWHgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:36:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3858 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030215Ab2HWHgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:36:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
-   d="asc'?scan'208,223";a="184400689"
-Message-ID: <1345707689.2848.203.camel@sauron.fi.intel.com>
-Subject: Re: JFFS2 issue with v3.5.x and later on Atmel chips at least (was:
- Kernel oops since v3.5.x on Atmel chips)
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: "ludovic.desroches" <ludovic.desroches@atmel.com>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mtd@lists.infradead.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Date: Thu, 23 Aug 2012 10:41:29 +0300
-In-Reply-To: <5034F3F8.9080802@atmel.com>
-References: <5034B45A.5060107@atmel.com> <5034F3F8.9080802@atmel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-BPHXsA/Sa4cHsGCzuXbV"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1030185Ab2HWHgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:36:38 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:16614 "EHLO mta02.xtra.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933618Ab2HWHgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:36:10 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: vt8500-wm8505-linux-kernel@googlegroups.com
+Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCHv4 7/9] arm: vt8500: doc: Add device tree bindings for arch-vt8500 devices
+Date: Thu, 23 Aug 2012 19:35:43 +1200
+Message-Id: <1345707346-9035-8-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
+References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bindings for gpio, interrupt controller, power management controller,
+timer, realtime clock, serial uart, ehci and uhci controllers and
+framebuffer controllers used on the arch-vt8500 platform.
 
---=-BPHXsA/Sa4cHsGCzuXbV
-Content-Type: multipart/mixed; boundary="=-aW7etfJgAUtW8B1UkdwX"
+Framebuffer binding also specifies a 'display' node which is required
+for determining the lcd panel data.
 
-
---=-aW7etfJgAUtW8B1UkdwX
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Date: Thu, 23 Aug 2012 10:10:07 +0300
-Subject: [PATCH] JFFS2: fix unmount regression
-
-This patch fixes regression introduced by
-"8bdc81c jffs2: get rid of jffs2_sync_super". We submit a delayed work in o=
-rder
-to make sure the write-buffer is synchronized at some point. But we do not
-flush it when we unmount, which causes an oops when we unmount the file-sys=
-tem
-and then the delayed work is executed.
-
-This patch fixes the issue by adding a "cancel_delayed_work_sync()" infocat=
-ion
-in the '->sync_fs()' handler. This will make sure the delayed work is cance=
-led
-on sync, unmount and re-mount. And because VFS always callse 'sync_fs()' be=
-fore
-unmounting or remounting, this fixes the issue.
-
-Reported-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: stable@vger.kernel.org [3.5+]
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
+ Documentation/devicetree/bindings/arm/vt8500.txt   |   15 ++++
+ .../bindings/arm/vt8500/via,vt8500-intc.txt        |   16 +++++
+ .../bindings/arm/vt8500/via,vt8500-pmc.txt         |   13 ++++
+ .../bindings/arm/vt8500/via,vt8500-timer.txt       |   15 ++++
+ Documentation/devicetree/bindings/clock/vt8500.txt |   72 ++++++++++++++++++++
+ .../devicetree/bindings/gpio/gpio-vt8500.txt       |   24 +++++++
+ .../devicetree/bindings/rtc/via,vt8500-rtc.txt     |   15 ++++
+ .../bindings/tty/serial/via,vt8500-uart.txt        |   17 +++++
+ .../devicetree/bindings/usb/platform-uhci.txt      |   15 ++++
+ .../devicetree/bindings/usb/via,vt8500-ehci.txt    |   15 ++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    2 +
+ .../devicetree/bindings/video/via,vt8500-fb.txt    |   48 +++++++++++++
+ .../devicetree/bindings/video/wm,prizm-ge-rops.txt |   13 ++++
+ .../devicetree/bindings/video/wm,wm8505-fb.txt     |   22 ++++++
+ 14 files changed, 302 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/vt8500.txt
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
+ create mode 100644 Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/platform-uhci.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
+ create mode 100644 Documentation/devicetree/bindings/video/via,vt8500-fb.txt
+ create mode 100644 Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
+ create mode 100644 Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
 
-Ludovic, would you please give this patch a test? Also attached.
-
- fs/jffs2/super.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
-index 61ea413..e385fa3 100644
---- a/fs/jffs2/super.c
-+++ b/fs/jffs2/super.c
-@@ -100,6 +100,9 @@ static int jffs2_sync_fs(struct super_block *sb, int wa=
-it)
- {
- 	struct jffs2_sb_info *c =3D JFFS2_SB_INFO(sb);
-=20
-+	if (IS_ENABLED(CONFIG_JFFS2_FS_WRITEBUFFER))
-+		cancel_delayed_work_sync(&c->wbuf_dwork);
+diff --git a/Documentation/devicetree/bindings/arm/vt8500.txt b/Documentation/devicetree/bindings/arm/vt8500.txt
+new file mode 100644
+index 0000000..1b3b187
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 Platforms Device Tree Bindings
++---------------------------------------
 +
- 	mutex_lock(&c->alloc_sem);
- 	jffs2_flush_wbuf_pad(c);
- 	mutex_unlock(&c->alloc_sem);
---=20
-1.7.10.4
-
---=-aW7etfJgAUtW8B1UkdwX
-Content-Disposition: attachment; filename="0001-JFFS2-fix-unmount-regression.patch"
-Content-Transfer-Encoding: base64
-Content-Type: text/x-patch; name="0001-JFFS2-fix-unmount-regression.patch";
-	charset="UTF-8"
-
-RnJvbSAyZjE1NTRkMDFmN2RiNTg2MzFmOWRhN2RkMTlhNzI1NGQxMDk2ZmViIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogQXJ0ZW0gQml0eXV0c2tpeSA8YXJ0ZW0uYml0eXV0c2tpeUBs
-aW51eC5pbnRlbC5jb20+DQpEYXRlOiBUaHUsIDIzIEF1ZyAyMDEyIDEwOjEwOjA3ICswMzAwDQpT
-dWJqZWN0OiBbUEFUQ0hdIEpGRlMyOiBmaXggdW5tb3VudCByZWdyZXNzaW9uDQoNClRoaXMgcGF0
-Y2ggZml4ZXMgcmVncmVzc2lvbiBpbnRyb2R1Y2VkIGJ5DQoiOGJkYzgxYyBqZmZzMjogZ2V0IHJp
-ZCBvZiBqZmZzMl9zeW5jX3N1cGVyIi4gV2Ugc3VibWl0IGEgZGVsYXllZCB3b3JrIGluIG9yZGVy
-DQp0byBtYWtlIHN1cmUgdGhlIHdyaXRlLWJ1ZmZlciBpcyBzeW5jaHJvbml6ZWQgYXQgc29tZSBw
-b2ludC4gQnV0IHdlIGRvIG5vdA0KZmx1c2ggaXQgd2hlbiB3ZSB1bm1vdW50LCB3aGljaCBjYXVz
-ZXMgYW4gb29wcyB3aGVuIHdlIHVubW91bnQgdGhlIGZpbGUtc3lzdGVtDQphbmQgdGhlbiB0aGUg
-ZGVsYXllZCB3b3JrIGlzIGV4ZWN1dGVkLg0KDQpUaGlzIHBhdGNoIGZpeGVzIHRoZSBpc3N1ZSBi
-eSBhZGRpbmcgYSAiY2FuY2VsX2RlbGF5ZWRfd29ya19zeW5jKCkiIGluZm9jYXRpb24NCmluIHRo
-ZSAnLT5zeW5jX2ZzKCknIGhhbmRsZXIuIFRoaXMgd2lsbCBtYWtlIHN1cmUgdGhlIGRlbGF5ZWQg
-d29yayBpcyBjYW5jZWxlZA0Kb24gc3luYywgdW5tb3VudCBhbmQgcmUtbW91bnQuIEFuZCBiZWNh
-dXNlIFZGUyBhbHdheXMgY2FsbHNlICdzeW5jX2ZzKCknIGJlZm9yZQ0KdW5tb3VudGluZyBvciBy
-ZW1vdW50aW5nLCB0aGlzIGZpeGVzIHRoZSBpc3N1ZS4NCg0KUmVwb3J0ZWQtYnk6IEx1ZG92aWMg
-RGVzcm9jaGVzIDxsdWRvdmljLmRlc3JvY2hlc0BhdG1lbC5jb20+DQpDYzogc3RhYmxlQHZnZXIu
-a2VybmVsLm9yZyBbMy41K10NClNpZ25lZC1vZmYtYnk6IEFydGVtIEJpdHl1dHNraXkgPGFydGVt
-LmJpdHl1dHNraXlAbGludXguaW50ZWwuY29tPg0KLS0tDQogZnMvamZmczIvc3VwZXIuYyB8ICAg
-IDMgKysrDQogMSBmaWxlIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKQ0KDQpkaWZmIC0tZ2l0IGEv
-ZnMvamZmczIvc3VwZXIuYyBiL2ZzL2pmZnMyL3N1cGVyLmMNCmluZGV4IDYxZWE0MTMuLmUzODVm
-YTMgMTAwNjQ0DQotLS0gYS9mcy9qZmZzMi9zdXBlci5jDQorKysgYi9mcy9qZmZzMi9zdXBlci5j
-DQpAQCAtMTAwLDYgKzEwMCw5IEBAIHN0YXRpYyBpbnQgamZmczJfc3luY19mcyhzdHJ1Y3Qgc3Vw
-ZXJfYmxvY2sgKnNiLCBpbnQgd2FpdCkNCiB7DQogCXN0cnVjdCBqZmZzMl9zYl9pbmZvICpjID0g
-SkZGUzJfU0JfSU5GTyhzYik7DQogDQorCWlmIChJU19FTkFCTEVEKENPTkZJR19KRkZTMl9GU19X
-UklURUJVRkZFUikpDQorCQljYW5jZWxfZGVsYXllZF93b3JrX3N5bmMoJmMtPndidWZfZHdvcmsp
-Ow0KKw0KIAltdXRleF9sb2NrKCZjLT5hbGxvY19zZW0pOw0KIAlqZmZzMl9mbHVzaF93YnVmX3Bh
-ZChjKTsNCiAJbXV0ZXhfdW5sb2NrKCZjLT5hbGxvY19zZW0pOw0KLS0gDQoxLjcuMTAuNA0KDQo=
-
-
---=-aW7etfJgAUtW8B1UkdwX--
-
---=-BPHXsA/Sa4cHsGCzuXbV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQNd6pAAoJECmIfjd9wqK0tXwP/RtxVKS+XBwtlT3vCS+R9+nl
-ZuTLlujkgMrRWrbHGfOljxhWUra3g9XbZZLrd9LK4krBrA4XqIivjcaMTdte/bmZ
-3NaL8BPhq3XuhbSWZiG+wyulhzzvfL4JvzJKDlZkG4QpV6+ZDEc9eg2Is6djET2Z
-Q6E3q/sVfmEi4X7UIYjABL2fjISglcCwrFKTV3eiM5aNjXTL3jzML7kr+H+NjULG
-5iRYEzVCjWP4z0rHsxtaAVm83YEfF0qKMvl/6H8zjphj2HpLQYHjlDZJ4B1Pge+N
-BOGNe7D4IDvgMvDfvg020IY2OYxYlWoaJsJ298DO0FTwKICZCbs2TnLkyNIlekDe
-8TtaLa8W15nsCmxCJkwplFS3z8GZv0a6pmh+iwWIJzvgAIgYRwoHVHYlS97n+smA
-Wl2K5hJtD7xLJgc6CwnMs/6fB7KSv5rHg+TPJiNs3AaQz9kRs23BSSr/95w0W7vU
-s9tnvpXptw73AoPXX37WnDWU5x5nqZKu+ssHangJ5En0JFjyMx6ys5ARPfaNeHxV
-3MaXq+s0cmRXPkswXLDSScxny0t32gVYIgnsByX4LhgPMBQPas7fYiXbVEYY0h57
-rZuEOO5C3mOUHwLbn3p5r3LlAGnUfwKRk9rjq30lv1BtNI6WFK2VgCjDWp1OVhD7
-zgax5sZ2KxIXL5MKbK2C
-=c/GY
------END PGP SIGNATURE-----
-
---=-BPHXsA/Sa4cHsGCzuXbV--
++Boards with the VIA VT8500 SoC shall have the following properties:
++Required root node property:
++compatible = "via,vt8500";
++
++Boards with the Wondermedia WM8505 SoC shall have the following properties:
++Required root node property:
++compatible = "wm,wm8505";
++
++Boards with the Wondermedia WM8650 SoC shall have the following properties:
++Required root node property:
++compatible = "wm,wm8650";
++
+diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
+new file mode 100644
+index 0000000..0a4ce10
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-intc.txt
+@@ -0,0 +1,16 @@
++VIA/Wondermedia VT8500 Interrupt Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-intc"
++- reg : Should contain 1 register ranges(address and length)
++- #interrupt-cells : should be <1>
++
++Example:
++
++	intc: interrupt-controller@d8140000 {
++		compatible = "via,vt8500-intc";
++		interrupt-controller;
++		reg = <0xd8140000 0x10000>;
++		#interrupt-cells = <1>;
++	};
+diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
+new file mode 100644
+index 0000000..521b9c7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-pmc.txt
+@@ -0,0 +1,13 @@
++VIA/Wondermedia VT8500 Power Management Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-pmc"
++- reg : Should contain 1 register ranges(address and length)
++
++Example:
++
++	pmc@d8130000 {
++		compatible = "via,vt8500-pmc";
++		reg = <0xd8130000 0x1000>;
++	};
+diff --git a/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
+new file mode 100644
+index 0000000..901c73f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vt8500/via,vt8500-timer.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 Timer
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-timer"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : interrupt for the timer
++
++Example:
++
++	timer@d8130100 {
++		compatible = "via,vt8500-timer";
++		reg = <0xd8130100 0x28>;
++		interrupts = <36>;
++	};
+diff --git a/Documentation/devicetree/bindings/clock/vt8500.txt b/Documentation/devicetree/bindings/clock/vt8500.txt
+new file mode 100644
+index 0000000..a880c70
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/vt8500.txt
+@@ -0,0 +1,72 @@
++Device Tree Clock bindings for arch-vt8500
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Required properties:
++- compatible : shall be one of the following:
++	"via,vt8500-pll-clock" - for a VT8500/WM8505 PLL clock
++	"wm,wm8650-pll-clock" - for a WM8650 PLL clock
++	"via,vt8500-device-clock" - for a VT/WM device clock
++
++Required properties for PLL clocks:
++- reg : shall be the control register offset from PMC base for the pll clock.
++- clocks : shall be the input parent clock phandle for the clock. This should
++	be the reference clock.
++- #clock-cells : from common clock binding; shall be set to 0.
++
++Required properties for device clocks:
++- clocks : shall be the input parent clock phandle for the clock. This should
++	be a pll output.
++- #clock-cells : from common clock binding; shall be set to 0.
++
++
++Device Clocks
++
++Device clocks are required to have one or both of the following sets of
++properties:
++
++
++Gated device clocks:
++
++Required properties:
++- enable-reg : shall be the register offset from PMC base for the enable
++	register.
++- enable-bit : shall be the bit within enable-reg to enable/disable the clock.
++
++
++Divisor device clocks:
++
++Required property:
++- divisor-reg : shall be the register offset from PMC base for the divisor
++	register.
++Optional property:
++- divisor-mask : shall be the mask for the divisor register. Defaults to 0x1f
++	if not specified.
++
++
++For example:
++
++ref25: ref25M {
++	#clock-cells = <0>;
++	compatible = "fixed-clock";
++	clock-frequency = <25000000>;
++};
++
++plla: plla {
++	#clock-cells = <0>;
++	compatible = "wm,wm8650-pll-clock";
++	clocks = <&ref25>;
++	reg = <0x200>;
++};
++
++sdhc: sdhc {
++	#clock-cells = <0>;
++	compatible = "via,vt8500-device-clock";
++	clocks = <&pllb>;
++	divisor-reg = <0x328>;
++	divisor-mask = <0x3f>;
++	enable-reg = <0x254>;
++	enable-bit = <18>;
++};
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-vt8500.txt b/Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
+new file mode 100644
+index 0000000..f4dc523
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
+@@ -0,0 +1,24 @@
++VIA/Wondermedia VT8500 GPIO Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-gpio", "wm,wm8505-gpio"
++	or "wm,wm8650-gpio" depending on your SoC
++- reg : Should contain 1 register range (address and length)
++- #gpio-cells : should be <3>.
++	1) bank
++	2) pin number
++	3) flags - should be 0
++
++Example:
++
++	gpio: gpio-controller@d8110000 {
++		compatible = "via,vt8500-gpio";
++		gpio-controller;
++		reg = <0xd8110000 0x10000>;
++		#gpio-cells = <3>;
++	};
++
++	vibrate {
++		gpios = <&gpio 0 1 0>; /* Bank 0, Pin 1, No flags */
++	};
+diff --git a/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt b/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
+new file mode 100644
+index 0000000..3c0484c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rtc/via,vt8500-rtc.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 Realtime Clock Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-rtc"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : alarm interrupt
++
++Example:
++
++	rtc@d8100000 {
++		compatible = "via,vt8500-rtc";
++		reg = <0xd8100000 0x10000>;
++		interrupts = <48>;
++	};
+diff --git a/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt b/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
+new file mode 100644
+index 0000000..5feef1e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/tty/serial/via,vt8500-uart.txt
+@@ -0,0 +1,17 @@
++VIA/Wondermedia VT8500 UART Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-uart"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : UART interrupt
++- clocks : phandle to the uart source clock (usually a 24Mhz fixed clock)
++
++Example:
++
++	uart@d8210000 {
++		compatible = "via,vt8500-uart";
++		reg = <0xd8210000 0x1040>;
++		interrupts = <47>;
++		clocks = <&ref24>;
++	};
+diff --git a/Documentation/devicetree/bindings/usb/platform-uhci.txt b/Documentation/devicetree/bindings/usb/platform-uhci.txt
+new file mode 100644
+index 0000000..a4fb071
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/platform-uhci.txt
+@@ -0,0 +1,15 @@
++Generic Platform UHCI Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "platform-uhci"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : UHCI controller interrupt
++
++Example:
++
++	uhci@d8007b00 {
++		compatible = "platform-uhci";
++		reg = <0xd8007b00 0x200>;
++		interrupts = <43>;
++	};
+diff --git a/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt b/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
+new file mode 100644
+index 0000000..17b3ad1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/via,vt8500-ehci.txt
+@@ -0,0 +1,15 @@
++VIA/Wondermedia VT8500 EHCI Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-ehci"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : ehci controller interrupt
++
++Example:
++
++	ehci@d8007900 {
++		compatible = "via,vt8500-ehci";
++		reg = <0xd8007900 0x200>;
++		interrupts = <43>;
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index db4d3af..5c63da2 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -47,5 +47,7 @@ sirf	SiRF Technology, Inc.
+ st	STMicroelectronics
+ stericsson	ST-Ericsson
+ ti	Texas Instruments
++via	VIA Technologies, Inc.
+ wlf	Wolfson Microelectronics
++wm	Wondermedia Technologies, Inc.
+ xlnx	Xilinx
+diff --git a/Documentation/devicetree/bindings/video/via,vt8500-fb.txt b/Documentation/devicetree/bindings/video/via,vt8500-fb.txt
+new file mode 100644
+index 0000000..98ad14c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/via,vt8500-fb.txt
+@@ -0,0 +1,48 @@
++VIA VT8500 Framebuffer
++-----------------------------------------------------
++
++Required properties:
++- compatible : "via,vt8500-fb"
++- reg : Should contain 1 register ranges(address and length)
++- interrupts : framebuffer controller interrupt
++- via,display: a phandle pointing to the display node
++
++Required nodes:
++- display: a display node is required to initialize the lcd panel
++	This should be in the board dts.
++
++Example:
++
++	fb@d800e400 {
++		compatible = "via,vt8500-fb";
++		reg = <0xd800e400 0x400>;
++		interrupts = <12>;
++		via,display = <&display>;
++	};
++
++VIA VT8500 Display
++-----------------------------------------------------
++Required properties:
++- xres : lcd panel horizontal resolution
++- yres : lcd panel vertical resolution
++- left-margin,
++- right-margin,
++- hsync-len: lcd panel horizontal timings in pixels
++- upper-margin,
++- lower-margin,
++- vsync-len: lcd panel verticals timings in pixels
++- bpp: lcd panel bit-depth.
++	<16> for RGB565, <32> for RGB888
++
++Example:
++	display {
++		xres = <800>;
++		yres = <480>;
++		left-margin = <88>;
++		right-margin = <40>;
++		hsync-len = <0>;
++		upper-margin = <32>;
++		lower-margin = <11>;
++		vsync-len = <1>;
++		bpp = <16>;
++	};
+diff --git a/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt b/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
+new file mode 100644
+index 0000000..a850fa0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/wm,prizm-ge-rops.txt
+@@ -0,0 +1,13 @@
++VIA/Wondermedia Graphics Engine Controller
++-----------------------------------------------------
++
++Required properties:
++- compatible : "wm,prizm-ge-rops"
++- reg : Should contain 1 register ranges(address and length)
++
++Example:
++
++	ge_rops@d8050400 {
++		compatible = "wm,prizm-ge-rops";
++		reg = <0xd8050400 0x100>;
++	};
+diff --git a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+new file mode 100644
+index 0000000..64f016a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+@@ -0,0 +1,22 @@
++Wondermedia WM8505 Framebuffer
++-----------------------------------------------------
++
++Required properties:
++- compatible : "wm,wm8505-fb"
++- reg : Should contain 1 register ranges(address and length)
++- via,display: a phandle pointing to the display node
++
++Required nodes:
++- display: a display node is required to initialize the lcd panel
++	This should be in the board dts. See definition in
++	Documentation/devicetree/bindings/video/via,vt8500-fb.txt
++
++
++Example:
++
++	fb@d8050800 {
++		compatible = "wm,wm8505-fb";
++		reg = <0xd8050800 0x200>;
++		via,display = <&display>;
++	};
++
+-- 
+1.7.9.5
 
