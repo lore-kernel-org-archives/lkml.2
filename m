@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab2HWH21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:28:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59514 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894Ab2HWH2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:28:24 -0400
+	id S1757143Ab2HWHaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:30:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756091Ab2HWHal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:30:41 -0400
+Date: Thu, 23 Aug 2012 04:30:04 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>
+Subject: [GIT PULL] KVM fixes for 3.6-rc3
+Message-ID: <20120823073004.GA22074@amt.cnet>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20120709182018.18165.98339.stgit@bhelgaas.mtv.corp.google.com>
-References: <20120709181745.18165.93914.stgit@bhelgaas.mtv.corp.google.com>
-	<20120709182018.18165.98339.stgit@bhelgaas.mtv.corp.google.com>
-Date: Thu, 23 Aug 2012 00:28:23 -0700
-Message-ID: <CAOesGMgUGUG9Z=x6ssumVkAxN6fHoeyAJ3-P8CoaNTGas7-vmg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PCI: leave MEM and IO decoding disabled during 64-bit
- BAR sizing, too
-From: Olof Johansson <olof@lixom.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Robert Hancock <hancockrwd@gmail.com>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, Jul 9, 2012 at 11:20 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> After 253d2e5498, we disable MEM and IO decoding for most devices while we
-> size 32-bit BARs.  However, we restore the original COMMAND register before
-> we size the upper 32 bits of 64-bit BARs, so we can still cause a conflict.
->
-> This patch waits to restore the original COMMAND register until we're
-> completely finished sizing the BAR.
->
-> Reference: https://lkml.org/lkml/2007/8/25/154
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Linus,
 
-This patch causes boot lockup on PA Semi hardware, since it disables
-the bar on the UART that is used for console, and it has printks
-between the old and the new re-enable location. If I boot with 'debug'
-level for printk, I hit this. If I boot with just regular console
-args, I don't.
+Please pull from
 
-I'm guessing any other platform that uses MMIO-based UART on PCI for
-console will have similar issues. I can verify on Chrome OS x86
-hardware tomorrow if legacy powerpc isn't important enough to care
-about. :-)
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
 
-I have no proposal for a fix for this. Can you please consider
-reverting for 3.6 unless someone has a better idea?
+To receive the following KVM bug fixes:
 
 
--Olof
+Alan Cox (1):
+      ppc: e500_tlb memset clears nothing
+
+Alexander Graf (1):
+      KVM: PPC: Add cache flush on page map
+
+Avi Kivity (1):
+      KVM: x86 emulator: use stack size attribute to mask rsp in stack ops
+
+Gleb Natapov (1):
+      KVM: x86: update KVM_SAVE_MSRS_BEGIN to correct value
+
+Paul Mackerras (1):
+      KVM: PPC: Book3S HV: Fix incorrect branch in H_CEDE code
+
+Takuya Yoshikawa (1):
+      KVM: MMU: Fix mmu_shrink() so that it can free mmu pages as intended
+
+
+ arch/powerpc/include/asm/kvm_host.h     |    1 +
+ arch/powerpc/include/asm/kvm_ppc.h      |   12 ++++++++++++
+ arch/powerpc/kvm/book3s_32_mmu_host.c   |    3 +++
+ arch/powerpc/kvm/book3s_64_mmu_host.c   |    2 ++
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S |   12 +++++++-----
+ arch/powerpc/kvm/e500_tlb.c             |   11 +++++++----
+ arch/powerpc/mm/mem.c                   |    1 +
+ arch/x86/kvm/emulate.c                  |   30 +++++++++++++++++++++---------
+ arch/x86/kvm/mmu.c                      |   13 +++++++++----
+ arch/x86/kvm/x86.c                      |    2 +-
+ 10 files changed, 64 insertions(+), 23 deletions(-)
