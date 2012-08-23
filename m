@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498Ab2HWLPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 07:15:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55165 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab2HWLPb convert rfc822-to-8bit (ORCPT
+	id S1753644Ab2HWLRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 07:17:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47953 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751387Ab2HWLRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 07:15:31 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Chinmay V S <cvs268@gmail.com>
-CC: "carmine.iascone@st.com" <carmine.iascone@st.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "greg@kroah.com" <greg@kroah.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
- accelerometer
-Thread-Topic: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
- accelerometer
-Thread-Index: AQHNgC+0NDpTyonaHU+HVTncuJ8wyZdlGIEAgAAPuoCAAFzA0P//wzoAgADFFbiAASUWTYAAAPYw
-Date: Thu, 23 Aug 2012 11:15:09 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA1EBF5@DBDE01.ent.ti.com>
-References: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
- <201208220748.39106.arnd@arndb.de>
- <CAK-9PRBy0PCQ4XAVZzQpWv5rnT8A9f6F=qxT=pJEaioN7RN_5w@mail.gmail.com>
- <331ABD5ECB02734CA317220B2BBEABC13EA1B975@DBDE01.ent.ti.com>
- <CAK-9PRBDpxtrxZWL_x9Uz--GMWDN5anyB_fuKtLrvZcLoRR+FQ@mail.gmail.com>
- <331ABD5ECB02734CA317220B2BBEABC13EA1BDA9@DBDE01.ent.ti.com>
- <CAK-9PRD6FH=5g0SrVcw+81Witpo8zRfvnsmGaePaA4swjHWkSw@mail.gmail.com>
- <331ABD5ECB02734CA317220B2BBEABC13EA1EA53@DBDE01.ent.ti.com>
- <CAK-9PRCe3Q0Tjn1qNdzkVcrPmUm_BPQowDgKE4+wVu5T-SVTZQ@mail.gmail.com>
-In-Reply-To: <CAK-9PRCe3Q0Tjn1qNdzkVcrPmUm_BPQowDgKE4+wVu5T-SVTZQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.132.219]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Aug 2012 07:17:44 -0400
+Date: Thu, 23 Aug 2012 12:17:41 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>, Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "paul.liu@linaro.org" <paul.liu@linaro.org>
+Subject: Re: [PATCH 4/7] regulator: anatop-regulator: convert to use
+ imx-syscon to access anatop register
+Message-ID: <20120823111741.GX7995@opensource.wolfsonmicro.com>
+References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
+ <1345619928-15446-5-git-send-email-b29396@freescale.com>
+ <20120822155953.GQ7995@opensource.wolfsonmicro.com>
+ <20120823071503.GF10057@shlinux2.ap.freescale.net>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vZbAFtxic7ONUJfi"
+Content-Disposition: inline
+In-Reply-To: <20120823071503.GF10057@shlinux2.ap.freescale.net>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chinmay,
 
-On Thu, Aug 23, 2012 at 15:53:10, Chinmay V S wrote:
-> > Note from datasheet, "1LSb=4g/4096 at 12bit representation,
-> > ±2g Full-scale"
-> 
-> Precisely my point. All the datasheet says is :
-> 1. It is +/-2G mode --> so Numerator is 4G.
-> 2. We are using 12bits --> so Denominator is 2^12 = 4096.
-> 
-> There is no clear reason/justification as to why 12bits was chosen in
-> the first place. At this point unless someone from the
-> design/original-driver team actually confirms why the 12bit
-> representation was chosen, it is all conjecture on our part.
-> 
-> If you have the actual LIS331DLH hardware, can you verify if the lower
-> 4bits do actually contain any data (or are they always zero). This
-> will help us decide whether to use them(16bit mode) or discard
-> them(12bit mode)?...
-> 
+--vZbAFtxic7ONUJfi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This is the outdata of accelerometer
+On Thu, Aug 23, 2012 at 03:15:04PM +0800, Dong Aisheng wrote:
+> On Wed, Aug 22, 2012 at 11:59:53PM +0800, Mark Brown wrote:
 
-root@am335xevm:~# cat /sys/devices/platform/lis3lv02d/position
-[   16.323852] lis3lv02d: hi 0x1    low 0x50   val 0x15
-[   16.329742] lis3lv02d: hi 0x0    low 0x0    val 0x0
-[   16.335052] lis3lv02d: hi 0x3e   low 0x50   val 0x3e5
-(20,0,973)
-root@am335xevm:~# cat /sys/devices/platform/lis3lv02d/position
-[   25.777343] lis3lv02d: hi 0x2    low 0xa0   val 0x2a
-[   25.783203] lis3lv02d: hi 0xc1   low 0xf0   val 0xfffffc1f
-[   25.790130] lis3lv02d: hi 0xfd   low 0x50   val 0xffffffd5
-(41,-969,-41)
-root@am335xevm:~# cat /sys/devices/platform/lis3lv02d/position
-[   47.607330] lis3lv02d: hi 0xc0   low 0x60   val 0xfffffc06
-[   47.613464] lis3lv02d: hi 0xfd   low 0x90   val 0xffffffd9
-[   47.619934] lis3lv02d: hi 0x2    low 0x40   val 0x24
-(-994,-38,35)
+> > With the conversion to regmap it'd also be good to convert the driver to
+> > use the regmap helper functions for enable and voltage operations if
+> > possible.
 
-Lower nibble always "0"
+> The anatop-regulator driver only implements set_voltage_sel/get_voltage_sel
+> which i have already converted, what do you mean others like
+> 'for enable and voltage operations' i should also convert?
 
-Regards
-AnilKumar
+Those operations should ideally be converted to use the generic regmap
+implementation now the device uses regmap - regmap_get_voltage_sel_regmap
+and so on.
+
+--vZbAFtxic7ONUJfi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQNhFOAAoJEFJkBDiqVpZ4FMUQAJqRf050UwEgd+lOkw7TQESB
+JIlAGwap4ik235uGuM96R++oRCcOKOKx2bc+fM4bixKUH8FDAUBDEc+v9YPo4ACI
+D9Trr1w0fntF5wz7ZjOUxM/MEPohqPOlZ6BmKYc+EhY4EM70qJyzi+PNX4nkEG/P
+kIgYu8O00MbzwEtQshu/nFYCPzIKScpvThZUq3C8AWy1pX6i9MEblD+cjCx88iuZ
+CPA+k/dGgtBDhxPr1z+Iax59ze+q4l3oLpX0tXC8mBrymY8Tlz89ZXmtroa2ZH3l
+D868iChT0TX/l2JgIku+XgYOCzRX5cpW3jScU1bIT6Ly75ryPM50hWUQ70WydZR/
+/qsHobyWlgVQfNnHFddlZPr8lD1z9WmKX8Drx7uE71zPsAtreZZ+h+Jd79vxFMZo
+i87gOGHWW2F8Fkx6d7QrRNEsF1cjbciqFZAqpWCi2dfBoD/Mh3pjVTx4eIedSUKv
+sxkgXt8oNzN/XarlUaNHv7Pb32OIcLlImmCjmGxdIrtZ1Ce1JomYM61FshMVr6yf
+Mb9i/XZ3qTvXwFV6yNMSVu6YlTHczSbTUO9/OSh8XETKd1dFZm2iGCrOCogLYw/3
+6Q09xhis1a4y5T0SRP5bfuKdSentio15xjuKdrdJb+/m8V3/d+lgHUO3oshAlgQX
+k2SaZUiSwoBspqn9AwZQ
+=ihQw
+-----END PGP SIGNATURE-----
+
+--vZbAFtxic7ONUJfi--
