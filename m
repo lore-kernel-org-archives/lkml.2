@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab2HWUh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:37:29 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:57553 "HELO
+	id S933813Ab2HWUhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:37:54 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49871 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932738Ab2HWUhX (ORCPT
+	with SMTP id S932826Ab2HWUht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:37:23 -0400
+	Thu, 23 Aug 2012 16:37:49 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18kZpdwyZ8k9nhiUwuXhs9Uwt0J/FzKfTFAmu01yC
-	KRudGbXvSVy6bD
-Message-ID: <5036947E.3040707@gmx.de>
-Date: Thu, 23 Aug 2012 20:37:18 +0000
+X-Provags-ID: V01U2FsdGVkX1/pcslSK8rpAoAwy+iHFywmDyPDG8q7EP2Y/oAVD+
+	HCU2G+yxaHHrO6
+Message-ID: <50369498.4010006@gmx.de>
+Date: Thu, 23 Aug 2012 20:37:44 +0000
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
 To: Damien Cassou <damien.cassou@lifl.fr>
 CC: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] drivers/video/mbx/mbxfb.c: use devm_ functions
-References: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr> <1343752762-16861-2-git-send-email-damien.cassou@lifl.fr>
-In-Reply-To: <1343752762-16861-2-git-send-email-damien.cassou@lifl.fr>
+Subject: Re: [PATCH 2/5] drivers/video/gbefb.c: use devm_ functions
+References: <1343752762-16861-1-git-send-email-damien.cassou@lifl.fr> <1343752762-16861-3-git-send-email-damien.cassou@lifl.fr>
+In-Reply-To: <1343752762-16861-3-git-send-email-damien.cassou@lifl.fr>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Y-GMX-Trusted: 0
@@ -47,73 +47,66 @@ Florian Tobias Schandinat
 
 > 
 > ---
->  drivers/video/mbx/mbxfb.c |   22 ++++++++--------------
->  1 file changed, 8 insertions(+), 14 deletions(-)
+>  drivers/video/gbefb.c |   15 +++++----------
+>  1 file changed, 5 insertions(+), 10 deletions(-)
 > 
-> diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
-> index 85e4f44..9229acf 100644
-> --- a/drivers/video/mbx/mbxfb.c
-> +++ b/drivers/video/mbx/mbxfb.c
-> @@ -939,8 +939,9 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
->  	}
->  	mfbi->reg_phys_addr = mfbi->reg_res->start;
->  
-> -	mfbi->reg_virt_addr = ioremap_nocache(mfbi->reg_phys_addr,
-> -					      res_size(mfbi->reg_req));
-> +	mfbi->reg_virt_addr = devm_ioremap_nocache(&dev->dev,
-> +						   mfbi->reg_phys_addr,
-> +						   res_size(mfbi->reg_req));
->  	if (!mfbi->reg_virt_addr) {
->  		dev_err(&dev->dev, "failed to ioremap Marathon registers\n");
->  		ret = -EINVAL;
-> @@ -948,12 +949,12 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
->  	}
->  	virt_base_2700 = mfbi->reg_virt_addr;
->  
-> -	mfbi->fb_virt_addr = ioremap_nocache(mfbi->fb_phys_addr,
-> -					     res_size(mfbi->fb_req));
-> +	mfbi->fb_virt_addr = devm_ioremap_nocache(&dev->dev, mfbi->fb_phys_addr,
-> +						  res_size(mfbi->fb_req));
->  	if (!mfbi->fb_virt_addr) {
->  		dev_err(&dev->dev, "failed to ioremap frame buffer\n");
->  		ret = -EINVAL;
-> -		goto err4;
-> +		goto err3;
+> diff --git a/drivers/video/gbefb.c b/drivers/video/gbefb.c
+> index 7e7b7a9..9b79d38 100644
+> --- a/drivers/video/gbefb.c
+> +++ b/drivers/video/gbefb.c
+> @@ -1156,7 +1156,8 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
+>  		goto out_release_framebuffer;
 >  	}
 >  
->  	fbi->screen_base = (char __iomem *)(mfbi->fb_virt_addr + 0x60000);
-> @@ -971,7 +972,7 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
->  	if (ret < 0) {
->  		dev_err(&dev->dev, "fb_alloc_cmap failed\n");
->  		ret = -EINVAL;
-> -		goto err5;
-> +		goto err3;
+> -	gbe = (struct sgi_gbe *) ioremap(GBE_BASE, sizeof(struct sgi_gbe));
+> +	gbe = (struct sgi_gbe *) devm_ioremap(&p_dev->dev, GBE_BASE,
+> +					      sizeof(struct sgi_gbe));
+>  	if (!gbe) {
+>  		printk(KERN_ERR "gbefb: couldn't map mmio region\n");
+>  		ret = -ENXIO;
+> @@ -1170,12 +1171,13 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
+>  	if (!gbe_tiles.cpu) {
+>  		printk(KERN_ERR "gbefb: couldn't allocate tiles table\n");
+>  		ret = -ENOMEM;
+> -		goto out_unmap;
+> +		goto out_release_mem_region;
 >  	}
 >  
->  	platform_set_drvdata(dev, fbi);
-> @@ -996,10 +997,6 @@ static int __devinit mbxfb_probe(struct platform_device *dev)
+>  	if (gbe_mem_phys) {
+>  		/* memory was allocated at boot time */
+> -		gbe_mem = ioremap_nocache(gbe_mem_phys, gbe_mem_size);
+> +		gbe_mem = devm_ioremap_nocache(&p_dev->dev, gbe_mem_phys,
+> +					       gbe_mem_size);
+>  		if (!gbe_mem) {
+>  			printk(KERN_ERR "gbefb: couldn't map framebuffer\n");
+>  			ret = -ENOMEM;
+> @@ -1241,13 +1243,9 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
+>  out_gbe_unmap:
+>  	if (gbe_dma_addr)
+>  		dma_free_coherent(NULL, gbe_mem_size, gbe_mem, gbe_mem_phys);
+> -	else
+> -		iounmap(gbe_mem);
+>  out_tiles_free:
+>  	dma_free_coherent(NULL, GBE_TLB_SIZE * sizeof(uint16_t),
+>  			  (void *)gbe_tiles.cpu, gbe_tiles.dma);
+> -out_unmap:
+> -	iounmap(gbe);
+>  out_release_mem_region:
+>  	release_mem_region(GBE_BASE, sizeof(struct sgi_gbe));
+>  out_release_framebuffer:
+> @@ -1264,12 +1262,9 @@ static int __devexit gbefb_remove(struct platform_device* p_dev)
+>  	gbe_turn_off();
+>  	if (gbe_dma_addr)
+>  		dma_free_coherent(NULL, gbe_mem_size, gbe_mem, gbe_mem_phys);
+> -	else
+> -		iounmap(gbe_mem);
+>  	dma_free_coherent(NULL, GBE_TLB_SIZE * sizeof(uint16_t),
+>  			  (void *)gbe_tiles.cpu, gbe_tiles.dma);
+>  	release_mem_region(GBE_BASE, sizeof(struct sgi_gbe));
+> -	iounmap(gbe);
+>  	gbefb_remove_sysfs(&p_dev->dev);
+>  	framebuffer_release(info);
 >  
->  err6:
->  	fb_dealloc_cmap(&fbi->cmap);
-> -err5:
-> -	iounmap(mfbi->fb_virt_addr);
-> -err4:
-> -	iounmap(mfbi->reg_virt_addr);
->  err3:
->  	release_mem_region(mfbi->reg_res->start, res_size(mfbi->reg_res));
->  err2:
-> @@ -1026,10 +1023,7 @@ static int __devexit mbxfb_remove(struct platform_device *dev)
->  			if (mfbi->platform_remove)
->  				mfbi->platform_remove(fbi);
->  
-> -			if (mfbi->fb_virt_addr)
-> -				iounmap(mfbi->fb_virt_addr);
-> -			if (mfbi->reg_virt_addr)
-> -				iounmap(mfbi->reg_virt_addr);
-> +
->  			if (mfbi->reg_req)
->  				release_mem_region(mfbi->reg_req->start,
->  						   res_size(mfbi->reg_req));
 > 
 > 
 
