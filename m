@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030638Ab2HWQDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 12:03:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030572Ab2HWQDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 12:03:09 -0400
-Message-ID: <50365443.1070104@redhat.com>
-Date: Thu, 23 Aug 2012 12:03:15 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1030641Ab2HWQEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:04:04 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38534 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030572Ab2HWQEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 12:04:01 -0400
+Date: Thu, 23 Aug 2012 21:32:10 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>, ananth@in.ibm.com,
+        ppcdev <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, peterz@infradead.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
+Message-ID: <20120823160210.GF25338@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120822082205.GA29216@in.ibm.com>
+ <20120822082708.GB29216@in.ibm.com>
+ <1345696100.3338.21.camel@concordia>
+ <20120823053234.GE25338@linux.vnet.ibm.com>
+ <1345716378.29170.4.camel@pasglop>
+ <20120823090209.GA4630@redhat.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rafael Aquini <aquini@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon pages
- mobility
-References: <20120822000741.GI9027@redhat.com> <20120822011930.GA23753@t510.redhat.com> <20120822093317.GC10680@redhat.com> <20120823021903.GA23660@x61.redhat.com> <20120823100107.GA17409@redhat.com> <20120823121338.GA3062@t510.redhat.com> <20120823123432.GA25659@redhat.com> <20120823130606.GB3746@t510.redhat.com> <20120823135328.GB25709@redhat.com> <20120823152128.GA8975@t510.redhat.com> <20120823155401.GA28876@redhat.com>
-In-Reply-To: <20120823155401.GA28876@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120823090209.GA4630@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12082316-9264-0000-0000-0000022FD277
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 11:54 AM, Michael S. Tsirkin wrote:
-> On Thu, Aug 23, 2012 at 12:21:29PM -0300, Rafael Aquini wrote:
->> On Thu, Aug 23, 2012 at 04:53:29PM +0300, Michael S. Tsirkin wrote:
->>> On Thu, Aug 23, 2012 at 10:06:07AM -0300, Rafael Aquini wrote:
->>>> On Thu, Aug 23, 2012 at 03:34:32PM +0300, Michael S. Tsirkin wrote:
->>>>>> So, nothing has changed here.
->>>>>
->>>>> Yes, your patch does change things:
->>>>> leak_balloon now might return without freeing any pages.
->>>>> In that case we will not be making any progress, and just
->>>>> spin, pinning CPU.
->>>>
->>>> That's a transitory condition, that migh happen if leak_balloon() takes place
->>>> when compaction, or migration are under their way and it might only affects the
->>>> module unload case.
->>>
->>> Regular operation seems even more broken: host might ask
->>> you to leak memory but because it is under compaction
->>> you might leak nothing. No?
->>>
->>
->> And that is exactely what it wants to do. If there is (temporarily) nothing to leak,
->> then not leaking is the only sane thing to do.
->
-> It's an internal issue between balloon and mm. User does not care.
->
->> Having balloon pages being migrated
->> does not break the leak at all, despite it can last a little longer.
->>
->
-> Not "longer" - apparently forever unless user resend the leak command.
-> It's wrong - it should
-> 1. not tell host if nothing was done
-> 2. after migration finished leak and tell host
+* Oleg Nesterov <oleg@redhat.com> [2012-08-23 11:02:09]:
 
-Agreed.  If the balloon is told to leak N pages, and could
-not do so because those pages were locked, the balloon driver
-needs to retry (maybe waiting on a page lock?) and not signal
-completion until after the job has been completed.
+> On 08/23, Benjamin Herrenschmidt wrote:
+> >
+> > On Thu, 2012-08-23 at 11:02 +0530, Srikar Dronamraju wrote:
+> > > >
+> > >
+> > > insn is updated/accessed in the arch independent code. Size of
+> > > uprobe_opcode_t could be different for different archs.
+> > > uprobe_opcode_t
+> > > represents the size of the smallest breakpoint instruction for an
+> > > arch.
+> > >
+> > > Hence u8 works out the best. I know we could still use uprobe_opcode_t
+> > > and achieve the same. In which case, we would have to interpret
+> > > MAX_UINSN_BYTES differently. Do you see any advantages of using
+> > > uprobe_opcode_t instead of u8 across archs?
+> >
+> > But don't you actively rely on the fact that on powerpc, unlike x86, you
+> > -can- atomically replace an instruction with a single 32-bit store ?
+> 
+> I must have missed something...
+> 
+> But powerpc does not replace an instruction, the arch independent code
+> does this and it assumes that uprobe->arch.insn is u8[MAX_UINSN_BYTES].
+> 
+> Perhaps you meant that on powerpc it is "safe" to replace the insn
+> even if this can race with some CPU executing this code? But uprobes
+> has to replace the original page anyway, we should not write to
+> ->vm_file.
 
-Having the balloon driver wait on the page lock should be
-fine, because compaction does not hold the page lock for
-long.
+I think Ben is referring to the fact that because we use an array we
+endup using memcpy to copy the original instruction from the ->vm_file.
+
+> 
+> I agree that memcpy() in arch_uprobe_analyze_insn() and
+> arch_uprobe_skip_sstep() looks a bit strange. May be powerpc can do
+> 
+> 	struct arch_uprobe {
+> 		union {
+> 			u8		insn[MAX_UINSN_BYTES];
+> 			u32		ainsn;
+> 		};
+> 	};
+> 
+> and use auprobe->ainsn directly, I dunno.
+
+I think this should work.
+
+Ben  would this suffice?
+
