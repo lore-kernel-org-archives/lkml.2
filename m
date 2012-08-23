@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab2HWOWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:22:07 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:44921 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758929Ab2HWOVx (ORCPT
+	id S932842Ab2HWOYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 10:24:49 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:47557 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615Ab2HWOYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 10:21:53 -0400
-Message-Id: <20120823141506.660023400@google.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 23 Aug 2012 07:14:27 -0700
-From: pjt@google.com
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Venki Pallipadi <venki@google.com>, Ben Segall <bsegall@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [patch 05/16] sched: add an rq migration call-back to sched_class
-References: <20120823141422.444396696@google.com>
-Content-Disposition: inline; filename=sched-migrate_rq.patch
+	Thu, 23 Aug 2012 10:24:47 -0400
+X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Aug 2012 10:24:47 EDT
+Message-ID: <50363B12.4060009@archlinux.org>
+Date: Thu, 23 Aug 2012 16:15:46 +0200
+From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Samuel Ortiz <sameo@linux.intel.com>, Peter Tyser <ptyser@xes-inc.com>,
+        Wim Van Sebroeck <wim@iguana.be>, Aaron Sierra <asierra@xes-inc.com>,
+        Guenter Roeck <linux@roeck-us.net>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-watchdog@vger.kernel.org,
+        Tobias Powalowski <tpowa@archlinux.org>
+Subject: Serious regression in 3.5's iTCO_wdt, does anyone care?
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enig042C56DF574069BAE902F0B7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Turner <pjt@google.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig042C56DF574069BAE902F0B7
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Since we are now doing bottom up load accumulation we need explicit
-notification when a task has been re-parented so that the old hierarchy can be
-updated.
+This regards the following commit in the Linus tree:
 
-Adds: migrate_task_rq(struct task_struct *p, int next_cpu)
+commit 887c8ec7219fc8eba78bb8f44a74c660934e9b98
+Author: Aaron Sierra <asierra@xes-inc.com>
+Date:   Fri Apr 20 14:14:11 2012 -0500
 
-(The alternative is to do this out of __set_task_cpu, but it was suggested that
-this would be a cleaner encapsulation.)
+    watchdog: Convert iTCO_wdt driver to mfd model
 
-Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Ben Segall <bsegall@google.com>
----
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |    2 ++
- kernel/sched/fair.c   |   12 ++++++++++++
- 3 files changed, 15 insertions(+), 0 deletions(-)
+Ever since the Linux 3.5 update, the iTCO_wdt driver has been completely
+non-functional on every machine I encountered due to the above
+conversion. A bug report for this problem has been open at
+https://bugzilla.kernel.org/show_bug.cgi?id=3D44991 for over a month.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7406249..93e27c0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1105,6 +1105,7 @@ struct sched_class {
- 
- #ifdef CONFIG_SMP
- 	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
-+	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
- 
- 	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
- 	void (*post_schedule) (struct rq *this_rq);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 33e6fe1..b3e2442 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -952,6 +952,8 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 	trace_sched_migrate_task(p, new_cpu);
- 
- 	if (task_cpu(p) != new_cpu) {
-+		if (p->sched_class->migrate_task_rq)
-+			p->sched_class->migrate_task_rq(p, new_cpu);
- 		p->se.nr_migrations++;
- 		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, NULL, 0);
- 	}
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0ce8d91..e11e24c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3028,6 +3028,17 @@ unlock:
- 
- 	return new_cpu;
- }
-+
-+/*
-+ * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
-+ * cfs_rq_of(p) references at time of call are still valid and identify the
-+ * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
-+ * other assumptions, including the state of rq->lock, should be made.
-+ */
-+static void
-+migrate_task_rq_fair(struct task_struct *p, int next_cpu)
-+{
-+}
- #endif /* CONFIG_SMP */
- 
- static unsigned long
-@@ -5591,6 +5602,7 @@ const struct sched_class fair_sched_class = {
- 
- #ifdef CONFIG_SMP
- 	.select_task_rq		= select_task_rq_fair,
-+	.migrate_task_rq	= migrate_task_rq_fair,
- 
- 	.rq_online		= rq_online_fair,
- 	.rq_offline		= rq_offline_fair,
+Yet, neither the author of the commit, nor the people who signed off on
+it have reacted to the bug report.
+
+At this point, I believe that none of you are actually aware of the
+problem and I write you to change that unfortunate situation.
+
+Regards
+Thomas B=E4chler
 
 
+--------------enig042C56DF574069BAE902F0B7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCAAGBQJQNjsVAAoJEChPw0yOSxolZj0P/1k03l70GyARaCGJySVCbhH+
+UPUEgisUDpTYLEbEjHH3zN99YscqqFNvf6Pecfat5mvAR+nxIv/0C5reEy/+4YHs
+o9on/LsWI/FOwfDzO23IC7CXyohiiuUCglZ4Qlfx7DvRcQZ7LHQ9Aidnxa0egajo
+mOptDlPp5gwcrgfBafITNLPcjWTRw62S8F66NlHc4uTJIDx43Koo26nExglVOzdq
+qC0X2MBInEAJ++cNsSjwYFPMRORzP59AJdDNg2SoM+Qnv5Pt07SuJG/SnmJ6NPwF
+oSfnjf3rhRzxRwVPvjmYt6GtVUCavou9QalbXgyi6t01DwIGQpvAfIgMUKe/FMa+
+qZrJzIu4gYI6CrtyXyhR/XgI0See02Oni9NdUT05RFq85xczbI5rlNcweD9CAL1Y
+mSP922TTfbquRuvBSyPYhRMbmAikTWnnyptvqbVioxVilk6WwJWKjOmUy2kmgPKI
+xBN4trt3chsZ2+GB5okcZkZl8OblJbhMhg32UKL/WP3lQoPvjKbQ5UWqSee1zZrt
+ljdTb/MmccsXYiiDlMA02PvG5ZTjvn2Yeq2NO/qyQYCTIuAkvc+qOoy6fX3qlOYT
+z9qy17Jt1mdysRRqsTCkQ4Fm6iNcQiinkIM1Ys/aqzl1KHhb2+hdcxNVLbnP26Wj
+ovIpPCMd+bGs/6W5Dgm6
+=T/NN
+-----END PGP SIGNATURE-----
+
+--------------enig042C56DF574069BAE902F0B7--
