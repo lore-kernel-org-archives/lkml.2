@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030252Ab2HWOQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 10:16:39 -0400
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:41080 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757642Ab2HWOPc (ORCPT
+	id S933422Ab2HWOQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 10:16:31 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:53881 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757783Ab2HWOPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Aug 2012 10:15:32 -0400
-Message-Id: <20120823141506.514678907@google.com>
+Message-Id: <20120823141507.422162369@google.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 23 Aug 2012 07:14:25 -0700
+Date: Thu, 23 Aug 2012 07:14:38 -0700
 From: pjt@google.com
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -23,179 +23,141 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Morten Rasmussen <Morten.Rasmussen@arm.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [patch 03/16] sched: aggregate load contributed by task entities on parenting cfs_rq
+Subject: [patch 16/16] sched: introduce temporary FAIR_GROUP_SCHED dependency for load-tracking
 References: <20120823141422.444396696@google.com>
-Content-Disposition: inline; filename=sched-cfs_rq_load.patch
+Content-Disposition: inline; filename=sched-depend_on_fair.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Paul Turner <pjt@google.com>
 
-For a given task t, we can compute its contribution to load as:
-  task_load(t) = runnable_avg(t) * weight(t)
+While per-entity load-tracking is generally useful, beyond computing shares
+distribution, e.g.
+  runnable based load-balance (in progress), governors, power-management, etc
 
-On a parenting cfs_rq we can then aggregate
-  runnable_load(cfs_rq) = \Sum task_load(t), for all runnable children t
-
-Maintain this bottom up, with task entities adding their contributed load to
-the parenting cfs_rq sum.  When a task entity's load changes we add the same
-delta to the maintained sum.
+These facilities are not yet consumers of this data.  This may be trivially
+reverted when the information is required; but avoid paying the overhead for
+calculations we will not use until then.
 
 Signed-off-by: Paul Turner <pjt@google.com>
 Reviewed-by: Ben Segall <bsegall@google.com>
 ---
- include/linux/sched.h |    1 +
- kernel/sched/debug.c  |    3 +++
- kernel/sched/fair.c   |   51 +++++++++++++++++++++++++++++++++++++++++++++----
- kernel/sched/sched.h  |   10 +++++++++-
- 4 files changed, 60 insertions(+), 5 deletions(-)
+ include/linux/sched.h |    8 +++++++-
+ kernel/sched/core.c   |    7 ++++++-
+ kernel/sched/fair.c   |   13 +++++++++++--
+ kernel/sched/sched.h  |    9 ++++++++-
+ 4 files changed, 32 insertions(+), 5 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f553da9..943a60d 100644
+index 2a4be1f..da37380 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1147,6 +1147,7 @@ struct sched_avg {
- 	 */
- 	u32 runnable_avg_sum, runnable_avg_period;
- 	u64 last_runnable_update;
-+	unsigned long load_avg_contrib;
+@@ -1213,7 +1213,13 @@ struct sched_entity {
+ 	/* rq "owned" by this entity/group: */
+ 	struct cfs_rq		*my_q;
+ #endif
+-#ifdef CONFIG_SMP
++/*
++ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
++ * removed when useful for applications beyond shares distribution (e.g.
++ * load-balance).
++ */
++#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
++	/* Per-entity load-tracking */
+ 	struct sched_avg	avg;
+ #endif
  };
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b3e2442..e497f59 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1558,7 +1558,12 @@ static void __sched_fork(struct task_struct *p)
+ 	p->se.vruntime			= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
  
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 4240abc..c953a89 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -94,6 +94,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
- #ifdef CONFIG_SMP
- 	P(se->avg.runnable_avg_sum);
- 	P(se->avg.runnable_avg_period);
-+	P(se->avg.load_avg_contrib);
+-#ifdef CONFIG_SMP
++/*
++ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
++ * removed when useful for applications beyond shares distribution (e.g.
++ * load-balance).
++ */
++#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
+ 	p->se.avg.runnable_avg_period = 0;
+ 	p->se.avg.runnable_avg_sum = 0;
  #endif
- #undef PN
- #undef P
-@@ -224,6 +225,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			cfs_rq->load_contribution);
- 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
- 			atomic_read(&cfs_rq->tg->load_weight));
-+	SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
-+			cfs_rq->runnable_load_avg);
- #endif
- 
- 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6eb2ce2..f1151f9 100644
+index 44a9a11..c46fd45 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1080,20 +1080,63 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 	return decayed;
+@@ -877,7 +877,8 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+ }
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+-#ifdef CONFIG_SMP
++/* Only depends on SMP, FAIR_GROUP_SCHED may be removed when useful in lb */
++#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
+ /*
+  * We choose a half-life close to 1 scheduling period.
+  * Note: The tables below are dependent on this value.
+@@ -3175,6 +3176,12 @@ unlock:
  }
  
-+/* Compute the current contribution to load_avg by se, return any delta */
-+static long __update_entity_load_avg_contrib(struct sched_entity *se)
-+{
-+	long old_contrib = se->avg.load_avg_contrib;
-+
-+	if (!entity_is_task(se))
-+		return 0;
-+
-+	se->avg.load_avg_contrib = div64_u64(se->avg.runnable_avg_sum *
-+					     se->load.weight,
-+					     se->avg.runnable_avg_period + 1);
-+
-+	return se->avg.load_avg_contrib - old_contrib;
-+}
-+
- /* Update a sched_entity's runnable average */
- static inline void update_entity_load_avg(struct sched_entity *se)
- {
--	__update_entity_runnable_avg(rq_of(cfs_rq_of(se))->clock_task, &se->avg,
--				     se->on_rq);
-+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+	long contrib_delta;
-+
-+	if (!__update_entity_runnable_avg(rq_of(cfs_rq)->clock_task, &se->avg,
-+					  se->on_rq))
-+		return;
-+
-+	contrib_delta = __update_entity_load_avg_contrib(se);
-+	if (se->on_rq)
-+		cfs_rq->runnable_load_avg += contrib_delta;
+ /*
++ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
++ * removed when useful for applications beyond shares distribution (e.g.
++ * load-balance).
++ */
++#ifdef CONFIG_FAIR_GROUP_SCHED
++/*
+  * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
+  * cfs_rq_of(p) references at time of call are still valid and identify the
+  * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
+@@ -3197,6 +3204,7 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+ 		atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
+ 	}
  }
++#endif
+ #endif /* CONFIG_SMP */
  
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- {
- 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
- }
-+
-+/* Add the load generated by se into cfs_rq's child load-average */
-+static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se)
-+{
-+	update_entity_load_avg(se);
-+	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
-+}
-+
-+/* Remove se's load from this cfs_rq child load-average */
-+static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se)
-+{
-+	update_entity_load_avg(se);
-+	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
-+}
- #else
- static inline void update_entity_load_avg(struct sched_entity *se) {}
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
-+static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se) {}
-+static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se) {}
- #endif
+ static unsigned long
+@@ -5775,8 +5783,9 @@ const struct sched_class fair_sched_class = {
  
- static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
-@@ -1222,7 +1265,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 */
- 	update_curr(cfs_rq);
- 	update_cfs_load(cfs_rq, 0);
--	update_entity_load_avg(se);
-+	enqueue_entity_load_avg(cfs_rq, se);
- 	account_entity_enqueue(cfs_rq, se);
- 	update_cfs_shares(cfs_rq);
+ #ifdef CONFIG_SMP
+ 	.select_task_rq		= select_task_rq_fair,
++#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.migrate_task_rq	= migrate_task_rq_fair,
+-
++#endif
+ 	.rq_online		= rq_online_fair,
+ 	.rq_offline		= rq_offline_fair,
  
-@@ -1297,7 +1340,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 * Update run-time statistics of the 'current'.
- 	 */
- 	update_curr(cfs_rq);
--	update_entity_load_avg(se);
-+	dequeue_entity_load_avg(cfs_rq, se);
- 
- 	update_stats_dequeue(cfs_rq, se);
- 	if (flags & DEQUEUE_SLEEP) {
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index eb61c75..7e35ae0 100644
+index e14601e..b3e84f6 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -222,6 +222,15 @@ struct cfs_rq {
- 	unsigned int nr_spread_over;
+@@ -225,6 +225,12 @@ struct cfs_rq {
  #endif
  
-+#ifdef CONFIG_SMP
-+	/*
-+	 * CFS Load tracking
-+	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
-+	 * This allows for the description of both thread and group usage (in
-+	 * the FAIR_GROUP_SCHED case).
-+	 */
-+	u64 runnable_load_avg;
-+#endif
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
- 
-@@ -1221,4 +1230,3 @@ static inline u64 irq_time_read(int cpu)
- }
- #endif /* CONFIG_64BIT */
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ #ifdef CONFIG_SMP
++/*
++ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
++ * removed when useful for applications beyond shares distribution (e.g.
++ * load-balance).
++ */
++#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/*
+ 	 * CFS Load tracking
+ 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
+@@ -234,7 +240,8 @@ struct cfs_rq {
+ 	u64 runnable_load_avg, blocked_load_avg;
+ 	atomic64_t decay_counter, removed_load;
+ 	u64 last_decay;
 -
++#endif /* CONFIG_FAIR_GROUP_SCHED */
++/* These always depend on CONFIG_FAIR_GROUP_SCHED */
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	u32 tg_runnable_contrib, tg_usage_contrib;
+ 	u64 tg_load_contrib;
 
 
