@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab2HWMgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:36:24 -0400
-Received: from dnvwsmailout1.mcafee.com ([161.69.31.173]:61980 "EHLO
-	DNVWSMAILOUT1.mcafee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab2HWMgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:36:21 -0400
-Message-ID: <5036234A.7060102@snapgear.com>
-Date: Thu, 23 Aug 2012 22:34:18 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S932740Ab2HWMh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:37:27 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:52033 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754587Ab2HWMhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 08:37:23 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Add support to broadcom 5222 PHY
-References: <1345551531-15348-1-git-send-email-stany.marcel@novasys-ingenierie.com> <CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
-In-Reply-To: <CAMuHMdUo5UPLtUhf6_GafMj_kEnM25k+XYszdwsGwkGyCUC6zw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: RE: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+Date: Thu, 23 Aug 2012 13:35:32 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6FC3@saturn3.aculab.com>
+In-Reply-To: <1345724123.5904.756.camel@edumazet-glaptop>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+thread-index: Ac2BKO1Ftym7JF4xRNyZeLZpZUz4jgAAq71g
+References: <503419D3.1080700@linlab.net> <CAFbMe2M7ekc94bQk7vTS1LhScPd49VZ-zKOCUXhqwxXtL-nkuA@mail.gmail.com> <50361AEA.6010807@linlab.net> <1345724123.5904.756.camel@edumazet-glaptop>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Eric Dumazet" <eric.dumazet@gmail.com>, "Alex Bergmann" <alex@linlab.net>
+Cc: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7NCbW7G030305
 
-Hi Stany,
+> I would suggest to increase TCP_SYN_RETRIES from 5 to 6.
+> 
+> 180 secs is eternity, but 31 secs is too small.
 
-On 08/23/2012 08:47 PM, Geert Uytterhoeven wrote:
-> On Tue, Aug 21, 2012 at 2:18 PM, Stany MARCEL
-> <stany.marcel@novasys-ingenierie.com> wrote:
->> Signed-off-by: Stany MARCEL <stany.marcel@novasys-ingenierie.com>
->> ---
->>
->>   This driver is an adaption of the one given by freescale for kernel 2.6.25.
->>
->>   Tested with kernel 3.4.8 with arch/m68k backported from linux-m68k head
->>   2 FEC configured with shared phy
->>
->>   drivers/net/phy/Kconfig        |    7 +-
->>   drivers/net/phy/Makefile       |    1 +
->>   drivers/net/phy/broadcom522x.c |  171 ++++++++++++++++++++++++++++++++++++++++
->
-> This patch and "[PATCH 3/3] Add support to M54xx DMA FEC Driver" need to go
-> through the netdev tree, or collect acks there.
+Wasn't the intention of the long delay to allow a system
+acting as a router to reboot?
+I suspect that is why it (and some other TCP timers)
+are in minutes.
 
-And patch 2/3 never made it to the linux-m68k list. Though I can see
-that it made it onto the linux-kernel list.
+	David
 
-I would suggest running them through checkpatch, there is a number of
-formating and the like issues that need cleaning up.
-
-Also you will want to break up patch 2. It is a bit large to be reviewed
-the way it is.
-
-Regards
-Greg
-
-
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-m68k" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close,                            FAX:         +61 7 3891 3630
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
