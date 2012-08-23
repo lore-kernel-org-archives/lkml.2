@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759294Ab2HWVnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:43:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57619 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758304Ab2HWVnM (ORCPT
+	id S1755005Ab2HWVvK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:51:10 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:47798 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab2HWVvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:43:12 -0400
+	Thu, 23 Aug 2012 17:51:04 -0400
+Date: Thu, 23 Aug 2012 23:50:55 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Chris Zankel <chris@zankel.net>, "3.2.x.." <stable@kernel.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>
+Subject: Re: [PATCH 00/10] rcu: Add missing RCU idle APIs on idle loop
+Message-ID: <20120823215052.GC19305@somewhere.redhat.com>
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+ <CAMuHMdUt62GsYsPMAPbUWZUtFL=c2VmYFintpDAQmSwQrWriuA@mail.gmail.com>
+ <20120823110157.GC18835@somewhere.redhat.com>
+ <CAMuHMdX5R_7EBGDu00zdy_P3q65BzKJbNeRwFcuwij8eHavTYQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87sjbfy0ue.wl%kuninori.morimoto.gx@renesas.com>
-References: <20120706161455.dd899154fbc8a79ee530572f@canb.auug.org.au>
-	<CACRpkdbZddOBf0PXFJjr_aRD3TEa9hSvXjAjf3--8Ko_W0zZcg@mail.gmail.com>
-	<w3psjd55kwl.wl%kuninori.morimoto.gx@renesas.com>
-	<CACRpkdb=bg7fc1HEW5U2PBjs_hLDRgGUNP=O6BEJRmYfCiSWpA@mail.gmail.com>
-	<87r4slg063.wl%kuninori.morimoto.gx@renesas.com>
-	<CACRpkdYSLRiAQd3kGGv8xktAvi+YbBSe1hGqMX2y7fFXQOHPXQ@mail.gmail.com>
-	<87sjbfy0ue.wl%kuninori.morimoto.gx@renesas.com>
-Date: Thu, 23 Aug 2012 23:43:10 +0200
-Message-ID: <CACRpkdaOyA2jPLkimQEtPFVYyRpxQGV7nV+6kiZ5_+mV827ytw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the gpio-lw tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdX5R_7EBGDu00zdy_P3q65BzKJbNeRwFcuwij8eHavTYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 7:03 AM, Kuninori Morimoto
-<kuninori.morimoto.gx@renesas.com> wrote:
+On Thu, Aug 23, 2012 at 10:23:22PM +0200, Geert Uytterhoeven wrote:
+> Hi Frederic,
+> 
+> On Thu, Aug 23, 2012 at 1:02 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > On Wed, Aug 22, 2012 at 07:18:04PM +0200, Geert Uytterhoeven wrote:
+> >> On Wed, Aug 22, 2012 at 6:23 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >> > So this fixes some potential RCU stalls in a bunch of architectures.
+> >> > When rcu_idle_enter()/rcu_idle_exit() became a requirement, we forgot
+> >> > to handle the architectures that don't support CONFIG_NO_HZ.
+> >> >
+> >> > I guess the set should be dispatched into arch maintainer trees.
+> >>
+> >> I can take the m68k version, but are you sure you want it this way?
+> >> Each of them must be in mainline before they can enter stable.
+> >
+> > Yeah, I was thinking the right route is for these patches to be
+> > carried by arch maintainer who then push to Linus and then this goes
+> > to stable.
+> >
+> > Is that ok for you?
+> >
+> > Otherwise I can carry the patches myself. In a tree of my own, or
+> > Paul's or mmotm. As long as I have your ack.
+> 
+> I applied your patch to the m68k for-3.6/for-linus branch.
+> I'll ask Linus to pull later in the rc cycle (right now I don't have
+> anything else
+> queued for 3.6).
+> Still, I think it's better to just collect acks and send it to Linus
+> in one shot,
+> so it can go into stable in one shot too.
 
-> Now, these fixup patches were accepted.
->   http://git.kernel.org/tip/17d83127d4c2b322dd8f217e0ac08c66eb403779
->   http://git.kernel.org/tip/b3ae66f209e8929db62b5a5f874ab2cdcf5ef1d4
->
-> Could you please re-check this dropped patch ?
+Sure I can do that if you prefer.
 
-Yes! I've applied it. Check that it lands nicely in -next.
+Thanks.
 
-Yours,
-Linus Walleij
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
