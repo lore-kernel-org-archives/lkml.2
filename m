@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2HWQls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 12:41:48 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58757 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab2HWQlm (ORCPT
+	id S1754359Ab2HWQqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 12:46:24 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:35484 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751767Ab2HWQqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 12:41:42 -0400
-Date: Thu, 23 Aug 2012 17:46:13 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Kay Sievers <kay@vrfy.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        systemd-devel@lists.freedesktop.org
-Subject: Re: udev 182: response timeout for request_firmware in module_probe
- path
-Message-ID: <20120823174613.0489837d@pyramind.ukuu.org.uk>
-In-Reply-To: <CACVXFVMFKGPv9Am0KzKSVsRamcA8EMMnD0kQO40MJ6OsjK4Eow@mail.gmail.com>
-References: <CACVXFVNYCZqxt9B=9F_71KP0gdinGbNXd_ePQ10NKsCGd1dY4g@mail.gmail.com>
-	<CACVXFVOMdWQSutkBzdcLJ-ozmecq_p-yzYJbtoLVUafz5KV=KQ@mail.gmail.com>
-	<CAPXgP13LBR6GD=VomBPim3mDPy1bJ=eFBZ=oDaKZCjEo=Xp94Q@mail.gmail.com>
-	<CACVXFVMFKGPv9Am0KzKSVsRamcA8EMMnD0kQO40MJ6OsjK4Eow@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Aug 2012 12:46:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <50365CC1.3080402@xenotime.net>
+References: <20120823152203.34297f3bc5fbb43d10653fcc@canb.auug.org.au>
+	<50365CC1.3080402@xenotime.net>
+Date: Thu, 23 Aug 2012 22:16:17 +0530
+Message-ID: <CAAe_U6+tDERZK8nBdEpOWuBaZNpW8YVc2vYQ+Ju1tACjTVk8ow@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 23 (drivers/bus/omap-ocp2scp.c)
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> IMO, the driver probing path is allowed to sleep, so looks request firmware
-> should be allowed inside .probe().
+On Thu, Aug 23, 2012 at 10:09 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 08/22/2012 10:22 PM, Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> Changes since 20120822:
+>>
+>
+>
+> on i386:
+>
+>   CC [M]  drivers/bus/omap-ocp2scp.o
+> drivers/bus/omap-ocp2scp.c:70:1: error: '__mod_of_device_table' aliased to undefined symbol 'omap_usb2_id_table'
 
-I'm not convinced about that. It can sleep but its holding various locks
-in most cases, and it looks like that can end up in a complete heap.
+Sorry. Will send the correct version to be merged.
 
-By all means *request* the firmware asynchronously in the probe, but
-there needs to be a seperate method somewhere after the probe to finish
-the job once the firmware appears.
-
-Alan
+-Kishon
