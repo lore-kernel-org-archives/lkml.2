@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751080Ab2HWEDW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 00:03:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40925 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab2HWEDT (ORCPT
+	id S1751914Ab2HWEQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 00:16:34 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:40636 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2HWEQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 00:03:19 -0400
-Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
- out_of_order memory use"
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        John W Linville <linville@tuxdriver.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <50355021.7000408@lwfinger.net>
-References: <50345B12.1050600@lwfinger.net>
-	 <1345612503.5158.566.camel@edumazet-glaptop>
-	 <50355021.7000408@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Aug 2012 06:03:13 +0200
-Message-ID: <1345694593.5904.87.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Aug 2012 00:16:30 -0400
+Date: Thu, 23 Aug 2012 09:45:57 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 33/36] autonuma: powerpc port
+Message-ID: <20120823041557.GA24519@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <1345647560-30387-1-git-send-email-aarcange@redhat.com>
+ <1345647560-30387-34-git-send-email-aarcange@redhat.com>
+ <1345672907.2617.44.camel@pasglop>
+ <1345676194.13399.1.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1345676194.13399.1.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12082304-5564-0000-0000-00000423AC80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-08-22 at 16:33 -0500, Larry Finger wrote:
-> On 08/22/2012 12:15 AM, Eric Dumazet wrote:
-> >
-> > This particular commit is the start of a patches batch that ended in the
-> > generic TCP coalescing mechanism.
-> >
-> > It is known to have problem on drivers doing skb_clone() in their rx
-> > path.
-> >
-> > Current kernels should be ok, because coalescing doesnt happen if the
-> > destination skb is cloned (skb_cloned(to) in skb_try_coalesce())
+* Benjamin Herrenschmidt <benh@kernel.crashing.org> [2012-08-23 08:56:34]:
+
+> On Thu, 2012-08-23 at 08:01 +1000, Benjamin Herrenschmidt wrote:
+> > On Wed, 2012-08-22 at 16:59 +0200, Andrea Arcangeli wrote:
+> > > From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> > > 
+> > >     * PMD flaging is not required in powerpc since large pages
+> > >       are tracked in ptes.
+> > >     * Yet to be tested with large pages
+> > >     * This is an initial patch that partially works
+> > >     * knuma_scand and numa hinting page faults works
+> > >     * Page migration is yet to be observed/verified
+> > > 
+> > > Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > I don't like this.
 > 
-> The skb_clone() call is not the source of the problem for r8712u, as it is only 
-> used when a memory allocation fails, which is not happening. The suggestion did 
-> lead to another patch that I had been preparing. The initial allocation of RX 
-> buffers used a size of 30720 bytes, while 9100 is sufficient to allow 
-> aggregation. Upon reducing the buffer size, the driver now works for me. I am 
-> now awaiting tests by the OP on the Red Hat bugzilla before sending the patch 
-> upstream.
-> 
-> So far, no ideas for the problem in connecting to WPA1 networks.
-> 
+> What I mean here is that it's fine as a proof of concept ;-) I don't
+> like it being in a series aimed at upstream...
 
-Changing the allocation size removes the problem ? thats really strange.
+I agree.  My intend was to get the ppc64 discussions started and also
+see what it takes to get autonuma to a new arch.
 
-If you try different sizes in the 9100-30720 range, can you pinpoint the
-failure threshold ?
+> We can try to flush out the issues, but as it is, the patch isn't
+> upstreamable imho.
 
+Yes.  The patch is still in RFC phase and good only for
+review/testing.
 
+> As for finding PTE bits, I have a few ideas we need to discuss, but
+> nothing simple I'm afraid.
+
+Sure Ben, lets try them and find the better fit.
+
+--Vaidy
 
