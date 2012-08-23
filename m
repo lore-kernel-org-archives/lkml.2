@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758372Ab2HWKKg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:10:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54206 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab2HWKKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:10:34 -0400
-Date: Thu, 23 Aug 2012 12:10:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1208231209280.32304@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933075Ab2HWKVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:21:24 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57883 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932542Ab2HWKVI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 06:21:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120823095022.GB10685@dhcp22.suse.cz>
+References: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
+	<20120823095022.GB10685@dhcp22.suse.cz>
+Date: Thu, 23 Aug 2012 18:21:06 +0800
+Message-ID: <CAFNq8R5pY0yPp-LQYNywpMhVtXgqPSy3RYqHVTVpPXs52kOmJw@mail.gmail.com>
+Subject: Re: Fixup the page of buddy_higher address's calculation
+From: Li Haifeng <omycle@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+I am sorry for my mistake.
 
-please pull from
+higher_buddy is corresponding with buddy_index, and higher page is
+corresponding with combined_idx. That is right.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git upstream-fixes
+But, How we get the page address from index offset? The key answer is
+what is the base value.
+So calculating the address based page should be (page + (buddy_idx - page_idx)).
 
-to receive fix for one particular device not being properly claimed by 
-hid-multitouch driver.
+Maybe, a diagram is easier to understand.
 
-Thanks.
+ |-------------------------|-------------|
+page               combined   buddy
 
-Simon Farnsworth (1):
-      HID: Remove QUANTA from special drivers list
+buddy's page address= page‘s page address + (buddy - page)*sizeof(struct page)
 
- drivers/hid/hid-core.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Clear?
 
--- 
-Jiri Kosina
-SUSE Labs
+2012/8/23 Michal Hocko <mhocko@suse.cz>:
+> On Thu 23-08-12 16:40:13, Li Haifeng wrote:
+>> From d7cd78f9d71a5c9ddeed02724558096f0bb4508a Mon Sep 17 00:00:00 2001
+>> From: Haifeng Li <omycle@gmail.com>
+>> Date: Thu, 23 Aug 2012 16:27:19 +0800
+>> Subject: [PATCH] Fixup the page of buddy_higher address's calculation
+>
+> Some general questions:
+> Any word about the change? Is it really that obvious? Why do you think the
+> current state is incorrect? How did you find out?
+>
+> And more specific below:
+>
+>> Signed-off-by: Haifeng Li <omycle@gmail.com>
+>> ---
+>>  mm/page_alloc.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index ddbc17d..5588f68 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -579,7 +579,7 @@ static inline void __free_one_page(struct page *page,
+>>                 combined_idx = buddy_idx & page_idx;
+>>                 higher_page = page + (combined_idx - page_idx);
+>>                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
+>> -               higher_buddy = page + (buddy_idx - combined_idx);
+>> +               higher_buddy = page + (buddy_idx - page_idx);
+>
+> We are finding buddy index for combined_idx so why should we use
+> page_idx here?
+>
+>>                 if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+>>                         list_add_tail(&page->lru,
+>>                                 &zone->free_area[order].free_list[migratetype]);
+>> --
+>> 1.7.5.4
+>
+> --
+> Michal Hocko
+> SUSE Labs
