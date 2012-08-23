@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab2HWMh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:37:57 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:22265 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932916Ab2HWMht (ORCPT
+	id S1756397Ab2HWMoh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:44:37 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33038 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754276Ab2HWMoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:37:49 -0400
-Message-ID: <50362417.9070600@atmel.com>
-Date: Thu, 23 Aug 2012 14:37:43 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 23 Aug 2012 08:44:32 -0400
+Date: Thu, 23 Aug 2012 16:44:27 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: [patch 0/9] extended fdinfo via procfs series, v7
+Message-ID: <20120823124427.GD1992@moon>
+References: <20120823104323.040550004@openvz.org>
+ <20120823122318.GD29943@fieldses.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linaro-kernel@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more mach-*/*.h
- includes
-References: <201208221253.07278.arnd@arndb.de> <201208221301.19439.arnd@arndb.de> <20120822214323.GA12255@n2100.arm.linux.org.uk> <201208231135.11688.arnd@arndb.de>
-In-Reply-To: <201208231135.11688.arnd@arndb.de>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120823122318.GD29943@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 01:35 PM, Arnd Bergmann :
-> On Wednesday 22 August 2012, Russell King - ARM Linux wrote:
->>
->> On Wed, Aug 22, 2012 at 01:01:19PM +0000, Arnd Bergmann wrote:
->>> These are lots of device drivers that include machine
->>> specific header files from ARM platforms and that are
->>> not easily scriptable. The changes have been found through
->>> manual inspection and should cause no visible changes
->>> because of the build script that maps the old names to the
->>> new ones.
-
-[..]
-
-> How about I move all the pure platform data definition files now and
-> rebase the other patches on top of that. Here is a list of suggested
-> file names in include/linux/platform_data/:
+On Thu, Aug 23, 2012 at 08:23:18AM -0400, J. Bruce Fields wrote:
+> On Thu, Aug 23, 2012 at 02:43:23PM +0400, Cyrill Gorcunov wrote:
+> > Hi guys,
+> > 
+> > here is updated version of the fdinfo via procfs series,
+> > the changes from previous one are the following
+> > 
+> >  - fhandle is carried inside inotify mark but this feature
+> >    is CONFIG dependent to not bloat the kernel for users
+> >    who don't need it
 > 
-> mach-at91/at_hdmac.h		-> dma-atmel.h
+> As Al points out, this doesn't help much: if this feature is something a
+> distro will want to provide, then in practice all their users are
+> eventually going to end up with it turned on.
+> 
 
-Fine with me. Maybe atmel-dma.h can better match what we already have in
-this directory, but I do not know what is the policy in this directory...
+Yes, I remember what Al has said, the problem is that this data attached
+to inotify mark is not just a couple of bytes but rather about 136 bytes
+per mark, and encoding this fhandle will take some cycles on mark creation
+as well. Thus when in a sake of c/r we simply have no other way and are
+to pay some trade off cost for c/r functionality, i don't think the
+regular users (and note that CONFIG_CHECKPOINT_RESTORE is off by default)
+should pay same cost for nothing. That's why I made it config dependant.
+Again if you still think that making it config-option is a bad idea I'll
+rip this symbols off, it's not a problem.
 
-[..]
+> Could you quantify the cost somehow?
+> 
 
+About 136 bytes per inotify mark.
 
-> ** list of mach/* inclusions that I could not match with
-> ** exactly one ARM platform:
+> I wonder if you could get away with something less than MAX_HANDLE_SIZE?
+> 128 bytes is the maximum allowable by NFSv4.  In practice I don't think
+> any of our filesystems need more than 40 or so right now.
 
-In fact, for "*atmel*" type of files, they usually match *both* AVR32
-and ARM/AT91 devices: so, we have to be careful about them...
+Look, Bruce, I would like to follow the limits we have #define'd in kernel,
+because it makes code easier to support. I can #define some limit for
+inotify fhandle but what should I print in fdinfo if say there is no
+space left in buffer?
 
-Best regards,
--- 
-Nicolas Ferre
+	Cyrill
