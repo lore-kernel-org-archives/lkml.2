@@ -1,146 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab2HWPcX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:32:23 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:33458 "EHLO mailhub1.si.c-s.fr"
+	id S1759045Ab2HWPds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:33:48 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58134 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753936Ab2HWPcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:32:20 -0400
-Date: Thu, 23 Aug 2012 17:32:12 +0200
-Message-Id: <201208231532.q7NFWCQZ023407@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [PATCH] hwmon/lm70: adding support for NS LM74 chip
+	id S1752524Ab2HWPdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:33:45 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH 0/2] revert changes to zcache_do_preload()
+Date: Thu, 23 Aug 2012 10:33:09 -0500
+Message-Id: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082315-5806-0000-0000-000018B80933
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patchset fixes a regression in 3.6 by reverting two dependent
+commits that made changes to zcache_do_preload().
 
-This Patch adds support for the LM74 chip from National Semiconductor (NS) 
-in the lm70 driver
+The commits undermine an assumption made by tmem_put() in
+the cleancache path that preemption is disabled.  This change
+introduces a race condition that can result in the wrong page
+being returned by tmem_get(), causing assorted errors (segfaults,
+apparent file corruption, etc) in userspace.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+The corruption was discussed in this thread:
+https://lkml.org/lkml/2012/8/17/494
 
-diff -u linux-3.5-vanilla/drivers/hwmon/Kconfig linux-3.5/drivers/hwmon/Kconfig
---- linux-3.5-vanilla/drivers/hwmon/Kconfig	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/drivers/hwmon/Kconfig	2012-08-21 13:46:47.000000000 +0200
-@@ -530,11 +530,11 @@
- 	  will be called lm63.
- 
- config SENSORS_LM70
--	tristate "National Semiconductor LM70 / Texas Instruments TMP121"
-+	tristate "National Semiconductor LM70&LM74 / Texas Instruments TMP121"
- 	depends on SPI_MASTER
- 	help
- 	  If you say yes here you get support for the National Semiconductor
--	  LM70 and Texas Instruments TMP121/TMP123 digital temperature
-+	  LM70 and LM74 and Texas Instruments TMP121/TMP123 digital temperature
- 	  sensor chips.
- 
- 	  This driver can also be built as a module.  If so, the module
-diff -u linux-3.5-vanilla/drivers/hwmon/lm70.c linux-3.5/drivers/hwmon/lm70.c
---- linux-3.5-vanilla/drivers/hwmon/lm70.c	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/drivers/hwmon/lm70.c	2012-08-21 13:46:31.000000000 +0200
-@@ -3,11 +3,12 @@
-  *
-  * The LM70 is a temperature sensor chip from National Semiconductor (NS).
-  * Copyright (C) 2006 Kaiwan N Billimoria <kaiwan@designergraphix.com>
-+ * Copyright (C) 2012 Christophe Leroy <christophe.leroy@c-s.fr>
-  *
-  * The LM70 communicates with a host processor via an SPI/Microwire Bus
-  * interface. The complete datasheet is available at National's website
-  * here:
-- * http://www.national.com/pf/LM/LM70.html
-+ * http://www.ti.com/product/LM70
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -43,6 +44,7 @@
- 
- #define LM70_CHIP_LM70		0	/* original NS LM70 */
- #define LM70_CHIP_TMP121	1	/* TI TMP121/TMP123 */
-+#define LM70_CHIP_LM74		2	/* original NS LM74 */
- 
- struct lm70 {
- 	struct device *hwmon_dev;
-@@ -98,6 +100,7 @@
- 		break;
- 
- 	case LM70_CHIP_TMP121:
-+	case LM70_CHIP_LM74:
- 		val = ((int)raw / 8) * 625 / 10;
- 		break;
- 	}
-@@ -123,6 +126,9 @@
- 	case LM70_CHIP_TMP121:
- 		ret = sprintf(buf, "tmp121\n");
- 		break;
-+	case LM70_CHIP_LM74:
-+		ret = sprintf(buf, "lm74\n");
-+		break;
- 	default:
- 		ret = -EINVAL;
- 	}
-@@ -139,12 +145,13 @@
- 	struct lm70 *p_lm70;
- 	int status;
- 
--	/* signaling is SPI_MODE_0 for both LM70 and TMP121 */
-+	/* signaling is SPI_MODE_0 for LM70, LM74 and TMP121 */
- 	if (spi->mode & (SPI_CPOL | SPI_CPHA))
- 		return -EINVAL;
- 
--	/* 3-wire link (shared SI/SO) for LM70 */
--	if (chip == LM70_CHIP_LM70 && !(spi->mode & SPI_3WIRE))
-+	/* 3-wire link (shared SI/SO) for LM70 and LM74 */
-+	if ((chip == LM70_CHIP_LM70 || chip == LM70_CHIP_LM74)
-+			&& !(spi->mode & SPI_3WIRE))
- 		return -EINVAL;
- 
- 	/* NOTE:  we assume 8-bit words, and convert to 16 bits manually */
-@@ -202,6 +209,7 @@
- static const struct spi_device_id lm70_ids[] = {
- 	{ "lm70",   LM70_CHIP_LM70 },
- 	{ "tmp121", LM70_CHIP_TMP121 },
-+	{ "lm74",   LM70_CHIP_LM74 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(spi, lm70_ids);
-@@ -219,5 +227,5 @@
- module_spi_driver(lm70_driver);
- 
- MODULE_AUTHOR("Kaiwan N Billimoria");
--MODULE_DESCRIPTION("NS LM70 / TI TMP121/TMP123 Linux driver");
-+MODULE_DESCRIPTION("NS LM70 & LM74 / TI TMP121/TMP123 Linux driver");
- MODULE_LICENSE("GPL");
-diff -u linux-3.5-vanilla/Documentation/hwmon/lm70 linux-3.5/Documentation/hwmon/lm70
---- linux-3.5-vanilla/Documentation/hwmon/lm70	2012-07-21 22:58:29.000000000 +0200
-+++ linux-3.5/Documentation/hwmon/lm70	2012-08-21 13:38:24.000000000 +0200
-@@ -3,7 +3,9 @@
- 
- Supported chips:
-   * National Semiconductor LM70
--    Datasheet: http://www.national.com/pf/LM/LM70.html
-+    Datasheet: http://www.ti.com/product/LM70
-+  * National Semiconductor LM74
-+    Datasheet: http://www.ti.com/product/LM74
-   * Texas Instruments TMP121/TMP123
-     Information: http://focus.ti.com/docs/prod/folders/print/tmp121.html
- 
-@@ -31,9 +33,11 @@
- with a "SPI master controller driver", see drivers/spi/spi_lm70llp.c
- and its associated documentation.
- 
--The TMP121/TMP123 are very similar; main differences are 4 wire SPI inter-
--face (read only) and 13-bit temperature data (0.0625 degrees celsius reso-
--lution).
-+The LM74 is very similar; main differences is 13-bit temperature data 
-+(0.0625 degrees celsius resolution).
-+
-+The TMP121/TMP123 are very similar to the LM74; main difference is 4 wire
-+SPI interface (read only).
- 
- Thanks to
- ---------
+Please apply this patchset to 3.6.  This problem didn't exist
+in previous releases so nothing need be done for the stable trees.
+
+Seth Jennings (2):
+  Revert "staging: zcache: cleanup zcache_do_preload and
+    zcache_put_page"
+  Revert "staging: zcache: optimize zcache_do_preload"
+
+ drivers/staging/zcache/zcache-main.c |   54 +++++++++++++++++++---------------
+ 1 file changed, 31 insertions(+), 23 deletions(-)
+
+-- 
+1.7.9.5
+
