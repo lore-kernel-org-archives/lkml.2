@@ -1,339 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030220Ab2HWHgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:36:44 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:16615 "EHLO mta02.xtra.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933620Ab2HWHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:36:11 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mike Turquette <mturquette@ti.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCHv4 4/9] usb: vt8500: Add devicetree support for vt8500-ehci and -uhci.
-Date: Thu, 23 Aug 2012 19:35:40 +1200
-Message-Id: <1345707346-9035-5-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
-References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
+	id S1030228Ab2HWHgy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:36:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3858 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030215Ab2HWHgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:36:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,299,1344236400"; 
+   d="asc'?scan'208,223";a="184400689"
+Message-ID: <1345707689.2848.203.camel@sauron.fi.intel.com>
+Subject: Re: JFFS2 issue with v3.5.x and later on Atmel chips at least (was:
+ Kernel oops since v3.5.x on Atmel chips)
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: "ludovic.desroches" <ludovic.desroches@atmel.com>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mtd@lists.infradead.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Date: Thu, 23 Aug 2012 10:41:29 +0300
+In-Reply-To: <5034F3F8.9080802@atmel.com>
+References: <5034B45A.5060107@atmel.com> <5034F3F8.9080802@atmel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-BPHXsA/Sa4cHsGCzuXbV"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree support for vt8500-ehci.
-Convert vt8500-uhci to a generic non-pci platform-uhci with
-device tree support.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+--=-BPHXsA/Sa4cHsGCzuXbV
+Content-Type: multipart/mixed; boundary="=-aW7etfJgAUtW8B1UkdwX"
+
+
+--=-aW7etfJgAUtW8B1UkdwX
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Date: Thu, 23 Aug 2012 10:10:07 +0300
+Subject: [PATCH] JFFS2: fix unmount regression
+
+This patch fixes regression introduced by
+"8bdc81c jffs2: get rid of jffs2_sync_super". We submit a delayed work in o=
+rder
+to make sure the write-buffer is synchronized at some point. But we do not
+flush it when we unmount, which causes an oops when we unmount the file-sys=
+tem
+and then the delayed work is executed.
+
+This patch fixes the issue by adding a "cancel_delayed_work_sync()" infocat=
+ion
+in the '->sync_fs()' handler. This will make sure the delayed work is cance=
+led
+on sync, unmount and re-mount. And because VFS always callse 'sync_fs()' be=
+fore
+unmounting or remounting, this fixes the issue.
+
+Reported-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Cc: stable@vger.kernel.org [3.5+]
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
- drivers/usb/host/Kconfig         |    4 +-
- drivers/usb/host/ehci-vt8500.c   |   25 ++++--
- drivers/usb/host/uhci-hcd.c      |    5 ++
- drivers/usb/host/uhci-platform.c |  169 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 195 insertions(+), 8 deletions(-)
- create mode 100644 drivers/usb/host/uhci-platform.c
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index dcfaaa9..d7a6b10 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -450,7 +450,7 @@ config USB_OHCI_LITTLE_ENDIAN
- 
- config USB_UHCI_HCD
- 	tristate "UHCI HCD (most Intel and VIA) support"
--	depends on USB && (PCI || SPARC_LEON)
-+	depends on USB && (PCI || SPARC_LEON || ARCH_VT8500)
- 	---help---
- 	  The Universal Host Controller Interface is a standard by Intel for
- 	  accessing the USB hardware in the PC (which is also called the USB
-@@ -468,7 +468,7 @@ config USB_UHCI_HCD
- config USB_UHCI_SUPPORT_NON_PCI_HC
- 	bool
- 	depends on USB_UHCI_HCD
--	default y if SPARC_LEON
-+	default y if (SPARC_LEON  || ARCH_VT8500)
- 
- config USB_UHCI_BIG_ENDIAN_MMIO
- 	bool
-diff --git a/drivers/usb/host/ehci-vt8500.c b/drivers/usb/host/ehci-vt8500.c
-index c1eda73..0e1637b 100644
---- a/drivers/usb/host/ehci-vt8500.c
-+++ b/drivers/usb/host/ehci-vt8500.c
-@@ -16,6 +16,7 @@
-  *
-  */
- 
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- 
- static int ehci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
-@@ -84,20 +85,23 @@ static const struct hc_driver vt8500_ehci_hc_driver = {
- 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
- };
- 
-+static u64 wmt_ehci_dma_mask = DMA_BIT_MASK(32);
-+
- static int vt8500_ehci_drv_probe(struct platform_device *pdev)
+Ludovic, would you please give this patch a test? Also attached.
+
+ fs/jffs2/super.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
+index 61ea413..e385fa3 100644
+--- a/fs/jffs2/super.c
++++ b/fs/jffs2/super.c
+@@ -100,6 +100,9 @@ static int jffs2_sync_fs(struct super_block *sb, int wa=
+it)
  {
- 	struct usb_hcd *hcd;
- 	struct ehci_hcd *ehci;
- 	struct resource *res;
-+	int irq;
- 	int ret;
- 
- 	if (usb_disabled())
- 		return -ENODEV;
- 
--	if (pdev->resource[1].flags != IORESOURCE_IRQ) {
--		pr_debug("resource[1] is not IORESOURCE_IRQ");
--		return -ENOMEM;
--	}
-+	/* devicetree created devices don't specify a dma mask */
-+	if (!pdev->dev.dma_mask)
-+		pdev->dev.dma_mask = &wmt_ehci_dma_mask;
+ 	struct jffs2_sb_info *c =3D JFFS2_SB_INFO(sb);
+=20
++	if (IS_ENABLED(CONFIG_JFFS2_FS_WRITEBUFFER))
++		cancel_delayed_work_sync(&c->wbuf_dwork);
 +
- 	hcd = usb_create_hcd(&vt8500_ehci_hc_driver, &pdev->dev, "VT8500");
- 	if (!hcd)
- 		return -ENOMEM;
-@@ -134,8 +138,9 @@ static int vt8500_ehci_drv_probe(struct platform_device *pdev)
- 
- 	ehci_reset(ehci);
- 
--	ret = usb_add_hcd(hcd, pdev->resource[1].start,
--			  IRQF_SHARED);
-+	irq = platform_get_irq(pdev, 0);
-+
-+	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (ret == 0) {
- 		platform_set_drvdata(pdev, hcd);
- 		return ret;
-@@ -162,6 +167,11 @@ static int vt8500_ehci_drv_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id vt8500_ehci_ids[] = {
-+	{ .compatible = "via,vt8500-ehci", },
-+	{}
-+};
-+
- static struct platform_driver vt8500_ehci_driver = {
- 	.probe		= vt8500_ehci_drv_probe,
- 	.remove		= vt8500_ehci_drv_remove,
-@@ -169,7 +179,10 @@ static struct platform_driver vt8500_ehci_driver = {
- 	.driver = {
- 		.name	= "vt8500-ehci",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(vt8500_ehci_ids),
- 	}
- };
- 
- MODULE_ALIAS("platform:vt8500-ehci");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DEVICE_TABLE(of, vt8500_ehci_ids);
-diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
-index e4db350..5da5c99 100644
---- a/drivers/usb/host/uhci-hcd.c
-+++ b/drivers/usb/host/uhci-hcd.c
-@@ -846,6 +846,11 @@ static const char hcd_name[] = "uhci_hcd";
- #define PLATFORM_DRIVER		uhci_grlib_driver
- #endif
- 
-+#ifdef CONFIG_ARCH_VT8500
-+#include "uhci-platform.c"
-+#define PLATFORM_DRIVER		uhci_platform_driver
-+#endif
-+
- #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER)
- #error "missing bus glue for uhci-hcd"
- #endif
-diff --git a/drivers/usb/host/uhci-platform.c b/drivers/usb/host/uhci-platform.c
-new file mode 100644
-index 0000000..35ca094
---- /dev/null
-+++ b/drivers/usb/host/uhci-platform.c
-@@ -0,0 +1,169 @@
-+/*
-+ * Generic UHCI HCD (Host Controller Driver) for Platform Devices
-+ *
-+ * Copyright (c) 2011 Tony Prisk <linux@prisktech.co.nz>
-+ *
-+ * This file is based on uhci-grlib.c
-+ * (C) Copyright 2004-2007 Alan Stern, stern@rowland.harvard.edu
-+ */
-+
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+
-+static int uhci_platform_init(struct usb_hcd *hcd)
-+{
-+	struct uhci_hcd *uhci = hcd_to_uhci(hcd);
-+
-+	uhci->rh_numports = uhci_count_ports(hcd);
-+
-+	/* Set up pointers to to generic functions */
-+	uhci->reset_hc = uhci_generic_reset_hc;
-+	uhci->check_and_reset_hc = uhci_generic_check_and_reset_hc;
-+
-+	/* No special actions need to be taken for the functions below */
-+	uhci->configure_hc = NULL;
-+	uhci->resume_detect_interrupts_are_broken = NULL;
-+	uhci->global_suspend_mode_is_broken = NULL;
-+
-+	/* Reset if the controller isn't already safely quiescent. */
-+	check_and_reset_hc(uhci);
-+	return 0;
-+}
-+
-+static const struct hc_driver uhci_platform_hc_driver = {
-+	.description =          hcd_name,
-+	.product_desc =         "Generic UHCI Host Controller",
-+	.hcd_priv_size =        sizeof(struct uhci_hcd),
-+
-+	/* Generic hardware linkage */
-+	.irq =                  uhci_irq,
-+	.flags =                HCD_MEMORY | HCD_USB11,
-+
-+	/* Basic lifecycle operations */
-+	.reset =                uhci_platform_init,
-+	.start =                uhci_start,
-+#ifdef CONFIG_PM
-+	.pci_suspend =          NULL,
-+	.pci_resume =           NULL,
-+	.bus_suspend =          uhci_rh_suspend,
-+	.bus_resume =           uhci_rh_resume,
-+#endif
-+	.stop =                 uhci_stop,
-+
-+	.urb_enqueue =          uhci_urb_enqueue,
-+	.urb_dequeue =          uhci_urb_dequeue,
-+
-+	.endpoint_disable =     uhci_hcd_endpoint_disable,
-+	.get_frame_number =     uhci_hcd_get_frame_number,
-+
-+	.hub_status_data =      uhci_hub_status_data,
-+	.hub_control =          uhci_hub_control,
-+};
-+
-+static u64 platform_uhci_dma_mask = DMA_BIT_MASK(32);
-+
-+static int __devinit uhci_hcd_platform_probe(struct platform_device *pdev)
-+{
-+	struct usb_hcd *hcd;
-+	struct uhci_hcd *uhci;
-+	struct resource *res;
-+	int ret;
-+
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	/* Right now device-tree probed devices don't get dma_mask set.
-+	 * Since shared usb code relies on it, set it here for now.
-+	 * Once we have dma capability bindings this can go away.
-+	 */
-+	if (!pdev->dev.dma_mask)
-+		pdev->dev.dma_mask = &platform_uhci_dma_mask;
-+
-+	hcd = usb_create_hcd(&uhci_platform_hc_driver, &pdev->dev,
-+				pdev->name);
-+	if (!hcd)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	hcd->rsrc_start = res->start;
-+	hcd->rsrc_len = resource_size(res);
-+
-+	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
-+		pr_err("%s: request_mem_region failed\n", __func__);
-+		ret = -EBUSY;
-+		goto err_rmr;
-+	}
-+
-+	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	if (!hcd->regs) {
-+		pr_err("%s: ioremap failed\n", __func__);
-+		ret = -ENOMEM;
-+		goto err_irq;
-+	}
-+	uhci = hcd_to_uhci(hcd);
-+
-+	uhci->regs = hcd->regs;
-+
-+	ret = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_DISABLED |
-+								IRQF_SHARED);
-+	if (ret)
-+		goto err_uhci;
-+
-+	return 0;
-+
-+err_uhci:
-+	iounmap(hcd->regs);
-+err_irq:
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+err_rmr:
-+	usb_put_hcd(hcd);
-+
-+	return ret;
-+}
-+
-+static int uhci_hcd_platform_remove(struct platform_device *pdev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+
-+	usb_remove_hcd(hcd);
-+	iounmap(hcd->regs);
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+	usb_put_hcd(hcd);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+/* Make sure the controller is quiescent and that we're not using it
-+ * any more.  This is mainly for the benefit of programs which, like kexec,
-+ * expect the hardware to be idle: not doing DMA or generating IRQs.
-+ *
-+ * This routine may be called in a damaged or failing kernel.  Hence we
-+ * do not acquire the spinlock before shutting down the controller.
-+ */
-+static void uhci_hcd_platform_shutdown(struct platform_device *op)
-+{
-+	struct usb_hcd *hcd = dev_get_drvdata(&op->dev);
-+
-+	uhci_hc_died(hcd_to_uhci(hcd));
-+}
-+
-+static const struct of_device_id platform_uhci_ids[] = {
-+	{ .compatible = "platform-uhci", },
-+	{}
-+};
-+
-+static struct platform_driver uhci_platform_driver = {
-+	.probe          = uhci_hcd_platform_probe,
-+	.remove         = uhci_hcd_platform_remove,
-+	.shutdown       = uhci_hcd_platform_shutdown,
-+	.driver = {
-+		.name = "platform-uhci",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(platform_uhci_ids),
-+	},
-+};
-+
-+MODULE_ALIAS("platform:platform-uhci");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DEVICE_TABLE(of, platform_uhci_ids);
--- 
-1.7.9.5
+ 	mutex_lock(&c->alloc_sem);
+ 	jffs2_flush_wbuf_pad(c);
+ 	mutex_unlock(&c->alloc_sem);
+--=20
+1.7.10.4
+
+--=-aW7etfJgAUtW8B1UkdwX
+Content-Disposition: attachment; filename="0001-JFFS2-fix-unmount-regression.patch"
+Content-Transfer-Encoding: base64
+Content-Type: text/x-patch; name="0001-JFFS2-fix-unmount-regression.patch";
+	charset="UTF-8"
+
+RnJvbSAyZjE1NTRkMDFmN2RiNTg2MzFmOWRhN2RkMTlhNzI1NGQxMDk2ZmViIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogQXJ0ZW0gQml0eXV0c2tpeSA8YXJ0ZW0uYml0eXV0c2tpeUBs
+aW51eC5pbnRlbC5jb20+DQpEYXRlOiBUaHUsIDIzIEF1ZyAyMDEyIDEwOjEwOjA3ICswMzAwDQpT
+dWJqZWN0OiBbUEFUQ0hdIEpGRlMyOiBmaXggdW5tb3VudCByZWdyZXNzaW9uDQoNClRoaXMgcGF0
+Y2ggZml4ZXMgcmVncmVzc2lvbiBpbnRyb2R1Y2VkIGJ5DQoiOGJkYzgxYyBqZmZzMjogZ2V0IHJp
+ZCBvZiBqZmZzMl9zeW5jX3N1cGVyIi4gV2Ugc3VibWl0IGEgZGVsYXllZCB3b3JrIGluIG9yZGVy
+DQp0byBtYWtlIHN1cmUgdGhlIHdyaXRlLWJ1ZmZlciBpcyBzeW5jaHJvbml6ZWQgYXQgc29tZSBw
+b2ludC4gQnV0IHdlIGRvIG5vdA0KZmx1c2ggaXQgd2hlbiB3ZSB1bm1vdW50LCB3aGljaCBjYXVz
+ZXMgYW4gb29wcyB3aGVuIHdlIHVubW91bnQgdGhlIGZpbGUtc3lzdGVtDQphbmQgdGhlbiB0aGUg
+ZGVsYXllZCB3b3JrIGlzIGV4ZWN1dGVkLg0KDQpUaGlzIHBhdGNoIGZpeGVzIHRoZSBpc3N1ZSBi
+eSBhZGRpbmcgYSAiY2FuY2VsX2RlbGF5ZWRfd29ya19zeW5jKCkiIGluZm9jYXRpb24NCmluIHRo
+ZSAnLT5zeW5jX2ZzKCknIGhhbmRsZXIuIFRoaXMgd2lsbCBtYWtlIHN1cmUgdGhlIGRlbGF5ZWQg
+d29yayBpcyBjYW5jZWxlZA0Kb24gc3luYywgdW5tb3VudCBhbmQgcmUtbW91bnQuIEFuZCBiZWNh
+dXNlIFZGUyBhbHdheXMgY2FsbHNlICdzeW5jX2ZzKCknIGJlZm9yZQ0KdW5tb3VudGluZyBvciBy
+ZW1vdW50aW5nLCB0aGlzIGZpeGVzIHRoZSBpc3N1ZS4NCg0KUmVwb3J0ZWQtYnk6IEx1ZG92aWMg
+RGVzcm9jaGVzIDxsdWRvdmljLmRlc3JvY2hlc0BhdG1lbC5jb20+DQpDYzogc3RhYmxlQHZnZXIu
+a2VybmVsLm9yZyBbMy41K10NClNpZ25lZC1vZmYtYnk6IEFydGVtIEJpdHl1dHNraXkgPGFydGVt
+LmJpdHl1dHNraXlAbGludXguaW50ZWwuY29tPg0KLS0tDQogZnMvamZmczIvc3VwZXIuYyB8ICAg
+IDMgKysrDQogMSBmaWxlIGNoYW5nZWQsIDMgaW5zZXJ0aW9ucygrKQ0KDQpkaWZmIC0tZ2l0IGEv
+ZnMvamZmczIvc3VwZXIuYyBiL2ZzL2pmZnMyL3N1cGVyLmMNCmluZGV4IDYxZWE0MTMuLmUzODVm
+YTMgMTAwNjQ0DQotLS0gYS9mcy9qZmZzMi9zdXBlci5jDQorKysgYi9mcy9qZmZzMi9zdXBlci5j
+DQpAQCAtMTAwLDYgKzEwMCw5IEBAIHN0YXRpYyBpbnQgamZmczJfc3luY19mcyhzdHJ1Y3Qgc3Vw
+ZXJfYmxvY2sgKnNiLCBpbnQgd2FpdCkNCiB7DQogCXN0cnVjdCBqZmZzMl9zYl9pbmZvICpjID0g
+SkZGUzJfU0JfSU5GTyhzYik7DQogDQorCWlmIChJU19FTkFCTEVEKENPTkZJR19KRkZTMl9GU19X
+UklURUJVRkZFUikpDQorCQljYW5jZWxfZGVsYXllZF93b3JrX3N5bmMoJmMtPndidWZfZHdvcmsp
+Ow0KKw0KIAltdXRleF9sb2NrKCZjLT5hbGxvY19zZW0pOw0KIAlqZmZzMl9mbHVzaF93YnVmX3Bh
+ZChjKTsNCiAJbXV0ZXhfdW5sb2NrKCZjLT5hbGxvY19zZW0pOw0KLS0gDQoxLjcuMTAuNA0KDQo=
+
+
+--=-aW7etfJgAUtW8B1UkdwX--
+
+--=-BPHXsA/Sa4cHsGCzuXbV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQNd6pAAoJECmIfjd9wqK0tXwP/RtxVKS+XBwtlT3vCS+R9+nl
+ZuTLlujkgMrRWrbHGfOljxhWUra3g9XbZZLrd9LK4krBrA4XqIivjcaMTdte/bmZ
+3NaL8BPhq3XuhbSWZiG+wyulhzzvfL4JvzJKDlZkG4QpV6+ZDEc9eg2Is6djET2Z
+Q6E3q/sVfmEi4X7UIYjABL2fjISglcCwrFKTV3eiM5aNjXTL3jzML7kr+H+NjULG
+5iRYEzVCjWP4z0rHsxtaAVm83YEfF0qKMvl/6H8zjphj2HpLQYHjlDZJ4B1Pge+N
+BOGNe7D4IDvgMvDfvg020IY2OYxYlWoaJsJ298DO0FTwKICZCbs2TnLkyNIlekDe
+8TtaLa8W15nsCmxCJkwplFS3z8GZv0a6pmh+iwWIJzvgAIgYRwoHVHYlS97n+smA
+Wl2K5hJtD7xLJgc6CwnMs/6fB7KSv5rHg+TPJiNs3AaQz9kRs23BSSr/95w0W7vU
+s9tnvpXptw73AoPXX37WnDWU5x5nqZKu+ssHangJ5En0JFjyMx6ys5ARPfaNeHxV
+3MaXq+s0cmRXPkswXLDSScxny0t32gVYIgnsByX4LhgPMBQPas7fYiXbVEYY0h57
+rZuEOO5C3mOUHwLbn3p5r3LlAGnUfwKRk9rjq30lv1BtNI6WFK2VgCjDWp1OVhD7
+zgax5sZ2KxIXL5MKbK2C
+=c/GY
+-----END PGP SIGNATURE-----
+
+--=-BPHXsA/Sa4cHsGCzuXbV--
 
