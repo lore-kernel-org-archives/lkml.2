@@ -1,144 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab2HWFe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 01:34:26 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52093 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab2HWFeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 01:34:22 -0400
-Date: Thu, 23 Aug 2012 11:02:34 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: ananth@in.ibm.com, ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        peterz@infradead.org, oleg@redhat.com, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
-Message-ID: <20120823053234.GE25338@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120822082205.GA29216@in.ibm.com>
- <20120822082708.GB29216@in.ibm.com>
- <1345696100.3338.21.camel@concordia>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1345696100.3338.21.camel@concordia>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12082305-6102-0000-0000-0000021860CB
+	id S1754759Ab2HWFvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 01:51:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23631 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754315Ab2HWFv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 01:51:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,298,1344236400"; 
+   d="scan'208";a="137006936"
+Date: Thu, 23 Aug 2012 13:45:57 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, <linux-pci@vger.kernel.org>
+Subject: Re: pci_get_subsys: GFP_KERNEL allocations with IRQs disabled
+Message-ID: <20120823134557.00fdeb58@feng-i7>
+In-Reply-To: <CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+References: <5017D19B.5080806@redhat.com>
+	<1343738627.27983.30.camel@gandalf.stny.rr.com>
+	<5017D4AB.3090107@redhat.com>
+	<1343740419.27983.33.camel@gandalf.stny.rr.com>
+	<20120731234336.GA5526@localhost>
+	<1343778699.27983.70.camel@gandalf.stny.rr.com>
+	<20120731235705.GW2422@linux.vnet.ibm.com>
+	<1343779778.27983.73.camel@gandalf.stny.rr.com>
+	<20120801001811.GX2422@linux.vnet.ibm.com>
+	<20120801004319.GA7043@localhost>
+	<20120822025008.GA8066@localhost>
+	<20120822154908.2e6ef3c0@feng-i7>
+	<CAErSpo7HhdDi4EhbQZ-oZbsbGVvTfZW8MwKn7Tm+6B8jaQxLBg@mail.gmail.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> These seem to be duplicated in kprobes.h, can we consolidate them.
-> 
-> > +struct arch_uprobe {
-> > +	u8	insn[MAX_UINSN_BYTES];
-> > +};
-> 
-> Why not uprobe_opcode_t insn ?
-> 
+Hi Bjorn,
 
-insn is updated/accessed in the arch independent code. Size of
-uprobe_opcode_t could be different for different archs. uprobe_opcode_t
-represents the size of the smallest breakpoint instruction for an arch.
+On Wed, 22 Aug 2012 11:02:52 -0700
+Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-Hence u8 works out the best. I know we could still use uprobe_opcode_t
-and achieve the same. In which case, we would have to interpret
-MAX_UINSN_BYTES differently. Do you see any advantages of using
-uprobe_opcode_t instead of u8 across archs?
+> On Wed, Aug 22, 2012 at 12:49 AM, Feng Tang <feng.tang@intel.com> wrote:
+> > Hi Fengguang,
+> >
+> >
+> > On Wed, 22 Aug 2012 10:50:08 +0800
+> > Fengguang Wu <fengguang.wu@intel.com> wrote:
+> >
+> >> Feng,
+> >>
+> >> > I think it's pci_get_subsys() triggered this assert:
+> >> >
+> >> >         /*
+> >> >          * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
+> >> >          */
+> >> >         if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
+> >> >                 return;
+> >>
+> >> It's bisected down to this commit:
+> >>
+> >> commit 55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
+> >> Author:     Feng Tang <feng.tang@intel.com>
+> >> AuthorDate: Wed May 30 23:15:41 2012 +0800
+> >> Commit:     Ingo Molnar <mingo@kernel.org>
+> >> CommitDate: Wed Jun 6 12:03:23 2012 +0200
+> >>
+> >>     x86/reboot: Fix a warning message triggered by stop_other_cpus()
+> >>
+> >> Thanks,
+> >> Fengguang
+> >
+> > Thanks for the bisection.
+> >
+> > Revert my commit should be a solution, but can we simply make the pci_device_id
+> > a local on stack one instead of using sleepable kmalloc for it, as this
+> > sounds fragile when pci_get_subsys get called in a late system reboot stage?
+> 
+> I think this is a great idea.  Can you make this a real patch, with a
+> changelog and Signed-off-by?
+
+Thanks and will do.
 
 > 
-> >  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+> We should also remove the obsolete comment about early boot.  I'm not
+> sure the no_pci_devices() check is needed, either.  And we can make
+> the same simplification in pci_get_class().
+
+Will check the no_pci_devices() part, and try to make it a separate
+patch for easy reverting in case of error.
+
+> 
+> > ------------
+> > diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+> > index 993d4a0..e5ccede 100644
+> > --- a/drivers/pci/search.c
+> > +++ b/drivers/pci/search.c
+> > @@ -246,7 +246,7 @@ struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
+> >                                struct pci_dev *from)
 > >  {
-> > +	if (thread_info_flags & _TIF_UPROBE) {
-> > +		clear_thread_flag(TIF_UPROBE);
-> > +		uprobe_notify_resume(regs);
-> > +	}
+> > +       id.vendor = vendor;
+> > +       id.device = device;
+> > +       id.subvendor = ss_vendor;
+> > +       id.subdevice = ss_device;
+> >
+> > +       pdev = pci_get_dev_by_id(&id, from);
 > 
-> Presumably this ordering is crucial, ie. uprobes before signals.
-> 
+> No need for "pdev" here, since we don't have to free anything.
 
-Yes, we would want uprobes to have a say before do_signal can take a
-look.
+ok, will directly return it.
 
-> 
-> 
-> I am probably missing something, but why do we need to execute out of
-> line?
-> 
-
-
-The other alternative to execute out of line is the current inline
-singlestepping. In inline singlestepping, we would have to guard other
-tasks from executing the same instruction. 
-
-Executing out of line solves this problem.
-
-> > +/*
-> > + * arch_uprobe_pre_xol - prepare to execute out of line.
-> > + * @auprobe: the probepoint information.
-> > + * @regs: reflects the saved user state of current task.
-> > + */
-> > +int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
-> > +{
-> > +	struct arch_uprobe_task *autask = &current->utask->autask;
-> > +
-> > +	autask->saved_trap_nr = current->thread.trap_nr;
-> > +	current->thread.trap_nr = UPROBE_TRAP_NR;
-> > +	regs->nip = current->utask->xol_vaddr;
-> > +	return 0;
-> > +}
-> > +
-> > +/**
-> > + * uprobe_get_swbp_addr - compute address of swbp given post-swbp regs
-> > + * @regs: Reflects the saved state of the task after it has hit a breakpoint
-> > + * instruction.
-> > + * Return the address of the breakpoint instruction.
-> > + */
-> > +unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
-> > +{
-> > +	return instruction_pointer(regs);
-> > +}
-> 
-> This seems like it would be better in asm/uprobes.h as a static inline,
-> but that's not your fault.
-> 
-
-We want archs to override uprobe_get_swbp_addr() if the default
-uprobe_get_swbp_addr() doesnt suite for a particular arch. Do you have
-better ways to achieve this. Initially we were using arch specific
-callbacks from which we moved to using weak functions based on reviews.
-
-> > +	/*
-> > +	 * emulate_step() returns 1 if the insn was successfully emulated.
-> > +	 * For all other cases, we need to single-step in hardware.
-> > +	 */
-> > +	ret = emulate_step(regs, insn);
-> > +	if (ret > 0)
-> > +		return true;
-> 
-> This actually emulates the instruction, ie. the contents of regs are
-> changed based on the instruction.
-> 
-> That seems to differ vs x86, where arch_uprobe_skip_sstep() just checks
-> the instruction and returns true/false. Is that because on x86 they are
-> only returning true for nops? ie. there is no emulation to be done?
-> 
-
-Yes, In x86, we currently support skip for nop instructions, Once we add
-code for skipping other instructions in x86, we could enhance them to
-skip them too.
-
-> It's a little surprising that can_skip_sstep() actually emulates the
-> instruction, but again that's not your fault.
-> 
-
-Are you saying its doing more than what the name suggests or to the fact
-that can_skip_step should ideally be called just once?
-
--- 
-Thanks and Regards
-Srikar
-
+Thanks,
+Feng
