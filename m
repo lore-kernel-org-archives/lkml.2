@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab2HWUbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 16:31:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35065 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab2HWUbH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 16:31:07 -0400
-Message-ID: <50369305.6050304@gmail.com>
-Date: Thu, 23 Aug 2012 22:31:01 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com> <5035445B.6000500@wwwdotorg.org> <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com> <50366E44.4030606@wwwdotorg.org>
-In-Reply-To: <50366E44.4030606@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757198Ab2HWUbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 16:31:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26594 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757051Ab2HWUbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 16:31:19 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] HWPOISON: fix action_result() to print out dirty/clean
+Date: Thu, 23 Aug 2012 16:31:09 -0400
+Message-Id: <1345753869-31053-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20120823093330.GC12745@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 07:54 PM, Stephen Warren wrote:
->> dt_parse() and dt_parse_function() build up structs that get used later on
->> in mvebu_pinmux_ops that require indexed functions. I can join them with
->> dt_node_to_map() but that would require incremental kzalloc for the
->> corresponding array. Or I could (functionally) leave dt_parse() to allocate
->> the array and only join dt_parse_function() with dt_node_to_map().
->
-> So everything you said makes sense, in that the core driver is
-> parameterizable and receives data from a SoC-variant-specific driver
-> indicating which pins/groups/functions are available. I'm still not sure
-> though why the translation of the pin/group/function structures passed
-> to probe into other data structures requires accessing the DT at all;
-> the set of available pins/groups/functions isn't configured through DT,
-> and doesn't need to be limited to only those options actually used in
-> DT, so can't you just process all the data that's passed to probe
-> without interaction with the DT?
+Hello,
 
-Hmm, maybe I still don't quite understand the terminology of pinctrl/pinmux
-core completely. What exactly should mvebu_pinmux_get_funcs_count return
-if not the number of DT node children?
+Thank you for your review.
 
-I thought that a "function" in the terminology of pinctrl/pinmux core is
-a list of pingroups and corresponding values to actually set it to e.g. uart1.
-In pinctrl-mvebu this would be one marvell,function assigned to one or more
-marvell,pins.
+On Thu, Aug 23, 2012 at 05:33:30PM +0800, Fengguang Wu wrote:
+> On Wed, Aug 22, 2012 at 11:17:33AM -0400, Naoya Horiguchi wrote:
+> > action_result() fails to print out "dirty" even if an error occurred on a
+> > dirty pagecache, because when we check PageDirty in action_result() it was
+> > cleared after page isolation even if it's dirty before error handling. This
+> > can break some applications that monitor this message, so should be fixed.
+> > 
+> > There are several callers of action_result() except page_action(), but
+> > either of them are not for LRU pages but for free pages or kernel pages,
+> > so we don't have to consider dirty or not for them.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Reviewed-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  mm/memory-failure.c | 22 +++++++++-------------
+> >  1 file changed, 9 insertions(+), 13 deletions(-)
+> > 
+> > diff --git v3.6-rc1.orig/mm/memory-failure.c v3.6-rc1/mm/memory-failure.c
+> > index a6e2141..79dfb2f 100644
+> > --- v3.6-rc1.orig/mm/memory-failure.c
+> > +++ v3.6-rc1/mm/memory-failure.c
+> > @@ -779,16 +779,16 @@ static struct page_state {
+> >  	{ compound,	compound,	"huge",		me_huge_page },
+> >  #endif
+> >  
+> > -	{ sc|dirty,	sc|dirty,	"swapcache",	me_swapcache_dirty },
+> > -	{ sc|dirty,	sc,		"swapcache",	me_swapcache_clean },
+> > +	{ sc|dirty,	sc|dirty,	"dirty swapcache",	me_swapcache_dirty },
+> > +	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
+> >  
+> > -	{ unevict|dirty, unevict|dirty,	"unevictable LRU", me_pagecache_dirty},
+> > -	{ unevict,	unevict,	"unevictable LRU", me_pagecache_clean},
+> > +	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
+> > +	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
+> >  
+> > -	{ mlock|dirty,	mlock|dirty,	"mlocked LRU",	me_pagecache_dirty },
+> > -	{ mlock,	mlock,		"mlocked LRU",	me_pagecache_clean },
+> > +	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
+> > +	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
+> >  
+> > -	{ lru|dirty,	lru|dirty,	"LRU",		me_pagecache_dirty },
+> > +	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
+> >  	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
+> 
+> According to the set_page_dirty() comment, the dirty bit might be set
+> outside the page lock (however I don't know any concrete examples).
+> That means the word "clean" is not 100% right.  That's probably why we
+> only report "dirty LRU" and didn't say "clean LRU".
 
-If the above is correct, I still need to access DT in probe() at least to count
-the number of children passed to allocate an array for mvebu_pinmux_ops callbacks
-that get indexed by "fid" (pctl->functions).
+So this doesn't seem to be just a messaging problem. If PageDirty is set
+outside page lock, we can handle the dirty page only with me_pagecache_clean(),
+without me_pagecache_dirty().
+It might be a good idea to add some check code to detect such kind of race
+and give up error isolation if it does.
+I'll dig into who sets dirty flags outside/inside page locks, and look for
+a workaround. (But it will be in another patch...)
 
-Sebastian
+Thanks,
+Naoya
