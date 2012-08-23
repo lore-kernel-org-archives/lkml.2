@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637Ab2HWHgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:36:13 -0400
-Received: from mta05.xtra.co.nz ([210.54.141.250]:16545 "EHLO mta02.xtra.co.nz"
+	id S1030220Ab2HWHgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:36:44 -0400
+Received: from mta05.xtra.co.nz ([210.54.141.250]:16615 "EHLO mta02.xtra.co.nz"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933611Ab2HWHgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:36:04 -0400
+	id S933620Ab2HWHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:36:11 -0400
 From: Tony Prisk <linux@prisktech.co.nz>
 To: vt8500-wm8505-linux-kernel@googlegroups.com
 Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
@@ -23,9 +23,9 @@ Cc: Tony Prisk <linux@prisktech.co.nz>, Russell King <linux@arm.linux.org.uk>,
         linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
         devicetree-discuss@lists.ozlabs.org
-Subject: [PATCHv4 9/9] arm: vt8500: clk: Add Common Clock Framework support
-Date: Thu, 23 Aug 2012 19:35:45 +1200
-Message-Id: <1345707346-9035-10-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCHv4 4/9] usb: vt8500: Add devicetree support for vt8500-ehci and -uhci.
+Date: Thu, 23 Aug 2012 19:35:40 +1200
+Message-Id: <1345707346-9035-5-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
 References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
@@ -33,546 +33,307 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds common clock framework support for arch-vt8500.
-Support for PLL and device clocks on VT8500, WM8505 and WM8650
-are included.
+Add devicetree support for vt8500-ehci.
+Convert vt8500-uhci to a generic non-pci platform-uhci with
+device tree support.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/clk/Makefile     |    1 +
- drivers/clk/clk-vt8500.c |  511 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 512 insertions(+)
- create mode 100644 drivers/clk/clk-vt8500.c
+ drivers/usb/host/Kconfig         |    4 +-
+ drivers/usb/host/ehci-vt8500.c   |   25 ++++--
+ drivers/usb/host/uhci-hcd.c      |    5 ++
+ drivers/usb/host/uhci-platform.c |  169 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 195 insertions(+), 8 deletions(-)
+ create mode 100644 drivers/usb/host/uhci-platform.c
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 5869ea3..42fb173 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
- obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
- obj-$(CONFIG_ARCH_INTEGRATOR)	+= versatile/
-+obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index dcfaaa9..d7a6b10 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -450,7 +450,7 @@ config USB_OHCI_LITTLE_ENDIAN
  
- # Chip specific
- obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
-diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-new file mode 100644
-index 0000000..2f7c77d
---- /dev/null
-+++ b/drivers/clk/clk-vt8500.c
-@@ -0,0 +1,511 @@
-+/* drivers/clk/clk-vt8500.c
-+ *
-+ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/io.h>
+ config USB_UHCI_HCD
+ 	tristate "UHCI HCD (most Intel and VIA) support"
+-	depends on USB && (PCI || SPARC_LEON)
++	depends on USB && (PCI || SPARC_LEON || ARCH_VT8500)
+ 	---help---
+ 	  The Universal Host Controller Interface is a standard by Intel for
+ 	  accessing the USB hardware in the PC (which is also called the USB
+@@ -468,7 +468,7 @@ config USB_UHCI_HCD
+ config USB_UHCI_SUPPORT_NON_PCI_HC
+ 	bool
+ 	depends on USB_UHCI_HCD
+-	default y if SPARC_LEON
++	default y if (SPARC_LEON  || ARCH_VT8500)
+ 
+ config USB_UHCI_BIG_ENDIAN_MMIO
+ 	bool
+diff --git a/drivers/usb/host/ehci-vt8500.c b/drivers/usb/host/ehci-vt8500.c
+index c1eda73..0e1637b 100644
+--- a/drivers/usb/host/ehci-vt8500.c
++++ b/drivers/usb/host/ehci-vt8500.c
+@@ -16,6 +16,7 @@
+  *
+  */
+ 
 +#include <linux/of.h>
-+#include <linux/slab.h>
-+#include <linux/bitops.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
+ #include <linux/platform_device.h>
+ 
+ static int ehci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
+@@ -84,20 +85,23 @@ static const struct hc_driver vt8500_ehci_hc_driver = {
+ 	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+ };
+ 
++static u64 wmt_ehci_dma_mask = DMA_BIT_MASK(32);
 +
-+/* All clocks share the same lock as none can be changed concurrently */
-+static DEFINE_SPINLOCK(_lock);
+ static int vt8500_ehci_drv_probe(struct platform_device *pdev)
+ {
+ 	struct usb_hcd *hcd;
+ 	struct ehci_hcd *ehci;
+ 	struct resource *res;
++	int irq;
+ 	int ret;
+ 
+ 	if (usb_disabled())
+ 		return -ENODEV;
+ 
+-	if (pdev->resource[1].flags != IORESOURCE_IRQ) {
+-		pr_debug("resource[1] is not IORESOURCE_IRQ");
+-		return -ENOMEM;
+-	}
++	/* devicetree created devices don't specify a dma mask */
++	if (!pdev->dev.dma_mask)
++		pdev->dev.dma_mask = &wmt_ehci_dma_mask;
 +
-+struct clk_device {
-+	struct clk_hw	hw;
-+	void __iomem	*div_reg;
-+	unsigned int	div_mask;
-+	void __iomem	*en_reg;
-+	int		en_bit;
-+	spinlock_t	*lock;
+ 	hcd = usb_create_hcd(&vt8500_ehci_hc_driver, &pdev->dev, "VT8500");
+ 	if (!hcd)
+ 		return -ENOMEM;
+@@ -134,8 +138,9 @@ static int vt8500_ehci_drv_probe(struct platform_device *pdev)
+ 
+ 	ehci_reset(ehci);
+ 
+-	ret = usb_add_hcd(hcd, pdev->resource[1].start,
+-			  IRQF_SHARED);
++	irq = platform_get_irq(pdev, 0);
++
++	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (ret == 0) {
+ 		platform_set_drvdata(pdev, hcd);
+ 		return ret;
+@@ -162,6 +167,11 @@ static int vt8500_ehci_drv_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id vt8500_ehci_ids[] = {
++	{ .compatible = "via,vt8500-ehci", },
++	{}
 +};
 +
+ static struct platform_driver vt8500_ehci_driver = {
+ 	.probe		= vt8500_ehci_drv_probe,
+ 	.remove		= vt8500_ehci_drv_remove,
+@@ -169,7 +179,10 @@ static struct platform_driver vt8500_ehci_driver = {
+ 	.driver = {
+ 		.name	= "vt8500-ehci",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(vt8500_ehci_ids),
+ 	}
+ };
+ 
+ MODULE_ALIAS("platform:vt8500-ehci");
++MODULE_LICENSE("GPL v2");
++MODULE_DEVICE_TABLE(of, vt8500_ehci_ids);
+diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+index e4db350..5da5c99 100644
+--- a/drivers/usb/host/uhci-hcd.c
++++ b/drivers/usb/host/uhci-hcd.c
+@@ -846,6 +846,11 @@ static const char hcd_name[] = "uhci_hcd";
+ #define PLATFORM_DRIVER		uhci_grlib_driver
+ #endif
+ 
++#ifdef CONFIG_ARCH_VT8500
++#include "uhci-platform.c"
++#define PLATFORM_DRIVER		uhci_platform_driver
++#endif
++
+ #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER)
+ #error "missing bus glue for uhci-hcd"
+ #endif
+diff --git a/drivers/usb/host/uhci-platform.c b/drivers/usb/host/uhci-platform.c
+new file mode 100644
+index 0000000..35ca094
+--- /dev/null
++++ b/drivers/usb/host/uhci-platform.c
+@@ -0,0 +1,169 @@
 +/*
-+ * Add new PLL_TYPE_x definitions here as required. Use the first known model
-+ * to support the new type as the name.
-+ * Add case statements to vtwm_pll_recalc_rate(), vtwm_pll_round_round() and
-+ * vtwm_pll_set_rate() to handle the new PLL_TYPE_x
++ * Generic UHCI HCD (Host Controller Driver) for Platform Devices
++ *
++ * Copyright (c) 2011 Tony Prisk <linux@prisktech.co.nz>
++ *
++ * This file is based on uhci-grlib.c
++ * (C) Copyright 2004-2007 Alan Stern, stern@rowland.harvard.edu
 + */
 +
-+#define PLL_TYPE_VT8500		0
-+#define PLL_TYPE_WM8650		1
++#include <linux/of.h>
++#include <linux/platform_device.h>
 +
-+struct clk_pll {
-+	struct clk_hw	hw;
-+	void __iomem	*reg;
-+	spinlock_t	*lock;
-+	int		type;
-+};
-+
-+static void __iomem *pmc_base;
-+
-+#define to_clk_device(_hw) container_of(_hw, struct clk_device, hw)
-+
-+
-+#define VT8500_PMC_BUSY_MASK		0x18
-+
-+static void vt8500_pmc_wait_busy(void)
++static int uhci_platform_init(struct usb_hcd *hcd)
 +{
-+	while (readl(pmc_base) & VT8500_PMC_BUSY_MASK)
-+		cpu_relax();
-+}
++	struct uhci_hcd *uhci = hcd_to_uhci(hcd);
 +
-+static void vt8500_dclk_endisable(struct clk_hw *hw, int enable)
-+{
-+	struct clk_device *cdev = to_clk_device(hw);
-+	u32 en_val;
-+	unsigned long flags = 0;
++	uhci->rh_numports = uhci_count_ports(hcd);
 +
-+	spin_lock_irqsave(cdev->lock, flags);
++	/* Set up pointers to to generic functions */
++	uhci->reset_hc = uhci_generic_reset_hc;
++	uhci->check_and_reset_hc = uhci_generic_check_and_reset_hc;
 +
-+	en_val = readl(cdev->en_reg);
++	/* No special actions need to be taken for the functions below */
++	uhci->configure_hc = NULL;
++	uhci->resume_detect_interrupts_are_broken = NULL;
++	uhci->global_suspend_mode_is_broken = NULL;
 +
-+	if (enable)
-+		en_val |= BIT(cdev->en_bit);
-+	else
-+		en_val &= ~BIT(cdev->en_bit);
-+
-+	writel(en_val, cdev->en_reg);
-+
-+	spin_unlock_irqrestore(cdev->lock, flags);
-+}
-+
-+static int vt8500_dclk_enable(struct clk_hw *hw)
-+{
-+	vt8500_dclk_endisable(hw, 1);
++	/* Reset if the controller isn't already safely quiescent. */
++	check_and_reset_hc(uhci);
 +	return 0;
 +}
 +
-+static void vt8500_dclk_disable(struct clk_hw *hw)
++static const struct hc_driver uhci_platform_hc_driver = {
++	.description =          hcd_name,
++	.product_desc =         "Generic UHCI Host Controller",
++	.hcd_priv_size =        sizeof(struct uhci_hcd),
++
++	/* Generic hardware linkage */
++	.irq =                  uhci_irq,
++	.flags =                HCD_MEMORY | HCD_USB11,
++
++	/* Basic lifecycle operations */
++	.reset =                uhci_platform_init,
++	.start =                uhci_start,
++#ifdef CONFIG_PM
++	.pci_suspend =          NULL,
++	.pci_resume =           NULL,
++	.bus_suspend =          uhci_rh_suspend,
++	.bus_resume =           uhci_rh_resume,
++#endif
++	.stop =                 uhci_stop,
++
++	.urb_enqueue =          uhci_urb_enqueue,
++	.urb_dequeue =          uhci_urb_dequeue,
++
++	.endpoint_disable =     uhci_hcd_endpoint_disable,
++	.get_frame_number =     uhci_hcd_get_frame_number,
++
++	.hub_status_data =      uhci_hub_status_data,
++	.hub_control =          uhci_hub_control,
++};
++
++static u64 platform_uhci_dma_mask = DMA_BIT_MASK(32);
++
++static int __devinit uhci_hcd_platform_probe(struct platform_device *pdev)
 +{
-+	vt8500_dclk_endisable(hw, 0);
-+}
++	struct usb_hcd *hcd;
++	struct uhci_hcd *uhci;
++	struct resource *res;
++	int ret;
 +
-+static int vt8500_dclk_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_device *cdev = to_clk_device(hw);
-+	u32 en_val = (readl(cdev->en_reg) & BIT(cdev->en_bit));
++	if (usb_disabled())
++		return -ENODEV;
 +
-+	return en_val ? 1 : 0;
-+}
++	/* Right now device-tree probed devices don't get dma_mask set.
++	 * Since shared usb code relies on it, set it here for now.
++	 * Once we have dma capability bindings this can go away.
++	 */
++	if (!pdev->dev.dma_mask)
++		pdev->dev.dma_mask = &platform_uhci_dma_mask;
 +
-+static unsigned long vt8500_dclk_recalc_rate(struct clk_hw *hw,
-+				unsigned long parent_rate)
-+{
-+	struct clk_device *cdev = to_clk_device(hw);
-+	u32 div = readl(cdev->div_reg) & cdev->div_mask;
++	hcd = usb_create_hcd(&uhci_platform_hc_driver, &pdev->dev,
++				pdev->name);
++	if (!hcd)
++		return -ENOMEM;
 +
-+	/* Special case for SDMMC devices */
-+	if ((cdev->div_mask == 0x3F) && (div & BIT(5)))
-+		div = 64 * (div & 0x1f);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	hcd->rsrc_start = res->start;
++	hcd->rsrc_len = resource_size(res);
 +
-+	/* div == 0 is actually the highest divisor */
-+	if (div == 0)
-+		div = (cdev->div_mask + 1);
-+
-+	return parent_rate / div;
-+}
-+
-+static long vt8500_dclk_round_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long *prate)
-+{
-+	u32 divisor = rate / *prate;
-+
-+	return *prate / divisor;
-+}
-+
-+static int vt8500_dclk_set_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long parent_rate)
-+{
-+	struct clk_device *cdev = to_clk_device(hw);
-+	u32 divisor = rate / parent_rate;
-+	unsigned long flags = 0;
-+
-+	if (divisor == cdev->div_mask + 1)
-+		divisor = 0;
-+
-+	if (divisor > cdev->div_mask) {
-+		pr_err("%s: invalid divisor for clock\n", __func__);
-+		return -EINVAL;
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
++		pr_err("%s: request_mem_region failed\n", __func__);
++		ret = -EBUSY;
++		goto err_rmr;
 +	}
 +
-+	spin_lock_irqsave(cdev->lock, flags);
++	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	if (!hcd->regs) {
++		pr_err("%s: ioremap failed\n", __func__);
++		ret = -ENOMEM;
++		goto err_irq;
++	}
++	uhci = hcd_to_uhci(hcd);
 +
-+	vt8500_pmc_wait_busy();
-+	writel(divisor, cdev->div_reg);
-+	vt8500_pmc_wait_busy();
++	uhci->regs = hcd->regs;
 +
-+	spin_lock_irqsave(cdev->lock, flags);
++	ret = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_DISABLED |
++								IRQF_SHARED);
++	if (ret)
++		goto err_uhci;
 +
 +	return 0;
++
++err_uhci:
++	iounmap(hcd->regs);
++err_irq:
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++err_rmr:
++	usb_put_hcd(hcd);
++
++	return ret;
 +}
 +
-+
-+static const struct clk_ops vt8500_gated_clk_ops = {
-+	.enable = vt8500_dclk_enable,
-+	.disable = vt8500_dclk_disable,
-+	.is_enabled = vt8500_dclk_is_enabled,
-+};
-+
-+static const struct clk_ops vt8500_divisor_clk_ops = {
-+	.round_rate = vt8500_dclk_round_rate,
-+	.set_rate = vt8500_dclk_set_rate,
-+	.recalc_rate = vt8500_dclk_recalc_rate,
-+};
-+
-+static const struct clk_ops vt8500_gated_divisor_clk_ops = {
-+	.enable = vt8500_dclk_enable,
-+	.disable = vt8500_dclk_disable,
-+	.is_enabled = vt8500_dclk_is_enabled,
-+	.round_rate = vt8500_dclk_round_rate,
-+	.set_rate = vt8500_dclk_set_rate,
-+	.recalc_rate = vt8500_dclk_recalc_rate,
-+};
-+
-+#define CLK_INIT_GATED			BIT(0)
-+#define CLK_INIT_DIVISOR		BIT(1)
-+#define CLK_INIT_GATED_DIVISOR		(CLK_INIT_DIVISOR | CLK_INIT_GATED)
-+
-+static __init void vtwm_device_clk_init(struct device_node *node)
++static int uhci_hcd_platform_remove(struct platform_device *pdev)
 +{
-+	u32 en_reg, div_reg;
-+	struct clk *clk;
-+	struct clk_device *dev_clk;
-+	const char *clk_name = node->name;
-+	const char *parent_name;
-+	struct clk_init_data init;
-+	int rc;
-+	int clk_init_flags = 0;
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 +
-+	dev_clk = kzalloc(sizeof(*dev_clk), GFP_KERNEL);
-+	if (WARN_ON(!dev_clk))
-+		return;
-+
-+	dev_clk->lock = &_lock;
-+
-+	rc = of_property_read_u32(node, "enable-reg", &en_reg);
-+	if (!rc) {
-+		dev_clk->en_reg = pmc_base + en_reg;
-+		rc = of_property_read_u32(node, "enable-bit", &dev_clk->en_bit);
-+		if (rc) {
-+			pr_err("%s: enable-bit property required for gated clock\n",
-+								__func__);
-+			return;
-+		}
-+		clk_init_flags |= CLK_INIT_GATED;
-+	}
-+
-+	rc = of_property_read_u32(node, "divisor-reg", &div_reg);
-+	if (!rc) {
-+		dev_clk->div_reg = pmc_base + div_reg;
-+		/*
-+		 * use 0x1f as the default mask since it covers
-+		 * almost all the clocks and reduces dts properties
-+		 */
-+		dev_clk->div_mask = 0x1f;
-+
-+		of_property_read_u32(node, "divisor-mask", &dev_clk->div_mask);
-+		clk_init_flags |= CLK_INIT_DIVISOR;
-+	}
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+
-+	switch (clk_init_flags) {
-+	case CLK_INIT_GATED:
-+		init.ops = &vt8500_gated_clk_ops;
-+		break;
-+	case CLK_INIT_DIVISOR:
-+		init.ops = &vt8500_divisor_clk_ops;
-+		break;
-+	case CLK_INIT_GATED_DIVISOR:
-+		init.ops = &vt8500_gated_divisor_clk_ops;
-+		break;
-+	default:
-+		pr_err("%s: Invalid clock description in device tree\n",
-+								__func__);
-+		kfree(dev_clk);
-+		return;
-+	}
-+
-+	init.name = clk_name;
-+	init.flags = 0;
-+	parent_name = of_clk_get_parent_name(node, 0);
-+	init.parent_names = &parent_name;
-+	init.num_parents = 1;
-+
-+	dev_clk->hw.init = &init;
-+
-+	clk = clk_register(NULL, &dev_clk->hw);
-+	if (WARN_ON(IS_ERR(clk))) {
-+		kfree(dev_clk);
-+		return;
-+	}
-+	rc = of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	clk_register_clkdev(clk, clk_name, NULL);
-+}
-+
-+
-+/* PLL clock related functions */
-+
-+#define to_clk_pll(_hw) container_of(_hw, struct clk_pll, hw)
-+
-+/* Helper macros for PLL_VT8500 */
-+#define VT8500_PLL_MUL(x)	((x & 0x1F) << 1)
-+#define VT8500_PLL_DIV(x)	((x & 0x100) ? 1 : 2)
-+
-+#define VT8500_BITS_TO_FREQ(r, m, d)					\
-+				((r / d) * m)
-+
-+#define VT8500_BITS_TO_VAL(m, d)					\
-+				((d == 2 ? 0 : 0x100) | ((m >> 1) & 0x1F))
-+
-+/* Helper macros for PLL_WM8650 */
-+#define WM8650_PLL_MUL(x)	(x & 0x3FF)
-+#define WM8650_PLL_DIV(x)	(((x >> 10) & 7) * (1 << ((x >> 13) & 3)))
-+
-+#define WM8650_BITS_TO_FREQ(r, m, d1, d2)				\
-+				(r * m / (d1 * (1 << d2)))
-+
-+#define WM8650_BITS_TO_VAL(m, d1, d2)					\
-+				((d2 << 13) | (d1 << 10) | (m & 0x3FF))
-+
-+
-+static void vt8500_find_pll_bits(unsigned long rate, unsigned long parent_rate,
-+				u32 *multiplier, u32 *prediv)
-+{
-+	unsigned long tclk;
-+
-+	/* sanity check */
-+	if ((rate < parent_rate * 4) || (rate > parent_rate * 62)) {
-+		pr_err("%s: requested rate out of range\n", __func__);
-+		*multiplier = 0;
-+		*prediv = 1;
-+		return;
-+	}
-+	if (rate <= parent_rate * 31)
-+		/* use the prediv to double the resolution */
-+		*prediv = 2;
-+	else
-+		*prediv = 1;
-+
-+	*multiplier = rate / (parent_rate / *prediv);
-+	tclk = (parent_rate / *prediv) * *multiplier;
-+
-+	if (tclk != rate)
-+		pr_warn("%s: requested rate %lu, found rate %lu\n", __func__,
-+								rate, tclk);
-+}
-+
-+static void wm8650_find_pll_bits(unsigned long rate, unsigned long parent_rate,
-+				u32 *multiplier, u32 *divisor1, u32 *divisor2)
-+{
-+	u32 mul, div1, div2;
-+	u32 best_mul, best_div1, best_div2;
-+	unsigned long tclk, rate_err, best_err;
-+
-+	best_err = (unsigned long)-1;
-+
-+	/* Find the closest match (lower or equal to requested) */
-+	for (div1 = 5; div1 >= 3; div1--)
-+		for (div2 = 3; div2 >= 0; div2--)
-+			for (mul = 3; mul <= 1023; mul++) {
-+				tclk = parent_rate * mul / (div1 * (1 << div2));
-+				if (tclk > rate)
-+					continue;
-+				/* error will always be +ve */
-+				rate_err = rate - tclk;
-+				if (rate_err == 0) {
-+					*multiplier = mul;
-+					*divisor1 = div1;
-+					*divisor2 = div2;
-+					return;
-+				}
-+
-+				if (rate_err < best_err) {
-+					best_err = rate_err;
-+					best_mul = mul;
-+					best_div1 = div1;
-+					best_div2 = div2;
-+				}
-+			}
-+
-+	/* if we got here, it wasn't an exact match */
-+	pr_warn("%s: requested rate %lu, found rate %lu\n", __func__, rate,
-+							rate - best_err);
-+	*multiplier = mul;
-+	*divisor1 = div1;
-+	*divisor2 = div2;
-+}
-+
-+static int vtwm_pll_set_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long parent_rate)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	u32 mul, div1, div2;
-+	u32 pll_val;
-+	unsigned long flags = 0;
-+
-+	/* sanity check */
-+
-+	switch (pll->type) {
-+	case PLL_TYPE_VT8500:
-+		vt8500_find_pll_bits(rate, parent_rate, &mul, &div1);
-+		pll_val = VT8500_BITS_TO_VAL(mul, div1);
-+		break;
-+	case PLL_TYPE_WM8650:
-+		wm8650_find_pll_bits(rate, parent_rate, &mul, &div1, &div2);
-+		pll_val = WM8650_BITS_TO_VAL(mul, div1, div2);
-+		break;
-+	default:
-+		pr_err("%s: invalid pll type\n", __func__);
-+		return 0;
-+	}
-+
-+	spin_lock_irqsave(pll->lock, flags);
-+
-+	vt8500_pmc_wait_busy();
-+	writel(pll_val, pll->reg);
-+	vt8500_pmc_wait_busy();
-+
-+	spin_unlock_irqrestore(pll->lock, flags);
++	usb_remove_hcd(hcd);
++	iounmap(hcd->regs);
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++	usb_put_hcd(hcd);
++	platform_set_drvdata(pdev, NULL);
 +
 +	return 0;
 +}
 +
-+static long vtwm_pll_round_rate(struct clk_hw *hw, unsigned long rate,
-+				unsigned long *prate)
++/* Make sure the controller is quiescent and that we're not using it
++ * any more.  This is mainly for the benefit of programs which, like kexec,
++ * expect the hardware to be idle: not doing DMA or generating IRQs.
++ *
++ * This routine may be called in a damaged or failing kernel.  Hence we
++ * do not acquire the spinlock before shutting down the controller.
++ */
++static void uhci_hcd_platform_shutdown(struct platform_device *op)
 +{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	u32 mul, div1, div2;
-+	long round_rate;
++	struct usb_hcd *hcd = dev_get_drvdata(&op->dev);
 +
-+	switch (pll->type) {
-+	case PLL_TYPE_VT8500:
-+		vt8500_find_pll_bits(rate, *prate, &mul, &div1);
-+		round_rate = VT8500_BITS_TO_FREQ(*prate, mul, div1);
-+		break;
-+	case PLL_TYPE_WM8650:
-+		wm8650_find_pll_bits(rate, *prate, &mul, &div1, &div2);
-+		round_rate = WM8650_BITS_TO_FREQ(*prate, mul, div1, div2);
-+		break;
-+	default:
-+		round_rate = 0;
-+	}
-+
-+	return round_rate;
++	uhci_hc_died(hcd_to_uhci(hcd));
 +}
 +
-+static unsigned long vtwm_pll_recalc_rate(struct clk_hw *hw,
-+				unsigned long parent_rate)
-+{
-+	struct clk_pll *pll = to_clk_pll(hw);
-+	u32 pll_val = readl(pll->reg);
-+	unsigned long pll_freq;
-+
-+	switch (pll->type) {
-+	case PLL_TYPE_VT8500:
-+		pll_freq = parent_rate * VT8500_PLL_MUL(pll_val);
-+		pll_freq /= VT8500_PLL_DIV(pll_val);
-+		break;
-+	case PLL_TYPE_WM8650:
-+		pll_freq = parent_rate * WM8650_PLL_MUL(pll_val);
-+		pll_freq /= WM8650_PLL_DIV(pll_val);
-+		break;
-+	default:
-+		pll_freq = 0;
-+	}
-+
-+	return pll_freq;
-+}
-+
-+const struct clk_ops vtwm_pll_ops = {
-+	.round_rate = vtwm_pll_round_rate,
-+	.set_rate = vtwm_pll_set_rate,
-+	.recalc_rate = vtwm_pll_recalc_rate,
++static const struct of_device_id platform_uhci_ids[] = {
++	{ .compatible = "platform-uhci", },
++	{}
 +};
 +
-+static __init void vtwm_pll_clk_init(struct device_node *node, int pll_type)
-+{
-+	u32 reg;
-+	struct clk *clk;
-+	struct clk_pll *pll_clk;
-+	const char *clk_name = node->name;
-+	const char *parent_name;
-+	struct clk_init_data init;
-+	int rc;
-+
-+	rc = of_property_read_u32(node, "reg", &reg);
-+	if (WARN_ON(rc))
-+		return;
-+
-+	pll_clk = kzalloc(sizeof(*pll_clk), GFP_KERNEL);
-+	if (WARN_ON(!pll_clk))
-+		return;
-+
-+	pll_clk->reg = pmc_base + reg;
-+	pll_clk->lock = &_lock;
-+	pll_clk->type = pll_type;
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+
-+	init.name = clk_name;
-+	init.ops = &vtwm_pll_ops;
-+	init.flags = 0;
-+	parent_name = of_clk_get_parent_name(node, 0);
-+	init.parent_names = &parent_name;
-+	init.num_parents = 1;
-+
-+	pll_clk->hw.init = &init;
-+
-+	clk = clk_register(NULL, &pll_clk->hw);
-+	if (WARN_ON(IS_ERR(clk))) {
-+		kfree(pll_clk);
-+		return;
-+	}
-+	rc = of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+	clk_register_clkdev(clk, clk_name, NULL);
-+}
-+
-+
-+/* Wrappers for initialization functions */
-+
-+static void __init vt8500_pll_init(struct device_node *node)
-+{
-+	vtwm_pll_clk_init(node, PLL_TYPE_VT8500);
-+}
-+
-+static void __init wm8650_pll_init(struct device_node *node)
-+{
-+	vtwm_pll_clk_init(node, PLL_TYPE_WM8650);
-+}
-+
-+static const __initconst struct of_device_id clk_match[] = {
-+	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
-+	{ .compatible = "via,vt8500-pll-clock", .data = vt8500_pll_init, },
-+	{ .compatible = "wm,wm8650-pll-clock", .data = wm8650_pll_init, },
-+	{ .compatible = "via,vt8500-device-clock",
-+					.data = vtwm_device_clk_init, },
-+	{ /* sentinel */ }
++static struct platform_driver uhci_platform_driver = {
++	.probe          = uhci_hcd_platform_probe,
++	.remove         = uhci_hcd_platform_remove,
++	.shutdown       = uhci_hcd_platform_shutdown,
++	.driver = {
++		.name = "platform-uhci",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(platform_uhci_ids),
++	},
 +};
 +
-+void __init vtwm_clk_init(void __iomem *base)
-+{
-+	if (!base)
-+		return;
-+
-+	pmc_base = base;
-+
-+	of_clk_init(clk_match);
-+}
++MODULE_ALIAS("platform:platform-uhci");
++MODULE_LICENSE("GPL v2");
++MODULE_DEVICE_TABLE(of, platform_uhci_ids);
 -- 
 1.7.9.5
 
