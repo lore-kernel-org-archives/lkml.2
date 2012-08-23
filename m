@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030556Ab2HWPed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:34:33 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58209 "EHLO e7.ny.us.ibm.com"
+	id S1759062Ab2HWPgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:36:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13695 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab2HWPdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:33:47 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 2/2] Revert "staging: zcache: optimize zcache_do_preload"
-Date: Thu, 23 Aug 2012 10:33:11 -0500
-Message-Id: <1345735991-6995-3-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082315-5806-0000-0000-000018B8096F
+	id S1754082Ab2HWPgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 11:36:21 -0400
+Date: Thu, 23 Aug 2012 11:02:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>, ananth@in.ibm.com,
+        ppcdev <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, peterz@infradead.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
+Message-ID: <20120823090209.GA4630@redhat.com>
+References: <20120822082205.GA29216@in.ibm.com> <20120822082708.GB29216@in.ibm.com> <1345696100.3338.21.camel@concordia> <20120823053234.GE25338@linux.vnet.ibm.com> <1345716378.29170.4.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345716378.29170.4.camel@pasglop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 79c0d92c5b6175c1462fbe38bf44180f325aa478.
+On 08/23, Benjamin Herrenschmidt wrote:
+>
+> On Thu, 2012-08-23 at 11:02 +0530, Srikar Dronamraju wrote:
+> > >
+> >
+> > insn is updated/accessed in the arch independent code. Size of
+> > uprobe_opcode_t could be different for different archs.
+> > uprobe_opcode_t
+> > represents the size of the smallest breakpoint instruction for an
+> > arch.
+> >
+> > Hence u8 works out the best. I know we could still use uprobe_opcode_t
+> > and achieve the same. In which case, we would have to interpret
+> > MAX_UINSN_BYTES differently. Do you see any advantages of using
+> > uprobe_opcode_t instead of u8 across archs?
+>
+> But don't you actively rely on the fact that on powerpc, unlike x86, you
+> -can- atomically replace an instruction with a single 32-bit store ?
 
-This commit is resulting  memory corruption in the cleancache case
+I must have missed something...
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Reported-by: Dan Magenheimer <dan.magenheimer@oracle.com>
----
- drivers/staging/zcache/zcache-main.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+But powerpc does not replace an instruction, the arch independent code
+does this and it assumes that uprobe->arch.insn is u8[MAX_UINSN_BYTES].
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 8a335b9..4f92d87 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1034,43 +1034,45 @@ static int zcache_do_preload(struct tmem_pool *pool)
- 		goto out;
- 	if (unlikely(zcache_obj_cache == NULL))
- 		goto out;
--
--	/* IRQ has already been disabled. */
-+	preempt_disable();
- 	kp = &__get_cpu_var(zcache_preloads);
- 	while (kp->nr < ARRAY_SIZE(kp->objnodes)) {
-+		preempt_enable_no_resched();
- 		objnode = kmem_cache_alloc(zcache_objnode_cache,
- 				ZCACHE_GFP_MASK);
- 		if (unlikely(objnode == NULL)) {
- 			zcache_failed_alloc++;
- 			goto out;
- 		}
--
--		kp->objnodes[kp->nr++] = objnode;
-+		preempt_disable();
-+		kp = &__get_cpu_var(zcache_preloads);
-+		if (kp->nr < ARRAY_SIZE(kp->objnodes))
-+			kp->objnodes[kp->nr++] = objnode;
-+		else
-+			kmem_cache_free(zcache_objnode_cache, objnode);
- 	}
--
-+	preempt_enable_no_resched();
- 	obj = kmem_cache_alloc(zcache_obj_cache, ZCACHE_GFP_MASK);
- 	if (unlikely(obj == NULL)) {
- 		zcache_failed_alloc++;
- 		goto out;
- 	}
--
- 	page = (void *)__get_free_page(ZCACHE_GFP_MASK);
- 	if (unlikely(page == NULL)) {
- 		zcache_failed_get_free_pages++;
- 		kmem_cache_free(zcache_obj_cache, obj);
- 		goto out;
- 	}
--
-+	preempt_disable();
-+	kp = &__get_cpu_var(zcache_preloads);
- 	if (kp->obj == NULL)
- 		kp->obj = obj;
- 	else
- 		kmem_cache_free(zcache_obj_cache, obj);
--
- 	if (kp->page == NULL)
- 		kp->page = page;
- 	else
- 		free_page((unsigned long)page);
--
- 	ret = 0;
- out:
- 	return ret;
-@@ -1581,6 +1583,7 @@ static int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- 				zcache_failed_pers_puts++;
- 		}
- 		zcache_put_pool(pool);
-+		preempt_enable_no_resched();
- 	} else {
- 		zcache_put_to_flush++;
- 		if (atomic_read(&pool->obj_count) > 0)
--- 
-1.7.9.5
+Perhaps you meant that on powerpc it is "safe" to replace the insn
+even if this can race with some CPU executing this code? But uprobes
+has to replace the original page anyway, we should not write to
+->vm_file.
+
+I agree that memcpy() in arch_uprobe_analyze_insn() and
+arch_uprobe_skip_sstep() looks a bit strange. May be powerpc can do
+
+	struct arch_uprobe {
+		union {
+			u8		insn[MAX_UINSN_BYTES];
+			u32		ainsn;
+		};
+	};
+
+and use auprobe->ainsn directly, I dunno.
+
+But probably I misunderstood you.
+
+Oleg.
 
