@@ -1,119 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab2HWMaa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 08:30:30 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50128 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356Ab2HWMa1 (ORCPT
+	id S932684Ab2HWMa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 08:30:59 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:33702 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758193Ab2HWMay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 08:30:27 -0400
-Message-ID: <50362257.6060006@linux.vnet.ibm.com>
-Date: Thu, 23 Aug 2012 20:30:15 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 23 Aug 2012 08:30:54 -0400
+X-AuditID: b753bd60-91b5cba000007c38-16-5036227b09f2
+X-AuditID: b753bd60-91b5cba000007c38-16-5036227b09f2
+Message-ID: <5036224F.3060706@hitachi.com>
+Date: Thu, 23 Aug 2012 21:30:07 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: trace the events of mmu_notifier
-References: <50335A27.2070306@linux.vnet.ibm.com> <20120823092405.GB32710@amt.cnet>
-In-Reply-To: <20120823092405.GB32710@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>, Arnd Bergmann <arnd@arndb.de>,
+        Borislav Petkov <bp@amd64.org>, "Franch Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Ingo Molnar <mingo@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, qemu-devel@nongnu.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH 2/5] trace-cmd: Use tracing directory to count
+ CPUs
+References: <20120822084251.17293.69086.stgit@ltc189.sdl.hitachi.co.jp>   <20120822084312.17293.47596.stgit@ltc189.sdl.hitachi.co.jp>  <1345642893.5069.31.camel@gandalf.local.home>  <50358F13.1030607@hitachi.com> <50359CE9.3000509@hitachi.com> <1345712886.5069.41.camel@gandalf.local.home>
+In-Reply-To: <1345712886.5069.41.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-x-cbid: 12082312-5564-0000-0000-000004254EAF
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 05:24 PM, Marcelo Tosatti wrote:
-> On Tue, Aug 21, 2012 at 05:51:35PM +0800, Xiao Guangrong wrote:
->> mmu_notifier is the interface to broadcast the mm events to KVM, the
->> tracepoints introduced in this patch can trace all these events, it is
->> very helpful for us to notice and fix the bug caused by mm
+(2012/08/23 18:08), Steven Rostedt wrote:
+> On Thu, 2012-08-23 at 12:00 +0900, Masami Hiramatsu wrote:
+>> (2012/08/23 11:01), Masami Hiramatsu wrote:
+>>> (2012/08/22 22:41), Steven Rostedt wrote:
+>>>> On Wed, 2012-08-22 at 17:43 +0900, Yoshihiro YUNOMAE wrote:
+>>>>> From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>>>
+>>>>> Count debugfs/tracing/per_cpu/cpu* to determine the
+>>>>> number of CPUs.
+>>>>
+>>>> I'm curious, do you find that sysconf doesn't return the # of CPUs the
+>>>> system has?
+>>>
+>>> No, sysconf returns the number of hosts CPUs, not guests.
+>>>
+>>>> I've had boxes where the per_cpu/cpu* had more cpus than the
+>>>> box actually holds. But this was a bug in the kernel, not the tool. This
+>>>> change log needs to have rational instead of just explaining what the
+>>>> patch does.
+>>>
+>>> Ah, I see. Hmm, then this should be enabled by a command line
+>>> option or an environment variable.
 >>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  include/trace/events/kvm.h |  121 ++++++++++++++++++++++++++++++++++++++++++++
->>  virt/kvm/kvm_main.c        |   19 +++++++
->>  2 files changed, 140 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
->> index 7ef9e75..a855ff9 100644
->> --- a/include/trace/events/kvm.h
->> +++ b/include/trace/events/kvm.h
->> @@ -309,6 +309,127 @@ TRACE_EVENT(
->>
->>  #endif
->>
->> +#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
->> +DECLARE_EVENT_CLASS(mmu_notifier_address_class,
->> +
->> +	TP_PROTO(struct kvm *kvm, unsigned long address),
->> +
->> +	TP_ARGS(kvm, address),
->> +
->> +	TP_STRUCT__entry(
->> +		__field(struct kvm *, kvm)
->> +		__field(unsigned long, address)
->> +	),
->> +
->> +	TP_fast_assign(
->> +		__entry->kvm = kvm;
->> +		__entry->address = address;
->> +	),
->> +
->> +	TP_printk("kvm %p address %lx", __entry->kvm, __entry->address)
+>> Oops, I misunderstood. I'll add more comment for why this
+>> should be tried instead of sysconf.
 > 
+> And now that I understand why you are doing this, why not only do this
+> if the TRACE_AGENT or DEBUG_TRACING_DIR is defined. That is, if we are
+> doing it against a bare metal system, then sysconf should suffice, but
+> if we are tracing against a guest, then it should use the tracing
+> directory to determine the buffers.
 > 
-> Perhaps the pointer was useful for debugging, but otherwise, i don't
-> think it should be printed.
+> We could add options to override this, but I would think the default
+> should just Do The Right Thing(tm).
 
-But this is the only information to identify the guest if may guest
-are running.
+Yeah, so I'd like to push this is the default method, and fix
+the kernel bug (but I'm not sure that is a bug).
 
-> 
->> +	TP_ARGS(kvm, address, pte),
->> +
->> +	TP_STRUCT__entry(
->> +		__field(struct kvm *, kvm)
->> +		__field(unsigned long, address)
->> +		__field(unsigned long, pte)
->> +	),
->> +
->> +	TP_fast_assign(
->> +		__entry->kvm = kvm;
->> +		__entry->address = address;
->> +		__entry->pte = pte.pte;
->> +	),
->> +
->> +	TP_printk("kvm %p address %lx pte %lx", __entry->kvm, __entry->address,
->> +		  __entry->pte)
-> 
-> The pte bits can be spelled out? (see __print_symbolic).
+Thank you,
 
-This tracepoint is put in kvm.h which can be used on different architectures
-which have different pte decode. I will try to find a way to show more
-readable format.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-> 
->>  	spin_lock(&kvm->mmu_lock);
->>
->> +	trace_kvm_mmu_notifier_clear_flush_young(kvm, address);
->> +
->>  	young = kvm_age_hva(kvm, address);
->>  	if (young)
->>  		kvm_flush_remote_tlbs(kvm);
->> @@ -394,6 +407,9 @@ static int kvm_mmu_notifier_test_young(struct mmu_notifier *mn,
->>
->>  	idx = srcu_read_lock(&kvm->srcu);
->>  	spin_lock(&kvm->mmu_lock);
->> +
->> +	trace_kvm_mmu_notifier_test_young(kvm, address);
->> +
-> 
-> can print young information?
-
-Okay, will do it in next version.
-
-Thanks for your review, Marcelo!
 
