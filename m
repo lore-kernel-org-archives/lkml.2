@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933644Ab2HWHyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 03:54:14 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51715 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab2HWHyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 03:54:09 -0400
-Subject: Re: [PATCH] staging: rtl8192e: use is_zero_ether_addr() instead of
- memcmp()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAPgLHd-VLPp-tpF77tTc9aj8-VO30jy2yhsi7KyW_NFQOqNqag@mail.gmail.com>
-References: <CAPgLHd-VLPp-tpF77tTc9aj8-VO30jy2yhsi7KyW_NFQOqNqag@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Aug 2012 09:54:03 +0200
-Message-ID: <1345708443.5904.186.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1030223Ab2HWHyw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 03:54:52 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:57710 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933186Ab2HWHyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 03:54:50 -0400
+Message-ID: <5035E103.3010101@parallels.com>
+Date: Thu, 23 Aug 2012 11:51:31 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Greg Thelen <gthelen@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 06/11] memcg: kmem controller infrastructure
+References: <1344517279-30646-1-git-send-email-glommer@parallels.com> <1344517279-30646-7-git-send-email-glommer@parallels.com> <xr93boi3ewxt.fsf@gthelen.mtv.corp.google.com> <503499CC.7070704@parallels.com> <xr93boi2v5bi.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93boi2v5bi.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-23 at 15:19 +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Using is_zero_ether_addr() instead of directly use
-> memcmp() to determine if the ethernet address is all
-> zeros.
-> 
-> spatch with a semantic match is used to found this problem.
-> (http://coccinelle.lip6.fr/)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/staging/rtl8192e/rtllib_softmac_wx.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8192e/rtllib_softmac_wx.c b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
-> index 1bb6b52..3cedfd9 100644
-> --- a/drivers/staging/rtl8192e/rtllib_softmac_wx.c
-> +++ b/drivers/staging/rtl8192e/rtllib_softmac_wx.c
-> @@ -14,6 +14,8 @@
->   */
->  
-> 
-> +#include <linux/etherdevice.h>
-> +
->  #include "rtllib.h"
->  #include "dot11d.h"
->  /* FIXME: add A freqs */
-> @@ -137,7 +139,6 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
->  {
->  
->  	int ret = 0;
-> -	u8 zero[] = {0, 0, 0, 0, 0, 0};
->  	unsigned long flags;
->  
->  	short ifup = ieee->proto_started;
-> @@ -157,7 +158,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
->  		goto out;
->  	}
->  
-> -	if (memcmp(temp->sa_data, zero, ETH_ALEN) == 0) {
-> +	if (is_zero_ether_addr(temp->sa_data)) {
->  		spin_lock_irqsave(&ieee->lock, flags);
->  		memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
 
-BTW this looks suspicious : Why is it using memcpy() if temp->sa_data is
-known to be zero ?
-
->  		ieee->wap_set = 0;
-> @@ -177,7 +178,7 @@ int rtllib_wx_set_wap(struct rtllib_device *ieee,
->  
->  	ieee->cannot_notify = false;
->  	memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
-> -	ieee->wap_set = (memcmp(temp->sa_data, zero, ETH_ALEN) != 0);
-> +	ieee->wap_set = (!is_zero_ether_addr(temp->sa_data));
->  
-	ieee->wap_set = !is_zero_ether_addr(temp->sa_data);
-
->  	spin_unlock_irqrestore(&ieee->lock, flags);
->  
+>>> Perhaps we're just trying to take a conservative initial implementation
+>>> which is consistent with user visible pages.
+>>>
+>>
+>> The way I see it, is not about being conservative, but rather about my
+>> physical safety. It is quite easy and natural to assume that "all
+>> modifications to page cgroup are done under lock". So someone modifying
+>> this later will likely find out about this exception in a rather
+>> unpleasant way. They know where I live, and guns for hire are everywhere.
+>>
+>> Note that it is not unreasonable to believe that we can modify this
+>> later. This can be a way out, for example, for the memcg lifecycle problem.
+>>
+>> I agree with your analysis and we can ultimately remove it, but if we
+>> cannot pinpoint any performance problems to here, maybe consistency
+>> wins. Also, the locking operation itself is a bit expensive, but the
+>> biggest price is the actual contention. If we'll have nobody contending
+>> for the same page_cgroup, the problem - if exists - shouldn't be that
+>> bad. And if we ever have, the lock is needed.
 > 
+> Sounds reasonable. Another reason we might have to eventually revisit
+> this lock is the fact that lock_page_cgroup() is not generally irq_safe.
+> I assume that slab pages may be freed in softirq and would thus (in an
+> upcoming patch series) call __memcg_kmem_free_page.  There are a few
+> factors that might make it safe to grab this lock here (and below in
+> __memcg_kmem_free_page) from hard/softirq context:
+> * the pc lock is a per page bit spinlock.  So we only need to worry
+>   about interrupting a task which holds the same page's lock to avoid
+>   deadlock.
+> * for accounted kernel pages, I am not aware of other code beyond
+>   __memcg_kmem_charge_page and __memcg_kmem_free_page which grab pc
+>   lock.  So we shouldn't find __memcg_kmem_free_page() called from a
+>   context which interrupted a holder of the page's pc lock.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+All very right.
 
 
