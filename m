@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab2HWKhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:37:11 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:50979 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758193Ab2HWKhH (ORCPT
+	id S933803Ab2HWKhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:37:18 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:33758 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933490Ab2HWKhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:37:07 -0400
+	Thu, 23 Aug 2012 06:37:12 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: alan@linux.intel.com
 Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
@@ -18,81 +18,161 @@ Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Shubhrajyoti Datta <shubhrajyoti@ti.com>,
         Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 00/23] OMAP UART patches
-Date: Thu, 23 Aug 2012 13:32:40 +0300
-Message-Id: <1345717983-18179-1-git-send-email-balbi@ti.com>
+Subject: [PATCH v3 02/23] serial: omap: define helpers for pdata function pointers
+Date: Thu, 23 Aug 2012 13:32:42 +0300
+Message-Id: <1345717983-18179-3-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.12.rc3
+In-Reply-To: <1345717983-18179-1-git-send-email-balbi@ti.com>
+References: <1345717983-18179-1-git-send-email-balbi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+this patch is in preparation to a few other changes
+which will align on the prototype for function
+pointers passed through pdata.
 
-here's v3 and hopefully final version of this series. A whole bunch of new
-patches added but the good thing is that now I had another engineer's help to
-test, so he's got his Tested-by in all patches.
+It also helps cleaning up the driver a little by
+agregating checks for pdata in a single location.
 
-Changes since v2:
-	. Added a bunch of new patches
-	. Fixed a problem where we would always return IRQ_NONE even though we
-		handled IRQ
+Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/tty/serial/omap-serial.c | 66 ++++++++++++++++++++++++++++------------
+ 1 file changed, 47 insertions(+), 19 deletions(-)
 
-Changes since v1:
-        . improved commit log on patch 9/13 (formerly 10/13)
-        . removed patch 2/13
-        . added a new patch switching from spin_lock_irqsave() to spin_lock and
-                spin_unlock_irqrestore to spin_unlock
-
-Alan, if you prefer in pull request form, here it is:
-
-The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
-
-  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git uart
-
-for you to fetch changes up to a29230f14d8466c9b8c25171715378bf52189453:
-
-  serial: omap: enable RX and TX FIFO usage (2012-08-23 09:25:16 +0300)
-
-----------------------------------------------------------------
-Felipe Balbi (20):
-      serial: omap: define and use to_uart_omap_port()
-      serial: omap: define helpers for pdata function pointers
-      serial: omap: don't access the platform_device
-      serial: omap: drop DMA support
-      serial: add OMAP-specific defines
-      serial: omap: simplify IRQ handling
-      serial: omap: refactor receive_chars() into rdi/rlsi handlers
-      serial: omap: move THRE check to transmit_chars()
-      serial: omap: stick to put_autosuspend
-      serial: omap: set dev->drvdata before enabling pm_runtime
-      serial: omap: drop unnecessary check from remove
-      serial: omap: make sure to suspend device before remove
-      serial: omap: don't save IRQ flags on hardirq
-      serial: omap: optimization with section annotations
-      serial: omap: drop "inline" from IRQ handler prototype
-      serial: omap: implement set_wake
-      serial: omap: make sure to put() on poll_get_char
-      serial: omap: remove unnecessary header and add a missing one
-      serial: omap: move uart_omap_port definition to C file
-      serial: omap: enable RX and TX FIFO usage
-
-Ruchika Kharwar (2):
-      serial: omap: fix sequence of pm_runtime_* calls.
-      serial: omap: unlock the port lock
-
-Vikram Pandita (1):
-      serial: omap: fix software flow control
-
- arch/arm/mach-omap2/serial.c                  |  15 +-
- arch/arm/plat-omap/include/plat/omap-serial.h |  47 +-
- drivers/tty/serial/omap-serial.c              | 808 ++++++++++----------------
- include/linux/serial_reg.h                    |   4 +
- 4 files changed, 330 insertions(+), 544 deletions(-)
-
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 5c0d0bc..6814a26 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -101,6 +101,40 @@ static inline void serial_omap_clear_fifos(struct uart_omap_port *up)
+ 	serial_out(up, UART_FCR, 0);
+ }
+ 
++static int serial_omap_get_context_loss_count(struct uart_omap_port *up)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (!pdata->get_context_loss_count)
++		return 0;
++
++	return pdata->get_context_loss_count(&up->pdev->dev);
++}
++
++static void serial_omap_set_forceidle(struct uart_omap_port *up)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (pdata->set_forceidle)
++		pdata->set_forceidle(up->pdev);
++}
++
++static void serial_omap_set_noidle(struct uart_omap_port *up)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (pdata->set_noidle)
++		pdata->set_noidle(up->pdev);
++}
++
++static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
++{
++	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
++
++	if (pdata->enable_wakeup)
++		pdata->enable_wakeup(up->pdev, enable);
++}
++
+ /*
+  * serial_omap_get_divisor - calculate divisor value
+  * @port: uart port info
+@@ -177,8 +211,8 @@ static void serial_omap_stop_tx(struct uart_port *port)
+ 		serial_out(up, UART_IER, up->ier);
+ 	}
+ 
+-	if (!up->use_dma && pdata && pdata->set_forceidle)
+-		pdata->set_forceidle(up->pdev);
++	if (!up->use_dma && pdata)
++		serial_omap_set_forceidle(up);
+ 
+ 	pm_runtime_mark_last_busy(&up->pdev->dev);
+ 	pm_runtime_put_autosuspend(&up->pdev->dev);
+@@ -308,7 +342,6 @@ static inline void serial_omap_enable_ier_thri(struct uart_omap_port *up)
+ static void serial_omap_start_tx(struct uart_port *port)
+ {
+ 	struct uart_omap_port *up = to_uart_omap_port(port);
+-	struct omap_uart_port_info *pdata = up->pdev->dev.platform_data;
+ 	struct circ_buf *xmit;
+ 	unsigned int start;
+ 	int ret = 0;
+@@ -316,8 +349,7 @@ static void serial_omap_start_tx(struct uart_port *port)
+ 	if (!up->use_dma) {
+ 		pm_runtime_get_sync(&up->pdev->dev);
+ 		serial_omap_enable_ier_thri(up);
+-		if (pdata && pdata->set_noidle)
+-			pdata->set_noidle(up->pdev);
++		serial_omap_set_noidle(up);
+ 		pm_runtime_mark_last_busy(&up->pdev->dev);
+ 		pm_runtime_put_autosuspend(&up->pdev->dev);
+ 		return;
+@@ -1648,28 +1680,26 @@ static int serial_omap_runtime_suspend(struct device *dev)
+ 	if (!up)
+ 		return -EINVAL;
+ 
+-	if (!pdata || !pdata->enable_wakeup)
++	if (!pdata)
+ 		return 0;
+ 
+-	if (pdata->get_context_loss_count)
+-		up->context_loss_cnt = pdata->get_context_loss_count(dev);
++	up->context_loss_cnt = serial_omap_get_context_loss_count(up);
+ 
+ 	if (device_may_wakeup(dev)) {
+ 		if (!up->wakeups_enabled) {
+-			pdata->enable_wakeup(up->pdev, true);
++			serial_omap_enable_wakeup(up, true);
+ 			up->wakeups_enabled = true;
+ 		}
+ 	} else {
+ 		if (up->wakeups_enabled) {
+-			pdata->enable_wakeup(up->pdev, false);
++			serial_omap_enable_wakeup(up, false);
+ 			up->wakeups_enabled = false;
+ 		}
+ 	}
+ 
+ 	/* Errata i291 */
+-	if (up->use_dma && pdata->set_forceidle &&
+-			(up->errata & UART_ERRATA_i291_DMA_FORCEIDLE))
+-		pdata->set_forceidle(up->pdev);
++	if (up->use_dma && (up->errata & UART_ERRATA_i291_DMA_FORCEIDLE))
++		serial_omap_set_forceidle(up);
+ 
+ 	up->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
+ 	schedule_work(&up->qos_work);
+@@ -1683,17 +1713,15 @@ static int serial_omap_runtime_resume(struct device *dev)
+ 	struct omap_uart_port_info *pdata = dev->platform_data;
+ 
+ 	if (up && pdata) {
+-		if (pdata->get_context_loss_count) {
+-			u32 loss_cnt = pdata->get_context_loss_count(dev);
++			u32 loss_cnt = serial_omap_get_context_loss_count(up);
+ 
+ 			if (up->context_loss_cnt != loss_cnt)
+ 				serial_omap_restore_context(up);
+-		}
+ 
+ 		/* Errata i291 */
+-		if (up->use_dma && pdata->set_noidle &&
+-				(up->errata & UART_ERRATA_i291_DMA_FORCEIDLE))
+-			pdata->set_noidle(up->pdev);
++		if ((up->errata & UART_ERRATA_i291_DMA_FORCEIDLE) &&
++				up->use_dma)
++			serial_omap_set_noidle(up);
+ 
+ 		up->latency = up->calc_latency;
+ 		schedule_work(&up->qos_work);
 -- 
 1.7.12.rc3
 
