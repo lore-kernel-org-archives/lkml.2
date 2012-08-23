@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab2HWKmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 06:42:20 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:40313 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933837Ab2HWKhj (ORCPT
+	id S933832Ab2HWKmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 06:42:37 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42537 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab2HWKmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 06:37:39 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: alan@linux.intel.com
-Cc: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 12/23] serial: omap: make sure to suspend device before remove
-Date: Thu, 23 Aug 2012 13:32:52 +0300
-Message-Id: <1345717983-18179-13-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.12.rc3
-In-Reply-To: <1345717983-18179-1-git-send-email-balbi@ti.com>
-References: <1345717983-18179-1-git-send-email-balbi@ti.com>
+	Thu, 23 Aug 2012 06:42:17 -0400
+Date: Thu, 23 Aug 2012 12:42:11 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        "3.2.x.." <stable@kernel.org>
+Subject: Re: [PATCH 01/10] alpha: Add missing RCU idle APIs on idle loop
+Message-ID: <20120823104201.GA18251@somewhere.redhat.com>
+References: <1345652628-15060-1-git-send-email-fweisbec@gmail.com>
+ <1345652628-15060-2-git-send-email-fweisbec@gmail.com>
+ <20120822171930.GE2447@linux.vnet.ibm.com>
+ <20120822173542.GD13674@somewhere>
+ <20120822190109.GH2447@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120822190109.GH2447@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-before removing the driver, let's make sure
-to force device into a suspended state in order
-to conserve power.
+On Wed, Aug 22, 2012 at 12:01:09PM -0700, Paul E. McKenney wrote:
+> > The current code is preemptable, at least it appears so because it calls
+> > schedule() directly. And if I call rcu_idle_enter() in a preemptable section,
+> > I'm in trouble because I'll schedule while in extended QS.
+> > 
+> > Thus I need to disable preemption here at least until I call rcu_idle_exit().
+> > 
+> > Now this is an endless loop so there is no need to re-enable
+> > preemption after the loop. And schedule_preempt_disabled()
+> > takes care of enabling preemption before schedule() and redisabling
+> > it afterward.
+> > 
+> > 
+> > > 
+> > > 							Thanx, Paul
+> > > 
+> > > >  	while (1) {
+> > > >  		/* FIXME -- EV6 and LCA45 know how to power down
+> > > >  		   the CPU.  */
+> > > > 
+> > > > +		rcu_idle_enter();
+> > > >  		while (!need_resched())
+> > > >  			cpu_relax();
+> > > > -		schedule();
+> > > > +		rcu_idle_exit();
+> > > > +		schedule_preempt_disabled();
+> > > >  	}
+> 
+> Understood, but what I don't understand is why you don't need a
+> preempt_enable() right here.
 
-Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/tty/serial/omap-serial.c | 1 +
- 1 file changed, 1 insertion(+)
+Look, let's inline the content of schedule_preempt_disabled(), the code
+then looks like:
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index 9581741..2df725b 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -1336,6 +1336,7 @@ static int serial_omap_remove(struct platform_device *dev)
- {
- 	struct uart_omap_port *up = platform_get_drvdata(dev);
- 
-+	pm_runtime_put_sync(up->dev);
- 	pm_runtime_disable(up->dev);
- 	uart_remove_one_port(&serial_omap_reg, &up->port);
- 	pm_qos_remove_request(&up->pm_qos_request);
--- 
-1.7.12.rc3
+void cpu_idle(void)
+{
+	set_thread_flag(TIF_POLLING_NRFLAG);
+
+	preempt_disable();
+	while (1) {
+		/* FIXME -- EV6 and LCA45 know how to power down
+		   the CPU.  */
+
+		rcu_idle_enter();
+		while (!need_resched())
+			cpu_relax();
+		rcu_idle_exit();
+
+		sched_preempt_enable_no_resched();
+	        schedule();
+	        preempt_disable();
+	}
+}
+
+So there is a preempt_enable() before we schedule, then we re-disable
+preemption after schedule.
+
+Now I realize cpu_idle() is supposed to be called with preemption disabled
+already so I shouldn't add an explicit preempt_disable() or it's going to be worse.
+But that means there is an existing bug here in alpha, it should call schedule_preempt_disabled()
+instead of schedule(). cpu_idle() is called with preemption disabled on the boot CPU.
+And it should as well from the secondary CPUs entry but alpha doesn't seem to do that.
+
+So I need to fix that first. I'll respin.
 
