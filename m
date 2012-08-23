@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030612Ab2HWP6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 11:58:22 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:54850 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932715Ab2HWP6T (ORCPT
+	id S934141Ab2HWP60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 11:58:26 -0400
+Received: from nm5.access.bullet.mail.mud.yahoo.com ([66.94.237.206]:33279
+	"HELO nm5.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1030605Ab2HWP6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 11:58:19 -0400
-X-IronPort-AV: E=Sophos;i="4.80,300,1344211200"; 
-   d="scan'208";a="14151319"
-Message-ID: <50364FE5.1070608@citrix.com>
-Date: Thu, 23 Aug 2012 16:44:37 +0100
-From: Attilio Rao <attilio.rao@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Thu, 23 Aug 2012 11:58:22 -0400
+X-Yahoo-Newman-Id: 366311.24195.bm@smtp109.biz.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: qb2RUUYVM1mM7d.7oTMIgCWYNihgftILQSyqPesR5GoWuW8
+ CKMtrBlv_a4cCH0J.WnqBEIkekp2PgasHxZu0Uq4t1E4rIpeIGIZHskz8c0x
+ IWua_evhMoj6rWaWdtK3liaP7.uXrg_UBwd2xkWum0bBLzgECOEXdbt64dsr
+ zQQ45KuknNHuBz64VuYyi3odhqjPVkJQY1lpqWJXa2DsDmPd_WHlXhjqcpOt
+ EUUMXh6fVA.TSLP2WxBLs8StiHpAq9IlkBBq.9GuUc0u2MpZyXQSsbhsm9px
+ xVucDMiR_YdG.EiAzoyBhLQR0ab8JlVYdY.T.Xy8qc0YwtzbbtwPMm1yk0GG
+ KfF3P5AOx2mZL9nk4Ak468WcliQzsXOY2iLptYG8UgLs6LXnclCiV5CSqnNY
+ mlYXizixjGNu_unWpz73SnkzV5CFx.MAc7XAJyQYyi5lWfX_L0IWycGimBB6
+ GtOys1euGL3pO3kn1dC4J.bgLH0mbGehRQ9jklNOVlXTKhv53PuGUW1g71JC
+ Ie0EiVV2xpahUrR80VK9GhvM-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <5036531A.7030207@schaufler-ca.com>
+Date: Thu, 23 Aug 2012 08:58:18 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v4 1/2] XEN/X86: Improve semantic support for x86_init.mapping.pagetable_reserve
-References: <1345648122-11935-1-git-send-email-attilio.rao@citrix.com> <1345648122-11935-2-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208231722040.2856@ionos>
-In-Reply-To: <alpine.LFD.2.02.1208231722040.2856@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: David Howells <dhowells@redhat.com>
+CC: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] Smack: setprocattr memory leak fix
+References: <50352873.9070706@schaufler-ca.com> <27988.1345726117@warthog.procyon.org.uk>
+In-Reply-To: <27988.1345726117@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/08/12 16:46, Thomas Gleixner wrote:
-> On Wed, 22 Aug 2012, Attilio Rao wrote:
+On 8/23/2012 5:48 AM, David Howells wrote:
+> Casey Schaufler <casey@schaufler-ca.com> wrote:
 >
->    
->> - Allow xen_mapping_pagetable_reserve() to handle a start different from
->>    pgt_buf_start, but still bigger than it.
->>      
-> What's the purpose of this and how is this going to be used and how is
-> it useful at all?
->    
+>> From: Casey Schaufler <casey@schaufler-ca.com>
+>> Subject: [PATCH] Smack: setprocattr memory leak fix
+>>
+>> The data structure allocations being done in prepare_creds
+>> are duplicated in smack_setprocattr. This results in the
+>> structure allocated in prepare_creds being orphaned and
+>> never freed. The duplicate code is removed from
+>> smack_setprocattr.
+>>
+>> Targeted for git://git.gitorious.org/smack-next/kernel.git
+>>
+>> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+> Acked-by: David Howells <dhowells@redhat.com>
 
-(Just replying here as all the other your comments are derivative)
-Looks like you are missing the whole point of the patch.
-What the patch is supposed to do is just to "enforce a correct semantic 
-for the setup function" and not fix an actual problem found in the code.
-This means that after the patch you know exactly what expect in terms of 
-semantic by the function and the callers will work following it.
+Thanks for the review.
 
-Otherwise, what could happen is that if one day for a reason or another 
-begin start being different from pgt_buf_start this function will just 
-break silently, reintroducing the original problem in a different form.
+> Note that I do have a patch to make Smack share rule lists - I've posted it a
+> number of times, but I take it you're not interested.
 
-I think this was clarified by the 0/2 but evidently you completely 
-missed it.
+The patch is a big chunk of code and the feature isn't getting
+used to the extent that the people who requested it seemed
+certain it would be. I don't see there being value in optimizing
+the per-task rule lists given the amount of use they get.
 
-Attilio
+>
+>   5707  06/13 [To:casey@schauf]  [PATCH 1/3] Smack: Constify some pointers<<Mak
+>   5708  06/13   [To:casey@schauf]  [PATCH 2/3] Smack: Further constification<<M
+>   5709  06/13   [To:casey@schauf]  [PATCH 3/3] Smack: Use rule list tail sharin
+>
+> David
+>
+
