@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab2HXUxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:53:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58552 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933522Ab2HXUxI (ORCPT
+	id S1030458Ab2HXUxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:53:25 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44306 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933522Ab2HXUxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:53:08 -0400
-Date: Fri, 24 Aug 2012 13:53:03 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>,
-        NeilBrown <neilb@suse.de>, Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Peter Osterlund <petero2@telia.com>, Sage Weil <sage@inktank.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH v6 11/13] block: Rework bio_pair_split()
-Message-ID: <20120824205303.GI21325@google.com>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-12-git-send-email-koverstreet@google.com>
- <20120822210410.GL19212@google.com>
- <20120824103049.GG11977@moria.home.lan>
+	Fri, 24 Aug 2012 16:53:18 -0400
+Message-ID: <5037E9D9.9000605@gmail.com>
+Date: Fri, 24 Aug 2012 22:53:45 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120824 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824103049.GG11977@moria.home.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-2-git-send-email-levinsasha928@gmail.com> <20120822180138.GA19212@google.com> <50357840.5020201@gmail.com> <20120823200456.GD14962@google.com> <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com> <5037E00B.6090606@gmail.com> <20120824203332.GF21325@google.com>
+In-Reply-To: <20120824203332.GF21325@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Aug 24, 2012 at 03:30:49AM -0700, Kent Overstreet wrote:
-> > I complained about this in the last posting and in the previous patch.
-> > Please respond.  Martin, are you okay with these integrity changes?
+On 08/24/2012 10:33 PM, Tejun Heo wrote:
+> Hello, Sasha.
 > 
-> I did respond. I said more before, but in short the old
-> bio_integrity_split() only worked for single page bios, and thus wasn't
-> useful even as a starting point.
+> On Fri, Aug 24, 2012 at 10:11:55PM +0200, Sasha Levin wrote:
+>>> If this implementation is about the common trivial case, why not just
+>>> have the usual DECLARE/DEFINE_HASHTABLE() combination?
+>>
+>> When we add the dynamic non-resizable support, how would DEFINE_HASHTABLE() look?
 > 
-> What my bio_split() does with the integrity is actually basically what
-> dm does (that's the only other place bio_integrity_trim()) is used).
+> Hmmm?  DECLARE/DEFINE are usually for static ones.
 
-And all those information should be in the patch description.  Imagine
-this patch hitting some enterprise deployment, say four years after
-now, and causing weird performance regression and someone succeeding
-to bisect it down to this commit.  None of us would be remembering
-much about this and could in fact be doing something completely
-different.  Patches should at least try to record its visible
-implications.
+Yup, but we could be using the same API for dynamic non-resizable and static if
+we go with the DECLARE/hash_init. We could switch between them (and other
+implementations) without having to change the code.
 
-This type of information should be always attached to the patch not
-only for future references but also to alert reviewers who aren't
-necessarily following the whole series and its iterations.
-
-> > Also, given that it's a pair split, it would be nice to somehow
-> > indicate that ->split is the earlier half.  Before this change it was
-> > pretty clear with ->bio1/2.
+>>> I don't know.  If we stick to the static (or even !resize dymaic)
+>>> straight-forward hash - and we need something like that - I don't see
+>>> what the full encapsulation buys us other than a lot of trivial
+>>> wrappers.
+>>
+>> Which macros do you consider as trivial within the current API?
+>>
+>> Basically this entire thing could be reduced to DEFINE/DECLARE_HASHTABLE and
+>> get_bucket(), but it would make the life of anyone who wants a slightly
+>> different hashtable a hell.
 > 
-> Fixed the comment to indicate that too.
-
-Any chance we can do that with field name?
-
-> commit 5db0562e43099d06ed9488e7ae6bf0a0cc6ef5da
-> Author: Kent Overstreet <koverstreet@google.com>
-> Date:   Fri Aug 24 03:27:24 2012 -0700
+> Wouldn't the following be enough to get most of the benefits?
 > 
->     block: Rework bio_pair_split()
->     
->     This changes bio_pair_split() to use the new bio_split() underneath.
->     
->     This has two user visible changes: First, it's not restricted to single
->     page bios anymore. Secondly, where before callers used bio1 and bio2 in
->     struct bio_pair, now they use split and orig - this being a result of
->     the new implementation.
->     
->     bio_integrity_split() is removed, as the old bio_pair_split() was the
->     only user; the new bio_split() uses bio_integrity_clone/trim much like
->     the dm code does.
+> * DECLARE/DEFINE
+> * hash_head()
+> * hash_for_each_head()
+> * hash_add*()
+> * hash_for_each_possible*()
+ * hash_for_each*() ?
 
-      "which may affect XXX in YYY cases but I think it's okay because ZZZ."
 
-If you aren't that sure,
+Why do we need hash_head/hash_for_each_head()? I haven't stumbled on a place yet
+that needed direct access to the bucket itself.
 
-      "which may affect AAA but I don't think that's a big deal
-       because BBB.  This definitely requires Martin's ack."
+Consider the following list:
 
-Thanks.
+ - DECLARE
+ - hash_init
+ - hash_add
+ - hash_del
+ - hash_hashed
+ - hash_for_each_[rcu, safe]
+ - hash_for_each_possible[rcu, safe]
 
--- 
-tejun
+This basically means 11 macros/functions that would let us have full
+encapsulation and will make it very easy for future implementations to work with
+this API instead of making up a new one. It's also not significantly (+~2-3)
+more than the ones you listed.
+
+>> I think that right now the only real trivial wrapper is hash_hashed(), and I
+>> think it's a price worth paying to have a single hashtable API instead of
+>> fragmenting it when more implementations come along.
+> 
+> I'm not objecting strongly against full encapsulation but having this
+> many thin wrappers makes me scratch my head.
+> 
+> Thanks.
+> 
+
