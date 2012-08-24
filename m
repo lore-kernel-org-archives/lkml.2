@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933316Ab2HXULf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:11:35 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51113 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933042Ab2HXULa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:11:30 -0400
-Message-ID: <5037E00B.6090606@gmail.com>
-Date: Fri, 24 Aug 2012 22:11:55 +0200
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120824 Thunderbird/14.0
+	id S933332Ab2HXUZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:25:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57063 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932668Ab2HXUZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 16:25:48 -0400
+Date: Fri, 24 Aug 2012 22:25:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Jones <davej@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+        wbrana <wbrana@gmail.com>, Martin Nybo Andersen <tweek@tweek.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Drop support for x86-32
+Message-ID: <20120824202544.GA23427@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dave Jones <davej@redhat.com>, Theodore Ts'o <tytso@mit.edu>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	"H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+	wbrana <wbrana@gmail.com>, Martin Nybo Andersen <tweek@tweek.dk>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+ <201208231814.21168.tweek@tweek.dk>
+ <CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
+ <CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
+ <5037C530.3000408@zytor.com>
+ <20120824185741.GC5094@thunk.org>
+ <20120824201358.0f086c9a@pyramind.ukuu.org.uk>
+ <20120824195856.GD5094@thunk.org>
+ <20120824200642.GA8543@redhat.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-2-git-send-email-levinsasha928@gmail.com> <20120822180138.GA19212@google.com> <50357840.5020201@gmail.com> <20120823200456.GD14962@google.com> <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com>
-In-Reply-To: <20120824195941.GC21325@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120824200642.GA8543@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2012 09:59 PM, Tejun Heo wrote:
-> Hello, Sasha.
+On Fri, Aug 24, 2012 at 04:06:42PM -0400, Dave Jones wrote:
+> On Fri, Aug 24, 2012 at 03:58:56PM -0400, Theodore Ts'o wrote:
 > 
-> On Fri, Aug 24, 2012 at 09:47:19PM +0200, Sasha Levin wrote:
->>> I think this is problematic.  It looks exactly like other existing
->>> DEFINE macros yet what its semantics is different.  I don't think
->>> that's a good idea.
->>
->> I can switch that to be DECLARE_HASHTABLE() if the issue is semantics.
+>  > BTW, it turns out I was wrong about Linux being used on Mars.
+>  > Apparently Linux was used on the Mars Global Surveyor, as well as the
+>  > Sprit and Opportunity rovers
 > 
-> If this implementation is about the common trivial case, why not just
-> have the usual DECLARE/DEFINE_HASHTABLE() combination?
+> citation? My recollection was that they were running VxWorks.
 
-When we add the dynamic non-resizable support, how would DEFINE_HASHTABLE() look?
+... on a "a radiation-hardened version of the IBM PowerPC 750." So no
+x86.
 
->>> So, I think it would be best to keep this one as straight-forward and
->>> trivial as possible.  Helper macros to help its users are fine but
->>> let's please not go for full encapsulation.
->>
->> What if we cut off the dynamic allocated (but not resizable) hashtable out for
->> the moment, and focus on the most common statically allocated hashtable case?
->>
->> The benefits would be:
->>
->>  - Getting rid of all the _size() macros, which will make the amount of helpers
->> here reasonable.
->>  - Dynamically allocated hashtable can be easily added as a separate
->> implementation using the same API. We already have some of those in the kernel...
-> 
-> It seems we have enough of this static usage and solving the static
-> case first shouldn't hinder the dynamic (!resize) case later, so,
-> yeah, sounds good to me.
-> 
->>  - When that's ready, I feel it's a shame to lose full encapsulation just due to
->> hash_hashed().
-> 
-> I don't know.  If we stick to the static (or even !resize dymaic)
-> straight-forward hash - and we need something like that - I don't see
-> what the full encapsulation buys us other than a lot of trivial
-> wrappers.
+http://www.pcmag.com/article2/0,2817,2408127,00.asp
 
-Which macros do you consider as trivial within the current API?
-
-Basically this entire thing could be reduced to DEFINE/DECLARE_HASHTABLE and
-get_bucket(), but it would make the life of anyone who wants a slightly
-different hashtable a hell.
-
-I think that right now the only real trivial wrapper is hash_hashed(), and I
-think it's a price worth paying to have a single hashtable API instead of
-fragmenting it when more implementations come along.
-
-Thanks,
-Sasha
-
-> 
-> Thanks.
-> 
-
+-- 
+Regards/Gruss,
+    Boris.
