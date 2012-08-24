@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2HXLxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 07:53:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43366 "EHLO
+	id S1755799Ab2HXL4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 07:56:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55238 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab2HXLxk (ORCPT
+	with ESMTP id S1753075Ab2HXL4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 07:53:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345214379.3708.29.camel@gandalf.local.home>
-References: <1345043907-18299-1-git-send-email-elezegarcia@gmail.com>
-	<1345151883.3708.7.camel@gandalf.local.home>
-	<CALF0-+WVoJ2NTPm7xZc0rr8-ZZ6an1BsN0SLtJvxzFd3CxA6bA@mail.gmail.com>
-	<1345211714.3708.24.camel@gandalf.local.home>
-	<CALF0-+VbJmAr0j-84sZM3Di2Ar-qAOn_SFuwW1sbd_-1hoojNg@mail.gmail.com>
-	<1345214379.3708.29.camel@gandalf.local.home>
-Date: Fri, 24 Aug 2012 08:53:39 -0300
-Message-ID: <CALF0-+XiJBVLRA2ja-JreDgfcrzgzcQJX+JjfB4kiHBgn2-M-g@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/1] trace: Move trace event enable from fs_initcall
- to early_initcall
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        tim.bird@am.sony.com, lizefan@huawei.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jason Baron <jbaron@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 24 Aug 2012 07:56:34 -0400
+Message-ID: <1345809391.3443.9.camel@ayu>
+Subject: [PATCH] i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
+From: Calvin Walton <calvin.walton@kepstin.ca>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Fri, 24 Aug 2012 07:56:31 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+This board is incorrectly detected as having an LVDS connector,
+resulting in the VGA output (the only available output on the board)
+showing the console only in the top-left 1024x768 pixels, and an extra
+LVDS connector appearing in X.
 
-On Fri, Aug 17, 2012 at 11:39 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> I don't think kmalloc is the issue. The big problem in front of you is
-> jump labels. That's what enables and disables trace points, and it gets
-> initialized just after memory is set up. You may have to force jump
-> labels off when doing early tracing :-/ Although I'm not sure it
-> requires allocations.
->
+It's a desktop Mini-ITX board using an Atom D525 CPU with an NM10
+chipset.
 
-Well, I wasn't thinking *that* early actually. So, I'm trying to enable tracing
-at some point after jump_labels (could be near perf_event_init).
+I've had this board for about a year, but this is the first time I
+noticed the issue because I've been running it headless for most of its
+life.
 
-Right now, the static ring buffer part is done and I'm having some
-problems copying this ring buffer into the *real* one.
+Signed-off-by: Calvin Walton <calvin.walton@kepstin.ca>
+---
 
-Mind giving me another hint?
+This board:
+http://www.gigabyte.us/products/product-page.aspx?pid=3549#sp
 
-Thanks a lot for your help so far,
-Ezequiel.
+If you want any additional debug output from this machine, let me know
+what you would like and how to find it.
+
+I think this patch would probably be a reasonable candidate for -stable?
+
+ drivers/gpu/drm/i915/intel_lvds.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 08eb04c..2c58310 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -777,6 +777,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "MS-7469"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Gigabyte GA-D525TUD",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
++		},
++	},
+ 
+ 	{ }	/* terminating entry */
+ };
+-- 
+1.7.12
+
+-- 
+Calvin Walton <calvin.walton@kepstin.ca>
+
