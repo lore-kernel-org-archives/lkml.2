@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030361Ab2HXUdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:33:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41160 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539Ab2HXUdk (ORCPT
+	id S933400Ab2HXUg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:36:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43350 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933296Ab2HXUg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:33:40 -0400
-Date: Fri, 24 Aug 2012 13:33:32 -0700
+	Fri, 24 Aug 2012 16:36:26 -0400
+Date: Fri, 24 Aug 2012 13:36:20 -0700
 From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
- hashtable
-Message-ID: <20120824203332.GF21325@google.com>
-References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com>
- <1345602432-27673-2-git-send-email-levinsasha928@gmail.com>
- <20120822180138.GA19212@google.com>
- <50357840.5020201@gmail.com>
- <20120823200456.GD14962@google.com>
- <5037DA47.9010306@gmail.com>
- <20120824195941.GC21325@google.com>
- <5037E00B.6090606@gmail.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>,
+        NeilBrown <neilb@suse.de>, Alasdair Kergon <agk@redhat.com>,
+        Jeff Garzik <jeff@garzik.org>
+Subject: Re: [PATCH v6 12/13] block: Add bio_clone_bioset(),
+ bio_clone_kmalloc()
+Message-ID: <20120824203620.GG21325@google.com>
+References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
+ <1345655050-28199-13-git-send-email-koverstreet@google.com>
+ <20120822210740.GM19212@google.com>
+ <20120824062418.GD11977@moria.home.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5037E00B.6090606@gmail.com>
+In-Reply-To: <20120824062418.GD11977@moria.home.lan>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Sasha.
+Hello,
 
-On Fri, Aug 24, 2012 at 10:11:55PM +0200, Sasha Levin wrote:
-> > If this implementation is about the common trivial case, why not just
-> > have the usual DECLARE/DEFINE_HASHTABLE() combination?
+On Thu, Aug 23, 2012 at 11:24:18PM -0700, Kent Overstreet wrote:
+> > I'd prefer simply adding @bioset to bio_clone() so that the caller
+> > always has to make the choice consciously.  We're updating all the
+> > callers anyway.
 > 
-> When we add the dynamic non-resizable support, how would DEFINE_HASHTABLE() look?
+> Possibly, but the btrfs code uses bio_clone() and there fs_bio_set may
+> be correct (will have to look at what it's doing, if it's cloning a bio
+> that was allocated out of fs_bio_set that would be bad..)
 
-Hmmm?  DECLARE/DEFINE are usually for static ones.
+Yeah, I think it's generally a good idea to require explicit bioset
+specification even if that ends up being fs_bio_set or NULL.
 
-> > I don't know.  If we stick to the static (or even !resize dymaic)
-> > straight-forward hash - and we need something like that - I don't see
-> > what the full encapsulation buys us other than a lot of trivial
-> > wrappers.
-> 
-> Which macros do you consider as trivial within the current API?
-> 
-> Basically this entire thing could be reduced to DEFINE/DECLARE_HASHTABLE and
-> get_bucket(), but it would make the life of anyone who wants a slightly
-> different hashtable a hell.
+> I would also prefer to simply drop bio_clone() so that
+> bio_clone_bioset() matches bio_alloc_bioset(), but regardless that'll
+> have to be a different patch (and I don't think I've had to update any
+> of the bio_clone() callers in this patch series anyways).
 
-Wouldn't the following be enough to get most of the benefits?
-
-* DECLARE/DEFINE
-* hash_head()
-* hash_for_each_head()
-* hash_add*()
-* hash_for_each_possible*()
-
-> I think that right now the only real trivial wrapper is hash_hashed(), and I
-> think it's a price worth paying to have a single hashtable API instead of
-> fragmenting it when more implementations come along.
-
-I'm not objecting strongly against full encapsulation but having this
-many thin wrappers makes me scratch my head.
+Ooh yeah, bio_clone_bioset() would be the better name for it.
 
 Thanks.
 
