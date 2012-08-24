@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2HXBMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:12:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63918 "EHLO mga03.intel.com"
+	id S1754553Ab2HXBMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:12:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4359 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754382Ab2HXBLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:11:18 -0400
+	id S1754401Ab2HXBLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 21:11:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="184254153"
+   d="scan'208";a="184254161"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v7 05/12] Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate can't be executed if CPU0 is detected offline. To make suspend or hibernate and further resume succeed, CPU0 must be online.
-Date: Thu, 23 Aug 2012 17:56:04 -0700
-Message-Id: <1345769771-27019-6-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v7 07/12] start_cpu0() is defined in head_32.S for 32-bit. The function sets up stack and jumps to start_secondary() for CPU0 wake up.
+Date: Thu, 23 Aug 2012 17:56:06 -0700
+Message-Id: <1345769771-27019-8-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
 References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
@@ -39,61 +39,32 @@ From: Fenghua Yu <fenghua.yu@intel.com>
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ arch/x86/kernel/head_32.S |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index 218cdb1..3338609 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -237,3 +237,47 @@ void restore_processor_state(void)
- #ifdef CONFIG_X86_32
- EXPORT_SYMBOL(restore_processor_state);
- #endif
-+
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index d42ab17..964f87a 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -266,6 +266,18 @@ num_subarch_entries = (. - subarch_entries) / 4
+ 	jmp default_entry
+ #endif /* CONFIG_PARAVIRT */
+ 
++#ifdef CONFIG_HOTPLUG_CPU
 +/*
-+ * When bsp_check() is called in hibernate and suspend, cpu hotplug
-+ * is disabled already. So it's unnessary to handle race condition between
-+ * cpumask query and cpu hotplug.
++ * Boot CPU0 entry point. It's called from play_dead(). Everything has been set
++ * up already except stack. We just set up stack here. Then call
++ * start_secondary().
 + */
-+static int bsp_check(void)
-+{
-+	if (cpumask_first(cpu_online_mask) != 0) {
-+		printk(KERN_WARNING "CPU0 is offline.\n");
-+		return -ENODEV;
-+	}
++ENTRY(start_cpu0)
++	movl stack_start, %ecx
++	movl %ecx, %esp
++	jmp  *(initial_code)
++#endif
 +
-+	return 0;
-+}
-+
-+static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
-+			   void *ptr)
-+{
-+	int ret = 0;
-+
-+	switch (action) {
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		ret = bsp_check();
-+		break;
-+	default:
-+		break;
-+	}
-+	return notifier_from_errno(ret);
-+}
-+
-+static int __init bsp_pm_check_init(void)
-+{
-+	/*
-+	 * Set this bsp_pm_callback as lower priority than
-+	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
-+	 * earlier to disable cpu hotplug before bsp online check.
-+	 */
-+	pm_notifier(bsp_pm_callback, -INT_MAX);
-+	return 0;
-+}
-+
-+core_initcall(bsp_pm_check_init);
+ /*
+  * Non-boot CPU entry point; entered from trampoline.S
+  * We can't lgdt here, because lgdt itself uses a data segment, but
 -- 
 1.7.2
 
