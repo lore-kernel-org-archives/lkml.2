@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758753Ab2HXKin (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 06:38:43 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:54670 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754737Ab2HXKil (ORCPT
+	id S1758601Ab2HXKmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 06:42:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53305 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab2HXKmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 06:38:41 -0400
+	Fri, 24 Aug 2012 06:42:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJ7jCmmLV1U0=zppoB8gfeh4f2KBmbcUR0GdvQ4AuHMHOMesMw@mail.gmail.com>
+In-Reply-To: <CAGa+R31TLGHDcJsG55jR8ofNDCFg7H+3+KYWaDXMJwPDZbn-6w@mail.gmail.com>
 References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
 	<201208231814.21168.tweek@tweek.dk>
 	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
@@ -20,24 +20,20 @@ References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
 	<CAJ7jCmkNUttzRJj9bvLiuKJyZWh7UYzhA25f4kwitoHWjwhAqA@mail.gmail.com>
 	<CAGa+R31cVDY9RHxyrYm-2HEDZSdMMZHcRvfZ88A9J-X9W5Hnmw@mail.gmail.com>
 	<CAJ7jCmmLV1U0=zppoB8gfeh4f2KBmbcUR0GdvQ4AuHMHOMesMw@mail.gmail.com>
-Date: Fri, 24 Aug 2012 22:38:40 +1200
-Message-ID: <CAGa+R31TLGHDcJsG55jR8ofNDCFg7H+3+KYWaDXMJwPDZbn-6w@mail.gmail.com>
+	<CAGa+R31TLGHDcJsG55jR8ofNDCFg7H+3+KYWaDXMJwPDZbn-6w@mail.gmail.com>
+Date: Fri, 24 Aug 2012 12:42:38 +0200
+Message-ID: <CAJ7jCmnXULdBHKPpqzd7aFF3D8QHF=KJ0pHpmgMPFZLdTUiKOA@mail.gmail.com>
 Subject: Re: Drop support for x86-32
-From: Ronnie Collinson <notthinking@gmail.com>
-To: wbrana <wbrana@gmail.com>
+From: wbrana <wbrana@gmail.com>
+To: Ronnie Collinson <notthinking@gmail.com>
 Cc: Brian Gerst <brgerst@gmail.com>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hes just told you what x32 is, if you dont understand that, you cant
-understand why its not a replacement for x32_64
-
-On 8/24/12, wbrana <wbrana@gmail.com> wrote:
-> On 8/24/12, Ronnie Collinson <notthinking@gmail.com> wrote:
->> Sort of the problem here, you dont understand what your talking about.
-> I understand what I'm talking about, but don't understand what Brian
-> Gerst is talking about.
->
+On 8/24/12, Ronnie Collinson <notthinking@gmail.com> wrote:
+> Hes just told you what x32 is, if you dont understand that, you cant
+> understand why its not a replacement for x32_64
+I know what is x32. x32 is replacement for x86-32, not x86-64.
