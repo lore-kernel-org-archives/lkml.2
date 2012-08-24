@@ -1,83 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab2HXCb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:31:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45646 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab2HXCbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:31:23 -0400
-Message-ID: <5036E773.6020609@gmail.com>
-Date: Fri, 24 Aug 2012 10:31:15 +0800
-From: wujianguo <wujianguo106@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1757940Ab2HXCcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 22:32:21 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:53713 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757918Ab2HXCbq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 22:31:46 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Petr Tesarik <ptesarik@suse.cz>
-CC: tony.luck@intel.com, fenghua.yu@intel.com, dhowells@redhat.com,
-        tj@kernel.org, mgorman@suse.de, yinghai@kernel.org,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, aarcange@redhat.com, davem@davemloft.net,
-        hannes@cmpxchg.org, liuj97@gmail.com, wency@cn.fujitsu.com,
-        rientjes@google.com, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jiang.liu@huawei.com, guohanjun@huawei.com,
-        qiuxishi@huawei.com
-Subject: Re: [PATCH]mm: fix-up zone present pages
-References: <5031DB52.9030806@gmail.com> <201208210555.41312.ptesarik@suse.cz>
-In-Reply-To: <201208210555.41312.ptesarik@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <1341767726-25630-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1341767726-25630-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+Message-ID: <20120824023135.4547.2534@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH 1/1] clk: add DT support for clock gating control
+Date: Thu, 23 Aug 2012 19:31:35 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-8-21 11:55, Petr Tesarik wrote:
-> Dne Po 20. srpna 2012 08:38:10 wujianguo napsal(a):
->> From: Jianguo Wu <wujianguo@huawei.com>
->>
->> Hi all,
->> 	I think zone->present_pages indicates pages that buddy system can
->> management, it should be:
->> 	zone->present_pages = spanned pages - absent pages - bootmem pages,
->> but now:
->> 	zone->present_pages = spanned pages - absent pages - memmap pages.
->> spanned pages：total size, including holes.
->> absent pages: holes.
->> bootmem pages: pages used in system boot, managed by bootmem allocator.
->> memmap pages: pages used by page structs.
+Quoting Sebastian Hesselbarth (2012-07-08 10:15:26)
+> This patch adds support for using clock gates (clk-gate) from DT based
+> on Rob Herrings DT clk binding support for 3.6.
 > 
-> Absolutely. The memory allocated to page structs should be counted in.
+> It adds a helper function to clk-gate to allocate all resources required by
+> a set of individual clock gates, i.e. register base address and lock. Each
+> clock gate is described as a child of the clock-gating-control in DT and
+> also created by the helper function.
 > 
 
-Hi Petr,
-	Bootmem pages include the memory allocated to page structs.
+Hi Sebastian,
 
-Thanks!
-Jianguo Wu
+Thanks for submitting this.  I'd prefer for Rob or someone with a more vested
+interest in DT to review your binding.  I have some comments on the code below.
 
->> This may cause zone->present_pages less than it should be.
->> For example, numa node 1 has ZONE_NORMAL and ZONE_MOVABLE,
->> it's memmap and other bootmem will be allocated from ZONE_MOVABLE,
->> so ZONE_NORMAL's present_pages should be spanned pages - absent pages,
->> but now it also minus memmap pages(free_area_init_core), which are actually
->> allocated from ZONE_MOVABLE. When offline all memory of a zone, This will
->> cause zone->present_pages less than 0, because present_pages is unsigned
->> long type, it is actually a very large integer, it indirectly caused
->> zone->watermark[WMARK_MIN] become a large
->> integer(setup_per_zone_wmarks()), than cause totalreserve_pages become a
->> large integer(calculate_totalreserve_pages()), and finally cause memory
->> allocating failure when fork process(__vm_enough_memory()).
->>
->> [root@localhost ~]# dmesg
->> -bash: fork: Cannot allocate memory
->>
->> I think bug described in http://marc.info/?l=linux-mm&m=134502182714186&w=2
->> is also caused by wrong zone present pages.
-> 
-> And yes, I can confirm that the bug I reported is caused by a too low number 
-> for the present pages counter. Your patch does fix the bug for me.
-> 
-> Thanks!
-> Petr Tesarik
-> 
+<snip>
+> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+> index 578465e..1e88907 100644
+> --- a/drivers/clk/clk-gate.c
+> +++ b/drivers/clk/clk-gate.c
+> @@ -15,6 +15,9 @@
+>  #include <linux/io.h>
+>  #include <linux/err.h>
+>  #include <linux/string.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_platform.h>
+>  
+>  /**
+>   * DOC: basic gatable clock which can gate and ungate it's ouput
+> @@ -148,3 +151,84 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+>  
+>         return clk;
+>  }
+> +
+> +#ifdef CONFIG_OF
+> +/**
+> + * of_clock_gating_control_setup() - Setup function for clock gate control
+> + *   This is a helper for using clk-gate from OF device tree. It allocates
+> + *   a common lock for a base register and creates the individual clk-gates.
+> + */
+> +void __init of_clock_gating_control_setup(struct device_node *np)
+> +{
+> +       struct device_node *child;
+> +       const char *pclk_name;
+> +       void __iomem *base;
+> +       spinlock_t *lockp;
+> +       unsigned int rnum;
+> +       u64 addr;
+> +
+> +       pclk_name = of_clk_get_parent_name(np, 0);
+> +       if (!pclk_name) {
+> +               pr_debug("%s: unable to get parent clock for %s\n",
+> +                       __func__, np->full_name);
+> +               return;
+> +       }
+> +
+> +       lockp = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
+> +       if (!lockp) {
+> +               pr_debug("%s: unable to allocate spinlock for %s\n",
+> +                        __func__, np->full_name);
+> +               return;
+> +       }
+> +
+> +       spin_lock_init(lockp);
 
+The spinlocks for the basic clock types have always been optional.  This
+code should reflect that and not assume the spinlock.
+
+Also I wonder if the assumption is true that a single spinlock
+corresponding to a device_node is always the right thing for every
+platform.  What about a 32-bit register that contains some gating bits
+and a 3-bit wide field for a mux which we perform read-modify-write
+operations on?
+
+You'll have to pardon my DT ignorance.  My concerns above may be totally
+crazy with respect to DT.
+
+> +       base = of_iomap(np, 0);
+> +       rnum = sizeof(resource_size_t) * 8;
+> +       addr = of_translate_address(np, of_get_property(np, "reg", NULL));
+> +
+> +       pr_debug("create clock gate control %s\n", np->full_name);
+
+There are some inconsistent prints here.  How about leading this trace
+with a __func__ like you do below for the error messages?
+
+> +
+> +       for_each_child_of_node(np, child) {
+> +               struct clk *cg;
+> +               const char *cg_name;
+> +               const char *cg_pclk_name;
+> +               u32 propval[2];
+> +               unsigned int rbit;
+> +
+> +               if (of_property_read_u32_array(child, "reg", propval, 2)) {
+> +                       pr_debug("%s: wrong #reg on %s\n",
+> +                                __func__, child->full_name);
+> +                       continue;
+> +               }
+> +
+> +               rbit = propval[0];
+> +               if (rbit >= rnum) {
+> +                       pr_debug("%s: bit position of %s exceeds resources\n",
+> +                                __func__, child->full_name);
+> +                       continue;
+> +               }
+> +
+> +               cg_pclk_name = of_clk_get_parent_name(child, 0);
+> +               if (!pclk_name)
+> +                       cg_pclk_name = pclk_name;
+
+!pclk_name would have caused an early return above, so this conditional
+will never evaluate as true.  Even if it did, I'm not sure I follow the
+logic.  Why set cg_pclk_name to NULL if pclk_name is NULL?
+
+> +
+> +               if (of_property_read_string(child, "clock-output-names",
+> +                                           &cg_name)) {
+> +                       unsigned int nlen = 4 + 16 + strlen(child->name);
+> +                       char *name = kzalloc(nlen+1, GFP_KERNEL);
+> +                       if (!name)
+> +                               continue;
+> +                       snprintf(name, nlen, "%u@%llx.%s", rbit,
+> +                                (unsigned long long)addr, child->name);
+> +                       cg_name = name;
+> +               }
+> +
+> +               pr_debug("  create clock gate: %s\n", cg_name);
+
+Extra whitespace typo?  Again, would be nice to lead this trace with a
+__func__ string.
+
+> +
+> +               cg = clk_register_gate(NULL, cg_name, cg_pclk_name, 0,
+> +                                      base, rbit, propval[1], lockp);
+> +               if (cg)
+> +                       of_clk_add_provider(child, of_clk_src_simple_get, cg);
+
+Need to check if clk_register_gate fails and do memory leak cleanup of
+name and maybe lockp for the corner case where none of the clock
+registration operations succeed.
+
+Regards,
+Mike
