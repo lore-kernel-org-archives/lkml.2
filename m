@@ -1,151 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759755Ab2HXQHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:07:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38954 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759716Ab2HXQHI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:07:08 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [PATCH 1/2] slub: rename cpu_partial to max_cpu_object
-Date: Sat, 25 Aug 2012 01:05:02 +0900
-Message-Id: <1345824303-30292-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <Yes>
-References: <Yes>
+	id S1759747Ab2HXQIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:08:53 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:51871 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755831Ab2HXQIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 12:08:50 -0400
+Date: Fri, 24 Aug 2012 18:08:38 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        andi@firstfloor.org
+Subject: Re: [PATCH] perf/x86: fix microcode revision check for SNB-PEBS
+Message-ID: <20120824160838.GC2297@aftab.osrc.amd.com>
+References: <20120824133434.GA8014@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824133434.GA8014@quad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu_partial of kmem_cache struct is a bit awkward.
+On Fri, Aug 24, 2012 at 03:34:34PM +0200, Stephane Eranian wrote:
+> 
+> The following patch, relative to 3.6.0-rc3, makes
+> the microcode update code path actually invoke the
+> perf_check_microcode() function and thus potentially
+> renabling SNB PEBS.
+> 
+> By default, CONFIG_MICROCODE_OLD_INTERFACE is
+> forced to Y in arch/x86/Kconfig. There is no
+> way to disable this. That means that the code
+> path used in arch/x86/kernel/microcode_core.c
+> did not include the call to perf_check_microcode().
+> 
+> Thus, even though the microcode was updated to a
+> version that fixes the SNB PEBS problem, perf_event
+> would still return EOPNOTSUPP when enabling precise
+> sampling.
+> 
+> This patch simply adds a call to perf_check_microcode()
+> in the call path used when OLD_INTERFACE=y.
 
-It means the maximum number of objects kept in the per cpu slab
-and cpu partial lists of a processor. However, current name
-seems to represent objects kept in the cpu partial lists only.
-So, this patch renames it.
+Ok, so c93dc84cbe324 added calls to perf_check_microcode but it looks
+like you're updating the microcode from /dev/cpu/microcode, correct?
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
+And if so, the old interface got missed.
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index df448ad..9130e6b 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -84,7 +84,7 @@ struct kmem_cache {
- 	int size;		/* The size of an object including meta data */
- 	int object_size;	/* The size of an object without meta data */
- 	int offset;		/* Free pointer offset. */
--	int cpu_partial;	/* Number of per cpu partial objects to keep around */
-+	int max_cpu_object;	/* Number of per cpu objects to keep around */
- 	struct kmem_cache_order_objects oo;
- 
- 	/* Allocation and freeing of slabs */
-diff --git a/mm/slub.c b/mm/slub.c
-index c67bd0a..d597530 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1565,7 +1565,7 @@ static void *get_partial_node(struct kmem_cache *s,
- 			available = put_cpu_partial(s, page, 0);
- 			stat(s, CPU_PARTIAL_NODE);
- 		}
--		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
-+		if (kmem_cache_debug(s) || available > s->max_cpu_object / 2)
- 			break;
- 
- 	}
-@@ -1953,7 +1953,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 		if (oldpage) {
- 			pobjects = oldpage->pobjects;
- 			pages = oldpage->pages;
--			if (drain && pobjects > s->cpu_partial) {
-+			if (drain && pobjects > s->max_cpu_object) {
- 				unsigned long flags;
- 				/*
- 				 * partial array is full. Move the existing
-@@ -3073,8 +3073,8 @@ static int kmem_cache_open(struct kmem_cache *s,
- 	set_min_partial(s, ilog2(s->size) / 2);
- 
- 	/*
--	 * cpu_partial determined the maximum number of objects kept in the
--	 * per cpu partial lists of a processor.
-+	 * max_cpu_object determined the maximum number of objects kept in the
-+	 * per cpu slab and cpu partial lists of a processor.
- 	 *
- 	 * Per cpu partial lists mainly contain slabs that just have one
- 	 * object freed. If they are used for allocation then they can be
-@@ -3085,20 +3085,20 @@ static int kmem_cache_open(struct kmem_cache *s,
- 	 *
- 	 * A) The number of objects from per cpu partial slabs dumped to the
- 	 *    per node list when we reach the limit.
--	 * B) The number of objects in cpu partial slabs to extract from the
--	 *    per node list when we run out of per cpu objects. We only fetch 50%
--	 *    to keep some capacity around for frees.
-+	 * B) The number of objects in cpu slab and cpu partial lists to
-+	 *    extract from the per node list when we run out of per cpu objects.
-+	 *    We only fetch 50% to keep some capacity around for frees.
- 	 */
- 	if (kmem_cache_debug(s))
--		s->cpu_partial = 0;
-+		s->max_cpu_object = 0;
- 	else if (s->size >= PAGE_SIZE)
--		s->cpu_partial = 2;
-+		s->max_cpu_object = 2;
- 	else if (s->size >= 1024)
--		s->cpu_partial = 6;
-+		s->max_cpu_object = 6;
- 	else if (s->size >= 256)
--		s->cpu_partial = 13;
-+		s->max_cpu_object = 13;
- 	else
--		s->cpu_partial = 30;
-+		s->max_cpu_object = 30;
- 
- 	s->refcount = 1;
- #ifdef CONFIG_NUMA
-@@ -4677,12 +4677,12 @@ static ssize_t min_partial_store(struct kmem_cache *s, const char *buf,
- }
- SLAB_ATTR(min_partial);
- 
--static ssize_t cpu_partial_show(struct kmem_cache *s, char *buf)
-+static ssize_t max_cpu_object_show(struct kmem_cache *s, char *buf)
- {
--	return sprintf(buf, "%u\n", s->cpu_partial);
-+	return sprintf(buf, "%u\n", s->max_cpu_object);
- }
- 
--static ssize_t cpu_partial_store(struct kmem_cache *s, const char *buf,
-+static ssize_t max_cpu_object_store(struct kmem_cache *s, const char *buf,
- 				 size_t length)
- {
- 	unsigned long objects;
-@@ -4694,11 +4694,11 @@ static ssize_t cpu_partial_store(struct kmem_cache *s, const char *buf,
- 	if (objects && kmem_cache_debug(s))
- 		return -EINVAL;
- 
--	s->cpu_partial = objects;
-+	s->max_cpu_object = objects;
- 	flush_all(s);
- 	return length;
- }
--SLAB_ATTR(cpu_partial);
-+SLAB_ATTR(max_cpu_object);
- 
- static ssize_t ctor_show(struct kmem_cache *s, char *buf)
- {
-@@ -5103,7 +5103,7 @@ static struct attribute *slab_attrs[] = {
- 	&objs_per_slab_attr.attr,
- 	&order_attr.attr,
- 	&min_partial_attr.attr,
--	&cpu_partial_attr.attr,
-+	&max_cpu_object_attr.attr,
- 	&objects_attr.attr,
- 	&objects_partial_attr.attr,
- 	&partial_attr.attr,
+Oh well, as long as we have to support it, we might as well add that
+perf call there - it will go when the interface goes anyway so until
+then:
+
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+> 
+> --- a/arch/x86/kernel/microcode_core.c
+> +++ b/arch/x86/kernel/microcode_core.c
+> @@ -225,6 +225,9 @@ static ssize_t microcode_write(struct file *file, const char __user *buf,
+>  	if (do_microcode_update(buf, len) == 0)
+>  		ret = (ssize_t)len;
+>  
+> +	if (ret > 0)
+> +		perf_check_microcode();
+> +
+>  	mutex_unlock(&microcode_mutex);
+>  	put_online_cpus();
+>  
+> 
+
+Thanks.
+
 -- 
-1.7.9.5
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
