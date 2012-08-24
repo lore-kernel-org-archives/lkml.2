@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758588Ab2HXJgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 05:36:13 -0400
-Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:50139 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543Ab2HXJgJ (ORCPT
+	id S1758262Ab2HXJhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 05:37:11 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55818 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab2HXJhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 05:36:09 -0400
-Message-ID: <50374B69.3040002@laposte.net>
-Date: Fri, 24 Aug 2012 11:37:45 +0200
-From: Yann Cantin <yann.cantin@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
+	Fri, 24 Aug 2012 05:37:03 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q7O9aLsU002795, This message is released by code: ctaloc0852
+From: <wei_wang@realsil.com.cn>
+To: <gregkh@linuxfoundation.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <cjb@laptop.org>, <arnd@arndb.de>, <sameo@linux.intel.com>
+CC: <bp@alien8.de>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v4 0/2] Add modules to support realtek PCIE card reader
+Date: Fri, 24 Aug 2012 17:36:21 +0800
+Message-ID: <cover.1345620826.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH v4 2/2] input: misc: New USB eBeam input driver.
-References: <1345673514-11575-1-git-send-email-yann.cantin@laposte.net> <1345673514-11575-3-git-send-email-yann.cantin@laposte.net> <1368810.q4rGz16CTW@linux-lqwf.site>
-In-Reply-To: <1368810.q4rGz16CTW@linux-lqwf.site>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-Le 23/08/2012 09:23, Oliver Neukum a écrit :
-> On Thursday 23 August 2012 00:11:54 Yann Cantin wrote:
->> +static int ebeam_resume(struct usb_interface *intf)
->> +{
->> +       struct ebeam_device *ebeam = usb_get_intfdata(intf);
->> +       struct input_dev *input = ebeam->input;
->> +       int result = 0;
->> +
->> +       mutex_lock(&input->mutex);
->> +       if (input->users)
->> +               result = usb_submit_urb(ebeam->irq, GFP_NOIO);
->> +       mutex_unlock(&input->mutex);
->> +
->> +       return result;
->> +}
->> +
->> +static int ebeam_reset_resume(struct usb_interface *intf)
->> +{
->> +       struct ebeam_device *ebeam = usb_get_intfdata(intf);
->> +       struct input_dev *input = ebeam->input;
->> +       int err = 0;
->> +
->> +       /* restart IO if needed */
->> +       mutex_lock(&input->mutex);
->> +       if (input->users)
->> +               err = usb_submit_urb(ebeam->irq, GFP_NOIO);
->> +       mutex_unlock(&input->mutex);
->> +
->> +       return err;
->> +}
-> 
-> These functions are identical. You should unify them.
+Support for Realtek PCI-Express driver-based card readers including rts5209 and rts5229.
 
-Removed reset_resume from the driver (optional, and not needed
-for this hardware).
+v2:
+1. Using platform device to replace realtek slot bus
 
-Thanks.
+v3:
+1. Fix a bug that DMA out of SW-IOMMU space in Lenovo Thinkpad x121e
+2. Tested by Borislav Petkov <bp@alien8.de>
+
+v4:
+1. Fulfill power management callbacks
+
+Wei WANG (2):
+  drivers/mfd: Add realtek pcie card reader driver
+  drivers/mmc: Add realtek pcie sdmmc host driver
+
+ drivers/mfd/Kconfig               |    9 +
+ drivers/mfd/Makefile              |    4 +
+ drivers/mfd/rts5209.c             |  104 +++
+ drivers/mfd/rts5229.c             |  119 ++++
+ drivers/mfd/rtsx_pcr.c            | 1314 +++++++++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.h            |   31 +
+ drivers/mmc/host/Kconfig          |    7 +
+ drivers/mmc/host/Makefile         |    2 +
+ drivers/mmc/host/rtsx_pci_sdmmc.c | 1378 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/rtsx_common.h   |   47 ++
+ include/linux/mfd/rtsx_pci.h      |  690 +++++++++++++++++++
+ 11 files changed, 3705 insertions(+)
+ create mode 100644 drivers/mfd/rts5209.c
+ create mode 100644 drivers/mfd/rts5229.c
+ create mode 100644 drivers/mfd/rtsx_pcr.c
+ create mode 100644 drivers/mfd/rtsx_pcr.h
+ create mode 100644 drivers/mmc/host/rtsx_pci_sdmmc.c
+ create mode 100644 include/linux/mfd/rtsx_common.h
+ create mode 100644 include/linux/mfd/rtsx_pci.h
 
 -- 
-Yann Cantin
-A4FEB47F
---
+1.7.9.5
+
