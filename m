@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab2HXLwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 07:52:38 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6353 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab2HXLwb convert rfc822-to-8bit (ORCPT
+	id S1756196Ab2HXLxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 07:53:44 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43366 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2HXLxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 07:52:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 24 Aug 2012 04:52:06 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>
-Date: Fri, 24 Aug 2012 13:52:00 +0200
-Subject: Re: [v3 1/4] ARM: dma-mapping: atomic_pool with struct page **pages
-Thread-Topic: [v3 1/4] ARM: dma-mapping: atomic_pool with struct page **pages
-Thread-Index: Ac2B7t/Rw3DAj1KmRFC3t/i1MGI/Mg==
-Message-ID: <20120824.145200.843951079622652894.hdoyu@nvidia.com>
-References: <1345796945-21115-1-git-send-email-hdoyu@nvidia.com><1345796945-21115-2-git-send-email-hdoyu@nvidia.com><20120824111323.GB11007@konrad-lan.dumpdata.com>
-In-Reply-To: <20120824111323.GB11007@konrad-lan.dumpdata.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Fri, 24 Aug 2012 07:53:40 -0400
 MIME-Version: 1.0
+In-Reply-To: <1345214379.3708.29.camel@gandalf.local.home>
+References: <1345043907-18299-1-git-send-email-elezegarcia@gmail.com>
+	<1345151883.3708.7.camel@gandalf.local.home>
+	<CALF0-+WVoJ2NTPm7xZc0rr8-ZZ6an1BsN0SLtJvxzFd3CxA6bA@mail.gmail.com>
+	<1345211714.3708.24.camel@gandalf.local.home>
+	<CALF0-+VbJmAr0j-84sZM3Di2Ar-qAOn_SFuwW1sbd_-1hoojNg@mail.gmail.com>
+	<1345214379.3708.29.camel@gandalf.local.home>
+Date: Fri, 24 Aug 2012 08:53:39 -0300
+Message-ID: <CALF0-+XiJBVLRA2ja-JreDgfcrzgzcQJX+JjfB4kiHBgn2-M-g@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/1] trace: Move trace event enable from fs_initcall
+ to early_initcall
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        tim.bird@am.sony.com, lizefan@huawei.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jason Baron <jbaron@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote @ Fri, 24 Aug 2012 13:13:23 +0200:
+Hi Steven,
 
-> On Fri, Aug 24, 2012 at 11:29:02AM +0300, Hiroshi Doyu wrote:
-> > struct page **pages is necessary to align with non atomic path in
-> > __iommu_get_pages(). atomic_pool() has the intialized **pages instead
-> > of just *page.
-> > 
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > ---
-> >  arch/arm/mm/dma-mapping.c |   17 +++++++++++++----
-> >  1 files changed, 13 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> > index 601da7a..b14ee64 100644
-> > --- a/arch/arm/mm/dma-mapping.c
-> > +++ b/arch/arm/mm/dma-mapping.c
-> > @@ -296,7 +296,7 @@ struct dma_pool {
-> >  	unsigned long *bitmap;
-> >  	unsigned long nr_pages;
-> >  	void *vaddr;
-> > -	struct page *page;
-> > +	struct page **pages;
-> >  };
-> >  
-> >  static struct dma_pool atomic_pool = {
-> > @@ -335,12 +335,16 @@ static int __init atomic_pool_init(void)
-> >  	unsigned long nr_pages = pool->size >> PAGE_SHIFT;
-> >  	unsigned long *bitmap;
-> >  	struct page *page;
-> > +	struct page **pages;
-> >  	void *ptr;
-> >  	int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
-> > +	size_t size = nr_pages * sizeof(struct page *);
-> >  
-> > -	bitmap = kzalloc(bitmap_size, GFP_KERNEL);
-> > +	size += bitmap_size;
-> > +	bitmap = kzalloc(size, GFP_KERNEL);
-> >  	if (!bitmap)
-> >  		goto no_bitmap;
-> > +	pages = (void *)bitmap + bitmap_size;
-> 
-> So you stuck a bitmap field in front of the array then?
-> Why not just define a structure where this is clearly defined
-> instead of doing the casting.
+On Fri, Aug 17, 2012 at 11:39 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> I don't think kmalloc is the issue. The big problem in front of you is
+> jump labels. That's what enables and disables trace points, and it gets
+> initialized just after memory is set up. You may have to force jump
+> labels off when doing early tracing :-/ Although I'm not sure it
+> requires allocations.
+>
 
-I just wanted to allocate only once for the members "pool->bitmap" and
-"pool->pages" at once. Since the size of a whole bitmap isn't known in
-advance, I couldn't find any fixed type for this bitmap, which pointer
-can be shifted without casting. IOW, they are variable length.
+Well, I wasn't thinking *that* early actually. So, I'm trying to enable tracing
+at some point after jump_labels (could be near perf_event_init).
+
+Right now, the static ring buffer part is done and I'm having some
+problems copying this ring buffer into the *real* one.
+
+Mind giving me another hint?
+
+Thanks a lot for your help so far,
+Ezequiel.
