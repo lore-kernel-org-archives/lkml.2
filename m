@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab2HXNTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 09:19:34 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42515 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2HXNTa (ORCPT
+	id S1759450Ab2HXNUq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 09:20:46 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:18186 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab2HXNUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 09:19:30 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
-        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        Tomasz Stanislawski <t.stanislaws@samsung.local>
-Subject: Re: [PATCH 2/3] [media] videobuf2-dma-streaming: new videobuf2 memory allocator
-Date: Fri, 24 Aug 2012 15:23:09 +0200
-Message-ID: <1417436.RHVOLNlTxk@harkonnen>
-User-Agent: KMail/4.8.5 (Linux/3.5.2-3.fc17.x86_64; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <02f301cd7eaa$4fa7a7a0$eef6f6e0$%szyprowski@samsung.com>
-References: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com> <1343765829-6006-3-git-send-email-federico.vaga@gmail.com> <02f301cd7eaa$4fa7a7a0$eef6f6e0$%szyprowski@samsung.com>
+	Fri, 24 Aug 2012 09:20:43 -0400
+X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QOb9J0FJuBIaYwpbJL5Q==
+X-RZG-CLASS-ID: mo05
+Message-ID: <50377E38.1040701@denx.de>
+Date: Fri, 24 Aug 2012 15:14:32 +0200
+From: Stefan Roese <sr@denx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: dedekind1@gmail.com
+CC: Julia Lawall <Julia.Lawall@lip6.fr>, Shiraz Hashim <shiraz.hashim@st.com>,
+        David Woodhouse <dwmw2@infradead.org>, kernel-janitors@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/mtd/devices/spear_smi.c: use devm_ functions
+ consistently
+References: <1344112598-1051-1-git-send-email-Julia.Lawall@lip6.fr> <1345808104.2848.285.camel@sauron.fi.intel.com>
+In-Reply-To: <1345808104.2848.285.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Getting back to your patch - in your approach cpu cache handling is
-> missing. I suspect that it worked fine only because it has been
-> tested on some simple platform without any cpu caches (or with very
-> small ones).
+On 08/24/2012 01:35 PM, Artem Bityutskiy wrote:
+>> @@ -1073,21 +1043,13 @@ static int __devexit spear_smi_remove(struct platform_device *pdev)
+>>  		ret = mtd_device_unregister(&flash->mtd);
+>>  		if (ret)
+>>  			dev_err(&pdev->dev, "error removing mtd\n");
+>> -
+>> -		iounmap(flash->base_addr);
+>> -		kfree(flash);
+>>  	}
+>>  
+>>  	irq = platform_get_irq(pdev, 0);
+>> -	free_irq(irq, dev);
+> 
+> I guess 'platform_get_irq()' should be killed as well? Stefan, this is
+> strange code - we get irq, without checking for error, and then free it?
+> What is the rationale?
 
-Is missing from the memory allocator because I do it on the device 
-driver. The current operations don't allow me to do that in the memory 
-allocator.
+Yes, this seems bogus. platform_get_irq() definitely should be removed
+from spear_smi_remove().
 
+>>  	clk_disable_unprepare(dev->clk);
+>> -	clk_put(dev->clk);
+>> -	iounmap(dev->io_base);
+>> -	kfree(dev);
+>>  
+>>  	smi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> -	release_mem_region(smi_base->start, resource_size(smi_base));
+>>  	platform_set_drvdata(pdev, NULL);
+> 
+> Why do we set platform data to NULL, is this needed?
 
-> Please check the following thread:
-> http://www.spinics.net/lists/linux-media/msg51768.html where Tomasz
-> has posted his ongoing effort on updating and extending videobuf2 and
-> dma-contig allocator. Especially the patch
-> http://www.spinics.net/lists/linux-media/msg51776.html will be
-> interesting for you, because cpu cache synchronization
-> (dma_sync_single_for_device / dma_sync_single_for_cpu) should be
-> called from prepare/finish callbacks.
+It seems to be common practice to use this call to clear the drvdata in
+the driver remove function. I have to admit, that I'm not sure if its
+really needed though.
 
-You are right, it is interesting because avoid me to use cache sync in 
-my driver. Can I work on these patches?
-
->From this page I understand that these patches are not approved yet
-https://patchwork.kernel.org/project/linux-media/list/?page=2
-
--- 
-Federico Vaga
+Thanks,
+Stefan
