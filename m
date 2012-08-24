@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760016Ab2HXS7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:59:39 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:47576 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab2HXS7e (ORCPT
+	id S1759881Ab2HXTEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 15:04:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53704 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab2HXTEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:59:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208242035.38733.tweek@tweek.dk>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208241952.04988.tweek@tweek.dk>
-	<CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
-	<201208242035.38733.tweek@tweek.dk>
-Date: Fri, 24 Aug 2012 20:59:33 +0200
-Message-ID: <CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Martin Nybo Andersen <tweek@tweek.dk>
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 24 Aug 2012 15:04:04 -0400
+Message-ID: <1345835040.3443.22.camel@ayu>
+Subject: Re: "Trapping" hard drive errors ( "ata***** failed command: READ
+ FPDMA QUEUED")
+From: Calvin Walton <calvin.walton@kepstin.ca>
+To: Mouse Dresden <mouse.the.lucky.dog@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 24 Aug 2012 15:04:00 -0400
+In-Reply-To: <CAOA0mo_-b3=mn5hKBE1S5s7_2tsnV42bFSe9v9Uj-Vmk4s54rQ@mail.gmail.com>
+References: <CAOA0mo_-b3=mn5hKBE1S5s7_2tsnV42bFSe9v9Uj-Vmk4s54rQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
-> I want to use *my* old machines (hey, I payed for them) on whatever new
-> hardware I can plug into them. I'm not an oracle and can't see into the
-> future, however USB has evolved, for instance, and will probably still do --
-Your 32-bit machines will be likely dead in 2015. If it didn't happen
-you will able to buy very cheap old 64-bit machine.
+On Thu, 2012-08-23 at 23:26 -0500, Mouse Dresden wrote:
+> Hello I hope that this question is not to mundane.
+> 
+> A while ago I encountered this error message on a hard drive of mine.
+> I managed to clean up the problem and run smartctl and the disk is
+> clean, but such errors can be very problematic. I think one of the
+> reasons is that the hard drive gets "bogs down" on the particular
+> command and communication between the kernel and drive, other system
+> calls time out. This generates a lot of spurious errors you have to
+> eliminate.
+> 
+> I would like to create some basic tools to aid in diagnosing and
+> repairing such problems. The main difficulty is "trapping" the error
+> message. By this I mean terminating the call that is causing the
+> error, causing the drive to abandon this particular command, and
+> sending some sort of signal ( figurative and or literal ) to the
+> process making the particular command, so I can trace it.
+> 
+> Can someone either describe the process, or if it is too long,
+> recommend some reading describing it?
+> 
+> If it helps to know the detailed message, it can be found at:
+> http://unix.stackexchange.com/questions/43681/kde-causes-read-fpdma-queued-error
 
->> I can't find any e-mail where Chris Friesen mentioned exact legacy apps.
-> Have a look in your inbox or one of the mailarchives. If that doesn't work,
->
-> then stop deleting half of the mails before replying.
->
-I don't delete e-mails. Can you copy-paste or give link?
+This error has nothing to do with software (kde) configuration or
+filesystem corruption. It is a hardware error. First of all, this:
 
-> The source code for Firefox and Chromium is available online. Go fetch and
-> compile. If they don't compile or execute as intended, I'm sure they would
-> like seeing a patch from you fixing the problem.
-Firefox and Chromium are large applications and can't be fixed by one user.
+sd 2:0:0:0: [sda]  Add. Sense: Unrecovered read error - auto reallocate failed
+end_request: I/O error, dev sda, sector 326677146
 
->
-> NVIDIA, on the other hand, is yet another reason for using nouveau.
->
-nouveau is useless garbage as most open source graphics drivers.
+means that your hard drive has a pending relocated sector (if you could
+share the smartctl output, it would confirm this). Assuming that your
+drive has spare area remaining (which it does, if smartctl says it's
+happy), then simply overwriting the sector in question will cause the
+drive to reallocate the sector and fix the error.
+
+You can use the 'hdparm --write-sector' command to do this - but read
+all the warnings and backup important data first.
+
+The reason for the delay/timeouts that you're seeing is that typical
+consumer drives will attempt to retry reads many times for up to 10
+seconds (or longer!) before returning an error to the operating system.
+In the mean time, there is no way for the linux kernel to cancel the
+command. It can only wait it out.
+
+Often times, errors like this are signs that your drive is close to
+failing - not /always/, but often. If manually overwriting the sector in
+question doesn't help, you should probably look into replacing the
+drive.
+
+-- 
+Calvin Walton <calvin.walton@kepstin.ca>
+
