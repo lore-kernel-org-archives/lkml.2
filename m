@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab2HXIf5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 04:35:57 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43723 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757003Ab2HXIfw (ORCPT
+	id S932541Ab2HXIvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 04:51:37 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:54213 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932203Ab2HXIvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 04:35:52 -0400
-Date: Fri, 24 Aug 2012 10:35:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: David Ahern <dsahern@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv2 1/1] perf: Port to Android
-Message-ID: <20120824083545.GA25599@gmail.com>
-References: <1408973.PFKjjaXiS1@localhost.localdomain>
- <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
- <5036A182.7030707@gmail.com>
- <20120824040845.GA3001@srcf.ucam.org>
-MIME-Version: 1.0
+	Fri, 24 Aug 2012 04:51:31 -0400
+Date: Fri, 24 Aug 2012 10:51:26 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.6-rc3
+Message-ID: <20120824085126.GL27604@spo001.leaseweb.com>
+References: <1345754768-4634-1-git-send-email-geert@linux-m68k.org> <5036AC23.8020309@xenotime.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120824040845.GA3001@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5036AC23.8020309@xenotime.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Randi,
 
-* Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-
-> On Thu, Aug 23, 2012 at 03:32:50PM -0600, David Ahern wrote:
+> > *** WARNINGS ***
+> > 
+> > 6202 regressions:
+> >   + Documentation/watchdog/src/watchdog-test.c: warning: no previous prototype for 'term' [-Wmissing-prototypes]:  => 34:6
 > 
-> > Why not add support for the missing functions (on_exit, 
-> > getsid, psignal and getline) to Bionic instead of perf?
 > 
-> Many vendors need to target existing Android platforms and 
-> don't have the luxury of waiting for code to get through 
-> Google review and then land on devices between 6 months in the 
-> future and never. The embedded world is dysfunctional in a 
-> whole bunch of ways.
+> patch posted by me... not merged anywhere AFAIK.
 
-and the compat changes don't look overly large, so I guess we 
-could do something like this.
+is in linux-watchdog-next. Will go to Linus this weekend.
 
-Would be nice to make it more robust in case Bionic does add 
-these functions? Feature tests and such? perf offering weak 
-symbols for some of these methods and the linker sorting it out?
+Kind regards,
+Wim.
 
-Thanks,
-
-	Ingo
