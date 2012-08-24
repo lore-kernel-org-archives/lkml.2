@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2HXIPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 04:15:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17306 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754776Ab2HXIPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 04:15:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,302,1344236400"; 
-   d="scan'208";a="210298913"
-Message-ID: <50373815.2080704@intel.com>
-Date: Fri, 24 Aug 2012 16:15:17 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1757208Ab2HXIXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 04:23:47 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3598 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756835Ab2HXIXm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 04:23:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 24 Aug 2012 01:23:41 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>
+CC: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Aug 2012 16:23:39 +0800
+Subject: Shutdown problem in SMP system happened on Tegra20
+Thread-Topic: Shutdown problem in SMP system happened on Tegra20
+Thread-Index: Ac2B0cMr5CR5XUBfSreHOblv5kwLBA==
+Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com>
+Accept-Language: zh-TW, en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-TW, en-US
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: apparent regressions from TLB range flushing page set
-References: <503261F00200007800096710@nat28.tlf.novell.com> <503450C1.8070600@intel.com> <50349AB4020000780008A4B5@nat28.tlf.novell.com> <50349E45.3020502@intel.com> <5034F9510200007800096E97@nat28.tlf.novell.com>
-In-Reply-To: <5034F9510200007800096E97@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2012 09:22 PM, Jan Beulich wrote:
+Hi,
 
->>>> On 22.08.12 at 10:54, Alex Shi <alex.shi@intel.com> wrote:
->> On 08/22/2012 03:39 PM, Jan Beulich wrote:
->>
->>>>>> Alex Shi <alex.shi@intel.com> 08/22/12 5:24 AM >>>
->>>> On 08/20/2012 10:12 PM, Jan Beulich wrote:
->>>> I was thought you have 'Agreed' for xen part code. :)
->>>
->>> I had agreed to it being done the right way, and I had pointed out the
->>> problem once. I can't say for sure that I looked at the most recent rev
->>> closely enough to spot the issue still being unfixed.
->>>
->>>>> For one, while TLB_FLUSH_ALL gets passed as 'end' argument to
->>>>> flush_tlb_others(), the Xen code was made to check its 'start'
->>>>> parameter.
->>>>
->>>> Do you mean need the following change? --untested.
->>>
->>> Yes. I'd question though whether for that special case it shouldn't be
->>> start _and_ end to get passed the special value.
->>
->>
->> Actually the special value is already there in old code.
->> so, what's your meaning of the question?
-> 
-> I'm saying that I'd rather see
-> 
-> #define flush_tlb_mm(mm)	flush_tlb_mm_range(mm, TLB_FLUSH_ALL, TLB_FLUSH_ALL, 0UL)
+When doing shutdown on Tegra20/Tegra30, we need to read/write PMIC registers through I2C
+to perform the power off sequence. Unfortunately, sometimes we'll fail to shutdown
+due to I2C timeout on Tegra20. And the cause of the timeout is due to the CPU which I2C
+controller IRQ affined to will have chance to be offlined without migrating all irqs affined 
+to it, so the following I2C transactions will fail (no any CPU will handle that interrupt
+since then).
 
+Some snippet of the shutdown codes:
 
-It bring logical confusing, and is no much help.
-flush_tlb_mm_range still will call:
-flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+void kernel_power_off(void)
+{
+	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+	:
+	disable_nonboot_cpus();
+	:
+	machine_power_off();
+}
 
-So, since we already fix code error, we'd better not to do this change.
+void machine_power_off(void)
+{
+	machine_shutdown();
+	if (pm_power_off)
+		pm_power_off(); /* this is where we send I2C write to shutdown */
+}
 
+void machine_shutdown(void)
+{
+#ifdef CONFIG_SMP
+	smp_send_stop();
+#endif
+}
 
->
+In "smp_send_stop()", it will send "IPI_CPU_STOPS" to offline other cpus except
+current cpu (smp_processor_id()), however, current cpu will not always be cpu0 at
+least at Tegra20, that said for example cpu1 might be the current cpu and cpu0 will
+be offlined and this is the case why the I2C transaction will timeout. 
 
-> Jan
-> 
+For normal case, "disable_nonboot_cpus()" call will disable all other Cpus except
+cpu0, that means we won't hit the problem mentioned here since cpu0 will always be
+the current cpu in the call "smp_send_stop", but the call to "disable_nonboot_cpus" 
+will happen only when "CONFIG_PM_SLEEP_SMP" is enabled which is not the case for
+Tegra20/Tegra30, we don't support suspend yet so this can't be enabled.
 
+There are two known fix for this, the first one is enable suspend (ARCH_SUSPEND_POSSIBLE)
+so the cpu0 will be the only online cpu while doing "machine_shutdown". The second
+fix is adding call to "migrate_irqs()" in "ipi_cpu_stop" so all irqs can be migrated to
+the active cpu.
 
+Could someone familiar with the ARM SMP design help to answer my two questions?
+
+1. Does it make sense that "smp_processor_id()" could be non-cpu0 in the call
+   "smp_send_stop()"? In Tegra30 it will always be cpu0 but Tegra20 will be 50-50,
+   I just can't find the magic.
+
+2. If current cpu is not necessarily be cpu0 in the call "smp_send_stop()", then
+   does it make sense to add "migrate_irqs()" in "ipi_cpu_stop()"? Or is there any
+   other fix which makes more sense?
+
+Thanks,
+Bill
+nvpublic
