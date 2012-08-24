@@ -1,62 +1,582 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab2HXPGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 11:06:04 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:38388 "EHLO e8.ny.us.ibm.com"
+	id S1756310Ab2HXPGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 11:06:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36339 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755733Ab2HXPF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 11:05:59 -0400
-Date: Fri, 24 Aug 2012 10:05:33 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter.Huewe@infineon.com
-Cc: jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
-        xiaoyan.zhang@intel.com, jj@chaosbits.net
-Subject: Re: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
-Message-ID: <20120824150533.GA2190@linux.vnet.ibm.com>
-References: <20120822215216.GC13519@linux.vnet.ibm.com>
- <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org>
- <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com>
+	id S1754396Ab2HXPGF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 11:06:05 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "ola.o.lilja@stericsson.com" <ola.o.lilja@stericsson.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "roger.xr.nilsson@stericsson.com" <roger.xr.nilsson@stericsson.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "STEricsson_nomadik_linux@list.st.com" 
+	<STEricsson_nomadik_linux@list.st.com>
+Subject: RE: [alsa-devel] [PATCH 14/17] ARM: ux500: Rename MSP board file to
+	something more meaningful
+Thread-Topic: [alsa-devel] [PATCH 14/17] ARM: ux500: Rename MSP board file
+ to	something more meaningful
+Thread-Index: AQHNggFwnW5c1S19YkOvnOKICDLYhZdpD4Cg
+Date: Fri, 24 Aug 2012 15:05:39 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA69B3A@DBDE01.ent.ti.com>
+References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
+ <1345816913-4113-15-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1345816913-4113-15-git-send-email-lee.jones@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-puzzleid: {7579288F-9B07-493F-9264-BF3EEB12A4C2}
+x-cr-hashedpuzzle: deDd fQl5 hUSw mmV1 wY7W y3Mf zcaW AAFtyw== ACGXZA==
+ AD4tDw== AEUVAw== AE7klA== AE9DBw== AHWjCw== AIWG4A==
+ AIteGQ==;10;YQBsAHMAYQAtAGQAZQB2AGUAbABAAGEAbABzAGEALQBwAHIAbwBqAGUAYwB0AC4AbwByAGcAOwBhAHIAbgBkAEAAYQByAG4AZABiAC4AZABlADsAYgByAG8AbwBuAGkAZQBAAG8AcABlAG4AcwBvAHUAcgBjAGUALgB3AG8AbABmAHMAbwBuAG0AaQBjAHIAbwAuAGMAbwBtADsAbABlAGUALgBqAG8AbgBlAHMAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAbABpAG4AdQBzAC4AdwBhAGwAbABlAGkAagBAAHMAdABlAHIAaQBjAHMAcwBvAG4ALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGEAcgBtAC0AawBlAHIAbgBlAGwAQABsAGkAcwB0AHMALgBpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG8AbABhAC4AbwAuAGwAaQBsAGoAYQBAAHMAdABlAHIAaQBjAHMAcwBvAG4ALgBjAG8AbQA7AHIAbwBnAGUAcgAuAHgAcgAuAG4AaQBsAHMAcwBvAG4AQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0AOwBzAHQAZQByAGkAYwBzAHMAbwBuAF8AbgBvAG0AYQBkAGkAawBfAGwAaQBuAHUAeABAAGwAaQBzAHQALgBzAHQALgBjAG8AbQA=;Sosha1_v1;7;{7579288F-9B07-493F-9264-BF3EEB12A4C2};ZwB1AHIAdQByAGEAagBhAC4AaABlAGIAYgBhAHIAQAB0AGkALgBjAG8AbQA=;Fri,
+ 24 Aug 2012 15:05:09
+ GMT;UgBFADoAIABbAGEAbABzAGEALQBkAGUAdgBlAGwAXQAgAFsAUABBAFQAQwBIACAAMQA0AC8AMQA3AF0AIABBAFIATQA6ACAAdQB4ADUAMAAwADoAIABSAGUAbgBhAG0AZQAgAE0AUwBQACAAYgBvAGEAcgBkACAAZgBpAGwAZQAgAHQAbwAJAHMAbwBtAGUAdABoAGkAbgBnACAAbQBvAHIAZQAgAG0AZQBhAG4AaQBuAGcAZgB1AGwA
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082415-9360-0000-0000-000009CCB401
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 08:32:47AM +0000, Peter.Huewe@infineon.com wrote:
-> >> From: James Morris [mailto:jmorris@namei.org] 
-> >> I'm getting this error when building i2c as a module
-> >> WARNING: "__i2c_transfer" [drivers/char/tpm/tpm_i2c_infineon.ko] undefined!
+On Fri, Aug 24, 2012 at 19:31:50, Lee Jones wrote:
+> The 'msp' board file does more than just register MSP devices. It
+> also registers some other components necessary to get audio working
+> on ux500 based platforms; such as the PCM and Machine Drivers. For
+> that reason we're changing the filename to be more encompassing -
+> 'audio'.
 > 
-> > This is unconditionally (except I2C) available in Linus' master tree.
-> > And was introduced by b37d2a3a75cb in June by Jean Delvare.
-> 
-> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=b37d2a3a75cb0e72e18c29336cb2095b63dabfc8
-> 
-> > It was tested here against Linus' tree at time of submission.
-> 
-> Did double check it against v3.6-rc3.
-> $ make ARCH=arm omap2plus_defconfig
-> $ make ARCH=arm menuconfig
-> -> deselected OMAP2_TYPICAL, which enables I2C to be builded as a module.
-> -> selected I2C as Module.
-> Build using make -> no error.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/mach-ux500/Makefile             |    2 +-
+>  arch/arm/mach-ux500/board-mop500-audio.c |  199 ++++++++++++++++++++++++++++++
+>  arch/arm/mach-ux500/board-mop500-msp.c   |  199 ------------------------------
 
-  I can't reproduce this either, James, can you send out your .config?
+Please use _M option when generating patches (git-format-patch -M ...).
+This will reduce the final patch size
 
-THanks,
-Kent
+>  arch/arm/mach-ux500/board-mop500.c       |   12 +-
+>  arch/arm/mach-ux500/board-mop500.h       |    4 +-
+>  5 files changed, 208 insertions(+), 208 deletions(-)
+>  create mode 100644 arch/arm/mach-ux500/board-mop500-audio.c
+>  delete mode 100644 arch/arm/mach-ux500/board-mop500-msp.c
+> 
+> diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
+> index 026086f..1dc2cfa 100644
+> --- a/arch/arm/mach-ux500/Makefile
+> +++ b/arch/arm/mach-ux500/Makefile
+> @@ -12,6 +12,6 @@ obj-$(CONFIG_MACH_MOP500)	+= board-mop500.o board-mop500-sdi.o \
+>  				board-mop500-uib.o board-mop500-stuib.o \
+>  				board-mop500-u8500uib.o \
+>  				board-mop500-pins.o \
+> -				board-mop500-msp.o
+> +				board-mop500-audio.o
+>  obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
+>  obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+> diff --git a/arch/arm/mach-ux500/board-mop500-audio.c b/arch/arm/mach-ux500/board-mop500-audio.c
+> new file mode 100644
+> index 0000000..18f6c5a
+> --- /dev/null
+> +++ b/arch/arm/mach-ux500/board-mop500-audio.c
+> @@ -0,0 +1,199 @@
+> +/*
+> + * Copyright (C) ST-Ericsson SA 2010
+> + *
+> + * License terms: GNU General Public License (GPL), version 2
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/init.h>
+> +#include <linux/gpio.h>
+> +#include <linux/pinctrl/consumer.h>
+> +
+> +#include <plat/gpio-nomadik.h>
+> +#include <plat/pincfg.h>
+> +#include <plat/ste_dma40.h>
+> +
+> +#include <mach/devices.h>
+> +#include <mach/hardware.h>
+> +#include <mach/irqs.h>
+> +#include <mach/msp.h>
+> +
+> +#include "ste-dma40-db8500.h"
+> +#include "board-mop500.h"
+> +#include "devices-db8500.h"
+> +#include "pins-db8500.h"
+> +
+> +static struct stedma40_chan_cfg msp0_dma_rx = {
+> +	.high_priority = true,
+> +	.dir = STEDMA40_PERIPH_TO_MEM,
+> +
+> +	.src_dev_type = DB8500_DMA_DEV31_MSP0_RX_SLIM0_CH0_RX,
+> +	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
+> +
+> +	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> +	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> +
+> +	/* data_width is set during configuration */
+> +};
+> +
+> +static struct stedma40_chan_cfg msp0_dma_tx = {
+> +	.high_priority = true,
+> +	.dir = STEDMA40_MEM_TO_PERIPH,
+> +
+> +	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
+> +	.dst_dev_type = DB8500_DMA_DEV31_MSP0_TX_SLIM0_CH0_TX,
+> +
+> +	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> +	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> +
+> +	/* data_width is set during configuration */
+> +};
+> +
+> +struct msp_i2s_platform_data msp0_platform_data = {
+> +	.id = MSP_I2S_0,
+> +	.msp_i2s_dma_rx = &msp0_dma_rx,
+> +	.msp_i2s_dma_tx = &msp0_dma_tx,
+> +};
+> +
+> +static struct stedma40_chan_cfg msp1_dma_rx = {
+> +	.high_priority = true,
+> +	.dir = STEDMA40_PERIPH_TO_MEM,
+> +
+> +	.src_dev_type = DB8500_DMA_DEV30_MSP3_RX,
+> +	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
+> +
+> +	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> +	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> +
+> +	/* data_width is set during configuration */
+> +};
+> +
+> +static struct stedma40_chan_cfg msp1_dma_tx = {
+> +	.high_priority = true,
+> +	.dir = STEDMA40_MEM_TO_PERIPH,
+> +
+> +	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
+> +	.dst_dev_type = DB8500_DMA_DEV30_MSP1_TX,
+> +
+> +	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> +	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> +
+> +	/* data_width is set during configuration */
+> +};
+> +
+> +struct msp_i2s_platform_data msp1_platform_data = {
+> +	.id = MSP_I2S_1,
+> +	.msp_i2s_dma_rx = NULL,
+> +	.msp_i2s_dma_tx = &msp1_dma_tx,
+> +};
+> +
+> +static struct stedma40_chan_cfg msp2_dma_rx = {
+> +	.high_priority = true,
+> +	.dir = STEDMA40_PERIPH_TO_MEM,
+> +
+> +	.src_dev_type = DB8500_DMA_DEV14_MSP2_RX,
+> +	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
+> +
+> +	/* MSP2 DMA doesn't work with PSIZE == 4 on DB8500v2 */
+> +	.src_info.psize = STEDMA40_PSIZE_LOG_1,
+> +	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
+> +
+> +	/* data_width is set during configuration */
+> +};
+> +
+> +static struct stedma40_chan_cfg msp2_dma_tx = {
+> +	.high_priority = true,
+> +	.dir = STEDMA40_MEM_TO_PERIPH,
+> +
+> +	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
+> +	.dst_dev_type = DB8500_DMA_DEV14_MSP2_TX,
+> +
+> +	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> +	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> +
+> +	.use_fixed_channel = true,
+> +	.phy_channel = 1,
+> +
+> +	/* data_width is set during configuration */
+> +};
+> +
+> +static struct platform_device *db8500_add_msp_i2s(struct device *parent,
+> +			int id,
+> +			resource_size_t base, int irq,
+> +			struct msp_i2s_platform_data *pdata)
+> +{
+> +	struct platform_device *pdev;
+> +	struct resource res[] = {
+> +		DEFINE_RES_MEM(base, SZ_4K),
+> +		DEFINE_RES_IRQ(irq),
+> +	};
+> +
+> +	pr_info("Register platform-device 'ux500-msp-i2s', id %d, irq %d\n",
+> +		id, irq);
+> +	pdev = platform_device_register_resndata(parent, "ux500-msp-i2s", id,
+> +						res, ARRAY_SIZE(res),
+> +						pdata, sizeof(*pdata));
+> +	if (!pdev) {
+> +		pr_err("Failed to register platform-device 'ux500-msp-i2s.%d'!\n",
+> +			id);
+> +		return NULL;
+> +	}
+> +
+> +	return pdev;
+> +}
+> +
+> +/* Platform device for ASoC MOP500 machine */
+> +static struct platform_device snd_soc_mop500 = {
+> +	.name = "snd-soc-mop500",
+> +	.id = 0,
+> +	.dev = {
+> +		.platform_data = NULL,
+> +	},
+> +};
+> +
+> +/* Platform device for Ux500-PCM */
+> +static struct platform_device ux500_pcm = {
+> +	.name = "ux500-pcm",
+> +	.id = 0,
+> +	.dev = {
+> +		.platform_data = NULL,
+> +	},
+> +};
+> +
+> +struct msp_i2s_platform_data msp2_platform_data = {
+> +	.id = MSP_I2S_2,
+> +	.msp_i2s_dma_rx = &msp2_dma_rx,
+> +	.msp_i2s_dma_tx = &msp2_dma_tx,
+> +};
+> +
+> +struct msp_i2s_platform_data msp3_platform_data = {
+> +	.id		= MSP_I2S_3,
+> +	.msp_i2s_dma_rx	= &msp1_dma_rx,
+> +	.msp_i2s_dma_tx	= NULL,
+> +};
+> +
+> +void mop500_audio_init(struct device *parent)
+> +{
+> +	pr_info("%s: Register platform-device 'snd-soc-mop500'.\n", __func__);
+> +	platform_device_register(&snd_soc_mop500);
+> +
+> +	pr_info("Initialize MSP I2S-devices.\n");
+> +	db8500_add_msp_i2s(parent, 0, U8500_MSP0_BASE, IRQ_DB8500_MSP0,
+> +			   &msp0_platform_data);
+> +	db8500_add_msp_i2s(parent, 1, U8500_MSP1_BASE, IRQ_DB8500_MSP1,
+> +			   &msp1_platform_data);
+> +	db8500_add_msp_i2s(parent, 2, U8500_MSP2_BASE, IRQ_DB8500_MSP2,
+> +			   &msp2_platform_data);
+> +	db8500_add_msp_i2s(parent, 3, U8500_MSP3_BASE, IRQ_DB8500_MSP1,
+> +			   &msp3_platform_data);
+> +
+> +	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
+> +	platform_device_register(&ux500_pcm);
+> +}
+> +
+> +/* Due for removal once the MSP driver has been fully DT:ed. */
+> +void mop500_of_audio_init(struct device *parent)
+> +{
+> +	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
+> +	platform_device_register(&ux500_pcm);
+> +}
+> diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-msp.c
+> deleted file mode 100644
+> index 2af017f..0000000
+> --- a/arch/arm/mach-ux500/board-mop500-msp.c
+> +++ /dev/null
+> @@ -1,199 +0,0 @@
+> -/*
+> - * Copyright (C) ST-Ericsson SA 2010
+> - *
+> - * License terms: GNU General Public License (GPL), version 2
+> - */
+> -
+> -#include <linux/platform_device.h>
+> -#include <linux/init.h>
+> -#include <linux/gpio.h>
+> -#include <linux/pinctrl/consumer.h>
+> -
+> -#include <plat/gpio-nomadik.h>
+> -#include <plat/pincfg.h>
+> -#include <plat/ste_dma40.h>
+> -
+> -#include <mach/devices.h>
+> -#include <mach/hardware.h>
+> -#include <mach/irqs.h>
+> -#include <mach/msp.h>
+> -
+> -#include "ste-dma40-db8500.h"
+> -#include "board-mop500.h"
+> -#include "devices-db8500.h"
+> -#include "pins-db8500.h"
+> -
+> -static struct stedma40_chan_cfg msp0_dma_rx = {
+> -	.high_priority = true,
+> -	.dir = STEDMA40_PERIPH_TO_MEM,
+> -
+> -	.src_dev_type = DB8500_DMA_DEV31_MSP0_RX_SLIM0_CH0_RX,
+> -	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
+> -
+> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> -
+> -	/* data_width is set during configuration */
+> -};
+> -
+> -static struct stedma40_chan_cfg msp0_dma_tx = {
+> -	.high_priority = true,
+> -	.dir = STEDMA40_MEM_TO_PERIPH,
+> -
+> -	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
+> -	.dst_dev_type = DB8500_DMA_DEV31_MSP0_TX_SLIM0_CH0_TX,
+> -
+> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> -
+> -	/* data_width is set during configuration */
+> -};
+> -
+> -struct msp_i2s_platform_data msp0_platform_data = {
+> -	.id = MSP_I2S_0,
+> -	.msp_i2s_dma_rx = &msp0_dma_rx,
+> -	.msp_i2s_dma_tx = &msp0_dma_tx,
+> -};
+> -
+> -static struct stedma40_chan_cfg msp1_dma_rx = {
+> -	.high_priority = true,
+> -	.dir = STEDMA40_PERIPH_TO_MEM,
+> -
+> -	.src_dev_type = DB8500_DMA_DEV30_MSP3_RX,
+> -	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
+> -
+> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> -
+> -	/* data_width is set during configuration */
+> -};
+> -
+> -static struct stedma40_chan_cfg msp1_dma_tx = {
+> -	.high_priority = true,
+> -	.dir = STEDMA40_MEM_TO_PERIPH,
+> -
+> -	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
+> -	.dst_dev_type = DB8500_DMA_DEV30_MSP1_TX,
+> -
+> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> -
+> -	/* data_width is set during configuration */
+> -};
+> -
+> -struct msp_i2s_platform_data msp1_platform_data = {
+> -	.id = MSP_I2S_1,
+> -	.msp_i2s_dma_rx = NULL,
+> -	.msp_i2s_dma_tx = &msp1_dma_tx,
+> -};
+> -
+> -static struct stedma40_chan_cfg msp2_dma_rx = {
+> -	.high_priority = true,
+> -	.dir = STEDMA40_PERIPH_TO_MEM,
+> -
+> -	.src_dev_type = DB8500_DMA_DEV14_MSP2_RX,
+> -	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
+> -
+> -	/* MSP2 DMA doesn't work with PSIZE == 4 on DB8500v2 */
+> -	.src_info.psize = STEDMA40_PSIZE_LOG_1,
+> -	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
+> -
+> -	/* data_width is set during configuration */
+> -};
+> -
+> -static struct stedma40_chan_cfg msp2_dma_tx = {
+> -	.high_priority = true,
+> -	.dir = STEDMA40_MEM_TO_PERIPH,
+> -
+> -	.src_dev_type = STEDMA40_DEV_DST_MEMORY,
+> -	.dst_dev_type = DB8500_DMA_DEV14_MSP2_TX,
+> -
+> -	.src_info.psize = STEDMA40_PSIZE_LOG_4,
+> -	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+> -
+> -	.use_fixed_channel = true,
+> -	.phy_channel = 1,
+> -
+> -	/* data_width is set during configuration */
+> -};
+> -
+> -static struct platform_device *db8500_add_msp_i2s(struct device *parent,
+> -			int id,
+> -			resource_size_t base, int irq,
+> -			struct msp_i2s_platform_data *pdata)
+> -{
+> -	struct platform_device *pdev;
+> -	struct resource res[] = {
+> -		DEFINE_RES_MEM(base, SZ_4K),
+> -		DEFINE_RES_IRQ(irq),
+> -	};
+> -
+> -	pr_info("Register platform-device 'ux500-msp-i2s', id %d, irq %d\n",
+> -		id, irq);
+> -	pdev = platform_device_register_resndata(parent, "ux500-msp-i2s", id,
+> -						res, ARRAY_SIZE(res),
+> -						pdata, sizeof(*pdata));
+> -	if (!pdev) {
+> -		pr_err("Failed to register platform-device 'ux500-msp-i2s.%d'!\n",
+> -			id);
+> -		return NULL;
+> -	}
+> -
+> -	return pdev;
+> -}
+> -
+> -/* Platform device for ASoC MOP500 machine */
+> -static struct platform_device snd_soc_mop500 = {
+> -	.name = "snd-soc-mop500",
+> -	.id = 0,
+> -	.dev = {
+> -		.platform_data = NULL,
+> -	},
+> -};
+> -
+> -/* Platform device for Ux500-PCM */
+> -static struct platform_device ux500_pcm = {
+> -	.name = "ux500-pcm",
+> -	.id = 0,
+> -	.dev = {
+> -		.platform_data = NULL,
+> -	},
+> -};
+> -
+> -struct msp_i2s_platform_data msp2_platform_data = {
+> -	.id = MSP_I2S_2,
+> -	.msp_i2s_dma_rx = &msp2_dma_rx,
+> -	.msp_i2s_dma_tx = &msp2_dma_tx,
+> -};
+> -
+> -struct msp_i2s_platform_data msp3_platform_data = {
+> -	.id		= MSP_I2S_3,
+> -	.msp_i2s_dma_rx	= &msp1_dma_rx,
+> -	.msp_i2s_dma_tx	= NULL,
+> -};
+> -
+> -/* Due for removal once the MSP driver has been fully DT:ed. */
+> -void mop500_of_msp_init(struct device *parent)
+> -{
+> -	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
+> -	platform_device_register(&ux500_pcm);
+> -}
+> -
+> -void mop500_msp_init(struct device *parent)
+> -{
+> -	pr_info("%s: Register platform-device 'snd-soc-mop500'.\n", __func__);
+> -	platform_device_register(&snd_soc_mop500);
+> -
+> -	pr_info("Initialize MSP I2S-devices.\n");
+> -	db8500_add_msp_i2s(parent, 0, U8500_MSP0_BASE, IRQ_DB8500_MSP0,
+> -			   &msp0_platform_data);
+> -	db8500_add_msp_i2s(parent, 1, U8500_MSP1_BASE, IRQ_DB8500_MSP1,
+> -			   &msp1_platform_data);
+> -	db8500_add_msp_i2s(parent, 2, U8500_MSP2_BASE, IRQ_DB8500_MSP2,
+> -			   &msp2_platform_data);
+> -	db8500_add_msp_i2s(parent, 3, U8500_MSP3_BASE, IRQ_DB8500_MSP1,
+> -			   &msp3_platform_data);
+> -
+> -	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
+> -	platform_device_register(&ux500_pcm);
+> -}
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index 0c141d5..7152635 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -607,7 +607,7 @@ static void __init mop500_init_machine(void)
+>  	mop500_i2c_init(parent);
+>  	mop500_sdi_init(parent);
+>  	mop500_spi_init(parent);
+> -	mop500_msp_init(parent);
+> +	mop500_audio_init(parent);
+>  	mop500_uart_init(parent);
+>  
+>  	u8500_cryp1_hash1_init(parent);
+> @@ -641,7 +641,7 @@ static void __init snowball_init_machine(void)
+>  	mop500_i2c_init(parent);
+>  	snowball_sdi_init(parent);
+>  	mop500_spi_init(parent);
+> -	mop500_msp_init(parent);
+> +	mop500_audio_init(parent);
+>  	mop500_uart_init(parent);
+>  
+>  	/* This board has full regulator constraints */
+> @@ -673,7 +673,7 @@ static void __init hrefv60_init_machine(void)
+>  	mop500_i2c_init(parent);
+>  	hrefv60_sdi_init(parent);
+>  	mop500_spi_init(parent);
+> -	mop500_msp_init(parent);
+> +	mop500_audio_init(parent);
+>  	mop500_uart_init(parent);
+>  
+>  	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
+> @@ -807,7 +807,7 @@ static void __init u8500_init_machine(void)
+>  				ARRAY_SIZE(mop500_platform_devs));
+>  
+>  		mop500_sdi_init(parent);
+> -		mop500_msp_init(parent);
+> +		mop500_audio_init(parent);
+>  		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
+>  		i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
+>  		i2c_register_board_info(2, mop500_i2c2_devices,
+> @@ -816,7 +816,7 @@ static void __init u8500_init_machine(void)
+>  		mop500_uib_init();
+>  
+>  	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
+> -		mop500_of_msp_init(parent);
+> +		mop500_of_audio_init(parent);
+>  	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
+>  		/*
+>  		 * The HREFv60 board removed a GPIO expander and routed
+> @@ -828,7 +828,7 @@ static void __init u8500_init_machine(void)
+>  				ARRAY_SIZE(mop500_platform_devs));
+>  
+>  		hrefv60_sdi_init(parent);
+> -		mop500_msp_init(parent);
+> +		mop500_audio_init(parent);
+>  
+>  		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
+>  		i2c0_devs -= NUM_PRE_V60_I2C0_DEVICES;
+> diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
+> index 3fbf48f..9e9dd5a 100644
+> --- a/arch/arm/mach-ux500/board-mop500.h
+> +++ b/arch/arm/mach-ux500/board-mop500.h
+> @@ -97,9 +97,9 @@ void __init mop500_stuib_init(void);
+>  void __init mop500_pinmaps_init(void);
+>  void __init snowball_pinmaps_init(void);
+>  void __init hrefv60_pinmaps_init(void);
+> -void mop500_msp_init(struct device *parent);
+> +void mop500_audio_init(struct device *parent);
+>  /* Due for removal once the MSP driver has been fully DT:ed. */
+> -void mop500_of_msp_init(struct device *parent);
+> +void mop500_of_audio_init(struct device *parent);
+>  
+>  int __init mop500_uib_init(void);
+>  void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
+> -- 
+> 1.7.9.5
+> 
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+> 
 
-> 
-> Thanks,
-> Peter
-> 
-> 
-> 
 
+Regards, 
+Gururaja
