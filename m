@@ -1,121 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab2HXB2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:28:33 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:40016 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab2HXB2b (ORCPT
+	id S1755224Ab2HXBb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:31:26 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:16876 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753064Ab2HXBbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:28:31 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61a-b7fc66d0000043b7-17-5036d8bdf3b8
-Message-id: <5036D8BA.7090904@samsung.com>
-Date: Fri, 24 Aug 2012 10:28:26 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mike Turquette <mturquette@ti.com>,
-        Xiaoguang Chen <chenxg@marvell.com>
-Subject: Re: [PATCH 2/2] devfreq: exynos4: Support initialization of freq_table
- and max_state of devfreq's profile.
-References: <1345099767-13467-1-git-send-email-jonghwa3.lee@samsung.com>
- <1345099767-13467-3-git-send-email-jonghwa3.lee@samsung.com>
- <201208240022.04846.rjw@sisk.pl>
-In-reply-to: <201208240022.04846.rjw@sisk.pl>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t9jAd29N8wCDBqWq1hc3jWHzeJz7xFG
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKuPvnAWHBcuOLj2++sDYxf+LsYOTkkBEwkDp1+ywhh
-	i0lcuLeerYuRi0NIYBGjxIZlC5lBErwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoC4xad4iZoj6
-	l4wS87avhqrXkujp2QlmswioSjw6N4sJxGYTkJN42/SNEWSOqECExK9+DpCwCFDJlif/2UHm
-	MAu0Mkm8ar8JtktYoFTiwrkgiPmrgO75dpsVJM4poCuxanX2BEaBWUium4Vw3Swk1y1gZF7F
-	KJpakFxQnJSea6hXnJhbXJqXrpecn7uJERyGz6R2MK5ssDjEKMDBqMTDu6PFLECINbGsuDL3
-	EKMEB7OSCO/X+UAh3pTEyqrUovz4otKc1OJDjNIcLErivPx9hgFCAumJJanZqakFqUUwWSYO
-	TqkGRv+73btLri977lricP32vN9vHiTxVd42XvqRRW7nbbPdt389NDr1cvIngW//Bdk2Hnoi
-	tkRXfa6ShWCD8YdzJh6q97TYow/2a9QY21c77hSxCuLL4ZH+rp568Em0kFj2B7ti6bZJbzyS
-	psckXyjNCPDUFr9Vn8T0PGnRx2fTvp0weudjbGDnp8RSnJFoqMVcVJwIAIxCblA/AgAA
-X-TM-AS-MML: No
+	Thu, 23 Aug 2012 21:31:23 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnoEABDWNlB5LORDgWdsb2JhbABFuVMDeSMBARYmJ4IgAQEEAScTHCMFCwgDDgouFCUDIROIBwW6BBSKdAl6hg4DlVOJL4lbgUY
+Date: Fri, 24 Aug 2012 11:31:18 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep
+ AS_HWPOISON sticky
+Message-ID: <20120824013118.GZ19235@dastard>
+References: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1345648655-4497-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345648655-4497-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012년 08월 24일 07:22, Rafael J. Wysocki wrote:
-> On Thursday, August 16, 2012, Jonghwa Lee wrote:
->> This patch initializes freq_table and max_state of devfreq's profile.
->> They will be used for creating transition table.
->>
->> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> Does that depend on [1/2]?
->
-> Rafael
+On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
+> "HWPOISON: report sticky EIO for poisoned file" still has a corner case
+> where we have possibilities of data lost. This is because in this fix
+> AS_HWPOISON is cleared when the inode cache is dropped.
+> 
+> For example, consider an application in which a process periodically
+> (every 10 minutes) writes some logs on a file (and closes it after
+> each writes,) and at the end of each day some batch programs run using
+> the log file. If a memory error hits on dirty pagecache of this log file
+> just after periodic write/close and the inode cache is cleared before the
+> next write, then this application is not aware of the error and the batch
+> programs will work wrongly.
+> 
+> To avoid this, this patch makes us pin the hwpoisoned inode on memory
+> until we remove or completely truncate the hwpoisoned file.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  fs/inode.c              | 12 ++++++++++++
+>  include/linux/pagemap.h | 11 +++++++++++
+>  mm/memory-failure.c     |  2 +-
+>  mm/truncate.c           |  2 ++
+>  4 files changed, 26 insertions(+), 1 deletion(-)
+> 
+> diff --git v3.6-rc1.orig/fs/inode.c v3.6-rc1/fs/inode.c
+> index ac8d904..8742397 100644
+> --- v3.6-rc1.orig/fs/inode.c
+> +++ v3.6-rc1/fs/inode.c
+> @@ -717,6 +717,15 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+>  		}
+>  
+>  		/*
+> +		 * Keep inode caches on memory for user processes to certainly
+> +		 * be aware of memory errors.
+> +		 */
+> +		if (unlikely(mapping_hwpoison(inode->i_mapping))) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+> +		}
+> +
+> +		/*
+>  		 * Referenced or dirty inodes are still in use. Give them
+>  		 * another pass through the LRU as we canot reclaim them now.
+>  		 */
 
-Not exactly, but it shows that required procedure for using function
-included in patch[1/2].
+I don't think you tested this at all. Have a look at what the loop
+does more closely - inodes with poisoned mappings will get stuck
+and reclaim doesn't make progress past them.
 
+I think you also need to document this inode lifecycle change....
 
-Thanks.
+> diff --git v3.6-rc1.orig/mm/truncate.c v3.6-rc1/mm/truncate.c
+> index 75801ac..82a994f 100644
+> --- v3.6-rc1.orig/mm/truncate.c
+> +++ v3.6-rc1/mm/truncate.c
+> @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
+>  
+>  	oldsize = inode->i_size;
+>  	i_size_write(inode, newsize);
+> +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
+> +		mapping_clear_hwpoison(inode->i_mapping);
 
->
->> ---
->>  drivers/devfreq/exynos4_bus.c |   30 +++++++++++++++++++++++++++++-
->>  1 files changed, 29 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
->> index 88ddc77..9c08855 100644
->> --- a/drivers/devfreq/exynos4_bus.c
->> +++ b/drivers/devfreq/exynos4_bus.c
->> @@ -985,7 +985,8 @@ static __devinit int exynos4_busfreq_probe(struct platform_device *pdev)
->>  	struct busfreq_data *data;
->>  	struct opp *opp;
->>  	struct device *dev = &pdev->dev;
->> -	int err = 0;
->> +	int err = 0, i;
->> +	unsigned int *freq_table;
->>  
->>  	data = kzalloc(sizeof(struct busfreq_data), GFP_KERNEL);
->>  	if (data == NULL) {
->> @@ -1042,6 +1043,33 @@ static __devinit int exynos4_busfreq_probe(struct platform_device *pdev)
->>  
->>  	platform_set_drvdata(pdev, data);
->>  
->> +	switch (data->type) {
->> +	case TYPE_BUSF_EXYNOS4210:
->> +		freq_table = devm_kzalloc(&pdev->dev, sizeof(unsigned int) * EX4210_LV_NUM,
->> +					GFP_KERNEL);
->> +
->> +		for (i = 0; i < EX4210_LV_NUM; i++)
->> +			freq_table[i] = exynos4210_busclk_table[i].clk;
->> +
->> +		exynos4_devfreq_profile.max_state = EX4210_LV_NUM;
->> +		break;
->> +	case TYPE_BUSF_EXYNOS4x12:
->> +		freq_table = devm_kzalloc(&pdev->dev, sizeof(unsigned int) * EX4x12_LV_NUM,
->> +					GFP_KERNEL);
->> +
->> +		for (i = 0; i < EX4x12_LV_NUM; i++)
->> +			freq_table[i] = exynos4x12_mifclk_table[i].clk;
->> +
->> +		exynos4_devfreq_profile.max_state = EX4x12_LV_NUM;
->> +		break;
->> +	default:
->> +		dev_err(dev, "Cannot determine the device id %d\n", data->type);
->> +		err = -EINVAL;
->> +		goto err_opp_add;
->> +	}
->> +
->> +	exynos4_devfreq_profile.freq_table = freq_table;
->> +
->>  	busfreq_mon_reset(data);
->>  
->>  	data->devfreq = devfreq_add_device(dev, &exynos4_devfreq_profile,
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+So only a truncate to zero size will clear the poison flag?
 
+What happens if it is the last page in the mapping that is poisoned,
+and we truncate that away? Shouldn't that clear the poisoned bit?
+What about a hole punch over the poisoned range?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
