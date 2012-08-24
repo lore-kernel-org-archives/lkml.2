@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab2HXBNJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:13:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10983 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754489Ab2HXBLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:11:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="184254193"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Tony Luck" <tony.luck@intel.com>,
-        "Arjan Dan De Ven" <arjan@linux.intel.com>,
-        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
-        "Len Brown" <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>,
-        "Chen Gong" <gong.chen@linux.intel.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
-Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v7 11/12] x86/i387.c: Thread xstate is initialized only on CPU0 once
-Date: Thu, 23 Aug 2012 17:56:10 -0700
-Message-Id: <1345769771-27019-12-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
-References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
+	id S1758031Ab2HXBNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:13:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33604 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab2HXBLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 21:11:39 -0400
+Date: Thu, 23 Aug 2012 18:11:34 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, apm: Make on_cpu0() use workqueue instead of
+ work_on_cpu()
+Message-ID: <20120824011134.GB21325@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+Make APM schedule a work item on CPU0 instead of using the expensive
+work_on_cpu(); hopefully, this is the last user of work_on_cpu() and
+we can take out work_on_cpu() in not too distant future.
 
-init_thread_xstate() is only called once to avoid overriding xstate_size during
-boot time or during CPU hotplug.
+Tested both paths.  Seems to work fine.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/kernel/i387.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ arch/x86/kernel/apm_32.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index f250431..e4c3a21 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -188,7 +188,11 @@ void __cpuinit fpu_init(void)
- 		cr0 |= X86_CR0_EM;
- 	write_cr0(cr0);
+diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+index d65464e..2bdb8c4 100644
+--- a/arch/x86/kernel/apm_32.c
++++ b/arch/x86/kernel/apm_32.c
+@@ -605,28 +605,43 @@ static long __apm_bios_call(void *_call)
+ 	return call->eax & 0xff;
+ }
  
--	if (!smp_processor_id())
-+	/*
-+	 * init_thread_xstate is only called once to avoid overriding
-+	 * xstate_size during boot time or during CPU hotplug.
-+	 */
-+	if (xstate_size == 0)
- 		init_thread_xstate();
++struct on_cpu0_arg {
++	struct work_struct	work;
++	long			(*fn)(void *);
++	struct apm_bios_call	*call;
++	int			ret;
++};
++
++static void on_cpu0_workfn(struct work_struct *work)
++{
++	struct on_cpu0_arg *arg = container_of(work, struct on_cpu0_arg, work);
++
++	arg->ret = arg->fn(arg->call);
++}
++
+ /* Run __apm_bios_call or __apm_bios_call_simple on CPU 0 */
+ static int on_cpu0(long (*fn)(void *), struct apm_bios_call *call)
+ {
+-	int ret;
++	struct on_cpu0_arg arg = { .fn = fn, .call = call };
  
- 	mxcsr_feature_mask_init();
--- 
-1.7.2
-
+-	/* Don't bother with work_on_cpu in the common case, so we don't
+-	 * have to worry about OOM or overhead. */
++	/* directly invoke on_cpu0_workfn() in the common case */
+ 	if (get_cpu() == 0) {
+-		ret = fn(call);
++		on_cpu0_workfn(&arg.work);
+ 		put_cpu();
+ 	} else {
+ 		put_cpu();
+-		ret = work_on_cpu(0, fn, call);
++		INIT_WORK_ONSTACK(&arg.work, on_cpu0_workfn);
++		schedule_work_on(0, &arg.work);
++		flush_work(&arg.work);
+ 	}
+ 
+ 	/* work_on_cpu can fail with -ENOMEM */
+-	if (ret < 0)
+-		call->err = ret;
++	if (arg.ret < 0)
++		call->err = arg.ret;
+ 	else
+ 		call->err = (call->eax >> 8) & 0xff;
+ 
+-	return ret;
++	return arg.ret;
+ }
+ 
+ /**
