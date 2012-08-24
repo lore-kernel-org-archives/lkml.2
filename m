@@ -1,151 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab2HXA0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 20:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752257Ab2HXA0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 20:26:38 -0400
-Date: Thu, 23 Aug 2012 21:26:09 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120824002607.GF10777@t510.redhat.com>
-References: <20120822093317.GC10680@redhat.com>
- <20120823021903.GA23660@x61.redhat.com>
- <20120823100107.GA17409@redhat.com>
- <20120823121338.GA3062@t510.redhat.com>
- <20120823123432.GA25659@redhat.com>
- <20120823130606.GB3746@t510.redhat.com>
- <20120823135328.GB25709@redhat.com>
- <20120823162504.GA1522@redhat.com>
- <20120823172844.GC10777@t510.redhat.com>
- <20120823233616.GB2775@redhat.com>
+	id S1753432Ab2HXA1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 20:27:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44913 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257Ab2HXA0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 20:26:48 -0400
+Date: Thu, 23 Aug 2012 17:26:43 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Len Brown <lenb@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, acpi: Make acpi_processor_ffh_cstate_probe() use a
+ work item instead of work_on_cpu()
+Message-ID: <20120824002643.GA21325@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120823233616.GB2775@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 02:36:16AM +0300, Michael S. Tsirkin wrote:
-> On Thu, Aug 23, 2012 at 02:28:45PM -0300, Rafael Aquini wrote:
-> > On Thu, Aug 23, 2012 at 07:25:05PM +0300, Michael S. Tsirkin wrote:
-> > > On Thu, Aug 23, 2012 at 04:53:28PM +0300, Michael S. Tsirkin wrote:
-> > > > Basically it was very simple: we assumed page->lru was never
-> > > > touched for an allocated page, so it's safe to use it for
-> > > > internal book-keeping by the driver.
-> > > > 
-> > > > Now, this is not the case anymore, you add some logic in mm/ that might
-> > > > or might not touch page->lru depending on things like reference count.
-> > > 
-> > > Another thought: would the issue go away if balloon used
-> > > page->private to link pages instead of LRU?
-> > > mm core could keep a reference on page to avoid it
-> > > being used while mm handles it (maybe it does already?).
-> > >
-> > I don't think so. That would be a lot more trikier and complex, IMHO.
-> 
-> What's tricky? Linking pages through a void * orivate pointer?
-> I can code it up in a couple of minutes.
-> It's middle of the night so too tired to test but still:
-> 
-> > > If we do this, will not the only change to balloon be to tell mm that it
-> > > can use compaction for these pages when it allocates the page: using
-> > > some GPF flag or a new API?
-> > > 
-> > 
-> > What about keep a conter at virtio_balloon structure on how much pages are
-> > isolated from balloon's list and check it at leak time?
-> > if the counter gets > 0 than we can safely put leak_balloon() to wait until
-> > balloon page list gets completely refilled. I guess that is simple to get
-> > accomplished and potentially addresses all your concerns on this issue.
-> > 
-> > Cheers!
-> 
-> I would wake it each time after adding a page, then it
-> can stop waiting when it leaks enough.
-> But again, it's cleaner to just keep tracking all
-> pages, let mm hang on to them by keeping a reference.
-> 
-> --->
-> 
-> virtio-balloon: replace page->lru list with page->private.
-> 
-> The point is to free up page->lru for use by compaction.
-> Warning: completely untested, will provide tested version
-> if we agree on this direction.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->
+Workqueue is guaranteed to be available on the target CPU by the time
+acpi_processor_ffh_cstate_probe() is invoked for it.  There's no
+reason to use costly work_on_cpu() which involves creating and tearing
+down a full kthread on each invocation to execute the probing function
+on the target CPU.  Use a work item instead.
 
-This way balloon driver will potentially release pages that were already
-migrated and doesn't belong to it anymore, since the page under migration never
-gets isolated from balloon's page list. It's a lot more dangerous than it was
-before. 
+Tested and works as expected.
 
-I'm working on having leak_balloon on the right way, as you correctly has
-pointed. I was blind and biased. So, thank you for pointing me the way.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ arch/x86/kernel/acpi/cstate.c |   35 ++++++++++++++++++++---------------
+ 1 file changed, 20 insertions(+), 15 deletions(-)
 
-
-> ---
-> 
-> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> index 0908e60..b38f57ce 100644
-> --- a/drivers/virtio/virtio_balloon.c
-> +++ b/drivers/virtio/virtio_balloon.c
-> @@ -56,7 +56,7 @@ struct virtio_balloon
->  	 * Each page on this list adds VIRTIO_BALLOON_PAGES_PER_PAGE
->  	 * to num_pages above.
->  	 */
-> -	struct list_head pages;
-> +	void *pages;
->  
->  	/* The array of pfns we tell the Host about. */
->  	unsigned int num_pfns;
-> @@ -141,7 +141,9 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
->  		set_page_pfns(vb->pfns + vb->num_pfns, page);
->  		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
->  		totalram_pages--;
-> -		list_add(&page->lru, &vb->pages);
-> +		/* Add to list of pages */
-> +		page->private = vb->pages;
-> +		vb->pages = page->private;
->  	}
->  
->  	/* Didn't get any?  Oh well. */
-> @@ -171,8 +173,9 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
->  
->  	for (vb->num_pfns = 0; vb->num_pfns < num;
->  	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
-> -		page = list_first_entry(&vb->pages, struct page, lru);
-> -		list_del(&page->lru);
-> +		/* Delete from list of pages */
-> +		page = vb->pages;
-> +		vb->pages = page->private;
->  		set_page_pfns(vb->pfns + vb->num_pfns, page);
->  		vb->num_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
->  	}
-> @@ -350,7 +353,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
->  		goto out;
->  	}
->  
-> -	INIT_LIST_HEAD(&vb->pages);
-> +	vb->pages = NULL;
->  	vb->num_pages = 0;
->  	init_waitqueue_head(&vb->config_change);
->  	init_waitqueue_head(&vb->acked);
-> -- 
-> MST
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index d2b7f27..97259f0 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -69,10 +69,16 @@ static short mwait_supported[ACPI_PROCESSOR_MAX_POWER];
+ 
+ #define NATIVE_CSTATE_BEYOND_HALT	(2)
+ 
+-static long acpi_processor_ffh_cstate_probe_cpu(void *_cx)
++struct cstate_probe_arg {
++	struct work_struct work;
++	struct acpi_processor_cx *cx;
++	int ret;
++};
++
++static void acpi_processor_ffh_cstate_probe_cpu(struct work_struct *work)
+ {
+-	struct acpi_processor_cx *cx = _cx;
+-	long retval;
++	struct cstate_probe_arg *arg = container_of(work, struct cstate_probe_arg, work);
++	struct acpi_processor_cx *cx = arg->cx;
+ 	unsigned int eax, ebx, ecx, edx;
+ 	unsigned int edx_part;
+ 	unsigned int cstate_type; /* C-state type and not ACPI C-state type */
+@@ -86,17 +92,16 @@ static long acpi_processor_ffh_cstate_probe_cpu(void *_cx)
+ 	edx_part = edx >> (cstate_type * MWAIT_SUBSTATE_SIZE);
+ 	num_cstate_subtype = edx_part & MWAIT_SUBSTATE_MASK;
+ 
+-	retval = 0;
+ 	if (num_cstate_subtype < (cx->address & MWAIT_SUBSTATE_MASK)) {
+-		retval = -1;
+-		goto out;
++		arg->ret = -1;
++		return;
+ 	}
+ 
+ 	/* mwait ecx extensions INTERRUPT_BREAK should be supported for C2/C3 */
+ 	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
+ 	    !(ecx & CPUID5_ECX_INTERRUPT_BREAK)) {
+-		retval = -1;
+-		goto out;
++		arg->ret = -1;
++		return;
+ 	}
+ 
+ 	if (!mwait_supported[cstate_type]) {
+@@ -108,8 +113,7 @@ static long acpi_processor_ffh_cstate_probe_cpu(void *_cx)
+ 	snprintf(cx->desc,
+ 			ACPI_CX_DESC_LEN, "ACPI FFH INTEL MWAIT 0x%x",
+ 			cx->address);
+-out:
+-	return retval;
++	arg->ret = 0;
+ }
+ 
+ int acpi_processor_ffh_cstate_probe(unsigned int cpu,
+@@ -117,7 +121,7 @@ int acpi_processor_ffh_cstate_probe(unsigned int cpu,
+ {
+ 	struct cstate_entry *percpu_entry;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+-	long retval;
++	struct cstate_probe_arg arg = { .cx = cx };
+ 
+ 	if (!cpu_cstate_entry || c->cpuid_level < CPUID_MWAIT_LEAF)
+ 		return -1;
+@@ -130,9 +134,10 @@ int acpi_processor_ffh_cstate_probe(unsigned int cpu,
+ 	percpu_entry->states[cx->index].ecx = 0;
+ 
+ 	/* Make sure we are running on right CPU */
+-
+-	retval = work_on_cpu(cpu, acpi_processor_ffh_cstate_probe_cpu, cx);
+-	if (retval == 0) {
++	INIT_WORK_ONSTACK(&arg.work, acpi_processor_ffh_cstate_probe_cpu);
++	schedule_work_on(cpu, &arg.work);
++	flush_work(&arg.work);
++	if (arg.ret == 0) {
+ 		/* Use the hint in CST */
+ 		percpu_entry->states[cx->index].eax = cx->address;
+ 		percpu_entry->states[cx->index].ecx = MWAIT_ECX_INTERRUPT_BREAK;
+@@ -146,7 +151,7 @@ int acpi_processor_ffh_cstate_probe(unsigned int cpu,
+ 	if ((c->x86_vendor == X86_VENDOR_INTEL) && !(reg->access_size & 0x2))
+ 		cx->bm_sts_skip = 1;
+ 
+-	return retval;
++	return arg.ret;
+ }
+ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+ 
