@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab2HXBM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:12:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10983 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754388Ab2HXBLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:11:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="184254158"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Tony Luck" <tony.luck@intel.com>,
-        "Arjan Dan De Ven" <arjan@linux.intel.com>,
-        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
-        "Len Brown" <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>,
-        "Chen Gong" <gong.chen@linux.intel.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
-Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v7 06/12] start_cpu0() is defined in head_64.S for 64-bit. The function sets up stack and jumps to start_secondary() for CPU0 wake up.
-Date: Thu, 23 Aug 2012 17:56:05 -0700
-Message-Id: <1345769771-27019-7-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
-References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
+	id S1757501Ab2HXBOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:14:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60553 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754617Ab2HXBOt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 21:14:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADwDc1AvCvWbj8znN-1WbkZA9WYVAqaTkxi7+ENZfJ-qFNRAvw@mail.gmail.com>
+References: <1345499431-21658-1-git-send-email-jmillenbach@gmail.com>
+	<20120821142047.777e4bb0@pyramind.ukuu.org.uk>
+	<CADwDc1AvCvWbj8znN-1WbkZA9WYVAqaTkxi7+ENZfJ-qFNRAvw@mail.gmail.com>
+Date: Thu, 23 Aug 2012 18:14:48 -0700
+Message-ID: <CADwDc1BgCM9AA4T3mUxfOGNaNoYwERP-x4y2ZS4mAhfF-K_qzA@mail.gmail.com>
+Subject: Fwd: [PATCH] tty: Added a CONFIG_TTY option to allow removal of TTY
+From: Joe Millenbach <jmillenbach@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>, team-fjord@googlegroups.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+---------- Forwarded message ----------
+From: Joe Millenbach <jmillenbach@gmail.com>
+Date: Thu, Aug 23, 2012 at 5:56 PM
+Subject: Re: [PATCH] tty: Added a CONFIG_TTY option to allow removal of TTY
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Alan Cox
+<alan@linux.intel.com>, linux-serial@vger.kernel.org,
+linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+team-fjord@googlegroups.com
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/kernel/head_64.S |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 94bf9cc..3faac8a 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -252,6 +252,21 @@ ENTRY(secondary_startup_64)
- 	pushq	%rax		# target address in negative space
- 	lretq
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+/*
-+ * Boot CPU0 entry point. It's called from play_dead(). Everything has been set
-+ * up already except stack. We just set up stack here. Then call
-+ * start_secondary().
-+ */
-+ENTRY(start_cpu0)
-+	movq stack_start(%rip),%rsp
-+	movq	initial_code(%rip),%rax
-+	pushq	$0		# fake return address to stop unwinder
-+	pushq	$__KERNEL_CS	# set correct cs
-+	pushq	%rax		# target address in negative space
-+	lretq
-+#endif
-+
- 	/* SMP bootup changes these two */
- 	__REFDATA
- 	.align	8
--- 
-1.7.2
+On Tue, Aug 21, 2012 at 6:20 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>
+> ...
+>
+> >  config MOUSE_PS2
+> >       tristate "PS/2 mouse"
+> > +     depends on TTY
+>
+> It shouldn't. It would be good to understand why this occurs.
 
+
+If I enable this config option, and turn off TTY I get the below errors.
+
+drivers/built-in.o: In function `serport_ldisc_read':
+serport.c:(.text+0x1aace6): undefined reference to `tty_name'
+serport.c:(.text+0x1aad57): undefined reference to `tty_name'
+drivers/built-in.o: In function `serport_init':
+serport.c:(.init.text+0x8478): undefined reference to `tty_register_ldisc'
+drivers/built-in.o: In function `serport_exit':
+serport.c:(.exit.text+0xb29): undefined reference to `tty_unregister_ldisc'
+
+All because MOUSE_PS2 depends on SERIO, just like a lot of entries I
+blocked.  I assume this means I should keep the dependency on TTY.
+Unfortunately, I don't have time to dig deeper for the true cause of the
+dependency right now.
+
+- Joe
+
+
+* Resending message as I forgot to turn off HTML messaging in Gmail
+(sorry), and I've heard SPAM blockers might eat HTML messages sent to
+LKML people.
+
+- Joe
