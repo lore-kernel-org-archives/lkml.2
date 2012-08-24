@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab2HXIMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 04:12:48 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23826 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839Ab2HXIMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 04:12:35 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7faf6d00000476a-bc-5037376d5412
-Message-id: <5037376A.9000507@samsung.com>
-Date: Fri, 24 Aug 2012 17:12:26 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: jonghwa3.lee@samsung.com
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v4] clock: max77686: Add driver for Maxim 77686 32KHz
- crystal oscillator
-References: <1340793077-14300-1-git-send-email-jonghwa3.lee@samsung.com>
- <20120824020718.4547.991@nucleus> <5037318E.2040903@samsung.com>
-In-reply-to: <5037318E.2040903@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t9jQd1cc/MAg/tnxC0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGrs+r2QsmCFYs/P6LvYHxPHcXIyeHhICJxLzPD9kgbDGJC/fW
-	A9lcHEIC0xklnk5+ywyS4BUQlPgx+R5LFyMHB7OAvMSRS9kgYWYBdYlJ8xYxQ9R3MUk8PLyY
-	HaJeS6J1+wmwXhYBVYn1e2ewgthsAnISb5u+MYLMERWIkPjVzwESFhGQkVh59ScTyBxmga+M
-	EifebWUFqREWiJN4dUwRYn43o8T6dR1gh3IKaEvM2LeWZQKjwCwk581COG8WkvMWMDKvYhRN
-	LUguKE5KzzXSK07MLS7NS9dLzs/dxAgOv2fSOxhXNVgcYhTgYFTi4d3RYhYgxJpYVlyZe4hR
-	goNZSYR3/mOgEG9KYmVValF+fFFpTmrxIUZpDhYlcV7+PsMAIYH0xJLU7NTUgtQimCwTB6dU
-	A+P0KStklSYEnNhzl9Hkv2LOlw1+4RsX6c3lk92z5NIGnuXPU7cZmOd7+j2c9jAjwDHr24mZ
-	r+7tdpeROtz3cu+ukIMLpfsS57XF7L5z1YHhm8u9xIsfTq7un/N2m/GfKfoynOvXLGG0/v/v
-	u5LtBYUlW+tmlOw+43j2fsIN+TrxVGHGBxtnZ4trK7EUZyQaajEXFScCAMMV4Do7AgAA
-X-TM-AS-MML: No
+	id S932120Ab2HXIPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 04:15:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17306 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754776Ab2HXIPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 04:15:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,302,1344236400"; 
+   d="scan'208";a="210298913"
+Message-ID: <50373815.2080704@intel.com>
+Date: Fri, 24 Aug 2012 16:15:17 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: apparent regressions from TLB range flushing page set
+References: <503261F00200007800096710@nat28.tlf.novell.com> <503450C1.8070600@intel.com> <50349AB4020000780008A4B5@nat28.tlf.novell.com> <50349E45.3020502@intel.com> <5034F9510200007800096E97@nat28.tlf.novell.com>
+In-Reply-To: <5034F9510200007800096E97@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012년 08월 24일 16:47, jonghwa3.lee@samsung.com wrote:
-> On 2012년 08월 24일 11:07, Mike Turquette wrote:
->>> +       struct clk *clk;
->>> +
->>> +       clk = clk_register(dev, clk_name[clk_id], &clk_max77686_ops,
->>> +                               &max77686->hw, NULL, 0, CLK_IS_ROOT);
->>> +
->>> +       if (IS_ERR(clk))
->>> +               return -ENOMEM;
->>> +
->>> +       max77686->lookup = devm_kzalloc(dev, sizeof(struct clk_lookup),
->>> +                                       GFP_KERNEL);
->>> +       if (IS_ERR(max77686->lookup))
->>> +               return -ENOMEM;
->>> +
->>> +       max77686->lookup->con_id = clk_name[clk_id];
->>> +       max77686->lookup->clk = clk;
->>> +
->>> +       clkdev_add(max77686->lookup);
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +static __devinit int max77686_clk_probe(struct platform_device *pdev)
->>> +{
->>> +       struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
->>> +       struct clk_max77686 *max77686[MAX77686_CLKS_NUM];
->>> +       int i, ret;
->>> +
->>> +       for (i = 0; i < MAX77686_CLKS_NUM; i++) {
->>> +               max77686[i] = devm_kzalloc(&pdev->dev,
->>> +                                sizeof(struct clk_max77686), GFP_KERNEL);
->>> +               if (!max77686[i])
->>> +                       return -ENOMEM;
->>> +
->>> +               max77686[i]->iodev = iodev;
->>> +               max77686[i]->mask = 1 << i;
->>> +
->>> +               ret = max77686_clk_register(&pdev->dev, max77686[i], i);
->>> +               if (ret) {
->>> +                       dev_err(&pdev->dev, "Fail to register clock\n");
->>> +                       return ret;
->>> +               }
->> There is a memory leak if you successfully register any clocks and then
->> fail to register the others.  Be sure to unwind the loop and kfree those
->> clocks in such a case (since this appears fatal).
-> I think it'll free memory allocation automatically, because It is used
-> devm_kzalloc. Am I wrong?
->
->
-Sorry, I misunderstood. Yes, you're right. Since clk has been allocated
-with kzalloc it would be released for the failing.
-Thanks for advisement. I'll fix it.
+On 08/22/2012 09:22 PM, Jan Beulich wrote:
 
-Thanks.
+>>>> On 22.08.12 at 10:54, Alex Shi <alex.shi@intel.com> wrote:
+>> On 08/22/2012 03:39 PM, Jan Beulich wrote:
+>>
+>>>>>> Alex Shi <alex.shi@intel.com> 08/22/12 5:24 AM >>>
+>>>> On 08/20/2012 10:12 PM, Jan Beulich wrote:
+>>>> I was thought you have 'Agreed' for xen part code. :)
+>>>
+>>> I had agreed to it being done the right way, and I had pointed out the
+>>> problem once. I can't say for sure that I looked at the most recent rev
+>>> closely enough to spot the issue still being unfixed.
+>>>
+>>>>> For one, while TLB_FLUSH_ALL gets passed as 'end' argument to
+>>>>> flush_tlb_others(), the Xen code was made to check its 'start'
+>>>>> parameter.
+>>>>
+>>>> Do you mean need the following change? --untested.
+>>>
+>>> Yes. I'd question though whether for that special case it shouldn't be
+>>> start _and_ end to get passed the special value.
+>>
+>>
+>> Actually the special value is already there in old code.
+>> so, what's your meaning of the question?
+> 
+> I'm saying that I'd rather see
+> 
+> #define flush_tlb_mm(mm)	flush_tlb_mm_range(mm, TLB_FLUSH_ALL, TLB_FLUSH_ALL, 0UL)
+
+
+It bring logical confusing, and is no much help.
+flush_tlb_mm_range still will call:
+flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+
+So, since we already fix code error, we'd better not to do this change.
+
+
+>
+
+> Jan
+> 
+
 
