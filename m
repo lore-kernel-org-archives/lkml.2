@@ -1,82 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab2HXLtq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 07:49:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51611 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab2HXLtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 07:49:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,304,1344236400"; 
-   d="asc'?scan'208";a="213412991"
-Message-ID: <1345809271.2848.294.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] ubifs: remove __DATE__ and __TIME__
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org,
-        Michal Marek <mmarek@suse.cz>
-Date: Fri, 24 Aug 2012 14:54:31 +0300
-In-Reply-To: <1344534194-16321-1-git-send-email-jslaby@suse.cz>
-References: <1344534194-16321-1-git-send-email-jslaby@suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-wD+OcB/ynwp7P+izDQGr"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754362Ab2HXLuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 07:50:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:65125 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab2HXLut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 07:50:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1345333117-2826-1-git-send-email-mail@danrl.de>
+References: <1345333117-2826-1-git-send-email-mail@danrl.de>
+Date: Fri, 24 Aug 2012 17:20:48 +0530
+Message-ID: <CAPEGOO+2fSWg2wiXouEQx6tn2Tp2sFwDg6TrqgACtV-1sqr2cQ@mail.gmail.com>
+Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
+From: Prashant Shah <kerneldev100@gmail.com>
+To: Dan Luedtke <mail@danrl.de>
+Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, chaosman@ontika.net, muthur@gmail.com,
+        kerolasa@iki.fi, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-wD+OcB/ynwp7P+izDQGr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, Aug 19, 2012 at 5:08 AM, Dan Luedtke <mail@danrl.de> wrote:
 
-On Thu, 2012-08-09 at 19:43 +0200, Jiri Slaby wrote:
-> diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-> index e354832..67af316 100644
-> --- a/fs/ubifs/super.c
-> +++ b/fs/ubifs/super.c
-> @@ -1431,7 +1431,6 @@ static int mount_ubifs(struct ubifs_info *c)
->  	ubifs_msg("reserved for root:  %llu bytes (%llu KiB)",
->  		c->report_rp_size, c->report_rp_size >> 10);
-> =20
-> -	dbg_msg("compiled on:         " __DATE__ " at " __TIME__);
->  	dbg_msg("min. I/O unit size:  %d bytes", c->min_io_size);
->  	dbg_msg("max. write size:     %d bytes", c->max_write_size);
->  	dbg_msg("LEB size:            %d bytes (%d KiB)",
+> +
+> +       /* allocate filesystem private data */
+> +       fsi = kzalloc(sizeof(*fsi), GFP_KERNEL);
+> +       if (!fsi)
+> +               return -ENOMEM;
+> +       spin_lock_init(&fsi->lock);
+> +       sb->s_fs_info = fsi;
+> +
+> +       /* set blocksize to minimum size for fetching superblock */
+> +       if (!sb_set_blocksize(sb, 1 << LANYFS_MIN_BLOCKSIZE)) {
+> +               if (!silent)
+> +                       lanyfs_err(sb, "error setting blocksize to %d bytes",
+> +                                  1 << LANYFS_MIN_BLOCKSIZE);
+> +               return -EIO;
+> +       }
+> +
+> +       /* fetch superblock */
+> +       bh = sb_bread(sb, LANYFS_SUPERBLOCK);
+> +       if (!bh) {
+> +               if (!silent)
+> +                       lanyfs_err(sb, "error reading superblock");
+> +               return -EIO;
+> +       }
+> +       lanysb = (struct lanyfs_sb *) bh->b_data;
+> +
+> +       /* check magic */
+> +       if (lanysb->magic != cpu_to_le32(LANYFS_SUPER_MAGIC)) {
+> +               if (!silent)
+> +                       lanyfs_info(sb, "bad magic 0x%x",
+> +                                   lanysb->magic);
+> +               goto exit_invalid;
+> +       }
+> +       sb->s_magic = LANYFS_SUPER_MAGIC;
+> +
+> +       /* check block type */
+> +       if (lanysb->type != LANYFS_TYPE_SB) {
+> +               if (!silent)
+> +                       lanyfs_err(sb, "bad block type 0x%x", lanysb->type);
+> +               goto exit_invalid;
+> +       }
+> +
+> +       /* check version */
+> +       if (lanysb->major > LANYFS_MAJOR_VERSION) {
+> +               if (!silent)
+> +                       lanyfs_err(sb, "major version mismatch");
+> +               goto exit_invalid;
+> +       }
+> +
+> +       /* check address length */
+> +       if (lanysb->addrlen < LANYFS_MIN_ADDRLEN ||
+> +           lanysb->addrlen > LANYFS_MAX_ADDRLEN) {
+> +               if (!silent)
+> +                       lanyfs_err(sb, "unsupported address length");
+> +               goto exit_invalid;
+> +       }
+> +       fsi->addrlen = lanysb->addrlen;
+> +
+> +       /* check blocksize */
+> +       if (lanysb->blocksize < LANYFS_MIN_BLOCKSIZE ||
+> +           lanysb->blocksize > LANYFS_MAX_BLOCKSIZE) {
+> +               if (!silent)
+> +                       lanyfs_err(sb, "unsupported blocksize");
+> +               goto exit_invalid;
+> +       }
+> +       fsi->blocksize = lanysb->blocksize;
+> +
 
-Pushed to linux-ubifs.git, thanks! Does it make sense to hurry up and
-send this to 3.6? Or it can be merged to 3.7 normally?
+> +
+> +       /* release block buffer */
+> +       brelse(bh);
+> +
+> +       /* parse mount options */
+> +       save_mount_options(sb, options);
+> +       err = lanyfs_super_options(sb, (char *) options, silent);
+> +       if (err)
+> +               return err;
+> +
+> +       /* set blocksize to correct size */
+> +       if (!sb_set_blocksize(sb, 1 << fsi->blocksize)) {
+> +               if (!silent)
+> +                       lanyfs_err(sb, "error setting blocksize to %d bytes",
+> +                                  1 << fsi->blocksize);
+> +               return -EIO;
+> +       }
+> +       /* default flags */
+> +       sb->s_maxbytes = 0xffffffff; /* TODO: hmmmmm */
+> +       sb->s_op = &lanyfs_super_operations;
+> +       sb->s_time_gran = 1;
+> +       sb->s_flags = MS_NOSUID | MS_NOATIME | MS_NODIRATIME;
+> +
+> +       /* make root directory */
+> +       inode = lanyfs_iget(sb, fsi->rootdir);
+> +       if (!inode)
+> +               return -ENOMEM;
+> +
+> +       sb->s_root = d_make_root(inode);
+> +       if (!sb->s_root) {
+> +               iput(inode);
+> +               return -ENOMEM;
+> +       }
+> +       return 0;
+> +
+> +exit_invalid:
+> +       brelse(bh);
+> +       if (!silent)
+> +               lanyfs_info(sb, "no valid lanyard filesystem found");
+> +       return -EINVAL;
+> +}
 
---=20
-Best Regards,
-Artem Bityutskiy
+You should free the memory for "fsi" on error.
 
---=-wD+OcB/ynwp7P+izDQGr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQN2t3AAoJECmIfjd9wqK014oP/RkJQdfW9UfsOn4lVqdiFsO8
-gO2Rv9P2R8qC+ywWPosNZxqUMibRUCI9DaFkrvOLFAJsfnltnUXiGzFFFFfzq0YV
-Ni1xCH/hSmFMLKuhZ2L9qiSkxECDEnozoM409Qmc/Yetiy7FsTetlL201Wq9SIqR
-mOucSgrB0ujKEaJfsIZfgDqkAwO+v9oQTjiICzL9Orax0mk56Cvq7z63F110VPzM
-fqK655nIx1zHOTOsE4dqtTDdZdmgnE37WFJgubcFgOo1J9Ea7mpHpZ09ob6NAshM
-XC+CEsGt5LoOub5tUurd4KfvkdSjxQr6txF67LZwV59v3UamZpi7RKy6Rjx3YS3U
-tkGhWuVf9joOQaGmf8ewYDg52C305/k+JvJxOS1RsD7dVRxnsxF6XohU5SuAi1c7
-nkPbpBfxa2wUr8J3ZfFbLykpPxue1nVl6B44M+BmjQJPtboHJtCFb34EL4luB4Vp
-mpm2ScyyHobiuPSkhkiPXmdDCJDGeMRxY7tKDFPAcTwXuNvm2VUy/c2NJV5qHAvM
-sip/RviWbFnTqVUi28dBf+MNQg3FQOU/C/wg+90LDZ5+FPvIixIPoTltLezIXLr0
-+NZONUgnofe9/sutyMlfgcSUbuvNtJs3Akyzku5D+VIpc548eGINYayoLCMPKcov
-/iOCcFUCSREZ8PF4hqNR
-=TfPa
------END PGP SIGNATURE-----
-
---=-wD+OcB/ynwp7P+izDQGr--
-
+Regards.
