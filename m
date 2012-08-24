@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2HXL7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 07:59:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19350 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087Ab2HXL7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 07:59:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,304,1344236400"; 
-   d="asc'?scan'208";a="184924703"
-Message-ID: <1345809866.2848.301.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: m25p80: add support for Micron N25Q256A
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 24 Aug 2012 15:04:26 +0300
-In-Reply-To: <1344972247-23583-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1344972247-23583-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-JZ1P7xzwqE3gQhyiltfN"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1757646Ab2HXMAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 08:00:22 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38978 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab2HXMAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 08:00:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJ7jCmmvmAocza6A=F5UKmfHWgBxeNyUsbmxRTCyoO8ChTC6PA@mail.gmail.com>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+	<201208231814.21168.tweek@tweek.dk>
+	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
+	<CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
+	<CAJ7jCmmvmAocza6A=F5UKmfHWgBxeNyUsbmxRTCyoO8ChTC6PA@mail.gmail.com>
+Date: Fri, 24 Aug 2012 08:00:15 -0400
+Message-ID: <CAMzpN2j1EMMxbnm6X4W263Lk+GzicoiXQuTKQuhpAswX4ywk8A@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+From: Brian Gerst <brgerst@gmail.com>
+To: wbrana <wbrana@gmail.com>
+Cc: Martin Nybo Andersen <tweek@tweek.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 24, 2012 at 5:53 AM, wbrana <wbrana@gmail.com> wrote:
+> On 8/23/12, Brian Gerst <brgerst@gmail.com> wrote:
+>> Windows mostly sells with new hardware, and by the time win9 is
+>> released all new hardware designed for it will be 64-bit capable.
+>> Therefore it is not *profitable* for Microsoft to continue to develop
+>> a 32-bit version.  That doesn't apply to Linux.  Linux is installed on
+>> a broad range of hardware, new and old.  In general, we don't drop
+>> support for hardware unless there is nobody willing to maintain it.
+> It won't also be profitable for Linux to support trash.
 
---=-JZ1P7xzwqE3gQhyiltfN
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+If you don't want to support it that's your opinion.  Those of us who
+do don't care what you think.  There is no profit motive in open
+source.
 
-On Tue, 2012-08-14 at 15:24 -0400, Vivien Didelot wrote:
-> The manufacturer datasheet can be found on the Micron website,
-> under the name n25q_256mb_3v_65nm.pdf:
->=20
-> http://www.micron.com/search?source=3Dps&q=3Dn25q_256mb_3v_65nm
->=20
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-
-Pushed to l2-mtd.git, thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-JZ1P7xzwqE3gQhyiltfN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQN23KAAoJECmIfjd9wqK0g40P+weDVVIBJzdXd/gwstJce1yZ
-DGhDP+HYs+Pxj5eTzxydJYQ8iEM3dTl0Uy5P6Efvzu34xqGGO69LUKlnKJN92np+
-khlg5wI9Q7h0I2cn8evcug4E41CsnPrrMre6Wmfz8x2j17EZHP/xHnReqm2rLA7g
-H7WOcnLho8JFS/hNP/BpsJqUiqTAb2YHqDXk7V774VeMkot8SCeZK0eHk8Uy5DTn
-OGzXWTdiJbbUC/y/ixHfUXlJO+H1Pi46CVhxRKYJb+qR1Ye3WUoUuKsLuwdaNuJ3
-zIvoXrCCHW+k6D++JbJJcrPSnE1e4jFwx4ZFGwSGa2olvxOnB8pQqZZObPCfbrVN
-ZHZ1O3WyURx3Z5Sw2BhfUIBwoPter1gC+1cTaDnaqtm8nodWiaDSbgzxCWwbhZtB
-29ISfnyLYbXHqbnjObLjSLMtUOau9JANQf8M45C34t0Hm2H1HOBrwVS6KWd+A6zj
-ATVbSNyPmtCB2ykMSb8RJ5NEBueIyCg/zC9QC1QghGm/pmlqYNDrq7pum+5ZM7i2
-tNdRGqQ+fPtD5J9xZLWUpDNP4PJZ3q/ttvVMnxDgmkBc0Ww5dwlGJJ1neYKBel2q
-urNR28vOea6qxeZGH8c7vOgc7Z0muO0AgApqoq8oI9eBiH6/J5f16DvMpK92229r
-bUDr99WfwzrKwZPCYynw
-=3ZyC
------END PGP SIGNATURE-----
-
---=-JZ1P7xzwqE3gQhyiltfN--
-
+--
+Brian Gerst
