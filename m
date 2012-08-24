@@ -1,38 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab2HXK7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 06:59:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50081 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759321Ab2HXK7j (ORCPT
+	id S1755071Ab2HXLN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 07:13:57 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:33217 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab2HXLNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 06:59:39 -0400
+	Fri, 24 Aug 2012 07:13:55 -0400
+Date: Fri, 24 Aug 2012 07:13:23 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: m.szyprowski@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com, arnd@arndb.de,
+        linux@arm.linux.org.uk, chunsang.jeong@linaro.org, vdumpa@nvidia.com,
+        subashrp@gmail.com, minchan@kernel.org, pullip.cho@samsung.com
+Subject: Re: [v3 1/4] ARM: dma-mapping: atomic_pool with struct page **pages
+Message-ID: <20120824111323.GB11007@konrad-lan.dumpdata.com>
+References: <1345796945-21115-1-git-send-email-hdoyu@nvidia.com>
+ <1345796945-21115-2-git-send-email-hdoyu@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJ7jCmnXULdBHKPpqzd7aFF3D8QHF=KJ0pHpmgMPFZLdTUiKOA@mail.gmail.com>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208231814.21168.tweek@tweek.dk>
-	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
-	<CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
-	<CAJ7jCmntV8kTup0=yLEmaGLP_vUDk4or3=UTWzODREO-pH8YxQ@mail.gmail.com>
-	<CAMzpN2h8XCmEh2Xsw07_aYsW5yv87BmXNk-e6sb6gUg3eptoJw@mail.gmail.com>
-	<CAJ7jCmkxS4Bor+XXvhh0Mpx5ZNyL8j8kED9KpbgMFJXED1ZoLw@mail.gmail.com>
-	<CAMzpN2hfYzNwRR8o7Kz0qsuAo6JP1iSA91x=-DJP1tBz-smgTw@mail.gmail.com>
-	<CAJ7jCmkNUttzRJj9bvLiuKJyZWh7UYzhA25f4kwitoHWjwhAqA@mail.gmail.com>
-	<CAGa+R31cVDY9RHxyrYm-2HEDZSdMMZHcRvfZ88A9J-X9W5Hnmw@mail.gmail.com>
-	<CAJ7jCmmLV1U0=zppoB8gfeh4f2KBmbcUR0GdvQ4AuHMHOMesMw@mail.gmail.com>
-	<CAGa+R31TLGHDcJsG55jR8ofNDCFg7H+3+KYWaDXMJwPDZbn-6w@mail.gmail.com>
-	<CAJ7jCmnXULdBHKPpqzd7aFF3D8QHF=KJ0pHpmgMPFZLdTUiKOA@mail.gmail.com>
-Date: Fri, 24 Aug 2012 22:59:38 +1200
-Message-ID: <CAGa+R31LOW1rriSfQ4XTuO_Bx7sNwHQhr_rOJ-0Fc-6JxV7jAw@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: Ronnie Collinson <notthinking@gmail.com>
-To: wbrana <wbrana@gmail.com>
-Cc: Brian Gerst <brgerst@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345796945-21115-2-git-send-email-hdoyu@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No its not a replacement, its an alternative with various nuances, but
-its not a direct replacement for anything
+On Fri, Aug 24, 2012 at 11:29:02AM +0300, Hiroshi Doyu wrote:
+> struct page **pages is necessary to align with non atomic path in
+> __iommu_get_pages(). atomic_pool() has the intialized **pages instead
+> of just *page.
+> 
+> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> ---
+>  arch/arm/mm/dma-mapping.c |   17 +++++++++++++----
+>  1 files changed, 13 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 601da7a..b14ee64 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -296,7 +296,7 @@ struct dma_pool {
+>  	unsigned long *bitmap;
+>  	unsigned long nr_pages;
+>  	void *vaddr;
+> -	struct page *page;
+> +	struct page **pages;
+>  };
+>  
+>  static struct dma_pool atomic_pool = {
+> @@ -335,12 +335,16 @@ static int __init atomic_pool_init(void)
+>  	unsigned long nr_pages = pool->size >> PAGE_SHIFT;
+>  	unsigned long *bitmap;
+>  	struct page *page;
+> +	struct page **pages;
+>  	void *ptr;
+>  	int bitmap_size = BITS_TO_LONGS(nr_pages) * sizeof(long);
+> +	size_t size = nr_pages * sizeof(struct page *);
+>  
+> -	bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+> +	size += bitmap_size;
+> +	bitmap = kzalloc(size, GFP_KERNEL);
+>  	if (!bitmap)
+>  		goto no_bitmap;
+> +	pages = (void *)bitmap + bitmap_size;
+
+So you stuck a bitmap field in front of the array then?
+Why not just define a structure where this is clearly defined
+instead of doing the casting.
+
+>  
+>  	if (IS_ENABLED(CONFIG_CMA))
+>  		ptr = __alloc_from_contiguous(NULL, pool->size, prot, &page);
+> @@ -348,9 +352,14 @@ static int __init atomic_pool_init(void)
+>  		ptr = __alloc_remap_buffer(NULL, pool->size, GFP_KERNEL, prot,
+>  					   &page, NULL);
+>  	if (ptr) {
+> +		int i;
+> +
+> +		for (i = 0; i < nr_pages; i++)
+> +			pages[i] = page + i;
+> +
+>  		spin_lock_init(&pool->lock);
+>  		pool->vaddr = ptr;
+> -		pool->page = page;
+> +		pool->pages = pages;
+>  		pool->bitmap = bitmap;
+>  		pool->nr_pages = nr_pages;
+>  		pr_info("DMA: preallocated %u KiB pool for atomic coherent allocations\n",
+> @@ -481,7 +490,7 @@ static void *__alloc_from_pool(size_t size, struct page **ret_page)
+>  	if (pageno < pool->nr_pages) {
+>  		bitmap_set(pool->bitmap, pageno, count);
+>  		ptr = pool->vaddr + PAGE_SIZE * pageno;
+> -		*ret_page = pool->page + pageno;
+> +		*ret_page = pool->pages[pageno];
+>  	} else {
+>  		pr_err_once("ERROR: %u KiB atomic DMA coherent pool is too small!\n"
+>  			    "Please increase it with coherent_pool= kernel parameter!\n",
+> -- 
+> 1.7.5.4
+> 
