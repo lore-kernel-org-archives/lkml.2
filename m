@@ -1,48 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759920Ab2HXQYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:24:46 -0400
-Received: from exprod7og107.obsmtp.com ([64.18.2.167]:44243 "EHLO
-	exprod7og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759828Ab2HXQYl (ORCPT
+	id S1759886Ab2HXQ0c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:26:32 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53863 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753481Ab2HXQ02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:24:41 -0400
-Message-ID: <5037AAB0.6040102@genband.com>
-Date: Fri, 24 Aug 2012 10:24:16 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Fri, 24 Aug 2012 12:26:28 -0400
 MIME-Version: 1.0
+In-Reply-To: <201208241820.54778.tweek@tweek.dk>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+	<201208241814.16862.tweek@tweek.dk>
+	<CAJ7jCmkpvrX87T06JPHk4cShxaC=fUmkxGQmiHsKGwe+X2RVow@mail.gmail.com>
+	<201208241820.54778.tweek@tweek.dk>
+Date: Fri, 24 Aug 2012 18:26:27 +0200
+Message-ID: <CAJ7jCmkmbgY3AqKii-+RH0jOnSw9Co=WLABfOK6NVW6q2hSgCA@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+From: wbrana <wbrana@gmail.com>
 To: Martin Nybo Andersen <tweek@tweek.dk>
-CC: wbrana <wbrana@gmail.com>, Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
+Cc: Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
         Ondrej Zary <linux@rainbow-software.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Drop support for x86-32
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <1345823281.28613.34.camel@thorin> <CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com> <201208241814.16862.tweek@tweek.dk>
-In-Reply-To: <201208241814.16862.tweek@tweek.dk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Aug 2012 16:24:17.0054 (UTC) FILETIME=[E837CBE0:01CD8214]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19136.000
-X-TM-AS-Result: No--13.652700-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2012 10:14 AM, Martin Nybo Andersen wrote:
-> (And I'm still not sure why one would run 32-bit applications on a 64-bit
-> architecture...)
-
-There are several architectures (powerpc comes to mind) where 32-bit 
-userspace on 64-bit kernel is the norm because it offers performance 
-advantages due to the smaller pointer size if the process doesn' t need 
-the larger address space.  This is the rationale behind the new x32 ABI 
-for x86-64 kernels.
-
-You might also want to run legacy apps (which can't be recompiled) on 
-new hardware.
-
-Chris
-
-
+On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
+> Dropping one of the most used architectures for no apparent reason makes no
+> sense at all.
+x86-32 won't be one of the most used architectures in 2017.
