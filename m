@@ -1,104 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab2HXIab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 04:30:31 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4120 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932463Ab2HXIaU (ORCPT
+	id S1757292Ab2HXIca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 04:32:30 -0400
+Received: from relay.medianet-world.de ([213.157.0.172]:21932 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751493Ab2HXIcZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 04:30:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 24 Aug 2012 01:24:20 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: <m.szyprowski@samsung.com>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linaro-mm-sig@lists.linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <kyungmin.park@samsung.com>,
-        <arnd@arndb.de>, <linux@arm.linux.org.uk>, <chunsang.jeong@linaro.org>,
-        <vdumpa@nvidia.com>, <konrad.wilk@oracle.com>, <subashrp@gmail.com>,
-        <minchan@kernel.org>, <pullip.cho@samsung.com>
-Subject: [v3 4/4] ARM: dma-mapping: IOMMU allocates pages from atomic_pool with GFP_ATOMIC
-Date: Fri, 24 Aug 2012 11:29:05 +0300
-Message-ID: <1345796945-21115-5-git-send-email-hdoyu@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1345796945-21115-1-git-send-email-hdoyu@nvidia.com>
-References: <1345796945-21115-1-git-send-email-hdoyu@nvidia.com>
+	Fri, 24 Aug 2012 04:32:25 -0400
+thread-index: Ac2B0vmYFMvBhnRLTIOjYyCIfsooAw==
+Thread-Topic: [ANNOUNCE] 3.4.9-rt17
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+From: "Tim Sander" <tim.sander@hbm.com>
+To: "RT" <linux-rt-users@vger.kernel.org>
+Cc: "Steven Rostedt" <rostedt@goodmis.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.4.9-rt17
+Date: Fri, 24 Aug 2012 10:32:14 +0200
+Message-ID: <1494830.WYyVmtosNh@dabox>
+Organization: Hottinger Baldwin Messtechnik
+User-Agent: KMail/4.8.4 (Linux/3.4.0; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <1843545.6vtXSYEOLB@dabox>
+References: <1345144963.3708.1.camel@gandalf.local.home> <10950377.h1F1h7Gs2a@dabox> <1843545.6vtXSYEOLB@dabox>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="iso-8859-1"
+X-OriginalArrivalTime: 24 Aug 2012 08:32:19.0345 (UTC) FILETIME=[F98C5010:01CD81D2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the same atomic pool as DMA does, and skip a kernel page
-mapping which can involve sleep'able operations at allocating a kernel
-page table.
+Hi 
 
-Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
----
- arch/arm/mm/dma-mapping.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+), 0 deletions(-)
+After fixing the realtime prios which got shuffled due to other irq thread names
+I just tested the realtime latency for interrupts on the i.mx35. With our own 
+systemtimer which does not get into the way of  the measurement interrupt this 
+kernel has 30µs worst time (caveat: short measurement period) interrupt 
+latency and usermode can keep up with a 2400kHz interrupt rate. While the 
+usermode performance seems to be largely unchanged (but i haven't tested very 
+thoroughly) the interrupt latency went down about 10µs coming from the 3.0-rt 
+series. Its really nice to see that kind of improvement. 
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 58a852b..3ce152a 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -1205,6 +1205,34 @@ static struct page **__iommu_get_pages(void *cpu_addr, struct dma_attrs *attrs)
- 	return NULL;
- }
- 
-+static void *__iommu_alloc_atomic(struct device *dev, size_t size,
-+				  dma_addr_t *handle)
-+{
-+	struct page *page;
-+	void *addr;
-+
-+	addr = __alloc_from_pool(size, &page);
-+	if (!addr)
-+		return NULL;
-+
-+	*handle = __iommu_create_mapping(dev, &page, size);
-+	if (*handle == DMA_ERROR_CODE)
-+		goto err_mapping;
-+
-+	return addr;
-+
-+err_mapping:
-+	__free_from_pool(addr, size);
-+	return NULL;
-+}
-+
-+static void __iommu_free_atomic(struct device *dev, struct page **pages,
-+				dma_addr_t handle, size_t size)
-+{
-+	__iommu_remove_mapping(dev, handle, size);
-+	__free_from_pool(page_address(pages[0]), size);
-+}
-+
- static void *arm_iommu_alloc_attrs(struct device *dev, size_t size,
- 	    dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
- {
-@@ -1215,6 +1243,9 @@ static void *arm_iommu_alloc_attrs(struct device *dev, size_t size,
- 	*handle = DMA_ERROR_CODE;
- 	size = PAGE_ALIGN(size);
- 
-+	if (gfp & GFP_ATOMIC)
-+		return __iommu_alloc_atomic(dev, size, handle);
-+
- 	pages = __iommu_alloc_buffer(dev, size, gfp);
- 	if (!pages)
- 		return NULL;
-@@ -1281,6 +1312,11 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
- 		return;
- 	}
- 
-+	if (__in_atomic_pool(cpu_addr, size)) {
-+		__iommu_free_atomic(dev, pages, handle, size);
-+		return;
-+	}
-+
- 	if (!dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, attrs)) {
- 		unmap_kernel_range((unsigned long)cpu_addr, size);
- 		vunmap(cpu_addr);
--- 
-1.7.5.4
+Thanks
+Tim
 
+Ignore the legalese please:
+
+
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
