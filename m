@@ -1,566 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2HXSpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:45:14 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61034 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2HXSpH (ORCPT
+	id S1757005Ab2HXSqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:46:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37785 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab2HXSqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:45:07 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 24 Aug 2012 11:45:05 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        lm-sensors@lm-sensors.org, linux-input@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-leds@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Andrew Jones <drjones@redhat.com>, Donggeun Kim <dg77.kim@samsung.com>,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        Wim Van Sebroeck <wim@iguana.be>, Bryan Wu <bryan.wu@canonical.com>,
-        "Richard Purdie <rpurdie@rpsys.net> Anthony Olech" 
-	<anthony.olech@diasemi.com>
-Subject: Re: [RFC PATCH 4/8] hwmon: Add DA906x hardware monitoring support.
-Message-ID: <20120824184505.GA7275@roeck-us.net>
-References: <201208241500@sw-eng-lt-dc-vm2>
- <201208241505@sw-eng-lt-dc-vm2>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201208241505@sw-eng-lt-dc-vm2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Aug 2012 14:46:25 -0400
+From: Michal Nazarewicz <mpn@google.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: gadget: get rid of USB_GADGET_{DUAL,SUPER}SPEED
+Date: Fri, 24 Aug 2012 20:46:18 +0200
+Message-Id: <8c7e6429f51fd5f21f1c62ae53c553b1f0fd0a1c.1345833862.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 03:05:00PM +0100, Krystian Garbaciak wrote:
-> DA906x PMIC provides ADC for voltage and temperature monitoring.
-> 
-Hi Krystian,
+From: Michal Nazarewicz <mina86@mina86.com>
 
-DA906x seems to be a bad choice for a name. It covers DA906[0-9] and possibly
-even DA906[A-Z]. The only chip really in existence seems to be DA9064.
+This commit removes USB_GADGET_DUALSPEED and USB_GADGET_SUPERSPEED
+Kconfig options.  Since now kernel allows many UDC drivers to be
+compiled, those options may turn to no longer be valid.  For
+instance, if someone decides to build UDC that supports super
+speed and UDC that supports high speed only, the latter will be
+"assumed" to support super speed since USB_GADGET_SUPERSPEED will
+be selected by the former.
 
-I personally think it is a bad idea to have an 'x' in a driver name. What if
-DA9069 shows up at some point and is completely different ? I think the driver
-should be named for the first supported chip; reference the others in the code
-and documentation.
+The test of whether CONFIG_USB_GADGET_*SPEED was defined was just
+an optimisation which removed otherwise dead code (ie. if UDC is
+not dual speed, there is no need to handle cases that can happen
+if speed is high).  This commit removes those checks.
 
-Worse, I find no information anywhere in your patch set indicating which chips
-are actually supported. I don't know how other subsystems handle this, but for
-hwmon this is a no-go.
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+ Hi,
 
-> The driver provides results of following ADC channels:
->  - in0 - system voltage (2500 - 5500 mV)
->  - in1 - universal voltage channel #1 (0 - 2500 mV)
->  - in2 - universal voltage channel #2 (0 - 2500 mV)
->  - in3 - universal voltage channel #3 (0 - 2500 mV)
->  - in4 - backup battery voltage (0 - 5000 mV)
->  - temp1 - PMIC internal junction temperature (-88 - 333 Celcius degrees)
-> 
-> Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-> ---
->  drivers/hwmon/Kconfig        |    6 +
->  drivers/hwmon/Makefile       |    1 +
->  drivers/hwmon/da906x-hwmon.c |  393 ++++++++++++++++++++++++++++++++++++++++++
+ I've sent this patch quite a while ago but it did not got picked up
+ for some reason.  Looking at the archives[1] I could not figure out
+ a reason why this patch should be omitted so I'm resending it.
 
-Also please provide Documentation/hwmon/da906x-hwmon.
+ This is rebase on top of v3.6-rc3.
 
->  3 files changed, 400 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/hwmon/da906x-hwmon.c
-> 
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index b0a2e4c..7abc9a0 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -1373,6 +1373,12 @@ config SENSORS_WM8350
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called wm8350-hwmon.
->  
-> +config SENSORS_DA906X
-> +	tristate "DA906X HWMON device drivers"
-> +	depends on MFD_DA906X
-> +	help
-> +	  Support for the HWMON DA906X device driver.
-> +
+ [1] https://groups.google.com/forum/?fromgroups=#!topic/linux.kernel/cUOFAhPGNhE
 
-Alphabetical order, please, and describe which chip(s) are supported. And you
-don't really support a device driver, the device driver presumably supports a
-chip. Since it is tristate, we also expect you to provide the module name if the
-driver is built as module.
+ drivers/usb/chipidea/Kconfig   |    1 -
+ drivers/usb/dwc3/Kconfig       |    2 --
+ drivers/usb/gadget/Kconfig     |   25 -------------------------
+ drivers/usb/gadget/composite.c |    9 +--------
+ drivers/usb/gadget/inode.c     |   15 ++++-----------
+ drivers/usb/gadget/u_ether.c   |    7 -------
+ drivers/usb/musb/Kconfig       |    1 -
+ include/linux/usb/gadget.h     |   19 ++-----------------
+ 8 files changed, 7 insertions(+), 72 deletions(-)
 
->  config SENSORS_ULTRA45
->  	tristate "Sun Ultra45 PIC16F747"
->  	depends on SPARC64
-> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> index 7aa9811..ffbe151 100644
-> --- a/drivers/hwmon/Makefile
-> +++ b/drivers/hwmon/Makefile
-> @@ -43,6 +43,7 @@ obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
->  obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
->  obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
->  obj-$(CONFIG_SENSORS_DA9052_ADC)+= da9052-hwmon.o
-> +obj-$(CONFIG_SENSORS_DA906X)	+= da906x-hwmon.o
->  obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
->  obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
->  obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
-> diff --git a/drivers/hwmon/da906x-hwmon.c b/drivers/hwmon/da906x-hwmon.c
-> new file mode 100644
-> index 0000000..8ece931
-> --- /dev/null
-> +++ b/drivers/hwmon/da906x-hwmon.c
-> @@ -0,0 +1,393 @@
-> +/*
-> + * HW Monitor support for Dialog DA906X PMIC series
-> + *
-> + * Copyright 2012 Dialog Semiconductor Ltd.
-> + *
-> + * Author: Krystian Garbaciak <krystian.garbaciak@diasemi.com>,
-> + *         Michal Hajduk <michal.hajduk@diasemi.com>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/string.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-sysfs.h>
-> +#include <linux/mfd/da906x/core.h>
-> +#include <linux/mfd/da906x/pdata.h>
-> +
-> +/* ADC resolutions for manual and auto modes */
-> +#define DA906X_ADC_RES		\
-> +		(1 << (DA906X_ADC_RES_L_BITS + DA906X_ADC_RES_M_BITS))
-> +#define DA906X_ADC_MAX		(DA906X_ADC_RES - 1)
-> +#define	DA906X_ADC_AUTO_RES	(1 << DA906X_ADC_RES_M_BITS)
-> +#define	DA906X_ADC_AUTO_MAX	(DA906X_ADC_AUTO_RES - 1)
-> +
-> +/* Define interpolation table to calculate ADC values  */
-> +struct i_table {
-> +	int x0;
-> +	int a;
-> +	int b;
-> +};
-> +#define ILINE(x1, x2, y1, y2)	{ \
-> +		.x0 = (x1), \
-> +		.a = ((y2) - (y1)) * DA906X_ADC_RES / ((x2) - (x1)), \
-> +		.b = (y1) - ((y2) - (y1)) * (x1) / ((x2) - (x1)), \
-> +	}
-> +
-> +struct channel_info {
-> +	const char *name;
-> +	const struct i_table *tbl;
-> +	int tbl_max;
-> +	u16 reg_auto_en;
-> +};
-> +
-> +enum da906x_adc {
-> +	DA906X_VSYS,
-> +	DA906X_ADCIN1,
-> +	DA906X_ADCIN2,
-> +	DA906X_ADCIN3,
-> +	DA906X_TJUNC,
-> +	DA906X_VBBAT,
-> +
-> +	DA906X_CHAN_NUM
-> +};
-> +
-> +static const struct i_table vsys_tbl[] = {
-> +	ILINE(0, DA906X_ADC_MAX, 2500, 5500)
-> +};
-> +
-> +static const struct i_table adcin_tbl[] = {
-> +	ILINE(0, DA906X_ADC_MAX, 0, 2500)
-> +};
-> +
-> +static const struct i_table tjunc_tbl[] = {
-> +	ILINE(0, DA906X_ADC_MAX, 333, -86)
-> +};
-> +
-> +static const struct i_table vbbat_tbl[] = {
-> +	ILINE(0, DA906X_ADC_MAX, 0, 5000)
-> +};
+diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
+index 47e499c..1ea932a 100644
+--- a/drivers/usb/chipidea/Kconfig
++++ b/drivers/usb/chipidea/Kconfig
+@@ -13,7 +13,6 @@ if USB_CHIPIDEA
+ config USB_CHIPIDEA_UDC
+ 	bool "ChipIdea device controller"
+ 	depends on USB_GADGET=y || USB_GADGET=USB_CHIPIDEA
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  Say Y here to enable device controller functionality of the
+ 	  ChipIdea driver.
+diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+index d13c60f..f6a6e07 100644
+--- a/drivers/usb/dwc3/Kconfig
++++ b/drivers/usb/dwc3/Kconfig
+@@ -2,8 +2,6 @@ config USB_DWC3
+ 	tristate "DesignWare USB3 DRD Core Support"
+ 	depends on (USB && USB_GADGET)
+ 	select USB_OTG_UTILS
+-	select USB_GADGET_DUALSPEED
+-	select USB_GADGET_SUPERSPEED
+ 	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+ 	help
+ 	  Say Y or M here if your system has a Dual Role SuperSpeed
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 51ab5fd..2ba0d0e 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -154,7 +154,6 @@ config USB_LPC32XX
+ 
+ config USB_ATMEL_USBA
+ 	tristate "Atmel USBA"
+-	select USB_GADGET_DUALSPEED
+ 	depends on AVR32 || ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
+ 	help
+ 	  USBA is the integrated high-speed USB Device controller on
+@@ -163,7 +162,6 @@ config USB_ATMEL_USBA
+ config USB_FSL_USB2
+ 	tristate "Freescale Highspeed USB DR Peripheral Controller"
+ 	depends on FSL_SOC || ARCH_MXC
+-	select USB_GADGET_DUALSPEED
+ 	select USB_FSL_MPH_DR_OF if OF
+ 	help
+ 	   Some of Freescale PowerPC and i.MX processors have a High Speed
+@@ -179,7 +177,6 @@ config USB_FSL_USB2
+ config USB_FUSB300
+ 	tristate "Faraday FUSB300 USB Peripheral Controller"
+ 	depends on !PHYS_ADDR_T_64BIT
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   Faraday usb device controller FUSB300 driver
+ 
+@@ -227,7 +224,6 @@ config USB_PXA25X_SMALL
+ 
+ config USB_R8A66597
+ 	tristate "Renesas R8A66597 USB Peripheral Controller"
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   R8A66597 is a discrete USB host and peripheral controller chip that
+ 	   supports both full and high speed USB 2.0 data transfers.
+@@ -240,7 +236,6 @@ config USB_R8A66597
+ config USB_RENESAS_USBHS_UDC
+ 	tristate 'Renesas USBHS controller'
+ 	depends on USB_RENESAS_USBHS
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   Renesas USBHS is a discrete USB host and peripheral controller chip
+ 	   that supports both full and high speed USB 2.0 data transfers.
+@@ -268,7 +263,6 @@ config USB_PXA27X
+ config USB_S3C_HSOTG
+ 	tristate "S3C HS/OtG USB Device controller"
+ 	depends on S3C_DEV_USB_HSOTG
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  The Samsung S3C64XX USB2.0 high-speed gadget controller
+ 	  integrated into the S3C64XX series SoC.
+@@ -305,7 +299,6 @@ config USB_S3C2410_DEBUG
+ config USB_S3C_HSUDC
+ 	tristate "S3C2416, S3C2443 and S3C2450 USB Device Controller"
+ 	depends on ARCH_S3C24XX
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  Samsung's S3C2416, S3C2443 and S3C2450 is an ARM9 based SoC
+ 	  integrated with dual speed USB 2.0 device controller. It has
+@@ -315,7 +308,6 @@ config USB_S3C_HSUDC
+ 
+ config USB_MV_UDC
+ 	tristate "Marvell USB2.0 Device Controller"
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  Marvell Socs (including PXA and MMP series) include a high speed
+ 	  USB2.0 OTG controller, which can be configured as high speed or
+@@ -338,14 +330,12 @@ config USB_MV_U3D
+ config USB_GADGET_MUSB_HDRC
+ 	tristate "Inventra HDRC USB Peripheral (TI, ADI, ...)"
+ 	depends on USB_MUSB_HDRC
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  This OTG-capable silicon IP is used in dual designs including
+ 	  the TI DaVinci, OMAP 243x, OMAP 343x, TUSB 6010, and ADI Blackfin
+ 
+ config USB_M66592
+ 	tristate "Renesas M66592 USB Peripheral Controller"
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   M66592 is a discrete USB peripheral controller chip that
+ 	   supports both full and high speed USB 2.0 data transfers.
+@@ -362,7 +352,6 @@ config USB_M66592
+ config USB_AMD5536UDC
+ 	tristate "AMD5536 UDC"
+ 	depends on PCI
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   The AMD5536 UDC is part of the AMD Geode CS5536, an x86 southbridge.
+ 	   It is a USB Highspeed DMA capable USB device controller. Beside ep0
+@@ -389,7 +378,6 @@ config USB_FSL_QE
+ 
+ config USB_NET2272
+ 	tristate "PLX NET2272"
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  PLX NET2272 is a USB peripheral controller which supports
+ 	  both full and high speed USB 2.0 data transfers.
+@@ -413,7 +401,6 @@ config USB_NET2272_DMA
+ config USB_NET2280
+ 	tristate "NetChip 228x"
+ 	depends on PCI
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   NetChip 2280 / 2282 is a PCI based USB peripheral controller which
+ 	   supports both full and high speed USB 2.0 data transfers.
+@@ -443,7 +430,6 @@ config USB_GOKU
+ config USB_EG20T
+ 	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
+ 	depends on PCI
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  This is a USB device driver for EG20T PCH.
+ 	  EG20T PCH is the platform controller hub that is used in Intel's
+@@ -470,8 +456,6 @@ config USB_EG20T
+ config USB_DUMMY_HCD
+ 	tristate "Dummy HCD (DEVELOPMENT)"
+ 	depends on USB=y || (USB=m && USB_GADGET=m)
+-	select USB_GADGET_DUALSPEED
+-	select USB_GADGET_SUPERSPEED
+ 	help
+ 	  This host controller driver emulates USB, looping all data transfer
+ 	  requests back to a USB "gadget driver" in the same host.  The host
+@@ -496,15 +480,6 @@ config USB_DUMMY_HCD
+ 
+ endmenu
+ 
+-# Selected by UDC drivers that support high-speed operation.
+-config USB_GADGET_DUALSPEED
+-	bool
+-
+-# Selected by UDC drivers that support super-speed opperation
+-config USB_GADGET_SUPERSPEED
+-	bool
+-	depends on USB_GADGET_DUALSPEED
+-
+ #
+ # USB Gadget Drivers
+ #
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 3f72110..f8a481c 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1585,12 +1585,6 @@ composite_resume(struct usb_gadget *gadget)
+ /*-------------------------------------------------------------------------*/
+ 
+ static struct usb_gadget_driver composite_driver = {
+-#ifdef CONFIG_USB_GADGET_SUPERSPEED
+-	.max_speed	= USB_SPEED_SUPER,
+-#else
+-	.max_speed	= USB_SPEED_HIGH,
+-#endif
+-
+ 	.unbind		= composite_unbind,
+ 
+ 	.setup		= composite_setup,
+@@ -1635,8 +1629,7 @@ int usb_composite_probe(struct usb_composite_driver *driver,
+ 		driver->iProduct = driver->name;
+ 	composite_driver.function =  (char *) driver->name;
+ 	composite_driver.driver.name = driver->name;
+-	composite_driver.max_speed =
+-		min_t(u8, composite_driver.max_speed, driver->max_speed);
++	composite_driver.max_speed = driver->max_speed;
+ 	composite = driver;
+ 	composite_gadget_bind = bind;
+ 
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index e58b164..ae13a10 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -828,7 +828,6 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 		if (value == 0)
+ 			data->state = STATE_EP_ENABLED;
+ 		break;
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ 	case USB_SPEED_HIGH:
+ 		/* fails if caller didn't provide that descriptor... */
+ 		ep->desc = &data->hs_desc;
+@@ -836,7 +835,6 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 		if (value == 0)
+ 			data->state = STATE_EP_ENABLED;
+ 		break;
+-#endif
+ 	default:
+ 		DBG(data->dev, "unconnected, %s init abandoned\n",
+ 				data->name);
+@@ -1324,7 +1322,6 @@ static const struct file_operations ep0_io_operations = {
+  * Unrecognized ep0 requests may be handled in user space.
+  */
+ 
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ static void make_qualifier (struct dev_data *dev)
+ {
+ 	struct usb_qualifier_descriptor		qual;
+@@ -1347,7 +1344,6 @@ static void make_qualifier (struct dev_data *dev)
+ 
+ 	memcpy (dev->rbuf, &qual, sizeof qual);
+ }
+-#endif
+ 
+ static int
+ config_buf (struct dev_data *dev, u8 type, unsigned index)
+@@ -1427,7 +1423,6 @@ gadgetfs_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 			dev->dev->bMaxPacketSize0 = dev->gadget->ep0->maxpacket;
+ 			req->buf = dev->dev;
+ 			break;
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ 		case USB_DT_DEVICE_QUALIFIER:
+ 			if (!dev->hs_config)
+ 				break;
+@@ -1437,7 +1432,6 @@ gadgetfs_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 			break;
+ 		case USB_DT_OTHER_SPEED_CONFIG:
+ 			// FALLTHROUGH
+-#endif
+ 		case USB_DT_CONFIG:
+ 			value = config_buf (dev,
+ 					w_value >> 8,
+@@ -1763,11 +1757,6 @@ gadgetfs_suspend (struct usb_gadget *gadget)
+ }
+ 
+ static struct usb_gadget_driver gadgetfs_driver = {
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+-	.max_speed	= USB_SPEED_HIGH,
+-#else
+-	.max_speed	= USB_SPEED_FULL,
+-#endif
+ 	.function	= (char *) driver_desc,
+ 	.unbind		= gadgetfs_unbind,
+ 	.setup		= gadgetfs_setup,
+@@ -1900,6 +1889,10 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 
+ 	/* triggers gadgetfs_bind(); then we can enumerate. */
+ 	spin_unlock_irq (&dev->lock);
++	if (dev->hs_config)
++		gadgetfs_driver.max_speed = USB_SPEED_HIGH;
++	else
++		gadgetfs_driver.max_speed = USB_SPEED_FULL;
+ 	value = usb_gadget_probe_driver(&gadgetfs_driver, gadgetfs_bind);
+ 	if (value != 0) {
+ 		kfree (dev->buf);
+diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+index 0e52309..7631d97 100644
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -83,17 +83,10 @@ struct eth_dev {
+ 
+ #define DEFAULT_QLEN	2	/* double buffering by default */
+ 
+-
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+-
+ static unsigned qmult = 5;
+ module_param(qmult, uint, S_IRUGO|S_IWUSR);
+ MODULE_PARM_DESC(qmult, "queue length multiplier at high/super speed");
+ 
+-#else	/* full speed (low speed doesn't do bulk) */
+-#define qmult		1
+-#endif
+-
+ /* for dual-speed hardware, use deeper queues at high/super speed */
+ static inline int qlen(struct usb_gadget *gadget)
+ {
+diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
+index 6259f0d..09f6856 100644
+--- a/drivers/usb/musb/Kconfig
++++ b/drivers/usb/musb/Kconfig
+@@ -12,7 +12,6 @@ config USB_MUSB_HDRC
+ 	select TWL4030_USB if MACH_OMAP_3430SDP
+ 	select TWL6030_USB if MACH_OMAP_4430SDP || MACH_OMAP4_PANDA
+ 	select USB_OTG_UTILS
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  Say Y here if your system has a dual role high speed USB
+ 	  controller based on the Mentor Graphics silicon IP.  Then
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index 9517466..d05b220 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -558,14 +558,7 @@ static inline struct usb_gadget *dev_to_usb_gadget(struct device *dev)
+  */
+ static inline int gadget_is_dualspeed(struct usb_gadget *g)
+ {
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+-	/* runtime test would check "g->max_speed" ... that might be
+-	 * useful to work around hardware bugs, but is mostly pointless
+-	 */
+-	return 1;
+-#else
+-	return 0;
+-#endif
++	return g->max_speed >= USB_SPEED_HIGH;
+ }
+ 
+ /**
+@@ -575,15 +568,7 @@ static inline int gadget_is_dualspeed(struct usb_gadget *g)
+  */
+ static inline int gadget_is_superspeed(struct usb_gadget *g)
+ {
+-#ifdef CONFIG_USB_GADGET_SUPERSPEED
+-	/*
+-	 * runtime test would check "g->max_speed" ... that might be
+-	 * useful to work around hardware bugs, but is mostly pointless
+-	 */
+-	return 1;
+-#else
+-	return 0;
+-#endif
++	return g->max_speed >= USB_SPEED_SUPER;
+ }
+ 
+ /**
+-- 
+1.7.7.3
 
-Since the first parameter to ILINE is always 0, it is not needed. This means
-that x0 in itable is also always 0 and thus not needed. 
-
-> +
-> +static const struct channel_info da906x_channels[] = {
-> +	[DA906X_VSYS]	= { "VSYS",
-> +			    vsys_tbl, ARRAY_SIZE(vsys_tbl) - 1,
-> +			    DA906X_REG_VSYS_RES },
-> +	[DA906X_ADCIN1]	= { "ADCIN1",
-> +			    adcin_tbl,	ARRAY_SIZE(adcin_tbl) - 1,
-> +			    DA906X_REG_ADCIN1_RES },
-> +	[DA906X_ADCIN2]	= { "ADCIN2",
-> +			    adcin_tbl,	ARRAY_SIZE(adcin_tbl) - 1,
-> +			    DA906X_REG_ADCIN2_RES },
-> +	[DA906X_ADCIN3]	= { "ADCIN3",
-> +			    adcin_tbl,	ARRAY_SIZE(adcin_tbl) - 1,
-> +			    DA906X_REG_ADCIN3_RES },
-> +	[DA906X_TJUNC]	= { "TJUNC",
-> +			    tjunc_tbl,	ARRAY_SIZE(tjunc_tbl) - 1 },
-> +	[DA906X_VBBAT]	= { "VBBAT",
-> +			    vbbat_tbl,	ARRAY_SIZE(vbbat_tbl) - 1}
-
-	s/1}/1 }/
-
-> +};
-
-You lost me here a bit (I am missing something ?).
-
-Seems to be each table has exactly one entry. Since the table size is 1,
-ARRAY_SIZE(vbbat_tbl) - 1 is 0, and ...
-
-> +#define DA906X_ADC_AUTO_MODE_SUPPORT_MASK	(DA906X_ADC_AUTO_VSYS_EN | \
-> +						 DA906X_ADC_AUTO_AD1_EN | \
-> +						 DA906X_ADC_AUTO_AD2_EN | \
-> +						 DA906X_ADC_AUTO_AD3_EN)
-> +
-> +struct da906x_hwmon {
-> +	struct da906x *da906x;
-> +	struct device *class_dev;
-> +	struct completion man_adc_rdy;	/* Manual read completion flag */
-> +	struct mutex hwmon_mutex;	/* Queue concurent manual reads */
-> +	int irq;
-> +	u8 adc_auto_en;     /* Bitmask of channels with auto mode enabled */
-> +	s8 tjunc_offset;    /* Calibration offset for junction temperature */
-> +};
-> +
-> +int da906x_adc_convert(int channel, int x)
-> +{
-> +	const struct channel_info *info = &da906x_channels[channel];
-> +	int i, ret;
-> +
-> +	for (i = info->tbl_max; i > 0; i--)
-> +		if (info->tbl[i].x0 <= x)
-> +			break;
-
-... this loop never does anything because info->tbl_max is always 0.
-Besides, even if the loop was used, x0 is always 0 anyway, so you might well
-compare against 0 instead which doesn't make sense.
-
-So what is the point for making the code that complex ? For me it just adds a
-lot of confusion.
-
-> +
-> +	ret = info->tbl[i].a * x;
-> +	if (ret >= 0)
-> +		ret += DA906X_ADC_RES / 2;
-> +	else
-> +		ret -= DA906X_ADC_RES / 2;
-> +	ret = ret / DA906X_ADC_RES + info->tbl[i].b;
-
-	ret = DIV_ROUND_CLOSEST(ret, DA906X_ADC_RES) + info->tbl[i].b;
-
-has the same effect as the 5 lines above and is simpler.
-
-> +	return ret;
-> +}
-> +
-> +static int da906x_adc_manual_read(struct da906x_hwmon *hwmon, int channel)
-> +{
-> +	int ret;
-> +	u8 data[2];
-> +
-> +	mutex_lock(&hwmon->hwmon_mutex);
-> +
-> +	init_completion(&hwmon->man_adc_rdy);
-> +
-> +	/* Start measurment on selected channel */
-> +	data[0] = (channel << DA906X_ADC_MUX_SHIFT) & DA906X_ADC_MUX_MASK;
-> +	data[0] |= DA906X_ADC_MAN;
-> +	ret = da906x_reg_update(hwmon->da906x, DA906X_REG_ADC_MAN,
-> +				DA906X_ADC_MUX_MASK | DA906X_ADC_MAN, data[0]);
-> +	if (ret < 0)
-> +		goto out;
-> +
-> +	/* Wait for interrupt from ADC */
-> +	ret = wait_for_completion_timeout(&hwmon->man_adc_rdy,
-> +					  msecs_to_jiffies(1000));
-> +	if (ret == 0) {
-> +		ret = -EBUSY;
-
-Should this be -ETIMEDOUT ?
-
-> +		goto out;
-> +	}
-> +
-> +	/* Get results */
-> +	ret = da906x_block_read(hwmon->da906x, DA906X_REG_ADC_RES_L, 2, data);
-> +	if (ret < 0)
-> +		goto out;
-> +	ret = (data[0] & DA906X_ADC_RES_L_MASK) >> DA906X_ADC_RES_L_SHIFT;
-> +	ret |= data[1] << DA906X_ADC_RES_L_BITS;
-> +out:
-> +	mutex_unlock(&hwmon->hwmon_mutex);
-> +	return ret;
-> +}
-> +
-> +static int da906x_adc_auto_read(struct da906x *da906x, int channel)
-> +{
-> +	const struct channel_info *info = &da906x_channels[channel];
-> +
-> +	return da906x_reg_read(da906x, info->reg_auto_en);
-> +}
-> +
-> +static irqreturn_t da906x_hwmon_irq_handler(int irq, void *irq_data)
-> +{
-> +	struct da906x_hwmon *hwmon = irq_data;
-> +
-> +	complete(&hwmon->man_adc_rdy);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static ssize_t da906x_adc_read(struct device *dev,
-> +			       struct device_attribute *devattr, char *buf)
-> +{
-> +	struct da906x_hwmon *hwmon = dev_get_drvdata(dev);
-> +	int channel = to_sensor_dev_attr(devattr)->index;
-> +	int val;
-> +
-> +	if (hwmon->adc_auto_en & (1 << channel)) {
-> +		val = da906x_adc_auto_read(hwmon->da906x, channel);
-> +		if (val < 0)
-> +			return val;
-> +
-> +		val *= DA906X_ADC_RES / DA906X_ADC_AUTO_RES;
-> +		val = da906x_adc_convert(channel, val);
-> +	} else {
-> +		val = da906x_adc_manual_read(hwmon, channel);
-> +		if (val < 0)
-> +			return val;
-> +
-> +		if (channel == DA906X_TJUNC)
-> +			val += hwmon->tjunc_offset;
-> +		val = da906x_adc_convert(channel, val);
-
-This call is really the same for both the if and else path. Might as well put it
-after the conditional code.
-
-> +	}
-> +
-> +	return sprintf(buf, "%d\n", val);
-> +}
-> +
-> +static ssize_t da906x_show_name(struct device *dev,
-> +	struct device_attribute *attr, char *buf)
-
-
-Please align all multi-line function parameters with the opening (.
-
-> +{
-> +	return sprintf(buf, DA906X_DRVNAME_HWMON "\n");
-> +}
-> +
-> +static ssize_t da906x_show_label(struct device *dev,
-> +				 struct device_attribute *devattr, char *buf)
-> +{
-> +	const struct channel_info *info;
-> +
-> +	info = &da906x_channels[to_sensor_dev_attr(devattr)->index];
-> +	return sprintf(buf, "%s\n", info->name);
-> +}
-> +
-> +/* Vsys voltage */
-> +static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO,
-> +			  da906x_adc_read, NULL, DA906X_VSYS);
-> +static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO,
-> +			  da906x_show_label, NULL, DA906X_VSYS);
-> +
-> +/* Universal ADC channel #1 */
-> +static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO,
-> +			  da906x_adc_read, NULL, DA906X_ADCIN1);
-> +static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO,
-> +			  da906x_show_label, NULL, DA906X_ADCIN1);
-> +
-> +/* Universal ADC channel #2 */
-> +static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO,
-> +			  da906x_adc_read, NULL,
-> +			  DA906X_ADCIN2);
-> +static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO,
-> +			  da906x_show_label, NULL, DA906X_ADCIN2);
-> +
-> +/* Universal ADC channel #3 */
-> +static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO,
-> +			  da906x_adc_read, NULL, DA906X_ADCIN3);
-> +static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO,
-> +			  da906x_show_label, NULL, DA906X_ADCIN3);
-> +
-> +/* Backup battery voltage */
-> +static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO,
-> +			  da906x_adc_read, NULL, DA906X_VBBAT);
-> +static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO,
-> +			  da906x_show_label, NULL, DA906X_VBBAT);
-> +
-> +/* Junction temperature */
-> +static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
-> +			  da906x_adc_read, NULL, DA906X_TJUNC);
-> +
-> +static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO,
-> +			  da906x_show_label, NULL, DA906X_TJUNC);
-> +
-> +/* Device name */
-> +static DEVICE_ATTR(name, S_IRUGO, da906x_show_name, NULL);
-> +
-> +static struct attribute *da906x_attributes[] = {
-> +	&dev_attr_name.attr,
-> +	&sensor_dev_attr_in0_input.dev_attr.attr,
-> +	&sensor_dev_attr_in0_label.dev_attr.attr,
-> +	&sensor_dev_attr_in1_input.dev_attr.attr,
-> +	&sensor_dev_attr_in1_label.dev_attr.attr,
-> +	&sensor_dev_attr_in2_input.dev_attr.attr,
-> +	&sensor_dev_attr_in2_label.dev_attr.attr,
-> +	&sensor_dev_attr_in3_input.dev_attr.attr,
-> +	&sensor_dev_attr_in3_label.dev_attr.attr,
-> +	&sensor_dev_attr_in4_input.dev_attr.attr,
-> +	&sensor_dev_attr_in4_label.dev_attr.attr,
-> +	&sensor_dev_attr_temp1_input.dev_attr.attr,
-> +	&sensor_dev_attr_temp1_label.dev_attr.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group da906x_attr_group = {
-> +	.attrs = da906x_attributes,
-> +};
-> +
-> +static int __devinit da906x_hwmon_probe(struct platform_device *pdev)
-> +{
-> +	struct da906x *da906x = dev_get_drvdata(pdev->dev.parent);
-> +	struct da906x_pdata *da906x_pdata = dev_get_platdata(da906x->dev);
-> +	struct da906x_hwmon *hwmon;
-> +	int ret;
-> +
-> +	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da906x_hwmon),
-> +			     GFP_KERNEL);
-> +	if (!hwmon)
-> +		return -ENOMEM;
-> +
-> +	mutex_init(&hwmon->hwmon_mutex);
-> +	init_completion(&hwmon->man_adc_rdy);
-> +	hwmon->da906x = da906x;
-> +
-> +	ret = da906x_reg_read(da906x, DA906X_REG_ADC_CONT);
-> +	if (ret < 0)
-> +		return ret;
-> +	hwmon->adc_auto_en = ret & DA906X_ADC_AUTO_MODE_SUPPORT_MASK;
-> +
-> +	if (da906x_pdata->flags & DA906X_FLG_FORCE_IN0_MANUAL_MODE)
-
-You should check if da906x_pdata is NULL before using it.
-
-> +		hwmon->adc_auto_en &= ~DA906X_ADC_AUTO_VSYS_EN;
-> +	else if (da906x_pdata->flags & DA906X_FLG_FORCE_IN0_AUTO_MODE)
-> +		hwmon->adc_auto_en |= DA906X_ADC_AUTO_VSYS_EN;
-> +
-> +	if (da906x_pdata->flags & DA906X_FLG_FORCE_IN1_MANUAL_MODE)
-> +		hwmon->adc_auto_en &= ~DA906X_ADC_AUTO_AD1_EN;
-> +	else if (da906x_pdata->flags & DA906X_FLG_FORCE_IN1_AUTO_MODE)
-> +		hwmon->adc_auto_en |= DA906X_ADC_AUTO_AD1_EN;
-> +
-> +	if (da906x_pdata->flags & DA906X_FLG_FORCE_IN2_MANUAL_MODE)
-> +		hwmon->adc_auto_en &= ~DA906X_ADC_AUTO_AD2_EN;
-> +	else if (da906x_pdata->flags & DA906X_FLG_FORCE_IN2_AUTO_MODE)
-> +		hwmon->adc_auto_en |= DA906X_ADC_AUTO_AD2_EN;
-> +
-> +	if (da906x_pdata->flags & DA906X_FLG_FORCE_IN3_MANUAL_MODE)
-> +		hwmon->adc_auto_en &= ~DA906X_ADC_AUTO_AD3_EN;
-> +	else if (da906x_pdata->flags & DA906X_FLG_FORCE_IN3_AUTO_MODE)
-> +		hwmon->adc_auto_en |= DA906X_ADC_AUTO_AD3_EN;
-> +
-> +	ret = da906x_reg_update(da906x, DA906X_REG_ADC_CONT,
-> +				DA906X_ADC_AUTO_MODE_SUPPORT_MASK,
-> +				hwmon->adc_auto_en);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	hwmon->class_dev = hwmon_device_register(&pdev->dev);
-> +	if (IS_ERR(hwmon->class_dev))
-> +		return PTR_ERR(hwmon->class_dev);
-> +
-hwmon registration has to be the last call, after sysfs attributes exist.
-sysfs entries are expected to exist when the hwmon device is registered.
-
-> +	hwmon->irq = platform_get_irq_byname(pdev, DA906X_DRVNAME_HWMON);
-
-This function can return an error (-ENXIO).
-
-> +	ret = devm_request_threaded_irq(&pdev->dev, hwmon->irq, NULL,
-> +					da906x_hwmon_irq_handler,
-> +					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +					"HWMON", hwmon);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to request IRQ.\n");
-> +		goto err;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, hwmon);
-> +
-> +	ret = da906x_reg_read(da906x, DA906X_REG_T_OFFSET);
-> +	if (ret < 0)
-> +		dev_warn(&pdev->dev, "Could not read temp1 callibration offset.\n");
-
-	s/callibration/calibration/
-
-> +	else
-> +		hwmon->tjunc_offset = (s8)ret;
-> +
-> +	ret = sysfs_create_group(&pdev->dev.kobj, &da906x_attr_group);
-> +	if (ret)
-> +		goto err;
-> +
-> +	return 0;
-> +
-> +err:
-> +	hwmon_device_unregister(hwmon->class_dev);
-> +	return ret;
-> +}
-> +
-> +static int __devexit da906x_hwmon_remove(struct platform_device *pdev)
-> +{
-> +	struct da906x_hwmon *hwmon = platform_get_drvdata(pdev);
-> +
-> +	hwmon_device_unregister(hwmon->class_dev);
-> +	sysfs_remove_group(&pdev->dev.kobj, &da906x_attr_group);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver da906x_hwmon_driver = {
-> +	.probe = da906x_hwmon_probe,
-> +	.remove = __devexit_p(da906x_hwmon_remove),
-> +	.driver = {
-> +		.name = DA906X_DRVNAME_HWMON,
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(da906x_hwmon_driver);
-> +
-> +MODULE_DESCRIPTION("DA906X Hardware monitoring");
-> +MODULE_AUTHOR("Krystian Garbaciak <krystian.garbaciak@diasemi.com>, Michal Hajduk <michal.hajduk@diasemi.com>");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("paltform:" DA906X_DRVNAME_HWMON);
-
-s/paltform/platform/
-
-> -- 
-> 1.7.0.4
-> 
-> 
