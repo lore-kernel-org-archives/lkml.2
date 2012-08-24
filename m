@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab2HXSNw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:13:52 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14548 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab2HXSNt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:13:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 24 Aug 2012 11:13:46 -0700
-Message-ID: <5037BFAC.7080209@nvidia.com>
-Date: Fri, 24 Aug 2012 23:23:48 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1755505Ab2HXSRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:17:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38181 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753609Ab2HXSRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 14:17:31 -0400
+Message-ID: <5037C530.3000408@zytor.com>
+Date: Fri, 24 Aug 2012 11:17:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "rabin.vincent@gmail.com" <rabin.vincent@gmail.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled
- for boot-on
-References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com> <5034AA28.5050306@nvidia.com> <20120823145308.GA28328@sirena.org.uk> <50364179.6070304@nvidia.com>
-In-Reply-To: <50364179.6070304@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Brian Gerst <brgerst@gmail.com>
+CC: wbrana <wbrana@gmail.com>, Martin Nybo Andersen <tweek@tweek.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Drop support for x86-32
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208231814.21168.tweek@tweek.dk> <CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com> <CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
+In-Reply-To: <CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 August 2012 08:13 PM, Laxman Dewangan wrote:
-> On Thursday 23 August 2012 08:23 PM, Mark Brown wrote:
->> On Wed, Aug 22, 2012 at 03:15:12PM +0530, Laxman Dewangan wrote:
->>> Hi Rabin,
->>> Is it resolved the issue you mentioned?
->> He replied to your mail pointing out that it generated a lockdep issue.
-> Thanks Mark for letting me know. The mail transfer to some other folder
-> of my mail due to some issue in outlook.
-> Let me create some more scenario to reproduce this.
->
->
+On 08/23/2012 11:54 AM, Brian Gerst wrote:
+> 
+>> - wastes time of developers who can spend their time supporting X32
+>> instead of x86-32 or support x86-64 only as 99% of users will be able
+>> to run x86-64 software if x86-32 will be dropped
+> 
+> The x86-32 arch is mature and well maintained, and shares so much in
+> common with x86-64, that there is little to be gained by dropping
+> kernel support.
+> 
 
-Hi Rabin,
-I tried to reproduce the issue but could not able to do this.
-Can you please send me your board/dt files where you are porviding 
-platform data for regulator?
-This will help me to reproduce the issue.
+Speaking as one of the x86 maintainers... we are currently deciding the
+cost/benefit tradeoff around removing i386 support.  I don't mean
+general x86-32 support, I mean i386 as opposed to i486, Pentium, and so on.
 
-Thanks,
-Laxman
+Dropping x86-32 support is decades away.
 
+	-hpa
 
