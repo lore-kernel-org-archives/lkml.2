@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab2HXOhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 10:37:31 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55660 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488Ab2HXOh1 (ORCPT
+	id S1759596Ab2HXOiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 10:38:16 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:35936 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab2HXOiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 10:37:27 -0400
+	Fri, 24 Aug 2012 10:38:13 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
@@ -16,10 +16,10 @@ Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
         Gavin Shan <shangw@linux.vnet.ibm.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Subject: [PATCH 1/2] mm/mmu_notifier: init notifier if necessary
-Date: Fri, 24 Aug 2012 22:37:04 +0800
-Message-Id: <1345819025-12445-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Date: Fri, 24 Aug 2012 22:37:55 +0800
+Message-Id: <1345819076-12545-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
-x-cbid: 12082414-5490-0000-0000-00000204560F
+x-cbid: 12082414-3568-0000-0000-0000025C47C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
