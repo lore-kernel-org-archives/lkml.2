@@ -1,134 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab2HXJoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 05:44:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754493Ab2HXJoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 05:44:20 -0400
-Date: Fri, 24 Aug 2012 11:44:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Haifeng <omycle@gmail.com>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Fixup the page of buddy_higher address's calculation
-Message-ID: <20120824094415.GD29282@dhcp22.suse.cz>
-References: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
- <20120823095022.GB10685@dhcp22.suse.cz>
- <CAFNq8R5pY0yPp-LQYNywpMhVtXgqPSy3RYqHVTVpPXs52kOmJw@mail.gmail.com>
- <20120823135839.GB19968@dhcp22.suse.cz>
- <CAFNq8R7ry5kyuMombamf6jLmiLcWFnRQRp2vYt1+kv+pPec1_w@mail.gmail.com>
- <20120824080626.GC29282@dhcp22.suse.cz>
- <CAFNq8R6uiNhBR8BJD2B=ehFFk=aY0Be1DLRRbiXWKQP4LHPC=Q@mail.gmail.com>
+	id S1758888Ab2HXJq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 05:46:56 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41746 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758622Ab2HXJqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 05:46:52 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q7O9kG8w004811, This message is released by code: ctaloc0852
+Message-ID: <50374D69.5020408@realsil.com.cn>
+Date: Fri, 24 Aug 2012 17:46:17 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFNq8R6uiNhBR8BJD2B=ehFFk=aY0Be1DLRRbiXWKQP4LHPC=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>, "arnd@arndb.de" <arnd@arndb.de>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH v4 0/2] Add modules to support realtek PCIE card reader
+References: <cover.1345620826.git.wei_wang@realsil.com.cn>
+In-Reply-To: <cover.1345620826.git.wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 24-08-12 17:08:36, Li Haifeng wrote:
-> 2012/8/24 Michal Hocko <mhocko@suse.cz>:
-> > On Fri 24-08-12 10:08:20, Li Haifeng wrote:
-> > [...]
-> >> Subject: [PATCH] Fix the page address of higher page's buddy calculation
-> >>
-> >> Calculate the page address of higher page's buddy should be based
-> >> higher_page with the offset between index of higher page and
-> >> index of higher page's buddy.
-> >
-> > Sorry for insisting but could you add an information about when this has
-> > been introduced (I have mentioned the commit in the other email) and the
-> > effect of the bug so that we can consider whether this is worth
-> > backporting to stable trees.
-> >
-> >> Signed-off-by: Haifeng Li <omycle@gmail.com>
-> >> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-> >
-> > Other than that
-> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> >
-> >> ---
-> >>  mm/page_alloc.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >> index cdef1d4..642cd62 100644
-> >> --- a/mm/page_alloc.c
-> >> +++ b/mm/page_alloc.c
-> >> @@ -536,7 +536,7 @@ static inline void __free_one_page(struct page *page,
-> >>                 combined_idx = buddy_idx & page_idx;
-> >>                 higher_page = page + (combined_idx - page_idx);
-> >>                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
-> >> -               higher_buddy = page + (buddy_idx - combined_idx);
-> >> +               higher_buddy = higher_page + (buddy_idx - combined_idx);
-> >>                 if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
-> >>                         list_add_tail(&page->lru,
-> >>                                 &zone->free_area[order].free_list[migratetype]);
-> >> --
-> >> 1.7.5.4
-> >
-> > --
-> > Michal Hocko
-> > SUSE Labs
-> 
-> I am sorry Michal. I misinterpreted what you mean.
-> 
-> And the post blow is OK?
-> ------------------------------------------>
-> Subject: [PATCH] Fix the page address of higher page's buddy calculation
-> 
-> The heuristic method for buddy has been introduced since
-> 43506fad(mm/page_alloc.c: simplify calculation of combined index
-> of adjacent buddy lists). 
-
-Maybe I just misunderstood you here but the heuristic has been
-introduced by 6dda9d55 (page allocator: reduce fragmentation in buddy
-allocator by adding buddies that are merging to the tail of the free
-lists) and the commit you are mentioning broke it.
-
-> But the page address of higher page's buddy was wrongly calculated,
-> which will lead page_is_buddy to fail for ever. IOW, the heuristic
-> method would be disabled with the wrong page address of higher page's
-> buddy.
-> 
-> Calculating the page address of higher page's buddy should be based
-> higher_page with the offset between index of higher page and
-> index of higher page's buddy.
+于 2012年08月24日 17:36, 王炜 写道:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 >
+> Support for Realtek PCI-Express driver-based card readers including rts5209 and rts5229.
+>
+>
+Oh, bad mail thread. I will resend them all. Please ignore these mails.
 
-I would also add CC: stable [2.6.38+] although it is not clear how much
-the heuristic is helpful. Anyway it's a regression and should be fix
-IMHO.
-
-> Signed-off-by: Haifeng Li <omycle@gmail.com>
-> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/page_alloc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index ddbc17d..0754a3c 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -579,7 +579,7 @@ static inline void __free_one_page(struct page *page,
->                 combined_idx = buddy_idx & page_idx;
->                 higher_page = page + (combined_idx - page_idx);
->                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
-> -               higher_buddy = page + (buddy_idx - combined_idx);
-> +               higher_buddy = higher_page + (buddy_idx - combined_idx);
->                 if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
->                         list_add_tail(&page->lru,
->                                 &zone->free_area[order].free_list[migratetype]);
-> --
-> 1.7.5.4
-
--- 
-Michal Hocko
-SUSE Labs
+Sorry for that.
