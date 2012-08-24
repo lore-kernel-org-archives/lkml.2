@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab2HXUgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:36:36 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:29672 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933343Ab2HXUg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:36:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18wzMRV/pNXG8e6hCUJp8II
-Date: Fri, 24 Aug 2012 13:36:23 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more
- mach-*/*.h includes
-Message-ID: <20120824203622.GB1303@atomide.com>
-References: <201208221253.07278.arnd@arndb.de>
- <20120822214323.GA12255@n2100.arm.linux.org.uk>
- <201208231135.11688.arnd@arndb.de>
- <201208231726.11293.arnd@arndb.de>
+	id S1030375Ab2HXUjq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:39:46 -0400
+Received: from vapor.isi.edu ([128.9.64.64]:62617 "EHLO vapor.isi.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757675Ab2HXUjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 16:39:44 -0400
+X-Greylist: delayed 1449 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 16:39:44 EDT
+Date: Fri, 24 Aug 2012 13:18:46 -0700
+From: Craig Milo Rogers <rogers@isi.edu>
+To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Brian Gerst <brgerst@gmail.com>, wbrana <wbrana@gmail.com>,
+        Martin Nybo Andersen <tweek@tweek.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Space-Certified CPUs and Linux
+Message-ID: <20120824201846.GA11418@isi.edu>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208231814.21168.tweek@tweek.dk> <CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com> <CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com> <5037C530.3000408@zytor.com> <20120824185741.GC5094@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201208231726.11293.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120824185741.GC5094@thunk.org>
+User-Agent: Mutt/1.5.16 (2007-06-09)
+X-ISI-4-43-8-MailScanner: Found to be clean
+X-MailScanner-From: rogers@jib3.isi.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [120823 10:27]:
-> On Thursday 23 August 2012, Arnd Bergmann wrote:
-> > On Wednesday 22 August 2012, Russell King - ARM Linux wrote:
-> > > In any case, what we should be doing here as well is moving the headers
-> > > included by drivers for platform data out of the arch/arm/mach/ subtrees
-> > > and into include/linux/platform_data.  That will substantially reduce the
-> > > amount of mach/ headers to deal with.
-> > 
-> > I've just looked at the {mach,plat}/*.h files that get included in ARM
-> > specific drivers. Out of the 342 header files that get used in this way,
-> > I found 93 that are practically just platform data, and a few that
-> > are platform_data mixed with something else.
-> > 
-> > How about I move all the pure platform data definition files now and
-> > rebase the other patches on top of that. Here is a list of suggested
-> > file names in include/linux/platform_data/:
-> 
-> I've just scripted this and am running my build testsuite over it now.
-> 
-> Please let me know what you think about it.
-> 
-> 	Arnd
-> 
-> The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
-> 
->   Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git 
+On 12.08.24, Theodore Ts'o wrote:
+> Random question.  As I recall the Space Shuttle and the International
+> Space Station was only using 80386's because they have to be hardened
+> against radiation/cosmic rays, as well as all of the other mechnical
+> and thermal stresses associated with being in a spacecraft.  Is there
+> any newer generation cpu's which are space-cerified at this point?
 
-I'd like to run some checks on this, but branch name missing here for
-pulling a branch in for testing..
- 
-> for you to fetch changes up to 25296e032db173e8376123c2801cd233c9dc9b78:
+	The MAESTRO processor is a rad-hard-by-design variant of the Tilera
+architecture, intended for space applications.  Linux runs on it.
 
-..and -ENOSUCHCOMMIT after fetching in arm-soc tree.
+	The Mongoose-V is a rad-hard MIPS R3000 processor.  It can run
+VxWorks, made by Wind River (a subsidiary of Intel since 2009).
 
-Regards,
+http://www.synova.com/proc/mg5.html
 
-Tony
+	Rad-hard Power PCs are the current space workhorse.  Several variants
+are available.  NASA has run Linux on at least one of them in space, but I
+believe that VxWorks is more the norm.
+
+> (Of course, I'm rather doubtful that NASA would ever be willing to use
+> Linux on something like the Curiosity Mars Rover, but I could imagine
+> Linux being used in a non-mission critcal system on the ISS....)
+
+	Linux has been use on scientific equipment sent to the ISS.
+Not, I think, on the avionics.
+
+	Curiosity runs VxWorks, as do the SpaceX Falcon 9 and Dragon.
+
+					Craig Milo Rogers
