@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759990Ab2HXSM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:12:27 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39548 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757789Ab2HXSMS (ORCPT
+	id S1754766Ab2HXSNw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:13:52 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14548 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab2HXSNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:12:18 -0400
-Date: Fri, 24 Aug 2012 20:12:11 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC 00/13] perf test: Add perf_event_attr tests
-Message-ID: <20120824181211.GA32273@gmail.com>
-References: <1345798844-27423-1-git-send-email-jolsa@redhat.com>
- <20120824130706.GA27708@infradead.org>
+	Fri, 24 Aug 2012 14:13:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 24 Aug 2012 11:13:46 -0700
+Message-ID: <5037BFAC.7080209@nvidia.com>
+Date: Fri, 24 Aug 2012 23:23:48 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824130706.GA27708@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "rabin.vincent@gmail.com" <rabin.vincent@gmail.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled
+ for boot-on
+References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com> <5034AA28.5050306@nvidia.com> <20120823145308.GA28328@sirena.org.uk> <50364179.6070304@nvidia.com>
+In-Reply-To: <50364179.6070304@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 23 August 2012 08:13 PM, Laxman Dewangan wrote:
+> On Thursday 23 August 2012 08:23 PM, Mark Brown wrote:
+>> On Wed, Aug 22, 2012 at 03:15:12PM +0530, Laxman Dewangan wrote:
+>>> Hi Rabin,
+>>> Is it resolved the issue you mentioned?
+>> He replied to your mail pointing out that it generated a lockdep issue.
+> Thanks Mark for letting me know. The mail transfer to some other folder
+> of my mail due to some issue in outlook.
+> Let me create some more scenario to reproduce this.
+>
+>
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-
-> Em Fri, Aug 24, 2012 at 11:00:31AM +0200, Jiri Olsa escreveu:
-> 
-> >  tools/perf/util/test-attr.c                         | 142 ++++++++++++++++++++++++++
-> >  tools/perf/util/test-attr.py                        | 272 ++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  tools/perf/util/test-attr/base-record               |  39 ++++++++
-> 
-> I suggest we move all this to:
-> 
->   tools/perf/tests/attr/
-
-Yes!
-
-I'd even strongly suggest increasing perf test's prominence 
-within the project: if the tests are quick enough to run we 
-could run them during the build of perf and warn if perf test 
-fails in an unexpected way with the new perf binary.
-
-( Running new perf on older kernel should never cause an 
-  unexpected failure and thus a build warning. )
-
-So as people are working on new perf patches, the default build 
-will run perf test and will catch some errors. As the number of 
-testcases grows it might catch a wide range of bugs. It will 
-also help us find regressions sooner, when users/testers build 
-perf they'll always run perf test as well and report new 
-warnings/failures.
+Hi Rabin,
+I tried to reproduce the issue but could not able to do this.
+Can you please send me your board/dt files where you are porviding 
+platform data for regulator?
+This will help me to reproduce the issue.
 
 Thanks,
+Laxman
 
-	Ingo
+
