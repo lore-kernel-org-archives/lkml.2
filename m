@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759409Ab2HXNNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 09:13:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33429 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab2HXNNG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 09:13:06 -0400
-Message-ID: <50377DDD.7060404@acm.org>
-Date: Fri, 24 Aug 2012 13:13:01 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1759423Ab2HXNN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 09:13:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48369 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753119Ab2HXNNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 09:13:54 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Richard W.M. Jones" <rjones@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Torsten Hilbrich <torsten.hilbrich@secunet.com>,
+        Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: replace __getblk_slow misfix by grow_dev_page fix
+References: <alpine.LSU.2.00.1208211826270.2488@eggly.anvils>
+	<20120822115243.GU1448@rhmail.home.annexia.org>
+	<alpine.LSU.2.00.1208222143440.1917@eggly.anvils>
+	<x49obm1fil0.fsf@segfault.boston.devel.redhat.com>
+	<alpine.LSU.2.00.1208231527150.5852@eggly.anvils>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 24 Aug 2012 09:13:45 -0400
+In-Reply-To: <alpine.LSU.2.00.1208231527150.5852@eggly.anvils> (Hugh Dickins's
+	message of "Thu, 23 Aug 2012 15:46:19 -0700 (PDT)")
+Message-ID: <x49sjbczb3q.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: Kernel hangs in truncate_inode_pages()
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hugh Dickins <hughd@google.com> writes:
 
-If I log in with the open-iscsi initiator to an iSCSI target an power
-down the target the initiator hangs in truncate_inode_pages(). This
-happens systematically with kernel 3.6-rc3 and it's something I've
-never seen with kernel 3.4 or before. Has anyone else already run into
-this issue ?
+> On Thu, 23 Aug 2012, Jeff Moyer wrote:
+>> Hugh Dickins <hughd@google.com> writes:
+>> 
+>> > [PATCH] block: replace __getblk_slow misfix by grow_dev_page fix
+>> >
+>> > Commit 91f68c89d8f3 ("block: fix infinite loop in __getblk_slow")
+>> > is not good: a successful call to grow_buffers() cannot guarantee
+>> > that the page won't be reclaimed before the immediate next call to
+>> > __find_get_block(), which is why there was always a loop there.
+>> [snip]
+>> > Revert 91f68c89d8f3, restoring __getblk_slow() to how it was (plus
+>> > a checkpatch nitfix).  Simplify the interface between grow_buffers()
+>> > and grow_dev_page(), and avoid the infinite loop beyond end of device
+>> > by instead checking init_page_buffers()'s end_block there (I presume
+>> > that's more efficient than a repeated call to blkdev_max_block()),
+>> > returning -ENXIO to __getblk_slow() in that case.
+>> >
+>> > And remove akpm's ten-year-old "__getblk() cannot fail ... weird"
+>> > comment, but that is worrying: are all users of __getblk() really
+>> > now prepared for a NULL bh beyond end of device, or will some oops??
+>> 
+>> Hi, Hugh,
+>> 
+>> Thanks for digging into this.  I had wondered whether that loop was
+>> required for other purposes, and you've verified that it was.  I mostly
+>> like your fix.  Returning end_block from init_page_buffers is a little
+>> strange,
+>
+> It is a little strange, I agree.  I wrestled a lot with the way block
+> and end_block were known at opposite ends of the callstack, and needed
+> to be brought together for the check.
+>
+> If you think it would be better to move the blkdev_max_block()
+> lookup up a level into grow_dev_page(), then pass end_block down to
+> init_page_buffers(), that could work as well; though we'd then still
+> need to report "failure" from init_page_buffers().
 
->From the output of echo w >/proc/sysrq-trigger:
+I have no strong opinion;  I can live with it as-is.
 
-SysRq : Show Blocked State
- task                        PC stack   pid father
-udisks-part-id  D ffffffff810f7530     0 30803  10057 0x00000006
-ffff8801063c39a8 0000000000000046 ffff880126955d60 0000000000000002
-ffff8801063c3fd8 ffff880126955d60 ffff8801063c3fd8 ffff8801063c3fd8
-ffffffff81813420 ffff880126955d60 ffff8801063c39a8 ffff88012fa13990
-Call Trace:
-[<ffffffff810f7530>] ? __lock_page+0x70/0x70
-[<ffffffff8140c4e9>] schedule+0x29/0x70
-[<ffffffff8140c5bf>] io_schedule+0x8f/0xd0
-[<ffffffff810f753e>] sleep_on_page+0xe/0x20
-[<ffffffff8140a0fa>] __wait_on_bit_lock+0x5a/0xc0
-[<ffffffff810fa45a>] ? find_get_pages+0x2a/0x1c0
-[<ffffffff81104f7f>] ? release_pages+0x1af/0x200
-[<ffffffff810f7527>] __lock_page+0x67/0x70
-[<ffffffff810615a0>] ? autoremove_wake_function+0x40/0x40
-[<ffffffff81106976>] truncate_inode_pages_range+0x456/0x480
-[<ffffffff8109590d>] ? trace_hardirqs_on+0xd/0x10
-[<ffffffff8109be5a>] ? on_each_cpu_cond+0xaa/0xf0
-[<ffffffff81106a25>] truncate_inode_pages+0x15/0x20
-[<ffffffff8118389f>] kill_bdev+0x2f/0x40
-[<ffffffff81184096>] __blkdev_put+0x76/0x1d0
-[<ffffffff8118424d>] blkdev_put+0x5d/0x180
-[<ffffffff81184395>] blkdev_close+0x25/0x30
-[<ffffffff8114c43c>] __fput+0xcc/0x240
-[<ffffffff8114c5be>] ____fput+0xe/0x10
-[<ffffffff8105d419>] task_work_run+0x69/0xa0
-[<ffffffff8104165f>] do_exit+0x78f/0x930
-[<ffffffff810514f0>] ? get_signal_to_deliver+0xf0/0x6f0
-[<ffffffff8140d1e7>] ? _raw_spin_lock_irq+0x17/0x60
-[<ffffffff8140d930>] ? _raw_spin_unlock_irq+0x30/0x50
-[<ffffffff81041b5e>] do_group_exit+0x4e/0xc0
-[<ffffffff81051628>] get_signal_to_deliver+0x228/0x6f0
-[<ffffffff8100223c>] do_signal+0x3c/0x620
-[<ffffffff81415dcc>] ? sysret_signal+0x5/0x3d
-[<ffffffff810028ad>] do_notify_resume+0x6d/0xb0
-[<ffffffff8120846e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[<ffffffff81415fd8>] int_signal+0x12/0x17
+> Great, thanks a lot.  It (but equally its incorrect earlier version)
+> have been running fine at home under my swapping load.  I'm confident
+> that it fixes the issues I had been seeing, although, strictly speaking,
+> it'll take another two or three days to reach bisection confidence level.
 
-Bart.
+Well, I bought your analysis, so I'm at least ready to see this get
+pushed. ;-)
+
+Cheers,
+Jeff
