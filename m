@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2HXHUa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 03:20:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41324 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100Ab2HXHU1 (ORCPT
+	id S1753968Ab2HXHUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 03:20:41 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:52179 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab2HXHUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 03:20:27 -0400
-Date: Fri, 24 Aug 2012 17:20:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mengdong Lin <mengdong.lin@intel.com>
-Subject: linux-next: build failure after merge of the final tree (sound tree
- related)
-Message-Id: <20120824172018.21db4ca1245f3aa28002a76b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__24_Aug_2012_17_20_18_+1000_pmjG_ghZl7e_fpQv"
+	Fri, 24 Aug 2012 03:20:38 -0400
+X-AuditID: cbfee61b-b7faf6d00000476a-9d-50372b443d9e
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] mm: cma: fix alignment requirements for contiguous regions
+Date: Fri, 24 Aug 2012 09:20:10 +0200
+Message-id: <1345792810-5152-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jQV0XbfMAg/vPJC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGoTOr2QtaOCtO3drD1sB4jL2LkZNDQsBEYvOkC6wQtpjEhXvr
+	2boYuTiEBKYzSkz+18IC4axmkjhw4yETSBWbgKFE19suNhBbRCBM4vHHr2AdzALvGSVWTt7F
+	CJIQFvCW6Gy4DTaWRUBV4uSeNywgNq+Au8S5rZ9YINbJSzy938c2gZF7ASPDKkbR1ILkguKk
+	9FwjveLE3OLSvHS95PzcTYxgLz6T3sG4qsHiEKMAB6MSD++OFrMAIdbEsuLK3EOMEhzMSiK8
+	8x8DhXhTEiurUovy44tKc1KLDzFKc7AoifPy9xkGCAmkJ5akZqemFqQWwWSZODilGhi7TVcp
+	PFol2io2nU/4w7Gbk05Lss5OnbGq8l75vJ1xWjITJtqHNJQkbOx/eOlI3OYzOy+ri6kkXQ5h
+	9+xV2j79MEPJTNs2+62vjlRP/78k5taR8vkXz2Y+cexZKPf7p/gMPe0VVRc235430S7wnpJy
+	8KF0nqonf+p0TzcwrfP6mXqmkmemxhx1JZbijERDLeai4kQAaPDhGd4BAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__24_Aug_2012_17_20_18_+1000_pmjG_ghZl7e_fpQv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Contiguous Memory Allocator requires each of its regions to be aligned
+in such a way that it is possible to change migration type for all
+pageblocks holding it and then isolate page of largest possible order from
+the buddy allocator (which is MAX_ORDER-1). This patch relaxes alignment
+requirements by one order, because MAX_ORDER alignment is not really
+needed.
 
-Hi all,
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
+---
+ drivers/base/dma-contiguous.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-After merging the final tree, today's linux-next build (i386 defconfig)
-failed like this:
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 78efb03..34d94c7 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -250,7 +250,7 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
+ 		return -EINVAL;
+ 
+ 	/* Sanitise input arguments */
+-	alignment = PAGE_SIZE << max(MAX_ORDER, pageblock_order);
++	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
+ 	base = ALIGN(base, alignment);
+ 	size = ALIGN(size, alignment);
+ 	limit &= ~(alignment - 1);
+-- 
+1.7.1.569.g6f426
 
-sound/pci/hda/hda_codec.c: In function 'snd_hda_codec_new':
-sound/pci/hda/hda_codec.c:1323:7: error: 'struct hda_codec' has no member n=
-amed 'd3_stop_clk'
-sound/pci/hda/hda_codec.c:1326:12: error: 'struct hda_codec' has no member =
-named 'd3_stop_clk'
-sound/pci/hda/hda_codec.c: In function 'hda_set_power_state':
-sound/pci/hda/hda_codec.c:3547:7: error: 'struct hda_codec' has no member n=
-amed 'd3_stop_clk_ok'
-sound/pci/hda/hda_codec.c:3573:11: error: 'struct hda_codec' has no member =
-named 'd3_stop_clk'
-sound/pci/hda/hda_codec.c:3574:8: error: 'struct hda_codec' has no member n=
-amed 'd3_stop_clk_ok'
-
-Caused by commit b8dfc4624162 ("ALSA: hda - add runtime PM support").
-CONFIG_SND_HDA_POWER_SAVE is not set for this build.
-
-I have reverted that commit for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__24_Aug_2012_17_20_18_+1000_pmjG_ghZl7e_fpQv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQNysyAAoJEECxmPOUX5FEMtEQAJsyTBk3oVmNpEdOcb98GkzM
-FRvoze0fQieZN+Y0KUp4ZiMrQaFyBdw3wmfvwZ7bWAGPFeeBrUpXFMUAu2SEv4YK
-ESiqFqDE1ZOT+jSYEBw29LkaYKqbR8Gu41vkw+Y6SsaQAXbjJcxBXjwhyOp0KNIp
-qjq4FRmmSl8gKNi/3XSKdRWnY/NZw+STyCbUvt9pzQ9UkVRJT/HsK9pJl41uUnxb
-JxBOxXpgsYeT260cWToZw+4QhkZ08Og4nQYoKHNxEoGQvxP1W9esRbpAQNJ0x02X
-RDrT/mKufl9D2/++pUePBohPbZL7lqZrrqIdumr2i84hMUfwPL3aaMsCfZ0TVCHC
-WfFuAf76Qn8SnjQiglYgQXR+PN+CqDPK63embbkVwyPIePxFvu0SiKdlSrHMqEZY
-MSBpWzFV7M1gJ7OQoJdSEnlsCFy05sCvhsGPQrpIVCd29QWKz27Rx1iD5Ou0rYmy
-zYLdqWNhPnF1+bJMHI4xfTO9uCdlgbjNkTor6EiyEgcoQ87Sdu7E3irUwXb/laDW
-aSCVxlBcC1yIoTyjGFgcNBPhWWmFtw5o7rVpj3VYHUaHlk2YIzxz1tlHtlLiRoLQ
-nI0cd/cSAV8GkAowgdyoviz2UDDArrmnH9XpV/JepPC3MapAeLKg742wTlyWhi4Q
-j5ms+JY+GuRjkB6Nfbyb
-=ueKW
------END PGP SIGNATURE-----
-
---Signature=_Fri__24_Aug_2012_17_20_18_+1000_pmjG_ghZl7e_fpQv--
