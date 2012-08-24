@@ -1,120 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab2HXR76 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 13:59:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:52336 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2HXR7x (ORCPT
+	id S1755169Ab2HXSB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:01:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53969 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab2HXSBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 13:59:53 -0400
-Date: Fri, 24 Aug 2012 14:59:47 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andrey Wagin <avagin@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 0/4] perf: Teach perf tool to profile sleep times (v2)
-Message-ID: <20120824175947.GA29542@infradead.org>
-References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
- <CANaxB-wXqqoE3oO81qTgQaAX5ipg4WwVrDOaxLaj-ehW8UsHZg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANaxB-wXqqoE3oO81qTgQaAX5ipg4WwVrDOaxLaj-ehW8UsHZg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Aug 2012 14:01:21 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>, David Miller <davem@davemloft.net>,
+        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] slub: consider pfmemalloc_match() in get_partial_node()
+Date: Sat, 25 Aug 2012 03:00:02 +0900
+Message-Id: <1345831202-4225-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Aug 24, 2012 at 05:32:21PM +0400, Andrey Wagin escreveu:
-> Hello Arnaldo,
-> 
-> What do you think about this series?
-> 
-> It has been fixed according with your comments to the previous
-> patches. Are you going to take it?
+There is no consideration for pfmemalloc_match() in get_partial(). If we don't
+consider that, we can't restrict access to PFMEMALLOC page mostly.
 
-I've put them in a perf/sleep branch in my tree, waiting on Frédéric
-that is reviewing it.
+We may encounter following scenario.
 
-- Arnaldo
+Assume there is a request from normal allocation
+and there is no objects in per cpu cache and no node partial slab.
+
+In this case, slab_alloc go into slow-path and
+new_slab_objects() is invoked. It may return PFMEMALLOC page.
+Current user is not allowed to access PFMEMALLOC page,
+deactivate_slab() is called (commit 5091b74a95d447e34530e713a8971450a45498b3),
+then return object from PFMEMALLOC page.
+
+Next time, when we meet another request from normal allocation,
+slab_alloc() go into slow-path and re-go new_slab_objects().
+In new_slab_objects(), we invoke get_partial() and we get a partial slab
+which we have been deactivated just before, that is, PFMEMALLOC page.
+We extract one object from it and re-deactivate.
+
+"deactivate -> re-get in get_partial -> re-deactivate" occures repeatedly.
+
+As a result, we can't restrict access to PFMEMALLOC page and
+moreover, it introduce much performance degration to normal allocation
+because of deactivation frequently.
+
+Now, we need to consider pfmemalloc_match() in get_partial_node()
+It prevent "deactivate -> re-get in get_partial".
+Instead, new_slab() is called. It may return !PFMEMALLOC page,
+so above situation will be suspended sometime.
+
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Eric B Munson <emunson@mgebm.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+This patch based on Pekka's slab/next tree with my two patches.
+
+[PATCH 1/2] slub: rename cpu_partial to max_cpu_object
+https://lkml.org/lkml/2012/8/24/293
+
+[PATCH 2/2] slub: correct the calculation of the number of cpu objects in get_partial_node
+https://lkml.org/lkml/2012/8/24/290
+
+diff --git a/mm/slub.c b/mm/slub.c
+index c96e0e4..a21da3a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1529,12 +1529,13 @@ static inline void *acquire_slab(struct kmem_cache *s,
+ }
  
-> 2012/8/7 Andrew Vagin <avagin@openvz.org>:
-> > This functionality helps to analize where a task sleeps or waits locks.
-> > This feature can help to investigate a scalability problems.
-> >
-> > The main idea is that we can combine sched_switch and sched_stat_sleep events.
-> > sched_switch contains a callchain, when a task starts sleeping.
-> > sched_stat_sleep contains a time period for which a task slept.
-> >
-> > This series teaches "perf inject" to combine this events.
-> >
-> > All kernel related patches were committed committed in 3.6-rc1.
-> >
-> > Here is an example of a report:
-> > $ cat ~/foo.c
-> > ....
-> >           for (i = 0; i <  10; i++) {
-> >                   ts1.tv_sec = 0;
-> >                   ts1.tv_nsec = 10000000;
-> >                   nanosleep(&ts1, NULL);
-> >
-> >                   tv1.tv_sec = 0;
-> >                   tv1.tv_usec = 40000;
-> >                   select(0, NULL, NULL, NULL,&tv1);
-> >           }
-> > ...
-> >
-> > $ ./perf record -e sched:sched_stat_sleep -e sched:sched_switch \
-> >                 -e sched:sched_process_exit -gP -o ~/perf.data.raw ~/foo
-> > [ perf record: Woken up 1 times to write data ]
-> > [ perf record: Captured and wrote 0.015 MB /root/perf.data.raw (~661 samples) ]
-> > $ ./perf inject -v -s -i ~/perf.data.raw -o ~/perf.data
-> > $ ./perf report -i ~/perf.data
-> > # Samples: 40  of event 'sched:sched_switch'
-> > # Event count (approx.): 1005527702
-> > #
-> > # Overhead  Command      Shared Object          Symbol
-> > # ........  .......  .................  ..............
-> > #
-> >    100.00%      foo  [kernel.kallsyms]  [k] __schedule
-> >                 |
-> >                 --- __schedule
-> >                     schedule
-> >                    |
-> >                    |--79.81%-- schedule_hrtimeout_range_clock
-> >                    |          schedule_hrtimeout_range
-> >                    |          poll_schedule_timeout
-> >                    |          do_select
-> >                    |          core_sys_select
-> >                    |          sys_select
-> >                    |          system_call_fastpath
-> >                    |          __select
-> >                    |          __libc_start_main
-> >                    |
-> >                     --20.19%-- do_nanosleep
-> >                               hrtimer_nanosleep
-> >                               sys_nanosleep
-> >                               system_call_fastpath
-> >                               __GI___libc_nanosleep
-> >                               __libc_start_main
-> >
-> > Andrew Vagin (3):
-> >   perf: teach "perf inject" to work with files
-> >   perf: teach perf inject to merge sched_stat_* and sched_switch events
-> >   perf: mark a dso if it's used
-> >
-> >  tools/perf/builtin-inject.c |  139 ++++++++++++++++++++++++++++++++++++++++---
-> >  tools/perf/util/build-id.c  |    2 +-
-> >  tools/perf/util/build-id.h  |    5 ++
-> >  3 files changed, 137 insertions(+), 9 deletions(-)
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+ static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
++static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
+ 
+ /*
+  * Try to allocate a partial slab from a specific node.
+  */
+-static void *get_partial_node(struct kmem_cache *s,
+-		struct kmem_cache_node *n, struct kmem_cache_cpu *c)
++static void *get_partial_node(struct kmem_cache *s, struct kmem_cache_node *n,
++				struct kmem_cache_cpu *c, gfp_t flags)
+ {
+ 	struct page *page, *page2;
+ 	void *object = NULL;
+@@ -1551,8 +1552,12 @@ static void *get_partial_node(struct kmem_cache *s,
+ 
+ 	spin_lock(&n->list_lock);
+ 	list_for_each_entry_safe(page, page2, &n->partial, lru) {
+-		void *t = acquire_slab(s, n, page, object == NULL);
++		void *t;
+ 
++		if (!pfmemalloc_match(page, flags))
++			continue;
++
++		t = acquire_slab(s, n, page, object == NULL);
+ 		if (!t)
+ 			break;
+ 
+@@ -1620,7 +1625,7 @@ static void *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 
+ 			if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
+ 					n->nr_partial > s->min_partial) {
+-				object = get_partial_node(s, n, c);
++				object = get_partial_node(s, n, c, flags);
+ 				if (object) {
+ 					/*
+ 					 * Return the object even if
+@@ -1649,7 +1654,7 @@ static void *get_partial(struct kmem_cache *s, gfp_t flags, int node,
+ 	void *object;
+ 	int searchnode = (node == NUMA_NO_NODE) ? numa_node_id() : node;
+ 
+-	object = get_partial_node(s, get_node(s, searchnode), c);
++	object = get_partial_node(s, get_node(s, searchnode), c, flags);
+ 	if (object || node != NUMA_NO_NODE)
+ 		return object;
+ 
+-- 
+1.7.9.5
+
