@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759901Ab2HXQYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:24:16 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49626 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759862Ab2HXQYN (ORCPT
+	id S1759908Ab2HXQYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:24:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46510 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab2HXQYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:24:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAArOQ2VepQoos7ji=7ja7aRjNDrFD5fT3V5Wh6JaDnvmR3h7QA@mail.gmail.com>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<1345823281.28613.34.camel@thorin>
-	<CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com>
-	<201208241814.16862.tweek@tweek.dk>
-	<CAJ7jCmkpvrX87T06JPHk4cShxaC=fUmkxGQmiHsKGwe+X2RVow@mail.gmail.com>
-	<CAArOQ2VepQoos7ji=7ja7aRjNDrFD5fT3V5Wh6JaDnvmR3h7QA@mail.gmail.com>
-Date: Fri, 24 Aug 2012 18:24:11 +0200
-Message-ID: <CAJ7jCm=EsgOKXwJghBpXHnVRtNQVM19VcfCLwHT9LArh4aOJQw@mail.gmail.com>
+	Fri, 24 Aug 2012 12:24:35 -0400
 Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Bobby Powers <bobbypowers@gmail.com>
-Cc: Martin Nybo Andersen <tweek@tweek.dk>,
-        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+From: Raymond Jennings <shentino@gmail.com>
+To: wbrana <wbrana@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 24 Aug 2012 09:24:30 -0700
+Message-ID: <1345825470.5463.7.camel@warfang.spyronet>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Bobby Powers <bobbypowers@gmail.com> wrote:
-> Did you have anyone in particular you wanted to volunteer as a
-> maintainer for this?
-Do you mean maintainer for long term tree? There is always one.
+On Thu, 2012-08-23 at 12:41 +0200, wbrana wrote:
+> Microsoft will drop support for x86-32 in Windows 9.
+> Linux could do same.
+> http://www.networkworld.com/community/blog/windows-9-details-are-already-emerging
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+I use an x86-32 system myself.
+
+So do many other people.
+
+Besides, it's not really your call to decide if x86-32 is obsolete.
+
+If it's anyone's call, it's for companies like AMD and Intel that
+actually make the chips.  Microsoft doesn't make x86 chips, so their
+opinion on x86-32's viability is none of our concern.
+
+Similiarly, if I were a marketing director for pepsi, I wouldn't listen
+to anything that Coca cola has to say about what flavors of soda to
+make.  A problem with the liquid CO2 company I buy my fizz from however
+WOULD get my attention.
+
+
