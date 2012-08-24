@@ -1,142 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759704Ab2HXQHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:07:01 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36253 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab2HXQG6 (ORCPT
+	id S1759743Ab2HXQHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:07:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55814 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759719Ab2HXQHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:06:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345042960-6287-2-git-send-email-js1304@gmail.com>
-References: <1345042960-6287-1-git-send-email-js1304@gmail.com>
-	<1345042960-6287-2-git-send-email-js1304@gmail.com>
-Date: Sat, 25 Aug 2012 01:06:57 +0900
-Message-ID: <CAAmzW4MjqETWfZuyzJUMF+5q-aGgZ20gKpgWSvFTYWp-LqdrHA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] slub: remove one code path and reduce lock contention
- in __slab_free()
-From: JoonSoo Kim <js1304@gmail.com>
+	Fri, 24 Aug 2012 12:07:11 -0400
+From: Joonsoo Kim <js1304@gmail.com>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Joonsoo Kim <js1304@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH 2/2] slub: correct the calculation of the number of cpu objects in get_partial_node
+Date: Sat, 25 Aug 2012 01:05:03 +0900
+Message-Id: <1345824303-30292-2-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345824303-30292-1-git-send-email-js1304@gmail.com>
+References: <Yes>
+ <1345824303-30292-1-git-send-email-js1304@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/16 Joonsoo Kim <js1304@gmail.com>:
-> When we try to free object, there is some of case that we need
-> to take a node lock. This is the necessary step for preventing a race.
-> After taking a lock, then we try to cmpxchg_double_slab().
-> But, there is a possible scenario that cmpxchg_double_slab() is failed
-> with taking a lock. Following example explains it.
->
-> CPU A               CPU B
-> need lock
-> ...                 need lock
-> ...                 lock!!
-> lock..but spin      free success
-> spin...             unlock
-> lock!!
-> free fail
->
-> In this case, retry with taking a lock is occured in CPU A.
-> I think that in this case for CPU A,
-> "release a lock first, and re-take a lock if necessary" is preferable way.
->
-> There are two reasons for this.
->
-> First, this makes __slab_free()'s logic somehow simple.
-> With this patch, 'was_frozen = 1' is "always" handled without taking a lock.
-> So we can remove one code path.
->
-> Second, it may reduce lock contention.
-> When we do retrying, status of slab is already changed,
-> so we don't need a lock anymore in almost every case.
-> "release a lock first, and re-take a lock if necessary" policy is
-> helpful to this.
->
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index ca778e5..efce427 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2421,7 +2421,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->         void *prior;
->         void **object = (void *)x;
->         int was_frozen;
-> -       int inuse;
->         struct page new;
->         unsigned long counters;
->         struct kmem_cache_node *n = NULL;
-> @@ -2433,13 +2432,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->                 return;
->
->         do {
-> +               if (unlikely(n)) {
-> +                       spin_unlock_irqrestore(&n->list_lock, flags);
-> +                       n = NULL;
-> +               }
->                 prior = page->freelist;
->                 counters = page->counters;
->                 set_freepointer(s, object, prior);
->                 new.counters = counters;
->                 was_frozen = new.frozen;
->                 new.inuse--;
-> -               if ((!new.inuse || !prior) && !was_frozen && !n) {
-> +               if ((!new.inuse || !prior) && !was_frozen) {
->
->                         if (!kmem_cache_debug(s) && !prior)
->
-> @@ -2464,7 +2467,6 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->
->                         }
->                 }
-> -               inuse = new.inuse;
->
->         } while (!cmpxchg_double_slab(s, page,
->                 prior, counters,
-> @@ -2490,25 +2492,17 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
->                  return;
->          }
->
-> +       if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
-> +               goto slab_empty;
-> +
->         /*
-> -        * was_frozen may have been set after we acquired the list_lock in
-> -        * an earlier loop. So we need to check it here again.
-> +        * Objects left in the slab. If it was not on the partial list before
-> +        * then add it.
->          */
-> -       if (was_frozen)
-> -               stat(s, FREE_FROZEN);
-> -       else {
-> -               if (unlikely(!inuse && n->nr_partial > s->min_partial))
-> -                        goto slab_empty;
-> -
-> -               /*
-> -                * Objects left in the slab. If it was not on the partial list before
-> -                * then add it.
-> -                */
-> -               if (unlikely(!prior)) {
-> -                       remove_full(s, page);
-> -                       add_partial(n, page, DEACTIVATE_TO_TAIL);
-> -                       stat(s, FREE_ADD_PARTIAL);
-> -               }
-> +       if (kmem_cache_debug(s) && unlikely(!prior)) {
-> +               remove_full(s, page);
-> +               add_partial(n, page, DEACTIVATE_TO_TAIL);
-> +               stat(s, FREE_ADD_PARTIAL);
->         }
->         spin_unlock_irqrestore(&n->list_lock, flags);
->         return;
-> --
-> 1.7.9.5
->
+In get_partial_node(), we want to refill cpu slab and cpu partial slabs
+until the number of object kept in the per cpu slab and cpu partial lists
+of a processor is reached to max_cpu_object.
 
-Hello, Pekka.
-Could you review this patch and comment it, please?
+However, in current implementation, it is not achieved.
+See following code in get_partial_node().
+
+if (!object) {
+	c->page = page;
+	stat(s, ALLOC_FROM_PARTIAL);
+	object = t;
+	available =  page->objects - page->inuse;
+} else {
+	available = put_cpu_partial(s, page, 0);
+	stat(s, CPU_PARTIAL_NODE);
+}
+if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
+	break;
+
+In case of !object (available = page->objects - page->inuse),
+"available" means the number of objects in cpu slab.
+In this time, we don't have any cpu partial slab, so "available" imply
+the number of objects available to the cpu without locking.
+This is what we want.
+
+But, look at another "available" (available = put_cpu_partial(s, page, 0)).
+This "available" doesn't include the number of objects in cpu slab.
+It only include the number of objects in cpu partial slabs.
+So, it doesn't imply the number of objects available to the cpu without locking.
+This isn't what we want.
+
+Therefore fix it to imply same meaning in both case
+and rename "available" to "cpu_slab_objects" for readability.
+
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+
+diff --git a/mm/slub.c b/mm/slub.c
+index d597530..c96e0e4 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1538,6 +1538,7 @@ static void *get_partial_node(struct kmem_cache *s,
+ {
+ 	struct page *page, *page2;
+ 	void *object = NULL;
++	int cpu_slab_objects = 0, pobjects = 0;
+ 
+ 	/*
+ 	 * Racy check. If we mistakenly see no partial slabs then we
+@@ -1551,7 +1552,6 @@ static void *get_partial_node(struct kmem_cache *s,
+ 	spin_lock(&n->list_lock);
+ 	list_for_each_entry_safe(page, page2, &n->partial, lru) {
+ 		void *t = acquire_slab(s, n, page, object == NULL);
+-		int available;
+ 
+ 		if (!t)
+ 			break;
+@@ -1560,12 +1560,13 @@ static void *get_partial_node(struct kmem_cache *s,
+ 			c->page = page;
+ 			stat(s, ALLOC_FROM_PARTIAL);
+ 			object = t;
+-			available =  page->objects - page->inuse;
++			cpu_slab_objects = page->objects - page->inuse;
+ 		} else {
+-			available = put_cpu_partial(s, page, 0);
++			pobjects = put_cpu_partial(s, page, 0);
+ 			stat(s, CPU_PARTIAL_NODE);
+ 		}
+-		if (kmem_cache_debug(s) || available > s->max_cpu_object / 2)
++		if (kmem_cache_debug(s)
++			|| cpu_slab_objects + pobjects > s->max_cpu_object / 2)
+ 			break;
+ 
+ 	}
+-- 
+1.7.9.5
+
