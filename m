@@ -1,146 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030298Ab2HXU3G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:29:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57984 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933261Ab2HXU3B (ORCPT
+	id S933359Ab2HXU3d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:29:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51995 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933261Ab2HXU3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:29:01 -0400
-Date: Fri, 24 Aug 2012 13:28:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v6 07/13] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120824202855.GE21325@google.com>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-8-git-send-email-koverstreet@google.com>
- <20120822203003.GJ19212@google.com>
- <20120824055554.GC11977@moria.home.lan>
+	Fri, 24 Aug 2012 16:29:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824055554.GC11977@moria.home.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAPM=9twyQ_dFERy5DsBD60o1MZh=kZxpsgPV8J_zDWOo_Uj3bg@mail.gmail.com>
+References: <20120824121955.454ebce22142f238f89c9a9a@canb.auug.org.au>
+	<87ehmwbw58.fsf@intel.com>
+	<CAPM=9twyQ_dFERy5DsBD60o1MZh=kZxpsgPV8J_zDWOo_Uj3bg@mail.gmail.com>
+Date: Fri, 24 Aug 2012 22:29:28 +0200
+Message-ID: <CA+icZUUS1jwh2Dy4_fo+ALr07YCxRY3tcaKUsk3J_CinWZXcRg@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: multipart/mixed; boundary=f46d0408da0738080704c808d530
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--f46d0408da0738080704c808d530
+Content-Type: text/plain; charset=UTF-8
 
-On Thu, Aug 23, 2012 at 10:55:54PM -0700, Kent Overstreet wrote:
-> > Why aren't we turning off __GFP_WAIT instead?  e.g. What if the caller
-> > has one of NUMA flags or __GFP_COLD specified?
-> 
-> Didn't think of that. The reason I did it that way is I wasn't sure if
-> just doing &= ~__GFP_WAIT would be correct, since that would leave
-> __GFP_IO|__GFP_FS set.
+On Fri, Aug 24, 2012 at 9:12 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Fri, Aug 24, 2012 at 5:13 PM, Jani Nikula <jani.nikula@intel.com> wrote:
+>> On Fri, 24 Aug 2012, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> Hi Dave,
+>>>
+>>> Today's linux-next merge of the drm tree got a conflict in
+>>> drivers/gpu/drm/i915/intel_modes.c between commit 4eab81366465
+>>> ("drm/i915: extract connector update from intel_ddc_get_modes() for
+>>> reuse") from Linus' tree and commit 451023dc32d4 ("drm: remove the
+>>> raw_edid field from struct drm_display_info") from the drm tree.
+>>
+>> Ugh, both from me, sorry about that. Wasn't sure when or in what order
+>> they'd go in.
+>>
+>>> I fixed it up (see below) and can carry the fix as necessary.
+>>
+>> I'm not quite sure what the patch below is against, but just removing
+>> the reference to raw_edid from a slightly different place is the way to
+>> go. Like you seem to do, so:
+>>
+>> Acked-by: Jani Nikula <jani.nikula@intel.com>
+>>
+>> I can also provide a patch against drm-next if needed.
+>
+> That applied fine, I pulled it in for tomorrow -next.
+>
 
-Using the appropriate __GFP_IO/FS flags is the caller's
-responsibility.  The only thing bioset needs to worry and take action
-about here is __GFP_WAIT causing indefinite wait in mempool.
+Is that the correct fix for both issues reported by Stephen?
 
-> > Plesae don't mix struct definition relocation (or any relocation
-> > really) with actual changes.  It buries the actual changes and makes
-> > reviewing difficult.
-> 
-> Make a new patch that does nothing more than reorder the definitions,
-> then?
+- Sedat -
 
-Yeap, with justification.
+> Dave.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
->     block: Avoid deadlocks with bio allocation by stacking drivers
->     
->     Previously, if we ever try to allocate more than once from the same bio
->     set while running under generic_make_request() (i.e. a stacking block
->     driver), we risk deadlock.
->     
->     This is because of the code in generic_make_request() that converts
->     recursion to iteration; any bios we submit won't actually be submitted
->     (so they can complete and eventually be freed) until after we return -
->     this means if we allocate a second bio, we're blocking the first one
->     from ever being freed.
->     
->     Thus if enough threads call into a stacking block driver at the same
->     time with bios that need multiple splits, and the bio_set's reserve gets
->     used up, we deadlock.
->     
->     This can be worked around in the driver code - we could check if we're
->     running under generic_make_request(), then mask out __GFP_WAIT when we
->     go to allocate a bio, and if the allocation fails punt to workqueue and
->     retry the allocation.
->     
->     But this is tricky and not a generic solution. This patch solves it for
->     all users by inverting the previously described technique. We allocate a
->     rescuer workqueue for each bio_set, and then in the allocation code if
->     there are bios on current->bio_list we would be blocking, we punt them
->     to the rescuer workqueue to be submitted.
->     
->     Tested it by forcing the rescue codepath to be taken (by disabling the
->     first GFP_NOWAIT) attempt, and then ran it with bcache (which does a lot
->     of arbitrary bio splitting) and verified that the rescuer was being
->     invoked.
+--f46d0408da0738080704c808d530
+Content-Type: application/octet-stream; 
+	name="0001-drm-i915-Context-fixes.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-i915-Context-fixes.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h69qhetz0
 
-Yeah, the description looks good to me.
-
->  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  {
-> +	gfp_t saved_gfp = gfp_mask;
->  	unsigned front_pad;
->  	unsigned inline_vecs;
->  	unsigned long idx = BIO_POOL_NONE;
-> @@ -318,16 +336,44 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  		p = kmalloc(sizeof(struct bio) +
->  			    nr_iovecs * sizeof(struct bio_vec),
->  			    gfp_mask);
-> +
->  		front_pad = 0;
->  		inline_vecs = nr_iovecs;
->  	} else {
-> +		/*
-> +		 * generic_make_request() converts recursion to iteration; this
-> +		 * means if we're running beneath it, any bios we allocate and
-> +		 * submit will not be submitted (and thus freed) until after we
-> +		 * return.
-> +		 *
-> +		 * This exposes us to a potential deadlock if we allocate
-> +		 * multiple bios from the same bio_set() while running
-> +		 * underneath generic_make_request(). If we were to allocate
-> +		 * multiple bios (say a stacking block driver that was splitting
-> +		 * bios), we would deadlock if we exhausted the mempool's
-> +		 * reserve.
-> +		 *
-> +		 * We solve this, and guarantee forward progress, with a rescuer
-> +		 * workqueue per bio_set. If we go to allocate and there are
-> +		 * bios on current->bio_list, we first try the allocation
-> +		 * without __GFP_WAIT; if that fails, we punt those bios we
-> +		 * would be blocking to the rescuer workqueue before we retry
-> +		 * with the original gfp_flags.
-> +		 */
-
-Can you please add a comment in generic_make_request() to describe the
-issue briefly and link back here?
-
->  void bioset_free(struct bio_set *bs)
->  {
-> +	if (bs->rescue_workqueue)
-
-Why is the conditional necessary?  Is it possible to have a bioset w/o
-rescue_workqueue?
-
-> +		destroy_workqueue(bs->rescue_workqueue);
-> +
->  	if (bs->bio_pool)
->  		mempool_destroy(bs->bio_pool);
-
-This makes bioset_free() require process context, which probably is
-okay for bioset but still isn't nice.  Might worth noting in the patch
-description.
-
-Thanks.
-
--- 
-tejun
+RnJvbSA5NGFlZTRlYjNkZWU1NzEzZjdjMzRjMWQ5NzA1MGM0ODFkMTIzM2Q5IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
+YXRlOiBGcmksIDI0IEF1ZyAyMDEyIDIyOjI0OjMxICswMjAwClN1YmplY3Q6IFtQQVRDSCAtbmV4
+dF0gZHJtOiBpOTE1OiBDb250ZXh0IGZpeGVzCgoKU2lnbmVkLW9mZi1ieTogU2VkYXQgRGlsZWsg
+PHNlZGF0LmRpbGVrQGdtYWlsLmNvbT4KLS0tCiBkcml2ZXJzL2dwdS9kcm0vaTkxNS9pOTE1X2dl
+bS5jICAgIHwgICAgNCArKy0tCiBkcml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9tb2Rlcy5jIHwg
+ICAgMSAtCiAyIGZpbGVzIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkK
+CmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vaTkxNS9pOTE1X2dlbS5jIGIvZHJpdmVycy9n
+cHUvZHJtL2k5MTUvaTkxNV9nZW0uYwppbmRleCA0ZjY4NDFkLi5lOGE1Y2IyIDEwMDY0NAotLS0g
+YS9kcml2ZXJzL2dwdS9kcm0vaTkxNS9pOTE1X2dlbS5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9p
+OTE1L2k5MTVfZ2VtLmMKQEAgLTIyNzMsMTEgKzIyNzMsMTEgQEAgaW50IGk5MTVfZ3B1X2lkbGUo
+c3RydWN0IGRybV9kZXZpY2UgKmRldikKIAogCS8qIEZsdXNoIGV2ZXJ5dGhpbmcgb250byB0aGUg
+aW5hY3RpdmUgbGlzdC4gKi8KIAlmb3JfZWFjaF9yaW5nKHJpbmcsIGRldl9wcml2LCBpKSB7Ci0J
+CXJldCA9IGk5MTVfc3dpdGNoX2NvbnRleHQocmluZywgTlVMTCwgREVGQVVMVF9DT05URVhUX0lE
+KTsKKwkJcmV0ID0gaTkxNV9yaW5nX2lkbGUocmluZyk7CiAJCWlmIChyZXQpCiAJCQlyZXR1cm4g
+cmV0OwogCi0JCXJldCA9IGk5MTVfcmluZ19pZGxlKHJpbmcpOworCQlyZXQgPSBpOTE1X3N3aXRj
+aF9jb250ZXh0KHJpbmcsIE5VTEwsIERFRkFVTFRfQ09OVEVYVF9JRCk7CiAJCWlmIChyZXQpCiAJ
+CQlyZXR1cm4gcmV0OwogCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9t
+b2Rlcy5jIGIvZHJpdmVycy9ncHUvZHJtL2k5MTUvaW50ZWxfbW9kZXMuYwppbmRleCAyOWI3MjU5
+Li40YmMxYzBmIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9tb2Rlcy5j
+CisrKyBiL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX21vZGVzLmMKQEAgLTQ1LDcgKzQ1LDYg
+QEAgaW50IGludGVsX2Nvbm5lY3Rvcl91cGRhdGVfbW9kZXMoc3RydWN0IGRybV9jb25uZWN0b3Ig
+KmNvbm5lY3RvciwKIAlkcm1fbW9kZV9jb25uZWN0b3JfdXBkYXRlX2VkaWRfcHJvcGVydHkoY29u
+bmVjdG9yLCBlZGlkKTsKIAlyZXQgPSBkcm1fYWRkX2VkaWRfbW9kZXMoY29ubmVjdG9yLCBlZGlk
+KTsKIAlkcm1fZWRpZF90b19lbGQoY29ubmVjdG9yLCBlZGlkKTsKLQljb25uZWN0b3ItPmRpc3Bs
+YXlfaW5mby5yYXdfZWRpZCA9IE5VTEw7CiAJa2ZyZWUoZWRpZCk7CiAKIAlyZXR1cm4gcmV0Owot
+LSAKMS43LjkuNQoK
+--f46d0408da0738080704c808d530--
