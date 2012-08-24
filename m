@@ -1,382 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab2HXF4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 01:56:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33643 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab2HXF42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 01:56:28 -0400
-Date: Thu, 23 Aug 2012 22:55:54 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH v6 07/13] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Message-ID: <20120824055554.GC11977@moria.home.lan>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-8-git-send-email-koverstreet@google.com>
- <20120822203003.GJ19212@google.com>
+	id S1755670Ab2HXGAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 02:00:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:2357 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753781Ab2HXGAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 02:00:35 -0400
+X-IronPort-AV: E=Sophos;i="4.77,818,1336320000"; 
+   d="scan'208";a="5712610"
+Message-ID: <503719C1.4080304@cn.fujitsu.com>
+Date: Fri, 24 Aug 2012 14:05:53 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120822203003.GJ19212@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>, Blue Swirl <blauwirbel@gmail.com>,
+        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH v9 5/6] introduce a new qom device to deal with panicked
+ event
+References: <50359561.9070001@cn.fujitsu.com> <5035962D.8050907@cn.fujitsu.com> <50360B4D.5070403@siemens.com>
+In-Reply-To: <50360B4D.5070403@siemens.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/24 14:00:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/08/24 14:00:30,
+	Serialize complete at 2012/08/24 14:00:30
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 01:30:03PM -0700, Tejun Heo wrote:
-> This description needs to be several times more descriptive than it
-> currently is.  The deadlock issue at hand is very unobvious.  Please
-> explain it so that someone who isn't familiar with the problem can
-> understand it by reading it.
+At 08/23/2012 06:51 PM, Jan Kiszka Wrote:
+> On 2012-08-23 04:32, Wen Congyang wrote:
+>> If the target is x86/x86_64, the guest's kernel will write 0x01 to the
+>> port KVM_PV_EVENT_PORT when it is panciked. This patch introduces a new
+>> qom device kvm_pv_ioport to listen this I/O port, and deal with panicked
+>> event according to panicked_action's value. The possible actions are:
+>> 1. emit QEVENT_GUEST_PANICKED only
+>> 2. emit QEVENT_GUEST_PANICKED and pause the guest
+>> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
+>> 4. emit QEVENT_GUEST_PANICKED and reset the guest
+>>
+>> I/O ports does not work for some targets(for example: s390). And you
+>> can implement another qom device, and include it's code into pv_event.c
+>> for such target.
+>>
+>> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
+>> application does not receive this event(the management may not
+>> run when the event is emitted), the management won't know the
+>> guest is panicked.
+>>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  hw/kvm/Makefile.objs |    2 +-
+>>  hw/kvm/pv_event.c    |  190 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  hw/pc_piix.c         |    9 +++
+>>  kvm.h                |    2 +
+>>  4 files changed, 202 insertions(+), 1 deletions(-)
+>>  create mode 100644 hw/kvm/pv_event.c
+>>
+>> diff --git a/hw/kvm/Makefile.objs b/hw/kvm/Makefile.objs
+>> index 226497a..23e3b30 100644
+>> --- a/hw/kvm/Makefile.objs
+>> +++ b/hw/kvm/Makefile.objs
+>> @@ -1 +1 @@
+>> -obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o
+>> +obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o pv_event.o
+>> diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
+>> new file mode 100644
+>> index 0000000..c03dd22
+>> --- /dev/null
+>> +++ b/hw/kvm/pv_event.c
+>> @@ -0,0 +1,190 @@
+>> +/*
+>> + * QEMU KVM support, paravirtual event device
+>> + *
+>> + * Copyright Fujitsu, Corp. 2012
+>> + *
+>> + * Authors:
+>> + *     Wen Congyang <wency@cn.fujitsu.com>
+>> + *
+>> + * This work is licensed under the terms of the GNU GPL, version 2 or later.
+>> + * See the COPYING file in the top-level directory.
+>> + *
+>> + */
+>> +
+>> +#include <linux/kvm_para.h>
+>> +#include <asm/kvm_para.h>
+>> +#include <qobject.h>
+>> +#include <qjson.h>
+>> +#include <monitor.h>
+>> +#include <sysemu.h>
+>> +#include <kvm.h>
+>> +
+>> +/* Possible values for action parameter. */
+>> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
+>> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
+>> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
+>> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
+>> +
+>> +#define PV_EVENT_DRIVER     "kvm_pv_event"
+>> +
+>> +struct PVEventAction {
+>> +    char *panicked_action;
+>> +    int panicked_action_value;
+>> +};
+>> +
+>> +#define DEFINE_PV_EVENT_PROPERTIES(_state, _conf)   \
+>> +    DEFINE_PROP_STRING("panicked_action", _state, _conf.panicked_action)
+>> +
+>> +static void panicked_mon_event(const char *action)
+>> +{
+>> +    QObject *data;
+>> +
+>> +    data = qobject_from_jsonf("{ 'action': %s }", action);
+>> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
+>> +    qobject_decref(data);
+>> +}
+>> +
+>> +static void panicked_perform_action(uint32_t panicked_action)
+>> +{
+>> +    switch (panicked_action) {
+>> +    case PANICKED_REPORT:
+>> +        panicked_mon_event("report");
+>> +        break;
+>> +
+>> +    case PANICKED_PAUSE:
+>> +        panicked_mon_event("pause");
+>> +        vm_stop(RUN_STATE_GUEST_PANICKED);
+>> +        break;
+>> +
+>> +    case PANICKED_POWEROFF:
+>> +        panicked_mon_event("poweroff");
+>> +        qemu_system_shutdown_request();
+>> +        break;
+>> +
+>> +    case PANICKED_RESET:
+>> +        panicked_mon_event("reset");
+>> +        qemu_system_reset_request();
+>> +        break;
+>> +    }
+>> +}
+>> +
+>> +static uint64_t supported_event(void)
+>> +{
+>> +    return 1 << KVM_PV_FEATURE_PANICKED;
+>> +}
+>> +
+>> +static void handle_event(int event, struct PVEventAction *conf)
+>> +{
+>> +    if (event == KVM_PV_EVENT_PANICKED) {
+>> +        panicked_perform_action(conf->panicked_action_value);
+>> +    }
+>> +}
+>> +
+>> +static int pv_event_init(struct PVEventAction *conf)
+>> +{
+>> +    if (!conf->panicked_action) {
+>> +        conf->panicked_action_value = PANICKED_REPORT;
+>> +    } else if (strcasecmp(conf->panicked_action, "none") == 0) {
+>> +        conf->panicked_action_value = PANICKED_REPORT;
+>> +    } else if (strcasecmp(conf->panicked_action, "pause") == 0) {
+>> +        conf->panicked_action_value = PANICKED_PAUSE;
+>> +    } else if (strcasecmp(conf->panicked_action, "poweroff") == 0) {
+>> +        conf->panicked_action_value = PANICKED_POWEROFF;
+>> +    } else if (strcasecmp(conf->panicked_action, "reset") == 0) {
+>> +        conf->panicked_action_value = PANICKED_RESET;
+>> +    } else {
+>> +        return -1;
+>> +    }
+>> +
+>> +    return 0;
+>> +}
+>> +
+>> +#if defined(KVM_PV_EVENT_PORT)
+>> +
+>> +#include "hw/isa.h"
+>> +
+>> +typedef struct {
+>> +    ISADevice dev;
+>> +    struct PVEventAction conf;
+>> +    MemoryRegion ioport;
+>> +} PVIOPortState;
+>> +
+>> +static uint64_t pv_io_read(void *opaque, target_phys_addr_t addr, unsigned size)
+>> +{
+>> +    return supported_event();
+>> +}
+>> +
+>> +static void pv_io_write(void *opaque, target_phys_addr_t addr, uint64_t val,
+>> +                        unsigned size)
+>> +{
+>> +    PVIOPortState *s = opaque;
+>> +
+>> +    handle_event(val, &s->conf);
+>> +}
+>> +
+>> +static const MemoryRegionOps pv_io_ops = {
+>> +    .read = pv_io_read,
+>> +    .write = pv_io_write,
+>> +    .impl = {
+>> +        .min_access_size = 4,
+>> +        .max_access_size = 4,
+>> +    },
+>> +};
+>> +
+>> +static int pv_ioport_initfn(ISADevice *dev)
+>> +{
+>> +    PVIOPortState *s = DO_UPCAST(PVIOPortState, dev, dev);
+>> +
+>> +    if (pv_event_init(&s->conf) < 0) {
+>> +        return -1;
+>> +    }
+>> +
+>> +    memory_region_init_io(&s->ioport, &pv_io_ops, s, "pv_event", 1);
+>> +    isa_register_ioport(dev, &s->ioport, KVM_PV_EVENT_PORT);
+>> +
+>> +    return 0;
+>> +}
+>> +
+>> +static Property pv_ioport_properties[] = {
+>> +    DEFINE_PV_EVENT_PROPERTIES(PVIOPortState, conf),
+>> +    DEFINE_PROP_END_OF_LIST(),
+>> +};
+>> +
+>> +static void pv_ioport_class_init(ObjectClass *klass, void *data)
+>> +{
+>> +    DeviceClass *dc = DEVICE_CLASS(klass);
+>> +    ISADeviceClass *ic = ISA_DEVICE_CLASS(klass);
+>> +
+>> +    ic->init = pv_ioport_initfn;
+>> +    dc->no_user = 1;
+>> +    dc->props = pv_ioport_properties;
+>> +}
+>> +
+>> +static TypeInfo pv_ioport_info = {
+>> +    .name          = PV_EVENT_DRIVER,
+>> +    .parent        = TYPE_ISA_DEVICE,
+>> +    .instance_size = sizeof(PVIOPortState),
+>> +    .class_init    = pv_ioport_class_init,
+>> +};
+>> +
+>> +static void pv_ioport_register_types(void)
+>> +{
+>> +    type_register_static(&pv_ioport_info);
+>> +}
+>> +
+>> +type_init(pv_ioport_register_types)
+>> +
+>> +void kvm_pv_event_init(void *opaque)
+>> +{
+>> +    ISABus *bus = opaque;
+>> +    ISADevice *dev;
+>> +
+>> +    dev = isa_create(bus, PV_EVENT_DRIVER);
+>> +    qdev_init_nofail(&dev->qdev);
+>> +}
+>> +
+>> +#else
+>> +void kvm_pv_event_init(void *opaque)
+>> +{
 > 
-> Also, please describe how the patch was tested.
+> Some comment that this stub requires an implementation whenever it is
+> actually built would be helpful. Something that explains a different
+> transport than PIO will be needed.
 
-New patch below, tell me how the new description reads?
-
-> > @@ -306,16 +324,39 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
-> >  		p = kmalloc(sizeof(struct bio) +
-> >  			    nr_iovecs * sizeof(struct bio_vec),
-> >  			    gfp_mask);
-> > +
-> >  		front_pad = 0;
-> >  		inline_vecs = nr_iovecs;
-> >  	} else {
-> > -		p = mempool_alloc(bs->bio_pool, gfp_mask);
-> > +		/*
-> > +		 * If we're running under generic_make_request()
-> > +		 * (current->bio_list != NULL), we risk deadlock if we sleep on
-> > +		 * allocation and there's already bios on current->bio_list that
-> > +		 * were allocated from the same bio_set; they won't be submitted
-> > +		 * (and thus freed) as long as we're blocked here.
-> > +		 *
-> > +		 * To deal with this, we first try the allocation without using
-> > +		 * the mempool; if that fails, we punt all the bios on
-> > +		 * current->bio_list to a different thread and then retry the
-> > +		 * allocation with the original gfp mask.
-> > +		 */
-> 
-> Ditto here.
-
-Ok, tell me if the new version below is better.
+OK
 
 > 
-> > +		if (current->bio_list &&
-> > +		    !bio_list_empty(current->bio_list) &&
-> > +		    (gfp_mask & __GFP_WAIT))
-> > +			gfp_mask &= GFP_ATOMIC;
+>> +}
+>> +#endif
+>> diff --git a/hw/pc_piix.c b/hw/pc_piix.c
+>> index 88ff041..f73fb85 100644
+>> --- a/hw/pc_piix.c
+>> +++ b/hw/pc_piix.c
+>> @@ -46,6 +46,9 @@
+>>  #ifdef CONFIG_XEN
+>>  #  include <xen/hvm/hvm_info_table.h>
+>>  #endif
+>> +#ifdef CONFIG_KVM
+>> +#   include <asm/kvm_para.h>
+>> +#endif
+>>  
+>>  #define MAX_IDE_BUS 2
+>>  
+>> @@ -285,6 +288,12 @@ static void pc_init1(MemoryRegion *system_memory,
+>>      if (pci_enabled) {
+>>          pc_pci_device_init(pci_bus);
+>>      }
+>> +
+>> +#ifdef KVM_PV_EVENT_PORT
 > 
-> Why aren't we turning off __GFP_WAIT instead?  e.g. What if the caller
-> has one of NUMA flags or __GFP_COLD specified?
-
-Didn't think of that. The reason I did it that way is I wasn't sure if
-just doing &= ~__GFP_WAIT would be correct, since that would leave
-__GFP_IO|__GFP_FS set.
-
-Look at how the mempool code uses the gfp flags, it's not clear to me
-what happens in general if __GFP_WAIT isn't set but __GFP_IO is... but I
-_think_ masking out __GFP_WAIT is sufficient and correct.
-
-(The mempool code masks out __GFP_IO where it masks out __GFP_WAIT, but
-it doesn't mask out __GFP_FS. Why would masking out __GFP_IO matter? And
-if it does, why isn't __GFP_FS masked out? Inquiring minds want to know.
-
-But at least for my purposes masking out __GFP_WAIT looks correct.
-
-> > +retry:
-> > +		if (gfp_mask & __GFP_WAIT)
-> > +			p = mempool_alloc(bs->bio_pool, gfp_mask);
-> > +		else
-> > +			p = kmem_cache_alloc(bs->bio_slab, gfp_mask);
+> This file is x86-only, and there we have KVM_PV_EVENT_PORT
+> unconditionally. So drop the #ifdef.
 > 
-> Why is it necessary to avoid using the mempool if __GFP_WAIT is
-> already cleared?
+>> +    if (kvm_enabled()) {
+>> +        kvm_pv_event_init(isa_bus);
+> 
+> But you are missing a kvm-stub entry for kvm_pv_event_init. A
+> --disable-kvm build should be broken for that reason.
 
-Now that I think about it, avoiding the mempool shouldn't be necessary
-at all (and it's better not to since the mempool code adds various
-flags, so allocating without those flags is at least inconsistent).
+Hmm, KVM_PV_EVENT_PORT is defined in asm/kvm_para.h, and I include
+this file only when CONFIG_KVM is defined. So --disable-kvm build
+does not be broken in my test.
 
-> Plesae don't mix struct definition relocation (or any relocation
-> really) with actual changes.  It buries the actual changes and makes
-> reviewing difficult.
+Thanks
+Wen Congyang
 
-Make a new patch that does nothing more than reorder the definitions,
-then?
+> 
+>> +    }
+>> +#endif
+>>  }
+>>  
+>>  static void pc_init_pci(ram_addr_t ram_size,
+>> diff --git a/kvm.h b/kvm.h
+>> index 5b8f588..41ce1b2 100644
+>> --- a/kvm.h
+>> +++ b/kvm.h
+>> @@ -276,4 +276,6 @@ int kvm_irqchip_add_irqfd(KVMState *s, int fd, int virq);
+>>  int kvm_irqchip_remove_irqfd(KVMState *s, int fd, int virq);
+>>  int kvm_irqchip_add_irq_notifier(KVMState *s, EventNotifier *n, int virq);
+>>  int kvm_irqchip_remove_irq_notifier(KVMState *s, EventNotifier *n, int virq);
+>> +
+>> +void kvm_pv_event_init(void *opaque);
+>>  #endif
+>>
+> 
+> Jan
+> 
 
-
-commit d4351a8fc634d3ed95c27f633184f3f87ba5c754
-Author: Kent Overstreet <koverstreet@google.com>
-Date:   Thu Aug 23 22:54:17 2012 -0700
-
-    block: Avoid deadlocks with bio allocation by stacking drivers
-    
-    Previously, if we ever try to allocate more than once from the same bio
-    set while running under generic_make_request() (i.e. a stacking block
-    driver), we risk deadlock.
-    
-    This is because of the code in generic_make_request() that converts
-    recursion to iteration; any bios we submit won't actually be submitted
-    (so they can complete and eventually be freed) until after we return -
-    this means if we allocate a second bio, we're blocking the first one
-    from ever being freed.
-    
-    Thus if enough threads call into a stacking block driver at the same
-    time with bios that need multiple splits, and the bio_set's reserve gets
-    used up, we deadlock.
-    
-    This can be worked around in the driver code - we could check if we're
-    running under generic_make_request(), then mask out __GFP_WAIT when we
-    go to allocate a bio, and if the allocation fails punt to workqueue and
-    retry the allocation.
-    
-    But this is tricky and not a generic solution. This patch solves it for
-    all users by inverting the previously described technique. We allocate a
-    rescuer workqueue for each bio_set, and then in the allocation code if
-    there are bios on current->bio_list we would be blocking, we punt them
-    to the rescuer workqueue to be submitted.
-    
-    Tested it by forcing the rescue codepath to be taken (by disabling the
-    first GFP_NOWAIT) attempt, and then ran it with bcache (which does a lot
-    of arbitrary bio splitting) and verified that the rescuer was being
-    invoked.
-    
-    Signed-off-by: Kent Overstreet <koverstreet@google.com>
-    CC: Jens Axboe <axboe@kernel.dk>
-
-diff --git a/fs/bio.c b/fs/bio.c
-index ed34526..f9f87d7 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -282,6 +282,23 @@ void bio_reset(struct bio *bio)
- }
- EXPORT_SYMBOL(bio_reset);
- 
-+static void bio_alloc_rescue(struct work_struct *work)
-+{
-+	struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
-+	struct bio *bio;
-+
-+	while (1) {
-+		spin_lock(&bs->rescue_lock);
-+		bio = bio_list_pop(&bs->rescue_list);
-+		spin_unlock(&bs->rescue_lock);
-+
-+		if (!bio)
-+			break;
-+
-+		generic_make_request(bio);
-+	}
-+}
-+
- /**
-  * bio_alloc_bioset - allocate a bio for I/O
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
-@@ -304,6 +321,7 @@ EXPORT_SYMBOL(bio_reset);
-  */
- struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- {
-+	gfp_t saved_gfp = gfp_mask;
- 	unsigned front_pad;
- 	unsigned inline_vecs;
- 	unsigned long idx = BIO_POOL_NONE;
-@@ -318,16 +336,44 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 		p = kmalloc(sizeof(struct bio) +
- 			    nr_iovecs * sizeof(struct bio_vec),
- 			    gfp_mask);
-+
- 		front_pad = 0;
- 		inline_vecs = nr_iovecs;
- 	} else {
-+		/*
-+		 * generic_make_request() converts recursion to iteration; this
-+		 * means if we're running beneath it, any bios we allocate and
-+		 * submit will not be submitted (and thus freed) until after we
-+		 * return.
-+		 *
-+		 * This exposes us to a potential deadlock if we allocate
-+		 * multiple bios from the same bio_set() while running
-+		 * underneath generic_make_request(). If we were to allocate
-+		 * multiple bios (say a stacking block driver that was splitting
-+		 * bios), we would deadlock if we exhausted the mempool's
-+		 * reserve.
-+		 *
-+		 * We solve this, and guarantee forward progress, with a rescuer
-+		 * workqueue per bio_set. If we go to allocate and there are
-+		 * bios on current->bio_list, we first try the allocation
-+		 * without __GFP_WAIT; if that fails, we punt those bios we
-+		 * would be blocking to the rescuer workqueue before we retry
-+		 * with the original gfp_flags.
-+		 */
-+
-+		if (current->bio_list &&
-+		    !bio_list_empty(current->bio_list) &&
-+		    (gfp_mask & __GFP_WAIT))
-+			gfp_mask &= ~__GFP_WAIT;
-+retry:
- 		p = mempool_alloc(bs->bio_pool, gfp_mask);
-+
- 		front_pad = bs->front_pad;
- 		inline_vecs = BIO_INLINE_VECS;
- 	}
- 
- 	if (unlikely(!p))
--		return NULL;
-+		goto err;
- 
- 	bio = p + front_pad;
- 	bio_init(bio);
-@@ -348,6 +394,19 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 
- err_free:
- 	mempool_free(p, bs->bio_pool);
-+err:
-+	if (gfp_mask != saved_gfp) {
-+		gfp_mask = saved_gfp;
-+
-+		spin_lock(&bs->rescue_lock);
-+		bio_list_merge(&bs->rescue_list, current->bio_list);
-+		bio_list_init(current->bio_list);
-+		spin_unlock(&bs->rescue_lock);
-+
-+		queue_work(bs->rescue_workqueue, &bs->rescue_work);
-+		goto retry;
-+	}
-+
- 	return NULL;
- }
- EXPORT_SYMBOL(bio_alloc_bioset);
-@@ -1556,6 +1615,9 @@ static void biovec_free_pools(struct bio_set *bs)
- 
- void bioset_free(struct bio_set *bs)
- {
-+	if (bs->rescue_workqueue)
-+		destroy_workqueue(bs->rescue_workqueue);
-+
- 	if (bs->bio_pool)
- 		mempool_destroy(bs->bio_pool);
- 
-@@ -1591,6 +1653,10 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
- 
- 	bs->front_pad = front_pad;
- 
-+	spin_lock_init(&bs->rescue_lock);
-+	bio_list_init(&bs->rescue_list);
-+	INIT_WORK(&bs->rescue_work, bio_alloc_rescue);
-+
- 	bs->bio_slab = bio_find_or_create_slab(front_pad + back_pad);
- 	if (!bs->bio_slab) {
- 		kfree(bs);
-@@ -1601,9 +1667,14 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
- 	if (!bs->bio_pool)
- 		goto bad;
- 
--	if (!biovec_create_pools(bs, pool_size))
--		return bs;
-+	if (biovec_create_pools(bs, pool_size))
-+		goto bad;
-+
-+	bs->rescue_workqueue = alloc_workqueue("bioset", WQ_MEM_RECLAIM, 0);
-+	if (!bs->rescue_workqueue)
-+		goto bad;
- 
-+	return bs;
- bad:
- 	bioset_free(bs);
- 	return NULL;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index b22c22b..ba5b52e 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -290,39 +290,6 @@ static inline int bio_associate_current(struct bio *bio) { return -ENOENT; }
- static inline void bio_disassociate_task(struct bio *bio) { }
- #endif	/* CONFIG_BLK_CGROUP */
- 
--/*
-- * bio_set is used to allow other portions of the IO system to
-- * allocate their own private memory pools for bio and iovec structures.
-- * These memory pools in turn all allocate from the bio_slab
-- * and the bvec_slabs[].
-- */
--#define BIO_POOL_SIZE 2
--#define BIOVEC_NR_POOLS 6
--#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
--
--struct bio_set {
--	struct kmem_cache *bio_slab;
--	unsigned int front_pad;
--
--	mempool_t *bio_pool;
--#if defined(CONFIG_BLK_DEV_INTEGRITY)
--	mempool_t *bio_integrity_pool;
--#endif
--	mempool_t *bvec_pool;
--};
--
--struct biovec_slab {
--	int nr_vecs;
--	char *name;
--	struct kmem_cache *slab;
--};
--
--/*
-- * a small number of entries is fine, not going to be performance critical.
-- * basically we just need to survive
-- */
--#define BIO_SPLIT_ENTRIES 2
--
- #ifdef CONFIG_HIGHMEM
- /*
-  * remember never ever reenable interrupts between a bvec_kmap_irq and
-@@ -497,6 +464,48 @@ static inline struct bio *bio_list_get(struct bio_list *bl)
- 	return bio;
- }
- 
-+/*
-+ * bio_set is used to allow other portions of the IO system to
-+ * allocate their own private memory pools for bio and iovec structures.
-+ * These memory pools in turn all allocate from the bio_slab
-+ * and the bvec_slabs[].
-+ */
-+#define BIO_POOL_SIZE 2
-+#define BIOVEC_NR_POOLS 6
-+#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
-+
-+struct bio_set {
-+	struct kmem_cache *bio_slab;
-+	unsigned int front_pad;
-+
-+	mempool_t *bio_pool;
-+#if defined(CONFIG_BLK_DEV_INTEGRITY)
-+	mempool_t *bio_integrity_pool;
-+#endif
-+	mempool_t *bvec_pool;
-+
-+	/*
-+	 * Deadlock avoidance for stacking block drivers: see comments in
-+	 * bio_alloc_bioset() for details
-+	 */
-+	spinlock_t		rescue_lock;
-+	struct bio_list		rescue_list;
-+	struct work_struct	rescue_work;
-+	struct workqueue_struct	*rescue_workqueue;
-+};
-+
-+struct biovec_slab {
-+	int nr_vecs;
-+	char *name;
-+	struct kmem_cache *slab;
-+};
-+
-+/*
-+ * a small number of entries is fine, not going to be performance critical.
-+ * basically we just need to survive
-+ */
-+#define BIO_SPLIT_ENTRIES 2
-+
- #if defined(CONFIG_BLK_DEV_INTEGRITY)
- 
- #define bip_vec_idx(bip, idx)	(&(bip->bip_vec[(idx)]))
