@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab2HXCji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:39:38 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:43999 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757977Ab2HXCjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:39:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6813"; a="226586837"
-X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="374748747"
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
-Subject: RE: [PATCH v2] net: add new QCA alx ethernet driver
-Thread-Topic: [PATCH v2] net: add new QCA alx ethernet driver
-Thread-Index: AQHNfq/QcigpFEkeAUuvSgE/Sf2tgZdnYDEA//+NnwCAAXEzAP//2OtggAB7GQD//5FtAA==
-Date: Fri, 24 Aug 2012 02:39:03 +0000
-Message-ID: <157393863283F442885425D2C45428562A4F5546@nasanexd02f.na.qualcomm.com>
-References: <1345480949-14800-1-git-send-email-cjren@qca.qualcomm.com>
-	 <20120822.225700.714020017287504609.davem@davemloft.net>
-	 <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
-	 <1345756142.2579.16.camel@bwh-desktop.uk.solarflarecom.com>
-	 <157393863283F442885425D2C45428562A4F54E3@nasanexd02f.na.qualcomm.com>
- <1345774184.2579.51.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1345774184.2579.51.camel@bwh-desktop.uk.solarflarecom.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.48.1]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S933076Ab2HXCjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 22:39:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932955Ab2HXCjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 22:39:47 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: david@fromorbit.com
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep AS_HWPOISON sticky
+Date: Thu, 23 Aug 2012 22:39:32 -0400
+Message-Id: <1345775972-1134-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20120824013118.GZ19235@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7O2dsHw001010
 
+On Fri, Aug 24, 2012 at 11:31:18AM +1000, Dave Chinner wrote:
+> On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
+> > "HWPOISON: report sticky EIO for poisoned file" still has a corner case
+> > where we have possibilities of data lost. This is because in this fix
+> > AS_HWPOISON is cleared when the inode cache is dropped.
+> > 
+> > For example, consider an application in which a process periodically
+> > (every 10 minutes) writes some logs on a file (and closes it after
+> > each writes,) and at the end of each day some batch programs run using
+> > the log file. If a memory error hits on dirty pagecache of this log file
+> > just after periodic write/close and the inode cache is cleared before the
+> > next write, then this application is not aware of the error and the batch
+> > programs will work wrongly.
+> > 
+> > To avoid this, this patch makes us pin the hwpoisoned inode on memory
+> > until we remove or completely truncate the hwpoisoned file.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  fs/inode.c              | 12 ++++++++++++
+> >  include/linux/pagemap.h | 11 +++++++++++
+> >  mm/memory-failure.c     |  2 +-
+> >  mm/truncate.c           |  2 ++
+> >  4 files changed, 26 insertions(+), 1 deletion(-)
+> > 
+> > diff --git v3.6-rc1.orig/fs/inode.c v3.6-rc1/fs/inode.c
+> > index ac8d904..8742397 100644
+> > --- v3.6-rc1.orig/fs/inode.c
+> > +++ v3.6-rc1/fs/inode.c
+> > @@ -717,6 +717,15 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+> >  		}
+> >  
+> >  		/*
+> > +		 * Keep inode caches on memory for user processes to certainly
+> > +		 * be aware of memory errors.
+> > +		 */
+> > +		if (unlikely(mapping_hwpoison(inode->i_mapping))) {
+> > +			spin_unlock(&inode->i_lock);
+> > +			continue;
+> > +		}
+> > +
+> > +		/*
+> >  		 * Referenced or dirty inodes are still in use. Give them
+> >  		 * another pass through the LRU as we canot reclaim them now.
+> >  		 */
 > 
-> If you want to implement a more sophisticated packet matching mode that
-> requires more details than struct ethtool_wolinfo, then you may need to
-> define new operations.
-> 
-It's great ! 
-Is it ok for ethtool to define a new operation with a sophisticated structure (like ethtool_eee) ?
+> I don't think you tested this at all. Have a look at what the loop
+> does more closely - inodes with poisoned mappings will get stuck
+> and reclaim doesn't make progress past them.
 
-Thanks
-Xiong
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Sorry, I overlooked something important in my testing. I'll correct it.
+Maybe we need list_move_tail() in this block.
+
+> I think you also need to document this inode lifecycle change....
+
+OK, I'll do it.
+
+> > diff --git v3.6-rc1.orig/mm/truncate.c v3.6-rc1/mm/truncate.c
+> > index 75801ac..82a994f 100644
+> > --- v3.6-rc1.orig/mm/truncate.c
+> > +++ v3.6-rc1/mm/truncate.c
+> > @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
+> >  
+> >  	oldsize = inode->i_size;
+> >  	i_size_write(inode, newsize);
+> > +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
+> > +		mapping_clear_hwpoison(inode->i_mapping);
+> 
+> So only a truncate to zero size will clear the poison flag?
+
+Yes, this is because we only know if the file is affected by hwpoison,
+but not where the hwpoisoned page is in the file. We could remember it,
+but I did not do it for simplicity.
+
+> What happens if it is the last page in the mapping that is poisoned,
+> and we truncate that away? Shouldn't that clear the poisoned bit?
+
+When we handle the hwpoisoned inode, the error page should already
+be removed from pagecache, so the remaining pages are not related
+to the error and we need not care about them when we consider bit
+clearing.
+
+> What about a hole punch over the poisoned range?
+
+For the same reason, this is also not related to when to clear the bit.
+
+Thanks,
+Naoya
