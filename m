@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759908Ab2HXQYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:24:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46510 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab2HXQYf (ORCPT
+	id S1759920Ab2HXQYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:24:46 -0400
+Received: from exprod7og107.obsmtp.com ([64.18.2.167]:44243 "EHLO
+	exprod7og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759828Ab2HXQYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:24:35 -0400
+	Fri, 24 Aug 2012 12:24:41 -0400
+Message-ID: <5037AAB0.6040102@genband.com>
+Date: Fri, 24 Aug 2012 10:24:16 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Martin Nybo Andersen <tweek@tweek.dk>
+CC: wbrana <wbrana@gmail.com>, Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Subject: Re: Drop support for x86-32
-From: Raymond Jennings <shentino@gmail.com>
-To: wbrana <wbrana@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 24 Aug 2012 09:24:30 -0700
-Message-ID: <1345825470.5463.7.camel@warfang.spyronet>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <1345823281.28613.34.camel@thorin> <CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com> <201208241814.16862.tweek@tweek.dk>
+In-Reply-To: <201208241814.16862.tweek@tweek.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Aug 2012 16:24:17.0054 (UTC) FILETIME=[E837CBE0:01CD8214]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19136.000
+X-TM-AS-Result: No--13.652700-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-23 at 12:41 +0200, wbrana wrote:
-> Microsoft will drop support for x86-32 in Windows 9.
-> Linux could do same.
-> http://www.networkworld.com/community/blog/windows-9-details-are-already-emerging
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On 08/24/2012 10:14 AM, Martin Nybo Andersen wrote:
+> (And I'm still not sure why one would run 32-bit applications on a 64-bit
+> architecture...)
 
-I use an x86-32 system myself.
+There are several architectures (powerpc comes to mind) where 32-bit 
+userspace on 64-bit kernel is the norm because it offers performance 
+advantages due to the smaller pointer size if the process doesn' t need 
+the larger address space.  This is the rationale behind the new x32 ABI 
+for x86-64 kernels.
 
-So do many other people.
+You might also want to run legacy apps (which can't be recompiled) on 
+new hardware.
 
-Besides, it's not really your call to decide if x86-32 is obsolete.
-
-If it's anyone's call, it's for companies like AMD and Intel that
-actually make the chips.  Microsoft doesn't make x86 chips, so their
-opinion on x86-32's viability is none of our concern.
-
-Similiarly, if I were a marketing director for pepsi, I wouldn't listen
-to anything that Coca cola has to say about what flavors of soda to
-make.  A problem with the liquid CO2 company I buy my fizz from however
-WOULD get my attention.
+Chris
 
 
