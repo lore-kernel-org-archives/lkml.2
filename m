@@ -1,75 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2HXGTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 02:19:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44502 "EHLO mga14.intel.com"
+	id S1755612Ab2HXGWR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 02:22:17 -0400
+Received: from mout.web.de ([212.227.17.12]:60700 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756005Ab2HXGTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 02:19:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,302,1344236400"; 
-   d="asc'?scan'208";a="184868782"
-Message-ID: <1345789460.2848.249.camel@sauron.fi.intel.com>
-Subject: Re: linux-next: build failure after merge of the ubi tree
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 24 Aug 2012 09:24:20 +0300
-In-Reply-To: <20120824113439.6fdb432e7d6057b3fae27d3f@canb.auug.org.au>
-References: <20120824113439.6fdb432e7d6057b3fae27d3f@canb.auug.org.au>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-dKtEwZ6BzLO6pY5cVa1Y"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753120Ab2HXGWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 02:22:14 -0400
+Message-ID: <50371D85.1080601@web.de>
+Date: Fri, 24 Aug 2012 08:21:57 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>, Blue Swirl <blauwirbel@gmail.com>,
+        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH v9 5/6] introduce a new qom device to deal with panicked
+ event
+References: <50359561.9070001@cn.fujitsu.com> <5035962D.8050907@cn.fujitsu.com> <50360B4D.5070403@siemens.com> <503719C1.4080304@cn.fujitsu.com>
+In-Reply-To: <503719C1.4080304@cn.fujitsu.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig679891DE041921E93FAC7E9B"
+X-Provags-ID: V02:K0:2nBbiY6NyZzA44eey1WYNgFRy3uZml7dIG6bPp68je1
+ s9Y3eXLle6/aQkXll2INDFRR+IAzJ9+5zkMAzFYSc6kAmDmXXI
+ nQW3Xxy0dlrbLGqKTpsR/tcUarLjHOHoG5w0VaVSJuHtwvKp4u
+ 7I49zrjWWp3r2ski2Xx0N3AhXQR6YbnhVIQZlgCK33d7B42ybI
+ CGUxkIn+wQ3ny3KomgWrg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-dKtEwZ6BzLO6pY5cVa1Y
-Content-Type: text/plain; charset="UTF-8"
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig679891DE041921E93FAC7E9B
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2012-08-24 at 11:34 +1000, Stephen Rothwell wrote:
-> Hi Artem,
+On 2012-08-24 08:05, Wen Congyang wrote:
+> At 08/23/2012 06:51 PM, Jan Kiszka Wrote:
+>> On 2012-08-23 04:32, Wen Congyang wrote:
+>>> If the target is x86/x86_64, the guest's kernel will write 0x01 to th=
+e
+>>> port KVM_PV_EVENT_PORT when it is panciked. This patch introduces a n=
+ew
+>>> qom device kvm_pv_ioport to listen this I/O port, and deal with panic=
+ked
+>>> event according to panicked_action's value. The possible actions are:=
+
+>>> 1. emit QEVENT_GUEST_PANICKED only
+>>> 2. emit QEVENT_GUEST_PANICKED and pause the guest
+>>> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
+>>> 4. emit QEVENT_GUEST_PANICKED and reset the guest
+>>>
+>>> I/O ports does not work for some targets(for example: s390). And you
+>>> can implement another qom device, and include it's code into pv_event=
+=2Ec
+>>> for such target.
+>>>
+>>> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
+>>> application does not receive this event(the management may not
+>>> run when the event is emitted), the management won't know the
+>>> guest is panicked.
+>>>
+>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>> ---
+>>>  hw/kvm/Makefile.objs |    2 +-
+>>>  hw/kvm/pv_event.c    |  190 ++++++++++++++++++++++++++++++++++++++++=
+++++++++++
+>>>  hw/pc_piix.c         |    9 +++
+>>>  kvm.h                |    2 +
+>>>  4 files changed, 202 insertions(+), 1 deletions(-)
+>>>  create mode 100644 hw/kvm/pv_event.c
+>>>
+>>> diff --git a/hw/kvm/Makefile.objs b/hw/kvm/Makefile.objs
+>>> index 226497a..23e3b30 100644
+>>> --- a/hw/kvm/Makefile.objs
+>>> +++ b/hw/kvm/Makefile.objs
+>>> @@ -1 +1 @@
+>>> -obj-$(CONFIG_KVM) +=3D clock.o apic.o i8259.o ioapic.o i8254.o
+>>> +obj-$(CONFIG_KVM) +=3D clock.o apic.o i8259.o ioapic.o i8254.o pv_ev=
+ent.o
+>>> diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
+>>> new file mode 100644
+>>> index 0000000..c03dd22
+>>> --- /dev/null
+>>> +++ b/hw/kvm/pv_event.c
+>>> @@ -0,0 +1,190 @@
+>>> +/*
+>>> + * QEMU KVM support, paravirtual event device
+>>> + *
+>>> + * Copyright Fujitsu, Corp. 2012
+>>> + *
+>>> + * Authors:
+>>> + *     Wen Congyang <wency@cn.fujitsu.com>
+>>> + *
+>>> + * This work is licensed under the terms of the GNU GPL, version 2 o=
+r later.
+>>> + * See the COPYING file in the top-level directory.
+>>> + *
+>>> + */
+>>> +
+>>> +#include <linux/kvm_para.h>
+>>> +#include <asm/kvm_para.h>
+>>> +#include <qobject.h>
+>>> +#include <qjson.h>
+>>> +#include <monitor.h>
+>>> +#include <sysemu.h>
+>>> +#include <kvm.h>
+>>> +
+>>> +/* Possible values for action parameter. */
+>>> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only *=
+/
+>>> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pa=
+use VM */
+>>> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and qu=
+it VM */
+>>> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and re=
+set VM */
+>>> +
+>>> +#define PV_EVENT_DRIVER     "kvm_pv_event"
+>>> +
+>>> +struct PVEventAction {
+>>> +    char *panicked_action;
+>>> +    int panicked_action_value;
+>>> +};
+>>> +
+>>> +#define DEFINE_PV_EVENT_PROPERTIES(_state, _conf)   \
+>>> +    DEFINE_PROP_STRING("panicked_action", _state, _conf.panicked_act=
+ion)
+>>> +
+>>> +static void panicked_mon_event(const char *action)
+>>> +{
+>>> +    QObject *data;
+>>> +
+>>> +    data =3D qobject_from_jsonf("{ 'action': %s }", action);
+>>> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
+>>> +    qobject_decref(data);
+>>> +}
+>>> +
+>>> +static void panicked_perform_action(uint32_t panicked_action)
+>>> +{
+>>> +    switch (panicked_action) {
+>>> +    case PANICKED_REPORT:
+>>> +        panicked_mon_event("report");
+>>> +        break;
+>>> +
+>>> +    case PANICKED_PAUSE:
+>>> +        panicked_mon_event("pause");
+>>> +        vm_stop(RUN_STATE_GUEST_PANICKED);
+>>> +        break;
+>>> +
+>>> +    case PANICKED_POWEROFF:
+>>> +        panicked_mon_event("poweroff");
+>>> +        qemu_system_shutdown_request();
+>>> +        break;
+>>> +
+>>> +    case PANICKED_RESET:
+>>> +        panicked_mon_event("reset");
+>>> +        qemu_system_reset_request();
+>>> +        break;
+>>> +    }
+>>> +}
+>>> +
+>>> +static uint64_t supported_event(void)
+>>> +{
+>>> +    return 1 << KVM_PV_FEATURE_PANICKED;
+>>> +}
+>>> +
+>>> +static void handle_event(int event, struct PVEventAction *conf)
+>>> +{
+>>> +    if (event =3D=3D KVM_PV_EVENT_PANICKED) {
+>>> +        panicked_perform_action(conf->panicked_action_value);
+>>> +    }
+>>> +}
+>>> +
+>>> +static int pv_event_init(struct PVEventAction *conf)
+>>> +{
+>>> +    if (!conf->panicked_action) {
+>>> +        conf->panicked_action_value =3D PANICKED_REPORT;
+>>> +    } else if (strcasecmp(conf->panicked_action, "none") =3D=3D 0) {=
+
+>>> +        conf->panicked_action_value =3D PANICKED_REPORT;
+>>> +    } else if (strcasecmp(conf->panicked_action, "pause") =3D=3D 0) =
+{
+>>> +        conf->panicked_action_value =3D PANICKED_PAUSE;
+>>> +    } else if (strcasecmp(conf->panicked_action, "poweroff") =3D=3D =
+0) {
+>>> +        conf->panicked_action_value =3D PANICKED_POWEROFF;
+>>> +    } else if (strcasecmp(conf->panicked_action, "reset") =3D=3D 0) =
+{
+>>> +        conf->panicked_action_value =3D PANICKED_RESET;
+>>> +    } else {
+>>> +        return -1;
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +#if defined(KVM_PV_EVENT_PORT)
+>>> +
+>>> +#include "hw/isa.h"
+>>> +
+>>> +typedef struct {
+>>> +    ISADevice dev;
+>>> +    struct PVEventAction conf;
+>>> +    MemoryRegion ioport;
+>>> +} PVIOPortState;
+>>> +
+>>> +static uint64_t pv_io_read(void *opaque, target_phys_addr_t addr, un=
+signed size)
+>>> +{
+>>> +    return supported_event();
+>>> +}
+>>> +
+>>> +static void pv_io_write(void *opaque, target_phys_addr_t addr, uint6=
+4_t val,
+>>> +                        unsigned size)
+>>> +{
+>>> +    PVIOPortState *s =3D opaque;
+>>> +
+>>> +    handle_event(val, &s->conf);
+>>> +}
+>>> +
+>>> +static const MemoryRegionOps pv_io_ops =3D {
+>>> +    .read =3D pv_io_read,
+>>> +    .write =3D pv_io_write,
+>>> +    .impl =3D {
+>>> +        .min_access_size =3D 4,
+>>> +        .max_access_size =3D 4,
+>>> +    },
+>>> +};
+>>> +
+>>> +static int pv_ioport_initfn(ISADevice *dev)
+>>> +{
+>>> +    PVIOPortState *s =3D DO_UPCAST(PVIOPortState, dev, dev);
+>>> +
+>>> +    if (pv_event_init(&s->conf) < 0) {
+>>> +        return -1;
+>>> +    }
+>>> +
+>>> +    memory_region_init_io(&s->ioport, &pv_io_ops, s, "pv_event", 1);=
+
+>>> +    isa_register_ioport(dev, &s->ioport, KVM_PV_EVENT_PORT);
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +static Property pv_ioport_properties[] =3D {
+>>> +    DEFINE_PV_EVENT_PROPERTIES(PVIOPortState, conf),
+>>> +    DEFINE_PROP_END_OF_LIST(),
+>>> +};
+>>> +
+>>> +static void pv_ioport_class_init(ObjectClass *klass, void *data)
+>>> +{
+>>> +    DeviceClass *dc =3D DEVICE_CLASS(klass);
+>>> +    ISADeviceClass *ic =3D ISA_DEVICE_CLASS(klass);
+>>> +
+>>> +    ic->init =3D pv_ioport_initfn;
+>>> +    dc->no_user =3D 1;
+>>> +    dc->props =3D pv_ioport_properties;
+>>> +}
+>>> +
+>>> +static TypeInfo pv_ioport_info =3D {
+>>> +    .name          =3D PV_EVENT_DRIVER,
+>>> +    .parent        =3D TYPE_ISA_DEVICE,
+>>> +    .instance_size =3D sizeof(PVIOPortState),
+>>> +    .class_init    =3D pv_ioport_class_init,
+>>> +};
+>>> +
+>>> +static void pv_ioport_register_types(void)
+>>> +{
+>>> +    type_register_static(&pv_ioport_info);
+>>> +}
+>>> +
+>>> +type_init(pv_ioport_register_types)
+>>> +
+>>> +void kvm_pv_event_init(void *opaque)
+>>> +{
+>>> +    ISABus *bus =3D opaque;
+>>> +    ISADevice *dev;
+>>> +
+>>> +    dev =3D isa_create(bus, PV_EVENT_DRIVER);
+>>> +    qdev_init_nofail(&dev->qdev);
+>>> +}
+>>> +
+>>> +#else
+>>> +void kvm_pv_event_init(void *opaque)
+>>> +{
+>>
+>> Some comment that this stub requires an implementation whenever it is
+>> actually built would be helpful. Something that explains a different
+>> transport than PIO will be needed.
 >=20
-> After merging the ubi tree, today's linux-next build (x86_64 allmodconfig=
-)
-> failed like this:
+> OK
 >=20
-> drivers/mtd/ubi/build.c: In function 'io_init':
-> drivers/mtd/ubi/build.c:658:3: error: 'mtd' undeclared (first use in this=
- function)
+>>
+>>> +}
+>>> +#endif
+>>> diff --git a/hw/pc_piix.c b/hw/pc_piix.c
+>>> index 88ff041..f73fb85 100644
+>>> --- a/hw/pc_piix.c
+>>> +++ b/hw/pc_piix.c
+>>> @@ -46,6 +46,9 @@
+>>>  #ifdef CONFIG_XEN
+>>>  #  include <xen/hvm/hvm_info_table.h>
+>>>  #endif
+>>> +#ifdef CONFIG_KVM
+>>> +#   include <asm/kvm_para.h>
+>>> +#endif
+>>> =20
+>>>  #define MAX_IDE_BUS 2
+>>> =20
+>>> @@ -285,6 +288,12 @@ static void pc_init1(MemoryRegion *system_memory=
+,
+>>>      if (pci_enabled) {
+>>>          pc_pci_device_init(pci_bus);
+>>>      }
+>>> +
+>>> +#ifdef KVM_PV_EVENT_PORT
+>>
+>> This file is x86-only, and there we have KVM_PV_EVENT_PORT
+>> unconditionally. So drop the #ifdef.
+>>
+>>> +    if (kvm_enabled()) {
+>>> +        kvm_pv_event_init(isa_bus);
+>>
+>> But you are missing a kvm-stub entry for kvm_pv_event_init. A
+>> --disable-kvm build should be broken for that reason.
+>=20
+> Hmm, KVM_PV_EVENT_PORT is defined in asm/kvm_para.h, and I include
+> this file only when CONFIG_KVM is defined. So --disable-kvm build
+> does not be broken in my test.
 
-Thanks Stephen, fixed, sorry for the breakage.
+Yeah, but that is a bit ugly and another reason to go for a proper kvm-st=
+ub.
 
---=20
-Best Regards,
-Artem Bityutskiy
+Jan
 
---=-dKtEwZ6BzLO6pY5cVa1Y
+
+
+--------------enig679891DE041921E93FAC7E9B
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iQIcBAABAgAGBQJQNx4UAAoJECmIfjd9wqK0aO0P/RDDnUkxtdyojUlk+73uoBG6
-m+EKcULpWrItWyg49xuXqkHhjt015GwOvmz/w+2PPzDYrPOAz1rd72QqVun/3oli
-5o1ygxr+uZ2HjNT+4UhuwwXaaEIWy//jkboTfwaWvRMrGGIWfuG7hbnpLLLmu8iw
-0mhYO8v99eDiXMhVrlFpO+ZihkzoBu6bmEt21hk892Oqkb9+Qazu5cca+b5UekAy
-814prbZaiGmDHM8J0nkECb8CeMX73zge4clkKNw4M1VyNxTWUx/e96DbaEsX5Edt
-mGVsbhDxjmDvUE5kV3MQxXdMfXCZKpXdLSL1VYJREHHoz3SdWEpuyrmBaqDntTXp
-dJF0GpkQET/NicDd8kb9vyIuk7dYFQBEmdE4VBi85psiKEap14rThCenhKyx8o5T
-mevqZmmApWaf47tLt1w2ZvRxAX9TRUkW5aVrFGxdefkskpSDaI0DPy6W1EfLt4xf
-ZpZmpq9+ke+nyzJUiqqgmAKFf+sTvvkzhlxow+OC+DG3oDW5kG7rCRX8u84JMm5h
-xoNgAHSvSwuMviHoOtcxNVC3VRinFQNof7K8t6pXvs2/9/Th7z9CwwdsF/ITCLwg
-BL6G47MIDdPQZb+ertVb7jgbmkyiym9xWA3JDFEMb1fGfrby+z8EorSDGwZUqCE5
-QDiWogHemdG21sGZqf6z
-=Ng61
+iEYEARECAAYFAlA3HYUACgkQitSsb3rl5xQQtQCePh2FRJV7ehx6xb5OU5D21CzH
+xpYAoIs+YC4JkX2OQNyh7mky83e51RP6
+=s2fG
 -----END PGP SIGNATURE-----
 
---=-dKtEwZ6BzLO6pY5cVa1Y--
-
+--------------enig679891DE041921E93FAC7E9B--
