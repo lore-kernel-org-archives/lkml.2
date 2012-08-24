@@ -1,133 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab2HXKKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 06:10:44 -0400
-Received: from ext190.halfdog.net ([88.116.147.190]:51060 "EHLO
-	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757040Ab2HXKKk (ORCPT
+	id S1757578Ab2HXKY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 06:24:27 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:22330 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755649Ab2HXKYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 06:10:40 -0400
-Message-ID: <50375302.1050603@halfdog.net>
-Date: Fri, 24 Aug 2012 10:10:10 +0000
-From: halfdog <me@halfdog.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14a1
+	Fri, 24 Aug 2012 06:24:24 -0400
+X-IronPort-AV: E=Sophos;i="4.80,302,1344211200"; 
+   d="scan'208";a="14165585"
+Message-ID: <5037531E.1010906@citrix.com>
+Date: Fri, 24 Aug 2012 11:10:38 +0100
+From: Attilio Rao <attilio.rao@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Search for patch for kernel stack data disclosure in binfmt_script
- during execve
-References: <502FA000.8090700@halfdog.net> <5030A65D.90305@halfdog.net> <503553EF.1090508@halfdog.net> <20120823085625.GA4683@otc-wbsnb-06>
-In-Reply-To: <20120823085625.GA4683@otc-wbsnb-06>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v4 1/2] XEN/X86: Improve semantic support for x86_init.mapping.pagetable_reserve
+References: <1345648122-11935-1-git-send-email-attilio.rao@citrix.com> <1345648122-11935-2-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208231722040.2856@ionos> <50364FE5.1070608@citrix.com> <alpine.LFD.2.02.1208231800530.2856@ionos> <503664C3.7010301@citrix.com> <20120824100309.GG3019@liondog.tnic>
+In-Reply-To: <20120824100309.GG3019@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-Kirill A. Shutemov wrote:
-> On Wed, Aug 22, 2012 at 09:49:35PM +0000, halfdog wrote:
->> Got a hint via IRC, that I should not send patch idea for review 
->> to "generic" list, but to maintainers and last (or relevant) 
->> comitters of code.
->> 
->> http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commitdiff;h=bf2a9a39639b8b51377905397a5005f444e9a892
+On 24/08/12 11:03, Borislav Petkov wrote:
+> On Thu, Aug 23, 2012 at 06:13:39PM +0100, Attilio Rao wrote:
+>    
+>> You seriously think that adding a single-check, that will be
+>> certainly skipped (now), in a boot-time function is going to add any
+>> performance burden?
 >>
->> 
-...
->> halfdog wrote:
->>> halfdog wrote:
->>>> I'm searching for a patch for linux kernel stack disclosure 
->>>> in binfmt_script with crafted interpreter names when 
->>>> CONFIG_MODULES is active (see [1]).
->>> 
->>> Please disregard my previous proposal [2], since it did not 
->>> address the problem directly (referencing local stack frame 
->>> data from bprm structure) but worked around it. I suspect,
->>> that this could increase probability to reintroduce similar
->>> bugs.
->>> 
->>> Opinions on (untested sketch for) second solution: Could 
->>> someone look on the source code comments and changes in patch 
->>> to judge, if this is going in the right direction?
->>> 
->>> Explanation of patch: Since load_script will start to 
->>> irreversibly change bprm structures at some point (using stack 
->>> local data was one of those changes), try to delay this point. 
->>> Run checks if load_script could be the right handler, if not 
->>> give other binfmt handlers the chance to do so.
->>> 
->>> If binfmt_script is the right one, try to load the interpreter
->>>  (causing bprm modification), if failing make sure that no
->>> other binfmt handler has the chance to continue on the now
->>> modified bprm data.
->>> 
->>> CAVEAT: This assumes, that if binfmt_script could handle the 
->>> load, that it would be the one and only binfmt with that 
->>> ability, so no other one, e.g. binfmt_misc should have the 
->>> chance to do so. If this assumption is wrong, leaving 
->>> binfmt_script would have to rollback all bprm changes (e.g. 
->>> restore old credentials).
->>> 
->>> [1]
->>> http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
->>>
->>> 
-[2] http://lkml.org/lkml/2012/8/18/75
-> 
-> What about (untested):
-> 
-> diff --git a/fs/exec.c b/fs/exec.c index 574cf4d..ef13850 100644 
-> --- a/fs/exec.c +++ b/fs/exec.c @@ -1438,7 +1438,8 @@ int 
-> search_binary_handler(struct linux_binprm *bprm,struct pt_regs 
-> *regs) } read_unlock(&binfmt_lock); #ifdef CONFIG_MODULES -		if 
-> (retval != -ENOEXEC || bprm->mm == NULL) { +		if (retval != 
-> -ENOEXEC || bprm->mm == NULL || +				bprm->recursion_depth > 
-> BINPRM_MAX_RECURSION) { break; } else { #define printable(c) 
-> (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
+>>      
+>>> What you are doing is actively wrong. You suggest that it's fine to
+>>> call that function with something different than pgt_buf_start as the
+>>> start argument. That's complete nonsense. The early pages are
+>>> allocated bottom up beginning at pgt_buf_start. So what the heck would
+>>> make it sane to change that argument ever?
+>>>        
+>> If you really don't like this approach, at this point I think the
+>> best thing to do is to assume that the start address will be
+>> pgt_buf_start and loose the starting argument at all.
+>> If you agree I can make a patch for that.
+>>      
+> One thing I don't understand is why is xen touching x86 code when it
+> doesn't have to? At least I cannot find a single reason for it in this
+> thread.
+>    
 
-- - From my understanding, this patch should not fix the problem, since
-recursion depth is reset back to old value after call of binfmt handler.
-This is done, so that fs/exec does not have to trust all binfmts to
-reset the depth by themselfes when leaving.
+I really don't understand why you are saying here:
+1) Are you implying that xen_mapping_pagetable_reserve() is unnecessary?
+2) Are you implying that my patch is unnecessary?
 
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=blob;f=fs/exec.c;h=da27b91ff1e8cbe87d0fe42aa5d39513e6a9deeb;hb=HEAD
-   1408                         read_unlock(&binfmt_lock);
-   1409                         retval = fn(bprm, regs);
-   1410                         /*
-   1411                          * Restore the depth counter to its
-starting value
-   1412                          * in this call, so we don't have to
-rely on every
-   1413                          * load_binary function to restore it on
-return.
-   1414                          */
-   1415                         bprm->recursion_depth = depth;
+In the 1 case you are wrong becsause it is of course necessary, unless 
+you have a better way to fix the same bug keeping the same level of 
+cleaniness. The reasons are reported earlier in the thread, but for 
+your's sake they are summarized further here:
+
+commit 279b706bf800b5967037f492dbe4fc5081ad5d0f
+Author: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
+Date:   Thu Apr 14 15:49:41 2011 +0100
+
+      x86,xen: introduce x86_init.mapping.pagetable_reserve
 
 
-I guess, the problem is, that recursion_depth usually not only limits
-the depth, but also the maximal number of binfmt_xxx calls. That's why,
-the use of local stack-frame data in bprm does not matter, there is no
-going up the stack AND using bprm->interpreter, the last error is
-terminates the search.
+In the case 2 you are wrong again. This is not a XEN-specific patch. 
+pagetable_reserve() has no documentation and no clear semantic right 
+now. hpa has asked to document all the kernel hooks, for a reference 
+look here:
+http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000070.html
 
-In the POC, search is not terminated because of ENOEXEC when max depth
-reached and due to special filename, mod-loader triggers also (about 30
-times? I do not known, if that could be a problem also, interfering with
-other module loads. Usually non-root users cannot trigger rapid module
-loads easily).
+So I'm sure this is something that is welcome also by Linux community.
 
-- -- 
-http://www.halfdog.net/
-PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> Thomas is clearly explaining to you that what you're trying to
+> enforce cannot happen on baremetal x86 and you're still insisting on
+> "documenting" that.
+>
+>    
 
-iEYEARECAAYFAlA3U3QACgkQxFmThv7tq+7hTgCZAcQFn70FUWnAhvoMYhm8EcFT
-8vQAn06VtbeY5P0cPGd9fcxL6AaEF8oS
-=An9g
------END PGP SIGNATURE-----
+I think that foundamentally there is a bit of misunderstanding here. 
+There were 2 ways to provide a correct semantic:
+1) Leave the arguments in place, but taking care to give some formalism 
+to them
+2) Remove the arguments and let handle all the pgt_buf_start, 
+pgt_buf_end logic within the functions themselves.
+
+Consensus by me, Konrad and Stefano went to case n.1, but now I see that 
+Thomas has issues with it. I don't agree at all with his objections for 
+several points:
+- Few extra-checks, which are not necessary now but would leave the 
+function sane in the future, in a boot-time mechanism aren't really a 
+performance critical issue.
+- He says that this function is not going to be used by drivers, but it 
+is however part of the kernel infrastructure, so you cannot really leave 
+it unlifted. Besides, Linux doesn't have a formal way to split his 
+functions into private and public KPI, thus any function can be 
+considered potentially usable by thirdy-part module (but I'm sure this 
+is an arguable point)
+
+However, the conclusion is that I respect Thomas authority here and I 
+will implement approach 2, hoping that he would then consider patch for 
+inclusion into tips.
+
+> Here's a simple answer: if it doesn't fix a bug on x86 baremetal (and
+> you're changing x86 native code only for the sake of xen), there's no
+> reason wasting energy to create patches.
+>
+>    
+
+You really should read (and understand) patches and e-mail more 
+carefully before to send such mis-informed responses.
+
+Attilio
