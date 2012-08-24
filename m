@@ -1,46 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2HXAdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 20:33:23 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:53939 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab2HXAdV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 20:33:21 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 23 Aug 2012 17:33:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: Build regressions/improvements in v3.6-rc3
-Message-ID: <20120824003315.GA3360@roeck-us.net>
-References: <1345754768-4634-1-git-send-email-geert@linux-m68k.org>
- <5036AC23.8020309@xenotime.net>
+	id S1753562Ab2HXAeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 20:34:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43312 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752738Ab2HXAeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 20:34:23 -0400
+Date: Thu, 23 Aug 2012 21:33:53 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
+ pages mobility
+Message-ID: <20120824003353.GG10777@t510.redhat.com>
+References: <20120822093317.GC10680@redhat.com>
+ <20120823021903.GA23660@x61.redhat.com>
+ <20120823100107.GA17409@redhat.com>
+ <20120823121338.GA3062@t510.redhat.com>
+ <20120823123432.GA25659@redhat.com>
+ <20120823130606.GB3746@t510.redhat.com>
+ <20120823135328.GB25709@redhat.com>
+ <20120823162504.GA1522@redhat.com>
+ <20120823172844.GC10777@t510.redhat.com>
+ <20120823233616.GB2775@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5036AC23.8020309@xenotime.net>
+In-Reply-To: <20120823233616.GB2775@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 03:18:11PM -0700, Randy Dunlap wrote:
-> On 08/23/2012 01:46 PM, Geert Uytterhoeven wrote:
+On Fri, Aug 24, 2012 at 02:36:16AM +0300, Michael S. Tsirkin wrote:
+> I would wake it each time after adding a page, then it
+> can stop waiting when it leaks enough.
+> But again, it's cleaner to just keep tracking all
+> pages, let mm hang on to them by keeping a reference.
 > 
-> > *** ERRORS ***
-> > 
-> > 54 regressions:
-> 
-> 
-> >   + drivers/net/can/usb/peak_usb/pcan_usb_core.c: error: conflicting types for 'dump_mem':  => 56:6
-> >   + drivers/net/can/usb/peak_usb/pcan_usb_core.h: error: conflicting types for 'dump_mem':  => 134:6
-> 
-> Anyone see what causes this?  I looked but failed to see
-> the problem.
-> 
-sh target, maybe ? dump_mem is declared as global function in arch/sh/include/asm/kdebug.h.
-Does not seem to be the best name for a global function.
+Here is a rough idea on how it's getting:
 
-Guenter
+Basically, I'm have introducing an atomic counter to track isolated pages, I
+also have changed vb->num_pages into an atomic conter. All inc/dec operations
+take place under pages_lock spinlock, and we only perform work under page lock.
+
+It's still missing the wait-part (I'll write it during the weekend) and your
+concerns (and mine) will be addressed, IMHO.
+
+---8<---
++/*
++ *
++ */
++static inline void __wait_on_isolated_pages(struct virtio_balloon *vb,
++                                           size_t num)
++{
++       /* There are no isolated pages for this balloon device */
++       if (!atomic_read(&vb->num_isolated_pages))
++               return;
++
++       /* the leak target is smaller than # of pages on vb->pages list */
++       if (num < (atomic_read(&vb->num_pages) -
++           atomic_read(&vb->num_isolated_pages)))
++               return;
++       else {
++               spin_unlock(&vb->pages_lock);
++               /* wait stuff goes here */
++               spin_lock(&vb->pages_lock);
++       }
++}
++
+ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+ {
+-       struct page *page;
++       /* The array of pfns we tell the Host about. */
++       unsigned int num_pfns;
++       u32 pfns[VIRTIO_BALLOON_ARRAY_PFNS_MAX];
+
+        /* We can only do one array worth at a time. */
+-       num = min(num, ARRAY_SIZE(vb->pfns));
++       num = min(num, ARRAY_SIZE(pfns));
+
+-       for (vb->num_pfns = 0; vb->num_pfns < num;
+-            vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+-               page = list_first_entry(&vb->pages, struct page, lru);
+-               list_del(&page->lru);
+-               set_page_pfns(vb->pfns + vb->num_pfns, page);
+-               vb->num_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
++       for (num_pfns = 0; num_pfns < num;
++            num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
++               struct page *page = NULL;
++               spin_lock(&vb->pages_lock);
++               __wait_on_isolated_pages(vb, num);
++
++               if (!list_empty(&vb->pages))
++                       page = list_first_entry(&vb->pages, struct page, lru);
++               /*
++                * Grab the page lock to avoid racing against threads isolating
++                * pages from, or migrating pages back to vb->pages list.
++                * (both tasks are done under page lock protection)
++                *
++                * Failing to grab the page lock here means this page is being
++                * isolated already, or its migration has not finished yet.
++                */
++               if (page && trylock_page(page)) {
++                       clear_balloon_mapping(page);
++                       list_del(&page->lru);
++                       set_page_pfns(pfns + num_pfns, page);
++                       atomic_sub(VIRTIO_BALLOON_PAGES_PER_PAGE,
++                                  &vb->num_pages);
++                       unlock_page(page);
++               }
++               spin_unlock(&vb->pages_lock);
+        }
+
+        /*
+@@ -182,8 +251,10 @@ static void leak_balloon(struct virtio_balloon *vb, size_t
+num)
+         * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+         * is true, we *have* to do it in this order
+         */
++       mutex_lock(&vb->balloon_lock);
+        tell_host(vb, vb->deflate_vq);
+-       release_pages_by_pfn(vb->pfns, vb->num_pfns);
++       mutex_unlock(&vb->balloon_lock);
++       release_pages_by_pfn(pfns, num_pfns);
+ }
+---8<---
