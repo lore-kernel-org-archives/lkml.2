@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758514Ab2HXVqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 17:46:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41636 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab2HXVqp (ORCPT
+	id S932371Ab2HXVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 17:51:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54724 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758819Ab2HXVvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 17:46:45 -0400
-Message-ID: <5037F641.3000602@wwwdotorg.org>
-Date: Fri, 24 Aug 2012 15:46:41 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Gyungoh Yoo <jack.yoo@maxim-ic.com>, devicetree-discuss@lists.ozlabs.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4] mfd: add MAX8907 core driver
-References: <1345048126-24054-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1345048126-24054-1-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 24 Aug 2012 17:51:52 -0400
+Date: Fri, 24 Aug 2012 14:51:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] mm/mmu_notifier: init notifier if necessary
+Message-Id: <20120824145151.b92557cc.akpm@linux-foundation.org>
+In-Reply-To: <1345819076-12545-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1345819076-12545-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2012 10:28 AM, Stephen Warren wrote:
-> From: Gyungoh Yoo <jack.yoo@maxim-ic.com>
+On Fri, 24 Aug 2012 22:37:55 +0800
+Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
+
+> From: Gavin Shan <shangw@linux.vnet.ibm.com>
 > 
-> The MAX8907 is an I2C-based power-management IC containing voltage
-> regulators, a reset controller, a real-time clock, and a touch-screen
-> controller.
+> While registering MMU notifier, new instance of MMU notifier_mm will
+> be allocated and later free'd if currrent mm_struct's MMU notifier_mm
+> has been initialized. That cause some overhead. The patch tries to
+> eleminate that.
+> 
+> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+>  mm/mmu_notifier.c |   22 +++++++++++-----------
+>  1 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+> index 862b608..fb4067f 100644
+> --- a/mm/mmu_notifier.c
+> +++ b/mm/mmu_notifier.c
+> @@ -192,22 +192,23 @@ static int do_mmu_notifier_register(struct mmu_notifier *mn,
+>  
+>  	BUG_ON(atomic_read(&mm->mm_users) <= 0);
+>  
+> -	ret = -ENOMEM;
+> -	mmu_notifier_mm = kmalloc(sizeof(struct mmu_notifier_mm), GFP_KERNEL);
+> -	if (unlikely(!mmu_notifier_mm))
+> -		goto out;
+> -
+>  	if (take_mmap_sem)
+>  		down_write(&mm->mmap_sem);
+>  	ret = mm_take_all_locks(mm);
+>  	if (unlikely(ret))
+> -		goto out_cleanup;
+> +		goto out;
+>  
+>  	if (!mm_has_notifiers(mm)) {
+> +		mmu_notifier_mm = kmalloc(sizeof(struct mmu_notifier_mm),
+> +					GFP_ATOMIC);
 
-Samuel,
+Why was the code switched to the far weaker GFP_ATOMIC?  We can still
+perform sleeping allocations inside mmap_sem.
 
-Does this look OK now? (although you're probably traveling to a
-conference right now...)
+> +		if (unlikely(!mmu_notifier_mm)) {
+> +			ret = -ENOMEM;
+> +			goto out_of_mem;
+> +		}
+>  		INIT_HLIST_HEAD(&mmu_notifier_mm->list);
+>  		spin_lock_init(&mmu_notifier_mm->lock);
+> +
+>  		mm->mmu_notifier_mm = mmu_notifier_mm;
+> -		mmu_notifier_mm = NULL;
+>  	}
+>  	atomic_inc(&mm->mm_count);
+>  
+
