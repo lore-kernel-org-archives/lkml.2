@@ -1,105 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab2HXH10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 03:27:26 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:46776 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827Ab2HXH1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 03:27:22 -0400
-Date: Fri, 24 Aug 2012 12:57:09 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Cc: benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, peterz@infradead.org,
-        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>, oleg@redhat.com
-Subject: [PATCH 2/3] powerpc: Add trap_nr to thread_struct
-Message-ID: <20120824072709.GB32031@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120824072602.GA32031@in.ibm.com>
+	id S1753081Ab2HXH2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 03:28:00 -0400
+Received: from smtp2.infineon.com ([217.10.60.23]:15049 "EHLO
+	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab2HXH14 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 03:27:56 -0400
+X-SBRS: None
+From: <Peter.Huewe@infineon.com>
+To: <jmorris@namei.org>, <key@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
+        <tpmdd-devel@lists.sourceforge.net>, <adlai@linux.vnet.ibm.com>,
+        <xiaoyan.zhang@intel.com>, <jj@chaosbits.net>
+Subject: RE: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+Thread-Topic: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+Thread-Index: AQHNgLBwseNda/zV6EGrO8CD/jLRy5dnufyAgADXl6A=
+Date: Fri, 24 Aug 2012 07:27:49 +0000
+Message-ID: <74A44E99E3274B4CB570415926B37D440E13D1@MUCSE501.eu.infineon.com>
+References: <20120822215216.GC13519@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.8.248]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824072602.GA32031@in.ibm.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082407-8974-0000-0000-00000C861F68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> From: James Morris [mailto:jmorris@namei.org] 
+> I'm getting this error when building i2c as a module
+> WARNING: "__i2c_transfer" [drivers/char/tpm/tpm_i2c_infineon.ko] undefined!
 
-Add thread_struct.trap_nr and use it to store the last exception
-the thread experienced. In this patch, we populate the field at
-various places where we force_sig_info() to the process.
+This is unconditionally (except I2C) available in Linus' master tree.
+And was introduced by b37d2a3a75cb in June by Jean Delvare.
 
-This is also used in uprobes to determine if the probed instruction
-caused an exception.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=b37d2a3a75cb0e72e18c29336cb2095b63dabfc8
 
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
----
- arch/powerpc/include/asm/processor.h |    1 +
- arch/powerpc/kernel/process.c        |    2 ++
- arch/powerpc/kernel/traps.c          |    1 +
- arch/powerpc/mm/fault.c              |    1 +
- 4 files changed, 5 insertions(+)
+It was tested here against Linus' tree at time of submission.
 
-Index: linux-26jul/arch/powerpc/include/asm/processor.h
-===================================================================
---- linux-26jul.orig/arch/powerpc/include/asm/processor.h
-+++ linux-26jul/arch/powerpc/include/asm/processor.h
-@@ -219,6 +219,7 @@ struct thread_struct {
- #endif /* CONFIG_HAVE_HW_BREAKPOINT */
- #endif
- 	unsigned long	dabr;		/* Data address breakpoint register */
-+	unsigned long	trap_nr;	/* last trap # on this thread */
- #ifdef CONFIG_ALTIVEC
- 	/* Complete AltiVec register set */
- 	vector128	vr[32] __attribute__((aligned(16)));
-Index: linux-26jul/arch/powerpc/kernel/process.c
-===================================================================
---- linux-26jul.orig/arch/powerpc/kernel/process.c
-+++ linux-26jul/arch/powerpc/kernel/process.c
-@@ -258,6 +258,7 @@ void do_send_trap(struct pt_regs *regs, 
- {
- 	siginfo_t info;
- 
-+	current->thread.trap_nr = signal_code;
- 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
- 			11, SIGSEGV) == NOTIFY_STOP)
- 		return;
-@@ -275,6 +276,7 @@ void do_dabr(struct pt_regs *regs, unsig
- {
- 	siginfo_t info;
- 
-+	current->thread.trap_nr = TRAP_HWBKPT;
- 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
- 			11, SIGSEGV) == NOTIFY_STOP)
- 		return;
-Index: linux-26jul/arch/powerpc/kernel/traps.c
-===================================================================
---- linux-26jul.orig/arch/powerpc/kernel/traps.c
-+++ linux-26jul/arch/powerpc/kernel/traps.c
-@@ -251,6 +251,7 @@ void _exception(int signr, struct pt_reg
- 	if (arch_irqs_disabled() && !arch_irq_disabled_regs(regs))
- 		local_irq_enable();
- 
-+	current->thread.trap_nr = code;
- 	memset(&info, 0, sizeof(info));
- 	info.si_signo = signr;
- 	info.si_code = code;
-Index: linux-26jul/arch/powerpc/mm/fault.c
-===================================================================
---- linux-26jul.orig/arch/powerpc/mm/fault.c
-+++ linux-26jul/arch/powerpc/mm/fault.c
-@@ -133,6 +133,7 @@ static int do_sigbus(struct pt_regs *reg
- 	up_read(&current->mm->mmap_sem);
- 
- 	if (user_mode(regs)) {
-+		current->thread.trap_nr = BUS_ADRERR;
- 		info.si_signo = SIGBUS;
- 		info.si_errno = 0;
- 		info.si_code = BUS_ADRERR;
-
+Thanks,
+Peter
