@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab2HXX4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 19:56:22 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:50342
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756734Ab2HXX4S (ORCPT
+	id S1756994Ab2HXX40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 19:56:26 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:24627
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756769Ab2HXX4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 19:56:18 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah1155h)
-X-WSS-ID: 0M9AAHQ-01-KWO-02
+	Fri, 24 Aug 2012 19:56:19 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VPS4(zzb922lzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
+X-WSS-ID: 0M9AAHO-02-B2E-02
 X-M-MSG: 
 From: Jacob Shin <jacob.shin@amd.com>
 To: X86-ML <x86@kernel.org>
@@ -21,9 +21,9 @@ CC: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Borislav Petkov <borislav.petkov@amd.com>,
         Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 1/5] x86: Move enabling of PSE and PGE out of init_memory_mapping
-Date: Fri, 24 Aug 2012 18:55:12 -0500
-Message-ID: <1345852516-3125-2-git-send-email-jacob.shin@amd.com>
+Subject: [PATCH 4/5] x86: Fixup code testing if a pfn is direct mapped
+Date: Fri, 24 Aug 2012 18:55:15 -0500
+Message-ID: <1345852516-3125-5-git-send-email-jacob.shin@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
 References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
@@ -34,57 +34,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on the platform, init_memory_mapping() may be called multiple
-times. Move it out to setup_arch() to avoid writing to cr4 on every call.
+Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
+[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
+pfn_mapped ranges instead.
 
 Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- arch/x86/kernel/setup.c |   10 ++++++++++
- arch/x86/mm/init.c      |   10 ----------
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ arch/x86/kernel/cpu/amd.c   |    6 +-----
+ arch/x86/platform/efi/efi.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f4b9b80..751e020 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -913,6 +913,16 @@ void __init setup_arch(char **cmdline_p)
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9d92e19..554ccfc 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -677,11 +677,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		 */
+ 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
+ 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
+-			if ((tseg>>PMD_SHIFT) <
+-				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
+-				((tseg>>PMD_SHIFT) <
+-				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
+-				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
++			if (pfn_is_mapped(tseg))
+ 				set_memory_4k((unsigned long)__va(tseg), 1);
+ 		}
+ 	}
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 92660eda..f1facde 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -776,7 +776,7 @@ void __init efi_enter_virtual_mode(void)
+ 	efi_memory_desc_t *md, *prev_md = NULL;
+ 	efi_status_t status;
+ 	unsigned long size;
+-	u64 end, systab, addr, npages, end_pfn;
++	u64 end, systab, addr, npages, start_pfn, end_pfn;
+ 	void *p, *va, *new_memmap = NULL;
+ 	int count = 0;
  
- 	init_gbpages();
+@@ -827,10 +827,10 @@ void __init efi_enter_virtual_mode(void)
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
  
-+	/* Enable PSE if available */
-+	if (cpu_has_pse)
-+		set_in_cr4(X86_CR4_PSE);
++		start_pfn = PFN_DOWN(md->phys_addr);
+ 		end_pfn = PFN_UP(end);
+-		if (end_pfn <= max_low_pfn_mapped
+-		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
+-			&& end_pfn <= max_pfn_mapped))
 +
-+	/* Enable PGE if available */
-+	if (cpu_has_pge) {
-+		set_in_cr4(X86_CR4_PGE);
-+		__supported_pte_mask |= _PAGE_GLOBAL;
-+	}
-+
- 	/* max_pfn_mapped is updated here */
- 	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
- 	max_pfn_mapped = max_low_pfn_mapped;
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index e0e6990..2f07e09 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -149,16 +149,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	use_gbpages = direct_gbpages;
- #endif
- 
--	/* Enable PSE if available */
--	if (cpu_has_pse)
--		set_in_cr4(X86_CR4_PSE);
--
--	/* Enable PGE if available */
--	if (cpu_has_pge) {
--		set_in_cr4(X86_CR4_PGE);
--		__supported_pte_mask |= _PAGE_GLOBAL;
--	}
--
- 	if (use_gbpages)
- 		page_size_mask |= 1 << PG_LEVEL_1G;
- 	if (use_pse)
++		if (pfn_range_is_mapped(start_pfn, end_pfn))
+ 			va = __va(md->phys_addr);
+ 		else
+ 			va = efi_ioremap(md->phys_addr, size, md->type);
 -- 
 1.7.9.5
 
