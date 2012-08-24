@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab2HXEZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 00:25:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23107 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab2HXEZV convert rfc822-to-8bit (ORCPT
+	id S1754491Ab2HXE04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 00:26:56 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37872 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab2HXE0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 00:25:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,302,1344236400"; 
-   d="scan'208";a="184849912"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: RE: [PATCH v2] smb347_charger: fix battery status reporting logic
- for charger faults
-Thread-Topic: [PATCH v2] smb347_charger: fix battery status reporting logic
- for charger faults
-Thread-Index: AQHNgPi7ZJFyDkZcAUKuhoC56fsXb5doXm9A
-Date: Fri, 24 Aug 2012 04:25:15 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD23EFED@BGSMSX102.gar.corp.intel.com>
-References: <1345686558-16512-1-git-send-email-ramakrishna.pallala@intel.com>
- <20120823063005.GL15548@intel.com>
-In-Reply-To: <20120823063005.GL15548@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Aug 2012 00:26:54 -0400
 MIME-Version: 1.0
+Date: Thu, 23 Aug 2012 23:26:52 -0500
+Message-ID: <CAOA0mo_-b3=mn5hKBE1S5s7_2tsnV42bFSe9v9Uj-Vmk4s54rQ@mail.gmail.com>
+Subject: "Trapping" hard drive errors ( "ata***** failed command: READ FPDMA QUEUED")
+From: Mouse Dresden <mouse.the.lucky.dog@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+Hello I hope that this question is not to mundane.
 
-> On Thu, Aug 23, 2012 at 07:19:18AM +0530, Ramakrishna Pallala wrote:
-> > This patch checks for charger status register for determining the
-> > battery charging status and reports Discharing/Charging/Not
-> > Charging/Full accordingly.
-> >
-> > This patch also adds the interrupt support for Safety Timer Expiration.
-> > This interrupt is helpful in debugging the cause for charger fault.
-> >
-> > Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> 
-> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+A while ago I encountered this error message on a hard drive of mine.
+I managed to clean up the problem and run smartctl and the disk is
+clean, but such errors can be very problematic. I think one of the
+reasons is that the hard drive gets "bogs down" on the particular
+command and communication between the kernel and drive, other system
+calls time out. This generates a lot of spurious errors you have to
+eliminate.
 
-I got the Ack from Mika can you look into this patch.
+I would like to create some basic tools to aid in diagnosing and
+repairing such problems. The main difficulty is "trapping" the error
+message. By this I mean terminating the call that is causing the
+error, causing the drive to abandon this particular command, and
+sending some sort of signal ( figurative and or literal ) to the
+process making the particular command, so I can trace it.
 
-Also I have submitted another patch which needs your attention.
-[PATCH v2] power_supply: Added helper function to get the ps object from supplied_to list
+Can someone either describe the process, or if it is too long,
+recommend some reading describing it?
 
-Thanks,
-Ram
+If it helps to know the detailed message, it can be found at:
+http://unix.stackexchange.com/questions/43681/kde-causes-read-fpdma-queued-error
+
+Thank you
