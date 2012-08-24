@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757733Ab2HXSSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:18:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59530 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab2HXSSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:18:09 -0400
-Message-ID: <5037C55A.4030608@kernel.dk>
-Date: Fri, 24 Aug 2012 20:18:02 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1759968Ab2HXSSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:18:30 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:43993 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755271Ab2HXSS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 14:18:26 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 14:18:26 EDT
+From: Gene Heskett <gheskett@wdtv.com>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Re: Drop support for x86-32
+Date: Fri, 24 Aug 2012 14:11:42 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.32-122-rtai; KDE/4.4.5; i686; ; )
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208241854.45656.tweek@tweek.dk> <CAJ7jCmkiPrr3-pf2yspNiHHzhZBCsuWZaTRCjmi_wSdBGhB6Fg@mail.gmail.com>
+In-Reply-To: <CAJ7jCmkiPrr3-pf2yspNiHHzhZBCsuWZaTRCjmi_wSdBGhB6Fg@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block bits for 3.6-rc3
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="windows-1256"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201208241411.42184.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Friday 24 August 2012, wbrana wrote:
+>On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
+>> What I'd hate even more is rendering my old working hardware useless by
+>> removing x86-32 support from the kernel. To reason the removal by
+>> saying "Microsoft plans to do it" just makes me go bonkers...
+>
+>Your old hardware will work fine with long term kernel.
 
-Please find below a set of block related fixes for the 3.6 rc series. It
-contains:
+Says you.
 
-- Improvements to the buffered and direct write IO plugging from
-  Fengguang.
+>> These legacy apps will most likely be compiled for x86-32 and not x32
+>> (an argument for not removing x86-32 support on a running x86-64
+>> kernel).
+>
+>Which legacy apps do you mean?
 
-- Abstract out the mapping of a bio in a request, and use that to
-  provide a blk_bio_map_sg() helper. Useful for mapping just a bio
-  instead of a full request.
+Any of them that have been in use, on 32 bit systems since the late 90's.  
+Among us 'old hands' the rate of 64 bit installs on 64 bit hardware is 
+minuscule at best, and here is one of them, running a 32 bit smp/pae 
+enabled install on amd phenom 4 core 64 bit hardware.  Why?  Because the 
+applications we run and have run for a decade or more simply have not ever 
+been rebuilt to run on 64 bit systems.  They have no official maintainers 
+to do so because they were written well in the first place and continue to 
+do well on the 64 bit systems the makers have foisted off on us purely as a 
+speed requirement.
 
-- Regression fix from Hugh, fixing up a patch that went into the
-  previous release cycle (and marked stable, too) attempting to
-  prevent a loop in __getblk_slow().
+I have had 2 different 64 bit installs on this box in the last 4 years,  
+they were just barely noticeable as faster but they lasted less than a 
+month when I realized that the programs I had been using for a decade 
+simply were not available from the 64 bit only repo's and no one was 
+interested in building such old but still 100% useful stuff.
 
-- Updates to discard requests, fixing up the sizing and how we align
-  them. Also a change to disallow merging of discard requests, since
-  that doesn't really work properly yet.
+So quite trying to find a problem where there is none, and go apply 
+yourself to solving the lack of a full menu of the legacy apps built for 64 
+bit OS's and machines.  Come back in a decade once you have solved that 
+problem and suggest this insanity again.  That is approximately the right 
+word for this proposal today, insane.
 
-- A few drbd fixes.
+Alan Cox probably said it better, but at my age, likely 3, maybe 4x yours, 
+I'll row in the same boat with Alan.  Put your efforts someplace useful. 
+This, at this time, is not useful.
 
-- Documentation updates.
-
-Please pull!
-
-  git://git.kernel.dk/linux-block.git for-linus
-
-----------------------------------------------------------------
-Alexey Khoroshilov (1):
-      bio: Fix potential memory leak in bio_find_or_create_slab()
-
-Asias He (2):
-      block: Introduce __blk_segment_map_sg() helper
-      block: Add blk_bio_map_sg() helper
-
-Fengguang Wu (2):
-      block: remove plugging at buffered write time
-      block: move down direct IO plugging
-
-Hugh Dickins (1):
-      block: replace __getblk_slow misfix by grow_dev_page fix
-
-Jens Axboe (1):
-      Merge branch 'for-jens' of git://git.drbd.org/linux-drbd into for-linus
-
-Jianpeng Ma (2):
-      fs/block-dev.c:fix performance regression in O_DIRECT writes to md block devices
-      block: Don't use static to define "void *p" in show_partition_start()
-
-Lars Ellenberg (1):
-      drbd: fix drbd wire compatibility for empty flushes
-
-Namjae Jeon (3):
-      Documentation: update missing index files in block/00-INDEX
-      Documentation: update tunable options in block/cfq-iosched.txt
-      Documentation: update tunable options in block/cfq-iosched.txt
-
-Paolo Bonzini (2):
-      block: reorganize rounding of max_discard_sectors
-      block: split discard into aligned requests
-
-Philipp Reisner (2):
-      drbd: Finish requests that completed while IO was frozen
-      drbd: Write all pages of the bitmap after an online resize
-
-Shaohua Li (1):
-      block: disable discard request merge temporarily
-
- Documentation/block/00-INDEX        |  10 ++-
- Documentation/block/cfq-iosched.txt |  77 ++++++++++++++++++++++++
- Documentation/block/queue-sysfs.txt |  64 ++++++++++++++++++++
- block/blk-lib.c                     |  41 +++++++++----
- block/blk-merge.c                   | 117 +++++++++++++++++++++++++-----------
- block/genhd.c                       |   2 +-
- drivers/block/drbd/drbd_bitmap.c    |  15 ++++-
- drivers/block/drbd/drbd_int.h       |   1 +
- drivers/block/drbd/drbd_main.c      |  28 ++++-----
- drivers/block/drbd/drbd_nl.c        |   4 +-
- drivers/block/drbd/drbd_req.c       |  36 +++++++++--
- fs/bio.c                            |  11 ++--
- fs/block_dev.c                      |   3 +
- fs/buffer.c                         |  66 +++++++++-----------
- fs/direct-io.c                      |   5 ++
- include/linux/blkdev.h              |  14 ++++-
- mm/filemap.c                        |   7 ---
- 17 files changed, 378 insertions(+), 123 deletions(-)
-
+Cheers, Gene
 -- 
-Jens Axboe
-
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
+Results vary by individual.
