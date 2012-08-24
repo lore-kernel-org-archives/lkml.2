@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758440Ab2HXRCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 13:02:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51458 "EHLO mx1.redhat.com"
+	id S1758525Ab2HXRDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 13:03:21 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:47272 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754567Ab2HXRCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 13:02:16 -0400
-Message-ID: <5037B36A.8000209@redhat.com>
-Date: Fri, 24 Aug 2012 13:01:30 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753879Ab2HXRDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 13:03:19 -0400
+X-Greylist: delayed 3035 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 13:03:18 EDT
+Date: Fri, 24 Aug 2012 18:12:13 +0200
+From: David Sterba <dave@jikos.cz>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, chris.mason@fusionio.com,
+        mfasheh@suse.com, jlbec@evilplan.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Vivek Trivedi <vtrivedi018@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 1/3] writeback: change nr_pages_dirtied argument into
+ local variable
+Message-ID: <20120824161213.GB17430@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Namjae Jeon <linkinjeon@gmail.com>,
+	Fengguang Wu <fengguang.wu@intel.com>, chris.mason@fusionio.com,
+	mfasheh@suse.com, jlbec@evilplan.org, akpm@linux-foundation.org,
+	linux-kernel@vger.kernel.org, Vivek Trivedi <vtrivedi018@gmail.com>,
+	linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	ocfs2-devel@oss.oracle.com
+References: <1345283309-7768-1-git-send-email-linkinjeon@gmail.com>
+ <20120819021554.GA16796@localhost>
+ <CAKYAXd9mSf4bR058-SqpMR_WxDFn5rhF5wGS98ArFaTmp0+YoQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Linux kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Len Brown <len.brown@intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        ShuoX Liu <shuox.liu@intel.com>
-Subject: KS/Plumbers: c-state governor BOF
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd9mSf4bR058-SqpMR_WxDFn5rhF5wGS98ArFaTmp0+YoQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After talking about my RFC patches to the c-state governor with
-Matthew and Arjan, it is clear that the whole concept of how
-things are done could use some more discussion.
+On Thu, Aug 23, 2012 at 05:06:19PM +0900, Namjae Jeon wrote:
+> 2012/8/19, Fengguang Wu <fengguang.wu@intel.com>:
+> > On Sat, Aug 18, 2012 at 05:48:29AM -0400, Namjae Jeon wrote:
+> >> There is no reason nr_pages_dirtied is argument anymore.
+> >> because nr_pages_dirtied value from caller is not used in
+> >> balance_dirty_pages_ratelimited_nr function.
+> >
+> > Looks good to me. If the fs developers don't have problems with this,
+> > I'll apply it to the writeback tree.
+> Thanks Wu!
+> 
+> Hi Chris, Mark, Joel.
+> 
+> Would you check this patch ?
 
-Since a good number of us will be in San Diego next week, at
-Kernel Summit / Plumbers / etc, I will organize a c-state
-governor BOF for those who are interested.
+Patch is ok from the btrfs side.
 
-Things to think about:
-- what should the c-state governor do?
-- how to best predict the future?
-- what kinds of odd workloads do we need to accomodate?
-
-I will talk to the LF people about getting space for such a
-BOF (probably after a mini-summit is done with a room, or a
-spare room), and will announce when and where such a BOF will
-take place.
-
-Watch whatever board is used to announce BOFs next week :)
-
--- 
-All rights reversed
+david
