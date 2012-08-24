@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab2HXQ1B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:27:01 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:52009 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759830Ab2HXQ06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:26:58 -0400
-Date: Fri, 24 Aug 2012 18:26:46 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        andi@firstfloor.org
-Subject: Re: [PATCH] perf/x86: fix microcode revision check for SNB-PEBS
-Message-ID: <20120824162646.GE2297@aftab.osrc.amd.com>
-References: <20120824133434.GA8014@quad>
- <20120824160838.GC2297@aftab.osrc.amd.com>
- <CABPqkBRV=2k34yfnr_y0fpftWab6YN2Q=qDKqA5xAW-R-r1bHg@mail.gmail.com>
+	id S964863Ab2HXQ3E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:29:04 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:65166 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759830Ab2HXQ26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 12:28:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRV=2k34yfnr_y0fpftWab6YN2Q=qDKqA5xAW-R-r1bHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <00000139596a800b-875d7863-23ac-44a5-8710-ea357f3df8a8-000000@email.amazonses.com>
+References: <1345824303-30292-1-git-send-email-js1304@gmail.com>
+	<1345824303-30292-2-git-send-email-js1304@gmail.com>
+	<00000139596a800b-875d7863-23ac-44a5-8710-ea357f3df8a8-000000@email.amazonses.com>
+Date: Sat, 25 Aug 2012 01:28:58 +0900
+Message-ID: <CAAmzW4ORnSLMdhVPmYPpeEJ=P1rrpz1LOibOYWQJgOYQxmDhuA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] slub: correct the calculation of the number of cpu
+ objects in get_partial_node
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 06:14:51PM +0200, Stephane Eranian wrote:
-> So you're saying there is a cmdline tool that can use another
-> interface to pass the ucode to the kernel. I am using the
-> microcode_ctl on Ubuntu 11.04. Apparently that one is still using the
-> old interface. But I may not be the only one in this situation then,
-> so I think it's worth fixing now.
+2012/8/25 Christoph Lameter <cl@linux.com>:
+> On Sat, 25 Aug 2012, Joonsoo Kim wrote:
 >
-> What's the tool to update the ucode using the "new" interface then?
+>> index d597530..c96e0e4 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -1538,6 +1538,7 @@ static void *get_partial_node(struct kmem_cache *s,
+>>  {
+>>       struct page *page, *page2;
+>>       void *object = NULL;
+>> +     int cpu_slab_objects = 0, pobjects = 0;
+>
+> We really need be clear here.
+>
+> One counter is for the numbe of objects in the per cpu slab and the other
+> for the objects in tbhe per cpu partial lists.
+>
+> So I think the first name is ok. Second should be similar
+>
+> cpu_partial_objects?
+>
 
-Well,
+Okay! It looks good.
+But, when using "cpu_partial_objects", I have a coding style problem.
 
-last time we talked about it:
-http://marc.info/?l=linux-kernel&m=134012203712243 I was advocating the
-following way:
+                if (kmem_cache_debug(s)
+                        || cpu_slab_objects + cpu_partial_objects
+                                                > s->max_cpu_object / 2)
 
-Put ucode image into /lib/firmware/amd-ucode or /lib/firmware/intel-ucode and then do
-
-$ echo 1 > /sys/devices/system/cpu/microcode/reload
-
-which I think is the easiest but hpa had some reservations about it and
-wanted to keep the old method too.
-
-But looking at the code, this *actually* should work on Intel now too.
-
-So, I'd say you can use both on Intel, it depends on them whatever they
-decide to do in the future.
-
-On AMD we have only the "echo 1" thing.
-
-Alternatively, "rmmod microcode; modprobe microcode" works too but some
-people wouldn't want to reload modules in order to update ucode.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Do you have any good idea?
