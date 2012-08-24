@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760106Ab2HXTnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 15:43:51 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:62424 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760037Ab2HXTnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 15:43:49 -0400
-X-Greylist: delayed 2189 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 15:43:48 EDT
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX195uITlygs9eDoUOLmuy6MP
-Date: Fri, 24 Aug 2012 12:08:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: alan@linux.intel.com, Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>
-Subject: Re: [PATCH v3 22/23] serial: omap: move uart_omap_port definition
- to C file
-Message-ID: <20120824190839.GS11011@atomide.com>
-References: <1345717983-18179-1-git-send-email-balbi@ti.com>
- <1345717983-18179-23-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1760121Ab2HXTpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 15:45:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41745 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757692Ab2HXTpg convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 24 Aug 2012 15:45:36 -0400
+Message-Id: <5037E7ED020000780008A7BD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 24 Aug 2012 20:45:32 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Alex Shi" <alex.shi@intel.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] xen: fix logical error in tlb flushing
+References: <1345798513-3566-1-git-send-email-alex.shi@intel.com>
+ <5037A8E7020000780008A78B@nat28.tlf.novell.com>
+ <20120824181721.GC15167@konrad-lan.dumpdata.com>
+In-Reply-To: <20120824181721.GC15167@konrad-lan.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1345717983-18179-23-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [120823 03:38]:
-> nobody needs to access the uart_omap_port structure
-> other than omap-serial.c file. Let's move that
-> structure definition to the C source file in order
-> to prevent anyone from accessing our structure.
+>>> On 24.08.12 at 20:17, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Fri, Aug 24, 2012 at 04:16:39PM +0100, Jan Beulich wrote:
+>> >>> On 24.08.12 at 10:55, Alex Shi <alex.shi@intel.com> wrote:
+>> > While TLB_FLUSH_ALL gets passed as 'end' argument to
+>> > flush_tlb_others(), the Xen code was made to check its 'start'
+>> > parameter. That may give a incorrect op.cmd to MMUEXT_INVLPG_MULTI
+>> > instead of MMUEXT_TLB_FLUSH_MULTI. Then it causes some page can not
+>> > be flushed from TLB.
+>> > 
+>> > This patch fixed this issue.
+>> > 
+>> > Reported-by: Jan Beulich <jbeulich@suse.com>
+>> > Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> 
+>> Acked-by: Jan Beulich <jbeulich@suse.com>
 > 
-> Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> How can I reproduce this
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+I don't know, I spotted this while looking at the code.
+
+> and should this also go to stable@kernel.org?
+
+No, the problem got introduced in 3.6-rc1.
+
+Jan
+
