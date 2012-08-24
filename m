@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab2HXCIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:08:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50779 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab2HXCIW (ORCPT
+	id S932923Ab2HXCJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 22:09:51 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:17652 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932120Ab2HXCJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:08:22 -0400
+	Thu, 23 Aug 2012 22:09:49 -0400
+Message-ID: <1345774184.2579.51.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: RE: [PATCH v2] net: add new QCA alx ethernet driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Huang, Xiong" <xiong@qca.qualcomm.com>
+CC: David Miller <davem@davemloft.net>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+Date: Fri, 24 Aug 2012 03:09:44 +0100
+In-Reply-To: <157393863283F442885425D2C45428562A4F54E3@nasanexd02f.na.qualcomm.com>
+References: <1345480949-14800-1-git-send-email-cjren@qca.qualcomm.com>
+	 <20120822.225700.714020017287504609.davem@davemloft.net>
+	 <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
+	 <1345756142.2579.16.camel@bwh-desktop.uk.solarflarecom.com>
+	 <157393863283F442885425D2C45428562A4F54E3@nasanexd02f.na.qualcomm.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-In-Reply-To: <20120823135839.GB19968@dhcp22.suse.cz>
-References: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
-	<20120823095022.GB10685@dhcp22.suse.cz>
-	<CAFNq8R5pY0yPp-LQYNywpMhVtXgqPSy3RYqHVTVpPXs52kOmJw@mail.gmail.com>
-	<20120823135839.GB19968@dhcp22.suse.cz>
-Date: Fri, 24 Aug 2012 10:08:20 +0800
-Message-ID: <CAFNq8R7ry5kyuMombamf6jLmiLcWFnRQRp2vYt1+kv+pPec1_w@mail.gmail.com>
-Subject: Re: Fixup the page of buddy_higher address's calculation
-From: Li Haifeng <omycle@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/23 Michal Hocko <mhocko@suse.cz>:
-> On Thu 23-08-12 20:30:34, Gavin Shan wrote:
->> On Thu, Aug 23, 2012 at 06:21:06PM +0800, Li Haifeng wrote:
-> [...]
->> >>> From d7cd78f9d71a5c9ddeed02724558096f0bb4508a Mon Sep 17 00:00:00 2001
->> >>> From: Haifeng Li <omycle@gmail.com>
->> >>> Date: Thu, 23 Aug 2012 16:27:19 +0800
->> >>> Subject: [PATCH] Fixup the page of buddy_higher address's calculation
->> >>
->> >> Some general questions:
->> >> Any word about the change? Is it really that obvious? Why do you think the
->> >> current state is incorrect? How did you find out?
->> >>
->> >> And more specific below:
->> >>
->> >>> Signed-off-by: Haifeng Li <omycle@gmail.com>
->> >>> ---
->> >>>  mm/page_alloc.c |    2 +-
->> >>>  1 files changed, 1 insertions(+), 1 deletions(-)
->> >>>
->> >>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> >>> index ddbc17d..5588f68 100644
->> >>> --- a/mm/page_alloc.c
->> >>> +++ b/mm/page_alloc.c
->> >>> @@ -579,7 +579,7 @@ static inline void __free_one_page(struct page *page,
->> >>>                 combined_idx = buddy_idx & page_idx;
->> >>>                 higher_page = page + (combined_idx - page_idx);
->> >>>                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
->> >>> -               higher_buddy = page + (buddy_idx - combined_idx);
->> >>> +               higher_buddy = page + (buddy_idx - page_idx);
->>
->> Haifeng, Not sure it would be better? At least, the expression
->> would be more explicitly meaningful than yours.
->>
->>                   higher_buddy = higher_page + (buddy_idx - combined_idx);
->
-Thanks Gavin. Yes, it's more meaningful. :)
+On Fri, 2012-08-24 at 01:55 +0000, Huang, Xiong wrote:
+> Thanks for all your feedback. I have another question need your help.
+> 
+> This NIC has special function that could receive/transmit simple
+> packet when it's in sleep (D3) state.
+> It will help someone wakeup his/her machine even it's behind a router.
+> This function is disabled by default. To enable it, the NIC should be
+> configured by app.
+> My question is which interface can I select to configure(write to) the
+> NIC register ?
 
-> Yes, indeed. It would be also good to mention that this is a regression
-> since 43506fad (mm/page_alloc.c: simplify calculation of combined index
-> of adjacent buddy lists). IIUC this basically disables the heuristic
-> because page_is_buddy will fail for order+1, right?
->
-> Maybe 2.6.38+ stable candidate, then.
->
-> Could you repost with the full changelog, please?
->
+There are standard operations to configure Wake-on-LAN (commands
+ETHTOOL_{G,S}WOL, driver methods ethtool_ops::{get,set}_wol) and WOL
+modes including MagicPacket.
 
-OK.
+If you want to implement a more sophisticated packet matching mode that
+requires more details than struct ethtool_wolinfo, then you may need to
+define new operations.
 
-> Thanks
-> --
-> Michal Hocko
-> SUSE Labs
+Ben.
 
-Also sorry for the confusing title. Repost it.
------------------------------------------------------->
-Subject: [PATCH] Fix the page address of higher page's buddy calculation
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-Calculate the page address of higher page's buddy should be based
-higher_page with the offset between index of higher page and
-index of higher page's buddy.
-
-Signed-off-by: Haifeng Li <omycle@gmail.com>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
----
- mm/page_alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index cdef1d4..642cd62 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -536,7 +536,7 @@ static inline void __free_one_page(struct page *page,
-                combined_idx = buddy_idx & page_idx;
-                higher_page = page + (combined_idx - page_idx);
-                buddy_idx = __find_buddy_index(combined_idx, order + 1);
--               higher_buddy = page + (buddy_idx - combined_idx);
-+               higher_buddy = higher_page + (buddy_idx - combined_idx);
-                if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
-                        list_add_tail(&page->lru,
-                                &zone->free_area[order].free_list[migratetype]);
---
-1.7.5.4
