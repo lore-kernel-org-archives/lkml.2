@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759837Ab2HXQqC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:46:02 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59492 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753829Ab2HXQp5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:45:57 -0400
+	id S1758322Ab2HXQq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:46:29 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:57415 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754643Ab2HXQq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 12:46:26 -0400
+Message-ID: <5037AFB9.5010001@sgi.com>
+Date: Fri, 24 Aug 2012 11:45:45 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20120824174712.16c75f31@pyramind.ukuu.org.uk>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208231814.21168.tweek@tweek.dk>
-	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
-	<201208231951.28606.linux@rainbow-software.org>
-	<CAJ7jCmnwXNXmoxT6sdOc-8znsUnnW+Rq8ioJ_8B8KnT0K2uc=A@mail.gmail.com>
-	<1345812057.28613.20.camel@thorin>
-	<CAJ7jCm=bZoHS0-qiiJnUjZb3gP6ibo1xbLsmaUJr2rL4pAU8Eg@mail.gmail.com>
-	<1345823281.28613.34.camel@thorin>
-	<CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com>
-	<CANQmPXgefyCJuzFiAugp6OW2+HtjABSWuQqG33gAU_XgQ1V_2A@mail.gmail.com>
-	<CAJ7jCmme5VNO9aX0SVtmVGUdJj4QODRE4+oPxBE62yCRKcVK6w@mail.gmail.com>
-	<20120824173626.0194625c@pyramind.ukuu.org.uk>
-	<CAJ7jCmmmMx_OmzE_6Gw7Rf3=Sqa3MWiU4FusJ79PQr2fApMUwA@mail.gmail.com>
-	<20120824174712.16c75f31@pyramind.ukuu.org.uk>
-Date: Fri, 24 Aug 2012 18:45:55 +0200
-Message-ID: <CAJ7jCmkAV=u4jxWfdTGXhsvmCbck7eHVLVPua4=1VjXLig4sHA@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Chen <hi3766691@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <adobriyan@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] fs/proc: Move kfree outside pde_unload_lock
+References: <1345653510-22000-1-git-send-email-nzimmer@sgi.com>  <1345660110.5158.1969.camel@edumazet-glaptop>  <1345671778.5158.2369.camel@edumazet-glaptop>  <20120824144852.GA18850@gulag1.americas.sgi.com> <1345820311.4824.2.camel@edumazet-laptop>
+In-Reply-To: <1345820311.4824.2.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.162.233.129]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> That doesn't work for a variety of reasons x86 hardware is still
-> changing, devices are still changing. So please exit cloud cuckoo land
-> and go do something useful.
-Hardware will be discontinued if no software will support it.
+On 08/24/2012 09:58 AM, Eric Dumazet wrote:
+> Le vendredi 24 août 2012 à 09:48 -0500, Nathan Zimmer a écrit :
+>> On Wed, Aug 22, 2012 at 11:42:58PM +0200, Eric Dumazet wrote:
+>>> On Wed, 2012-08-22 at 20:28 +0200, Eric Dumazet wrote:
+>>>
+>>>> Thats interesting, but if you really want this to fly, one RCU
+>>>> conversion would be much better ;)
+>>>>
+>>>> pde_users would be an atomic_t and you would avoid the spinlock
+>>>> contention.
+>>> Here is what I had in mind, I would be interested to know how it helps a 512 core machine ;)
+>>>
+>> Here are the results and they look great.
+>>
+>> cpuinfo	baseline	moved kfree	Rcu
+>> tasks	read-sec	read-sec	read-sec
+>> 1	0.0141		0.0141		0.0141
+>> 2	0.0140		0.0140		0.0142
+>> 4	0.0140		0.0141		0.0141
+>> 8	0.0145		0.0145		0.0140
+>> 16	0.0553		0.0548		0.0168
+>> 32	0.1688		0.1622		0.0549
+>> 64	0.5017		0.3856		0.1690
+>> 128	1.7005		0.9710		0.5038
+>> 256	5.2513		2.6519		2.0804
+>> 512	8.0529		6.2976		3.0162
+>>
+>>
+>>
+> Indeed...
+>
+> Could you explicit the test you are actually doing ?
+>
+> Thanks
+>
+>
+
+
+It is a dead simple test.
+The test starts by forking off X number of tasks
+assigning each their own cpu.
+Each task then allocs a bit of memory.
+All tasks wait on a memory cell for the go order.
+We measure the read time starting here.
+Once the go order is given they all read a chunk of the selected proc file.
+I was using /proc/cpuinfo to test.
+Once everyone has finished we take the end read time.
+
+
+
+
