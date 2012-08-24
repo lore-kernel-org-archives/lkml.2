@@ -1,308 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab2HXI0z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 04:26:55 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61621 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab2HXI0t (ORCPT
+	id S1757168Ab2HXI3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 04:29:47 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13386 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771Ab2HXI3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 04:26:49 -0400
-X-AuditID: 9c930197-b7b93ae0000028a7-a6-50373ac67056
-From: Namhyung Kim <namhyung@kernel.org>
-To: pjt@google.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Venki Pallipadi <venki@google.com>, Ben Segall <bsegall@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [patch 01/16] sched: track the runnable average on a per-task entitiy basis
-References: <20120823141422.444396696@google.com>
-	<20120823141506.372695337@google.com>
-Date: Fri, 24 Aug 2012 17:20:10 +0900
-In-Reply-To: <20120823141506.372695337@google.com> (pjt@google.com's message
-	of "Thu, 23 Aug 2012 07:14:23 -0700")
-Message-ID: <87mx1khfb9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 24 Aug 2012 04:29:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 24 Aug 2012 01:29:40 -0700
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: <m.szyprowski@samsung.com>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linaro-mm-sig@lists.linaro.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <kyungmin.park@samsung.com>,
+        <arnd@arndb.de>, <linux@arm.linux.org.uk>, <chunsang.jeong@linaro.org>,
+        <vdumpa@nvidia.com>, <konrad.wilk@oracle.com>, <subashrp@gmail.com>,
+        <minchan@kernel.org>, <pullip.cho@samsung.com>
+Subject: [v3 0/4] ARM: dma-mapping: IOMMU atomic allocation
+Date: Fri, 24 Aug 2012 11:29:01 +0300
+Message-ID: <1345796945-21115-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Just typos below..
+The commit e9da6e9 "ARM: dma-mapping: remove custom consistent dma
+region" breaks the compatibility with existing drivers. This causes
+the following kernel oops(*1). That driver has called dma_pool_alloc()
+to allocate memory from the interrupt context, and it hits
+BUG_ON(in_interrpt()) in "get_vm_area_caller()". This patch seris
+fixes this problem with making use of the pre-allocate atomic memory
+pool which DMA is using in the same way as DMA does now.
 
-On Thu, 23 Aug 2012 07:14:23 -0700, > From: Paul Turner <pjt@google.com>
->
-> Instead of tracking averaging the load parented by a cfs_rq, we can track
-> entity load directly.  With the load for a given cfs_rq then being the sum of
-> its children.
->
-> To do this we represent the historical contribution to runnable average within each
-> trailing 1024us of execution as the coefficients of a geometric series.
->
-> We can express this for a given task t as:
->   runnable_sum(t) = \Sum u_i * y^i, runnable_avg_period(t) = \Sum 1024 * y^i
->   load(t) = weight_t * runnable_sum(t) / runnable_avg_period(t)
->
-> Where: u_i is the usage in the last i`th 1024us period (approximately 1ms) ~ms
-> and y is chosen such that y^k = 1/2.  We currently choose k to be 32 which
-> roughly translates to about a sched period.
->
-> Signed-off-by: Paul Turner <pjt@google.com>
-> Reviewed-by: Ben Segall <bsegall@google.com>
-> ---
->  include/linux/sched.h |   13 +++++
->  kernel/sched/core.c   |    5 ++
->  kernel/sched/debug.c  |    4 ++
->  kernel/sched/fair.c   |  128 +++++++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 150 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index f3eebc1..f553da9 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1139,6 +1139,16 @@ struct load_weight {
->  	unsigned long weight, inv_weight;
->  };
->  
-> +struct sched_avg {
-> +	/*
-> +	 * These sums represent an infinite geometric series and so are bound
-> +	 * above by 1024/(1-y).  Thus we only need a u32 to store them for for all
-> +	 * choices of y < 1-2^(-32)*1024.
-> +	 */
-> +	u32 runnable_avg_sum, runnable_avg_period;
-> +	u64 last_runnable_update;
-> +};
-> +
->  #ifdef CONFIG_SCHEDSTATS
->  struct sched_statistics {
->  	u64			wait_start;
-> @@ -1199,6 +1209,9 @@ struct sched_entity {
->  	/* rq "owned" by this entity/group: */
->  	struct cfs_rq		*my_q;
->  #endif
-> +#ifdef CONFIG_SMP
-> +	struct sched_avg	avg;
-> +#endif
->  };
->  
->  struct sched_rt_entity {
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 78d9c96..fcc3cad 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1556,6 +1556,11 @@ static void __sched_fork(struct task_struct *p)
->  	p->se.vruntime			= 0;
->  	INIT_LIST_HEAD(&p->se.group_node);
->  
-> +#ifdef CONFIG_SMP
-> +	p->se.avg.runnable_avg_period = 0;
-> +	p->se.avg.runnable_avg_sum = 0;
-> +#endif
-> +
->  #ifdef CONFIG_SCHEDSTATS
->  	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
->  #endif
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index 6f79596..61f7097 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -85,6 +85,10 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
->  	P(se->statistics.wait_count);
->  #endif
->  	P(se->load.weight);
-> +#ifdef CONFIG_SMP
-> +	P(se->avg.runnable_avg_sum);
-> +	P(se->avg.runnable_avg_period);
-> +#endif
->  #undef PN
->  #undef P
->  }
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 01d3eda..2c53263 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -971,6 +971,125 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
->  }
->  #endif /* CONFIG_FAIR_GROUP_SCHED */
->  
-> +#ifdef CONFIG_SMP
-> +/*
-> + * Approximate:
-> + *   val * y^n,    where y^32 ~= 0.5 (~1 scheduling period)
-> + */
-> +static __always_inline u64 decay_load(u64 val, u64 n)
-> +{
-> +	for (; n && val; n--) {
-> +		val *= 4008;
-> +		val >>= 12;
-> +	}
-> +
-> +	return val;
-> +}
-> +
-> +/* We can represent the historical contribution to runnable average as the
-> + * coefficients of a geometric series.  To do this we sub-divide our runnable
-> + * history into segments of approximately 1ms (1024us); label the segment that
-> + * occurred N-ms ago p_N, with p_0 corresponding to the current period, e.g.
-> + *
-> + * [<- 1024us ->|<- 1024us ->|<- 1024us ->| ...
-> + *      p0            p1           p1
+Any comment would be really appreciated.
 
-Should it be                          p2 ?
+v3:
+Provide a different path for IOMMU for more clean code. (Marek)
+atomic_pool is backed with struct page *pages[].
+v2:
+Don't modify attrs(DMA_ATTR_NO_KERNEL_MAPPING) for atomic allocation. (Marek)
+Modify vzalloc (KyongHo, Minchan)
+v1:
+http://lists.linaro.org/pipermail/linaro-mm-sig/2012-August/002398.html
+
+*1:
+[    8.321343] ------------[ cut here ]------------
+[    8.325971] kernel BUG at kernel/mm/vmalloc.c:1322!
+[    8.333615] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
+[    8.339436] Modules linked in:
+[    8.342496] CPU: 0    Tainted: G        W     (3.4.6-00067-g5d485f7 #67)
+[    8.349192] PC is at __get_vm_area_node.isra.29+0x164/0x16c
+[    8.354758] LR is at get_vm_area_caller+0x4c/0x54
+[    8.359454] pc : [<c011297c>]    lr : [<c011318c>]    psr: 20000193
+[    8.359458] sp : c09edca0  ip : c09ec000  fp : ae278000
+[    8.370922] r10: f0000000  r9 : c011aa54  r8 : c0a26cb8
+[    8.376136] r7 : 00000001  r6 : 000000d0  r5 : 20000008  r4 : c09edca0
+[    8.382651] r3 : 00010000  r2 : 20000008  r1 : 00000001  r0 : 00001000
+[    8.389166] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[    8.396549] Control: 10c5387d  Table: ad98c04a  DAC: 00000015
+....
+[    9.169162] dfa0: 412fc099 c09ec000 00000000 c000fdd8 c06df1e4 c0a1b080 00000000 00000000
+[    9.177329] dfc0: c0a235cc 8000406a 00000000 c0986818 ffffffff ffffffff c0986404 00000000
+[    9.185497] dfe0: 00000000 c09bb070 10c5387d c0a19c58 c09bb064 80008044 00000000 00000000
+[    9.193673] [<c011297c>] (__get_vm_area_node.isra.29+0x164/0x16c) from [<c011318c>] (get_vm_area_caller+0x4c/0x54)
+[    9.204022] [<c011318c>] (get_vm_area_caller+0x4c/0x54) from [<c001aed8>] (__iommu_alloc_remap.isra.14+0x2c/0xfc)
+[    9.214276] [<c001aed8>] (__iommu_alloc_remap.isra.14+0x2c/0xfc) from [<c001b06c>] (arm_iommu_alloc_attrs+0xc4/0xf8)
+[    9.224795] [<c001b06c>] (arm_iommu_alloc_attrs+0xc4/0xf8) from [<c011aa54>] (pool_alloc_page.constprop.5+0x6c/0xf8)
+[    9.235309] [<c011aa54>] (pool_alloc_page.constprop.5+0x6c/0xf8) from [<c011ab60>] (dma_pool_alloc+0x80/0x170)
+[    9.245304] [<c011ab60>] (dma_pool_alloc+0x80/0x170) from [<c03cbbcc>] (tegra_build_dtd+0x48/0x14c)
+[    9.254344] [<c03cbbcc>] (tegra_build_dtd+0x48/0x14c) from [<c03cbd4c>] (tegra_req_to_dtd+0x7c/0xa8)
+[    9.263467] [<c03cbd4c>] (tegra_req_to_dtd+0x7c/0xa8) from [<c03cc140>] (tegra_ep_queue+0x154/0x33c)
+[    9.272592] [<c03cc140>] (tegra_ep_queue+0x154/0x33c) from [<c03dd5b4>] (composite_setup+0x364/0x6d4)
+[    9.281804] [<c03dd5b4>] (composite_setup+0x364/0x6d4) from [<c03dd9dc>] (android_setup+0xb8/0x14c)
+[    9.290843] [<c03dd9dc>] (android_setup+0xb8/0x14c) from [<c03cd144>] (setup_received_irq+0xbc/0x270)
+[    9.300053] [<c03cd144>] (setup_received_irq+0xbc/0x270) from [<c03cda64>] (tegra_udc_irq+0x2ac/0x2c4)
+[    9.309353] [<c03cda64>] (tegra_udc_irq+0x2ac/0x2c4) from [<c00b5708>] (handle_irq_event_percpu+0x78/0x2e0)
+[    9.319087] [<c00b5708>] (handle_irq_event_percpu+0x78/0x2e0) from [<c00b59b4>] (handle_irq_event+0x44/0x64)
+[    9.328907] [<c00b59b4>] (handle_irq_event+0x44/0x64) from [<c00b8688>] (handle_fasteoi_irq+0xc4/0x16c)
+[    9.338294] [<c00b8688>] (handle_fasteoi_irq+0xc4/0x16c) from [<c00b4f14>] (generic_handle_irq+0x34/0x48)
+[    9.347858] [<c00b4f14>] (generic_handle_irq+0x34/0x48) from [<c000f6f4>] (handle_IRQ+0x54/0xb4)
+[    9.356637] [<c000f6f4>] (handle_IRQ+0x54/0xb4) from [<c00084b0>] (gic_handle_irq+0x2c/0x60)
+[    9.365068] [<c00084b0>] (gic_handle_irq+0x2c/0x60) from [<c000e900>] (__irq_svc+0x40/0x70)
+[    9.373405] Exception stack(0xc09edf10 to 0xc09edf58)
+[    9.378447] df00:                                     00000000 000f4240 00000003 00000000
+[    9.386615] df20: 00000000 e55bbc00 ef66f3ca 00000001 00000000 412fc099 c0abb9c8 00000000
+[    9.394781] df40: 3b9ac9ff c09edf58 c027a9bc c0042880 20000113 ffffffff
+[    9.401396] [<c000e900>] (__irq_svc+0x40/0x70) from [<c0042880>] (tegra_idle_enter_lp3+0x68/0x78)
+[    9.410272] [<c0042880>] (tegra_idle_enter_lp3+0x68/0x78) from [<c04701d4>] (cpuidle_idle_call+0xdc/0x3a4)
+[    9.419922] [<c04701d4>] (cpuidle_idle_call+0xdc/0x3a4) from [<c000fdd8>] (cpu_idle+0xd8/0x134)
+[    9.428612] [<c000fdd8>] (cpu_idle+0xd8/0x134) from [<c0986818>] (start_kernel+0x27c/0x2cc)
+[    9.436952] Code: e1a00004 e3a04000 eb002265 eaffffe0 (e7f001f2)
+[    9.443038] ---[ end trace 1b75b31a2719ed24 ]---
+[    9.447645] Kernel panic - not syncing: Fatal exception in interrupt
 
 
-> + *     (now)       (~1ms ago)  (~2ms ago)
-> + *
-> + * Let u_i denote the fraction of p_i that the entity was runnable.
-> + *
-> + * We then designate the fractions u_i as our co-efficients, yielding the
-> + * following representation of historical load:
-> + *   u_0 + u_1*y + u_2*y^2 + u_3*y^3 + ...
-> + *
-> + * We choose y based on the with of a reasonably scheduling period, fixing:
-> + *   y^32 = 0.5
-> + *
-> + * This means that the contribution to load ~32ms ago (u_32) will be weighted
-> + * approximately half as much as the contribution to load within the last ms
-> + * (u_0).
-> + *
-> + * When a period "rolls over" and we have new u_0`, multiplying the previous
-> + * sum again by y is sufficient to update:
-> + *   load_avg = u_0` + y*(u_0 + u_1*y + u_2*y^2 + ... )
-> + *            = u_0 + u_1*y + u_2*y^2 + ... [re-labeling u_i --> u_{i+1]
+Hiroshi Doyu (4):
+  ARM: dma-mapping: atomic_pool with struct page **pages
+  ARM: dma-mapping: Refactor out to introduce __in_atomic_pool
+  ARM: dma-mapping: Introduce __atomic_get_pages() for
+    __iommu_get_pages()
+  ARM: dma-mapping: IOMMU allocates pages from atomic_pool with
+    GFP_ATOMIC
 
-s/u_{i+1]/u_{i+1}]/
+ arch/arm/mm/dma-mapping.c |   90 ++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 80 insertions(+), 10 deletions(-)
 
-Thanks,
-Namhyung
+-- 
+1.7.5.4
 
-
-> + */
-> +static __always_inline int __update_entity_runnable_avg(u64 now,
-> +							struct sched_avg *sa,
-> +							int runnable)
-> +{
-> +	u64 delta;
-> +	int delta_w, decayed = 0;
-> +
-> +	delta = now - sa->last_runnable_update;
-> +	/*
-> +	 * This should only happen when time goes backwards, which it
-> +	 * unfortunately does during sched clock init when we swap over to TSC.
-> +	 */
-> +	if ((s64)delta < 0) {
-> +		sa->last_runnable_update = now;
-> +		return 0;
-> +	}
-> +
-> +	/*
-> +	 * Use 1024ns as the unit of measurement since it's a reasonable
-> +	 * approximation of 1us and fast to compute.
-> +	 */
-> +	delta >>= 10;
-> +	if (!delta)
-> +		return 0;
-> +	sa->last_runnable_update = now;
-> +
-> +	/* delta_w is the amount already accumulated against our next period */
-> +	delta_w = sa->runnable_avg_period % 1024;
-> +	if (delta + delta_w >= 1024) {
-> +		/* period roll-over */
-> +		decayed = 1;
-> +
-> +		/*
-> +		 * Now that we know we're crossing a period boundary, figure
-> +		 * out how much from delta we need to complete the current
-> +		 * period and accrue it.
-> +		 */
-> +		delta_w = 1024 - delta_w;
-> +		BUG_ON(delta_w > delta);
-> +		do {
-> +			if (runnable)
-> +				sa->runnable_avg_sum += delta_w;
-> +			sa->runnable_avg_period += delta_w;
-> +
-> +			/*
-> +			 * Remainder of delta initiates a new period, roll over
-> +			 * the previous.
-> +			 */
-> +			sa->runnable_avg_sum =
-> +				decay_load(sa->runnable_avg_sum, 1);
-> +			sa->runnable_avg_period =
-> +				decay_load(sa->runnable_avg_period, 1);
-> +
-> +			delta -= delta_w;
-> +			/* New period is empty */
-> +			delta_w = 1024;
-> +		} while (delta >= 1024);
-> +	}
-> +
-> +	/* Remainder of delta accrued against u_0` */
-> +	if (runnable)
-> +		sa->runnable_avg_sum += delta;
-> +	sa->runnable_avg_period += delta;
-> +
-> +	return decayed;
-> +}
-> +
-> +/* Update a sched_entity's runnable average */
-> +static inline void update_entity_load_avg(struct sched_entity *se)
-> +{
-> +	__update_entity_runnable_avg(rq_of(cfs_rq_of(se))->clock_task, &se->avg,
-> +				     se->on_rq);
-> +}
-> +#else
-> +static inline void update_entity_load_avg(struct sched_entity *se) {}
-> +#endif
-> +
->  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
->  {
->  #ifdef CONFIG_SCHEDSTATS
-> @@ -1097,6 +1216,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->  	 */
->  	update_curr(cfs_rq);
->  	update_cfs_load(cfs_rq, 0);
-> +	update_entity_load_avg(se);
->  	account_entity_enqueue(cfs_rq, se);
->  	update_cfs_shares(cfs_rq);
->  
-> @@ -1171,6 +1291,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->  	 * Update run-time statistics of the 'current'.
->  	 */
->  	update_curr(cfs_rq);
-> +	update_entity_load_avg(se);
->  
->  	update_stats_dequeue(cfs_rq, se);
->  	if (flags & DEQUEUE_SLEEP) {
-> @@ -1340,6 +1461,8 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
->  		update_stats_wait_start(cfs_rq, prev);
->  		/* Put 'current' back into the tree. */
->  		__enqueue_entity(cfs_rq, prev);
-> +		/* in !on_rq case, update occurred at dequeue */
-> +		update_entity_load_avg(prev);
->  	}
->  	cfs_rq->curr = NULL;
->  }
-> @@ -1353,6 +1476,11 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
->  	update_curr(cfs_rq);
->  
->  	/*
-> +	 * Ensure that runnable average is periodically updated.
-> +	 */
-> +	update_entity_load_avg(curr);
-> +
-> +	/*
->  	 * Update share accounting for long-running entities.
->  	 */
->  	update_entity_shares_tick(cfs_rq);
