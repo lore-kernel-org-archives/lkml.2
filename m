@@ -1,173 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab2HXBNg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:13:36 -0400
-Received: from ozlabs.org ([203.10.76.45]:49888 "EHLO ozlabs.org"
+	id S932224Ab2HXBNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:13:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63918 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756647Ab2HXBNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:13:20 -0400
-Message-ID: <1345770803.13865.10.camel@concordia>
-Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
-From: Michael Ellerman <michael@ellerman.id.au>
-To: ananth@in.ibm.com
-Cc: ppcdev <linuxppc-dev@lists.ozlabs.org>,
-        lkml <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        peterz@infradead.org, oleg@redhat.com,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Fri, 24 Aug 2012 11:13:23 +1000
-In-Reply-To: <20120823055820.GA14603@in.ibm.com>
-References: <20120822082205.GA29216@in.ibm.com>
-	 <20120822082708.GB29216@in.ibm.com> <1345696100.3338.21.camel@concordia>
-	 <20120823055820.GA14603@in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754559Ab2HXBLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 21:11:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
+   d="scan'208";a="184254199"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tony Luck" <tony.luck@intel.com>,
+        "Arjan Dan De Ven" <arjan@linux.intel.com>,
+        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
+        "Len Brown" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Chen Gong" <gong.chen@linux.intel.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v7 12/12] x86/topology.c: debug CPU0 hotplug
+Date: Thu, 23 Aug 2012 17:56:11 -0700
+Message-Id: <1345769771-27019-13-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
+References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-23 at 11:28 +0530, Ananth N Mavinakayanahalli wrote:
-> On Thu, Aug 23, 2012 at 02:28:20PM +1000, Michael Ellerman wrote:
-> > On Wed, 2012-08-22 at 13:57 +0530, Ananth N Mavinakayanahalli wrote:
-> > > From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> > > 
-> > > This is the port of uprobes to powerpc. Usage is similar to x86.
-> > 
-> > Hi Ananth,
-> > 
-> > Excuse my ignorance of uprobes, some comments inline ...
-> 
-> Thanks for the review Michael!
-> 
-> > > [root@xxxx ~]# ./bin/perf probe -x /lib64/libc.so.6 malloc
-> > > Added new event:
-> > >   probe_libc:malloc    (on 0xb4860)
-> > > 
-> > > You can now use it in all perf tools, such as:
-> > > 
-> > > 	perf record -e probe_libc:malloc -aR sleep 1
-> > 
-> > Is there a test suite for any of this?
-> 
-> We don't have a formal testsuite yet, but the usual way of testing it is
-> to run kernbench while registering/unregistering a bunch of probes
-> periodically.
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-OK. Someone should put that on their TODO list, otherwise in a year or
-two it'll be broken and we won't notice :)
+CONFIG_DEBUG_HOTPLUG_CPU0 is for debuging the CPU0 hotplug feature. The switch
+offlines CPU0 as soon as possible and boots userspace up with CPU0 offlined.
+User can online CPU0 back after boot time. The default value of the switch is
+off.
 
+To debug CPU0 hotplug, you need to enable CPU0 offline/online feature by either
+turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during compilation or giving
+cpu0_hotplug kernel parameter at boot.
 
-> > It would be nice if someone could consolidate this with kprobe_opcode_t.
-> 
-> Thats on the TODO after the uprobes code stabilizes further.
-> 
-> I am wondering which file would be appropriate? We could either
-> consolidate a bunch of these into asm/kdebug.h or asm/ptrace.h. Any
-> preference/suggestion?
+It's safe and early place to take down CPU0 after all hotplug notifiers
+are installed and SMP is booted.
 
-Add a new one :)
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/Kconfig           |   15 +++++++++++++
+ arch/x86/include/asm/cpu.h |    3 ++
+ arch/x86/kernel/topology.c |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/power/cpu.c       |   38 ++++++++++++++++++++++++++++++++
+ 4 files changed, 107 insertions(+), 0 deletions(-)
 
-> > > +#define MAX_UINSN_BYTES			4
-> > > +#define UPROBE_XOL_SLOT_BYTES		(MAX_UINSN_BYTES)
-> > > +
-> > > +#define UPROBE_SWBP_INSN		0x7fe00008
-> > 
-> > This is just "trap" ?
-> 
-> Yes. But since its referred to in arch agnostic code too, we'd have to alias
-> it thus.
-
-Yep I was just checking, I think it's probably worth a comment.
-
-> > > +#define UPROBE_SWBP_INSN_SIZE		4 /* swbp insn size in bytes */
-> > > +
-> > > +#define IS_TW(instr)		(((instr) & 0xfc0007fe) == 0x7c000008)
-> > > +#define IS_TD(instr)		(((instr) & 0xfc0007fe) == 0x7c000088)
-> > > +#define IS_TDI(instr)		(((instr) & 0xfc000000) == 0x08000000)
-> > > +#define IS_TWI(instr)		(((instr) & 0xfc000000) == 0x0c000000)
-> > > +
-> > > +#define is_trap(instr)	(IS_TW(instr) || IS_TD(instr) || \
-> > > +			IS_TWI(instr) || IS_TDI(instr))
-> > 
-> > These seem to be duplicated in kprobes.h, can we consolidate them.
-> 
-> Yes, similar to the opcode_t types above.
-
-Hmm, OK. Any reason you can't include kprobes.h to get those?
-
-> > > +struct arch_uprobe {
-> > > +	u8	insn[MAX_UINSN_BYTES];
-> > > +};
-> > 
-> > Why not uprobe_opcode_t insn ?
-> 
-> I had a similar discussion with Srikar while doing the port, but he has
-> reasons for this...
-
-OK, will argue with him :D
-
-> > > +/**
-> > > + * arch_uprobe_analyze_insn
-> > 
-> > Analyze what about the instruction?
-> 
-
-+ /*
-
-> Depends on the architecture. On x86, we need to verify if the address is
-> at an instruction boundary, and if the instruction can be probed at all.
-> On powerpc, we have an easier time. We just validate the address is
-> aligned at instruction boundary and flag if the instruction at the
-> address is a trap variant.
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 31c8b89..6795c8a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1740,6 +1740,21 @@ config BOOTPARAM_HOTPLUG_CPU0
+ 	  You still can enable the CPU0 hotplug feature at boot by kernel
+ 	  parameter cpu0_hotplug.
+ 
++config DEBUG_HOTPLUG_CPU0
++	def_bool n
++	prompt "Debug CPU0 hotplug"
++	depends on HOTPLUG_CPU && EXPERIMENTAL
++	---help---
++	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
++	  soon as possible and boots up userspace with CPU0 offlined. User
++	  can online CPU0 back after boot time.
++
++	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
++	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
++	  compilation or giving cpu0_hotplug kernel parameter at boot.
++
++	  If unuser, say N.
++
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
+diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+index a119572..5f9a124 100644
+--- a/arch/x86/include/asm/cpu.h
++++ b/arch/x86/include/asm/cpu.h
+@@ -29,6 +29,9 @@ struct x86_cpu {
+ extern int arch_register_cpu(int num);
+ extern void arch_unregister_cpu(int);
+ extern void __cpuinit start_cpu0(void);
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++extern int _debug_hotplug_cpu(int cpu, int action);
++#endif
+ #endif
+ 
+ DECLARE_PER_CPU(int, cpu_state);
+diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+index fa87fd6..bed40b9 100644
+--- a/arch/x86/kernel/topology.c
++++ b/arch/x86/kernel/topology.c
+@@ -50,6 +50,57 @@ static int __init enable_cpu0_hotplug(char *str)
+ __setup("cpu0_hotplug", enable_cpu0_hotplug);
+ #endif
+ 
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++/*
++ * This function offlines a CPU as early as possible and allows userspace to
++ * boot up without the CPU. The CPU can be onlined back by user after boot.
++ *
++ * This is only called for debugging CPU offline/online feature.
 + */
-
-:)
-
-
-> > > + * @mm: the probed address space.
-> > > + * @arch_uprobe: the probepoint information.
-> > > + * @addr: vaddr to probe.
-> > > + * Return 0 on success or a -ve number on error.
-> > > + */
-> > > +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
-> > > +{
-> > > +	unsigned int insn;
-> > > +
-> > > +	if (addr & 0x03)
-> > > +		return -EINVAL;
-> > > +
-> > > +	memcpy(&insn, auprobe->insn, MAX_UINSN_BYTES);
-> > 
-> > We shouldn't need to use memcpy, we know it's a u32.
-> 
-> OK. Right now, its u8 insn[4], so I did this to be 'correct'. But I
-> agree we can just do an assignment.
-
-Yeah, at least in the arch code I think we should just use u32 and
-assign directly.
-
-> > > +/* callback routine for handling exceptions. */
-> > > +int arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data)
-> > > +{
-> > > +	struct die_args *args = data;
-> > > +	struct pt_regs *regs = args->regs;
-> > > +
-> > > +	/* We are only interested in userspace traps */
-> > > +	if (regs && !user_mode(regs))
-> > > +		return NOTIFY_DONE;
-> > 
-> > Do we ever get here with a NULL regs?
-> 
-> I don't think so. Its just a paranoid check. Do you prefer it to be
-> removed?
-
-Yeah. A NULL regs here is a kernel bug, so I think it's actually
-preferable to crash than silently return.
-
-cheers
-
++int __ref _debug_hotplug_cpu(int cpu, int action)
++{
++	struct device *dev = get_cpu_device(cpu);
++	int ret;
++
++	if (!cpu_is_hotpluggable(cpu))
++		return -EINVAL;
++
++	cpu_hotplug_driver_lock();
++
++	switch (action) {
++	case 0:
++		ret = cpu_down(cpu);
++		if (!ret) {
++			pr_info("CPU %u is now offline\n", cpu);
++			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
++		} else
++			pr_debug("Can't offline CPU%d.\n", cpu);
++		break;
++	case 1:
++		ret = cpu_up(cpu);
++		if (!ret)
++			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
++		else
++			pr_debug("Can't online CPU%d.\n", cpu);
++		break;
++	default:
++		ret = -EINVAL;
++	}
++
++	cpu_hotplug_driver_unlock();
++
++	return ret;
++}
++
++static int __init debug_hotplug_cpu(void)
++{
++	_debug_hotplug_cpu(0, 0);
++	return 0;
++}
++
++late_initcall_sync(debug_hotplug_cpu);
++#endif /* CONFIG_DEBUG_HOTPLUG_CPU0 */
++
+ int __ref arch_register_cpu(int num)
+ {
+ 	/*
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 3338609..abc748a 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -21,6 +21,7 @@
+ #include <asm/suspend.h>
+ #include <asm/debugreg.h>
+ #include <asm/fpu-internal.h> /* pcntxt_mask */
++#include <asm/cpu.h>
+ 
+ #ifdef CONFIG_X86_32
+ static struct saved_context saved_context;
+@@ -263,6 +264,43 @@ static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
+ 	case PM_HIBERNATION_PREPARE:
+ 		ret = bsp_check();
+ 		break;
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++	case PM_RESTORE_PREPARE:
++		/*
++		 * When system resumes from hibernation, online CPU0 because
++		 * 1. it's required for resume and
++		 * 2. the CPU was online before hibernation
++		 */
++		if (!cpu_online(0))
++			_debug_hotplug_cpu(0, 1);
++		break;
++	case PM_POST_RESTORE:
++		/*
++		 * When a resume really happens, this code won't be called.
++		 *
++		 * This code is called only when user space hibernation software
++		 * prepares for snapshot device during boot time. So we just
++		 * call _debug_hotplug_cpu() to restore to CPU0's state prior to
++		 * preparing the snapshot device.
++		 *
++		 * This works for normal boot case in our CPU0 hotplug debug
++		 * mode, i.e. CPU0 is offline and user mode hibernation
++		 * software initializes during boot time.
++		 *
++		 * If CPU0 is online and user application accesses snapshot
++		 * device after boot time, this will offline CPU0 and user may
++		 * see different CPU0 state before and after accessing
++		 * the snapshot device. But hopefully this is not a case when
++		 * user debugging CPU0 hotplug. Even if users hit this case,
++		 * they can easily online CPU0 back.
++		 *
++		 * To simplify this debug code, we only consider normal boot
++		 * case. Otherwise we need to remember CPU0's state and restore
++		 * to that state and resolve racy conditions etc.
++		 */
++		_debug_hotplug_cpu(0, 0);
++		break;
++#endif
+ 	default:
+ 		break;
+ 	}
+-- 
+1.7.2
 
