@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2HXEjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 00:39:22 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:61124 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751777Ab2HXEjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 00:39:19 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApAFAAgFN1B5LORDgWdsb2JhbABFhRq0PAN4IwEBFiYngiABAQQBJxMcIxAIAw4KLhQlAyETiAcFuXEUinSBA4UuYAOLMoohhkmCZolb
-Date: Fri, 24 Aug 2012 14:39:17 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep
- AS_HWPOISON sticky
-Message-ID: <20120824043916.GC19235@dastard>
-References: <20120824013118.GZ19235@dastard>
- <1345775972-1134-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1756210Ab2HXEoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 00:44:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41737 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167Ab2HXEod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 00:44:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,302,1344236400"; 
+   d="scan'208";a="190762687"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: RE: [PATCH v2] smb347_charger: fix battery status reporting logic
+ for charger faults
+Thread-Topic: [PATCH v2] smb347_charger: fix battery status reporting logic
+ for charger faults
+Thread-Index: AQHNgPi7ZJFyDkZcAUKuhoC56fsXb5doXm9A//+k7gCAAGA2cA==
+Date: Fri, 24 Aug 2012 04:44:09 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD23F08C@BGSMSX102.gar.corp.intel.com>
+References: <1345686558-16512-1-git-send-email-ramakrishna.pallala@intel.com>
+ <20120823063005.GL15548@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD23EFED@BGSMSX102.gar.corp.intel.com>
+ <20120824042722.GA12291@lizard>
+In-Reply-To: <20120824042722.GA12291@lizard>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345775972-1134-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7O4ignt001649
 
-On Thu, Aug 23, 2012 at 10:39:32PM -0400, Naoya Horiguchi wrote:
-> On Fri, Aug 24, 2012 at 11:31:18AM +1000, Dave Chinner wrote:
-> > On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
-> > > "HWPOISON: report sticky EIO for poisoned file" still has a corner case
-> > > where we have possibilities of data lost. This is because in this fix
-> > > AS_HWPOISON is cleared when the inode cache is dropped.
-....
-> > > --- v3.6-rc1.orig/mm/truncate.c
-> > > +++ v3.6-rc1/mm/truncate.c
-> > > @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
-> > >  
-> > >  	oldsize = inode->i_size;
-> > >  	i_size_write(inode, newsize);
-> > > +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
-> > > +		mapping_clear_hwpoison(inode->i_mapping);
-> > 
-> > So only a truncate to zero size will clear the poison flag?
+> > > > This patch checks for charger status register for determining the
+> > > > battery charging status and reports Discharing/Charging/Not
+> > > > Charging/Full accordingly.
+> > > >
+> > > > This patch also adds the interrupt support for Safety Timer Expiration.
+> > > > This interrupt is helpful in debugging the cause for charger fault.
+> > > >
+> > > > Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> > >
+> > > Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >
+> > I got the Ack from Mika can you look into this patch.
+
+I am assuming you will review/merge this patch
+smb347_charger: fix battery status reporting logic for charger faults
+
+> > Also I have submitted another patch which needs your attention.
+> > [PATCH v2] power_supply: Added helper function to get the ps object
+> > from supplied_to list
 > 
-> Yes, this is because we only know if the file is affected by hwpoison,
-> but not where the hwpoisoned page is in the file. We could remember it,
-> but I did not do it for simplicity.
+> Can you please submit some user of this function?
+Sure I will submit a supporting patch for this.
 
-Surely the page has flags on it to say it is poisoned? That is,
-after truncating the page cache, if the address space is poisoned,
-then you can do a pass across the mapping tree checking if there are
-any poisoned pages left? Or perhaps adding a new mapping tree tag so
-that the poisoned status is automatically determined by the presence
-of the poisoned page in the mapping tree?
-
-> > What happens if it is the last page in the mapping that is poisoned,
-> > and we truncate that away? Shouldn't that clear the poisoned bit?
-> 
-> When we handle the hwpoisoned inode, the error page should already
-> be removed from pagecache, so the remaining pages are not related
-> to the error and we need not care about them when we consider bit
-> clearing.
-
-Sorry, I don't follow. What removed the page from the page cache?
-The truncate_page_cache() call that follows the above code hunk is
-what does that, so I don't see how it can already be removed from
-the page cache....
-
-> > What about a hole punch over the poisoned range?
-> 
-> For the same reason, this is also not related to when to clear the bit.
-
-Sure it is - if you remove the poisoned pages from the mapping when
-the hole is punched, then the mapping is no longer poisoned. Hence
-the bit should be cleared at that time as nothing else will ever
-clear it.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+Ram
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
