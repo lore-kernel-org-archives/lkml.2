@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176Ab2HXTxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 15:53:30 -0400
-Received: from mail1-hoer.fullrate.dk ([89.150.129.84]:49260 "EHLO
-	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760132Ab2HXTx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 15:53:27 -0400
-From: Martin Nybo Andersen <tweek@tweek.dk>
-To: wbrana <wbrana@gmail.com>
-Subject: Re: Drop support for x86-32
-Date: Fri, 24 Aug 2012 21:53:24 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1+; KDE/4.8.4; x86_64; ; )
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208242035.38733.tweek@tweek.dk> <CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
-In-Reply-To: <CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
+	id S1760192Ab2HXTxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 15:53:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52859 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760132Ab2HXTxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 15:53:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,304,1344236400"; 
+   d="scan'208";a="213607454"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v7 02/12] x86/Kconfig: Add config switch for CPU0 hotplug
+Thread-Topic: [PATCH v7 02/12] x86/Kconfig: Add config switch for CPU0
+ hotplug
+Thread-Index: AQHNgZVV6EYR2RB16UmEwtme5YqL9pdpKYcAgAAz7/A=
+Date: Fri, 24 Aug 2012 19:53:31 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122007789378@ORSMSX105.amr.corp.intel.com>
+References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
+ <1345769771-27019-3-git-send-email-fenghua.yu@intel.com>
+ <20120824093436.GC3019@liondog.tnic>
+In-Reply-To: <20120824093436.GC3019@liondog.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208242153.24638.tweek@tweek.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7OJrx57005002
 
-On Friday 24 August 2012 20:59:33 wbrana wrote:
-> On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
-> > I want to use *my* old machines (hey, I payed for them) on whatever new
-> > hardware I can plug into them. I'm not an oracle and can't see into the
-> > future, however USB has evolved, for instance, and will probably still do
-> > --
-> 
-> Your 32-bit machines will be likely dead in 2015. If it didn't happen
-> you will able to buy very cheap old 64-bit machine.
-I don't think so. My trusty old Amiga 4000 from '93 still works, and I don't 
-think it'll die within the next three years. :-) 
+> And, btw, maybe I didn't catch this earlier, but why is in all
+> user-visible options the thing called "cpu0_*"? Wouldn't it be better
+> to
+> call it "bsp_*"?
 
-> >> I can't find any e-mail where Chris Friesen mentioned exact legacy apps.
-> > 
-> > Have a look in your inbox or one of the mailarchives. If that doesn't
-> > work,
-> > 
-> > then stop deleting half of the mails before replying.
-> 
-> I don't delete e-mails. Can you copy-paste or give link?
-You delete part of them. Here's a link to Friesens mail:
-https://lkml.org/lkml/2012/8/24/300
+The kernel parameter was called bsp_hotplug before. It was changed to cpu0_hotplug in v5 to keep uniform cpu0/CPU0 names.
 
-Quote:
-"You might also want to run legacy apps (which can't be recompiled) on new 
-hardware."
+Thanks.
 
-I know he's not giving any names, however he's specific enough: Apps which 
-can't be recompiled. Ie. software for which you haven't got the source code or 
-a working compiler.
-
-> > The source code for Firefox and Chromium is available online. Go fetch
-> > and compile. If they don't compile or execute as intended, I'm sure they
-> > would like seeing a patch from you fixing the problem.
-> 
-> Firefox and Chromium are large applications and can't be fixed by one user.
-Try telling Torvalds he couldn't create Linux, or Stallman that he couldn't 
-create GNU.
-
-Seriously: Announce your work and people will help you if they feel that it is 
-worthwhile.
-
-> > NVIDIA, on the other hand, is yet another reason for using nouveau.
-> 
-> nouveau is useless garbage as most open source graphics drivers.
-Quite the opposite. You should try it some day. The only thing I miss is 
-VDPAU. But then again, I use another computer for watching movies. It has a 
-Radeon card installed (using the open radeon driver -- not the flgrx). Full HD 
-and sound via HDMI running flawlessly. As does the integrated Intel GPU on my 
-eeepc 900 (the CPU seems to be the fastest chip on that netbook ... ;-) ...).
-
--- 
-Cheers,
-Martin
+-Fenghua
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
