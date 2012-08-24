@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab2HXVwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 17:52:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758819Ab2HXVwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 17:52:18 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Andi Kleen <andi.kleen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep AS_HWPOISON sticky
-Date: Fri, 24 Aug 2012 17:52:07 -0400
-Message-Id: <1345845127-13650-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1345753903-31389-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S932722Ab2HXWBh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 18:01:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43975 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757172Ab2HXWBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 18:01:33 -0400
+Date: Sat, 25 Aug 2012 00:01:42 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
+Message-ID: <20120824220142.GA1470@gmail.com>
+References: <50191EA5.1040303@pengutronix.de>
+ <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com>
+ <20120824051016.GB1718@vandijck-laurijssen.be>
+ <50376550.4020501@pengutronix.de>
+ <20120824124248.GA422@vandijck-laurijssen.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824124248.GA422@vandijck-laurijssen.be>
+X-Operating-System: Linux balto-eee 3.6.0-rc1-balto-eee-00322-ge60818e-dirty
+ GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello Kurt,
 
-On Thu, Aug 23, 2012 at 04:31:43PM -0400, Naoya Horiguchi wrote:
-> On Thu, Aug 23, 2012 at 05:11:25PM +0800, Fengguang Wu wrote:
-> > On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
-...
-> > > diff --git v3.6-rc1.orig/fs/inode.c v3.6-rc1/fs/inode.c
-> > > index ac8d904..8742397 100644
-> > > --- v3.6-rc1.orig/fs/inode.c
-> > > +++ v3.6-rc1/fs/inode.c
-> > > @@ -717,6 +717,15 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
-> > >  		}
-> > >  
-> > >  		/*
-> > > +		 * Keep inode caches on memory for user processes to certainly
-> > > +		 * be aware of memory errors.
-> > > +		 */
-> > > +		if (unlikely(mapping_hwpoison(inode->i_mapping))) {
-> > > +			spin_unlock(&inode->i_lock);
-> > > +			continue;
-> > > +		}
+On Fri, Aug 24, 2012 at 02:42:48PM +0200, Kurt Van Dijck wrote:
+> On Fri, Aug 24, 2012 at 01:28:16PM +0200, Marc Kleine-Budde wrote:
+> > On 08/24/2012 07:10 AM, Kurt Van Dijck wrote:
+> > > Hello,
+> > > 
+> > > I find the CAN led triggers an interesting thing.
+> > > 
+> > > And then, this scenario fell crossed my mind:
+> > > Imagine I do:
+> > > [insert CAN device: can0]
+> > > $ ip link set can0 name helga
+> > > [insert another CAN device: again 'can0']
+> > > 
+> > > Registering 'can0-tx' led trigger will fail for the second CAN device,
+> > > since that led trigger name is already reserved for CAN device 'helga'.
+> > Good point.
+
+Yep, thanks for pointing that out!
+
+Interface renaming was something I considered when I first wrote the
+code and I had the mac80211-led driver in mind, as that driver uses the
+phy name and not the netdev one for its triggers.
+
+The reason why I did not care that much in the end is that on SoC based
+systems trigger-led association is made at probe time, based on data
+either from platform_data or devicetree, so I imagined that once the
+kernel is ported to the board and default triggers are set correctly at
+boot time, the userspace is free to rename CAN interfaces and nobody
+should notice... :^)
+
+The thing I did not consider are hot-plug interfaces mixed with
+renaming, such as in the case you pointed out - it's probably not really
+common but still possible.
+
+> > > I'm not sure how to fix such.
+> > > If 'rx' & 'tx' may be combined, reusing the netdev name may be possible?
+> > > Just wild thinking ...
 > > 
-> > That chunk prevents reclaiming all the cached pages. However the intention
-> > is only to keep the struct inode together with the hwpoison bit?
+> > I think the device's name (not netdev) is unique in the system and
+> > cannot be changed.
+>
+> but may contain several netdev's ...
+
+Ouch.
+
 > 
-> Yes, we can not reclaim pagecaches from shrink_slab(), but we can do from
-> shrink_zone(). So it shouldn't happen that cached pages on hwpoisoned file
-> remain for long under high memory pressure.
-
-I might lose your point. Are you suggesting this chunk should come after
-if (inode_has_buffers(inode) || inode->i_data.nrpages) { ... } block,
-aren't you?  I think that's right, so I'll try and test it this weekend.
-
-> > > +		/*
-> > >  		 * Referenced or dirty inodes are still in use. Give them
-> > >  		 * another pass through the LRU as we canot reclaim them now.
-> > >  		 */
-> > > @@ -1405,6 +1414,9 @@ static void iput_final(struct inode *inode)
-> > >  		inode->i_state &= ~I_WILL_FREE;
-> > >  	}
-> > >  
-> > > +	if (unlikely(mapping_hwpoison(inode->i_mapping) && drop))
-> > > +		mapping_clear_hwpoison(inode->i_mapping);
 > > 
-> > Is that clear necessary? Because the bit will be gone with the inode
-> > struct: it's going to be de-allocated anyway.
+> > On my device tree enabled mx28 I'm talking about the "80032000.can" in:
 > 
-> With the chunk in prune_icache_sb() we keep the inode struct with
-> AS_HWPOISON set on memory, so in order to remove it, we need explicitly
-> clear the bit.
-> Without this clear, the inode remains until system reboot.
+> You idea triggered another thougt: since control is put in device drivers,
+> why putting the name in the generic can_dev struct?
 
-And again, you are right here. Without this clear, this inode will be
-cleared in destroy_inode().
+Why not?  That makes the API easy.
 
-Thanks,
-Naoya
+> A more flexible approach to assign names is the key to success here.
+> The correct 'works in all conditions' approach is not yet in my sight :-(
+
+Agreed.
+
+What about using a combination of device name + an optional port index
+specified in devm_can_led_init()? (something like to platform_device names)
+Of course that would require changing the API for libraries like
+register_sja1000dev(), to add a port index.
+
+Fabio
