@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634Ab2HXPjI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 11:39:08 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:28885 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759036Ab2HXPjF (ORCPT
+	id S1759628Ab2HXPkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 11:40:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34036 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759303Ab2HXPkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 11:39:05 -0400
-Date: Fri, 24 Aug 2012 17:39:02 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/5] mm/memblock: rename
-	get_allocated_memblock_reserved_regions_info()
-Message-ID: <20120824153902.GA22555@merkur.ravnborg.org>
-References: <1345818820-12102-1-git-send-email-liwanp@linux.vnet.ibm.com> <1345818820-12102-2-git-send-email-liwanp@linux.vnet.ibm.com>
+	Fri, 24 Aug 2012 11:40:14 -0400
+Date: Fri, 24 Aug 2012 17:40:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Mike Galbraith <efault@gmx.de>, sedat.dilek@gmail.com,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [next-20120823] NOHZ: local_softirq_pending 200 on s/r
+In-Reply-To: <20120824145247.GB2472@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1208241738130.2856@ionos>
+References: <CA+icZUW2aUP=vjBeoksFU=NAVFMJEiBQy6sNKZczzRPEP9kOfw@mail.gmail.com> <1345793168.4331.64.camel@marge.simpson.net> <20120824145247.GB2472@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345818820-12102-2-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 10:33:37PM +0800, Wanpeng Li wrote:
-> From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> 
-> Rename get_allocated_memblock_reserved_regions_info() to
-> memblock_reserved_regions_info() so that the function name
-> looks more short and has prefix "memblock".
-> 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  include/linux/memblock.h |    2 +-
->  mm/memblock.c            |    2 +-
->  mm/nobootmem.c           |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-> index 569d67d..ab7b887 100644
-> --- a/include/linux/memblock.h
-> +++ b/include/linux/memblock.h
-> @@ -50,7 +50,7 @@ phys_addr_t memblock_find_in_range_node(phys_addr_t start, phys_addr_t end,
->  				phys_addr_t size, phys_addr_t align, int nid);
->  phys_addr_t memblock_find_in_range(phys_addr_t start, phys_addr_t end,
->  				   phys_addr_t size, phys_addr_t align);
-> -phys_addr_t get_allocated_memblock_reserved_regions_info(phys_addr_t *addr);
-> +phys_addr_t memblock_reserved_regions_info(phys_addr_t *addr);
-When you anyway change the prototype a description of what this function
-is supposed to be used for would be good.
-Many memblock function lacks this :-(
+On Fri, 24 Aug 2012, Paul E. McKenney wrote:
 
-	Sam
+> On Fri, Aug 24, 2012 at 09:26:08AM +0200, Mike Galbraith wrote:
+> > On Thu, 2012-08-23 at 12:04 +0200, Sedat Dilek wrote:
+> > 
+> > > Jack Winter confirmed to see similiar NOHZ messages also on
+> > > v3.4.9-rt17 kernel (CPU: Core2Duo when no suspend performed):
+> > > 
+> > > [15223.171585] NOHZ: local_softirq_pending 08
+> > 
+> > These can be caused by blocking while holding local_softirq_lock.
+
+> > Even with per softirq threads, and then (yet more overhead) splitting
+> > the lock to make sure one softirq type can't block another, _and_ only
+> > griping if the lock for the pending softirq is _not_ held, seems the
+> > little bugger can still be triggered very rarely by syn flood induced
+> > handler bail/raise.  Annoying little gripe :)
+> 
+> Hmmm...  Now that you mention it, if I understand correctly, the
+> conversion of spinlocks to sleeplocks in -rt would seem to invalidate
+> this particular diagnostic completely.
+> 
+> So, what am I missing?
+
+I wonder whether the softirq_check_pending_idle() check needs a few
+tweaks for RT, but I have to see a proper context for the failure
+scenario first.
+
+Thanks,
+
+	tglx
