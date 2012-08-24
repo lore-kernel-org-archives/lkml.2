@@ -1,131 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab2HXJnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 05:43:00 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33984 "EHLO mail.skyhub.de"
+	id S1758769Ab2HXJoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 05:44:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54509 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754493Ab2HXJm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 05:42:57 -0400
-Date: Fri, 24 Aug 2012 11:42:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1754493Ab2HXJoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 05:44:20 -0400
+Date: Fri, 24 Aug 2012 11:44:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Haifeng <omycle@gmail.com>
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v7 05/12] Because x86 BIOS requires CPU0 to resume from
- sleep, suspend or hibernate can't be executed if CPU0 is detected offline.
- To make suspend or hibernate and further resume succeed, CPU0 must be
- online.
-Message-ID: <20120824094254.GF3019@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Asit K Mallick <asit.k.mallick@intel.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Arjan Dan De Ven <arjan@linux.intel.com>,
-	Suresh B Siddha <suresh.b.siddha@intel.com>,
-	Len Brown <len.brown@intel.com>,
-	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Chen Gong <gong.chen@linux.intel.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
- <1345769771-27019-6-git-send-email-fenghua.yu@intel.com>
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fixup the page of buddy_higher address's calculation
+Message-ID: <20120824094415.GD29282@dhcp22.suse.cz>
+References: <CAFNq8R7ibTNeRP_Wftwyr7mK6Du4TVysQysgL_RYj+CGf9N2qg@mail.gmail.com>
+ <20120823095022.GB10685@dhcp22.suse.cz>
+ <CAFNq8R5pY0yPp-LQYNywpMhVtXgqPSy3RYqHVTVpPXs52kOmJw@mail.gmail.com>
+ <20120823135839.GB19968@dhcp22.suse.cz>
+ <CAFNq8R7ry5kyuMombamf6jLmiLcWFnRQRp2vYt1+kv+pPec1_w@mail.gmail.com>
+ <20120824080626.GC29282@dhcp22.suse.cz>
+ <CAFNq8R6uiNhBR8BJD2B=ehFFk=aY0Be1DLRRbiXWKQP4LHPC=Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345769771-27019-6-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <CAFNq8R6uiNhBR8BJD2B=ehFFk=aY0Be1DLRRbiXWKQP4LHPC=Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 05:56:04PM -0700, Fenghua Yu wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
+On Fri 24-08-12 17:08:36, Li Haifeng wrote:
+> 2012/8/24 Michal Hocko <mhocko@suse.cz>:
+> > On Fri 24-08-12 10:08:20, Li Haifeng wrote:
+> > [...]
+> >> Subject: [PATCH] Fix the page address of higher page's buddy calculation
+> >>
+> >> Calculate the page address of higher page's buddy should be based
+> >> higher_page with the offset between index of higher page and
+> >> index of higher page's buddy.
+> >
+> > Sorry for insisting but could you add an information about when this has
+> > been introduced (I have mentioned the commit in the other email) and the
+> > effect of the bug so that we can consider whether this is worth
+> > backporting to stable trees.
+> >
+> >> Signed-off-by: Haifeng Li <omycle@gmail.com>
+> >> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+> >
+> > Other than that
+> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> >
+> >> ---
+> >>  mm/page_alloc.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >> index cdef1d4..642cd62 100644
+> >> --- a/mm/page_alloc.c
+> >> +++ b/mm/page_alloc.c
+> >> @@ -536,7 +536,7 @@ static inline void __free_one_page(struct page *page,
+> >>                 combined_idx = buddy_idx & page_idx;
+> >>                 higher_page = page + (combined_idx - page_idx);
+> >>                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
+> >> -               higher_buddy = page + (buddy_idx - combined_idx);
+> >> +               higher_buddy = higher_page + (buddy_idx - combined_idx);
+> >>                 if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+> >>                         list_add_tail(&page->lru,
+> >>                                 &zone->free_area[order].free_list[migratetype]);
+> >> --
+> >> 1.7.5.4
+> >
+> > --
+> > Michal Hocko
+> > SUSE Labs
 > 
+> I am sorry Michal. I misinterpreted what you mean.
+> 
+> And the post blow is OK?
+> ------------------------------------------>
+> Subject: [PATCH] Fix the page address of higher page's buddy calculation
+> 
+> The heuristic method for buddy has been introduced since
+> 43506fad(mm/page_alloc.c: simplify calculation of combined index
+> of adjacent buddy lists). 
 
-Ditto for too long Subject line and missing commit message.
+Maybe I just misunderstood you here but the heuristic has been
+introduced by 6dda9d55 (page allocator: reduce fragmentation in buddy
+allocator by adding buddies that are merging to the tail of the free
+lists) and the commit you are mentioning broke it.
 
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> But the page address of higher page's buddy was wrongly calculated,
+> which will lead page_is_buddy to fail for ever. IOW, the heuristic
+> method would be disabled with the wrong page address of higher page's
+> buddy.
+> 
+> Calculating the page address of higher page's buddy should be based
+> higher_page with the offset between index of higher page and
+> index of higher page's buddy.
+>
+
+I would also add CC: stable [2.6.38+] although it is not clear how much
+the heuristic is helpful. Anyway it's a regression and should be fix
+IMHO.
+
+> Signed-off-by: Haifeng Li <omycle@gmail.com>
+> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 > ---
->  arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 44 insertions(+), 0 deletions(-)
+>  mm/page_alloc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-> index 218cdb1..3338609 100644
-> --- a/arch/x86/power/cpu.c
-> +++ b/arch/x86/power/cpu.c
-> @@ -237,3 +237,47 @@ void restore_processor_state(void)
->  #ifdef CONFIG_X86_32
->  EXPORT_SYMBOL(restore_processor_state);
->  #endif
-> +
-> +/*
-> + * When bsp_check() is called in hibernate and suspend, cpu hotplug
-> + * is disabled already. So it's unnessary to handle race condition between
-> + * cpumask query and cpu hotplug.
-> + */
-> +static int bsp_check(void)
-> +{
-> +	if (cpumask_first(cpu_online_mask) != 0) {
-> +		printk(KERN_WARNING "CPU0 is offline.\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
-> +			   void *ptr)
-> +{
-> +	int ret = 0;
-> +
-> +	switch (action) {
-> +	case PM_SUSPEND_PREPARE:
-> +	case PM_HIBERNATION_PREPARE:
-> +		ret = bsp_check();
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +	return notifier_from_errno(ret);
-> +}
-> +
-> +static int __init bsp_pm_check_init(void)
-> +{
-> +	/*
-> +	 * Set this bsp_pm_callback as lower priority than
-> +	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
-> +	 * earlier to disable cpu hotplug before bsp online check.
-> +	 */
-> +	pm_notifier(bsp_pm_callback, -INT_MAX);
-> +	return 0;
-> +}
-> +
-> +core_initcall(bsp_pm_check_init);
-> -- 
-> 1.7.2
-> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ddbc17d..0754a3c 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -579,7 +579,7 @@ static inline void __free_one_page(struct page *page,
+>                 combined_idx = buddy_idx & page_idx;
+>                 higher_page = page + (combined_idx - page_idx);
+>                 buddy_idx = __find_buddy_index(combined_idx, order + 1);
+> -               higher_buddy = page + (buddy_idx - combined_idx);
+> +               higher_buddy = higher_page + (buddy_idx - combined_idx);
+>                 if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+>                         list_add_tail(&page->lru,
+>                                 &zone->free_area[order].free_list[migratetype]);
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 1.7.5.4
 
 -- 
-Regards/Gruss,
-    Boris.
+Michal Hocko
+SUSE Labs
