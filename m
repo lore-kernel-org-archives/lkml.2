@@ -1,173 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab2HXOQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 10:16:05 -0400
-Received: from eu2sys200bog106.obsmtp.com ([207.126.150.234]:60245 "EHLO
-	eu2sys200bog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932458Ab2HXOQA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 10:16:00 -0400
-X-Greylist: delayed 1395 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 10:15:59 EDT
-From: Philippe LANGLAIS <philippe.langlais@st.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Date: Fri, 24 Aug 2012 15:52:31 +0200
-Subject: Re: [PATCH 1/1 v2] ARM: ux500: Provide SMSC911x fixed-regulator
- when not booting DT
-Thread-Topic: [PATCH 1/1 v2] ARM: ux500: Provide SMSC911x fixed-regulator
- when not booting DT
-Thread-Index: Ac2B/7WSy9SaW/c7Q+O+8iaprwZnTQ==
-Message-ID: <5037871F.7080300@st.com>
-References: <1345812481-2384-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1345812481-2384-1-git-send-email-lee.jones@linaro.org>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-acceptlanguage: fr-FR, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S932511Ab2HXOSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 10:18:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46627 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757700Ab2HXOSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 10:18:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,304,1344236400"; 
+   d="asc'?scan'208";a="184481802"
+Message-ID: <1345818199.2848.314.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: kill MTD_NAND_VERIFY_WRITE
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <shijie8@gmail.com>
+Cc: dwmw2@infradead.org, jdzheng@broadcom.com, sbranden@broadcom.com,
+        mcuos.com@gmail.com, maximlevitsky@gmail.com, arnd@arndb.de,
+        stigge@antcom.de, tony@atomide.com, jkrzyszt@tis.icnet.pl,
+        ralf@linux-mips.org, manuel.lauss@googlemail.com,
+        computersforpeace@gmail.com, mikedunn@newsguy.com,
+        dbaryshkov@gmail.com, paul.gortmaker@windriver.com,
+        b35362@freescale.com, scottwood@freescale.com, jamie@jamieiles.com,
+        aletes.xgr@gmail.com, u.kleine-koenig@pengutronix.de,
+        s.hauer@pengutronix.de, shmulik.ladkani@gmail.com, nico@linaro.org,
+        axel.lin@gmail.com, rmk+kernel@arm.linux.org.uk,
+        ivan.djelic@parrot.com, leiwen@marvell.com, hechtb@gmail.com,
+        laurent.pinchart@ideasonboard.com, julia@diku.dk,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, fabio.estevam@freescale.com,
+        marex@denx.de
+Date: Fri, 24 Aug 2012 17:23:19 +0300
+In-Reply-To: <1344998325-3279-1-git-send-email-shijie8@gmail.com>
+References: <1344998325-3279-1-git-send-email-shijie8@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-hT6WUK0bwfZaL2w8UGUo"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
 
-I have checked in Snowball schematics and I can confirm that the fixed
-3.3V regulator is GPIO26 on AB8500 not DB8500, so its numero is 
-MOP500_AB8500_PIN_GPIO(26)
-and you have first to update the upstream gpio-ab8500 driver.
+--=-hT6WUK0bwfZaL2w8UGUo
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-BR,
-Philippe
+On Tue, 2012-08-14 at 22:38 -0400, Huang Shijie wrote:
+> Just as Artem suggested:
+>=20
+> "Both UBI and JFFS2 are able to read verify what they wrote already.
+> There are also MTD tests which do this verification. So I think there
+> is no reason to keep this in the NAND layer, let alone wasting RAM in
+> the driver to support this feature."
+>=20
+> So kill MTD_NAND_VERIFY_WRITE entirely.
+>=20
+> Signed-off-by: Huang Shijie <shijie8@gmail.com>
 
-On 08/24/2012 02:48 PM, Lee Jones wrote:
-> The SMSC911x Ethernet chip requires a fixed-regulator in order to
-> function correctly. We have previously provided a means to obtain
-> this during a Device Tree boot, however nothing has been put into
-> place when booting with a non-DT kernel. This patch aims to change
-> that.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->   arch/arm/mach-ux500/board-mop500-regulators.c |   17 +++++++++++++++++
->   arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
->   arch/arm/mach-ux500/board-mop500.c            |   21 +++++++++++++++++++++
->   arch/arm/mach-ux500/board-mop500.h            |    2 +-
->   4 files changed, 40 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-> index 52426a4..139f31e 100644
-> --- a/arch/arm/mach-ux500/board-mop500-regulators.c
-> +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-> @@ -13,6 +13,23 @@
->   #include <linux/regulator/ab8500.h>
->   #include "board-mop500-regulators.h"
->   
-> +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
-> +static struct regulator_consumer_supply gpio_en_3v3_consumers[] = {
-> +	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
-> +};
-> +
-> +struct regulator_init_data gpio_en_3v3_regulator = {
-> +	.constraints = {
-> +		.name = "EN-3V3",
-> +		.min_uV = 3300000,
-> +		.max_uV = 3300000,
-> +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-> +	},
-> +	.num_consumer_supplies = ARRAY_SIZE(gpio_en_3v3_consumers),
-> +	.consumer_supplies = gpio_en_3v3_consumers,
-> +};
-> +#endif
-> +
->   /*
->    * TPS61052 regulator
->    */
-> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-> index 9499215..78a0642 100644
-> --- a/arch/arm/mach-ux500/board-mop500-regulators.h
-> +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-> @@ -18,5 +18,6 @@ extern struct ab8500_regulator_reg_init
->   ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
->   extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
->   extern struct regulator_init_data tps61052_regulator;
-> +extern struct regulator_init_data gpio_en_3v3_regulator;
->   
->   #endif
-> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-> index 42e1759..c7f0973 100644
-> --- a/arch/arm/mach-ux500/board-mop500.c
-> +++ b/arch/arm/mach-ux500/board-mop500.c
-> @@ -23,6 +23,7 @@
->   #include <linux/spi/spi.h>
->   #include <linux/mfd/abx500/ab8500.h>
->   #include <linux/regulator/ab8500.h>
-> +#include <linux/regulator/fixed.h>
->   #include <linux/mfd/tc3589x.h>
->   #include <linux/mfd/tps6105x.h>
->   #include <linux/mfd/abx500/ab8500-gpio.h>
-> @@ -75,6 +76,25 @@ static struct platform_device snowball_led_dev = {
->   	},
->   };
->   
-> +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
-> +static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
-> +	.supply_name		= "EN-3V3",
-> +	.gpio			= SNOWBALL_EN_3V3_ETH_GPIO,
-> +	.microvolts		= 3300000,
-> +	.enable_high		= 1,
-> +	.init_data		= &gpio_en_3v3_regulator,
-> +	.startup_delay		= 5000, /* 1200us */
-> +};
-> +
-> +static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
-> +	.name	= "reg-fixed-voltage",
-> +	.id	= 1,
-> +	.dev	= {
-> +		.platform_data	= &snowball_gpio_en_3v3_data,
-> +	},
-> +};
-> +#endif
-> +
->   static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
->   	.gpio_base		= MOP500_AB8500_PIN_GPIO(1),
->   	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-> @@ -585,6 +605,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
->   	&snowball_led_dev,
->   	&snowball_key_dev,
->   	&snowball_sbnet_dev,
-> +	&snowball_gpio_en_3v3_regulator_dev,
->   };
->   
->   static void __init mop500_init_machine(void)
-> diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
-> index 9e9dd5a..d3a02d5 100644
-> --- a/arch/arm/mach-ux500/board-mop500.h
-> +++ b/arch/arm/mach-ux500/board-mop500.h
-> @@ -13,6 +13,7 @@
->   #include <linux/amba/mmci.h>
->   
->   /* Snowball specific GPIO assignments, this board has no GPIO expander */
-> +#define SNOWBALL_EN_3V3_ETH_GPIO	26
-No it's MOP500_AB8500_PIN_GPIO(26)
->   #define SNOWBALL_ACCEL_INT1_GPIO	163
->   #define SNOWBALL_ACCEL_INT2_GPIO	164
->   #define SNOWBALL_MAGNET_DRDY_GPIO	165
-> @@ -76,7 +77,6 @@
->   #define SNOWBALL_PM_GPIO4_GPIO		MOP500_AB8500_PIN_GPIO(4)	/* SYSCLKREQ6/GPIO4 */
->   #define SNOWBALL_EN_3V6_GPIO		MOP500_AB8500_PIN_GPIO(16)	/* PWMOUT3/GPIO16 */
->   #define SNOWBALL_PME_ETH_GPIO		MOP500_AB8500_PIN_GPIO(24)	/* SYSCLKREQ7/GPIO24 */
-> -#define SNOWBALL_EN_3V3_ETH_GPIO	MOP500_AB8500_PIN_GPIO(26)	/* GPIO26 */
-keep this line
->   
->   struct device;
->   struct i2c_board_info;
+Pushed to l2-mtd.git, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-hT6WUK0bwfZaL2w8UGUo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQN45XAAoJECmIfjd9wqK0tMcQAKMgHB5HxZLb2D0P6W1t/Kfq
+72pu2CGopTqDIAGDfXGZk6eWnDbQ+NMJbf3y4pCeZEGlS2t01Xy5TgOmnIazYzvK
+fHKSIkbwYE+y6f29jI5TBoRs/VfdKmIdzyjfYAgbO/jfUkG2iAXUX1YaULX2e6yI
+gTZRaH4pFbw7SQKP4G9rWEMl0kapQhEf3QceQywneFf45yf0coV34KkB1GzXsepC
+6BSEPRnKxjOOyOHWK/BCOvFrkeb3GRnS4De+AdohDvTcignbcoeTm0SVgGOCFRgu
+FB4AV9njDiN+H3gX9IVFJ/uVYMQA0FEEGIgXReKfa3aya3MnYNdc7qtljUGLmLWT
+dbScnd03Cx3V+Of+6d6wOKDsI+uiGMq/q1A/bLJ5smeh4hvf5ki+ITEZxhCPncJf
+SF5fv8QjcxzzpkdXSwpRtbEfRL7CCcZ9e0jDAzsPqGXsAsiXDDo5PO7FJnC+OlOv
+LvR+0WdC7K4ufqX94ozG92pp+A2ZPtd3azmcfYr0iIVNUnw7JDfG1pejPPPrTP/J
+gVaig7aQ+4ZBFbVPMNLNhkpaCKCr/aRkG7oR+4xCYuS7P2P8mrEeFskYrfYzkQlG
+66WW34kinYYH5NS83z4KJ+xdg5TsH8jpEPJHywZfJLSB5t+KCAi1CYm9HYNBjB/s
+NwSLbeXF6trRDtW8Hwja
+=reLj
+-----END PGP SIGNATURE-----
+
+--=-hT6WUK0bwfZaL2w8UGUo--
+
