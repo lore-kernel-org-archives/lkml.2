@@ -1,19 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964899Ab2HXQbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:31:45 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60292 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932586Ab2HXQbm (ORCPT
+	id S1030222Ab2HXQga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:36:30 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52173 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964839Ab2HXQg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:31:42 -0400
-Date: Fri, 24 Aug 2012 17:36:26 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: wbrana <wbrana@gmail.com>
-Cc: Chen <hi3766691@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Drop support for x86-32
-Message-ID: <20120824173626.0194625c@pyramind.ukuu.org.uk>
-In-Reply-To: <CAJ7jCmme5VNO9aX0SVtmVGUdJj4QODRE4+oPxBE62yCRKcVK6w@mail.gmail.com>
+	Fri, 24 Aug 2012 12:36:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120824173626.0194625c@pyramind.ukuu.org.uk>
 References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
 	<201208231814.21168.tweek@tweek.dk>
 	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
@@ -25,30 +20,25 @@ References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
 	<CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com>
 	<CANQmPXgefyCJuzFiAugp6OW2+HtjABSWuQqG33gAU_XgQ1V_2A@mail.gmail.com>
 	<CAJ7jCmme5VNO9aX0SVtmVGUdJj4QODRE4+oPxBE62yCRKcVK6w@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	<20120824173626.0194625c@pyramind.ukuu.org.uk>
+Date: Fri, 24 Aug 2012 18:36:26 +0200
+Message-ID: <CAJ7jCmmmMx_OmzE_6Gw7Rf3=Sqa3MWiU4FusJ79PQr2fApMUwA@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+From: wbrana <wbrana@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Chen <hi3766691@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> almost all x86-32 boxes will be trash in 2017, remaining boxes will
-> use long term tree
-
-People will still be manufacturing 32bit x86 processors in 2017 I'm quite
-sure. You appear entirely out of touch. There are already serious
-discussions going on about things like the kernel modifications needed to
-make 32bit systems run past 2038. 
-
-Besides which what Linux supports is defined by what peope chose to
-contribute code for. We support 32bit 680x0 machines that have been
-obsolete for nigh on 20 years because someone chooses to support them.
-
-For that matter if someone comes along with DEC-10 port and it works as
-was clean without messing up the core I'm sure we'd add that too!
-
-Alan
-
-
+On 8/24/12, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> almost all x86-32 boxes will be trash in 2017, remaining boxes will
+>> use long term tree
+>
+> People will still be manufacturing 32bit x86 processors in 2017 I'm quite
+> sure. You appear entirely out of touch. There are already serious
+> discussions going on about things like the kernel modifications needed to
+> make 32bit systems run past 2038.
+>
+You probably didn't notice: remaining boxes will use long term tree
