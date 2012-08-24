@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab2HXXkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 19:40:36 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62346 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755717Ab2HXXke (ORCPT
+	id S1756901Ab2HXX4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 19:56:22 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:50342
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756734Ab2HXX4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 19:40:34 -0400
-Date: Sat, 25 Aug 2012 01:40:14 +0200
-From: Rabin Vincent <rabin@rab.in>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled for
- boot-on
-Message-ID: <20120824233835.GA29178@ubuntu>
-References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com>
- <5034AA28.5050306@nvidia.com>
- <20120823145308.GA28328@sirena.org.uk>
- <50364179.6070304@nvidia.com>
- <5037BF45.1070205@nvidia.com>
+	Fri, 24 Aug 2012 19:56:18 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah1155h)
+X-WSS-ID: 0M9AAHQ-01-KWO-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: X86-ML <x86@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 1/5] x86: Move enabling of PSE and PGE out of init_memory_mapping
+Date: Fri, 24 Aug 2012 18:55:12 -0500
+Message-ID: <1345852516-3125-2-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
+References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5037BF45.1070205@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 11:22:05PM +0530, Laxman Dewangan wrote:
-> I tried to reproduce the issue but could not able to do this.
-> Can you please send me your board/dt files where you are porviding
-> platform data for regulator?
-> This will help me to reproduce the issue.
+Depending on the platform, init_memory_mapping() may be called multiple
+times. Move it out to setup_arch() to avoid writing to cr4 on every call.
 
-Here's a dts patch:
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/x86/kernel/setup.c |   10 ++++++++++
+ arch/x86/mm/init.c      |   10 ----------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/boot/dts/vexpress-v2m.dtsi b/arch/arm/boot/dts/vexpress-v2m.dtsi
-index dba53fd..386eafa 100644
---- a/arch/arm/boot/dts/vexpress-v2m.dtsi
-+++ b/arch/arm/boot/dts/vexpress-v2m.dtsi
-@@ -207,5 +207,20 @@
- 			regulator-max-microvolt = <3300000>;
- 			regulator-always-on;
- 		};
-+
-+		vbat: fixedregulator@1 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "vbat";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+		};
-+
-+		fixedregulator@2 {
-+			compatible = "regulator-fixed";
-+			regulator-name = "vtest1";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+			vin-supply = <&vbat>;
-+			regulator-boot-on;
-+		};
- 	};
- };
-
-If you want to test it with fixed regulators, you'll need the hack below
-to bypass the ops->disable check in regulator_init_complete(). 
-
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index 185468c..05f3028 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -129,9 +129,16 @@ static int fixed_voltage_list_voltage(struct regulator_dev *dev,
- 	return data->microvolts;
- }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f4b9b80..751e020 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -913,6 +913,16 @@ void __init setup_arch(char **cmdline_p)
  
-+static int fixed_enable(struct regulator_dev *dev)
-+{
-+	return 0;
-+}
-+
- static struct regulator_ops fixed_voltage_ops = {
- 	.get_voltage = fixed_voltage_get_voltage,
- 	.list_voltage = fixed_voltage_list_voltage,
-+	.disable = fixed_enable,
-+	.enable = fixed_enable,
- };
+ 	init_gbpages();
  
- static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
++	/* Enable PSE if available */
++	if (cpu_has_pse)
++		set_in_cr4(X86_CR4_PSE);
++
++	/* Enable PGE if available */
++	if (cpu_has_pge) {
++		set_in_cr4(X86_CR4_PGE);
++		__supported_pte_mask |= _PAGE_GLOBAL;
++	}
++
+ 	/* max_pfn_mapped is updated here */
+ 	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+ 	max_pfn_mapped = max_low_pfn_mapped;
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index e0e6990..2f07e09 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -149,16 +149,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	use_gbpages = direct_gbpages;
+ #endif
+ 
+-	/* Enable PSE if available */
+-	if (cpu_has_pse)
+-		set_in_cr4(X86_CR4_PSE);
+-
+-	/* Enable PGE if available */
+-	if (cpu_has_pge) {
+-		set_in_cr4(X86_CR4_PGE);
+-		__supported_pte_mask |= _PAGE_GLOBAL;
+-	}
+-
+ 	if (use_gbpages)
+ 		page_size_mask |= 1 << PG_LEVEL_1G;
+ 	if (use_pse)
+-- 
+1.7.9.5
+
+
