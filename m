@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2HXBMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:12:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4359 "EHLO mga03.intel.com"
+	id S1757319Ab2HXBMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:12:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10983 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754401Ab2HXBLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:11:20 -0400
+	id S1754443Ab2HXBLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 21:11:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="184254161"
+   d="scan'208";a="184254183"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v7 07/12] start_cpu0() is defined in head_32.S for 32-bit. The function sets up stack and jumps to start_secondary() for CPU0 wake up.
-Date: Thu, 23 Aug 2012 17:56:06 -0700
-Message-Id: <1345769771-27019-8-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v7 10/12] Ask the first online CPU to save mtrr instead of asking BSP. BSP could be offline when mtrr_save_state() is called.
+Date: Thu, 23 Aug 2012 17:56:09 -0700
+Message-Id: <1345769771-27019-11-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
 References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
@@ -39,32 +39,32 @@ From: Fenghua Yu <fenghua.yu@intel.com>
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/head_32.S |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/mtrr/main.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index d42ab17..964f87a 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -266,6 +266,18 @@ num_subarch_entries = (. - subarch_entries) / 4
- 	jmp default_entry
- #endif /* CONFIG_PARAVIRT */
+diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+index 6b96110..e4c1a41 100644
+--- a/arch/x86/kernel/cpu/mtrr/main.c
++++ b/arch/x86/kernel/cpu/mtrr/main.c
+@@ -695,11 +695,16 @@ void mtrr_ap_init(void)
+ }
  
-+#ifdef CONFIG_HOTPLUG_CPU
-+/*
-+ * Boot CPU0 entry point. It's called from play_dead(). Everything has been set
-+ * up already except stack. We just set up stack here. Then call
-+ * start_secondary().
-+ */
-+ENTRY(start_cpu0)
-+	movl stack_start, %ecx
-+	movl %ecx, %esp
-+	jmp  *(initial_code)
-+#endif
+ /**
+- * Save current fixed-range MTRR state of the BSP
++ * Save current fixed-range MTRR state of the first cpu in cpu_online_mask.
+  */
+ void mtrr_save_state(void)
+ {
+-	smp_call_function_single(0, mtrr_save_fixed_ranges, NULL, 1);
++	int first_cpu;
 +
- /*
-  * Non-boot CPU entry point; entered from trampoline.S
-  * We can't lgdt here, because lgdt itself uses a data segment, but
++	get_online_cpus();
++	first_cpu = cpumask_first(cpu_online_mask);
++	smp_call_function_single(first_cpu, mtrr_save_fixed_ranges, NULL, 1);
++	put_online_cpus();
+ }
+ 
+ void set_mtrr_aps_delayed_init(void)
 -- 
 1.7.2
 
