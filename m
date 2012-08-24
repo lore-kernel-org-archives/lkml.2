@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933632Ab2HXU6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:58:03 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46018 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933376Ab2HXU57 (ORCPT
+	id S1030520Ab2HXU6W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:58:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41657 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030240Ab2HXU6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:57:59 -0400
-Message-ID: <5037EAC8.6080403@linux.vnet.ibm.com>
-Date: Fri, 24 Aug 2012 15:57:44 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Fri, 24 Aug 2012 16:58:17 -0400
+Date: Fri, 24 Aug 2012 13:58:12 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, vgoyal@redhat.com,
+        mpatocka@redhat.com, bharrosh@panasas.com,
+        Jens Axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.de>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Peter Osterlund <petero2@telia.com>, Sage Weil <sage@inktank.com>
+Subject: Re: [PATCH v6 11/13] block: Rework bio_pair_split()
+Message-ID: <20120824205812.GJ21325@google.com>
+References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
+ <1345655050-28199-12-git-send-email-koverstreet@google.com>
+ <20120822210410.GL19212@google.com>
+ <yq1y5l5hvpw.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH 0/2] revert changes to zcache_do_preload()
-References: <1345735991-6995-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120823205648.GA2066@barrios> <5036AA38.6010400@linux.vnet.ibm.com> <20120823232845.GE5369@bbox>
-In-Reply-To: <20120823232845.GE5369@bbox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082420-2356-0000-0000-000001922A59
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq1y5l5hvpw.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 06:28 PM, Minchan Kim wrote:
-> Okay, then, why do you think the patchsets are culprit?
-> I didn't look the cleanup patch series of Xiao at that time
-> so I can be wrong but as I just look through patch of
-> "zcache: optimize zcache_do_preload", I can't find any fault
-> because zcache_put_page checks irq_disable so we don't need
-> to disable preemption so it seems that patch is correct to me.
-> If the race happens by preemption, BUG_ON in zcache_put_page
-> should catch it.
-> 
-> What do you mean? Do you have any clue in your mind?
-> 
->         The commits undermine an assumption made by tmem_put() in
->         the cleancache path that preemption is disabled.
+Hello, Martin.
 
-I do not have an explanation right now for why these commits
-expose this issue.  The patch looks like it should be fine
-to me, hence my Ack at the time.
+On Thu, Aug 23, 2012 at 10:25:47PM -0400, Martin K. Petersen wrote:
+> However, I'm not sure I like the overall approach of the new splitting.
+> Instead of all this cloning, slicing and dicing of bio_vecs I'd rather
+> we bit the bullet and had an offset + length for the vector inside each
+> bio. That way we could keep the bio_vec immutable and make clones more
+> lightweight since their vecs would always point to the parent. This also
+> makes it trivial to split I/Os in the stacking drivers and removes evils
+> in the partial completion code path. It would also allow to sever the
+> ties between "size of block range operated on" vs. bi_size which we need
+> for copy offload, discard, etc.
 
-I understand and agree with you that the zcache shim
-functions zcache_put_page(), zcache_get_page(),
-zcache_flush_page(), and zcache_flush_object() all disable
-interrupts (or make sure that interrupts are already
-disabled) which implicitly disables preemption.
+Yeah, I'm fairly sure we all want that but that's gonna have to be a
+separate not-so-small project.  Also, how we split underlying bvec
+doesn't affect the split interface update being done here.  This
+patchset is updating split so that it can handle arbirarily sized
+bios, which is useful whether its implementation is using immutable
+bvec or COWing it.
 
-I'm still trying to find root cause here.
+Thanks.
 
-Seth
-
+-- 
+tejun
