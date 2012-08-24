@@ -1,183 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759590Ab2HXO1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 10:27:34 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:33366 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754396Ab2HXO1a (ORCPT
+	id S932685Ab2HXOas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 10:30:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40391 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759477Ab2HXOao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 10:27:30 -0400
-From: Philippe LANGLAIS <philippe.langlais@st.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Date: Fri, 24 Aug 2012 16:27:14 +0200
-Subject: Re: [PATCH 1/1 v2] ARM: ux500: Provide SMSC911x fixed-regulator
- when not booting DT
-Thread-Topic: [PATCH 1/1 v2] ARM: ux500: Provide SMSC911x fixed-regulator
- when not booting DT
-Thread-Index: Ac2CBI53/D0D79tIQauDohmEPbcavw==
-Message-ID: <50378F42.3060409@st.com>
-References: <1345812481-2384-1-git-send-email-lee.jones@linaro.org>
- <5037871F.7080300@st.com> <20120824140849.GM32491@gmail.com>
-In-Reply-To: <20120824140849.GM32491@gmail.com>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
- Thunderbird/14.0
-acceptlanguage: fr-FR, en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 24 Aug 2012 10:30:44 -0400
+Message-ID: <50379008.3080500@gmail.com>
+Date: Fri, 24 Aug 2012 22:30:32 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
+To: Liu ping fan <kernelfans@gmail.com>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Scott Murray <scott@spiteful.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: pci: question about the life cycle of pci_dev and its parent
+ pci_bus
+References: <CAFgQCTt82Mu2mhVxeZ01=1bJzuzDWZjBEV58X9xjeEPQY3R8ww@mail.gmail.com>
+In-Reply-To: <CAFgQCTt82Mu2mhVxeZ01=1bJzuzDWZjBEV58X9xjeEPQY3R8ww@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7OERjuG003518
 
-On 08/24/2012 04:08 PM, Lee Jones wrote:
->> I have checked in Snowball schematics and I can confirm that the fixed
->> 3.3V regulator is GPIO26 on AB8500 not DB8500, so its numero is
->> MOP500_AB8500_PIN_GPIO(26)
-> We're also using GPIO26 on the DB8500 in the Device Tree solution.
-> Odd that is should work? I wonder if we're just getting lucky, or if
-> it's just not required?
-Yes, we are lucky that the AB8500 GPIO26 is in the right state to make 
-the ethernet working
-and changing the state of GPIO26 doesn't seems to break something on 
-Snowball.
->
->> and you have first to update the upstream gpio-ab8500 driver.
-> I see. Do you know what needs to be updated to get it working?
-I can't remember exactly, changes have been done recently on the 
-internal driver and I know that the upstream driver is BROKEN (use 
-obsolete IRQ API).
->
->> On 08/24/2012 02:48 PM, Lee Jones wrote:
->>> The SMSC911x Ethernet chip requires a fixed-regulator in order to
->>> function correctly. We have previously provided a means to obtain
->>> this during a Device Tree boot, however nothing has been put into
->>> place when booting with a non-DT kernel. This patch aims to change
->>> that.
->>>
->>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>> ---
->>>    arch/arm/mach-ux500/board-mop500-regulators.c |   17 +++++++++++++++++
->>>    arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
->>>    arch/arm/mach-ux500/board-mop500.c            |   21 +++++++++++++++++++++
->>>    arch/arm/mach-ux500/board-mop500.h            |    2 +-
->>>    4 files changed, 40 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
->>> index 52426a4..139f31e 100644
->>> --- a/arch/arm/mach-ux500/board-mop500-regulators.c
->>> +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
->>> @@ -13,6 +13,23 @@
->>>    #include <linux/regulator/ab8500.h>
->>>    #include "board-mop500-regulators.h"
->>>    
->>> +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
->>> +static struct regulator_consumer_supply gpio_en_3v3_consumers[] = {
->>> +	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
->>> +};
->>> +
->>> +struct regulator_init_data gpio_en_3v3_regulator = {
->>> +	.constraints = {
->>> +		.name = "EN-3V3",
->>> +		.min_uV = 3300000,
->>> +		.max_uV = 3300000,
->>> +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
->>> +	},
->>> +	.num_consumer_supplies = ARRAY_SIZE(gpio_en_3v3_consumers),
->>> +	.consumer_supplies = gpio_en_3v3_consumers,
->>> +};
->>> +#endif
->>> +
->>>    /*
->>>     * TPS61052 regulator
->>>     */
->>> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
->>> index 9499215..78a0642 100644
->>> --- a/arch/arm/mach-ux500/board-mop500-regulators.h
->>> +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
->>> @@ -18,5 +18,6 @@ extern struct ab8500_regulator_reg_init
->>>    ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
->>>    extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
->>>    extern struct regulator_init_data tps61052_regulator;
->>> +extern struct regulator_init_data gpio_en_3v3_regulator;
->>>    
->>>    #endif
->>> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
->>> index 42e1759..c7f0973 100644
->>> --- a/arch/arm/mach-ux500/board-mop500.c
->>> +++ b/arch/arm/mach-ux500/board-mop500.c
->>> @@ -23,6 +23,7 @@
->>>    #include <linux/spi/spi.h>
->>>    #include <linux/mfd/abx500/ab8500.h>
->>>    #include <linux/regulator/ab8500.h>
->>> +#include <linux/regulator/fixed.h>
->>>    #include <linux/mfd/tc3589x.h>
->>>    #include <linux/mfd/tps6105x.h>
->>>    #include <linux/mfd/abx500/ab8500-gpio.h>
->>> @@ -75,6 +76,25 @@ static struct platform_device snowball_led_dev = {
->>>    	},
->>>    };
->>>    
->>> +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
->>> +static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
->>> +	.supply_name		= "EN-3V3",
->>> +	.gpio			= SNOWBALL_EN_3V3_ETH_GPIO,
->>> +	.microvolts		= 3300000,
->>> +	.enable_high		= 1,
->>> +	.init_data		= &gpio_en_3v3_regulator,
->>> +	.startup_delay		= 5000, /* 1200us */
->>> +};
->>> +
->>> +static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
->>> +	.name	= "reg-fixed-voltage",
->>> +	.id	= 1,
->>> +	.dev	= {
->>> +		.platform_data	= &snowball_gpio_en_3v3_data,
->>> +	},
->>> +};
->>> +#endif
->>> +
->>>    static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
->>>    	.gpio_base		= MOP500_AB8500_PIN_GPIO(1),
->>>    	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
->>> @@ -585,6 +605,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
->>>    	&snowball_led_dev,
->>>    	&snowball_key_dev,
->>>    	&snowball_sbnet_dev,
->>> +	&snowball_gpio_en_3v3_regulator_dev,
->>>    };
->>>    
->>>    static void __init mop500_init_machine(void)
->>> diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
->>> index 9e9dd5a..d3a02d5 100644
->>> --- a/arch/arm/mach-ux500/board-mop500.h
->>> +++ b/arch/arm/mach-ux500/board-mop500.h
->>> @@ -13,6 +13,7 @@
->>>    #include <linux/amba/mmci.h>
->>>    
->>>    /* Snowball specific GPIO assignments, this board has no GPIO expander */
->>> +#define SNOWBALL_EN_3V3_ETH_GPIO	26
->> No it's MOP500_AB8500_PIN_GPIO(26)
->>>    #define SNOWBALL_ACCEL_INT1_GPIO	163
->>>    #define SNOWBALL_ACCEL_INT2_GPIO	164
->>>    #define SNOWBALL_MAGNET_DRDY_GPIO	165
->>> @@ -76,7 +77,6 @@
->>>    #define SNOWBALL_PM_GPIO4_GPIO		MOP500_AB8500_PIN_GPIO(4)	/* SYSCLKREQ6/GPIO4 */
->>>    #define SNOWBALL_EN_3V6_GPIO		MOP500_AB8500_PIN_GPIO(16)	/* PWMOUT3/GPIO16 */
->>>    #define SNOWBALL_PME_ETH_GPIO		MOP500_AB8500_PIN_GPIO(24)	/* SYSCLKREQ7/GPIO24 */
->>> -#define SNOWBALL_EN_3V3_ETH_GPIO	MOP500_AB8500_PIN_GPIO(26)	/* GPIO26 */
->> keep this line
->>>    
->>>    struct device;
->>>    struct i2c_board_info;
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hi Pingfan,
+
+	We have realized the same when implementing lock mechanisms for PCI hotplug
+operations, and we are planning to holding a reference to parent bus for each pci dev.
+	Regards!
+	Gerry
+
+On 08/23/2012 01:24 PM, Liu ping fan wrote:
+> Hi,
+> 
+> I have a question about the life cycle of pci_dev and its parent pci_bus.
+> In pci_destroy_dev(), we remove the pci_dev from the bus_list, so
+> pci_dev is isolated from its parent pci_bus, and their life cycle are
+> independent too. But it seems that in pci_dev, we can still access the
+> pci_bus from the pointer pci_dev->bus.  To resolve such issue, I think
+> during the pci_dev removal,  there should be process to 1.prevent the
+> reader incoming 2. ensure the current reader has exit.  But can not
+> find them.
+> 
+> Could anyone tell me?
+> 
+> Thanx, pingfan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
