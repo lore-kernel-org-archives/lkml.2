@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab2HXTIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 15:08:44 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:56723 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759812Ab2HXTIY (ORCPT
+	id S1760039Ab2HXTJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 15:09:22 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60465 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab2HXTJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 15:08:24 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19U8G2dOkVr1iL/cHHiKqEN
-Date: Fri, 24 Aug 2012 12:08:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: alan@linux.intel.com, Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Vikram Pandita <vikram.pandita@ti.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v3 20/23] serial: omap: fix software flow control
-Message-ID: <20120824190819.GR11011@atomide.com>
-References: <1345717983-18179-1-git-send-email-balbi@ti.com>
- <1345717983-18179-21-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345717983-18179-21-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 24 Aug 2012 15:09:20 -0400
+Date: Fri, 24 Aug 2012 20:13:58 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+        wbrana <wbrana@gmail.com>, Martin Nybo Andersen <tweek@tweek.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Drop support for x86-32
+Message-ID: <20120824201358.0f086c9a@pyramind.ukuu.org.uk>
+In-Reply-To: <20120824185741.GC5094@thunk.org>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+	<201208231814.21168.tweek@tweek.dk>
+	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
+	<CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
+	<5037C530.3000408@zytor.com>
+	<20120824185741.GC5094@thunk.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [120823 03:38]:
-> From: Vikram Pandita <vikram.pandita@ti.com>
-> 
-> Software flow control register bits were not defined correctly.
-> 
-> Also clarify the IXON and IXOFF logic to reflect what userspace wants.
-> 
-> Cc: stable@vger.kernel.org
-> Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> (Of course, I'm rather doubtful that NASA would ever be willing to use
+> Linux on something like the Curiosity Mars Rover, but I could imagine
+> Linux being used in a non-mission critcal system on the ISS....)
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+GOAS, RACSI... not entirely non-mission critical stuff either.
+
+And the ST8 project covers Linux 
+
