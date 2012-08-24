@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970Ab2HXSVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:21:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45125 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab2HXSVo (ORCPT
+	id S932376Ab2HXSfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:35:44 -0400
+Received: from mail1-hoer.fullrate.dk ([89.150.129.84]:57677 "EHLO
+	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757955Ab2HXSfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:21:44 -0400
-Date: Fri, 24 Aug 2012 19:21:33 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Bill Huang <bilhuang@nvidia.com>
-Cc: "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Shutdown problem in SMP system happened on Tegra20
-Message-ID: <20120824182133.GB18957@n2100.arm.linux.org.uk>
-References: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com>
+	Fri, 24 Aug 2012 14:35:41 -0400
+From: Martin Nybo Andersen <tweek@tweek.dk>
+To: wbrana <wbrana@gmail.com>
+Subject: Re: Drop support for x86-32
+Date: Fri, 24 Aug 2012 20:35:38 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1+; KDE/4.8.4; x86_64; ; )
+Cc: Chris Friesen <chris.friesen@genband.com>,
+        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208241952.04988.tweek@tweek.dk> <CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
+In-Reply-To: <CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208242035.38733.tweek@tweek.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 04:23:39PM +0800, Bill Huang wrote:
-> When doing shutdown on Tegra20/Tegra30, we need to read/write PMIC
-> registers through I2C to perform the power off sequence. Unfortunately,
-> sometimes we'll fail to shutdown due to I2C timeout on Tegra20. And the
-> cause of the timeout is due to the CPU which I2C controller IRQ affined
-> to will have chance to be offlined without migrating all irqs affined 
-> to it, so the following I2C transactions will fail (no any CPU will
-> handle that interrupt since then).
+On Friday 24 August 2012 20:18:49 wbrana wrote:
+> On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
+> > That's right, but new hardware, that I wish to use with the old machines
+> > might
+> > not because of no backporting of new drivers. Same goes for new software
+> > utilising newer kernel features.
+> 
+> Which new hardware and which old machine do you want to use?
+I want to use *my* old machines (hey, I payed for them) on whatever new 
+hardware I can plug into them. I'm not an oracle and can't see into the 
+future, however USB has evolved, for instance, and will probably still do -- 
+requiring new drivers as before.
 
-> Some snippet of the shutdown codes:
+> > Those mentioned by Chris Friesen, whose arguments you apparently ignored.
 > 
-> void kernel_power_off(void)
-> {
-> 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
-> 	:
-> 	disable_nonboot_cpus();
-> 	:
-> 	machine_power_off();
-> }
-> 
-> void machine_power_off(void)
-> {
-> 	machine_shutdown();
-> 	if (pm_power_off)
-> 		pm_power_off(); /* this is where we send I2C write to shutdown */
-> }
-> 
-> void machine_shutdown(void)
-> {
-> #ifdef CONFIG_SMP
-> 	smp_send_stop();
-> #endif
-> }
-> 
-> In "smp_send_stop()", it will send "IPI_CPU_STOPS" to offline other cpus except
-> current cpu (smp_processor_id()), however, current cpu will not always be cpu0 at
-> least at Tegra20, that said for example cpu1 might be the current cpu and cpu0 will
-> be offlined and this is the case why the I2C transaction will timeout. 
-> 
-> For normal case, "disable_nonboot_cpus()" call will disable all other Cpus except
-> cpu0, that means we won't hit the problem mentioned here since cpu0 will always be
-> the current cpu in the call "smp_send_stop", but the call to "disable_nonboot_cpus" 
-> will happen only when "CONFIG_PM_SLEEP_SMP" is enabled which is not the case for
-> Tegra20/Tegra30, we don't support suspend yet so this can't be enabled.
+> I can't find any e-mail where Chris Friesen mentioned exact legacy apps.
+Have a look in your inbox or one of the mailarchives. If that doesn't work, 
+then stop deleting half of the mails before replying.
 
-So what you're asking for is a feature to do what CONFIG_PM_SLEEP_SMP
-does, but without CONFIG_PM_SLEEP_SMP enabled?
+> > You are allowed to compile most of the software running on Linux
+> > yourself. If
+> > you want a binary to use the x32 ABI, go compile.
+> 
+> I can't compile x32 versions of Firefox, Chromium, NVIDIA drivers, etc.
+The source code for Firefox and Chromium is available online. Go fetch and 
+compile. If they don't compile or execute as intended, I'm sure they would 
+like seeing a patch from you fixing the problem.
 
-Why not just ensure that CONFIG_PM_SLEEP_SMP is enabled if your platform
-requires that the lowest CPU number be the CPU dealing with reboot?
+NVIDIA, on the other hand, is yet another reason for using nouveau.
+
+-- 
+Cheers,
+Martin
