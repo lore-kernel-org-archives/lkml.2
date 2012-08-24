@@ -1,136 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab2HXRYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 13:24:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58390 "EHLO mx1.redhat.com"
+	id S1759931Ab2HXRZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 13:25:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46481 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753936Ab2HXRY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 13:24:28 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep AS_HWPOISON sticky
-Date: Fri, 24 Aug 2012 13:24:16 -0400
-Message-Id: <1345829056-7591-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20120824043916.GC19235@dastard>
+	id S1758445Ab2HXRYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 13:24:55 -0400
+Date: Fri, 24 Aug 2012 13:24:43 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Borislav Petkov <bp@alien8.de>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Davidlohr Bueso <dave@gnu.org>, Wang YanQing <udknight@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Cheng Renquan <crquan@gmail.com>
+Subject: Re: [PATCH v2 0/6] menuconfig: jump to search results
+Message-ID: <20120824172443.GA30057@d2.synalogic.ca>
+References: <1345748108-12206-1-git-send-email-bpoirier@suse.de>
+ <20120824154957.GA5738@x1.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824154957.GA5738@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 02:39:17PM +1000, Dave Chinner wrote:
-> On Thu, Aug 23, 2012 at 10:39:32PM -0400, Naoya Horiguchi wrote:
-> > On Fri, Aug 24, 2012 at 11:31:18AM +1000, Dave Chinner wrote:
-> > > On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
-> > > > "HWPOISON: report sticky EIO for poisoned file" still has a corner case
-> > > > where we have possibilities of data lost. This is because in this fix
-> > > > AS_HWPOISON is cleared when the inode cache is dropped.
-> ....
-> > > > --- v3.6-rc1.orig/mm/truncate.c
-> > > > +++ v3.6-rc1/mm/truncate.c
-> > > > @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
-> > > >  
-> > > >  	oldsize = inode->i_size;
-> > > >  	i_size_write(inode, newsize);
-> > > > +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
-> > > > +		mapping_clear_hwpoison(inode->i_mapping);
-> > > 
-> > > So only a truncate to zero size will clear the poison flag?
+On 2012/08/24 17:49, Borislav Petkov wrote:
+> On Thu, Aug 23, 2012 at 02:55:02PM -0400, Benjamin Poirier wrote:
+> > This patch series adds "jump to" keys (similar to the cscope interface) to the
+> > search results of "make menuconfig" so that we can go directly to the menu
+> > entry for a config option after searching for it.
 > > 
-> > Yes, this is because we only know if the file is affected by hwpoison,
-> > but not where the hwpoisoned page is in the file. We could remember it,
-> > but I did not do it for simplicity.
-> 
-> Surely the page has flags on it to say it is poisoned? That is,
-> after truncating the page cache, if the address space is poisoned,
-> then you can do a pass across the mapping tree checking if there are
-> any poisoned pages left? Or perhaps adding a new mapping tree tag so
-> that the poisoned status is automatically determined by the presence
-> of the poisoned page in the mapping tree?
-
-The answer for the first question is yes. And for the second question,
-I don't think it's easy because the mapping tree has no reference to
-the error page (I explain more about this below, please see also it,)
-and it can cost too much to search poisoned pages over page cache in
-each request.
-And for the third question, I think we could do this, but to do it
-we need an additional space (8 bytes) in struct radix_tree_node.
-Considering that this new tag is not used so frequently, so I'm not
-sure that it's worth the cost.
-
-> > > What happens if it is the last page in the mapping that is poisoned,
-> > > and we truncate that away? Shouldn't that clear the poisoned bit?
+> > Patches 1-4 implement the basic functionality.
+> > Patches 5-6 are an optional improvement.
 > > 
-> > When we handle the hwpoisoned inode, the error page should already
-> > be removed from pagecache, so the remaining pages are not related
-> > to the error and we need not care about them when we consider bit
-> > clearing.
-> 
-> Sorry, I don't follow. What removed the page from the page cache?
-> The truncate_page_cache() call that follows the above code hunk is
-> what does that, so I don't see how it can already be removed from
-> the page cache....
-
-Memory error handler (memory_failure() in mm/memory-failure.c) has
-removed the error page from the page cache.
-And truncate_page_cache() that follows this hunk removes all pages
-belonging to the page cache of the poisoned file (where the error
-page itself is not included in them.)
-
-Let me explain more to clarify my whole scenario. If a memory error
-hits on a dirty pagecache, kernel works like below:
-
-  1. handles a MCE interrupt (logging MCE events,)
-  2. calls memory error handler (doing 3 to 6,)
-  3. sets PageHWPoison flag on the error page,
-  4. unmaps all mappings to processes' virtual addresses,
-  5. sets AS_HWPOISON on mappings to which the error page belongs
-  6. invalidates the error page (unlinks it from LRU list and removes
-     it from pagecache,)
-  (memory error handler finished)
-  7. later accesses to the file returns -EIO,
-  8. AS_HWPOISON is cleared when the file is removed or completely
-     truncated.
-
-This patchset tries to fix the problem in 7 and add a new behavior 8,
-where I have an assumption that 1-6 has already worked out.
-
-You may think it strange that the condition of clearing AS_HWPOISON
-is checked with file granularity. This is because currently userspace
-applications know the memory errors only with file granularity for
-simplicity, when they access via read(), write() and/or fsync().
-(Only for access via mmap(), error reporting is with page granularity.)
-We can do it with page granularity, and I tried 2 approaches:
-
-  a. "adding a new tag in mapping tree" approach
-     as I explained above, this needs an additional space on heavily
-     used data structure,
-  b. "adding a new data structure specific to dirty pagecache error
-     management" approach
-     I did this in the 1st version of this patchset, but found that
-     it's too complicated as the first step.
-
-But I think both of these are some difficulty to be accepted,
-so at first I try to start with simpler one.
-
-> > > What about a hole punch over the poisoned range?
+> > Changes v1-v2:
+> > * add a short description to patches 2 & 3
+> > * correct checkpatch style warnings on patch 6
 > > 
-> > For the same reason, this is also not related to when to clear the bit.
+> > It should be targeted for v3.7
 > 
-> Sure it is - if you remove the poisoned pages from the mapping when
-> the hole is punched, then the mapping is no longer poisoned. Hence
-> the bit should be cleared at that time as nothing else will ever
-> clear it.
+> Ok, did a quick test on -rc3 here. Is it a feature that if I do a
+> search, go to the result, then do a search again and go to another
+> result from the second search... and do that a couple of times, clicking
+> on Exit at the lower part of the menu returns me back to all the
+> searches I had done? Much like a stack.
+> 
+> I mean, I don't mind it that way, it is workable - I'm just asking :).
 
-If we achieve error reporting with the page granularity, I hope we can
-also do this easily.
+That's how it's meant, yes. As stated in the log for patch 4:
+	menuconfig: Add jump keys to search results
+	[...] After exiting this menu, the user is returned to the
+	search results where he may jump further in or elsewhere.
+... and after exiting the search results the user is returned to the
+menu where he was before performing the search. That's the current
+behavior.
 
-Do I answer all your questions? If not, please let me know.
+A likely alternative would be that jumping to a menu entry would exit
+the search results, forget the current position in the menus and go to
+the new one as if the user had navigated to it from the root menu.
 
-Thanks,
-Naoya
+The current mconf.c code structure lends itself much better to the
+"stacked" way of doing things. Each navigation to a deeper menu
+corresponds to a nested conf() call. To do it the second way we'd have
+to add logic to exit these nested conf() calls and redo new ones without
+user intervention or change how it's handled altogether.
+
+It seemed to me that choosing one approach over the other was debatable
+UI-wise but that the first approach was definitely simpler code-wise.
