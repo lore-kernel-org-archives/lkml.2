@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760250Ab2HXWQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 18:16:40 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43051 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030465Ab2HXWQf (ORCPT
+	id S1030614Ab2HXWQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 18:16:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43052 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760252Ab2HXWQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 18:16:35 -0400
+	Fri, 24 Aug 2012 18:16:41 -0400
 From: Sedat Dilek <sedat.dilek@gmail.com>
 To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
 Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH drm-next 1/3] drm/udl: usb: Fix recursive Kconfig dependency
-Date: Sat, 25 Aug 2012 00:16:22 +0200
-Message-Id: <1345846584-5910-1-git-send-email-sedat.dilek@gmail.com>
+Subject: [PATCH drm-next 3/3] drm/i915/contexts: Fixup merge with commit b6c7488df68a
+Date: Sat, 25 Aug 2012 00:16:24 +0200
+Message-Id: <1345846584-5910-3-git-send-email-sedat.dilek@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1345846584-5910-1-git-send-email-sedat.dilek@gmail.com>
+References: <1345846584-5910-1-git-send-email-sedat.dilek@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/usb/Kconfig "config USB_ARCH_HAS_HCD" is within "if USB_SUPPORT"
-statement.
+This is a fixup patch for the merge of drm-next into linux-next caused
+by commit b6c7488df68a ("drm/i915/contexts: fix list corruption").
 
-In drivers/gpu/drm/Kconfig "config DRM_USB" depends on USB_ARCH_HAS_HCD
-but selects USB_SUPPORT which leads to the error for udl Kconfig:
-
-$ yes "" | make oldconfig
-scripts/kconfig/conf --oldconfig Kconfig
-drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
-drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
-drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
-drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
-drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
-
-Fix this by changing from select to depends on USB_SUPPORT in
-"config DRM_USB".
-
-This is a follow-up fix to df0b344300724e00db9fff7eb6406eb91f450b91
-in Dave's drm-next GIT branch.
-
-[ v2: Restore old status, but change from select to depends on USB_SUPPORT ]
-[ v3: Use common prefix "drm/udl" in label ]
-
+Reported-By: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
 ---
- drivers/gpu/drm/Kconfig |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index 3a8c683..0cbdc45 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -22,9 +22,8 @@ menuconfig DRM
- config DRM_USB
- 	tristate
- 	depends on DRM
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB_SUPPORT && USB_ARCH_HAS_HCD
- 	select USB
--	select USB_SUPPORT
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 4f6841d..e8a5cb2 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2273,11 +2273,11 @@ int i915_gpu_idle(struct drm_device *dev)
  
- config DRM_KMS_HELPER
- 	tristate
+ 	/* Flush everything onto the inactive list. */
+ 	for_each_ring(ring, dev_priv, i) {
+-		ret = i915_switch_context(ring, NULL, DEFAULT_CONTEXT_ID);
++		ret = i915_ring_idle(ring);
+ 		if (ret)
+ 			return ret;
+ 
+-		ret = i915_ring_idle(ring);
++		ret = i915_switch_context(ring, NULL, DEFAULT_CONTEXT_ID);
+ 		if (ret)
+ 			return ret;
+ 
 -- 
 1.7.9.5
 
