@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab2HXXgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 19:36:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63863 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755242Ab2HXXgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 19:36:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,307,1344236400"; 
-   d="scan'208";a="210944692"
-From: Dave Jiang <dave.jiang@intel.com>
-Subject: [PATCH] ioat: Adding Ivy Bridge IOATDMA PCI device IDs
-To: djbw@fb.com
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
-Date: Fri, 24 Aug 2012 16:36:20 -0700
-Message-ID: <20120824233619.9218.25014.stgit@djiang5-linux.ch.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1756848Ab2HXXkg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 19:40:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62346 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755717Ab2HXXke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 19:40:34 -0400
+Date: Sat, 25 Aug 2012 01:40:14 +0200
+From: Rabin Vincent <rabin@rab.in>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled for
+ boot-on
+Message-ID: <20120824233835.GA29178@ubuntu>
+References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com>
+ <5034AA28.5050306@nvidia.com>
+ <20120823145308.GA28328@sirena.org.uk>
+ <50364179.6070304@nvidia.com>
+ <5037BF45.1070205@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5037BF45.1070205@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
+On Fri, Aug 24, 2012 at 11:22:05PM +0530, Laxman Dewangan wrote:
+> I tried to reproduce the issue but could not able to do this.
+> Can you please send me your board/dt files where you are porviding
+> platform data for regulator?
+> This will help me to reproduce the issue.
 
- drivers/dma/ioat/pci.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+Here's a dts patch:
 
-diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-index 5e3a40f..c057306 100644
---- a/drivers/dma/ioat/pci.c
-+++ b/drivers/dma/ioat/pci.c
-@@ -40,6 +40,17 @@ MODULE_VERSION(IOAT_DMA_VERSION);
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_AUTHOR("Intel Corporation");
- 
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB0	0x0e20
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB1	0x0e21
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB2	0x0e22
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB3	0x0e23
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB4	0x0e24
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB5	0x0e25
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB6	0x0e26
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB7	0x0e27
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB8	0x0e2e
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB9	0x0e2f
+diff --git a/arch/arm/boot/dts/vexpress-v2m.dtsi b/arch/arm/boot/dts/vexpress-v2m.dtsi
+index dba53fd..386eafa 100644
+--- a/arch/arm/boot/dts/vexpress-v2m.dtsi
++++ b/arch/arm/boot/dts/vexpress-v2m.dtsi
+@@ -207,5 +207,20 @@
+ 			regulator-max-microvolt = <3300000>;
+ 			regulator-always-on;
+ 		};
 +
- static struct pci_device_id ioat_pci_tbl[] = {
- 	/* I/OAT v1 platforms */
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT) },
-@@ -83,6 +94,17 @@ static struct pci_device_id ioat_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB8) },
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB9) },
- 
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB0) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB1) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB2) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB3) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB4) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB5) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB6) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB7) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB8) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT_IVB9) },
++		vbat: fixedregulator@1 {
++			compatible = "regulator-fixed";
++			regulator-name = "vbat";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++		};
 +
- 	{ 0, }
++		fixedregulator@2 {
++			compatible = "regulator-fixed";
++			regulator-name = "vtest1";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			vin-supply = <&vbat>;
++			regulator-boot-on;
++		};
+ 	};
  };
- MODULE_DEVICE_TABLE(pci, ioat_pci_tbl);
 
+If you want to test it with fixed regulators, you'll need the hack below
+to bypass the ops->disable check in regulator_init_complete(). 
+
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index 185468c..05f3028 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -129,9 +129,16 @@ static int fixed_voltage_list_voltage(struct regulator_dev *dev,
+ 	return data->microvolts;
+ }
+ 
++static int fixed_enable(struct regulator_dev *dev)
++{
++	return 0;
++}
++
+ static struct regulator_ops fixed_voltage_ops = {
+ 	.get_voltage = fixed_voltage_get_voltage,
+ 	.list_voltage = fixed_voltage_list_voltage,
++	.disable = fixed_enable,
++	.enable = fixed_enable,
+ };
+ 
+ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
