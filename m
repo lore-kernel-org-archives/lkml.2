@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607Ab2HXUxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:53:07 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45193 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933522Ab2HXUxF (ORCPT
+	id S933635Ab2HXUxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:53:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58552 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933522Ab2HXUxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:53:05 -0400
-Date: Fri, 24 Aug 2012 21:52:56 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] ARM: treewide: manually change more
-	mach-*/*.h includes
-Message-ID: <20120824205256.GF18957@n2100.arm.linux.org.uk>
-References: <201208221253.07278.arnd@arndb.de> <201208221301.19439.arnd@arndb.de> <20120822214323.GA12255@n2100.arm.linux.org.uk> <201208231135.11688.arnd@arndb.de>
+	Fri, 24 Aug 2012 16:53:08 -0400
+Date: Fri, 24 Aug 2012 13:53:03 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>,
+        NeilBrown <neilb@suse.de>, Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Peter Osterlund <petero2@telia.com>, Sage Weil <sage@inktank.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH v6 11/13] block: Rework bio_pair_split()
+Message-ID: <20120824205303.GI21325@google.com>
+References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
+ <1345655050-28199-12-git-send-email-koverstreet@google.com>
+ <20120822210410.GL19212@google.com>
+ <20120824103049.GG11977@moria.home.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201208231135.11688.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120824103049.GG11977@moria.home.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 11:35:11AM +0000, Arnd Bergmann wrote:
-> About two third of the platform header files included in device drivers
-> are not related to platform_data according to what I found. Most of them
-> are also wrong (hardcoding interrupt numbers or addresses, headers
-> included by accident but not actually used, driver specific definitions
-> that don't belong in the platform, platform specific abstraction layers,
-> ...), but they tend to be harder to clean up.
+Hello,
+
+On Fri, Aug 24, 2012 at 03:30:49AM -0700, Kent Overstreet wrote:
+> > I complained about this in the last posting and in the previous patch.
+> > Please respond.  Martin, are you okay with these integrity changes?
 > 
-> I hope we can get there eventually, but I think the intermediate step
-> of enforcing a mach-${MACH}/foo.h is a step in the right direction on
-> that way.
+> I did respond. I said more before, but in short the old
+> bio_integrity_split() only worked for single page bios, and thus wasn't
+> useful even as a starting point.
+> 
+> What my bio_split() does with the integrity is actually basically what
+> dm does (that's the only other place bio_integrity_trim()) is used).
 
-I think the opposite: if a platform wishes to be part of the multiplatform
-kernel, it must clean up its header files first to become part of that,
-otherwise it will not be configured into such a kernel.
+And all those information should be in the patch description.  Imagine
+this patch hitting some enterprise deployment, say four years after
+now, and causing weird performance regression and someone succeeding
+to bisect it down to this commit.  None of us would be remembering
+much about this and could in fact be doing something completely
+different.  Patches should at least try to record its visible
+implications.
 
-Otherwise there's no incentive for platform maintainers to do anything
-other than sit around waiting for someone else to do it for them.
-There's also no incentive to avoid introducing new dependencies between
-drivers and mach/ include files in the future either.
+This type of information should be always attached to the patch not
+only for future references but also to alert reviewers who aren't
+necessarily following the whole series and its iterations.
 
-Yes, some platforms are going to need a lot more work than others to get
-them ready (such as the Samsung suite) but that doesn't mean that we
-should work around that, especially when the end-goal is to get rid of
-these platform dependencies between drivers and mach includes.
+> > Also, given that it's a pair split, it would be nice to somehow
+> > indicate that ->split is the earlier half.  Before this change it was
+> > pretty clear with ->bio1/2.
+> 
+> Fixed the comment to indicate that too.
+
+Any chance we can do that with field name?
+
+> commit 5db0562e43099d06ed9488e7ae6bf0a0cc6ef5da
+> Author: Kent Overstreet <koverstreet@google.com>
+> Date:   Fri Aug 24 03:27:24 2012 -0700
+> 
+>     block: Rework bio_pair_split()
+>     
+>     This changes bio_pair_split() to use the new bio_split() underneath.
+>     
+>     This has two user visible changes: First, it's not restricted to single
+>     page bios anymore. Secondly, where before callers used bio1 and bio2 in
+>     struct bio_pair, now they use split and orig - this being a result of
+>     the new implementation.
+>     
+>     bio_integrity_split() is removed, as the old bio_pair_split() was the
+>     only user; the new bio_split() uses bio_integrity_clone/trim much like
+>     the dm code does.
+
+      "which may affect XXX in YYY cases but I think it's okay because ZZZ."
+
+If you aren't that sure,
+
+      "which may affect AAA but I don't think that's a big deal
+       because BBB.  This definitely requires Martin's ack."
+
+Thanks.
+
+-- 
+tejun
