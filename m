@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758790Ab2HXMRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 08:17:45 -0400
-Received: from mail.linlab.net ([89.244.147.154]:47271 "EHLO mail.linlab.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab2HXMRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 08:17:40 -0400
-X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7OCHR1w010036
-Message-ID: <503770D8.8040906@linlab.net>
-Date: Fri, 24 Aug 2012 14:17:28 +0200
-From: Alex Bergmann <alex@linlab.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1758359Ab2HXMWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 08:22:35 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:39943
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751646Ab2HXMWb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 08:22:31 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bhzz1202hzz15d4Iz2dh668h839hd25he5bhf0ah11b5h1155h)
+X-WSS-ID: 0M99EDD-01-6C8-02
+X-M-MSG: 
+Date: Fri, 24 Aug 2012 14:22:26 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <joro@8bytes.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 03/19] x86, io_apic: Introduce x86_io_apic_ops.disable()
+Message-ID: <20120824122226.GW2582@amd.com>
+References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
+ <1345470965-24410-4-git-send-email-joerg.roedel@amd.com>
+ <20120823211140.GB7120@breakpoint.cc>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-References: <503419D3.1080700@linlab.net>  <CAFbMe2M7ekc94bQk7vTS1LhScPd49VZ-zKOCUXhqwxXtL-nkuA@mail.gmail.com>  <50361AEA.6010807@linlab.net> <1345724123.5904.756.camel@edumazet-glaptop>  <50362407.9070805@linlab.net> <1345726185.5904.835.camel@edumazet-glaptop>
-In-Reply-To: <1345726185.5904.835.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.6 (mail.linlab.net [IPv6:2001:470:7142:a0::3]); Fri, 24 Aug 2012 14:17:33 +0200 (CEST)
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20120823211140.GB7120@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
-> 
-> A change of the comment might be good, to help future readers.
-> 
+On Thu, Aug 23, 2012 at 11:11:40PM +0200, Sebastian Andrzej Siewior wrote:
+> On Mon, Aug 20, 2012 at 03:55:49PM +0200, Joerg Roedel wrote:
+> What I miss here is the fact that you extract irq-mapping specific bits from
+> disable_IO_APIC() and put them in a separate function named
+> irq_remapping_disable_io_apic(). And having a big if in this function probably
+> didn't look that sexy so you decided to use function op. Nice move, no
+> question but not abvious from the description here and it took a while to figure
+> it out based on the code. Well, maybe it is lateâ?¦
 
-Okay, I've also changed the comments of SYN and SYNACK retries. 
+Well, yeah, the confusing thing with this patch is, that it does not only
+introduce the x86_io_apic_ops.disable call-back but also adds the
+infrastructure to change this op (and others). So the infrastructure
+change should probably be in a seperate patch. But on the other side the
+infrastructure change is small and the patch-set is already really
+large.
+Is it worth it to split that out?
 
-Alex
+> I don't want sound to picky here but the term 'modify' is bad I think. Would
+> 'overwrite' fit better here? Is 'modify' used someplace else in x86 so you
+> follow a common pattern here? Maybe it is just me.
 
->From 11a292b1cff772f930a02fda02d5b741f8ea5033 Mon Sep 17 00:00:00 2001
-From: Alexander Bergmann <alex@linlab.net>
-Date: Fri, 24 Aug 2012 14:09:49 +0200
-Subject: [PATCH 1/1] tcp: Increase timeout for SYN segments
+Probably it's just me, but overwrite sounds like 'replace' (== overwrite
+all ops with own values). But the code changes only a few of the ops
+which need different behavior for interrupt remapping. I think 'modify'
+describes that better, no?
 
-Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
-RFC6298 (former RFC2988bis). This reduced the time till the last SYN
-retransmission packet gets sent from 93secs to 31secs.
 
-RFC1122 is stating that the retransmission should be done for at least 3
-minutes, but this seems to be quite high.
+	Joerg
 
-  "However, the values of R1 and R2 may be different for SYN
-  and data segments.  In particular, R2 for a SYN segment MUST
-  be set large enough to provide retransmission of the segment
-  for at least 3 minutes.  The application can close the
-  connection (i.e., give up on the open attempt) sooner, of
-  course."
-
-This patch increases the value of TCP_SYN_RETRIES to the value of 6,
-providing a retransmission window of 63secs.
-
-The comments for SYN and SYNACK retries have also been updated to
-describe the current settings.
-
-Signed-off-by: Alexander Bergmann <alex@linlab.net>
----
- include/net/tcp.h |   18 ++++++++++++++----
- 1 files changed, 14 insertions(+), 4 deletions(-)
-
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 1f000ff..d43d6b3 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -98,11 +98,21 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
-                                 * 15 is ~13-30min depending on RTO.
-                                 */
- 
--#define TCP_SYN_RETRIES         5      /* number of times to retry active opening a
--                                * connection: ~180sec is RFC minimum   */
-+#define TCP_SYN_RETRIES         6      /*
-+                                * This is how many retries it does to active
-+                                * opening a connection.
-+                                * RFC1122 says the minimum retry MUST be at
-+                                * least 180secs. Nevertheless this value is
-+                                * corresponding to 63secs of retransmission
-+                                * with the current initial RTO.
-+                                */
- 
--#define TCP_SYNACK_RETRIES 5   /* number of times to retry passive opening a
--                                * connection: ~180sec is RFC minimum   */
-+#define TCP_SYNACK_RETRIES 5   /* 
-+                                * This is how may retries it does to passive
-+                                * opening a connection. 
-+                                * This is corresponding to 31secs of 
-+                                * retransmission with the current initial RTO.
-+                                */
- 
- #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
-                                  * state, about 60 seconds     */
 -- 
-1.7.8.6
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
