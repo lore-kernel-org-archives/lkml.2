@@ -1,141 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab2HXLuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 07:50:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:65125 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab2HXLut (ORCPT
+	id S1755990Ab2HXLvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 07:51:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34868 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab2HXLvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 07:50:49 -0400
+	Fri, 24 Aug 2012 07:51:06 -0400
+Message-ID: <50376AA6.7030303@suse.cz>
+Date: Fri, 24 Aug 2012 13:51:02 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120731 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1345333117-2826-1-git-send-email-mail@danrl.de>
-References: <1345333117-2826-1-git-send-email-mail@danrl.de>
-Date: Fri, 24 Aug 2012 17:20:48 +0530
-Message-ID: <CAPEGOO+2fSWg2wiXouEQx6tn2Tp2sFwDg6TrqgACtV-1sqr2cQ@mail.gmail.com>
-Subject: Re: [PATCH] fs: Introducing Lanyard Filesystem
-From: Prashant Shah <kerneldev100@gmail.com>
-To: Dan Luedtke <mail@danrl.de>
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, chaosman@ontika.net, muthur@gmail.com,
-        kerolasa@iki.fi, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: dedekind1@gmail.com
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] ubifs: remove __DATE__ and __TIME__
+References: <1344534194-16321-1-git-send-email-jslaby@suse.cz> <1345809271.2848.294.camel@sauron.fi.intel.com>
+In-Reply-To: <1345809271.2848.294.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Sun, Aug 19, 2012 at 5:08 AM, Dan Luedtke <mail@danrl.de> wrote:
+On 08/24/2012 01:54 PM, Artem Bityutskiy wrote:
+> On Thu, 2012-08-09 at 19:43 +0200, Jiri Slaby wrote:
+>> diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c index
+>> e354832..67af316 100644 --- a/fs/ubifs/super.c +++
+>> b/fs/ubifs/super.c @@ -1431,7 +1431,6 @@ static int
+>> mount_ubifs(struct ubifs_info *c) ubifs_msg("reserved for root:
+>> %llu bytes (%llu KiB)", c->report_rp_size, c->report_rp_size >>
+>> 10);
+>> 
+>> -	dbg_msg("compiled on:         " __DATE__ " at " __TIME__); 
+>> dbg_msg("min. I/O unit size:  %d bytes", c->min_io_size); 
+>> dbg_msg("max. write size:     %d bytes", c->max_write_size); 
+>> dbg_msg("LEB size:            %d bytes (%d KiB)",
+> 
+> Pushed to linux-ubifs.git, thanks! Does it make sense to hurry up
+> and send this to 3.6? Or it can be merged to 3.7 normally?
 
-> +
-> +       /* allocate filesystem private data */
-> +       fsi = kzalloc(sizeof(*fsi), GFP_KERNEL);
-> +       if (!fsi)
-> +               return -ENOMEM;
-> +       spin_lock_init(&fsi->lock);
-> +       sb->s_fs_info = fsi;
-> +
-> +       /* set blocksize to minimum size for fetching superblock */
-> +       if (!sb_set_blocksize(sb, 1 << LANYFS_MIN_BLOCKSIZE)) {
-> +               if (!silent)
-> +                       lanyfs_err(sb, "error setting blocksize to %d bytes",
-> +                                  1 << LANYFS_MIN_BLOCKSIZE);
-> +               return -EIO;
-> +       }
-> +
-> +       /* fetch superblock */
-> +       bh = sb_bread(sb, LANYFS_SUPERBLOCK);
-> +       if (!bh) {
-> +               if (!silent)
-> +                       lanyfs_err(sb, "error reading superblock");
-> +               return -EIO;
-> +       }
-> +       lanysb = (struct lanyfs_sb *) bh->b_data;
-> +
-> +       /* check magic */
-> +       if (lanysb->magic != cpu_to_le32(LANYFS_SUPER_MAGIC)) {
-> +               if (!silent)
-> +                       lanyfs_info(sb, "bad magic 0x%x",
-> +                                   lanysb->magic);
-> +               goto exit_invalid;
-> +       }
-> +       sb->s_magic = LANYFS_SUPER_MAGIC;
-> +
-> +       /* check block type */
-> +       if (lanysb->type != LANYFS_TYPE_SB) {
-> +               if (!silent)
-> +                       lanyfs_err(sb, "bad block type 0x%x", lanysb->type);
-> +               goto exit_invalid;
-> +       }
-> +
-> +       /* check version */
-> +       if (lanysb->major > LANYFS_MAJOR_VERSION) {
-> +               if (!silent)
-> +                       lanyfs_err(sb, "major version mismatch");
-> +               goto exit_invalid;
-> +       }
-> +
-> +       /* check address length */
-> +       if (lanysb->addrlen < LANYFS_MIN_ADDRLEN ||
-> +           lanysb->addrlen > LANYFS_MAX_ADDRLEN) {
-> +               if (!silent)
-> +                       lanyfs_err(sb, "unsupported address length");
-> +               goto exit_invalid;
-> +       }
-> +       fsi->addrlen = lanysb->addrlen;
-> +
-> +       /* check blocksize */
-> +       if (lanysb->blocksize < LANYFS_MIN_BLOCKSIZE ||
-> +           lanysb->blocksize > LANYFS_MAX_BLOCKSIZE) {
-> +               if (!silent)
-> +                       lanyfs_err(sb, "unsupported blocksize");
-> +               goto exit_invalid;
-> +       }
-> +       fsi->blocksize = lanysb->blocksize;
-> +
+No need to rush. We have the patch in a local queue anyway.
 
-> +
-> +       /* release block buffer */
-> +       brelse(bh);
-> +
-> +       /* parse mount options */
-> +       save_mount_options(sb, options);
-> +       err = lanyfs_super_options(sb, (char *) options, silent);
-> +       if (err)
-> +               return err;
-> +
-> +       /* set blocksize to correct size */
-> +       if (!sb_set_blocksize(sb, 1 << fsi->blocksize)) {
-> +               if (!silent)
-> +                       lanyfs_err(sb, "error setting blocksize to %d bytes",
-> +                                  1 << fsi->blocksize);
-> +               return -EIO;
-> +       }
-> +       /* default flags */
-> +       sb->s_maxbytes = 0xffffffff; /* TODO: hmmmmm */
-> +       sb->s_op = &lanyfs_super_operations;
-> +       sb->s_time_gran = 1;
-> +       sb->s_flags = MS_NOSUID | MS_NOATIME | MS_NODIRATIME;
-> +
-> +       /* make root directory */
-> +       inode = lanyfs_iget(sb, fsi->rootdir);
-> +       if (!inode)
-> +               return -ENOMEM;
-> +
-> +       sb->s_root = d_make_root(inode);
-> +       if (!sb->s_root) {
-> +               iput(inode);
-> +               return -ENOMEM;
-> +       }
-> +       return 0;
-> +
-> +exit_invalid:
-> +       brelse(bh);
-> +       if (!silent)
-> +               lanyfs_info(sb, "no valid lanyard filesystem found");
-> +       return -EINVAL;
-> +}
+thanks,
+- -- 
+js
+suse labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-You should free the memory for "fsi" on error.
-
-Regards.
+iQIcBAEBAgAGBQJQN2qmAAoJEL0lsQQGtHBJi/EP/AxRThCd3Kbp2QS0cWlR2d81
+AlYi+/TWC8P3NOjfoW3dZibn23DsZ45Dgs0MR9V1AvaKAZ81MIVE7dTQKJxalgen
+R8bugSb8j9YssnuSmQaqmGgsvDXzW3VCLaGgwSVlOJ1sTJgG0A7r9/vNf1aPLG5J
+oDthCQswltnyl7iRuYMLB3G1mtP+ml2rW9GyKhQfR9/380gPDsfx5PuCwjqvS3we
+zn81GS54RTe0C8kROUuyIuLGN+NVPoGXQVp3IIww7cN6G/xb7WDm5sle0VNYYCiC
+VQCXfApJWkOaORqKRfBHMLqfgkcaegT+uQA0ELon0T5GTfLrTGHnmijYKLbYhVK9
+suUdLMOSrk5Pcu8KYmT3ti7FP+kTJE9+lJAqdCpedSBEzn88TGn+5gY9APG+Nsy2
+9YkvwAelnzdRlf0AO5RXfCUua6wk/UNSNrZJDex1fflYCjBXdlneeV7akDBVqGW8
+9Vklwmp5PeBtWt2kh7U9cyxDRiC55df8DKG1I/TGZ7YdtL6O+mtFegVMkc5NA2rp
+DXFgYDnhthaqfGDXLHIiGTS+B7twmsVI1kwXEY/Tsga0JS7WQu6rgmbn88JJFwI4
+PS7VT0EQ4ZiAH2olXu9fpFbJrI+s7ksWw5pC/4ri15wAHVZd8i5dZkhbX60XM7ns
+Xd3BJrukZbugw0iiMVBv
+=7Zm3
+-----END PGP SIGNATURE-----
