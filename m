@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab2HXSfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:35:44 -0400
-Received: from mail1-hoer.fullrate.dk ([89.150.129.84]:57677 "EHLO
-	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757955Ab2HXSfl (ORCPT
+	id S1760022Ab2HXSjF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:39:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54029 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab2HXSjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:35:41 -0400
-From: Martin Nybo Andersen <tweek@tweek.dk>
-To: wbrana <wbrana@gmail.com>
-Subject: Re: Drop support for x86-32
-Date: Fri, 24 Aug 2012 20:35:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc1+; KDE/4.8.4; x86_64; ; )
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208241952.04988.tweek@tweek.dk> <CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
-In-Reply-To: <CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208242035.38733.tweek@tweek.dk>
+	Fri, 24 Aug 2012 14:39:01 -0400
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH drm-next] drm: udl: usb: Fix recursive Kconfig dependency
+Date: Fri, 24 Aug 2012 20:38:42 +0200
+Message-Id: <1345833522-16618-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 August 2012 20:18:49 wbrana wrote:
-> On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
-> > That's right, but new hardware, that I wish to use with the old machines
-> > might
-> > not because of no backporting of new drivers. Same goes for new software
-> > utilising newer kernel features.
-> 
-> Which new hardware and which old machine do you want to use?
-I want to use *my* old machines (hey, I payed for them) on whatever new 
-hardware I can plug into them. I'm not an oracle and can't see into the 
-future, however USB has evolved, for instance, and will probably still do -- 
-requiring new drivers as before.
+In drivers/usb/Kconfig "config USB_ARCH_HAS_HCD" is within "if USB_SUPPORT"
+statement.
 
-> > Those mentioned by Chris Friesen, whose arguments you apparently ignored.
-> 
-> I can't find any e-mail where Chris Friesen mentioned exact legacy apps.
-Have a look in your inbox or one of the mailarchives. If that doesn't work, 
-then stop deleting half of the mails before replying.
+In drivers/gpu/drm/Kconfig "config DRM_USB" depends on USB_ARCH_HAS_HCD
+but selects USB_SUPPORT which leads to the error for udl Kconfig:
 
-> > You are allowed to compile most of the software running on Linux
-> > yourself. If
-> > you want a binary to use the x32 ABI, go compile.
-> 
-> I can't compile x32 versions of Firefox, Chromium, NVIDIA drivers, etc.
-The source code for Firefox and Chromium is available online. Go fetch and 
-compile. If they don't compile or execute as intended, I'm sure they would 
-like seeing a patch from you fixing the problem.
+$ yes "" | make oldconfig
+scripts/kconfig/conf --oldconfig Kconfig
+drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
+drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
+drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
+drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
+drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
 
-NVIDIA, on the other hand, is yet another reason for using nouveau.
+Fix the issue by dropping "select USB_SUPPORT" from "config DRM_USB".
 
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ drivers/gpu/drm/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 3a8c683..90e2808 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -24,7 +24,6 @@ config DRM_USB
+ 	depends on DRM
+ 	depends on USB_ARCH_HAS_HCD
+ 	select USB
+-	select USB_SUPPORT
+ 
+ config DRM_KMS_HELPER
+ 	tristate
 -- 
-Cheers,
-Martin
+1.7.9.5
+
