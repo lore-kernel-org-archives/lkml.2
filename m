@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab2HXBMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:12:17 -0400
+	id S1756532Ab2HXBMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:12:34 -0400
 Received: from mga03.intel.com ([143.182.124.21]:63918 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754362Ab2HXBLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:11:16 -0400
+	id S1754382Ab2HXBLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 21:11:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="184254145"
+   d="scan'208";a="184254153"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v7 03/12] x86/topology.c: Support functions for CPU0 online/offline
-Date: Thu, 23 Aug 2012 17:56:02 -0700
-Message-Id: <1345769771-27019-4-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v7 05/12] Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate can't be executed if CPU0 is detected offline. To make suspend or hibernate and further resume succeed, CPU0 must be online.
+Date: Thu, 23 Aug 2012 17:56:04 -0700
+Message-Id: <1345769771-27019-6-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
 References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
@@ -37,80 +37,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-If CONFIG_BOOTPARAM_HOTPLUG_CPU is turned on, CPU0 hotplug feature is enabled
-by default.
-
-If CONFIG_BOOTPARAM_HOTPLUG_CPU is not turned on, CPU0 hotplug feature is not
-enabled by default. The kernel parameter cpu0_hotplug can enable CPU0 hotplug
-feature at boot.
-
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/topology.c |   41 ++++++++++++++++++++++++++++++++++-------
- 1 files changed, 34 insertions(+), 7 deletions(-)
+ arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index 76ee977..fa87fd6 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -30,23 +30,50 @@
- #include <linux/mmzone.h>
- #include <linux/init.h>
- #include <linux/smp.h>
-+#include <linux/irq.h>
- #include <asm/cpu.h>
- 
- static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
- 
- #ifdef CONFIG_HOTPLUG_CPU
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 218cdb1..3338609 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -237,3 +237,47 @@ void restore_processor_state(void)
+ #ifdef CONFIG_X86_32
+ EXPORT_SYMBOL(restore_processor_state);
+ #endif
 +
-+#ifdef CONFIG_BOOTPARAM_HOTPLUG_CPU0
-+static int cpu0_hotpluggable = 1;
-+#else
-+static int cpu0_hotpluggable;
-+static int __init enable_cpu0_hotplug(char *str)
++/*
++ * When bsp_check() is called in hibernate and suspend, cpu hotplug
++ * is disabled already. So it's unnessary to handle race condition between
++ * cpumask query and cpu hotplug.
++ */
++static int bsp_check(void)
 +{
-+	cpu0_hotpluggable = 1;
-+	return 1;
++	if (cpumask_first(cpu_online_mask) != 0) {
++		printk(KERN_WARNING "CPU0 is offline.\n");
++		return -ENODEV;
++	}
++
++	return 0;
 +}
 +
-+__setup("cpu0_hotplug", enable_cpu0_hotplug);
-+#endif
++static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
++			   void *ptr)
++{
++	int ret = 0;
 +
- int __ref arch_register_cpu(int num)
- {
- 	/*
--	 * CPU0 cannot be offlined due to several
--	 * restrictions and assumptions in kernel. This basically
--	 * doesn't add a control file, one cannot attempt to offline
--	 * BSP.
-+	 * Two known BSP/CPU0 dependencies: Resume from suspend/hibernate
-+	 * depends on BSP. PIC interrupts depend on BSP.
- 	 *
--	 * Also certain PCI quirks require not to enable hotplug control
--	 * for all CPU's.
-+	 * If the BSP depencies are under control, one can tell kernel to
-+	 * enable BSP hotplug. This basically adds a control file and
-+	 * one can attempt to offline BSP.
- 	 */
--	if (num)
-+	if (num == 0 && cpu0_hotpluggable) {
-+		unsigned int irq;
-+		/*
-+		 * We won't take down the boot processor on i386 if some
-+		 * interrupts only are able to be serviced by the BSP in PIC.
-+		 */
-+		for_each_active_irq(irq) {
-+			if (!IO_APIC_IRQ(irq) && irq_has_action(irq)) {
-+				cpu0_hotpluggable = 0;
-+				break;
-+			}
-+		}
++	switch (action) {
++	case PM_SUSPEND_PREPARE:
++	case PM_HIBERNATION_PREPARE:
++		ret = bsp_check();
++		break;
++	default:
++		break;
 +	}
-+	if (num || cpu0_hotpluggable)
- 		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
- 
- 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
++	return notifier_from_errno(ret);
++}
++
++static int __init bsp_pm_check_init(void)
++{
++	/*
++	 * Set this bsp_pm_callback as lower priority than
++	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
++	 * earlier to disable cpu hotplug before bsp online check.
++	 */
++	pm_notifier(bsp_pm_callback, -INT_MAX);
++	return 0;
++}
++
++core_initcall(bsp_pm_check_init);
 -- 
 1.7.2
 
