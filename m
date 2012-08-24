@@ -1,213 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab2HXEZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 00:25:03 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42415 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2HXEZA (ORCPT
+	id S1754858Ab2HXEZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 00:25:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37186 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab2HXEZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 00:25:00 -0400
-X-AuditID: 9c93016f-b7cc0ae000000e9f-b6-5037021af2a2
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [RFC] mm: support MIGRATE_DISCARD
-Date: Fri, 24 Aug 2012 13:25:30 +0900
-Message-Id: <1345782330-23234-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 24 Aug 2012 00:25:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <5036B8EB.5050502@wwwdotorg.org>
+References: <1345720529-32315-1-git-send-email-thomas.abraham@linaro.org>
+	<1345720529-32315-2-git-send-email-thomas.abraham@linaro.org>
+	<5036B8EB.5050502@wwwdotorg.org>
+Date: Fri, 24 Aug 2012 09:55:16 +0530
+Message-ID: <CAJuYYwQ2fGxVddWiaUGXQWfSUCw9LBBpYF=pKPFkU5RmZfpJRg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] pinctrl: add samsung pinctrl and gpiolib driver
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, dong.aisheng@linaro.org, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introudes MIGRATE_DISCARD mode in migration.
-It drops *unmapped clean cache pages* instead of migration so that
-migration latency could be reduced by avoiding (memcpy + page remapping).
-It's useful for CMA because latency of migration is very important rather
-than eviction of background processes's workingset. In addition, it needs
-less free pages for migration targets so it could avoid memory reclaiming
-to get free pages, which is another factor increase latency.
+On 24 August 2012 04:42, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/23/2012 05:15 AM, Thomas Abraham wrote:
+>> Add a new device tree enabled pinctrl and gpiolib driver for Samsung
+>> SoC's. This driver provides a common and extensible framework for all
+>> Samsung SoC's to interface with the pinctrl and gpiolib subsystems. This
+>> driver supports only device tree based instantiation and hence can be
+>> used only on those Samsung platforms that have device tree enabled.
+>>
+>> This driver is split into two parts: the pinctrl interface and the gpiolib
+>> interface. The pinctrl interface registers pinctrl devices with the pinctrl
+>> subsystem and gpiolib interface registers gpio chips with the gpiolib
+>> subsystem. The information about the pins, pin groups, pin functions and
+>> gpio chips, which are SoC specific, are parsed from device tree node.
+>
+>> diff --git a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+>
+> BTW, this is a very nicely written and complete/precise binding
+> document. Well done.
 
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/migrate_mode.h |   11 ++++++---
- mm/migrate.c                 |   56 ++++++++++++++++++++++++++++++++++--------
- mm/page_alloc.c              |    2 +-
- 3 files changed, 55 insertions(+), 14 deletions(-)
+Thank you!
 
-diff --git a/include/linux/migrate_mode.h b/include/linux/migrate_mode.h
-index ebf3d89..8e44e30 100644
---- a/include/linux/migrate_mode.h
-+++ b/include/linux/migrate_mode.h
-@@ -6,11 +6,16 @@
-  *	on most operations but not ->writepage as the potential stall time
-  *	is too significant
-  * MIGRATE_SYNC will block when migrating pages
-+ * MIGRTATE_DISCARD will discard clean cache page instead of migration
-+ *
-+ * MIGRATE_ASYNC, MIGRATE_SYNC_LIGHT, MIGRATE_SYNC shouldn't be used
-+ * together with OR flag.
-  */
- enum migrate_mode {
--	MIGRATE_ASYNC,
--	MIGRATE_SYNC_LIGHT,
--	MIGRATE_SYNC,
-+	MIGRATE_ASYNC = 1 << 0,
-+	MIGRATE_SYNC_LIGHT = 1 << 1,
-+	MIGRATE_SYNC = 1 << 2,
-+	MIGRATE_DISCARD = 1 << 3,
- };
- 
- #endif		/* MIGRATE_MODE_H_INCLUDED */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 77ed2d7..90be7a9 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -225,7 +225,7 @@ static bool buffer_migrate_lock_buffers(struct buffer_head *head,
- 	struct buffer_head *bh = head;
- 
- 	/* Simple case, sync compaction */
--	if (mode != MIGRATE_ASYNC) {
-+	if (!(mode & MIGRATE_ASYNC)) {
- 		do {
- 			get_bh(bh);
- 			lock_buffer(bh);
-@@ -313,7 +313,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 	 * the mapping back due to an elevated page count, we would have to
- 	 * block waiting on other references to be dropped.
- 	 */
--	if (mode == MIGRATE_ASYNC && head &&
-+	if (mode & MIGRATE_ASYNC && head &&
- 			!buffer_migrate_lock_buffers(head, mode)) {
- 		page_unfreeze_refs(page, expected_count);
- 		spin_unlock_irq(&mapping->tree_lock);
-@@ -521,7 +521,7 @@ int buffer_migrate_page(struct address_space *mapping,
- 	 * with an IRQ-safe spinlock held. In the sync case, the buffers
- 	 * need to be locked now
- 	 */
--	if (mode != MIGRATE_ASYNC)
-+	if (!(mode & MIGRATE_ASYNC))
- 		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
- 
- 	ClearPagePrivate(page);
-@@ -603,7 +603,7 @@ static int fallback_migrate_page(struct address_space *mapping,
- {
- 	if (PageDirty(page)) {
- 		/* Only writeback pages in full synchronous migration */
--		if (mode != MIGRATE_SYNC)
-+		if (!(mode & MIGRATE_SYNC))
- 			return -EBUSY;
- 		return writeout(mapping, page);
- 	}
-@@ -678,6 +678,19 @@ static int move_to_new_page(struct page *newpage, struct page *page,
- 	return rc;
- }
- 
-+static int discard_page(struct page *page)
-+{
-+	int ret = -EAGAIN;
-+
-+	struct address_space *mapping = page_mapping(page);
-+	if (page_has_private(page))
-+		if (!try_to_release_page(page, GFP_KERNEL))
-+			return ret;
-+	if (remove_mapping(mapping, page))
-+		ret = 0;
-+	return ret;
-+}
-+
- static int __unmap_and_move(struct page *page, struct page *newpage,
- 			int force, bool offlining, enum migrate_mode mode)
- {
-@@ -685,9 +698,12 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 	int remap_swapcache = 1;
- 	struct mem_cgroup *mem;
- 	struct anon_vma *anon_vma = NULL;
-+	enum ttu_flags ttu_flags;
-+	bool discard_mode = false;
-+	bool file = false;
- 
- 	if (!trylock_page(page)) {
--		if (!force || mode == MIGRATE_ASYNC)
-+		if (!force || mode & MIGRATE_ASYNC)
- 			goto out;
- 
- 		/*
-@@ -733,7 +749,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 		 * the retry loop is too short and in the sync-light case,
- 		 * the overhead of stalling is too much
- 		 */
--		if (mode != MIGRATE_SYNC) {
-+		if (!(mode & MIGRATE_SYNC)) {
- 			rc = -EBUSY;
- 			goto uncharge;
- 		}
-@@ -799,12 +815,32 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 		goto skip_unmap;
- 	}
- 
-+	file = page_is_file_cache(page);
-+	ttu_flags = TTU_IGNORE_ACCESS;
-+retry:
-+	if (!(mode & MIGRATE_DISCARD) || !file || PageDirty(page))
-+		ttu_flags |= (TTU_MIGRATION | TTU_IGNORE_MLOCK);
-+	else
-+		discard_mode = true;
-+
- 	/* Establish migration ptes or remove ptes */
--	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-+	rc = try_to_unmap(page, ttu_flags);
- 
- skip_unmap:
--	if (!page_mapped(page))
--		rc = move_to_new_page(newpage, page, remap_swapcache, mode);
-+	if (rc == SWAP_SUCCESS) {
-+		if (!discard_mode)
-+			rc = move_to_new_page(newpage, page,
-+					remap_swapcache, mode);
-+		else {
-+
-+			rc = discard_page(page);
-+			goto uncharge;
-+		}
-+	} else if (rc == SWAP_MLOCK && discard_mode) {
-+		mode &= ~MIGRATE_DISCARD;
-+		discard_mode = false;
-+		goto retry;
-+	}
- 
- 	if (rc && remap_swapcache)
- 		remove_migration_ptes(page, page);
-@@ -907,7 +943,7 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- 	rc = -EAGAIN;
- 
- 	if (!trylock_page(hpage)) {
--		if (!force || mode != MIGRATE_SYNC)
-+		if (!force || !(mode & MIGRATE_SYNC))
- 			goto out;
- 		lock_page(hpage);
- 	}
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ba3100a..e14b960 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5670,7 +5670,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 
- 		ret = migrate_pages(&cc.migratepages,
- 				    __alloc_contig_migrate_alloc,
--				    0, false, MIGRATE_SYNC);
-+				    0, false, MIGRATE_SYNC|MIGRATE_DISCARD);
- 	}
- 
- 	putback_lru_pages(&cc.migratepages);
--- 
-1.7.9.5
+>
+>> +Samsung GPIO and Pin Mux/Config controller
+>> +
+>> +Samsung's ARM based SoC's integrates a GPIO and Pin mux/config hardware
+>> +controller. It controls the input/output settings on the available pads/pins
+>> +and also provides ability to multiplex and configure the output of various
+>> +on-chip controllers onto these pads.
+>> +
+>> +Required Properties:
+>> +- compatible: should be one of the following.
+>> +  - "samsung,pinctrl-exynos4210": for Exynos4210 compatible pin-controller.
+>> +  - "samsung,pinctrl-exynos5250": for Exynos5250 compatible pin-controller.
+>> +
+>> +- reg: Base address of the pin controller hardware module and length of
+>> +  the address space it occupies.
+>> +
+>> +- interrupts: interrupt specifier for the controller. The format and value of
+>> +  the interrupt specifier depends on the interrupt parent for the controller.
+>> +
+>> +- Pin mux/config groups as child nodes: The pin mux (selecting pin function
+>
+> Direct child nodes of the pin-controller, not a second level?
 
+The child nodes would be direct child nodes.
+
+>
+> While that's quite legal, it means that if you need a particular client
+> module to use 4 pins, 2 of which need one samsung,pin-function value and
+> 2 of which need a different pin-function value, then the client device's
+> pinctrl-0 property has to have two entries.
+>
+> i.e. a completely hypothetical example roughly based on yours below:
+>
+>         pinctrl_1: pinctrl@11000000 {
+>                 uart0_rxd: uart0-rxd {
+>                         samsung,pins = "gpa0-0";
+>                         samsung,pin-function = <2>;
+>                         samsung,pin-pud = <0>;
+>                         samsung,pin-drv = <0>;
+>                 };
+>
+>                 uart0_txd: uart0-txd {
+>                         samsung,pins = "gpa0-1";
+>                         samsung,pin-function = <1>;
+>                         samsung,pin-pud = <0>;
+>                         samsung,pin-drv = <0>;
+>                 };
+>         };
+>
+>         uart@13800000 {
+>                 pinctrl-names = "default";
+>                 pinctrl-0 = <&uart0_rxd &uart0_txd>;
+>         };
+>
+> rather than:
+>
+>         pinctrl_1: pinctrl@11000000 {
+>                 uart0_opt1: uart0-opt1 {
+>                         uart0_rxd: uart0-rxd {
+>                                 samsung,pins = "gpa0-0";
+>                                 samsung,pin-function = <2>;
+>                                 samsung,pin-pud = <0>;
+>                                 samsung,pin-drv = <0>;
+>                         };
+>
+>                         uart0_txd: uart0-txd {
+>                                 samsung,pins = "gpa0-1";
+>                                 samsung,pin-function = <1>;
+>                                 samsung,pin-pud = <0>;
+>                                 samsung,pin-drv = <0>;
+>                         };
+>                 };
+>         };
+>
+>         uart@13800000 {
+>                 pinctrl-names = "default";
+>                 pinctrl-0 = <&uart0_opt1;
+>         };
+>
+> The latter layout simplifies writing the client nodes, since all the
+> related settings can be grouped together by whoever writes the pinctrl
+> node, rather than every client author having to work out all the entries
+> to include in the list.
+>
+> That all said, the way you've defined the binding is perfectly
+> legitimate, and I don't have any kind of issue with it; it's just
+> something you might want to consider.
+
+Thanks for suggesting this alternate method. I do agree with your
+point. But, for now, I would prefer to stabilize this driver without
+changing the dt parsing code and make it usable for client nodes. I
+will revisit your suggested approach at a later point. I assume for
+now that the author's of client nodes know which pin settings to
+select.
+
+>
+> Irrespective of whether you choose to keep the binding as-is, or change
+> it, please consider it:
+>
+> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+
+Thanks.
+
+>
+>> +  The values specified by these config properties should be dervied from the
+>
+> s/dervied/derived/
+
+Ok.
+
+>
+>> +External GPIO and Wakeup Interrupts:
+>> +
+>> +The controller supports two types of external interrupts over gpio. The first
+>> +is the external gpio interrupt and second is the external wakeup interrupts.
+>> +The difference between the two is that the external wakeup interrupts can be
+>> +used as system wakeup events.
+>> +
+>> +A. External GPIO Interrupts: For supporting external gpio interrupts, the
+>> +   properties should be specified in the pin-controller device node.
+>
+> s/the properties/the following properties/ ?
+
+Ok.
+
+>
+>> +Aliases:
+>> +
+>> +All the pin controller nodes should be represented in the aliases node using
+>> +the following format 'pinctrl{n}' where n is a unique number for the alias.
+>
+> There /should/ be an alias, or there /may/ be; I'm not sure why
+> requiring or recommending an alias would be particularly important for
+> this device?
+
+The alias is required since the SoC data for a particular instance is
+dependent on the instance number. And the instance number is derived
+from the alias.
+
+>
+> I've only had time to review the binding document so far.
+
+Ok. Thanks Stephen for your comments on this patch.
+
+Regards,
+Thomas.
