@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760222Ab2HXV0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 17:26:07 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:42063 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752997Ab2HXV0D (ORCPT
+	id S1760237Ab2HXV1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 17:27:48 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:46899 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757172Ab2HXV1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 17:26:03 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+UfCLLAtIiZ2UoB7n4akPm
-Date: Fri, 24 Aug 2012 12:07:33 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: alan@linux.intel.com, Kevin Hilman <khilman@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>
-Subject: Re: [PATCH v3 03/23] serial: omap: don't access the platform_device
-Message-ID: <20120824190733.GQ11011@atomide.com>
-References: <1345717983-18179-1-git-send-email-balbi@ti.com>
- <1345717983-18179-4-git-send-email-balbi@ti.com>
+	Fri, 24 Aug 2012 17:27:45 -0400
+Date: Fri, 24 Aug 2012 14:26:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
+        "3.2.x.." <stable@vger.kernel.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        Michael Cree <mcree@orcon.net.nz>
+Subject: Re: [PATCH 00/11] rcu: Add missing RCU idle APIs on idle loop v2
+Message-ID: <20120824212647.GU2472@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345717983-18179-4-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082421-7606-0000-0000-000003120F65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [120823 03:37]:
-> The driver doesn't need to know about its platform_device.
+On Thu, Aug 23, 2012 at 04:58:24PM +0200, Frederic Weisbecker wrote:
+> Hi,
 > 
-> Everything the driver needs can be done through the
-> struct device pointer. In case we need to use the
-> OMAP-specific PM function pointers, those can make
-> sure to find the device's platform_device pointer
-> so they can find the struct omap_device through
-> pdev->archdata field.
+> Changes since v1:
 > 
-> Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> - Fixed preempt handling in alpha idle loop
+> - added ack from Geert
+> - fixed stable email address, sorry :-/
+> 
+> This time I built tested everywhere but: h8300 (compiler internal error),
+> and mn10300, parisc, score (cross compilers not available in
+> ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/)
+> 
+> For testing, you can pull from:
+> 
+> git://github.com/fweisbec/linux-dynticks.git
+> 	rcu/idle-fix-v2 
+> 
+> Thanks.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+I have queued these on -rcu branch rcu/idle:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+
+This problem has been in place since 3.3, so it is hard to argue that
+it is a regression for this merge window.  I have therefore queued it
+for 3.7.
+
+								Thanx, Paul
+
+> Frederic Weisbecker (11):
+>   alpha: Fix preemption handling in idle loop
+>   alpha: Add missing RCU idle APIs on idle loop
+>   cris: Add missing RCU idle APIs on idle loop
+>   frv: Add missing RCU idle APIs on idle loop
+>   h8300: Add missing RCU idle APIs on idle loop
+>   m32r: Add missing RCU idle APIs on idle loop
+>   m68k: Add missing RCU idle APIs on idle loop
+>   mn10300: Add missing RCU idle APIs on idle loop
+>   parisc: Add missing RCU idle APIs on idle loop
+>   score: Add missing RCU idle APIs on idle loop
+>   xtensa: Add missing RCU idle APIs on idle loop
+> 
+>  arch/alpha/kernel/process.c   |    6 +++++-
+>  arch/alpha/kernel/smp.c       |    1 +
+>  arch/cris/kernel/process.c    |    3 +++
+>  arch/frv/kernel/process.c     |    3 +++
+>  arch/h8300/kernel/process.c   |    3 +++
+>  arch/m32r/kernel/process.c    |    3 +++
+>  arch/m68k/kernel/process.c    |    3 +++
+>  arch/mn10300/kernel/process.c |    3 +++
+>  arch/parisc/kernel/process.c  |    3 +++
+>  arch/score/kernel/process.c   |    4 +++-
+>  arch/xtensa/kernel/process.c  |    3 +++
+>  11 files changed, 33 insertions(+), 2 deletions(-)
+> 
+> -- 
+> 1.7.5.4
+> 
+
