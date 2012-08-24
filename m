@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab2HXX4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 19:56:48 -0400
+	id S1756870Ab2HXX5A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 19:57:00 -0400
 Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:41808
 	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756858Ab2HXX4U (ORCPT
+	by vger.kernel.org with ESMTP id S1756612Ab2HXX4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 19:56:20 -0400
+	Fri, 24 Aug 2012 19:56:19 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VPS8(z37d4l1036lzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah107ah1155h)
-X-WSS-ID: 0M9AAHR-01-KWP-02
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275dhz2dh668h839hd24he5bhf0ah107ah1155h)
+X-WSS-ID: 0M9AAHQ-01-KWN-02
 X-M-MSG: 
 From: Jacob Shin <jacob.shin@amd.com>
 To: X86-ML <x86@kernel.org>
@@ -21,12 +21,10 @@ CC: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Andreas Herrmann <andreas.herrmann3@amd.com>,
         Borislav Petkov <borislav.petkov@amd.com>,
         Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 5/5] x86: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
-Date: Fri, 24 Aug 2012 18:55:16 -0500
-Message-ID: <1345852516-3125-6-git-send-email-jacob.shin@amd.com>
+Subject: [PATCH V4 0/5] x86: Create direct mappings for E820_RAM only
+Date: Fri, 24 Aug 2012 18:55:11 -0500
+Message-ID: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
-References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -34,45 +32,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There could be cases where user supplied memmap=exactmap memory
-mappings do not mark the region where the kernel .text .data and
-.bss reside as E820_RAM as reported here:
+Currently kernel direct mappings are created for all pfns between
+[ 0 to max_low_pfn ) and [ 4GB to max_pfn ). When we introduce memory
+holes, we end up mapping memory ranges that are not backed by physical
+DRAM. This is fine for lower memory addresses which can be marked as UC
+by fixed/variable range MTRRs, however we run in to trouble with high
+addresses.
 
-https://lkml.org/lkml/2012/8/14/86
+The following patchset creates direct mappings only for E820_RAM regions
+between 0 ~ max_low_pfn and 4GB ~ max_pfn. And leaves non-E820_RAM and
+memory holes unmapped.
 
-Handle it by complaining, and adding the range back into the e820.
+This fourth revision of the patchset attempts to resolve comments and
+concerns from the following threads:
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- arch/x86/kernel/setup.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+* https://lkml.org/lkml/2012/8/22/680
+* https://lkml.org/lkml/2012/8/13/512
+* https://lkml.org/lkml/2012/8/9/536
+* https://lkml.org/lkml/2011/10/20/323
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 4217fb4..b84aceb5 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -926,6 +926,21 @@ void __init setup_arch(char **cmdline_p)
- 	insert_resource(&iomem_resource, &data_resource);
- 	insert_resource(&iomem_resource, &bss_resource);
- 
-+	/*
-+	 * Complain if .text .data and .bss are not marked as E820_RAM and
-+	 * attempt to fix it by adding the range. We may have a confused BIOS,
-+	 * or the user may have incorrectly supplied it via memmap=exactmap. If
-+	 * we really are running on top non-RAM, we will crash later anyways.
-+	 */
-+	if (!e820_all_mapped(code_resource.start, bss_resource.end, E820_RAM)) {
-+		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
-+
-+		e820_add_region(code_resource.start,
-+				bss_resource.end - code_resource.start + 1,
-+				E820_RAM);
-+		sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	}
-+
- 	trim_bios_range();
- #ifdef CONFIG_X86_32
- 	if (ppro_with_ram_bug()) {
+Jacob Shin (5):
+  x86: Move enabling of PSE and PGE out of init_memory_mapping
+  x86: find_early_table_space based on memory ranges that are being
+    mapped
+  x86: Only direct map addresses that are marked as E820_RAM
+  x86: Fixup code testing if a pfn is direct mapped
+  x86: if kernel .text .data .bss are not marked as E820_RAM, complain
+    and fix
+
+ arch/x86/include/asm/page_types.h |    9 +++
+ arch/x86/kernel/cpu/amd.c         |    6 +-
+ arch/x86/kernel/setup.c           |  130 ++++++++++++++++++++++++++++++++-----
+ arch/x86/mm/init.c                |   74 ++++++++++-----------
+ arch/x86/mm/init_64.c             |    6 +-
+ arch/x86/platform/efi/efi.c       |    8 +--
+ 6 files changed, 167 insertions(+), 66 deletions(-)
+
 -- 
 1.7.9.5
 
