@@ -1,97 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab2HXL21 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 07:28:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49469 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab2HXL2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 07:28:25 -0400
-Message-ID: <50376550.4020501@pengutronix.de>
-Date: Fri, 24 Aug 2012 13:28:16 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@gmail.com>, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Subject: Re: [PATCH can-next v6] can: add tx/rx LED trigger support
-References: <50191EA5.1040303@pengutronix.de> <1343845298-2065-1-git-send-email-fabio.baltieri@gmail.com> <20120824051016.GB1718@vandijck-laurijssen.be>
-In-Reply-To: <20120824051016.GB1718@vandijck-laurijssen.be>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig00580F959376127700432EB7"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1756751Ab2HXLao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 07:30:44 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59565 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753024Ab2HXLak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 07:30:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,304,1344236400"; 
+   d="asc'?scan'208";a="184921170"
+Message-ID: <1345808104.2848.285.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] drivers/mtd/devices/spear_smi.c: use devm_ functions
+ consistently
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Stefan Roese <sr@denx.de>,
+        Shiraz Hashim <shiraz.hashim@st.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, kernel-janitors@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 24 Aug 2012 14:35:04 +0300
+In-Reply-To: <1344112598-1051-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1344112598-1051-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-Clpew83sEk/hjVAkQmpY"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig00580F959376127700432EB7
-Content-Type: text/plain; charset=UTF-8
+
+--=-Clpew83sEk/hjVAkQmpY
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On 08/24/2012 07:10 AM, Kurt Van Dijck wrote:
-> Hello,
+[See here for the original patch:
+ http://lists.infradead.org/pipermail/linux-mtd/2012-August/043112.html]
+
+Julia, sorry for long delay,
+
+aiaiai gives says that this patch introduced 3 warnings:
+
+---------------------------------------------------------------------------=
+-----
+
+Successfully built configuration "arm-spear6xx_defconfig,arm,arm-unknown-li=
+nux-gnueabi-", results:
+
+--- before_patching.log
++++ after_patching.log
+@@ @@
+-drivers/mtd/devices/spear_smi.c: In function 'spear_smi_remove':
+-drivers/mtd/devices/spear_smi.c:1022:30: warning: variable 'pdata' set but=
+ not used [-Wunused-but-set-variable]
++drivers/mtd/devices/spear_smi.c: In function 'spear_smi_remove':
++drivers/mtd/devices/spear_smi.c:1026:9: warning: variable 'irq' set but no=
+t used [-Wunused-but-set-variable]
++drivers/mtd/devices/spear_smi.c:1022:30: warning: variable 'pdata' set but=
+ not used [-Wunused-but-set-variable]
++drivers/mtd/devices/spear_smi.c:1024:19: warning: variable 'smi_base' set =
+but not used [-Wunused-but-set-variable]
+
+---------------------------------------------------------------------------=
+-----
+
+
+On Sat, 2012-08-04 at 22:36 +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 >=20
-> I find the CAN led triggers an interesting thing.
+> Use devm_kzalloc for all calls to kzalloc and not just the first.  Use de=
+vm
+> functions for other allocations as well.
 >=20
-> And then, this scenario fell crossed my mind:
-> Imagine I do:
-> [insert CAN device: can0]
-> $ ip link set can0 name helga
-> [insert another CAN device: again 'can0']
+> Move the call to platform_get_resource(pdev, IORESOURCE_MEM, 0) closer to
+> where its result is passed to devm_request_and_ioremap to make the lack o=
+f
+> need for a NULL test more evident.
 >=20
-> Registering 'can0-tx' led trigger will fail for the second CAN device,
-> since that led trigger name is already reserved for CAN device 'helga'.=
+> The semantic match that finds the inconsistency is as follows:
+> (http://coccinelle.lip6.fr/)
 
+...
 
-Good point.
+> @@ -1073,21 +1043,13 @@ static int __devexit spear_smi_remove(struct plat=
+form_device *pdev)
+>  		ret =3D mtd_device_unregister(&flash->mtd);
+>  		if (ret)
+>  			dev_err(&pdev->dev, "error removing mtd\n");
+> -
+> -		iounmap(flash->base_addr);
+> -		kfree(flash);
+>  	}
+> =20
+>  	irq =3D platform_get_irq(pdev, 0);
+> -	free_irq(irq, dev);
 
-> I'm not sure how to fix such.
-> If 'rx' & 'tx' may be combined, reusing the netdev name may be possible=
-?
-> Just wild thinking ...
+I guess 'platform_get_irq()' should be killed as well? Stefan, this is
+strange code - we get irq, without checking for error, and then free it?
+What is the rationale?
 
-I think the device's name (not netdev) is unique in the system and
-cannot be changed.
+>  	clk_disable_unprepare(dev->clk);
+> -	clk_put(dev->clk);
+> -	iounmap(dev->io_base);
+> -	kfree(dev);
+> =20
+>  	smi_base =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	release_mem_region(smi_base->start, resource_size(smi_base));
+>  	platform_set_drvdata(pdev, NULL);
 
-On my device tree enabled mx28 I'm talking about the "80032000.can" in:
+Why do we set platform data to NULL, is this needed?
 
-> dmesg |grep flexcan
-> flexcan 80032000.can: device registered (reg_base=3Df5032000, irq=3D8)
-> flexcan 80034000.can: device registered (reg_base=3Df5034000, irq=3D9)
-
-> $ ls /sys/bus/platform/devices/*can* -d
-> /sys/bus/platform/devices/80032000.can
-> /sys/bus/platform/devices/80034000.can
-
-regards, Marc
 
 --=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Best Regards,
+Artem Bityutskiy
 
-
---------------enig00580F959376127700432EB7
+--=-Clpew83sEk/hjVAkQmpY
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAlA3ZVQACgkQjTAFq1RaXHPn2QCfVli8vdZlQYkFUj1pYHIFApu/
-E3cAn0uD+4U/IBwv81M5QwanGlmJ6T4Q
-=gUEp
+iQIcBAABAgAGBQJQN2boAAoJECmIfjd9wqK0lMcQAIqFtZ4Z/O7w3FW3mRE6zddO
+yYfIdL+F5687ZHQvr7DHOO3CzrRl4z8tZ+n8CRN9Dnf/xB6zewe/wXDxdNz7yKGL
+62xoS4+gPSadkry8BNmDv3II2k+5F56Lc4ouU5MGJlPLdhHVq/trQIPTtV9NWxDQ
+jDOU91GgR2KscyswQeDKP2ScuTgtO3LIPCk7njDKOZqM2YX2qbpb2Sg0IRXAR++z
+V4IkaUHaEMx5jpo90S8kNwHL9zgf1Dz4tPhCt+UiI4K/TFqs9UYpkF9w2LG17wcu
+Wsov+YlIrcmY9zYVUGfgcPAm4aVvjKof9b/nlWcQHlhp8qqMwV12lqRSX4lmfJw2
+bbKLpg2HroYYEQAooOuDvbdxR/d2ETi+ZXVJTXMrwI/ObfGeFadNJVYi1fywTlYI
+Jk3JPak4+P4KBGngI4F7kHryNjZwqhdyna6pl7wKm/952YU6SX1ylyP3y97J/Srt
+VI+/GJ3GjnC2Qw2Zhl6e5KEcpbSbb1thxsB1JzYx3h+L4um6CzGkhieTFNUyhXJE
+Axm0fFhVli/kg1HR8DfN5dfjGFLo/VGyBxF79zf2cAEbS79/janVhB8r/lC22EFQ
+WoB2EC4CV2Ec0CTUnA3HFY1sBt1TML+Pnf8tMWfYIP95EtCHy6Ey8Z3BJA9QN1O+
+ZUgrAz2/bOl+saKrfPta
+=L1km
 -----END PGP SIGNATURE-----
 
---------------enig00580F959376127700432EB7--
+--=-Clpew83sEk/hjVAkQmpY--
+
