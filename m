@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319Ab2HXBMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:12:50 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10983 "EHLO mga03.intel.com"
+	id S1757481Ab2HXBM6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:12:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4359 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754443Ab2HXBLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754480Ab2HXBLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Aug 2012 21:11:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,301,1344236400"; 
-   d="scan'208";a="184254183"
+   d="scan'208";a="184254177"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v7 10/12] Ask the first online CPU to save mtrr instead of asking BSP. BSP could be offline when mtrr_save_state() is called.
-Date: Thu, 23 Aug 2012 17:56:09 -0700
-Message-Id: <1345769771-27019-11-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v7 09/12] During CPU0 online, enable x2apic, set_numa_node.
+Date: Thu, 23 Aug 2012 17:56:08 -0700
+Message-Id: <1345769771-27019-10-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
 References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
@@ -39,32 +39,32 @@ From: Fenghua Yu <fenghua.yu@intel.com>
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/cpu/mtrr/main.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/common.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 6b96110..e4c1a41 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -695,11 +695,16 @@ void mtrr_ap_init(void)
- }
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 2ea24da..ce8b772 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1223,7 +1223,7 @@ void __cpuinit cpu_init(void)
+ 	oist = &per_cpu(orig_ist, cpu);
  
- /**
-- * Save current fixed-range MTRR state of the BSP
-+ * Save current fixed-range MTRR state of the first cpu in cpu_online_mask.
-  */
- void mtrr_save_state(void)
- {
--	smp_call_function_single(0, mtrr_save_fixed_ranges, NULL, 1);
-+	int first_cpu;
-+
-+	get_online_cpus();
-+	first_cpu = cpumask_first(cpu_online_mask);
-+	smp_call_function_single(first_cpu, mtrr_save_fixed_ranges, NULL, 1);
-+	put_online_cpus();
- }
+ #ifdef CONFIG_NUMA
+-	if (cpu != 0 && this_cpu_read(numa_node) == 0 &&
++	if (this_cpu_read(numa_node) == 0 &&
+ 	    early_cpu_to_node(cpu) != NUMA_NO_NODE)
+ 		set_numa_node(early_cpu_to_node(cpu));
+ #endif
+@@ -1255,8 +1255,7 @@ void __cpuinit cpu_init(void)
+ 	barrier();
  
- void set_mtrr_aps_delayed_init(void)
+ 	x86_configure_nx();
+-	if (cpu != 0)
+-		enable_x2apic();
++	enable_x2apic();
+ 
+ 	/*
+ 	 * set up and load the per-CPU TSS
 -- 
 1.7.2
 
