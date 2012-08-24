@@ -1,56 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab2HXOPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 10:15:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39110 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab2HXOPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 10:15:37 -0400
-Date: Fri, 24 Aug 2012 22:16:13 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de
-Subject: Re: [PATCH 0/5] Add device tree support for on-chip SRAM
-Message-ID: <20120824141610.GG31998@S2101-09.ap.freescale.net>
-References: <1345799866-19876-1-git-send-email-p.zabel@pengutronix.de>
+	id S932605Ab2HXOQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 10:16:05 -0400
+Received: from eu2sys200bog106.obsmtp.com ([207.126.150.234]:60245 "EHLO
+	eu2sys200bog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932458Ab2HXOQA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 10:16:00 -0400
+X-Greylist: delayed 1395 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 10:15:59 EDT
+From: Philippe LANGLAIS <philippe.langlais@st.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Date: Fri, 24 Aug 2012 15:52:31 +0200
+Subject: Re: [PATCH 1/1 v2] ARM: ux500: Provide SMSC911x fixed-regulator
+ when not booting DT
+Thread-Topic: [PATCH 1/1 v2] ARM: ux500: Provide SMSC911x fixed-regulator
+ when not booting DT
+Thread-Index: Ac2B/7WSy9SaW/c7Q+O+8iaprwZnTQ==
+Message-ID: <5037871F.7080300@st.com>
+References: <1345812481-2384-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1345812481-2384-1-git-send-email-lee.jones@linaro.org>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345799866-19876-1-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 11:17:41AM +0200, Philipp Zabel wrote:
-> These patches add support to configure the on-chip SRAM via device-tree
-> node and to obtain the resulting genalloc pool from a phandle pointing   
-> at the node.
-> This allows drivers to allocate SRAM with the genalloc API without
-> hard-coding the genalloc pool address.
-> 
-It looks like a good stuff.  But in the end, there is nothing IMX
-specific with iram_alloc.c.  Why do we name it in IMX?
+Hi Lee,
 
-Regards,
-Shawn
+I have checked in Snowball schematics and I can confirm that the fixed
+3.3V regulator is GPIO26 on AB8500 not DB8500, so its numero is 
+MOP500_AB8500_PIN_GPIO(26)
+and you have first to update the upstream gpio-ab8500 driver.
 
-> regards
-> Philipp
-> 
+BR,
+Philippe
+
+On 08/24/2012 02:48 PM, Lee Jones wrote:
+> The SMSC911x Ethernet chip requires a fixed-regulator in order to
+> function correctly. We have previously provided a means to obtain
+> this during a Device Tree boot, however nothing has been put into
+> place when booting with a non-DT kernel. This patch aims to change
+> that.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  arch/arm/boot/dts/imx53.dtsi          |    5 ++
->  arch/arm/boot/dts/imx6q.dtsi          |    5 ++
->  arch/arm/plat-mxc/include/mach/iram.h |   41 -----------------
->  arch/arm/plat-mxc/iram_alloc.c        |   81 ++++++++++++++++++++-------------
->  include/linux/genalloc.h              |   14 ++++++
->  lib/genalloc.c                        |   77 +++++++++++++++++++++++++++++++
->  6 files changed, 150 insertions(+), 73 deletions(-)
-> 
+>   arch/arm/mach-ux500/board-mop500-regulators.c |   17 +++++++++++++++++
+>   arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
+>   arch/arm/mach-ux500/board-mop500.c            |   21 +++++++++++++++++++++
+>   arch/arm/mach-ux500/board-mop500.h            |    2 +-
+>   4 files changed, 40 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
+> index 52426a4..139f31e 100644
+> --- a/arch/arm/mach-ux500/board-mop500-regulators.c
+> +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
+> @@ -13,6 +13,23 @@
+>   #include <linux/regulator/ab8500.h>
+>   #include "board-mop500-regulators.h"
+>   
+> +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
+> +static struct regulator_consumer_supply gpio_en_3v3_consumers[] = {
+> +	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
+> +};
+> +
+> +struct regulator_init_data gpio_en_3v3_regulator = {
+> +	.constraints = {
+> +		.name = "EN-3V3",
+> +		.min_uV = 3300000,
+> +		.max_uV = 3300000,
+> +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+> +	},
+> +	.num_consumer_supplies = ARRAY_SIZE(gpio_en_3v3_consumers),
+> +	.consumer_supplies = gpio_en_3v3_consumers,
+> +};
+> +#endif
+> +
+>   /*
+>    * TPS61052 regulator
+>    */
+> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
+> index 9499215..78a0642 100644
+> --- a/arch/arm/mach-ux500/board-mop500-regulators.h
+> +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
+> @@ -18,5 +18,6 @@ extern struct ab8500_regulator_reg_init
+>   ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
+>   extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
+>   extern struct regulator_init_data tps61052_regulator;
+> +extern struct regulator_init_data gpio_en_3v3_regulator;
+>   
+>   #endif
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index 42e1759..c7f0973 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -23,6 +23,7 @@
+>   #include <linux/spi/spi.h>
+>   #include <linux/mfd/abx500/ab8500.h>
+>   #include <linux/regulator/ab8500.h>
+> +#include <linux/regulator/fixed.h>
+>   #include <linux/mfd/tc3589x.h>
+>   #include <linux/mfd/tps6105x.h>
+>   #include <linux/mfd/abx500/ab8500-gpio.h>
+> @@ -75,6 +76,25 @@ static struct platform_device snowball_led_dev = {
+>   	},
+>   };
+>   
+> +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
+> +static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
+> +	.supply_name		= "EN-3V3",
+> +	.gpio			= SNOWBALL_EN_3V3_ETH_GPIO,
+> +	.microvolts		= 3300000,
+> +	.enable_high		= 1,
+> +	.init_data		= &gpio_en_3v3_regulator,
+> +	.startup_delay		= 5000, /* 1200us */
+> +};
+> +
+> +static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
+> +	.name	= "reg-fixed-voltage",
+> +	.id	= 1,
+> +	.dev	= {
+> +		.platform_data	= &snowball_gpio_en_3v3_data,
+> +	},
+> +};
+> +#endif
+> +
+>   static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
+>   	.gpio_base		= MOP500_AB8500_PIN_GPIO(1),
+>   	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
+> @@ -585,6 +605,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
+>   	&snowball_led_dev,
+>   	&snowball_key_dev,
+>   	&snowball_sbnet_dev,
+> +	&snowball_gpio_en_3v3_regulator_dev,
+>   };
+>   
+>   static void __init mop500_init_machine(void)
+> diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
+> index 9e9dd5a..d3a02d5 100644
+> --- a/arch/arm/mach-ux500/board-mop500.h
+> +++ b/arch/arm/mach-ux500/board-mop500.h
+> @@ -13,6 +13,7 @@
+>   #include <linux/amba/mmci.h>
+>   
+>   /* Snowball specific GPIO assignments, this board has no GPIO expander */
+> +#define SNOWBALL_EN_3V3_ETH_GPIO	26
+No it's MOP500_AB8500_PIN_GPIO(26)
+>   #define SNOWBALL_ACCEL_INT1_GPIO	163
+>   #define SNOWBALL_ACCEL_INT2_GPIO	164
+>   #define SNOWBALL_MAGNET_DRDY_GPIO	165
+> @@ -76,7 +77,6 @@
+>   #define SNOWBALL_PM_GPIO4_GPIO		MOP500_AB8500_PIN_GPIO(4)	/* SYSCLKREQ6/GPIO4 */
+>   #define SNOWBALL_EN_3V6_GPIO		MOP500_AB8500_PIN_GPIO(16)	/* PWMOUT3/GPIO16 */
+>   #define SNOWBALL_PME_ETH_GPIO		MOP500_AB8500_PIN_GPIO(24)	/* SYSCLKREQ7/GPIO24 */
+> -#define SNOWBALL_EN_3V3_ETH_GPIO	MOP500_AB8500_PIN_GPIO(26)	/* GPIO26 */
+keep this line
+>   
+>   struct device;
+>   struct i2c_board_info;
