@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab2HXSB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:01:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53969 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2HXSBV (ORCPT
+	id S1756376Ab2HXSCL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:02:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44884 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab2HXSCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:01:21 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, David Miller <davem@davemloft.net>,
-        Neil Brown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] slub: consider pfmemalloc_match() in get_partial_node()
-Date: Sat, 25 Aug 2012 03:00:02 +0900
-Message-Id: <1345831202-4225-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 24 Aug 2012 14:02:09 -0400
+Date: Fri, 24 Aug 2012 20:02:01 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, David Ahern <dsahern@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCHv2 1/1] perf: Port to Android
+Message-ID: <20120824180201.GA32144@gmail.com>
+References: <1408973.PFKjjaXiS1@localhost.localdomain>
+ <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
+ <5036A182.7030707@gmail.com>
+ <20120824040845.GA3001@srcf.ucam.org>
+ <20120824133033.3d93cf5f@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824133033.3d93cf5f@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no consideration for pfmemalloc_match() in get_partial(). If we don't
-consider that, we can't restrict access to PFMEMALLOC page mostly.
 
-We may encounter following scenario.
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Assume there is a request from normal allocation
-and there is no objects in per cpu cache and no node partial slab.
+> On Fri, 24 Aug 2012 05:08:45 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> 
+> > On Thu, Aug 23, 2012 at 03:32:50PM -0600, David Ahern wrote:
+> > 
+> > > Why not add support for the missing functions (on_exit, getsid,
+> > > psignal and getline) to Bionic instead of perf?
+> > 
+> > Many vendors need to target existing Android platforms and 
+> > don't have the luxury of waiting for code to get through 
+> > Google review and then land on devices between 6 months in 
+> > the future and never. The embedded world is dysfunctional in 
+> > a whole bunch of ways.
+> 
+> So add a small library and link with -lstuffandroidforgot. 
+> That's basically how the FSF dealt with all the proprietary 
+> Unix library messes.
+> 
+> Come to think of it call the library "integrated build runtime 
+> environment" and you can like with -libre ;)
+> 
+> It's also going to be far more maintainable and generically 
+> useful for porting tools from GNU to 'droid userspace.
 
-In this case, slab_alloc go into slow-path and
-new_slab_objects() is invoked. It may return PFMEMALLOC page.
-Current user is not allowed to access PFMEMALLOC page,
-deactivate_slab() is called (commit 5091b74a95d447e34530e713a8971450a45498b3),
-then return object from PFMEMALLOC page.
+Well, you should see the uglies Git has to support Windows ;-)
 
-Next time, when we meet another request from normal allocation,
-slab_alloc() go into slow-path and re-go new_slab_objects().
-In new_slab_objects(), we invoke get_partial() and we get a partial slab
-which we have been deactivated just before, that is, PFMEMALLOC page.
-We extract one object from it and re-deactivate.
+Anyway, I'm not against making perf work on Android in 
+principle, it is Obviously Useful (tm).
 
-"deactivate -> re-get in get_partial -> re-deactivate" occures repeatedly.
+Thanks,
 
-As a result, we can't restrict access to PFMEMALLOC page and
-moreover, it introduce much performance degration to normal allocation
-because of deactivation frequently.
-
-Now, we need to consider pfmemalloc_match() in get_partial_node()
-It prevent "deactivate -> re-get in get_partial".
-Instead, new_slab() is called. It may return !PFMEMALLOC page,
-so above situation will be suspended sometime.
-
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
-This patch based on Pekka's slab/next tree with my two patches.
-
-[PATCH 1/2] slub: rename cpu_partial to max_cpu_object
-https://lkml.org/lkml/2012/8/24/293
-
-[PATCH 2/2] slub: correct the calculation of the number of cpu objects in get_partial_node
-https://lkml.org/lkml/2012/8/24/290
-
-diff --git a/mm/slub.c b/mm/slub.c
-index c96e0e4..a21da3a 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1529,12 +1529,13 @@ static inline void *acquire_slab(struct kmem_cache *s,
- }
- 
- static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
-+static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
- 
- /*
-  * Try to allocate a partial slab from a specific node.
-  */
--static void *get_partial_node(struct kmem_cache *s,
--		struct kmem_cache_node *n, struct kmem_cache_cpu *c)
-+static void *get_partial_node(struct kmem_cache *s, struct kmem_cache_node *n,
-+				struct kmem_cache_cpu *c, gfp_t flags)
- {
- 	struct page *page, *page2;
- 	void *object = NULL;
-@@ -1551,8 +1552,12 @@ static void *get_partial_node(struct kmem_cache *s,
- 
- 	spin_lock(&n->list_lock);
- 	list_for_each_entry_safe(page, page2, &n->partial, lru) {
--		void *t = acquire_slab(s, n, page, object == NULL);
-+		void *t;
- 
-+		if (!pfmemalloc_match(page, flags))
-+			continue;
-+
-+		t = acquire_slab(s, n, page, object == NULL);
- 		if (!t)
- 			break;
- 
-@@ -1620,7 +1625,7 @@ static void *get_any_partial(struct kmem_cache *s, gfp_t flags,
- 
- 			if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
- 					n->nr_partial > s->min_partial) {
--				object = get_partial_node(s, n, c);
-+				object = get_partial_node(s, n, c, flags);
- 				if (object) {
- 					/*
- 					 * Return the object even if
-@@ -1649,7 +1654,7 @@ static void *get_partial(struct kmem_cache *s, gfp_t flags, int node,
- 	void *object;
- 	int searchnode = (node == NUMA_NO_NODE) ? numa_node_id() : node;
- 
--	object = get_partial_node(s, get_node(s, searchnode), c);
-+	object = get_partial_node(s, get_node(s, searchnode), c, flags);
- 	if (object || node != NUMA_NO_NODE)
- 		return object;
- 
--- 
-1.7.9.5
-
+	Ingo
