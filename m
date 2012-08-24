@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760022Ab2HXSjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:39:05 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54029 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab2HXSjB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:39:01 -0400
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH drm-next] drm: udl: usb: Fix recursive Kconfig dependency
-Date: Fri, 24 Aug 2012 20:38:42 +0200
-Message-Id: <1345833522-16618-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1760028Ab2HXSkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:40:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13681 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758214Ab2HXSko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 14:40:44 -0400
+Date: Fri, 24 Aug 2012 14:40:34 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tj@kernel.org, mpatocka@redhat.com,
+        bharrosh@panasas.com, Alasdair Kergon <agk@redhat.com>
+Subject: Re: [PATCH v6 02/13] dm: Use bioset's front_pad for
+ dm_rq_clone_bio_info
+Message-ID: <20120824184034.GA29932@redhat.com>
+References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
+ <1345655050-28199-3-git-send-email-koverstreet@google.com>
+ <20120822213010.GA8020@redhat.com>
+ <20120824071448.GF11977@moria.home.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824071448.GF11977@moria.home.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/usb/Kconfig "config USB_ARCH_HAS_HCD" is within "if USB_SUPPORT"
-statement.
+On Fri, Aug 24, 2012 at 12:14:48AM -0700, Kent Overstreet wrote:
 
-In drivers/gpu/drm/Kconfig "config DRM_USB" depends on USB_ARCH_HAS_HCD
-but selects USB_SUPPORT which leads to the error for udl Kconfig:
+[..]
+> > > -static struct dm_rq_clone_bio_info *alloc_bio_info(struct mapped_device *md)
+> > > -{
+> > > -	return mempool_alloc(md->io_pool, GFP_ATOMIC);
+> > > -}
+> > > -
+> > > -static void free_bio_info(struct dm_rq_clone_bio_info *info)
+> > > -{
+> > > -	mempool_free(info, info->tio->md->io_pool);
+> > > -}
+> > > -
+> > 
+> > With this change, do you still need "_rq_bio_info_cache" slab cache? I would
+> > think that it can be cleaned up now?
+> 
+> It looks like it, but I'm hesitent to make more extensive changes to the
+> dm code given that I'm unfamiliar with it and I haven't been able to
+> personally test the request type dm target code.
+> 
+> That and the way io_pool is overloaded. I see too many ways I could
+> screw things up.
 
-$ yes "" | make oldconfig
-scripts/kconfig/conf --oldconfig Kconfig
-drivers/gpu/drm/udl/Kconfig:1:error: recursive dependency detected!
-drivers/gpu/drm/udl/Kconfig:1:  symbol DRM_UDL depends on USB_ARCH_HAS_HCD
-drivers/usb/Kconfig:76: symbol USB_ARCH_HAS_HCD depends on USB_SUPPORT
-drivers/usb/Kconfig:58: symbol USB_SUPPORT is selected by DRM_USB
-drivers/gpu/drm/Kconfig:22:     symbol DRM_USB is selected by DRM_UDL
+I understand your concern but still if you leave it behind, job is
+half done. You moved rq_bio_info in bio front padding but left the
+associated cache and mempool behind. I would say we need to clean
+it up and then get ACK from dm/md folks.
 
-Fix the issue by dropping "select USB_SUPPORT" from "config DRM_USB".
+I am looking at the code and one thing which is not clear to me is
+__bind_mempools() which assumes that md->io_pool is always set. With
+your change md->io_pool is set only for BIO based targets and not
+request based targets. So that will need some tidying up.
 
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
- drivers/gpu/drm/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+Testing of request based target should be easy. Just enable multipath
+for your sata disk.
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index 3a8c683..90e2808 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -24,7 +24,6 @@ config DRM_USB
- 	depends on DRM
- 	depends on USB_ARCH_HAS_HCD
- 	select USB
--	select USB_SUPPORT
- 
- config DRM_KMS_HELPER
- 	tristate
--- 
-1.7.9.5
 
+> 
+> Also it looks like the equivalent change ought to be done with struct
+> dm_io first (then we'd have removed all the users of io_pool), but
+> honestly it takes me forever to do anything in the dm code so I'd rather
+> leave that to someone else.
+
+I think we can leave io_pool behind. Just that it remains null for
+request based targets.
+
+Thanks
+Vivek
