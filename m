@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab2HXSMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:12:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5899 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092Ab2HXSMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:12:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 24 Aug 2012 11:12:03 -0700
-Message-ID: <5037BF45.1070205@nvidia.com>
-Date: Fri, 24 Aug 2012 23:22:05 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1759958Ab2HXSMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:12:19 -0400
+Received: from nm29-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.43]:43001 "HELO
+	nm29-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754092Ab2HXSMO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 14:12:14 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 14:12:14 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 164393.76091.bm@omp1023.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Lo1LpPmQvt1ywO/BBd71EfutssOEcXe5r045H2zEEnqFHiBRkDhPpO2aIQSFMp0Vrv4Q83dgHAkrNP/AB+L7QWuDNhn/ugpF72PnhQ9wGSclPtzRLy0c//Z8S/S61irU45uIIJm1Gmqnn+cxsr4h3Zhmwxdpn70sxnEVAEm9i68=;
+X-YMail-OSG: J6jyJj4VM1kfPUaAS2PP8ioLAJUJWlXGFHvZxy_j61d._CV
+ CDFeey7Qz4gW93rmaGl.scHkXx_Z7AHLYSL7sQlTQKMRGrTwK8uwiRTeWtBT
+ SQ9VBIpTggbR6NASzFsclBMBAPo7V.F32cC.CCtabddf.PT1tqNGfABdXAPP
+ ._VaCe_2AzJOT6B1hGBKR.nAQLdnNfylWVubj8xT_E5FrHMmX6vO_UkjWhLO
+ s5KK6GTmfk4Arxc4ZDN5rhPYKRfdf6djszJ2dX8kxEpudLf_QSiiB5RfELrt
+ l0yRcaFs8biM6V0SAZ0VoprFFvjRvwtDzyp2d0zRWlQzhB2FaiCyzNnX6.nb
+ TXyc7SdFdkaTQN1AvjjbUF4.URtVgx6dW1NwQjd.2A7FJrPg0NbcGG_adSB0
+ 3FxOZZXGegrT7XgSnhFjfLCiFabyd6FvQVsoLl_sRnU.OUh48oc3mJhO9NZb
+ Yz9dOwwixv_A7fyr7q5zZ8QheWDidE6XSGfGeuUBTKf8Oz3hd7KpNpdYdRaf
+ NiqDOe2ei8KGRndZrnA--
+X-Mailer: YahooMailWebService/0.8.121.416
+Message-ID: <1345831520.60351.YahooMailNeo@web121005.mail.ne1.yahoo.com>
+Date: Fri, 24 Aug 2012 11:05:20 -0700 (PDT)
+From: Nicholle Trudel <nicholle.trudel@yahoo.com>
+Reply-To: Nicholle Trudel <nicholle.trudel@yahoo.com>
+Subject: Ticket #60Q5Q51472
+To: "laexpresso@gmail.com" <laexpresso@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "rabin.vincent@gmail.com" <rabin.vincent@gmail.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: disable supply regulator if it is enabled
- for boot-on
-References: <1344938848-29606-1-git-send-email-ldewangan@nvidia.com> <5034AA28.5050306@nvidia.com> <20120823145308.GA28328@sirena.org.uk> <50364179.6070304@nvidia.com>
-In-Reply-To: <50364179.6070304@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 August 2012 08:13 PM, Laxman Dewangan wrote:
-> On Thursday 23 August 2012 08:23 PM, Mark Brown wrote:
->> On Wed, Aug 22, 2012 at 03:15:12PM +0530, Laxman Dewangan wrote:
->>> Hi Rabin,
->>> Is it resolved the issue you mentioned?
->> He replied to your mail pointing out that it generated a lockdep issue.
-> Thanks Mark for letting me know. The mail transfer to some other folder
-> of my mail due to some issue in outlook.
-> Let me create some more scenario to reproduce this.
->
->
+Valued online banking user, your account at our our bank is restricted due to suspicion of unauthorized access. All operations in your account are temporary frozen.
 
-Hi Rabin,
-I tried to reproduce the issue but could not able to do this.
-Can you please send me your board/dt files where you are porviding 
-platform data for regulator?
-This will help me to reproduce the issue.
+Reason ID: 33
+Unauthorized access from: 139.45.84.221
 
-Thanks,
-Laxman
+Suspicious activity  may be the result of hacker activity at your computer with remote access to online banking.
 
-
+To restore access to your account you have to follow the routine security procedure described herehttp://ọķȍu.i-apca.com??ḛķťè
