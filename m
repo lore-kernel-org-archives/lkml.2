@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759815Ab2HXRF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 13:05:58 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55011 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758491Ab2HXRFz (ORCPT
+	id S1759858Ab2HXRHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 13:07:42 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60340 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756542Ab2HXRHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 13:05:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <201208241854.45656.tweek@tweek.dk>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208241814.16862.tweek@tweek.dk>
-	<5037AAB0.6040102@genband.com>
-	<201208241854.45656.tweek@tweek.dk>
-Date: Fri, 24 Aug 2012 19:05:53 +0200
-Message-ID: <CAJ7jCmkiPrr3-pf2yspNiHHzhZBCsuWZaTRCjmi_wSdBGhB6Fg@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Martin Nybo Andersen <tweek@tweek.dk>
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 24 Aug 2012 13:07:40 -0400
+Date: Fri, 24 Aug 2012 18:12:21 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Joe Millenbach <jmillenbach@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        team-fjord@googlegroups.com
+Subject: Re: [PATCH] tty: Added a CONFIG_TTY option to allow removal of TTY
+Message-ID: <20120824181221.5ed4511c@pyramind.ukuu.org.uk>
+In-Reply-To: <20120824170342.GA9794@jtriplet-mobl1>
+References: <1345499431-21658-1-git-send-email-jmillenbach@gmail.com>
+	<20120821142047.777e4bb0@pyramind.ukuu.org.uk>
+	<CADwDc1AvCvWbj8znN-1WbkZA9WYVAqaTkxi7+ENZfJ-qFNRAvw@mail.gmail.com>
+	<CADwDc1BgCM9AA4T3mUxfOGNaNoYwERP-x4y2ZS4mAhfF-K_qzA@mail.gmail.com>
+	<20120824141537.63274081@pyramind.ukuu.org.uk>
+	<20120824170342.GA9794@jtriplet-mobl1>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
-> What I'd hate even more is rendering my old working hardware useless by
-> removing x86-32 support from the kernel. To reason the removal by saying
-> "Microsoft plans to do it" just makes me go bonkers...
-Your old hardware will work fine with long term kernel.
 
-> These legacy apps will most likely be compiled for x86-32 and not x32 (an
-> argument for not removing x86-32 support on a running x86-64 kernel).
-Which legacy apps do you mean?
+> > The true cause I think is that serio/serport.c should depend on tty to be
+> > built but the ps/2 mouse bits shouldn't.
+> 
+> On the other hand, most people disabling CONFIG_TTY will be building an
+> extreme embedded system, and on such a system a PS/2 mouse seems highly
+> unlikely.  Given that, perhaps the goal of removing dependencies on TTY
+> could happen incrementally once CONFIG_TTY exists?
+
+Fine by me
