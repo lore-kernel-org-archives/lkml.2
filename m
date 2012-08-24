@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758698Ab2HXJjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 05:39:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33901 "EHLO mail.skyhub.de"
+	id S1758739Ab2HXJnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 05:43:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33984 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754493Ab2HXJjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 05:39:31 -0400
-Date: Fri, 24 Aug 2012 11:39:28 +0200
+	id S1754493Ab2HXJm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 05:42:57 -0400
+Date: Fri, 24 Aug 2012 11:42:54 +0200
 From: Borislav Petkov <bp@alien8.de>
 To: Fenghua Yu <fenghua.yu@intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -23,9 +23,11 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Chen Gong <gong.chen@linux.intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v7 04/12] Don't offline CPU0 if any PIC irq can not be
- migrated out of it.
-Message-ID: <20120824093928.GE3019@liondog.tnic>
+Subject: Re: [PATCH v7 05/12] Because x86 BIOS requires CPU0 to resume from
+ sleep, suspend or hibernate can't be executed if CPU0 is detected offline.
+ To make suspend or hibernate and further resume succeed, CPU0 must be
+ online.
+Message-ID: <20120824094254.GF3019@liondog.tnic>
 Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
 	Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
 	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
@@ -42,133 +44,79 @@ Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
 	linux-kernel <linux-kernel@vger.kernel.org>,
 	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
 References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
- <1345769771-27019-5-git-send-email-fenghua.yu@intel.com>
+ <1345769771-27019-6-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1345769771-27019-5-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1345769771-27019-6-git-send-email-fenghua.yu@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 05:56:03PM -0700, Fenghua Yu wrote:
+On Thu, Aug 23, 2012 at 05:56:04PM -0700, Fenghua Yu wrote:
 > From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> Change smp_store_cpu_info() to store cpu info for a CPU when it's brought up.
-> This includes bringing up CPU0 or AP after it's offline. But don't store cpu
-> info when BSP first boots during boot time.
-> 
-> Continue to online CPU0 in native_cpu_up().
-> 
+
+Ditto for too long Subject line and missing commit message.
+
 > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 > ---
->  arch/x86/include/asm/smp.h |    2 +-
->  arch/x86/kernel/smpboot.c  |   32 +++++++++++---------------------
->  2 files changed, 12 insertions(+), 22 deletions(-)
+>  arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 44 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-> index 4f19a15..0be0b29 100644
-> --- a/arch/x86/include/asm/smp.h
-> +++ b/arch/x86/include/asm/smp.h
-> @@ -166,7 +166,7 @@ void native_send_call_func_ipi(const struct cpumask *mask);
->  void native_send_call_func_single_ipi(int cpu);
->  void x86_idle_thread_init(unsigned int cpu, struct task_struct *idle);
->  
-> -void smp_store_cpu_info(int id);
-> +void smp_store_cpu_info(int id, int store);
->  #define cpu_physical_id(cpu)	per_cpu(x86_cpu_to_apicid, cpu)
->  
->  #else /* !CONFIG_SMP */
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index c80a33b..8d0b4ff 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -125,8 +125,8 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
->  atomic_t init_deasserted;
->  
->  /*
-> - * Report back to the Boot Processor.
-> - * Running on AP.
-> + * Report back to the Boot Processor during boot time or to the caller processor
-> + * during CPU online.
->   */
->  static void __cpuinit smp_callin(void)
->  {
-> @@ -201,7 +201,7 @@ static void __cpuinit smp_callin(void)
->  	 * Save our processor parameters. Note: this information
->  	 * is needed for clock calibration.
->  	 */
-> -	smp_store_cpu_info(cpuid);
-> +	smp_store_cpu_info(cpuid, 1);
->  
->  	/*
->  	 * Get our bogomips.
-> @@ -283,14 +283,17 @@ notrace static void __cpuinit start_secondary(void *unused)
->   * The bootstrap kernel entry code has set these up. Save them for
->   * a given CPU
->   */
-> -
-> -void __cpuinit smp_store_cpu_info(int id)
-> +void __cpuinit smp_store_cpu_info(int id, int store)
-
-This usage begs for "bool store".
-
->  {
->  	struct cpuinfo_x86 *c = &cpu_data(id);
->  
->  	*c = boot_cpu_data;
->  	c usage->cpu_index = id;
-> -	if (id != 0)
+> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+> index 218cdb1..3338609 100644
+> --- a/arch/x86/power/cpu.c
+> +++ b/arch/x86/power/cpu.c
+> @@ -237,3 +237,47 @@ void restore_processor_state(void)
+>  #ifdef CONFIG_X86_32
+>  EXPORT_SYMBOL(restore_processor_state);
+>  #endif
+> +
+> +/*
+> + * When bsp_check() is called in hibernate and suspend, cpu hotplug
+> + * is disabled already. So it's unnessary to handle race condition between
+> + * cpumask query and cpu hotplug.
+> + */
+> +static int bsp_check(void)
+> +{
+> +	if (cpumask_first(cpu_online_mask) != 0) {
+> +		printk(KERN_WARNING "CPU0 is offline.\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
+> +			   void *ptr)
+> +{
+> +	int ret = 0;
+> +
+> +	switch (action) {
+> +	case PM_SUSPEND_PREPARE:
+> +	case PM_HIBERNATION_PREPARE:
+> +		ret = bsp_check();
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +	return notifier_from_errno(ret);
+> +}
+> +
+> +static int __init bsp_pm_check_init(void)
+> +{
 > +	/*
-> +	 * During boot time, CPU0 has this setup already. Save the info when
-> +	 * bringing up AP or offlined CPU0.
+> +	 * Set this bsp_pm_callback as lower priority than
+> +	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
+> +	 * earlier to disable cpu hotplug before bsp online check.
 > +	 */
-> +	if (store)
->  		identify_secondary_cpu(c);
->  }
->  
-> @@ -795,7 +798,7 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
->  
->  	pr_debug("++++++++++++++++++++=_---CPU UP  %u\n", cpu);
->  
-> -	if (apicid == BAD_APICID || apicid == boot_cpu_physical_apicid ||
-> +	if (apicid == BAD_APICID ||
->  	    !physid_isset(apicid, phys_cpu_present_map) ||
->  	    !apic->apic_id_valid(apicid)) {
-
-Nothing in the commit message explains this change...
-
->  		pr_err("%s: bad cpu %d\n", __func__, cpu);
-> @@ -990,7 +993,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
->  	/*
->  	 * Setup boot CPU information
->  	 */
-> -	smp_store_cpu_info(0); /* Final full version of the data */
-> +	smp_store_cpu_info(0, 0); /* Final full version of the data */
->  	cpumask_copy(cpu_callin_mask, cpumask_of(0));
->  	mb();
->  
-> @@ -1214,19 +1217,6 @@ void cpu_disable_common(void)
->  
->  int native_cpu_disable(void)
->  {
-> -	int cpu = smp_processor_id();
-> -
-> -	/*
-> -	 * Perhaps use cpufreq to drop frequency, but that could go
-> -	 * into generic code.
-> -	 *
-> -	 * We won't take down the boot processor on i386 due to some
-> -	 * interrupts only being able to be serviced by the BSP.
-> -	 * Especially so if we're not using an IOAPIC	-zwane
-> -	 */
-> -	if (cpu == 0)
-> -		return -EBUSY;
-> -
->  	clear_local_APIC();
->  
->  	cpu_disable_common();
+> +	pm_notifier(bsp_pm_callback, -INT_MAX);
+> +	return 0;
+> +}
+> +
+> +core_initcall(bsp_pm_check_init);
 > -- 
 > 1.7.2
 > 
