@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab2HXUKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 16:10:23 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35387 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890Ab2HXUKS (ORCPT
+	id S933316Ab2HXULf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 16:11:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51113 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933042Ab2HXULa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 16:10:18 -0400
-Date: Fri, 24 Aug 2012 22:10:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, Attilio Rao <attilio.rao@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH v4 1/2] XEN/X86: Improve semantic support for
- x86_init.mapping.pagetable_reserve
-In-Reply-To: <alpine.DEB.2.02.1208241653550.15568@kaball.uk.xensource.com>
-Message-ID: <alpine.LFD.2.02.1208242137260.2856@ionos>
-References: <1345648122-11935-1-git-send-email-attilio.rao@citrix.com> <1345648122-11935-2-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208231722040.2856@ionos> <50364FE5.1070608@citrix.com> <alpine.LFD.2.02.1208231800530.2856@ionos>
- <503664C3.7010301@citrix.com> <20120824100309.GG3019@liondog.tnic> <20120824113644.GE11007@konrad-lan.dumpdata.com> <alpine.LFD.2.02.1208241446090.2856@ionos> <alpine.DEB.2.02.1208241412040.15568@kaball.uk.xensource.com> <alpine.LFD.2.02.1208241719030.2856@ionos>
- <alpine.DEB.2.02.1208241653550.15568@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 24 Aug 2012 16:11:30 -0400
+Message-ID: <5037E00B.6090606@gmail.com>
+Date: Fri, 24 Aug 2012 22:11:55 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120824 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-2-git-send-email-levinsasha928@gmail.com> <20120822180138.GA19212@google.com> <50357840.5020201@gmail.com> <20120823200456.GD14962@google.com> <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com>
+In-Reply-To: <20120824195941.GC21325@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Aug 2012, Stefano Stabellini wrote:
-> On Fri, 24 Aug 2012, Thomas Gleixner wrote:
-> > And how exactly are they allocated between from pgt_buf w/o increasing
-> > pgt_buf_end ?
+On 08/24/2012 09:59 PM, Tejun Heo wrote:
+> Hello, Sasha.
 > 
-> So let's suppose that we change the check in mask_rw_pte to be:
+> On Fri, Aug 24, 2012 at 09:47:19PM +0200, Sasha Levin wrote:
+>>> I think this is problematic.  It looks exactly like other existing
+>>> DEFINE macros yet what its semantics is different.  I don't think
+>>> that's a good idea.
+>>
+>> I can switch that to be DECLARE_HASHTABLE() if the issue is semantics.
 > 
-> pfn >= pgt_buf_start && pfn < pgt_buf_end
+> If this implementation is about the common trivial case, why not just
+> have the usual DECLARE/DEFINE_HASHTABLE() combination?
+
+When we add the dynamic non-resizable support, how would DEFINE_HASHTABLE() look?
+
+>>> So, I think it would be best to keep this one as straight-forward and
+>>> trivial as possible.  Helper macros to help its users are fine but
+>>> let's please not go for full encapsulation.
+>>
+>> What if we cut off the dynamic allocated (but not resizable) hashtable out for
+>> the moment, and focus on the most common statically allocated hashtable case?
+>>
+>> The benefits would be:
+>>
+>>  - Getting rid of all the _size() macros, which will make the amount of helpers
+>> here reasonable.
+>>  - Dynamically allocated hashtable can be easily added as a separate
+>> implementation using the same API. We already have some of those in the kernel...
 > 
-> as it was originally. This is what could happen:
+> It seems we have enough of this static usage and solving the static
+> case first shouldn't hinder the dynamic (!resize) case later, so,
+> yeah, sounds good to me.
 > 
-> 1) pgt_buf_start - pgt_buf_end gets mapped RO;
-> 2) pgt_buf_end - pgt_buf_top gets mapped RW;
-> 3) a new pagetable page is allocated, pgt_buf_end is increased;
-> 4) this new pagetable page is hooked into the pagetable;
-> 5) since a mapping of this page already exists (it was done in
->    point 2), and this mapping is RW, Linux crashes.
+>>  - When that's ready, I feel it's a shame to lose full encapsulation just due to
+>> hash_hashed().
 > 
-> 
-> Thanks for taking the time to look into this issue. I know it is
-> difficult and not very pleasant.
+> I don't know.  If we stick to the static (or even !resize dymaic)
+> straight-forward hash - and we need something like that - I don't see
+> what the full encapsulation buys us other than a lot of trivial
+> wrappers.
 
-Indeed, it's a nightmare.
+Which macros do you consider as trivial within the current API?
 
-Now all of this is only relevant up to the point where paging_init()
-has been done. After that xen_pagetable_setup_done() switches the
-set_pte function pointer and the nastyness gets replaced.
+Basically this entire thing could be reduced to DEFINE/DECLARE_HASHTABLE and
+get_bucket(), but it would make the life of anyone who wants a slightly
+different hashtable a hell.
 
-Now the functions called up to that point which are relevant to page
-table setups are quite limited and we know exactly that we are setting
-up an early page table pte. So why don't we use a different
-indirection for that? Even if there are functions which are used later
-on as well it's not a problem to switch the pointer as you do already
-for set_pte.
-
-No weird boundary checks, just a plain native_set_pte for !XEN and a
-special case for XEN.
-
-Yes, it's some work to analyse all the relevant code pathes and make
-the necessary changes, but that's the only sensible thing to do.
-
-The current magic is doomed for failure and completely
-unmaintainable. It's really time to find a proper solution for this
-early mapping stuff instead of bandaiding it over and over.
+I think that right now the only real trivial wrapper is hash_hashed(), and I
+think it's a price worth paying to have a single hashtable API instead of
+fragmenting it when more implementations come along.
 
 Thanks,
+Sasha
 
-	tglx
+> 
+> Thanks.
+> 
+
