@@ -1,70 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab2HXAxF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 20:53:05 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39770 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab2HXAxC (ORCPT
+	id S1754052Ab2HXAyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 20:54:25 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64922 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2HXAyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 20:53:02 -0400
-Message-ID: <5036D062.7070003@linux.vnet.ibm.com>
-Date: Fri, 24 Aug 2012 08:52:50 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 23 Aug 2012 20:54:23 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-CC: catalin.marinas@arm.com,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/3] kmemleak: replace list_for_each_continue_rcu with
- new interface
-References: <502CB92F.2010700@linux.vnet.ibm.com> <502DC99E.4060408@linux.vnet.ibm.com>
-In-Reply-To: <502DC99E.4060408@linux.vnet.ibm.com>
+In-Reply-To: <CAPM=9tw+HoEDTr8gwsODUWubbM3SmNitbmj_gO=QcV+0OVeuBw@mail.gmail.com>
+References: <CALCETrU=tTvgdbxSORWLUidmY9m5BRHvBLj=2U1-jqbsBqNLZw@mail.gmail.com>
+ <CAPM=9tw+HoEDTr8gwsODUWubbM3SmNitbmj_gO=QcV+0OVeuBw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 23 Aug 2012 17:54:01 -0700
+Message-ID: <CALCETrUcX5PZeovQ0qTAATb-Vpgp0XOk_FJJACeeNY+reAg5Zg@mail.gmail.com>
+Subject: Re: mgag200 hang on boot
+To: Dave Airlie <airlied@gmail.com>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082400-0260-0000-0000-000001BC5166
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2012 12:33 PM, Michael Wang wrote:
-> From: Michael Wang <wangyun@linux.vnet.ibm.com>
-> 
-> This patch replaces list_for_each_continue_rcu() with
-> list_for_each_entry_continue_rcu() to save a few lines
-> of code and allow removing list_for_each_continue_rcu().
+On Thu, Aug 23, 2012 at 4:22 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On Fri, Aug 24, 2012 at 7:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> mgag200 hangs like this on startup, on a Dell PowerEge 12g box.  The
+>> serial console says:
+>
+> You can apply this
+>
+> https://patchwork.kernel.org/patch/1298651/
 
-Hi, Catalin
+Works for me.  Thanks.
 
-Could I get some comments on this patch?
-
-Regards,
-Michael Wang
-
-> 
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> ---
->  mm/kmemleak.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-> index 45eb621..0de83b4 100644
-> --- a/mm/kmemleak.c
-> +++ b/mm/kmemleak.c
-> @@ -1483,13 +1483,11 @@ static void *kmemleak_seq_next(struct seq_file *seq, void *v, loff_t *pos)
->  {
->  	struct kmemleak_object *prev_obj = v;
->  	struct kmemleak_object *next_obj = NULL;
-> -	struct list_head *n = &prev_obj->object_list;
-> +	struct kmemleak_object *obj = prev_obj;
-> 
->  	++(*pos);
-> 
-> -	list_for_each_continue_rcu(n, &object_list) {
-> -		struct kmemleak_object *obj =
-> -			list_entry(n, struct kmemleak_object, object_list);
-> +	list_for_each_entry_continue_rcu(obj, &object_list, object_list) {
->  		if (get_object(obj)) {
->  			next_obj = obj;
->  			break;
-> 
-
+--Andy
