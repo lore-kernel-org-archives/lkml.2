@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab2HXDeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 23:34:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33840 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab2HXDem (ORCPT
+	id S1754665Ab2HXDtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 23:49:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48029 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab2HXDt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 23:34:42 -0400
-Message-ID: <5036F651.4020700@wwwdotorg.org>
-Date: Thu, 23 Aug 2012 21:34:41 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com> <5035445B.6000500@wwwdotorg.org> <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com> <50366E44.4030606@wwwdotorg.org> <50369305.6050304@gmail.com> <50369FEE.8000003@wwwdotorg.org> <5036B639.20608@gmail.com>
-In-Reply-To: <5036B639.20608@gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Aug 2012 23:49:29 -0400
+Date: Fri, 24 Aug 2012 13:49:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the drm tree
+Message-Id: <20120824134918.8d57aa23aff53f3ee981e2df@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__24_Aug_2012_13_49_18_+1000_G42uCVFAbSG31eIQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 05:01 PM, Sebastian Hesselbarth wrote:
-> On 08/23/2012 11:26 PM, Stephen Warren wrote:
->> As you may have guessed, I strongly prefer the hard-coded static table
->> based approach, or at least separating the definition of known
->> pins/groups/functions from the configuration nodes that define which
->> particular mux settings to actually use.
->>
->> Puting this all a little more simply, the pinctrl core wants to generate
->> a list of all known functions. It is a single global/unified list. It
->> first calls pinmux_ops.get_functions_count() to find out how many
->> functions there are in the list, then pinmux_ops.get_function_name() for
->> each one to find its name, then pinmux_ops.get_function_groups() to find
->> out which groups allow that function to be mux'd onto them.
-> 
-> Ok, now this becomes a little bit more clear to me.
-> 
-> Consider uart1 on dove is muxable to:
-> mpp2 uart1(rts), mpp3 uart1(cts), mpp21 uart1(rts), mpp22 uart1(cts),
-> and finally mpp_uart1(rx and tx).
-> 
-> So possible, valid combinations for uart1 would be:
-> (a) mpp_uart1;
-> (b) mpp_uart1, mpp2, mpp3;
-> (c) mpp_uart1, mpp21, mpp22;
-> (d) mpp_uart1, mpp2, mpp22;
-> (e) mpp_uart1, mpp21, mpp3;
-> 
-> Now what we currently do is, use DT to setup all known functions with e.g.
-> marvell,pins = "mpp_uart1", "mpp2", "mpp22" and marvell,function = "uart1".
-> This requires to count all pinctrl DT node children to count the known
-> functions that can ever be muxed to. It will never allow to mux uart1 to sw
-> flow control during run-time when there was no DT child node for it.
+--Signature=_Fri__24_Aug_2012_13_49_18_+1000_G42uCVFAbSG31eIQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In the example above, there is a single function named "uart1". If this
-was all the HW supported, I'd expect the driver's
-pinmux_ops.get_functions_count() to return 1,
-pinmux_ops.get_function_name(0) to return "uart1", and
-pinmux_ops.get_function_name(n>0) to return an error.
+Hi Dave,
 
-In practice, I assume there are many other options that can be muxed
-onto mpp2/3/21/22/uart1, so they'd be included in the list as well.
+After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-> But you are proposing to scan the list passed from SoC specific driver
-> for all
-> possible marvell,function ("uart1", "uart2", "sdio0", ...) and build up
-> lists
-> of pingroups that can be used with this specific marvell,function; or
-> even build
-> up lists of pingroups that allow uart1(rts), and another one for
-> uart1(cts), ...?
+drivers/gpu/drm/gma500/cdv_intel_display.c: In function 'cdv_intel_crtc_mod=
+e_set':
+drivers/gpu/drm/gma500/cdv_intel_display.c:1129:3: error: implicit declarat=
+ion of function 'cdv_intel_dp_set_m_n' [-Werror=3Dimplicit-function-declara=
+tion]
 
-I don't expect any scanning, no. I'd expect that tables provided by the
-SoC-specific drivers to be:
+Introducd by commit 220801bdb53c ("gma500/cdv: add the bits that don't
+need the new code") and exposed by commit f76c0dde78fb ("gma500/cdv: Fix
+call to cdv_intel_dp_set_m_n").
 
-* A table of pins
-* A table of groups
-* A table of functions
+I have used the drm tree form next-20120823 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-No scanning involved.
+--Signature=_Fri__24_Aug_2012_13_49_18_+1000_G42uCVFAbSG31eIQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQNvm/AAoJEECxmPOUX5FEy1kQAIKbMNyYimNb2XKsbvbbLzyp
+APUuylPHVFroop0sl0LHEbwb+JlJKcOE1zEs+tAfIcocooyJlo9hquiHuN/HcYJM
+5185T3E+GJmTOAlPCx3M0R2Ruoy+VpSbS7+IfnV1o283UXLw6BmC21ACQJnYD3RB
+Ndny5p18hPN0YMEfq/KUwxwN3xk9uNjgAdltE0hQfyj05+1jVBUSa3zc9OaNOHbY
+vYE38aBz78+q0m/pvlldNhLqLickTifSR6yzGNdPWjV0GiE0QyZlrJmrZK5/rjMI
+u1DVP69grVo2Ge7E+IFDLrAU7idezqwq7HY7jQGyQTps23+Hfn2cBj/mzMjKfyjQ
+ipYz8Zk61E5DHTCblayji2DPmLtq6Fh+lmt1qc9boHWzrZ7NQBp9+UbKMZCIFoNY
+O/9j7mEpppAMFmhSvgw+eVa42F8WYgjdzxHvdWs12z3lep1SNZ6s5suUBPLz2o9o
+GjSHusIK910DNDDsrPkJxHJgt6NynersahcYLZLI3KvzUSXHyFrIlHal8BswNWxK
+pw/Fe3WZ5xrNUR/5ws4bDu+lHyFboKNvlUSk+Flm3bExNlqrlUV8dPjFxHq1Ye/C
+t1FmTK+xQGpEJOh3np+UbpzY7+famgf73/KsahKzsmrdzo/pRPm7TmiMFEGKto5V
+dpVVRzsvCNmhaPr0X6bg
+=xK/y
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Aug_2012_13_49_18_+1000_G42uCVFAbSG31eIQ--
