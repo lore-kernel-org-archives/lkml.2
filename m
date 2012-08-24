@@ -1,156 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759465Ab2HXNhu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 09:37:50 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:48133 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab2HXNhq (ORCPT
+	id S1759473Ab2HXNkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 09:40:55 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:51490 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab2HXNkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 09:37:46 -0400
-X-IronPort-AV: E=Sophos;i="4.80,304,1344211200"; 
-   d="scan'208";a="14169629"
-Message-ID: <50378070.3000904@citrix.com>
-Date: Fri, 24 Aug 2012 14:24:00 +0100
-From: Attilio Rao <attilio.rao@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [PATCH v4 1/2] XEN/X86: Improve semantic support for x86_init.mapping.pagetable_reserve
-References: <1345648122-11935-1-git-send-email-attilio.rao@citrix.com> <1345648122-11935-2-git-send-email-attilio.rao@citrix.com> <alpine.LFD.2.02.1208231722040.2856@ionos> <50364FE5.1070608@citrix.com> <alpine.LFD.2.02.1208231800530.2856@ionos> <503664C3.7010301@citrix.com> <20120824100309.GG3019@liondog.tnic> <20120824113644.GE11007@konrad-lan.dumpdata.com> <alpine.LFD.2.02.1208241446090.2856@ionos>
-In-Reply-To: <alpine.LFD.2.02.1208241446090.2856@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Aug 2012 09:40:52 -0400
+X-AuditID: cbfee61a-b7fc66d0000043b7-e7-503784627b33
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: "'Federico Vaga'" <federico.vaga@gmail.com>
+Cc: "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
+        "'Pawel Osciak'" <pawel@osciak.com>,
+        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
+        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+References: <1343765829-6006-1-git-send-email-federico.vaga@gmail.com>
+ <1343765829-6006-3-git-send-email-federico.vaga@gmail.com>
+ <02f301cd7eaa$4fa7a7a0$eef6f6e0$%szyprowski@samsung.com>
+ <1417436.RHVOLNlTxk@harkonnen>
+In-reply-to: <1417436.RHVOLNlTxk@harkonnen>
+Subject: RE: [PATCH 2/3] [media] videobuf2-dma-streaming: new videobuf2 memory
+ allocator
+Date: Fri, 24 Aug 2012 15:40:38 +0200
+Organization: SPRC
+Message-id: <027701cd81fe$0ed356a0$2c7a03e0$%szyprowski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2B+xrMC9Jyc9knTkC0GiicAKDPOQAAmKNQ
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t9jQd2kFvMAg57fihaXd81hs+jZsJXV
+	gcnj8ya5AMYoLpuU1JzMstQifbsErow9n5cwF/zlqfj1fyt7A+Nhri5GTg4JAROJr1teMEPY
+	YhIX7q1n62Lk4hASmM4oMal/FiOE85NRYvb0bkaQKjYBQ4mut11sILaIgK5ET28PC0gRs8Ax
+	Jom2V20sEB33GSWePlzJClLFKaAt8br5NNgOYYEoiRP7QDo4OVgEVCXWnGsEmsrBwS8gJDFx
+	lgJImFfARaL3/D52CFtQ4sfke2DlzAJaEut3HmeCsOUlNq95ywzSKiGgLvHory7EPUYS3yYf
+	gyoRkbjb8Jx1AqPwLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93E
+	CA72Z1I7GFc2WBxiFOBgVOLh3dFiFiDEmlhWXJl7iFGCg1lJhFfAzzxAiDclsbIqtSg/vqg0
+	J7X4EKM0B4uSOC9/n2GAkEB6YklqdmpqQWoRTJaJg1OqgbG6Jfv7tlP6zcvso+LOscw29RP6
+	4RjvrRgeuEcivEmY12hHowiHnci6Jfsi+faknmN7fXDiwalcE14fkfIzSJx1zTvsbZ7t8ohi
+	J29hgZ7ogrm93x+y7qhlX3rQaQcfu1XMekvxRp2guWznLYXFn26IYlH0tGj89dAwzWpVDNu3
+	ettn76NvK7EUZyQaajEXFScCADtbwwNyAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/08/12 14:00, Thomas Gleixner wrote:
-> On Fri, 24 Aug 2012, Konrad Rzeszutek Wilk wrote:
->    
->> His goal was to document the semantics of the call. We all want to clean
->> up the mess of extra calls that don't make sense (remember the
->> write_msr_safe one?) and the first step is get some of the calls
->> documented so that we know if some of these calls can be moved around
->> for refactoring. Attilio went then beyond that being enthuastic about
->> this and wrote logic to deal with the description of the semantics.
->> In part this would help the refactoring as it would catch runtime
->> issues.
->>      
-> No. His logic to deal with the semantics started to imply wrong and
-> silly semantics in the first place. What's the point of making a
-> function deal with A != B, where A is required to be equal to B. We do
-> not add special cases for stuff which cannot happen neither on
-> baremetal nor on XEN. Period.
->    
+Hello,
 
-Please stop referring to your opinion as if they are the only source of 
-truth.
-Actually here is a matter of comparing prices. We thought accounting for 
-different { start, end } was a viable option, you want something simpler 
-and as a x86-maintainer you enforce your opinion over here. But this 
-doesn't mean what the patch does is "wrong".
+On Friday, August 24, 2012 3:23 PM Federico Vaga wrote:
 
->> That is at odds with what Peter would like to have fixed:
->> (from
->> http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000070.html)
->> "
->>     Hooks and notifiers are a form of "COME FROM" programming, and they
->>     make it very hard to reason about the code.  The only way that that
->>     can be reasonably mitigated is by having the exact semantics of a
->>     hook or notifier -- the preconditions, postconditions, and other
->>     invariants -- carefully documented.  Experience has shown that in
->>     practice that happens somewhere between rarely and never.
->>
->>     Hooks that terminate into hypercalls or otherwise are empty in the
->>     "normal" flow are particularly problematic, as it is trivial for a
->>     mainstream developer to break them.
->> "
->>      
-> I'm not against documentation. I'm against wrong documentation, wrong
-> and silly semantics and pointless code which tries to deal with cases which
-> are just wrong to begin with.
->
-> I looked at the whole pgt_buf_* mess and it's amazingly stupid. We
-> could avoid all that dance and make all of that pgt_buf_* stuff static
-> and provide proper accessor functions and hand start, end, top to the
-> reserve function instead of fiddling with global variables all over
-> the place. That'd be a real cleanup and progress.
->    
+> > Getting back to your patch - in your approach cpu cache handling is
+> > missing. I suspect that it worked fine only because it has been
+> > tested on some simple platform without any cpu caches (or with very
+> > small ones).
+> 
+> Is missing from the memory allocator because I do it on the device
+> driver. The current operations don't allow me to do that in the memory
+> allocator.
 
-Assuming that having a bunch of static variable in boot-time code is 
-"clean" in your head (and certainly it is not in mine) ...
+Memory allocator module is much more appropriate place for it. dma-sg
+allocator also needs a huge cleanup in this area...
 
-> But we can't do that easily. And why? Because XEN is making magic
-> decisions based on those globals in mask_rw_pte().
->
-> 	/*
-> 	 * If the new pfn is within the range of the newly allocated
-> 	 * kernel pagetable, and it isn't being mapped into an
-> 	 * early_ioremap fixmap slot as a freshly allocated page, make sure
-> 	 * it is RO.
-> 	 */
-> 	if (((!is_early_ioremap_ptep(ptep)&&
-> 			pfn>= pgt_buf_start&&  pfn<  pgt_buf_top)) ||
-> 			(is_early_ioremap_ptep(ptep)&&  pfn != (pgt_buf_end - 1)))
->
-> This comment along with the implementation is really a master piece of
-> obfuscation. Let's see what this is doing. RO is enforced when:
->
-> This is not an early ioreamp AND
->
->        pfn>= pgt_buf_start&&  pfn<  pgt_buf_top
->
-> So why is this checking pgt_buf_top? The early stuff is installed
-> within pgt_buf_start and pgt_buf_end. Anything which is>=
-> pgt_buf_end at this point is completely wrong.
->
-> Now the second check is even more interesting:
->
-> If this is an early ioremap AND
->
->        pfn != (pgt_buf_end -1 )
->
-> then it's forced RO as well.
->
-> So this checks whether the early ioremap is happening on the last
-> allocated pfn from the pgt_buf range.
->
->    
+> > Please check the following thread:
+> > http://www.spinics.net/lists/linux-media/msg51768.html where Tomasz
+> > has posted his ongoing effort on updating and extending videobuf2 and
+> > dma-contig allocator. Especially the patch
+> > http://www.spinics.net/lists/linux-media/msg51776.html will be
+> > interesting for you, because cpu cache synchronization
+> > (dma_sync_single_for_device / dma_sync_single_for_cpu) should be
+> > called from prepare/finish callbacks.
+> 
+> You are right, it is interesting because avoid me to use cache sync in
+> my driver. Can I work on these patches?
+> 
+> From this page I understand that these patches are not approved yet
+> https://patchwork.kernel.org/project/linux-media/list/?page=2
 
-... how this really prevents pgt_buf_{start, end, top} to be correctly 
-cleaned up with accessor function? Because it is completely beyond my 
-understanding. It would be enough to implement an inspecting function 
-here to export the logic in some sort of way. Also, besides the usage of 
-pgt_buf_{start, end, top} out of arch/x86/mm/init.c and besides maybe 
-the extra-check you point out, I don't see how this code is supposed to 
-be broken.
-More importantly, this code snipped is completely orthogonal to the 
-proposed patch.
-x86_init.mapping.pagetable_reserve will probabilly keep living even 
-after the "cleanup" you speak about.
+You can take the patch which adds prepare/finish methods to memory
+allocators. It should not have any dependency on the other stuff from
+that thread. I'm fine with merging it either together with Your patch
+or via Tomasz's patchset, whatever comes first.
 
-> OMG, really great design! And the comment above that if() obfuscation
-> is not really helping much.
->
-> If anything is missing a semantic documentation and analysis then
-> definitely code like this which is just a cobbled together steaming
-> pile of ....
->    
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-Look, when it cames to "comparing prices" situation I can reimplement 
-things in the way you prefer, but here it seems you are just going out 
-of the line without a real reason and certainly that was uncalled for.
 
-What I want to understand now is: are you favorable in taking into tips 
-a different patch to x86_init.mapping.pagetable_reserve semantic or you 
-would not consider it just on the basis that other xen-related code 
-doesn't behave the way you like, without giving any real technical 
-objection?
-
-Attilio
