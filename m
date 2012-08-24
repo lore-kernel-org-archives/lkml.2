@@ -1,64 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab2HXHZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 03:25:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16952 "EHLO mga01.intel.com"
+	id S1753297Ab2HXH0t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 03:26:49 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:46508 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827Ab2HXHZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 03:25:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,302,1344236400"; 
-   d="scan'208";a="213328871"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [RFC] [PATCH] vfs: remount all file-systems R/O on emergency remount.
-Date: Fri, 24 Aug 2012 10:26:06 +0300
-Message-Id: <1345793166-14230-1-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752381Ab2HXH0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 03:26:12 -0400
+Date: Fri, 24 Aug 2012 12:56:02 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: ppcdev <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, peterz@infradead.org,
+        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>, oleg@redhat.com
+Subject: [PATCH 1/3] powerpc: Consolidate *probe definitions
+Message-ID: <20120824072602.GA32031@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082407-8974-0000-0000-00000C861D83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Currently the emergency remount (triggered by Sysrq-u) re-mounting only
-those file-systems R/O, which have an associated block device (sb->s_bdev).
-This does not work for file-systems like UBIFS and JFFS2 which work on top
-of MTD devices (character devices) and always have sb->s_bdev = NULL.
+Move is_trap() and relatives to a common file to be shared between *probes.
+Code movement only; no change in functionality.
 
-This also does not work for tmpfs.
+Suggested by Michael Ellerman.
 
-Most probably the intention was to avoid re-mounting R/O file-systems like
-procfs, sysfs, cgroup, and debugfs. However, I do not really see why not
-to remount them R/O as well in case of emergency.
-
-This patch removes the 'sb->s_bdev != NULL' check from
-'do_emergency_remount()', so _all_ file-systems will be re-mounted R/O.
-
-Tested in Fedora - all file-systems (ext4, ubifs, procfs, sysfs, cgroup, and
-debugfs) become R/O on Sysrq-u with this patch.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- fs/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/asm/kprobes.h |   15 +------------
+ arch/powerpc/include/asm/probes.h  |   42 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+), 13 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 0902cfa..95cf173 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -812,7 +812,7 @@ static void do_emergency_remount(struct work_struct *work)
- 		sb->s_count++;
- 		spin_unlock(&sb_lock);
- 		down_write(&sb->s_umount);
--		if (sb->s_root && sb->s_bdev && (sb->s_flags & MS_BORN) &&
-+		if (sb->s_root && (sb->s_flags & MS_BORN) &&
- 		    !(sb->s_flags & MS_RDONLY)) {
- 			/*
- 			 * What lock protects sb->s_flags??
--- 
-1.7.10.4
+Index: linux-tip-23aug/arch/powerpc/include/asm/kprobes.h
+===================================================================
+--- linux-tip-23aug.orig/arch/powerpc/include/asm/kprobes.h
++++ linux-tip-23aug/arch/powerpc/include/asm/kprobes.h
+@@ -29,21 +29,16 @@
+ #include <linux/types.h>
+ #include <linux/ptrace.h>
+ #include <linux/percpu.h>
++#include <asm/probes.h>
+ 
+ #define  __ARCH_WANT_KPROBES_INSN_SLOT
+ 
+ struct pt_regs;
+ struct kprobe;
+ 
+-typedef unsigned int kprobe_opcode_t;
+-#define BREAKPOINT_INSTRUCTION	0x7fe00008	/* trap */
++typedef opcode_t kprobe_opcode_t;
+ #define MAX_INSN_SIZE 1
+ 
+-#define IS_TW(instr)		(((instr) & 0xfc0007fe) == 0x7c000008)
+-#define IS_TD(instr)		(((instr) & 0xfc0007fe) == 0x7c000088)
+-#define IS_TDI(instr)		(((instr) & 0xfc000000) == 0x08000000)
+-#define IS_TWI(instr)		(((instr) & 0xfc000000) == 0x0c000000)
+-
+ #ifdef CONFIG_PPC64
+ /*
+  * 64bit powerpc uses function descriptors.
+@@ -72,12 +67,6 @@ typedef unsigned int kprobe_opcode_t;
+ 		addr = (kprobe_opcode_t *)kallsyms_lookup_name(dot_name); \
+ 	}								\
+ }
+-
+-#define is_trap(instr)	(IS_TW(instr) || IS_TD(instr) || \
+-			IS_TWI(instr) || IS_TDI(instr))
+-#else
+-/* Use stock kprobe_lookup_name since ppc32 doesn't use function descriptors */
+-#define is_trap(instr)	(IS_TW(instr) || IS_TWI(instr))
+ #endif
+ 
+ #define flush_insn_slot(p)	do { } while (0)
+Index: linux-tip-23aug/arch/powerpc/include/asm/probes.h
+===================================================================
+--- /dev/null
++++ linux-tip-23aug/arch/powerpc/include/asm/probes.h
+@@ -0,0 +1,42 @@
++#ifndef _ASM_POWERPC_PROBES_H
++#define _ASM_POWERPC_PROBES_H
++#ifdef __KERNEL__
++/*
++ * Definitions common to probes files
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright IBM Corporation, 2012
++ */
++#include <linux/types.h>
++
++typedef u32 opcode_t;
++#define BREAKPOINT_INSTRUCTION	0x7fe00008	/* trap */
++
++/* Trap definitions per ISA */
++#define IS_TW(instr)		(((instr) & 0xfc0007fe) == 0x7c000008)
++#define IS_TD(instr)		(((instr) & 0xfc0007fe) == 0x7c000088)
++#define IS_TDI(instr)		(((instr) & 0xfc000000) == 0x08000000)
++#define IS_TWI(instr)		(((instr) & 0xfc000000) == 0x0c000000)
++
++#ifdef CONFIG_PPC64
++#define is_trap(instr)		(IS_TW(instr) || IS_TD(instr) || \
++				IS_TWI(instr) || IS_TDI(instr))
++#else
++#define is_trap(instr)		(IS_TW(instr) || IS_TWI(instr))
++#endif /* CONFIG_PPC64 */
++
++#endif /* __KERNEL__ */
++#endif	/* _ASM_POWERPC_PROBES_H */
 
