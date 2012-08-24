@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076Ab2HXCjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:39:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932955Ab2HXCjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:39:47 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: david@fromorbit.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep AS_HWPOISON sticky
-Date: Thu, 23 Aug 2012 22:39:32 -0400
-Message-Id: <1345775972-1134-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20120824013118.GZ19235@dastard>
+	id S1753663Ab2HXCrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 22:47:39 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:46607
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751052Ab2HXCrf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 22:47:35 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah1155h)
+Date: Fri, 24 Aug 2012 10:28:09 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linus.walleij@stericsson.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lrg@ti.com" <lrg@ti.com>, Zhao Richard-B20223 <B20223@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/7] mfd: add imx syscon driver based on regmap
+Message-ID: <20120824022807.GA5822@shlinux2.ap.freescale.net>
+References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
+ <1345619928-15446-2-git-send-email-b29396@freescale.com>
+ <20120822160241.GR7995@opensource.wolfsonmicro.com>
+ <20120823072629.GG10057@shlinux2.ap.freescale.net>
+ <20120823110647.GU7995@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120823110647.GU7995@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 11:31:18AM +1000, Dave Chinner wrote:
-> On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
-> > "HWPOISON: report sticky EIO for poisoned file" still has a corner case
-> > where we have possibilities of data lost. This is because in this fix
-> > AS_HWPOISON is cleared when the inode cache is dropped.
-> > 
-> > For example, consider an application in which a process periodically
-> > (every 10 minutes) writes some logs on a file (and closes it after
-> > each writes,) and at the end of each day some batch programs run using
-> > the log file. If a memory error hits on dirty pagecache of this log file
-> > just after periodic write/close and the inode cache is cleared before the
-> > next write, then this application is not aware of the error and the batch
-> > programs will work wrongly.
-> > 
-> > To avoid this, this patch makes us pin the hwpoisoned inode on memory
-> > until we remove or completely truncate the hwpoisoned file.
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  fs/inode.c              | 12 ++++++++++++
-> >  include/linux/pagemap.h | 11 +++++++++++
-> >  mm/memory-failure.c     |  2 +-
-> >  mm/truncate.c           |  2 ++
-> >  4 files changed, 26 insertions(+), 1 deletion(-)
-> > 
-> > diff --git v3.6-rc1.orig/fs/inode.c v3.6-rc1/fs/inode.c
-> > index ac8d904..8742397 100644
-> > --- v3.6-rc1.orig/fs/inode.c
-> > +++ v3.6-rc1/fs/inode.c
-> > @@ -717,6 +717,15 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
-> >  		}
-> >  
-> >  		/*
-> > +		 * Keep inode caches on memory for user processes to certainly
-> > +		 * be aware of memory errors.
-> > +		 */
-> > +		if (unlikely(mapping_hwpoison(inode->i_mapping))) {
-> > +			spin_unlock(&inode->i_lock);
-> > +			continue;
-> > +		}
-> > +
-> > +		/*
-> >  		 * Referenced or dirty inodes are still in use. Give them
-> >  		 * another pass through the LRU as we canot reclaim them now.
-> >  		 */
+On Thu, Aug 23, 2012 at 07:06:47PM +0800, Mark Brown wrote:
+> On Thu, Aug 23, 2012 at 03:26:30PM +0800, Dong Aisheng wrote:
+> > On Thu, Aug 23, 2012 at 12:02:41AM +0800, Mark Brown wrote:
 > 
-> I don't think you tested this at all. Have a look at what the loop
-> does more closely - inodes with poisoned mappings will get stuck
-> and reclaim doesn't make progress past them.
-
-Sorry, I overlooked something important in my testing. I'll correct it.
-Maybe we need list_move_tail() in this block.
-
-> I think you also need to document this inode lifecycle change....
-
-OK, I'll do it.
-
-> > diff --git v3.6-rc1.orig/mm/truncate.c v3.6-rc1/mm/truncate.c
-> > index 75801ac..82a994f 100644
-> > --- v3.6-rc1.orig/mm/truncate.c
-> > +++ v3.6-rc1/mm/truncate.c
-> > @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
-> >  
-> >  	oldsize = inode->i_size;
-> >  	i_size_write(inode, newsize);
-> > +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
-> > +		mapping_clear_hwpoison(inode->i_mapping);
+> > > It'd be good to provide a way of retrieving the regmap so that drivers
+> > > for subsystems with generic regmap code could use the framework features
+> > > (regulator is one example that I just mentioned in my other mail).
 > 
-> So only a truncate to zero size will clear the poison flag?
+> > Do you mean something like:
+> > regmap = syscon_regmap_dev_lookup(np, "fsl,anatop");
+> > regmap_write(regmap, reg, val);
+> 
+> > Then drivers can use generic regmap framework features rather than depend
+> > on what imx-syscon implemented, is that correct?
+> 
+> Yes, this is mainly for cases where the subsystem has helper functions
+> that can work with regmap.
 
-Yes, this is because we only know if the file is affected by hwpoison,
-but not where the hwpoisoned page is in the file. We could remember it,
-but I did not do it for simplicity.
+Okay, then imx-syscon only implements regmap register mechanism and regmap
+lookup mechanism, for accessors, client driver can directly use the generic
+regmap API defined in include/linux/regmap.h.
 
-> What happens if it is the last page in the mapping that is poisoned,
-> and we truncate that away? Shouldn't that clear the poisoned bit?
+Then it looks to me the driver is more like a generic feature which may also be
+needed for other SoCs, IIRC, Tegra ahb and ux500 PRCMU,
 
-When we handle the hwpoisoned inode, the error page should already
-be removed from pagecache, so the remaining pages are not related
-to the error and we need not care about them when we consider bit
-clearing.
+Do you think if we should implement it in a more generic way at first?
+e.g, drop 'imx-' prefix first.
 
-> What about a hole punch over the poisoned range?
+Linus,
+You're the first guy to raise the idea that we could implement a syscon
+framework to generic register access, what's your comment on this?
 
-For the same reason, this is also not related to when to clear the bit.
+Regards
+Dong Aisheng
 
-Thanks,
-Naoya
