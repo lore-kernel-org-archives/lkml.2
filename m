@@ -1,136 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759432Ab2HXNHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 09:07:44 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:49938 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751146Ab2HXNHj (ORCPT
+	id S1759402Ab2HXNLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 09:11:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59879 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab2HXNLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 09:07:39 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 1/2] mtd: lpc32xx_slc: Cleanup after DT-only conversion
-Date: Fri, 24 Aug 2012 15:06:51 +0200
-Message-Id: <1345813612-4234-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Fri, 24 Aug 2012 09:11:01 -0400
+Date: Fri, 24 Aug 2012 14:15:37 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Joe Millenbach <jmillenbach@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Triplett <josh@joshtriplett.org>, team-fjord@googlegroups.com
+Subject: Re: [PATCH] tty: Added a CONFIG_TTY option to allow removal of TTY
+Message-ID: <20120824141537.63274081@pyramind.ukuu.org.uk>
+In-Reply-To: <CADwDc1BgCM9AA4T3mUxfOGNaNoYwERP-x4y2ZS4mAhfF-K_qzA@mail.gmail.com>
+References: <1345499431-21658-1-git-send-email-jmillenbach@gmail.com>
+	<20120821142047.777e4bb0@pyramind.ukuu.org.uk>
+	<CADwDc1AvCvWbj8znN-1WbkZA9WYVAqaTkxi7+ENZfJ-qFNRAvw@mail.gmail.com>
+	<CADwDc1BgCM9AA4T3mUxfOGNaNoYwERP-x4y2ZS4mAhfF-K_qzA@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The LPC32xx's DT-only conversion of the SLC NAND driver makes NAND config via
-platform_data obsolete. Dropped by this patch.
+On Thu, 23 Aug 2012 18:14:48 -0700
+Joe Millenbach <jmillenbach@gmail.com> wrote:
 
-Further, the driver really needs CONFIG_OF, which is already reflected by the
-dependency on ARCH_LPC32XX which depends on CONFIG_OF. So also dropping
-CONFIG_OF ifdefs.
+> ---------- Forwarded message ----------
+> From: Joe Millenbach <jmillenbach@gmail.com>
+> Date: Thu, Aug 23, 2012 at 5:56 PM
+> Subject: Re: [PATCH] tty: Added a CONFIG_TTY option to allow removal of TTY
+> To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Alan Cox
+> <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+> linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+> team-fjord@googlegroups.com
+> 
+> 
+> On Tue, Aug 21, 2012 at 6:20 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> >
+> > ...
+> >
+> > >  config MOUSE_PS2
+> > >       tristate "PS/2 mouse"
+> > > +     depends on TTY
+> >
+> > It shouldn't. It would be good to understand why this occurs.
+> 
+> 
+> If I enable this config option, and turn off TTY I get the below errors.
+> 
+> drivers/built-in.o: In function `serport_ldisc_read':
+> serport.c:(.text+0x1aace6): undefined reference to `tty_name'
+> serport.c:(.text+0x1aad57): undefined reference to `tty_name'
+> drivers/built-in.o: In function `serport_init':
+> serport.c:(.init.text+0x8478): undefined reference to `tty_register_ldisc'
+> drivers/built-in.o: In function `serport_exit':
+> serport.c:(.exit.text+0xb29): undefined reference to `tty_unregister_ldisc'
+> 
+> All because MOUSE_PS2 depends on SERIO, just like a lot of entries I
+> blocked.  I assume this means I should keep the dependency on TTY.
+> Unfortunately, I don't have time to dig deeper for the true cause of the
+> dependency right now.
 
-There is still platform_data necessary to supply the dma_filter callback for
-the dma engine. This is a completely different data structure than the old
-platform_data for NAND config, so renaming some old "pdata" variable to "ncfg"
-to prevent confusion with the new platform data.
+The true cause I think is that serio/serport.c should depend on tty to be
+built but the ps/2 mouse bits shouldn't.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- drivers/mtd/nand/lpc32xx_slc.c |   52 ++++++++++++++++-------------------------
- 1 file changed, 21 insertions(+), 31 deletions(-)
-
---- linux-2.6.orig/drivers/mtd/nand/lpc32xx_slc.c
-+++ linux-2.6/drivers/mtd/nand/lpc32xx_slc.c
-@@ -732,45 +732,38 @@ static int lpc32xx_nand_dma_setup(struct
- 	return 0;
- }
- 
--#ifdef CONFIG_OF
- static struct lpc32xx_nand_cfg_slc *lpc32xx_parse_dt(struct device *dev)
- {
--	struct lpc32xx_nand_cfg_slc *pdata;
-+	struct lpc32xx_nand_cfg_slc *ncfg;
- 	struct device_node *np = dev->of_node;
- 
--	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
--	if (!pdata) {
--		dev_err(dev, "could not allocate memory for platform data\n");
-+	ncfg = devm_kzalloc(dev, sizeof(*ncfg), GFP_KERNEL);
-+	if (!ncfg) {
-+		dev_err(dev, "could not allocate memory for NAND config\n");
- 		return NULL;
- 	}
- 
--	of_property_read_u32(np, "nxp,wdr-clks", &pdata->wdr_clks);
--	of_property_read_u32(np, "nxp,wwidth", &pdata->wwidth);
--	of_property_read_u32(np, "nxp,whold", &pdata->whold);
--	of_property_read_u32(np, "nxp,wsetup", &pdata->wsetup);
--	of_property_read_u32(np, "nxp,rdr-clks", &pdata->rdr_clks);
--	of_property_read_u32(np, "nxp,rwidth", &pdata->rwidth);
--	of_property_read_u32(np, "nxp,rhold", &pdata->rhold);
--	of_property_read_u32(np, "nxp,rsetup", &pdata->rsetup);
--
--	if (!pdata->wdr_clks || !pdata->wwidth || !pdata->whold ||
--	    !pdata->wsetup || !pdata->rdr_clks || !pdata->rwidth ||
--	    !pdata->rhold || !pdata->rsetup) {
-+	of_property_read_u32(np, "nxp,wdr-clks", &ncfg->wdr_clks);
-+	of_property_read_u32(np, "nxp,wwidth", &ncfg->wwidth);
-+	of_property_read_u32(np, "nxp,whold", &ncfg->whold);
-+	of_property_read_u32(np, "nxp,wsetup", &ncfg->wsetup);
-+	of_property_read_u32(np, "nxp,rdr-clks", &ncfg->rdr_clks);
-+	of_property_read_u32(np, "nxp,rwidth", &ncfg->rwidth);
-+	of_property_read_u32(np, "nxp,rhold", &ncfg->rhold);
-+	of_property_read_u32(np, "nxp,rsetup", &ncfg->rsetup);
-+
-+	if (!ncfg->wdr_clks || !ncfg->wwidth || !ncfg->whold ||
-+	    !ncfg->wsetup || !ncfg->rdr_clks || !ncfg->rwidth ||
-+	    !ncfg->rhold || !ncfg->rsetup) {
- 		dev_err(dev, "chip parameters not specified correctly\n");
- 		return NULL;
- 	}
- 
--	pdata->use_bbt = of_get_nand_on_flash_bbt(np);
--	pdata->wp_gpio = of_get_named_gpio(np, "gpios", 0);
-+	ncfg->use_bbt = of_get_nand_on_flash_bbt(np);
-+	ncfg->wp_gpio = of_get_named_gpio(np, "gpios", 0);
- 
--	return pdata;
-+	return ncfg;
- }
--#else
--static struct lpc32xx_nand_cfg_slc *lpc32xx_parse_dt(struct device *dev)
--{
--	return NULL;
--}
--#endif
- 
- /*
-  * Probe for NAND controller
-@@ -806,10 +799,9 @@ static int __devinit lpc32xx_nand_probe(
- 
- 	if (pdev->dev.of_node)
- 		host->ncfg = lpc32xx_parse_dt(&pdev->dev);
--	else
--		host->ncfg = pdev->dev.platform_data;
- 	if (!host->ncfg) {
--		dev_err(&pdev->dev, "Missing platform data\n");
-+		dev_err(&pdev->dev,
-+			"Missing or bad NAND config from device tree\n");
- 		return -ENOENT;
- 	}
- 	if (host->ncfg->wp_gpio == -EPROBE_DEFER)
-@@ -1035,13 +1027,11 @@ static int lpc32xx_nand_suspend(struct p
- #define lpc32xx_nand_suspend NULL
- #endif
- 
--#if defined(CONFIG_OF)
- static const struct of_device_id lpc32xx_nand_match[] = {
- 	{ .compatible = "nxp,lpc3220-slc" },
- 	{ /* sentinel */ },
- };
- MODULE_DEVICE_TABLE(of, lpc32xx_nand_match);
--#endif
- 
- static struct platform_driver lpc32xx_nand_driver = {
- 	.probe		= lpc32xx_nand_probe,
+Alan
