@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760121Ab2HXTpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 15:45:40 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41745 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757692Ab2HXTpg convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Fri, 24 Aug 2012 15:45:36 -0400
-Message-Id: <5037E7ED020000780008A7BD@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 24 Aug 2012 20:45:32 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Alex Shi" <alex.shi@intel.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] xen: fix logical error in tlb flushing
-References: <1345798513-3566-1-git-send-email-alex.shi@intel.com>
- <5037A8E7020000780008A78B@nat28.tlf.novell.com>
- <20120824181721.GC15167@konrad-lan.dumpdata.com>
-In-Reply-To: <20120824181721.GC15167@konrad-lan.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1760141Ab2HXTq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 15:46:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51389 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757692Ab2HXTqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 15:46:52 -0400
+Message-ID: <5037DA47.9010306@gmail.com>
+Date: Fri, 24 Aug 2012 21:47:19 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120824 Thunderbird/14.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-2-git-send-email-levinsasha928@gmail.com> <20120822180138.GA19212@google.com> <50357840.5020201@gmail.com> <20120823200456.GD14962@google.com>
+In-Reply-To: <20120823200456.GD14962@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.08.12 at 20:17, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Fri, Aug 24, 2012 at 04:16:39PM +0100, Jan Beulich wrote:
->> >>> On 24.08.12 at 10:55, Alex Shi <alex.shi@intel.com> wrote:
->> > While TLB_FLUSH_ALL gets passed as 'end' argument to
->> > flush_tlb_others(), the Xen code was made to check its 'start'
->> > parameter. That may give a incorrect op.cmd to MMUEXT_INVLPG_MULTI
->> > instead of MMUEXT_TLB_FLUSH_MULTI. Then it causes some page can not
->> > be flushed from TLB.
->> > 
->> > This patch fixed this issue.
->> > 
->> > Reported-by: Jan Beulich <jbeulich@suse.com>
->> > Signed-off-by: Alex Shi <alex.shi@intel.com>
->> 
->> Acked-by: Jan Beulich <jbeulich@suse.com>
+On 08/23/2012 10:04 PM, Tejun Heo wrote:
+> Hello, Sasha.
 > 
-> How can I reproduce this
+> On Thu, Aug 23, 2012 at 02:24:32AM +0200, Sasha Levin wrote:
+>>> I think the almost trivial nature of hlist hashtables makes this a bit
+>>> tricky and I'm not very sure but having this combinatory explosion is
+>>> a bit dazzling when the same functionality can be achieved by simply
+>>> combining operations which are already defined and named considering
+>>> hashtable.  I'm not feeling too strong about this tho.  What do others
+>>> think?
+>>
+>> I'm thinking that this hashtable API will have 2 purposes: First, it would
+>> prevent the excessive duplication of hashtable implementations all around the code.
+>>
+>> Second, it will allow more easily interchangeable hashtable implementations to
+>> find their way into the kernel. There are several maintainers who would be happy
+>> to see dynamically sized RCU hashtable, and I'm guessing that several more
+>> variants could be added based on needs in specific modules.
+>>
+>> The second reason is why several things you've mentioned look the way they are:
+>>
+>>  - No DEFINE_HASHTABLE(): I wanted to force the use of hash_init() since
+>> initialization for other hashtables may be more complicated than the static
+>> initialization for this implementation, which means that any place that used
+>> DEFINE_HASHTABLE() and didn't do hash_init() will be buggy.
+> 
+> I think this is problematic.  It looks exactly like other existing
+> DEFINE macros yet what its semantics is different.  I don't think
+> that's a good idea.
 
-I don't know, I spotted this while looking at the code.
+I can switch that to be DECLARE_HASHTABLE() if the issue is semantics.
 
-> and should this also go to stable@kernel.org?
+>> I'm actually tempted in hiding hlist completely from hashtable users, probably
+>> by simply defining a hash_head/hash_node on top of the hlist_ counterparts.
+> 
+> I think that it would be best to keep this one simple & obvious, which
+> already has enough in-kernel users to justify its existence.  There
+> are significant benefits in being trivially understandable and
+> expectable.  If we want more advanced ones - say resizing, hybrid or
+> what not, let's make that a separate one.  No need to complicate the
+> common straight-forward case for that.
+> 
+> So, I think it would be best to keep this one as straight-forward and
+> trivial as possible.  Helper macros to help its users are fine but
+> let's please not go for full encapsulation.
 
-No, the problem got introduced in 3.6-rc1.
+What if we cut off the dynamic allocated (but not resizable) hashtable out for
+the moment, and focus on the most common statically allocated hashtable case?
 
-Jan
+The benefits would be:
+
+ - Getting rid of all the _size() macros, which will make the amount of helpers
+here reasonable.
+ - Dynamically allocated hashtable can be easily added as a separate
+implementation using the same API. We already have some of those in the kernel...
+ - When that's ready, I feel it's a shame to lose full encapsulation just due to
+hash_hashed().
+
+
+Thanks,
+Sasha
+
+> 
+> Thanks.
+> 
 
