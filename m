@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab2HXEJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 00:09:03 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33440 "EHLO
+	id S1752786Ab2HXEJV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 00:09:21 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33451 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab2HXEI7 (ORCPT
+	with ESMTP id S1750707Ab2HXEJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 00:08:59 -0400
-Date: Fri, 24 Aug 2012 05:08:45 +0100
+	Fri, 24 Aug 2012 00:09:17 -0400
+Date: Fri, 24 Aug 2012 05:09:14 +0100
 From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCHv2 1/1] perf: Port to Android
-Message-ID: <20120824040845.GA3001@srcf.ucam.org>
-References: <1408973.PFKjjaXiS1@localhost.localdomain>
- <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
- <5036A182.7030707@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-efi@vger.kernel.org, mfleming@intel.com, dwmw2@infradead.org
+Subject: Re: [PATCH V3 1/4] EFI: Stash ROMs if they're not in the PCI BAR
+Message-ID: <20120824040914.GB3001@srcf.ucam.org>
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+ <1345739803-21017-2-git-send-email-mjg@redhat.com>
+ <CAErSpo4Y=z-sP6cjJSzCtD-Gsnrm6-CWWKJpqiScv6QdbzTeyA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5036A182.7030707@gmail.com>
+In-Reply-To: <CAErSpo4Y=z-sP6cjJSzCtD-Gsnrm6-CWWKJpqiScv6QdbzTeyA@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -32,15 +29,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 03:32:50PM -0600, David Ahern wrote:
+On Thu, Aug 23, 2012 at 05:44:22PM -0600, Bjorn Helgaas wrote:
+> On Thu, Aug 23, 2012 at 10:36 AM, Matthew Garrett <mjg@redhat.com> wrote:
+> > EFI provides support for providing PCI ROMs via means other than the ROM
+> > BAR. This support vanishes after we've exited boot services, so add support
+> > for stashing copies of the ROMs in setup_data if they're not otherwise
+> > available.
+> 
+> -ENO_SIGNED_OFF_BY
+> 
+> I'll add it if you confirm it.
 
-> Why not add support for the missing functions (on_exit, getsid,
-> psignal and getline) to Bionic instead of perf?
-
-Many vendors need to target existing Android platforms and don't have 
-the luxury of waiting for code to get through Google review and then 
-land on devices between 6 months in the future and never. The embedded 
-world is dysfunctional in a whole bunch of ways.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
