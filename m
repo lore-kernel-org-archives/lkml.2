@@ -1,45 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759447Ab2HXNXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 09:23:34 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:56842 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2HXNXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 09:23:30 -0400
-Date: Fri, 24 Aug 2012 15:23:11 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Jovi Zhang <bookjovi@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mips@linux-mips.org,
-        Youquan Song <youquan.song@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] MIPS/mm: add compound tail page _mapcount when mapped
-Message-ID: <20120824132311.GG10439@linux-mips.org>
-References: <CACV3sb+nocqeDiM+4m+hv1ygu=KAxD6CpR5wQmawkKMdAuXbgA@mail.gmail.com>
+	id S1759442Ab2HXNY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 09:24:29 -0400
+Received: from antcom.de ([188.40.178.216]:48557 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931Ab2HXNYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 09:24:25 -0400
+Message-ID: <50378084.3080102@antcom.de>
+Date: Fri, 24 Aug 2012 15:24:20 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACV3sb+nocqeDiM+4m+hv1ygu=KAxD6CpR5wQmawkKMdAuXbgA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "arm@kernel.org" <arm@kernel.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        bigeasy@linutronix.de, arnd@arndb.de, aletes.xgr@gmail.com,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Subject: [GIT PULL] ARM: mach-pnx4008: Remove architecture
+References: <1345724548-18130-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1345724548-18130-1-git-send-email-stigge@antcom.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 11:02:34AM +0800, Jovi Zhang wrote:
+Hi,
 
-> see commit b6999b191 which target for x86 mm/gup, let it align with
-> mips architecture.
+On 23/08/12 14:22, Roland Stigge wrote:
+> This patch removes the ARM architecture mach-pnx4008. No direct support or user
+> feedback since 2006. Acknowledgements from NXP/Philips and Linux arm-soc
+> maintainers.
 > 
-> Quote from commit b6999b191:
->     "If compound pages are used and the page is a
->     tail page, gup_huge_pmd() increases _mapcount to record tail page are
->     mapped while gup_huge_pud does not do that."
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Thanks, applied and also acked' for -stable.
+The patch was a bit too big for the mailing list - sorry.
 
-Note the patch got linewrapped along the way but it's trivial enough to be
-fixed up.
+Now re-proposing via pull request, below.
 
-  Ralf
+Thanks in advance,
+
+Roland
+
+
+The following changes since commit fea7a08acb13524b47711625eebea40a0ede69a0:
+
+  Linux 3.6-rc3 (2012-08-22 13:29:06 -0700)
+
+are available in the git repository at:
+
+  git://git.antcom.de/linux-2.6.git pnx4008-removal
+
+for you to fetch changes up to 5b54d019ca93850099299527753d23a5ff57c2e6:
+
+  ARM: mach-pnx4008: Remove architecture (2012-08-24 15:12:21 +0200)
+
+----------------------------------------------------------------
+Roland Stigge (1):
+      ARM: mach-pnx4008: Remove architecture
+
+ arch/arm/Kconfig                                  |    8 -
+ arch/arm/Makefile                                 |    1 -
+ arch/arm/configs/pnx4008_defconfig                |  472 ---------
+ arch/arm/mach-pnx4008/Makefile                    |   12 -
+ arch/arm/mach-pnx4008/Makefile.boot               |    4 -
+ arch/arm/mach-pnx4008/clock.c                     | 1001 -------------------
+ arch/arm/mach-pnx4008/clock.h                     |   43 -
+ arch/arm/mach-pnx4008/core.c                      |  290 ------
+ arch/arm/mach-pnx4008/dma.c                       | 1105 ---------------------
+ arch/arm/mach-pnx4008/gpio.c                      |  328 ------
+ arch/arm/mach-pnx4008/i2c.c                       |   86 --
+ arch/arm/mach-pnx4008/include/mach/clock.h        |   62 --
+ arch/arm/mach-pnx4008/include/mach/debug-macro.S  |   21 -
+ arch/arm/mach-pnx4008/include/mach/dma.h          |  160 ---
+ arch/arm/mach-pnx4008/include/mach/entry-macro.S  |  116 ---
+ arch/arm/mach-pnx4008/include/mach/gpio-pnx4008.h |  241 -----
+ arch/arm/mach-pnx4008/include/mach/hardware.h     |   32 -
+ arch/arm/mach-pnx4008/include/mach/irq.h          |   42 -
+ arch/arm/mach-pnx4008/include/mach/irqs.h         |  215 ----
+ arch/arm/mach-pnx4008/include/mach/param.h        |   21 -
+ arch/arm/mach-pnx4008/include/mach/platform.h     |   69 --
+ arch/arm/mach-pnx4008/include/mach/pm.h           |   33 -
+ arch/arm/mach-pnx4008/include/mach/timex.h        |   19 -
+ arch/arm/mach-pnx4008/include/mach/uncompress.h   |   46 -
+ arch/arm/mach-pnx4008/irq.c                       |  121 ---
+ arch/arm/mach-pnx4008/pm.c                        |  153 ---
+ arch/arm/mach-pnx4008/serial.c                    |   67 --
+ arch/arm/mach-pnx4008/sleep.S                     |  195 ----
+ arch/arm/mach-pnx4008/time.c                      |  134 ---
+ arch/arm/mach-pnx4008/time.h                      |   70 --
+ arch/arm/tools/mach-types                         |    1 -
+ drivers/i2c/busses/Kconfig                        |    2 +-
+ drivers/usb/Kconfig                               |    1 -
+ drivers/usb/host/Kconfig                          |    2 +-
+ drivers/usb/host/ohci-hcd.c                       |    2 +-
+ drivers/usb/host/ohci-nxp.c                       |   84 +-
+ drivers/video/Kconfig                             |   15 -
+ drivers/video/Makefile                            |    2 -
+ drivers/video/pnx4008/Makefile                    |    7 -
+ drivers/video/pnx4008/dum.h                       |  211 ----
+ drivers/video/pnx4008/fbcommon.h                  |   43 -
+ drivers/video/pnx4008/pnxrgbfb.c                  |  198 ----
+ drivers/video/pnx4008/sdum.c                      |  861 ----------------
+ drivers/video/pnx4008/sdum.h                      |  136 ---
+ drivers/watchdog/Kconfig                          |    6 +-
+ 45 files changed, 7 insertions(+), 6731 deletions(-)
+ delete mode 100644 arch/arm/configs/pnx4008_defconfig
+ delete mode 100644 arch/arm/mach-pnx4008/Makefile
+ delete mode 100644 arch/arm/mach-pnx4008/Makefile.boot
+ delete mode 100644 arch/arm/mach-pnx4008/clock.c
+ delete mode 100644 arch/arm/mach-pnx4008/clock.h
+ delete mode 100644 arch/arm/mach-pnx4008/core.c
+ delete mode 100644 arch/arm/mach-pnx4008/dma.c
+ delete mode 100644 arch/arm/mach-pnx4008/gpio.c
+ delete mode 100644 arch/arm/mach-pnx4008/i2c.c
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/clock.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/debug-macro.S
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/dma.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/entry-macro.S
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/gpio-pnx4008.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/hardware.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/irq.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/irqs.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/param.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/platform.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/pm.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/timex.h
+ delete mode 100644 arch/arm/mach-pnx4008/include/mach/uncompress.h
+ delete mode 100644 arch/arm/mach-pnx4008/irq.c
+ delete mode 100644 arch/arm/mach-pnx4008/pm.c
+ delete mode 100644 arch/arm/mach-pnx4008/serial.c
+ delete mode 100644 arch/arm/mach-pnx4008/sleep.S
+ delete mode 100644 arch/arm/mach-pnx4008/time.c
+ delete mode 100644 arch/arm/mach-pnx4008/time.h
+ delete mode 100644 drivers/video/pnx4008/Makefile
+ delete mode 100644 drivers/video/pnx4008/dum.h
+ delete mode 100644 drivers/video/pnx4008/fbcommon.h
+ delete mode 100644 drivers/video/pnx4008/pnxrgbfb.c
+ delete mode 100644 drivers/video/pnx4008/sdum.c
+ delete mode 100644 drivers/video/pnx4008/sdum.h
