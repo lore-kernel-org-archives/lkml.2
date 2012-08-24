@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab2HXW6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 18:58:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45010 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab2HXW6o (ORCPT
+	id S1755325Ab2HXW7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 18:59:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53440 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab2HXW7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 18:58:44 -0400
-Date: Fri, 24 Aug 2012 15:58:39 -0700
-From: Tejun Heo <tj@kernel.org>
-To: aris@redhat.com
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Hugh Dickins <hughd@google.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        Lennart Poettering <lpoetter@redhat.com>
-Subject: Re: [PATCH v7 0/4] cgroup: add xattr support
-Message-ID: <20120824225839.GM21325@google.com>
-References: <20120823205327.237533518@napanee.usersys.redhat.com>
+	Fri, 24 Aug 2012 18:59:03 -0400
+Message-ID: <5038074D.300@gmail.com>
+Date: Sat, 25 Aug 2012 00:59:25 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120824 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823205327.237533518@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive hashtable
+References: <1345602432-27673-1-git-send-email-levinsasha928@gmail.com> <1345602432-27673-2-git-send-email-levinsasha928@gmail.com> <20120822180138.GA19212@google.com> <50357840.5020201@gmail.com> <20120823200456.GD14962@google.com> <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com> <5037E00B.6090606@gmail.com> <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com> <20120824212348.GK21325@google.com>
+In-Reply-To: <20120824212348.GK21325@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+>> Why do we need hash_head/hash_for_each_head()? I haven't stumbled on a place yet
+>> that needed direct access to the bucket itself.
+> 
+> Because whole hash table walking is much less common and we can avoid
+> another full set of iterators.
 
-On Thu, Aug 23, 2012 at 04:53:27PM -0400, aris@redhat.com wrote:
-> This series are a refreshed version of a patchset submitted by Li Zefan back
-> in march:
-> 	https://lkml.org/lkml/2012/3/1/13
+I don't agree. Out of 32 places which now use a hashtable iterator of some kind,
+12 of them (38%) walk the entire table.
 
-Applied to cgroup/for-3.7 w/ "Original-Patch-by: Li Zefan" added for
-the first three patches.
+The thing is that usually data structures are indexable by more than one key, so
+usually hashtables are fully walked in cold paths to look for different keys.
 
-* Can you please update MTA setting so that the From: header contains
-  your full name?  Importing the series to git ended up with
-  "aris@redhat.com <aris@redhat.com>".
+Take kernel/workqueue.c for example: There are 4 places which do a key lookup
+(find_worker_executing_work()) and 3 places which fully walk the entire table
+(for_each_busy_worker()).
 
-* Can you please add some comments and documentation regarding this?
+>> This basically means 11 macros/functions that would let us have full
+>> encapsulation and will make it very easy for future implementations to work with
+>> this API instead of making up a new one. It's also not significantly (+~2-3)
+>> more than the ones you listed.
+> 
+> I'm not sure whether full encapsulation is a good idea for trivial
+> hashtable.  For higher level stuff, sure but at this level I think
+> benefits coming from known obvious implementation can be larger.
+> e.g. suppose the caller knows certain entries to be way colder than
+> others and wants to put them at the end of the chain.
 
-Thanks.
+Thats the thing, the amount of things of things you can do with a given bucket
+is very limited. You can't add entries to any point besides the head (without
+walking the entire list).
 
--- 
-tejun
+Basically you can do only two things with a bucket:
+
+ - Add something to it at a very specific place.
+ - Walk it
+
+So I don't understand whats the point in exposing the internal structure of the
+hashtable if there's nothing significant that can be gained from it by the user.
+
+> 
+> So, I think implmenting the minimal set of helpers which reflect the
+> underlying trivial implementation explicitly could actually be better
+> even when discounting the reduced number of wrappers.
+> 
+> Thanks.
+> 
+
