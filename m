@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab2HXO5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 10:57:14 -0400
-Received: from nm5.bullet.mail.ird.yahoo.com ([77.238.189.62]:34250 "HELO
-	nm5.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753038Ab2HXO5K convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 10:57:10 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 58401.29264.bm@omp1013.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.it;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=l6TZdMHeOMwmDBoxKxNV/8fTQ2LGtL1BfkMK/nwQmuoZCBDTdfnmgHJ9cn2fEQr30kNYytAAxrdB0l/VmfH/i9+SiDeUpkbsCw3WHeUdI3++fCbEM6rqf39q1ae9KzBJhMS8gRb0Fx/Xvkt3UUIfoPPoR+ZUGAKrlWk604/irig=;
-X-YMail-OSG: v1kxc2gVM1nYQ1kiIP.AgtKlD6vUFoXsP6CxU86_0ox9gXA
- 0yLPs8StTxY3bogIKmp9uvn1sZekj1Q3hUDf8cr4JjjjtqDJ8m5ZkJA6A_Oq
- HSwGxolFX2CEbB2FEp9fRadWomlbpPRc_KY.5ESh6dBRuHCjnbwrpOklPMws
- IpQZfeVLtA.lRwI1dKFPY1sVxmvAHChwBCR_ysOvncihabv_TQhTvRja.5hM
- ixrljKfkyLNTcZyeBXGWC7hz0QBpa06m27xJr4rIWJCgTHuMwqc5HGGFi98j
- KECF0n5A7O_s9zh1OsNU9kXHHGRYxkauhM.FGZ95FwHwC7St51MfA2cUt8ut
- rwMX0wGpodByAAcYS9RHD.SyzVpz77PO.ISgb3dCMwslv40tNXkqmc_ARgoY
- 7fZkDDwxFRUs3hHd98KNEfqRaSuuqnKQDBQ_lLgysU3AZ6YU83DyG
-X-Mailer: YahooMailWebService/0.8.121.416
-Message-ID: <1345820228.87750.YahooMailNeo@web29604.mail.ird.yahoo.com>
-Date: Fri, 24 Aug 2012 15:57:08 +0100 (BST)
-From: "Bastelli Carlo \(yahoo\)" <carlo_bastelli@yahoo.it>
-Reply-To: "Bastelli Carlo \(yahoo\)" <carlo_bastelli@yahoo.it>
-Subject: SLAVE Side SPI kernel driver development
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1755514Ab2HXO6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 10:58:39 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38188 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab2HXO6g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 10:58:36 -0400
+Message-ID: <1345820311.4824.2.camel@edumazet-laptop>
+Subject: Re: [PATCH] fs/proc: Move kfree outside pde_unload_lock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        adobriyan@gmail.com, Alexander Viro <viro@zeniv.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Fri, 24 Aug 2012 16:58:31 +0200
+In-Reply-To: <20120824144852.GA18850@gulag1.americas.sgi.com>
+References: <1345653510-22000-1-git-send-email-nzimmer@sgi.com>
+	 <1345660110.5158.1969.camel@edumazet-glaptop>
+	 <1345671778.5158.2369.camel@edumazet-glaptop>
+	 <20120824144852.GA18850@gulag1.americas.sgi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, I'm Carlo, I have a difficult task at work, my boss asked me to 
-develop
- a driver SPI slave side on embedded ARM processor running Linux. 
-Precisely linux occur on the SPI bus as a slave, not master as required 
-by the hierarchical structure of the current kernel. The new driver 
-will
- receive via interrupt and respond when selected by its chip select. Can
- anyone suggest the best way to develop this driver?. Personally, I 
-have identified two main roads, the first if possible to exploit the 
-structure SPI master driver, with a few tricks that now I can not 
-define. The second most radical, write a driver for a UART like, but 
-managing the SPI device.
-Thank you for any suggestions or examples.
+Le vendredi 24 août 2012 à 09:48 -0500, Nathan Zimmer a écrit :
+> On Wed, Aug 22, 2012 at 11:42:58PM +0200, Eric Dumazet wrote:
+> > On Wed, 2012-08-22 at 20:28 +0200, Eric Dumazet wrote:
+> > 
+> > > 
+> > > Thats interesting, but if you really want this to fly, one RCU
+> > > conversion would be much better ;)
+> > > 
+> > > pde_users would be an atomic_t and you would avoid the spinlock
+> > > contention.
+> > 
+> > Here is what I had in mind, I would be interested to know how it helps a 512 core machine ;)
+> > 
+> 
+> Here are the results and they look great.
+> 
+> cpuinfo	baseline	moved kfree	Rcu 
+> tasks	read-sec	read-sec	read-sec
+> 1	0.0141		0.0141		0.0141
+> 2	0.0140		0.0140		0.0142
+> 4	0.0140		0.0141		0.0141
+> 8	0.0145		0.0145		0.0140
+> 16	0.0553		0.0548		0.0168
+> 32	0.1688		0.1622		0.0549
+> 64	0.5017		0.3856		0.1690
+> 128	1.7005		0.9710		0.5038
+> 256	5.2513		2.6519		2.0804
+> 512	8.0529		6.2976		3.0162
+> 
+> 
+> 
 
-Carlo Bastelli
+Indeed...
+
+Could you explicit the test you are actually doing ?
+
+Thanks
+
+
