@@ -1,107 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab2HXBb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:31:26 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:16876 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753064Ab2HXBbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:31:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnoEABDWNlB5LORDgWdsb2JhbABFuVMDeSMBARYmJ4IgAQEEAScTHCMFCwgDDgouFCUDIROIBwW6BBSKdAl6hg4DlVOJL4lbgUY
-Date: Fri, 24 Aug 2012 11:31:18 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep
- AS_HWPOISON sticky
-Message-ID: <20120824013118.GZ19235@dastard>
-References: <1345648655-4497-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1345648655-4497-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345648655-4497-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756647Ab2HXBdt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:33:49 -0400
+Received: from ozlabs.org ([203.10.76.45]:37952 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754016Ab2HXBdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 21:33:45 -0400
+Message-ID: <1345772029.13865.23.camel@concordia>
+Subject: Re: [PATCH v4 2/2] powerpc: Uprobes port to powerpc
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: ananth@in.ibm.com, ppcdev <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        peterz@infradead.org, oleg@redhat.com, Ingo Molnar <mingo@elte.hu>
+Date: Fri, 24 Aug 2012 11:33:49 +1000
+In-Reply-To: <20120823053234.GE25338@linux.vnet.ibm.com>
+References: <20120822082205.GA29216@in.ibm.com>
+	 <20120822082708.GB29216@in.ibm.com> <1345696100.3338.21.camel@concordia>
+	 <20120823053234.GE25338@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
-> "HWPOISON: report sticky EIO for poisoned file" still has a corner case
-> where we have possibilities of data lost. This is because in this fix
-> AS_HWPOISON is cleared when the inode cache is dropped.
+On Thu, 2012-08-23 at 11:02 +0530, Srikar Dronamraju wrote:
+> > 
+> > These seem to be duplicated in kprobes.h, can we consolidate them.
+> > 
+> > > +struct arch_uprobe {
+> > > +	u8	insn[MAX_UINSN_BYTES];
+> > > +};
+> > 
+> > Why not uprobe_opcode_t insn ?
+> > 
 > 
-> For example, consider an application in which a process periodically
-> (every 10 minutes) writes some logs on a file (and closes it after
-> each writes,) and at the end of each day some batch programs run using
-> the log file. If a memory error hits on dirty pagecache of this log file
-> just after periodic write/close and the inode cache is cleared before the
-> next write, then this application is not aware of the error and the batch
-> programs will work wrongly.
+> insn is updated/accessed in the arch independent code. Size of
+> uprobe_opcode_t could be different for different archs. uprobe_opcode_t
+> represents the size of the smallest breakpoint instruction for an arch.
 > 
-> To avoid this, this patch makes us pin the hwpoisoned inode on memory
-> until we remove or completely truncate the hwpoisoned file.
+> Hence u8 works out the best. I know we could still use uprobe_opcode_t
+> and achieve the same. In which case, we would have to interpret
+> MAX_UINSN_BYTES differently. Do you see any advantages of using
+> uprobe_opcode_t instead of u8 across archs?
+
+It's not a big deal, just a bit of a nit.
+
+It just feels a bit messy to have uprobe_opcode_t and also expect the
+arch code to use an array.
+
+It seems like if we need uprobe_opcode_t then the generic code should
+expect to use that everywhere.
+
+Or, we should get ride of uprobe_opcode_t and use u8 (or void *).
+
+
+> > >  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+> > >  {
+> > > +	if (thread_info_flags & _TIF_UPROBE) {
+> > > +		clear_thread_flag(TIF_UPROBE);
+> > > +		uprobe_notify_resume(regs);
+> > > +	}
+> > 
+> > Presumably this ordering is crucial, ie. uprobes before signals.
+> > 
 > 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  fs/inode.c              | 12 ++++++++++++
->  include/linux/pagemap.h | 11 +++++++++++
->  mm/memory-failure.c     |  2 +-
->  mm/truncate.c           |  2 ++
->  4 files changed, 26 insertions(+), 1 deletion(-)
+> Yes, we would want uprobes to have a say before do_signal can take a
+> look.
+
+A comment would be good IMHO, so in 10 years we don't forget.
+
+> > I am probably missing something, but why do we need to execute out of
+> > line?
 > 
-> diff --git v3.6-rc1.orig/fs/inode.c v3.6-rc1/fs/inode.c
-> index ac8d904..8742397 100644
-> --- v3.6-rc1.orig/fs/inode.c
-> +++ v3.6-rc1/fs/inode.c
-> @@ -717,6 +717,15 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
->  		}
->  
->  		/*
-> +		 * Keep inode caches on memory for user processes to certainly
-> +		 * be aware of memory errors.
-> +		 */
-> +		if (unlikely(mapping_hwpoison(inode->i_mapping))) {
-> +			spin_unlock(&inode->i_lock);
-> +			continue;
-> +		}
-> +
-> +		/*
->  		 * Referenced or dirty inodes are still in use. Give them
->  		 * another pass through the LRU as we canot reclaim them now.
->  		 */
+> The other alternative to execute out of line is the current inline
+> singlestepping. In inline singlestepping, we would have to guard other
+> tasks from executing the same instruction. 
+> 
+> Executing out of line solves this problem.
 
-I don't think you tested this at all. Have a look at what the loop
-does more closely - inodes with poisoned mappings will get stuck
-and reclaim doesn't make progress past them.
+Yeah ignore that, I was forgetting that the original trap is caused by a
+patched instruction.
 
-I think you also need to document this inode lifecycle change....
+> > > +/**
+> > > + * uprobe_get_swbp_addr - compute address of swbp given post-swbp regs
+> > > + * @regs: Reflects the saved state of the task after it has hit a breakpoint
+> > > + * instruction.
+> > > + * Return the address of the breakpoint instruction.
+> > > + */
+> > > +unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
+> > > +{
+> > > +	return instruction_pointer(regs);
+> > > +}
+> > 
+> > This seems like it would be better in asm/uprobes.h as a static inline,
+> > but that's not your fault.
+> > 
+> 
+> We want archs to override uprobe_get_swbp_addr() if the default
+> uprobe_get_swbp_addr() doesnt suite for a particular arch. Do you have
+> better ways to achieve this. Initially we were using arch specific
+> callbacks from which we moved to using weak functions based on reviews.
 
-> diff --git v3.6-rc1.orig/mm/truncate.c v3.6-rc1/mm/truncate.c
-> index 75801ac..82a994f 100644
-> --- v3.6-rc1.orig/mm/truncate.c
-> +++ v3.6-rc1/mm/truncate.c
-> @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
->  
->  	oldsize = inode->i_size;
->  	i_size_write(inode, newsize);
-> +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
-> +		mapping_clear_hwpoison(inode->i_mapping);
+OK, having a default that is weak makes sense if there is one behaviour
+that is common across arches, but a few arches need to override it. A
+static inline in the arch header is simpler if the behaviour is actually
+different across all arches.
 
-So only a truncate to zero size will clear the poison flag?
+The current default implements the x86 behaviour, where the instruction
+pointer has moved past the breakpoint instruction.
 
-What happens if it is the last page in the mapping that is poisoned,
-and we truncate that away? Shouldn't that clear the poisoned bit?
-What about a hole punch over the poisoned range?
+What does ARM do? ie. is this behaviour actually the right default?
 
-Cheers,
+> > > +	/*
+> > > +	 * emulate_step() returns 1 if the insn was successfully emulated.
+> > > +	 * For all other cases, we need to single-step in hardware.
+> > > +	 */
+> > > +	ret = emulate_step(regs, insn);
+> > > +	if (ret > 0)
+> > > +		return true;
+> > 
+> > This actually emulates the instruction, ie. the contents of regs are
+> > changed based on the instruction.
+> > 
+> > That seems to differ vs x86, where arch_uprobe_skip_sstep() just checks
+> > the instruction and returns true/false. Is that because on x86 they are
+> > only returning true for nops? ie. there is no emulation to be done?
+> > 
+> 
+> Yes, In x86, we currently support skip for nop instructions, Once we add
+> code for skipping other instructions in x86, we could enhance them to
+> skip them too.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+(and emulating them right?)
+
+> > It's a little surprising that can_skip_sstep() actually emulates the
+> > instruction, but again that's not your fault.
+> 
+> Are you saying its doing more than what the name suggests or to the fact
+> that can_skip_step should ideally be called just once?
+
+Yeah just that the name suggests it is just a "checker" function, but it
+actually emulates the instruction and changes the task state!
+
+cheers
+
+
+
