@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2HXIca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 04:32:30 -0400
-Received: from relay.medianet-world.de ([213.157.0.172]:21932 "HELO
-	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751493Ab2HXIcZ convert rfc822-to-8bit (ORCPT
+	id S1757428Ab2HXIdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 04:33:32 -0400
+Received: from smtp2.infineon.com ([217.10.60.23]:18094 "EHLO
+	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab2HXId1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 04:32:25 -0400
-thread-index: Ac2B0vmYFMvBhnRLTIOjYyCIfsooAw==
-Thread-Topic: [ANNOUNCE] 3.4.9-rt17
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-From: "Tim Sander" <tim.sander@hbm.com>
-To: "RT" <linux-rt-users@vger.kernel.org>
-Cc: "Steven Rostedt" <rostedt@goodmis.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.4.9-rt17
-Date: Fri, 24 Aug 2012 10:32:14 +0200
-Message-ID: <1494830.WYyVmtosNh@dabox>
-Organization: Hottinger Baldwin Messtechnik
-User-Agent: KMail/4.8.4 (Linux/3.4.0; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <1843545.6vtXSYEOLB@dabox>
-References: <1345144963.3708.1.camel@gandalf.local.home> <10950377.h1F1h7Gs2a@dabox> <1843545.6vtXSYEOLB@dabox>
-MIME-Version: 1.0
+	Fri, 24 Aug 2012 04:33:27 -0400
+X-SBRS: None
+From: <Peter.Huewe@infineon.com>
+To: <jmorris@namei.org>, <key@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
+        <tpmdd-devel@lists.sourceforge.net>, <adlai@linux.vnet.ibm.com>,
+        <xiaoyan.zhang@intel.com>, <jj@chaosbits.net>
+Subject: RE: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+Thread-Topic: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+Thread-Index: AQHNgLBwseNda/zV6EGrO8CD/jLRy5dnufyAgADXl6CAABF4gA==
+Date: Fri, 24 Aug 2012 08:32:47 +0000
+Message-ID: <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com>
+References: <20120822215216.GC13519@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org> 
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.8.248]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset="iso-8859-1"
-X-OriginalArrivalTime: 24 Aug 2012 08:32:19.0345 (UTC) FILETIME=[F98C5010:01CD81D2]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi 
+>> From: James Morris [mailto:jmorris@namei.org] 
+>> I'm getting this error when building i2c as a module
+>> WARNING: "__i2c_transfer" [drivers/char/tpm/tpm_i2c_infineon.ko] undefined!
 
-After fixing the realtime prios which got shuffled due to other irq thread names
-I just tested the realtime latency for interrupts on the i.mx35. With our own 
-systemtimer which does not get into the way of  the measurement interrupt this 
-kernel has 30µs worst time (caveat: short measurement period) interrupt 
-latency and usermode can keep up with a 2400kHz interrupt rate. While the 
-usermode performance seems to be largely unchanged (but i haven't tested very 
-thoroughly) the interrupt latency went down about 10µs coming from the 3.0-rt 
-series. Its really nice to see that kind of improvement. 
+> This is unconditionally (except I2C) available in Linus' master tree.
+> And was introduced by b37d2a3a75cb in June by Jean Delvare.
 
-Thanks
-Tim
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=b37d2a3a75cb0e72e18c29336cb2095b63dabfc8
 
-Ignore the legalese please:
+> It was tested here against Linus' tree at time of submission.
+
+Did double check it against v3.6-rc3.
+$ make ARCH=arm omap2plus_defconfig
+$ make ARCH=arm menuconfig
+-> deselected OMAP2_TYPICAL, which enables I2C to be builded as a module.
+-> selected I2C as Module.
+Build using make -> no error.
+
+Thanks,
+Peter
 
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
 
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
-
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
-
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
