@@ -1,48 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab2HXPOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 11:14:06 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33955 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775Ab2HXPOB (ORCPT
+	id S1759415Ab2HXPO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 11:14:56 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56533 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757262Ab2HXPOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 11:14:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <1345820228.87750.YahooMailNeo@web29604.mail.ird.yahoo.com>
-References: <1345820228.87750.YahooMailNeo@web29604.mail.ird.yahoo.com>
-Date: Fri, 24 Aug 2012 12:14:00 -0300
-Message-ID: <CAOMZO5Ds6NKsTCptQXDGZDJasb119hYWqXMzX8nG5WFArysL7A@mail.gmail.com>
-Subject: Re: SLAVE Side SPI kernel driver development
-From: Fabio Estevam <festevam@gmail.com>
-To: "Bastelli Carlo (yahoo)" <carlo_bastelli@yahoo.it>
+	Fri, 24 Aug 2012 11:14:52 -0400
+Date: Fri, 24 Aug 2012 16:14:47 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marex@denx.de>
-Content-Type: text/plain; charset=UTF-8
+        "ola.o.lilja@stericsson.com" <ola.o.lilja@stericsson.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "roger.xr.nilsson@stericsson.com" <roger.xr.nilsson@stericsson.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "STEricsson_nomadik_linux@list.st.com" 
+	<STEricsson_nomadik_linux@list.st.com>
+Subject: Re: [alsa-devel] [PATCH 14/17] ARM: ux500: Rename MSP board file to
+ something more meaningful
+Message-ID: <20120824151446.GQ32491@gmail.com>
+References: <1345816913-4113-1-git-send-email-lee.jones@linaro.org>
+ <1345816913-4113-15-git-send-email-lee.jones@linaro.org>
+ <1BAFE6F6C881BF42822005164F1491C33EA69B3A@DBDE01.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EA69B3A@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 11:57 AM, Bastelli Carlo (yahoo)
-<carlo_bastelli@yahoo.it> wrote:
-> Hello, I'm Carlo, I have a difficult task at work, my boss asked me to
-> develop
->  a driver SPI slave side on embedded ARM processor running Linux.
-> Precisely linux occur on the SPI bus as a slave, not master as required
-> by the hierarchical structure of the current kernel. The new driver
-> will
->  receive via interrupt and respond when selected by its chip select. Can
->  anyone suggest the best way to develop this driver?. Personally, I
-> have identified two main roads, the first if possible to exploit the
-> structure SPI master driver, with a few tricks that now I can not
-> define. The second most radical, write a driver for a UART like, but
-> managing the SPI device.
-> Thank you for any suggestions or examples.
+Like this?
 
-Marek got spi slave running on a mx28. See his patch:
-http://www.spinics.net/lists/arm-kernel/msg190860.html
+From: Lee Jones <lee.jones@linaro.org>
+Date: Fri, 24 Aug 2012 13:16:06 +0100
+Subject: [PATCH 1/1] ARM: ux500: Rename MSP board file to something more meaningful
 
-Regards,
+The 'msp' board file does more than just register MSP devices. It
+also registers some other components necessary to get audio working
+on ux500 based platforms; such as the PCM and Machine Drivers. For
+that reason we're changing the filename to be more encompassing -
+'audio'.
 
-Fabio Estevam
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/mach-ux500/Makefile                       |    2 +-
+ .../{board-mop500-msp.c => board-mop500-audio.c}   |   16 ++++++++--------
+ arch/arm/mach-ux500/board-mop500.c                 |   12 ++++++------
+ arch/arm/mach-ux500/board-mop500.h                 |    4 ++--
+ 4 files changed, 17 insertions(+), 17 deletions(-)
+ rename arch/arm/mach-ux500/{board-mop500-msp.c => board-mop500-audio.c} (98%)
+
+diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
+index 026086f..1dc2cfa 100644
+--- a/arch/arm/mach-ux500/Makefile
++++ b/arch/arm/mach-ux500/Makefile
+@@ -12,6 +12,6 @@ obj-$(CONFIG_MACH_MOP500)	+= board-mop500.o board-mop500-sdi.o \
+ 				board-mop500-uib.o board-mop500-stuib.o \
+ 				board-mop500-u8500uib.o \
+ 				board-mop500-pins.o \
+-				board-mop500-msp.o
++				board-mop500-audio.o
+ obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+diff --git a/arch/arm/mach-ux500/board-mop500-msp.c b/arch/arm/mach-ux500/board-mop500-audio.c
+similarity index 98%
+rename from arch/arm/mach-ux500/board-mop500-msp.c
+rename to arch/arm/mach-ux500/board-mop500-audio.c
+index 2af017f..18f6c5a 100644
+--- a/arch/arm/mach-ux500/board-mop500-msp.c
++++ b/arch/arm/mach-ux500/board-mop500-audio.c
+@@ -172,14 +172,7 @@ struct msp_i2s_platform_data msp3_platform_data = {
+ 	.msp_i2s_dma_tx	= NULL,
+ };
+ 
+-/* Due for removal once the MSP driver has been fully DT:ed. */
+-void mop500_of_msp_init(struct device *parent)
+-{
+-	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
+-	platform_device_register(&ux500_pcm);
+-}
+-
+-void mop500_msp_init(struct device *parent)
++void mop500_audio_init(struct device *parent)
+ {
+ 	pr_info("%s: Register platform-device 'snd-soc-mop500'.\n", __func__);
+ 	platform_device_register(&snd_soc_mop500);
+@@ -197,3 +190,10 @@ void mop500_msp_init(struct device *parent)
+ 	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
+ 	platform_device_register(&ux500_pcm);
+ }
++
++/* Due for removal once the MSP driver has been fully DT:ed. */
++void mop500_of_audio_init(struct device *parent)
++{
++	pr_info("%s: Register platform-device 'ux500-pcm'\n", __func__);
++	platform_device_register(&ux500_pcm);
++}
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 0c141d5..7152635 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -607,7 +607,7 @@ static void __init mop500_init_machine(void)
+ 	mop500_i2c_init(parent);
+ 	mop500_sdi_init(parent);
+ 	mop500_spi_init(parent);
+-	mop500_msp_init(parent);
++	mop500_audio_init(parent);
+ 	mop500_uart_init(parent);
+ 
+ 	u8500_cryp1_hash1_init(parent);
+@@ -641,7 +641,7 @@ static void __init snowball_init_machine(void)
+ 	mop500_i2c_init(parent);
+ 	snowball_sdi_init(parent);
+ 	mop500_spi_init(parent);
+-	mop500_msp_init(parent);
++	mop500_audio_init(parent);
+ 	mop500_uart_init(parent);
+ 
+ 	/* This board has full regulator constraints */
+@@ -673,7 +673,7 @@ static void __init hrefv60_init_machine(void)
+ 	mop500_i2c_init(parent);
+ 	hrefv60_sdi_init(parent);
+ 	mop500_spi_init(parent);
+-	mop500_msp_init(parent);
++	mop500_audio_init(parent);
+ 	mop500_uart_init(parent);
+ 
+ 	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
+@@ -807,7 +807,7 @@ static void __init u8500_init_machine(void)
+ 				ARRAY_SIZE(mop500_platform_devs));
+ 
+ 		mop500_sdi_init(parent);
+-		mop500_msp_init(parent);
++		mop500_audio_init(parent);
+ 		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
+ 		i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
+ 		i2c_register_board_info(2, mop500_i2c2_devices,
+@@ -816,7 +816,7 @@ static void __init u8500_init_machine(void)
+ 		mop500_uib_init();
+ 
+ 	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
+-		mop500_of_msp_init(parent);
++		mop500_of_audio_init(parent);
+ 	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
+ 		/*
+ 		 * The HREFv60 board removed a GPIO expander and routed
+@@ -828,7 +828,7 @@ static void __init u8500_init_machine(void)
+ 				ARRAY_SIZE(mop500_platform_devs));
+ 
+ 		hrefv60_sdi_init(parent);
+-		mop500_msp_init(parent);
++		mop500_audio_init(parent);
+ 
+ 		i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
+ 		i2c0_devs -= NUM_PRE_V60_I2C0_DEVICES;
+diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
+index 3fbf48f..9e9dd5a 100644
+--- a/arch/arm/mach-ux500/board-mop500.h
++++ b/arch/arm/mach-ux500/board-mop500.h
+@@ -97,9 +97,9 @@ void __init mop500_stuib_init(void);
+ void __init mop500_pinmaps_init(void);
+ void __init snowball_pinmaps_init(void);
+ void __init hrefv60_pinmaps_init(void);
+-void mop500_msp_init(struct device *parent);
++void mop500_audio_init(struct device *parent);
+ /* Due for removal once the MSP driver has been fully DT:ed. */
+-void mop500_of_msp_init(struct device *parent);
++void mop500_of_audio_init(struct device *parent);
+ 
+ int __init mop500_uib_init(void);
+ void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
+-- 
+1.7.9.5
