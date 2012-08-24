@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964835Ab2HXOks (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 10:40:48 -0400
-Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:59372 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932635Ab2HXOko (ORCPT
+	id S933054Ab2HXOmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 10:42:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58522 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932612Ab2HXOmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 10:40:44 -0400
-Message-ID: <503792CC.6050209@laposte.net>
-Date: Fri, 24 Aug 2012 16:42:20 +0200
-From: Yann Cantin <yann.cantin@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
+	Fri, 24 Aug 2012 10:42:16 -0400
+Message-ID: <503792BF.1030601@gmail.com>
+Date: Fri, 24 Aug 2012 22:42:07 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC ebeam PATCH v4 2/2] input: misc: New USB eBeam input driver.
-References: <1345673514-11575-1-git-send-email-yann.cantin@laposte.net> <1368810.q4rGz16CTW@linux-lqwf.site> <50374B69.3040002@laposte.net> <1555763.Oi7gGGn7BU@linux-lqwf.site>
-In-Reply-To: <1555763.Oi7gGGn7BU@linux-lqwf.site>
-X-Enigmail-Version: 1.4
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Unable to mount NFSROOT: pcie change breaks e1000?
+References: <20120823004604.GA2882@localhost> <503587F4.3090907@huawei.com> <50364641.8010000@gmail.com> <CAErSpo6MepO=Ms+WBqfJmcGH0oZBJbnuYNuswavcF+mdqs2uZw@mail.gmail.com>
+In-Reply-To: <CAErSpo6MepO=Ms+WBqfJmcGH0oZBJbnuYNuswavcF+mdqs2uZw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Le 24/08/2012 13:41, Oliver Neukum a écrit :
-> On Friday 24 August 2012 11:37:45 Yann Cantin wrote:
->> Hi,
->>
->> Le 23/08/2012 09:23, Oliver Neukum a écrit :
->>> On Thursday 23 August 2012 00:11:54 Yann Cantin wrote:
+On 08/24/2012 12:12 AM, Bjorn Helgaas wrote:
+> On Thu, Aug 23, 2012 at 9:03 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> Hi Bjorn,
+>>         Could you please help to fold this small patch into
+>> "[5/40] PCI/core: Use PCI Express Capability accessors"?
+>> It fixes a bug reported by Fengguang.
 > 
->>> These functions are identical. You should unify them.
->>
->> Removed reset_resume from the driver (optional, and not needed
->> for this hardware).
-> 
-> Why did you do that? It is always better to have reset_resume().
-> And you cannot tell whether it will be needed.
+> Thanks, I folded it in.  I looked briefly at whether a similar fix is
+> needed in pci_restore_pcie_state().  I don't *think* so, but it
+> wouldn't hurt for you to also double-check and let me know if it does.
 
-This function was used in usbtouchscreen (which this driver is based on)
-for some hardware specific init after reset. eBeam devices doesn't need that,
-and i didn't mention the similarity of the 2 functions after stripping the code.
+I think it's optional to add a "pci_is_pcie()" check for pci_restore_pcie_state().
+pci_find_saved_cap(dev, PCI_CAP_ID_EXP) should return NULL for non-PCIe device.
 
-According to power-management.txt, reset_resume is optional, and lot of input
-driver lack it. Anyway, if you think it's worth the code, i'll re-add a 
-reset_resume function proxing resume like wacom_sys.c do.
+--Gerry
 
--- 
-Yann Cantin
-A4FEB47F
---
