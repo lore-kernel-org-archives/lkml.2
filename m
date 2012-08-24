@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964863Ab2HXQ3E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:29:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:65166 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759830Ab2HXQ26 (ORCPT
+	id S1759926Ab2HXQ3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:29:31 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48186 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759830Ab2HXQ30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:28:58 -0400
+	Fri, 24 Aug 2012 12:29:26 -0400
+Message-ID: <5037ABE2.2020407@lwfinger.net>
+Date: Fri, 24 Aug 2012 11:29:22 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <00000139596a800b-875d7863-23ac-44a5-8710-ea357f3df8a8-000000@email.amazonses.com>
-References: <1345824303-30292-1-git-send-email-js1304@gmail.com>
-	<1345824303-30292-2-git-send-email-js1304@gmail.com>
-	<00000139596a800b-875d7863-23ac-44a5-8710-ea357f3df8a8-000000@email.amazonses.com>
-Date: Sat, 25 Aug 2012 01:28:58 +0900
-Message-ID: <CAAmzW4ORnSLMdhVPmYPpeEJ=P1rrpz1LOibOYWQJgOYQxmDhuA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] slub: correct the calculation of the number of cpu
- objects in get_partial_node
-From: JoonSoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        John W Linville <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
+ out_of_order memory use"
+References: <50345B12.1050600@lwfinger.net>  <1345612503.5158.566.camel@edumazet-glaptop>  <50355021.7000408@lwfinger.net> <1345694593.5904.87.camel@edumazet-glaptop>  <50369925.3050705@lwfinger.net>  <1345757200.5904.1890.camel@edumazet-glaptop> <50378B35.80307@lwfinger.net>  <1345820142.4824.1.camel@edumazet-laptop> <5037A292.1020801@lwfinger.net> <1345824094.19483.9.camel@edumazet-glaptop>
+In-Reply-To: <1345824094.19483.9.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/25 Christoph Lameter <cl@linux.com>:
-> On Sat, 25 Aug 2012, Joonsoo Kim wrote:
+On 08/24/2012 11:01 AM, Eric Dumazet wrote:
+> On Fri, 2012-08-24 at 10:49 -0500, Larry Finger wrote:
 >
->> index d597530..c96e0e4 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -1538,6 +1538,7 @@ static void *get_partial_node(struct kmem_cache *s,
->>  {
->>       struct page *page, *page2;
->>       void *object = NULL;
->> +     int cpu_slab_objects = 0, pobjects = 0;
+>> There is nothing in kernel log when it happens. The file STRACE is attached.
+>>
 >
-> We really need be clear here.
->
-> One counter is for the numbe of objects in the per cpu slab and the other
-> for the objects in tbhe per cpu partial lists.
->
-> So I think the first name is ok. Second should be similar
->
-> cpu_partial_objects?
->
+> So there is indeed a corruption. What was the driver you used in this
+> case ?
 
-Okay! It looks good.
-But, when using "cpu_partial_objects", I have a coding style problem.
+The only driver that shows this problem is r8712u. One thought that I just had 
+is that this driver does not use mac80211, which is why it is in staging. 
+Instead it uses a Realtek soft MAC layer derived from the obsolete softmac 
+driver that was in the kernel in the 2.6.20 time frame. That means that none of 
+the skbs have ever been cloned by any part of the wireless code.
 
-                if (kmem_cache_debug(s)
-                        || cpu_slab_objects + cpu_partial_objects
-                                                > s->max_cpu_object / 2)
+Larry
 
-Do you have any good idea?
+
