@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab2HXCrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:47:39 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:46607
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751052Ab2HXCrf (ORCPT
+	id S932067Ab2HXCtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 22:49:14 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:18711 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751052Ab2HXCtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:47:35 -0400
+	Thu, 23 Aug 2012 22:49:11 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 1
-X-BigFish: VS1(zz98dI1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah1155h)
-Date: Fri, 24 Aug 2012 10:28:09 +0800
+X-BigFish: VS1(zz98dI1432Izz1202h1082kzzz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Fri, 24 Aug 2012 10:29:47 +0800
 From: Dong Aisheng <b29396@freescale.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linus.walleij@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
@@ -28,54 +27,41 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
         "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 1/7] mfd: add imx syscon driver based on regmap
-Message-ID: <20120824022807.GA5822@shlinux2.ap.freescale.net>
+Subject: Re: [PATCH 4/7] regulator: anatop-regulator: convert to use
+ imx-syscon to access anatop register
+Message-ID: <20120824022946.GB5822@shlinux2.ap.freescale.net>
 References: <1345619928-15446-1-git-send-email-b29396@freescale.com>
- <1345619928-15446-2-git-send-email-b29396@freescale.com>
- <20120822160241.GR7995@opensource.wolfsonmicro.com>
- <20120823072629.GG10057@shlinux2.ap.freescale.net>
- <20120823110647.GU7995@opensource.wolfsonmicro.com>
+ <1345619928-15446-5-git-send-email-b29396@freescale.com>
+ <20120822155953.GQ7995@opensource.wolfsonmicro.com>
+ <20120823071503.GF10057@shlinux2.ap.freescale.net>
+ <20120823111741.GX7995@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120823110647.GU7995@opensource.wolfsonmicro.com>
+In-Reply-To: <20120823111741.GX7995@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 07:06:47PM +0800, Mark Brown wrote:
-> On Thu, Aug 23, 2012 at 03:26:30PM +0800, Dong Aisheng wrote:
-> > On Thu, Aug 23, 2012 at 12:02:41AM +0800, Mark Brown wrote:
+On Thu, Aug 23, 2012 at 07:17:41PM +0800, Mark Brown wrote:
+> On Thu, Aug 23, 2012 at 03:15:04PM +0800, Dong Aisheng wrote:
+> > On Wed, Aug 22, 2012 at 11:59:53PM +0800, Mark Brown wrote:
 > 
-> > > It'd be good to provide a way of retrieving the regmap so that drivers
-> > > for subsystems with generic regmap code could use the framework features
-> > > (regulator is one example that I just mentioned in my other mail).
+> > > With the conversion to regmap it'd also be good to convert the driver to
+> > > use the regmap helper functions for enable and voltage operations if
+> > > possible.
 > 
-> > Do you mean something like:
-> > regmap = syscon_regmap_dev_lookup(np, "fsl,anatop");
-> > regmap_write(regmap, reg, val);
+> > The anatop-regulator driver only implements set_voltage_sel/get_voltage_sel
+> > which i have already converted, what do you mean others like
+> > 'for enable and voltage operations' i should also convert?
 > 
-> > Then drivers can use generic regmap framework features rather than depend
-> > on what imx-syscon implemented, is that correct?
-> 
-> Yes, this is mainly for cases where the subsystem has helper functions
-> that can work with regmap.
+> Those operations should ideally be converted to use the generic regmap
+> implementation now the device uses regmap - regmap_get_voltage_sel_regmap
+> and so on.
 
-Okay, then imx-syscon only implements regmap register mechanism and regmap
-lookup mechanism, for accessors, client driver can directly use the generic
-regmap API defined in include/linux/regmap.h.
-
-Then it looks to me the driver is more like a generic feature which may also be
-needed for other SoCs, IIRC, Tegra ahb and ux500 PRCMU,
-
-Do you think if we should implement it in a more generic way at first?
-e.g, drop 'imx-' prefix first.
-
-Linus,
-You're the first guy to raise the idea that we could implement a syscon
-framework to generic register access, what's your comment on this?
+Okay, got it.
 
 Regards
 Dong Aisheng
