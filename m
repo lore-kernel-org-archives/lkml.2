@@ -1,173 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759533Ab2HXOI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 10:08:59 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43399 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab2HXOI4 (ORCPT
+	id S1759554Ab2HXOKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 10:10:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55651 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab2HXOKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 10:08:56 -0400
-Date: Fri, 24 Aug 2012 15:08:51 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Philippe LANGLAIS <philippe.langlais@st.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH 1/1 v2] ARM: ux500: Provide SMSC911x fixed-regulator when
- not booting DT
-Message-ID: <20120824140849.GM32491@gmail.com>
-References: <1345812481-2384-1-git-send-email-lee.jones@linaro.org>
- <5037871F.7080300@st.com>
+	Fri, 24 Aug 2012 10:10:02 -0400
+Message-ID: <50378B35.80307@lwfinger.net>
+Date: Fri, 24 Aug 2012 09:09:57 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5037871F.7080300@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        John W Linville <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
+ out_of_order memory use"
+References: <50345B12.1050600@lwfinger.net>  <1345612503.5158.566.camel@edumazet-glaptop>  <50355021.7000408@lwfinger.net> <1345694593.5904.87.camel@edumazet-glaptop>  <50369925.3050705@lwfinger.net> <1345757200.5904.1890.camel@edumazet-glaptop>
+In-Reply-To: <1345757200.5904.1890.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have checked in Snowball schematics and I can confirm that the fixed
-> 3.3V regulator is GPIO26 on AB8500 not DB8500, so its numero is 
-> MOP500_AB8500_PIN_GPIO(26)
+On 08/23/2012 04:26 PM, Eric Dumazet wrote:
+>
+> skb->truesize is adjusted when a frag is added to one skb, or when
+> skb->head is re-allocated.
+>
+> Are you sure you dont have another problem, because as I said commit
+> c8628155ece3  had a bug, so a bisect is not very useful.
+>
+> How many reloads are needed to trigger the bug, do you have a script to
+> reproduce it ?
 
-We're also using GPIO26 on the DB8500 in the Device Tree solution.
-Odd that is should work? I wonder if we're just getting lucky, or if
-it's just not required?
+I was doing the tests with a browser; however, it seems that a wget of that same 
+page is much more effective at triggering the problem. Now I have a script that 
+tries 60 passes of
 
-> and you have first to update the upstream gpio-ab8500 driver.
+wget https://bugzilla.redhat.com/show_bug.cgi?id=847525
 
-I see. Do you know what needs to be updated to get it working?
+I usually get failures on the first or second try. A kernel built from "git 
+checkout c862815" gets the following wget output:
 
-> On 08/24/2012 02:48 PM, Lee Jones wrote:
-> > The SMSC911x Ethernet chip requires a fixed-regulator in order to
-> > function correctly. We have previously provided a means to obtain
-> > this during a Device Tree boot, however nothing has been put into
-> > place when booting with a non-DT kernel. This patch aims to change
-> > that.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >   arch/arm/mach-ux500/board-mop500-regulators.c |   17 +++++++++++++++++
-> >   arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
-> >   arch/arm/mach-ux500/board-mop500.c            |   21 +++++++++++++++++++++
-> >   arch/arm/mach-ux500/board-mop500.h            |    2 +-
-> >   4 files changed, 40 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-> > index 52426a4..139f31e 100644
-> > --- a/arch/arm/mach-ux500/board-mop500-regulators.c
-> > +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-> > @@ -13,6 +13,23 @@
-> >   #include <linux/regulator/ab8500.h>
-> >   #include "board-mop500-regulators.h"
-> >   
-> > +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
-> > +static struct regulator_consumer_supply gpio_en_3v3_consumers[] = {
-> > +	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
-> > +};
-> > +
-> > +struct regulator_init_data gpio_en_3v3_regulator = {
-> > +	.constraints = {
-> > +		.name = "EN-3V3",
-> > +		.min_uV = 3300000,
-> > +		.max_uV = 3300000,
-> > +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-> > +	},
-> > +	.num_consumer_supplies = ARRAY_SIZE(gpio_en_3v3_consumers),
-> > +	.consumer_supplies = gpio_en_3v3_consumers,
-> > +};
-> > +#endif
-> > +
-> >   /*
-> >    * TPS61052 regulator
-> >    */
-> > diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-> > index 9499215..78a0642 100644
-> > --- a/arch/arm/mach-ux500/board-mop500-regulators.h
-> > +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-> > @@ -18,5 +18,6 @@ extern struct ab8500_regulator_reg_init
-> >   ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS];
-> >   extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
-> >   extern struct regulator_init_data tps61052_regulator;
-> > +extern struct regulator_init_data gpio_en_3v3_regulator;
-> >   
-> >   #endif
-> > diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-> > index 42e1759..c7f0973 100644
-> > --- a/arch/arm/mach-ux500/board-mop500.c
-> > +++ b/arch/arm/mach-ux500/board-mop500.c
-> > @@ -23,6 +23,7 @@
-> >   #include <linux/spi/spi.h>
-> >   #include <linux/mfd/abx500/ab8500.h>
-> >   #include <linux/regulator/ab8500.h>
-> > +#include <linux/regulator/fixed.h>
-> >   #include <linux/mfd/tc3589x.h>
-> >   #include <linux/mfd/tps6105x.h>
-> >   #include <linux/mfd/abx500/ab8500-gpio.h>
-> > @@ -75,6 +76,25 @@ static struct platform_device snowball_led_dev = {
-> >   	},
-> >   };
-> >   
-> > +#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
-> > +static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
-> > +	.supply_name		= "EN-3V3",
-> > +	.gpio			= SNOWBALL_EN_3V3_ETH_GPIO,
-> > +	.microvolts		= 3300000,
-> > +	.enable_high		= 1,
-> > +	.init_data		= &gpio_en_3v3_regulator,
-> > +	.startup_delay		= 5000, /* 1200us */
-> > +};
-> > +
-> > +static struct platform_device snowball_gpio_en_3v3_regulator_dev = {
-> > +	.name	= "reg-fixed-voltage",
-> > +	.id	= 1,
-> > +	.dev	= {
-> > +		.platform_data	= &snowball_gpio_en_3v3_data,
-> > +	},
-> > +};
-> > +#endif
-> > +
-> >   static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
-> >   	.gpio_base		= MOP500_AB8500_PIN_GPIO(1),
-> >   	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-> > @@ -585,6 +605,7 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
-> >   	&snowball_led_dev,
-> >   	&snowball_key_dev,
-> >   	&snowball_sbnet_dev,
-> > +	&snowball_gpio_en_3v3_regulator_dev,
-> >   };
-> >   
-> >   static void __init mop500_init_machine(void)
-> > diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
-> > index 9e9dd5a..d3a02d5 100644
-> > --- a/arch/arm/mach-ux500/board-mop500.h
-> > +++ b/arch/arm/mach-ux500/board-mop500.h
-> > @@ -13,6 +13,7 @@
-> >   #include <linux/amba/mmci.h>
-> >   
-> >   /* Snowball specific GPIO assignments, this board has no GPIO expander */
-> > +#define SNOWBALL_EN_3V3_ETH_GPIO	26
-> No it's MOP500_AB8500_PIN_GPIO(26)
-> >   #define SNOWBALL_ACCEL_INT1_GPIO	163
-> >   #define SNOWBALL_ACCEL_INT2_GPIO	164
-> >   #define SNOWBALL_MAGNET_DRDY_GPIO	165
-> > @@ -76,7 +77,6 @@
-> >   #define SNOWBALL_PM_GPIO4_GPIO		MOP500_AB8500_PIN_GPIO(4)	/* SYSCLKREQ6/GPIO4 */
-> >   #define SNOWBALL_EN_3V6_GPIO		MOP500_AB8500_PIN_GPIO(16)	/* PWMOUT3/GPIO16 */
-> >   #define SNOWBALL_PME_ETH_GPIO		MOP500_AB8500_PIN_GPIO(24)	/* SYSCLKREQ7/GPIO24 */
-> > -#define SNOWBALL_EN_3V3_ETH_GPIO	MOP500_AB8500_PIN_GPIO(26)	/* GPIO26 */
-> keep this line
-> >   
-> >   struct device;
-> >   struct i2c_board_info;
+============================================================================
+--2012-08-23 21:50:32--  https://bugzilla.redhat.com/show_bug.cgi?id=847525
+Resolving bugzilla.redhat.com (bugzilla.redhat.com)... 209.132.183.69
+Connecting to bugzilla.redhat.com (bugzilla.redhat.com)|209.132.183.69|:443... 
+connected.
+OpenSSL: error:0D0680A8:asn1 encoding routines:ASN1_CHECK_TLEN:wrong tag
+OpenSSL: error:0D07803A:asn1 encoding routines:ASN1_ITEM_EX_D2I:nested asn1 error
+OpenSSL: error:0D08303A:asn1 encoding routines:ASN1_TEMPLATE_NOEXP_D2I:nested 
+asn1 error
+OpenSSL: error:0D08303A:asn1 encoding routines:ASN1_TEMPLATE_NOEXP_D2I:nested 
+asn1 error
+OpenSSL: error:1409000D:SSL routines:SSL3_GET_SERVER_CERTIFICATE:ASN1 lib
+Unable to establish SSL connection.
+============================================================================
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+With kernel 3.6-rc2, the error changes to the following:
+
+============================================================================
+--2012-08-24 08:26:42--  https://bugzilla.redhat.com/show_bug.cgi?id=847525
+Resolving bugzilla.redhat.com (bugzilla.redhat.com)... 209.132.183.69
+Connecting to bugzilla.redhat.com (bugzilla.redhat.com)|209.132.183.69|:443... 
+connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [text/html]
+Saving to: `show_bug.cgi?id=847525.3'
+
+     [ <=>                          ] 0           --.-K/s   in 0s
+
+2012-08-24 08:26:45 (0.00 B/s) - Read error at byte 0 (error:1408F119:SSL 
+routines:SSL3_GET_RECORD:decryption failed or bad record mac).Retrying.
+============================================================================
+
+> Could it be a PMTU problem ? (check
+> http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=commit;h=9b04f350057863d1fad1ba071e09362a1da3503e )
+
+I added the PMTU patch to kernel 3.6-rc2 - nothing changed.
+
+Anything else to try?
+
+Thanks,
+
+Larry
+
