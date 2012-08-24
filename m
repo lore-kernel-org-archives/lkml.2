@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030587Ab2HXVEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 17:04:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54478 "EHLO
+	id S1030524Ab2HXVLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 17:11:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030446Ab2HXVEV (ORCPT
+	with ESMTP id S1757675Ab2HXVLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 17:04:21 -0400
-Date: Fri, 24 Aug 2012 14:04:19 -0700
+	Fri, 24 Aug 2012 17:11:09 -0400
+Date: Fri, 24 Aug 2012 14:11:08 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Matt Porter <mporter@kernel.crashing.org>
-Subject: Re: [PATCH] rapidio: apply RX/TX enable to active switch ports only
-Message-Id: <20120824140419.2b3a9623.akpm@linux-foundation.org>
-In-Reply-To: <1345559035-25879-2-git-send-email-alexandre.bounine@idt.com>
-References: <1345559035-25879-1-git-send-email-alexandre.bounine@idt.com>
-	<1345559035-25879-2-git-send-email-alexandre.bounine@idt.com>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/14] aoe: for performance support larger packet
+ payloads
+Message-Id: <20120824141108.27da5e79.akpm@linux-foundation.org>
+In-Reply-To: <7c895879cfd1e15dd76c2469b417b48d0462d7df.1345743801.git.ecashin@coraid.com>
+References: <cover.1345743800.git.ecashin@coraid.com>
+	<7c895879cfd1e15dd76c2469b417b48d0462d7df.1345743801.git.ecashin@coraid.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,18 +25,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Aug 2012 10:23:55 -0400
-Alexandre Bounine <alexandre.bounine@idt.com> wrote:
+On Fri, 17 Aug 2012 21:18:37 -0400
+Ed Cashin <ecashin@coraid.com> wrote:
 
-> Modify RIO enumeration to apply RX/TX enable operations only to active
-> switch ports. This will leave inactive ports in condition consistent with
-> their state.
+> --- a/drivers/block/aoe/aoeblk.c
+> +++ b/drivers/block/aoe/aoeblk.c
+> @@ -279,6 +279,9 @@ aoeblk_gdalloc(void *vp)
+>  	if (bdi_init(&d->blkq->backing_dev_info))
+>  		goto err_blkq;
+>  	spin_lock_irqsave(&d->lock, flags);
+> +	blk_queue_max_hw_sectors(d->blkq, BLK_DEF_MAX_SECTORS);
+> +	d->blkq->backing_dev_info.ra_pages = BLK_DEF_MAX_SECTORS * 1024;
+> +	d->blkq->backing_dev_info.ra_pages /= PAGE_CACHE_SIZE;
 
-It's unclear (to me) what the effects of this are.  Does it fix some
-user-visible malfunction?  Or is it just some nice-to-have thing?  Or
-what?
+This seems a bit abusive of BLK_DEF_MAX_SECTORS, which is in units of
+512-byte sectors.  (BLK_DEF_MAX_SECTORS * 512)/PAGE_CACHE_SIZE would
+make sense.
 
-> This patch is applicable to kernel versions starting from v2.6.35.
 
-Is that a recommendation that such a backport be performed?  If so,
-please provide the reasoning.
