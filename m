@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759892Ab2HXQTo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:19:44 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54414 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759842Ab2HXQTa (ORCPT
+	id S1759889Ab2HXQUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:20:07 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55294 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759831Ab2HXQUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:19:30 -0400
+	Fri, 24 Aug 2012 12:20:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANQmPXgefyCJuzFiAugp6OW2+HtjABSWuQqG33gAU_XgQ1V_2A@mail.gmail.com>
+In-Reply-To: <CAJ7jCmkpvrX87T06JPHk4cShxaC=fUmkxGQmiHsKGwe+X2RVow@mail.gmail.com>
 References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208231814.21168.tweek@tweek.dk>
-	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
-	<201208231951.28606.linux@rainbow-software.org>
-	<CAJ7jCmnwXNXmoxT6sdOc-8znsUnnW+Rq8ioJ_8B8KnT0K2uc=A@mail.gmail.com>
-	<1345812057.28613.20.camel@thorin>
-	<CAJ7jCm=bZoHS0-qiiJnUjZb3gP6ibo1xbLsmaUJr2rL4pAU8Eg@mail.gmail.com>
 	<1345823281.28613.34.camel@thorin>
 	<CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com>
-	<CANQmPXgefyCJuzFiAugp6OW2+HtjABSWuQqG33gAU_XgQ1V_2A@mail.gmail.com>
-Date: Fri, 24 Aug 2012 18:19:29 +0200
-Message-ID: <CAJ7jCmme5VNO9aX0SVtmVGUdJj4QODRE4+oPxBE62yCRKcVK6w@mail.gmail.com>
+	<201208241814.16862.tweek@tweek.dk>
+	<CAJ7jCmkpvrX87T06JPHk4cShxaC=fUmkxGQmiHsKGwe+X2RVow@mail.gmail.com>
+Date: Fri, 24 Aug 2012 09:20:00 -0700
+Message-ID: <CAArOQ2VepQoos7ji=7ja7aRjNDrFD5fT3V5Wh6JaDnvmR3h7QA@mail.gmail.com>
 Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Chen <hi3766691@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+From: Bobby Powers <bobbypowers@gmail.com>
+To: wbrana <wbrana@gmail.com>
+Cc: Martin Nybo Andersen <tweek@tweek.dk>,
+        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Chen <hi3766691@gmail.com> wrote:
-> no, u have ignore so many x86-32 boxes.I have enough reason to prove that u
-> have got temperature or mental illness, or even your brain has been hit by
-> somebody.LoL.
-almost all x86-32 boxes will be trash in 2017, remaining boxes will
-use long term tree
+On Fri, Aug 24, 2012 at 9:17 AM, wbrana <wbrana@gmail.com> wrote:
+> On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
+>> Ahh..., so the development time saved by not supporting x86-32 in mainline
+>> can
+>> now be used by backporting new features to the forementioned long term
+>> tree?
+> new features won't be backported
+
+Did you have anyone in particular you wanted to volunteer as a
+maintainer for this?
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
