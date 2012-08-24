@@ -1,174 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab2HXCcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:32:21 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:53713 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757918Ab2HXCbq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:31:46 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1757953Ab2HXCir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 22:38:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46750 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab2HXCin (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 22:38:43 -0400
+Message-ID: <5036E92D.8090803@gmail.com>
+Date: Fri, 24 Aug 2012 10:38:37 +0800
+From: wujianguo <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-From: Mike Turquette <mturquette@ti.com>
-In-Reply-To: <1341767726-25630-1-git-send-email-sebastian.hesselbarth@googlemail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1341767726-25630-1-git-send-email-sebastian.hesselbarth@googlemail.com>
-Message-ID: <20120824023135.4547.2534@nucleus>
-User-Agent: alot/0.3.2+
-Subject: Re: [PATCH 1/1] clk: add DT support for clock gating control
-Date: Thu, 23 Aug 2012 19:31:35 -0700
+To: Michal Hocko <mhocko@suse.cz>
+CC: tony.luck@intel.com, kay.sievers@vrfy.org, minchan.kim@gmail.com,
+        mgorman@suse.de, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-ia64@vger.kernel.org, wency@cn.fujitsu.com,
+        akpm@linux-foundation.org, yinghai@kernel.org, liuj97@gmail.com,
+        jiang.liu@huawei.com, qiuxishi@huawei.com, wujianguo@huawei.com,
+        guohanjun@huawei.com, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] mm/ia64: fix a memory block size bug
+References: <50330482.4070204@gmail.com> <20120823154646.GA10789@dhcp22.suse.cz>
+In-Reply-To: <20120823154646.GA10789@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sebastian Hesselbarth (2012-07-08 10:15:26)
-> This patch adds support for using clock gates (clk-gate) from DT based
-> on Rob Herrings DT clk binding support for 3.6.
+Hi Michal,
+	Thanks for your comments and review.
+
+On 2012-8-23 23:48, Michal Hocko wrote:
+> [Fixed gregkh email address]
 > 
-> It adds a helper function to clk-gate to allocate all resources required by
-> a set of individual clock gates, i.e. register base address and lock. Each
-> clock gate is described as a child of the clock-gating-control in DT and
-> also created by the helper function.
+> On Tue 21-08-12 11:46:10, wujianguo wrote:
+>> From: Jianguo Wu <wujianguo@huawei.com>
+>>
+>> Hi all,
+>> 	I found following definition in include/linux/memory.h, in my IA64
+>> platform, SECTION_SIZE_BITS is equal to 32, and MIN_MEMORY_BLOCK_SIZE will be 0.
+>> 	#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
+> 
+> OK, so I assume you have CONFIG_FORCE_MAX_ZONEORDER 17 and PAGE_SHIFT
+> 16, right? But even CONFIG_FORCE_MAX_ZONEORDER 16 would be a problem.
 > 
 
-Hi Sebastian,
+Yes, you are right, CONFIG_FORCE_MAX_ZONEORDER 16 would be a problem too.
 
-Thanks for submitting this.  I'd prefer for Rob or someone with a more vested
-interest in DT to review your binding.  I have some comments on the code below.
+>> 	Because MIN_MEMORY_BLOCK_SIZE is 32bits, so MIN_MEMORY_BLOCK_SIZE(1 << 32)
+>> will equal to 0. This will cause wrong system memory infomation in sysfs. I think
+>> it should be:
+>> 	#define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
+>>
+> 
+> I guess the part below is not necessary for the changelog
+> 
 
-<snip>
-> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-> index 578465e..1e88907 100644
-> --- a/drivers/clk/clk-gate.c
-> +++ b/drivers/clk/clk-gate.c
-> @@ -15,6 +15,9 @@
->  #include <linux/io.h>
->  #include <linux/err.h>
->  #include <linux/string.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_platform.h>
->  
->  /**
->   * DOC: basic gatable clock which can gate and ungate it's ouput
-> @@ -148,3 +151,84 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
->  
->         return clk;
->  }
-> +
-> +#ifdef CONFIG_OF
-> +/**
-> + * of_clock_gating_control_setup() - Setup function for clock gate control
-> + *   This is a helper for using clk-gate from OF device tree. It allocates
-> + *   a common lock for a base register and creates the individual clk-gates.
-> + */
-> +void __init of_clock_gating_control_setup(struct device_node *np)
-> +{
-> +       struct device_node *child;
-> +       const char *pclk_name;
-> +       void __iomem *base;
-> +       spinlock_t *lockp;
-> +       unsigned int rnum;
-> +       u64 addr;
-> +
-> +       pclk_name = of_clk_get_parent_name(np, 0);
-> +       if (!pclk_name) {
-> +               pr_debug("%s: unable to get parent clock for %s\n",
-> +                       __func__, np->full_name);
-> +               return;
-> +       }
-> +
-> +       lockp = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
-> +       if (!lockp) {
-> +               pr_debug("%s: unable to allocate spinlock for %s\n",
-> +                        __func__, np->full_name);
-> +               return;
-> +       }
-> +
-> +       spin_lock_init(lockp);
+Thanks for your suggestion, I will delete them in version 2.
 
-The spinlocks for the basic clock types have always been optional.  This
-code should reflect that and not assume the spinlock.
+>> linux-drf:/sys/devices/system/memory # ll
+>> total 0
+>> -r--r--r-- 1 root root 65536 Aug 20 02:35 block_size_bytes
+>> drwxr-xr-x 3 root root     0 Aug 20 02:19 memory0
+>> drwxr-xr-x 2 root root     0 Aug 20 02:35 power
+>> -rw-r--r-- 1 root root 65536 Aug 20 02:35 uevent
+>>
+>> linux-drf:/sys/devices/system/memory # cat block_size_bytes
+>> 0
+>>
+>> linux-drf:/sys/devices/system/memory/memory0 # cat *
+>> 8000000000000000
+>> cat: node0: Is a directory
+>> cat: node1: Is a directory
+>> cat: node2: Is a directory
+>> cat: node3: Is a directory
+>> 0
+>> 8000000000000000
+>> cat: power: Is a directory
+>> 1
+>> online
+>> cat: subsystem: Is a directory
+>>
+> 
+> Up to here.
+> 
+>> 	And "echo offline > memory0/state" will cause following call trace:
+>>
+>> kernel BUG at mm/memory_hotplug.c:885!
+>> sh[6455]: bugcheck! 0 [1]
+>>
+>> Pid: 6455, CPU 0, comm:                   sh
+>> psr : 0000101008526030 ifs : 8000000000000fa4 ip  : [<a0000001008c40f0>]    Not tainted (3.6.0-rc1)
+>> ip is at offline_pages+0x210/0xee0
+>> unat: 0000000000000000 pfs : 0000000000000fa4 rsc : 0000000000000003
+>> rnat: a0000001008f2d50 bsps: 0000000000000000 pr  : 65519a96659a9565
+>> ldrs: 0000000000000000 ccv : 0000010b9263f310 fpsr: 0009804c0270033f
+>> csd : 0000000000000000 ssd : 0000000000000000
+>> b0  : a0000001008c40f0 b6  : a000000100473980 b7  : a0000001000106d0
+>> f6  : 000000000000000000000 f7  : 1003e0000000085c9354c
+>> f8  : 1003e0044b82fa09b5a53 f9  : 1003e000000d65cd62abf
+>> f10 : 1003efd02efdec682803d f11 : 1003e0000000000000042
+>> r1  : a00000010152c2e0 r2  : 0000000000006ada r3  : 000000000000fffe
+>> r8  : 0000000000000026 r9  : a00000010121cc18 r10 : a0000001013309f0
+>> r11 : 65519a96659a19e9 r12 : e00000070a91fdf0 r13 : e00000070a910000
+>> r14 : 0000000000006ada r15 : 0000000000004000 r16 : 000000006ad8356c
+>> r17 : a0000001019a525e r18 : 0000000000007fff r19 : 0000000000000000
+>> r20 : 0000000000006ad6 r21 : 0000000000006ad6 r22 : a00000010133bec8
+>> r23 : 0000000000006ad4 r24 : 0000000000000002 r25 : 8200000000260038
+>> r26 : 00000000000004f9 r27 : 00000000000004f8 r28 : 000000000001cf98
+>> r29 : 0000000000000038 r30 : a0000001019a5ae0 r31 : 000000000001cf60
+>>
+>> Call Trace:
+>>  [<a0000001000163e0>] show_stack+0x80/0xa0
+>>                                 sp=e00000070a91f9b0 bsp=e00000070a9115e0
+>>  [<a000000100016a40>] show_regs+0x640/0x920
+>>                                 sp=e00000070a91fb80 bsp=e00000070a911588
+>>  [<a000000100040590>] die+0x190/0x2c0
+>>                                 sp=e00000070a91fb90 bsp=e00000070a911548
+>>  [<a000000100040710>] die_if_kernel+0x50/0x80
+>>                                 sp=e00000070a91fb90 bsp=e00000070a911518
+>>  [<a0000001008f8030>] ia64_bad_break+0x3d0/0x6e0
+>>                                 sp=e00000070a91fb90 bsp=e00000070a9114f0
+>>  [<a00000010000c0c0>] ia64_native_leave_kernel+0x0/0x270
+>>                                 sp=e00000070a91fc20 bsp=e00000070a9114f0
+>>  [<a0000001008c40f0>] offline_pages+0x210/0xee0
+>>                                 sp=e00000070a91fdf0 bsp=e00000070a9113c8
+>>  [<a00000010022d580>] alloc_pages_current+0x180/0x2a0
+>>                                 sp=e00000070a91fe20 bsp=e00000070a9113a
+>>
+>> This patch is trying to fix the bug.
+> 
+> not just trying ;)
+> 
+>>
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+>> ---
+>>  include/linux/memory.h |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/memory.h b/include/linux/memory.h
+>> index 1ac7f6e..ff9a9f8 100644
+>> --- a/include/linux/memory.h
+>> +++ b/include/linux/memory.h
+>> @@ -19,7 +19,7 @@
+>>  #include <linux/compiler.h>
+>>  #include <linux/mutex.h>
+>>
+>> -#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
+>> +#define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
+>>
+>>  struct memory_block {
+>>  	unsigned long start_section_nr;
+> 
 
-Also I wonder if the assumption is true that a single spinlock
-corresponding to a device_node is always the right thing for every
-platform.  What about a 32-bit register that contains some gating bits
-and a 3-bit wide field for a mux which we perform read-modify-write
-operations on?
-
-You'll have to pardon my DT ignorance.  My concerns above may be totally
-crazy with respect to DT.
-
-> +       base = of_iomap(np, 0);
-> +       rnum = sizeof(resource_size_t) * 8;
-> +       addr = of_translate_address(np, of_get_property(np, "reg", NULL));
-> +
-> +       pr_debug("create clock gate control %s\n", np->full_name);
-
-There are some inconsistent prints here.  How about leading this trace
-with a __func__ like you do below for the error messages?
-
-> +
-> +       for_each_child_of_node(np, child) {
-> +               struct clk *cg;
-> +               const char *cg_name;
-> +               const char *cg_pclk_name;
-> +               u32 propval[2];
-> +               unsigned int rbit;
-> +
-> +               if (of_property_read_u32_array(child, "reg", propval, 2)) {
-> +                       pr_debug("%s: wrong #reg on %s\n",
-> +                                __func__, child->full_name);
-> +                       continue;
-> +               }
-> +
-> +               rbit = propval[0];
-> +               if (rbit >= rnum) {
-> +                       pr_debug("%s: bit position of %s exceeds resources\n",
-> +                                __func__, child->full_name);
-> +                       continue;
-> +               }
-> +
-> +               cg_pclk_name = of_clk_get_parent_name(child, 0);
-> +               if (!pclk_name)
-> +                       cg_pclk_name = pclk_name;
-
-!pclk_name would have caused an early return above, so this conditional
-will never evaluate as true.  Even if it did, I'm not sure I follow the
-logic.  Why set cg_pclk_name to NULL if pclk_name is NULL?
-
-> +
-> +               if (of_property_read_string(child, "clock-output-names",
-> +                                           &cg_name)) {
-> +                       unsigned int nlen = 4 + 16 + strlen(child->name);
-> +                       char *name = kzalloc(nlen+1, GFP_KERNEL);
-> +                       if (!name)
-> +                               continue;
-> +                       snprintf(name, nlen, "%u@%llx.%s", rbit,
-> +                                (unsigned long long)addr, child->name);
-> +                       cg_name = name;
-> +               }
-> +
-> +               pr_debug("  create clock gate: %s\n", cg_name);
-
-Extra whitespace typo?  Again, would be nice to lead this trace with a
-__func__ string.
-
-> +
-> +               cg = clk_register_gate(NULL, cg_name, cg_pclk_name, 0,
-> +                                      base, rbit, propval[1], lockp);
-> +               if (cg)
-> +                       of_clk_add_provider(child, of_clk_src_simple_get, cg);
-
-Need to check if clk_register_gate fails and do memory leak cleanup of
-name and maybe lockp for the corner case where none of the clock
-registration operations succeed.
-
-Regards,
-Mike
