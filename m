@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab2HXJ5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 05:57:16 -0400
-Received: from forward7.mail.yandex.net ([77.88.61.37]:47173 "EHLO
-	forward7.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2HXJ5O (ORCPT
+	id S1758055Ab2HXKBE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 06:01:04 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55780 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab2HXKBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 05:57:14 -0400
-X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Aug 2012 05:57:14 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Subject: scripts/tags.sh: Add magic for pci access functions
+	Fri, 24 Aug 2012 06:01:03 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q7OA0PnF000905, This message is released by code: ctaloc0852
+From: <wei_wang@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <arnd@arndb.de>, <bp@alien8.de>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v4 0/2] Add modules to support realtek PCIE card reader
+Date: Fri, 24 Aug 2012 18:00:25 +0800
+Message-ID: <cover.1345801051.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Message-Id: <624341345801828@web28e.yandex.ru>
-Date: Fri, 24 Aug 2012 13:50:28 +0400
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Content-Transfer-Encoding: 7bit
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scripts/tags.sh: Add magic for pci access functions
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-Make [ce]tags find the pci_bus_read_config_* and pci_bus_write_config_*
-definitions
+Support for Realtek PCI-Express driver-based card readers including rts5209 and rts5229.
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
----
-scripts/tags.sh |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index cff8faa..79fdafb 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -154,7 +154,9 @@ exuberant()
- 	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
- 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
- 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
--	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
-+	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
-+	--regex-c='/PCI_OP_READ\(([a-z]*[a-z]).*[1-4]\)/pci_bus_read_config_\1/' \
-+	--regex-c='/PCI_OP_WRITE\(([a-z]*[a-z]).*[1-4]\)/pci_bus_write_config_\1/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
-@@ -197,7 +199,9 @@ emacs()
- 	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
- 	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
- 	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
--	--regex='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
-+	--regex='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
-+	--regex='/PCI_OP_READ\(([a-z]*[a-z]).*[1-4]\)/pci_bus_read_config_\1/' \
-+	--regex='/PCI_OP_WRITE\(([a-z]*[a-z]).*[1-4]\)/pci_bus_write_config_\1/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
+v2:
+1. Using platform device to replace realtek slot bus
+
+v3:
+1. Fix a bug that DMA out of SW-IOMMU space in Lenovo Thinkpad x121e
+2. Tested by Borislav Petkov <bp@alien8.de>
+
+v4:
+1. Fulfill power management callbacks
+
+Wei WANG (2):
+  drivers/mfd: Add realtek pcie card reader driver
+  drivers/mmc: Add realtek pcie sdmmc host driver
+
+ drivers/mfd/Kconfig               |    9 +
+ drivers/mfd/Makefile              |    4 +
+ drivers/mfd/rts5209.c             |  104 +++
+ drivers/mfd/rts5229.c             |  119 ++++
+ drivers/mfd/rtsx_pcr.c            | 1321 +++++++++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.h            |   31 +
+ drivers/mmc/host/Kconfig          |    7 +
+ drivers/mmc/host/Makefile         |    2 +
+ drivers/mmc/host/rtsx_pci_sdmmc.c | 1378 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/rtsx_common.h   |   47 ++
+ include/linux/mfd/rtsx_pci.h      |  690 +++++++++++++++++++
+ 11 files changed, 3712 insertions(+)
+ create mode 100644 drivers/mfd/rts5209.c
+ create mode 100644 drivers/mfd/rts5229.c
+ create mode 100644 drivers/mfd/rtsx_pcr.c
+ create mode 100644 drivers/mfd/rtsx_pcr.h
+ create mode 100644 drivers/mmc/host/rtsx_pci_sdmmc.c
+ create mode 100644 include/linux/mfd/rtsx_common.h
+ create mode 100644 include/linux/mfd/rtsx_pci.h
+
+-- 
+1.7.9.5
+
