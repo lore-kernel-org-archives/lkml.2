@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab2HXJgC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 05:36:02 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40707 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab2HXJf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 05:35:59 -0400
-Date: Fri, 24 Aug 2012 11:35:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v7 07/12] start_cpu0() is defined in head_32.S for
- 32-bit. The function sets up stack and jumps to start_secondary() for CPU0
- wake up.
-Message-ID: <20120824093557.GD3019@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Asit K Mallick <asit.k.mallick@intel.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Arjan Dan De Ven <arjan@linux.intel.com>,
-	Suresh B Siddha <suresh.b.siddha@intel.com>,
-	Len Brown <len.brown@intel.com>,
-	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Chen Gong <gong.chen@linux.intel.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-References: <1345769771-27019-1-git-send-email-fenghua.yu@intel.com>
- <1345769771-27019-8-git-send-email-fenghua.yu@intel.com>
+	id S1758588Ab2HXJgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 05:36:13 -0400
+Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:50139 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757543Ab2HXJgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 05:36:09 -0400
+Message-ID: <50374B69.3040002@laposte.net>
+Date: Fri, 24 Aug 2012 11:37:45 +0200
+From: Yann Cantin <yann.cantin@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120717 Thunderbird/10.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1345769771-27019-8-git-send-email-fenghua.yu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oliver Neukum <oneukum@suse.de>
+CC: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
+        gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC ebeam PATCH v4 2/2] input: misc: New USB eBeam input driver.
+References: <1345673514-11575-1-git-send-email-yann.cantin@laposte.net> <1345673514-11575-3-git-send-email-yann.cantin@laposte.net> <1368810.q4rGz16CTW@linux-lqwf.site>
+In-Reply-To: <1368810.q4rGz16CTW@linux-lqwf.site>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 05:56:06PM -0700, Fenghua Yu wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
-> 
+Hi,
 
-Looks like the extra-long Subject line belongs in here where the commit
-message should be.
+Le 23/08/2012 09:23, Oliver Neukum a écrit :
+> On Thursday 23 August 2012 00:11:54 Yann Cantin wrote:
+>> +static int ebeam_resume(struct usb_interface *intf)
+>> +{
+>> +       struct ebeam_device *ebeam = usb_get_intfdata(intf);
+>> +       struct input_dev *input = ebeam->input;
+>> +       int result = 0;
+>> +
+>> +       mutex_lock(&input->mutex);
+>> +       if (input->users)
+>> +               result = usb_submit_urb(ebeam->irq, GFP_NOIO);
+>> +       mutex_unlock(&input->mutex);
+>> +
+>> +       return result;
+>> +}
+>> +
+>> +static int ebeam_reset_resume(struct usb_interface *intf)
+>> +{
+>> +       struct ebeam_device *ebeam = usb_get_intfdata(intf);
+>> +       struct input_dev *input = ebeam->input;
+>> +       int err = 0;
+>> +
+>> +       /* restart IO if needed */
+>> +       mutex_lock(&input->mutex);
+>> +       if (input->users)
+>> +               err = usb_submit_urb(ebeam->irq, GFP_NOIO);
+>> +       mutex_unlock(&input->mutex);
+>> +
+>> +       return err;
+>> +}
+> 
+> These functions are identical. You should unify them.
 
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> ---
->  arch/x86/kernel/head_32.S |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-> index d42ab17..964f87a 100644
-> --- a/arch/x86/kernel/head_32.S
-> +++ b/arch/x86/kernel/head_32.S
-> @@ -266,6 +266,18 @@ num_subarch_entries = (. - subarch_entries) / 4
->  	jmp default_entry
->  #endif /* CONFIG_PARAVIRT */
->  
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +/*
-> + * Boot CPU0 entry point. It's called from play_dead(). Everything has been set
-> + * up already except stack. We just set up stack here. Then call
-> + * start_secondary().
-> + */
-> +ENTRY(start_cpu0)
-> +	movl stack_start, %ecx
-> +	movl %ecx, %esp
-> +	jmp  *(initial_code)
-> +#endif
-> +
->  /*
->   * Non-boot CPU entry point; entered from trampoline.S
->   * We can't lgdt here, because lgdt itself uses a data segment, but
-> -- 
-> 1.7.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Removed reset_resume from the driver (optional, and not needed
+for this hardware).
+
+Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
+Yann Cantin
+A4FEB47F
+--
