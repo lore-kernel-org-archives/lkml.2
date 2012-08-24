@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760003Ab2HXSSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:18:54 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48152 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab2HXSSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:18:51 -0400
+	id S1758782Ab2HXSTp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:19:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42394 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754259Ab2HXSTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 14:19:42 -0400
+Date: Fri, 24 Aug 2012 14:19:40 -0400
+From: jbaron <jbaron@redhat.com>
+To: Jianpeng Ma <majianpeng@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, jim.cromie@gmail.com
+Subject: Re: About multiple queries to control using
+ $DBGMT/dynamic_debug/control
+Message-ID: <20120824181939.GB6197@redhat.com>
+References: <201208221942104377284@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201208241952.04988.tweek@tweek.dk>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208241854.45656.tweek@tweek.dk>
-	<CAJ7jCmkiPrr3-pf2yspNiHHzhZBCsuWZaTRCjmi_wSdBGhB6Fg@mail.gmail.com>
-	<201208241952.04988.tweek@tweek.dk>
-Date: Fri, 24 Aug 2012 20:18:49 +0200
-Message-ID: <CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Martin Nybo Andersen <tweek@tweek.dk>
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208221942104377284@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
-> That's right, but new hardware, that I wish to use with the old machines
-> might
-> not because of no backporting of new drivers. Same goes for new software
-> utilising newer kernel features.
-Which new hardware and which old machine do you want to use?
+On Wed, Aug 22, 2012 at 07:42:14PM +0800, Jianpeng Ma wrote:
+> Hi,
+> 	I used the $DBGMT/dynamic_debug/control to control printing debuginfo.But When i wote multiple queries which has at least one didn't match,
+> the result is ok which no error can return.
+> 	So i think i wrote correct queries.But until using dmesg, i only found error.
+> 	And if parm verbose of dynamic_debug is zero, i can't find the result by dmesg.
+> 	So i think it's not convenient.
+> 	If it did not found any query,it should return error.
+> 
+> Thanks!
 
-> Those mentioned by Chris Friesen, whose arguments you apparently ignored.
-I can't find any e-mail where Chris Friesen mentioned exact legacy apps.
+Hi,
 
-> You are allowed to compile most of the software running on Linux yourself.
-> If
-> you want a binary to use the x32 ABI, go compile.
-I can't compile x32 versions of Firefox, Chromium, NVIDIA drivers, etc.
+You can verify what changes have occured by looking in the
+$DBGMT/dynamic_debug/control file, and verifying what statements have
+been matched. For example, we add a 'p' when printing is enabled.
+Does that address your concern?
+
+As these debug statements come and go, I think I'd prefer not to error
+out in this case.
+
+Thanks,
+
+-Jason
