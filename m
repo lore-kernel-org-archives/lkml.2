@@ -1,140 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759951Ab2HXSyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:54:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755859Ab2HXSxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:53:54 -0400
-Date: Fri, 24 Aug 2012 20:56:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: lockdep trace from posix timers
-Message-ID: <20120824185619.GA16719@redhat.com>
-References: <1345463081.23018.34.camel@twins> <20120820150507.GC18499@redhat.com> <1345475530.23018.50.camel@twins> <20120820154154.GB20258@redhat.com> <1345478211.23018.69.camel@twins> <20120820161012.GC21400@redhat.com> <1345479590.23018.75.camel@twins> <20120820162302.GA22354@redhat.com> <20120821182751.GA11243@redhat.com> <20120821183408.GA11721@redhat.com>
+	id S1760025Ab2HXSyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:54:15 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:56673
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760008Ab2HXSyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 14:54:08 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah11b5h1155h)
+X-WSS-ID: 0M99WI2-02-15E-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Robert Richter <robert.richter@amd.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 2/2] oprofile: Remove 'WQ on CPUx, prefer CPUy' warning
+Date: Fri, 24 Aug 2012 20:53:31 +0200
+Message-ID: <1345834411-24940-3-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1345834411-24940-1-git-send-email-robert.richter@amd.com>
+References: <1345834411-24940-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120821183408.GA11721@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21, Oleg Nesterov wrote:
->
-> > task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
-> > {
-> > 	do {
-> > 		twork->next = ACCESS_ONCE(task->task_works);
-> > 		if (unlikely(twork->next == TWORK_EXITED))
-> > 			return -ESRCH;
-> > 	} while (cmp_xchg(&task->task_works, twork->next, twork));
->           ^^^^^^^^^^^^^^^
->
-> while (!cmp_xchg(...))
+Under certain workloads we see the following warnings:
 
-and _cancel can be simplified a bit.
+ WQ on CPU0, prefer CPU1
+ WQ on CPU0, prefer CPU2
+ WQ on CPU0, prefer CPU3
 
-OK, I actually tested the code below, seems to work.
+It warns the user that the wq to access a per-cpu buffers runs not on
+the same cpu. This happens if the wq is rescheduled on a different cpu
+than where the buffer is located. This was probably implemented to
+detect performance issues. Not sure if there actually is one as the
+buffers are copied to a single buffer anyway which should be the
+actual bottleneck.
 
-Peter, if you think it can work for you and if you agree with
-the implementation I will be happy to send the patch.
+We wont change WQ implementation. Since a user can do nothing the
+warning is pointless. Removing it.
 
-The only change outside of task_work.c is that exit_task_work()
-should call task_work_run() unconditionally.
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ drivers/oprofile/cpu_buffer.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-As for cmp_xchg below... Of course it is not strictly needed.
-But otoh, personally I'd like to have this helper (probably
-renamed) somewhere in include/linux. Perhaps this is just me,
-but cmpxchg() always confuses me, and most users only need
-success_or_not from cmpxchg.
+diff --git a/drivers/oprofile/cpu_buffer.c b/drivers/oprofile/cpu_buffer.c
+index b8ef8dd..8aa73fa 100644
+--- a/drivers/oprofile/cpu_buffer.c
++++ b/drivers/oprofile/cpu_buffer.c
+@@ -451,14 +451,9 @@ static void wq_sync_buffer(struct work_struct *work)
+ {
+ 	struct oprofile_cpu_buffer *b =
+ 		container_of(work, struct oprofile_cpu_buffer, work.work);
+-	if (b->cpu != smp_processor_id()) {
+-		printk(KERN_DEBUG "WQ on CPU%d, prefer CPU%d\n",
+-		       smp_processor_id(), b->cpu);
+-
+-		if (!cpu_online(b->cpu)) {
+-			cancel_delayed_work(&b->work);
+-			return;
+-		}
++	if (b->cpu != smp_processor_id() && !cpu_online(b->cpu)) {
++		cancel_delayed_work(&b->work);
++		return;
+ 	}
+ 	sync_buffer(b->cpu);
+ 
+-- 
+1.7.8.6
 
-Oleg.
-
-
-#define cmp_xchg(ptr, _old, new)	\
-({					\
-	__typeof__(_old) old = (_old);	\
-	cmpxchg(ptr, old, new) == old;	\
-})
-
-#define TWORK_EXITED	((struct callback_head*)1)
-
-int
-task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
-{
-	do {
-		work->next = ACCESS_ONCE(task->task_works);
-		if (unlikely(work->next == TWORK_EXITED))
-			return -ESRCH;
-	} while (!cmp_xchg(&task->task_works, work->next, work));
-
-	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
-	if (notify)
-		set_notify_resume(task);
-	return 0;
-}
-
-struct callback_head *
-task_work_cancel(struct task_struct *task, task_work_func_t func)
-{
-	struct callback_head **pprev = &task->task_works;
-	struct callback_head *work = NULL;
-	unsigned long flags;
-
-	raw_spin_lock_irqsave(&task->pi_lock, flags);
-	if (likely(*pprev != TWORK_EXITED)) {
-		while ((work = *pprev)) {
-			read_barrier_depends();
-			if (work->func != func)
-				pprev = &work->next;
-			else if (cmp_xchg(pprev, work, work->next))
-				break;
-		}
-	}
-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-
-	return work;
-}
-
-void task_work_run(void)
-{
-	struct task_struct *task = current;
-	struct callback_head *work, *head, *next;
-
-	for (;;) {
-		raw_spin_lock_irq(&task->pi_lock);
-		do {
-			work = ACCESS_ONCE(task->task_works);
-			head = !work && (task->flags & PF_EXITING) ?
-				TWORK_EXITED : NULL;
-		} while (!cmp_xchg(&task->task_works, work, head));
-		raw_spin_unlock_irq(&task->pi_lock);
-
-		if (!work)
-			break;
-
-#if PETERZ_WONT_ARGUE_AGAINST_FIFO_TOO_MUCH
-		head = NULL;
-		do {
-			next = work->next;
-			work->next = head;
-			head = work;
-			work = next;
-		} while (work);
-
-		work = head;
-#endif
-		do {
-			next = work->next;
-			work->func(work);
-			work = next;
-			cond_resched();
-		} while (work);
-	}
-}
 
