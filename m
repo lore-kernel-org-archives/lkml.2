@@ -1,182 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab2HXJSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 05:18:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48100 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592Ab2HXJSN (ORCPT
+	id S1758254Ab2HXJXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 05:23:06 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17208 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057Ab2HXJXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 05:18:13 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Fri, 24 Aug 2012 05:23:02 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 24 Aug 2012 02:23:01 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Warren <swarren@nvidia.com>, Simon Glass <sjg@chromium.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, kernel@pengutronix.de
-Cc: Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 4/5] genalloc: add a global pool list, allow to find pools by phys address
-Date: Fri, 24 Aug 2012 11:17:45 +0200
-Message-Id: <1345799866-19876-5-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1345799866-19876-1-git-send-email-p.zabel@pengutronix.de>
-References: <1345799866-19876-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Leela Krishna Amudala <leelakrishna.a@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 1/3] Runtime Interpreted Power Sequences
+Date: Fri, 24 Aug 2012 18:24:54 +0900
+Message-ID: <6044581.2jEzZBWCu1@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9 (Linux/3.4.9-1-ARCH; KDE/4.9.0; x86_64; ; )
+In-Reply-To: <1345542860.4085.40.camel@deskari>
+References: <1345097337-24170-1-git-send-email-acourbot@nvidia.com> <20120821091306.GA4819@avionic-0098.mockup.avionic-design.de> <1345542860.4085.40.camel@deskari>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch keeps all created pools in a global list and adds two
-functions that allow to retrieve the gen_pool pointer from a known
-physical address and from a device tree node.
+On Tuesday 21 August 2012 17:54:20 Tomi Valkeinen wrote:
+> > However this also means we'll essentially just be moving the board code.
+> 
+> 
+> What do you mean "just"? Wasn't the point of the whole "arm board file
+> mess" to get rid of the code from the board files? If the code in the
+> board file is device specific code, not board specific, then the driver
+> of the device is a logical place to place it.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- include/linux/genalloc.h |   14 +++++++++
- lib/genalloc.c           |   77 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 91 insertions(+)
+I think Tomi has a point here - these sequences were not belonging to the 
+board code in the first place. They are definitely tied to the device, hence 
+should have been handled by the driver all along, with the board code 
+assigning the correct resources to the device (like the vast majority of 
+device drivers do).
 
-diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-index 5e98eeb..46ff435 100644
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -33,6 +33,7 @@
-  *  General purpose special memory pool descriptor.
-  */
- struct gen_pool {
-+	struct list_head next_pool;	/* pool in global list */
- 	spinlock_t lock;
- 	struct list_head chunks;	/* list of chunks in this pool */
- 	int min_alloc_order;		/* minimum allocation order */
-@@ -78,4 +79,17 @@ extern void gen_pool_for_each_chunk(struct gen_pool *,
- 	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
- extern size_t gen_pool_avail(struct gen_pool *);
- extern size_t gen_pool_size(struct gen_pool *);
-+extern struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys);
-+
-+#ifdef CONFIG_OF
-+struct device_node;
-+extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
-+	const char *propname, int index);
-+#else
-+inline struct gen_pool *of_get_named_gen_pool(struct device_node *np,
-+	const char *propname, int index)
-+{
-+	return NULL;
-+}
-+#endif
- #endif /* __GENALLOC_H__ */
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index 6bc04aa..df2d8f9 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -34,6 +34,11 @@
- #include <linux/rculist.h>
- #include <linux/interrupt.h>
- #include <linux/genalloc.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+
-+static LIST_HEAD(pools);
-+static DEFINE_SPINLOCK(list_lock);
- 
- static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
- {
-@@ -152,6 +157,9 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
- 		spin_lock_init(&pool->lock);
- 		INIT_LIST_HEAD(&pool->chunks);
- 		pool->min_alloc_order = min_alloc_order;
-+		spin_lock(&list_lock);
-+		list_add_rcu(&pool->next_pool, &pools);
-+		spin_unlock(&list_lock);
- 	}
- 	return pool;
- }
-@@ -234,6 +242,9 @@ void gen_pool_destroy(struct gen_pool *pool)
- 	int order = pool->min_alloc_order;
- 	int bit, end_bit;
- 
-+	spin_lock(&list_lock);
-+	list_del_rcu(&pool->next_pool);
-+	spin_unlock(&list_lock);
- 	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
- 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
- 		list_del(&chunk->next_chunk);
-@@ -400,3 +411,69 @@ size_t gen_pool_size(struct gen_pool *pool)
- 	return size;
- }
- EXPORT_SYMBOL_GPL(gen_pool_size);
-+
-+/**
-+ * gen_pool_find_by_phys - find a pool by physical start address
-+ * @phys: physical address as added with gen_pool_add_virt
-+ *
-+ * Returns the pool that contains the chunk starting at phys,
-+ * or NULL if not found.
-+ */
-+struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys)
-+{
-+	struct gen_pool *pool, *found = NULL;
-+	struct gen_pool_chunk *chunk;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(pool, &pools, next_pool) {
-+		list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+			if (phys == chunk->phys_addr) {
-+				found = pool;
-+				break;
-+			}
-+		}
-+	}
-+	rcu_read_unlock();
-+
-+	return found;
-+}
-+EXPORT_SYMBOL_GPL(gen_pool_find_by_phys);
-+
-+#ifdef CONFIG_OF
-+/**
-+ * of_get_named_gen_pool - find a pool by the physical address in
-+ * @np: device node
-+ *
-+ * Returns the pool that contains the chunk starting at the physical
-+ * address of the np device node, or NULL if not found.
-+ */
-+struct gen_pool *of_get_named_gen_pool(struct device_node *np,
-+	const char *propname, int index)
-+{
-+	struct property *prop;
-+	const __be32 *list;
-+	int size;
-+	phandle phandle;
-+	struct device_node *np_pool;
-+	const u32 *reg;
-+	u64 addr;
-+
-+	prop = of_find_property(np, propname, &size);
-+	if (!prop)
-+		return NULL;
-+	list = prop->value;
-+	size /= sizeof(*list);
-+	phandle = be32_to_cpup(list);
-+	np_pool = of_find_node_by_phandle(phandle);
-+	if (!np_pool)
-+		return NULL;
-+	reg = of_get_property(np_pool, "reg", NULL);
-+	if (!reg)
-+		return NULL;
-+	addr = of_translate_address(np_pool, reg);
-+	if (addr == OF_BAD_ADDR)
-+		return NULL;
-+	return gen_pool_find_by_phys((phys_addr_t) addr);
-+}
-+EXPORT_SYMBOL_GPL(of_get_named_gen_pool);
-+#endif /* CONFIG_OF */
--- 
-1.7.10.4
+> And as I said, I don't have any problems with some kind of generic power
+> sequences. So the code in the board file could be moved and converted to
+> use the power sequences, if that is better than just plain c code.
+
+My concern now is, provided that all drivers to their job and handle how their 
+devices are switched on and off, when (if at all) are encoded power sequences 
+better than their equivalent C code? There is the matching database size issue 
+that you mentionned, is it a sufficient concern to justify a new kernel feature?
+
+On the other hand some devices like panels are typically not used in many 
+different appliances, so maybe it is not worth to separate them from their 
+board definition. As Mark mentionned, having .dtsi files for the DT (and their 
+equivalent .h for kernels that use platform data) might be a good middle 
+ground.
+
+But the line is really tight between what is code and what is data here.
+
+Alex.
 
