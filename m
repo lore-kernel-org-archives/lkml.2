@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab2HXPzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 11:55:15 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42946 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab2HXPzK (ORCPT
+	id S1759357Ab2HXP6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 11:58:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35900 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831Ab2HXP6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 11:55:10 -0400
+	Fri, 24 Aug 2012 11:58:51 -0400
+Message-ID: <5037A4B0.3080208@lwfinger.net>
+Date: Fri, 24 Aug 2012 10:58:40 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1345823281.28613.34.camel@thorin>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208231814.21168.tweek@tweek.dk>
-	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
-	<201208231951.28606.linux@rainbow-software.org>
-	<CAJ7jCmnwXNXmoxT6sdOc-8znsUnnW+Rq8ioJ_8B8KnT0K2uc=A@mail.gmail.com>
-	<1345812057.28613.20.camel@thorin>
-	<CAJ7jCm=bZoHS0-qiiJnUjZb3gP6ibo1xbLsmaUJr2rL4pAU8Eg@mail.gmail.com>
-	<1345823281.28613.34.camel@thorin>
-Date: Fri, 24 Aug 2012 17:55:08 +0200
-Message-ID: <CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        Martin Nybo Andersen <tweek@tweek.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: eric.dumazet@gmail.com, ncardwell@google.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
+ out_of_order memory use"
+References: <50369925.3050705@lwfinger.net> <1345757200.5904.1890.camel@edumazet-glaptop> <50378B35.80307@lwfinger.net> <20120824.111948.680531915905273128.davem@davemloft.net>
+In-Reply-To: <20120824.111948.680531915905273128.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Bernd Petrovitsch <bernd@petrovitsch.priv.at> wrote:
-> You really think that there are no 32bit x86-compatible CPUs in the
-> embedded world?
-x86-32 would be supported by long term tree until all x86-32 CPU disappear
+On 08/24/2012 10:19 AM, David Miller wrote:
+>
+> This looks like full-on data corruption to me.
+
+I agree. The question is why does it happen with r8712u, and only after the 
+commit in the subject. Drivers for other devices that I have are OK. Thus far, I 
+have tested b43, rtl8187, ath9k_htc, and rtl8192cu. To my knowledge, there are 
+no reports posted for this bug with any other device.
+
+Larry
+
+
+
+
