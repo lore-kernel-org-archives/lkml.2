@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2HXH0x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 03:26:53 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:58254 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752611Ab2HXH0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 03:26:13 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+JTkk8zp+JJgg1b277iWijPAwxt9cOkuSSKrwX5T
-	xRAbtYq2TvDLNu
-Message-ID: <1345793168.4331.64.camel@marge.simpson.net>
-Subject: Re: [next-20120823] NOHZ: local_softirq_pending 200 on s/r
-From: Mike Galbraith <efault@gmx.de>
-To: sedat.dilek@gmail.com
-Cc: Paul McKenney <paul.mckenney@linaro.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-next <linux-next@vger.kernel.org>
-Date: Fri, 24 Aug 2012 09:26:08 +0200
-In-Reply-To: <CA+icZUW2aUP=vjBeoksFU=NAVFMJEiBQy6sNKZczzRPEP9kOfw@mail.gmail.com>
-References: <CA+icZUW2aUP=vjBeoksFU=NAVFMJEiBQy6sNKZczzRPEP9kOfw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1755144Ab2HXH10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 03:27:26 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:46776 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827Ab2HXH1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 03:27:22 -0400
+Date: Fri, 24 Aug 2012 12:57:09 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: ppcdev <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, peterz@infradead.org,
+        michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>, oleg@redhat.com
+Subject: [PATCH 2/3] powerpc: Add trap_nr to thread_struct
+Message-ID: <20120824072709.GB32031@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120824072602.GA32031@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824072602.GA32031@in.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082407-8974-0000-0000-00000C861F68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-08-23 at 12:04 +0200, Sedat Dilek wrote:
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-> Jack Winter confirmed to see similiar NOHZ messages also on
-> v3.4.9-rt17 kernel (CPU: Core2Duo when no suspend performed):
-> 
-> [15223.171585] NOHZ: local_softirq_pending 08
+Add thread_struct.trap_nr and use it to store the last exception
+the thread experienced. In this patch, we populate the field at
+various places where we force_sig_info() to the process.
 
-These can be caused by blocking while holding local_softirq_lock.
+This is also used in uprobes to determine if the probed instruction
+caused an exception.
 
-Even with per softirq threads, and then (yet more overhead) splitting
-the lock to make sure one softirq type can't block another, _and_ only
-griping if the lock for the pending softirq is _not_ held, seems the
-little bugger can still be triggered very rarely by syn flood induced
-handler bail/raise.  Annoying little gripe :)
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
+ arch/powerpc/include/asm/processor.h |    1 +
+ arch/powerpc/kernel/process.c        |    2 ++
+ arch/powerpc/kernel/traps.c          |    1 +
+ arch/powerpc/mm/fault.c              |    1 +
+ 4 files changed, 5 insertions(+)
 
--Mike
+Index: linux-26jul/arch/powerpc/include/asm/processor.h
+===================================================================
+--- linux-26jul.orig/arch/powerpc/include/asm/processor.h
++++ linux-26jul/arch/powerpc/include/asm/processor.h
+@@ -219,6 +219,7 @@ struct thread_struct {
+ #endif /* CONFIG_HAVE_HW_BREAKPOINT */
+ #endif
+ 	unsigned long	dabr;		/* Data address breakpoint register */
++	unsigned long	trap_nr;	/* last trap # on this thread */
+ #ifdef CONFIG_ALTIVEC
+ 	/* Complete AltiVec register set */
+ 	vector128	vr[32] __attribute__((aligned(16)));
+Index: linux-26jul/arch/powerpc/kernel/process.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/process.c
++++ linux-26jul/arch/powerpc/kernel/process.c
+@@ -258,6 +258,7 @@ void do_send_trap(struct pt_regs *regs, 
+ {
+ 	siginfo_t info;
+ 
++	current->thread.trap_nr = signal_code;
+ 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
+ 			11, SIGSEGV) == NOTIFY_STOP)
+ 		return;
+@@ -275,6 +276,7 @@ void do_dabr(struct pt_regs *regs, unsig
+ {
+ 	siginfo_t info;
+ 
++	current->thread.trap_nr = TRAP_HWBKPT;
+ 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
+ 			11, SIGSEGV) == NOTIFY_STOP)
+ 		return;
+Index: linux-26jul/arch/powerpc/kernel/traps.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/kernel/traps.c
++++ linux-26jul/arch/powerpc/kernel/traps.c
+@@ -251,6 +251,7 @@ void _exception(int signr, struct pt_reg
+ 	if (arch_irqs_disabled() && !arch_irq_disabled_regs(regs))
+ 		local_irq_enable();
+ 
++	current->thread.trap_nr = code;
+ 	memset(&info, 0, sizeof(info));
+ 	info.si_signo = signr;
+ 	info.si_code = code;
+Index: linux-26jul/arch/powerpc/mm/fault.c
+===================================================================
+--- linux-26jul.orig/arch/powerpc/mm/fault.c
++++ linux-26jul/arch/powerpc/mm/fault.c
+@@ -133,6 +133,7 @@ static int do_sigbus(struct pt_regs *reg
+ 	up_read(&current->mm->mmap_sem);
+ 
+ 	if (user_mode(regs)) {
++		current->thread.trap_nr = BUS_ADRERR;
+ 		info.si_signo = SIGBUS;
+ 		info.si_errno = 0;
+ 		info.si_code = BUS_ADRERR;
 
