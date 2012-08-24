@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760200Ab2HXTyV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 15:54:21 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56031 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760132Ab2HXTyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 15:54:17 -0400
-Date: Fri, 24 Aug 2012 12:53:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/3] kmemleak: replace list_for_each_continue_rcu with
- new interface
-Message-ID: <20120824195357.GR2472@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <502CB92F.2010700@linux.vnet.ibm.com>
- <502DC99E.4060408@linux.vnet.ibm.com>
- <5036D062.7070003@linux.vnet.ibm.com>
- <20120824100505.GG7585@arm.com>
+	id S1760195Ab2HXT6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 15:58:43 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4115 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760169Ab2HXT6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 15:58:38 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <5037DCE3.2010505@broadcom.com>
+Date: Fri, 24 Aug 2012 21:58:27 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824100505.GG7585@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082419-5518-0000-0000-00000718639C
+To: "Aaron Lu" <aaron.lwe@gmail.com>
+cc: linux-mmc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Philip Rakity" <prakity@marvell.com>
+Subject: Re: v3.6-rc1: modprobe hangs with sdhci failure on dell e6410
+References: <5034E895.4050105@broadcom.com>
+ <CAOzJMDTTAzzV3VHgvY6B3ooe1ZyWkRGvfDgbFw4ZonQJFu3uAQ@mail.gmail.com>
+ <50373A31.7040803@broadcom.com>
+In-Reply-To: <50373A31.7040803@broadcom.com>
+X-WSS-ID: 7C2903FA49823170460-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 11:05:05AM +0100, Catalin Marinas wrote:
-> On Fri, Aug 24, 2012 at 01:52:50AM +0100, Michael Wang wrote:
-> > On 08/17/2012 12:33 PM, Michael Wang wrote:
-> > > From: Michael Wang <wangyun@linux.vnet.ibm.com>
-> > > 
-> > > This patch replaces list_for_each_continue_rcu() with
-> > > list_for_each_entry_continue_rcu() to save a few lines
-> > > of code and allow removing list_for_each_continue_rcu().
-> > 
-> > Could I get some comments on this patch?
-> 
-> Sorry, busy with other things and forgot about this.
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+On 08/24/2012 10:24 AM, Arend van Spriel wrote:
+> On 08/23/2012 04:58 PM, Aaron Lu wrote:
+>> On Wed, Aug 22, 2012 at 10:11 PM, Arend van Spriel
+>> <arend@broadcom.com> wrote:
+>>> A quick search using google did not provide clues. Regardless if
+>>> there is
+>>> anything inserted the hang occurs.
+>>>
+>>> Gr. AvS
+>>
+>> Also, your .config might be helpful.
+>
+> True. Here it is.
+>
+> Gr. AvS
 
-Queued, thank you both!
+Inspected the logs on another machine running the same kernel and it has 
+the same issue. I was not using the mmc slot on that machine so I was 
+not aware. On x86_64 I am not seeing the issue (so far).
 
-							Thanx, Paul
+Gr. AvS
 
