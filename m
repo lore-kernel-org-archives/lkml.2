@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760229Ab2HXVQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 17:16:30 -0400
+	id S1760219Ab2HXVQZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 17:16:25 -0400
 Received: from mga03.intel.com ([143.182.124.21]:7595 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785Ab2HXVPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 17:15:30 -0400
+	id S1753783Ab2HXVPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Aug 2012 17:15:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,304,1344236400"; 
-   d="scan'208";a="190967378"
+   d="scan'208";a="190967387"
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
         andreas.herrmann3@amd.com, bp@amd64.org, robert.richter@amd.com
-Cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 1/6] x86, fpu: drop_fpu() before restoring new state from sigframe
-Date: Fri, 24 Aug 2012 14:12:57 -0700
-Message-Id: <1345842782-24175-2-git-send-email-suresh.b.siddha@intel.com>
+Cc: linux-kernel@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: [PATCH 3/6] x86, kvm: use kernel_fpu_begin/end() in kvm_load/put_guest_fpu()
+Date: Fri, 24 Aug 2012 14:12:59 -0700
+Message-Id: <1345842782-24175-4-git-send-email-suresh.b.siddha@intel.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>
 References: <1345842782-24175-1-git-send-email-suresh.b.siddha@intel.com>
@@ -23,65 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to save the state with unlazy_fpu(), that is about to get overwritten
-by the state from the signal frame. Instead use drop_fpu() and continue
-to restore the new state.
+kvm's guest fpu save/restore should be wrapped around
+kernel_fpu_begin/end(). This will avoid for example taking a DNA
+in kvm_load_guest_fpu() when it tries to load the fpu immediately
+after doing unlazy_fpu() on the host side.
 
-Also fold the stop_fpu_preload() into drop_fpu().
+More importantly this will prevent the host process fpu from being
+corrupted.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Avi Kivity <avi@redhat.com>
 ---
- arch/x86/include/asm/fpu-internal.h |    7 +------
- arch/x86/kernel/xsave.c             |    8 +++-----
- 2 files changed, 4 insertions(+), 11 deletions(-)
+ arch/x86/kvm/x86.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index ba83a08..fe95ad0 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -448,17 +448,12 @@ static inline void save_init_fpu(struct task_struct *tsk)
- 	preempt_enable();
- }
- 
--static inline void stop_fpu_preload(struct task_struct *tsk)
--{
--	tsk->fpu_counter = 0;
--}
--
- static inline void drop_fpu(struct task_struct *tsk)
- {
- 	/*
- 	 * Forget coprocessor state..
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 42bce48..67e773c 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5969,7 +5969,7 @@ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
  	 */
--	stop_fpu_preload(tsk);
-+	tsk->fpu_counter = 0;
- 	preempt_disable();
- 	__drop_fpu(tsk);
- 	preempt_enable();
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index a23d100..6cfc7d9 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -381,16 +381,14 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 		struct xsave_struct *xsave = &tsk->thread.fpu.state->xsave;
- 		struct user_i387_ia32_struct env;
+ 	kvm_put_guest_xcr0(vcpu);
+ 	vcpu->guest_fpu_loaded = 1;
+-	unlazy_fpu(current);
++	kernel_fpu_begin();
+ 	fpu_restore_checking(&vcpu->arch.guest_fpu);
+ 	trace_kvm_fpu(1);
+ }
+@@ -5983,6 +5983,7 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
  
--		stop_fpu_preload(tsk);
--		unlazy_fpu(tsk);
-+		drop_fpu(tsk);
- 
- 		if (__copy_from_user(xsave, buf_fx, state_size) ||
--		    __copy_from_user(&env, buf, sizeof(env))) {
--			drop_fpu(tsk);
-+		    __copy_from_user(&env, buf, sizeof(env)))
- 			return -1;
--		}
- 
- 		sanitize_restored_xstate(tsk, &env, xstate_bv, fx_only);
-+		set_used_math();
- 	} else {
- 		/*
- 		 * For 64-bit frames and 32-bit fsave frames, restore the user
+ 	vcpu->guest_fpu_loaded = 0;
+ 	fpu_save_init(&vcpu->arch.guest_fpu);
++	kernel_fpu_end();
+ 	++vcpu->stat.fpu_reload;
+ 	kvm_make_request(KVM_REQ_DEACTIVATE_FPU, vcpu);
+ 	trace_kvm_fpu(0);
 -- 
 1.7.6.5
 
