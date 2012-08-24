@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab2HXBet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 21:34:49 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48833 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab2HXBer (ORCPT
+	id S1757563Ab2HXBgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 21:36:17 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39626 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2HXBgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 21:34:47 -0400
-Date: Fri, 24 Aug 2012 11:34:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the ubi tree
-Message-Id: <20120824113439.6fdb432e7d6057b3fae27d3f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__24_Aug_2012_11_34_39_+1000_vtrj1iM6.J=rgMAL"
+	Thu, 23 Aug 2012 21:36:12 -0400
+Message-ID: <5036DA80.5010405@linux.vnet.ibm.com>
+Date: Fri, 24 Aug 2012 09:36:00 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: f@amt.cnet, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: trace the events of mmu_notifier
+References: <50335A27.2070306@linux.vnet.ibm.com> <20120823092405.GB32710@amt.cnet> <50362257.6060006@linux.vnet.ibm.com> <20120823130814.GA11915@amt.cnet>
+In-Reply-To: <20120823130814.GA11915@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082401-3568-0000-0000-0000025B5EA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__24_Aug_2012_11_34_39_+1000_vtrj1iM6.J=rgMAL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/23/2012 09:08 PM, Marcelo Tosatti wrote:
+> On Thu, Aug 23, 2012 at 08:30:15PM +0800, Xiao Guangrong wrote:
+>> On 08/23/2012 05:24 PM, Marcelo Tosatti wrote:
+>>> On Tue, Aug 21, 2012 at 05:51:35PM +0800, Xiao Guangrong wrote:
+>>>> mmu_notifier is the interface to broadcast the mm events to KVM, the
+>>>> tracepoints introduced in this patch can trace all these events, it is
+>>>> very helpful for us to notice and fix the bug caused by mm
+>>>>
+>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>> ---
+>>>>  include/trace/events/kvm.h |  121 ++++++++++++++++++++++++++++++++++++++++++++
+>>>>  virt/kvm/kvm_main.c        |   19 +++++++
+>>>>  2 files changed, 140 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+>>>> index 7ef9e75..a855ff9 100644
+>>>> --- a/include/trace/events/kvm.h
+>>>> +++ b/include/trace/events/kvm.h
+>>>> @@ -309,6 +309,127 @@ TRACE_EVENT(
+>>>>
+>>>>  #endif
+>>>>
+>>>> +#if defined(CONFIG_MMU_NOTIFIER) && defined(KVM_ARCH_WANT_MMU_NOTIFIER)
+>>>> +DECLARE_EVENT_CLASS(mmu_notifier_address_class,
+>>>> +
+>>>> +	TP_PROTO(struct kvm *kvm, unsigned long address),
+>>>> +
+>>>> +	TP_ARGS(kvm, address),
+>>>> +
+>>>> +	TP_STRUCT__entry(
+>>>> +		__field(struct kvm *, kvm)
+>>>> +		__field(unsigned long, address)
+>>>> +	),
+>>>> +
+>>>> +	TP_fast_assign(
+>>>> +		__entry->kvm = kvm;
+>>>> +		__entry->address = address;
+>>>> +	),
+>>>> +
+>>>> +	TP_printk("kvm %p address %lx", __entry->kvm, __entry->address)
+>>>
+>>>
+>>> Perhaps the pointer was useful for debugging, but otherwise, i don't
+>>> think it should be printed.
+>>
+>> But this is the only information to identify the guest if may guest
+>> are running.
+> 
+> Can't you get to task_struct, then pid?
 
-Hi Artem,
+Qemu-kvm have many threads, that means, we hardly know which pids belong
+to the same kvm.
 
-After merging the ubi tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> 
+> A kernel pointer to identify a task is really weird (and not consistent 
+> with the other tracepoints).
 
-drivers/mtd/ubi/build.c: In function 'io_init':
-drivers/mtd/ubi/build.c:658:3: error: 'mtd' undeclared (first use in this f=
-unction)
+Okay, if you really dislike it, i can use perf record to filter the process
+then perf script to show the result, but it is not so readable because some
+tracepoints can not fully decoded by perf script.
 
-Caused by commit 8eb71060a0a5 ("UBI: disallow max_beb_per1024 on NOR flash"=
-).
-
-I have used the ubi tree from next-20120823 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__24_Aug_2012_11_34_39_+1000_vtrj1iM6.J=rgMAL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQNtovAAoJEECxmPOUX5FELAkQAKM196Vf4D3uX4vSQflsC4pn
-4vy35xrO0faXHUG8VMI1/Gc26nTehWWZLldcQujNi9sfZBgNMFrHBPP9q/E7yLxv
-Fmky8o53clMUqbDGN1JeW8Be7HXq4GAx98xclC8XmxTd5EYIx6aRSv+9Enr2vpoR
-uXvB6LcTY3SGonTWg78eYrrOx+xuYJ8aRqbTvpbip0/l4oZZEF/u68lHusVtnrFA
-FE7FpIHYhth+C60z5HTl2M0chrh++mJGPvY20XOiSDdCLIAXtaUH/zx+xMMmBb63
-i1Tq97G8YkRf2tRMYMs3wrhZrVUNmkY7qZIjMnzonTthwKz+9NpZu1IAGWzU04+6
-1IVNRIg2W6am/6VYPQml3DAMgf2O7M4wPBuDp69SIYVI20Rne0MgBdgg0IbC/Kjj
-MNDJzBDkvxdvRG9ajLLOui2URSvP4Cd9Qav9cLPAfbIaHbDqL3WPJSeZweo4EMVE
-XkUPwxFF8Oe0gKr+jHP9WkJ3ZwdURzxYMwT809Nklf2AMLQxk0/+MgJS4U/CMEeZ
-l9lW2aUMiP7doBXCJ2eHR0jm1iPNCz6SmG2kxZA9smg6xZvjrh5AGGegsEixV33P
-8A4BEX/CCxcpTBs5aNlZXh2gliQxszxvpQF+32C1t+puyGEAHJXt+t/BdpTTc5Vi
-yflu1F1b+Mk4IfIYdJgn
-=gwV7
------END PGP SIGNATURE-----
-
---Signature=_Fri__24_Aug_2012_11_34_39_+1000_vtrj1iM6.J=rgMAL--
