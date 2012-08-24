@@ -1,32 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759770Ab2HXQM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 12:12:59 -0400
-Received: from a194-183.smtp-out.amazonses.com ([199.255.194.183]:21394 "EHLO
-	a194-183.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759715Ab2HXQM5 (ORCPT
+	id S932458Ab2HXQOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 12:14:23 -0400
+Received: from mail1-hoer.fullrate.dk ([89.150.129.84]:63261 "EHLO
+	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759647Ab2HXQOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 12:12:57 -0400
-Date: Fri, 24 Aug 2012 16:12:55 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <js1304@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] slub: rename cpu_partial to max_cpu_object
-In-Reply-To: <1345824303-30292-1-git-send-email-js1304@gmail.com>
-Message-ID: <0000013959685cfc-8f8f9570-98ba-4dd5-b2a5-25faba405d79-000000@email.amazonses.com>
-References: <Yes> <1345824303-30292-1-git-send-email-js1304@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 24 Aug 2012 12:14:20 -0400
+From: Martin Nybo Andersen <tweek@tweek.dk>
+To: wbrana <wbrana@gmail.com>
+Subject: Re: Drop support for x86-32
+Date: Fri, 24 Aug 2012 18:14:16 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-rc2+; KDE/4.8.4; i686; ; )
+Cc: Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <1345823281.28613.34.camel@thorin> <CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com>
+In-Reply-To: <CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.183
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208241814.16862.tweek@tweek.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Aug 2012, Joonsoo Kim wrote:
+On Friday 24 August 2012 17:55:08 wbrana wrote:
+> On 8/24/12, Bernd Petrovitsch <bernd@petrovitsch.priv.at> wrote:
+> > You really think that there are no 32bit x86-compatible CPUs in the
+> > embedded world?
+> 
+> x86-32 would be supported by long term tree until all x86-32 CPU disappear
 
-> cpu_partial of kmem_cache struct is a bit awkward.
+Ahh..., so the development time saved by not supporting x86-32 in mainline can 
+now be used by backporting new features to the forementioned long term tree?
 
-Acked-by: Christoph Lameter <cl@linux.com>
+(And I'm still not sure why one would run 32-bit applications on a 64-bit 
+architecture...)
+
+-- 
+Cheers,
+Martin
