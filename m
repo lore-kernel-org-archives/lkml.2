@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932923Ab2HXCJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:09:51 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:17652 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932120Ab2HXCJt (ORCPT
+	id S932898Ab2HXCUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 22:20:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33005 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab2HXCUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:09:49 -0400
-Message-ID: <1345774184.2579.51.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: RE: [PATCH v2] net: add new QCA alx ethernet driver
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: "Huang, Xiong" <xiong@qca.qualcomm.com>
-CC: David Miller <davem@davemloft.net>, "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
-Date: Fri, 24 Aug 2012 03:09:44 +0100
-In-Reply-To: <157393863283F442885425D2C45428562A4F54E3@nasanexd02f.na.qualcomm.com>
-References: <1345480949-14800-1-git-send-email-cjren@qca.qualcomm.com>
-	 <20120822.225700.714020017287504609.davem@davemloft.net>
-	 <157393863283F442885425D2C45428562A4F5169@nasanexd02f.na.qualcomm.com>
-	 <1345756142.2579.16.camel@bwh-desktop.uk.solarflarecom.com>
-	 <157393863283F442885425D2C45428562A4F54E3@nasanexd02f.na.qualcomm.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+	Thu, 23 Aug 2012 22:20:05 -0400
+Date: Fri, 24 Aug 2012 12:19:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20120824121955.454ebce22142f238f89c9a9a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__24_Aug_2012_12_19_55_+1000_wFS..8v=TjKZDnH/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-08-24 at 01:55 +0000, Huang, Xiong wrote:
-> Thanks for all your feedback. I have another question need your help.
-> 
-> This NIC has special function that could receive/transmit simple
-> packet when it's in sleep (D3) state.
-> It will help someone wakeup his/her machine even it's behind a router.
-> This function is disabled by default. To enable it, the NIC should be
-> configured by app.
-> My question is which interface can I select to configure(write to) the
-> NIC register ?
+--Signature=_Fri__24_Aug_2012_12_19_55_+1000_wFS..8v=TjKZDnH/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There are standard operations to configure Wake-on-LAN (commands
-ETHTOOL_{G,S}WOL, driver methods ethtool_ops::{get,set}_wol) and WOL
-modes including MagicPacket.
+Hi Dave,
 
-If you want to implement a more sophisticated packet matching mode that
-requires more details than struct ethtool_wolinfo, then you may need to
-define new operations.
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/i915/intel_modes.c between commit 4eab81366465
+("drm/i915: extract connector update from intel_ddc_get_modes() for
+reuse") from Linus' tree and commit 451023dc32d4 ("drm: remove the
+raw_edid field from struct drm_display_info") from the drm tree.
 
-Ben.
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+diff --cc drivers/gpu/drm/i915/intel_modes.c
+index 29b7259,7a5238f..0000000
+--- a/drivers/gpu/drm/i915/intel_modes.c
++++ b/drivers/gpu/drm/i915/intel_modes.c
+@@@ -33,25 -33,6 +33,24 @@@
+  #include "i915_drv.h"
+ =20
+  /**
+ + * intel_connector_update_modes - update connector from edid
+ + * @connector: DRM connector device to use
+ + * @edid: previously read EDID information
+ + */
+ +int intel_connector_update_modes(struct drm_connector *connector,
+ +				struct edid *edid)
+ +{
+ +	int ret;
+ +
+ +	drm_mode_connector_update_edid_property(connector, edid);
+ +	ret =3D drm_add_edid_modes(connector, edid);
+ +	drm_edid_to_eld(connector, edid);
+- 	connector->display_info.raw_edid =3D NULL;
+ +	kfree(edid);
+ +
+ +	return ret;
+ +}
+ +
+ +/**
+   * intel_ddc_get_modes - get modelist from monitor
+   * @connector: DRM connector device to use
+   * @adapter: i2c adapter
 
+--Signature=_Fri__24_Aug_2012_12_19_55_+1000_wFS..8v=TjKZDnH/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQNuTLAAoJEECxmPOUX5FEldsP/jL3ayJVeAjcLLJUyLVyhV2F
+HMZQ2UBAoI3noklLMEmbeozVVQqAlG6sZgZxBWNWj6IKI0Z3lX8YxbI0Z3aM2sOx
+c4oKO0t+C2YrKbF5E7pbVlu03KniBpGMAImDCMIhOtnWZ+mHjSFvHGtHSMvm3LEj
+KADeiaPXxOQkBQw/ZwsYP7IWjDGoROsjGa+gT56dW2ds6YvrOWYs/Ol4enFsYZz7
+rSdEsXhiUJqzV+A155DkZfq7+6xwfuSmj5wuS4b8wlPZ6aM53YYZvzx585DvVJ+O
+hVoMjEOgUvNlfxsDHJn1hseJArHmOOsuosPGC3DgHzZdNoNJQM5Sy4/yesGw/gkE
+uxkV8aArPGkxFy7+THUdlVFIMHWgMNr+d9CouL5MsHs+rNjArQYC2k3ICaqlwhIU
+OfhekW+uGIKODbDs7mrHsLhut5OeI7OMDinFnzCLAAtaDkihg1zUQw69OgobffSv
+aX+C9cINH5IW6mbNRHoZVPuIO1Vvv9kqfFmNvf5ea3Joz491kT8lWWU/Colo4vrO
+QnnKUFv0XaUFdR+deyQHkOhjIf0/2AutbRckWBKsqJdc3Ely4Fm1JbxYYZkiSeMP
+iYZlYEH0PiHNxbvtodcbOPZIwppLkgYVgv9cjgWT/0H5oICRLVpr35FQwwQLZnno
+ygUiicENYbwfqaRFlYXE
+=yY9T
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Aug_2012_12_19_55_+1000_wFS..8v=TjKZDnH/--
