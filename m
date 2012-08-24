@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab2HXHip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 03:38:45 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:47521 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755526Ab2HXHim (ORCPT
+	id S1751228Ab2HXHpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 03:45:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46014 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab2HXHpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 03:38:42 -0400
-X-Authenticated: #9962044
-X-Provags-ID: V01U2FsdGVkX1/o0uprFHrolkvkl4wmWpm2OIQqYzywhrvs+CT0AS
-	lz0wDfUXrDcu5b
-From: Marc Dietrich <marvin24@gmx.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Julian Andres Klode <jak@jak-linux.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH staging] nvec: use system_nrt_wq instead of custom one
-Date: Fri, 24 Aug 2012 09:38:35 +0200
-Message-ID: <3351764.3akYJnKF5N@fb07-iapwap2>
-User-Agent: KMail/4.8.4 (Linux/3.4.9-2-desktop; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <20120822223238.GO19212@google.com>
-References: <20120822223238.GO19212@google.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Y-GMX-Trusted: 0
+	Fri, 24 Aug 2012 03:45:49 -0400
+Date: Fri, 24 Aug 2012 17:45:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: probably no trees for the next week
+Message-Id: <20120824174541.7d659a1763a00fabd360a6de@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__24_Aug_2012_17_45_41_+1000_jrp5pGYsJWHdSa0l"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 22. August 2012, 15:32:38 schrieb Tejun Heo:
-> There isn't much reason to use custom workqueue in nvec.  It can use
-> system_nrt_wq instead and cancel the two work items on removal.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
-> Marc, I think I'll do this conversion in two steps.  system_nrt_wq ->
-> system_wq conversion should be trivial after 3.7 merge window.
+--Signature=_Fri__24_Aug_2012_17_45_41_+1000_jrp5pGYsJWHdSa0l
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm fine with that. Thanks for spitting up the large patch.
-I cc the staging list.
+Hi all,
 
-Greg, can you pick it up for 3.7?
+Since I will be at Kernel Summit/Plumbers/Linuxcon for the next week,
+there will probably be no linux-next releases until September 4.   I have
+been known to get bored in the past while attending KS, so there may be
+one or two, but no promises.  :-)
 
-Signed-off-by: Marc Dietrich <marvin24@gmx.de>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->  drivers/staging/nvec/nvec.c |   10 ++++------
->  1 file changed, 4 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-> index 695ea35..daaef24 100644
-> --- a/drivers/staging/nvec/nvec.c
-> +++ b/drivers/staging/nvec/nvec.c
-> @@ -264,7 +264,7 @@ int nvec_write_async(struct nvec_chip *nvec, const
-> unsigned char *data, list_add_tail(&msg->node, &nvec->tx_data);
->  	spin_unlock_irqrestore(&nvec->tx_lock, flags);
-> 
-> -	queue_work(nvec->wq, &nvec->tx_work);
-> +	queue_work(system_nrt_wq, &nvec->tx_work);
-> 
->  	return 0;
->  }
-> @@ -470,7 +470,7 @@ static void nvec_rx_completed(struct nvec_chip *nvec)
->  	if (!nvec_msg_is_event(nvec->rx))
->  		complete(&nvec->ec_transfer);
-> 
-> -	queue_work(nvec->wq, &nvec->rx_work);
-> +	queue_work(system_nrt_wq, &nvec->rx_work);
->  }
-> 
->  /**
-> @@ -791,13 +791,11 @@ static int __devinit tegra_nvec_probe(struct
-> platform_device *pdev) INIT_LIST_HEAD(&nvec->tx_data);
->  	INIT_WORK(&nvec->rx_work, nvec_dispatch);
->  	INIT_WORK(&nvec->tx_work, nvec_request_master);
-> -	nvec->wq = alloc_workqueue("nvec", WQ_NON_REENTRANT, 2);
-> 
->  	err = devm_gpio_request_one(&pdev->dev, nvec->gpio, GPIOF_OUT_INIT_HIGH,
->  					"nvec gpio");
->  	if (err < 0) {
->  		dev_err(nvec->dev, "couldn't request gpio\n");
-> -		destroy_workqueue(nvec->wq);
->  		return -ENODEV;
->  	}
-> 
-> @@ -805,7 +803,6 @@ static int __devinit tegra_nvec_probe(struct
-> platform_device *pdev) "nvec", nvec);
->  	if (err) {
->  		dev_err(nvec->dev, "couldn't request irq\n");
-> -		destroy_workqueue(nvec->wq);
->  		return -ENODEV;
->  	}
->  	disable_irq(nvec->irq);
-> @@ -859,7 +856,8 @@ static int __devexit tegra_nvec_remove(struct
-> platform_device *pdev)
-> 
->  	nvec_write_async(nvec, EC_DISABLE_EVENT_REPORTING, 3);
->  	mfd_remove_devices(nvec->dev);
-> -	destroy_workqueue(nvec->wq);
-> +	cancel_work_sync(&nvec->rx_work);
-> +	cancel_work_sync(&nvec->tx_work);
-> 
->  	return 0;
->  }
+--Signature=_Fri__24_Aug_2012_17_45_41_+1000_jrp5pGYsJWHdSa0l
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQNzElAAoJEECxmPOUX5FEdZUP/iZ08BkumPXbf7jBy9FtwWeW
+2IDyf5/l2ERyLy7ycOzm0OLNvvu1RQJxdMokU44lTvRbMA1fXDTgmULka+Nsx6RZ
+zsOLbPWyHmk1kg/brYw0JDVt3x1nk3UQ4GC7XSZgy4FfDc3LKwMHJgFJatFRgP5Y
+lCQ6pJ2ZJ5gjtgFb/D6cIBgyqx6NEQw30vYN6fYAMzPKD7c8Wwz5PYqRzqPvx9ZG
+H45XHPlrzuGInl0e6Ijgdac1usFwnLPqLUdiGSjKgm18qmAEof75K9pKtvKyfFT7
+CcCtn0tPD2GIB1M+hxnSzCUITRL/xxxcYJyPwQVW3Fn7sbRe9OAImds1bMqc9t+f
+be/0Tr7ao4mf1/9N8djoQcSVFY9r5d/RhXXqV2QucbomyCDXd5zZo11Kc7KELI2n
+DnH8IhZhuyKzZ44NRTib4+eY4mM0fXMairFHijQ4iGxFMWuK9fGjpeSUtg5aPtgh
+5XKOr/DGNAqdwxLKLABkX3splCaB4652wD/lK3bwvFk2/b/hBGDPN2Fb0w7NaQgo
+0sqwRq/mfGJEUAqOkNPpFulh1KDdTt5Eu2RtpOKp6KM91jBM3bFfyAjnkz9shurn
+XxI3Ap1R+FxwVkh7pNIboh6XTs54vdZkw/wPaVBxEtNPWyLfcVAa5M7kS42/p9xS
+J2GAWApLgB+HHc2j8mrd
+=4WZT
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Aug_2012_17_45_41_+1000_jrp5pGYsJWHdSa0l--
