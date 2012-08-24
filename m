@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab2HXAjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 20:39:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752873Ab2HXAjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 20:39:15 -0400
-Date: Thu, 23 Aug 2012 21:38:48 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v8 1/5] mm: introduce a common interface for balloon
- pages mobility
-Message-ID: <20120824003848.GH10777@t510.redhat.com>
-References: <20120823021903.GA23660@x61.redhat.com>
- <20120823100107.GA17409@redhat.com>
- <20120823121338.GA3062@t510.redhat.com>
- <20120823123432.GA25659@redhat.com>
- <20120823130606.GB3746@t510.redhat.com>
- <20120823135328.GB25709@redhat.com>
- <20120823162504.GA1522@redhat.com>
- <20120823172844.GC10777@t510.redhat.com>
- <20120823233616.GB2775@redhat.com>
- <20120824003353.GG10777@t510.redhat.com>
+	id S1753835Ab2HXAkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 20:40:06 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42864 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab2HXAkC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 20:40:02 -0400
+X-AuditID: 9c930179-b7cc4ae00000134d-ff-5036cd60a5e4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] tools lib traceevent: Fix off-by-one bug in pevent_strerror()
+References: <1345707420-21767-1-git-send-email-namhyung@kernel.org>
+	<1345714223.5069.45.camel@gandalf.local.home>
+Date: Fri, 24 Aug 2012 09:33:22 +0900
+In-Reply-To: <1345714223.5069.45.camel@gandalf.local.home> (Steven Rostedt's
+	message of "Thu, 23 Aug 2012 05:30:23 -0400")
+Message-ID: <87393di0x9.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824003353.GG10777@t510.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 09:33:53PM -0300, Rafael Aquini wrote:
-> On Fri, Aug 24, 2012 at 02:36:16AM +0300, Michael S. Tsirkin wrote:
-> > I would wake it each time after adding a page, then it
-> > can stop waiting when it leaks enough.
-> > But again, it's cleaner to just keep tracking all
-> > pages, let mm hang on to them by keeping a reference.
-> > 
+Hi, Steve
 
-Btw, it's also late here, and there still some work to be done around those
-bits, but I guess that has potential to get this issue nailed.
+On Thu, 23 Aug 2012 05:30:23 -0400, Steven Rostedt wrote:
+> On Thu, 2012-08-23 at 16:37 +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> As pevent_errno is defined using PEVENT_ERRORS which uses _PE macro
+>> magic, the first errno is bigger than __PEVENT_ERRNO_START by 1. So we
+>> need to subtract the 1 also when calculating the index of the error
+>> strings.
+>> 
+>> Cc: Fredereic Weisbecker <fweisbec@gmail.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/lib/traceevent/event-parse.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+>> index f978c59f67bf..b5b4d806ffa2 100644
+>> --- a/tools/lib/traceevent/event-parse.c
+>> +++ b/tools/lib/traceevent/event-parse.c
+>> @@ -4822,7 +4822,7 @@ int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
+>>  	    errnum >= __PEVENT_ERRNO__END)
+>>  		return -1;
+>>  
+>> -	idx = errnum - __PEVENT_ERRNO__START;
+>> +	idx = errnum - __PEVENT_ERRNO__START - 1;
+>>  	msg = pevent_error_str[idx];
+>>  
+>
+> Note, if you had kept my original way, you wouldn't have this bug ;-)
+>
+> http://marc.info/?l=linux-kernel&m=133976417632111
 
-> Here is a rough idea on how it's getting:
-> 
-> Basically, I'm have introducing an atomic counter to track isolated pages, I
-> also have changed vb->num_pages into an atomic conter. All inc/dec operations
-> take place under pages_lock spinlock, and we only perform work under page lock.
-> 
-> It's still missing the wait-part (I'll write it during the weekend) and your
-> concerns (and mine) will be addressed, IMHO.
-> 
-> ---8<---
-> +/*
-> + *
-> + */
-> +static inline void __wait_on_isolated_pages(struct virtio_balloon *vb,
-> +                                           size_t num)
-> +{
-> +       /* There are no isolated pages for this balloon device */
-> +       if (!atomic_read(&vb->num_isolated_pages))
-> +               return;
-> +
-> +       /* the leak target is smaller than # of pages on vb->pages list */
-> +       if (num < (atomic_read(&vb->num_pages) -
-> +           atomic_read(&vb->num_isolated_pages)))
-> +               return;
-> +       else {
-> +               spin_unlock(&vb->pages_lock);
-> +               /* wait stuff goes here */
-> +               spin_lock(&vb->pages_lock);
-> +       }
-> +}
-> +
->  static void leak_balloon(struct virtio_balloon *vb, size_t num)
->  {
-> -       struct page *page;
-> +       /* The array of pfns we tell the Host about. */
-> +       unsigned int num_pfns;
-> +       u32 pfns[VIRTIO_BALLOON_ARRAY_PFNS_MAX];
-> 
->         /* We can only do one array worth at a time. */
-> -       num = min(num, ARRAY_SIZE(vb->pfns));
-> +       num = min(num, ARRAY_SIZE(pfns));
-> 
-> -       for (vb->num_pfns = 0; vb->num_pfns < num;
-> -            vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
-> -               page = list_first_entry(&vb->pages, struct page, lru);
-> -               list_del(&page->lru);
-> -               set_page_pfns(vb->pfns + vb->num_pfns, page);
-> -               vb->num_pages -= VIRTIO_BALLOON_PAGES_PER_PAGE;
-> +       for (num_pfns = 0; num_pfns < num;
-> +            num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
-> +               struct page *page = NULL;
-> +               spin_lock(&vb->pages_lock);
-> +               __wait_on_isolated_pages(vb, num);
-> +
-> +               if (!list_empty(&vb->pages))
-> +                       page = list_first_entry(&vb->pages, struct page, lru);
-> +               /*
-> +                * Grab the page lock to avoid racing against threads isolating
-> +                * pages from, or migrating pages back to vb->pages list.
-> +                * (both tasks are done under page lock protection)
-> +                *
-> +                * Failing to grab the page lock here means this page is being
-> +                * isolated already, or its migration has not finished yet.
-> +                */
-> +               if (page && trylock_page(page)) {
-> +                       clear_balloon_mapping(page);
-> +                       list_del(&page->lru);
-> +                       set_page_pfns(pfns + num_pfns, page);
-> +                       atomic_sub(VIRTIO_BALLOON_PAGES_PER_PAGE,
-> +                                  &vb->num_pages);
-> +                       unlock_page(page);
-> +               }
-> +               spin_unlock(&vb->pages_lock);
->         }
-> 
->         /*
-> @@ -182,8 +251,10 @@ static void leak_balloon(struct virtio_balloon *vb, size_t
-> num)
->          * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
->          * is true, we *have* to do it in this order
->          */
-> +       mutex_lock(&vb->balloon_lock);
->         tell_host(vb, vb->deflate_vq);
-> -       release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> +       mutex_unlock(&vb->balloon_lock);
-> +       release_pages_by_pfn(pfns, num_pfns);
->  }
-> ---8<---
+Oh, I missed the BEFORE_START part at that time, sorry. :)
+
+Thanks,
+Namhyung
