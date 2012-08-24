@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab2HXC5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 22:57:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab2HXC5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 22:57:41 -0400
-Message-ID: <5036ED97.8040306@redhat.com>
-Date: Thu, 23 Aug 2012 22:57:27 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1756715Ab2HXDFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 23:05:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51046 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab2HXDFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Aug 2012 23:05:22 -0400
+Date: Fri, 24 Aug 2012 11:05:03 +0800
+From: Adam Lee <adam8157@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net>,
+        Peter Foley <pefoley2@verizon.net>, Paul Bolle <pebolle@tiscali.nl>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "open list:KCONFIG" <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] kconfig: replace 'oldnoconfig' with 'olddefconfig', what
+ it really does
+Message-ID: <20120824030503.GB5323@adam-laptop>
+References: <1345187778-19678-1-git-send-email-adam8157@gmail.com>
+ <1345752601.12440.3.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ShuoX Liu <shuox.liu@intel.com>, mjg59@srcf.ucam.org,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Len Brown <len.brown@intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 0/3] c-state governor changes
-References: <20120823171104.38574add@cuia.bos.redhat.com> <5036A67D.9090904@linux.intel.com>
-In-Reply-To: <5036A67D.9090904@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345752601.12440.3.camel@gandalf.local.home>
+X-PGP-Key-ID: 2F39D84D
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 05:54 PM, Arjan van de Ven wrote:
-> On 8/23/2012 2:11 PM, Rik van Riel wrote:
->> This patch set is mostly there to kick off a discussion in time
->> for Kernel Summit.  When running it on my laptop, with acpi_idle,
->> I see a promising change in powertop.
->
-> be careful with acpi_idle... that will remove most of the intermediate C states the platform has,
-> so the policy engine no longer has good things to chose from.
+On Thu, Aug 23, 2012 at 04:10:01PM -0400, Steven Rostedt wrote:
+> Sorry for the late reply.
+> 
+> On Fri, 2012-08-17 at 15:16 +0800, Adam Lee wrote:
+> > As 67d34a6a391369269a2e5dba8a5f42cc4cd50231 said, 'oldnoconfig' doesn't
+> > set new symbols to 'n', but instead sets it to their default values.
+> > 
+> > So, this patch replace 'oldnoconfig' with 'olddefconfig', stop making
+> > people confused.
+> > 
+> > PS: the document in conf.c fixed in another mail, "[PATCH] [Signed-off]
+> > kconfig: document oldnoconfig to what it really does in conf.c"
+> 
+> The reason that I didn't make this change myself is that I'm afraid that
+> things depend on 'oldnoconfig' existing. For example, ktest.pl has it
+> hardcoded. That may not be the only script that uses it.
 
-Interesting, I was not aware of that.
+Yes, but I think very few scripts use it up to now, because it's
+"fresh".
 
-Another thing I did see is that the intel_idle driver selects
-a target residency time around 4x larger than the exit latency
-for most c-states, while acpi_idle sticks to 2x by default.
+> I think a better solution would be to make oldnoconfig do just that, set
+> everything to 'n' as the name implies, and we can create a olddefconfig
+> to do what it does now.
 
-Aiming for a residency time only 2x the exit latency seems
-excessively aggressive, especially for the deeper c states.
+Lots of configs can't be set to 'n', they expect digit or other string.
 
-The latency issues with various KVM guests communicating with
-each other have been observed on various Intel and AMD chipsets,
-not unique to one vendor.
+Later we fix it, bigger the problem becomes.
 
 -- 
-All rights reversed
+Regards,
+Adam Lee
+http://adam8157.info
