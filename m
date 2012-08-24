@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab2HXKmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 06:42:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53305 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab2HXKmm (ORCPT
+	id S1758906Ab2HXKoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 06:44:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61129 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757698Ab2HXKoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 06:42:42 -0400
+	Fri, 24 Aug 2012 06:44:14 -0400
+Date: Fri, 24 Aug 2012 11:43:39 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v2 21/31] arm64: 32-bit (compat) applications support
+Message-ID: <20120824104338.GI7585@arm.com>
+References: <1344966752-16102-1-git-send-email-catalin.marinas@arm.com>
+ <1344966752-16102-22-git-send-email-catalin.marinas@arm.com>
+ <201208151434.05145.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <CAGa+R31TLGHDcJsG55jR8ofNDCFg7H+3+KYWaDXMJwPDZbn-6w@mail.gmail.com>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208231814.21168.tweek@tweek.dk>
-	<CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com>
-	<CAMzpN2ioV-DjNDKJQwKebSRAuGO=BnYMtutLWPRoUOqx_sA-3g@mail.gmail.com>
-	<CAJ7jCmntV8kTup0=yLEmaGLP_vUDk4or3=UTWzODREO-pH8YxQ@mail.gmail.com>
-	<CAMzpN2h8XCmEh2Xsw07_aYsW5yv87BmXNk-e6sb6gUg3eptoJw@mail.gmail.com>
-	<CAJ7jCmkxS4Bor+XXvhh0Mpx5ZNyL8j8kED9KpbgMFJXED1ZoLw@mail.gmail.com>
-	<CAMzpN2hfYzNwRR8o7Kz0qsuAo6JP1iSA91x=-DJP1tBz-smgTw@mail.gmail.com>
-	<CAJ7jCmkNUttzRJj9bvLiuKJyZWh7UYzhA25f4kwitoHWjwhAqA@mail.gmail.com>
-	<CAGa+R31cVDY9RHxyrYm-2HEDZSdMMZHcRvfZ88A9J-X9W5Hnmw@mail.gmail.com>
-	<CAJ7jCmmLV1U0=zppoB8gfeh4f2KBmbcUR0GdvQ4AuHMHOMesMw@mail.gmail.com>
-	<CAGa+R31TLGHDcJsG55jR8ofNDCFg7H+3+KYWaDXMJwPDZbn-6w@mail.gmail.com>
-Date: Fri, 24 Aug 2012 12:42:38 +0200
-Message-ID: <CAJ7jCmnXULdBHKPpqzd7aFF3D8QHF=KJ0pHpmgMPFZLdTUiKOA@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Ronnie Collinson <notthinking@gmail.com>
-Cc: Brian Gerst <brgerst@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201208151434.05145.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/24/12, Ronnie Collinson <notthinking@gmail.com> wrote:
-> Hes just told you what x32 is, if you dont understand that, you cant
-> understand why its not a replacement for x32_64
-I know what is x32. x32 is replacement for x86-32, not x86-64.
+On Wed, Aug 15, 2012 at 03:34:04PM +0100, Arnd Bergmann wrote:
+> On Tuesday 14 August 2012, Catalin Marinas wrote:
+> 
+> > +#ifdef CONFIG_AARCH32_EMULATION
+> > +#include <linux/compat.h>
+> > +
+> > +#define AARCH32_KERN_SIGRET_CODE_OFFSET	0x500
+> > +
+> > +extern const compat_ulong_t aarch32_sigret_code[6];
+> > +
+> > +int compat_setup_frame(int usig, struct k_sigaction *ka, sigset_t *set,
+> > +		       struct pt_regs *regs);
+> > +int compat_setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
+> > +			  sigset_t *set, struct pt_regs *regs);
+> > +
+> > +void compat_setup_restart_syscall(struct pt_regs *regs);
+> > +#else
+> > +
+> > +static inline int compat_setup_frame(int usid, struct k_sigaction *ka,
+> > +				     sigset_t *set, struct pt_regs *regs)
+> > +{
+> > +	BUG();
+> > +}
+> 
+> What good is the run-time BUG() here? Nothing should be calling these
+> when CONFIG_COMPAT is disabled, so I think you should just remove
+> the #ifdef around the declarations, and the entire #else case.
+
+They are called from handle_signal(), so that's to avoid #ifdef inside
+functions. I can drop the BUG() (but keep the empty function) and
+change the checks to is_compat_task() so that the compiler optimises the
+condition out when !COMPAT.
+
+-- 
+Catalin
