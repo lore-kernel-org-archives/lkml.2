@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030569Ab2HXWQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 18:16:46 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37646 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760224Ab2HXWQj (ORCPT
+	id S933347Ab2HXWRS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 18:17:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40034 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760204Ab2HXWRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 18:16:39 -0400
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH drm-next 2/3] drm/i915: Remove reference to drm_display_info raw_edid field
-Date: Sat, 25 Aug 2012 00:16:23 +0200
-Message-Id: <1345846584-5910-2-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1345846584-5910-1-git-send-email-sedat.dilek@gmail.com>
-References: <1345846584-5910-1-git-send-email-sedat.dilek@gmail.com>
+	Fri, 24 Aug 2012 18:17:14 -0400
+Date: Fri, 24 Aug 2012 15:16:59 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-1ce83ffda9aea53e6e4b6b6a82c028a019526010@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rusty@rustcorp.com.au, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1345842782-24175-6-git-send-email-suresh.b.siddha@intel.com>
+References: <1345842782-24175-6-git-send-email-suresh.b.siddha@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] lguest, x86: handle guest TS bit for lazy/
+ non-lazy fpu host models
+Git-Commit-ID: 1ce83ffda9aea53e6e4b6b6a82c028a019526010
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 24 Aug 2012 15:17:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reported-By: Stephen Rothwell <sfr@canb.auug.org.au>
-Acked-by: Jani Nikula <jani.nikula@intel.com>
-Acked-by: Dave Airlie <airlied@gmail.com>
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+Commit-ID:  1ce83ffda9aea53e6e4b6b6a82c028a019526010
+Gitweb:     http://git.kernel.org/tip/1ce83ffda9aea53e6e4b6b6a82c028a019526010
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Fri, 24 Aug 2012 14:13:01 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 24 Aug 2012 14:26:52 -0700
+
+lguest, x86: handle guest TS bit for lazy/non-lazy fpu host models
+
+Instead of using unlazy_fpu() check if user_has_fpu() and set/clear
+the host TS bits so that the lguest works fine with both the
+lazy/non-lazy FPU host models with minimal changes.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Link: http://lkml.kernel.org/r/1345842782-24175-6-git-send-email-suresh.b.siddha@intel.com
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/gpu/drm/i915/intel_modes.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/lguest/x86/core.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_modes.c b/drivers/gpu/drm/i915/intel_modes.c
-index 29b7259..4bc1c0f 100644
---- a/drivers/gpu/drm/i915/intel_modes.c
-+++ b/drivers/gpu/drm/i915/intel_modes.c
-@@ -45,7 +45,6 @@ int intel_connector_update_modes(struct drm_connector *connector,
- 	drm_mode_connector_update_edid_property(connector, edid);
- 	ret = drm_add_edid_modes(connector, edid);
- 	drm_edid_to_eld(connector, edid);
--	connector->display_info.raw_edid = NULL;
- 	kfree(edid);
+diff --git a/drivers/lguest/x86/core.c b/drivers/lguest/x86/core.c
+index 39809035..4af12e1 100644
+--- a/drivers/lguest/x86/core.c
++++ b/drivers/lguest/x86/core.c
+@@ -203,8 +203,8 @@ void lguest_arch_run_guest(struct lg_cpu *cpu)
+ 	 * we set it now, so we can trap and pass that trap to the Guest if it
+ 	 * uses the FPU.
+ 	 */
+-	if (cpu->ts)
+-		unlazy_fpu(current);
++	if (cpu->ts && user_has_fpu())
++		stts();
  
- 	return ret;
--- 
-1.7.9.5
-
+ 	/*
+ 	 * SYSENTER is an optimized way of doing system calls.  We can't allow
+@@ -234,6 +234,10 @@ void lguest_arch_run_guest(struct lg_cpu *cpu)
+ 	 if (boot_cpu_has(X86_FEATURE_SEP))
+ 		wrmsr(MSR_IA32_SYSENTER_CS, __KERNEL_CS, 0);
+ 
++	/* Clear the host TS bit if it was set above. */
++	if (cpu->ts && user_has_fpu())
++		clts();
++
+ 	/*
+ 	 * If the Guest page faulted, then the cr2 register will tell us the
+ 	 * bad virtual address.  We have to grab this now, because once we
+@@ -249,7 +253,7 @@ void lguest_arch_run_guest(struct lg_cpu *cpu)
+ 	 * a different CPU. So all the critical stuff should be done
+ 	 * before this.
+ 	 */
+-	else if (cpu->regs->trapnum == 7)
++	else if (cpu->regs->trapnum == 7 && !user_has_fpu())
+ 		math_state_restore();
+ }
+ 
