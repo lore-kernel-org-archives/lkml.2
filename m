@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab2HXSCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 14:02:11 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44884 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab2HXSCJ (ORCPT
+	id S1756066Ab2HXSKH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 14:10:07 -0400
+Received: from mail1-hoer.fullrate.dk ([89.150.129.84]:63337 "EHLO
+	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752819Ab2HXSJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 14:02:09 -0400
-Date: Fri, 24 Aug 2012 20:02:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, David Ahern <dsahern@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Bernhard Rosenkraenzer <bernhard.rosenkranzer@linaro.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCHv2 1/1] perf: Port to Android
-Message-ID: <20120824180201.GA32144@gmail.com>
-References: <1408973.PFKjjaXiS1@localhost.localdomain>
- <CAOJsxLFgvqJUwwnrtH8b9eOfNzUEZDmQGP1FVvToitD6ayYP0g@mail.gmail.com>
- <5036A182.7030707@gmail.com>
- <20120824040845.GA3001@srcf.ucam.org>
- <20120824133033.3d93cf5f@pyramind.ukuu.org.uk>
+	Fri, 24 Aug 2012 14:09:47 -0400
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Re: Drop support for x86-32
+From: Martin Nybo Andersen <tweek@tweek.dk>
+Date: Fri, 24 Aug 2012 20:09:46 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120824133033.3d93cf5f@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201208242009.46270.tweek@tweek.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> On Fri, 24 Aug 2012 05:08:45 +0100
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+On Friday 24 August 2012 19:05:53 wbrana wrote:
+> On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
+> > What I'd hate even more is rendering my old working hardware useless by
+> > removing x86-32 support from the kernel. To reason the removal by saying
+> > "Microsoft plans to do it" just makes me go bonkers...
 > 
-> > On Thu, Aug 23, 2012 at 03:32:50PM -0600, David Ahern wrote:
-> > 
-> > > Why not add support for the missing functions (on_exit, getsid,
-> > > psignal and getline) to Bionic instead of perf?
-> > 
-> > Many vendors need to target existing Android platforms and 
-> > don't have the luxury of waiting for code to get through 
-> > Google review and then land on devices between 6 months in 
-> > the future and never. The embedded world is dysfunctional in 
-> > a whole bunch of ways.
+> Your old hardware will work fine with long term kernel.
+
+That's right, but new hardware, that I wish to use with the old machines might 
+not because of no backporting of new drivers. Same goes for new software 
+utilising newer kernel features.
+
+> > These legacy apps will most likely be compiled for x86-32 and not x32 (an
+> > argument for not removing x86-32 support on a running x86-64 kernel).
 > 
-> So add a small library and link with -lstuffandroidforgot. 
-> That's basically how the FSF dealt with all the proprietary 
-> Unix library messes.
-> 
-> Come to think of it call the library "integrated build runtime 
-> environment" and you can like with -libre ;)
-> 
-> It's also going to be far more maintainable and generically 
-> useful for porting tools from GNU to 'droid userspace.
+> Which legacy apps do you mean?
 
-Well, you should see the uglies Git has to support Windows ;-)
+Those mentioned by Chris Friesen, whose arguments you apparently ignored.
 
-Anyway, I'm not against making perf work on Android in 
-principle, it is Obviously Useful (tm).
+Going back to your original arguments:
+> x86-32
+> - is deprecated since Linux supports X32.
+No. X32 is merely yet another ABI supported by Linux.
 
-Thanks,
+> - will slow down adoption of X32
+Perhaps. But that would rather be because of low benefits offered by x32 (not 
+being able to run on legacy hardware is not a benefit (and not its 
+intension)).
 
-	Ingo
+> - there won't be X32 versions of many software
+You are allowed to compile most of the software running on Linux yourself. If 
+you want a binary to use the x32 ABI, go compile. 
+
+> - if new ABI was added, old one should be removed
+No. If kernel.org runs out of diskspace, I'd rather sponsor some new disks.
+And, x32 is an ABI for the x86-64 architecture, while x86-32 is an 
+architecture in itself.
+
+> - wastes time of developers who can spend their time supporting X32
+> instead of x86-32 or support x86-64 only as 99% of users will be able
+> to run x86-64 software if x86-32 will be dropped
+No. If, for instance, an m68k maintainer/developer stops maintaining m68k 
+support, nobody is telling him to continue his works on, say, sparc or 
+whatever hyped architecture.
+
+In other words: It costs exactly *nothing* for us to have x86-32 support. What 
+is does cost, though, is the maintainers/developers spare time and goodwill. 
+Something we all should appreciate.
+
+> - wouldn't be dropped this year, but there should be plan when it will
+> be dropped e.g. when Windows 9 will be released
+No. That plan will come automagically when x86-32 is not used anymore and when 
+somebody works on a patch to remove x86-32 support.
+
+-- 
+Cheers,
+Martin
