@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab2HYIoL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 04:44:11 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:33504 "EHLO mail.wdtv.com"
+	id S1756612Ab2HYIsn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 04:48:43 -0400
+Received: from mail.linlab.net ([89.244.147.154]:47882 "EHLO mail.linlab.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755212Ab2HYIoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 04:44:00 -0400
-From: Gene Heskett <gheskett@wdtv.com>
-To: wbrana <wbrana@gmail.com>
-Subject: Re: Drop support for x86-32
-Date: Sat, 25 Aug 2012 04:43:57 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.32-122-rtai; KDE/4.4.5; i686; ; )
-Cc: Martin Nybo Andersen <tweek@tweek.dk>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208242153.24638.tweek@tweek.dk> <CAJ7jCmkhetET-NpSOPtphKs9Mq-FTXZQK2Di=RMHo+6Zcewn9w@mail.gmail.com>
-In-Reply-To: <CAJ7jCmkhetET-NpSOPtphKs9Mq-FTXZQK2Di=RMHo+6Zcewn9w@mail.gmail.com>
+	id S1751891Ab2HYIs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 04:48:28 -0400
+X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7P8mKPH024459
+Date: Sat, 25 Aug 2012 10:48:19 +0200
+From: Alexander Bergmann <alex@linlab.net>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, hkjerry.chu@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
+Message-ID: <20120825084819.GD430@linlab.net>
+References: <1345724123.5904.756.camel@edumazet-glaptop>
+ <50362407.9070805@linlab.net>
+ <1345726185.5904.835.camel@edumazet-glaptop>
+ <20120824.134231.41073001349178209.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201208250443.57080.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120824.134231.41073001349178209.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (mail.linlab.net [127.0.0.1]); Sat, 25 Aug 2012 10:48:21 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 25 August 2012, wbrana wrote:
->On 8/24/12, Martin Nybo Andersen <tweek@tweek.dk> wrote:
->> I know he's not giving any names, however he's specific enough: Apps
->> which can't be recompiled. Ie. software for which you haven't got the
->> source code or
->> a working compiler.
->
->Software used by 99% users will have alternative software which have
->source code available or have 64-bit version.
->
->> Try telling Torvalds he couldn't create Linux, or Stallman that he
->> couldn't create GNU.
->
->Chromium 22 is much more complex than Linux 1.0
->linux-1.0.tar.bz2 - 20 contributors - size 1 MB
->chromium-22.0.1229.14.tar.bz2 - size 200 MB
->
->> Quite the opposite. You should try it some day. The only thing I miss
->> is VDPAU. But then again, I use another computer for watching movies.
->> It has a Radeon card installed (using the open radeon driver -- not
->> the flgrx). Full HD
->> and sound via HDMI running flawlessly. As does the integrated Intel GPU
->> on my
->> eeepc 900 (the CPU seems to be the fastest chip on that netbook ... ;-)
->
->Open source drivers are black listed by Chromium because of instability
->file software_rendering_list.json:
->NVIDIA cards with nouveau drivers in Linux are crash-prone
+On Fri, Aug 24, 2012 at 01:42:31PM -0400, David Miller wrote:
+> Alex, this patch doesn't apply, it was completely corrupted by your email
+> client.
+> 
+> Make a fresh submission, with this fixed.  But before you do, email the
+> patch to yourself and make sure you can actually apply the patch you
+> receive in your inbox.  Because that's exactly what I'm going to have
+> to do.
 
-What rock did you just crawl out from under?  Stuff gets fixed, I've been 
-using it since I installed Ubu10.04.4 LTS.  Current uptime is half a day 
-short of 3 weeks.
+Sorry I messed it up the last time. This time I've double checked as 
+you suggested. I'll keep that in mind.
 
->The Intel Mobile 945 Express family of chipsets is not compatible with
->WebGL Intel mesa drivers are crash-prone
->ATI/AMD cards with third-party drivers in Linux are crash-prone
->Drivers are unreliable for Optimus on Linux
+>From 11a292b1cff772f930a02fda02d5b741f8ea5033 Mon Sep 17 00:00:00 2001
+From: Alexander Bergmann <alex@linlab.net>
+Date: Fri, 24 Aug 2012 14:09:49 +0200
+Subject: [PATCH 1/1] tcp: Increase timeout for SYN segments
 
-Now that I can't argue with, given that what ATI/AMD has thrown over the 
-fence is based on their own code, and I have yet to get their own code to 
-run any ATI card I've ever had.
+Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
+RFC6298 (former RFC2988bis). This reduced the time till the last SYN
+retransmission packet gets sent from 93secs to 31secs.
 
->http://www.phoronix.com/scan.php?page=article&item=intel_ivy_gpushow&num=
->10 Geforce 9800 GT with nouveau has worse performance than Ivy Bridge.
->Radeon 6770 with open source drivers has far worse performance than Ivy
->Bridge. There is no discrete Ivy Bridge graphics card.
+RFC1122 is stating that the retransmission should be done for at least 3
+minutes, but this seems to be quite high.
 
-Cheers, Gene
+  "However, the values of R1 and R2 may be different for SYN
+  and data segments.  In particular, R2 for a SYN segment MUST
+  be set large enough to provide retransmission of the segment
+  for at least 3 minutes.  The application can close the
+  connection (i.e., give up on the open attempt) sooner, of
+  course."
+
+This patch increases the value of TCP_SYN_RETRIES to the value of 6,
+providing a retransmission window of 63secs.
+
+The comments for SYN and SYNACK retries have also been updated to
+describe the current settings.
+
+Signed-off-by: Alexander Bergmann <alex@linlab.net>
+---
+ include/net/tcp.h |   18 ++++++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 1f000ff..d43d6b3 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -98,11 +98,21 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
+ 				 * 15 is ~13-30min depending on RTO.
+ 				 */
+ 
+-#define TCP_SYN_RETRIES	 5	/* number of times to retry active opening a
+-				 * connection: ~180sec is RFC minimum	*/
++#define TCP_SYN_RETRIES	 6	/*
++				 * This is how many retries it does to active
++				 * opening a connection.
++				 * RFC1122 says the minimum retry MUST be at
++				 * least 180secs. Nevertheless this value is
++				 * corresponding to 63secs of retransmission
++				 * with the current initial RTO.
++				 */
+ 
+-#define TCP_SYNACK_RETRIES 5	/* number of times to retry passive opening a
+-				 * connection: ~180sec is RFC minimum	*/
++#define TCP_SYNACK_RETRIES 5	/* 
++				 * This is how may retries it does to passive
++				 * opening a connection. 
++				 * This is corresponding to 31secs of 
++				 * retransmission with the current initial RTO.
++				 */
+ 
+ #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
+ 				  * state, about 60 seconds	*/
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
-... bacteriological warfare ... hard to believe we were once foolish
-enough to play around with that.
-		-- McCoy, "The Omega Glory", stardate unknown
+1.7.8.6
+
