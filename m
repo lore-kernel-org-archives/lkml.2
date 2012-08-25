@@ -1,221 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2HYCGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 22:06:46 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64319 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab2HYCGo (ORCPT
+	id S1753994Ab2HYCK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 22:10:26 -0400
+Received: from nctlincom02.orcon.net.nz ([60.234.4.75]:57135 "EHLO
+	nctlincom02.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab2HYCKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 22:06:44 -0400
+	Fri, 24 Aug 2012 22:10:21 -0400
+Message-ID: <50383409.7090207@orcon.net.nz>
+Date: Sat, 25 Aug 2012 14:10:17 +1200
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUyoDmpQ96OPY-9Lvq4sqHP2h=O_knkVqbpLaX6BKJRhQ@mail.gmail.com>
-References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
-	<1345852516-3125-2-git-send-email-jacob.shin@amd.com>
-	<CAE9FiQVugSnpVjbYLScXUNfXqmUBD54FkAuvm7TWThGYrSVLMA@mail.gmail.com>
-	<CAE9FiQUyoDmpQ96OPY-9Lvq4sqHP2h=O_knkVqbpLaX6BKJRhQ@mail.gmail.com>
-Date: Fri, 24 Aug 2012 19:06:42 -0700
-X-Google-Sender-Auth: h7D0Z-LZI2VBfneYaqGeGMiKceA
-Message-ID: <CAE9FiQUddNjpwQjs7ccURf_gKtr=-u5BNLcsxnwo+=KF+g1UAg@mail.gmail.com>
-Subject: Re: [PATCH 1/5] x86: Move enabling of PSE and PGE out of init_memory_mapping
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jacob Shin <jacob.shin@amd.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Dave Young <dyoung@redhat.com>,
-        Chao Wang <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Content-Type: multipart/mixed; boundary=bcaec54fb75c3d5f8404c80d8bd1
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: paulmck@linux.vnet.ibm.com, Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
+        "3.2.x.." <stable@vger.kernel.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>
+Subject: Re: [PATCH 00/11] rcu: Add missing RCU idle APIs on idle loop v2
+References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>	 <20120824212647.GU2472@linux.vnet.ibm.com> <1345857554.4840.43.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1345857554.4840.43.camel@deadeye.wl.decadent.org.uk>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx3.orcon.net.nz on Sat, 25 Aug 2012 14:10:18 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sat Aug 25 14:10:18 2012
+X-DSPAM-Confidence: 0.7007
+X-DSPAM-Probability: 0.0000
+X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
+X-Spam-Score: 0.00 () [Hold at 5.50] 
+X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=G2; city=Porirua; latitude=-41.1333; longitude=174.8500; http://maps.google.com/maps?q=-41.1333,174.8500&z=6
+X-CanItPRO-Stream: base:default
+X-Canit-Stats-ID: 05HOOkzfm - 0541e52f6b08 - 20120825
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec54fb75c3d5f8404c80d8bd1
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Fri, Aug 24, 2012 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Aug 24, 2012 at 6:25 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Fri, Aug 24, 2012 at 4:55 PM, Jacob Shin <jacob.shin@amd.com> wrote:
->>> Depending on the platform, init_memory_mapping() may be called multiple
->>> times. Move it out to setup_arch() to avoid writing to cr4 on every call.
+On 25/08/12 13:19, Ben Hutchings wrote:
+> On Fri, 2012-08-24 at 14:26 -0700, Paul E. McKenney wrote:
+>> On Thu, Aug 23, 2012 at 04:58:24PM +0200, Frederic Weisbecker wrote:
+>>> Hi,
 >>>
->>> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
->>> ---
->>>  arch/x86/kernel/setup.c |   10 ++++++++++
->>>  arch/x86/mm/init.c      |   10 ----------
->>>  2 files changed, 10 insertions(+), 10 deletions(-)
+>>> Changes since v1:
 >>>
->>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
->>> index f4b9b80..751e020 100644
->>> --- a/arch/x86/kernel/setup.c
->>> +++ b/arch/x86/kernel/setup.c
->>> @@ -913,6 +913,16 @@ void __init setup_arch(char **cmdline_p)
+>>> - Fixed preempt handling in alpha idle loop
+>>> - added ack from Geert
+>>> - fixed stable email address, sorry :-/
 >>>
->>>         init_gbpages();
+>>> This time I built tested everywhere but: h8300 (compiler internal error),
+>>> and mn10300, parisc, score (cross compilers not available in
+>>> ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/)
 >>>
->>> +       /* Enable PSE if available */
->>> +       if (cpu_has_pse)
->>> +               set_in_cr4(X86_CR4_PSE);
->>> +
->>> +       /* Enable PGE if available */
->>> +       if (cpu_has_pge) {
->>> +               set_in_cr4(X86_CR4_PGE);
->>> +               __supported_pte_mask |= _PAGE_GLOBAL;
->>> +       }
->>> +
+>>> For testing, you can pull from:
+>>>
+>>> git://github.com/fweisbec/linux-dynticks.git
+>>> 	rcu/idle-fix-v2 
+>>>
+>>> Thanks.
 >>
->> please don't put it directly in setup_arch().
+>> I have queued these on -rcu branch rcu/idle:
 >>
->> and another function.
+>> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
 >>
->
-> Jacob, hpa
->
-> can you use attached one to replace the first patch?
+>> This problem has been in place since 3.3, so it is hard to argue that
+>> it is a regression for this merge window.  I have therefore queued it
+>> for 3.7.
+> 
+> I don't follow that; I would expect any serious bug fix (serious enough
+> for a stable update) to be acceptable for 3.6 at this point.
+> 
+> If the regression occurred in 3.3, then the cc lines should be something
+> like:
+> 
+>     Cc: <stable@vger.kernel.org> # 3.3+
+> 
+> and not the current:
+> 
+>     Cc: 3.2.x.. <stable@vger.kernel.org>
 
-Please use attached two instead.
+The Alpha patches fix an even earlier regression resulting in RCU CPU
+stalls on an SMP kernel built for generic Alpha (which includes the
+current Debian 3.2-alpha-smp kernel) and renders the kernel pretty much
+unuseable.  I've only tested the two alpha patches together but maybe
+just the first patch (1/11 alpha: Fix preemption handling in idle loop)
+might be needed to fix the problem in 3.2.   I'll test and let you know.
 
-Thanks
-
-Yinghai
-
---bcaec54fb75c3d5f8404c80d8bd1
-Content-Type: application/octet-stream; name="get_page_size_mask_v3.patch"
-Content-Disposition: attachment; filename="get_page_size_mask_v3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h6a2hjyb1
-
-U3ViamVjdDogW1BBVENIIDEvMl0geDg2LCBtbTogQWRkIHBhZ2Vfc2l6ZV9tYXNrKCkKCmRldGVj
-dCBpZiBuZWVkIHRvIHVzZSAxRyBvciAyTSBhbmQgc3RvcmUgdGhlbSBpbiBwYWdlX3NpemVfbWFz
-ay4KCk9ubHkgcHJvYmUgdGhlbSBvbmUgdGltZS4KClN1Z2dlc3RlZC1ieTogSW5nbyBNb2xuYXIg
-PG1pbmdvQGVsdGUuaHU+ClNpZ25lLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwu
-b3JnPgoKLS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlLmggfCAgICAxIAogYXJjaC94
-ODYva2VybmVsL3NldHVwLmMgICAgICAgIHwgICAgMSAKIGFyY2gveDg2L21tL2luaXQuYyAgICAg
-ICAgICAgICB8ICAgNjYgKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0K
-IDMgZmlsZXMgY2hhbmdlZCwgMzMgaW5zZXJ0aW9ucygrKSwgMzUgZGVsZXRpb25zKC0pCgpJbmRl
-eDogbGludXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUuaAo9PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
-LSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlLmgKKysrIGxpbnV4
-LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlLmgKQEAgLTU5Nyw2ICs1OTcsNyBAQCBz
-dGF0aWMgaW5saW5lIGludCBwZ2Rfbm9uZShwZ2RfdCBwZ2QpCiAjaWZuZGVmIF9fQVNTRU1CTFlf
-XwogCiBleHRlcm4gaW50IGRpcmVjdF9nYnBhZ2VzOwordm9pZCBwcm9iZV9wYWdlX3NpemVfbWFz
-ayh2b2lkKTsKIAogLyogbG9jYWwgcHRlIHVwZGF0ZXMgbmVlZCBub3QgdXNlIHhjaGcgZm9yIGxv
-Y2tpbmcgKi8KIHN0YXRpYyBpbmxpbmUgcHRlX3QgbmF0aXZlX2xvY2FsX3B0ZXBfZ2V0X2FuZF9j
-bGVhcihwdGVfdCAqcHRlcCkKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0LmMKPT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvbW0vaW5pdC5jCisrKyBsaW51eC0y
-LjYvYXJjaC94ODYvbW0vaW5pdC5jCkBAIC0zNSw4ICszNSwxMCBAQCBzdHJ1Y3QgbWFwX3Jhbmdl
-IHsKIAl1bnNpZ25lZCBwYWdlX3NpemVfbWFzazsKIH07CiAKLXN0YXRpYyB2b2lkIF9faW5pdCBm
-aW5kX2Vhcmx5X3RhYmxlX3NwYWNlKHN0cnVjdCBtYXBfcmFuZ2UgKm1yLCB1bnNpZ25lZCBsb25n
-IGVuZCwKLQkJCQkJICBpbnQgdXNlX3BzZSwgaW50IHVzZV9nYnBhZ2VzKQorc3RhdGljIGludCBw
-YWdlX3NpemVfbWFzazsKKworc3RhdGljIHZvaWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVfc3Bh
-Y2Uoc3RydWN0IG1hcF9yYW5nZSAqbXIsCisJCQkJCSAgdW5zaWduZWQgbG9uZyBlbmQpCiB7CiAJ
-dW5zaWduZWQgbG9uZyBwdWRzLCBwbWRzLCBwdGVzLCB0YWJsZXMsIHN0YXJ0ID0gMCwgZ29vZF9l
-bmQgPSBlbmQ7CiAJcGh5c19hZGRyX3QgYmFzZTsKQEAgLTQ0LDcgKzQ2LDcgQEAgc3RhdGljIHZv
-aWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVfc3BhYwogCXB1ZHMgPSAoZW5kICsgUFVEX1NJWkUg
-LSAxKSA+PiBQVURfU0hJRlQ7CiAJdGFibGVzID0gcm91bmR1cChwdWRzICogc2l6ZW9mKHB1ZF90
-KSwgUEFHRV9TSVpFKTsKIAotCWlmICh1c2VfZ2JwYWdlcykgeworCWlmIChwYWdlX3NpemVfbWFz
-ayAmICgxIDw8IFBHX0xFVkVMXzFHKSkgewogCQl1bnNpZ25lZCBsb25nIGV4dHJhOwogCiAJCWV4
-dHJhID0gZW5kIC0gKChlbmQ+PlBVRF9TSElGVCkgPDwgUFVEX1NISUZUKTsKQEAgLTU0LDcgKzU2
-LDcgQEAgc3RhdGljIHZvaWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVfc3BhYwogCiAJdGFibGVz
-ICs9IHJvdW5kdXAocG1kcyAqIHNpemVvZihwbWRfdCksIFBBR0VfU0laRSk7CiAKLQlpZiAodXNl
-X3BzZSkgeworCWlmIChwYWdlX3NpemVfbWFzayAmICgxIDw8IFBHX0xFVkVMXzJNKSkgewogCQl1
-bnNpZ25lZCBsb25nIGV4dHJhOwogCiAJCWV4dHJhID0gZW5kIC0gKChlbmQ+PlBNRF9TSElGVCkg
-PDwgUE1EX1NISUZUKTsKQEAgLTkwLDYgKzkyLDMwIEBAIHN0YXRpYyB2b2lkIF9faW5pdCBmaW5k
-X2Vhcmx5X3RhYmxlX3NwYWMKIAkJKHBndF9idWZfdG9wIDw8IFBBR0VfU0hJRlQpIC0gMSk7CiB9
-CiAKK3ZvaWQgcHJvYmVfcGFnZV9zaXplX21hc2sodm9pZCkKK3sKKyNpZiAhZGVmaW5lZChDT05G
-SUdfREVCVUdfUEFHRUFMTE9DKSAmJiAhZGVmaW5lZChDT05GSUdfS01FTUNIRUNLKQorCS8qCisJ
-ICogRm9yIENPTkZJR19ERUJVR19QQUdFQUxMT0MsIGlkZW50aXR5IG1hcHBpbmcgd2lsbCB1c2Ug
-c21hbGwgcGFnZXMuCisJICogVGhpcyB3aWxsIHNpbXBsaWZ5IGNwYSgpLCB3aGljaCBvdGhlcndp
-c2UgbmVlZHMgdG8gc3VwcG9ydCBzcGxpdHRpbmcKKwkgKiBsYXJnZSBwYWdlcyBpbnRvIHNtYWxs
-IGluIGludGVycnVwdCBjb250ZXh0LCBldGMuCisJICovCisJaWYgKGRpcmVjdF9nYnBhZ2VzKQor
-CQlwYWdlX3NpemVfbWFzayB8PSAxIDw8IFBHX0xFVkVMXzFHOworCWlmIChjcHVfaGFzX3BzZSkK
-KwkJcGFnZV9zaXplX21hc2sgfD0gMSA8PCBQR19MRVZFTF8yTTsKKyNlbmRpZgorCisJLyogRW5h
-YmxlIFBTRSBpZiBhdmFpbGFibGUgKi8KKwlpZiAoY3B1X2hhc19wc2UpCisJCXNldF9pbl9jcjQo
-WDg2X0NSNF9QU0UpOworCisJLyogRW5hYmxlIFBHRSBpZiBhdmFpbGFibGUgKi8KKwlpZiAoY3B1
-X2hhc19wZ2UpIHsKKwkJc2V0X2luX2NyNChYODZfQ1I0X1BHRSk7CisJCV9fc3VwcG9ydGVkX3B0
-ZV9tYXNrIHw9IF9QQUdFX0dMT0JBTDsKKwl9Cit9CiB2b2lkIF9faW5pdCBuYXRpdmVfcGFnZXRh
-YmxlX3Jlc2VydmUodTY0IHN0YXJ0LCB1NjQgZW5kKQogewogCW1lbWJsb2NrX3Jlc2VydmUoc3Rh
-cnQsIGVuZCAtIHN0YXJ0KTsKQEAgLTEyNSw0NSArMTUxLDE1IEBAIHN0YXRpYyBpbnQgX19tZW1p
-bml0IHNhdmVfbXIoc3RydWN0IG1hcF8KIHVuc2lnbmVkIGxvbmcgX19pbml0X3JlZm9rIGluaXRf
-bWVtb3J5X21hcHBpbmcodW5zaWduZWQgbG9uZyBzdGFydCwKIAkJCQkJICAgICAgIHVuc2lnbmVk
-IGxvbmcgZW5kKQogewotCXVuc2lnbmVkIGxvbmcgcGFnZV9zaXplX21hc2sgPSAwOwogCXVuc2ln
-bmVkIGxvbmcgc3RhcnRfcGZuLCBlbmRfcGZuOwogCXVuc2lnbmVkIGxvbmcgcmV0ID0gMDsKIAl1
-bnNpZ25lZCBsb25nIHBvczsKLQogCXN0cnVjdCBtYXBfcmFuZ2UgbXJbTlJfUkFOR0VfTVJdOwog
-CWludCBucl9yYW5nZSwgaTsKLQlpbnQgdXNlX3BzZSwgdXNlX2dicGFnZXM7CiAKIAlwcmludGso
-S0VSTl9JTkZPICJpbml0X21lbW9yeV9tYXBwaW5nOiBbbWVtICUjMDEwbHgtJSMwMTBseF1cbiIs
-CiAJICAgICAgIHN0YXJ0LCBlbmQgLSAxKTsKIAotI2lmIGRlZmluZWQoQ09ORklHX0RFQlVHX1BB
-R0VBTExPQykgfHwgZGVmaW5lZChDT05GSUdfS01FTUNIRUNLKQotCS8qCi0JICogRm9yIENPTkZJ
-R19ERUJVR19QQUdFQUxMT0MsIGlkZW50aXR5IG1hcHBpbmcgd2lsbCB1c2Ugc21hbGwgcGFnZXMu
-Ci0JICogVGhpcyB3aWxsIHNpbXBsaWZ5IGNwYSgpLCB3aGljaCBvdGhlcndpc2UgbmVlZHMgdG8g
-c3VwcG9ydCBzcGxpdHRpbmcKLQkgKiBsYXJnZSBwYWdlcyBpbnRvIHNtYWxsIGluIGludGVycnVw
-dCBjb250ZXh0LCBldGMuCi0JICovCi0JdXNlX3BzZSA9IHVzZV9nYnBhZ2VzID0gMDsKLSNlbHNl
-Ci0JdXNlX3BzZSA9IGNwdV9oYXNfcHNlOwotCXVzZV9nYnBhZ2VzID0gZGlyZWN0X2dicGFnZXM7
-Ci0jZW5kaWYKLQotCS8qIEVuYWJsZSBQU0UgaWYgYXZhaWxhYmxlICovCi0JaWYgKGNwdV9oYXNf
-cHNlKQotCQlzZXRfaW5fY3I0KFg4Nl9DUjRfUFNFKTsKLQotCS8qIEVuYWJsZSBQR0UgaWYgYXZh
-aWxhYmxlICovCi0JaWYgKGNwdV9oYXNfcGdlKSB7Ci0JCXNldF9pbl9jcjQoWDg2X0NSNF9QR0Up
-OwotCQlfX3N1cHBvcnRlZF9wdGVfbWFzayB8PSBfUEFHRV9HTE9CQUw7Ci0JfQotCi0JaWYgKHVz
-ZV9nYnBhZ2VzKQotCQlwYWdlX3NpemVfbWFzayB8PSAxIDw8IFBHX0xFVkVMXzFHOwotCWlmICh1
-c2VfcHNlKQotCQlwYWdlX3NpemVfbWFzayB8PSAxIDw8IFBHX0xFVkVMXzJNOwotCiAJbWVtc2V0
-KG1yLCAwLCBzaXplb2YobXIpKTsKIAlucl9yYW5nZSA9IDA7CiAKQEAgLTI2Nyw3ICsyNjMsNyBA
-QCB1bnNpZ25lZCBsb25nIF9faW5pdF9yZWZvayBpbml0X21lbW9yeV9tCiAJICogbm9kZXMgYXJl
-IGRpc2NvdmVyZWQuCiAJICovCiAJaWYgKCFhZnRlcl9ib290bWVtKQotCQlmaW5kX2Vhcmx5X3Rh
-YmxlX3NwYWNlKCZtclswXSwgZW5kLCB1c2VfcHNlLCB1c2VfZ2JwYWdlcyk7CisJCWZpbmRfZWFy
-bHlfdGFibGVfc3BhY2UoJm1yWzBdLCBlbmQpOwogCiAJZm9yIChpID0gMDsgaSA8IG5yX3Jhbmdl
-OyBpKyspCiAJCXJldCA9IGtlcm5lbF9waHlzaWNhbF9tYXBwaW5nX2luaXQobXJbaV0uc3RhcnQs
-IG1yW2ldLmVuZCwKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYwo9PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYworKysgbGlu
-dXgtMi42L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCkBAIC05MTIsNiArOTEyLDcgQEAgdm9pZCBf
-X2luaXQgc2V0dXBfYXJjaChjaGFyICoqY21kbGluZV9wKQogCXNldHVwX3JlYWxfbW9kZSgpOwog
-CiAJaW5pdF9nYnBhZ2VzKCk7CisJcHJvYmVfcGFnZV9zaXplX21hc2soKTsKIAogCS8qIG1heF9w
-Zm5fbWFwcGVkIGlzIHVwZGF0ZWQgaGVyZSAqLwogCW1heF9sb3dfcGZuX21hcHBlZCA9IGluaXRf
-bWVtb3J5X21hcHBpbmcoMCwgbWF4X2xvd19wZm48PFBBR0VfU0hJRlQpOwo=
---bcaec54fb75c3d5f8404c80d8bd1
-Content-Type: application/octet-stream; name="mr_cal.patch"
-Content-Disposition: attachment; filename="mr_cal.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h6a2i3qg2
-
-U3ViamVjdDogW1BBVENIIDIvMl0geDg2LCBtbTogU3BsaXQgb3V0IHNwbGl0X21lbV9yYW5nZQoK
-ZnJvbSBpbml0X21lbW9yeV9tYXBwaW5nLCBzbyBtYWtlIGluaXRfbWVtb3J5X21hcHBpbmcgcmVh
-ZGFibGUuCgpTdWdnZXN0ZWQtYnk6IEluZ28gTW9sbmFyIDxtaW5nb0BlbHRlLmh1PgpTaWduZS1v
-ZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogYXJjaC94ODYvbW0v
-aW5pdC5jIHwgICA0MiArKysrKysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLS0K
-IDEgZmlsZSBjaGFuZ2VkLCAyNiBpbnNlcnRpb25zKCspLCAxNiBkZWxldGlvbnMoLSkKCkluZGV4
-OiBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5v
-cmlnL2FyY2gveDg2L21tL2luaXQuYworKysgbGludXgtMi42L2FyY2gveDg2L21tL2luaXQuYwpA
-QCAtMTQzLDI1ICsxNDMsMTMgQEAgc3RhdGljIGludCBfX21lbWluaXQgc2F2ZV9tcihzdHJ1Y3Qg
-bWFwXwogCXJldHVybiBucl9yYW5nZTsKIH0KIAotLyoKLSAqIFNldHVwIHRoZSBkaXJlY3QgbWFw
-cGluZyBvZiB0aGUgcGh5c2ljYWwgbWVtb3J5IGF0IFBBR0VfT0ZGU0VULgotICogVGhpcyBydW5z
-IGJlZm9yZSBib290bWVtIGlzIGluaXRpYWxpemVkIGFuZCBnZXRzIHBhZ2VzIGRpcmVjdGx5IGZy
-b20KLSAqIHRoZSBwaHlzaWNhbCBtZW1vcnkuIFRvIGFjY2VzcyB0aGVtIHRoZXkgYXJlIHRlbXBv
-cmFyaWx5IG1hcHBlZC4KLSAqLwotdW5zaWduZWQgbG9uZyBfX2luaXRfcmVmb2sgaW5pdF9tZW1v
-cnlfbWFwcGluZyh1bnNpZ25lZCBsb25nIHN0YXJ0LAotCQkJCQkgICAgICAgdW5zaWduZWQgbG9u
-ZyBlbmQpCitzdGF0aWMgaW50IF9fbWVtaW5pdCBzcGxpdF9tZW1fcmFuZ2Uoc3RydWN0IG1hcF9y
-YW5nZSAqbXIsIGludCBucl9yYW5nZSwKKwkJCQkgICAgIHVuc2lnbmVkIGxvbmcgc3RhcnQsCisJ
-CQkJICAgICB1bnNpZ25lZCBsb25nIGVuZCkKIHsKIAl1bnNpZ25lZCBsb25nIHN0YXJ0X3Bmbiwg
-ZW5kX3BmbjsKLQl1bnNpZ25lZCBsb25nIHJldCA9IDA7CiAJdW5zaWduZWQgbG9uZyBwb3M7Ci0J
-c3RydWN0IG1hcF9yYW5nZSBtcltOUl9SQU5HRV9NUl07Ci0JaW50IG5yX3JhbmdlLCBpOwotCi0J
-cHJpbnRrKEtFUk5fSU5GTyAiaW5pdF9tZW1vcnlfbWFwcGluZzogW21lbSAlIzAxMGx4LSUjMDEw
-bHhdXG4iLAotCSAgICAgICBzdGFydCwgZW5kIC0gMSk7Ci0KLQltZW1zZXQobXIsIDAsIHNpemVv
-ZihtcikpOwotCW5yX3JhbmdlID0gMDsKKwlpbnQgaTsKIAogCS8qIGhlYWQgaWYgbm90IGJpZyBw
-YWdlIGFsaWdubWVudCA/ICovCiAJc3RhcnRfcGZuID0gc3RhcnQgPj4gUEFHRV9TSElGVDsKQEAg
-LTI1NSw2ICsyNDMsMjggQEAgdW5zaWduZWQgbG9uZyBfX2luaXRfcmVmb2sgaW5pdF9tZW1vcnlf
-bQogCQkJKG1yW2ldLnBhZ2Vfc2l6ZV9tYXNrICYgKDE8PFBHX0xFVkVMXzFHKSk/IjFHIjooCiAJ
-CQkgKG1yW2ldLnBhZ2Vfc2l6ZV9tYXNrICYgKDE8PFBHX0xFVkVMXzJNKSk/IjJNIjoiNGsiKSk7
-CiAKKwlyZXR1cm4gbnJfcmFuZ2U7Cit9CisKKy8qCisgKiBTZXR1cCB0aGUgZGlyZWN0IG1hcHBp
-bmcgb2YgdGhlIHBoeXNpY2FsIG1lbW9yeSBhdCBQQUdFX09GRlNFVC4KKyAqIFRoaXMgcnVucyBi
-ZWZvcmUgYm9vdG1lbSBpcyBpbml0aWFsaXplZCBhbmQgZ2V0cyBwYWdlcyBkaXJlY3RseSBmcm9t
-CisgKiB0aGUgcGh5c2ljYWwgbWVtb3J5LiBUbyBhY2Nlc3MgdGhlbSB0aGV5IGFyZSB0ZW1wb3Jh
-cmlseSBtYXBwZWQuCisgKi8KK3Vuc2lnbmVkIGxvbmcgX19pbml0X3JlZm9rIGluaXRfbWVtb3J5
-X21hcHBpbmcodW5zaWduZWQgbG9uZyBzdGFydCwKKwkJCQkJICAgICAgIHVuc2lnbmVkIGxvbmcg
-ZW5kKQoreworCXN0cnVjdCBtYXBfcmFuZ2UgbXJbTlJfUkFOR0VfTVJdOworCXVuc2lnbmVkIGxv
-bmcgcmV0ID0gMDsKKwlpbnQgbnJfcmFuZ2UsIGk7CisKKwlwcmludGsoS0VSTl9JTkZPICJpbml0
-X21lbW9yeV9tYXBwaW5nOiBbbWVtICUjMDEwbHgtJSMwMTBseF1cbiIsCisJICAgICAgIHN0YXJ0
-LCBlbmQgLSAxKTsKKworCW1lbXNldChtciwgMCwgc2l6ZW9mKG1yKSk7CisJbnJfcmFuZ2UgPSAw
-OworCW5yX3JhbmdlID0gc3BsaXRfbWVtX3JhbmdlKG1yLCBucl9yYW5nZSwgc3RhcnQsIGVuZCk7
-CisKIAkvKgogCSAqIEZpbmQgc3BhY2UgZm9yIHRoZSBrZXJuZWwgZGlyZWN0IG1hcHBpbmcgdGFi
-bGVzLgogCSAqCg==
---bcaec54fb75c3d5f8404c80d8bd1--
+Cheers
+Michael.
