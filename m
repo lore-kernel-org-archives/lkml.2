@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab2HYR6X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 13:58:23 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36728 "EHLO mga14.intel.com"
+	id S1757083Ab2HYR62 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 13:58:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:13437 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756369Ab2HYR4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 13:56:14 -0400
+	id S1754470Ab2HYR4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 13:56:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,311,1344236400"; 
-   d="scan'208";a="184878883"
+   d="scan'208";a="184878880"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v8 07/12] x86-32, hotplug: Add start_cpu0() entry point to head_32.S
-Date: Sat, 25 Aug 2012 10:41:23 -0700
-Message-Id: <1345916488-8355-8-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v8 06/12] x86-64, hotplug: Add start_cpu0() entry point to head_64.S
+Date: Sat, 25 Aug 2012 10:41:22 -0700
+Message-Id: <1345916488-8355-7-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1345916488-8355-1-git-send-email-fenghua.yu@intel.com>
 References: <1345916488-8355-1-git-send-email-fenghua.yu@intel.com>
@@ -37,21 +37,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-start_cpu0() is defined in head_32.S for 32-bit. The function sets up stack and
+start_cpu0() is defined in head_64.S for 64-bit. The function sets up stack and
 jumps to start_secondary() for CPU0 wake up.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/head_32.S |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ arch/x86/kernel/head_64.S |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index d42ab17..964f87a 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -266,6 +266,18 @@ num_subarch_entries = (. - subarch_entries) / 4
- 	jmp default_entry
- #endif /* CONFIG_PARAVIRT */
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 94bf9cc..3faac8a 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -252,6 +252,21 @@ ENTRY(secondary_startup_64)
+ 	pushq	%rax		# target address in negative space
+ 	lretq
  
 +#ifdef CONFIG_HOTPLUG_CPU
 +/*
@@ -60,14 +60,17 @@ index d42ab17..964f87a 100644
 + * start_secondary().
 + */
 +ENTRY(start_cpu0)
-+	movl stack_start, %ecx
-+	movl %ecx, %esp
-+	jmp  *(initial_code)
++	movq stack_start(%rip),%rsp
++	movq	initial_code(%rip),%rax
++	pushq	$0		# fake return address to stop unwinder
++	pushq	$__KERNEL_CS	# set correct cs
++	pushq	%rax		# target address in negative space
++	lretq
 +#endif
 +
- /*
-  * Non-boot CPU entry point; entered from trampoline.S
-  * We can't lgdt here, because lgdt itself uses a data segment, but
+ 	/* SMP bootup changes these two */
+ 	__REFDATA
+ 	.align	8
 -- 
 1.7.2
 
