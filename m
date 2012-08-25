@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2HYKBc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 06:01:32 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:63528 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab2HYKBY (ORCPT
+	id S1751939Ab2HYKcS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 06:32:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63922 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab2HYKcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 06:01:24 -0400
-Message-ID: <5038A217.5050007@huawei.com>
-Date: Sat, 25 Aug 2012 17:59:51 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Sat, 25 Aug 2012 06:32:17 -0400
+Date: Sat, 25 Aug 2012 18:33:01 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Bill Huang <bilhuang@nvidia.com>,
+        "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Shutdown problem in SMP system happened on Tegra20
+Message-ID: <20120825103257.GN31998@S2101-09.ap.freescale.net>
+References: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com>
+ <20120824182133.GB18957@n2100.arm.linux.org.uk>
+ <20120825073624.GI31998@S2101-09.ap.freescale.net>
+ <20120825075221.GH18957@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Huang Ying <ying.huang@intel.com>, Hanjun Guo <guohanjun@huawei.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [RESEND BUGFIX PATCH 2/3] PCI/AER: clean pci_bus_ops when related
- pci bus was removed
-References: <1344685946-8172-2-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1344685946-8172-2-git-send-email-wangyijing@huawei.com>
-X-Forwarded-Message-Id: <1344685946-8172-2-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.84]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120825075221.GH18957@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When Inject aer errors to the target pci device, a pci_bus_ops will
-be allocated for the pci device's pci bus.When the pci bus was removed,
-we should also release the pci_bus_ops.
+On Sat, Aug 25, 2012 at 08:52:21AM +0100, Russell King - ARM Linux wrote:
+> On Sat, Aug 25, 2012 at 03:36:27PM +0800, Shawn Guo wrote:
+> > On Fri, Aug 24, 2012 at 07:21:33PM +0100, Russell King - ARM Linux wrote:
+> > > Why not just ensure that CONFIG_PM_SLEEP_SMP is enabled if your platform
+> > > requires that the lowest CPU number be the CPU dealing with reboot?
+> > 
+> > I have CONFIG_PM_SLEEP_SMP enabled for imx6q, but still see the imx6q
+> > restart hook running on cpu1 than cpu0.  It seems that
+> > disable_nonboot_cpus is only called in kernel_power_off but never
+> > kernel_restart.  We should probably patch kernel_restart or
+> > machine_restart to have disable_nonboot_cpus called? 
+> 
+> Remember that this path gets called from IRQ context which makes calling
+> functions which sleep very dodgy.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/pci/pcie/aer/aer_inject.c |   43 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 42 insertions(+), 1 deletions(-)
+I'm so familiar with the code/context.  Are you saying disable_nonboot_cpus
+sleeps and kernel_power_off never gets called from IRQ context?
 
-diff --git a/drivers/pci/pcie/aer/aer_inject.c b/drivers/pci/pcie/aer/aer_inject.c
-index fc28785..8ca744f 100644
---- a/drivers/pci/pcie/aer/aer_inject.c
-+++ b/drivers/pci/pcie/aer/aer_inject.c
-@@ -526,10 +526,50 @@ static struct miscdevice aer_inject_device = {
- 	.fops = &aer_inject_fops,
- };
+I tested the code change below on kernel_restart with
+CONFIG_DEBUG_ATOMIC_SLEEP enabled.  It fixes imx6q restart issue (with
+no change on cpu_relax) while no sleep-inside-atomic-section warning
+is seen. 
 
-+static void aer_clean_pci_bus_ops(struct pci_dev *dev)
-+{
-+	unsigned long flags;
-+	struct pci_bus_ops *bus_ops, *tmp_ops;
-+	struct pci_bus *bus;
-+	bus = dev->subordinate;
-+	if (!bus)
-+		return;
-+
-+	spin_lock_irqsave(&inject_lock, flags);
-+	list_for_each_entry_safe(bus_ops, tmp_ops, &pci_bus_ops_list, list)
-+		if (bus_ops->bus == bus) {
-+			list_del(&bus_ops->list);
-+			kfree(bus_ops);
-+			break;
-+		}
-+	spin_unlock_irqrestore(&inject_lock, flags);
-+}
-+
-+static int aer_hp_notify_fn(struct notifier_block *nb,
-+		unsigned long event, void *data)
-+{
-+	switch (event) {
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		aer_clean_pci_bus_ops(to_pci_dev(data));
-+		break;
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block aerinj_hp_notifier = {
-+	.notifier_call = &aer_hp_notify_fn,
-+};
+Regards,
+Shawn
 
- static int __init aer_inject_init(void)
- {
--	return misc_register(&aer_inject_device);
-+	int ret;
-+	ret = misc_register(&aer_inject_device);
-+	if (!ret)
-+		bus_register_notifier(&pci_bus_type, &aerinj_hp_notifier);
-+	return ret;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 241507f..0359328 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -373,6 +373,7 @@ void kernel_restart(char *cmd)
+        else
+                printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
+        kmsg_dump(KMSG_DUMP_RESTART);
++       disable_nonboot_cpus();
+        machine_restart(cmd);
  }
-
- static void __exit aer_inject_exit(void)
-@@ -538,6 +578,7 @@ static void __exit aer_inject_exit(void)
- 	unsigned long flags;
- 	struct pci_bus_ops *bus_ops;
-
-+	bus_unregister_notifier(&pci_bus_type, &aerinj_hp_notifier);
- 	misc_deregister(&aer_inject_device);
-
- 	while ((bus_ops = pci_bus_ops_pop())) {
--- 
-1.7.1
-
-
-
-.
-
-
-
-
+ EXPORT_SYMBOL_GPL(kernel_restart);
