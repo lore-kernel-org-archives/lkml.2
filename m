@@ -1,72 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab2HYPx6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 11:53:58 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45289 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab2HYPxz (ORCPT
+	id S1754650Ab2HYQHx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 12:07:53 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48552 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753234Ab2HYQHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 11:53:55 -0400
-Message-ID: <5038F50E.7030807@gmail.com>
-Date: Sat, 25 Aug 2012 17:53:50 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	Sat, 25 Aug 2012 12:07:50 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/9] pinctrl: mvebu: pinctrl driver core
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-1-git-send-email-sebastian.hesselbarth@gmail.com> <1345623750-10645-2-git-send-email-sebastian.hesselbarth@gmail.com> <5035445B.6000500@wwwdotorg.org> <CABJ1b_Tdr80DGqb-FRzwDbF3m7g6fBguk5GtRAfRUYx5Sqy_cA@mail.gmail.com> <50366E44.4030606@wwwdotorg.org> <50369305.6050304@gmail.com> <50369FEE.8000003@wwwdotorg.org> <5036B639.20608@gmail.com> <5036F651.4020700@wwwdotorg.org>
-In-Reply-To: <5036F651.4020700@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAGDaZ_o_1__cyn7FZxtn6mxAVY3p8Y5sGnXg1ksy4R5Xfe_vOw@mail.gmail.com>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+	<201208242035.38733.tweek@tweek.dk>
+	<CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
+	<201208242153.24638.tweek@tweek.dk>
+	<CAJ7jCmkhetET-NpSOPtphKs9Mq-FTXZQK2Di=RMHo+6Zcewn9w@mail.gmail.com>
+	<CAJ7jCmnLm4t_w98A=zjz2M32xvR2NyGfDH+kFstp4ZEquZ_=VA@mail.gmail.com>
+	<CAJ7jCmkqBWYDJrpJbDvHKKgVoTfBQSFrCSmUj0Bd9HbLW-FF8A@mail.gmail.com>
+	<CAGDaZ_o_1__cyn7FZxtn6mxAVY3p8Y5sGnXg1ksy4R5Xfe_vOw@mail.gmail.com>
+Date: Sat, 25 Aug 2012 18:07:48 +0200
+Message-ID: <CAJ7jCmnrKj+OBrSOzNhh5ZfomEwVYGJgGZ5kS5VQKgh8227F6A@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+From: wbrana <wbrana@gmail.com>
+To: Shentino <shentino@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2012 05:34 AM, Stephen Warren wrote:
-> On 08/23/2012 05:01 PM, Sebastian Hesselbarth wrote:
->> So possible, valid combinations for uart1 would be:
->> (a) mpp_uart1;
->> (b) mpp_uart1, mpp2, mpp3;
->> (c) mpp_uart1, mpp21, mpp22;
->> (d) mpp_uart1, mpp2, mpp22;
->> (e) mpp_uart1, mpp21, mpp3;
->>  [...]
-> In the example above, there is a single function named "uart1". If this
-> was all the HW supported, I'd expect the driver's
-> pinmux_ops.get_functions_count() to return 1,
-> pinmux_ops.get_function_name(0) to return "uart1", and
-> pinmux_ops.get_function_name(n>0) to return an error.
->
-> In practice, I assume there are many other options that can be muxed
-> onto mpp2/3/21/22/uart1, so they'd be included in the list as well.
->
-> I don't expect any scanning, no. I'd expect that tables provided by the
-> SoC-specific drivers to be:
->
-> * A table of pins
-> * A table of groups
-> * A table of functions
->
-> No scanning involved.
-
-Stephen,
-
-now I do understand but in the current driver we pass pingroups associated
-with the available functions, i.e. "mpp2" with "uart1", "uart2", "sdio0", aso.
-IMHO for the above three functions it would be better to have functions associated
-with the corresponding groups, i.e. "uart1" with "mpp_uart1", "mpp2", "mpp3", aso.
-
-That would require some larger rework of the driver and therefore I just
-wanted to make sure, that I hit your expectations/explanations.
-
-Sebastian
+On 8/25/12, Shentino <shentino@gmail.com> wrote:
+> How is that even relevant to a discussion on support for x86_32?
+I said if kernel supports x86_32, NVIDIA won't support x32.
+I was told I should use open source drivers if I want to use x32.
+My previous mail is saying than I can't use open source drivers
+because of low performance.
