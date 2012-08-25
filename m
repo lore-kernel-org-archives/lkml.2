@@ -1,60 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab2HYSVY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 14:21:24 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:38832 "EHLO
-	homiemail-a45.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751082Ab2HYSVU (ORCPT
+	id S1756773Ab2HYS0I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 14:26:08 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18446 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab2HYS0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 14:21:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=XUpTh/rpSkl18U/2HtNzpYJBwkIMCRzWo6qnpjYbqlnVMvr2TghJmJ2gBb4Mn
-	OIXSI8AHtGJCMIYcc8zYol+QM6JhesQTNL595x54vCMBftLzpDyQOEgRCyFbELlj
-	ZYy/X0KjqX4e6bHxEyCrAuw/R/1frqjOUl5T+CNrHPh/mU=
-Message-ID: <5039179D.6010909@shealevy.com>
-Date: Sat, 25 Aug 2012 14:21:17 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120703 Thunderbird/11.0.1
+	Sat, 25 Aug 2012 14:26:04 -0400
+Date: Sat, 25 Aug 2012 14:25:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com,
+        linux-doc@vger.kernel.org, rob@landley.net
+Subject: Re: [PATCH] swiotlb: Add support to disable swiotlb overflow buffer
+ with deprecation warning
+Message-ID: <20120825182546.GC18320@konrad-lan.dumpdata.com>
+References: <1344638802.8018.18.camel@lorien2>
+ <1345842845.2651.41.camel@lorien2>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth: Add support for Apple vendor-specific devices
-References: <1345915686-3915-1-git-send-email-rydberg@euromail.se> <50390B54.4040706@shealevy.com> <20120825174342.GA4057@polaris.bitmath.org>
-In-Reply-To: <20120825174342.GA4057@polaris.bitmath.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345842845.2651.41.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, Aug 24, 2012 at 03:14:05PM -0600, Shuah Khan wrote:
+> Add support for disabling swiotlb overflow buffer using zero size swiotlb
+> overflow buffer to help test disable overflow scenarios to find drivers that
+> don't check dma mapping errors. Add kernel error message to track overflow
+> buffer triggers to understand how often overflow buffer gets used. Add
+> deprecation notice warning message and deprecation schedule documentation, as
+> a first step towards removing overflow support, to be consistent with other
+> iommu implementations and return DMA_ERROR_CODE. Once drivers are fixed
+> overflow support can be removed.
 
-On 08/25/2012 01:43 PM, Henrik Rydberg wrote:
-> On Sat, Aug 25, 2012 at 01:28:52PM -0400, Shea Levy wrote:
->> Hello,
->>
->> On 08/25/2012 01:28 PM, Henrik Rydberg wrote:
->>> +	/* Apple-specific (Broadcom) devices */
->>> +	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
->>> +
->>>
->> Would this subsume https://lkml.org/lkml/2012/8/22/689 ?
-> Yes, it will make 05ac:821d work as well. If you are able to test it
-> successfully, we can append the commit message and add your Tested-by.
+This looks like the previous patch. I thought we discussed this and
+decided that the overflow buffer support should not be disabled outright
+(meaning by default it is ON) - but we can provide a knob to turn it
+off.
 
-I'm getting a build error due to lack of USB_VENDOR_AND_INTERFACE_INFO 
-macro when patching 3.5.2 with that patch. Which kernel tree should I 
-patch with this patch to test?
+And alongside you were going to look at DMA API debug code to see if you
+can come up with a mechanism to track that the users of DMA API call
+dma_mapping_error after they have called various variants of 'map'?
 
-> Thanks,
-> Henrik
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-Thanks,
-Shea
+> 
+> Tested on x86-64 and compile tested on IA64.
+> 
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> ---
+>  Documentation/feature-removal-schedule.txt |   15 ++++++
+>  lib/swiotlb.c                              |   73 ++++++++++++++++++++--------
+>  2 files changed, 69 insertions(+), 19 deletions(-)
+> 
+> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> index a52924e..b5938ca 100644
+> --- a/Documentation/feature-removal-schedule.txt
+> +++ b/Documentation/feature-removal-schedule.txt
+> @@ -646,3 +646,18 @@ Who:	Russell King <linux@arm.linux.org.uk>,
+>  	Santosh Shilimkar <santosh.shilimkar@ti.com>
+>  
+>  ----------------------------
+> +
+> +What:  SWIOTLB overflow buffer support.
+> +When:  3.8
+> +Why:   Remove SWIOTLB overflow buffer support and return DMA_ERROR_CODE
+> +       (a value of zero) to make it consistent with iommu implementation
+> +       on Intel, AMD, and swiotlb-xen. In 3.7, add logging to track swiotlb
+> +       buffer overflow triggers to understand how often overflow buffer
+> +       gets used. The next step is to fix drivers that don't call
+> +       dma_mapping_error to check for errors returned by the mapping
+> +       interfaces. Once drivers are fixed overflow support can be removed.
+> +       If you see any problems related to disabling SWIOTLB overflow buffer,
+> +       please report to us!
+> +       E-mail us at: linux-kernel@vger.kernel.org
+> +Who:   Shuah Khan <shuah.khan@hp.com> <shuahkhan@gmail.com>
+> +
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index 45bc1f8..658f35a 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -92,6 +92,24 @@ static DEFINE_SPINLOCK(io_tlb_lock);
+>  
+>  static int late_alloc;
+>  
+> +static void swiotlb_print_overflow_deprecation_notice(void)
+> +{
+> +	if (io_tlb_overflow) {
+> +		pr_warn("SWIOTLB overflow buffer will be deprecated.\n"
+> +			"  If you have a driver that depends on this feature\n"
+> +			"  please Email us at: linux-kernel@vger.kernel.org,\n"
+> +			"  Shuah Khan (shuahkhan@gmail.com), and\n"
+> +			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
+> +	} else {
+> +		pr_warn("SWIOTLB overflow buffer is disabled and will be\n"
+> +			"  deprecated. Please report problems related to\n"
+> +			"  disabling overflow buffer to\n"
+> +			"  linux-kernel@vger.kernel.org,\n"
+> +			"  Shuah Khan (shuahkhan@gmail.com), and\n"
+> +			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
+> +	}
+> +}
+> +
+>  static int __init
+>  setup_io_tlb_npages(char *str)
+>  {
+> @@ -108,7 +126,6 @@ setup_io_tlb_npages(char *str)
+>  	return 1;
+>  }
+>  __setup("swiotlb=", setup_io_tlb_npages);
+> -/* make io_tlb_overflow tunable too? */
+>  
+>  unsigned long swiotlb_nr_tbl(void)
+>  {
+> @@ -156,12 +173,18 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+>  	io_tlb_index = 0;
+>  	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+>  
+> -	/*
+> -	 * Get the overflow emergency buffer
+> -	 */
+> -	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+> -	if (!io_tlb_overflow_buffer)
+> -		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+> +	if (io_tlb_overflow) {
+> +		/*
+> +		 * Get the overflow emergency buffer
+> +		 */
+> +		io_tlb_overflow_buffer = alloc_bootmem_low_pages(
+> +						PAGE_ALIGN(io_tlb_overflow));
+> +		if (!io_tlb_overflow_buffer)
+> +			panic("Cannot allocate SWIOTLB overflow buffer!\n");
+> +	}
+> +
+> +	swiotlb_print_overflow_deprecation_notice();
+> +
+>  	if (verbose)
+>  		swiotlb_print_info();
+>  }
+> @@ -264,14 +287,17 @@ swiotlb_late_init_with_default_size(size_t default_size)
+>  
+>  	memset(io_tlb_orig_addr, 0, io_tlb_nslabs * sizeof(phys_addr_t));
+>  
+> -	/*
+> -	 * Get the overflow emergency buffer
+> -	 */
+> -	io_tlb_overflow_buffer = (void *)__get_free_pages(GFP_DMA,
+> -	                                          get_order(io_tlb_overflow));
+> -	if (!io_tlb_overflow_buffer)
+> -		goto cleanup4;
+> +	if (io_tlb_overflow) {
+> +		/*
+> +		 * Get the overflow emergency buffer
+> +		 */
+> +		io_tlb_overflow_buffer = (void *)
+> +			__get_free_pages(GFP_DMA, get_order(io_tlb_overflow));
+> +		if (!io_tlb_overflow_buffer)
+> +			goto cleanup4;
+> +	}
+>  
+> +	swiotlb_print_overflow_deprecation_notice();
+>  	swiotlb_print_info();
+>  
+>  	late_alloc = 1;
+> @@ -297,12 +323,13 @@ cleanup1:
+>  
+>  void __init swiotlb_free(void)
+>  {
+> -	if (!io_tlb_overflow_buffer)
+> +	if (!io_tlb_orig_addr)
+>  		return;
+>  
+>  	if (late_alloc) {
+> -		free_pages((unsigned long)io_tlb_overflow_buffer,
+> -			   get_order(io_tlb_overflow));
+> +		if (io_tlb_overflow_buffer)
+> +			free_pages((unsigned long)io_tlb_overflow_buffer,
+> +				   get_order(io_tlb_overflow));
+>  		free_pages((unsigned long)io_tlb_orig_addr,
+>  			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
+>  		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
+> @@ -310,8 +337,9 @@ void __init swiotlb_free(void)
+>  		free_pages((unsigned long)io_tlb_start,
+>  			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+>  	} else {
+> -		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+> -				  PAGE_ALIGN(io_tlb_overflow));
+> +		if (io_tlb_overflow_buffer)
+> +			free_bootmem_late(__pa(io_tlb_overflow_buffer),
+> +					  PAGE_ALIGN(io_tlb_overflow));
+>  		free_bootmem_late(__pa(io_tlb_orig_addr),
+>  				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+>  		free_bootmem_late(__pa(io_tlb_list),
+> @@ -681,7 +709,10 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+>  	map = map_single(dev, phys, size, dir);
+>  	if (!map) {
+>  		swiotlb_full(dev, size, dir, 1);
+> +		if (!io_tlb_overflow)
+> +			return DMA_ERROR_CODE;
+>  		map = io_tlb_overflow_buffer;
+> +		dev_err(dev, "SWIOTLB is full. Mapping overflow buffer.\n");
+>  	}
+>  
+>  	dev_addr = swiotlb_virt_to_bus(dev, map);
+> @@ -691,6 +722,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+>  	 */
+>  	if (!dma_capable(dev, dev_addr, size)) {
+>  		swiotlb_tbl_unmap_single(dev, map, size, dir);
+> +		if (!io_tlb_overflow)
+> +			return DMA_ERROR_CODE;
+>  		dev_addr = swiotlb_virt_to_bus(dev, io_tlb_overflow_buffer);
+>  	}
+>  
+> @@ -910,6 +943,8 @@ EXPORT_SYMBOL(swiotlb_sync_sg_for_device);
+>  int
+>  swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr)
+>  {
+> +	if (!io_tlb_overflow)
+> +		return DMA_ERROR_CODE;
+>  	return (dma_addr == swiotlb_virt_to_bus(hwdev, io_tlb_overflow_buffer));
+>  }
+>  EXPORT_SYMBOL(swiotlb_dma_mapping_error);
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
