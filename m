@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab2HYT5Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 15:57:24 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:45964
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754644Ab2HYT5P (ORCPT
+	id S1757999Ab2HYT50 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 15:57:26 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:2649 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751490Ab2HYT5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 15:57:15 -0400
+	Sat, 25 Aug 2012 15:57:16 -0400
 X-IronPort-AV: E=Sophos;i="4.80,311,1344204000"; 
-   d="scan'208";a="153817993"
+   d="scan'208";a="153817994"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] drivers/media/platform/mx2_emmaprp.c: adjust inconsistent IS_ERR and PTR_ERR
-Date: Sat, 25 Aug 2012 21:57:05 +0200
-Message-Id: <1345924629-16584-3-git-send-email-Julia.Lawall@lip6.fr>
+To: Felipe Balbi <balbi@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/6] drivers/usb/gadget/lpc32xx_udc.c: adjust inconsistent IS_ERR and PTR_ERR
+Date: Sat, 25 Aug 2012 21:57:06 +0200
+Message-Id: <1345924629-16584-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345924629-16584-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345924629-16584-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,8 +26,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Change the call to IS_ERR to test the value that was just initialized and
-is returned using PTR_ERR.
+Change the call to PTR_ERR to access the value just tested by IS_ERR.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -51,22 +51,20 @@ if (IS_ERR(e=e1)) { ... PTR_ERR(e) ... }
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/platform/mx2_emmaprp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/gadget/lpc32xx_udc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/platform/mx2_emmaprp.c b/drivers/media/platform/mx2_emmaprp.c
-index dab380a..2be1bb1 100644
---- a/drivers/media/platform/mx2_emmaprp.c
-+++ b/drivers/media/platform/mx2_emmaprp.c
-@@ -908,9 +908,8 @@ static int emmaprp_probe(struct platform_device *pdev)
+diff --git a/drivers/usb/gadget/lpc32xx_udc.c b/drivers/usb/gadget/lpc32xx_udc.c
+index f1ec99e..3a6cdd0 100644
+--- a/drivers/usb/gadget/lpc32xx_udc.c
++++ b/drivers/usb/gadget/lpc32xx_udc.c
+@@ -3208,7 +3208,7 @@ static int __init lpc32xx_udc_probe(struct platform_device *pdev)
+ 	udc->usb_otg_clk = clk_get(&pdev->dev, "ck_usb_otg");
+ 	if (IS_ERR(udc->usb_otg_clk)) {
+ 		dev_err(udc->dev, "failed to acquire USB otg clock\n");
+-		retval = PTR_ERR(udc->usb_slv_clk);
++		retval = PTR_ERR(udc->usb_otg_clk);
+ 		goto usb_otg_clk_get_fail;
  	}
  
- 	pcdev->clk_emma_ahb = devm_clk_get(&pdev->dev, "ahb");
--	if (IS_ERR(pcdev->clk_emma_ipg)) {
-+	if (IS_ERR(pcdev->clk_emma_ahb))
- 		return PTR_ERR(pcdev->clk_emma_ahb);
--	}
- 
- 	irq_emma = platform_get_irq(pdev, 0);
- 	res_emma = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
