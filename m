@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab2HYIsn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 04:48:43 -0400
-Received: from mail.linlab.net ([89.244.147.154]:47882 "EHLO mail.linlab.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891Ab2HYIs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 04:48:28 -0400
-X-DKIM: OpenDKIM Filter v2.5.1 mail.linlab.net q7P8mKPH024459
-Date: Sat, 25 Aug 2012 10:48:19 +0200
-From: Alexander Bergmann <alex@linlab.net>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, hkjerry.chu@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-Message-ID: <20120825084819.GD430@linlab.net>
-References: <1345724123.5904.756.camel@edumazet-glaptop>
- <50362407.9070805@linlab.net>
- <1345726185.5904.835.camel@edumazet-glaptop>
- <20120824.134231.41073001349178209.davem@davemloft.net>
+	id S1756607Ab2HYIuf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 04:50:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61394 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab2HYIu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 04:50:27 -0400
+Date: Sat, 25 Aug 2012 10:50:23 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 00/46] 3.5.3-stable review
+Message-ID: <20120825085023.GA1516@fritha.org>
+References: <20120820035832.274275502@linuxfoundation.org>
+ <20120821170813.GA1561@fancy-poultry.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-ripemd160;
+	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
 Content-Disposition: inline
-In-Reply-To: <20120824.134231.41073001349178209.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (mail.linlab.net [127.0.0.1]); Sat, 25 Aug 2012 10:48:21 +0200 (CEST)
+In-Reply-To: <20120821170813.GA1561@fancy-poultry.org>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+66 (70810a88ce9f) (2011-07-01)
+X-Provags-ID: V02:K0:YGP47jAQ5VWlxI29gUdnKotHBfOwQppw3Wj1upALZBy
+ 9NKTQgkC2AbwjRShWhS7SqotYTMajaT73b7X9Vq9rSOE3NCmr9
+ JvTL+hsb+JFDgEVVw/zC+C/jvyxjpiUMT/Y75DZ892ytGkX00R
+ vj8mWjWulnKScXe1qlKdatkNHhnfwkOyeGUH25Ky8zzQzJF6jq
+ 7Lt710/s3xx0uMjKxlcPHiVDbPnaftIxyB+cHiNSCy1LVAoqDG
+ bCyQw7jehkuZUXcQu4wmBsPGKIY0IdYfFUtEi6i+ptjOfNU1GY
+ z7xvwtGEk+sfG1S9bS5dK9z476Zsk12XnuaxOYGqZesXDlmTdn
+ 32GWqRwhQepmHbxvcwu1087FrY2/yTh3GTzDqrsxN
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 01:42:31PM -0400, David Miller wrote:
-> Alex, this patch doesn't apply, it was completely corrupted by your email
-> client.
-> 
-> Make a fresh submission, with this fixed.  But before you do, email the
-> patch to yourself and make sure you can actually apply the patch you
-> receive in your inbox.  Because that's exactly what I'm going to have
-> to do.
 
-Sorry I messed it up the last time. This time I've double checked as 
-you suggested. I'll keep that in mind.
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->From 11a292b1cff772f930a02fda02d5b741f8ea5033 Mon Sep 17 00:00:00 2001
-From: Alexander Bergmann <alex@linlab.net>
-Date: Fri, 24 Aug 2012 14:09:49 +0200
-Subject: [PATCH 1/1] tcp: Increase timeout for SYN segments
+Quoting myself here..
 
-Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
-RFC6298 (former RFC2988bis). This reduced the time till the last SYN
-retransmission packet gets sent from 93secs to 31secs.
+On 21.08.2012, Heinz Diehl wrote: 
 
-RFC1122 is stating that the retransmission should be done for at least 3
-minutes, but this seems to be quite high.
+> 3.5.3-rc1 hangs my machine on boot (can reboot with CTRL-ALT-DEL). 
+> All other kernels are/has been fine, incl. latest 3.5.2 and 3.6-rc1. 
 
-  "However, the values of R1 and R2 may be different for SYN
-  and data segments.  In particular, R2 for a SYN segment MUST
-  be set large enough to provide retransmission of the segment
-  for at least 3 minutes.  The application can close the
-  connection (i.e., give up on the open attempt) sooner, of
-  course."
+...to let you know that my problem is solved, and it was _not_ kernel
+related. I can't tell what it was which blocked a proper boot, but
+after reverting some of the patches of the 3.5.3-rc1 upgrade without
+success, I updated the whole machine and did a BIOS reset, and the
+problem was immediately gone.
 
-This patch increases the value of TCP_SYN_RETRIES to the value of 6,
-providing a retransmission window of 63secs.
+So just ignore my previous mail. 3.5.3-rc1 boots fine now.
+Sorry for the noise!
 
-The comments for SYN and SYNACK retries have also been updated to
-describe the current settings.
 
-Signed-off-by: Alexander Bergmann <alex@linlab.net>
----
- include/net/tcp.h |   18 ++++++++++++++----
- 1 files changed, 14 insertions(+), 4 deletions(-)
+--Qxx1br4bt0+wmkIi
+Content-Type: application/pgp-signature
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 1f000ff..d43d6b3 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -98,11 +98,21 @@ extern void tcp_time_wait(struct sock *sk, int state, int timeo);
- 				 * 15 is ~13-30min depending on RTO.
- 				 */
- 
--#define TCP_SYN_RETRIES	 5	/* number of times to retry active opening a
--				 * connection: ~180sec is RFC minimum	*/
-+#define TCP_SYN_RETRIES	 6	/*
-+				 * This is how many retries it does to active
-+				 * opening a connection.
-+				 * RFC1122 says the minimum retry MUST be at
-+				 * least 180secs. Nevertheless this value is
-+				 * corresponding to 63secs of retransmission
-+				 * with the current initial RTO.
-+				 */
- 
--#define TCP_SYNACK_RETRIES 5	/* number of times to retry passive opening a
--				 * connection: ~180sec is RFC minimum	*/
-+#define TCP_SYNACK_RETRIES 5	/* 
-+				 * This is how may retries it does to passive
-+				 * opening a connection. 
-+				 * This is corresponding to 31secs of 
-+				 * retransmission with the current initial RTO.
-+				 */
- 
- #define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT
- 				  * state, about 60 seconds	*/
--- 
-1.7.8.6
+-----BEGIN PGP SIGNATURE-----
 
+iQGcBAEBAwAGBQJQOJHIAAoJEF+bQu+7rXrnBDAL/1brwjYh+SlG9/boJ1fSnd2j
+TjmyL+9P0Vxg7to/XVXEVCB+m6IcZdkim3hSnKdFiZ/MDct+tLDG+frbLXeI7Lri
+u7JW19yp/Ct5SvWxqBsFq235svnTE6wBZmNJCGT7nLrIiD6tSA2Ex6dos7DUdNoc
+KqMvXbzYDhRwFzjjanQVzZAmYlDw2T9eBSKX+jsh9d9njXAcpHlE+SnG8C2ZesX+
+wLWL87bKwVFPmgf4cSl8z5b7kZXknIgf3ptNPm5CaVo7SBkl/Yj5c677zJj3H3Zw
+/EwMmQ1fona/KsQVqSO5MVr0SWBBzeDH/UxvdM6PceTczR0K0+lxvUPprz1c1XyV
+rpIBuL97GxzQbHH8R8ByxODX0IeYmNVNSlbYOnP0sUOjYNqMz6oMi2u4PjErekGS
+1vljex3eBuackr4orb0vvGu10cKxtK0erJ/TQ3r2drU89z9+QiQqMO07XwFrx56l
+s6uqPrYCBOEc1UCcobKdbh41FGinz72Hl3RMpHXx5Q==
+=jHEP
+-----END PGP SIGNATURE-----
+
+--Qxx1br4bt0+wmkIi--
