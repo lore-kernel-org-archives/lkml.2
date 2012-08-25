@@ -1,185 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751042Ab2HYEYT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 00:24:19 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:29486
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750830Ab2HYEYQ (ORCPT
+	id S1751546Ab2HYEY2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 00:24:28 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35389 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751124Ab2HYEYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 00:24:16 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zz98dI9371I1432I179dNzz1202hzz8275bhz2dh668h839h944hd25hd2bhf0ah107ah1155h)
-X-WSS-ID: 0M9AMWB-01-1GU-02
-X-M-MSG: 
-Date: Fri, 24 Aug 2012 23:24:09 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 3/5] x86: Only direct map addresses that are marked as
- E820_RAM
-Message-ID: <20120825042409.GD26127@jshin-Toonie>
-References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
- <1345852516-3125-4-git-send-email-jacob.shin@amd.com>
- <CAE9FiQUjaBSn0q=+om7+CPjLXVD9Pemf=mNvgYG7C3bE5XxOSw@mail.gmail.com>
+	Sat, 25 Aug 2012 00:24:22 -0400
+Date: Sat, 25 Aug 2012 00:24:19 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v3 01/17] hashtable: introduce a small and naive
+	hashtable
+Message-ID: <20120825042419.GA27240@Krystal>
+References: <50357840.5020201@gmail.com> <20120823200456.GD14962@google.com> <5037DA47.9010306@gmail.com> <20120824195941.GC21325@google.com> <5037E00B.6090606@gmail.com> <20120824203332.GF21325@google.com> <5037E9D9.9000605@gmail.com> <20120824212348.GK21325@google.com> <5038074D.300@gmail.com> <20120824230740.GN21325@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUjaBSn0q=+om7+CPjLXVD9Pemf=mNvgYG7C3bE5XxOSw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120824230740.GN21325@google.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 06:07:01PM -0700, Yinghai Lu wrote:
-> On Fri, Aug 24, 2012 at 4:55 PM, Jacob Shin <jacob.shin@amd.com> wrote:
-> > Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
-> > and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
-> > backed by actual DRAM. This is fine for holes under 4GB which are covered
-> > by fixed and variable range MTRRs to be UC. However, we run into trouble
-> > on higher memory addresses which cannot be covered by MTRRs.
-> >
-> > Our system with 1TB of RAM has an e820 that looks like this:
-> >
-> >  BIOS-e820: [mem 0x0000000000000000-0x00000000000983ff] usable
-> >  BIOS-e820: [mem 0x0000000000098400-0x000000000009ffff] reserved
-> >  BIOS-e820: [mem 0x00000000000d0000-0x00000000000fffff] reserved
-> >  BIOS-e820: [mem 0x0000000000100000-0x00000000c7ebffff] usable
-> >  BIOS-e820: [mem 0x00000000c7ec0000-0x00000000c7ed7fff] ACPI data
-> >  BIOS-e820: [mem 0x00000000c7ed8000-0x00000000c7ed9fff] ACPI NVS
-> >  BIOS-e820: [mem 0x00000000c7eda000-0x00000000c7ffffff] reserved
-> >  BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
-> >  BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
-> >  BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
-> >  BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
-> >  BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
-> >  BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
-> >
-> > and so direct mappings are created for huge memory hole between
-> > 0x000000e038000000 to 0x0000010000000000. Even though the kernel never
-> > generates memory accesses in that region, since the page tables mark
-> > them incorrectly as being WB, our (AMD) processor ends up causing a MCE
-> > while doing some memory bookkeeping/optimizations around that area.
-> >
-> > This patch iterates through e820 and only direct maps ranges that are
-> > marked as E820_RAM, and keeps track of those pfn ranges. Depending on
-> > the alignment of E820 ranges, this may possibly result in using smaller
-> > size (i.e. 4K instead of 2M or 1G) page tables.
-> >
-> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> > ---
-> >  arch/x86/include/asm/page_types.h |    9 +++
-> >  arch/x86/kernel/setup.c           |  125 +++++++++++++++++++++++++++++--------
-> >  arch/x86/mm/init.c                |    2 +
-> >  arch/x86/mm/init_64.c             |    6 +-
-> >  4 files changed, 112 insertions(+), 30 deletions(-)
-> >
-> > diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-> > index e21fdd1..409047a 100644
-> > --- a/arch/x86/include/asm/page_types.h
-> > +++ b/arch/x86/include/asm/page_types.h
-> > @@ -3,6 +3,7 @@
-> >
-> >  #include <linux/const.h>
-> >  #include <linux/types.h>
-> > +#include <asm/e820.h>
-> >
-> >  /* PAGE_SHIFT determines the page size */
-> >  #define PAGE_SHIFT     12
-> > @@ -40,12 +41,20 @@
-> >  #endif /* CONFIG_X86_64 */
-> >
-> >  #ifndef __ASSEMBLY__
-> > +#include <linux/range.h>
-> >
-> >  extern int devmem_is_allowed(unsigned long pagenr);
-> >
-> >  extern unsigned long max_low_pfn_mapped;
-> >  extern unsigned long max_pfn_mapped;
-> >
-> > +extern struct range pfn_mapped[E820_X_MAX];
-> > +extern int nr_pfn_mapped;
-> > +
-> > +extern void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn);
-> > +extern bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
-> > +extern bool pfn_is_mapped(unsigned long pfn);
-> > +
-> >  static inline phys_addr_t get_max_mapped(void)
-> >  {
-> >         return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
-> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> > index 751e020..4217fb4 100644
-> > --- a/arch/x86/kernel/setup.c
-> > +++ b/arch/x86/kernel/setup.c
-> > @@ -115,13 +115,46 @@
-> >  #include <asm/prom.h>
-> >
-> >  /*
-> > - * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
-> > - * The direct mapping extends to max_pfn_mapped, so that we can directly access
-> > - * apertures, ACPI and other tables without having to play with fixmaps.
-> > + * max_low_pfn_mapped: highest direct mapped pfn under 4GB
-> > + * max_pfn_mapped:     highest direct mapped pfn over 4GB
-> > + *
-> > + * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
-> > + * represented by pfn_mapped
-> >   */
-> >  unsigned long max_low_pfn_mapped;
-> >  unsigned long max_pfn_mapped;
-> >
-> > +struct range pfn_mapped[E820_X_MAX];
-> > +int nr_pfn_mapped;
-> > +
-> > +void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
-> > +{
-> > +       nr_pfn_mapped = add_range_with_merge(pfn_mapped, E820_X_MAX,
-> > +                                            nr_pfn_mapped, start_pfn, end_pfn);
-> > +
-> > +       max_pfn_mapped = max(max_pfn_mapped, end_pfn);
-> > +
-> > +       if (end_pfn <= (1UL << (32 - PAGE_SHIFT)))
-> > +               max_low_pfn_mapped = max(max_low_pfn_mapped, end_pfn);
-> > +}
-> > +
-> > +bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
-> > +{
-> > +       int i;
-> > +
-> > +       for (i = 0; i < nr_pfn_mapped; i++)
-> > +               if ((start_pfn >= pfn_mapped[i].start) &&
-> > +                   (end_pfn <= pfn_mapped[i].end))
-> > +                       return true;
-> > +
-> > +       return false;
-> > +}
-> > +
-> > +bool pfn_is_mapped(unsigned long pfn)
-> > +{
-> > +       return pfn_range_is_mapped(pfn, pfn + 1);
-> > +}
-> > +
+* Tejun Heo (tj@kernel.org) wrote:
+> Hello,
 > 
-> looks like you could avoid add pfn_mapped[] array.
+> On Sat, Aug 25, 2012 at 12:59:25AM +0200, Sasha Levin wrote:
+> > Thats the thing, the amount of things of things you can do with a given bucket
+> > is very limited. You can't add entries to any point besides the head (without
+> > walking the entire list).
 > 
-> pfn_range_is_mapped() should be
-> check max_low_pfn_mapped, max_pfn_mapped with
-> e820_all_mapped(start, end, E820_RAM).
+> Kinda my point.  We already have all the hlist*() interface to deal
+> with such cases.  Having something which is evidently the trivial
+> hlist hashtable and advertises as such in the interface can be
+> helpful.  I think we need that more than we need anything fancy.
+> 
+> Heh, this is a debate about which one is less insignificant.  I can
+> see your point.  I'd really like to hear what others think on this.
+> 
+> Guys, do we want something which is evidently trivial hlist hashtable
+> which can use hlist_*() API directly or do we want something better
+> encapsulated?
 
-Hmm .. I guess that could work .. but what about EFI code that keys off of
-EFI memory map? Does the EFI code update e820 and mark as E820_RAM whatever
-ranges that it calls init_memory_mapping on (via efi_ioremap?)
+My 2 cents, FWIW: I think this specific effort should target a trivially
+understandable API and implementation, for use-cases where one would be
+tempted to reimplement his own trivial hash table anyway. So here
+exposing hlist internals, with which kernel developers are already
+familiar, seems like a good approach in my opinion, because hiding stuff
+behind new abstraction might make the target users go away.
 
-I'll try your suggestion on Monday.
+Then, as we see the need, we can eventually merge a more elaborate hash
+table with poneys and whatnot, but I would expect that the trivial hash
+table implementation would still be useful. There are of course very
+compelling reasons to use a more featureful hash table: automatic
+resize, RT-aware updates, scalable updates, etc... but I see a purpose
+for a trivial implementation. Its primary strong points being:
 
-> 
-> Thanks
-> 
-> Yinghai
-> 
+- it's trivially understandable, so anyone how want to be really sure
+  they won't end up debugging the hash table instead of their
+  work-in-progress code can have a full understanding of it,
+- it has few dependencies, which makes it easier to understand and
+  easier to use in some contexts (e.g. early boot).
 
+So I'm in favor of not overdoing the abstraction for this trivial hash
+table, and honestly I would rather prefer that this trivial hash table
+stays trivial. A more elaborate hash table should probably come as a
+separate API.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
