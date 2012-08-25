@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab2HYDX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 23:23:59 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:53533 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab2HYDXW (ORCPT
+	id S1757078Ab2HYDcH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 23:32:07 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38456 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690Ab2HYDcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 23:23:22 -0400
-From: David Decotigny <decot@googlers.com>
-To: Ayaz Abdulla <aabdulla@nvidia.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, Joe Perches <joe@perches.com>,
-        David Decotigny <decot@googlers.com>
-Subject: [PATCH net-next v1 3/3] forcedeth: prevent TX timeouts after reboot
-Date: Fri, 24 Aug 2012 20:22:53 -0700
-Message-Id: <99df7d049cc0060a7a8bcdb6931a723cb2c172ed.1345864542.git.decot@googlers.com>
-X-Mailer: git-send-email 1.7.10.2.5.g20d7bc9
-In-Reply-To: <cover.1345864542.git.decot@googlers.com>
-References: <cover.1345864542.git.decot@googlers.com>
-In-Reply-To: <cover.1345864542.git.decot@googlers.com>
-References: <cover.1345864542.git.decot@googlers.com>
-Organization: Google, Inc.
+	Fri, 24 Aug 2012 23:32:04 -0400
+Message-ID: <50384732.9060304@nvidia.com>
+Date: Fri, 24 Aug 2012 21:32:02 -0600
+From: Stephen Warren <swarren@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Tony Prisk <linux@prisktech.co.nz>
+CC: vt8500-wm8505-linux-kernel@googlegroups.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mike Turquette <mturquette@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, rtc-linux@googlegroups.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCHv4 0/9] *** ARM: Update arch-vt8500 to Devicetree ***
+References: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
+In-Reply-To: <1345707346-9035-1-git-send-email-linux@prisktech.co.nz>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This complements patch "net-forcedeth: fix TX timeout caused by TX
-pause on down link" which ensures that a lock-up sequence is not sent
-to the NIC. Present patch ensures that if a NIC is already locked-up,
-the driver will recover from it when initializing the device.
+On 08/23/2012 01:35 AM, Tony Prisk wrote:
+> This patchset updates arch-vt8500 to devicetree and removes all the old-style
+> code. Support for WM8650 has also been added.
+> 
+> Example dts/dtsi files are given for the three currently supported models.
+> 
+> Major changes:
+> 
+> GPIO code has been converted to a platform_device and rewritten as WM8505
+> support was broken. Add support for WM8650 gpio controller.
+> 
+> UHCI support was missing. Added this as a generic non-pci uhci controller as
+> it doesn't require anything special. Should be usable by any system that doesn't
+> have special requirements to get the UHCI controller working.
+> 
+> Framebuffer code patched to support WM8650. The bindings for this are of concern
+> but there doesn't seem to be a formalized binding yet. This patch is based off
+> Sascha Hauer's current patch on the dri-devel mailing list and should be easily
+> patched out when its finalized.
+> 
+> Patchset based on Arnd's arm-soc/for-next branch.
 
-It does the equivalent of the following recovery sequence:
- - write NVREG_TX_PAUSEFRAME_ENABLE_V1 to eth1's register
-   NvRegTxPauseFrame
- - write NVREG_XMITCTL_START to eth1's register
-   NvRegTransmitterControl
- - write 0 to eth1's register NvRegTransmitterControl
-(this is at the heart of the "unbricking" sequence mentioned in patch
- "net-forcedeth: fix TX timeout caused by TX pause on down link")
-
-Tested:
- - hardware is MCP55 device id 10de:0373 (rev a3), dual-port
- - reboot a kernel without any of patches mentioned
- - freeze the NIC (details on description for commit "net-forcedeth:
-   fix TX timeout caused by TX pause on down link")
- - wait 5mn until ping hangs & TX timeout in dmesg
- - reboot on kernel with present patch
- - host is immediatly operational, no TX timeout
-
-
-
-Signed-off-by: David Decotigny <decot@googlers.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 8b82457..edd6221 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -5905,11 +5905,18 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
- 		goto out_error;
- 	}
- 
-+	netif_carrier_off(dev);
-+
-+	/* Some NICs freeze when TX pause is enabled while NIC is
-+	 * down, and this stays across warm reboots. The sequence
-+	 * below should be enough to recover from that state. */
-+	nv_update_pause(dev, 0);
-+	nv_start_tx(dev);
-+	nv_stop_tx(dev);
-+
- 	if (id->driver_data & DEV_HAS_VLAN)
- 		nv_vlan_mode(dev, dev->features);
- 
--	netif_carrier_off(dev);
--
- 	dev_info(&pci_dev->dev, "ifname %s, PHY OUI 0x%x @ %d, addr %pM\n",
- 		 dev->name, np->phy_oui, np->phyaddr, dev->dev_addr);
- 
--- 
-1.7.10.2.5.g20d7bc9
-
+I believe all the issues I pointed out are fixed in this series. I'm not
+sure I reviewed it in enough detail to ack it, but I'm fine with what I saw.
