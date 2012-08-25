@@ -1,164 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab2HYHvx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 03:51:53 -0400
-Received: from smtp208.alice.it ([82.57.200.104]:36334 "EHLO smtp208.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754661Ab2HYHvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 03:51:47 -0400
-X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Aug 2012 03:51:46 EDT
-Message-ID: <000f01cd8295$bd728770$0702a8c0@spectrekizxcpt>
-From: "Bastelli Carlo" <carlo_bastelli@yahoo.it>
-To: "Ned Forrester" <nforrester@whoi.edu>, "Marek Vasut" <marex@denx.de>
-Cc: "Fabio Estevam" <festevam@gmail.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-References: <1345820228.87750.YahooMailNeo@web29604.mail.ird.yahoo.com>	<CAOMZO5Ds6NKsTCptQXDGZDJasb119hYWqXMzX8nG5WFArysL7A@mail.gmail.com> <201208241738.45601.marex@denx.de> <5037B1DF.40503@whoi.edu>
-Subject: Re: SLAVE Side SPI kernel driver development
-Date: Sat, 25 Aug 2012 09:46:28 +0200
+	id S1755262Ab2HYHwk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 03:52:40 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45266 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751Ab2HYHwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 03:52:33 -0400
+Date: Sat, 25 Aug 2012 08:52:21 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Bill Huang <bilhuang@nvidia.com>,
+        "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Shutdown problem in SMP system happened on Tegra20
+Message-ID: <20120825075221.GH18957@n2100.arm.linux.org.uk>
+References: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com> <20120824182133.GB18957@n2100.arm.linux.org.uk> <20120825073624.GI31998@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.2180
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.2180
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120825073624.GI31998@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In my application in fact the slave is connected to the master without other 
-devices on the bus, a simple point to point, and receives a frame of known 
-dimensions.
-I think I will be very busy to read post in the coming days  :)
+On Sat, Aug 25, 2012 at 03:36:27PM +0800, Shawn Guo wrote:
+> On Fri, Aug 24, 2012 at 07:21:33PM +0100, Russell King - ARM Linux wrote:
+> > Why not just ensure that CONFIG_PM_SLEEP_SMP is enabled if your platform
+> > requires that the lowest CPU number be the CPU dealing with reboot?
+> 
+> I have CONFIG_PM_SLEEP_SMP enabled for imx6q, but still see the imx6q
+> restart hook running on cpu1 than cpu0.  It seems that
+> disable_nonboot_cpus is only called in kernel_power_off but never
+> kernel_restart.  We should probably patch kernel_restart or
+> machine_restart to have disable_nonboot_cpus called? 
 
-Thanks to all of you who provided suggestions.
-Carlo Bastelli
-
------ Original Message ----- 
-From: "Ned Forrester" <nforrester@whoi.edu>
-To: "Marek Vasut" <marex@denx.de>
-Cc: "Fabio Estevam" <festevam@gmail.com>; 
-<spi-devel-general@lists.sourceforge.net>; "Bastelli Carlo (yahoo)" 
-<carlo_bastelli@yahoo.it>; <linux-kernel@vger.kernel.org>; 
-<linux-arm-kernel@lists.infradead.org>
-Sent: Friday, August 24, 2012 6:54 PM
-Subject: Re: SLAVE Side SPI kernel driver development
-
-
-On 08/24/2012 11:38 AM, Marek Vasut wrote:
-> Dear Fabio Estevam,
->
->> On Fri, Aug 24, 2012 at 11:57 AM, Bastelli Carlo (yahoo)
->
-> CCing SPI list
->
->> <carlo_bastelli@yahoo.it> wrote:
->>> Hello, I'm Carlo, I have a difficult task at work, my boss asked me to
->>> develop
->>>
->>>  a driver SPI slave side on embedded ARM processor running Linux.
->>>
->>> Precisely linux occur on the SPI bus as a slave, not master as required
->>> by the hierarchical structure of the current kernel. The new driver
->>> will
->>>
->>>  receive via interrupt and respond when selected by its chip select.
->
-> So a soft-spi ? It's gonna be slow as hell and unstable too.
->
->>>  Can
->>>  anyone suggest the best way to develop this driver?
->
-> Get a CPU which has SPI-slave capable IP, start from there. If you were to
-> implement soft-spi this way, you'd have to use FIQ on ARM, to be able to 
-> handle
-> stuff with reasonable latency ... check how the ps/2-gpio driver is done 
-> in
-> Linux ... I tried it, it barely worked, you don't want to go down that 
-> road.
->
->>>  Personally, I
->>>
->>> have identified two main roads, the first if possible to exploit the
->>> structure SPI master driver
->
-> Not happening. You'd have to split the parts from the struct spi_master 
-> into
-> common and master-only parts. That's for starters.
->
->>> with a few tricks that now I can not
->>> define. The second most radical, write a driver for a UART like, but
->>> managing the SPI device.
->>> Thank you for any suggestions or examples.
->
-> First of all, the SPI slave mode is COMPLETELY different from the master 
-> mode.
-> You need to react on incoming CS-low ASAP, which might turn out to be a 
-> problem
-> on it's own. Then, even if you do, you do not know how long the transfer 
-> is
-> going to be, so you need to allocate enough buffers as the transfer 
-> progresses
-> onwards.
->
-> In case of your soft-spi, how do you plan to sample the CLK line to sync 
-> clock?
->
->> Marek got spi slave running on a mx28. See his patch:
->> http://www.spinics.net/lists/arm-kernel/msg190860.html
->
-> This was tested (and developed) on this board:
-> http://www.denx-cs.de/?q=M28
->
-> The userland code is really easy too, simply pump it into spidev or read 
-> from
-> it. But all that is only possible because of the SPI IP in the mx28 is 
-> nice.
->
->> Regards,
->>
->> Fabio Estevam
->
-> Best regards,
-> Marek Vasut
-
-I generally agree with the above comments.  A generalized SPI slave must
-be able to respond instantly, often within one clock cycle.  This can
-only work in hardware, or in an OS like Linux when the activity on the
-bus is completely predictable by the Linux slave.  The only cases I know
-of are streaming of data in a predictable way between a single master
-and single slave (no other devices on the bus).
-
-This topic comes up periodically, but I don't think there has been any
-change in the situation for all the time I've followed the discussion.
-I recommend that you read the archives of this mailing list to
-understand the limitations of a potential slave mode.  The archives can
-be found at:
-
-http://sourceforge.net/mailarchive/forum.php?forum_name=spi-devel-general
-
-then look for threads with "slave" in the subject in the following
-months (I'd give thread start dates, but parts of the threads are
-disconnected in the archives, and this is the easiest way to see all the
-parts, day ranges are in parentheses):
-
-2007/04 (13-18)
-2007/09/27 and 2007/10 (13-17)
-2009/03 (2-3)
-2009/12/18 and 2010/1/19 and 2010/02 (14-16)
-2010/07 (26) and 2010/08 (13)
-2011/01 (28-31) and 2011/02 (1-10)
-2011/10 (18)
-2012/06 (29-30 and 2012/07 (1-17)
-
--- 
-Ned Forrester                                       nforrester@whoi.edu
-Oceanographic Systems Lab                           508-289-2226 Office
-Applied Ocean Physics and Engineering Dept.
-Woods Hole Oceanographic Institution          Woods Hole, MA 02543, USA
-http://www.whoi.edu/
-http://www.whoi.edu/page.do?pid=29856
-http://www.whoi.edu/hpb/Site.do?id=1532
-
+Remember that this path gets called from IRQ context which makes calling
+functions which sleep very dodgy.
