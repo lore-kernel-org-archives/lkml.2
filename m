@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab2HYR40 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 13:56:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52706 "EHLO mga14.intel.com"
+	id S1756801Ab2HYR4w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 13:56:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:35381 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab2HYR4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 13:56:13 -0400
+	id S1752551Ab2HYR4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 13:56:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,311,1344236400"; 
-   d="scan'208";a="184878874"
+   d="scan'208";a="184878905"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -25,9 +25,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v8 05/12] x86, hotplug, suspend: Online CPU0 for suspend or hibernate
-Date: Sat, 25 Aug 2012 10:41:21 -0700
-Message-Id: <1345916488-8355-6-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v8 12/12] x86, topology: Debug CPU00 hotplug
+Date: Sat, 25 Aug 2012 10:41:28 -0700
+Message-Id: <1345916488-8355-13-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1345916488-8355-1-git-send-email-fenghua.yu@intel.com>
 References: <1345916488-8355-1-git-send-email-fenghua.yu@intel.com>
@@ -37,67 +37,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate can't
-be executed if CPU0 is detected offline. To make suspend or hibernate and
-further resume succeed, CPU0 must be online.
+CONFIG_DEBUG_HOTPLUG_CPU0 is for debugging the CPU0 hotplug feature. The switch
+offlines CPU0 as soon as possible and boots userspace up with CPU0 offlined.
+User can online CPU0 back after boot time. The default value of the switch is
+off.
+
+To debug CPU0 hotplug, you need to enable CPU0 offline/online feature by either
+turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during compilation or giving
+cpu0_hotplug kernel parameter at boot.
+
+It's safe and early place to take down CPU0 after all hotplug notifiers
+are installed and SMP is booted.
+
+Please note that some applications or drivers, e.g. some versions of udevd,
+during boot time may put CPU0 online again in this CPU0 hotplug debug mode.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig           |   15 +++++++++++++
+ arch/x86/include/asm/cpu.h |    3 ++
+ arch/x86/kernel/topology.c |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/power/cpu.c       |   38 ++++++++++++++++++++++++++++++++
+ 4 files changed, 107 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index 218cdb1..3338609 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -237,3 +237,47 @@ void restore_processor_state(void)
- #ifdef CONFIG_X86_32
- EXPORT_SYMBOL(restore_processor_state);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 31c8b89..6795c8a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1740,6 +1740,21 @@ config BOOTPARAM_HOTPLUG_CPU0
+ 	  You still can enable the CPU0 hotplug feature at boot by kernel
+ 	  parameter cpu0_hotplug.
+ 
++config DEBUG_HOTPLUG_CPU0
++	def_bool n
++	prompt "Debug CPU0 hotplug"
++	depends on HOTPLUG_CPU && EXPERIMENTAL
++	---help---
++	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
++	  soon as possible and boots up userspace with CPU0 offlined. User
++	  can online CPU0 back after boot time.
++
++	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
++	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
++	  compilation or giving cpu0_hotplug kernel parameter at boot.
++
++	  If unuser, say N.
++
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
+diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+index a119572..5f9a124 100644
+--- a/arch/x86/include/asm/cpu.h
++++ b/arch/x86/include/asm/cpu.h
+@@ -29,6 +29,9 @@ struct x86_cpu {
+ extern int arch_register_cpu(int num);
+ extern void arch_unregister_cpu(int);
+ extern void __cpuinit start_cpu0(void);
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++extern int _debug_hotplug_cpu(int cpu, int action);
++#endif
  #endif
-+
+ 
+ DECLARE_PER_CPU(int, cpu_state);
+diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+index fa87fd6..63d8374 100644
+--- a/arch/x86/kernel/topology.c
++++ b/arch/x86/kernel/topology.c
+@@ -50,6 +50,57 @@ static int __init enable_cpu0_hotplug(char *str)
+ __setup("cpu0_hotplug", enable_cpu0_hotplug);
+ #endif
+ 
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
 +/*
-+ * When bsp_check() is called in hibernate and suspend, cpu hotplug
-+ * is disabled already. So it's unnessary to handle race condition between
-+ * cpumask query and cpu hotplug.
++ * This function offlines a CPU as early as possible and allows userspace to
++ * boot up without the CPU. The CPU can be onlined back by user after boot.
++ *
++ * This is only called for debugging CPU offline/online feature.
 + */
-+static int bsp_check(void)
++int __ref _debug_hotplug_cpu(int cpu, int action)
 +{
-+	if (cpumask_first(cpu_online_mask) != 0) {
-+		printk(KERN_WARNING "CPU0 is offline.\n");
-+		return -ENODEV;
-+	}
++	struct device *dev = get_cpu_device(cpu);
++	int ret;
 +
-+	return 0;
-+}
++	if (!cpu_is_hotpluggable(cpu))
++		return -EINVAL;
 +
-+static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
-+			   void *ptr)
-+{
-+	int ret = 0;
++	cpu_hotplug_driver_lock();
 +
 +	switch (action) {
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		ret = bsp_check();
++	case 0:
++		ret = cpu_down(cpu);
++		if (!ret) {
++			pr_info("CPU %u is now offline\n", cpu);
++			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
++		} else
++			pr_debug("Can't offline CPU%d.\n", cpu);
++		break;
++	case 1:
++		ret = cpu_up(cpu);
++		if (!ret)
++			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
++		else
++			pr_debug("Can't online CPU%d.\n", cpu);
 +		break;
 +	default:
-+		break;
++		ret = -EINVAL;
 +	}
-+	return notifier_from_errno(ret);
++
++	cpu_hotplug_driver_unlock();
++
++	return ret;
 +}
 +
-+static int __init bsp_pm_check_init(void)
++static int __init debug_hotplug_cpu(void)
 +{
-+	/*
-+	 * Set this bsp_pm_callback as lower priority than
-+	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
-+	 * earlier to disable cpu hotplug before bsp online check.
-+	 */
-+	pm_notifier(bsp_pm_callback, -INT_MAX);
++	_debug_hotplug_cpu(0, 0);
 +	return 0;
 +}
 +
-+core_initcall(bsp_pm_check_init);
++late_initcall_sync(debug_hotplug_cpu);
++#endif /* CONFIG_DEBUG_HOTPLUG_CPU0 */
++
+ int __ref arch_register_cpu(int num)
+ {
+ 	/*
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 3338609..abc748a 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -21,6 +21,7 @@
+ #include <asm/suspend.h>
+ #include <asm/debugreg.h>
+ #include <asm/fpu-internal.h> /* pcntxt_mask */
++#include <asm/cpu.h>
+ 
+ #ifdef CONFIG_X86_32
+ static struct saved_context saved_context;
+@@ -263,6 +264,43 @@ static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
+ 	case PM_HIBERNATION_PREPARE:
+ 		ret = bsp_check();
+ 		break;
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++	case PM_RESTORE_PREPARE:
++		/*
++		 * When system resumes from hibernation, online CPU0 because
++		 * 1. it's required for resume and
++		 * 2. the CPU was online before hibernation
++		 */
++		if (!cpu_online(0))
++			_debug_hotplug_cpu(0, 1);
++		break;
++	case PM_POST_RESTORE:
++		/*
++		 * When a resume really happens, this code won't be called.
++		 *
++		 * This code is called only when user space hibernation software
++		 * prepares for snapshot device during boot time. So we just
++		 * call _debug_hotplug_cpu() to restore to CPU0's state prior to
++		 * preparing the snapshot device.
++		 *
++		 * This works for normal boot case in our CPU0 hotplug debug
++		 * mode, i.e. CPU0 is offline and user mode hibernation
++		 * software initializes during boot time.
++		 *
++		 * If CPU0 is online and user application accesses snapshot
++		 * device after boot time, this will offline CPU0 and user may
++		 * see different CPU0 state before and after accessing
++		 * the snapshot device. But hopefully this is not a case when
++		 * user debugging CPU0 hotplug. Even if users hit this case,
++		 * they can easily online CPU0 back.
++		 *
++		 * To simplify this debug code, we only consider normal boot
++		 * case. Otherwise we need to remember CPU0's state and restore
++		 * to that state and resolve racy conditions etc.
++		 */
++		_debug_hotplug_cpu(0, 0);
++		break;
++#endif
+ 	default:
+ 		break;
+ 	}
 -- 
 1.7.2
 
