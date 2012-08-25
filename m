@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab2HYDXL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 23:23:11 -0400
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:45091 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab2HYDXI (ORCPT
+	id S1757730Ab2HYDX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 23:23:26 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:44250 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796Ab2HYDXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 23:23:08 -0400
+	Fri, 24 Aug 2012 23:23:12 -0400
 From: David Decotigny <decot@googlers.com>
 To: Ayaz Abdulla <aabdulla@nvidia.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
         Eric Dumazet <edumazet@google.com>, Joe Perches <joe@perches.com>,
         David Decotigny <decot@googlers.com>
-Subject: [PATCH net-next v1 0/3] forcedeth: fix device lock-up for dual-port NICs
-Date: Fri, 24 Aug 2012 20:22:50 -0700
-Message-Id: <cover.1345864542.git.decot@googlers.com>
+Subject: [PATCH net-next v1 1/3] forcedeth: fix buffer overflow
+Date: Fri, 24 Aug 2012 20:22:51 -0700
+Message-Id: <527de689e5eff49f66a8da7aff05ad72b8b97c04.1345864542.git.decot@googlers.com>
 X-Mailer: git-send-email 1.7.10.2.5.g20d7bc9
+In-Reply-To: <cover.1345864542.git.decot@googlers.com>
+References: <cover.1345864542.git.decot@googlers.com>
+In-Reply-To: <cover.1345864542.git.decot@googlers.com>
+References: <cover.1345864542.git.decot@googlers.com>
 Organization: Google, Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a dual port MCP55 10de:0373 (rev a3) NIC with both ports connected,
-we identified a configuration that does freeze the whole NIC: having
-autoneg & TX pause turned on while one port is physically connected
-but interface is down (eg. eth1) eventually causes the whole NIC to
-freeze (eth1 and... eth0). This triggers TX timeouts on the UP
-interface and, more generally, an unreachable network.
+Found by manual code inspection.
 
-In order to avoid the bug, all we have to do is make sure not to
-configure TX pause on the hardware while NIC is down. This is what the
-2nd patch of the series does (details included).
-
-And, in case the NIC is in a bad state at reboot (should not happen
-anymore thanks to patch above), third patch basically always makes
-sure to fix the NIC when module is loaded.
-
-I could only test this with a MCP55 10de:0373 (rev a3) PCI device on a
-x86_64 host.
-
-Any feedback on these patches welcome! In particular, please let me
-know if this should not apply to other hardware.
+Tested: compile, reboot, ethtool -d ethX
 
 
-############################################
-# Patch Set Summary:
+Signed-off-by: David Decotigny <decot@googlers.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-David Decotigny (3):
-  forcedeth: fix buffer overflow
-  forcedeth: fix TX timeout caused by TX pause on down link
-  forcedeth: prevent TX timeouts after reboot
-
- drivers/net/ethernet/nvidia/forcedeth.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
-
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index f45def0..51d19d8 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -4435,7 +4435,7 @@ static void nv_get_regs(struct net_device *dev, struct ethtool_regs *regs, void
+ 
+ 	regs->version = FORCEDETH_REGS_VER;
+ 	spin_lock_irq(&np->lock);
+-	for (i = 0; i <= np->register_size/sizeof(u32); i++)
++	for (i = 0; i < np->register_size/sizeof(u32); i++)
+ 		rbuf[i] = readl(base + i*sizeof(u32));
+ 	spin_unlock_irq(&np->lock);
+ }
 -- 
 1.7.10.2.5.g20d7bc9
 
