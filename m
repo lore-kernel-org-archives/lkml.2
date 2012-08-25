@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab2HYMSU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 08:18:20 -0400
-Received: from wolff.to ([65.117.131.163]:46245 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751900Ab2HYMSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 08:18:09 -0400
-Date: Sat, 25 Aug 2012 07:16:21 -0500
-From: Bruno Wolff III <bruno@wolff.to>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Daniel Mack <zonque@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Logitech USB headset not working in 3.6-rc3
-Message-ID: <20120825121621.GA24462@wolff.to>
-References: <20120824190808.GC20043@zod.bos.redhat.com>
- <5038007E.5060505@gmail.com>
- <20120825111749.GA17048@wolff.to>
- <20120825115423.GA14327@wolff.to>
- <5038BEEB.6090303@gmail.com>
- <20120825120740.GA19539@wolff.to>
- <20120825121326.GE20043@zod.bos.redhat.com>
+	id S1754027Ab2HYMUN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 08:20:13 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58389 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751112Ab2HYMUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 08:20:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20120825121326.GE20043@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJ7jCmkhetET-NpSOPtphKs9Mq-FTXZQK2Di=RMHo+6Zcewn9w@mail.gmail.com>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+	<201208242035.38733.tweek@tweek.dk>
+	<CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
+	<201208242153.24638.tweek@tweek.dk>
+	<CAJ7jCmkhetET-NpSOPtphKs9Mq-FTXZQK2Di=RMHo+6Zcewn9w@mail.gmail.com>
+Date: Sat, 25 Aug 2012 14:20:05 +0200
+Message-ID: <CAJ7jCmnLm4t_w98A=zjz2M32xvR2NyGfDH+kFstp4ZEquZ_=VA@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+From: wbrana <wbrana@gmail.com>
+To: Martin Nybo Andersen <tweek@tweek.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 25, 2012 at 08:13:27 -0400,
-   Josh Boyer <jwboyer@redhat.com> wrote:
->On Sat, Aug 25, 2012 at 07:07:40AM -0500, Bruno Wolff III wrote:
->> On Sat, Aug 25, 2012 at 14:02:51 +0200,
->>   Daniel Mack <zonque@gmail.com> wrote:
->> >
->> >Can you revert commit e9ba389c5 ("ALSA: usb-audio: Fix
->> >scheduling-while-atomic bug in PCM capture stream") and see if that
->>
->> I can try that, but it takes a long time to build a new kernel on my
->> old hardware.
->
->I started a scratch build of a kernel with that patch reverted (via
->patch -R).  You'll find it here when it finishes:
->
->http://koji.fedoraproject.org/koji/taskinfo?taskID=4421817
->
->josh
-
-I'll test it when it finishes. Thanks. It takes me a long time to build 
-kernels locally, and I wasn't sure how to do a scratch build on koji without 
-committing stuff remotely.
+On 8/25/12, wbrana <wbrana@gmail.com> wrote:
+> Open source drivers are black listed by Chromium because of instability
+> file software_rendering_list.json:
+> NVIDIA cards with nouveau drivers in Linux are crash-prone
+> The Intel Mobile 945 Express family of chipsets is not compatible with
+> WebGL
+> Intel mesa drivers are crash-prone
+> ATI/AMD cards with third-party drivers in Linux are crash-prone
+> Drivers are unreliable for Optimus on Linux
+There is chance Ivy Bridge can accelerate Chromium, but it can't
+accelerate open source game at sufficient frame rate - 60 fps
+http://www.phoronix.com/scan.php?page=article&item=intel_ivy_gpushow&num=8
