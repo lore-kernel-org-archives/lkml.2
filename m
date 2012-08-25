@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab2HYUhF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 16:37:05 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56399 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab2HYUhC (ORCPT
+	id S1757545Ab2HYUmv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 16:42:51 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:60289 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751248Ab2HYUmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 16:37:02 -0400
-MIME-Version: 1.0
-Date: Sat, 25 Aug 2012 16:37:01 -0400
-Message-ID: <CAGh4K3+7+4E0rt1Lwu-z1n-XrDtaiE4Vk82S0a98GVo4VnDA7Q@mail.gmail.com>
-Subject: [PATCH]:dir.c patch
-From: Christopher Sacchi <chris.sacchi@gmail.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 25 Aug 2012 16:42:49 -0400
+X-IronPort-AV: E=Sophos;i="4.80,311,1344204000"; 
+   d="scan'208";a="170806531"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] scripts/coccinelle/tests/odd_ptr_err.cocci: semantic patch for IS_ERR/PTR_ERR inconsistency
+Date: Sat, 25 Aug 2012 22:42:45 +0200
+Message-Id: <1345927365-26814-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a non-style issue dir.c-patch, and as far as I can see from
-the lines of code, the compilation errors weren't about what I put in.
-This patch fixes a "break" statement inside an "if" statement, as
-obviously not correct.
-Here's the patch for the kernel version v3.6.0rc3:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
---
-Signed-off-by: Christopher P. Sacchi <chris.sacchi@gmail.com>
---- dir.c	2012-08-25 15:47:24.260443900 -0400
-+++ dir.c	2012-08-25 16:02:05.458845600 -0400
-@@ -580,7 +580,6 @@ static int ext4_dx_readdir(struct file *
- 				return ret;
- 			if (ret == 0) {
- 				filp->f_pos = ext4_get_htree_eof(filp);
--				break;
- 			}
- 			info->curr_node = rb_first(&info->root);
- 		}
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
---
+---
+ scripts/coccinelle/tests/odd_ptr_err.cocci |   65 +++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
 
--- 
-Christopher
+diff --git a/scripts/coccinelle/tests/odd_ptr_err.cocci b/scripts/coccinelle/tests/odd_ptr_err.cocci
+new file mode 100644
+index 0000000..d114662
+--- /dev/null
++++ b/scripts/coccinelle/tests/odd_ptr_err.cocci
+@@ -0,0 +1,65 @@
++/// PTR_ERR should access the value just tested by IS_ERR
++//# There can be false positives in the patch case, where it is the call
++//# IS_ERR that is wrong.
++///
++// Confidence: High
++// Copyright: (C) 2012 Julia Lawall, INRIA.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments:
++// Options: -no_includes -include_headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++@depends on patch@
++expression e,e1;
++@@
++
++(
++if (IS_ERR(e)) { ... PTR_ERR(e) ... }
++|
++if (IS_ERR(e=e1)) { ... PTR_ERR(e) ... }
++|
++if (IS_ERR(e))
++ { ...
++  PTR_ERR(
++-   e1
+++   e
++  )
++   ... }
++)
++
++@r depends on !patch@
++expression e,e1;
++position p1,p2;
++@@
++
++(
++if (IS_ERR(e)) { ... PTR_ERR(e) ... }
++|
++if (IS_ERR(e=e1)) { ... PTR_ERR(e) ... }
++|
++*if (IS_ERR@p1(e))
++ { ...
++*  PTR_ERR@p2(e1)
++   ... }
++)
++
++@script:python depends on org@
++p1 << r.p1;
++p2 << r.p2;
++@@
++
++cocci.print_main("inconsistent IS_ERR and PTR_ERR",p1)
++cocci.print_secs("PTR_ERR",p2)
++
++@script:python depends on report@
++p1 << r.p1;
++p2 << r.p2;
++@@
++
++msg = "inconsistent IS_ERR and PTR_ERR, PTR_ERR on line %s" % (p2[0].line)
++coccilib.report.print_report(p1[0],msg)
+
