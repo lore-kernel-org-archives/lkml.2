@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2HYIYk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 04:24:40 -0400
+	id S1754696Ab2HYIYz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 04:24:55 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44867 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499Ab2HYIXl (ORCPT
+	with ESMTP id S1755483Ab2HYIX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 04:23:41 -0400
+	Sat, 25 Aug 2012 04:23:56 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
         Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH 2/2] fat : no need to reset EOF in ent_put for FAT32
-Date: Sat, 25 Aug 2012 04:23:31 -0400
-Message-Id: <1345883011-6263-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH 3/3] fat: simplify writeback_inode function.
+Date: Sat, 25 Aug 2012 04:23:46 -0400
+Message-Id: <1345883026-6297-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-#define FAT_ENT_EOF(EOF_FAT32)
-
-there is no need to reset value of 'new' for FAT32 as the values is
-already correct
+Simplify writeback_inode function.
 
 Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
 ---
- fs/fat/fatent.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/fat/inode.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
-diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index 31f08ab..af53815 100644
---- a/fs/fat/fatent.c
-+++ b/fs/fat/fatent.c
-@@ -186,8 +186,6 @@ static void fat16_ent_put(struct fat_entry *fatent, int new)
- 
- static void fat32_ent_put(struct fat_entry *fatent, int new)
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 973296b..4bbb24e 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1457,18 +1457,14 @@ static int writeback_inode(struct inode *inode)
  {
--	if (new == FAT_ENT_EOF)
--		new = EOF_FAT32;
  
- 	WARN_ON(new & 0xf0000000);
- 	new |= le32_to_cpu(*fatent->u.ent32_p) & ~0x0fffffff;
+ 	int ret;
+-	struct address_space *mapping = inode->i_mapping;
+-	struct writeback_control wbc = {
+-	       .sync_mode = WB_SYNC_NONE,
+-	      .nr_to_write = 0,
+-	};
+-	/* if we used WB_SYNC_ALL, sync_inode waits for the io for the
+-	* inode to finish.  So WB_SYNC_NONE is sent down to sync_inode
++
++	/* if we used wait=1, sync_inode_metadata waits for the io for the
++	* inode to finish.  So wait=0 is sent down to sync_inode_metadata
+ 	* and filemap_fdatawrite is used for the data blocks
+ 	*/
+-	ret = sync_inode(inode, &wbc);
++	ret = sync_inode_metadata(inode, 0);
+ 	if (!ret)
+-	       ret = filemap_fdatawrite(mapping);
++	       ret = filemap_fdatawrite(inode->i_mapping);
+ 	return ret;
+ }
+ 
 -- 
 1.7.9.5
 
