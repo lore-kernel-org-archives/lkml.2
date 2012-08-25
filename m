@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab2HYRWZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 13:22:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:47316 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab2HYRWX (ORCPT
+	id S1753952Ab2HYRXC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 13:23:02 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:57164 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab2HYRXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 13:22:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120825164627.GC16914@pompeji.miese-zwerge.org>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	<201208241952.04988.tweek@tweek.dk>
-	<CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
-	<201208242035.38733.tweek@tweek.dk>
-	<CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
-	<1345894521.28613.43.camel@thorin>
-	<CAJ7jCmn7oH75EObCuP+oFsP8skArrc1V5c72tmtwEpWn_DWpjw@mail.gmail.com>
-	<20120825164627.GC16914@pompeji.miese-zwerge.org>
-Date: Sat, 25 Aug 2012 19:22:21 +0200
-Message-ID: <CAJ7jCm=A8aTqvaQYP+T8+uqpqX26woZrFd3zhiyfqzqu__g9pA@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-From: wbrana <wbrana@gmail.com>
-To: Jochen Striepe <jochen@tolot.escape.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 25 Aug 2012 13:23:00 -0400
+X-SENDER-IP: [85.230.170.20]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhNMAGcJOVBV5qoUPGdsb2JhbABFhRqFI7AtGQEBAQEeGQ0ngn0TAQ8YgQIKGhOIEbtkFJIFA5tAjQ8
+X-IronPort-AV: E=Sophos;i="4.77,826,1336341600"; 
+   d="scan'208";a="180648374"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Gustavo Padovan <gustavo@padovan.org>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH] Bluetooth: Add support for Apple vendor-specific devices
+Date: Sat, 25 Aug 2012 19:28:06 +0200
+Message-Id: <1345915686-3915-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/25/12, Jochen Striepe <jochen@tolot.escape.de> wrote:
-> Let me get this straight. You don't see yourself capable of helping to
-> improve kernel or userland.
-If you tell me what and how Firefox and Chromium should be changed to
-support x32,
-I will create patches if it won't take 1000s of hours. I'm not paid to
-work on Firefox and Chromium like many developers.
+As pointed out by Gustavo and Marcel, all Apple-specific Broadcom
+devices seen so far have the same interface class, subclass and
+protocol numbers. This patch adds an entry which matches all of them,
+using the new USB_VENDOR_AND_INTERFACE_INFO() macro.
 
-> You demand stuff. You offer nothing. You don't listen to the arguments
-> people very patiently explain to you.
-I replied to (almost) all arguments.
+In particular, this patch adds support for the MacBook Pro Retina
+(05ac:8286), which is not in the present list.
 
-> Why should anyone consider your proposal?
-because it is good idea.
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Gustavo,
+
+here is a patch for the Apple devices, utilizing commit d81a5d19, for
+3.6. Tested on the MacBookPro10,1 (Retina). If you want, I can
+follow-up with a patch for 3.7 which removes the specific entries. I
+have verified the lsusb output of all of them, except MacMini5,1.
+
+Thanks,
+Henrik
+
+ drivers/bluetooth/btusb.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 12075ad..1fae607 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -52,6 +52,9 @@ static struct usb_device_id btusb_table[] = {
+ 	/* Generic Bluetooth USB device */
+ 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
+ 
++	/* Apple-specific (Broadcom) devices */
++	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
++
+ 	/* Broadcom SoftSailing reporting vendor specific */
+ 	{ USB_DEVICE(0x0a5c, 0x21e1) },
+ 
+-- 
+1.7.12
+
