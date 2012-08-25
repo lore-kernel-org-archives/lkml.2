@@ -1,20 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab2HYNmP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 09:42:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52807 "EHLO mx2.suse.de"
+	id S1754434Ab2HYNpL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 09:45:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52927 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666Ab2HYNmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 09:42:08 -0400
-Date: Sat, 25 Aug 2012 15:42:05 +0200
-Message-ID: <s5hbohz84wi.wl%tiwai@suse.de>
+	id S1752025Ab2HYNpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 09:45:06 -0400
+Date: Sat, 25 Aug 2012 15:45:05 +0200
+Message-ID: <s5h8vd384ri.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mengdong Lin <mengdong.lin@intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree (sound tree related)
-In-Reply-To: <20120824172018.21db4ca1245f3aa28002a76b@canb.auug.org.au>
-References: <20120824172018.21db4ca1245f3aa28002a76b@canb.auug.org.au>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Daniel Mack <zonque@gmail.com>, Bruno Wolff III <bruno@wolff.to>,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Logitech USB headset not working in 3.6-rc3
+In-Reply-To: <20120825121758.GF20043@zod.bos.redhat.com>
+References: <20120824190808.GC20043@zod.bos.redhat.com>
+	<5038007E.5060505@gmail.com>
+	<20120825111749.GA17048@wolff.to>
+	<20120825115423.GA14327@wolff.to>
+	<5038BEEB.6090303@gmail.com>
+	<20120825120740.GA19539@wolff.to>
+	<5038C186.7000107@gmail.com>
+	<20120825121758.GF20043@zod.bos.redhat.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,28 +32,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 24 Aug 2012 17:20:18 +1000,
-Stephen Rothwell wrote:
+At Sat, 25 Aug 2012 08:17:58 -0400,
+Josh Boyer wrote:
 > 
-> Hi all,
+> On Sat, Aug 25, 2012 at 02:13:58PM +0200, Daniel Mack wrote:
+> > On 25.08.2012 14:07, Bruno Wolff III wrote:
+> > > On Sat, Aug 25, 2012 at 14:02:51 +0200,
+> > >    Daniel Mack <zonque@gmail.com> wrote:
+> > >>
+> > >> Can you revert commit e9ba389c5 ("ALSA: usb-audio: Fix
+> > >> scheduling-while-atomic bug in PCM capture stream") and see if that
+> > > 
+> > > I can try that, but it takes a long time to build a new kernel on my 
+> > > old hardware.
+> > > 
+> > >> helps? If not, can you summarize again which kernels still work for you
+> > >> and which don't?
+> > > 
+> > > The latest kernel that works is 3.6.0-0.rc2.git1.2.fc18. The earliest that 
+> > > doesn't work is 3.6.0-0.rc2.git2.1.fc18.
+> > > 
+> > 
+> > The report you sent doesn't look like it could be caused by e9ba389c5.
+> > It fixes a kernel Ooops. But as it is the only relevant patch in that
+> > area, it would be interesting if reverting it fixes anything.
 > 
-> After merging the final tree, today's linux-next build (i386 defconfig)
-> failed like this:
-> 
-> sound/pci/hda/hda_codec.c: In function 'snd_hda_codec_new':
-> sound/pci/hda/hda_codec.c:1323:7: error: 'struct hda_codec' has no member named 'd3_stop_clk'
-> sound/pci/hda/hda_codec.c:1326:12: error: 'struct hda_codec' has no member named 'd3_stop_clk'
-> sound/pci/hda/hda_codec.c: In function 'hda_set_power_state':
-> sound/pci/hda/hda_codec.c:3547:7: error: 'struct hda_codec' has no member named 'd3_stop_clk_ok'
-> sound/pci/hda/hda_codec.c:3573:11: error: 'struct hda_codec' has no member named 'd3_stop_clk'
-> sound/pci/hda/hda_codec.c:3574:8: error: 'struct hda_codec' has no member named 'd3_stop_clk_ok'
-> 
-> Caused by commit b8dfc4624162 ("ALSA: hda - add runtime PM support").
-> CONFIG_SND_HDA_POWER_SAVE is not set for this build.
-> 
-> I have reverted that commit for today.
+> Yep, agreed.  If this revert kernel doesn't work, we're likely down to a
+> git bisect, Bruno.
 
-This should have been fixed now.  Sorry for inconvenience.
+Yes, please.  I'm currently traveling for KS and Plumbers, so I cannot
+debug it deeply, unfortunately.
 
+If the culprit were really my patch, I still don't figure out why it
+breaks.  In that case, it must be really a subtle timing issue...
+
+
+thanks,
 
 Takashi
