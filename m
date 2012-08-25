@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab2HYHwk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 03:52:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45266 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab2HYHwd (ORCPT
+	id S1755439Ab2HYIFn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 04:05:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47648 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055Ab2HYIF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 03:52:33 -0400
-Date: Sat, 25 Aug 2012 08:52:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Bill Huang <bilhuang@nvidia.com>,
-        "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Shutdown problem in SMP system happened on Tegra20
-Message-ID: <20120825075221.GH18957@n2100.arm.linux.org.uk>
-References: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com> <20120824182133.GB18957@n2100.arm.linux.org.uk> <20120825073624.GI31998@S2101-09.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120825073624.GI31998@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 25 Aug 2012 04:05:28 -0400
+From: Huang Shijie <shijie8@gmail.com>
+To: dwmw2@infradead.org
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dedekind1@gmail.com, Huang Shijie <shijie8@gmail.com>
+Subject: [PATCH v2] mtd: cmdlinepart: fix the wrong check condition
+Date: Sat, 25 Aug 2012 16:06:50 -0400
+Message-Id: <1345925210-7500-1-git-send-email-shijie8@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 25, 2012 at 03:36:27PM +0800, Shawn Guo wrote:
-> On Fri, Aug 24, 2012 at 07:21:33PM +0100, Russell King - ARM Linux wrote:
-> > Why not just ensure that CONFIG_PM_SLEEP_SMP is enabled if your platform
-> > requires that the lowest CPU number be the CPU dealing with reboot?
-> 
-> I have CONFIG_PM_SLEEP_SMP enabled for imx6q, but still see the imx6q
-> restart hook running on cpu1 than cpu0.  It seems that
-> disable_nonboot_cpus is only called in kernel_power_off but never
-> kernel_restart.  We should probably patch kernel_restart or
-> machine_restart to have disable_nonboot_cpus called? 
+The `mtd_id` is set by the name of a mtd device driver.
 
-Remember that this path gets called from IRQ context which makes calling
-functions which sleep very dodgy.
+As a nand controller driver, even we do not set the @name of
+the mtd_info{}, the nand_get_flash_type() will set it with
+the nand type's name. So the `mtd_id` can never be NULL in this
+case.
+
+But as a nor controller driver which may does not call the
+nand_get_flash_type(), there is a risk that the `mtd_id` becames NULL.
+
+If the `mtd_id` is NULL, the check condition will be true.
+If we accidentally set some partitions in the kernel command line,
+just like:
+          #gpmi-nand:20m(boot),20m(kernel),1g(rootfs),-(user)
+
+The cmdlinepart may parses out several mtd partitions right now.
+This is obviously wrong. We even do not enable the gpmi-nand in
+this case.
+
+The patch comes from Artem's suggestion code which is better then mine.
+
+Signed-off-by: Huang Shijie <shijie8@gmail.com>
+---
+ drivers/mtd/cmdlinepart.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
+index fc960a3..216d751 100644
+--- a/drivers/mtd/cmdlinepart.c
++++ b/drivers/mtd/cmdlinepart.c
+@@ -322,13 +322,16 @@ static int parse_cmdline_partitions(struct mtd_info *master,
+ 	struct cmdline_mtd_partition *part;
+ 	const char *mtd_id = master->name;
+ 
++	if (!mtd_id)
++		return 0;
++
+ 	/* parse command line */
+ 	if (!cmdline_parsed)
+ 		mtdpart_setup_real(cmdline);
+ 
+ 	for(part = partitions; part; part = part->next)
+ 	{
+-		if ((!mtd_id) || (!strcmp(part->mtd_id, mtd_id)))
++		if (!strcmp(part->mtd_id, mtd_id))
+ 		{
+ 			for(i = 0, offset = 0; i < part->num_parts; i++)
+ 			{
+-- 
+1.7.4.4
+
