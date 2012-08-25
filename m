@@ -1,56 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab2HYPml (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 11:42:41 -0400
-Received: from smtp1.uu.se ([130.238.7.54]:33449 "EHLO smtp1.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab2HYPmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 11:42:39 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -3.835
+	id S1753509Ab2HYPvu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 11:51:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55009 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab2HYPvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 11:51:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20536.61972.508189.308675@pilspetsen.it.uu.se>
-Date: Sat, 25 Aug 2012 17:41:08 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
-Subject: Re: [3.6-rc3 regression] sata_mv cannot get optional clkdev breaking
- boot on QNAP TS-119P+
-In-Reply-To: <20120825151524.GH9886@lunn.ch>
-References: <20536.52397.140042.917795@pilspetsen.it.uu.se>
-	<20120825151524.GH9886@lunn.ch>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+In-Reply-To: <CAJ7jCmkqBWYDJrpJbDvHKKgVoTfBQSFrCSmUj0Bd9HbLW-FF8A@mail.gmail.com>
+References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
+ <201208242035.38733.tweek@tweek.dk> <CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
+ <201208242153.24638.tweek@tweek.dk> <CAJ7jCmkhetET-NpSOPtphKs9Mq-FTXZQK2Di=RMHo+6Zcewn9w@mail.gmail.com>
+ <CAJ7jCmnLm4t_w98A=zjz2M32xvR2NyGfDH+kFstp4ZEquZ_=VA@mail.gmail.com> <CAJ7jCmkqBWYDJrpJbDvHKKgVoTfBQSFrCSmUj0Bd9HbLW-FF8A@mail.gmail.com>
+From: Shentino <shentino@gmail.com>
+Date: Sat, 25 Aug 2012 08:51:06 -0700
+Message-ID: <CAGDaZ_o_1__cyn7FZxtn6mxAVY3p8Y5sGnXg1ksy4R5Xfe_vOw@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+To: wbrana <wbrana@gmail.com>
+Cc: Martin Nybo Andersen <tweek@tweek.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Lunn writes:
- > On Sat, Aug 25, 2012 at 03:01:33PM +0200, Mikael Pettersson wrote:
- > > My Kirkwood-based QNAP TS-119P+ boots fine with the 3.5 kernel.  With
- > > 3.6-rc2 and 3.6-rc3 however sata_mv complains:
- > > 
- > > sata_mv sata_mv.0: cannot get optional clkdev
- > > sata_mv sata_mv.0: slots 32 ports 2
- > > 
- > > and then the kernel grinds to a halt with no further messages.
- > > 
- > > Full boot log from 3.6-rc3 appended below.  .config available upon
- > > request, but this is a non-DT kernel.
- > 
- > Hi Mikael
- > 
- > This is a known issue. See:
- > 
- > http://comments.gmane.org/gmane.linux.ports.arm.kernel/181989
- > 
- > There are patches being developed to fix this. I hope we can push them
- > to an RC soon.
+On Sat, Aug 25, 2012 at 7:41 AM, wbrana <wbrana@gmail.com> wrote:
+> On 8/25/12, wbrana <wbrana@gmail.com> wrote:
+>> There is chance Ivy Bridge can accelerate Chromium, but it can't
+>> accelerate open source game at sufficient frame rate - 60 fps
+>> http://www.phoronix.com/scan.php?page=article&item=intel_ivy_gpushow&num=8
+> My 5-years-old Geforce 7300 GT provides 120 fps instead of 30 fps at 1920x1200.
 
-Thanks for the pointer.  Aaro Koskinen's suggestion of passing
-coherent_pool=1M to the kernel allowed it to boot successfully.
-I'll use that workaround for now.
-
-/Mikael
+How is that even relevant to a discussion on support for x86_32?
