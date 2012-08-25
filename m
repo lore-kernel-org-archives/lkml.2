@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759422Ab2HYDv0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Aug 2012 23:51:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19860 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab2HYDux (ORCPT
+	id S1759558Ab2HYDvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Aug 2012 23:51:31 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33845 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758857Ab2HYDu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Aug 2012 23:50:53 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=2k-WFFBCSGIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=seBqgFWFO7gA:10 a=meVymXHHAAAA:8 a=z6gsHLkEAAAA:8 a=Thplo4k3AAAA:8 a=VwQbUJbxAAAA:8 a=ohp7AQS0vaYIBeFxnjgA:9 a=SXYrDhgbg5QA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20120825035051.968542677@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 24 Aug 2012 23:49:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Frank Rowand <frank.rowand@am.sony.com>,
-        Frank <Frank_Rowand@sonyusa.com>
-Subject: [PATCH RT 1/2] fix printk flush of messages
-References: <20120825034900.144648579@goodmis.org>
-Content-Disposition: inline; filename=0001-fix-printk-flush-of-messages.patch
+	Fri, 24 Aug 2012 23:50:56 -0400
+Date: Fri, 24 Aug 2012 20:50:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
+        "3.2.x.." <stable@vger.kernel.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        Michael Cree <mcree@orcon.net.nz>
+Subject: Re: [PATCH 00/11] rcu: Add missing RCU idle APIs on idle loop v2
+Message-ID: <20120825035047.GB3436@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
+ <20120824212647.GU2472@linux.vnet.ibm.com>
+ <1345857554.4840.43.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345857554.4840.43.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082503-6148-0000-0000-000008EF9629
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updates console-make-rt-friendly.patch
+On Sat, Aug 25, 2012 at 02:19:14AM +0100, Ben Hutchings wrote:
+> On Fri, 2012-08-24 at 14:26 -0700, Paul E. McKenney wrote:
+> > On Thu, Aug 23, 2012 at 04:58:24PM +0200, Frederic Weisbecker wrote:
+> > > Hi,
+> > > 
+> > > Changes since v1:
+> > > 
+> > > - Fixed preempt handling in alpha idle loop
+> > > - added ack from Geert
+> > > - fixed stable email address, sorry :-/
+> > > 
+> > > This time I built tested everywhere but: h8300 (compiler internal error),
+> > > and mn10300, parisc, score (cross compilers not available in
+> > > ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/)
+> > > 
+> > > For testing, you can pull from:
+> > > 
+> > > git://github.com/fweisbec/linux-dynticks.git
+> > > 	rcu/idle-fix-v2 
+> > > 
+> > > Thanks.
+> > 
+> > I have queued these on -rcu branch rcu/idle:
+> > 
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> > 
+> > This problem has been in place since 3.3, so it is hard to argue that
+> > it is a regression for this merge window.  I have therefore queued it
+> > for 3.7.
+> 
+> I don't follow that; I would expect any serious bug fix (serious enough
+> for a stable update) to be acceptable for 3.6 at this point.
 
-#ifdef CONFIG_PREEMPT_RT_FULL, printk() output is never flushed by
-printk() because:
+OK, if any of the arch maintainers wishes to submit the patch to 3.6,
+they are free to do so -- just let me know and I will drop the patch from
+my tree.
 
-   # some liberties taken in this pseudo-code to make it easier to follow
-   printk()
-      vprintk()
-         raw_spin_lock(&logbuf_lock)
-            # increment preempt_count():
-            preempt_disable()
-      result = console_trylock_for_printk()
-         retval = 0
-         # lock will always be false, because preempt_count() will be >= 1
-         lock = ... && !preempt_count()
-         if (lock)
-            retval = 1
-         return retval
-      # result will always be false since lock will always be false
-      if (result)
-         console_unlock()
-            # this is where the printk() output would be flushed
+That said, all this does is cause spurious warnings to be printed, so
+not sure it really qualifies as serious.  But I am happy to leave that
+decision with the individual arch maintainers -- it is their arch,
+after all, so their decision.
 
-On system boot some printk() output is flushed because register_console()
-and tty_open() call console_unlock().
+							Thanx, Paul
 
-This change also fixes the problem that was previously fixed by
-preempt-rt-allow-immediate-magic-sysrq-output-for-preempt_rt_full.patch
-
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
-Cc: Frank <Frank_Rowand@sonyusa.com>
-Link: http://lkml.kernel.org/r/4FB44FD0.4090800@am.sony.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/printk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 60f4290..f2c459f 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -835,7 +835,7 @@ static int console_trylock_for_printk(unsigned int cpu, unsigned long flags)
- {
- #ifdef CONFIG_PREEMPT_RT_FULL
- 	int lock = (!early_boot_irqs_disabled && !irqs_disabled_flags(flags) &&
--		!preempt_count()) || sysrq_in_progress;
-+		(preempt_count() <= 1)) || sysrq_in_progress;
- #else
- 	int lock = 1;
- #endif
--- 
-1.7.10.4
-
+> If the regression occurred in 3.3, then the cc lines should be something
+> like:
+> 
+>     Cc: <stable@vger.kernel.org> # 3.3+
+> 
+> and not the current:
+> 
+>     Cc: 3.2.x.. <stable@vger.kernel.org>
+> 
+> (Note, version annotations should be on the right of the address, not in
+> the 'real name' position on the left.)
 
