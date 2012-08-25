@@ -1,60 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab2HYJBw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 05:01:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61455 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab2HYJBp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 05:01:45 -0400
-Subject: Re: [PATCH 1/1] tcp: Wrong timeout for SYN segments
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexander Bergmann <alex@linlab.net>
-Cc: David Miller <davem@davemloft.net>, hkjerry.chu@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20120825084819.GD430@linlab.net>
-References: <1345724123.5904.756.camel@edumazet-glaptop>
-	 <50362407.9070805@linlab.net> <1345726185.5904.835.camel@edumazet-glaptop>
-	 <20120824.134231.41073001349178209.davem@davemloft.net>
-	 <20120825084819.GD430@linlab.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 25 Aug 2012 11:01:39 +0200
-Message-ID: <1345885299.19483.113.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756965Ab2HYJCl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 05:02:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53125 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756110Ab2HYJCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 05:02:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,309,1344236400"; 
+   d="scan'208";a="211315255"
+Date: Sat, 25 Aug 2012 17:02:27 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Vivek Trivedi <vtrivedi018@gmail.com>
+Subject: Re: [PATCH] writeback: backing-dev: replace simple_strtoul to kstrto*
+Message-ID: <20120825090227.GA21890@localhost>
+References: <1345883072-6364-1-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345883072-6364-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Applied with small change of changlog. Thanks!
 
-> From: Alexander Bergmann <alex@linlab.net>
-> Date: Fri, 24 Aug 2012 14:09:49 +0200
-> Subject: [PATCH 1/1] tcp: Increase timeout for SYN segments
-> 
-> Commit 9ad7c049 changed the initRTO from 3secs to 1sec in accordance to
-> RFC6298 (former RFC2988bis). This reduced the time till the last SYN
-> retransmission packet gets sent from 93secs to 31secs.
-> 
-> RFC1122 is stating that the retransmission should be done for at least 3
-> minutes, but this seems to be quite high.
-> 
->   "However, the values of R1 and R2 may be different for SYN
->   and data segments.  In particular, R2 for a SYN segment MUST
->   be set large enough to provide retransmission of the segment
->   for at least 3 minutes.  The application can close the
->   connection (i.e., give up on the open attempt) sooner, of
->   course."
-> 
-> This patch increases the value of TCP_SYN_RETRIES to the value of 6,
-> providing a retransmission window of 63secs.
-> 
-> The comments for SYN and SYNACK retries have also been updated to
-> describe the current settings.
-> 
-> Signed-off-by: Alexander Bergmann <alex@linlab.net>
-> ---
-
-Acked-by: Eric Dumazet <edumazet@google.com>
-
-
+Fengguang
