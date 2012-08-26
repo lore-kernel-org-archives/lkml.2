@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab2HZMyE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 08:54:04 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:47396 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754739Ab2HZMx7 (ORCPT
+	id S1751694Ab2HZMxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 08:53:40 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:51416 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551Ab2HZMxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 08:53:59 -0400
+	Sun, 26 Aug 2012 08:53:16 -0400
 X-SENDER-IP: [85.230.170.20]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApVZADUbOlBV5qoUPGdsb2JhbABFhRqFI7AtGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESG4d2u0kUkgUDm0CNDw
+X-IronPort-Anti-Spam-Result: ApVZADUbOlBV5qoUPGdsb2JhbABFhRqFI7AtGQEBAQEeGQ0ngiEBBScvEwEKBRAISTkKFAYBEogRu0kUinWHEAObQI0PgV8
 X-IronPort-AV: E=Sophos;i="4.77,830,1336341600"; 
-   d="scan'208";a="397048785"
+   d="scan'208";a="397048645"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 14/20] Input: bcm5974 - Drop pressure and width emulation
-Date: Sun, 26 Aug 2012 14:57:32 +0200
-Message-Id: <1345985858-445-15-git-send-email-rydberg@euromail.se>
+        Henrik Rydberg <rydberg@euromail.se>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH v2 07/20] Input: Send events one packet at a time
+Date: Sun, 26 Aug 2012 14:57:25 +0200
+Message-Id: <1345985858-445-8-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1345985858-445-1-git-send-email-rydberg@euromail.se>
 References: <1345985858-445-1-git-send-email-rydberg@euromail.se>
@@ -27,88 +28,435 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ABS_PRESSURE and ABS_WIDTH have special scales, and were initially
-added solely for thumb and palm recognition in the synaptics driver.
-This never really get used, however, and userspace quickly moved to
-MT solutions instead. This patch drops the unused events.
+On heavy event loads, such as a multitouch driver, the irqsoff latency
+can be as high as 250 us.  By accumulating a frame worth of data
+before passing it on, the latency can be dramatically reduced.  As a
+side effect, the special EV_SYN handling can be removed, since the
+frame is now atomic.
 
+This patch adds the events() handler callback and uses it if it
+exists. The latency is improved by 50 us even without the callback.
+
+Cc: Daniel Kurtz <djkurtz@chromium.org>
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/input/mouse/bcm5974.c | 26 +++++---------------------
- 1 file changed, 5 insertions(+), 21 deletions(-)
+ drivers/input/input-mt.c |   3 +-
+ drivers/input/input.c    | 192 ++++++++++++++++++++++++++++-------------------
+ include/linux/input.h    |  26 +++++--
+ 3 files changed, 137 insertions(+), 84 deletions(-)
 
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index cb9383e..d53628f 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -417,10 +417,6 @@ static void setup_events_to_report(struct input_dev *input_dev,
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+index 58bde77..f956b27 100644
+--- a/drivers/input/input-mt.c
++++ b/drivers/input/input-mt.c
+@@ -63,7 +63,6 @@ void input_mt_destroy_slots(struct input_dev *dev)
  {
- 	__set_bit(EV_ABS, input_dev->evbit);
+ 	kfree(dev->mt);
+ 	dev->mt = NULL;
+-	dev->slot = 0;
+ }
+ EXPORT_SYMBOL(input_mt_destroy_slots);
  
--	input_set_abs_params(input_dev, ABS_PRESSURE,
--				0, cfg->p.dim, cfg->p.fuzz, 0);
--	input_set_abs_params(input_dev, ABS_TOOL_WIDTH,
--				0, cfg->w.dim, cfg->w.fuzz, 0);
- 	input_set_abs_params(input_dev, ABS_X,
- 				0, cfg->x.dim, cfg->x.fuzz, 0);
- 	input_set_abs_params(input_dev, ABS_Y,
-@@ -502,9 +498,9 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 	const struct bcm5974_config *c = &dev->cfg;
- 	const struct tp_finger *f;
- 	struct input_dev *input = dev->input;
--	int raw_p, raw_w, raw_x, raw_y, raw_n, i;
-+	int raw_p, raw_x, raw_y, raw_n, i;
- 	int ptest, origin, ibt = 0, nmin = 0, nmax = 0;
--	int abs_p = 0, abs_w = 0, abs_x = 0, abs_y = 0;
-+	int abs_x = 0, abs_y = 0;
- 
- 	if (size < c->tp_offset || (size - c->tp_offset) % SIZEOF_FINGER != 0)
- 		return -EIO;
-@@ -521,22 +517,19 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 			report_finger_data(input, c, &f[i]);
- 
- 		raw_p = raw2int(f->touch_major);
--		raw_w = raw2int(f->tool_major);
- 		raw_x = raw2int(f->abs_x);
- 		raw_y = raw2int(f->abs_y);
- 
- 		dprintk(9,
- 			"bcm5974: "
--			"raw: p: %+05d w: %+05d x: %+05d y: %+05d n: %d\n",
--			raw_p, raw_w, raw_x, raw_y, raw_n);
-+			"raw: p: %+05d x: %+05d y: %+05d n: %d\n",
-+			raw_p, raw_x, raw_y, raw_n);
- 
- 		ptest = int2bound(&c->p, raw_p);
- 		origin = raw2int(f->origin);
- 
- 		/* while tracking finger still valid, count all fingers */
- 		if (ptest > PRESSURE_LOW && origin) {
--			abs_p = ptest;
--			abs_w = int2bound(&c->w, raw_w);
- 			abs_x = int2bound(&c->x, raw_x - c->x.devmin);
- 			abs_y = int2bound(&c->y, c->y.devmax - raw_y);
- 			while (raw_n--) {
-@@ -566,18 +559,9 @@ static int report_tp_state(struct bcm5974 *dev, int size)
- 	input_report_key(input, BTN_TOOL_TRIPLETAP, dev->fingers == 3);
- 	input_report_key(input, BTN_TOOL_QUADTAP, dev->fingers > 3);
- 
--	input_report_abs(input, ABS_PRESSURE, abs_p);
--	input_report_abs(input, ABS_TOOL_WIDTH, abs_w);
--
--	if (abs_p) {
-+	if (dev->fingers > 0) {
- 		input_report_abs(input, ABS_X, abs_x);
- 		input_report_abs(input, ABS_Y, abs_y);
--
--		dprintk(8,
--			"bcm5974: abs: p: %+05d w: %+05d x: %+05d y: %+05d "
--			"nmin: %d nmax: %d n: %d ibt: %d\n", abs_p, abs_w,
--			abs_x, abs_y, nmin, nmax, dev->fingers, ibt);
--
+@@ -91,7 +90,7 @@ void input_mt_report_slot_state(struct input_dev *dev,
+ 		return;
  	}
  
- 	/* type 2 reports button events via ibt only */
+-	slot = &mt->slots[dev->slot];
++	slot = &mt->slots[input_abs_get_val(dev, ABS_MT_SLOT)];
+ 	id = input_mt_get_value(slot, ABS_MT_TRACKING_ID);
+ 	if (id < 0 || input_mt_get_value(slot, ABS_MT_TOOL_TYPE) != tool_type)
+ 		id = input_mt_new_trkid(mt);
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index a57c4a5..2bdbae7 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -47,6 +47,8 @@ static DEFINE_MUTEX(input_mutex);
+ 
+ static struct input_handler *input_table[8];
+ 
++static const struct input_value input_value_sync = { EV_SYN, SYN_REPORT, 1 };
++
+ static inline int is_event_supported(unsigned int code,
+ 				     unsigned long *bm, unsigned int max)
+ {
+@@ -90,46 +92,81 @@ static void input_stop_autorepeat(struct input_dev *dev)
+  * filtered out, through all open handles. This function is called with
+  * dev->event_lock held and interrupts disabled.
+  */
+-static void input_pass_event(struct input_dev *dev,
+-			     unsigned int type, unsigned int code, int value)
++static size_t input_to_handler(struct input_handle *handle,
++				    struct input_value *vals, size_t count)
+ {
+-	struct input_handler *handler;
+-	struct input_handle *handle;
++	struct input_handler *handler = handle->handler;
++	struct input_value *end = vals;
++	struct input_value *v;
+ 
+-	rcu_read_lock();
++	for (v = vals; v != vals + count; v++) {
++		if (handler->filter &&
++		    handler->filter(handle, v->type, v->code, v->value))
++			continue;
++		if (end != v)
++			*end = *v;
++		end++;
++	}
+ 
+-	handle = rcu_dereference(dev->grab);
+-	if (handle)
+-		handle->handler->event(handle, type, code, value);
+-	else {
+-		bool filtered = false;
++	count = end - vals;
++	if (!count)
++		return 0;
+ 
+-		list_for_each_entry_rcu(handle, &dev->h_list, d_node) {
+-			if (!handle->open)
+-				continue;
++	if (handler->events)
++		handler->events(handle, vals, count);
++	else
++		for (v = vals; v != end; v++)
++			handler->event(handle, v->type, v->code, v->value);
+ 
+-			handler = handle->handler;
+-			if (!handler->filter) {
+-				if (filtered)
+-					break;
++	return count;
++}
+ 
+-				handler->event(handle, type, code, value);
++/*
++ * Pass values first through all filters and then, if event has not been
++ * filtered out, through all open handles. This function is called with
++ * dev->event_lock held and interrupts disabled.
++ */
++static void input_pass_values(struct input_dev *dev,
++			      struct input_value *vals, size_t count)
++{
++	struct input_handle *handle;
++	struct input_value *v;
+ 
+-			} else if (handler->filter(handle, type, code, value))
+-				filtered = true;
+-		}
++	if (!count)
++		return;
++
++	rcu_read_lock();
++
++	handle = rcu_dereference(dev->grab);
++	if (handle) {
++		count = input_to_handler(handle, vals, count);
++	} else {
++		list_for_each_entry_rcu(handle, &dev->h_list, d_node)
++			if (handle->open)
++				count = input_to_handler(handle, vals, count);
+ 	}
+ 
+ 	rcu_read_unlock();
+ 
++	add_input_randomness(vals->type, vals->code, vals->value);
++
+ 	/* trigger auto repeat for key events */
+-	if (type == EV_KEY && value != 2) {
+-		if (value)
+-			input_start_autorepeat(dev, code);
+-		else
+-			input_stop_autorepeat(dev);
++	for (v = vals; v != vals + count; v++) {
++		if (v->type == EV_KEY && v->value != 2) {
++			if (v->value)
++				input_start_autorepeat(dev, v->code);
++			else
++				input_stop_autorepeat(dev);
++		}
+ 	}
++}
++
++static void input_pass_event(struct input_dev *dev,
++			     unsigned int type, unsigned int code, int value)
++{
++	struct input_value vals[] = { { type, code, value } };
+ 
++	input_pass_values(dev, vals, ARRAY_SIZE(vals));
+ }
+ 
+ /*
+@@ -146,18 +183,12 @@ static void input_repeat_key(unsigned long data)
+ 
+ 	if (test_bit(dev->repeat_key, dev->key) &&
+ 	    is_event_supported(dev->repeat_key, dev->keybit, KEY_MAX)) {
++		struct input_value vals[] =  {
++			{ EV_KEY, dev->repeat_key, 2 },
++			input_value_sync,
++		};
+ 
+-		input_pass_event(dev, EV_KEY, dev->repeat_key, 2);
+-
+-		if (dev->sync) {
+-			/*
+-			 * Only send SYN_REPORT if we are not in a middle
+-			 * of driver parsing a new hardware packet.
+-			 * Otherwise assume that the driver will send
+-			 * SYN_REPORT once it's done.
+-			 */
+-			input_pass_event(dev, EV_SYN, SYN_REPORT, 1);
+-		}
++		input_pass_values(dev, vals, ARRAY_SIZE(vals));
+ 
+ 		if (dev->rep[REP_PERIOD])
+ 			mod_timer(&dev->timer, jiffies +
+@@ -170,37 +201,23 @@ static void input_repeat_key(unsigned long data)
+ #define INPUT_IGNORE_EVENT	0
+ #define INPUT_PASS_TO_HANDLERS	1
+ #define INPUT_PASS_TO_DEVICE	2
++#define INPUT_FLUSH		4
+ #define INPUT_PASS_TO_ALL	(INPUT_PASS_TO_HANDLERS | INPUT_PASS_TO_DEVICE)
+ 
+ static int input_handle_abs_event(struct input_dev *dev,
+ 				  unsigned int code, int *pval)
+ {
+ 	bool is_mt_event;
+-	int *pold;
+-
+-	if (code == ABS_MT_SLOT) {
+-		/*
+-		 * "Stage" the event; we'll flush it later, when we
+-		 * get actual touch data.
+-		 */
+-		if (dev->mt && *pval >= 0 && *pval < dev->mt->num_slots)
+-			dev->slot = *pval;
+-
+-		return INPUT_IGNORE_EVENT;
+-	}
++	int *pold = NULL;
+ 
+ 	is_mt_event = input_is_mt_value(code);
+ 
+ 	if (!is_mt_event) {
+ 		pold = &dev->absinfo[code].value;
+ 	} else if (dev->mt) {
+-		pold = &dev->mt->slots[dev->slot].abs[code - ABS_MT_FIRST];
+-	} else {
+-		/*
+-		 * Bypass filtering for multi-touch events when
+-		 * not employing slots.
+-		 */
+-		pold = NULL;
++		int slot = dev->absinfo[ABS_MT_SLOT].value;
++		if (slot >= 0 && slot < dev->mt->num_slots)
++			pold = &dev->mt->slots[slot].abs[code - ABS_MT_FIRST];
+ 	}
+ 
+ 	if (pold) {
+@@ -212,17 +229,11 @@ static int input_handle_abs_event(struct input_dev *dev,
+ 		*pold = *pval;
+ 	}
+ 
+-	/* Flush pending "slot" event */
+-	if (is_mt_event && dev->slot != input_abs_get_val(dev, ABS_MT_SLOT)) {
+-		input_abs_set_val(dev, ABS_MT_SLOT, dev->slot);
+-		input_pass_event(dev, EV_ABS, ABS_MT_SLOT, dev->slot);
+-	}
+-
+ 	return INPUT_PASS_TO_HANDLERS;
+ }
+ 
+-static void input_handle_event(struct input_dev *dev,
+-			       unsigned int type, unsigned int code, int value)
++static int input_get_disposition(struct input_dev *dev,
++			  unsigned int type, unsigned int code, int value)
+ {
+ 	int disposition = INPUT_IGNORE_EVENT;
+ 
+@@ -235,13 +246,9 @@ static void input_handle_event(struct input_dev *dev,
+ 			break;
+ 
+ 		case SYN_REPORT:
+-			if (!dev->sync) {
+-				dev->sync = true;
+-				disposition = INPUT_PASS_TO_HANDLERS;
+-			}
++			disposition = INPUT_PASS_TO_HANDLERS | INPUT_FLUSH;
+ 			break;
+ 		case SYN_MT_REPORT:
+-			dev->sync = false;
+ 			disposition = INPUT_PASS_TO_HANDLERS;
+ 			break;
+ 		}
+@@ -326,14 +333,41 @@ static void input_handle_event(struct input_dev *dev,
+ 		break;
+ 	}
+ 
+-	if (disposition != INPUT_IGNORE_EVENT && type != EV_SYN)
+-		dev->sync = false;
++	return disposition;
++}
+ 
+-	if ((disposition & INPUT_PASS_TO_DEVICE) && dev->event)
++static void input_handle_event(struct input_dev *dev,
++			       unsigned int type, unsigned int code, int value)
++{
++	int disp;
++
++	disp = input_get_disposition(dev, type, code, value);
++
++	if ((disp & INPUT_PASS_TO_DEVICE) && dev->event)
+ 		dev->event(dev, type, code, value);
+ 
+-	if (disposition & INPUT_PASS_TO_HANDLERS)
+-		input_pass_event(dev, type, code, value);
++	if (!dev->vals)
++		return;
++
++	if (disp & INPUT_PASS_TO_HANDLERS) {
++		struct input_value *v;
++
++		v = &dev->vals[dev->num_vals++];
++		v->type = type;
++		v->code = code;
++		v->value = value;
++	}
++
++	if (disp & INPUT_FLUSH) {
++		if (dev->num_vals >= 2)
++			input_pass_values(dev, dev->vals, dev->num_vals);
++		dev->num_vals = 0;
++	} else if (dev->num_vals >= dev->max_vals - 1) {
++		dev->vals[dev->num_vals++] = input_value_sync;
++		input_pass_values(dev, dev->vals, dev->num_vals);
++		dev->num_vals = 0;
++	}
++
+ }
+ 
+ /**
+@@ -361,7 +395,6 @@ void input_event(struct input_dev *dev,
+ 	if (is_event_supported(type, dev->evbit, EV_MAX)) {
+ 
+ 		spin_lock_irqsave(&dev->event_lock, flags);
+-		add_input_randomness(type, code, value);
+ 		input_handle_event(dev, type, code, value);
+ 		spin_unlock_irqrestore(&dev->event_lock, flags);
+ 	}
+@@ -842,8 +875,7 @@ int input_set_keycode(struct input_dev *dev,
+ 	    __test_and_clear_bit(old_keycode, dev->key)) {
+ 
+ 		input_pass_event(dev, EV_KEY, old_keycode, 0);
+-		if (dev->sync)
+-			input_pass_event(dev, EV_SYN, SYN_REPORT, 1);
++		input_pass_event(dev, EV_SYN, SYN_REPORT, 1);
+ 	}
+ 
+  out:
+@@ -1425,6 +1457,7 @@ static void input_dev_release(struct device *device)
+ 	input_ff_destroy(dev);
+ 	input_mt_destroy_slots(dev);
+ 	kfree(dev->absinfo);
++	kfree(dev->vals);
+ 	kfree(dev);
+ 
+ 	module_put(THIS_MODULE);
+@@ -1845,6 +1878,11 @@ int input_register_device(struct input_dev *dev)
+ 	if (dev->hint_events_per_packet < packet_size)
+ 		dev->hint_events_per_packet = packet_size;
+ 
++	dev->max_vals = max(dev->hint_events_per_packet, packet_size);
++	dev->vals = kcalloc(dev->max_vals, sizeof(*dev->vals), GFP_KERNEL);
++	if (!dev->vals)
++		return -ENOMEM;
++
+ 	/*
+ 	 * If delay and period are pre-set by the driver, then autorepeating
+ 	 * is handled by the driver itself and we don't do it in input.c.
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 76d6788..1f7f172 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -1169,6 +1169,18 @@ struct ff_effect {
+ #include <linux/mod_devicetable.h>
+ 
+ /**
++ * struct input_value - input value representation
++ * @type: type of value (EV_KEY, EV_ABS, etc)
++ * @code: the value code
++ * @value: the value
++ */
++struct input_value {
++	__u16 type;
++	__u16 code;
++	__s32 value;
++};
++
++/**
+  * struct input_dev - represents an input device
+  * @name: name of the device
+  * @phys: physical path to the device in the system hierarchy
+@@ -1204,7 +1216,6 @@ struct ff_effect {
+  * @timer: timer for software autorepeat
+  * @rep: current values for autorepeat parameters (delay, rate)
+  * @mt: pointer to multitouch state
+- * @slot: MT slot currently being transmitted
+  * @absinfo: array of &struct input_absinfo elements holding information
+  *	about absolute axes (current value, min, max, flat, fuzz,
+  *	resolution)
+@@ -1241,7 +1252,6 @@ struct ff_effect {
+  *	last user closes the device
+  * @going_away: marks devices that are in a middle of unregistering and
+  *	causes input_open_device*() fail with -ENODEV.
+- * @sync: set to %true when there were no new events since last EV_SYN
+  * @dev: driver model's view of this device
+  * @h_list: list of input handles associated with the device. When
+  *	accessing the list dev->mutex must be held
+@@ -1285,7 +1295,6 @@ struct input_dev {
+ 	int rep[REP_CNT];
+ 
+ 	struct input_mt *mt;
+-	int slot;
+ 
+ 	struct input_absinfo *absinfo;
+ 
+@@ -1307,12 +1316,14 @@ struct input_dev {
+ 	unsigned int users;
+ 	bool going_away;
+ 
+-	bool sync;
+-
+ 	struct device dev;
+ 
+ 	struct list_head	h_list;
+ 	struct list_head	node;
++
++	size_t num_vals;
++	size_t max_vals;
++	struct input_value *vals;
+ };
+ #define to_input_dev(d) container_of(d, struct input_dev, dev)
+ 
+@@ -1373,6 +1384,9 @@ struct input_handle;
+  * @event: event handler. This method is being called by input core with
+  *	interrupts disabled and dev->event_lock spinlock held and so
+  *	it may not sleep
++ * @events: event sequence handler. This method is being called by
++ *	input core with interrupts disabled and dev->event_lock
++ *	spinlock held and so it may not sleep
+  * @filter: similar to @event; separates normal event handlers from
+  *	"filters".
+  * @match: called after comparing device's id with handler's id_table
+@@ -1409,6 +1423,8 @@ struct input_handler {
+ 	void *private;
+ 
+ 	void (*event)(struct input_handle *handle, unsigned int type, unsigned int code, int value);
++	void (*events)(struct input_handle *handle,
++		       const struct input_value *vals, size_t count);
+ 	bool (*filter)(struct input_handle *handle, unsigned int type, unsigned int code, int value);
+ 	bool (*match)(struct input_handler *handler, struct input_dev *dev);
+ 	int (*connect)(struct input_handler *handler, struct input_dev *dev, const struct input_device_id *id);
 -- 
 1.7.12
 
