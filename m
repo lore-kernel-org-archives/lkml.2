@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab2HZN4Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 09:56:24 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:19473 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751878Ab2HZN4W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 09:56:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAG6Zu08YNPuJ/2dsb2JhbAANN4UtsgEBAQEBAyNVARALGAICBRYLAgIJAwIBAgFFBg0BBQIBAa8YknuBJo4KgRQDqBA
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="196728956"
-Message-ID: <503A2B04.7080703@teksavvy.com>
-Date: Sun, 26 Aug 2012 09:56:20 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1753764Ab2HZN6X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 09:58:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48718 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752357Ab2HZN6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 09:58:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,315,1344236400"; 
+   d="scan'208";a="185445015"
+Message-ID: <503A2B76.7030808@intel.com>
+Date: Sun, 26 Aug 2012 21:58:14 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: wbrana <wbrana@gmail.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Chen <hi3766691@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Drop support for x86-32
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com> <201208231814.21168.tweek@tweek.dk> <CAJ7jCmmJ4DrGkebgG1a03+grs5PX3D86thdZ5mK361CYNaP6HQ@mail.gmail.com> <201208231951.28606.linux@rainbow-software.org> <CAJ7jCmnwXNXmoxT6sdOc-8znsUnnW+Rq8ioJ_8B8KnT0K2uc=A@mail.gmail.com> <1345812057.28613.20.camel@thorin> <CAJ7jCm=bZoHS0-qiiJnUjZb3gP6ibo1xbLsmaUJr2rL4pAU8Eg@mail.gmail.com> <1345823281.28613.34.camel@thorin> <CAJ7jCmmYdQacFtzw+ukGAtrUntnn8S869RcCmbt3cVRY7HYOWw@mail.gmail.com> <CANQmPXgefyCJuzFiAugp6OW2+HtjABSWuQqG33gAU_XgQ1V_2A@mail.gmail.com> <CAJ7jCmme5VNO9aX0SVtmVGUdJj4QODRE4+oPxBE62yCRKcVK6w@mail.gmail.com> <20120824173626.0194625c@pyramind.ukuu.org.uk> <CAJ7jCmmmMx_OmzE_6Gw7Rf3=Sqa3MWiU4FusJ79PQr2fApMUwA@mail.gmail.com> <20120824174712.16c75f31@pyramind.ukuu.org.uk> <CAJ7jCmkAV=u4jxWfdTGXhsvmCbck7eHVLVPua4=1VjXLig4sHA@mail.gmail.com>
-In-Reply-To: <CAJ7jCmkAV=u4jxWfdTGXhsvmCbck7eHVLVPua4=1VjXLig4sHA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: gregkh <gregkh@linuxfoundation.org>,
+        Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+References: <1331787186.2979.71.camel@debian> <20120315145743.GA7928@kroah.com> <4F6204B7.5010908@intel.com> <20120315175608.GA6077@xanatos> <4FC5D04E.5040907@intel.com> <4FD59AD8.1050109@intel.com> <20120611204709.GC5742@xanatos> <20120611211428.GB24904@kroah.com> <502897A4.4030601@intel.com> <20120826020123.GG6557@xanatos>
+In-Reply-To: <20120826020123.GG6557@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-08-24 12:45 PM, wbrana wrote:
-> On 8/24/12, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> That doesn't work for a variety of reasons x86 hardware is still
->> changing, devices are still changing. So please exit cloud cuckoo land
->> and go do something useful.
-> Hardware will be discontinued if no software will support it.
+On 08/26/2012 10:01 AM, Sarah Sharp wrote:
 
-Here are a couple of real scenarios you don't seem to have thought about.
-A 32-bit kernel on a legacy (or even new) system in 2017 will still need
-regular kernel updates (not "long term" un0maintained kernels)
-in order to work with new USB devices, new 4KB+ sector hard drives,
-newer generations of SSDs, etc..
+> On Mon, Aug 13, 2012 at 01:59:00PM +0800, Alex Shi wrote:
+>> On 06/12/2012 05:14 AM, gregkh wrote:
+>>
+>>> On Mon, Jun 11, 2012 at 01:47:09PM -0700, Sarah Sharp wrote:
+>>>> Hi Alex,
+>>>>
+>>>> This got lost in the 3.5 push, but I think it's a good candidate for
+>>>> 3.6.  I think Greg is accepting 3.6 patches now, and I'll send this off
+>>>> to him.
+>>>
+>>> Yes, I am taking 3.6 stuff now.  In the future, once -rc1 is out, I can
+>>> take patches for the next release at that point in time.
+>>>
+>>> greg k-h
+>>>
+>>
+>>
+>> Didn't find the patch in upstream 3.6-rc, but it is still workable for
+>> upstream kernel.
+>> So, was you just going to apply it on 3.7 kernel?  or just forget it?
+> 
+> Hi Alex,
+> 
+> I am human, and trying my human best to keep up as a maintainer.  Bug
+> fixes and big features take priority over the small improvements, and
+> I'm sorry that your patch (and other patches) have fallen by the
+> wayside.  It is not personal, I simply cannot be perfect.
+> 
+> I will be returning to full maintainership duties after the various
+> Linux conferences next week, and I will do my best to get your patch
+> merged.
 
-It's (mostly) all about drivers.
 
-Cheers
+Thanks for your response, and pick up this small patch.
+
+I am sorry, if you thought I want press you on a such small issue.
+Actually, I just went to have a kindly reminder.
+
+Thanks again for your consideration and maintain job!
+
+
+> 
+> Sarah Sharp
+
+
+
+-- 
+Thanks
+    Alex
