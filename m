@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2HZTKP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 15:10:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19773 "EHLO mx1.redhat.com"
+	id S1753863Ab2HZTKM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 15:10:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7393 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab2HZTJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 15:09:47 -0400
-Date: Sun, 26 Aug 2012 21:12:17 +0200
+	id S1753040Ab2HZTJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 15:09:43 -0400
+Date: Sun, 26 Aug 2012 21:12:09 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>
 Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
         dhowells <dhowells@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 4/4] task_work: simplify the usage in ptrace_notify() and
-	get_signal_to_deliver()
-Message-ID: <20120826191217.GA4238@redhat.com>
+Subject: [PATCH 1/4] task_work: make task_work_add() lockless
+Message-ID: <20120826191209.GA4221@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,59 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace_notify() and get_signal_to_deliver() do unnecessary things
-before task_work_run().
+Change task_works to use llist-like code to avoid pi_lock
+in task_work_add(), this makes it useable under rq->lock.
 
-1. smp_mb__after_clear_bit() is not needed, test_and_clear_bit()
-   implies mb().
+task_work_cancel() and task_work_run() still use pi_lock
+to synchronize with each other.
 
-2. And we do not need the barrier at all, in this case we only
-   care about the "synchronous" works added by the task itself.
-
-3. No need to clear TIF_NOTIFY_RESUME, and we should not assume
-   task_works is the only user of this flag.
-
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/signal.c |   18 ++++--------------
- 1 files changed, 4 insertions(+), 14 deletions(-)
+ kernel/task_work.c |   95 ++++++++++++++++++++++++++-------------------------
+ 1 files changed, 48 insertions(+), 47 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index be4f856..2c681f1 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1971,13 +1971,8 @@ static void ptrace_do_notify(int signr, int exit_code, int why)
- void ptrace_notify(int exit_code)
+diff --git a/kernel/task_work.c b/kernel/task_work.c
+index d320d44..f13ec0b 100644
+--- a/kernel/task_work.c
++++ b/kernel/task_work.c
+@@ -3,25 +3,18 @@
+ #include <linux/tracehook.h>
+ 
+ int
+-task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
++task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
  {
- 	BUG_ON((exit_code & (0x7f | ~0xffff)) != SIGTRAP);
--	if (unlikely(current->task_works)) {
--		if (test_and_clear_ti_thread_flag(current_thread_info(),
--						   TIF_NOTIFY_RESUME)) {
--			smp_mb__after_clear_bit();
--			task_work_run();
+-	struct callback_head *last, *first;
+-	unsigned long flags;
+-
++	struct callback_head *head;
+ 	/*
+ 	 * Not inserting the new work if the task has already passed
+ 	 * exit_task_work() is the responisbility of callers.
+ 	 */
+-	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	last = task->task_works;
+-	first = last ? last->next : twork;
+-	twork->next = first;
+-	if (last)
+-		last->next = twork;
+-	task->task_works = twork;
+-	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++	do {
++		head = ACCESS_ONCE(task->task_works);
++		work->next = head;
++	} while (cmpxchg(&task->task_works, head, work) != head);
+ 
+-	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
+ 	if (notify)
+ 		set_notify_resume(task);
+ 	return 0;
+@@ -30,52 +23,60 @@ task_work_add(struct task_struct *task, struct callback_head *twork, bool notify
+ struct callback_head *
+ task_work_cancel(struct task_struct *task, task_work_func_t func)
+ {
++	struct callback_head **pprev = &task->task_works;
++	struct callback_head *work = NULL;
+ 	unsigned long flags;
+-	struct callback_head *last, *res = NULL;
+-
++	/*
++	 * If cmpxchg() fails we continue without updating pprev.
++	 * Either we raced with task_work_add() which added the
++	 * new entry before this work, we will find it again. Or
++	 * we raced with task_work_run(), *pprev == NULL.
++	 */
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+-	last = task->task_works;
+-	if (last) {
+-		struct callback_head *q = last, *p = q->next;
+-		while (1) {
+-			if (p->func == func) {
+-				q->next = p->next;
+-				if (p == last)
+-					task->task_works = q == p ? NULL : q;
+-				res = p;
+-				break;
+-			}
+-			if (p == last)
+-				break;
+-			q = p;
+-			p = q->next;
 -		}
--	}
-+	if (unlikely(current->task_works))
-+		task_work_run();
++	while ((work = ACCESS_ONCE(*pprev))) {
++		read_barrier_depends();
++		if (work->func != func)
++			pprev = &work->next;
++		else if (cmpxchg(pprev, work, work->next) == work)
++			break;
+ 	}
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+-	return res;
++
++	return work;
+ }
  
- 	spin_lock_irq(&current->sighand->siglock);
- 	ptrace_do_notify(SIGTRAP, exit_code, CLD_TRAPPED);
-@@ -2198,13 +2193,8 @@ int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka,
- 	struct signal_struct *signal = current->signal;
- 	int signr;
+ void task_work_run(void)
+ {
+ 	struct task_struct *task = current;
+-	struct callback_head *p, *q;
++	struct callback_head *work, *head, *next;
  
--	if (unlikely(current->task_works)) {
--		if (test_and_clear_ti_thread_flag(current_thread_info(),
--						   TIF_NOTIFY_RESUME)) {
--			smp_mb__after_clear_bit();
--			task_work_run();
+-	while (1) {
+-		raw_spin_lock_irq(&task->pi_lock);
+-		p = task->task_works;
+-		task->task_works = NULL;
+-		raw_spin_unlock_irq(&task->pi_lock);
++	for (;;) {
++		work = xchg(&task->task_works, NULL);
++		if (!work)
++			break;
++		/*
++		 * Synchronize with task_work_cancel(). It can't remove
++		 * the first entry == work, cmpxchg(task_works) should
++		 * fail, but it can play with *work and other entries.
++		 */
++		raw_spin_unlock_wait(&task->pi_lock);
++		smp_mb();
+ 
+-		if (unlikely(!p))
+-			return;
++		/* Reverse the list to run the works in fifo order */
++		head = NULL;
++		do {
++			next = work->next;
++			work->next = head;
++			head = work;
++			work = next;
++		} while (work);
+ 
+-		q = p->next; /* head */
+-		p->next = NULL; /* cut it */
+-		while (q) {
+-			p = q->next;
+-			q->func(q);
+-			q = p;
++		work = head;
++		do {
++			next = work->next;
++			work->func(work);
++			work = next;
+ 			cond_resched();
 -		}
--	}
-+	if (unlikely(current->task_works))
-+		task_work_run();
- 
- 	if (unlikely(uprobe_deny_signal()))
- 		return 0;
++		} while (work);
+ 	}
+ }
 -- 
 1.5.5.1
 
