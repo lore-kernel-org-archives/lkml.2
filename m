@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab2HZRrk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 13:47:40 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52071 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab2HZRrQ (ORCPT
+	id S1752832Ab2HZRxj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 13:53:39 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:33983 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751087Ab2HZRxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 13:47:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 26 Aug 2012 10:47:21 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] hwmon/lm70: adding support for NS LM74 chip
-Message-ID: <20120826174721.GA32334@roeck-us.net>
-References: <201208231532.q7NFWCQZ023407@localhost.localdomain>
- <20120823181317.GA5623@roeck-us.net>
+	Sun, 26 Aug 2012 13:53:38 -0400
+Message-ID: <503A6273.9090702@fb.com>
+Date: Sun, 26 Aug 2012 10:52:51 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120823181317.GA5623@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Benjamin Redelings <benjamin.redelings@nescent.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>
+Subject: Re: perf backtraces off-by-1
+References: <5037FC9F.3090603@fb.com> <1345997415.2296.0.camel@laptop>
+In-Reply-To: <1345997415.2296.0.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.428,0.0.0000
+ definitions=2012-08-26_07:2012-08-24,2012-08-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 11:13:17AM -0700, Guenter Roeck wrote:
-> On Thu, Aug 23, 2012 at 05:32:12PM +0200, Christophe Leroy wrote:
-> > Hello,
-> > 
-> Hi Christophe,
-> 
-Hi again,
 
-[ ... ]
+On 8/26/12 9:10 AM, Peter Zijlstra wrote:
+> On Fri, 2012-08-24 at 15:13 -0700, Arun Sharma wrote:
+>
+>>   One option is to support
+>> this for user mode only, with code to detect signal frames. Any other
+>> ideas?
+>>
+> I guess we'd need to see what that patch would look like... :-)
+>
 
-> >  
-> > -	/* 3-wire link (shared SI/SO) for LM70 */
-> > -	if (chip == LM70_CHIP_LM70 && !(spi->mode & SPI_3WIRE))
-> > +	/* 3-wire link (shared SI/SO) for LM70 and LM74 */
-> > +	if ((chip == LM70_CHIP_LM70 || chip == LM70_CHIP_LM74)
-> > +			&& !(spi->mode & SPI_3WIRE))
-> 
-> Ok for now, but I'll have to check this. The driver does not really write
-> anything to the chip, so it should be irrelevant which mode the SPI master
-> controller supports (MOSI does not have to be connected). Besides, from the
-> chip specification it looks like it is possible to connect the chip to a
-> standard SPI interface by adding a 10k resistor between MOSI and MISO.
-> 
-After looking into the above, the proper change or fix is really to remove the
-above check for SPI_3WIRE entirely. The driver works perfectly fine if a LM70 is
-connected to a controller which does not explicitly support SPI_3WIRE; all that
-needs to be done is to connect MOSI through a resistor or not at all. This is,
-however, a board design decision, not a SPI master chip limitation.
+It used to look like this:
 
-With that, we don't need to explicitly add any LM74 specific code to the driver,
-since the TMP121 code does the trick. All we need to do is to update the
-documentation, adding a note that LM74 is supported as well, and that it can be
-selected with 'tmp121'.
+http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=commitdiff;h=92cc7fd78a5a79c4bb5f85bfb7d7fb025df9cd5a
 
-Thanks,
-Guenter
+These days we just look at dwarf augmentation string:
+
+http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=blob;f=src/dwarf/Gfde.c;h=8659624b0320c514057861a259b6efe1b605bbf3;hb=HEAD#l189
+
+  -Arun
