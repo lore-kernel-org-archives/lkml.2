@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2HZPF1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 11:05:27 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59693 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab2HZPFZ (ORCPT
+	id S1752609Ab2HZPGr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 11:06:47 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:41951 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750754Ab2HZPGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 11:05:25 -0400
-Date: Sun, 26 Aug 2012 16:05:20 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Matthew Helsley <matt.helsley@gmail.com>,
-        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
-Subject: Re: [patch 2/9] procfs: Convert /proc/pid/fdinfo/ handling routines
- to seq-file v2
-Message-ID: <20120826150520.GZ23464@ZenIV.linux.org.uk>
-References: <20120823104323.040550004@openvz.org>
- <20120823104725.686586462@openvz.org>
- <20120826024653.GY23464@ZenIV.linux.org.uk>
- <20120826142820.GA16038@moon>
+	Sun, 26 Aug 2012 11:06:46 -0400
+Message-ID: <503A3B7C.4040005@xenotime.net>
+Date: Sun, 26 Aug 2012 08:06:36 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120826142820.GA16038@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James <bjlockie@lockie.ca>
+CC: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ifdef only module
+References: <50399D1A.9080000@lockie.ca>
+In-Reply-To: <50399D1A.9080000@lockie.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 06:28:20PM +0400, Cyrill Gorcunov wrote:
-> On Sun, Aug 26, 2012 at 03:46:53AM +0100, Al Viro wrote:
-> > 
-> > IMO doing that at open() time is just a headache for no good reason -
-> > resolving descriptor to struct file * at read() time as we do now
-> > is much saner.  Better do that in your ->show(), since you are using
-> > a single-shot iterator anyway...
+On 08/25/2012 08:50 PM, James wrote:
+
+> I want to only run code if a module is being built.
 > 
-> Al, the updated version is below. I suppose I can grab proc inode then
-> and lookup for file position and flags at show method. (I remember
-> what you've said about O_CLOEXEC bit, but I'll address this in
-> another patch).
+> drivers/media/video/cx25840/cx25840-core.c: 394
+> If it is built into kernel it causes a timeout because it relies on udev which is not initialized yet.
+> The code is only needed to provide analog reception.
+> --
 
-Applied, with a couple of changes:
-	* there's no need for those games with ihold/iput - opened file pins
-its inode down just fine, TYVM.
-	* struct fd_info is pointless in that form - the last argument
-of single_open() will end up in seq_file ->private, so let's just pass
-the inode there and use m->private in ->show().
 
-I'll push that into vfs.git#master (along with the previous patch) in a few
-hours.
 
-O_CLOEXEC is taken care of in my tree.  FWIW, I'm consolidating descriptor
-handling in general into fs/file.c (and I'm seriously tempted to rename
-that sucker to something like fs/descriptors.c or fs/fdtable.c); some of
-that stuff is already in #master.  I'm probably going to move some of the
-code from your fs/proc/fd.c there as well...
+#ifdef MODULE
+<that code>
+#endif
+
+
+-- 
+~Randy
