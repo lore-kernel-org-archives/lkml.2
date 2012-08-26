@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab2HZQDL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 12:03:11 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:61272
+	id S1755156Ab2HZQD5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 12:03:57 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56799
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753713Ab2HZQBR (ORCPT
+	by vger.kernel.org with ESMTP id S1753579Ab2HZQBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 12:01:17 -0400
+	Sun, 26 Aug 2012 12:01:16 -0400
 X-IronPort-AV: E=Sophos;i="4.80,315,1344204000"; 
-   d="scan'208";a="153852295"
+   d="scan'208";a="153852293"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Chris Ball <cjb@laptop.org>
-Cc: kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
+To: Russell King <linux@arm.linux.org.uk>
+Cc: kernel-janitors@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/13] drivers/mmc/host/mmci.c: use clk_prepare_enable and clk_disable_unprepare
-Date: Sun, 26 Aug 2012 18:00:59 +0200
-Message-Id: <1345996865-32082-8-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 5/13] arch/arm: use clk_prepare_enable and clk_disable_unprepare
+Date: Sun, 26 Aug 2012 18:00:57 +0200
+Message-Id: <1345996865-32082-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -53,48 +53,83 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/mmc/host/mmci.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ arch/arm/common/sa1111.c   |    3 +--
+ arch/arm/common/timer-sp.c |   16 ++++------------
+ arch/arm/kernel/smp_twd.c  |   13 +++----------
+ 3 files changed, 8 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 50ff19a..edc3e9b 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -1309,14 +1309,10 @@ static int __devinit mmci_probe(struct amba_device *dev,
- 		goto host_free;
+diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
+index 9173d11..bd58414 100644
+--- a/arch/arm/common/sa1111.c
++++ b/arch/arm/common/sa1111.c
+@@ -834,8 +834,7 @@ static void __sa1111_remove(struct sa1111 *sachip)
+ 	sa1111_writel(0, irqbase + SA1111_WAKEEN0);
+ 	sa1111_writel(0, irqbase + SA1111_WAKEEN1);
+ 
+-	clk_disable(sachip->clk);
+-	clk_unprepare(sachip->clk);
++	clk_disable_unprepare(sachip->clk);
+ 
+ 	if (sachip->irq != NO_IRQ) {
+ 		irq_set_chained_handler(sachip->irq, NULL);
+diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
+index df13a3f..af1a4ab 100644
+--- a/arch/arm/common/timer-sp.c
++++ b/arch/arm/common/timer-sp.c
+@@ -42,17 +42,10 @@ static long __init sp804_get_clock_rate(const char *name)
+ 		return PTR_ERR(clk);
  	}
  
--	ret = clk_prepare(host->clk);
-+	ret = clk_prepare_enable(host->clk);
- 	if (ret)
- 		goto clk_free;
- 
--	ret = clk_enable(host->clk);
--	if (ret)
--		goto clk_unprep;
+-	err = clk_prepare(clk);
++	err = clk_prepare_enable(clk);
+ 	if (err) {
+-		pr_err("sp804: %s clock failed to prepare: %d\n", name, err);
+-		clk_put(clk);
+-		return err;
+-	}
 -
- 	host->plat = plat;
- 	host->variant = variant;
- 	host->mclk = clk_get_rate(host->clk);
-@@ -1515,9 +1511,7 @@ static int __devinit mmci_probe(struct amba_device *dev,
-  err_gpio_cd:
- 	iounmap(host->base);
-  clk_disable:
--	clk_disable(host->clk);
-- clk_unprep:
--	clk_unprepare(host->clk);
-+	clk_disable_unprepare(host->clk);
-  clk_free:
- 	clk_put(host->clk);
-  host_free:
-@@ -1564,8 +1558,7 @@ static int __devexit mmci_remove(struct amba_device *dev)
- 			gpio_free(host->gpio_cd);
+-	err = clk_enable(clk);
+-	if (err) {
+-		pr_err("sp804: %s clock failed to enable: %d\n", name, err);
+-		clk_unprepare(clk);
++		pr_err("sp804: %s clock failed to prepare or to enable: %d\n",
++		       name, err);
+ 		clk_put(clk);
+ 		return err;
+ 	}
+@@ -60,8 +53,7 @@ static long __init sp804_get_clock_rate(const char *name)
+ 	rate = clk_get_rate(clk);
+ 	if (rate < 0) {
+ 		pr_err("sp804: %s clock failed to get rate: %ld\n", name, rate);
+-		clk_disable(clk);
+-		clk_unprepare(clk);
++		clk_disable_unprepare(clk);
+ 		clk_put(clk);
+ 	}
  
- 		iounmap(host->base);
--		clk_disable(host->clk);
--		clk_unprepare(host->clk);
-+		clk_disable_unprepare(host->clk);
- 		clk_put(host->clk);
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index fef42b2..8c94b8b 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -204,17 +204,10 @@ static struct clk *twd_get_clock(void)
+ 		return clk;
+ 	}
  
- 		if (host->vcc)
+-	err = clk_prepare(clk);
++	err = clk_prepare_enable(clk);
+ 	if (err) {
+-		pr_err("smp_twd: clock failed to prepare: %d\n", err);
+-		clk_put(clk);
+-		return ERR_PTR(err);
+-	}
+-
+-	err = clk_enable(clk);
+-	if (err) {
+-		pr_err("smp_twd: clock failed to enable: %d\n", err);
+-		clk_unprepare(clk);
++		pr_err("smp_twd: clock failed to prepare or to enable: %d\n",
++		       err);
+ 		clk_put(clk);
+ 		return ERR_PTR(err);
+ 	}
 
