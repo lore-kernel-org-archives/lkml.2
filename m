@@ -1,1505 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab2HZNAm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 09:00:42 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:34741 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2HZNAi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 09:00:38 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: <linux-kernel@vger.kernel.org>
-Cc: <netdev@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        David Miller <davem@davemloft.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Paris <eparis@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <87lih2h6i4.fsf@xmission.com>
-Date: Sun, 26 Aug 2012 06:00:13 -0700
-In-Reply-To: <87lih2h6i4.fsf@xmission.com> (Eric W. Biederman's message of
-	"Sat, 25 Aug 2012 16:54:59 -0700")
-Message-ID: <87y5l1byg2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754026Ab2HZNCD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 09:02:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50133 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751900Ab2HZNB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 09:01:58 -0400
+Date: Sun, 26 Aug 2012 15:01:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Adko Branil <adkobranil@yahoo.com>
+Cc: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: HDD problem, software bug, bios bug, or hardware ?
+Message-ID: <20120826130152.GA20021@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Adko Branil <adkobranil@yahoo.com>,
+	"linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <1345901771.8871.YahooMailNeo@web124706.mail.ne1.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19zQ7TmEKU5clhk4YX+jyoNRRw+Veb+POs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0860]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ****;<linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH 06/15] userns: Convert audit to use kuid and kgid where appropriate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1345901771.8871.YahooMailNeo@web124706.mail.ne1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adding linux-kernel to CC.
 
-- Explicitly deny permission for audit messages sent from processes
-  outside of the initial pid or user namespace.  This removes the need
-  to format audit messages in other the initial user and pid namespaces.
+On Sat, Aug 25, 2012 at 06:36:11AM -0700, Adko Branil wrote:
+> Here i post few more panics, the last 3-4 or 5 of them are with boot
+> option "nosmp". I will take a look at the motherboard to see is there
+> any visual sign for this plague after 2 days probably, as i am no near
+> to that machine now.
+>
+> Thanks for the answers Felix and Boris!
 
-- Explicitly format uids gids in audit messges in the initial user
-  namespace. This is safe because auditd is restrected to be in
-  the initial user namespace.
+Sure, but when you reply to them, please use the "Reply-to-all" feature
+in your mail client so that you send email to everybody on the thread
+and they can read your reply.The yahoo web interface should have a
+button like that.
 
-- Expliclty format pids in audit messages in the initial pid namespace.
-  This is safe because auditd is restricted to be in the initial pid
-  namespace.
+So, looking at your RIPs:
 
-- Modify audit_get_loginuid to return a kuid
-- Modify /proc/<pid>/loginuid on read to convert the loginuid
-  into the user namespace of the opener of the file.
-- Modify /proc/<pid>/loginud on write to convert the loginuid
-  from the user namespace of the opener of the file.
+[36291.240016] RIP: 0010:[<ffffffff810759c9>]  [<ffffffff810759c9>] select_task_rq_idle+0x9/0x20
+[  168.841525] RIP: 0010:[<ffff88007fc03e98>]  [<ffff88007fc03e98>] 0xffff88007fc03e97
+[  170.457007] RIP: 0010:[<ffffffff81047810>]  [<ffffffff81047810>] mktime+0xc0/0xc0
+[ 1740.273732] RIP: 0010:[<ffff88007fc03f58>]  [<ffff88007fc03f58>] 0xffff88007fc03f57
+[  732.877002] RIP: 0010:[<ffff88007fc03f58>]  [<ffff88007fc03f58>] 0xffff88007fc03f57
+[   85.610428] RIP: 0010:[<ffff88007fc03f58>]  [<ffff88007fc03f58>] 0xffff88007fc03f57
+[ 2005.920951] RIP: 0010:[<ffffffff81b16c80>]  [<ffffffff81b16c80>] _raw_spin_trylock_bh+0x50/0x50
 
-- In audit_krule store kuid_t values in a new uid field.  Allowing
-  type safety when filtering on uids.
-- In audit_krule store kgidt_t values in a new gid field.  Allowing
-  type safety when filtering on gids.
+it looks like a random error with a pattern repeating three times at ffff88007fc03f58
 
-- Get caller process uid and gid from the current task instead of the
-  NETLINK_CB.  This results in simpler code yielding kuid_t and kgid_t
-  values.  This is safe because netlink requests are now all processed
-  in the task of the sender.
+appearing with
 
-- Convert audit_sig_uid into a kuid_t.
+[ 1740.272749] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
 
-- Deny bitmask comparisons of uids and gids
+before the page fault in kernel space.
 
-- Introduce audit_uid_comparitor and audit_gid_compartor typesafe
-  variants of audit_compartor without the bitmask operations.
+Stupid question: have you tried replacing your DIMMs to see whether this
+can be caused by a faulty DRAM?
 
-- Replace audit_compare_id with audit_compare_uid and audit_compare_gid.
-  This is one of those odd cases where being type safe and duplicating
-  code leads to simpler short and more concise code.
+Leaving the rest in for reference.
 
-- For uid comparisons replace audit_comparator with audit_uid comparator.
-- For gid comparisons replace audit_comparator with audit_gid_comparator.
+> [36291.085760] Pid: 0, comm: swapper/1 Not tainted 3.5.2 #2 To Be Filled By O.E.M. To Be Filled By O.E.M./A8V Deluxe
+> [36291.240016] RIP: 0010:[<ffffffff810759c9>]  [<ffffffff810759c9>] select_task_rq_idle+0x9/0x20
+> [36291.240016] RSP: 0018:ffff88007fd03f10  EFLAGS: 00010046
+> [36291.240016] RAX: 0000000000000004 RBX: ffff88007fd0d780 RCX: 0000000000000000
+> [36291.240016] RDX: 00002101ad3ae230 RSI: ffff88007fd0d780 RDI: 0000000000000000
+> [36291.240016] RBP: 000000007fd03f10 R08: 0000000000000000 R09: 0000000000000000
+> [36291.240016] R10: ffffffff81049091 R11: 0000000000000001 R12: ffff88007fd0d780
+> [36291.240016] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> [36291.240016] FS:  00007f1857041740(0000) GS:ffff88007fd00000(0000) knlGS:00000000f6fb6700
+> [36291.240016] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [36291.240016] CR2: 0000000000000008 CR3: 000000007436c000 CR4: 00000000000007e0
+> [36291.240016] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [36291.240016] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [36291.240016] Process swapper/1 (pid: 0, threadinfo ffff88007c516000, task ffff88007d0528e0)
+> [36291.240016] Stack:
+> [36291.240016]  ffffffff81091237 ffff88007fd03f68 00002101ad3ae230 ffff88007fd03f68
+> [36291.240016]  0000000000000001 0000000000000000 0000000000000000 ffff88007fd03f88
+> [36291.240016] Call Trace:
+> [36291.240016]  <IRQ>  [<ffffffff81090d4e>] ? tick_nohz_stop_idle+0x3e/0x50
+> [36291.240016]  [<ffffffff81091237>] ? tick_check_idle+0xb7/0xd0
+> [36291.240016]  [<ffffffff81049091>] ? irq_enter+0x71/0x80
+> [36291.240016]  [<ffffffff81b18ffe>] ? smp_apic_timer_interrupt+0x3e/0x99
+> [36291.240016]  [<ffffffff81b18147>] ? apic_timer_interrupt+0x67/0x70
+> [36291.240016]  <EOI>  [<ffffffff8100a6fa>] ? default_idle+0x5a/0x1b0
+> [36291.240016]  [<ffffffff8100b4f6>] ? cpu_idle+0x106/0x120
+> [36291.240016]  [<ffffffff81afcd19>] ? start_secondary+0x1d8/0x1df
+> [36291.240016] Code: 00 00 8b 3d 9a e6 07 01 85 ff 74 06 f3 c3 0f 1f 40 00 55 48 89 e5 e8 57 ff ff ff 5d c3 0f 1f 44 00 00 55 48 89 e5 66 66 66 66 90 <48> 8b 47 08 5d 8b 40 18 c3 66 66 66 66 66 2e 0f 1f 84 00 00 00 
+> [36291.240016] RIP  [<ffffffff810759c9>] select_task_rq_idle+0x9/0x20
+> [36291.240016]  RSP <ffff88007fd03f10>
+> [36291.240016] CR2: 0000000000000008
+> [36291.240016] [drm] nouveau 0000:01:00.0: Setting dpms mode 0 on vga encoder (output 0)
+> [36291.240016]  ffffffff81090d4e 000000000000d780 ffff88007fd0d780 ffff88007fd03f68
+> [36291.287884] ---[ end trace 617ca3727df8933f ]---
+> [36291.287884] Kernel panic - not syncing: Fatal exception in interrupt
+> [36291.287884] panic occurred, switching back to text console
+> [36291.287884] Rebooting in 10 seconds..[  934.880051] [drm] nouveau 0000:01:00.0: Setting dpms mode 1 on vga encoder (output 0)
+> [ 2721.605648] REISERFS warning (device sda1): clm-6006 reiserfs_dirty_inode: writing inode 347717 on readonly FS
+> [ 2721.983935] REISERFS warning (device sda1): clm-6006 reiserfs_dirty_inode: writing inode 347740 on readonly FS
+> [ 2722.505205] REISERFS warning (device sda1): clm-6006 reiserfs_dirty_inode: writing inode 426162 on readonly FS
+> [  168.840543] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+> [  168.841525] BUG: unable to handle kernel paging request at ffff88007fc03e98
+> [  168.841525] IP: [<ffff88007fc03e98>] 0xffff88007fc03e97
+> [  168.841525] PGD 200c063 PUD 1fbfd067 PMD 800000007fc001e3 
+> [  168.841525] Oops: 0011 [#1] SMP 
+> [  168.841525] CPU 0 
+> [  168.841525] Modules linked in:[  168.841525]  netconsole snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipt_REJECT xt_tcpudp iptable_raw iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_filter ip_tables x_tables lp fuse nouveau mxm_wmi wmi mperf video processor ttm drm_kms_helper drm freq_table thermal_sys i2c_viapro i2c_algo_bit snd_via82xx snd_ac97_codec snd_mpu401_uart snd_rawmidi snd_seq_device snd_pcm snd_page_alloc i2c_core k8temp amd64_agp agpgart shpchp hwmon ppdev snd_timer snd soundcore ac97_bus gameport skge evdev button parport_pc parport loop
+> 
+> [  168.841525] Pid: 0, comm: swapper/0 Not tainted 3.5.2 #2 To Be Filled By O.E.M. To Be Filled By O.E.M./A8V Deluxe
+> [  168.841525] RIP: 0010:[<ffff88007fc03e98>]  [<ffff88007fc03e98>] 0xffff88007fc03e97
+> [  168.841525] RSP: 0018:ffff88007fc03e80  EFLAGS: 00010006
+> [  168.841525] RAX: 000000007fc03e78 RBX: 000000000000001b RCX: 0000000000000008
+> [  168.841525] RDX: 000000007fc03e78 RSI: 000000005038995a RDI: ffff88007fc03e78
+> [  168.841525] RBP: ffffffff81088daa R08: 00000000172f91a8 R09: 00172f91a9000000
+> [  168.841525] R10: 000000000080ffad R11: 0000000000000001 R12: 0000000013c00700
+> [  168.841525] R13: 000000000013c007 R14: 0000000000000360 R15: 000000000000001b
+> [  168.841525] FS:  00007f91bbfd7740(0000) GS:ffff88007fc00000(0000) knlGS:00000000f6f76700
+> [  168.841525] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  168.841525] CR2: ffff88007fc03e98 CR3: 000000007b557000 CR4: 00000000000007f0
+> [  168.841525] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  168.841525] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  168.841525] Process swapper/0 (pid: 0, threadinfo ffffffff82000000, task ffffffff82013440)
+> [  168.841525] Stack:
+> [  168.841525]  ffffffff8108a3c0 ffff88007fc03e98 ffffffff81088e62 ffff88007fc03ef8
+> [  168.841525]  ffffffff81089dce ffff88007fc12b80 ffff88007fc12b80 00000000cc022746
+> [  168.841525]  0000000000000012 ffff88007fc03ee8 0000000001a40288 0000000000000000
+> [  168.841525] Call Trace:
+> [  168.841525]  <IRQ> 
+> [  168.841525]  [<ffffffff8108a3c0>] ? ntp_tick_length+0x30/0x40
+> [  168.841525]  [<ffffffff81088e62>] ? timekeeping_update+0x22/0x50
+> [  168.841525]  [<ffffffff81089dce>] ? do_timer+0x2de/0x550
+> [  168.841525]  [<ffffffff810906c7>] ? tick_do_update_jiffies64+0x77/0xc0
+> [  168.841525]  [<ffffffff81091214>] ? tick_check_idle+0x94/0xd0
+> [  168.841525]  [<ffffffff81049091>] ? irq_enter+0x71/0x80
+> [  168.841525]  [<ffffffff81b18f1e>] ? do_IRQ+0x3e/0xe0
+> [  168.841525]  [<ffffffff81b16ea7>] ? common_interrupt+0x67/0x67
+> [  168.841525]  <EOI> 
+> [  168.841525]  [<ffffffff8100a6fa>] ? default_idle+0x5a/0x1b0
+> [  168.841525]  [<ffffffff8100b4f6>] ? cpu_idle+0x106/0x120
+> [  168.841525]  [<ffffffff81ace029>] ? rest_init+0x6d/0x74
+> [  168.841525]  [<ffffffff8210db9a>] ? start_kernel+0x38c/0x399
+> [  168.841525]  [<ffffffff8210d60d>] ? repair_env_string+0x5e/0x5e
+> [  168.841525]  [<ffffffff8210d32d>] ? x86_64_start_reservations+0x131/0x135
+> [  168.841525]  [<ffffffff8210d409>] ? x86_64_start_kernel+0xd8/0xdc
+> [  168.841525] Code: 00 00 00 80 3e c0 7f 00 88 ff ff 18 00 00 00 00 00 00 00 c0 a3 08 81 ff ff ff ff 98 3e c0 7f 00 88 ff ff 62 8e 08 81 ff ff ff ff <f8> 3e c0 7f 00 88 ff ff ce 9d 08 81 ff ff ff ff 80 2b c1 7f 00 
+> [  168.841525] RIP  [<ffff88007fc03e98>] 0xffff88007fc03e97
+> [  168.841525]  RSP <ffff88007fc03e80>
+> [  168.841525] CR2: ffff88007fc03e98
+> [  168.841525] ---[ end trace 197aa6de17869ba9 ]---
+> [  168.841525] Kernel panic - not syncing: Fatal exception in interrupt
+> [  168.841525] panic occurred, switching back to text console
+> [  168.841525] Rebooting in 10 seconds..[  170.456024] BUG: unable to handle kernel paging request at ffffffff2bbc4800
+> [  170.457007] IP: [<ffffffff81047810>] mktime+0xc0/0xc0
+> [  170.457007] PGD 200d067 PUD 0 
+> [  170.457007] Oops: 0002 [#1] SMP 
+> [  170.457007] CPU 0 
+> [  170.457007] Modules linked in:[  170.457007]  netconsole snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipt_REJECT xt_tcpudp iptable_raw iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_filter ip_tables x_tables lp fuse nouveau mxm_wmi mperf wmi processor video snd_via82xx ttm drm_kms_helper drm i2c_algo_bit snd_ac97_codec snd_mpu401_uart snd_rawmidi snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore shpchp evdev i2c_viapro amd64_agp ac97_bus agpgart ppdev freq_table thermal_sys skge parport_pc parport button gameport i2c_core k8temp hwmon loop
+> 
+> [  170.457007] Pid: 0, comm: swapper/0 Not tainted 3.5.2 #2 To Be Filled By O.E.M. To Be Filled By O.E.M./A8V Deluxe
+> [  170.457007] RIP: 0010:[<ffffffff81047810>]  [<ffffffff81047810>] mktime+0xc0/0xc0
+> [  170.457007] RSP: 0018:ffff88007fc03e70  EFLAGS: 00010013
+> [  170.457007] RAX: ffffffff2bbc4800 RBX: 0000000000000020 RCX: 0000000000000008
+> [  170.457007] RDX: ffffffffca1b2166 RSI: 0000000050389a37 RDI: ffff88007fc03e78
+> [  170.457007] RBP: ffff88007fc03e88 R08: 0000000020d77f47 R09: 0020d77f48000000
+> [  170.457007] R10: 000000000080ffad R11: 0000000000000001 R12: 000000000374ffa0
+> [  170.457007] R13: 00000000001ba7fd R14: 00000000be97e000 R15: 0000000000000008
+> [  170.457007] FS:  00007fe879ee9740(0000) GS:ffff88007fc00000(0000) knlGS:00000000f6fcb700
+> [  170.457007] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  170.457007] CR2: ffffffff2bbc4800 CR3: 000000007b53c000 CR4: 00000000000007f0
+> [  170.457007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  170.457007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  170.457007] Process swapper/0 (pid: 0, threadinfo ffffffff82000000, task ffffffff82013440)
+> [  170.457007] Stack:
+> [  170.457007]  ffffffff81088daa ffff88007fc03e98 ffffffff8108a3c0 ffff88007fc03e98
+> [  170.457007]  ffffffff81088e62 ffff88007fc03ef8 ffffffff81089dce ffff88007fc12b80
+> [  170.457007]  ffff88007fc12b80 00000000214310aa 0000000000000002 ffff88007fc03ee8
+> [  170.457007] Call Trace:
+> [  170.457007]  <IRQ> 
+> [  170.457007]  [<ffffffff81088daa>] ? update_rt_offset+0x2a/0x60
+> [  170.457007]  [<ffffffff8108a3c0>] ? ntp_tick_length+0x30/0x40
+> [  170.457007]  [<ffffffff81088e62>] timekeeping_update+0x22/0x50
+> [  170.457007]  [<ffffffff81089dce>] do_timer+0x2de/0x550
+> [  170.457007]  [<ffffffff810906c7>] tick_do_update_jiffies64+0x77/0xc0
+> [  170.457007]  [<ffffffff81091214>] tick_check_idle+0x94/0xd0
+> [  170.457007]  [<ffffffff81049091>] irq_enter+0x71/0x80
+> [  170.457007]  [<ffffffff81b18f1e>] do_IRQ+0x3e/0xe0
+> [  170.457007]  [<ffffffff81b16ea7>] common_interrupt+0x67/0x67
+> [  170.457007]  <EOI> 
+> [  170.457007]  [<ffffffff8100a6fa>] ? default_idle+0x5a/0x1b0
+> [  170.457007]  [<ffffffff8100b4f6>] cpu_idle+0x106/0x120
+> [  170.457007]  [<ffffffff81ace029>] rest_init+0x6d/0x74
+> [  170.457007]  [<ffffffff8210db9a>] start_kernel+0x38c/0x399
+> [  170.457007]  [<ffffffff8210d60d>] ? repair_env_string+0x5e/0x5e
+> [  170.457007]  [<ffffffff8210d32d>] x86_64_start_reservations+0x131/0x135
+> [  170.457007]  [<ffffffff8210d409>] x86_64_start_kernel+0xd8/0xdc
+> [  170.457007] Code: 48 29 c2 4c 01 c2 48 8d 04 95 00 00 00 00 49 89 d0 49 c1 e0 06 49 29 c0 4b 8d 04 03 c3 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 <55> 48 89 e5 66 66 66 66 90 48 81 fa ff c9 9a 3b 7e 19 66 0f 1f 
+> [  170.457007] RIP  [<ffffffff81047810>] mktime+0xc0/0xc0
+> [  170.457007]  RSP <ffff88007fc03e70>
+> [  170.457007] CR2: ffffffff2bbc4800
+> [  170.457007] ---[ end trace fb5b43f93a914e0c ]---
+> [  170.457007] Kernel panic - not syncing: Fatal exception in interrupt
+> [  170.457007] panic occurred, switching back to text console
+> [  170.457007] Rebooting in 10 seconds..[  914.400054] [drm] nouveau 0000:01:00.0: Setting dpms mode 1 on vga encoder (output 0)
+> [ 1740.272749] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+> [ 1740.273732] BUG: unable to handle kernel paging request at ffff88007fc03f58
+> [ 1740.273732] IP: [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [ 1740.273732] PGD 200c063 PUD 1fbfd067 PMD 800000007fc001e3 
+> [ 1740.273732] Oops: 0011 [#1] SMP 
+> [ 1740.273732] CPU 0 
+> [ 1740.273732] Modules linked in:[ 1740.273732]  netconsole snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipt_REJECT xt_tcpudp iptable_raw iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_filter ip_tables x_tables lp fuse nouveau mxm_wmi snd_via82xx wmi video ttm drm_kms_helper snd_ac97_codec drm i2c_viapro i2c_algo_bit mperf processor amd64_agp freq_table snd_mpu401_uart snd_rawmidi snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore thermal_sys k8temp hwmon agpgart ppdev shpchp ac97_bus skge i2c_core gameport evdev button parport_pc parport loop
+> 
+> [ 1740.273732] Pid: 0, comm: swapper/0 Not tainted 3.5.2 #2 To Be Filled By O.E.M. To Be Filled By O.E.M./A8V Deluxe
+> [ 1740.273732] RIP: 0010:[<ffff88007fc03f58>]  [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [ 1740.273732] RSP: 0018:ffff88007fc03f50  EFLAGS: 00010046
+> [ 1740.273732] RAX: 0000000000005454 RBX: ffff88007f807000 RCX: ffff88007d000018
+> [ 1740.273732] RDX: 0000000000000054 RSI: ffff88007f807000 RDI: ffff88007f807084
+> [ 1740.273732] RBP: ffffffff810b99ed R08: 0000000000000000 R09: ffff88007d000000
+> [ 1740.273732] R10: 0000000000000002 R11: 0000000000000001 R12: 0000000000000030
+> [ 1740.273732] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> [ 1740.273732] FS:  00007f81a4a93740(0000) GS:ffff88007fc00000(0000) knlGS:00000000f6f37700
+> [ 1740.273732] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1740.273732] CR2: ffff88007fc03f58 CR3: 000000007b545000 CR4: 00000000000007f0
+> [ 1740.273732] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 1740.273732] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 1740.273732] Process swapper/0 (pid: 0, threadinfo ffffffff82000000, task ffffffff82013440)
+> [ 1740.273732] Stack:
+> [ 1740.273732]  0000000000000000 ffff88007fc03f78 ffffffff81003be2 ffff88007fc03f78
+> [ 1740.273732]  ffffffff82001e58 ffff88007fc03fa8 ffffffff81b18f3a ffffffff82001fd8
+> [ 1740.273732]  0000000000000000 ffffffff821572c0 ffff88007ff7d8c0 ffffffff82001f18
+> [ 1740.273732] Call Trace:
+> [ 1740.273732]  <IRQ> 
+> [ 1740.273732]  [<ffffffff81003be2>] ? handle_irq+0x22/0x40
+> [ 1740.273732]  [<ffffffff81b18f3a>] ? do_IRQ+0x5a/0xe0
+> [ 1740.273732]  [<ffffffff81b16ea7>] ? common_interrupt+0x67/0x67
+> [ 1740.273732]  <EOI> 
+> [ 1740.273732]  [<ffffffff8100a6fa>] ? default_idle+0x5a/0x1b0
+> [ 1740.273732]  [<ffffffff8100b4f6>] ? cpu_idle+0x106/0x120
+> [ 1740.273732]  [<ffffffff81ace029>] ? rest_init+0x6d/0x74
+> [ 1740.273732]  [<ffffffff8210db9a>] ? start_kernel+0x38c/0x399
+> [ 1740.273732]  [<ffffffff8210d60d>] ? repair_env_string+0x5e/0x5e
+> [ 1740.273732]  [<ffffffff8210d32d>] ? x86_64_start_reservations+0x131/0x135
+> [ 1740.273732]  [<ffffffff8210d409>] ? x86_64_start_kernel+0xd8/0xdc
+> [ 1740.273732] Code: 88 ff ff 10 00 00 00 00 00 00 00 46 00 01 00 00 00 00 00 50 3f c0 7f 00 88 ff ff 18 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <78> 3f c0 7f 00 88 ff ff e2 3b 00 81 ff ff ff ff 78 3f c0 7f 00 
+> [ 1740.273732] RIP  [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [ 1740.273732]  RSP <ffff88007fc03f50>
+> [ 1740.273732] CR2: ffff88007fc03f58
+> [ 1740.273732] [drm] nouveau 0000:01:00.0: Setting dpms mode 0 on vga encoder (output 0)
+> [ 1740.273732] ---[ end trace 66512b2a64d236e7 ]---
+> [ 1740.273732] Kernel panic - not syncing: Fatal exception in interrupt
+> [ 1740.273732] panic occurred, switching back to text console
+> [ 1740.273732] Rebooting in 10 seconds..[  732.876020] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+> [  732.877002] BUG: unable to handle kernel paging request at ffff88007fc03f58
+> [  732.877002] IP: [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [  732.877002] PGD 200c063 PUD 1fbfd067 PMD 800000007fc001e3 
+> [  732.877002] Oops: 0011 [#1] SMP 
+> [  732.877002] CPU 0 
+> [  732.877002] Modules linked in:[  732.877002]  netconsole snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipt_REJECT xt_tcpudp iptable_raw iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_filter ip_tables x_tables lp fuse snd_via82xx snd_ac97_codec snd_mpu401_uart snd_rawmidi snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore ac97_bus gameport nouveau mxm_wmi wmi video ttm drm_kms_helper drm mperf i2c_algo_bit amd64_agp processor freq_table shpchp thermal_sys i2c_viapro agpgart evdev i2c_core k8temp hwmon ppdev button skge parport_pc parport loop
+> 
+> [  732.877002] Pid: 0, comm: swapper/0 Not tainted 3.5.2 #2 To Be Filled By O.E.M. To Be Filled By O.E.M./A8V Deluxe
+> [  732.877002] RIP: 0010:[<ffff88007fc03f58>]  [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [  732.877002] RSP: 0018:ffff88007fc03f50  EFLAGS: 00010046
+> [  732.877002] RAX: 000000000000a2a2 RBX: ffff88007f807000 RCX: ffff88007d000018
+> [  732.877002] RDX: 00000000000000a2 RSI: ffff88007f807000 RDI: ffff88007f807084
+> [  732.877002] RBP: ffffffff810b99ed R08: 0000000000000000 R09: ffff88007d000000
+> [  732.877002] R10: 0000000000000002 R11: 0000000000000001 R12: 0000000000000030
+> [  732.877002] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> [  732.877002] FS:  00007f0e22699740(0000) GS:ffff88007fc00000(0000) knlGS:00000000f6f51700
+> [  732.877002] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  732.877002] CR2: ffff88007fc03f58 CR3: 000000007b74b000 CR4: 00000000000007f0
+> [  732.877002] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  732.877002] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  732.877002] Process swapper/0 (pid: 0, threadinfo ffffffff82000000, task ffffffff82013440)
+> [  732.877002] Stack:
+> [  732.877002]  0000000000000000 ffff88007fc03f78 ffffffff81003be2 ffff88007fc03f78
+> [  732.877002]  ffffffff82001e58 ffff88007fc03fa8 ffffffff81b18f3a ffffffff82001fd8
+> [  732.877002]  0000000000000000 ffffffff821572c0 ffff88007ff7d8c0 ffffffff82001f18
+> [  732.877002] Call Trace:
+> [  732.877002]  <IRQ> 
+> [  732.877002]  [<ffffffff81003be2>] ? handle_irq+0x22/0x40
+> [  732.877002]  [<ffffffff81b18f3a>] ? do_IRQ+0x5a/0xe0
+> [  732.877002]  [<ffffffff81b16ea7>] ? common_interrupt+0x67/0x67
+> [  732.877002]  <EOI> 
+> [  732.877002]  [<ffffffff8100a6fa>] ? default_idle+0x5a/0x1b0
+> [  732.877002]  [<ffffffff8100b4f6>] ? cpu_idle+0x106/0x120
+> [  732.877002]  [<ffffffff81ace029>] ? rest_init+0x6d/0x74
+> [  732.877002]  [<ffffffff8210db9a>] ? start_kernel+0x38c/0x399
+> [  732.877002]  [<ffffffff8210d60d>] ? repair_env_string+0x5e/0x5e
+> [  732.877002]  [<ffffffff8210d32d>] ? x86_64_start_reservations+0x131/0x135
+> [  732.877002]  [<ffffffff8210d409>] ? x86_64_start_kernel+0xd8/0xdc
+> [  732.877002] Code: 88 ff ff 10 00 00 00 00 00 00 00 46 00 01 00 00 00 00 00 50 3f c0 7f 00 88 ff ff 18 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <78> 3f c0 7f 00 88 ff ff e2 3b 00 81 ff ff ff ff 78 3f c0 7f 00 
+> [  732.877002] RIP  [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [  732.877002]  RSP <ffff88007fc03f50>
+> [  732.877002] CR2: ffff88007fc03f58
+> [  732.877002] ---[ end trace 4f43a25a3497d19e ]---
+> [  732.877002] Kernel panic - not syncing: Fatal exception in interrupt
+> [  732.877002] panic occurred, switching back to text console
+> [  732.877002] Rebooting in 10 seconds..[   85.609447] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
+> [   85.610428] BUG: unable to handle kernel paging request at ffff88007fc03f58
+> [   85.610428] IP: [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [   85.610428] PGD 200c063 PUD 1fbfd067 PMD 800000007fc001e3 
+> [   85.610428] Oops: 0011 [#1] SMP 
+> [   85.610428] CPU 0 
+> [   85.610428] Modules linked in:[   85.610428]  netconsole snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipt_REJECT xt_tcpudp iptable_raw iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_filter ip_tables x_tables lp fuse nouveau mxm_wmi snd_via82xx snd_ac97_codec snd_mpu401_uart snd_rawmidi wmi video ttm drm_kms_helper drm i2c_algo_bit snd_seq_device snd_pcm snd_page_alloc shpchp amd64_agp ppdev snd_timer snd soundcore ac97_bus gameport i2c_viapro agpgart parport_pc skge i2c_core evdev parport k8temp button mperf freq_table processor thermal_sys hwmon loop
+> 
+> [   85.610428] Pid: 0, comm: swapper/0 Not tainted 3.5.2 #2 To Be Filled By O.E.M. To Be Filled By O.E.M./A8V Deluxe
+> [   85.610428] RIP: 0010:[<ffff88007fc03f58>]  [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [   85.610428] RSP: 0018:ffff88007fc03f50  EFLAGS: 00010046
+> [   85.610428] RAX: 000000000000f6f6 RBX: ffff88007f807000 RCX: ffff88007d000018
+> [   85.610428] RDX: 00000000000000f6 RSI: ffff88007f807000 RDI: ffff88007f807084
+> [   85.610428] RBP: ffffffff810b99ed R08: 0000000000000000 R09: ffff88007d000000
+> [   85.610428] R10: 0000000000000002 R11: 0000000000000001 R12: 0000000000000030
+> [   85.610428] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> [   85.610428] FS:  00007f5f133f9740(0000) GS:ffff88007fc00000(0000) knlGS:00000000f6f7b700
+> [   85.610428] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [   85.610428] CR2: ffff88007fc03f58 CR3: 000000007b24e000 CR4: 00000000000007f0
+> [   85.610428] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   85.610428] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   85.610428] Process swapper/0 (pid: 0, threadinfo ffffffff82000000, task ffffffff82013440)
+> [   85.610428] Stack:
+> [   85.610428]  0000000000000000 ffff88007fc03f78 ffffffff81003be2 ffff88007fc03f78
+> [   85.610428]  ffffffff82001e58 ffff88007fc03fa8 ffffffff81b18f3a ffffffff82001fd8
+> [   85.610428]  0000000000000000 ffffffff821572c0 ffff88007ff7d8c0 ffffffff82001f18
+> [   85.610428] Call Trace:
+> [   85.610428]  <IRQ> 
+> [   85.610428]  [<ffffffff81003be2>] ? handle_irq+0x22/0x40
+> [   85.610428]  [<ffffffff81b18f3a>] ? do_IRQ+0x5a/0xe0
+> [   85.610428]  [<ffffffff81b16ea7>] ? common_interrupt+0x67/0x67
+> [   85.610428]  <EOI> 
+> [   85.610428]  [<ffffffff8100a6fa>] ? default_idle+0x5a/0x1b0
+> [   85.610428]  [<ffffffff8100b4f6>] ? cpu_idle+0x106/0x120
+> [   85.610428]  [<ffffffff81ace029>] ? rest_init+0x6d/0x74
+> [   85.610428]  [<ffffffff8210db9a>] ? start_kernel+0x38c/0x399
+> [   85.610428]  [<ffffffff8210d60d>] ? repair_env_string+0x5e/0x5e
+> [   85.610428]  [<ffffffff8210d32d>] ? x86_64_start_reservations+0x131/0x135
+> [   85.610428]  [<ffffffff8210d409>] ? x86_64_start_kernel+0xd8/0xdc
+> [   85.610428] Code: 88 ff ff 10 00 00 00 00 00 00 00 46 00 01 00 00 00 00 00 50 3f c0 7f 00 88 ff ff 18 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <78> 3f c0 7f 00 88 ff ff e2 3b 00 81 ff ff ff ff 78 3f c0 7f 00 
+> [   85.610428] RIP  [<ffff88007fc03f58>] 0xffff88007fc03f57
+> [   85.610428]  RSP <ffff88007fc03f50>
+> [   85.610428] CR2: ffff88007fc03f58
+> [   85.610428] ---[ end trace efa90d0be322bd86 ]---
+> [   85.610428] Kernel panic - not syncing: Fatal exception in interrupt
+> [   85.610428] panic occurred, switching back to text console
+> [   85.610428] Rebooting in 10 seconds..[   40.402985] REISERFS warning (device sda1): clm-6006 reiserfs_dirty_inode: writing inode 347717 on readonly FS
+> [   40.806320] REISERFS warning (device sda1): clm-6006 reiserfs_dirty_inode: writing inode 347740 on readonly FS
+> [   41.285850] REISERFS warning (device sda1): clm-6006 reiserfs_dirty_inode: writing inode 426162 on readonly FS
+> [  914.400057] [drm] nouveau 0000:01:00.0: Setting dpms mode 1 on vga encoder (output 0)
+> [ 2005.919969] BUG: unable to handle kernel paging request at ffffffff81006020
+> [ 2005.920951] IP: [<ffffffff81b16c80>] _raw_spin_trylock_bh+0x50/0x50
+> [ 2005.920951] PGD 200d067 PUD 2011063 PMD 10001e1 
+> [ 2005.920951] Oops: 0003 [#1] SMP 
+> [ 2005.920951] CPU 0 
+> [ 2005.920951] Modules linked in:[ 2005.920951]  netconsole snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipt_REJECT xt_tcpudp iptable_raw iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_filter ip_tables x_tables lp fuse nouveau mxm_wmi wmi video ttm drm_kms_helper drm mperf freq_table snd_via82xx snd_ac97_codec snd_mpu401_uart snd_rawmidi snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore ac97_bus gameport amd64_agp agpgart i2c_algo_bit ppdev processor thermal_sys skge shpchp parport_pc parport i2c_viapro i2c_core k8temp hwmon evdev button loop
+> 
+> [ 2005.920951] Pid: 0, comm: swapper/0 Not tainted 3.5.2 #2 To Be Filled By O.E.M. To Be Filled By O.E.M./A8V Deluxe
+> [ 2005.920951] RIP: 0010:[<ffffffff81b16c80>]  [<ffffffff81b16c80>] _raw_spin_trylock_bh+0x50/0x50
+> [ 2005.920951] RSP: 0018:ffff88007fc03f10  EFLAGS: 00010086
+> [ 2005.920951] RAX: ffffffff81006020 RBX: 0000000000000001 RCX: 0000000000000000
+> [ 2005.920951] RDX: ffffffff82014da0 RSI: ffff88007f807000 RDI: ffffffff821db4d0
+> [ 2005.920951] RBP: ffff88007fc03f38 R08: 0000000000000000 R09: ffff88007d000000
+> [ 2005.920951] R10: 0000000000000002 R11: 0000000000000001 R12: 0000000000000000
+> [ 2005.920951] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> [ 2005.920951] FS:  00007feddb139740(0000) GS:ffff88007fc00000(0000) knlGS:00000000f6fde700
+> [ 2005.920951] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 2005.920951] CR2: ffffffff81006020 CR3: 000000007b556000 CR4: 00000000000007f0
+> [ 2005.920951] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 2005.920951] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 2005.920951] Process swapper/0 (pid: 0, threadinfo ffffffff82000000, task ffffffff82013440)
+> [ 2005.920951] Stack:
+> [ 2005.920951]  ffffffff81006052 ffff88007fc03f58 ffff88007f807000 0000000000000030
+> [ 2005.920951]  0000000000000000 ffff88007fc03f58 ffffffff810b99ff ffff88007fc03f58
+> [ 2005.920951]  0000000000000000 ffff88007fc03f78 ffffffff81003be2 ffff88007fc03f78
+> [ 2005.920951] Call Trace:
+> [ 2005.920951]  <IRQ> 
+> [ 2005.920951]  [<ffffffff81006052>] ? mask_and_ack_8259A+0x32/0x110
+> [ 2005.920951]  [<ffffffff810b99ff>] handle_level_irq+0x2f/0xc0
+> [ 2005.920951]  [<ffffffff81003be2>] handle_irq+0x22/0x40
+> [ 2005.920951]  [<ffffffff81b18f3a>] do_IRQ+0x5a/0xe0
+> [ 2005.920951]  [<ffffffff81b16ea7>] common_interrupt+0x67/0x67
+> [ 2005.920951]  <EOI> 
+> [ 2005.920951]  [<ffffffff8100a6fa>] ? default_idle+0x5a/0x1b0
+> [ 2005.920951]  [<ffffffff8100b4f6>] cpu_idle+0x106/0x120
+> [ 2005.920951]  [<ffffffff81ace029>] rest_init+0x6d/0x74
+> [ 2005.920951]  [<ffffffff8210db9a>] start_kernel+0x38c/0x399
+> [ 2005.920951]  [<ffffffff8210d60d>] ? repair_env_string+0x5e/0x5e
+> [ 2005.920951]  [<ffffffff8210d32d>] x86_64_start_reservations+0x131/0x135
+> [ 2005.920951]  [<ffffffff8210d409>] x86_64_start_kernel+0xd8/0xdc
+> [ 2005.920951] Code: ff 48 83 c4 08 31 c0 5b 5d c3 90 8d 8a 00 01 00 00 89 d0 3e 66 0f b1 0b 66 39 d0 75 db 48 83 c4 08 b8 01 00 00 00 5b 5d c3 66 90 <55> 48 89 e5 66 66 66 66 90 9c 58 fa ba 00 01 00 00 3e 66 0f c1 
+> [ 2005.920951] RIP  [<ffffffff81b16c80>] _raw_spin_trylock_bh+0x50/0x50
+> [ 2005.920951]  RSP <ffff88007fc03f10>
+> [ 2005.920951] CR2: ffffffff81006020
+> [ 2005.920951] [drm] nouveau 0000:01:00.0: Setting dpms mode 0 on vga encoder (output 0)
+> [ 2005.920951] ---[ end trace df411da47382bb20 ]---
+> [ 2005.920951] Kernel panic - not syncing: Fatal exception in interrupt
+> [ 2005.920951] panic occurred, switching back to text console
+> [ 2005.920951] Rebooting in 10 seconds..
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-The net result is that the audit subsystem now uses kuid_t and kgid_t whenever
-possible making it almost impossible to confuse a raw uid_t with a kuid_t
-preventing bugs.
-
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Paul Moore <paul@paul-moore.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
-
-Apologies if you are receiving this twice.  I am resending because
-it looks like this message failed to be delivered to most of it's
-recepients.
-
- drivers/tty/tty_audit.c           |   16 ++--
- fs/proc/base.c                    |   12 ++-
- include/linux/audit.h             |   12 ++-
- include/linux/init_task.h         |    2 +-
- include/linux/sched.h             |    2 +-
- include/linux/tty.h               |    4 +-
- include/net/netlabel.h            |    2 +-
- include/net/xfrm.h                |   23 ++--
- init/Kconfig                      |    2 -
- kernel/audit.c                    |   42 +++++---
- kernel/audit.h                    |    4 +-
- kernel/audit_watch.c              |    2 +-
- kernel/auditfilter.c              |  142 +++++++++++++++++++++----
- kernel/auditsc.c                  |  214 +++++++++++++++++++------------------
- net/core/dev.c                    |    2 +-
- net/netlabel/netlabel_unlabeled.c |    2 +-
- net/netlabel/netlabel_user.c      |    2 +-
- net/xfrm/xfrm_policy.c            |    8 +-
- net/xfrm/xfrm_state.c             |    6 +-
- net/xfrm/xfrm_user.c              |   12 +-
- 20 files changed, 320 insertions(+), 191 deletions(-)
-
-diff --git a/drivers/tty/tty_audit.c b/drivers/tty/tty_audit.c
-index 7c58669..e6b2422 100644
---- a/drivers/tty/tty_audit.c
-+++ b/drivers/tty/tty_audit.c
-@@ -61,7 +61,7 @@ static void tty_audit_buf_put(struct tty_audit_buf *buf)
- }
- 
- static void tty_audit_log(const char *description, struct task_struct *tsk,
--			  uid_t loginuid, unsigned sessionid, int major,
-+			  kuid_t loginuid, unsigned sessionid, int major,
- 			  int minor, unsigned char *data, size_t size)
- {
- 	struct audit_buffer *ab;
-@@ -69,11 +69,13 @@ static void tty_audit_log(const char *description, struct task_struct *tsk,
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_TTY);
- 	if (ab) {
- 		char name[sizeof(tsk->comm)];
--		uid_t uid = task_uid(tsk);
-+		uid_t uid = from_kuid_munged(&init_user_ns, task_uid(tsk));
- 
- 		audit_log_format(ab, "%s pid=%u uid=%u auid=%u ses=%u "
- 				 "major=%d minor=%d comm=", description,
--				 tsk->pid, uid, loginuid, sessionid,
-+				 tsk->pid, uid,
-+				 from_kuid(&init_user_ns, loginuid),
-+				 sessionid,
- 				 major, minor);
- 		get_task_comm(name, tsk);
- 		audit_log_untrustedstring(ab, name);
-@@ -89,7 +91,7 @@ static void tty_audit_log(const char *description, struct task_struct *tsk,
-  *	Generate an audit message from the contents of @buf, which is owned by
-  *	@tsk with @loginuid.  @buf->mutex must be locked.
-  */
--static void tty_audit_buf_push(struct task_struct *tsk, uid_t loginuid,
-+static void tty_audit_buf_push(struct task_struct *tsk, kuid_t loginuid,
- 			       unsigned int sessionid,
- 			       struct tty_audit_buf *buf)
- {
-@@ -112,7 +114,7 @@ static void tty_audit_buf_push(struct task_struct *tsk, uid_t loginuid,
-  */
- static void tty_audit_buf_push_current(struct tty_audit_buf *buf)
- {
--	uid_t auid = audit_get_loginuid(current);
-+	kuid_t auid = audit_get_loginuid(current);
- 	unsigned int sessionid = audit_get_sessionid(current);
- 	tty_audit_buf_push(current, auid, sessionid, buf);
- }
-@@ -179,7 +181,7 @@ void tty_audit_tiocsti(struct tty_struct *tty, char ch)
- 	}
- 
- 	if (should_audit && audit_enabled) {
--		uid_t auid;
-+		kuid_t auid;
- 		unsigned int sessionid;
- 
- 		auid = audit_get_loginuid(current);
-@@ -199,7 +201,7 @@ void tty_audit_tiocsti(struct tty_struct *tty, char ch)
-  * reference to the tty audit buffer if available.
-  * Flush the buffer or return an appropriate error code.
-  */
--int tty_audit_push_task(struct task_struct *tsk, uid_t loginuid, u32 sessionid)
-+int tty_audit_push_task(struct task_struct *tsk, kuid_t loginuid, u32 sessionid)
- {
- 	struct tty_audit_buf *buf = ERR_PTR(-EPERM);
- 	unsigned long flags;
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1b6c84c..138cff4 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1089,7 +1089,8 @@ static ssize_t proc_loginuid_read(struct file * file, char __user * buf,
- 	if (!task)
- 		return -ESRCH;
- 	length = scnprintf(tmpbuf, TMPBUFLEN, "%u",
--				audit_get_loginuid(task));
-+			   from_kuid(file->f_cred->user_ns,
-+				     audit_get_loginuid(task)));
- 	put_task_struct(task);
- 	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
- }
-@@ -1101,6 +1102,7 @@ static ssize_t proc_loginuid_write(struct file * file, const char __user * buf,
- 	char *page, *tmp;
- 	ssize_t length;
- 	uid_t loginuid;
-+	kuid_t kloginuid;
- 
- 	rcu_read_lock();
- 	if (current != pid_task(proc_pid(inode), PIDTYPE_PID)) {
-@@ -1130,7 +1132,13 @@ static ssize_t proc_loginuid_write(struct file * file, const char __user * buf,
- 		goto out_free_page;
- 
- 	}
--	length = audit_set_loginuid(loginuid);
-+	kloginuid = make_kuid(file->f_cred->user_ns, loginuid);
-+	if (!uid_valid(kloginuid)) {
-+		length = -EINVAL;
-+		goto out_free_page;
-+	}
-+
-+	length = audit_set_loginuid(kloginuid);
- 	if (likely(length == 0))
- 		length = count;
- 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 36abf2a..4af8ba7 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -442,6 +442,8 @@ struct audit_krule {
- struct audit_field {
- 	u32				type;
- 	u32				val;
-+	kuid_t				uid;
-+	kgid_t				gid;
- 	u32				op;
- 	char				*lsm_str;
- 	void				*lsm_rule;
-@@ -525,7 +527,7 @@ static inline void audit_ptrace(struct task_struct *t)
- extern unsigned int audit_serial(void);
- extern int auditsc_get_stamp(struct audit_context *ctx,
- 			      struct timespec *t, unsigned int *serial);
--extern int  audit_set_loginuid(uid_t loginuid);
-+extern int  audit_set_loginuid(kuid_t loginuid);
- #define audit_get_loginuid(t) ((t)->loginuid)
- #define audit_get_sessionid(t) ((t)->sessionid)
- extern void audit_log_task_context(struct audit_buffer *ab);
-@@ -637,7 +639,7 @@ extern int audit_signals;
- #define audit_core_dumps(i) do { ; } while (0)
- #define audit_seccomp(i,s,c) do { ; } while (0)
- #define auditsc_get_stamp(c,t,s) (0)
--#define audit_get_loginuid(t) (-1)
-+#define audit_get_loginuid(t) (INVALID_UID)
- #define audit_get_sessionid(t) (-1)
- #define audit_log_task_context(b) do { ; } while (0)
- #define audit_ipc_obj(i) ((void)0)
-@@ -700,10 +702,10 @@ extern void 		    audit_log_secctx(struct audit_buffer *ab, u32 secid);
- extern int		    audit_update_lsm_rules(void);
- 
- 				/* Private API (for audit.c only) */
--extern int audit_filter_user(struct netlink_skb_parms *cb);
-+extern int audit_filter_user(void);
- extern int audit_filter_type(int type);
--extern int  audit_receive_filter(int type, int pid, int uid, int seq,
--				void *data, size_t datasz, uid_t loginuid,
-+extern int  audit_receive_filter(int type, int pid, kuid_t uid, int seq,
-+				void *data, size_t datasz, kuid_t loginuid,
- 				u32 sessionid, u32 sid);
- extern int audit_enabled;
- #else
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 89f1cb1..6d087c5 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -92,7 +92,7 @@ extern struct group_info init_groups;
- 
- #ifdef CONFIG_AUDITSYSCALL
- #define INIT_IDS \
--	.loginuid = -1, \
-+	.loginuid = INVALID_UID, \
- 	.sessionid = -1,
- #else
- #define INIT_IDS
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c147e70..f64d092 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1426,7 +1426,7 @@ struct task_struct {
- 
- 	struct audit_context *audit_context;
- #ifdef CONFIG_AUDITSYSCALL
--	uid_t loginuid;
-+	kuid_t loginuid;
- 	unsigned int sessionid;
- #endif
- 	struct seccomp seccomp;
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 9f47ab5..7298385 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -553,7 +553,7 @@ extern void tty_audit_fork(struct signal_struct *sig);
- extern void tty_audit_tiocsti(struct tty_struct *tty, char ch);
- extern void tty_audit_push(struct tty_struct *tty);
- extern int tty_audit_push_task(struct task_struct *tsk,
--			       uid_t loginuid, u32 sessionid);
-+			       kuid_t loginuid, u32 sessionid);
- #else
- static inline void tty_audit_add_data(struct tty_struct *tty,
- 				      unsigned char *data, size_t size)
-@@ -572,7 +572,7 @@ static inline void tty_audit_push(struct tty_struct *tty)
- {
- }
- static inline int tty_audit_push_task(struct task_struct *tsk,
--				      uid_t loginuid, u32 sessionid)
-+				      kuid_t loginuid, u32 sessionid)
- {
- 	return 0;
- }
-diff --git a/include/net/netlabel.h b/include/net/netlabel.h
-index f674409..2c95d55 100644
---- a/include/net/netlabel.h
-+++ b/include/net/netlabel.h
-@@ -110,7 +110,7 @@ struct cipso_v4_doi;
- /* NetLabel audit information */
- struct netlbl_audit {
- 	u32 secid;
--	uid_t loginuid;
-+	kuid_t loginuid;
- 	u32 sessionid;
- };
- 
-diff --git a/include/net/xfrm.h b/include/net/xfrm.h
-index d9509eb..1f217e2 100644
---- a/include/net/xfrm.h
-+++ b/include/net/xfrm.h
-@@ -662,7 +662,7 @@ struct xfrm_spi_skb_cb {
- /* Audit Information */
- struct xfrm_audit {
- 	u32	secid;
--	uid_t	loginuid;
-+	kuid_t	loginuid;
- 	u32	sessionid;
- };
- 
-@@ -681,13 +681,14 @@ static inline struct audit_buffer *xfrm_audit_start(const char *op)
- 	return audit_buf;
- }
- 
--static inline void xfrm_audit_helper_usrinfo(uid_t auid, u32 ses, u32 secid,
-+static inline void xfrm_audit_helper_usrinfo(kuid_t auid, u32 ses, u32 secid,
- 					     struct audit_buffer *audit_buf)
- {
- 	char *secctx;
- 	u32 secctx_len;
- 
--	audit_log_format(audit_buf, " auid=%u ses=%u", auid, ses);
-+	audit_log_format(audit_buf, " auid=%u ses=%u",
-+			 from_kuid(&init_user_ns, auid), ses);
- 	if (secid != 0 &&
- 	    security_secid_to_secctx(secid, &secctx, &secctx_len) == 0) {
- 		audit_log_format(audit_buf, " subj=%s", secctx);
-@@ -697,13 +698,13 @@ static inline void xfrm_audit_helper_usrinfo(uid_t auid, u32 ses, u32 secid,
- }
- 
- extern void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid);
-+				  kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid);
-+				  kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_state_add(struct xfrm_state *x, int result,
--				 u32 auid, u32 ses, u32 secid);
-+				 kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_state_delete(struct xfrm_state *x, int result,
--				    u32 auid, u32 ses, u32 secid);
-+				    kuid_t auid, u32 ses, u32 secid);
- extern void xfrm_audit_state_replay_overflow(struct xfrm_state *x,
- 					     struct sk_buff *skb);
- extern void xfrm_audit_state_replay(struct xfrm_state *x,
-@@ -716,22 +717,22 @@ extern void xfrm_audit_state_icvfail(struct xfrm_state *x,
- #else
- 
- static inline void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid)
-+				  kuid_t auid, u32 ses, u32 secid)
- {
- }
- 
- static inline void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result,
--				  u32 auid, u32 ses, u32 secid)
-+				  kuid_t auid, u32 ses, u32 secid)
- {
- }
- 
- static inline void xfrm_audit_state_add(struct xfrm_state *x, int result,
--				 u32 auid, u32 ses, u32 secid)
-+				 kuid_t auid, u32 ses, u32 secid)
- {
- }
- 
- static inline void xfrm_audit_state_delete(struct xfrm_state *x, int result,
--				    u32 auid, u32 ses, u32 secid)
-+				    kuid_t auid, u32 ses, u32 secid)
- {
- }
- 
-diff --git a/init/Kconfig b/init/Kconfig
-index 4daf449..525f4e8 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -927,8 +927,6 @@ config UIDGID_CONVERTED
- 	# Features
- 	depends on IMA = n
- 	depends on EVM = n
--	depends on AUDIT = n
--	depends on AUDITSYSCALL = n
- 	depends on TASKSTATS = n
- 	depends on TRACING = n
- 	depends on FS_POSIX_ACL = n
-diff --git a/kernel/audit.c b/kernel/audit.c
-index ea3b7b6..b25afb7 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -61,6 +61,7 @@
- #include <linux/netlink.h>
- #include <linux/freezer.h>
- #include <linux/tty.h>
-+#include <linux/pid_namespace.h>
- 
- #include "audit.h"
- 
-@@ -104,7 +105,7 @@ static int	audit_backlog_wait_time = 60 * HZ;
- static int	audit_backlog_wait_overflow = 0;
- 
- /* The identity of the user shutting down the audit system. */
--uid_t		audit_sig_uid = -1;
-+kuid_t		audit_sig_uid = INVALID_UID;
- pid_t		audit_sig_pid = -1;
- u32		audit_sig_sid = 0;
- 
-@@ -264,7 +265,7 @@ void audit_log_lost(const char *message)
- }
- 
- static int audit_log_config_change(char *function_name, int new, int old,
--				   uid_t loginuid, u32 sessionid, u32 sid,
-+				   kuid_t loginuid, u32 sessionid, u32 sid,
- 				   int allow_changes)
- {
- 	struct audit_buffer *ab;
-@@ -272,7 +273,7 @@ static int audit_log_config_change(char *function_name, int new, int old,
- 
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
- 	audit_log_format(ab, "%s=%d old=%d auid=%u ses=%u", function_name, new,
--			 old, loginuid, sessionid);
-+			 old, from_kuid(&init_user_ns, loginuid), sessionid);
- 	if (sid) {
- 		char *ctx = NULL;
- 		u32 len;
-@@ -292,7 +293,7 @@ static int audit_log_config_change(char *function_name, int new, int old,
- }
- 
- static int audit_do_config_change(char *function_name, int *to_change,
--				  int new, uid_t loginuid, u32 sessionid,
-+				  int new, kuid_t loginuid, u32 sessionid,
- 				  u32 sid)
- {
- 	int allow_changes, rc = 0, old = *to_change;
-@@ -319,21 +320,21 @@ static int audit_do_config_change(char *function_name, int *to_change,
- 	return rc;
- }
- 
--static int audit_set_rate_limit(int limit, uid_t loginuid, u32 sessionid,
-+static int audit_set_rate_limit(int limit, kuid_t loginuid, u32 sessionid,
- 				u32 sid)
- {
- 	return audit_do_config_change("audit_rate_limit", &audit_rate_limit,
- 				      limit, loginuid, sessionid, sid);
- }
- 
--static int audit_set_backlog_limit(int limit, uid_t loginuid, u32 sessionid,
-+static int audit_set_backlog_limit(int limit, kuid_t loginuid, u32 sessionid,
- 				   u32 sid)
- {
- 	return audit_do_config_change("audit_backlog_limit", &audit_backlog_limit,
- 				      limit, loginuid, sessionid, sid);
- }
- 
--static int audit_set_enabled(int state, uid_t loginuid, u32 sessionid, u32 sid)
-+static int audit_set_enabled(int state, kuid_t loginuid, u32 sessionid, u32 sid)
- {
- 	int rc;
- 	if (state < AUDIT_OFF || state > AUDIT_LOCKED)
-@@ -348,7 +349,7 @@ static int audit_set_enabled(int state, uid_t loginuid, u32 sessionid, u32 sid)
- 	return rc;
- }
- 
--static int audit_set_failure(int state, uid_t loginuid, u32 sessionid, u32 sid)
-+static int audit_set_failure(int state, kuid_t loginuid, u32 sessionid, u32 sid)
- {
- 	if (state != AUDIT_FAIL_SILENT
- 	    && state != AUDIT_FAIL_PRINTK
-@@ -467,7 +468,7 @@ static int kauditd_thread(void *dummy)
- 	return 0;
- }
- 
--static int audit_prepare_user_tty(pid_t pid, uid_t loginuid, u32 sessionid)
-+static int audit_prepare_user_tty(pid_t pid, kuid_t loginuid, u32 sessionid)
- {
- 	struct task_struct *tsk;
- 	int err;
-@@ -588,6 +589,11 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- {
- 	int err = 0;
- 
-+	/* Only support the initial namespaces for now. */
-+	if ((current_user_ns() != &init_user_ns) ||
-+	    (task_active_pid_ns(current) != &init_pid_ns))
-+		return -EPERM;
-+
- 	switch (msg_type) {
- 	case AUDIT_GET:
- 	case AUDIT_LIST:
-@@ -619,7 +625,7 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- }
- 
- static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
--				     u32 pid, u32 uid, uid_t auid, u32 ses,
-+				     u32 pid, kuid_t uid, kuid_t auid, u32 ses,
- 				     u32 sid)
- {
- 	int rc = 0;
-@@ -633,7 +639,10 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
- 
- 	*ab = audit_log_start(NULL, GFP_KERNEL, msg_type);
- 	audit_log_format(*ab, "pid=%d uid=%u auid=%u ses=%u",
--			 pid, uid, auid, ses);
-+			 pid,
-+			 from_kuid(&init_user_ns, uid),
-+			 from_kuid(&init_user_ns, auid),
-+			 ses);
- 	if (sid) {
- 		rc = security_secid_to_secctx(sid, &ctx, &len);
- 		if (rc)
-@@ -649,13 +658,14 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type,
- 
- static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- {
--	u32			uid, pid, seq, sid;
-+	u32			pid, seq, sid;
-+	kuid_t			uid;
- 	void			*data;
- 	struct audit_status	*status_get, status_set;
- 	int			err;
- 	struct audit_buffer	*ab;
- 	u16			msg_type = nlh->nlmsg_type;
--	uid_t			loginuid; /* loginuid of sender */
-+	kuid_t			loginuid; /* loginuid of sender */
- 	u32			sessionid;
- 	struct audit_sig_info   *sig_data;
- 	char			*ctx = NULL;
-@@ -676,7 +686,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	}
- 
- 	pid  = NETLINK_CREDS(skb)->pid;
--	uid  = NETLINK_CREDS(skb)->uid;
-+	uid = current_uid();
- 	loginuid = audit_get_loginuid(current);
- 	sessionid = audit_get_sessionid(current);
- 	security_task_getsecid(current, &sid);
-@@ -738,7 +748,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 		if (!audit_enabled && msg_type != AUDIT_USER_AVC)
- 			return 0;
- 
--		err = audit_filter_user(&NETLINK_CB(skb));
-+		err = audit_filter_user();
- 		if (err == 1) {
- 			err = 0;
- 			if (msg_type == AUDIT_USER_TTY) {
-@@ -866,7 +876,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 				security_release_secctx(ctx, len);
- 			return -ENOMEM;
- 		}
--		sig_data->uid = audit_sig_uid;
-+		sig_data->uid = from_kuid(&init_user_ns, audit_sig_uid);
- 		sig_data->pid = audit_sig_pid;
- 		if (audit_sig_sid) {
- 			memcpy(sig_data->ctx, ctx, len);
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 8167668..fd30cc7 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -76,6 +76,8 @@ static inline int audit_hash_ino(u32 ino)
- 
- extern int audit_match_class(int class, unsigned syscall);
- extern int audit_comparator(const u32 left, const u32 op, const u32 right);
-+extern int audit_uid_comparator(kuid_t left, const u32 op, kuid_t right);
-+extern int audit_gid_comparator(kgid_t left, const u32 op, kgid_t right);
- extern int audit_compare_dname_path(const char *dname, const char *path,
- 				    int *dirlen);
- extern struct sk_buff *	    audit_make_reply(int pid, int seq, int type,
-@@ -144,7 +146,7 @@ extern void audit_kill_trees(struct list_head *);
- extern char *audit_unpack_string(void **, size_t *, size_t);
- 
- extern pid_t audit_sig_pid;
--extern uid_t audit_sig_uid;
-+extern kuid_t audit_sig_uid;
- extern u32 audit_sig_sid;
- 
- #ifdef CONFIG_AUDITSYSCALL
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index 3823281..1c22ec3 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -241,7 +241,7 @@ static void audit_watch_log_rule_change(struct audit_krule *r, struct audit_watc
- 		struct audit_buffer *ab;
- 		ab = audit_log_start(NULL, GFP_NOFS, AUDIT_CONFIG_CHANGE);
- 		audit_log_format(ab, "auid=%u ses=%u op=",
--				 audit_get_loginuid(current),
-+				 from_kuid(&init_user_ns, audit_get_loginuid(current)),
- 				 audit_get_sessionid(current));
- 		audit_log_string(ab, op);
- 		audit_log_format(ab, " path=");
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index a6c3f1a..1a8a648 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -342,6 +342,8 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
- 
- 		f->type = rule->fields[i] & ~(AUDIT_NEGATE|AUDIT_OPERATORS);
- 		f->val = rule->values[i];
-+		f->uid = INVALID_UID;
-+		f->gid = INVALID_GID;
- 
- 		err = -EINVAL;
- 		if (f->op == Audit_bad)
-@@ -350,16 +352,34 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
- 		switch(f->type) {
- 		default:
- 			goto exit_free;
--		case AUDIT_PID:
- 		case AUDIT_UID:
- 		case AUDIT_EUID:
- 		case AUDIT_SUID:
- 		case AUDIT_FSUID:
-+		case AUDIT_LOGINUID:
-+			/* bit ops not implemented for uid comparisons */
-+			if (f->op == Audit_bitmask || f->op == Audit_bittest)
-+				goto exit_free;
-+
-+			f->uid = make_kuid(current_user_ns(), f->val);
-+			if (!uid_valid(f->uid))
-+				goto exit_free;
-+			break;
-+
- 		case AUDIT_GID:
- 		case AUDIT_EGID:
- 		case AUDIT_SGID:
- 		case AUDIT_FSGID:
--		case AUDIT_LOGINUID:
-+			/* bit ops not implemented for gid comparisons */
-+			if (f->op == Audit_bitmask || f->op == Audit_bittest)
-+				goto exit_free;
-+
-+			f->gid = make_kgid(current_user_ns(), f->val);
-+			if (!gid_valid(f->gid))
-+				goto exit_free;
-+			break;
-+
-+		case AUDIT_PID:
- 		case AUDIT_PERS:
- 		case AUDIT_MSGTYPE:
- 		case AUDIT_PPID:
-@@ -437,19 +457,41 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
- 
- 		f->type = data->fields[i];
- 		f->val = data->values[i];
-+		f->uid = INVALID_UID;
-+		f->gid = INVALID_GID;
- 		f->lsm_str = NULL;
- 		f->lsm_rule = NULL;
- 		switch(f->type) {
--		case AUDIT_PID:
- 		case AUDIT_UID:
- 		case AUDIT_EUID:
- 		case AUDIT_SUID:
- 		case AUDIT_FSUID:
-+		case AUDIT_LOGINUID:
-+		case AUDIT_OBJ_UID:
-+			/* bit ops not implemented for uid comparisons */
-+			if (f->op == Audit_bitmask || f->op == Audit_bittest)
-+				goto exit_free;
-+
-+			f->uid = make_kuid(current_user_ns(), f->val);
-+			if (!uid_valid(f->uid))
-+				goto exit_free;
-+			break;
-+
- 		case AUDIT_GID:
- 		case AUDIT_EGID:
- 		case AUDIT_SGID:
- 		case AUDIT_FSGID:
--		case AUDIT_LOGINUID:
-+		case AUDIT_OBJ_GID:
-+			/* bit ops not implemented for gid comparisons */
-+			if (f->op == Audit_bitmask || f->op == Audit_bittest)
-+				goto exit_free;
-+
-+			f->gid = make_kgid(current_user_ns(), f->val);
-+			if (!gid_valid(f->gid))
-+				goto exit_free;
-+			break;
-+
-+		case AUDIT_PID:
- 		case AUDIT_PERS:
- 		case AUDIT_MSGTYPE:
- 		case AUDIT_PPID:
-@@ -461,9 +503,8 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
- 		case AUDIT_ARG1:
- 		case AUDIT_ARG2:
- 		case AUDIT_ARG3:
--		case AUDIT_OBJ_UID:
--		case AUDIT_OBJ_GID:
- 			break;
-+		/* arch is only allowed to be = or != */
- 		case AUDIT_ARCH:
- 			entry->rule.arch_f = f;
- 			break;
-@@ -707,6 +748,23 @@ static int audit_compare_rule(struct audit_krule *a, struct audit_krule *b)
- 			if (strcmp(a->filterkey, b->filterkey))
- 				return 1;
- 			break;
-+		case AUDIT_UID:
-+		case AUDIT_EUID:
-+		case AUDIT_SUID:
-+		case AUDIT_FSUID:
-+		case AUDIT_LOGINUID:
-+		case AUDIT_OBJ_UID:
-+			if (!uid_eq(a->fields[i].uid, b->fields[i].uid))
-+				return 1;
-+			break;
-+		case AUDIT_GID:
-+		case AUDIT_EGID:
-+		case AUDIT_SGID:
-+		case AUDIT_FSGID:
-+		case AUDIT_OBJ_GID:
-+			if (!gid_eq(a->fields[i].gid, b->fields[i].gid))
-+				return 1;
-+			break;
- 		default:
- 			if (a->fields[i].val != b->fields[i].val)
- 				return 1;
-@@ -1056,7 +1114,7 @@ static void audit_list_rules(int pid, int seq, struct sk_buff_head *q)
- }
- 
- /* Log rule additions and removals */
--static void audit_log_rule_change(uid_t loginuid, u32 sessionid, u32 sid,
-+static void audit_log_rule_change(kuid_t loginuid, u32 sessionid, u32 sid,
- 				  char *action, struct audit_krule *rule,
- 				  int res)
- {
-@@ -1068,7 +1126,8 @@ static void audit_log_rule_change(uid_t loginuid, u32 sessionid, u32 sid,
- 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_CONFIG_CHANGE);
- 	if (!ab)
- 		return;
--	audit_log_format(ab, "auid=%u ses=%u", loginuid, sessionid);
-+	audit_log_format(ab, "auid=%u ses=%u",
-+			 from_kuid(&init_user_ns, loginuid), sessionid);
- 	if (sid) {
- 		char *ctx = NULL;
- 		u32 len;
-@@ -1098,8 +1157,8 @@ static void audit_log_rule_change(uid_t loginuid, u32 sessionid, u32 sid,
-  * @sessionid: sessionid for netlink audit message
-  * @sid: SE Linux Security ID of sender
-  */
--int audit_receive_filter(int type, int pid, int uid, int seq, void *data,
--			 size_t datasz, uid_t loginuid, u32 sessionid, u32 sid)
-+int audit_receive_filter(int type, int pid, kuid_t uid, int seq, void *data,
-+			 size_t datasz, kuid_t loginuid, u32 sessionid, u32 sid)
- {
- 	struct task_struct *tsk;
- 	struct audit_netlink_list *dest;
-@@ -1198,6 +1257,52 @@ int audit_comparator(u32 left, u32 op, u32 right)
- 	}
- }
- 
-+int audit_uid_comparator(kuid_t left, u32 op, kuid_t right)
-+{
-+	switch (op) {
-+	case Audit_equal:
-+		return uid_eq(left, right);
-+	case Audit_not_equal:
-+		return !uid_eq(left, right);
-+	case Audit_lt:
-+		return uid_lt(left, right);
-+	case Audit_le:
-+		return uid_lte(left, right);
-+	case Audit_gt:
-+		return uid_gt(left, right);
-+	case Audit_ge:
-+		return uid_gte(left, right);
-+	case Audit_bitmask:
-+	case Audit_bittest:
-+	default:
-+		BUG();
-+		return 0;
-+	}
-+}
-+
-+int audit_gid_comparator(kgid_t left, u32 op, kgid_t right)
-+{
-+	switch (op) {
-+	case Audit_equal:
-+		return gid_eq(left, right);
-+	case Audit_not_equal:
-+		return !gid_eq(left, right);
-+	case Audit_lt:
-+		return gid_lt(left, right);
-+	case Audit_le:
-+		return gid_lte(left, right);
-+	case Audit_gt:
-+		return gid_gt(left, right);
-+	case Audit_ge:
-+		return gid_gte(left, right);
-+	case Audit_bitmask:
-+	case Audit_bittest:
-+	default:
-+		BUG();
-+		return 0;
-+	}
-+}
-+
- /* Compare given dentry name with last component in given path,
-  * return of 0 indicates a match. */
- int audit_compare_dname_path(const char *dname, const char *path,
-@@ -1236,8 +1341,7 @@ int audit_compare_dname_path(const char *dname, const char *path,
- 	return strncmp(p, dname, dlen);
- }
- 
--static int audit_filter_user_rules(struct netlink_skb_parms *cb,
--				   struct audit_krule *rule,
-+static int audit_filter_user_rules(struct audit_krule *rule,
- 				   enum audit_state *state)
- {
- 	int i;
-@@ -1249,17 +1353,17 @@ static int audit_filter_user_rules(struct netlink_skb_parms *cb,
- 
- 		switch (f->type) {
- 		case AUDIT_PID:
--			result = audit_comparator(cb->creds.pid, f->op, f->val);
-+			result = audit_comparator(task_pid_nr(current), f->op, f->val);
- 			break;
- 		case AUDIT_UID:
--			result = audit_comparator(cb->creds.uid, f->op, f->val);
-+			result = audit_uid_comparator(current_uid(), f->op, f->uid);
- 			break;
- 		case AUDIT_GID:
--			result = audit_comparator(cb->creds.gid, f->op, f->val);
-+			result = audit_gid_comparator(current_gid(), f->op, f->gid);
- 			break;
- 		case AUDIT_LOGINUID:
--			result = audit_comparator(audit_get_loginuid(current),
--						  f->op, f->val);
-+			result = audit_uid_comparator(audit_get_loginuid(current),
-+						  f->op, f->uid);
- 			break;
- 		case AUDIT_SUBJ_USER:
- 		case AUDIT_SUBJ_ROLE:
-@@ -1287,7 +1391,7 @@ static int audit_filter_user_rules(struct netlink_skb_parms *cb,
- 	return 1;
- }
- 
--int audit_filter_user(struct netlink_skb_parms *cb)
-+int audit_filter_user(void)
- {
- 	enum audit_state state = AUDIT_DISABLED;
- 	struct audit_entry *e;
-@@ -1295,7 +1399,7 @@ int audit_filter_user(struct netlink_skb_parms *cb)
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(e, &audit_filter_list[AUDIT_FILTER_USER], list) {
--		if (audit_filter_user_rules(cb, &e->rule, &state)) {
-+		if (audit_filter_user_rules(&e->rule, &state)) {
- 			if (state == AUDIT_DISABLED)
- 				ret = 0;
- 			break;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 4b96415..0795f58 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -113,8 +113,8 @@ struct audit_names {
- 	unsigned long	ino;
- 	dev_t		dev;
- 	umode_t		mode;
--	uid_t		uid;
--	gid_t		gid;
-+	kuid_t		uid;
-+	kgid_t		gid;
- 	dev_t		rdev;
- 	u32		osid;
- 	struct audit_cap_data fcap;
-@@ -149,8 +149,8 @@ struct audit_aux_data_execve {
- struct audit_aux_data_pids {
- 	struct audit_aux_data	d;
- 	pid_t			target_pid[AUDIT_AUX_PIDS];
--	uid_t			target_auid[AUDIT_AUX_PIDS];
--	uid_t			target_uid[AUDIT_AUX_PIDS];
-+	kuid_t			target_auid[AUDIT_AUX_PIDS];
-+	kuid_t			target_uid[AUDIT_AUX_PIDS];
- 	unsigned int		target_sessionid[AUDIT_AUX_PIDS];
- 	u32			target_sid[AUDIT_AUX_PIDS];
- 	char 			target_comm[AUDIT_AUX_PIDS][TASK_COMM_LEN];
-@@ -208,14 +208,14 @@ struct audit_context {
- 	size_t sockaddr_len;
- 				/* Save things to print about task_struct */
- 	pid_t		    pid, ppid;
--	uid_t		    uid, euid, suid, fsuid;
--	gid_t		    gid, egid, sgid, fsgid;
-+	kuid_t		    uid, euid, suid, fsuid;
-+	kgid_t		    gid, egid, sgid, fsgid;
- 	unsigned long	    personality;
- 	int		    arch;
- 
- 	pid_t		    target_pid;
--	uid_t		    target_auid;
--	uid_t		    target_uid;
-+	kuid_t		    target_auid;
-+	kuid_t		    target_uid;
- 	unsigned int	    target_sessionid;
- 	u32		    target_sid;
- 	char		    target_comm[TASK_COMM_LEN];
-@@ -231,8 +231,8 @@ struct audit_context {
- 			long args[6];
- 		} socketcall;
- 		struct {
--			uid_t			uid;
--			gid_t			gid;
-+			kuid_t			uid;
-+			kgid_t			gid;
- 			umode_t			mode;
- 			u32			osid;
- 			int			has_perm;
-@@ -464,37 +464,47 @@ static int match_tree_refs(struct audit_context *ctx, struct audit_tree *tree)
- 	return 0;
- }
- 
--static int audit_compare_id(uid_t uid1,
--			    struct audit_names *name,
--			    unsigned long name_offset,
--			    struct audit_field *f,
--			    struct audit_context *ctx)
-+static int audit_compare_uid(kuid_t uid,
-+			     struct audit_names *name,
-+			     struct audit_field *f,
-+			     struct audit_context *ctx)
- {
- 	struct audit_names *n;
--	unsigned long addr;
--	uid_t uid2;
- 	int rc;
- 
--	BUILD_BUG_ON(sizeof(uid_t) != sizeof(gid_t));
--
- 	if (name) {
--		addr = (unsigned long)name;
--		addr += name_offset;
--
--		uid2 = *(uid_t *)addr;
--		rc = audit_comparator(uid1, f->op, uid2);
-+		rc = audit_uid_comparator(uid, f->op, name->uid);
- 		if (rc)
- 			return rc;
- 	}
- 
- 	if (ctx) {
- 		list_for_each_entry(n, &ctx->names_list, list) {
--			addr = (unsigned long)n;
--			addr += name_offset;
-+			rc = audit_uid_comparator(uid, f->op, n->uid);
-+			if (rc)
-+				return rc;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int audit_compare_gid(kgid_t gid,
-+			     struct audit_names *name,
-+			     struct audit_field *f,
-+			     struct audit_context *ctx)
-+{
-+	struct audit_names *n;
-+	int rc;
- 
--			uid2 = *(uid_t *)addr;
-+	if (name) {
-+		rc = audit_gid_comparator(gid, f->op, name->gid);
-+		if (rc)
-+			return rc;
-+	}
- 
--			rc = audit_comparator(uid1, f->op, uid2);
-+	if (ctx) {
-+		list_for_each_entry(n, &ctx->names_list, list) {
-+			rc = audit_gid_comparator(gid, f->op, n->gid);
- 			if (rc)
- 				return rc;
- 		}
-@@ -511,80 +521,62 @@ static int audit_field_compare(struct task_struct *tsk,
- 	switch (f->val) {
- 	/* process to file object comparisons */
- 	case AUDIT_COMPARE_UID_TO_OBJ_UID:
--		return audit_compare_id(cred->uid,
--					name, offsetof(struct audit_names, uid),
--					f, ctx);
-+		return audit_compare_uid(cred->uid, name, f, ctx);
- 	case AUDIT_COMPARE_GID_TO_OBJ_GID:
--		return audit_compare_id(cred->gid,
--					name, offsetof(struct audit_names, gid),
--					f, ctx);
-+		return audit_compare_gid(cred->gid, name, f, ctx);
- 	case AUDIT_COMPARE_EUID_TO_OBJ_UID:
--		return audit_compare_id(cred->euid,
--					name, offsetof(struct audit_names, uid),
--					f, ctx);
-+		return audit_compare_uid(cred->euid, name, f, ctx);
- 	case AUDIT_COMPARE_EGID_TO_OBJ_GID:
--		return audit_compare_id(cred->egid,
--					name, offsetof(struct audit_names, gid),
--					f, ctx);
-+		return audit_compare_gid(cred->egid, name, f, ctx);
- 	case AUDIT_COMPARE_AUID_TO_OBJ_UID:
--		return audit_compare_id(tsk->loginuid,
--					name, offsetof(struct audit_names, uid),
--					f, ctx);
-+		return audit_compare_uid(tsk->loginuid, name, f, ctx);
- 	case AUDIT_COMPARE_SUID_TO_OBJ_UID:
--		return audit_compare_id(cred->suid,
--					name, offsetof(struct audit_names, uid),
--					f, ctx);
-+		return audit_compare_uid(cred->suid, name, f, ctx);
- 	case AUDIT_COMPARE_SGID_TO_OBJ_GID:
--		return audit_compare_id(cred->sgid,
--					name, offsetof(struct audit_names, gid),
--					f, ctx);
-+		return audit_compare_gid(cred->sgid, name, f, ctx);
- 	case AUDIT_COMPARE_FSUID_TO_OBJ_UID:
--		return audit_compare_id(cred->fsuid,
--					name, offsetof(struct audit_names, uid),
--					f, ctx);
-+		return audit_compare_uid(cred->fsuid, name, f, ctx);
- 	case AUDIT_COMPARE_FSGID_TO_OBJ_GID:
--		return audit_compare_id(cred->fsgid,
--					name, offsetof(struct audit_names, gid),
--					f, ctx);
-+		return audit_compare_gid(cred->fsgid, name, f, ctx);
- 	/* uid comparisons */
- 	case AUDIT_COMPARE_UID_TO_AUID:
--		return audit_comparator(cred->uid, f->op, tsk->loginuid);
-+		return audit_uid_comparator(cred->uid, f->op, tsk->loginuid);
- 	case AUDIT_COMPARE_UID_TO_EUID:
--		return audit_comparator(cred->uid, f->op, cred->euid);
-+		return audit_uid_comparator(cred->uid, f->op, cred->euid);
- 	case AUDIT_COMPARE_UID_TO_SUID:
--		return audit_comparator(cred->uid, f->op, cred->suid);
-+		return audit_uid_comparator(cred->uid, f->op, cred->suid);
- 	case AUDIT_COMPARE_UID_TO_FSUID:
--		return audit_comparator(cred->uid, f->op, cred->fsuid);
-+		return audit_uid_comparator(cred->uid, f->op, cred->fsuid);
- 	/* auid comparisons */
- 	case AUDIT_COMPARE_AUID_TO_EUID:
--		return audit_comparator(tsk->loginuid, f->op, cred->euid);
-+		return audit_uid_comparator(tsk->loginuid, f->op, cred->euid);
- 	case AUDIT_COMPARE_AUID_TO_SUID:
--		return audit_comparator(tsk->loginuid, f->op, cred->suid);
-+		return audit_uid_comparator(tsk->loginuid, f->op, cred->suid);
- 	case AUDIT_COMPARE_AUID_TO_FSUID:
--		return audit_comparator(tsk->loginuid, f->op, cred->fsuid);
-+		return audit_uid_comparator(tsk->loginuid, f->op, cred->fsuid);
- 	/* euid comparisons */
- 	case AUDIT_COMPARE_EUID_TO_SUID:
--		return audit_comparator(cred->euid, f->op, cred->suid);
-+		return audit_uid_comparator(cred->euid,	f->op, cred->suid);
- 	case AUDIT_COMPARE_EUID_TO_FSUID:
--		return audit_comparator(cred->euid, f->op, cred->fsuid);
-+		return audit_uid_comparator(cred->euid, f->op, cred->fsuid);
- 	/* suid comparisons */
- 	case AUDIT_COMPARE_SUID_TO_FSUID:
--		return audit_comparator(cred->suid, f->op, cred->fsuid);
-+		return audit_uid_comparator(cred->suid,	f->op, cred->fsuid);
- 	/* gid comparisons */
- 	case AUDIT_COMPARE_GID_TO_EGID:
--		return audit_comparator(cred->gid, f->op, cred->egid);
-+		return audit_gid_comparator(cred->gid, f->op, cred->egid);
- 	case AUDIT_COMPARE_GID_TO_SGID:
--		return audit_comparator(cred->gid, f->op, cred->sgid);
-+		return audit_gid_comparator(cred->gid, f->op, cred->sgid);
- 	case AUDIT_COMPARE_GID_TO_FSGID:
--		return audit_comparator(cred->gid, f->op, cred->fsgid);
-+		return audit_gid_comparator(cred->gid, f->op, cred->fsgid);
- 	/* egid comparisons */
- 	case AUDIT_COMPARE_EGID_TO_SGID:
--		return audit_comparator(cred->egid, f->op, cred->sgid);
-+		return audit_gid_comparator(cred->egid,	f->op, cred->sgid);
- 	case AUDIT_COMPARE_EGID_TO_FSGID:
--		return audit_comparator(cred->egid, f->op, cred->fsgid);
-+		return audit_gid_comparator(cred->egid,	f->op, cred->fsgid);
- 	/* sgid comparison */
- 	case AUDIT_COMPARE_SGID_TO_FSGID:
--		return audit_comparator(cred->sgid, f->op, cred->fsgid);
-+		return audit_gid_comparator(cred->sgid,	f->op, cred->fsgid);
- 	default:
- 		WARN(1, "Missing AUDIT_COMPARE define.  Report as a bug\n");
- 		return 0;
-@@ -630,28 +622,28 @@ static int audit_filter_rules(struct task_struct *tsk,
- 			}
- 			break;
- 		case AUDIT_UID:
--			result = audit_comparator(cred->uid, f->op, f->val);
-+			result = audit_uid_comparator(cred->uid, f->op, f->uid);
- 			break;
- 		case AUDIT_EUID:
--			result = audit_comparator(cred->euid, f->op, f->val);
-+			result = audit_uid_comparator(cred->euid, f->op, f->uid);
- 			break;
- 		case AUDIT_SUID:
--			result = audit_comparator(cred->suid, f->op, f->val);
-+			result = audit_uid_comparator(cred->suid, f->op, f->uid);
- 			break;
- 		case AUDIT_FSUID:
--			result = audit_comparator(cred->fsuid, f->op, f->val);
-+			result = audit_uid_comparator(cred->fsuid, f->op, f->uid);
- 			break;
- 		case AUDIT_GID:
--			result = audit_comparator(cred->gid, f->op, f->val);
-+			result = audit_gid_comparator(cred->gid, f->op, f->gid);
- 			break;
- 		case AUDIT_EGID:
--			result = audit_comparator(cred->egid, f->op, f->val);
-+			result = audit_gid_comparator(cred->egid, f->op, f->gid);
- 			break;
- 		case AUDIT_SGID:
--			result = audit_comparator(cred->sgid, f->op, f->val);
-+			result = audit_gid_comparator(cred->sgid, f->op, f->gid);
- 			break;
- 		case AUDIT_FSGID:
--			result = audit_comparator(cred->fsgid, f->op, f->val);
-+			result = audit_gid_comparator(cred->fsgid, f->op, f->gid);
- 			break;
- 		case AUDIT_PERS:
- 			result = audit_comparator(tsk->personality, f->op, f->val);
-@@ -717,10 +709,10 @@ static int audit_filter_rules(struct task_struct *tsk,
- 			break;
- 		case AUDIT_OBJ_UID:
- 			if (name) {
--				result = audit_comparator(name->uid, f->op, f->val);
-+				result = audit_uid_comparator(name->uid, f->op, f->uid);
- 			} else if (ctx) {
- 				list_for_each_entry(n, &ctx->names_list, list) {
--					if (audit_comparator(n->uid, f->op, f->val)) {
-+					if (audit_uid_comparator(n->uid, f->op, f->uid)) {
- 						++result;
- 						break;
- 					}
-@@ -729,10 +721,10 @@ static int audit_filter_rules(struct task_struct *tsk,
- 			break;
- 		case AUDIT_OBJ_GID:
- 			if (name) {
--				result = audit_comparator(name->gid, f->op, f->val);
-+				result = audit_gid_comparator(name->gid, f->op, f->gid);
- 			} else if (ctx) {
- 				list_for_each_entry(n, &ctx->names_list, list) {
--					if (audit_comparator(n->gid, f->op, f->val)) {
-+					if (audit_gid_comparator(n->gid, f->op, f->gid)) {
- 						++result;
- 						break;
- 					}
-@@ -750,7 +742,7 @@ static int audit_filter_rules(struct task_struct *tsk,
- 		case AUDIT_LOGINUID:
- 			result = 0;
- 			if (ctx)
--				result = audit_comparator(tsk->loginuid, f->op, f->val);
-+				result = audit_uid_comparator(tsk->loginuid, f->op, f->uid);
- 			break;
- 		case AUDIT_SUBJ_USER:
- 		case AUDIT_SUBJ_ROLE:
-@@ -1184,7 +1176,7 @@ static void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk
- }
- 
- static int audit_log_pid_context(struct audit_context *context, pid_t pid,
--				 uid_t auid, uid_t uid, unsigned int sessionid,
-+				 kuid_t auid, kuid_t uid, unsigned int sessionid,
- 				 u32 sid, char *comm)
- {
- 	struct audit_buffer *ab;
-@@ -1196,8 +1188,9 @@ static int audit_log_pid_context(struct audit_context *context, pid_t pid,
- 	if (!ab)
- 		return rc;
- 
--	audit_log_format(ab, "opid=%d oauid=%d ouid=%d oses=%d", pid, auid,
--			 uid, sessionid);
-+	audit_log_format(ab, "opid=%d oauid=%d ouid=%d oses=%d", pid,
-+			 from_kuid(&init_user_ns, auid),
-+			 from_kuid(&init_user_ns, uid), sessionid);
- 	if (security_secid_to_secctx(sid, &ctx, &len)) {
- 		audit_log_format(ab, " obj=(none)");
- 		rc = 1;
-@@ -1447,7 +1440,9 @@ static void show_special(struct audit_context *context, int *call_panic)
- 		u32 osid = context->ipc.osid;
- 
- 		audit_log_format(ab, "ouid=%u ogid=%u mode=%#ho",
--			 context->ipc.uid, context->ipc.gid, context->ipc.mode);
-+				 from_kuid(&init_user_ns, context->ipc.uid),
-+				 from_kgid(&init_user_ns, context->ipc.gid),
-+				 context->ipc.mode);
- 		if (osid) {
- 			char *ctx = NULL;
- 			u32 len;
-@@ -1560,8 +1555,8 @@ static void audit_log_name(struct audit_context *context, struct audit_names *n,
- 				 MAJOR(n->dev),
- 				 MINOR(n->dev),
- 				 n->mode,
--				 n->uid,
--				 n->gid,
-+				 from_kuid(&init_user_ns, n->uid),
-+				 from_kgid(&init_user_ns, n->gid),
- 				 MAJOR(n->rdev),
- 				 MINOR(n->rdev));
- 	}
-@@ -1638,11 +1633,16 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
- 		  context->name_count,
- 		  context->ppid,
- 		  context->pid,
--		  tsk->loginuid,
--		  context->uid,
--		  context->gid,
--		  context->euid, context->suid, context->fsuid,
--		  context->egid, context->sgid, context->fsgid, tty,
-+		  from_kuid(&init_user_ns, tsk->loginuid),
-+		  from_kuid(&init_user_ns, context->uid),
-+		  from_kgid(&init_user_ns, context->gid),
-+		  from_kuid(&init_user_ns, context->euid),
-+		  from_kuid(&init_user_ns, context->suid),
-+		  from_kuid(&init_user_ns, context->fsuid),
-+		  from_kgid(&init_user_ns, context->egid),
-+		  from_kgid(&init_user_ns, context->sgid),
-+		  from_kgid(&init_user_ns, context->fsgid),
-+		  tty,
- 		  tsk->sessionid);
- 
- 
-@@ -2299,14 +2299,14 @@ static atomic_t session_id = ATOMIC_INIT(0);
-  *
-  * Called (set) from fs/proc/base.c::proc_loginuid_write().
-  */
--int audit_set_loginuid(uid_t loginuid)
-+int audit_set_loginuid(kuid_t loginuid)
- {
- 	struct task_struct *task = current;
- 	struct audit_context *context = task->audit_context;
- 	unsigned int sessionid;
- 
- #ifdef CONFIG_AUDIT_LOGINUID_IMMUTABLE
--	if (task->loginuid != -1)
-+	if (uid_valid(task->loginuid))
- 		return -EPERM;
- #else /* CONFIG_AUDIT_LOGINUID_IMMUTABLE */
- 	if (!capable(CAP_AUDIT_CONTROL))
-@@ -2322,8 +2322,10 @@ int audit_set_loginuid(uid_t loginuid)
- 			audit_log_format(ab, "login pid=%d uid=%u "
- 				"old auid=%u new auid=%u"
- 				" old ses=%u new ses=%u",
--				task->pid, task_uid(task),
--				task->loginuid, loginuid,
-+				task->pid,
-+				from_kuid(&init_user_ns, task_uid(task)),
-+				from_kuid(&init_user_ns, task->loginuid),
-+				from_kuid(&init_user_ns, loginuid),
- 				task->sessionid, sessionid);
- 			audit_log_end(ab);
- 		}
-@@ -2546,15 +2548,14 @@ int __audit_signal_info(int sig, struct task_struct *t)
- 	struct audit_aux_data_pids *axp;
- 	struct task_struct *tsk = current;
- 	struct audit_context *ctx = tsk->audit_context;
--	uid_t uid = current_uid(), t_uid = task_uid(t);
- 
- 	if (audit_pid && t->tgid == audit_pid) {
- 		if (sig == SIGTERM || sig == SIGHUP || sig == SIGUSR1 || sig == SIGUSR2) {
- 			audit_sig_pid = tsk->pid;
--			if (tsk->loginuid != -1)
-+			if (uid_valid(tsk->loginuid))
- 				audit_sig_uid = tsk->loginuid;
- 			else
--				audit_sig_uid = uid;
-+				audit_sig_uid = current_uid();
- 			security_task_getsecid(tsk, &audit_sig_sid);
- 		}
- 		if (!audit_signals || audit_dummy_context())
-@@ -2566,7 +2567,7 @@ int __audit_signal_info(int sig, struct task_struct *t)
- 	if (!ctx->target_pid) {
- 		ctx->target_pid = t->tgid;
- 		ctx->target_auid = audit_get_loginuid(t);
--		ctx->target_uid = t_uid;
-+		ctx->target_uid = task_uid(t);
- 		ctx->target_sessionid = audit_get_sessionid(t);
- 		security_task_getsecid(t, &ctx->target_sid);
- 		memcpy(ctx->target_comm, t->comm, TASK_COMM_LEN);
-@@ -2587,7 +2588,7 @@ int __audit_signal_info(int sig, struct task_struct *t)
- 
- 	axp->target_pid[axp->pid_count] = t->tgid;
- 	axp->target_auid[axp->pid_count] = audit_get_loginuid(t);
--	axp->target_uid[axp->pid_count] = t_uid;
-+	axp->target_uid[axp->pid_count] = task_uid(t);
- 	axp->target_sessionid[axp->pid_count] = audit_get_sessionid(t);
- 	security_task_getsecid(t, &axp->target_sid[axp->pid_count]);
- 	memcpy(axp->target_comm[axp->pid_count], t->comm, TASK_COMM_LEN);
-@@ -2676,9 +2677,10 @@ static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
- 	gid_t gid;
- 	unsigned int sessionid;
- 
--	auid = audit_get_loginuid(current);
-+	auid = from_kuid(&init_user_ns, audit_get_loginuid(current));
- 	sessionid = audit_get_sessionid(current);
--	current_uid_gid(&uid, &gid);
-+	uid = from_kuid(&init_user_ns, current_uid());
-+	gid = from_kgid(&init_user_ns, current_gid());
- 
- 	audit_log_format(ab, "auid=%u uid=%u gid=%u ses=%u",
- 			 auid, uid, gid, sessionid);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 026bb4a..1c0d082 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4524,7 +4524,7 @@ static int __dev_set_promiscuity(struct net_device *dev, int inc)
- 				"dev=%s prom=%d old_prom=%d auid=%u uid=%u gid=%u ses=%u",
- 				dev->name, (dev->flags & IFF_PROMISC),
- 				(old_flags & IFF_PROMISC),
--				audit_get_loginuid(current),
-+				from_kuid(&init_user_ns, audit_get_loginuid(current)),
- 				from_kuid(&init_user_ns, uid),
- 				from_kgid(&init_user_ns, gid),
- 				audit_get_sessionid(current));
-diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
-index e7ff694..729a345 100644
---- a/net/netlabel/netlabel_unlabeled.c
-+++ b/net/netlabel/netlabel_unlabeled.c
-@@ -1541,7 +1541,7 @@ int __init netlbl_unlabel_defconf(void)
- 	 * it is called is at bootup before the audit subsystem is reporting
- 	 * messages so don't worry to much about these values. */
- 	security_task_getsecid(current, &audit_info.secid);
--	audit_info.loginuid = 0;
-+	audit_info.loginuid = GLOBAL_ROOT_UID;
- 	audit_info.sessionid = 0;
- 
- 	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
-diff --git a/net/netlabel/netlabel_user.c b/net/netlabel/netlabel_user.c
-index 9fae63f..9650c4a 100644
---- a/net/netlabel/netlabel_user.c
-+++ b/net/netlabel/netlabel_user.c
-@@ -109,7 +109,7 @@ struct audit_buffer *netlbl_audit_start_common(int type,
- 		return NULL;
- 
- 	audit_log_format(audit_buf, "netlabel: auid=%u ses=%u",
--			 audit_info->loginuid,
-+			 from_kuid(&init_user_ns, audit_info->loginuid),
- 			 audit_info->sessionid);
- 
- 	if (audit_info->secid != 0 &&
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index c5a5165..2f47515 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -2630,12 +2630,12 @@ static void xfrm_policy_fini(struct net *net)
- 
- 	flush_work(&net->xfrm.policy_hash_work);
- #ifdef CONFIG_XFRM_SUB_POLICY
--	audit_info.loginuid = -1;
-+	audit_info.loginuid = INVALID_UID;
- 	audit_info.sessionid = -1;
- 	audit_info.secid = 0;
- 	xfrm_policy_flush(net, XFRM_POLICY_TYPE_SUB, &audit_info);
- #endif
--	audit_info.loginuid = -1;
-+	audit_info.loginuid = INVALID_UID;
- 	audit_info.sessionid = -1;
- 	audit_info.secid = 0;
- 	xfrm_policy_flush(net, XFRM_POLICY_TYPE_MAIN, &audit_info);
-@@ -2742,7 +2742,7 @@ static void xfrm_audit_common_policyinfo(struct xfrm_policy *xp,
- }
- 
- void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
--			   uid_t auid, u32 sessionid, u32 secid)
-+			   kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-@@ -2757,7 +2757,7 @@ void xfrm_audit_policy_add(struct xfrm_policy *xp, int result,
- EXPORT_SYMBOL_GPL(xfrm_audit_policy_add);
- 
- void xfrm_audit_policy_delete(struct xfrm_policy *xp, int result,
--			      uid_t auid, u32 sessionid, u32 secid)
-+			      kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-index 5b228f9..fce6a49 100644
---- a/net/xfrm/xfrm_state.c
-+++ b/net/xfrm/xfrm_state.c
-@@ -2045,7 +2045,7 @@ void xfrm_state_fini(struct net *net)
- 	unsigned int sz;
- 
- 	flush_work(&net->xfrm.state_hash_work);
--	audit_info.loginuid = -1;
-+	audit_info.loginuid = INVALID_UID;
- 	audit_info.sessionid = -1;
- 	audit_info.secid = 0;
- 	xfrm_state_flush(net, IPSEC_PROTO_ANY, &audit_info);
-@@ -2112,7 +2112,7 @@ static void xfrm_audit_helper_pktinfo(struct sk_buff *skb, u16 family,
- }
- 
- void xfrm_audit_state_add(struct xfrm_state *x, int result,
--			  uid_t auid, u32 sessionid, u32 secid)
-+			  kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-@@ -2127,7 +2127,7 @@ void xfrm_audit_state_add(struct xfrm_state *x, int result,
- EXPORT_SYMBOL_GPL(xfrm_audit_state_add);
- 
- void xfrm_audit_state_delete(struct xfrm_state *x, int result,
--			     uid_t auid, u32 sessionid, u32 secid)
-+			     kuid_t auid, u32 sessionid, u32 secid)
- {
- 	struct audit_buffer *audit_buf;
- 
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index e75d8e4..9ea55db 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -575,7 +575,7 @@ static int xfrm_add_sa(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	struct xfrm_state *x;
- 	int err;
- 	struct km_event c;
--	uid_t loginuid = audit_get_loginuid(current);
-+	kuid_t loginuid = audit_get_loginuid(current);
- 	u32 sessionid = audit_get_sessionid(current);
- 	u32 sid;
- 
-@@ -654,7 +654,7 @@ static int xfrm_del_sa(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	int err = -ESRCH;
- 	struct km_event c;
- 	struct xfrm_usersa_id *p = nlmsg_data(nlh);
--	uid_t loginuid = audit_get_loginuid(current);
-+	kuid_t loginuid = audit_get_loginuid(current);
- 	u32 sessionid = audit_get_sessionid(current);
- 	u32 sid;
- 
-@@ -1369,7 +1369,7 @@ static int xfrm_add_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	struct km_event c;
- 	int err;
- 	int excl;
--	uid_t loginuid = audit_get_loginuid(current);
-+	kuid_t loginuid = audit_get_loginuid(current);
- 	u32 sessionid = audit_get_sessionid(current);
- 	u32 sid;
- 
-@@ -1624,7 +1624,7 @@ static int xfrm_get_policy(struct sk_buff *skb, struct nlmsghdr *nlh,
- 					    NETLINK_CB(skb).pid);
- 		}
- 	} else {
--		uid_t loginuid = audit_get_loginuid(current);
-+		kuid_t loginuid = audit_get_loginuid(current);
- 		u32 sessionid = audit_get_sessionid(current);
- 		u32 sid;
- 
-@@ -1918,7 +1918,7 @@ static int xfrm_add_pol_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
- 
- 	err = 0;
- 	if (up->hard) {
--		uid_t loginuid = audit_get_loginuid(current);
-+		kuid_t loginuid = audit_get_loginuid(current);
- 		u32 sessionid = audit_get_sessionid(current);
- 		u32 sid;
- 
-@@ -1961,7 +1961,7 @@ static int xfrm_add_sa_expire(struct sk_buff *skb, struct nlmsghdr *nlh,
- 	km_state_expired(x, ue->hard, current->pid);
- 
- 	if (ue->hard) {
--		uid_t loginuid = audit_get_loginuid(current);
-+		kuid_t loginuid = audit_get_loginuid(current);
- 		u32 sessionid = audit_get_sessionid(current);
- 		u32 sid;
- 
 -- 
-1.7.5.4
-
+Regards/Gruss,
+    Boris.
