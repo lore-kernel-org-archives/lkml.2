@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab2HZMxl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 08:53:41 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:44557 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab2HZMxV (ORCPT
+	id S1754710Ab2HZMxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 08:53:49 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:47386 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab2HZMxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 08:53:21 -0400
+	Sun, 26 Aug 2012 08:53:46 -0400
 X-SENDER-IP: [85.230.170.20]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApRZADUbOlBV5qoUPGdsb2JhbABFhRqFI7AtGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESiBG7SRSSBQObQI0P
+X-IronPort-Anti-Spam-Result: ApRZALMbOlBV5qoUPGdsb2JhbABFhRqFI7AtGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESiBG7SRSSBQObQI0P
 X-IronPort-AV: E=Sophos;i="4.77,830,1336341600"; 
-   d="scan'208";a="103157573"
+   d="scan'208";a="180869248"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 08/20] Input: evdev - Add the events() callback
-Date: Sun, 26 Aug 2012 14:57:26 +0200
-Message-Id: <1345985858-445-9-git-send-email-rydberg@euromail.se>
+Subject: [PATCH 12/20] Input: MT - Add slot assignment by id
+Date: Sun, 26 Aug 2012 14:57:30 +0200
+Message-Id: <1345985858-445-13-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1345985858-445-1-git-send-email-rydberg@euromail.se>
 References: <1345985858-445-1-git-send-email-rydberg@euromail.se>
@@ -27,132 +27,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By sending a full frame of events at the same time, the irqsoff
-latency at heavy load is brought down from 200 us to 100 us.
+Some drivers produce their own tracking ids, which needs to be mapped
+to slots. This patch provides that function.
 
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/input/evdev.c | 68 +++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 47 insertions(+), 21 deletions(-)
+ drivers/input/input-mt.c | 30 ++++++++++++++++++++++++++++++
+ include/linux/input/mt.h |  2 ++
+ 2 files changed, 32 insertions(+)
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index a0692c5..1bf4ce5 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -54,16 +54,9 @@ struct evdev_client {
- static struct evdev *evdev_table[EVDEV_MINORS];
- static DEFINE_MUTEX(evdev_table_mutex);
- 
--static void evdev_pass_event(struct evdev_client *client,
--			     struct input_event *event,
--			     ktime_t mono, ktime_t real)
-+static void __pass_event(struct evdev_client *client,
-+			 const struct input_event *event)
- {
--	event->time = ktime_to_timeval(client->clkid == CLOCK_MONOTONIC ?
--					mono : real);
--
--	/* Interrupts are disabled, just acquire the lock. */
--	spin_lock(&client->buffer_lock);
--
- 	client->buffer[client->head++] = *event;
- 	client->head &= client->bufsize - 1;
- 
-@@ -86,42 +79,74 @@ static void evdev_pass_event(struct evdev_client *client,
- 		client->packet_head = client->head;
- 		kill_fasync(&client->fasync, SIGIO, POLL_IN);
- 	}
-+}
-+
-+static void evdev_pass_values(struct evdev_client *client,
-+			      const struct input_value *vals, size_t count,
-+			      ktime_t mono, ktime_t real)
-+{
-+	struct evdev *evdev = client->evdev;
-+	const struct input_value *v;
-+	struct input_event event;
-+	bool wakeup = false;
-+
-+	event.time = ktime_to_timeval(client->clkid == CLOCK_MONOTONIC ?
-+				      mono : real);
-+
-+	/* Interrupts are disabled, just acquire the lock. */
-+	spin_lock(&client->buffer_lock);
-+
-+	for (v = vals; v != vals + count; v++) {
-+		event.type = v->type;
-+		event.code = v->code;
-+		event.value = v->value;
-+		__pass_event(client, &event);
-+		if (v->type == EV_SYN && v->code == SYN_REPORT)
-+			wakeup = true;
-+	}
- 
- 	spin_unlock(&client->buffer_lock);
-+
-+	if (wakeup)
-+		wake_up_interruptible(&evdev->wait);
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+index effea9b..a485014 100644
+--- a/drivers/input/input-mt.c
++++ b/drivers/input/input-mt.c
+@@ -383,3 +383,33 @@ int input_mt_assign_slots(struct input_dev *dev, int *slots,
+ 	return 0;
  }
- 
- /*
-- * Pass incoming event to all connected clients.
-+ * Pass incoming events to all connected clients.
-  */
--static void evdev_event(struct input_handle *handle,
--			unsigned int type, unsigned int code, int value)
-+static void evdev_events(struct input_handle *handle,
-+			 const struct input_value *vals, size_t count)
- {
- 	struct evdev *evdev = handle->private;
- 	struct evdev_client *client;
--	struct input_event event;
- 	ktime_t time_mono, time_real;
- 
- 	time_mono = ktime_get();
- 	time_real = ktime_sub(time_mono, ktime_get_monotonic_offset());
- 
--	event.type = type;
--	event.code = code;
--	event.value = value;
--
- 	rcu_read_lock();
- 
- 	client = rcu_dereference(evdev->grab);
- 
- 	if (client)
--		evdev_pass_event(client, &event, time_mono, time_real);
-+		evdev_pass_values(client, vals, count, time_mono, time_real);
- 	else
- 		list_for_each_entry_rcu(client, &evdev->client_list, node)
--			evdev_pass_event(client, &event, time_mono, time_real);
-+			evdev_pass_values(client, vals, count,
-+					  time_mono, time_real);
- 
- 	rcu_read_unlock();
-+}
- 
--	if (type == EV_SYN && code == SYN_REPORT)
--		wake_up_interruptible(&evdev->wait);
-+/*
-+ * Pass incoming event to all connected clients.
+ EXPORT_SYMBOL(input_mt_assign_slots);
++
++/**
++ * input_mt_assign_slot_by_id() - return matching slot
++ * @dev: input device with allocated MT slots
++ * @id: the sought tracking id
++ *
++ * Returns the slot of the given tracking id, if it exists. Otherwise,
++ * the first unused slot is returned.
++ *
++ * If no available slot can be found, -1 is returned.
 + */
-+static void evdev_event(struct input_handle *handle,
-+			unsigned int type, unsigned int code, int value)
++int input_mt_assign_slot_by_id(struct input_dev *dev, int id)
 +{
-+	struct input_value vals[] = { { type, code, value } };
++	struct input_mt *mt = dev->mt;
++	struct input_mt_slot *s;
 +
-+	evdev_events(handle, vals, 1);
- }
++	if (!mt)
++		return -1;
++
++	for (s = mt->slots; s != mt->slots + mt->num_slots; s++)
++		if (input_mt_get_value(s, ABS_MT_TRACKING_ID) == id)
++			return s - mt->slots;
++
++	for (s = mt->slots; s != mt->slots + mt->num_slots; s++)
++		if (!input_mt_is_active(s))
++			return s - mt->slots;
++
++	return -1;
++}
++EXPORT_SYMBOL(input_mt_assign_slot_by_id);
+diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
+index 10bb77c..54b640b 100644
+--- a/include/linux/input/mt.h
++++ b/include/linux/input/mt.h
+@@ -109,4 +109,6 @@ struct input_mt_pos {
+ int input_mt_assign_slots(struct input_dev *dev, int *slots,
+ 			  const struct input_mt_pos *pos, int num_pos);
  
- static int evdev_fasync(int fd, struct file *file, int on)
-@@ -1050,6 +1075,7 @@ MODULE_DEVICE_TABLE(input, evdev_ids);
- 
- static struct input_handler evdev_handler = {
- 	.event		= evdev_event,
-+	.events		= evdev_events,
- 	.connect	= evdev_connect,
- 	.disconnect	= evdev_disconnect,
- 	.fops		= &evdev_fops,
++int input_mt_assign_slot_by_id(struct input_dev *dev, int id);
++
+ #endif
 -- 
 1.7.12
 
