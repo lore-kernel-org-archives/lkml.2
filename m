@@ -1,73 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab2HZPsg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 11:48:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab2HZPsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 11:48:35 -0400
-Date: Sun, 26 Aug 2012 18:44:23 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v9 0/5] make balloon pages movable by compaction
-Message-ID: <20120826154423.GA15478@redhat.com>
-References: <cover.1345869378.git.aquini@redhat.com>
- <20120826075840.GE19551@redhat.com>
- <503A3565.2060004@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503A3565.2060004@redhat.com>
+	id S1753487Ab2HZQBP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 12:01:15 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56799
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751970Ab2HZQBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 12:01:13 -0400
+X-IronPort-AV: E=Sophos;i="4.80,315,1344204000"; 
+   d="scan'208";a="153852285"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 0/13] use clk_prepare_enable and clk_disable_unprepare
+Date: Sun, 26 Aug 2012 18:00:52 +0200
+Message-Id: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 10:40:37AM -0400, Rik van Riel wrote:
-> On 08/26/2012 03:58 AM, Michael S. Tsirkin wrote:
-> >On Sat, Aug 25, 2012 at 02:24:55AM -0300, Rafael Aquini wrote:
-> >>Memory fragmentation introduced by ballooning might reduce significantly
-> >>the number of 2MB contiguous memory blocks that can be used within a guest,
-> >>thus imposing performance penalties associated with the reduced number of
-> >>transparent huge pages that could be used by the guest workload.
-> >>
-> >>This patch-set follows the main idea discussed at 2012 LSFMMS session:
-> >>"Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
-> >>to introduce the required changes to the virtio_balloon driver, as well as
-> >>the changes to the core compaction & migration bits, in order to make those
-> >>subsystems aware of ballooned pages and allow memory balloon pages become
-> >>movable within a guest, thus avoiding the aforementioned fragmentation issue
-> >
-> >Meta-question: are there any numbers showing gain from this patchset?
-> >
-> >The reason I ask, on migration we notify host about each page
-> >individually.  If this is rare maybe the patchset does not help much.
-> >If this is common we would be better off building up a list of multiple
-> >pages and passing them in one go.
-> 
-> The gain is in getting a better THP allocation rate inside the
-> guest, allowing applications to run faster.
-> 
-> The rarer it is for this code to run, the better - it means we
-> are getting the benefits without the overhead :)
+Clk_prepare_enable and clk_disable_unprepare combine clk_prepare and
+clk_enable, and clk_disable and clk_unprepare.  They make the code more
+concise, and ensure that clk_unprepare is called when clk_enable fails.
 
-I am simply asking how was this patchset tested.
-It would be nice to have this info in commit log.
-Since this is an optimization patch it is strange
-to see one with no numbers at all.
-For example, you probably run some workload and
-played with the balloon, and then saw less huge pages
-without the patch and more with?
-Please put this info in the cover letter.
+The transformation is made using the following semantic patch
+(http://coccinelle.lip6.fr/).  This semantic patch is not really safe, in
+that it doesn't check for clk_disable's that are relying on the removed
+clk_unprepare's.  These cases have been adjusted by hand.
 
-> -- 
-> All rights reversed
+// <smpl>
+@@
+expression e;
+@@
+
+- clk_prepare(e);
+- clk_enable(e);
++ clk_prepare_enable(e);
+
+@@
+expression e;
+identifier r;
+statement S;
+@@
+
+- r = clk_prepare(e); if (r) S
+- clk_enable(e);
++ r = clk_prepare_enable(e); if (r) S
+
+@@
+expression e;
+expression r;
+@@
+
+- clk_prepare(e);
+  r =
+- clk_enable
++ clk_prepare_enable
+  (e);
+  if (r) { ...
+- clk_unprepare(e); // unsafe!
+  ...
+  return ...;
+  }
+
+@@
+expression e;
+expression r;
+@@
+
+- clk_prepare(e);
+  r =
+- clk_enable
++ clk_prepare_enable
+  (e);
+
+@@
+expression e;
+statement S;
+@@
+
+- if (clk_prepare(e)) S
+- clk_enable(e);
++ if (clk_prepare_enable(e)) S
+
+@@
+expression e;
+@@
+
+- clk_prepare(e);
+  if (
+- clk_enable(e)
++ clk_prepare_enable(e)
+  ) { ...
+- clk_unprepare(e); // unsafe!
+  ...
+  return ...;
+  }
+
+@@
+expression e;
+statement S;
+@@
+
+- clk_prepare(e);
+  if (
+- clk_enable(e)
++ clk_prepare_enable(e)
+  ) S
+
+@@
+expression e,r2;
+identifier r1;
+statement S;
+@@
+
+- r1 = clk_prepare(e); if (r1) S
+  r2 =
+-  clk_enable
++  clk_prepare_enable
+   (e);
+  if (r2) { ...
+- clk_unprepare(e); // unsafe!
+  ...
+  return ...;
+  }
+
+@@
+expression e,r2;
+identifier r1;
+statement S;
+@@
+
+- r1 = clk_prepare(e); if (r1) S
+  r2 =
+-  clk_enable
++  clk_prepare_enable
+   (e);
+
+@@
+expression e;
+statement S1;
+@@
+
+- if (clk_prepare(e)) S1
+  if (
+-  clk_enable
++  clk_prepare_enable
+     (e)) { ...
+- clk_unprepare(e); // unsafe!
+  ...
+  return ...;
+  }
+
+@@
+expression e;
+statement S1,S2;
+@@
+
+- if (clk_prepare(e)) S1
+  if (
+-  clk_enable
++  clk_prepare_enable
+     (e)) S2
+
+@@
+expression e;
+@@
+
+- clk_disable(e);
+- clk_unprepare(e);
++ clk_disable_unprepare(e);
+// </smpl>
+
