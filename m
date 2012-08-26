@@ -1,132 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab2HZO0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 10:26:16 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:49837 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229Ab2HZOZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 10:25:59 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
-        David Miller <davem@davemloft.net>
-References: <87lih2h6i4.fsf@xmission.com>
-	<9E0E8AAC-9548-4009-AE29-D368244D8EEA@dubeyko.com>
-Date: Sun, 26 Aug 2012 07:25:46 -0700
-In-Reply-To: <9E0E8AAC-9548-4009-AE29-D368244D8EEA@dubeyko.com> (Vyacheslav
-	Dubeyko's message of "Sun, 26 Aug 2012 16:29:03 +0400")
-Message-ID: <87txvp91cl.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754441Ab2HZO1O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 10:27:14 -0400
+Received: from antcom.de ([188.40.178.216]:58747 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753084Ab2HZO1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 10:27:11 -0400
+Message-ID: <503A323A.9090309@antcom.de>
+Date: Sun, 26 Aug 2012 16:27:06 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18gOLXqyhUEdw2aYP1PjzpU/rtzw+jHh2Y=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vyacheslav Dubeyko <slava@dubeyko.com>
-X-Spam-Relay-Country: 
-Subject: Re: [REVIEW][PATCH 0/15] userns subsystem conversions
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: dedekind1@gmail.com
+CC: linux@arm.linux.org.uk, artem.bityutskiy@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH RESEND] mtd: lpc32xx_mlc: Make driver independent of AMBA
+ DMA engine driver
+References: <1345674311-16874-1-git-send-email-stigge@antcom.de> <1345898007.1815.7.camel@kyv>
+In-Reply-To: <1345898007.1815.7.camel@kyv>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vyacheslav Dubeyko <slava@dubeyko.com> writes:
+Hi,
 
-> HI,
->
-> On Aug 26, 2012, at 3:54 AM, Eric W. Biederman wrote:
+On 25/08/12 14:33, Artem Bityutskiy wrote:
+> On Thu, 2012-08-23 at 00:25 +0200, Roland Stigge wrote:
+>> This patch makes the MLC NAND driver independent of the single
+>> AMBA DMA engine driver by using the platform data provided
+>> dma_filter callback.
 >> 
->> fs/9p/acl.c                       |    8 +-
->> fs/btrfs/acl.c                    |    8 +-
->> fs/configfs/inode.c               |    4 +-
->> fs/debugfs/inode.c                |   26 +++--
->> fs/ext2/acl.c                     |   32 ++++--
->> fs/ext3/acl.c                     |   32 ++++--
->> fs/ext4/acl.c                     |   31 ++++--
->> fs/generic_acl.c                  |    4 +-
->> fs/gfs2/acl.c                     |   14 ++--
->> fs/gfs2/quota.c                   |   44 +++++---
->> fs/jffs2/acl.c                    |    4 +-
->> fs/jfs/acl.c                      |    4 +-
->> fs/jfs/xattr.c                    |    4 +-
->> fs/nfs/nfs3acl.c                  |    4 +-
->> fs/nfsd/vfs.c                     |    8 +-
->> fs/ocfs2/acl.c                    |    4 +-
->> fs/ocfs2/file.c                   |    6 +-
->> fs/ocfs2/quota_global.c           |   34 +++++--
->> fs/ocfs2/quota_local.c            |   12 ++-
->> fs/posix_acl.c                    |   30 +++---
->> fs/proc/base.c                    |   12 ++-
->> fs/quota/dquot.c                  |   43 ++++----
->> fs/quota/netlink.c                |   11 ++-
->> fs/quota/quota.c                  |   44 +++++---
->> fs/quota/quota_tree.c             |   20 +++-
->> fs/quota/quota_v1.c               |    8 +-
->> fs/quota/quota_v2.c               |   14 ++-
->> drivers/connector/cn_proc.c       |   18 +++-
->> drivers/gpu/drm/drm_fops.c        |    3 +-
->> drivers/gpu/drm/drm_info.c        |    5 +-
->> drivers/gpu/drm/drm_ioctl.c       |    4 +-
->> drivers/tty/tty_audit.c           |   16 ++--
->> fs/9p/acl.c                       |    8 +-
->> fs/btrfs/acl.c                    |    8 +-
->> fs/configfs/inode.c               |    4 +-
->> fs/debugfs/inode.c                |   26 +++--
->> fs/ext2/acl.c                     |   32 ++++--
->> fs/ext3/acl.c                     |   32 ++++--
->> fs/ext4/acl.c                     |   31 ++++--
->> fs/generic_acl.c                  |    4 +-
->> fs/gfs2/acl.c                     |   14 ++--
->> fs/gfs2/quota.c                   |   44 +++++---
->> fs/jffs2/acl.c                    |    4 +-
->> fs/jfs/acl.c                      |    4 +-
->> fs/jfs/xattr.c                    |    4 +-
->> fs/nfs/nfs3acl.c                  |    4 +-
->> fs/nfsd/vfs.c                     |    8 +-
->> fs/ocfs2/acl.c                    |    4 +-
->> fs/ocfs2/file.c                   |    6 +-
->> fs/ocfs2/quota_global.c           |   34 +++++--
->> fs/ocfs2/quota_local.c            |   12 ++-
->> fs/posix_acl.c                    |   30 +++---
->> fs/proc/base.c                    |   12 ++-
->> fs/quota/dquot.c                  |   43 ++++----
->> fs/quota/netlink.c                |   11 ++-
->> fs/quota/quota.c                  |   44 +++++---
->> fs/quota/quota_tree.c             |   20 +++-
->> fs/quota/quota_v1.c               |    8 +-
->> fs/quota/quota_v2.c               |   14 ++-
->> fs/reiserfs/xattr_acl.c           |    4 +-
->> fs/xattr.c                        |    7 ++
->> fs/xattr_acl.c                    |   96 +++++++++++++++--
->> fs/xfs/xfs_acl.c                  |    4 +-
->> fs/xfs/xfs_quotaops.c             |   18 ++--
->> fs/xfs/xfs_trans_dquot.c          |    8 +-
->
->
-> Sorry, maybe I misunderstand something. But I can't find in the patch
-> set changes in concrete filesystems' code.
+>> (This also fixes the build error of the MLC NAND driver in case
+>> of module linking because the (not exported) reference to
+>> pl08x_filter_id is gone now.)
+>> 
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> 
+> I already have both patches in l2-mtd.git. Please, use it as the 
+> baseline for sending patches.
 
-I assume the problem is patches 6 8 13 and 14 didn't make it through to
-the mailling for some reason.
+Yes, noticed to late that you have already applied it, sorry.
 
-Just to see what is going on I you can look at my development branch
-git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git userns-always-map-user-v48
+The recently posted cleanup patches for LPC32xx SLC and MLC drivers
+apply to l2-mtd.git, anyway.
 
-Meanwhile I am going to scratch my head and try and resolve my technical
-patch sending difficulties.
+Thanks,
 
-Eric
+Roland
