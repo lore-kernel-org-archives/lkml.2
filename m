@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab2HZGGO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 02:06:14 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55139 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab2HZGGM (ORCPT
+	id S1752601Ab2HZGkA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 02:40:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57940 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab2HZGj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 02:06:12 -0400
-Date: Sun, 26 Aug 2012 09:06:03 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dedekind1@gmail.com
-Subject: Re: [PATCH v2] mtd: cmdlinepart: fix the wrong partitions number
- when truncating occurs
-Message-ID: <20120826090603.6b833e54@pixies.home.jungo.com>
-In-Reply-To: <CAMiH66HyfNEzEHGyZUcLJ_01PNVHqA44fjAqXsyM2c-HHms8hQ@mail.gmail.com>
-References: <1345904767-23011-1-git-send-email-shijie8@gmail.com>
-	<20120825120231.73577d6a@halley>
-	<CAMiH66HyfNEzEHGyZUcLJ_01PNVHqA44fjAqXsyM2c-HHms8hQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 26 Aug 2012 02:39:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120825173725.GD3363@breakpoint.cc>
+References: <1345909883-29977-1-git-send-email-amwang@redhat.com>
+	<20120825173725.GD3363@breakpoint.cc>
+Date: Sun, 26 Aug 2012 14:39:58 +0800
+Message-ID: <CAM_iQpWjEKhY_gv0YLeJR6ymdZY5JHte_EQ8d0f0zuBHURG0kg@mail.gmail.com>
+Subject: Re: [Patch] block: remove the deprecated ub driver
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Aug 26, 2012 at 1:37 AM, Sebastian Andrzej Siewior
+<sebastian@breakpoint.cc> wrote:
+> On Sat, Aug 25, 2012 at 11:51:23PM +0800, Cong Wang wrote:
+>> From: Cong Wang <xiyou.wangcong@gmail.com>
+>>
+>> It is scheduled to be removed in 3.6.
+>
+> This should go via Greg and linux-usb and you should put Pete Zaitcev on Cc.
 
-On Sat, 25 Aug 2012 05:26:51 -0400 Huang Shijie <shijie8@gmail.com> wrote:
-> On Sat, Aug 25, 2012 at 5:02 AM, Shmulik Ladkani
-> <shmulik.ladkani@gmail.com> wrote:
-> > Your analysis seems right, but let me offer an alternative approach.
-> >
-> > I would simply:
-> >
-> > -                                       part->num_parts = i;
-> your code does not wors in such kernel command line(also with the 1GB
-> nand chip):
-> #gpmi-nand:100m(root),100m(kernel),1g(rootfs),1g(user),-(rest)
-> 
+Will do.
 
-Can you please detail what do you mean by "not work"?
+> I have a patch in my try doing this and removing the libusual which is obsolete
+> since there is only one driver for USB storage.
+> I would not remove the config option from all these defconfigs. Once this
+> symbol is gone, it will vanish from defconfigs all by itself once they update
+> their defconfigs and this patch does not clash with them.
+>
 
-To my understanding, in this example, according to my suggestion, the
-resulting partitions would be:
+Makes sense. I will send an updated patch.
 
-root	100m@0
-kernel	100m@100m
-rootfs	800m@200m (truncated)
-user	0@1g (truncated)
-rest	0@1g
-
-Reasonable IMO, given the fact that the mtd device size is smaller than
-the specified parts.
-
-I saw you submitted a patch which sorts the cmdline parts; I don't
-understand why this is necessary.
-Also, sorting might not be desirable, as the user specified the unsorted
-partitions might have _wanted_ them to appear in that order.
-
-Now lets focus on your original suggestion and its consequences:
-
-- Orignal code STOPPED parsing at the 1st truncated partition,
-  this partition WAS NOT returned to the caller
-- Your patch STOPS AFTER parsing the 1st truncated partition,
-  this partiton IS returned to the caller (but partitions specified
-  later are no longer parsed)
-- My suggestion CONTINUES parsing all partitions.
-  So later partitions (specified with the 'size' but *without* 'offset')
-  will be truncated AND presented to the caller.
-  AND, if later partitions are specified using the 'size@offset'
-  explicit format, they are parsed normally.
-  
-Regards,
-Shmulik
+Thanks!
