@@ -1,71 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2HZWZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 18:25:59 -0400
-Received: from bosmailout20.eigbox.net ([66.96.185.20]:40380 "EHLO
-	bosmailout20.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab2HZWZ5 (ORCPT
+	id S1753770Ab2HZW0T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 18:26:19 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:1364 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753619Ab2HZW0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 18:25:57 -0400
-X-Greylist: delayed 2393 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Aug 2012 18:25:57 EDT
-X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
- a=OWwsRfqG41DA94+gJvZMBg==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
- a=RnqgmmiJ3l0A:10 a=8nJEP1OIZ-IA:10 a=cHz4xhJ9zCEA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=GpLXe_uxwL8xOnI39DIA:9 a=wPNLvfGTeEIA:10
- a=x8qw8EAkfcRkIpZA8Q87Bg==:117
-X-EN-OrigOutIP: 10.20.18.7
-X-EN-IMPSID: rZmJ1j004099BUA01ZmJd7
-Message-ID: <503A8B6F.3010404@yahoo.es>
-Date: Mon, 27 Aug 2012 04:47:43 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>
-CC: spear-devel <spear-devel@list.st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, egtvedt@samfundet.no,
+	Sun, 26 Aug 2012 18:26:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmEKAEOhOlB5LD1U/2dsb2JhbABFhRq0UwN9gQiCIAEBBAEnExwjBQsIAw4KLhQlAyETiAcFujoUinSBA4UuYAOLMooihkmCZ4ZmgnU
+Date: Mon, 27 Aug 2012 08:26:07 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [PATCH 0/2] dw_dmac: repair driver for use with AVR32 (AP7000)
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.63.241
-X-EN-OrigHost: unknown
+        Tony Luck <tony.luck@intel.com>, Rik van Riel <riel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] HWPOISON: prevent inode cache removal to keep
+ AS_HWPOISON sticky
+Message-ID: <20120826222607.GD19235@dastard>
+References: <20120824043916.GC19235@dastard>
+ <1345829056-7591-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345829056-7591-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After some recent changes to dw_dmac, the driver got broken
-for the AVR32 platform for two reasons:
+On Fri, Aug 24, 2012 at 01:24:16PM -0400, Naoya Horiguchi wrote:
+> On Fri, Aug 24, 2012 at 02:39:17PM +1000, Dave Chinner wrote:
+> > On Thu, Aug 23, 2012 at 10:39:32PM -0400, Naoya Horiguchi wrote:
+> > > On Fri, Aug 24, 2012 at 11:31:18AM +1000, Dave Chinner wrote:
+> > > > On Wed, Aug 22, 2012 at 11:17:35AM -0400, Naoya Horiguchi wrote:
+> > > > > "HWPOISON: report sticky EIO for poisoned file" still has a corner case
+> > > > > where we have possibilities of data lost. This is because in this fix
+> > > > > AS_HWPOISON is cleared when the inode cache is dropped.
+> > ....
+> > > > > --- v3.6-rc1.orig/mm/truncate.c
+> > > > > +++ v3.6-rc1/mm/truncate.c
+> > > > > @@ -574,6 +574,8 @@ void truncate_setsize(struct inode *inode, loff_t newsize)
+> > > > >  
+> > > > >  	oldsize = inode->i_size;
+> > > > >  	i_size_write(inode, newsize);
+> > > > > +	if (unlikely(mapping_hwpoison(inode->i_mapping) && !newsize))
+> > > > > +		mapping_clear_hwpoison(inode->i_mapping);
+> > > > 
+> > > > So only a truncate to zero size will clear the poison flag?
+> > > 
+> > > Yes, this is because we only know if the file is affected by hwpoison,
+> > > but not where the hwpoisoned page is in the file. We could remember it,
+> > > but I did not do it for simplicity.
+> > 
+> > Surely the page has flags on it to say it is poisoned? That is,
+> > after truncating the page cache, if the address space is poisoned,
+> > then you can do a pass across the mapping tree checking if there are
+> > any poisoned pages left? Or perhaps adding a new mapping tree tag so
+> > that the poisoned status is automatically determined by the presence
+> > of the poisoned page in the mapping tree?
+> 
+> The answer for the first question is yes. And for the second question,
+> I don't think it's easy because the mapping tree has no reference to
+> the error page (I explain more about this below, please see also it,)
+> and it can cost too much to search poisoned pages over page cache in
+> each request.
 
-The accessors to i/o memory had become little-endian.
-The maximum transfer width on the memory side was increased
-from 32 to 64 bits.
+Which is my point about a radix tree tag - that's very efficient.
 
-These patches repair the driver by:
-1. making the endianness configurable through Kconfig,
-for AVR32 it will become big-endian
-2. making the maximum memory transfer width configurable
-It can be set in the code within arch
+> And for the third question, I think we could do this, but to do it
+> we need an additional space (8 bytes) in struct radix_tree_node.
+> Considering that this new tag is not used so frequently, so I'm not
+> sure that it's worth the cost.
 
-For non-avr32 (ARM) platforms, nothing has to be changed.
+A radix tree node is currently 560 bytes on x86_64, packed 7 to a
+page. i.e. using 3920 bytes. We can add another 8 bytes to it
+without increasing memory usage at all. So, no cost at all.
 
-Thanks to Viresh and Arnd for reviewing
+> > > > What happens if it is the last page in the mapping that is poisoned,
+> > > > and we truncate that away? Shouldn't that clear the poisoned bit?
+> > > 
+> > > When we handle the hwpoisoned inode, the error page should already
+> > > be removed from pagecache, so the remaining pages are not related
+> > > to the error and we need not care about them when we consider bit
+> > > clearing.
+> > 
+> > Sorry, I don't follow. What removed the page from the page cache?
+> > The truncate_page_cache() call that follows the above code hunk is
+> > what does that, so I don't see how it can already be removed from
+> > the page cache....
+> 
+> Memory error handler (memory_failure() in mm/memory-failure.c) has
+> removed the error page from the page cache.
+> And truncate_page_cache() that follows this hunk removes all pages
+> belonging to the page cache of the poisoned file (where the error
+> page itself is not included in them.)
+> 
+> Let me explain more to clarify my whole scenario. If a memory error
+> hits on a dirty pagecache, kernel works like below:
+> 
+>   1. handles a MCE interrupt (logging MCE events,)
+>   2. calls memory error handler (doing 3 to 6,)
+>   3. sets PageHWPoison flag on the error page,
+>   4. unmaps all mappings to processes' virtual addresses,
 
-Hein Tibosch (2):
+So nothing in userspace sees the bad page after this.
 
-  dw_dmac: make driver endianness configurable
-  dw_dmac: max_mem_width limits value for SRC/DST_TR_WID register
+>   5. sets AS_HWPOISON on mappings to which the error page belongs
+>   6. invalidates the error page (unlinks it from LRU list and removes
+>      it from pagecache,)
+>   (memory error handler finished)
 
- drivers/dma/Kconfig        |    8 ++++++++
- drivers/dma/dw_dmac.c      |    8 ++++++++
- drivers/dma/dw_dmac_regs.h |   23 +++++++++++++++++++++++
- include/linux/dw_dmac.h    |    3 +++
- 4 files changed, 42 insertions(+), 0 deletions(-)
+Ok, so the moment a memory error is handled, the page has been
+removed from the inode's mapping, and it will never be seen by
+aplications again. It's a transient error....
 
+>   7. later accesses to the file returns -EIO,
+>   8. AS_HWPOISON is cleared when the file is removed or completely
+>      truncated.
+
+.... so why do we have to keep an EIO on the inode forever?
+
+If the page is not dirty, then just tossing it from the cache (as
+is already done) and rereading it from disk next time it is accessed
+removes the need for any error to be reported at all. It's
+effectively a transient error at this point, and as such no errors
+should be visible from userspace.
+
+If the page is dirty, then it needs to be treated just like any
+other failed page write - the page is invalidated and the address
+space is marked with AS_EIO, and that is reported to the next
+operation that waits on IO on that file (i.e. fsync)
+
+If you have a second application that reads the files that depends
+on a guarantee of good data, then the first step in that process is
+that application that writes it needs to use fsync to check the data
+was written correctly. That ensures that you only have clean pages
+in the cache before the writer closes the file, and any h/w error
+then devolves to the above transient clean page invalidation case.
+
+Hence I fail to see why this type of IO error needs to be sticky.
+The error on the mapping is transient - it is gone as soon as the
+page is removed from the mapping. Hence the error can be dropped as
+soon as it is reported to userspace because the mapping is now error
+free.
+
+> You may think it strange that the condition of clearing AS_HWPOISON
+> is checked with file granularity.
+
+I don't think it is strange, I think it is *wrong*.
+
+> This is because currently userspace
+> applications know the memory errors only with file granularity for
+> simplicity, when they access via read(), write() and/or fsync().
+
+Trying to report this error to every potential future access
+regardless of whether the error still exists or the access is to the
+poisoned range with magical sticky errors on inode address spaces
+and hacks to memory the reclaim subsystems smells to me like a really
+bad hack to work around applications that use bad data integrity
+practices.
+
+As such, I think you probably need to rethink the approach you are
+taking to handling this error. The error is transient w.r.t. to the
+mapping and page cache, and needs to be addressed consistently
+compared to other transient IO errors that are reported through the
+mapping....
+
+Cheers,
+
+Dave.
 -- 
-
+Dave Chinner
+david@fromorbit.com
