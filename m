@@ -1,93 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab2HZBWf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 21:22:35 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:48950 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab2HZBWe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 21:22:34 -0400
-MIME-Version: 1.0
-Date: Sun, 26 Aug 2012 09:22:33 +0800
-Message-ID: <CAPgLHd9raeBjQ0utQZ1u5P=55RMC2gMu-2hPxk3P4m83SMnTOw@mail.gmail.com>
-Subject: [PATCH] staging: r8712u: use is_broadcast_ether_addr() to simplify
- the code
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
-        gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754565Ab2HZBjN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 21:39:13 -0400
+Received: from cat.he.net ([216.218.139.2]:45111 "HELO cat.he.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753408Ab2HZBjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Aug 2012 21:39:10 -0400
+X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Aug 2012 21:39:10 EDT
+From: ecashin@cat.he.net
+Message-Id: <1345944687.24968@cat.he.net>
+Date: Sat, 25 Aug 2012 18:31:27 -0700
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 02/14] aoe: kernel thread handles I/O completions for
+ simple locking
+In-Reply-To: <20120824142257.cbfb21a6.akpm@linux-foundation.org>
+References: <cover.1345743800.git.ecashin@coraid.com>
+	<752ecb77a67b4ba55e8f3ebddd745491aacc8818.1345743801.git.ecashin@coraid.com>
+	<20120824142257.cbfb21a6.akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Ed Cashin <ecashin@coraid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Fri, 24 Aug 2012 14:22:57 -0700, Andrew Morton wrote:
 
-Using is_broadcast_ether_addr() to simplify the code.
+> On Fri, 17 Aug 2012 21:24:08 -0400
+> Ed Cashin <ecashin@coraid.com> wrote:
+...
+> > +#ifdef PF_NOFREEZE
+> 
+> PF_NOFREEZE can never be undefined.
+> 
+> > +	current->flags |= PF_NOFREEZE;
+> > +#endif
+> > +	set_user_nice(current, -10);
+> > +	sigfillset(&blocked);
+> > +	sigprocmask(SIG_BLOCK, &blocked, NULL);
+> > +	flush_signals(current);
+> 
+> This is a kernel thread - it shouldn't need to fiddle with signals.
+> 
+> > +	complete(&k->rendez);
+> 
+> That's odd.  Why do a complete() before we even start?  A code comment
+> is needed if this is indeed correct.
 
-spatch with a semantic match is used to found this problem.
-(http://coccinelle.lip6.fr/)
+There is a whole class of races that goes away when the code starting
+a thread waits for the thread to be running before proceeding, and that's
+what this rendezvous is for.  I've added a comment that will appear next
+time I send the patchset.
 
+(More comments below.)
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/staging/rtl8712/ethernet.h            | 8 --------
- drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 4 +---
- drivers/staging/rtl8712/rtl871x_ioctl_set.c   | 6 ++----
- 3 files changed, 3 insertions(+), 15 deletions(-)
+> > +	do {
+> > +		__set_current_state(TASK_UNINTERRUPTIBLE);
+> 
+> I think this statement is simply unneeded.
+> 
+> > +		spin_lock_irq(k->lock);
+> > +		more = k->fn();
+> > +		if (!more) {
+> > +			add_wait_queue(k->waitq, &wait);
+> > +			__set_current_state(TASK_INTERRUPTIBLE);
+> > +		}
+> > +		spin_unlock_irq(k->lock);
+> > +		if (!more) {
+> > +			schedule();
+> > +			remove_wait_queue(k->waitq, &wait);
+> > +		} else
+> > +			cond_resched();
+> 
+> Here we can do a cond_resched() when in state TASK_INTERRUPTIBLE.  Such
+> a schedule() will never return unless some other thread flips this task
+> into state TASK_RUNNING.  But if another thread does that, we should
+> have been on that waitqueue!
+> 
+> It seems all confused and racy.
 
-diff --git a/drivers/staging/rtl8712/ethernet.h b/drivers/staging/rtl8712/ethernet.h
-index 882d61b..9095420 100644
---- a/drivers/staging/rtl8712/ethernet.h
-+++ b/drivers/staging/rtl8712/ethernet.h
-@@ -35,14 +35,6 @@
+When we do a cond_resched, it's only when "more" is non-zero, in which
+case, we did not set the state to TASK_INTERRUPTIBLE.  I do like
+your suggestions, though.
+
+Please check out the (post-patchset) changes below that I plan to
+incorporate into the patchset for resubmission, and let me know if
+you see a race now that your suggestions have been incorporated.
+
+It seems to work just as well in the testing I did with the changes
+below incorporated.
+
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index d91b8d0..97d05fa 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -1075,20 +1075,13 @@ kthread(void *vp)
+ {
+ 	struct ktstate *k;
+ 	DECLARE_WAITQUEUE(wait, current);
+-	sigset_t blocked;
+ 	int more;
  
- /*!< Is Multicast Address? */
- #define RT_ETH_IS_MULTICAST(_pAddr)	((((u8 *)(_pAddr))[0]&0x01) != 0)
--/*!< Is Broadcast Address? */
--#define RT_ETH_IS_BROADCAST(_pAddr)	(				\
--			((u8 *)(_pAddr))[0] == 0xff	&&		\
--			((u8 *)(_pAddr))[1] == 0xff	&&		\
--			((u8 *)(_pAddr))[2] == 0xff	&&		\
--			((u8 *)(_pAddr))[3] == 0xff	&&		\
--			((u8 *)(_pAddr))[4] == 0xff	&&		\
--			((u8 *)(_pAddr))[5] == 0xff)
+ 	k = vp;
+-#ifdef PF_NOFREEZE
+ 	current->flags |= PF_NOFREEZE;
+-#endif
+ 	set_user_nice(current, -10);
+-	sigfillset(&blocked);
+-	sigprocmask(SIG_BLOCK, &blocked, NULL);
+-	flush_signals(current);
+-	complete(&k->rendez);
++	complete(&k->rendez);	/* tell spawner we're running */
+ 	do {
+-		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		spin_lock_irq(k->lock);
+ 		more = k->fn();
+ 		if (!more) {
+@@ -1102,8 +1095,7 @@ kthread(void *vp)
+ 		} else
+ 			cond_resched();
+ 	} while (!kthread_should_stop());
+-	__set_current_state(TASK_RUNNING);
+-	complete(&k->rendez);
++	complete(&k->rendez);	/* tell spawner we're stopping */
+ 	return 0;
+ }
  
- #endif /* #ifndef __INC_ETHERNET_H */
+@@ -1122,10 +1114,10 @@ aoe_ktstart(struct ktstate *k)
+ 	init_completion(&k->rendez);
+ 	task = kthread_run(kthread, k, k->name);
+ 	if (task == NULL || IS_ERR(task))
+-		return -EFAULT;
++		return -ENOMEM;
+ 	k->task = task;
+-	wait_for_completion(&k->rendez);
+-	init_completion(&k->rendez);	/* for exit */
++	wait_for_completion(&k->rendez); /* allow kthread to start */
++	init_completion(&k->rendez);	/* for waiting for exit later */
+ 	return 0;
+ }
  
-
-diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-index 35e781f..c9a6a7f 100644
---- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-+++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-@@ -407,9 +407,7 @@ static int wpa_set_encryption(struct net_device *dev, struct ieee_param *param,
- 	if (param_len != (u32)((u8 *) param->u.crypt.key - (u8 *)param) +
- 			 param->u.crypt.key_len)
- 		return -EINVAL;
--	if (param->sta_addr[0] == 0xff && param->sta_addr[1] == 0xff &&
--	    param->sta_addr[2] == 0xff && param->sta_addr[3] == 0xff &&
--	    param->sta_addr[4] == 0xff && param->sta_addr[5] == 0xff) {
-+	if (is_broadcast_ether_addr(param->sta_addr)) {
- 		if (param->u.crypt.idx >= WEP_KEYS) {
- 			/* for large key indices, set the default (0) */
- 			param->u.crypt.idx = 0;
-
-diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_set.c b/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-index f352b32..5ab70ab 100644
---- a/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-+++ b/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-@@ -131,10 +131,7 @@ u8 r8712_set_802_11_bssid(struct _adapter *padapter, u8 *bssid)
- 	u8 status = true;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 
--	if ((bssid[0] == 0x00 && bssid[1] == 0x00 && bssid[2] == 0x00 &&
--	     bssid[3] == 0x00 && bssid[4] == 0x00 && bssid[5] == 0x00) ||
--	    (bssid[0] == 0xFF && bssid[1] == 0xFF && bssid[2] == 0xFF &&
--	     bssid[3] == 0xFF && bssid[4] == 0xFF && bssid[5] == 0xFF)) {
-+	if (is_zero_ether_addr(bssid) || is_broadcast_ether_addr(bssid)) {
- 		status = false;
- 		return status;
- 	}
-
-
