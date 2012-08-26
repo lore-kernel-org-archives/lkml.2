@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2HZAtJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 20:49:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50192 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab2HZAsW (ORCPT
+	id S1755381Ab2HZAwv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 20:52:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44268 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab2HZAwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 20:48:22 -0400
-Date: Sat, 25 Aug 2012 19:48:19 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Bernhard Froemel <bfroemel@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-Subject: Re: [PATCH v2 2/2] apple-gmux: Obtain version info from indexed gmux
-Message-ID: <20120826004819.GC20735@ubuntu-mba51>
-Mail-Followup-To: Bernhard Froemel <bfroemel@gmail.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-References: <50388C45.6030707@gmail.com>
- <1345883449-2790-1-git-send-email-bfroemel@gmail.com>
- <1345883449-2790-2-git-send-email-bfroemel@gmail.com>
+	Sat, 25 Aug 2012 20:52:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1345883449-2790-2-git-send-email-bfroemel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sun, 26 Aug 2012 08:52:48 +0800
+Message-ID: <CAPgLHd_hFSVnpy=jp8E=eZ1uhwoKxz7i4k0mCSiqRehBhayxWw@mail.gmail.com>
+Subject: [PATCH] staging: wlags49_h2: use is_broadcast_ether_addr() instead of memcmp()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: pe1dnn@amsat.org, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 25, 2012 at 10:30:49AM +0200, Bernhard Froemel wrote:
-> From: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-> 
-> This patch extracts and displays version information from the indexed
-> gmux device as it is also done for the classic gmux device.
-> 
-> Signed-off-by: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Acked-by: Seth Forshee <seth.forshee@canonical.com>
+Using is_broadcast_ether_addr() instead of directly use
+memcmp() to determine if the ethernet address is broadcast
+address.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/wlags49_h2/wl_wext.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/wlags49_h2/wl_wext.c b/drivers/staging/wlags49_h2/wl_wext.c
+index 7ff0a10..ae8dac0 100644
+--- a/drivers/staging/wlags49_h2/wl_wext.c
++++ b/drivers/staging/wlags49_h2/wl_wext.c
+@@ -62,6 +62,7 @@
+ #include <linux/if_arp.h>
+ #include <linux/ioport.h>
+ #include <linux/delay.h>
++#include <linux/etherdevice.h>
+ #include <asm/uaccess.h>
+ 
+ #include <debug.h>
+@@ -173,7 +174,7 @@ static int hermes_clear_tkip_keys(ltv_t *ltv, u16 key_idx, u8 *addr)
+ 
+ 	switch (key_idx) {
+ 	case 0:
+-		if (memcmp(addr, "\xff\xff\xff\xff\xff\xff", ETH_ALEN) != 0) {
++		if (!is_broadcast_ether_addr(addr)) {
+ 			ltv->len = 7;
+ 			ltv->typ = CFG_REMOVE_TKIP_MAPPED_KEY;
+ 			memcpy(&ltv->u.u8[0], addr, ETH_ALEN);
+
 
