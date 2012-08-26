@@ -1,172 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab2HZTKM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 15:10:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7393 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753040Ab2HZTJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 15:09:43 -0400
-Date: Sun, 26 Aug 2012 21:12:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
-        dhowells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 1/4] task_work: make task_work_add() lockless
-Message-ID: <20120826191209.GA4221@redhat.com>
+	id S1753691Ab2HZTNw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 15:13:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54728 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab2HZTNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 15:13:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120826191132.GA3743@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120826184249.GC5194@phenom.ffwll.local>
+References: <1345846584-5910-1-git-send-email-sedat.dilek@gmail.com>
+	<1345846584-5910-3-git-send-email-sedat.dilek@gmail.com>
+	<20120826184249.GC5194@phenom.ffwll.local>
+Date: Sun, 26 Aug 2012 21:13:49 +0200
+Message-ID: <CA+icZUWpT3of7kOb-mqSMth2uu9TAMkX3gum0qNfoEyFwRvCGg@mail.gmail.com>
+Subject: Re: [PATCH drm-next 3/3] drm/i915/contexts: Fixup merge with commit b6c7488df68a
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change task_works to use llist-like code to avoid pi_lock
-in task_work_add(), this makes it useable under rq->lock.
+On Sun, Aug 26, 2012 at 8:42 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Sat, Aug 25, 2012 at 12:16:24AM +0200, Sedat Dilek wrote:
+>> This is a fixup patch for the merge of drm-next into linux-next caused
+>> by commit b6c7488df68a ("drm/i915/contexts: fix list corruption").
+>>
+>> Reported-By: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+>
+> This is wrong, switch_context _must_ happen before ring_idle, otherwise
+> all hell can break loose on resume.
 
-task_work_cancel() and task_work_run() still use pi_lock
-to synchronize with each other.
+I followed what's in drm-intel-next not what was in Linus-tree.
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/task_work.c |   95 ++++++++++++++++++++++++++-------------------------
- 1 files changed, 48 insertions(+), 47 deletions(-)
+- Sedat -
 
-diff --git a/kernel/task_work.c b/kernel/task_work.c
-index d320d44..f13ec0b 100644
---- a/kernel/task_work.c
-+++ b/kernel/task_work.c
-@@ -3,25 +3,18 @@
- #include <linux/tracehook.h>
- 
- int
--task_work_add(struct task_struct *task, struct callback_head *twork, bool notify)
-+task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
- {
--	struct callback_head *last, *first;
--	unsigned long flags;
--
-+	struct callback_head *head;
- 	/*
- 	 * Not inserting the new work if the task has already passed
- 	 * exit_task_work() is the responisbility of callers.
- 	 */
--	raw_spin_lock_irqsave(&task->pi_lock, flags);
--	last = task->task_works;
--	first = last ? last->next : twork;
--	twork->next = first;
--	if (last)
--		last->next = twork;
--	task->task_works = twork;
--	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+	do {
-+		head = ACCESS_ONCE(task->task_works);
-+		work->next = head;
-+	} while (cmpxchg(&task->task_works, head, work) != head);
- 
--	/* test_and_set_bit() implies mb(), see tracehook_notify_resume(). */
- 	if (notify)
- 		set_notify_resume(task);
- 	return 0;
-@@ -30,52 +23,60 @@ task_work_add(struct task_struct *task, struct callback_head *twork, bool notify
- struct callback_head *
- task_work_cancel(struct task_struct *task, task_work_func_t func)
- {
-+	struct callback_head **pprev = &task->task_works;
-+	struct callback_head *work = NULL;
- 	unsigned long flags;
--	struct callback_head *last, *res = NULL;
--
-+	/*
-+	 * If cmpxchg() fails we continue without updating pprev.
-+	 * Either we raced with task_work_add() which added the
-+	 * new entry before this work, we will find it again. Or
-+	 * we raced with task_work_run(), *pprev == NULL.
-+	 */
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
--	last = task->task_works;
--	if (last) {
--		struct callback_head *q = last, *p = q->next;
--		while (1) {
--			if (p->func == func) {
--				q->next = p->next;
--				if (p == last)
--					task->task_works = q == p ? NULL : q;
--				res = p;
--				break;
--			}
--			if (p == last)
--				break;
--			q = p;
--			p = q->next;
--		}
-+	while ((work = ACCESS_ONCE(*pprev))) {
-+		read_barrier_depends();
-+		if (work->func != func)
-+			pprev = &work->next;
-+		else if (cmpxchg(pprev, work, work->next) == work)
-+			break;
- 	}
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
--	return res;
-+
-+	return work;
- }
- 
- void task_work_run(void)
- {
- 	struct task_struct *task = current;
--	struct callback_head *p, *q;
-+	struct callback_head *work, *head, *next;
- 
--	while (1) {
--		raw_spin_lock_irq(&task->pi_lock);
--		p = task->task_works;
--		task->task_works = NULL;
--		raw_spin_unlock_irq(&task->pi_lock);
-+	for (;;) {
-+		work = xchg(&task->task_works, NULL);
-+		if (!work)
-+			break;
-+		/*
-+		 * Synchronize with task_work_cancel(). It can't remove
-+		 * the first entry == work, cmpxchg(task_works) should
-+		 * fail, but it can play with *work and other entries.
-+		 */
-+		raw_spin_unlock_wait(&task->pi_lock);
-+		smp_mb();
- 
--		if (unlikely(!p))
--			return;
-+		/* Reverse the list to run the works in fifo order */
-+		head = NULL;
-+		do {
-+			next = work->next;
-+			work->next = head;
-+			head = work;
-+			work = next;
-+		} while (work);
- 
--		q = p->next; /* head */
--		p->next = NULL; /* cut it */
--		while (q) {
--			p = q->next;
--			q->func(q);
--			q = p;
-+		work = head;
-+		do {
-+			next = work->next;
-+			work->func(work);
-+			work = next;
- 			cond_resched();
--		}
-+		} while (work);
- 	}
- }
--- 
-1.5.5.1
+http://cgit.freedesktop.org/~danvet/drm-intel/tree/drivers/gpu/drm/i915/i915_gem.c?h=drm-intel-next#n2432
 
+> -Daniel
+>
+>> ---
+>>  drivers/gpu/drm/i915/i915_gem.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+>> index 4f6841d..e8a5cb2 100644
+>> --- a/drivers/gpu/drm/i915/i915_gem.c
+>> +++ b/drivers/gpu/drm/i915/i915_gem.c
+>> @@ -2273,11 +2273,11 @@ int i915_gpu_idle(struct drm_device *dev)
+>>
+>>       /* Flush everything onto the inactive list. */
+>>       for_each_ring(ring, dev_priv, i) {
+>> -             ret = i915_switch_context(ring, NULL, DEFAULT_CONTEXT_ID);
+>> +             ret = i915_ring_idle(ring);
+>>               if (ret)
+>>                       return ret;
+>>
+>> -             ret = i915_ring_idle(ring);
+>> +             ret = i915_switch_context(ring, NULL, DEFAULT_CONTEXT_ID);
+>>               if (ret)
+>>                       return ret;
+>>
+>> --
+>> 1.7.9.5
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
+> --
+> Daniel Vetter
+> Mail: daniel@ffwll.ch
+> Mobile: +41 (0)79 365 57 48
