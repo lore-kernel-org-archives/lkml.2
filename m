@@ -1,107 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab2HZBoo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 21:44:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55948 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab2HZBon (ORCPT
+	id S1755997Ab2HZBsO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 21:48:14 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:35061 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab2HZBsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 21:44:43 -0400
-Message-ID: <50397F86.9090800@lwfinger.net>
-Date: Sat, 25 Aug 2012 20:44:38 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Sat, 25 Aug 2012 21:48:12 -0400
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
-        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+Date: Sun, 26 Aug 2012 09:48:11 +0800
+Message-ID: <CAPgLHd_pYM3otnZBZ=nz7aYTP4dorBSjQtj=x9Z+zz7yr1NgSg@mail.gmail.com>
+Subject: [PATCH] ARM i.MX: remove duplicated include from clk-imx21.c
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: kernel@pengutronix.de, linux@arm.linux.org.uk
+Cc: yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: r8712u: use is_broadcast_ether_addr() to simplify
- the code
-References: <CAPgLHd9raeBjQ0utQZ1u5P=55RMC2gMu-2hPxk3P4m83SMnTOw@mail.gmail.com>
-In-Reply-To: <CAPgLHd9raeBjQ0utQZ1u5P=55RMC2gMu-2hPxk3P4m83SMnTOw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2012 08:22 PM, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Using is_broadcast_ether_addr() to simplify the code.
->
-> spatch with a semantic match is used to found this problem.
-> (http://coccinelle.lip6.fr/)
->
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->   drivers/staging/rtl8712/ethernet.h            | 8 --------
->   drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 4 +---
->   drivers/staging/rtl8712/rtl871x_ioctl_set.c   | 6 ++----
->   3 files changed, 3 insertions(+), 15 deletions(-)
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-ACKed-by: Larry Finger <Larry.Finger@lwfinger.net>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Thanks,
+Remove duplicated include.
 
-Larry
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ arch/arm/mach-imx/clk-imx21.c | 1 -
+ 1 file changed, 1 deletion(-)
 
->
-> diff --git a/drivers/staging/rtl8712/ethernet.h b/drivers/staging/rtl8712/ethernet.h
-> index 882d61b..9095420 100644
-> --- a/drivers/staging/rtl8712/ethernet.h
-> +++ b/drivers/staging/rtl8712/ethernet.h
-> @@ -35,14 +35,6 @@
->
->   /*!< Is Multicast Address? */
->   #define RT_ETH_IS_MULTICAST(_pAddr)	((((u8 *)(_pAddr))[0]&0x01) != 0)
-> -/*!< Is Broadcast Address? */
-> -#define RT_ETH_IS_BROADCAST(_pAddr)	(				\
-> -			((u8 *)(_pAddr))[0] == 0xff	&&		\
-> -			((u8 *)(_pAddr))[1] == 0xff	&&		\
-> -			((u8 *)(_pAddr))[2] == 0xff	&&		\
-> -			((u8 *)(_pAddr))[3] == 0xff	&&		\
-> -			((u8 *)(_pAddr))[4] == 0xff	&&		\
-> -			((u8 *)(_pAddr))[5] == 0xff)
->
->   #endif /* #ifndef __INC_ETHERNET_H */
->
->
-> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> index 35e781f..c9a6a7f 100644
-> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
-> @@ -407,9 +407,7 @@ static int wpa_set_encryption(struct net_device *dev, struct ieee_param *param,
->   	if (param_len != (u32)((u8 *) param->u.crypt.key - (u8 *)param) +
->   			 param->u.crypt.key_len)
->   		return -EINVAL;
-> -	if (param->sta_addr[0] == 0xff && param->sta_addr[1] == 0xff &&
-> -	    param->sta_addr[2] == 0xff && param->sta_addr[3] == 0xff &&
-> -	    param->sta_addr[4] == 0xff && param->sta_addr[5] == 0xff) {
-> +	if (is_broadcast_ether_addr(param->sta_addr)) {
->   		if (param->u.crypt.idx >= WEP_KEYS) {
->   			/* for large key indices, set the default (0) */
->   			param->u.crypt.idx = 0;
->
-> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_set.c b/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-> index f352b32..5ab70ab 100644
-> --- a/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_set.c
-> @@ -131,10 +131,7 @@ u8 r8712_set_802_11_bssid(struct _adapter *padapter, u8 *bssid)
->   	u8 status = true;
->   	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
->
-> -	if ((bssid[0] == 0x00 && bssid[1] == 0x00 && bssid[2] == 0x00 &&
-> -	     bssid[3] == 0x00 && bssid[4] == 0x00 && bssid[5] == 0x00) ||
-> -	    (bssid[0] == 0xFF && bssid[1] == 0xFF && bssid[2] == 0xFF &&
-> -	     bssid[3] == 0xFF && bssid[4] == 0xFF && bssid[5] == 0xFF)) {
-> +	if (is_zero_ether_addr(bssid) || is_broadcast_ether_addr(bssid)) {
->   		status = false;
->   		return status;
->   	}
->
->
->
+diff --git a/arch/arm/mach-imx/clk-imx21.c b/arch/arm/mach-imx/clk-imx21.c
+index ea13e61..cf65148 100644
+--- a/arch/arm/mach-imx/clk-imx21.c
++++ b/arch/arm/mach-imx/clk-imx21.c
+@@ -23,7 +23,6 @@
+ #include <linux/clk-provider.h>
+ #include <linux/io.h>
+ #include <linux/module.h>
+-#include <linux/clkdev.h>
+ #include <linux/err.h>
+ 
+ #include <mach/hardware.h>
 
