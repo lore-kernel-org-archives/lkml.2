@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2HZBAA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 21:00:00 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:40352 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab2HZA77 (ORCPT
+	id S1755966Ab2HZBAc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 21:00:32 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:37169 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab2HZBAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 20:59:59 -0400
+	Sat, 25 Aug 2012 21:00:30 -0400
 MIME-Version: 1.0
-Date: Sun, 26 Aug 2012 08:59:58 +0800
-Message-ID: <CAPgLHd-aZEY_WZi0YofhivBi2Z1y6xdHAyTpo9_Wn_S5=hEpHg@mail.gmail.com>
-Subject: [PATCH] staging: rtl8187se: use is_broadcast_ether_addr() instead of memcmp()
+Date: Sun, 26 Aug 2012 09:00:30 +0800
+Message-ID: <CAPgLHd_FznPhj4xWhp_1KnHn6vr0=cpaZ57dy7XkL784cfmWPQ@mail.gmail.com>
+Subject: [PATCH] Staging: rtl8192u: use is_broadcast_ether_addr() instead of memcmp()
 From: Wei Yongjun <weiyj.lk@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
@@ -32,22 +32,23 @@ spatch with a semantic match is used to found this problem.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-index 8173240..7c669a2 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-@@ -21,6 +21,7 @@
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+index f6ff8cf..02dd80d 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+@@ -20,6 +20,8 @@
+ #include <linux/delay.h>
  #include <linux/slab.h>
- #include <linux/interrupt.h>
  #include <asm/uaccess.h>
 +#include <linux/etherdevice.h>
- 
++
  #include "dot11d.h"
+ 
  u8 rsn_authen_cipher_suite[16][4] = {
-@@ -2808,9 +2809,7 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
+@@ -2969,9 +2971,7 @@ static int ieee80211_wpa_set_encryption(struct ieee80211_device *ieee,
  			       param->u.crypt.key_len);
  		return -EINVAL;
  	}
