@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab2HZVnD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 17:43:03 -0400
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:56899 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab2HZVnB (ORCPT
+	id S1753517Ab2HZWZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 18:25:59 -0400
+Received: from bosmailout20.eigbox.net ([66.96.185.20]:40380 "EHLO
+	bosmailout20.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab2HZWZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 17:43:01 -0400
-X-Greylist: delayed 449 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Aug 2012 17:43:01 EDT
-Date: Sun, 26 Aug 2012 23:35:17 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, speakup@braille.uwo.ca
-Subject: [PATCH,STAGING] speakup: lower default software speech rate
-Message-ID: <20120826213517.GT23559@type.wlan.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org, speakup@braille.uwo.ca
+	Sun, 26 Aug 2012 18:25:57 -0400
+X-Greylist: delayed 2393 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Aug 2012 18:25:57 EDT
+X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
+ a=OWwsRfqG41DA94+gJvZMBg==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
+ a=RnqgmmiJ3l0A:10 a=8nJEP1OIZ-IA:10 a=cHz4xhJ9zCEA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=GpLXe_uxwL8xOnI39DIA:9 a=wPNLvfGTeEIA:10
+ a=x8qw8EAkfcRkIpZA8Q87Bg==:117
+X-EN-OrigOutIP: 10.20.18.7
+X-EN-IMPSID: rZmJ1j004099BUA01ZmJd7
+Message-ID: <503A8B6F.3010404@yahoo.es>
+Date: Mon, 27 Aug 2012 04:47:43 +0800
+From: Hein Tibosch <hein_tibosch@yahoo.es>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+To: viresh kumar <viresh.kumar@linaro.org>
+CC: spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, egtvedt@samfundet.no,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: [PATCH 0/2] dw_dmac: repair driver for use with AVR32 (AP7000)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
+X-EN-AuthUser: hein@htibosch.net
+X-EN-OrigIP: 114.79.63.241
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Speech synthesis beginners need a low speech rate, and trained people
-want a high speech rate.  A medium speech rate is thus actually not a
-good default for neither.  Since trained people will typically know how
-to change the rate, better default for a low speech rate, which
-beginners can grasp and learn how to increase it afterwards
+After some recent changes to dw_dmac, the driver got broken
+for the AVR32 platform for two reasons:
 
-Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
----
+The accessors to i/o memory had become little-endian.
+The maximum transfer width on the memory side was increased
+from 32 to 64 bits.
 
-This was agreed with users on the speakup mailing list.
+These patches repair the driver by:
+1. making the endianness configurable through Kconfig,
+for AVR32 it will become big-endian
+2. making the maximum memory transfer width configurable
+It can be set in the code within arch
 
-diff --git a/drivers/staging/speakup/speakup_soft.c b/drivers/staging/speakup/speakup_soft.c
-index 42cdafe..2a67610 100644
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -46,7 +46,7 @@ static int misc_registered;
- static struct var_t vars[] = {
- 	{ CAPS_START, .u.s = {"\x01+3p" } },
- 	{ CAPS_STOP, .u.s = {"\x01-3p" } },
--	{ RATE, .u.n = {"\x01%ds", 5, 0, 9, 0, 0, NULL } },
-+	{ RATE, .u.n = {"\x01%ds", 2, 0, 9, 0, 0, NULL } },
- 	{ PITCH, .u.n = {"\x01%dp", 5, 0, 9, 0, 0, NULL } },
- 	{ VOL, .u.n = {"\x01%dv", 5, 0, 9, 0, 0, NULL } },
- 	{ TONE, .u.n = {"\x01%dx", 1, 0, 2, 0, 0, NULL } },
+For non-avr32 (ARM) platforms, nothing has to be changed.
+
+Thanks to Viresh and Arnd for reviewing
+
+Hein Tibosch (2):
+
+  dw_dmac: make driver endianness configurable
+  dw_dmac: max_mem_width limits value for SRC/DST_TR_WID register
+
+ drivers/dma/Kconfig        |    8 ++++++++
+ drivers/dma/dw_dmac.c      |    8 ++++++++
+ drivers/dma/dw_dmac_regs.h |   23 +++++++++++++++++++++++
+ include/linux/dw_dmac.h    |    3 +++
+ 4 files changed, 42 insertions(+), 0 deletions(-)
+
+-- 
+
