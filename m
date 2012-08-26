@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab2HZM5N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 08:57:13 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:44568 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2HZMxc (ORCPT
+	id S1754272Ab2HZMxb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 08:53:31 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:45895 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321Ab2HZMxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 08:53:32 -0400
+	Sun, 26 Aug 2012 08:53:00 -0400
 X-SENDER-IP: [85.230.170.20]
 X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApRZALMbOlBV5qoUPGdsb2JhbABFhRqFI7AtGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESiBG7SRSSBQObQI0P
+X-IronPort-Anti-Spam-Result: ApRZADUbOlBV5qoUPGdsb2JhbABFhRqFI7AtGQEBAQEeGQ0ngiEBBScvEwEPEAhJOQoUBgESiBG7SRSSBQObQI0P
 X-IronPort-AV: E=Sophos;i="4.77,830,1336341600"; 
-   d="scan'208";a="180869197"
+   d="scan'208";a="103157486"
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>, Ping Cheng <pingc@wacom.com>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [PATCH v2 10/20] Input: MT - Handle frame synchronization in core
-Date: Sun, 26 Aug 2012 14:57:28 +0200
-Message-Id: <1345985858-445-11-git-send-email-rydberg@euromail.se>
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 04/20] Input: Remove redundant packet estimates
+Date: Sun, 26 Aug 2012 14:57:22 +0200
+Message-Id: <1345985858-445-5-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1345985858-445-1-git-send-email-rydberg@euromail.se>
 References: <1345985858-445-1-git-send-email-rydberg@euromail.se>
@@ -28,171 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most MT drivers perform the same actions on frame synchronization.
-Some actions, like dropping unseen contacts, are also unnecessarily
-complex. Collect common frame synchronization tasks in a new function,
-input_mt_sync_frame(). Depending on the flags set, it drops unseen
-contacts and performs pointer emulation.
+Packet estimates are now better handled in the input core. Remove the
+redundant estimates from those drivers.
 
-With init flags and frame synchronization in place, most MT drivers
-can be simplified. First out are the bcm5974 and hid-multitouch
-drivers, following this patch.
-
-Cc: Ping Cheng <pingc@wacom.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/input/input-mt.c | 70 ++++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/input/mt.h |  9 +++++++
- 2 files changed, 77 insertions(+), 2 deletions(-)
+ drivers/hid/hid-input.c       | 4 ----
+ drivers/hid/hid-magicmouse.c  | 2 --
+ drivers/input/input-mt.c      | 1 -
+ drivers/input/mouse/bcm5974.c | 2 --
+ 4 files changed, 9 deletions(-)
 
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 811bfad..ad5cbcf 100644
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -911,10 +911,6 @@ mapped:
+ 
+ 		input_abs_set_res(input, usage->code,
+ 				  hidinput_calc_abs_res(field, usage->code));
+-
+-		/* use a larger default input buffer for MT devices */
+-		if (usage->code == ABS_MT_POSITION_X && input->hint_events_per_packet == 0)
+-			input_set_events_per_packet(input, 60);
+ 	}
+ 
+ 	if (usage->type == EV_ABS &&
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index 7364726..e425de4 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -435,8 +435,6 @@ static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hd
+ 				  TRACKPAD_RES_Y);
+ 	}
+ 
+-	input_set_events_per_packet(input, 60);
+-
+ 	if (report_undeciphered) {
+ 		__set_bit(EV_MSC, input->evbit);
+ 		__set_bit(MSC_RAW, input->mscbit);
 diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
-index bbb3304..564be99 100644
+index c6df704..58bde77 100644
 --- a/drivers/input/input-mt.c
 +++ b/drivers/input/input-mt.c
-@@ -14,6 +14,14 @@
- 
- #define TRKID_SGN	((TRKID_MAX + 1) >> 1)
- 
-+static void copy_abs(struct input_dev *dev, unsigned int dst, unsigned int src)
-+{
-+	if (dev->absinfo && test_bit(src, dev->absbit)) {
-+		dev->absinfo[dst] = dev->absinfo[src];
-+		dev->absbit[BIT_WORD(dst)] |= BIT_MASK(dst);
-+	}
-+}
-+
- /**
-  * input_mt_init_slots() - initialize MT input slots
-  * @dev: input device supporting MT events and finger tracking
-@@ -45,6 +53,28 @@ int input_mt_init_slots(struct input_dev *dev, unsigned int num_slots,
+@@ -42,7 +42,6 @@ int input_mt_init_slots(struct input_dev *dev, unsigned int num_slots)
+ 	mt->num_slots = num_slots;
  	input_set_abs_params(dev, ABS_MT_SLOT, 0, num_slots - 1, 0, 0);
  	input_set_abs_params(dev, ABS_MT_TRACKING_ID, 0, TRKID_MAX, 0, 0);
+-	input_set_events_per_packet(dev, 6 * num_slots);
  
-+	if (flags & (INPUT_MT_POINTER | INPUT_MT_DIRECT)) {
-+		__set_bit(EV_KEY, dev->evbit);
-+		__set_bit(BTN_TOUCH, dev->keybit);
-+
-+		copy_abs(dev, ABS_X, ABS_MT_POSITION_X);
-+		copy_abs(dev, ABS_Y, ABS_MT_POSITION_Y);
-+		copy_abs(dev, ABS_PRESSURE, ABS_MT_PRESSURE);
-+	}
-+	if (flags & INPUT_MT_POINTER) {
-+		__set_bit(BTN_TOOL_FINGER, dev->keybit);
-+		__set_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
-+		if (num_slots >= 3)
-+			__set_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
-+		if (num_slots >= 4)
-+			__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-+		if (num_slots >= 5)
-+			__set_bit(BTN_TOOL_QUINTTAP, dev->keybit);
-+		__set_bit(INPUT_PROP_POINTER, dev->propbit);
-+	}
-+	if (flags & INPUT_MT_DIRECT)
-+		__set_bit(INPUT_PROP_DIRECT, dev->propbit);
-+
  	/* Mark slots as 'unused' */
  	for (i = 0; i < num_slots; i++)
- 		input_mt_set_value(&mt->slots[i], ABS_MT_TRACKING_ID, -1);
-@@ -87,12 +117,17 @@ void input_mt_report_slot_state(struct input_dev *dev,
- 	struct input_mt_slot *slot;
- 	int id;
- 
--	if (!mt || !active) {
-+	if (!mt)
-+		return;
-+
-+	slot = &mt->slots[input_abs_get_val(dev, ABS_MT_SLOT)];
-+	slot->frame = mt->frame;
-+
-+	if (!active) {
- 		input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
- 		return;
- 	}
- 
--	slot = &mt->slots[input_abs_get_val(dev, ABS_MT_SLOT)];
- 	id = input_mt_get_value(slot, ABS_MT_TRACKING_ID);
- 	if (id < 0 || input_mt_get_value(slot, ABS_MT_TOOL_TYPE) != tool_type)
- 		id = input_mt_new_trkid(mt);
-@@ -177,3 +212,34 @@ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count)
- 	}
+diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
+index 39ac9ff..8965824 100644
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -456,8 +456,6 @@ static void setup_events_to_report(struct input_dev *input_dev,
+ 	__set_bit(INPUT_PROP_POINTER, input_dev->propbit);
+ 	if (cfg->caps & HAS_INTEGRATED_BUTTON)
+ 		__set_bit(INPUT_PROP_BUTTONPAD, input_dev->propbit);
+-
+-	input_set_events_per_packet(input_dev, 60);
  }
- EXPORT_SYMBOL(input_mt_report_pointer_emulation);
-+
-+/**
-+ * input_mt_sync_frame() - synchronize mt frame
-+ * @dev: input device with allocated MT slots
-+ *
-+ * Close the frame and prepare the internal state for a new one.
-+ * Depending on the flags, marks unused slots as inactive and performs
-+ * pointer emulation.
-+ */
-+void input_mt_sync_frame(struct input_dev *dev)
-+{
-+	struct input_mt *mt = dev->mt;
-+	struct input_mt_slot *s;
-+
-+	if (!mt)
-+		return;
-+
-+	if (mt->flags & INPUT_MT_DROP_UNUSED) {
-+		for (s = mt->slots; s != mt->slots + mt->num_slots; s++) {
-+			if (s->frame == mt->frame)
-+				continue;
-+			input_mt_slot(dev, s - mt->slots);
-+			input_event(dev, EV_ABS, ABS_MT_TRACKING_ID, -1);
-+		}
-+	}
-+
-+	input_mt_report_pointer_emulation(dev, (mt->flags & INPUT_MT_POINTER));
-+
-+	mt->frame++;
-+}
-+EXPORT_SYMBOL(input_mt_sync_frame);
-diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
-index 03c52ce..a11d485 100644
---- a/include/linux/input/mt.h
-+++ b/include/linux/input/mt.h
-@@ -15,12 +15,17 @@
  
- #define TRKID_MAX	0xffff
- 
-+#define INPUT_MT_POINTER	0x0001	/* pointer device, e.g. trackpad */
-+#define INPUT_MT_DIRECT		0x0002	/* direct device, e.g. touchscreen */
-+#define INPUT_MT_DROP_UNUSED	0x0004	/* drop contacts not seen in frame */
- /**
-  * struct input_mt_slot - represents the state of an input MT slot
-  * @abs: holds current values of ABS_MT axes for this slot
-+ * @frame: last frame at which input_mt_report_slot_state() was called
-  */
- struct input_mt_slot {
- 	int abs[ABS_MT_LAST - ABS_MT_FIRST + 1];
-+	unsigned int frame;
- };
- 
- /**
-@@ -28,12 +33,14 @@ struct input_mt_slot {
-  * @trkid: stores MT tracking ID for the next contact
-  * @num_slots: number of MT slots the device uses
-  * @flags: input_mt operation flags
-+ * @frame: increases every time input_mt_sync_frame() is called
-  * @slots: array of slots holding current values of tracked contacts
-  */
- struct input_mt {
- 	int trkid;
- 	int num_slots;
- 	unsigned int flags;
-+	unsigned int frame;
- 	struct input_mt_slot slots[];
- };
- 
-@@ -79,4 +86,6 @@ void input_mt_report_slot_state(struct input_dev *dev,
- void input_mt_report_finger_count(struct input_dev *dev, int count);
- void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count);
- 
-+void input_mt_sync_frame(struct input_dev *dev);
-+
- #endif
+ /* report button data as logical button state */
 -- 
 1.7.12
 
