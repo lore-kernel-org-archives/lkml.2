@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab2HZJBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 05:01:09 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56267 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab2HZJA7 (ORCPT
+	id S1753502Ab2HZJBk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 05:01:40 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60654 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2HZJAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 05:00:59 -0400
+	Sun, 26 Aug 2012 05:00:50 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -15,70 +15,46 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Minchan Kim <minchan@kernel.org>,
         Gavin Shan <shangw@linux.vnet.ibm.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 4/4] mm/memblock: cleanup early_node_map[] related comments  
-Date: Sun, 26 Aug 2012 17:00:26 +0800
-Message-Id: <1345971626-17090-4-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 1/4] mm/memblock: reduce overhead in binary search
+Date: Sun, 26 Aug 2012 17:00:23 +0800
+Message-Id: <1345971626-17090-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1345971626-17090-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1345971626-17090-1-git-send-email-liwanp@linux.vnet.ibm.com>
-x-cbid: 12082609-8878-0000-0000-000003BF375A
+x-cbid: 12082609-3864-0000-0000-000004562E3F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+"v1 -> v2": 
+* move check from memblock_search to memblock_is_memory
+* modify changelog
 
-Commit 0ee332c14518699 ("memblock: Kill early_node_map[]") removed
-early_node_map[], the patch does cleanup on comments to comply with
-that change.
+When checking the indicated address belongs to the memory region, the 
+memory regions are checked one by one through binary search, which would 
+be a little time consuming. If the indicated address isn't in memory 
+region, then we needn't do the time-sonsuming search. The patch adds
+more check on the indicated address for that purpose.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- include/linux/memblock.h |    3 +--
- mm/nobootmem.c           |    2 --
- mm/page_alloc.c          |    2 +-
- 3 files changed, 2 insertions(+), 5 deletions(-)
+ mm/memblock.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d3d53aa..ab7b887 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -70,8 +70,7 @@ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
-  * @p_end: ptr to ulong for end pfn of the range, can be %NULL
-  * @p_nid: ptr to int for nid of the range, can be %NULL
-  *
-- * Walks over configured memory ranges.  Available after early_node_map is
-- * populated.
-+ * Walks over configured memory ranges.
-  */
- #define for_each_mem_pfn_range(i, nid, p_start, p_end, p_nid)		\
- 	for (i = -1, __next_mem_pfn_range(&i, nid, p_start, p_end, p_nid); \
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 8ec48484..7e95953 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -162,8 +162,6 @@ unsigned long __init free_all_bootmem(void)
- 	 * We need to use MAX_NUMNODES instead of NODE_DATA(0)->node_id
- 	 *  because in some case like Node0 doesn't have RAM installed
- 	 *  low ram will be on Node1
--	 * Use MAX_NUMNODES will make sure all ranges in early_node_map[]
--	 *  will be used instead of only Node0 related
- 	 */
- 	return free_low_memory_core_early(MAX_NUMNODES);
- }
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 009ac28..c1e2949 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4873,7 +4873,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
- 			       zone_movable_pfn[i] << PAGE_SHIFT);
- 	}
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 4d9393c..258e81d 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -888,6 +888,11 @@ int __init memblock_is_reserved(phys_addr_t addr)
  
--	/* Print out the early_node_map[] */
-+	/* Print out the early node map */
- 	printk("Early memory node ranges\n");
- 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
- 		printk("  node %3d: [mem %#010lx-%#010lx]\n", nid,
+ int __init_memblock memblock_is_memory(phys_addr_t addr)
+ {
++
++	if (unlikely(addr < memblock_start_of_DRAM() ||
++		addr >= memblock_end_of_DRAM()))
++		return 0;
++
+ 	return memblock_search(&memblock.memory, addr) != -1;
+ }
+ 
 -- 
-1.7.7.6
+1.7.5.4
 
