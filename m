@@ -1,57 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2HZCSm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 22:18:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57809 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756323Ab2HZCSj (ORCPT
+	id S1756863Ab2HZC34 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 22:29:56 -0400
+Received: from SpacedOut.fries.net ([67.64.210.234]:34777 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab2HZC3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 22:18:39 -0400
-X-Sasl-enc: zhN1fVS89za56XEEBY1vz6N6B+Se9RHv2hs4D3KjrA70 1345947518
-Date: Sat, 25 Aug 2012 23:18:34 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: wbrana <wbrana@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Drop support for x86-32
-Message-ID: <20120826021834.GC17597@khazad-dum.debian.net>
-References: <201208242035.38733.tweek@tweek.dk>
- <CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
- <1345894521.28613.43.camel@thorin>
- <CAJ7jCmn7oH75EObCuP+oFsP8skArrc1V5c72tmtwEpWn_DWpjw@mail.gmail.com>
- <20120825164627.GC16914@pompeji.miese-zwerge.org>
- <CAJ7jCm=A8aTqvaQYP+T8+uqpqX26woZrFd3zhiyfqzqu__g9pA@mail.gmail.com>
- <CAGDaZ_p5-dUS=wSsVQoyf+kqsnvvVgf6AX+M0KsXFWyV=u6WMw@mail.gmail.com>
- <CAJ7jCm=LpArwo4N3GfEFkX9-B5EgrL63gmgFNy1m0kfsqBmU8g@mail.gmail.com>
- <CAOJsxLFf02VFhL8DaxQC125Dp1hjta1JSU8GZaxoprT5t=1Tyg@mail.gmail.com>
- <CAJ7jCmku4JQZPCJoB=Cbv8i_uD2xbm13ZBv8uu_NwxtEQCLMdg@mail.gmail.com>
+	Sat, 25 Aug 2012 22:29:55 -0400
+X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Aug 2012 22:29:55 EDT
+Date: Sat, 25 Aug 2012 21:19:31 -0500
+From: David Fries <david@fries.net>
+To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
+Cc: Matthew Garrett <mjg@redhat.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] rtc_sysfs_show_hctosys 0 if resume failed
+Message-ID: <20120826021931.GA20620@spacedout.fries.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAJ7jCmku4JQZPCJoB=Cbv8i_uD2xbm13ZBv8uu_NwxtEQCLMdg@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sat, 25 Aug 2012 21:19:34 -0500 (CDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Aug 2012, wbrana wrote:
-> On 8/25/12, Pekka Enberg <penberg@kernel.org> wrote:
-> > So despite my humble suggestion, you've filled up my inbox with
-> > pointless rambling. Would it be at all possible you just got the f*ck
-> > off LKML? I know it's difficult to hear this but nobody gives a shit
-> > about your ideas.
-> You can temporary unsubscribe from LKML and read archives
-> http://marc.info/?l=linux-kernel
-> http://www.ussg.iu.edu/hypermail/linux/kernel/
-> People care because they replied to my e-mails.
+The original rtc_sysfs_show_hctosys returnd 1 if this device was the
+CONFIG_RTC_HCTOSYS_DEVICE device, a later patch checked
+rtc_hctosys_ret from boot, this verifies boot do_settimeofday
+succeeded, and sets rtc_hctosys_ret in resume to indicate when
+adjusting the clock from resume fails.
 
-Yes, people do care.  But not necessarily in the way you imply.
+This uses only CONFIG_RTC_HCTOSYS_DEVICE for conditional compilation
+instead of it and CONFIG_RTC_HCTOSYS.  rtc_hctosys_ret was moved to
+class.c so rtc_hctosys can be removed with just a Kconfig change if
+boot time setting isn't desired.
 
-Are you perchance William Brana?
+Signed-off-by: David Fries <David@Fries.net>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/rtc/class.c     |    5 ++++-
+ drivers/rtc/hctosys.c   |    4 +---
+ drivers/rtc/rtc-sysfs.c |    6 ++++++
+ include/linux/rtc.h     |    2 +-
+ 4 files changed, 12 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index dc4c274..298f69a 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -39,7 +39,8 @@ static void rtc_device_release(struct device *dev)
+  */
+ 
+ static struct timespec old_rtc, old_system, old_delta;
+-
++/* Result of the last RTC to system clock attempt. */
++int rtc_hctosys_ret = -ENODEV;
+ 
+ static int rtc_suspend(struct device *dev, pm_message_t mesg)
+ {
+@@ -84,6 +85,7 @@ static int rtc_resume(struct device *dev)
+ 	struct timespec		new_system, new_rtc;
+ 	struct timespec		sleep_time;
+ 
++	rtc_hctosys_ret = -ENODEV;
+ 	if (strcmp(dev_name(&rtc->dev), CONFIG_RTC_HCTOSYS_DEVICE) != 0)
+ 		return 0;
+ 
+@@ -117,6 +119,7 @@ static int rtc_resume(struct device *dev)
+ 
+ 	if (sleep_time.tv_sec >= 0)
+ 		timekeeping_inject_sleeptime(&sleep_time);
++	rtc_hctosys_ret = 0;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/rtc/hctosys.c b/drivers/rtc/hctosys.c
+index bc90b09..4aa60d7 100644
+--- a/drivers/rtc/hctosys.c
++++ b/drivers/rtc/hctosys.c
+@@ -22,8 +22,6 @@
+  * the best guess is to add 0.5s.
+  */
+ 
+-int rtc_hctosys_ret = -ENODEV;
+-
+ static int __init rtc_hctosys(void)
+ {
+ 	int err = -ENODEV;
+@@ -56,7 +54,7 @@ static int __init rtc_hctosys(void)
+ 
+ 	rtc_tm_to_time(&tm, &tv.tv_sec);
+ 
+-	do_settimeofday(&tv);
++	err = do_settimeofday(&tv);
+ 
+ 	dev_info(rtc->dev.parent,
+ 		"setting system clock to "
+diff --git a/drivers/rtc/rtc-sysfs.c b/drivers/rtc/rtc-sysfs.c
+index 380083c..b70e2bb 100644
+--- a/drivers/rtc/rtc-sysfs.c
++++ b/drivers/rtc/rtc-sysfs.c
+@@ -102,6 +102,12 @@ rtc_sysfs_set_max_user_freq(struct device *dev, struct device_attribute *attr,
+ 	return n;
+ }
+ 
++/**
++ * rtc_sysfs_show_hctosys - indicate if the given RTC set the system time
++ *
++ * Returns 1 if the system clock was set by this RTC at the last
++ * boot or resume event.
++ */
+ static ssize_t
+ rtc_sysfs_show_hctosys(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index f071b39..20ec4d3 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -276,7 +276,7 @@ static inline bool is_leap_year(unsigned int year)
+ 	return (!(year % 4) && (year % 100)) || !(year % 400);
+ }
+ 
+-#ifdef CONFIG_RTC_HCTOSYS
++#ifdef CONFIG_RTC_HCTOSYS_DEVICE
+ extern int rtc_hctosys_ret;
+ #else
+ #define rtc_hctosys_ret -ENODEV
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.7.2.5
+
