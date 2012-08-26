@@ -1,166 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab2HZL0e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 07:26:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52676 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753505Ab2HZL0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 07:26:31 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Baron <jbaron@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jim Cromie <jim.cromie@gmail.com>,
-        Kay Sievers <kay@vrfy.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] device and dynamic_debug: Use dev_vprintk_emit and dev_printk_emit
-Date: Sun, 26 Aug 2012 04:25:30 -0700
-Message-Id: <7b5acb50f6cd1e9f3228930bff510c77fd8b823b.1345978012.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1345978012.git.joe@perches.com>
-References: <cover.1345978012.git.joe@perches.com>
+	id S1754555Ab2HZL0p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 07:26:45 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34410 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab2HZL0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 07:26:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALJbWerzuzaRwEenLRtMmkGdmze1Zdd5PM+uVv8SknUgxnpQQw@mail.gmail.com>
+References: <CALJbWerzuzaRwEenLRtMmkGdmze1Zdd5PM+uVv8SknUgxnpQQw@mail.gmail.com>
+Date: Sun, 26 Aug 2012 16:56:40 +0530
+Message-ID: <CALJbWeoW-8UxgeZr3s_hW+FkNWGe5LjdySgYaSjQ8fk54NBcWA@mail.gmail.com>
+Subject: Re: [GIT PULL] logfs: some important bug fixes
+From: Prasad Joshi <prasadjoshi.linux@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert direct calls of vprintk_emit and printk_emit to the
-dev_ equivalents.
+Hello Linus,
 
-Make create_syslog_header static.
+Could you please pull the following changes since commit
+dd775ae2549217d3ae09363e3edb305d0fa19928:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/base/core.c    |   14 +++++---------
- include/linux/device.h |    2 --
- lib/dynamic_debug.c    |   31 +++++++++++--------------------
- net/core/dev.c         |   16 ++++++----------
- 4 files changed, 22 insertions(+), 41 deletions(-)
+  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index ffccb64..65f82e3 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1861,7 +1861,8 @@ void device_shutdown(void)
-  */
- 
- #ifdef CONFIG_PRINTK
--int create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
-+static int
-+create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
- {
- 	const char *subsys;
- 	size_t pos = 0;
-@@ -1939,17 +1940,12 @@ EXPORT_SYMBOL(dev_printk_emit);
- static int __dev_printk(const char *level, const struct device *dev,
- 			struct va_format *vaf)
- {
--	char hdr[128];
--	size_t hdrlen;
--
- 	if (!dev)
- 		return printk("%s(NULL device *): %pV", level, vaf);
- 
--	hdrlen = create_syslog_header(dev, hdr, sizeof(hdr));
--
--	return printk_emit(0, level[1] - '0', hdrlen ? hdr : NULL, hdrlen,
--			   "%s %s: %pV",
--			   dev_driver_string(dev), dev_name(dev), vaf);
-+	return dev_printk_emit(level[1] - '0', dev,
-+			       "%s %s: %pV",
-+			       dev_driver_string(dev), dev_name(dev), vaf);
- }
- 
- int dev_printk(const char *level, const struct device *dev,
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 0063d01..2da4589 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -891,8 +891,6 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
--extern int create_syslog_header(const struct device *dev,
--				char *hdr, size_t hdrlen);
- extern int dev_vprintk_emit(int level, const struct device *dev,
- 			    const char *fmt, va_list args);
- extern __printf(3, 4)
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 6b3ebab..e7f7d99 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -591,15 +591,11 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
- 		res = printk(KERN_DEBUG "(NULL device *): %pV", &vaf);
- 	} else {
- 		char buf[PREFIX_SIZE];
--		char dict[128];
--		size_t dictlen;
- 
--		dictlen = create_syslog_header(dev, dict, sizeof(dict));
--
--		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
--				  "%s%s %s: %pV",
--				  dynamic_emit_prefix(descriptor, buf),
--				  dev_driver_string(dev), dev_name(dev), &vaf);
-+		res = dev_printk_emit(7, dev, "%s%s %s: %pV",
-+				      dynamic_emit_prefix(descriptor, buf),
-+				      dev_driver_string(dev), dev_name(dev),
-+				      &vaf);
- 	}
- 
- 	va_end(args);
-@@ -627,18 +623,13 @@ int __dynamic_netdev_dbg(struct _ddebug *descriptor,
- 
- 	if (dev && dev->dev.parent) {
- 		char buf[PREFIX_SIZE];
--		char dict[128];
--		size_t dictlen;
--
--		dictlen = create_syslog_header(dev->dev.parent,
--					       dict, sizeof(dict));
--
--		res = printk_emit(0, 7, dictlen ? dict : NULL, dictlen,
--				  "%s%s %s %s: %pV",
--				  dynamic_emit_prefix(descriptor, buf),
--				  dev_driver_string(dev->dev.parent),
--				  dev_name(dev->dev.parent),
--				  netdev_name(dev), &vaf);
-+
-+		res = dev_printk_emit(7, dev->dev.parent,
-+				      "%s%s %s %s: %pV",
-+				      dynamic_emit_prefix(descriptor, buf),
-+				      dev_driver_string(dev->dev.parent),
-+				      dev_name(dev->dev.parent),
-+				      netdev_name(dev), &vaf);
- 	} else if (dev) {
- 		res = printk(KERN_DEBUG "%s: %pV", netdev_name(dev), &vaf);
- 	} else {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 1ec186a..8ad42fd 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6428,16 +6428,12 @@ static int __netdev_printk(const char *level, const struct net_device *dev,
- 	int r;
- 
- 	if (dev && dev->dev.parent) {
--		char dict[128];
--		size_t dictlen = create_syslog_header(dev->dev.parent,
--						      dict, sizeof(dict));
--
--		r = printk_emit(0, level[1] - '0',
--				dictlen ? dict : NULL, dictlen,
--				"%s %s %s: %pV",
--				dev_driver_string(dev->dev.parent),
--				dev_name(dev->dev.parent),
--				netdev_name(dev), vaf);
-+		r = dev_printk_emit(level[1] - '0',
-+				    dev->dev.parent,
-+				    "%s %s %s: %pV",
-+				    dev_driver_string(dev->dev.parent),
-+				    dev_name(dev->dev.parent),
-+				    netdev_name(dev), vaf);
- 	} else if (dev) {
- 		r = printk("%s%s: %pV", level, netdev_name(dev), vaf);
- 	} else {
--- 
-1.7.8.111.gad25c.dirty
+are available in the git repository at:
+  git://github.com/prasad-joshi/logfs_upstream.git master
 
+Prasad Joshi (5):
+      logfs: destroy the reserved inodes while unmounting
+      logfs: initialize the number of iovecs in bio
+      logfs: create a pagecache page if it is not present
+      logfs: maintain the ordering of meta-inode destruction
+      logfs: query block device for number of pages to send with bio
+
+ fs/logfs/dev_bdev.c  |   15 +++++++--------
+ fs/logfs/inode.c     |   18 +++++++++++++++++-
+ fs/logfs/journal.c   |    2 +-
+ fs/logfs/readwrite.c |    1 -
+ fs/logfs/segment.c   |    2 +-
+ 5 files changed, 26 insertions(+), 12 deletions(-)
+
+Please note that the signed tag (for-linus) is applied and the same is
+pushed. The repository is also added in the 'linux-next' and there no
+conflicts in the 'linux-next: Tree for Aug 24'.
+
+Thanks and Warm Regards,
+Prasad
