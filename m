@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab2HZQEX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 12:04:23 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56799
+	id S1755353Ab2HZQEi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 12:04:38 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:61272
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752300Ab2HZQBO (ORCPT
+	by vger.kernel.org with ESMTP id S1752270Ab2HZQBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 26 Aug 2012 12:01:14 -0400
 X-IronPort-AV: E=Sophos;i="4.80,315,1344204000"; 
-   d="scan'208";a="153852288"
+   d="scan'208";a="153852286"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: kernel-janitors@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/13] drivers/spi/spi-{orion,pl022}.c: use clk_prepare_enable and clk_disable_unprepare
-Date: Sun, 26 Aug 2012 18:00:54 +0200
-Message-Id: <1345996865-32082-3-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 1/13] drivers/staging/iio/adc/spear_adc.c: use clk_prepare_enable and clk_disable_unprepare
+Date: Sun, 26 Aug 2012 18:00:53 +0200
+Message-Id: <1345996865-32082-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -53,66 +55,82 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/spi/spi-orion.c |    3 +--
- drivers/spi/spi-pl022.c |   17 ++++-------------
- 2 files changed, 5 insertions(+), 15 deletions(-)
+ drivers/staging/iio/adc/spear_adc.c |   25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/spi/spi-orion.c b/drivers/spi/spi-orion.c
-index b17c09c..b2a7199 100644
---- a/drivers/spi/spi-orion.c
-+++ b/drivers/spi/spi-orion.c
-@@ -416,8 +416,7 @@ static int __init orion_spi_probe(struct platform_device *pdev)
- 		goto out;
+diff --git a/drivers/staging/iio/adc/spear_adc.c b/drivers/staging/iio/adc/spear_adc.c
+index 675c427..0b83e2e 100644
+--- a/drivers/staging/iio/adc/spear_adc.c
++++ b/drivers/staging/iio/adc/spear_adc.c
+@@ -330,36 +330,30 @@ static int __devinit spear_adc_probe(struct platform_device *pdev)
+ 		goto errout3;
  	}
  
--	clk_prepare(spi->clk);
--	clk_enable(spi->clk);
-+	clk_prepare_enable(spi->clk);
- 	tclk_hz = clk_get_rate(spi->clk);
- 	spi->max_speed = DIV_ROUND_UP(tclk_hz, 4);
- 	spi->min_speed = DIV_ROUND_UP(tclk_hz, 30);
-diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-index b0fec03..0d235d4 100644
---- a/drivers/spi/spi-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@ -2142,16 +2142,10 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
- 		goto err_no_clk;
- 	}
- 
--	status = clk_prepare(pl022->clk);
--	if (status) {
--		dev_err(&adev->dev, "could not prepare SSP/SPI bus clock\n");
--		goto  err_clk_prep;
+-	ret = clk_prepare(info->clk);
+-	if (ret) {
+-		dev_err(dev, "failed preparing clock\n");
+-		goto errout4;
 -	}
 -
--	status = clk_enable(pl022->clk);
-+	status = clk_prepare_enable(pl022->clk);
- 	if (status) {
- 		dev_err(&adev->dev, "could not enable SSP/SPI bus clock\n");
--		goto err_no_clk_en;
-+		goto err_clk_prep;
+-	ret = clk_enable(info->clk);
++	ret = clk_prepare_enable(info->clk);
+ 	if (ret) {
+ 		dev_err(dev, "failed enabling clock\n");
+-		goto errout5;
++		goto errout4;
  	}
  
- 	/* Initialize transfer pump */
-@@ -2207,9 +2201,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+ 	irq = platform_get_irq(pdev, 0);
+ 	if ((irq < 0) || (irq >= NR_IRQS)) {
+ 		dev_err(dev, "failed getting interrupt resource\n");
+ 		ret = -EINVAL;
+-		goto errout6;
++		goto errout5;
+ 	}
  
- 	free_irq(adev->irq[0], pl022);
-  err_no_irq:
--	clk_disable(pl022->clk);
-- err_no_clk_en:
--	clk_unprepare(pl022->clk);
-+	clk_disable_unprepare(pl022->clk);
-  err_clk_prep:
- 	clk_put(pl022->clk);
-  err_no_clk:
-@@ -2243,8 +2235,7 @@ pl022_remove(struct amba_device *adev)
- 		pl022_dma_remove(pl022);
+ 	ret = devm_request_irq(dev, irq, spear_adc_isr, 0, MOD_NAME, info);
+ 	if (ret < 0) {
+ 		dev_err(dev, "failed requesting interrupt\n");
+-		goto errout6;
++		goto errout5;
+ 	}
  
- 	free_irq(adev->irq[0], pl022);
--	clk_disable(pl022->clk);
--	clk_unprepare(pl022->clk);
-+	clk_disable_unprepare(pl022->clk);
- 	clk_put(pl022->clk);
- 	pm_runtime_disable(&adev->dev);
- 	iounmap(pl022->virtbase);
+ 	if (of_property_read_u32(np, "sampling-frequency",
+ 				 &info->sampling_freq)) {
+ 		dev_err(dev, "sampling-frequency missing in DT\n");
+ 		ret = -EINVAL;
+-		goto errout6;
++		goto errout5;
+ 	}
+ 
+ 	/*
+@@ -389,16 +383,14 @@ static int __devinit spear_adc_probe(struct platform_device *pdev)
+ 
+ 	ret = iio_device_register(iodev);
+ 	if (ret)
+-		goto errout6;
++		goto errout5;
+ 
+ 	dev_info(dev, "SPEAR ADC driver loaded, IRQ %d\n", irq);
+ 
+ 	return 0;
+ 
+-errout6:
+-	clk_disable(info->clk);
+ errout5:
+-	clk_unprepare(info->clk);
++	clk_disable_unprepare(info->clk);
+ errout4:
+ 	clk_put(info->clk);
+ errout3:
+@@ -416,8 +408,7 @@ static int __devexit spear_adc_remove(struct platform_device *pdev)
+ 
+ 	iio_device_unregister(iodev);
+ 	platform_set_drvdata(pdev, NULL);
+-	clk_disable(info->clk);
+-	clk_unprepare(info->clk);
++	clk_disable_unprepare(info->clk);
+ 	clk_put(info->clk);
+ 	iounmap(info->adc_base_spear6xx);
+ 	iio_device_free(iodev);
 
