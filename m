@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab2HZN6X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 09:58:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48718 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357Ab2HZN6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 09:58:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,315,1344236400"; 
-   d="scan'208";a="185445015"
-Message-ID: <503A2B76.7030808@intel.com>
-Date: Sun, 26 Aug 2012 21:58:14 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1754195Ab2HZN6z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 09:58:55 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:60485 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab2HZN6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 09:58:53 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH 1/2] fat: kill unused macros
+References: <1345882995-6229-1-git-send-email-linkinjeon@gmail.com>
+Date: Sun, 26 Aug 2012 22:58:48 +0900
+In-Reply-To: <1345882995-6229-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sat, 25 Aug 2012 04:23:15 -0400")
+Message-ID: <87d32dwy93.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: gregkh <gregkh@linuxfoundation.org>,
-        Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-References: <1331787186.2979.71.camel@debian> <20120315145743.GA7928@kroah.com> <4F6204B7.5010908@intel.com> <20120315175608.GA6077@xanatos> <4FC5D04E.5040907@intel.com> <4FD59AD8.1050109@intel.com> <20120611204709.GC5742@xanatos> <20120611211428.GB24904@kroah.com> <502897A4.4030601@intel.com> <20120826020123.GG6557@xanatos>
-In-Reply-To: <20120826020123.GG6557@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2012 10:01 AM, Sarah Sharp wrote:
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-> On Mon, Aug 13, 2012 at 01:59:00PM +0800, Alex Shi wrote:
->> On 06/12/2012 05:14 AM, gregkh wrote:
->>
->>> On Mon, Jun 11, 2012 at 01:47:09PM -0700, Sarah Sharp wrote:
->>>> Hi Alex,
->>>>
->>>> This got lost in the 3.5 push, but I think it's a good candidate for
->>>> 3.6.  I think Greg is accepting 3.6 patches now, and I'll send this off
->>>> to him.
->>>
->>> Yes, I am taking 3.6 stuff now.  In the future, once -rc1 is out, I can
->>> take patches for the next release at that point in time.
->>>
->>> greg k-h
->>>
->>
->>
->> Didn't find the patch in upstream 3.6-rc, but it is still workable for
->> upstream kernel.
->> So, was you just going to apply it on 3.7 kernel?  or just forget it?
-> 
-> Hi Alex,
-> 
-> I am human, and trying my human best to keep up as a maintainer.  Bug
-> fixes and big features take priority over the small improvements, and
-> I'm sorry that your patch (and other patches) have fallen by the
-> wayside.  It is not personal, I simply cannot be perfect.
-> 
-> I will be returning to full maintainership duties after the various
-> Linux conferences next week, and I will do my best to get your patch
-> merged.
+> Remove unused macros.
 
+Those are for userland. Are you sure userland doesn't use those anymore?
 
-Thanks for your response, and pick up this small patch.
-
-I am sorry, if you thought I want press you on a such small issue.
-Actually, I just went to have a kindly reminder.
-
-Thanks again for your consideration and maintain job!
-
-
-> 
-> Sarah Sharp
-
-
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+> ---
+>  include/linux/msdos_fs.h |   12 ------------
+>  1 file changed, 12 deletions(-)
+>
+> diff --git a/include/linux/msdos_fs.h b/include/linux/msdos_fs.h
+> index 11cc2ac..be3dc72 100644
+> --- a/include/linux/msdos_fs.h
+> +++ b/include/linux/msdos_fs.h
+> @@ -9,18 +9,6 @@
+>   * The MS-DOS filesystem constants/structures
+>   */
+>  
+> -#define SECTOR_SIZE	512		/* sector size (bytes) */
+> -#define SECTOR_BITS	9		/* log2(SECTOR_SIZE) */
+> -#define MSDOS_DPB	(MSDOS_DPS)	/* dir entries per block */
+> -#define MSDOS_DPB_BITS	4		/* log2(MSDOS_DPB) */
+> -#define MSDOS_DPS	(SECTOR_SIZE / sizeof(struct msdos_dir_entry))
+> -#define MSDOS_DPS_BITS	4		/* log2(MSDOS_DPS) */
+> -#define MSDOS_LONGNAME	256		/* maximum name length */
+> -#define CF_LE_W(v)	le16_to_cpu(v)
+> -#define CF_LE_L(v)	le32_to_cpu(v)
+> -#define CT_LE_W(v)	cpu_to_le16(v)
+> -#define CT_LE_L(v)	cpu_to_le32(v)
+> -
+>  #define MSDOS_ROOT_INO	 1	/* The root inode number */
+>  #define MSDOS_FSINFO_INO 2	/* Used for managing the FSINFO block */
 
 -- 
-Thanks
-    Alex
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
