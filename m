@@ -1,127 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab2HZW34 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 18:29:56 -0400
-Received: from bosmailout05.eigbox.net ([66.96.186.5]:37903 "EHLO
-	bosmailout05.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab2HZW3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 18:29:54 -0400
-X-Greylist: delayed 2596 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Aug 2012 18:29:54 EDT
-X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
- a=OWwsRfqG41DA94+gJvZMBg==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
- a=hXkxg5Rd_AAA:10 a=8nJEP1OIZ-IA:10 a=2eTuGy9p-XUA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=rvrEcjyvZElRX2EkMWcA:9 a=wPNLvfGTeEIA:10
- a=9MP9vxlQrmnoeofDS6o88g==:117
-X-EN-OrigOutIP: 10.20.18.2
-X-EN-IMPSID: rZmd1j00302gpmq01ZmdeJ
-Message-ID: <503A8CAE.6050606@yahoo.es>
-Date: Mon, 27 Aug 2012 04:53:02 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>
-CC: spear-devel <spear-devel@list.st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, egtvedt@samfundet.no,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: [PATCH 1/2] dw_dmac: make driver endianness configurable
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.63.241
-X-EN-OrigHost: unknown
+	id S1753717Ab2HZWea (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 18:34:30 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42395 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753098Ab2HZWe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 18:34:28 -0400
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] printk: Move to separate directory for easier modification
+Date: Sun, 26 Aug 2012 15:34:23 -0700
+Message-Id: <da2f40d128cee72c37c8a10e62f2f4ad6bbac9bc.1346020147.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_dmac was originally developed for avr32 to be used with the
-Synopsys DesignWare AHB DMA controller. After 2.6.38, device access was done
-with the little-endian readl/writel functions. This didn't work on the
-avr32 platform, because it needs native-endian (i.e. big-endian) accessors.
-This patch makes the endianness configurable using 'DW_DMAC_BE',
-which will default be true for AVR32
+Make it easier to break up printk into bite-sized chunks.
 
+Remove printk path/filename from comment.
 
-Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/dma/Kconfig        |    8 ++++++++
- drivers/dma/dw_dmac_regs.h |   23 +++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 0 deletions(-)
+ kernel/Makefile              |    3 ++-
+ kernel/printk/Makefile       |    1 +
+ kernel/{ => printk}/printk.c |    2 --
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+ create mode 100644 kernel/printk/Makefile
+ rename kernel/{ => printk}/printk.c (99%)
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index aadeb5b..3635daf 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -89,6 +89,14 @@ config DW_DMAC
- 	  Support the Synopsys DesignWare AHB DMA controller.  This
- 	  can be integrated in chips such as the Atmel AT32ap7000.
+diff --git a/kernel/Makefile b/kernel/Makefile
+index c0cc67a..12cad6e 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel.
+ #
  
-+config DW_DMAC_BE
-+	bool "Synopsys DesignWare AHB DMA needs big endian access"
-+	default y if AVR32
-+	depends on DW_DMAC
-+	help
-+	  Say yes if access to the Synopsys DesignWare AHB DMA controller
-+	  should be big endian, such as for Atmel AT32ap7000
-+
- config AT_HDMAC
- 	tristate "Atmel AHB DMA support"
- 	depends on ARCH_AT91
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index f298f69..cf048c3 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -175,11 +175,22 @@ __dwc_regs(struct dw_dma_chan *dwc)
- 	return dwc->ch_regs;
- }
+-obj-y     = fork.o exec_domain.o panic.o printk.o \
++obj-y     = fork.o exec_domain.o panic.o \
+ 	    cpu.o exit.o itimer.o time.o softirq.o resource.o \
+ 	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o \
+ 	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
+@@ -24,6 +24,7 @@ endif
  
-+#ifdef CONFIG_DW_DMAC_BE
-+
-+#define channel_readl(dwc, name) \
-+	ioread32be(&(__dwc_regs(dwc)->name))
-+#define channel_writel(dwc, name, val) \
-+	iowrite32be((val), &(__dwc_regs(dwc)->name))
-+
-+#else
-+
- #define channel_readl(dwc, name) \
- 	readl(&(__dwc_regs(dwc)->name))
- #define channel_writel(dwc, name, val) \
- 	writel((val), &(__dwc_regs(dwc)->name))
+ obj-y += sched/
+ obj-y += power/
++obj-y += printk/
  
-+#endif
-+
- static inline struct dw_dma_chan *to_dw_dma_chan(struct dma_chan *chan)
- {
- 	return container_of(chan, struct dw_dma_chan, chan);
-@@ -201,11 +212,23 @@ static inline struct dw_dma_regs __iomem *__dw_regs(struct dw_dma *dw)
- 	return dw->regs;
- }
- 
-+#ifdef CONFIG_DW_DMAC_BE
-+
-+#define dma_readl(dwc, name) \
-+	ioread32be(&(__dw_regs(dw)->name))
-+#define dma_writel(dwc, name, val) \
-+	iowrite32be((val), &(__dw_regs(dw)->name))
-+
-+#else
-+
- #define dma_readl(dw, name) \
- 	readl(&(__dw_regs(dw)->name))
- #define dma_writel(dw, name, val) \
- 	writel((val), &(__dw_regs(dw)->name))
- 
-+#endif
-+
- #define channel_set_bit(dw, reg, mask) \
- 	dma_writel(dw, reg, ((mask) << 8) | (mask))
- #define channel_clear_bit(dw, reg, mask) \
+ ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
+ obj-$(CONFIG_X86) += kcmp.o
+diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
+new file mode 100644
+index 0000000..36d306d
+--- /dev/null
++++ b/kernel/printk/Makefile
+@@ -0,0 +1 @@
++obj-y	= printk.o
+diff --git a/kernel/printk.c b/kernel/printk/printk.c
+similarity index 99%
+rename from kernel/printk.c
+rename to kernel/printk/printk.c
+index 66a2ea3..5ee48b5 100644
+--- a/kernel/printk.c
++++ b/kernel/printk/printk.c
+@@ -1,6 +1,4 @@
+ /*
+- *  linux/kernel/printk.c
+- *
+  *  Copyright (C) 1991, 1992  Linus Torvalds
+  *
+  * Modified to make sys_syslog() more flexible: added commands to
 -- 
-1.7.8.0
+1.7.6.rc3
 
