@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab2HZQnS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 12:43:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55677 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751056Ab2HZQnR (ORCPT
+	id S1752294Ab2HZRC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 13:02:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52203 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2HZRC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 12:43:17 -0400
-Message-ID: <1345999370.20840.13.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [Ksummit-2012-discuss] Pubring and instructions for the KS 2012
- keysigning
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: ksummit-2012-discuss@lists.linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 26 Aug 2012 09:42:50 -0700
-In-Reply-To: <50387307.9070001@kernel.org>
-References: <50387307.9070001@kernel.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-JMiU/rNbDNB/XZs5Yvmo"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 12.105.246.2
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 26 Aug 2012 13:02:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <E1T5dn3-0004YT-RP@server.hosting2all.com>
+References: <E1T5dn3-0004YT-RP@server.hosting2all.com>
+From: Shentino <shentino@gmail.com>
+Date: Sun, 26 Aug 2012 10:01:48 -0700
+Message-ID: <CAGDaZ_okJh=nDO0NQzwih2_fOiufsjQkNS+-VTycs_CxZbZvcg@mail.gmail.com>
+Subject: Re: Drop support for x86-32
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Aug 26, 2012 at 7:26 AM, Free Email Service <info@send-email.org> wrote:
+>  A 32-bit kernel on a legacy (or even new) system in 2017 will still
+> need
+>> regular kernel updates (not \"long term\" un0maintained kernels)
+>> in order to work with new USB devices, new 4KB+ sector hard drives,
+>> newer generations of SSDs, etc..
+> 12-years-old machine is trash. If someone can buy e.g. new hard
+> drive,
+> he can also afford to buy newer PC. New hard drive in 2017 will be
+> likely incompatible with 12-years-old machine in such way which
+> can\'t
+> be fixed by new kernel.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---=-JMiU/rNbDNB/XZs5Yvmo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+So not only are you trolling, but you are spamming your blog AND
+evading my filters to do so?
 
-On Fri, 2012-08-24 at 23:39 -0700, Konstantin Ryabitsev wrote:
-> Hello, all:
->=20
-> I collected 46 keys from 40 people interested in keysigning at the
-> Kernel Summit. I have uploaded the fingerprints and the pubring to the
-> following locations:
->=20
-> https://www.kernel.org/ks2012-fingerprints.txt
-> https://www.kernel.org/ks2012-pubring.gpg
->=20
-> This is the sha256sum of the pubring:
-> bbb816d955c3939c72985175b0ea4f8781662f70d8a0fa9b0985391403a0fe79
->=20
-> You can import the pubring using "gpg --import" command.
->=20
-> WARNING: just in case someone jumps the gun -- these fingerprints were
-> taken at "face value". I DID NO VERIFICATION WHATSOEVER whether these
-> keys belong to the actual people. DO NOT sign any of these keys
-> without the verification procedure at the Kernel Summit. My GPG
-> signature on this email is in no way an endorsement of these keys.
->=20
-> Here's how the procedure will play out:
-[...]
-
-You seem to have missed step 0:
-
-Verify your own key fingerprint in ks2012-pubring.gpg by comparing:
-
-gpg --fingerprint $KEY_ID
-gpg --no-default-keyring --keyring ./ks2012-pubring.gpg --fingerprint $REAL=
-_NAME
-
-(Normally, people would verify their key fingerprints in
-ks2012-fingerprints.txt, but unless we also agree the sha256sum of that
-then no-one can rely on the contents of that file as more than a
-checklist.)
-
-Ben.
-
---=20
-Ben Hutchings
-Experience is what causes a person to make new mistakes instead of old ones=
-.
-
---=-JMiU/rNbDNB/XZs5Yvmo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUDpSCue/yOyVhhEJAQqjHxAAiUe1FeWpgUw8nHHsOLaQEYL75QhX1TVP
-vig7SZ8qNDYrLbxFb4l5KPTFgZNF9FCIXUJs9WNpDhbZN+q25B2a16+AFhO7RA2j
-sLxO4qZi8ZkvtM2KQiC7TR0fAsXByhwTca5cfVJfMeIlzUg2JyaJNOc3CBNulu7M
-KD285i7+MNuw1VUo+94eF0kxEkYrwrJ2hd99wN7TTqL+RMKrb8jEpr1Wz1/iDGC0
-wt08IX1WHm6BNA+78vKrVj4Il45uB0Qud8kYwUd+6eIVtubmQSFCbPfdIb19cu0/
-MP/WmtjCRPlEf374rIxAaAfMa3FsUVqWLxIfwdngpTRGk4SF35HGw2BUWSOAuHag
-37fgtjraQFfhLtRIbWbT9EUcxYrhyf1bjqaDJmelvY+CzolPh1cDvBJPj8JwAArY
-AnRiytPwu8gtyPCl73Itx4GWx5TtGf9ZNISXTCACeoqKeB0Yx9/KKM1nsekK25Ug
-Nk6uLvk35k8ys0Q5rl78YSjlJzyZeNQssH2HU0Nw45/pE6dACpSOu8h2MpexSTDw
-jEATHDjOi2LG/dzrUZVF1FEetr6IztNH6O49zSSX2Y1mhkqyA24QYeO87CbRdJpX
-fNUBKdb4ghKreQ/y7CZHW+AqfnvH3xh2gdkZWmZw+LUNyOQZfXQ9YHe8aM4OlzCi
-TpY4WtvnJWc=
-=JAhI
------END PGP SIGNATURE-----
-
---=-JMiU/rNbDNB/XZs5Yvmo--
+Can someone from kernel.org block this fool please?
