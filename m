@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab2HZTSJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 15:18:09 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39415 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab2HZTSH (ORCPT
+	id S1752836Ab2HZUQm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 16:16:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63582 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2HZUQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 15:18:07 -0400
+	Sun, 26 Aug 2012 16:16:41 -0400
+Message-ID: <503A8418.50809@kernel.org>
+Date: Sun, 26 Aug 2012 13:16:24 -0700
+From: Konstantin Ryabitsev <mricon@kernel.org>
+Organization: Linux Foundation/Kernel.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20120826183952.GB5194@phenom.ffwll.local>
-References: <1345846584-5910-1-git-send-email-sedat.dilek@gmail.com>
-	<1345846584-5910-2-git-send-email-sedat.dilek@gmail.com>
-	<20120826183952.GB5194@phenom.ffwll.local>
-Date: Sun, 26 Aug 2012 21:18:05 +0200
-Message-ID: <CA+icZUUzoPQEogUAcCrEiW054MwqB6Y3kf_vaYF8-+SgYorPZA@mail.gmail.com>
-Subject: Re: [PATCH drm-next 2/3] drm/i915: Remove reference to
- drm_display_info raw_edid field
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: ksummit-2012-discuss@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] Pubring and instructions for the KS 2012
+ keysigning
+References: <50387307.9070001@kernel.org> <1345999370.20840.13.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1345999370.20840.13.camel@deadeye.wl.decadent.org.uk>
+X-Enigmail-Version: 1.4.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig417565F88CA1742DCF59BD49"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 8:39 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Sat, Aug 25, 2012 at 12:16:23AM +0200, Sedat Dilek wrote:
->> Reported-By: Stephen Rothwell <sfr@canb.auug.org.au>
->> Acked-by: Jani Nikula <jani.nikula@intel.com>
->> Acked-by: Dave Airlie <airlied@gmail.com>
->> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
->
-> This doesn't apply to my drm-intel-next tree any more - we've moved around
-> the assignement a bit.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig417565F88CA1742DCF59BD49
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Error still exists but is in intel_ddc_get_modes() now.
+On 26/08/12 09:42 AM, Ben Hutchings wrote:
+> You seem to have missed step 0:
+>=20
+> Verify your own key fingerprint in ks2012-pubring.gpg by comparing:
+>=20
+> gpg --fingerprint $KEY_ID
+> gpg --no-default-keyring --keyring ./ks2012-pubring.gpg --fingerprint $=
+REAL_NAME
 
-- Sedat -
+Yes, you are correct. I'll send a mass mailing to all people who
+submitted their keys to remember to do that step -- I meant to do that,
+but got busy doing all the datacentre stuff.
 
-http://cgit.freedesktop.org/~danvet/drm-intel/tree/drivers/gpu/drm/i915/intel_modes.c?h=drm-intel-next#n53
+Thanks for the reminder.
 
-> -Daniel
->
->> ---
->>  drivers/gpu/drm/i915/intel_modes.c |    1 -
->>  1 file changed, 1 deletion(-)
->>
->> diff --git a/drivers/gpu/drm/i915/intel_modes.c b/drivers/gpu/drm/i915/intel_modes.c
->> index 29b7259..4bc1c0f 100644
->> --- a/drivers/gpu/drm/i915/intel_modes.c
->> +++ b/drivers/gpu/drm/i915/intel_modes.c
->> @@ -45,7 +45,6 @@ int intel_connector_update_modes(struct drm_connector *connector,
->>       drm_mode_connector_update_edid_property(connector, edid);
->>       ret = drm_add_edid_modes(connector, edid);
->>       drm_edid_to_eld(connector, edid);
->> -     connector->display_info.raw_edid = NULL;
->>       kfree(edid);
->>
->>       return ret;
->> --
->> 1.7.9.5
->>
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
-> --
-> Daniel Vetter
-> Mail: daniel@ffwll.ch
-> Mobile: +41 (0)79 365 57 48
+Best,
+--=20
+Konstantin Ryabitsev
+Systems Administrator
+Linux Foundation, kernel.org
+Montr=C3=A9al, Qu=C3=A9bec
+
+
+--------------enig417565F88CA1742DCF59BD49
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQGcBAEBAgAGBQJQOoQcAAoJEI6WedmufEle+QEMAIP3dNZMxwbeE6VtSwfkdTJc
+2E0pmYCTtu3K1xsMr5B0vMyILZYOHt0IHsRHY5eFfAqfXo5W1tQrqGcZcuWxoCxz
+ui3KYgnmIKYZAyLdQeSJOvQ99Spb4X4rWqSk8d18c2/QFiJ4qyXwvB2VguBt172f
+g5nrzn7iie5AcHVizX623QV38BxwhL+j3cTmyTVRQCSa+vHK4uF+R1M4rhcr4nN+
+edfa0ygKWvmjfbbprahGAbZQz5VGlwhHqDf8OSg3v23negmFGNwH+8cDvYOj9OqU
+xs8cqAuRugPt4jaduRupqCcXlZ3+uQNS6g83dfHgjlszzp0yKLpetuYXPe+g0bMM
+kTYA6WYi+v1jtU5r9rRocb6N04PBV6zjnXrhcWj01ahMkpucIYHJdLtwwM9jdbsF
+5vElVmZH3YDWEANy90Q2i0RYhjhaw81xyrITzIGKaN8ujN7XZx88gOoYrrtjQwRs
+KM68jzIXAqyt/hLYEm19Ew6FIcdmBKxfnm91VYc0ww==
+=Reda
+-----END PGP SIGNATURE-----
+
+--------------enig417565F88CA1742DCF59BD49--
