@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab2HZTKR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 15:10:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29854 "EHLO mx1.redhat.com"
+	id S1754240Ab2HZTKP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 15:10:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19773 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753147Ab2HZTJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 15:09:48 -0400
-Date: Sun, 26 Aug 2012 21:12:11 +0200
+	id S1753144Ab2HZTJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 15:09:47 -0400
+Date: Sun, 26 Aug 2012 21:12:17 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>
 Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, rostedt <rostedt@goodmis.org>,
         dhowells <dhowells@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 2/4] task_work: task_work_add() should not succeed after
-	exit_task_work()
-Message-ID: <20120826191211.GA4228@redhat.com>
+Subject: [PATCH 4/4] task_work: simplify the usage in ptrace_notify() and
+	get_signal_to_deliver()
+Message-ID: <20120826191217.GA4238@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,90 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ed3e694d "move exit_task_work() past exit_files() et.al" destroyed
-the add/exit synchronization we had, the caller itself should ensure
-task_work_add() can't race with the exiting task.
+ptrace_notify() and get_signal_to_deliver() do unnecessary things
+before task_work_run().
 
-However, this is not convenient/simple, and the only user which tries
-to do this is buggy (see the next patch). Unless the task is current,
-there is simply no way to do this in general.
+1. smp_mb__after_clear_bit() is not needed, test_and_clear_bit()
+   implies mb().
 
-Change exit_task_work()->task_work_run() to use the dummy "work_exited"
-entry to let task_work_add() know it should fail.
+2. And we do not need the barrier at all, in this case we only
+   care about the "synchronous" works added by the task itself.
+
+3. No need to clear TIF_NOTIFY_RESUME, and we should not assume
+   task_works is the only user of this flag.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/task_work.h |    3 +--
- kernel/task_work.c        |   22 ++++++++++++++++------
- 2 files changed, 17 insertions(+), 8 deletions(-)
+ kernel/signal.c |   18 ++++--------------
+ 1 files changed, 4 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/task_work.h b/include/linux/task_work.h
-index fb46b03..ca5a1cf 100644
---- a/include/linux/task_work.h
-+++ b/include/linux/task_work.h
-@@ -18,8 +18,7 @@ void task_work_run(void);
- 
- static inline void exit_task_work(struct task_struct *task)
+diff --git a/kernel/signal.c b/kernel/signal.c
+index be4f856..2c681f1 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1971,13 +1971,8 @@ static void ptrace_do_notify(int signr, int exit_code, int why)
+ void ptrace_notify(int exit_code)
  {
--	if (unlikely(task->task_works))
--		task_work_run();
-+	task_work_run();
- }
+ 	BUG_ON((exit_code & (0x7f | ~0xffff)) != SIGTRAP);
+-	if (unlikely(current->task_works)) {
+-		if (test_and_clear_ti_thread_flag(current_thread_info(),
+-						   TIF_NOTIFY_RESUME)) {
+-			smp_mb__after_clear_bit();
+-			task_work_run();
+-		}
+-	}
++	if (unlikely(current->task_works))
++		task_work_run();
  
- #endif	/* _LINUX_TASK_WORK_H */
-diff --git a/kernel/task_work.c b/kernel/task_work.c
-index f13ec0b..65bd3c9 100644
---- a/kernel/task_work.c
-+++ b/kernel/task_work.c
-@@ -2,16 +2,17 @@
- #include <linux/task_work.h>
- #include <linux/tracehook.h>
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	ptrace_do_notify(SIGTRAP, exit_code, CLD_TRAPPED);
+@@ -2198,13 +2193,8 @@ int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka,
+ 	struct signal_struct *signal = current->signal;
+ 	int signr;
  
-+static struct callback_head work_exited; /* all we need is ->next == NULL */
-+
- int
- task_work_add(struct task_struct *task, struct callback_head *work, bool notify)
- {
- 	struct callback_head *head;
--	/*
--	 * Not inserting the new work if the task has already passed
--	 * exit_task_work() is the responisbility of callers.
--	 */
-+
- 	do {
- 		head = ACCESS_ONCE(task->task_works);
-+		if (unlikely(head == &work_exited))
-+			return -ESRCH;
- 		work->next = head;
- 	} while (cmpxchg(&task->task_works, head, work) != head);
+-	if (unlikely(current->task_works)) {
+-		if (test_and_clear_ti_thread_flag(current_thread_info(),
+-						   TIF_NOTIFY_RESUME)) {
+-			smp_mb__after_clear_bit();
+-			task_work_run();
+-		}
+-	}
++	if (unlikely(current->task_works))
++		task_work_run();
  
-@@ -30,7 +31,7 @@ task_work_cancel(struct task_struct *task, task_work_func_t func)
- 	 * If cmpxchg() fails we continue without updating pprev.
- 	 * Either we raced with task_work_add() which added the
- 	 * new entry before this work, we will find it again. Or
--	 * we raced with task_work_run(), *pprev == NULL.
-+	 * we raced with task_work_run(), *pprev == NULL/exited.
- 	 */
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 	while ((work = ACCESS_ONCE(*pprev))) {
-@@ -51,7 +52,16 @@ void task_work_run(void)
- 	struct callback_head *work, *head, *next;
- 
- 	for (;;) {
--		work = xchg(&task->task_works, NULL);
-+		/*
-+		 * work->func() can do task_work_add(), do not set
-+		 * work_exited unless the list is empty.
-+		 */
-+		do {
-+			work = ACCESS_ONCE(task->task_works);
-+			head = !work && (task->flags & PF_EXITING) ?
-+				&work_exited : NULL;
-+		} while (cmpxchg(&task->task_works, work, head) != work);
-+
- 		if (!work)
- 			break;
- 		/*
+ 	if (unlikely(uprobe_deny_signal()))
+ 		return 0;
 -- 
 1.5.5.1
 
