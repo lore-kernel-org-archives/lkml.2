@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab2HZACF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 20:02:05 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:33250 "EHLO
+	id S1755239Ab2HZADR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 20:03:17 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:33330 "EHLO
 	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab2HZACB (ORCPT
+	with ESMTP id S1753803Ab2HZADM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 20:02:01 -0400
+	Sat, 25 Aug 2012 20:03:12 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: <linux-kernel@vger.kernel.org>
 Cc: <netdev@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
         "Serge E. Hallyn" <serge@hallyn.com>,
         David Miller <davem@davemloft.net>
-Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: David Miller <davem@davemloft.net>
 References: <87lih2h6i4.fsf@xmission.com>
-Date: Sat, 25 Aug 2012 17:01:48 -0700
+Date: Sat, 25 Aug 2012 17:02:59 -0700
 In-Reply-To: <87lih2h6i4.fsf@xmission.com> (Eric W. Biederman's message of
 	"Sat, 25 Aug 2012 16:54:59 -0700")
-Message-ID: <87k3wmfrmb.fsf@xmission.com>
+Message-ID: <877gsmfrkc.fsf@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/jtPnt6eoU5O8jWwb1eIfXB0U6Yw7jukA=
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19xSlGNxocmE0TxftYu1pWhaIXqDeSQvxQ=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
@@ -30,192 +31,93 @@ X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 TR_Symld_Words too many words that have symbols inside
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2658]
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;<linux-kernel@vger.kernel.org>
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;<linux-kernel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [REVIEW][PATCH 07/15] userns: Convert taskstats to handle the user and pid namespaces.
+Subject: [REVIEW][PATCH 09/15] userns: Convert process event connector to handle kuids and kgids
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-- Explicitly limit exit task stat broadcast to the initial user and
-  pid namespaces, as it is already limited to the initial network
-  namespace.
+- Only allow asking for events from the initial user and pid namespace,
+  where we generate the events in.
 
-- For broadcast task stats explicitly generate all of the idenitiers
-  in terms of the initial user namespace and the initial pid
-  namespace.
+- Convert kuids and kgids into the initial user namespace to report
+  them via the process event connector.
 
-- For request stats report them in terms of the current user namespace
-  and the current pid namespace.  Netlink messages are delivered
-  syncrhonously to the kernel allowing us to get the user namespace
-  and the pid namespace from the current task.
-
-- Pass the namespaces for representing pids and uids and gids
-  into bacct_add_task.
-
-Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: David Miller <davem@davemloft.net>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- include/linux/tsacct_kern.h |    8 ++++++--
+ drivers/connector/cn_proc.c |   18 ++++++++++++++----
  init/Kconfig                |    1 -
- kernel/taskstats.c          |   23 +++++++++++++++++------
- kernel/tsacct.c             |   12 +++++++-----
- 4 files changed, 30 insertions(+), 14 deletions(-)
+ 2 files changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/tsacct_kern.h b/include/linux/tsacct_kern.h
-index 7e50ac7..44893e5 100644
---- a/include/linux/tsacct_kern.h
-+++ b/include/linux/tsacct_kern.h
-@@ -10,9 +10,13 @@
- #include <linux/taskstats.h>
- 
- #ifdef CONFIG_TASKSTATS
--extern void bacct_add_tsk(struct taskstats *stats, struct task_struct *tsk);
-+extern void bacct_add_tsk(struct user_namespace *user_ns,
-+			  struct pid_namespace *pid_ns,
-+			  struct taskstats *stats, struct task_struct *tsk);
- #else
--static inline void bacct_add_tsk(struct taskstats *stats, struct task_struct *tsk)
-+static inline void bacct_add_tsk(struct user_namespace *user_ns,
-+				 struct pid_namespace *pid_ns,
-+				 struct taskstats *stats, struct task_struct *tsk)
- {}
- #endif /* CONFIG_TASKSTATS */
- 
-diff --git a/init/Kconfig b/init/Kconfig
-index 525f4e8..965a700 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -927,7 +927,6 @@ config UIDGID_CONVERTED
- 	# Features
- 	depends on IMA = n
- 	depends on EVM = n
--	depends on TASKSTATS = n
- 	depends on TRACING = n
- 	depends on FS_POSIX_ACL = n
- 	depends on QUOTA = n
-diff --git a/kernel/taskstats.c b/kernel/taskstats.c
-index d0a3279..3880df2 100644
---- a/kernel/taskstats.c
-+++ b/kernel/taskstats.c
-@@ -27,6 +27,7 @@
- #include <linux/cgroup.h>
- #include <linux/fs.h>
- #include <linux/file.h>
-+#include <linux/pid_namespace.h>
- #include <net/genetlink.h>
+diff --git a/drivers/connector/cn_proc.c b/drivers/connector/cn_proc.c
+index 3e92b7d..fce2000 100644
+--- a/drivers/connector/cn_proc.c
++++ b/drivers/connector/cn_proc.c
+@@ -30,6 +30,7 @@
+ #include <linux/gfp.h>
+ #include <linux/ptrace.h>
  #include <linux/atomic.h>
++#include <linux/pid_namespace.h>
  
-@@ -174,7 +175,9 @@ static void send_cpu_listeners(struct sk_buff *skb,
- 	up_write(&listeners->sem);
- }
+ #include <asm/unaligned.h>
  
--static void fill_stats(struct task_struct *tsk, struct taskstats *stats)
-+static void fill_stats(struct user_namespace *user_ns,
-+		       struct pid_namespace *pid_ns,
-+		       struct task_struct *tsk, struct taskstats *stats)
- {
- 	memset(stats, 0, sizeof(*stats));
- 	/*
-@@ -190,7 +193,7 @@ static void fill_stats(struct task_struct *tsk, struct taskstats *stats)
- 	stats->version = TASKSTATS_VERSION;
- 	stats->nvcsw = tsk->nvcsw;
- 	stats->nivcsw = tsk->nivcsw;
--	bacct_add_tsk(stats, tsk);
-+	bacct_add_tsk(user_ns, pid_ns, stats, tsk);
- 
- 	/* fill in extended acct fields */
- 	xacct_add_tsk(stats, tsk);
-@@ -207,7 +210,7 @@ static int fill_stats_for_pid(pid_t pid, struct taskstats *stats)
- 	rcu_read_unlock();
- 	if (!tsk)
- 		return -ESRCH;
--	fill_stats(tsk, stats);
-+	fill_stats(current_user_ns(), task_active_pid_ns(current), tsk, stats);
- 	put_task_struct(tsk);
- 	return 0;
- }
-@@ -291,6 +294,12 @@ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
- 	if (!cpumask_subset(mask, cpu_possible_mask))
- 		return -EINVAL;
- 
-+	if (current_user_ns() != &init_user_ns)
-+		return -EINVAL;
-+
-+	if (task_active_pid_ns(current) != &init_pid_ns)
-+		return -EINVAL;
-+
- 	if (isadd == REGISTER) {
- 		for_each_cpu(cpu, mask) {
- 			s = kmalloc_node(sizeof(struct listener),
-@@ -631,11 +640,12 @@ void taskstats_exit(struct task_struct *tsk, int group_dead)
- 	if (rc < 0)
+@@ -127,11 +128,11 @@ void proc_id_connector(struct task_struct *task, int which_id)
+ 	rcu_read_lock();
+ 	cred = __task_cred(task);
+ 	if (which_id == PROC_EVENT_UID) {
+-		ev->event_data.id.r.ruid = cred->uid;
+-		ev->event_data.id.e.euid = cred->euid;
++		ev->event_data.id.r.ruid = from_kuid_munged(&init_user_ns, cred->uid);
++		ev->event_data.id.e.euid = from_kuid_munged(&init_user_ns, cred->euid);
+ 	} else if (which_id == PROC_EVENT_GID) {
+-		ev->event_data.id.r.rgid = cred->gid;
+-		ev->event_data.id.e.egid = cred->egid;
++		ev->event_data.id.r.rgid = from_kgid_munged(&init_user_ns, cred->gid);
++		ev->event_data.id.e.egid = from_kgid_munged(&init_user_ns, cred->egid);
+ 	} else {
+ 		rcu_read_unlock();
+ 		return;
+@@ -303,6 +304,15 @@ static void cn_proc_mcast_ctl(struct cn_msg *msg,
+ 	if (msg->len != sizeof(*mc_op))
  		return;
  
--	stats = mk_reply(rep_skb, TASKSTATS_TYPE_PID, tsk->pid);
-+	stats = mk_reply(rep_skb, TASKSTATS_TYPE_PID,
-+			 task_pid_nr_ns(tsk, &init_pid_ns));
- 	if (!stats)
- 		goto err;
++	/* 
++	 * Events are reported with respect to the initial pid
++	 * and user namespaces so ignore requestors from
++	 * other namespaces.
++	 */
++	if ((current_user_ns() != &init_user_ns) ||
++	    (task_active_pid_ns(current) != &init_pid_ns))
++		return;
++
+ 	mc_op = (enum proc_cn_mcast_op *)msg->data;
+ 	switch (*mc_op) {
+ 	case PROC_CN_MCAST_LISTEN:
+diff --git a/init/Kconfig b/init/Kconfig
+index 6c9d004..7327869 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -932,7 +932,6 @@ config UIDGID_CONVERTED
+ 	depends on QUOTA = n
+ 	depends on QUOTACTL = n
+ 	depends on DRM = n
+-	depends on PROC_EVENTS = n
  
--	fill_stats(tsk, stats);
-+	fill_stats(&init_user_ns, &init_pid_ns, tsk, stats);
- 
- 	/*
- 	 * Doesn't matter if tsk is the leader or the last group member leaving
-@@ -643,7 +653,8 @@ void taskstats_exit(struct task_struct *tsk, int group_dead)
- 	if (!is_thread_group || !group_dead)
- 		goto send;
- 
--	stats = mk_reply(rep_skb, TASKSTATS_TYPE_TGID, tsk->tgid);
-+	stats = mk_reply(rep_skb, TASKSTATS_TYPE_TGID,
-+			 task_tgid_nr_ns(tsk, &init_pid_ns));
- 	if (!stats)
- 		goto err;
- 
-diff --git a/kernel/tsacct.c b/kernel/tsacct.c
-index 23b4d78..625df0b 100644
---- a/kernel/tsacct.c
-+++ b/kernel/tsacct.c
-@@ -26,7 +26,9 @@
- /*
-  * fill in basic accounting fields
-  */
--void bacct_add_tsk(struct taskstats *stats, struct task_struct *tsk)
-+void bacct_add_tsk(struct user_namespace *user_ns,
-+		   struct pid_namespace *pid_ns,
-+		   struct taskstats *stats, struct task_struct *tsk)
- {
- 	const struct cred *tcred;
- 	struct timespec uptime, ts;
-@@ -55,13 +57,13 @@ void bacct_add_tsk(struct taskstats *stats, struct task_struct *tsk)
- 		stats->ac_flag |= AXSIG;
- 	stats->ac_nice	 = task_nice(tsk);
- 	stats->ac_sched	 = tsk->policy;
--	stats->ac_pid	 = tsk->pid;
-+	stats->ac_pid	 = task_pid_nr_ns(tsk, pid_ns);
- 	rcu_read_lock();
- 	tcred = __task_cred(tsk);
--	stats->ac_uid	 = tcred->uid;
--	stats->ac_gid	 = tcred->gid;
-+	stats->ac_uid	 = from_kuid_munged(user_ns, tcred->uid);
-+	stats->ac_gid	 = from_kgid_munged(user_ns, tcred->gid);
- 	stats->ac_ppid	 = pid_alive(tsk) ?
--				rcu_dereference(tsk->real_parent)->tgid : 0;
-+		task_tgid_nr_ns(rcu_dereference(tsk->real_parent), pid_ns) : 0;
- 	rcu_read_unlock();
- 	stats->ac_utime = cputime_to_usecs(tsk->utime);
- 	stats->ac_stime = cputime_to_usecs(tsk->stime);
+ 	# Networking
+ 	depends on NET_9P = n
 -- 
 1.7.5.4
 
