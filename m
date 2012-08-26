@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2HZSae (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 14:30:34 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60913 "EHLO
+	id S1754904Ab2HZSlp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 14:41:45 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60924 "EHLO
 	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751191Ab2HZSad (ORCPT
+	by vger.kernel.org with ESMTP id S1753495Ab2HZSlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 14:30:33 -0400
-Date: Sun, 26 Aug 2012 20:30:30 +0200
+	Sun, 26 Aug 2012 14:41:44 -0400
+Date: Sun, 26 Aug 2012 20:41:40 +0200
 From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 To: Joerg Roedel <joerg.roedel@amd.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, joro@8bytes.org,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 16/19] x86, irq: Introduce setup_remapped_irq()
-Message-ID: <20120826183030.GH3690@breakpoint.cc>
+Subject: Re: [PATCH 17/19] x86, msi: Introduce x86_msi.compose_msi_msg
+ call-back
+Message-ID: <20120826184140.GI3690@breakpoint.cc>
 References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-17-git-send-email-joerg.roedel@amd.com>
+ <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345470965-24410-17-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1345470965-24410-18-git-send-email-joerg.roedel@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 03:56:02PM +0200, Joerg Roedel wrote:
-> --- a/arch/x86/include/asm/irq_remapping.h
-> +++ b/arch/x86/include/asm/irq_remapping.h
-> @@ -44,6 +44,9 @@ extern void compose_remapped_msi_msg(struct pci_dev *pdev,
->  				     struct msi_msg *msg, u8 hpet_id);
->  extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
->  extern void panic_if_irq_remap(const char *msg);
-> +extern bool setup_remapped_irq(int irq,
-> +			       struct irq_cfg *cfg,
-> +			       struct irq_chip *chip);
-here and in the next definition, is it possible to fit it in one line or
-alteast in two?
+On Mon, Aug 20, 2012 at 03:56:03PM +0200, Joerg Roedel wrote:
+> This call-back points to the right function for initializing
+> the msi_msg structure.
 
->  
->  static inline bool irq_remapped(struct irq_cfg *cfg)
->  {
-> @@ -93,6 +96,12 @@ static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+So you pull out the compose_remapped_msi_msg() out of msi_compose_msg() and
+put this in a callback. Such information is good since you don't see this in
+diff and even --patience does not help here.
 
 > --- a/drivers/iommu/irq_remapping.c
 > +++ b/drivers/iommu/irq_remapping.c
-> @@ -302,3 +302,14 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
->  	chip->irq_eoi = ir_ack_apic_level;
->  	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
+> @@ -242,10 +243,12 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
+>  			      unsigned int irq, unsigned int dest,
+>  			      struct msi_msg *msg, u8 hpet_id)
+>  {
+> -	if (!remap_ops || !remap_ops->compose_msi_msg)
+> -		return;
+> +	struct irq_cfg *cfg = irq_get_chip_data(irq);
+>  
+> -	remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+> +	if (cfg && !irq_remapped(cfg))
+> +		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+> +	else if (remap_ops && remap_ops->compose_msi_msg)
+> +		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+
+cfg _has_ to be valid here and if it is not than you shouldn't assume that
+this irq is remapped.
+Also remap_ops has to be set here. And ->compose_msi_msg() should be set
+here as well. Would it make sense if it is not set?
+
 >  }
-> +
-> +bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
-> +{
-> +	if (irq_remapped(cfg)) {
-> +		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
-> +		irq_remap_modify_chip_defaults(chip);
-> +		return true;
-> +	} else {
-> +		return false;
-> +	}
-> +}
-
-What about
-
-bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
-{
-	if (!irq_remapped(cfg))
-		return false;
-	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
-	irq_remap_modify_chip_defaults(chip);
-	return true;
-}
+>  
+>  static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
 
 Sebastian
