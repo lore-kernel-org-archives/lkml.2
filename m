@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab2HZCbH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 22:31:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42218 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756564Ab2HZCaT (ORCPT
+	id S1756982Ab2HZCrE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 22:47:04 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60800 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756304Ab2HZCrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 22:30:19 -0400
-Date: Sat, 25 Aug 2012 19:30:14 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: Re: [ 40/46] KVM: PIC: call ack notifiers for irqs that are dropped
- form irr
-Message-ID: <20120826023014.GA6033@kroah.com>
-References: <20120820035832.274275502@linuxfoundation.org>
- <20120820035837.834733550@linuxfoundation.org>
- <1345680175.15245.15.camel@deadeye.wl.decadent.org.uk>
+	Sat, 25 Aug 2012 22:47:02 -0400
+Date: Sun, 26 Aug 2012 03:46:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        aneesh.kumar@linux.vnet.ibm.com, bfields@fieldses.org
+Subject: Re: [patch 2/9] procfs: Convert /proc/pid/fdinfo/ handling routines
+ to seq-file v2
+Message-ID: <20120826024653.GY23464@ZenIV.linux.org.uk>
+References: <20120823104323.040550004@openvz.org>
+ <20120823104725.686586462@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1345680175.15245.15.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <20120823104725.686586462@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 01:02:55AM +0100, Ben Hutchings wrote:
-> On Sun, 2012-08-19 at 20:59 -0700, Greg Kroah-Hartman wrote:
-> > From: Greg KH <gregkh@linuxfoundation.org>
-> > 
-> > 3.5-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Gleb Natapov <gleb@redhat.com>
-> > 
-> > (cherry picked from commit aea218f3cbbcaac249b6b2c98930a00d6d931f1e)
-> > 
-> > After commit 242ec97c358256 PIT interrupts are no longer delivered after
-> > PIC reset. It happens because PIT injects interrupt only if previous one
-> > was acked, but since on PIC reset it is dropped from irr it will never
-> > be delivered and hence acknowledged. Fix that by calling ack notifier on
-> > PIC reset.
-> [...]
+On Thu, Aug 23, 2012 at 02:43:25PM +0400, Cyrill Gorcunov wrote:
+> This patch converts /proc/pid/fdinfo/ handling routines to seq-file which
+> is needed to extend seq operations and plug in auxiliary fdinfo provides
+> from subsystems like eventfd/eventpoll/fsnotify.
 > 
-> Based on the commit blamed for the regression, I think this is needed
-> for 3.4 as well.
+> Note the proc_fd_link no longer call for proc_fd_info, simply because
+> proc_fd_info is converted to seq_fdinfo_open (which is seq-file open()
+> prototype).
 
-That's up to Avi and Marcelo, as I do not apply any KVM patches to any
-stable tree unless they say so (as they have asked in the past.)
+Actually, now that I've looked at it a bit more...  You've just introduced
+an ABI change here.  Look:
 
-Avi and Marcelo?
+echo foo > /tmp/a
+exec 8</tmp/a			# fd 8 reads from /tmp/a
+read i <&8			# read line from it
+exec 9</proc/self/fdinfo/8	# fd 9 is /proc/self/fdinfo/8
+exec 8</tmp/a			# close fd 8 and reopen it to the same /tmp/a
+cat <&9				# now read from fd 9
 
-greg k-h
+With the mainline it will print
+pos:  0
+flags:  0100000
+
+With that commit you will get
+pos:    4
+flags:  0100000
+
+since the file you've opened refers to what used to be at fd 8 at the
+moment of open(2), not read(2).  It may or may not be harmless, but it
+definitely is a userland ABI change.  And that way it's actually an
+extra PITA for yourself - think what /proc/self/fdinfo/9 should contain
+now!  That's right, you've got hidden state there and would need to
+print it to be able to reconstruct the state on restart.  Only it doesn't
+end just there - what if you've taken that one step further and got the
+struct file stashed in there at open(2) time also of the same kind?
+
+IMO doing that at open() time is just a headache for no good reason -
+resolving descriptor to struct file * at read() time as we do now
+is much saner.  Better do that in your ->show(), since you are using
+a single-shot iterator anyway...
