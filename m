@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab2HZRC3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 13:02:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52203 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2HZRC2 (ORCPT
+	id S1752619Ab2HZRLt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 13:11:49 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:56530 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2HZRLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 13:02:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <E1T5dn3-0004YT-RP@server.hosting2all.com>
-References: <E1T5dn3-0004YT-RP@server.hosting2all.com>
-From: Shentino <shentino@gmail.com>
-Date: Sun, 26 Aug 2012 10:01:48 -0700
-Message-ID: <CAGDaZ_okJh=nDO0NQzwih2_fOiufsjQkNS+-VTycs_CxZbZvcg@mail.gmail.com>
-Subject: Re: Drop support for x86-32
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-To: unlisted-recipients:; (no To-header on input)
+	Sun, 26 Aug 2012 13:11:47 -0400
+Message-ID: <1346000930.1779.29.camel@aeonflux>
+Subject: Re: [PATCH] Bluetooth: Add support for Apple vendor-specific devices
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 26 Aug 2012 10:08:50 -0700
+In-Reply-To: <1345915686-3915-1-git-send-email-rydberg@euromail.se>
+References: <1345915686-3915-1-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 7:26 AM, Free Email Service <info@send-email.org> wrote:
->  A 32-bit kernel on a legacy (or even new) system in 2017 will still
-> need
->> regular kernel updates (not \"long term\" un0maintained kernels)
->> in order to work with new USB devices, new 4KB+ sector hard drives,
->> newer generations of SSDs, etc..
-> 12-years-old machine is trash. If someone can buy e.g. new hard
-> drive,
-> he can also afford to buy newer PC. New hard drive in 2017 will be
-> likely incompatible with 12-years-old machine in such way which
-> can\'t
-> be fixed by new kernel.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hi Henrik,
 
-So not only are you trolling, but you are spamming your blog AND
-evading my filters to do so?
+> As pointed out by Gustavo and Marcel, all Apple-specific Broadcom
+> devices seen so far have the same interface class, subclass and
+> protocol numbers. This patch adds an entry which matches all of them,
+> using the new USB_VENDOR_AND_INTERFACE_INFO() macro.
+> 
+> In particular, this patch adds support for the MacBook Pro Retina
+> (05ac:8286), which is not in the present list.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi Gustavo,
+> 
+> here is a patch for the Apple devices, utilizing commit d81a5d19, for
+> 3.6. Tested on the MacBookPro10,1 (Retina). If you want, I can
+> follow-up with a patch for 3.7 which removes the specific entries. I
+> have verified the lsusb output of all of them, except MacMini5,1.
+> 
+> Thanks,
+> Henrik
+> 
+>  drivers/bluetooth/btusb.c | 3 +++
+>  1 file changed, 3 insertions(+)
 
-Can someone from kernel.org block this fool please?
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+
+Regards
+
+Marcel
+
+
