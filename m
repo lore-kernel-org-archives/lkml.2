@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab2HZAMr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Aug 2012 20:12:47 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:36715 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773Ab2HZAMn (ORCPT
+	id S1756036Ab2HZATb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Aug 2012 20:19:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13592 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab2HZAT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Aug 2012 20:12:43 -0400
-Date: Sat, 25 Aug 2012 17:12:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
-        "3.2.x.." <stable@vger.kernel.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        m68k <linux-m68k@vger.kernel.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Cris <linux-cris-kernel@axis.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>
-Subject: Re: [PATCH 00/11] rcu: Add missing RCU idle APIs on idle loop v2
-Message-ID: <20120826001233.GH3436@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1345733915-20040-1-git-send-email-fweisbec@gmail.com>
- <20120824212647.GU2472@linux.vnet.ibm.com>
- <1345857554.4840.43.camel@deadeye.wl.decadent.org.uk>
- <20120825035047.GB3436@linux.vnet.ibm.com>
- <20120825131647.GA1994@somewhere>
- <20120825161806.GD3436@linux.vnet.ibm.com>
- <5039406F.9040604@orcon.net.nz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5039406F.9040604@orcon.net.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082600-2356-0000-0000-00000197F915
+	Sat, 25 Aug 2012 20:19:26 -0400
+X-Authority-Analysis: v=2.0 cv=Vb91zSV9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=AHs9r33zl8UA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=Vzmi2hJzzP0A:10 a=meVymXHHAAAA:8 a=m0xyThlhAAAA:8 a=yCNFPZJBO34YLDsK70cA:9 a=QEXdDO2ut3YA:10 a=6BTljOyc3qUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Subject: Re: [REVIEW][PATCH 11/15] userns: Teach trace to use from_kuid
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        David Miller <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <87wr0mecxz.fsf@xmission.com>
+References: <87lih2h6i4.fsf@xmission.com>  <87wr0mecxz.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 25 Aug 2012 20:18:36 -0400
+Message-ID: <1345940316.19381.1.camel@pippen.local.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 09:15:27AM +1200, Michael Cree wrote:
-> On 26/08/12 04:18, Paul E. McKenney wrote:
-> > On Sat, Aug 25, 2012 at 03:16:49PM +0200, Frederic Weisbecker wrote:
-> >> On Fri, Aug 24, 2012 at 08:50:47PM -0700, Paul E. McKenney wrote:
-> >>> On Sat, Aug 25, 2012 at 02:19:14AM +0100, Ben Hutchings wrote:
-> >>>> On Fri, 2012-08-24 at 14:26 -0700, Paul E. McKenney wrote:
-> >>>>> On Thu, Aug 23, 2012 at 04:58:24PM +0200, Frederic Weisbecker wrote:
-> >>>>>> Hi,
-> >>>>>>
-> >>>>>> Changes since v1:
-> >>>>>>
-> >>>>>> - Fixed preempt handling in alpha idle loop
-> >>>>>> - added ack from Geert
-> >>>>>> - fixed stable email address, sorry :-/
-> >>>>>>
-> >>>>>> This time I built tested everywhere but: h8300 (compiler internal error),
-> >>>>>> and mn10300, parisc, score (cross compilers not available in
-> >>>>>> ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/)
-> >>>>>>
-> >>>>>> For testing, you can pull from:
-> >>>>>>
-> >>>>>> git://github.com/fweisbec/linux-dynticks.git
-> >>>>>> 	rcu/idle-fix-v2 
-> >>>>>>
-> >>>>>> Thanks.
-> >>>>>
-> >>>>> I have queued these on -rcu branch rcu/idle:
-> >>>>>
-> >>>>> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> >>>>>
-> >>>>> This problem has been in place since 3.3, so it is hard to argue that
-> >>>>> it is a regression for this merge window.  I have therefore queued it
-> >>>>> for 3.7.
-> >>>>
-> >>>> I don't follow that; I would expect any serious bug fix (serious enough
-> >>>> for a stable update) to be acceptable for 3.6 at this point.
-> >>>
-> >>> OK, if any of the arch maintainers wishes to submit the patch to 3.6,
-> >>> they are free to do so -- just let me know and I will drop the patch from
-> >>> my tree.
-> >>>
-> >>> That said, all this does is cause spurious warnings to be printed, so
-> >>> not sure it really qualifies as serious.  But I am happy to leave that
-> >>> decision with the individual arch maintainers -- it is their arch,
-> >>> after all, so their decision.
-> >>
-> >> Couldn't that cause hung tasks due to long lasting synchronize_rcu() ?
-> > 
-> > In theory, definitely.  In practice, they haven't been running into it,
-> > or they would be reporting hangs.
+On Sat, 2012-08-25 at 17:04 -0700, Eric W. Biederman wrote:
+> - When tracing capture the kuid.
+> - When displaying the data to user space convert the kuid into the
+>   user namespace of the process that opened the report file.
 > 
-> I am hereby reporting that RCU CPU stall warnings and hung tasks are
-> being experienced on SMP kernels built for generic Alpha. This problem
-> dates back quite a few kernel releases. The discussed patches appear to
-> fix the problem.
 
-OK, fair enough.
+> index 5c38c81..c9ace83 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2060,7 +2060,8 @@ print_trace_header(struct seq_file *m, struct trace_iterator *iter)
+>  	seq_puts(m, "#    -----------------\n");
+>  	seq_printf(m, "#    | task: %.16s-%d "
+>  		   "(uid:%d nice:%ld policy:%ld rt_prio:%ld)\n",
+> -		   data->comm, data->pid, data->uid, data->nice,
+> +		   data->comm, data->pid,
+> +		   from_kuid_munged(seq_user_ns(m), data->uid), data->nice,
 
-> A backport to the 3.2 kernel, of at least the Alpha patches, would be
-> very much appreciated! :-)
+This is a global id. That is, it stored whatever process triggered the
+report, not the one reading it. Thus, two different readers could get a
+different uid for the same task that triggered the latency?
 
-Both Alpha patches should apply as-is back to 3.3, and should also fix
-the problem.  Could you please check this on the versions of interest?
+-- Steve
 
-If you are seeing something like this on 3.2 or earlier, you have some
-other problem that needs to be tracked down separately.
+>  		   data->policy, data->rt_priority);
+>  	seq_puts(m, "#    -----------------\n");
+>  
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 55e1f7f..40a6f30 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -147,7 +147,7 @@ struct trace_array_cpu {
+>  	unsigned long		skipped_entries;
+>  	cycle_t			preempt_timestamp;
+>  	pid_t			pid;
+> -	uid_t			uid;
+> +	kuid_t			uid;
+>  	char			comm[TASK_COMM_LEN];
+>  };
+>  
 
-							Thanx, Paul
 
