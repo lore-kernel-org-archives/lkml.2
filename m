@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab2HZJ4l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 05:56:41 -0400
-Received: from 8bytes.org ([85.214.48.195]:35012 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab2HZJ4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 05:56:40 -0400
-Date: Sun, 26 Aug 2012 11:56:36 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 03/19] x86, io_apic: Introduce x86_io_apic_ops.disable()
-Message-ID: <20120826095636.GA17549@8bytes.org>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <1345470965-24410-4-git-send-email-joerg.roedel@amd.com>
- <20120823211140.GB7120@breakpoint.cc>
- <20120824122226.GW2582@amd.com>
- <20120825171705.GC3363@breakpoint.cc>
+	id S1753917Ab2HZKfI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 06:35:08 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2226 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab2HZKfG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Aug 2012 06:35:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 26 Aug 2012 03:29:00 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <vinod.koul@intel.com>, <djbw@fb.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <swarren@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] dma: tegra: add const to of_device_id.data's structure
+Date: Sun, 26 Aug 2012 15:44:23 +0530
+Message-ID: <1345976063-24437-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120825171705.GC3363@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun Aug 26 11:56:37 2012
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5039f2d522971562218834
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 25, 2012 at 07:17:05PM +0200, Sebastian Andrzej Siewior wrote:
-> On Fri, Aug 24, 2012 at 02:22:26PM +0200, Joerg Roedel wrote:
+The membe "data" of structure of_device_id is changed to const
+pointer. Hence initializing this with const type data.
+This will fix the compilation warning like
+drivers/dma/tegra20-apb-dma.c:1217:9: warning: assignment discards 'const' qualifier from
+pointer target type [enabled by default]
 
-> > Is it worth it to split that out?
-> 
-> I don't insist to redo the patch because of this. Please redo the patch
-> description to better describe what you do. You pull the "irq remap" code out
-> and stuff it in another function.
+This warning came after the change
+---------
+commit 98d7bbb9929bcc14e11ac8a55245a4f2dc174e17
+Author: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+    of: add const to struct *of_device_id.data
+---------
 
-Okay, I will update the commit message :)
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/dma/tegra20-apb-dma.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-
-	Joerg
-
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 24acd71..09a15ff 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -201,7 +201,7 @@ struct tegra_dma {
+ 	struct clk			*dma_clk;
+ 	spinlock_t			global_lock;
+ 	void __iomem			*base_addr;
+-	struct tegra_dma_chip_data	*chip_data;
++	const struct tegra_dma_chip_data	*chip_data;
+ 
+ 	/* Some register need to be cache before suspend */
+ 	u32				reg_gen;
+@@ -1173,14 +1173,14 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+ }
+ 
+ /* Tegra20 specific DMA controller information */
+-static struct tegra_dma_chip_data tegra20_dma_chip_data = {
++static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
+ 	.nr_channels		= 16,
+ 	.max_dma_count		= 1024UL * 64,
+ };
+ 
+ #if defined(CONFIG_OF)
+ /* Tegra30 specific DMA controller information */
+-static struct tegra_dma_chip_data tegra30_dma_chip_data = {
++static const struct tegra_dma_chip_data tegra30_dma_chip_data = {
+ 	.nr_channels		= 32,
+ 	.max_dma_count		= 1024UL * 64,
+ };
+@@ -1204,7 +1204,7 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
+ 	struct tegra_dma *tdma;
+ 	int ret;
+ 	int i;
+-	struct tegra_dma_chip_data *cdata = NULL;
++	const struct tegra_dma_chip_data *cdata = NULL;
+ 
+ 	if (pdev->dev.of_node) {
+ 		const struct of_device_id *match;
+-- 
+1.7.1.1
 
