@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab2HZQD5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 12:03:57 -0400
+	id S1755238Ab2HZQEX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 12:04:23 -0400
 Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:56799
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753579Ab2HZQBQ (ORCPT
+	by vger.kernel.org with ESMTP id S1752300Ab2HZQBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 12:01:16 -0400
+	Sun, 26 Aug 2012 12:01:14 -0400
 X-IronPort-AV: E=Sophos;i="4.80,315,1344204000"; 
-   d="scan'208";a="153852293"
+   d="scan'208";a="153852288"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: kernel-janitors@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: kernel-janitors@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/13] arch/arm: use clk_prepare_enable and clk_disable_unprepare
-Date: Sun, 26 Aug 2012 18:00:57 +0200
-Message-Id: <1345996865-32082-6-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 2/13] drivers/spi/spi-{orion,pl022}.c: use clk_prepare_enable and clk_disable_unprepare
+Date: Sun, 26 Aug 2012 18:00:54 +0200
+Message-Id: <1345996865-32082-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -53,83 +53,66 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/arm/common/sa1111.c   |    3 +--
- arch/arm/common/timer-sp.c |   16 ++++------------
- arch/arm/kernel/smp_twd.c  |   13 +++----------
- 3 files changed, 8 insertions(+), 24 deletions(-)
+ drivers/spi/spi-orion.c |    3 +--
+ drivers/spi/spi-pl022.c |   17 ++++-------------
+ 2 files changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
-index 9173d11..bd58414 100644
---- a/arch/arm/common/sa1111.c
-+++ b/arch/arm/common/sa1111.c
-@@ -834,8 +834,7 @@ static void __sa1111_remove(struct sa1111 *sachip)
- 	sa1111_writel(0, irqbase + SA1111_WAKEEN0);
- 	sa1111_writel(0, irqbase + SA1111_WAKEEN1);
- 
--	clk_disable(sachip->clk);
--	clk_unprepare(sachip->clk);
-+	clk_disable_unprepare(sachip->clk);
- 
- 	if (sachip->irq != NO_IRQ) {
- 		irq_set_chained_handler(sachip->irq, NULL);
-diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
-index df13a3f..af1a4ab 100644
---- a/arch/arm/common/timer-sp.c
-+++ b/arch/arm/common/timer-sp.c
-@@ -42,17 +42,10 @@ static long __init sp804_get_clock_rate(const char *name)
- 		return PTR_ERR(clk);
+diff --git a/drivers/spi/spi-orion.c b/drivers/spi/spi-orion.c
+index b17c09c..b2a7199 100644
+--- a/drivers/spi/spi-orion.c
++++ b/drivers/spi/spi-orion.c
+@@ -416,8 +416,7 @@ static int __init orion_spi_probe(struct platform_device *pdev)
+ 		goto out;
  	}
  
--	err = clk_prepare(clk);
-+	err = clk_prepare_enable(clk);
- 	if (err) {
--		pr_err("sp804: %s clock failed to prepare: %d\n", name, err);
--		clk_put(clk);
--		return err;
+-	clk_prepare(spi->clk);
+-	clk_enable(spi->clk);
++	clk_prepare_enable(spi->clk);
+ 	tclk_hz = clk_get_rate(spi->clk);
+ 	spi->max_speed = DIV_ROUND_UP(tclk_hz, 4);
+ 	spi->min_speed = DIV_ROUND_UP(tclk_hz, 30);
+diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+index b0fec03..0d235d4 100644
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -2142,16 +2142,10 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+ 		goto err_no_clk;
+ 	}
+ 
+-	status = clk_prepare(pl022->clk);
+-	if (status) {
+-		dev_err(&adev->dev, "could not prepare SSP/SPI bus clock\n");
+-		goto  err_clk_prep;
 -	}
 -
--	err = clk_enable(clk);
--	if (err) {
--		pr_err("sp804: %s clock failed to enable: %d\n", name, err);
--		clk_unprepare(clk);
-+		pr_err("sp804: %s clock failed to prepare or to enable: %d\n",
-+		       name, err);
- 		clk_put(clk);
- 		return err;
- 	}
-@@ -60,8 +53,7 @@ static long __init sp804_get_clock_rate(const char *name)
- 	rate = clk_get_rate(clk);
- 	if (rate < 0) {
- 		pr_err("sp804: %s clock failed to get rate: %ld\n", name, rate);
--		clk_disable(clk);
--		clk_unprepare(clk);
-+		clk_disable_unprepare(clk);
- 		clk_put(clk);
+-	status = clk_enable(pl022->clk);
++	status = clk_prepare_enable(pl022->clk);
+ 	if (status) {
+ 		dev_err(&adev->dev, "could not enable SSP/SPI bus clock\n");
+-		goto err_no_clk_en;
++		goto err_clk_prep;
  	}
  
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index fef42b2..8c94b8b 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -204,17 +204,10 @@ static struct clk *twd_get_clock(void)
- 		return clk;
- 	}
+ 	/* Initialize transfer pump */
+@@ -2207,9 +2201,7 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
  
--	err = clk_prepare(clk);
-+	err = clk_prepare_enable(clk);
- 	if (err) {
--		pr_err("smp_twd: clock failed to prepare: %d\n", err);
--		clk_put(clk);
--		return ERR_PTR(err);
--	}
--
--	err = clk_enable(clk);
--	if (err) {
--		pr_err("smp_twd: clock failed to enable: %d\n", err);
--		clk_unprepare(clk);
-+		pr_err("smp_twd: clock failed to prepare or to enable: %d\n",
-+		       err);
- 		clk_put(clk);
- 		return ERR_PTR(err);
- 	}
+ 	free_irq(adev->irq[0], pl022);
+  err_no_irq:
+-	clk_disable(pl022->clk);
+- err_no_clk_en:
+-	clk_unprepare(pl022->clk);
++	clk_disable_unprepare(pl022->clk);
+  err_clk_prep:
+ 	clk_put(pl022->clk);
+  err_no_clk:
+@@ -2243,8 +2235,7 @@ pl022_remove(struct amba_device *adev)
+ 		pl022_dma_remove(pl022);
+ 
+ 	free_irq(adev->irq[0], pl022);
+-	clk_disable(pl022->clk);
+-	clk_unprepare(pl022->clk);
++	clk_disable_unprepare(pl022->clk);
+ 	clk_put(pl022->clk);
+ 	pm_runtime_disable(&adev->dev);
+ 	iounmap(pl022->virtbase);
 
