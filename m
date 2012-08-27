@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab2H0RmU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:42:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38235 "EHLO mx1.redhat.com"
+	id S1753977Ab2H0RwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:52:01 -0400
+Received: from nn7.de ([85.214.94.156]:45368 "EHLO nn7.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671Ab2H0RmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:42:19 -0400
-Date: Mon, 27 Aug 2012 19:44:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [PATCH 0/3] uprobes: teach uprobes to clear MMF_HAS_UPROBES
-Message-ID: <20120827174428.GA438@redhat.com>
-References: <20120819164008.GA25454@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120819164008.GA25454@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753767Ab2H0RwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 13:52:00 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 13:51:59 EDT
+Message-ID: <1346089515.26382.52.camel@no>
+Subject: b43 regression: extremely slow wireless with BCM4322 802.11a/b/g/n
+From: Soeren Sonnenburg <sonne@debian.org>
+To: linux-kernel@vger.kernel.org
+Date: Mon, 27 Aug 2012 19:45:15 +0200
+Organization: 
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-bw6H2+7Ry3aMZVxNg0lE"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar, this is still waiting for your review ;)
 
-FYI, I created the tree to accumulate the acked patches,
-kernel.org:/pub/scm/linux/kernel/git/oleg/misc
+--=-bw6H2+7Ry3aMZVxNg0lE
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: quoted-printable
 
-Currently it has:
+Hi,
 
-	Oleg Nesterov (7):
-	      uprobes: kill uprobes_state->count
-	      uprobes: kill dup_mmap()->uprobe_mmap(), simplify uprobe_mmap/munmap
-	      uprobes: change uprobe_mmap() to ignore the errors but check fatal_signal_pending()
-	      uprobes: do not use -EEXIST in install_breakpoint() paths
-	      uprobes: introduce MMF_HAS_UPROBES
-	      uprobes: fold uprobe_reset_state() into uprobe_dup_mmap()
-	      uprobes: remove "verify" argument from set_orig_insn()
+since kernel version >=3D 3.4 wireless became extremely slow (download
+rates of about 90k/sec when downloading a new kernel from kernel.org
+instead of >1MB/s)https://bbs.archlinux.org/viewtopic.php?pid=3D1146085
 
-	Sebastian Andrzej Siewior (1):
-	      uprobes: remove check for uprobe variable in handle_swbp()
+There is a thread on archlinux
+https://bbs.archlinux.org/viewtopic.php?pid=3D1146085 where people observe
+the very same. Kernel 3.3.X was the last known good one.
 
-	Srikar Dronamraju (1):
-	      uprobes: Remove redundant lock_page/unlock_page
+*Sometimes* download rates are OK but most of the time they are not.
 
-You didn't ack Sebastian's patch, but it looks simple. If you
-have any objections please let me know.
+$lspci | grep Broad
 
-On 08/19, Oleg Nesterov wrote:
->
-> Hello.
->
-> On top of "kill uprobes_state->count, add MMF_HAS_UPROBES"
-> series.
->
-> Once again, I am not sure we really need this (except 1/3).
-> Perhaps we could remove uprobe_munmap() instead and forget
-> about the false-positive MMF_HAS_UPROBES's.
->
-> OTOH, imho it looks a bit more clean this way. Please comment.
->
-> diffstat reports the code bloat, but note that the previous
-> series removed more code.
->
-> Oleg.
->
->  include/linux/sched.h   |    3 +-
->  kernel/events/uprobes.c |   82 +++++++++++++++++++++++++++++++++++++----------
->  2 files changed, 67 insertions(+), 18 deletions(-)
+04:00.0 Network controller: Broadcom Corporation BCM4322 802.11a/b/g/n Wire=
+less LAN Controller (rev 01)
 
+
+Any ideas?
+
+Soeren
+--=20
+For the one fact about the future of which we can be certain is that it
+will be utterly fantastic. -- Arthur C. Clarke, 1962
+
+--=-bw6H2+7Ry3aMZVxNg0lE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCAAGBQJQO7IrAAoJEH82z1Wqh6p3hrMP/1WqSKDGOVZ0vdoblHX3jfHF
+5SVzC1cSnBj9VjHrpR56Znc0d0e0Mv6sGu+8+c83QqzvgnuAruqhi4UiQQzK4JSH
+w/Nx+S9YgHwwosKRykaI7J/YZX/dIx6aF4tv40l7mu28OY5/pja6DHlbXOMfAI4l
+9TNSi49aCU7MLmEVmpe52BXB/1vAOx7Oza6QJ3PTots5XfwhqWAAyCrOvFwoF922
+Axv53UfWhkePh3diBNgNgd2/U4ZGqEVdAiv5o+OUuQtEClZ/W/L7ZJ6fQ4Spgu5z
+PNgGWH1P4tBWMTdT9BbTup3HN9709KF8PHU45XaHjh3uj+ndlBAv5fw51g9xpeWN
+0tIG2KGjF5+fuWeazpgb8BBrhQkKWv7tHrWkJkqv5jfHmYdIZPFaZaYNiManGSr2
+rs63fLKHkKJ4wzVM5ceCUhll1avXgv1SB781/kuNxQY4Bb4d2K4uA2XMtn8B9Oju
+h5mBmibgzWMC9sCNJfTyUpn/i/bLOirHQTjhxbcO/4Ip+9tRQroWjfK2CPsuP+a5
+qAj6eRHwsJqZ+gdtsNw865BcQXGyG/6OhWcWlh1cDrkZJ9FLVAZ/QuMXcBplDQH3
+y+RkloFngTUHx/fvOOXut/XUA7o4zuSEEl4HAUqoTtntWUV1bdSV2tKIY43UdAw2
+6rYiE7w1fjQpPq5XRMzm
+=knuy
+-----END PGP SIGNATURE-----
+
+--=-bw6H2+7Ry3aMZVxNg0lE--
