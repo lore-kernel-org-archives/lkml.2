@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab2H0PIH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:08:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35307 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab2H0PIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:08:02 -0400
-Date: Mon, 27 Aug 2012 08:07:54 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@bitmath.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: [PATCH] HID: hid-debug: Show rdesc for unclaimed devices
-In-Reply-To: <1345573364-341-1-git-send-email-rydberg@euromail.se>
-Message-ID: <alpine.LNX.2.00.1208270807420.22447@pobox.suse.cz>
-References: <1345573364-341-1-git-send-email-rydberg@euromail.se>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752163Ab2H0PLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:11:20 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41550 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab2H0PLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 11:11:19 -0400
+Date: Mon, 27 Aug 2012 17:11:43 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Remove __GFP_NO_KSWAPD
+Message-ID: <20120827151143.GC5376@phenom.ffwll.local>
+Mail-Followup-To: Sedat Dilek <sedat.dilek@gmail.com>,
+	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <1346068957-27754-1-git-send-email-sedat.dilek@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346068957-27754-1-git-send-email-sedat.dilek@gmail.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Aug 2012, Henrik Rydberg wrote:
-
-> Since commit a7197c2e, the raw report descriptor is available also for
-> unclaimed devices. This patchs make it show in the rdesc debugfs node.
-
-Definitely nice to have. Applied, thanks Henrik.
-
+On Mon, Aug 27, 2012 at 02:02:37PM +0200, Sedat Dilek wrote:
+> When I pulled-in today's drm-intel-next into linux-next (next-20120824)
+> I saw this build-breakage:
 > 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/hid/hid-debug.c | 12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
+> drivers/gpu/drm/i915/i915_gem.c: In function 'i915_gem_object_get_pages_gtt':
+> drivers/gpu/drm/i915/i915_gem.c:1778:40: error: '__GFP_NO_KSWAPD' undeclared (first use in this function)
+> drivers/gpu/drm/i915/i915_gem.c:1778:40: note: each undeclared identifier is reported only once for each function it appears in
 > 
-> diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
-> index 01dd9a7..933fff0 100644
-> --- a/drivers/hid/hid-debug.c
-> +++ b/drivers/hid/hid-debug.c
-> @@ -911,15 +911,21 @@ static void hid_dump_input_mapping(struct hid_device *hid, struct seq_file *f)
->  
->  }
->  
-> -
->  static int hid_debug_rdesc_show(struct seq_file *f, void *p)
->  {
->  	struct hid_device *hdev = f->private;
-> +	const __u8 *rdesc = hdev->rdesc;
-> +	unsigned rsize = hdev->rsize;
->  	int i;
->  
-> +	if (!rdesc) {
-> +		rdesc = hdev->dev_rdesc;
-> +		rsize = hdev->dev_rsize;
-> +	}
-> +
->  	/* dump HID report descriptor */
-> -	for (i = 0; i < hdev->rsize; i++)
-> -		seq_printf(f, "%02x ", hdev->rdesc[i]);
-> +	for (i = 0; i < rsize; i++)
-> +		seq_printf(f, "%02x ", rdesc[i]);
->  	seq_printf(f, "\n\n");
->  
->  	/* dump parsed data and input mappings */
-> -- 
-> 1.7.11.5
+> This is caused by commit ba099ef165f8 ("mm: remove __GFP_NO_KSWAPD")
+> and commit b6beae2c2014 ("mm: remove __GFP_NO_KSWAPD fixes") in
+> linux-next (next-20120824).
 > 
+> Fix this by removing __GFP_NO_KSWAPD from drm/i915 driver.
+> 
+> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
 
+Queued for -next, thanks for the patch.
+-Daniel
 -- 
-Jiri Kosina
-SUSE Labs
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
