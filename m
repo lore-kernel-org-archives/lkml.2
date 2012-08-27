@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab2H0QTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:19:04 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52054 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab2H0QTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:19:01 -0400
-Date: Mon, 27 Aug 2012 09:18:43 -0700
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2012-08-27
-Message-ID: <20120827161843.GD8934@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753174Ab2H0QYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:24:36 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4299 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752260Ab2H0QYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 12:24:32 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <503B9F31.5050502@broadcom.com>
+Date: Mon, 27 Aug 2012 18:24:17 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714
+ Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Wei Ni" <wni@nvidia.com>
+cc: swarren@wwwdotorg.org, "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        rvossen@broadcom.com, krakesh@nvidia.com, ldewangan@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com
+Subject: Re: [PATCH 2/6] brcmfmac: Handling the interrupt in ISR
+ directly for non-OOB
+References: <1346063114-30361-1-git-send-email-wni@nvidia.com>
+ <1346063114-30361-3-git-send-email-wni@nvidia.com>
+In-Reply-To: <1346063114-30361-3-git-send-email-wni@nvidia.com>
+X-WSS-ID: 7C25413749824030767-01-01
+Content-Type: text/plain;
+ charset=windows-1252;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/27/2012 12:25 PM, Wei Ni wrote:
+> In case of inband interrupts, if we handle the interrupt in dpc thread,
+> two level of thread switching takes place to process wifi interrupts.
+> One in SDHCI driver and the other in Wifi driver. This may cause the system
+> instability.
 
---0F1p//8PRICkK4MW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Looking into the sdhci/mmc code indeed shows that the brcmfmac irq 
+handler is not called in true IRQ context. So the dpc thread may add 
+unnecessary complexity, but to me there is not indication that there is 
+a stability issue.
 
-Hi John,
+> Because the SDHCI calls sdio_irq_thread() to handle the irq, this thread locks
+> mmc host and calls wifi handler. It expects WiFi handler to be quick and
+> enables sdio interrupt from card at end. If wifi handler defers this work for
+> a different thread, sdio_irq_thread() will be stuck on next wifi interrupt
+> since mmc lock is not freed.
 
-A few updates for the 3.6 kernel. There are two btusb patches to add more
-supported devices through the new USB_VENDOR_AND_INTEFACE_INFO() macro and
-another one that add a new device id for a Sony Vaio laptop, one fix for a
-user-after-free and, finally, two patches from Vinicius to fix a issue in SMP
-pairing.
+Not sure if I can follow this explanation. The isr is called with host 
+claimed (by sdio_irq_thread) and all it does is at a linked list member 
+and signal the dpc thread. After doing this the host is released.
 
-	Gustavo
+> Handling the interrupt in ISR directly will prevent thread context switching in
+> wifi driver. It can fix the instability problems.
 
----
-The following changes since commit 7dd6753f6d2e7e0ccbf2263cef3a9fff6bc89988:
+This basically increases the duration of the isr in brcmfmac.
 
-  ath5k: fix spin_lock_irqsave/spin_lock_bh nesting in mesh (2012-08-13 15:17:25 -0400)
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>   drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c   |    2 ++
+>   drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |    8 +++++++-
+>   2 files changed, 9 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> index 8e7e692..5cf6c3b 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+> @@ -121,7 +121,9 @@ static void brcmf_sdio_irqhandler(struct sdio_func *func)
+>
+>   	brcmf_dbg(INTR, "ib intr triggered\n");
+>
+> +	sdio_release_host(sdiodev->func[1]);
+>   	brcmf_sdbrcm_isr(sdiodev->bus);
+> +	sdio_claim_host(sdiodev->func[1]);
 
-are available in the git repository at:
+This is probably needed because the ISR now locks the host to long 
+because brcmf_sdbrcm_dpc() is called directly.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+>   }
+>
+>   /* dummy handler for SDIO function 2 interrupt */
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> index 472f2ef..4576d59 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+> @@ -2347,7 +2347,7 @@ static bool brcmf_sdbrcm_dpc(struct brcmf_sdio *bus)
+>   	uint framecnt = 0;	/* Temporary counter of tx/rx frames */
+>   	bool rxdone = true;	/* Flag for no more read data */
+>   	bool resched = false;	/* Flag indicating resched wanted */
+> -	int err;
+> +	int err = 0;
+>
+>   	brcmf_dbg(TRACE, "Enter\n");
+>
+> @@ -3786,11 +3786,17 @@ void brcmf_sdbrcm_isr(void *arg)
+>   	if (!bus->intr)
+>   		brcmf_dbg(ERROR, "isr w/o interrupt configured!\n");
+>
+> +
+> +#ifndef CONFIG_BRCMFMAC_SDIO_OOB
+> +	while (brcmf_sdbrcm_dpc(bus))
+> +		;
+> +#else
+>   	bus->dpc_sched = true;
+>   	if (bus->dpc_tsk) {
+>   		brcmf_sdbrcm_adddpctsk(bus);
+>   		complete(&bus->dpc_wait);
+>   	}
+> +#endif
+>   }
+>
+>   static bool brcmf_sdbrcm_bus_watchdog(struct brcmf_sdio *bus)
+>
 
-for you to fetch changes up to d8343f125710fb596f7a88cd756679f14f4e77b9:
+I would really like to know what issue is solved by this change. Could 
+you provide more details.
 
-  Bluetooth: Fix sending a HCI Authorization Request over LE links (2012-08-27 08:11:51 -0700)
+Franky,
 
-----------------------------------------------------------------
-Andre Guedes (1):
-      Bluetooth: Fix use-after-free bug in SMP
+Do you have anything to add here?
 
-Gustavo Padovan (1):
-      Bluetooth: Use USB_VENDOR_AND_INTERFACE() for Broadcom devices
+Gr. AvS
 
-Henrik Rydberg (1):
-      Bluetooth: Add support for Apple vendor-specific devices
-
-Vinicius Costa Gomes (2):
-      Bluetooth: Change signature of smp_conn_security()
-      Bluetooth: Fix sending a HCI Authorization Request over LE links
-
-Yevgeniy Melnichuk (1):
-      Bluetooth: Add support for Sony Vaio T-Series
-
- drivers/bluetooth/ath3k.c   |  2 ++
- drivers/bluetooth/btusb.c   | 12 +++++++-----
- include/net/bluetooth/smp.h |  2 +-
- net/bluetooth/hci_conn.c    |  4 ++++
- net/bluetooth/l2cap_core.c  | 11 ++++++-----
- net/bluetooth/l2cap_sock.c  |  2 +-
- net/bluetooth/smp.c         | 10 +++++-----
- 7 files changed, 26 insertions(+), 17 deletions(-)
-
---0F1p//8PRICkK4MW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQO53jAAoJEPs3PUX4s20obg4QAKcSulWXOn7BIEh3qZeuNtO1
-vL6Yf9B/wumfMQ5UbLUG9AKEOIGbYpJ1BtkckhCoGY2r4g9ENq0MX/b3fxoa20qr
-2P94mCws2M0kGjY/aQOqQ3jdjCd5cgckZp8QyQ29XtmRznwX8r4371e+40QKLJnx
-56NCy2Qy5cHofSchMBVpnRXvKT57pMy8sMXHiuXs2Fa7dZhF5gZ2I1EHgetw6FbU
-VBsQZbnTZ9I53AKNRyk+L3OiEPtZ8k3ag95erGFEaOdyRHIqolYZ4OLUO4gHXDRZ
-iEXSZqKSpWw7y/nJOibyigGG9nkQBu8P0b3CYGaSA0sZHgkSdm4YSmY8Eqy6m1Rp
-DHYdz0YBVM5EU3es+k7C3Hkac1aME/p5YcbAjwMUyeGNdllgd/z5uRBpX17H1ixe
-KpY2PjP/a+v/Bc6sNG5H7CsabnVi1FJaUG4W4mlhbiP1sU+/9O1VtcqwEy0vf1uN
-JpGFeYR3sW8RmE8ChEsoKvIlxODdHFqw85U6tTNYXfpNywPG4r+xv2J9smxhT9dy
-h5ehKtI7mBDsKUcF1Z3IK8oQHtGOEWUWGhExgNPLbqSjs+menOxj8Ei1inX5/+7p
-cCtobKW+hWbaiGxbn99zrH44jfJ/m73pLZPxVI0RcqyZQ3hMU6wnt4zuzYT4B04G
-PoSBSI2Wler3ylhk3ilh
-=BJwS
------END PGP SIGNATURE-----
-
---0F1p//8PRICkK4MW--
