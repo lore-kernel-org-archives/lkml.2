@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab2H0KZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 06:25:47 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:57801 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab2H0KZp convert rfc822-to-8bit (ORCPT
+	id S1753559Ab2H0K0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 06:26:33 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12952 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab2H0K0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 06:25:45 -0400
-In-Reply-To: <20120827090354.GA5840@osiris.de.ibm.com>
-References: <1346052196-32682-1-git-send-email-gaowanlong@cn.fujitsu.com> <1346052196-32682-6-git-send-email-gaowanlong@cn.fujitsu.com> <20120827090354.GA5840@osiris.de.ibm.com>
-To: heicars2@linux.vnet.ibm.com
-Cc: BOEBLINGEN LINUX390 <LINUX390@de.ibm.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        "open list:S390" <linux-s390@vger.kernel.org>,
-        mschwid2@linux.vnet.ibm.com
+	Mon, 27 Aug 2012 06:26:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 27 Aug 2012 03:20:13 -0700
+From: Wei Ni <wni@nvidia.com>
+To: <swarren@wwwdotorg.org>, <brudley@broadcom.com>, <rvossen@broadcom.com>
+CC: <krakesh@nvidia.com>, <ldewangan@nvidia.com>,
+        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>, Wei Ni <wni@nvidia.com>
+Subject: [PATCH 1/6] ARM: tegra: set up wlan clocks for tegra dt
+Date: Mon, 27 Aug 2012 18:25:09 +0800
+Message-ID: <1346063114-30361-2-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1346063114-30361-1-git-send-email-wni@nvidia.com>
+References: <1346063114-30361-1-git-send-email-wni@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Subject: Re: [PATCH 5/5] s390:block:fix up ENOIOCTLCMD error handling
-X-KeepSent: A9F14DCC:A1DFDC50-C1257A67:0038C99B;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-From: Stefan Weinhuber <WEIN@de.ibm.com>
-Message-ID: <OFA9F14DCC.A1DFDC50-ONC1257A67.0038C99B-C1257A67.003947D3@de.ibm.com>
-Date: Mon, 27 Aug 2012 12:25:32 +0200
-X-MIMETrack: Serialize by Router on D06ML030/06/M/IBM(Release 8.5.3 ZX853HP5|January 12, 2012) at
- 27/08/2012 12:25:32,
-	Serialize complete at 27/08/2012 12:25:32
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12082710-6892-0000-0000-000002D1E8D6
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-heicars2@linux.vnet.ibm.com wrote on 2012-08-27 11:03:55:
+Set up the wlan clock tree for Tegra20 and Tegra30.
 
-[..]
-> 
-> Thanks, but you missed the else path. I'm going to commit the patch 
-below
-> unless Stefan has any objections:
-> 
-> From dac16bd8b314dc6f3f4e6815feab199fdfc8cddd Mon Sep 17 00:00:00 2001
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Date: Mon, 27 Aug 2012 10:59:42 +0200
-> Subject: [PATCH] s390/dasd: fix ioctl return value
-> 
-> For unimplemented ioctls the dasd driver should return -ENOTTY.
-> 
-> Reported-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  drivers/s390/block/dasd_eckd.c  | 2 +-
->  drivers/s390/block/dasd_ioctl.c | 7 ++-----
->  2 files changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/s390/block/dasd_eckd.c 
-b/drivers/s390/block/dasd_eckd.c
-> index 40a826a..2fb2b9e 100644
-> --- a/drivers/s390/block/dasd_eckd.c
-> +++ b/drivers/s390/block/dasd_eckd.c
-> @@ -3804,7 +3804,7 @@ dasd_eckd_ioctl(struct dasd_block *block, 
-> unsigned int cmd, void __user *argp)
->     case BIODASDSYMMIO:
->        return dasd_symm_io(device, argp);
->     default:
-> -      return -ENOIOCTLCMD;
-> +      return -ENOTTY;
->     }
->  }
-> 
-> diff --git a/drivers/s390/block/dasd_ioctl.c 
-b/drivers/s390/block/dasd_ioctl.c
-> index cceae70..654c692 100644
-> --- a/drivers/s390/block/dasd_ioctl.c
-> +++ b/drivers/s390/block/dasd_ioctl.c
-> @@ -498,12 +498,9 @@ int dasd_ioctl(struct block_device *bdev, fmode_t 
-mode,
->        break;
->     default:
->        /* if the discipline has an ioctl method try it. */
-> -      if (base->discipline->ioctl) {
-> +      rc = -ENOTTY;
-> +      if (base->discipline->ioctl)
->           rc = base->discipline->ioctl(block, cmd, argp);
-> -         if (rc == -ENOIOCTLCMD)
-> -            rc = -EINVAL;
-> -      } else
-> -         rc = -EINVAL;
->     }
->     dasd_put_device(base);
->     return rc;
-> -- 
-> 1.7.11.5
-> 
+Signed-off-by: Wei Ni <wni@nvidia.com>
+---
+ arch/arm/mach-tegra/board-dt-tegra20.c |    4 ++++
+ arch/arm/mach-tegra/board-dt-tegra30.c |    4 ++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-The patch is looking fine to me, thanks.
-
-Mit freundlichen Grüßen / Kind regards
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index d9eeae6..5efc219 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -79,8 +79,12 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+ 	{ "pll_a",      "pll_p_out1",   56448000,       true },
+ 	{ "pll_a_out0", "pll_a",        11289600,       true },
+ 	{ "cdev1",      NULL,           0,              true },
++	{ "blink",      "clk_32k",      32768,          true },
+ 	{ "i2s1",       "pll_a_out0",   11289600,       false},
+ 	{ "i2s2",       "pll_a_out0",   11289600,       false},
++	{ "sdmmc1",	"pll_p",	48000000,	false},
++	{ "sdmmc3",	"pll_p",	48000000,	false},
++	{ "sdmmc4",	"pll_p",	48000000,	false},
+ 	{ NULL,		NULL,		0,		0},
+ };
  
-Stefan Weinhuber
-
-
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index 53bf60f..3277d1e 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -61,11 +61,15 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+ 	{ "pll_a_out0",	"pll_a",	11289600,	true },
+ 	{ "extern1",	"pll_a_out0",	0,		true },
+ 	{ "clk_out_1",	"extern1",	0,		true },
++	{ "blink",	"clk_32k",	32768,		true },
+ 	{ "i2s0",	"pll_a_out0",	11289600,	false},
+ 	{ "i2s1",	"pll_a_out0",	11289600,	false},
+ 	{ "i2s2",	"pll_a_out0",	11289600,	false},
+ 	{ "i2s3",	"pll_a_out0",	11289600,	false},
+ 	{ "i2s4",	"pll_a_out0",	11289600,	false},
++	{ "sdmmc1",	"pll_p",	48000000,	false},
++	{ "sdmmc3",	"pll_p",	48000000,	false},
++	{ "sdmmc4",	"pll_p",	48000000,	false},
+ 	{ NULL,		NULL,		0,		0},
+ };
+ 
+-- 
+1.7.1
 
