@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab2H0X5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 19:57:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55628 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab2H0X5S (ORCPT
+	id S1755188Ab2H0X7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 19:59:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59997 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755078Ab2H0X7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 19:57:18 -0400
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] floppy: properly handle failure on add_disk loop
-Date: Mon, 27 Aug 2012 20:56:54 -0300
-Message-Id: <1346111816-16700-5-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1346111816-16700-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1346111816-16700-1-git-send-email-herton.krzesinski@canonical.com>
+	Mon, 27 Aug 2012 19:59:47 -0400
+Date: Tue, 28 Aug 2012 00:59:32 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "shinya.kuribayashi.px@renesas.com" 
+	<shinya.kuribayashi.px@renesas.com>
+Subject: Re: [PATCH] ARM: MSM: Implement read_current_timer for msm timers
+Message-ID: <20120827235932.GA8468@mudshark.cambridge.arm.com>
+References: <1345817604-9004-2-git-send-email-will.deacon@arm.com>
+ <1346102319-24497-1-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1346102319-24497-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On floppy initialization, if something failed inside the loop we call
-add_disk, there was no cleanup of previous iterations in the error
-handling.
+On Mon, Aug 27, 2012 at 10:18:39PM +0100, Stephen Boyd wrote:
+> Setup the same timer used as the clocksource to be used as the
+> read_current_timer implementation. This allows us to support a
+> stable udelay implementation on MSMs where it's possible for the
+> CPUs to scale speeds independently of one another.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+> 
+> I have some patches to send that add DT support to the MSM timer that
+> this conflicts with slightly. I'm not too concerned though, but we may
+> want to decide what tree this goes through when I send out those patches.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/block/floppy.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+Cheers Stephen, this looks good to me. After looking at this code some more
+I think I'll change the read_current_timer function pointer type to be:
 
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 32551f2..2197c88 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4293,7 +4293,7 @@ static int __init do_floppy_init(void)
- 
- 		err = platform_device_register(&floppy_device[drive]);
- 		if (err)
--			goto out_release_dma;
-+			goto out_remove_drives;
- 
- 		err = device_create_file(&floppy_device[drive].dev,
- 					 &dev_attr_cmos);
-@@ -4311,6 +4311,15 @@ static int __init do_floppy_init(void)
- 
- out_unreg_platform_dev:
- 	platform_device_unregister(&floppy_device[drive]);
-+out_remove_drives:
-+	while (drive--) {
-+		if ((allowed_drive_mask & (1 << drive)) &&
-+		    fdc_state[FDC(drive)].version != FDC_NONE) {
-+			del_gendisk(disks[drive]);
-+			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
-+			platform_device_unregister(&floppy_device[drive]);
-+		}
-+	}
- out_release_dma:
- 	if (atomic_read(&usage_count))
- 		floppy_release_irq_and_dma();
--- 
-1.7.9.5
+	unsigned long (*read_current_timer)(void);
 
+since it doesn't make sense to return an error code from the platform
+implementation (in fact, it will cause havoc in the delay loop).
+
+I'll post a new patch -- rebasing your code should be trivial.
+
+Cheers,
+
+Will
