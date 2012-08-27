@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2H0Shv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:37:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59066 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751466Ab2H0Shu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:37:50 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: core: Report microvolts in sysfs even with only list_voltage()
-Date: Mon, 27 Aug 2012 11:37:46 -0700
-Message-Id: <1346092666-17772-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753922Ab2H0SiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:38:20 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34940 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752987Ab2H0SiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 14:38:18 -0400
+Date: Mon, 27 Aug 2012 11:38:13 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH] Yama: handle 32-bit userspace prctl
+Message-ID: <20120827183813.GA23991@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a regulator only supports a single voltage list_voltage() can be used
-to report what that voltage is so add this as one of the criteria for
-creating the microvolts file in sysfs.
+When running a 64-bit kernel and receiving prctls from a 32-bit
+userspace, the "-1" used as an unsigned long will end up being
+misdetected. The kernel is looking for 0xffffffffffffffff instead of
+0xffffffff. Since prctl lacks a distinct compat interface, Yama needs
+to handle this translation itself. As such, support either value as
+meaning PR_SET_PTRACER_ANY, to avoid breaking the ABI for 64-bit.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
 ---
- drivers/regulator/core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ security/yama/yama_lsm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 06186ba..db7d59a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3020,7 +3020,8 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
- 
- 	/* some attributes need specific methods to be displayed */
- 	if ((ops->get_voltage && ops->get_voltage(rdev) >= 0) ||
--	    (ops->get_voltage_sel && ops->get_voltage_sel(rdev) >= 0)) {
-+	    (ops->get_voltage_sel && ops->get_voltage_sel(rdev) >= 0) ||
-+	    (ops->list_voltage && ops->list_voltage(rdev, 0) >= 0)) {
- 		status = device_create_file(dev, &dev_attr_microvolts);
- 		if (status < 0)
- 			return status;
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index 0cc99a3..dcd6178 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -143,7 +143,7 @@ static int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+ 		if (arg2 == 0) {
+ 			yama_ptracer_del(NULL, myself);
+ 			rc = 0;
+-		} else if (arg2 == PR_SET_PTRACER_ANY) {
++		} else if (arg2 == PR_SET_PTRACER_ANY || (int)arg2 == -1) {
+ 			rc = yama_ptracer_add(NULL, myself);
+ 		} else {
+ 			struct task_struct *tracer;
 -- 
-1.7.10.4
+1.7.0.4
 
+
+-- 
+Kees Cook
+Chrome OS Security
