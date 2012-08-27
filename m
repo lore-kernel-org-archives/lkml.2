@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab2H0R7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:59:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:17857 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab2H0R5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:57:45 -0400
-X-IronPort-AV: E=Sophos;i="4.77,837,1336320000"; 
-   d="scan'208";a="5733847"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/7] workqueue: simple clear WORKER_REBIND
-Date: Tue, 28 Aug 2012 01:58:22 +0800
-Message-Id: <1346090307-3020-3-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1346090307-3020-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1346090307-3020-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/28 01:57:33,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/08/28 01:57:34,
-	Serialize complete at 2012/08/28 01:57:34
+	id S1754004Ab2H0SCV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:02:21 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:45228 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab2H0SCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 14:02:18 -0400
+Date: Mon, 27 Aug 2012 13:02:10 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: James Morris <jmorris@namei.org>
+Cc: Peter.Huewe@infineon.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
+        xiaoyan.zhang@intel.com, jj@chaosbits.net
+Subject: Re: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+Message-ID: <20120827180210.GA14509@linux.vnet.ibm.com>
+References: <20120822215216.GC13519@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org>
+ <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com>
+ <20120824150533.GA2190@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
+ <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com>
+ <20120827161747.GA2436@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1208280321220.17312@tundra.namei.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1208280321220.17312@tundra.namei.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082718-7408-0000-0000-000007F31FB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WORKER_REBIND is not used for other purpose,
-idle_worker_rebind() can directly clear it.
+On Tue, Aug 28, 2012 at 03:21:51AM +1000, James Morris wrote:
+> On Mon, 27 Aug 2012, Kent Yoder wrote:
+> 
+> > On Mon, Aug 27, 2012 at 07:23:40AM +0000, Peter.Huewe@infineon.com wrote:
+> > > >> > Build using make -> no error.
+> > > >>   I can't reproduce this either, James, can you send out your .config?
+> > > 
+> > > > See attached.
+> > > 
+> > > Hi James,
+> > > 
+> > > even with you config, I can't reproduce it here with 3.6-rc3 + mypatch.
+> > 
+> >   Same here, against linux-security plus the pullreq patches...
+> 
+> I may have missed something, but what do you mean by pullreq patches?
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+  Just the stuff I asked you to pull here.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5872c31..90ada8f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1316,6 +1316,7 @@ static void idle_worker_rebind(struct worker *worker)
- {
- 	/* CPU must be online at this point */
- 	WARN_ON(!worker_maybe_bind_and_lock(worker));
-+	worker_clr_flags(worker, WORKER_REBIND);
- 	if (!--worker->idle_rebind->cnt)
- 		complete(&worker->idle_rebind->done);
- 	spin_unlock_irq(&worker->pool->gcwq->lock);
-@@ -1393,7 +1394,7 @@ retry:
- 	/* set REBIND and kick idle ones, we'll wait for these later */
- 	for_each_worker_pool(pool, gcwq) {
- 		list_for_each_entry(worker, &pool->idle_list, entry) {
--			if (worker->flags & WORKER_REBIND)
-+			if (!(worker->flags & WORKER_UNBOUND))
- 				continue;
- 
- 			/* morph UNBOUND to REBIND */
-@@ -1416,16 +1417,6 @@ retry:
- 		goto retry;
- 	}
- 
--	/*
--	 * All idle workers are rebound and waiting for %WORKER_REBIND to
--	 * be cleared inside idle_worker_rebind().  Clear and release.
--	 * Clearing %WORKER_REBIND from this foreign context is safe
--	 * because these workers are still guaranteed to be idle.
--	 */
--	for_each_worker_pool(pool, gcwq)
--		list_for_each_entry(worker, &pool->idle_list, entry)
--			worker->flags &= ~WORKER_REBIND;
--
- 	/* rebind busy workers */
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
--- 
-1.7.4.4
+Kent
+
+> 
+> 
+> -- 
+> James Morris
+> <jmorris@namei.org>
+> 
 
