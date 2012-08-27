@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab2H0UML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:12:11 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57469 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab2H0UMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:12:09 -0400
-Message-ID: <503BD497.9020400@kernel.org>
-Date: Mon, 27 Aug 2012 21:12:07 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754369Ab2H0UPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:15:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35819 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754270Ab2H0UP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:15:29 -0400
+Message-ID: <503BD556.8080406@zytor.com>
+Date: Mon, 27 Aug 2012 13:15:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/13] drivers/iio/adc/at91_adc.c: use clk_prepare_enable
- and clk_disable_unprepare
-References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr> <1345996865-32082-7-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1345996865-32082-7-git-send-email-Julia.Lawall@lip6.fr>
+To: Jacob Shin <jacob.shin@amd.com>
+CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 3/5] x86: Only direct map addresses that are marked as
+ E820_RAM
+References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com> <1345852516-3125-4-git-send-email-jacob.shin@amd.com> <50381C9D.5070007@zytor.com> <20120825004859.GB10812@jshin-Toonie> <5038269E.80707@zytor.com> <20120825042020.GC26127@jshin-Toonie> <503852BE.1010908@zytor.com> <20120827191729.GB23135@jshin-Toonie>
+In-Reply-To: <20120827191729.GB23135@jshin-Toonie>
 X-Enigmail-Version: 1.4.3
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -26,123 +29,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2012 05:00 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 08/27/2012 12:17 PM, Jacob Shin wrote:
 > 
-> Clk_prepare_enable and clk_disable_unprepare combine clk_prepare and
-> clk_enable, and clk_disable and clk_unprepare.  They make the code more
-> concise, and ensure that clk_unprepare is called when clk_enable fails.
+> if there is E820_RAM right above ISA region, then you get to initialize
+> 0 ~ max_low_pfn in one big chunk, which results in some memory configurations
+> for more 2M or 1G page tables which means less space used for page tables.
 > 
-> A simplified version of the semantic patch that introduces calls to these
-> functions is as follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e;
-> @@
-> 
-> - clk_prepare(e);
-> - clk_enable(e);
-> + clk_prepare_enable(e);
-> 
-> @@
-> expression e;
-> @@
-> 
-> - clk_disable(e);
-> - clk_unprepare(e);
-> + clk_disable_unprepare(e);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-merged to togreg branch of
-git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
 
-Thanks,
+We need to be able to coalesce small page tables to large, anyway; there
+are plenty of machines in the field who do small chunks.  I'm not too
+worried about the legacy region being in 4K pages; it will be broken
+into 4K pages anyway by the TLB.
 
-Jonathan
-> 
-> ---
->  drivers/iio/adc/at91_adc.c |   33 +++++++++------------------------
->  1 file changed, 9 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
-> index 98c96f9..c1e4690 100644
-> --- a/drivers/iio/adc/at91_adc.c
-> +++ b/drivers/iio/adc/at91_adc.c
-> @@ -589,18 +589,13 @@ static int __devinit at91_adc_probe(struct platform_device *pdev)
->  		goto error_free_irq;
->  	}
->  
-> -	ret = clk_prepare(st->clk);
-> +	ret = clk_prepare_enable(st->clk);
->  	if (ret) {
-> -		dev_err(&pdev->dev, "Could not prepare the clock.\n");
-> +		dev_err(&pdev->dev,
-> +			"Could not prepare or enable the clock.\n");
->  		goto error_free_irq;
->  	}
->  
-> -	ret = clk_enable(st->clk);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "Could not enable the clock.\n");
-> -		goto error_unprepare_clk;
-> -	}
-> -
->  	st->adc_clk = devm_clk_get(&pdev->dev, "adc_op_clk");
->  	if (IS_ERR(st->adc_clk)) {
->  		dev_err(&pdev->dev, "Failed to get the ADC clock.\n");
-> @@ -608,18 +603,13 @@ static int __devinit at91_adc_probe(struct platform_device *pdev)
->  		goto error_disable_clk;
->  	}
->  
-> -	ret = clk_prepare(st->adc_clk);
-> +	ret = clk_prepare_enable(st->adc_clk);
->  	if (ret) {
-> -		dev_err(&pdev->dev, "Could not prepare the ADC clock.\n");
-> +		dev_err(&pdev->dev,
-> +			"Could not prepare or enable the ADC clock.\n");
->  		goto error_disable_clk;
->  	}
->  
-> -	ret = clk_enable(st->adc_clk);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "Could not enable the ADC clock.\n");
-> -		goto error_unprepare_adc_clk;
-> -	}
-> -
->  	/*
->  	 * Prescaler rate computation using the formula from the Atmel's
->  	 * datasheet : ADC Clock = MCK / ((Prescaler + 1) * 2), ADC Clock being
-> @@ -681,13 +671,9 @@ error_remove_triggers:
->  error_unregister_buffer:
->  	at91_adc_buffer_remove(idev);
->  error_disable_adc_clk:
-> -	clk_disable(st->adc_clk);
-> -error_unprepare_adc_clk:
-> -	clk_unprepare(st->adc_clk);
-> +	clk_disable_unprepare(st->adc_clk);
->  error_disable_clk:
-> -	clk_disable(st->clk);
-> -error_unprepare_clk:
-> -	clk_unprepare(st->clk);
-> +	clk_disable_unprepare(st->clk);
->  error_free_irq:
->  	free_irq(st->irq, idev);
->  error_free_device:
-> @@ -705,8 +691,7 @@ static int __devexit at91_adc_remove(struct platform_device *pdev)
->  	at91_adc_trigger_remove(idev);
->  	at91_adc_buffer_remove(idev);
->  	clk_disable_unprepare(st->adc_clk);
-> -	clk_disable(st->clk);
-> -	clk_unprepare(st->clk);
-> +	clk_disable_unprepare(st->clk);
->  	free_irq(st->irq, idev);
->  	iio_device_free(idev);
->  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Another thing is that we may want to map from the top down (on i386 at
+least top of lowmem down); we don't want to fill low memory with page
+tables because of devices with restricted DMA masks.
+
+> im also worried about the case where that first call to init_memory_mapping
+> for 0 ~ 1MB, results in max_pfn_mapped = 1MB, and the next call to
+> init_memory_mapping is some large enough area, where we don't have enough
+> space under 1MB for all the page tables needed (maybe only 4K page tables
+> are supported or something).
+
+This is serious... I'm worrying that this might be a more general
+problem.  In that case we probably need to handle the case where we have
+filled up all the "free" memory with page tables for the next chunk;
+however, in that case the answer is pretty simple: we can then allow the
+memory already mapped to become page tables for the new chunk.
+
+	-hpa
