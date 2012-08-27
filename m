@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2H0SxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:53:07 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46185 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab2H0SxF (ORCPT
+	id S1753401Ab2H0SxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:53:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37991 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab2H0SxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:53:05 -0400
-Date: Mon, 27 Aug 2012 19:52:48 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jeff Garzik <jgarzik@redhat.com>, Andrew Lunn <andrew@lunn.ch>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: Re: [PATCH] clk.h: Fix shim ifdef guard (HAVE_CLK -> COMMON_CLK)
-Message-ID: <20120827185248.GE25321@flint.arm.linux.org.uk>
-References: <503B920F.30509@suse.com>
+	Mon, 27 Aug 2012 14:53:16 -0400
+Date: Mon, 27 Aug 2012 11:53:12 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] workqueue: wait on manager_mutex instead of
+ rebind_hold
+Message-ID: <20120827185312.GA13094@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1346090307-3020-1-git-send-email-laijs@cn.fujitsu.com>
+ <1346090307-3020-2-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <503B920F.30509@suse.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1346090307-3020-2-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 11:28:15AM -0400, Jeff Mahoney wrote:
-> Commit 93abe8e4 (clk: add non HAVE_CLK routines) added shims for
-> the clk code but HAVE_CLK isn't enough. It's possible to have the
-> clk support but not enable it. We end up with full prototypes for code
-> that is never built - causing module linking to fail later.
+Hello, Lai.
+
+On Tue, Aug 28, 2012 at 01:58:21AM +0800, Lai Jiangshan wrote:
+>     this thread is finally scheduled,		  .
+>     sees the WORKER_REBIND is not cleared,	  .
+>     go to sleep again waiting for (another)	  .
+>     rebind_workers() to wake up me.	<--bug->  waiting for the idles' ACK.
 > 
-> This patch changes the guard to use COMMON_CLK, which actually guards
-> the code.
+> The two thread wait each other. It is bug.
 
-This is wrong.  COMMON_CLK is an _implementation_ of the CLK API.  It
-is not the only implementation in the kernel.  Conditionalizing like
-this breaks existing users.
+Ooh, nice catch.  Has this actually happened in the wild?  Can you
+reproduce it?
 
-HAVE_CLK is the right thing here - if you define HAVE_CLK then you _are_
-providing an implementation of clk_get() et.al.  If you're not, then you
-do not define HAVE_CLK.  Simples.
+> This fix:
+> The idle_worker_rebind() don't wait on rebind_hold, it waits on manager_mutex
+> instead. When mutex_lock(manager_mutex) returns, the idles know that
+> the corresponding rebind_workers() is finish up, the idle_worker_rebind() can
+> returns.
+
+Hmm... I can't really see how this change makes any difference tho.
+While the exact wait condition changes, the mechanics doesn't.
+
+	IDLE WORKER			HOTPLUG
+					- online
+	- rebind and kicks completion
+	- wait on manager_mutex
+					- finishes onlining
+					- offline
+					- online again, re-enters rebind_workers()
+	- wakes up but blocked on
+	  manager_mutex
+
+So, we're just deadlocked on a different thing.  It seems what we need
+is another interlocked step to make hotplug onlining wait for idle
+worker finishes the last step, no?
+
+Thanks.
 
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+tejun
