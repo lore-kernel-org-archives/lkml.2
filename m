@@ -1,93 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab2H0V5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 17:57:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55386 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754484Ab2H0V5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 17:57:31 -0400
-Message-ID: <503BED6A.4080802@suse.com>
-Date: Mon, 27 Aug 2012 17:58:02 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1754756Ab2H0V7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 17:59:47 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:37666 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab2H0V7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 17:59:44 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [PATCH] exynos-rng: Depend on ARCH_EXYNOS
-References: <503BE05F.40109@suse.com> <503BE429.7080301@codeaurora.org> <503BE5E7.106@suse.com> <20120827213719.GD4400@opensource.wolfsonmicro.com>
-In-Reply-To: <20120827213719.GD4400@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.3
+In-Reply-To: <1345241877-16200-8-git-send-email-cheiny@synaptics.com>
+References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
+	<1345241877-16200-8-git-send-email-cheiny@synaptics.com>
+Date: Mon, 27 Aug 2012 14:59:43 -0700
+Message-ID: <CACRpkdaGoPfieJQnryHmorh9LcxdLU+WjpnER8fXbuMAji2DDA@mail.gmail.com>
+Subject: Re: [RFC PATCH 7/17] input: RMI4 F01 device control
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Peichen Chang <peichen.chang@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Henrik Rydberg <rydberg@euromail.se>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Fri, Aug 17, 2012 at 3:17 PM, Christopher Heiny <cheiny@synaptics.com> wrote:
 
-On 8/27/12 5:37 PM, Mark Brown wrote:
-> On Mon, Aug 27, 2012 at 05:25:59PM -0400, Jeff Mahoney wrote:
->> On 8/27/12 5:18 PM, Stephen Boyd wrote:
-> 
->>> Hmm the point of making it not depend on ARCH_EXYNOS was so
->>> that it would get more build coverage. Is it devm_clk_get()
->>> that's missing? I believe Mark Brown sent some patches that
->>> move devm_clk_get() to common code so that we don't have these 
->>> failures[1]. Can you try that patch?
-> 
->> I'll give it a go since it should fix more than one issue for me.
->> My question remains, though: If this hardware is never going to
->> be found on powerpc hardware, what difference does it make if
->> there is build coverage there?
-> 
-> If you're trying to do some generic API changes or similar it's
-> *much* easier if you can at least build test a good proportion of
-> the kernel (or subsytem) with one build even if you've no intention
-> of running the code.  Having to build lots of different configs to
-> get coverage means that's likely to get skipped which in turn
-> increases the error rate with these things.
+(...)
+> +++ b/drivers/input/rmi4/rmi_f01.c
+(...)
+> +union f01_device_commands {
+> +       struct {
+> +               u8 reset:1;
+> +               u8 reserved:1;
 
-I can see the advantage there. It's just a pain when I'm building
-distro configs and need to research where a particular piece of
-hardware might turn up. For USB devices, it's easy: "everywhere." A
-lot of the details for SoC stuff can be tough to turn up. This driver
-will never be used on powerpc hardware, but it does because it meets
-the API requirements. If your generic clock API patches gain traction,
-then the API dependencies will be satisfied everywhere. That's a win
-for build coverage but noise for people trying to build a kernel that
-will cover the maximum amount of hardware without wasting build cycles
-or user disk space. A separate depends on that indicates a hardware
-dependency instead of just an API dependency -- one that can be
-ignored when doing build coverage tests -- would be a nice thing to
-have. Also ponies.
+I would just use bool for one-bit variables.
 
-- -Jeff
+But I see that some protocol people often cast a piece of data on top
+of  a struct, and have it packed to fit on top of each other.
 
-- -- 
-Jeff Mahoney
-SUSE Labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
-Comment: GPGTools - http://gpgtools.org
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+It looks like that is what is going on here.
 
-iQIcBAEBAgAGBQJQO+1qAAoJEB57S2MheeWy/eYQAImEBKsCATQExqwRXTnKwk1q
-rL2B2L11I6XTHRYDQlK65RcHMkpt6ZlIM6QyH5kpBdH5e+Eew9b5A5oU1xZlI74d
-BqDHTSmvT9c6ZSFncaTrfnTDWan4OWWSWzhoLSohTvVDd0Kq3pw99w3IkAeQL1P+
-8vAVVDTX6mhIWqsH3MT6sTLoKevGLDyVPZtOQY//zPi4qbpB6fZmk0dyqa7bVotl
-bOGH7IGKR/drh5y+ZjUKitl9PQdLa8j734iKL0owj5k97i9C4foe/sQ4Jh+KiUhj
-FVhpHKtiIWoH9AebUSAxq1KtUmDbC3sBgLxRS4uG/Dpn8PYXZGb1ryNlkXVZKuga
-HvX6LvYrcnBC07o62uH1NfolElBvUDYZYjL9EaEjAqB8KeVEYACn0Ja0n6Jg/YWd
-Ll9e0JpEFCIaygU6mMO82ZvFpVB6pdl6jsBZxHdM3rw7pC1c+GyQTO/dcCfNta8h
-knczZCG7gM3RevkhRvuTYZ6KHiLG0cBc7RHGMxPTR2rxP1LGN6pQ8UIm/OJASC/u
-6OYNZJDvCnvgipvRs9bjA+AAmX6Nm46znEnh42CXpYNE98OqiUrKGrDVShKUPC9O
-d24nH+1O3QhbsRGCt8o7Nd1owEQyKHHXUPURzZego562k3oBg7Ta7y3JvpnrhbZi
-6l+nyPcYqxuyP1DRkbBb
-=tAKG
------END PGP SIGNATURE-----
+> +       };
+> +       u8 reg;
+> +};
+
+If you're doing bitstuffing, use
+__attribute__((__packed__));
+after each struct.
+
+> +struct f01_device_control {
+> +       union f01_device_control_0 ctrl0;
+> +       u8 *interrupt_enable;
+> +       u8 doze_interval;
+> +       u8 wakeup_threshold;
+> +       u8 doze_holdoff;
+> +};
+
+These could use some kerneldoc.
+
+__attribute__((__packed__));
+
+> +union f01_query_42 {
+> +       struct {
+> +               u8 has_ds4_queries:1;
+> +               u8 has_multi_phy:1;
+> +               u8 has_guest:1;
+> +               u8 reserved:5;
+> +       };
+> +       u8 regs[1];
+> +};
+
+__attribute__((__packed__));
+
+> +union f01_ds4_queries {
+> +       struct {
+> +               u8 length:4;
+> +               u8 reserved_1:4;
+> +
+> +               u8 has_package_id_query:1;
+> +               u8 has_packrat_query:1;
+> +               u8 has_reset_query:1;
+> +               u8 has_maskrev_query:1;
+> +               u8 reserved_2:4;
+> +
+> +               u8 has_i2c_control:1;
+> +               u8 has_spi_control:1;
+> +               u8 has_attn_control:1;
+> +               u8 reserved_3:5;
+> +
+> +               u8 reset_enabled:1;
+> +               u8 reset_polarity:1;
+> +               u8 pullup_enabled:1;
+> +               u8 reserved_4:1;
+> +               u8 reset_pin_number:4;
+> +       };
+> +       u8 regs[4];
+> +};
+
+__attribute__((__packed__));
+
+
+(...)
+> +static struct device_attribute fn_01_attrs[] = {
+> +       __ATTR(productinfo, RMI_RO_ATTR,
+> +              rmi_fn_01_productinfo_show, rmi_store_error),
+> +       __ATTR(productid, RMI_RO_ATTR,
+> +              rmi_fn_01_productid_show, rmi_store_error),
+> +       __ATTR(manufacturer, RMI_RO_ATTR,
+> +              rmi_fn_01_manufacturer_show, rmi_store_error),
+> +       __ATTR(datecode, RMI_RO_ATTR,
+> +              rmi_fn_01_datecode_show, rmi_store_error),
+> +
+> +       /* control register access */
+> +       __ATTR(sleepmode, RMI_RW_ATTR,
+> +              rmi_fn_01_sleepmode_show, rmi_fn_01_sleepmode_store),
+> +       __ATTR(nosleep, RMI_RW_ATTR,
+> +              rmi_fn_01_nosleep_show, rmi_fn_01_nosleep_store),
+> +       __ATTR(chargerinput, RMI_RW_ATTR,
+> +              rmi_fn_01_chargerinput_show, rmi_fn_01_chargerinput_store),
+> +       __ATTR(reportrate, RMI_RW_ATTR,
+> +              rmi_fn_01_reportrate_show, rmi_fn_01_reportrate_store),
+> +       __ATTR(interrupt_enable, RMI_RW_ATTR,
+> +              rmi_fn_01_interrupt_enable_show,
+> +               rmi_fn_01_interrupt_enable_store),
+> +       __ATTR(doze_interval, RMI_RW_ATTR,
+> +              rmi_fn_01_doze_interval_show,
+> +               rmi_fn_01_doze_interval_store),
+> +       __ATTR(wakeup_threshold, RMI_RW_ATTR,
+> +              rmi_fn_01_wakeup_threshold_show,
+> +               rmi_fn_01_wakeup_threshold_store),
+> +       __ATTR(doze_holdoff, RMI_RW_ATTR,
+> +              rmi_fn_01_doze_holdoff_show,
+> +               rmi_fn_01_doze_holdoff_store),
+> +
+> +       /* We make report rate RO, since the driver uses that to look for
+> +        * resets.  We don't want someone faking us out by changing that
+> +        * bit.
+> +        */
+> +       __ATTR(configured, RMI_RO_ATTR,
+> +              rmi_fn_01_configured_show, rmi_store_error),
+> +
+> +       /* Command register access. */
+> +       __ATTR(reset, RMI_WO_ATTR,
+> +              rmi_show_error, rmi_fn_01_reset_store),
+> +
+> +       /* STatus register access. */
+> +       __ATTR(unconfigured, RMI_RO_ATTR,
+> +              rmi_fn_01_unconfigured_show, rmi_store_error),
+> +       __ATTR(flashprog, RMI_RO_ATTR,
+> +              rmi_fn_01_flashprog_show, rmi_store_error),
+> +       __ATTR(statuscode, RMI_RO_ATTR,
+> +              rmi_fn_01_statuscode_show, rmi_store_error),
+> +};
+
+Can you partition this into one set of stuff that goes into sysfs and
+another part that goes into debugfs, depending on usage?
+
+The sysfs portions need to be documented in
+Documentation/ABI/testing/*
+
+> +/* Utility routine to set the value of a bit field in a register. */
+> +int rmi_set_bit_field(struct rmi_device *rmi_dev,
+
+This is not what the function is doing. It is doing
+read/mask/set/write, so rmi_mask_and_set() is a better name.
+
+> +                     unsigned short address,
+
+u16?
+
+> +                     unsigned char field_mask,
+
+u8?
+
+Just "mask" is fine.
+
+> +                     unsigned char bits)
+
+u8?
+
+Call it "set" (IMHO)?
+
+(...)
+> +static ssize_t rmi_fn_01_interrupt_enable_store(struct device *dev,
+> +                                         struct device_attribute *attr,
+> +                                         const char *buf, size_t count)
+> +{
+> +       struct rmi_function_container *fc;
+> +       struct f01_data *data;
+> +       int i;
+> +       int irq_count = 0;
+> +       int retval = count;
+> +       int irq_reg = 0;
+> +
+> +       fc = to_rmi_function_container(dev);
+> +       data = fc->data;
+> +       for (i = 0; i < data->irq_count && *buf != 0;
+> +            i++, buf += 2) {
+> +               int irq_shift;
+> +               int interrupt_enable;
+> +               int result;
+> +
+> +               irq_reg = i / 8;
+> +               irq_shift = i % 8;
+> +
+> +               /* get next interrupt mapping value and store and bump up to
+> +                * point to next item in buf */
+> +               result = sscanf(buf, "%u", &interrupt_enable);
+> +               if ((result != 1) ||
+> +                       (interrupt_enable != 0 && interrupt_enable != 1)) {
+> +                       dev_err(dev,
+> +                               "%s: Error - interrupt enable[%d]"
+> +                               " is not a valid value 0x%x.\n",
+> +                               __func__, i, interrupt_enable);
+> +                       return -EINVAL;
+> +               }
+> +               if (interrupt_enable == 0) {
+> +                       data->device_control.interrupt_enable[irq_reg] &=
+> +                               (1 << irq_shift) ^ 0xFF;
+> +               } else
+> +                       data->device_control.interrupt_enable[irq_reg] |=
+> +                               (1 << irq_shift);
+> +               irq_count++;
+> +       }
+> +
+> +       /* Make sure the irq count matches */
+> +       if (irq_count != data->irq_count) {
+> +               dev_err(dev,
+> +                       "%s: Error - interrupt enable count of %d"
+> +                       " doesn't match device count of %d.\n",
+> +                        __func__, irq_count, data->irq_count);
+> +               return -EINVAL;
+> +       }
+> +
+> +       /* write back to the control register */
+> +       retval = rmi_write_block(fc->rmi_dev, data->interrupt_enable_addr,
+> +                       data->device_control.interrupt_enable,
+> +                       sizeof(u8)*(data->num_of_irq_regs));
+> +       if (retval < 0) {
+> +               dev_err(dev, "%s : Could not write interrupt_enable_store"
+> +                       " to 0x%x\n", __func__, data->interrupt_enable_addr);
+> +               return retval;
+> +       }
+> +
+> +       return count;
+> +
+> +}
+
+I cannot figure out why you would want to enable/disable IRQs from
+sysfs nodes? Please describe the usecase... If this is only for
+debugging and testing, debugfs is the right place.
+
+(...)
+> +static int rmi_f01_reset(struct rmi_function_container *fc)
+> +{
+> +       /*do nothing here */
+> +       return 0;
+> +}
+
+Doesn't look very useful?
+
+> +static int rmi_f01_init(struct rmi_function_container *fc)
+> +{
+> +       return 0;
+> +}
+
+Neither does this.
+
+> +static struct rmi_function_handler function_handler = {
+> +       .func = 0x01,
+> +       .init = rmi_f01_init,
+> +       .config = rmi_f01_config,
+> +       .reset = rmi_f01_reset,
+> +       .attention = rmi_f01_attention,
+
+So make .reset and .init by checking for them being NULL in the
+bus driver and avoid calling them in this case like that:
+
+if (!func->init)
+   return 0;
+
+> +#ifdef CONFIG_PM
+> +#if defined(CONFIG_HAS_EARLYSUSPEND) && \
+> +                       !defined(CONFIG_RMI4_SPECIAL_EARLYSUSPEND)
+> +       .early_suspend = rmi_f01_suspend,
+> +       .late_resume = rmi_f01_resume,
+> +#else
+> +       .suspend = rmi_f01_suspend,
+> +       .resume = rmi_f01_resume,
+> +#endif  /* defined(CONFIG_HAS_EARLYSUSPEND) && !def... */
+> +#endif  /* CONFIG_PM */
+
+More Android stuff not in the mainline kernel...
+
+(...)
+> +++ b/drivers/input/rmi4/rmi_f01.h
+(...)
+> +union f01_basic_queries {
+> +       struct {
+> +               u8 manufacturer_id:8;
+> +
+> +               u8 custom_map:1;
+> +               u8 non_compliant:1;
+> +               u8 has_lts:1;
+> +               u8 has_sensor_id:1;
+> +               u8 has_charger_input:1;
+> +               u8 has_adjustable_doze:1;
+> +               u8 has_adjustable_doze_holdoff:1;
+> +               u8 has_product_properties_2:1;
+> +
+> +               u8 productinfo_1:7;
+> +               u8 q2_bit_7:1;
+> +               u8 productinfo_2:7;
+> +               u8 q3_bit_7:1;
+> +
+> +               u8 year:5;
+> +               u8 month:4;
+> +               u8 day:5;
+> +               u8 cp1:1;
+> +               u8 cp2:1;
+> +               u8 wafer_id1_lsb:8;
+> +               u8 wafer_id1_msb:8;
+> +               u8 wafer_id2_lsb:8;
+> +               u8 wafer_id2_msb:8;
+> +               u8 wafer_id3_lsb:8;
+> +       };
+> +       u8 regs[11];
+> +};
+
+__attribute__((packed));
+
+?
+
+> +union f01_device_status {
+> +       struct {
+> +               u8 status_code:4;
+> +               u8 reserved:2;
+> +               u8 flash_prog:1;
+> +               u8 unconfigured:1;
+> +       };
+> +       u8 regs[1];
+> +};
+
+__attribute__((packed));
+
+?
+
+
+> +/* control register bits */
+> +#define RMI_SLEEP_MODE_NORMAL (0x00)
+> +#define RMI_SLEEP_MODE_SENSOR_SLEEP (0x01)
+> +#define RMI_SLEEP_MODE_RESERVED0 (0x02)
+> +#define RMI_SLEEP_MODE_RESERVED1 (0x03)
+
+Funny reserved modes but whatever...
+
+> +
+> +#define RMI_IS_VALID_SLEEPMODE(mode) \
+> +       (mode >= RMI_SLEEP_MODE_NORMAL && mode <= RMI_SLEEP_MODE_RESERVED1)
+> +
+> +union f01_device_control_0 {
+> +       struct {
+> +               u8 sleep_mode:2;
+> +               u8 nosleep:1;
+> +               u8 reserved:2;
+> +               u8 charger_input:1;
+> +               u8 report_rate:1;
+> +               u8 configured:1;
+> +       };
+> +       u8 regs[1];
+> +};
+
+__attribute__((packed));
+
+?
+
+Yours,
+Linus Walleij
