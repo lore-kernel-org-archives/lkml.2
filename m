@@ -1,127 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab2H0QYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:24:36 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4299 "EHLO mms3.broadcom.com"
+	id S1752417Ab2H0Qe0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:34:26 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:60322 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260Ab2H0QYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:24:32 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <503B9F31.5050502@broadcom.com>
-Date: Mon, 27 Aug 2012 18:24:17 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714
- Thunderbird/14.0
+	id S1751228Ab2H0QeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 12:34:23 -0400
+Date: Mon, 27 Aug 2012 18:34:08 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@amd64.org>, tony.luck@intel.com, andi@firstfloor.org,
+        gong.chen@linux.intel.com, ananth@in.ibm.com,
+        masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
+Message-ID: <20120827163408.GK27979@aftab.osrc.amd.com>
+References: <20120827112503.10313.62594.stgit@localhost.localdomain>
+ <20120827143619.GE27979@aftab.osrc.amd.com>
+ <503B93D2.7090702@linux.vnet.ibm.com>
+ <20120827154741.GI27979@aftab.osrc.amd.com>
+ <503B99C7.3000503@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Wei Ni" <wni@nvidia.com>
-cc: swarren@wwwdotorg.org, "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        rvossen@broadcom.com, krakesh@nvidia.com, ldewangan@nvidia.com,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com
-Subject: Re: [PATCH 2/6] brcmfmac: Handling the interrupt in ISR
- directly for non-OOB
-References: <1346063114-30361-1-git-send-email-wni@nvidia.com>
- <1346063114-30361-3-git-send-email-wni@nvidia.com>
-In-Reply-To: <1346063114-30361-3-git-send-email-wni@nvidia.com>
-X-WSS-ID: 7C25413749824030767-01-01
-Content-Type: text/plain;
- charset=windows-1252;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <503B99C7.3000503@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 12:25 PM, Wei Ni wrote:
-> In case of inband interrupts, if we handle the interrupt in dpc thread,
-> two level of thread switching takes place to process wifi interrupts.
-> One in SDHCI driver and the other in Wifi driver. This may cause the system
-> instability.
+On Mon, Aug 27, 2012 at 09:31:11PM +0530, Naveen N. Rao wrote:
+> On 08/27/2012 09:17 PM, Borislav Petkov wrote:
+> >On Mon, Aug 27, 2012 at 09:05:46PM +0530, Naveen N. Rao wrote:
+> >>>>+
+> >>>>+extern struct mce_boot_flags mce_boot_flags;
+> >>>
+> >>>Why do we need that extern thing?
+> >>
+> >>So that this is visible across mce.c and mce_intel.c?
+> >
+> >Ok. But if you move the struct to mce-internal.h and since both .c files
+> >include it, we shouldn't need that extern, right?
+> 
+> I'm not sure I understand. I think we still need it. This is not
+> about the structure, but the variable itself. extern allows
+> mce_boot_flags _variable_ accessible from mce_intel.c.
 
-Looking into the sdhci/mmc code indeed shows that the brcmfmac irq 
-handler is not called in true IRQ context. So the dpc thread may add 
-unnecessary complexity, but to me there is not indication that there is 
-a stability issue.
+Ok, you're right. I actually was thinking of having athe extern at the
+place it is used, i.e. mce_intel.c but looking at mce-internal, it has a
+bunch of other externs so let keep it that way.
 
-> Because the SDHCI calls sdio_irq_thread() to handle the irq, this thread locks
-> mmc host and calls wifi handler. It expects WiFi handler to be quick and
-> enables sdio interrupt from card at end. If wifi handler defers this work for
-> a different thread, sdio_irq_thread() will be stuck on next wifi interrupt
-> since mmc lock is not freed.
+But, I went and did change your patch a bit because I think
+mce_boot_flags is not such a fitting name if we want to move more of
+those items at the beginning of mce.c to it. Basically, I'd like to put
+all those MCE vendor-specific config settings into one struct which
+encapsulates them all together in a clean way instead of having a bunch
+of single variables all over the place.
 
-Not sure if I can follow this explanation. The isr is called with host 
-claimed (by sdio_irq_thread) and all it does is at a linked list member 
-and signal the dpc thread. After doing this the host is released.
+IOW, how about the following?
 
-> Handling the interrupt in ISR directly will prevent thread context switching in
-> wifi driver. It can fix the instability problems.
+--
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index a3ac52b29cbf..e5cfd241e508 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -126,7 +126,6 @@ struct mce_log {
+ #define K8_MCE_THRESHOLD_BANK_5    (MCE_THRESHOLD_BASE + 5 * 9)
+ #define K8_MCE_THRESHOLD_DRAM_ECC  (MCE_THRESHOLD_BANK_4 + 0)
+ 
+-
+ #ifdef __KERNEL__
+ 
+ extern void mce_register_decode_chain(struct notifier_block *nb);
+@@ -169,8 +168,6 @@ DECLARE_PER_CPU(struct device *, mce_device);
+ #define MAX_NR_BANKS 32
+ 
+ #ifdef CONFIG_X86_MCE_INTEL
+-extern int mce_cmci_disabled;
+-extern int mce_ignore_ce;
+ void mce_intel_feature_init(struct cpuinfo_x86 *c);
+ void cmci_clear(void);
+ void cmci_reenable(void);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+index 6a05c1d327a9..3b25bcf452d9 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
++++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+@@ -28,6 +28,15 @@ extern int mce_ser;
+ 
+ extern struct mce_bank *mce_banks;
+ 
++struct mce_cfg {
++	__u32	cmci_disabled		: 1,
++		ignore_ce		: 1,
++		dont_log_ce		: 1,
++		__pad			: 29;
++};
++
++extern struct mce_cfg cfg;
++
+ #ifdef CONFIG_X86_MCE_INTEL
+ unsigned long mce_intel_adjust_timer(unsigned long interval);
+ void mce_intel_cmci_poll(void);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index c311122ea838..db3c5eaa16da 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -79,11 +79,10 @@ static int			rip_msr			__read_mostly;
+ static int			mce_bootlog		__read_mostly = -1;
+ static int			monarch_timeout		__read_mostly = -1;
+ static int			mce_panic_timeout	__read_mostly;
+-static int			mce_dont_log_ce		__read_mostly;
+-int				mce_cmci_disabled	__read_mostly;
+-int				mce_ignore_ce		__read_mostly;
+ int				mce_ser			__read_mostly;
+ 
++struct mce_cfg			cfg			__read_mostly;
++
+ struct mce_bank                *mce_banks		__read_mostly;
+ 
+ /* User mode helper program triggered by machine check event */
+@@ -630,7 +629,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		 * Don't get the IP here because it's unlikely to
+ 		 * have anything to do with the actual error location.
+ 		 */
+-		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce)
++		if (!(flags & MCP_DONTLOG) && !cfg.dont_log_ce)
+ 			mce_log(&m);
+ 
+ 		/*
+@@ -1634,7 +1633,7 @@ static void mce_start_timer(unsigned int cpu, struct timer_list *t)
+ 
+ 	__this_cpu_write(mce_next_interval, iv);
+ 
+-	if (mce_ignore_ce || !iv)
++	if (cfg.ignore_ce || !iv)
+ 		return;
+ 
+ 	t->expires = round_jiffies(jiffies + iv);
+@@ -1958,11 +1957,11 @@ static int __init mcheck_enable(char *str)
+ 	if (!strcmp(str, "off"))
+ 		mce_disabled = 1;
+ 	else if (!strcmp(str, "no_cmci"))
+-		mce_cmci_disabled = 1;
++		cfg.cmci_disabled = 1;
+ 	else if (!strcmp(str, "dont_log_ce"))
+-		mce_dont_log_ce = 1;
++		cfg.dont_log_ce = 1;
+ 	else if (!strcmp(str, "ignore_ce"))
+-		mce_ignore_ce = 1;
++		cfg.ignore_ce = 1;
+ 	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
+ 		mce_bootlog = (str[0] == 'b');
+ 	else if (isdigit(str[0])) {
+@@ -2115,7 +2114,7 @@ show_trigger(struct device *s, struct device_attribute *attr, char *buf)
+ }
+ 
+ static ssize_t set_trigger(struct device *s, struct device_attribute *attr,
+-				const char *buf, size_t siz)
++			   const char *buf, size_t size)
+ {
+ 	char *p;
+ 
+@@ -2129,6 +2128,34 @@ static ssize_t set_trigger(struct device *s, struct device_attribute *attr,
+ 	return strlen(mce_helper) + !!p;
+ }
+ 
++static ssize_t get_dont_log_ce(struct device *dev,
++			       struct device_attribute *attr,
++			       char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "%d\n", cfg.dont_log_ce);
++}
++
++static ssize_t set_dont_log_ce(struct device *s,
++			       struct device_attribute *attr,
++			       const char *buf, size_t size)
++{
++	u64 new;
++
++	if (strict_strtoull(buf, 0, &new) < 0)
++		return -EINVAL;
++
++	cfg.dont_log_ce = !!new;
++
++	return size;
++}
++
++static ssize_t get_ignore_ce(struct device *dev,
++			     struct device_attribute *attr,
++			     char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "%d\n", cfg.ignore_ce);
++}
++
+ static ssize_t set_ignore_ce(struct device *s,
+ 			     struct device_attribute *attr,
+ 			     const char *buf, size_t size)
+@@ -2138,21 +2165,28 @@ static ssize_t set_ignore_ce(struct device *s,
+ 	if (strict_strtoull(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+-	if (mce_ignore_ce ^ !!new) {
++	if (cfg.ignore_ce ^ !!new) {
+ 		if (new) {
+ 			/* disable ce features */
+ 			mce_timer_delete_all();
+ 			on_each_cpu(mce_disable_cmci, NULL, 1);
+-			mce_ignore_ce = 1;
++			cfg.ignore_ce = 1;
+ 		} else {
+ 			/* enable ce features */
+-			mce_ignore_ce = 0;
++			cfg.ignore_ce = 0;
+ 			on_each_cpu(mce_enable_ce, (void *)1, 1);
+ 		}
+ 	}
+ 	return size;
+ }
+ 
++static ssize_t get_cmci_disabled(struct device *dev,
++				 struct device_attribute *attr,
++				 char *buf)
++{
++	return snprintf(buf, PAGE_SIZE, "%d\n", cfg.cmci_disabled);
++}
++
+ static ssize_t set_cmci_disabled(struct device *s,
+ 				 struct device_attribute *attr,
+ 				 const char *buf, size_t size)
+@@ -2162,14 +2196,14 @@ static ssize_t set_cmci_disabled(struct device *s,
+ 	if (strict_strtoull(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+-	if (mce_cmci_disabled ^ !!new) {
++	if (cfg.cmci_disabled ^ !!new) {
+ 		if (new) {
+ 			/* disable cmci */
+ 			on_each_cpu(mce_disable_cmci, NULL, 1);
+-			mce_cmci_disabled = 1;
++			cfg.cmci_disabled = 1;
+ 		} else {
+ 			/* enable cmci */
+-			mce_cmci_disabled = 0;
++			cfg.cmci_disabled = 0;
+ 			on_each_cpu(mce_enable_ce, NULL, 1);
+ 		}
+ 	}
+@@ -2188,31 +2222,23 @@ static ssize_t store_int_with_restart(struct device *s,
+ static DEVICE_ATTR(trigger, 0644, show_trigger, set_trigger);
+ static DEVICE_INT_ATTR(tolerant, 0644, tolerant);
+ static DEVICE_INT_ATTR(monarch_timeout, 0644, monarch_timeout);
+-static DEVICE_INT_ATTR(dont_log_ce, 0644, mce_dont_log_ce);
++static DEVICE_ATTR(dont_log_ce, 0644, get_dont_log_ce, set_dont_log_ce);
++static DEVICE_ATTR(ignore_ce, 0644, get_ignore_ce, set_ignore_ce);
++static DEVICE_ATTR(cmci_disabled, 0644, get_cmci_disabled, set_cmci_disabled);
+ 
+ static struct dev_ext_attribute dev_attr_check_interval = {
+ 	__ATTR(check_interval, 0644, device_show_int, store_int_with_restart),
+ 	&check_interval
+ };
+ 
+-static struct dev_ext_attribute dev_attr_ignore_ce = {
+-	__ATTR(ignore_ce, 0644, device_show_int, set_ignore_ce),
+-	&mce_ignore_ce
+-};
+-
+-static struct dev_ext_attribute dev_attr_cmci_disabled = {
+-	__ATTR(cmci_disabled, 0644, device_show_int, set_cmci_disabled),
+-	&mce_cmci_disabled
+-};
+-
+ static struct device_attribute *mce_device_attrs[] = {
+ 	&dev_attr_tolerant.attr,
+ 	&dev_attr_check_interval.attr,
+ 	&dev_attr_trigger,
+ 	&dev_attr_monarch_timeout.attr,
+-	&dev_attr_dont_log_ce.attr,
+-	&dev_attr_ignore_ce.attr,
+-	&dev_attr_cmci_disabled.attr,
++	&dev_attr_dont_log_ce,
++	&dev_attr_ignore_ce,
++	&dev_attr_cmci_disabled,
+ 	NULL
+ };
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 098386fed48e..f0cf857ba389 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -53,7 +53,7 @@ static int cmci_supported(int *banks)
+ {
+ 	u64 cap;
+ 
+-	if (mce_cmci_disabled || mce_ignore_ce)
++	if (cfg.cmci_disabled || cfg.ignore_ce)
+ 		return 0;
+ 
+ 	/*
 
-This basically increases the duration of the isr in brcmfmac.
+-- 
+Regards/Gruss,
+Boris.
 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->   drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c   |    2 ++
->   drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c |    8 +++++++-
->   2 files changed, 9 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> index 8e7e692..5cf6c3b 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> @@ -121,7 +121,9 @@ static void brcmf_sdio_irqhandler(struct sdio_func *func)
->
->   	brcmf_dbg(INTR, "ib intr triggered\n");
->
-> +	sdio_release_host(sdiodev->func[1]);
->   	brcmf_sdbrcm_isr(sdiodev->bus);
-> +	sdio_claim_host(sdiodev->func[1]);
-
-This is probably needed because the ISR now locks the host to long 
-because brcmf_sdbrcm_dpc() is called directly.
-
->   }
->
->   /* dummy handler for SDIO function 2 interrupt */
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> index 472f2ef..4576d59 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
-> @@ -2347,7 +2347,7 @@ static bool brcmf_sdbrcm_dpc(struct brcmf_sdio *bus)
->   	uint framecnt = 0;	/* Temporary counter of tx/rx frames */
->   	bool rxdone = true;	/* Flag for no more read data */
->   	bool resched = false;	/* Flag indicating resched wanted */
-> -	int err;
-> +	int err = 0;
->
->   	brcmf_dbg(TRACE, "Enter\n");
->
-> @@ -3786,11 +3786,17 @@ void brcmf_sdbrcm_isr(void *arg)
->   	if (!bus->intr)
->   		brcmf_dbg(ERROR, "isr w/o interrupt configured!\n");
->
-> +
-> +#ifndef CONFIG_BRCMFMAC_SDIO_OOB
-> +	while (brcmf_sdbrcm_dpc(bus))
-> +		;
-> +#else
->   	bus->dpc_sched = true;
->   	if (bus->dpc_tsk) {
->   		brcmf_sdbrcm_adddpctsk(bus);
->   		complete(&bus->dpc_wait);
->   	}
-> +#endif
->   }
->
->   static bool brcmf_sdbrcm_bus_watchdog(struct brcmf_sdio *bus)
->
-
-I would really like to know what issue is solved by this change. Could 
-you provide more details.
-
-Franky,
-
-Do you have anything to add here?
-
-Gr. AvS
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
