@@ -1,53 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab2H0Szd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:55:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30369 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab2H0Szc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:55:32 -0400
-Message-ID: <503BC298.3080306@redhat.com>
-Date: Mon, 27 Aug 2012 11:55:20 -0700
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754013Ab2H0S5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:57:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46248 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab2H0S5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 14:57:00 -0400
+Message-ID: <503BC2F1.5060003@linutronix.de>
+Date: Mon, 27 Aug 2012 20:56:49 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-To: Michael Wolf <mjw@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
-        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
-Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
-References: <20120823231346.11681.1502.stgit@lambeau>
-In-Reply-To: <20120823231346.11681.1502.stgit@lambeau>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakaynahalli <ananth@in.ibm.com>, stan_shebs@mentor.com,
+        gdb-patches@sourceware.org
+Subject: Re: [RFC 5/5 v2] uprobes: add global breakpoints
+References: <1344355952-2382-1-git-send-email-bigeasy@linutronix.de> <1344355952-2382-6-git-send-email-bigeasy@linutronix.de> <1344857686.31459.25.camel@twins> <20120821194200.GA32293@linutronix.de> <20120822134837.GA28878@redhat.com>
+In-Reply-To: <20120822134837.GA28878@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2012 04:14 PM, Michael Wolf wrote:
-> This is an RFC regarding the reporting of stealtime.  In the case of
-> where you have a system that is running with partial processors such as
-> KVM the user may see steal time being reported in accounting tools such
-> as top or vmstat.  This can cause confusion for the end user.  To
-> ease the confusion this patch set adds a sysctl interface to set the
-> cpu entitlement.  This is the percentage of cpu that the guest system is
->  expected to receive.  As long as the steal time is within its expected
-> range it will show up as 0 in /proc/stat.  The user will then see in the
-> accounting tools that they are getting a full utilization of the cpu
-> resources assigned to them.
+On 08/22/2012 03:48 PM, Oleg Nesterov wrote:
+> On 08/21, Sebastian Andrzej Siewior wrote:
+>>
+>> This patch adds the ability to hold the program once this point has been
+>> passed and the user may attach to the program via ptrace.
 >
-> This patchset is changing the contents/output of /proc/stat and could affect 
-> user tools.  However the default setting is that the cpu is entitled to 100% 
-> so the code will act as before.  Also another field could be added to the 
-> /proc/stat output and show the unaltered steal time. Since this additional 
-> field could cause more confusion than it would clear up I have left it out 
-> for now.
->                 
+> Sorry Sebastian, I didn't even try to read the patch ;) Fortunately I am
+> not maintainer, I can only reapeat that you do not need to convince me.
 
-How would a guest know what its entitlement is?
+At least for the ptrace part I would prefer to have your blessing
+instead something that seems to work but is wrong.
 
+>> Oleg: The change in ptrace_attach() is still as it was. I tried to
+>> address Peter concern here.
+>> Now what options do I have here:
+>> - not putting the task in TASK_TRACED but simply halt. This would work
+>>    without a change to ptrace_attach() but the task continues on any
+>>    signal. So a signal friendly task would continue and not notice a
+>>    thing.
+>
+> TASK_KILLABLE
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+That would help but would require a change in ptrace_attach() or
+something in gdb/strace/…
 
+One thing I just noticed: If I don't register a handler for SIGUSR1 and
+send one to the application while it is in TASK_KILLABLE then the
+signal gets delivered. If I register a signal handler for it than it
+gets blocked and delivered once I resume the task.
+Shouldn't it get blocked even if I don't register a handler for it?
+
+>> - putting the TASK_TRACED
+>
+> This is simply wrong, in many ways.
+>
+> For example, what if the probed task is already ptraced? Or debugger
+> attaches via PTRACE_SEIZE? How can debugger know it is stopped?
+> uprobe_wait_traced() goes to sleep in TASK_TRACED without notification.
+> And it does not set ->exit_code, this means do_wait() won't work.
+> And note ptrace_stop()->recalc_sigpending_tsk().
+
+Okay, okay. It looks like it is better to stick with TASK_KILLABLE
+instead of fixing the issues you pointed out.
+
+>> --- a/kernel/events/uprobes.c
+>> +++ b/kernel/events/uprobes.c
+>> @@ -1513,7 +1513,16 @@ static void handle_swbp(struct pt_regs *regs)
+>>   			goto cleanup_ret;
+>>   	}
+>>   	utask->active_uprobe = uprobe;
+>> -	handler_chain(uprobe, regs);
+>> +	if (utask->skip_handler)
+>> +		utask->skip_handler = 0;
+>> +	else
+>> +		handler_chain(uprobe, regs);
+>> +
+>> +	if (utask->state == UTASK_TRACE_WOKEUP_TRACED) {
+>> +		send_sig(SIGTRAP, current, 0);
+>> +		utask->skip_handler = 1;
+>> +		goto cleanup_ret;
+>> +	}
+>>   	if (uprobe->flags&  UPROBE_SKIP_SSTEP&&  can_skip_sstep(uprobe, regs))
+>>   		goto cleanup_ret;
+>>
+>> @@ -1528,7 +1537,7 @@ cleanup_ret:
+>>   		utask->active_uprobe = NULL;
+>>   		utask->state = UTASK_RUNNING;
+>>   	}
+>> -	if (!(uprobe->flags&  UPROBE_SKIP_SSTEP))
+>> +	if (!(uprobe->flags&  UPROBE_SKIP_SSTEP) || utask->skip_handler)
+>
+> Am I understand correctly?
+>
+> If it was woken by PTRACE_ATTACH we set utask->skip_handler = 1 and
+> re-execute the instruction (yes, SIGTRAP, but this doesn't matter).
+> When the task hits this bp again we skip handler_chain() because it
+> was already reported.
+>
+> Yes? If yes, I don't think this can work. Suppose that the task
+> dequeues a signal before it returns to the usermode to re-execute
+> and enters the signal handler which can hit another uprobe.
+
+ach, those signals make everything complicated. I though signals are
+blocked until the single step is done but my test just showed my
+something different. Okay, what now? A simple nested struct uprobe_task
+and struct uprobe? Blocking signals isn't probably a good idea.
+
+> And this can race with uprobe_register() afaics.
+
+> Oleg.
+
+Sebastian
