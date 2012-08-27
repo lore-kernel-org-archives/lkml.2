@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab2H0RSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:18:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34567 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab2H0RSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:18:34 -0400
-Date: Mon, 27 Aug 2012 10:18:21 -0700
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-e3e45c01ae690e65f2650e5288b9af802e95a136@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        borislav.petkov@amd.com
-In-Reply-To: <20120824133434.GA8014@quad>
-References: <20120824133434.GA8014@quad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86:
-  Fix microcode revision check for SNB-PEBS
-Git-Commit-ID: e3e45c01ae690e65f2650e5288b9af802e95a136
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753821Ab2H0RXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:23:07 -0400
+Received: from tundra.namei.org ([65.99.196.166]:57010 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab2H0RXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 13:23:05 -0400
+Date: Tue, 28 Aug 2012 03:19:51 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Peter.Huewe@infineon.com
+cc: key@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
+        xiaoyan.zhang@intel.com, jj@chaosbits.net
+Subject: RE: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+In-Reply-To: <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com>
+Message-ID: <alpine.LRH.2.02.1208280319420.17312@tundra.namei.org>
+References: <20120822215216.GC13519@linux.vnet.ibm.com> <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org> <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com> <20120824150533.GA2190@linux.vnet.ibm.com> <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
+ <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:18:26 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e3e45c01ae690e65f2650e5288b9af802e95a136
-Gitweb:     http://git.kernel.org/tip/e3e45c01ae690e65f2650e5288b9af802e95a136
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Fri, 24 Aug 2012 15:34:34 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 27 Aug 2012 08:48:19 +0200
+On Mon, 27 Aug 2012, Peter.Huewe@infineon.com wrote:
 
-perf/x86: Fix microcode revision check for SNB-PEBS
+> >> > Build using make -> no error.
+> >>   I can't reproduce this either, James, can you send out your .config?
+> 
+> > See attached.
+> 
+> Hi James,
+> 
+> even with you config, I can't reproduce it here with 3.6-rc3 + mypatch.
 
-The following patch makes the microcode update code path
-actually invoke the perf_check_microcode() function and
-thus potentially renabling SNB PEBS.
+Try against my -next branch.
 
-By default, CONFIG_MICROCODE_OLD_INTERFACE is
-forced to Y in arch/x86/Kconfig. There is no
-way to disable this. That means that the code
-path used in arch/x86/kernel/microcode_core.c
-did not include the call to perf_check_microcode().
 
-Thus, even though the microcode was updated to a
-version that fixes the SNB PEBS problem, perf_event
-would still return EOPNOTSUPP when enabling precise
-sampling.
+> 
+> 
+> Peter
+> 
 
-This patch simply adds a call to perf_check_microcode()
-in the call path used when OLD_INTERFACE=y.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: peterz@infradead.org
-Cc: andi@firstfloor.org
-Link: http://lkml.kernel.org/r/20120824133434.GA8014@quad
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/microcode_core.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 4873e62..9e5bcf1 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -225,6 +225,9 @@ static ssize_t microcode_write(struct file *file, const char __user *buf,
- 	if (do_microcode_update(buf, len) == 0)
- 		ret = (ssize_t)len;
- 
-+	if (ret > 0)
-+		perf_check_microcode();
-+
- 	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
- 
+-- 
+James Morris
+<jmorris@namei.org>
