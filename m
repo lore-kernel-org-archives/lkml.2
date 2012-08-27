@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab2H0UXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:23:17 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55857 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754508Ab2H0UXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:23:11 -0400
-Message-ID: <1346098984.8623.23.camel@lambeau>
-Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
-Reply-To: mjw@linux.vnet.ibm.com
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
-        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
-Date: Mon, 27 Aug 2012 15:23:04 -0500
-In-Reply-To: <503BC298.3080306@redhat.com>
-References: <20120823231346.11681.1502.stgit@lambeau>
-	 <503BC298.3080306@redhat.com>
-Organization: IBM
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082720-5806-0000-0000-000018DBDDA2
+	id S1754616Ab2H0UXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:23:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40500 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754544Ab2H0UXQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:23:16 -0400
+Date: Mon, 27 Aug 2012 13:23:11 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
+ nfs4_lookup_revalidate
+Message-ID: <20120827202311.GA16556@kroah.com>
+References: <1345666097-14815-1-git-send-email-Trond.Myklebust@netapp.com>
+ <20120827200949.GA4732@kroah.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA908F6E388@SACEXCMBX04-PRD.hq.netapp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908F6E388@SACEXCMBX04-PRD.hq.netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-27 at 11:55 -0700, Avi Kivity wrote:
-> On 08/23/2012 04:14 PM, Michael Wolf wrote:
-> > This is an RFC regarding the reporting of stealtime.  In the case of
-> > where you have a system that is running with partial processors such as
-> > KVM the user may see steal time being reported in accounting tools such
-> > as top or vmstat.  This can cause confusion for the end user.  To
-> > ease the confusion this patch set adds a sysctl interface to set the
-> > cpu entitlement.  This is the percentage of cpu that the guest system is
-> >  expected to receive.  As long as the steal time is within its expected
-> > range it will show up as 0 in /proc/stat.  The user will then see in the
-> > accounting tools that they are getting a full utilization of the cpu
-> > resources assigned to them.
-> >
-> > This patchset is changing the contents/output of /proc/stat and could affect 
-> > user tools.  However the default setting is that the cpu is entitled to 100% 
-> > so the code will act as before.  Also another field could be added to the 
-> > /proc/stat output and show the unaltered steal time. Since this additional 
-> > field could cause more confusion than it would clear up I have left it out 
-> > for now.
-> >                 
+On Mon, Aug 27, 2012 at 08:16:09PM +0000, Myklebust, Trond wrote:
+> On Mon, 2012-08-27 at 13:09 -0700, Greg KH wrote:
+> > On Wed, Aug 22, 2012 at 04:08:17PM -0400, Trond Myklebust wrote:
+> > > Fix the following Oops in 3.5.1:
+> > > 
+> > >  BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> > >  IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> > >  PGD 337c63067 PUD 0
+> > >  Oops: 0000 [#1] SMP
+> > >  CPU 5
+> > >  Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+> > > 
+> > >  Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
+> > >  RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> > >  RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
+> > >  RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
+> > >  RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
+> > >  RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
+> > >  R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
+> > >  R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
+> > >  FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
+> > >  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > >  CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
+> > >  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > >  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > >  Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
+> > >  Stack:
+> > >   ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
+> > >   ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
+> > >   ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
+> > >  Call Trace:
+> > >   [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
+> > >   [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
+> > >   [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
+> > >   [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
+> > >   [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
+> > >   [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
+> > >   [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
+> > >   [<00002b5348b5f527>] 0x2b5348b5f526
+> > >  Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
+> > >  RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> > >   RSP <ffff8801b418bd38>
+> > >  CR2: 0000000000000038
+> > >  ---[ end trace 845113ed191985dd ]---
+> > > 
+> > > This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
+> > > calling down to the dentry revalidation code with a NULL pointer
+> > > to struct nameidata.
+> > > 
+> > > It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
+> > > to ->d_revalidate())
+> > 
+> > So this is just a nfs-only backport of the larger patch 0b728e1911c,
+> > right?  Should we also do this for other filesystems as well?  Or just
+> > backport the whole commit?
 > 
-> How would a guest know what its entitlement is?
-> 
-> 
+> The larger patch involves a VFS api change (the atomic open code) which
+> has a bunch of pre- and post-requirements. I'd assume that is a too
+> large change for stable. I think that the smaller per-filesystem changes
+> are probably more appropriate. The list of filesystems that care are
+> likely to be small. Off the top of my head, I can only think of NFS,
+> CIFS, FUSE and possibly ceph.
 
-Currently the Admin/management tool setting up the guests will put it on
-the qemu commandline.  From this it is passed via an ioctl to the host.
-The guest will get the value from the host via a hypercall.
+Ok, I'll take this one for NFS, care to break this up also for FUSE and
+CIFS and send me a patch for it?
 
-In the future the host could try and do some of it automatically in some
-cases. 
+thanks,
 
+greg k-h
