@@ -1,44 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab2H0FlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 01:41:05 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12361 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab2H0FlC convert rfc822-to-8bit (ORCPT
+	id S1752180Ab2H0FnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 01:43:12 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5903 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab2H0FnL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 01:41:02 -0400
+	Mon, 27 Aug 2012 01:43:11 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 26 Aug 2012 22:34:51 -0700
+	by hqnvupgp05.nvidia.com on Sun, 26 Aug 2012 22:43:10 -0700
 From: Bill Huang <bilhuang@nvidia.com>
-To: "'Stephen Warren'" <swarren@wwwdotorg.org>
-CC: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'sameo@linux.intel.com'" <sameo@linux.intel.com>,
-        "'grant.likely@secretlab.ca'" <grant.likely@secretlab.ca>,
-        "'rob.herring@calxeda.com'" <rob.herring@calxeda.com>,
-        "'rob@landley.net'" <rob@landley.net>,
-        "'broonie@opensource.wolfsonmicro.com'" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Xin Xie <xxie@nvidia.com>,
-        "'lrg@slimlogic.co.uk'" <lrg@slimlogic.co.uk>,
-        "'jhovold@gmail.com'" <jhovold@gmail.com>,
-        "'kyle.manna@fuel7.com'" <kyle.manna@fuel7.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "'devicetree-discuss@lists.ozlabs.org'" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "'linux-doc@vger.kernel.org'" <linux-doc@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Aug 2012 13:40:51 +0800
-Subject: RE: [PATCH v2 1/2] mfd: dt: tps6586x: Add power off control
-Thread-Topic: [PATCH v2 1/2] mfd: dt: tps6586x: Add power off control
-Thread-Index: Ac2CcoqX3gqc2V1HRnm59y1GrfvayQBkqeUA
-Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BA98284E@HKMAIL02.nvidia.com>
-References: <1345424876-4365-1-git-send-email-bilhuang@nvidia.com>
- <1345424876-4365-2-git-send-email-bilhuang@nvidia.com>
- <20120820113423.GA5996@avionic-0098.mockup.avionic-design.de>
- <A7051F87A141B744BCAF487D48E5B3BDF5BA982847@HKMAIL02.nvidia.com>
- <A7051F87A141B744BCAF487D48E5B3BDF5BA98284B@HKMAIL02.nvidia.com>
- <503847C2.3080400@wwwdotorg.org>
-In-Reply-To: <503847C2.3080400@wwwdotorg.org>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+CC: "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 27 Aug 2012 13:43:07 +0800
+Subject: RE: Shutdown problem in SMP system happened on Tegra20
+Thread-Topic: Shutdown problem in SMP system happened on Tegra20
+Thread-Index: Ac2CkcVRY3F5RuuoRrqO9o4pYoZICABhOcwQ
+Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BA98284F@HKMAIL02.nvidia.com>
+References: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com>
+ <20120824182133.GB18957@n2100.arm.linux.org.uk>
+ <A7051F87A141B744BCAF487D48E5B3BDF5BA98284A@HKMAIL02.nvidia.com>
+ <20120825071755.GG18957@n2100.arm.linux.org.uk>
+In-Reply-To: <20120825071755.GG18957@n2100.arm.linux.org.uk>
 Accept-Language: zh-TW, en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
@@ -51,41 +37,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nvpublic
-> On 08/24/2012 06:36 PM, Bill Huang wrote:
-> >>> On Sun, Aug 19, 2012 at 06:07:55PM -0700, Bill Huang wrote:
-> >>>> Add DT property "ti,system-power-controller" telling whether or not
-> >>>> this pmic is in charge of controlling the system power, so the
-> >>>> power off routine can be hooked up to system call "pm_power_off".
-> ...
-> >>> I've seen the following while trying this patch applied on top of next-20120817:
-> >>>
-> >>> [   40.581151] Power down.
-> >>> [   41.583160] ------------[ cut here ]------------
-> >>> [   41.587784] WARNING: at /home/thierry.reding/src/kernel/linux-ipmp.git/drivers/i2c/busses/i2c-
-> >>> tegra.c:525 tegra_i2c_xfer+0x21c/0x29c()
-> ...
-> >> Thanks Thierry, I can repro this on Tegra20 inconsistently and found,
-> >> if current cpu is not cpu0 when doing "machine_shutdown" (it will
-> >> call "smp_send_stop"), i2c controller will failed to do any transaction (looks like gic interrupt
-> will be disabled), I'll debug further to find out the root cause.
-> >>
-> >> By the way, Tegra30 is good since it will always be cpu0 when doing
-> >> "machine_shutdown", I still don't know why it makes the difference
-> >> against Tegra20 since I'm not familiar with those cpu stuffs and what make it behave differently,
-> I'll study a bit, thanks.
+> On Sat, Aug 25, 2012 at 08:00:56AM +0800, Bill Huang wrote:
+> > nvpublic
+> > > So what you're asking for is a feature to do what
+> > > CONFIG_PM_SLEEP_SMP does, but without CONFIG_PM_SLEEP_SMP enabled?
 > >
-> > I've sent the shutdown issue for discussion in ARM list: Shutdown problem in SMP system happened on
-> Tegra20.
-> > The cause of the i2c timeout is pretty clear now and it is not
-> > directly related to this patch, so is this patch series acceptable? Any thoughts or comment? Thanks.
+> > Yeah pretty much, I'm actually asking should we take care of this
+> > since maybe not all platforms will have this config enabled?
+> > >
+> > > Why not just ensure that CONFIG_PM_SLEEP_SMP is enabled if your
+> > > platform requires that the lowest CPU number be the CPU dealing with reboot?
+> >
+> > Someday we will have it enabled, but before that we'll hit the issue,
+> > so you don't think this should be taken care of? Thanks.
 > 
-> I tend to agree; power off never worked without this patch, and sometimes does with the patch, due to
-> nothing wrong with this patch.
+> Well, just enable CONFIG_PM_SLEEP_SMP then - it'll be far better than trying to implement something in
+> the ARM code, especially as sysrq can be used for poweroff/reboot etc (which will run from atomic
+> contexts where you can't switch to another CPU.)
 > 
-> Bill, please do follow up on getting the underlying Tegra issue solved somehow though. IIRC, Joseph Lo
-> or Prashant has a patch which enabled the config option that Russell mentioned, so the fix may just be
-> to wait for that patch to get finalized, but please double-check that solves it.
-> Thanks!
+> What you're asking for will make these callbacks fragile for other platforms.
 
-As per the shutdown issue discussion, enabling CONFIG_PM_SLEEP_SMP is the only solution and I've confirmed that fix the issue, thanks. 
+OK, thanks.
