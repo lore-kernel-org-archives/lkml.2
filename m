@@ -1,139 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab2H0Ney (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 09:34:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42680 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2H0Nex (ORCPT
+	id S1752071Ab2H0Nif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 09:38:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60950 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2H0Nid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 09:34:53 -0400
-From: Baodong Chen <chenbdchenbd@gmail.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz, davem@davemloft.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Baodong Chen <chenbdchenbd@gmail.com>
-Subject: [PATCH] staging:fixed code to fit tty_driver's kref filed fixed code to fit tty_driver's kref filed for drivers/staging/net/pc300_tty.c
-Date: Mon, 27 Aug 2012 21:34:18 +0800
-Message-Id: <1346074458-2659-1-git-send-email-chenbdchenbd@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 27 Aug 2012 09:38:33 -0400
+Date: Mon, 27 Aug 2012 08:38:22 -0500
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Add support for Apple vendor-specific devices
+Message-ID: <20120827133822.GA7740@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Henrik Rydberg <rydberg@euromail.se>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1345915686-3915-1-git-send-email-rydberg@euromail.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345915686-3915-1-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Baodong Chen <chenbdchenbd@gmail.com>
----
- drivers/staging/net/pc300_tty.c |   55 ++++++++++++++++++++++-----------------
- 1 files changed, 31 insertions(+), 24 deletions(-)
+Hi Henrik,
 
-diff --git a/drivers/staging/net/pc300_tty.c b/drivers/staging/net/pc300_tty.c
-index 4709f42..91ada93 100644
---- a/drivers/staging/net/pc300_tty.c
-+++ b/drivers/staging/net/pc300_tty.c
-@@ -46,6 +46,8 @@
- #include <linux/slab.h>
- #include <linux/if.h>
- #include <linux/skbuff.h>
-+#include <linux/kref.h>
-+
- /* TTY includes */
- #include <linux/tty.h>
- #include <linux/tty_flip.h>
-@@ -134,12 +136,26 @@ static void cpc_tty_signal_on(pc300dev_t *pc300dev, unsigned char);
- static int pc300_tiocmset(struct tty_struct *, unsigned int, unsigned int);
- static int pc300_tiocmget(struct tty_struct *);
- 
-+static void cpc_tty_do_unreg_driver(struct kref *ref);
-+
- /* functions called by PC300 driver */
- void cpc_tty_init(pc300dev_t *dev);
- void cpc_tty_unregister_service(pc300dev_t *pc300dev);
- void cpc_tty_receive(pc300dev_t *pc300dev);
- void cpc_tty_trigger_poll(pc300dev_t *pc300dev);
- 
-+static void cpc_tty_do_unreg_driver(struct kref *ref)
-+{
-+	struct tty_driver *drv = container_of(ref, struct tty_driver, kref);
-+	int ret;
-+
-+	cpc_tty_unreg_flag = 0;
-+
-+	res = tty_unregister_driver(drv);
-+	if (res)
-+		CPC_TTY_DBG("unregister the tty driver error=%d\n", res);
-+}
-+
- /*
-  * PC300 TTY clear "signal"
-  */
-@@ -239,6 +255,8 @@ void cpc_tty_init(pc300dev_t *pc300dev)
- 		/* interface routines from the upper tty layer to the tty driver */
- 		tty_set_operations(&serial_drv, &pc300_ops);
- 
-+		kref_init(&serial_drv.kref);
-+
- 		/* register the TTY driver */
- 		if (tty_register_driver(&serial_drv)) { 
- 			printk("%s-tty: Failed to register serial driver! ",
-@@ -408,13 +426,9 @@ static void cpc_tty_close(struct tty_struct *tty, struct file *flip)
- 
- 	CPC_TTY_DBG("%s: TTY closed\n",cpc_tty->name);
- 	
--	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
--		cpc_tty_unreg_flag = 0;
--		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
--		if ((res=tty_unregister_driver(&serial_drv))) { 
--			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
--							cpc_tty->name,res);
--		}
-+	if (cpc_tty_unreg_flag) {
-+		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
-+		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
- 	}
- 	return; 
- } 
-@@ -644,13 +658,9 @@ static void cpc_tty_hangup(struct tty_struct *tty)
- 		CPC_TTY_DBG("%s: TTY is not opened\n",cpc_tty->name);
- 		return ;
- 	}
--	if (!serial_drv.refcount && cpc_tty_unreg_flag) {
--		cpc_tty_unreg_flag = 0;
--		CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
--		if ((res=tty_unregister_driver(&serial_drv))) { 
--			CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
--							cpc_tty->name,res);
--		}
-+	if (cpc_tty_unreg_flag) {
-+		CPC_TTY_DBG("%s: checking unregister the tty driver...\n", cpc_tty->name);
-+		kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
- 	}
- 	cpc_tty_signal_off(cpc_tty->pc300dev, CTL_DTR);
- }
-@@ -1043,19 +1053,16 @@ void cpc_tty_unregister_service(pc300dev_t *pc300dev)
- 		return; 
- 	}
- 
--	if (--cpc_tty_cnt == 0) { 
--		if (serial_drv.refcount) {
--			CPC_TTY_DBG("%s: unregister is not possible, refcount=%d",
--							cpc_tty->name, serial_drv.refcount);
-+	if (--cpc_tty_cnt == 0) {
-+		CPC_TTY_DBG("%s: checking unregister the tty driver...\n",
-+				cpc_tty->name);
-+		res = kref_put(&serial_drv.kref, cpc_tty_do_unreg_driver);
-+		if (0 == res) {
-+			CPC_TTY_DBG("%s: unregister is not possible\n",
-+					cpc_tty->name);
- 			cpc_tty_cnt++;
- 			cpc_tty_unreg_flag = 1;
- 			return;
--		} else { 
--			CPC_TTY_DBG("%s: unregister the tty driver\n", cpc_tty->name);
--			if ((res=tty_unregister_driver(&serial_drv))) { 
--				CPC_TTY_DBG("%s: ERROR ->unregister the tty driver error=%d\n",
--								cpc_tty->name,res);
--			}
- 		}
- 	}
- 	CPC_TTY_LOCK(pc300dev->chan->card,flags);
--- 
-1.7.0.4
+* Henrik Rydberg <rydberg@euromail.se> [2012-08-25 19:28:06 +0200]:
 
+> As pointed out by Gustavo and Marcel, all Apple-specific Broadcom
+> devices seen so far have the same interface class, subclass and
+> protocol numbers. This patch adds an entry which matches all of them,
+> using the new USB_VENDOR_AND_INTERFACE_INFO() macro.
+> 
+> In particular, this patch adds support for the MacBook Pro Retina
+> (05ac:8286), which is not in the present list.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi Gustavo,
+> 
+> here is a patch for the Apple devices, utilizing commit d81a5d19, for
+> 3.6. Tested on the MacBookPro10,1 (Retina). If you want, I can
+> follow-up with a patch for 3.7 which removes the specific entries. I
+> have verified the lsusb output of all of them, except MacMini5,1.
+> 
+> Thanks,
+> Henrik
+> 
+>  drivers/bluetooth/btusb.c | 3 +++
+>  1 file changed, 3 insertions(+)
+
+Patch has been applied to the bluetooth tree. Thanks.
+
+	Gustavo
