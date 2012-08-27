@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab2H0RZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:25:08 -0400
-Received: from tundra.namei.org ([65.99.196.166]:57017 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab2H0RZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:25:05 -0400
-Date: Tue, 28 Aug 2012 03:21:51 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-cc: Peter.Huewe@infineon.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
-        xiaoyan.zhang@intel.com, jj@chaosbits.net
-Subject: Re: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
-In-Reply-To: <20120827161747.GA2436@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.02.1208280321220.17312@tundra.namei.org>
-References: <20120822215216.GC13519@linux.vnet.ibm.com> <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org> <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com> <20120824150533.GA2190@linux.vnet.ibm.com> <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
- <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com> <20120827161747.GA2436@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753933Ab2H0RZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:25:22 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55989 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab2H0RZT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 13:25:19 -0400
+Message-ID: <503BAD7C.5010608@kernel.org>
+Date: Mon, 27 Aug 2012 18:25:16 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH 2/3] iio: use IIO_CHAN_INFO_RAW rather than 0
+References: <A874F61F95741C4A9BA573A70FE3998F41EEFD76@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F41EEFD76@DQHE02.ent.ti.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Aug 2012, Kent Yoder wrote:
-
-> On Mon, Aug 27, 2012 at 07:23:40AM +0000, Peter.Huewe@infineon.com wrote:
-> > >> > Build using make -> no error.
-> > >>   I can't reproduce this either, James, can you send out your .config?
-> > 
-> > > See attached.
-> > 
-> > Hi James,
-> > 
-> > even with you config, I can't reproduce it here with 3.6-rc3 + mypatch.
+On 08/16/2012 08:39 AM, Kim, Milo wrote:
+> (a) For better readability, replace 0 with IIO_CHAN_INFO_RAW.
+> (b) Make same line-format as other apis()
+>     : iio_read_channel_scale() and iio_read_channel_offset()
 > 
->   Same here, against linux-security plus the pullreq patches...
-
-I may have missed something, but what do you mean by pullreq patches?
-
-
--- 
-James Morris
-<jmorris@namei.org>
+merged. Thanks.
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/iio/inkern.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> index bd09245..5103337 100644
+> --- a/drivers/iio/inkern.c
+> +++ b/drivers/iio/inkern.c
+> @@ -239,8 +239,10 @@ int iio_read_channel_raw(struct iio_channel *chan, int *val)
+>  		goto err_unlock;
+>  	}
+>  
+> -	ret = chan->indio_dev->info->read_raw(chan->indio_dev, chan->channel,
+> -					      val, &val2, 0);
+> +	ret = chan->indio_dev->info->read_raw(chan->indio_dev,
+> +					      chan->channel,
+> +					      val, &val2,
+> +					      IIO_CHAN_INFO_RAW);
+>  err_unlock:
+>  	mutex_unlock(&chan->indio_dev->info_exist_lock);
+>  
+> 
