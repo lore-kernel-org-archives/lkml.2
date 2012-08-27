@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab2H0Gt1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 02:49:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36147 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab2H0GtY (ORCPT
+	id S1751390Ab2H0HDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 03:03:31 -0400
+Received: from cassarossa.samfundet.no ([129.241.93.19]:35753 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab2H0HDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 02:49:24 -0400
-Date: Sun, 26 Aug 2012 23:49:20 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arun Murthy <arun.murthy@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCHv3 1/4] modem_shm: Add Modem Access Framework
-Message-ID: <20120827064920.GA5170@kroah.com>
-References: <1346046569-8050-1-git-send-email-arun.murthy@stericsson.com>
- <1346046569-8050-2-git-send-email-arun.murthy@stericsson.com>
+	Mon, 27 Aug 2012 03:03:30 -0400
+Date: Mon, 27 Aug 2012 09:03:23 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: viresh kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH 1/2] dw_dmac: make driver endianness configurable
+Message-ID: <20120827070323.GC28721@samfundet.no>
+References: <503A8CAE.6050606@yahoo.es>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346046569-8050-2-git-send-email-arun.murthy@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <503A8CAE.6050606@yahoo.es>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 11:19:26AM +0530, Arun Murthy wrote:
-> +struct modem {
-> +	struct device *dev;
+Around Mon 27 Aug 2012 04:53:02 +0800 or thereabout, Hein Tibosch wrote:
+> The dw_dmac was originally developed for avr32 to be used with the
+> Synopsys DesignWare AHB DMA controller. After 2.6.38, device access was done
+> with the little-endian readl/writel functions. This didn't work on the
+> avr32 platform, because it needs native-endian (i.e. big-endian) accessors.
+> This patch makes the endianness configurable using 'DW_DMAC_BE',
+> which will default be true for AVR32
 
-No, this needs to be:
-	struct device dev;
+I think the English in kconfig could use some brushing up.
 
-Please fix it up to be like that, otherwise you are not using the driver
-model properly at all.
+> Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
+> ---
+>  drivers/dma/Kconfig        |    8 ++++++++
+>  drivers/dma/dw_dmac_regs.h |   23 +++++++++++++++++++++++
+>  2 files changed, 31 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index aadeb5b..3635daf 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -89,6 +89,14 @@ config DW_DMAC
+>  	  Support the Synopsys DesignWare AHB DMA controller.  This
+>  	  can be integrated in chips such as the Atmel AT32ap7000.
+>  
+> +config DW_DMAC_BE
+>
 
-> +/**
-> + * modem_register - register a modem
-> + * @modem_desc: - description for modem
-> + * @dev:        - device
-> + * @driver_data:- driver specific data
-> + *
-> + * Register a modem with the modem access framework, so that
-> + * it could be used by client drivers for accessing the
-> + * modem.
-> + */
-> +struct modem_dev *modem_register(struct modem_desc *modem_desc,
-> +		struct device *dev,
-> +		void *driver_data)
-> +{
-> +	static atomic_t modem_no = ATOMIC_INIT(0);
-> +	struct modem_dev *mdev;
-> +	int ret;
-> +
-> +	if (modem_desc == NULL)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	if (modem_desc->name == NULL || modem_desc->ops == NULL)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	mdev = kzalloc(sizeof(struct modem_dev), GFP_KERNEL);
-> +	if (mdev == NULL)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	mutex_lock(&modem_list_mutex);
-> +
-> +	mutex_init(&mdev->mutex);
-> +	mdev->modem_data = driver_data;
-> +	mdev->owner = modem_desc->owner;
-> +	mdev->desc = modem_desc;
-> +	INIT_LIST_HEAD(&mdev->client_list);
-> +	INIT_LIST_HEAD(&mdev->modem_list);
-> +	BLOCKING_INIT_NOTIFIER_HEAD(&mdev->notifier);
-> +
-> +	/* mdev->dev.class = &modem_class;*/
-> +	mdev->dev.parent = dev;
-> +	dev_set_name(&mdev->dev, "modem.%d", atomic_inc_return(&modem_no) - 1);
+This name isn't that long, so we could skip the abbreviation of big endian;
+DW_DMAC_BIG_ENDIAN_IO or something similar?
 
-Use the idr interface instead please.
+> +	bool "Synopsys DesignWare AHB DMA needs big endian access"
+>
 
-> +	ret = device_register(&mdev->dev);
-> +	if (ret != 0)
-> +		goto clean;
+bool "Use big endian I/O register access"
+
+> +	default y if AVR32
+> +	depends on DW_DMAC
+> +	help
+> +	  Say yes if access to the Synopsys DesignWare AHB DMA controller
+> +	  should be big endian, such as for Atmel AT32ap7000
 > +
-> +	dev_set_drvdata(&mdev->dev, mdev);
-> +
-> +	ret = add_modem_attributes(mdev);
-> +	if (ret < 0)
-> +		goto backoff;
-> +
-> +	list_add(&mdev->modem_list, &modem_list);
 
-Hint, you don't need such a list if you use the driver model properly...
+"Say yes here to use big endian I/O access when reading and writing to the
+DMA controller registers. This is needed on some platforms, like the Atmel
+AVR32 architecture.
 
-> +out:
-> +	mutex_unlock(&modem_list_mutex);
-> +	return mdev;
-> +
-> +backoff:
-> +	device_unregister(&mdev->dev);
-> +	mdev = ERR_PTR(ret);
-> +	goto out;
-> +
-> +clean:
-> +	kfree(mdev);
-> +	mdev = ERR_PTR(ret);
-> +	goto out;
-> +}
-> +EXPORT_SYMBOL_GPL(modem_register);
+If unsure, use the default setting."
 
-You have no "modem_unregister()" call, which, if you did, and actually
-tested it out, would show you the problem in the code above (hint, you
-really didn't read the documentation I pointed you at previously.)
+<snipp patch diff>
 
-You are also racing userspace with your device creation, and I can't
-tell the difference between a modem_dev and a modem, why have two
-different things?
-
-This whole thing needs to be totally reworked, start with the above
-comments, and you will see whole sections of this patch just disappear,
-as you properly start to use the driver model.
-
-greg k-h
+-- 
+mvh
+Hans-Christian Egtvedt
