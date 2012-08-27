@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab2H0XxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 19:53:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55585 "EHLO
+	id S1755070Ab2H0X5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 19:57:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55600 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab2H0XxL (ORCPT
+	with ESMTP id S1754638Ab2H0X5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 19:53:11 -0400
-Date: Mon, 27 Aug 2012 20:53:02 -0300
+	Mon, 27 Aug 2012 19:57:03 -0400
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH v3 4/6] floppy: properly handle failure on add_disk loop
-Message-ID: <20120827235301.GB3030@herton-Z68MA-D2H-B3>
-References: <1344881787-6422-1-git-send-email-herton.krzesinski@canonical.com>
- <1344881787-6422-5-git-send-email-herton.krzesinski@canonical.com>
- <1344915083.824.182.camel@deadeye.wl.decadent.org.uk>
- <20120814144310.GD5277@herton-Z68MA-D2H-B3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120814144310.GD5277@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Bug fixes/cleanups for floppy driver (v4)
+Date: Mon, 27 Aug 2012 20:56:50 -0300
+Message-Id: <1346111816-16700-1-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 14, 2012 at 11:43:11AM -0300, Herton Ronaldo Krzesinski wrote:
-> On Tue, Aug 14, 2012 at 04:31:23AM +0100, Ben Hutchings wrote:
-> > On Mon, 2012-08-13 at 15:16 -0300, Herton Ronaldo Krzesinski wrote:
-> > > On do_floppy_init, if something failed inside the loop we call add_disk,
-> > > there was no cleanup of previous iterations in the error handling.
-> > > 
-> > > Cc: stable@vger.kernel.org
-> > > Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> > > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> > 
-> > This depends on 3/6.  If that's replaced by my proposed fix, then:
+Following this are fixes for bugs noticed on floppy driver, and some
+extra cleanups. Version history below:
 
-I redid the patch series with your proposed fix, and I'm going to submit it
-again in some minutes, so I hope finally it goes forward.
+v2: separate fixes, and incorporate suggestions by Vivek Goyal.
+    also I splitted the cleanups from fixes.
+v3: remove dr, also this possibly makes error handling more readable
+    (suggested by by Vivek Goyal), incorporate acks.
+v4: re-shuffle series with patch from Ben Hutchings handling the queue
+    reference in a better way inside genhd
 
-> > 
-> > > ---
-> > >  drivers/block/floppy.c |   10 +++++++++-
-> > >  1 file changed, 9 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> > > index 9272203..3eafe93 100644
-> > > --- a/drivers/block/floppy.c
-> > > +++ b/drivers/block/floppy.c
-> > > @@ -4294,7 +4294,7 @@ static int __init do_floppy_init(void)
-> > >  
-> > >  		err = platform_device_register(&floppy_device[drive]);
-> > >  		if (err)
-> > > -			goto out_release_dma;
-> > > +			goto out_remove_drives;
-> > >  
-> > >  		err = device_create_file(&floppy_device[drive].dev,
-> > >  					 &dev_attr_cmos);
-> > > @@ -4313,6 +4313,14 @@ static int __init do_floppy_init(void)
-> > >  
-> > >  out_unreg_platform_dev:
-> > >  	platform_device_unregister(&floppy_device[drive]);
-> > > +out_remove_drives:
-> > > +	while (drive--) {
-> > > +		if (disk_registered[drive]) {
-> > 
-> > I think the test of allowed_drive_mask and FDC version before
-> > registering each driver should be factored out into a function that you
-> > can use here.  There would then no need for the disk_registered array.
-> 
-> Seems a better approach. I'll redo the patches, but I'm not sure how to
-> proceed now, since it depends on your change. Patches 4-6 that I did
-> needs to be dropped/redone. At first my patches 0001/0002 could be
-> applied with yours, then I would submit another series for the rest. Or
-> I could take your change and submit your patch along with my series.
-> 
-> > 
-> > Ben.
-> > 
+Patches 1-2 and 4 are general bug fixes for problems noted in the floppy
+driver initialization and its error handling. They are the minimal fix
+required, so it's suitable and easy to pick for stable releases (so
+are Cc'd to stable), and thus not contain cleanups or re-factoring.
+
+Patch 3 is a patch from Ben Hutchings fixing in a better way the extra
+queue reference issue that was introduced in commit 523e1d3 ('block:
+make gendisk hold a reference to its queue'). Instead of making the
+drivers worry about the extra reference, fix it and handle that in a
+better way inside genhd. I'm not sure if this should go with the floppy
+changes or picked up separate for the block tree. In any case, patch 6
+will only apply after it is applied. His patch was proposed with the
+previous series I submitted and handles the problem better so I took the
+liberty to include now, I just fixed the changelog as was noticed that
+time to reference the right commit, and included my ack.
+
+Patch 5 and 6 implements earlier suggested cleanups and enhancements.
 
 -- 
 []'s
