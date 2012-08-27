@@ -1,168 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2H0Fu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 01:50:58 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:36189 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752228Ab2H0Ft4 (ORCPT
+	id S1752328Ab2H0F5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 01:57:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37241 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab2H0F5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 01:49:56 -0400
-From: Arun Murthy <arun.murthy@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <alan@lxorguk.ukuu.org.uk>
-Cc: <arun.murthy@stericsson.com>
-Subject: [PATCHv3 2/4] modem_shm: Register u8500 client for MAF
-Date: Mon, 27 Aug 2012 11:19:27 +0530
-Message-ID: <1346046569-8050-3-git-send-email-arun.murthy@stericsson.com>
-X-Mailer: git-send-email 1.7.4.3
-In-Reply-To: <1346046569-8050-1-git-send-email-arun.murthy@stericsson.com>
-References: <1346046569-8050-1-git-send-email-arun.murthy@stericsson.com>
+	Mon, 27 Aug 2012 01:57:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1345996865-32082-6-git-send-email-Julia.Lawall@lip6.fr>
+References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1345996865-32082-6-git-send-email-Julia.Lawall@lip6.fr>
+Date: Mon, 27 Aug 2012 11:27:33 +0530
+Message-ID: <CADTbHxqm9Nktcn++-+GFqX8n_CwNzgp79XRJGf21-eDgtm8jsg@mail.gmail.com>
+Subject: Re: [PATCH 5/13] arch/arm: use clk_prepare_enable and clk_disable_unprepare
+From: Pankaj Jangra <jangra.pankaj9@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Russell King <linux@arm.linux.org.uk>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with Modem Access Framework(MAF) for u8500 platform. This will provide
-interface to enable and disable modem access and also provide the status.
+Hi,
 
-Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
----
- drivers/modem_shm/Kconfig       |   11 +++++
- drivers/modem_shm/Makefile      |    1 +
- drivers/modem_shm/modem_u8500.c |   96 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 108 insertions(+), 0 deletions(-)
- create mode 100644 drivers/modem_shm/modem_u8500.c
+On Sun, Aug 26, 2012 at 9:30 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Clk_prepare_enable and clk_disable_unprepare combine clk_prepare and
+> clk_enable, and clk_disable and clk_unprepare.  They make the code more
+> concise, and ensure that clk_unprepare is called when clk_enable fails.
+>
+> A simplified version of the semantic patch that introduces calls to these
+> functions is as follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression e;
+> @@
+>
+> - clk_prepare(e);
+> - clk_enable(e);
+> + clk_prepare_enable(e);
+>
+> @@
+> expression e;
+> @@
+>
+> - clk_disable(e);
+> - clk_unprepare(e);
+> + clk_disable_unprepare(e);
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> ---
+>  arch/arm/common/sa1111.c   |    3 +--
+>  arch/arm/common/timer-sp.c |   16 ++++------------
+>  arch/arm/kernel/smp_twd.c  |   13 +++----------
+>  3 files changed, 8 insertions(+), 24 deletions(-)
+>
 
-diff --git a/drivers/modem_shm/Kconfig b/drivers/modem_shm/Kconfig
-index f4b7e54..f59d3dc 100644
---- a/drivers/modem_shm/Kconfig
-+++ b/drivers/modem_shm/Kconfig
-@@ -7,3 +7,14 @@ config MODEM_SHM
- 	 and allows transparent access to modem to the client drivers.
- 
- 	 If unsure, say N.
-+
-+config MODEM_U8500
-+	bool "Modem Access driver for STE U8500 platform"
-+	depends on MODEM_SHM
-+	default n
-+	help
-+	 Add support for Modem Access driver on STE U8500 platform which
-+	 uses Shared Memroy as IPC mechanism between Modem processor and
-+	 Application processor.
-+
-+	 If unsure, say N.
-diff --git a/drivers/modem_shm/Makefile b/drivers/modem_shm/Makefile
-index b77bcc0..a9aac0f 100644
---- a/drivers/modem_shm/Makefile
-+++ b/drivers/modem_shm/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_MODEM_SHM)		:= modem_access.o
-+obj-$(CONFIG_MODEM_U8500)	+= modem_u8500.o
-diff --git a/drivers/modem_shm/modem_u8500.c b/drivers/modem_shm/modem_u8500.c
-new file mode 100644
-index 0000000..86966fc
---- /dev/null
-+++ b/drivers/modem_shm/modem_u8500.c
-@@ -0,0 +1,96 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2011
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Kumar Sanghvi
-+ *	Arun Murthy <arun.murthy@stericsson.com>
-+ *
-+ * Platform driver implementing access mechanisms to modem
-+ * on U8500 which uses Shared Memroy as IPC between Application
-+ * Processor and Modem processor.
-+ */
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/modem_shm/modem.h>
-+#include <linux/mfd/dbx500-prcmu.h>
-+
-+static int u8500_modem_request(struct modem_dev *mdev)
-+{
-+	return prcmu_ac_wake_req();
-+}
-+
-+static void u8500_modem_release(struct modem_dev *mdev)
-+{
-+	prcmu_ac_sleep_req();
-+}
-+
-+static int u8500_modem_is_requested(struct modem_dev *mdev)
-+{
-+	return prcmu_is_ac_wake_requested();
-+}
-+
-+static struct modem_ops u8500_modem_ops = {
-+	.request = u8500_modem_request,
-+	.release = u8500_modem_release,
-+	.is_requested = u8500_modem_is_requested,
-+};
-+
-+static struct modem_desc u8500_modem_desc = {
-+	.name   = "u8500-shrm-modem",
-+	.id     = 0,
-+	.ops    = &u8500_modem_ops,
-+	.owner  = THIS_MODULE,
-+};
-+
-+
-+static int __devinit u8500_modem_probe(struct platform_device *pdev)
-+{
-+	struct modem_dev *mdev;
-+	int err;
-+
-+	mdev = modem_register(&u8500_modem_desc, &pdev->dev,
-+			NULL);
-+	if (IS_ERR(mdev)) {
-+		err = PTR_ERR(mdev);
-+		pr_err("failed to register %s: err %i\n",
-+				u8500_modem_desc.name, err);
-+	}
-+
-+	return 0;
-+}
-+
-+static int __devexit u8500_modem_remove(struct platform_device *pdev)
-+{
-+
-+	return 0;
-+}
-+
-+static struct platform_driver u8500_modem_driver = {
-+	.driver = {
-+		.name = "u8500-modem",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = u8500_modem_probe,
-+	.remove = __devexit_p(u8500_modem_remove),
-+};
-+
-+static int __init u8500_modem_init(void)
-+{
-+	int ret;
-+
-+	ret = platform_driver_register(&u8500_modem_driver);
-+	if (ret < 0) {
-+		printk(KERN_ERR "u8500_modem: platform driver reg failed\n");
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
-+static void __exit u8500_modem_exit(void)
-+{
-+	platform_driver_unregister(&u8500_modem_driver);
-+}
-+
-+arch_initcall(u8500_modem_init);
--- 
-1.7.4.3
+Reviewed-by: Pankaj Jangra <jangra.pankaj9@gmail.com>
 
+Regards,
+Pankaj Jangra
