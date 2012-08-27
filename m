@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab2H0R0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:26:55 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:36550 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab2H0R0x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:26:53 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 13:26:53 EDT
-Date: Mon, 27 Aug 2012 17:20:12 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Vaibhav Hiremath <hvaibhav@ti.com>
-cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
- device-tree
-In-Reply-To: <1346061842-28714-1-git-send-email-hvaibhav@ti.com>
-Message-ID: <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com>
-References: <1346061842-28714-1-git-send-email-hvaibhav@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753908Ab2H0Rig (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:38:36 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55886 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753650Ab2H0Rie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 13:38:34 -0400
+Message-ID: <1346089113.2471.13.camel@joe2Laptop>
+Subject: [PATCH] MAINTAINERS: Update gianfar_ptp after renaming
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 27 Aug 2012 10:38:33 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+commit ec21e2ec36769 ("freescale: Move the Freescale drivers")
+moved the files, update the pattern.
 
-On Mon, 27 Aug 2012, Vaibhav Hiremath wrote:
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Currently, the device names for the dcan module follows the
-> format "dcan.X", where 'X' is the dcan instance number.
-> On other side, driver may request for clock with/without con_id
-> and dev_id, and it is expected that platform should respect this
-> request and return the requested clock handle.
-> 
-> Now, when using device tree, the format of the device name created
-> by OF layer is different, "<reg-address>.<device-name>",
-> assuming that the device-tree "reg" property is specified.
-> This causes the look-up failure for clock node in dcan driver
-> 
-> To fix this add new dcan clock alias for using device-tree.
-
-Is the dcan driver present in v3.6-rc kernels?  Doesn't look like it but 
-maybe it's under an alias.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fdc0119..2ad2c52 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5507,7 +5507,7 @@ S:	Maintained
+ W:	http://linuxptp.sourceforge.net/
+ F:	Documentation/ABI/testing/sysfs-ptp
+ F:	Documentation/ptp/*
+-F:	drivers/net/gianfar_ptp.c
++F:	drivers/net/ethernet/freescale/gianfar_ptp.c
+ F:	drivers/net/phy/dp83640*
+ F:	drivers/ptp/*
+ F:	include/linux/ptp_cl*
 
 
-- Paul
