@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab2H0XBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 19:01:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39515 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab2H0XBx (ORCPT
+	id S1754915Ab2H0XD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 19:03:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42642 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153Ab2H0XD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 19:01:53 -0400
+	Mon, 27 Aug 2012 19:03:57 -0400
+Message-ID: <503BFCD8.5090804@gmail.com>
+Date: Mon, 27 Aug 2012 18:03:52 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <1345241877-16200-18-git-send-email-cheiny@synaptics.com>
-References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
-	<1345241877-16200-18-git-send-email-cheiny@synaptics.com>
-Date: Mon, 27 Aug 2012 16:01:52 -0700
-Message-ID: <CACRpkdYNUNmbMinzAth4ZBUojgTuKCvf1msuvDy3EK_3aQ9vRg@mail.gmail.com>
-Subject: Re: [RFC PATCH 17/17] input: RMI4 F54 analog data reporting
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>,
-        William Manson <wmanson@synaptics.com>,
-        Peichen Chang <peichen.chang@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        linaro-dev@lists.linaro.org, Ian.Campbell@citrix.com, arnd@arndb.de,
+        konrad.wilk@oracle.com, catalin.marinas@arm.com,
+        devicetree-discuss@lists.ozlabs.org, tim@xen.org,
+        David Vrabel <david.vrabel@citrix.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 06/25] docs: Xen ARM DT bindings
+References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com> <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1345131377-14713-6-git-send-email-stefano.stabellini@eu.citrix.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 17, 2012 at 3:17 PM, Christopher Heiny <cheiny@synaptics.com> wrote:
+On 08/16/2012 10:35 AM, Stefano Stabellini wrote:
+> Add a doc to describe the Xen ARM device tree bindings
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: devicetree-discuss@lists.ozlabs.org
+> CC: David Vrabel <david.vrabel@citrix.com>
+> ---
+>  Documentation/devicetree/bindings/arm/xen.txt |   22 ++++++++++++++++++++++
+>  1 files changed, 22 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/xen.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/xen.txt b/Documentation/devicetree/bindings/arm/xen.txt
+> new file mode 100644
+> index 0000000..ec6d884
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/xen.txt
+> @@ -0,0 +1,22 @@
+> +* Xen hypervisor device tree bindings
+> +
+> +Xen ARM virtual platforms shall have the following properties:
+> +
+> +- compatible:
+> +	compatible = "xen,xen", "xen,xen-<version>";
+> +  where <version> is the version of the Xen ABI of the platform.
+> +
+> +- reg: specifies the base physical address and size of a region in
+> +  memory where the grant table should be mapped to, using an
+> +  HYPERVISOR_memory_op hypercall. 
+> +
+> +- interrupts: the interrupt used by Xen to inject event notifications.
 
-Verbose commit message.
+You should look at ePAPR 1.1 which defines hypervisor related bindings.
+While it is a PPC doc, we should reuse or extend what makes sense.
 
-> Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+See section 7.5:
 
-> +#include <linux/hrtimer.h>
-> +#include <linux/kernel.h>
-> +#include <linux/rmi.h>
-> +#include <linux/slab.h>
-> +#include <linux/version.h>
-> +#include <linux/delay.h>
+https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
 
-This is not using the existing in-kernel framework for ADC (which I think is
-what you're doing), in this case use the IIO subsystem so consult
-drivers/iio/adc and be inspired.
+Rob
 
-Just exposing a set of weird sysfs files to userspace is not proper.
+> +
+> +
+> +Example:
+> +
+> +hypervisor {
+> +	compatible = "xen,xen", "xen,xen-4.3";
+> +	reg = <0xb0000000 0x20000>;
+> +	interrupts = <1 15 0xf08>;
+> +};
+> 
 
-Yours,
-Linus Walleij
