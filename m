@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab2H0RRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:17:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34549 "EHLO
+	id S1753959Ab2H0RSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:18:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34567 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab2H0RRh (ORCPT
+	with ESMTP id S1753620Ab2H0RSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:17:37 -0400
-Date: Mon, 27 Aug 2012 10:17:24 -0700
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-9d58a9dfd5f0db55b625254204ea23f2fc2a35a0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1345916488-8355-13-git-send-email-fenghua.yu@intel.com>
-References: <1345916488-8355-13-git-send-email-fenghua.yu@intel.com>
+	Mon, 27 Aug 2012 13:18:34 -0400
+Date: Mon, 27 Aug 2012 10:18:21 -0700
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Message-ID: <tip-e3e45c01ae690e65f2650e5288b9af802e95a136@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        borislav.petkov@amd.com
+In-Reply-To: <20120824133434.GA8014@quad>
+References: <20120824133434.GA8014@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/bsp-hotplug] x86, topology: Debug CPU0 hotplug
-Git-Commit-ID: 9d58a9dfd5f0db55b625254204ea23f2fc2a35a0
+Subject: [tip:perf/urgent] perf/x86:
+  Fix microcode revision check for SNB-PEBS
+Git-Commit-ID: e3e45c01ae690e65f2650e5288b9af802e95a136
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,200 +29,59 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:17:30 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:18:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9d58a9dfd5f0db55b625254204ea23f2fc2a35a0
-Gitweb:     http://git.kernel.org/tip/9d58a9dfd5f0db55b625254204ea23f2fc2a35a0
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Sat, 25 Aug 2012 10:41:28 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 25 Aug 2012 19:26:42 -0700
+Commit-ID:  e3e45c01ae690e65f2650e5288b9af802e95a136
+Gitweb:     http://git.kernel.org/tip/e3e45c01ae690e65f2650e5288b9af802e95a136
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Fri, 24 Aug 2012 15:34:34 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 27 Aug 2012 08:48:19 +0200
 
-x86, topology: Debug CPU0 hotplug
+perf/x86: Fix microcode revision check for SNB-PEBS
 
-CONFIG_DEBUG_HOTPLUG_CPU0 is for debugging the CPU0 hotplug feature. The switch
-offlines CPU0 as soon as possible and boots userspace up with CPU0 offlined.
-User can online CPU0 back after boot time. The default value of the switch is
-off.
+The following patch makes the microcode update code path
+actually invoke the perf_check_microcode() function and
+thus potentially renabling SNB PEBS.
 
-To debug CPU0 hotplug, you need to enable CPU0 offline/online feature by either
-turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during compilation or giving
-cpu0_hotplug kernel parameter at boot.
+By default, CONFIG_MICROCODE_OLD_INTERFACE is
+forced to Y in arch/x86/Kconfig. There is no
+way to disable this. That means that the code
+path used in arch/x86/kernel/microcode_core.c
+did not include the call to perf_check_microcode().
 
-It's safe and early place to take down CPU0 after all hotplug notifiers
-are installed and SMP is booted.
+Thus, even though the microcode was updated to a
+version that fixes the SNB PEBS problem, perf_event
+would still return EOPNOTSUPP when enabling precise
+sampling.
 
-Please note that some applications or drivers, e.g. some versions of udevd,
-during boot time may put CPU0 online again in this CPU0 hotplug debug mode.
+This patch simply adds a call to perf_check_microcode()
+in the call path used when OLD_INTERFACE=y.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1345916488-8355-13-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: peterz@infradead.org
+Cc: andi@firstfloor.org
+Link: http://lkml.kernel.org/r/20120824133434.GA8014@quad
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/Kconfig           |   15 +++++++++++++
- arch/x86/include/asm/cpu.h |    3 ++
- arch/x86/kernel/topology.c |   51 ++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/power/cpu.c       |   38 ++++++++++++++++++++++++++++++++
- 4 files changed, 107 insertions(+), 0 deletions(-)
+ arch/x86/kernel/microcode_core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 4538411..490b70e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1707,6 +1707,21 @@ config BOOTPARAM_HOTPLUG_CPU0
- 	  You still can enable the CPU0 hotplug feature at boot by kernel
- 	  parameter cpu0_hotplug.
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index 4873e62..9e5bcf1 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -225,6 +225,9 @@ static ssize_t microcode_write(struct file *file, const char __user *buf,
+ 	if (do_microcode_update(buf, len) == 0)
+ 		ret = (ssize_t)len;
  
-+config DEBUG_HOTPLUG_CPU0
-+	def_bool n
-+	prompt "Debug CPU0 hotplug"
-+	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	---help---
-+	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
-+	  soon as possible and boots up userspace with CPU0 offlined. User
-+	  can online CPU0 back after boot time.
++	if (ret > 0)
++		perf_check_microcode();
 +
-+	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
-+	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
-+	  compilation or giving cpu0_hotplug kernel parameter at boot.
-+
-+	  If unuser, say N.
-+
- config COMPAT_VDSO
- 	def_bool y
- 	prompt "Compat VDSO support"
-diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index a119572..5f9a124 100644
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -29,6 +29,9 @@ struct x86_cpu {
- extern int arch_register_cpu(int num);
- extern void arch_unregister_cpu(int);
- extern void __cpuinit start_cpu0(void);
-+#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
-+extern int _debug_hotplug_cpu(int cpu, int action);
-+#endif
- #endif
+ 	mutex_unlock(&microcode_mutex);
+ 	put_online_cpus();
  
- DECLARE_PER_CPU(int, cpu_state);
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index fa87fd6..63d8374 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -50,6 +50,57 @@ static int __init enable_cpu0_hotplug(char *str)
- __setup("cpu0_hotplug", enable_cpu0_hotplug);
- #endif
- 
-+#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
-+/*
-+ * This function offlines a CPU as early as possible and allows userspace to
-+ * boot up without the CPU. The CPU can be onlined back by user after boot.
-+ *
-+ * This is only called for debugging CPU offline/online feature.
-+ */
-+int __ref _debug_hotplug_cpu(int cpu, int action)
-+{
-+	struct device *dev = get_cpu_device(cpu);
-+	int ret;
-+
-+	if (!cpu_is_hotpluggable(cpu))
-+		return -EINVAL;
-+
-+	cpu_hotplug_driver_lock();
-+
-+	switch (action) {
-+	case 0:
-+		ret = cpu_down(cpu);
-+		if (!ret) {
-+			pr_info("CPU %u is now offline\n", cpu);
-+			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-+		} else
-+			pr_debug("Can't offline CPU%d.\n", cpu);
-+		break;
-+	case 1:
-+		ret = cpu_up(cpu);
-+		if (!ret)
-+			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
-+		else
-+			pr_debug("Can't online CPU%d.\n", cpu);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+	}
-+
-+	cpu_hotplug_driver_unlock();
-+
-+	return ret;
-+}
-+
-+static int __init debug_hotplug_cpu(void)
-+{
-+	_debug_hotplug_cpu(0, 0);
-+	return 0;
-+}
-+
-+late_initcall_sync(debug_hotplug_cpu);
-+#endif /* CONFIG_DEBUG_HOTPLUG_CPU0 */
-+
- int __ref arch_register_cpu(int num)
- {
- 	/*
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index 3338609..abc748a 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -21,6 +21,7 @@
- #include <asm/suspend.h>
- #include <asm/debugreg.h>
- #include <asm/fpu-internal.h> /* pcntxt_mask */
-+#include <asm/cpu.h>
- 
- #ifdef CONFIG_X86_32
- static struct saved_context saved_context;
-@@ -263,6 +264,43 @@ static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
- 	case PM_HIBERNATION_PREPARE:
- 		ret = bsp_check();
- 		break;
-+#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
-+	case PM_RESTORE_PREPARE:
-+		/*
-+		 * When system resumes from hibernation, online CPU0 because
-+		 * 1. it's required for resume and
-+		 * 2. the CPU was online before hibernation
-+		 */
-+		if (!cpu_online(0))
-+			_debug_hotplug_cpu(0, 1);
-+		break;
-+	case PM_POST_RESTORE:
-+		/*
-+		 * When a resume really happens, this code won't be called.
-+		 *
-+		 * This code is called only when user space hibernation software
-+		 * prepares for snapshot device during boot time. So we just
-+		 * call _debug_hotplug_cpu() to restore to CPU0's state prior to
-+		 * preparing the snapshot device.
-+		 *
-+		 * This works for normal boot case in our CPU0 hotplug debug
-+		 * mode, i.e. CPU0 is offline and user mode hibernation
-+		 * software initializes during boot time.
-+		 *
-+		 * If CPU0 is online and user application accesses snapshot
-+		 * device after boot time, this will offline CPU0 and user may
-+		 * see different CPU0 state before and after accessing
-+		 * the snapshot device. But hopefully this is not a case when
-+		 * user debugging CPU0 hotplug. Even if users hit this case,
-+		 * they can easily online CPU0 back.
-+		 *
-+		 * To simplify this debug code, we only consider normal boot
-+		 * case. Otherwise we need to remember CPU0's state and restore
-+		 * to that state and resolve racy conditions etc.
-+		 */
-+		_debug_hotplug_cpu(0, 0);
-+		break;
-+#endif
- 	default:
- 		break;
- 	}
