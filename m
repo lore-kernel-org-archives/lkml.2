@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab2H0XIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 19:08:00 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44809 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153Ab2H0XH7 (ORCPT
+	id S1754972Ab2H0XJt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 19:09:49 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55352 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab2H0XJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 19:07:59 -0400
+	Mon, 27 Aug 2012 19:09:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120820080632.GD8450@gmail.com>
+In-Reply-To: <20120820115914.GP8450@gmail.com>
 References: <1344527268-5964-1-git-send-email-lee.jones@linaro.org>
-	<1344527268-5964-14-git-send-email-lee.jones@linaro.org>
-	<CACRpkdaem6t3mvy-_9e=GEgwWoeBQSoX3Hf1L=hjWsvLJdsVAQ@mail.gmail.com>
-	<20120820080632.GD8450@gmail.com>
-Date: Mon, 27 Aug 2012 16:07:58 -0700
-Message-ID: <CACRpkdZRJ1yX-o8-NUuMzXMz5ebbp=H21Xa6JMy1y56Chq-T9g@mail.gmail.com>
-Subject: Re: [PATCH 13/22] ARM: ux500: Fork MSP platform registration for
- step-by-step DT enablement
+	<1344527268-5964-5-git-send-email-lee.jones@linaro.org>
+	<CACRpkda_xOyu9BFGRK4xTsXOO9RCJu7BbU-kPGpttVkR6mDMZg@mail.gmail.com>
+	<20120820115914.GP8450@gmail.com>
+Date: Mon, 27 Aug 2012 16:09:46 -0700
+Message-ID: <CACRpkdZse9Nq1acoAujV8ojhRKxykNX0ymcr51QAoanUbDW14g@mail.gmail.com>
+Subject: Re: [PATCH 04/22] ASoC: Ux500: Move MSP pinctrl setup into the MSP driver
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, broonie@opensource.wolfsonmicro.com
+        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
+        arnd@arndb.de, broonie@opensource.wolfsonmicro.com,
+        STEricsson_nomadik_linux@list.st.com,
+        Patrice CHOTARD <patrice.chotard@stericsson.com>,
+        Ola LILJA2 <ola.o.lilja@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 20, 2012 at 1:06 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Tue, Aug 14, 2012 at 01:13:49PM +0200, Linus Walleij wrote:
->> On Thu, Aug 9, 2012 at 5:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
->>
->> > We've done this before and it worked well last time. Here we're
->> > duplicating a complex registration function to ease the process
->> > of enabling it for Device Tree. As there are quite a few steps
->> > taken during the registration process, it makes sense to break
->> > them up into more manageable chunks. This patch will aid us.
->> >
->> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>
->> I understand you have used this approach before so:
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Does this comment take back your previous one:
->
-> NOTE: it seems this patch set contains some churn. First you
-> add in the forked device init, put in a big chunk of code and
-> then in the *same* patch set delete it again. It's not like
-> we're dying to see all the development history... can this
-> be squashed down a bit?
->
-> ... hence leave the patch-set as it is?
+On Mon, Aug 20, 2012 at 4:59 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, Aug 14, 2012 at 10:51:02AM +0200, Linus Walleij wrote:
 
-No. I just meant leave it like that for the devices outside of this
-set.
+>> But wait. These are just local statics. Surelty you can put these into
+>> struct ux500_msp instead? Here it looks like these will be used for
+>> all ports, so MSP2 will enable the pins requested by MSP1 etc
+>> completely broken. So put it into the struct ux500_msp state
+>> container from ux500_msp_i2s.h where it belongs.
+>>
+>> Refer to drivers/tty/serial/amba-pl011.c when in trouble. This
+>> one is a good pinctrl example.
+>
+> How do you see the MSP1 and MSP3 usage protection working if I hide it
+> all away in MSP specific structs?
 
-If you're adding and then removing *all* of them in this set,
-why add them in the first place?
+Usage protection? Sorry not following. Please elaborate...
 
 Yours,
 Linus Walleij
