@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab2H0JDy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 05:03:54 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:42445 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382Ab2H0JDw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 05:03:52 -0400
-Date: Mon, 27 Aug 2012 11:03:55 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Stefan Weinhuber <wein@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux390@de.ibm.com, "open list:S390" <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH 5/5] s390:block:fix up ENOIOCTLCMD error handling
-Message-ID: <20120827090354.GA5840@osiris.de.ibm.com>
-References: <1346052196-32682-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <1346052196-32682-6-git-send-email-gaowanlong@cn.fujitsu.com>
+	id S1753519Ab2H0JMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 05:12:50 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:59172 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752968Ab2H0JMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 05:12:49 -0400
+Date: Mon, 27 Aug 2012 11:12:35 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org, ananth@in.ibm.com,
+        Chris McDermott <lcm@us.ibm.com>, masbock@linux.vnet.ibm.com
+Subject: Re: [PATCH] x86: mce: Honour bios-set CMCI threshold
+Message-ID: <20120827091235.GB26602@aftab.osrc.amd.com>
+References: <20120822123054.29238.3864.stgit@localhost.localdomain>
+ <20120822124649.GD5817@aftab.osrc.amd.com>
+ <50361A59.2020308@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1346052196-32682-6-git-send-email-gaowanlong@cn.fujitsu.com>
+In-Reply-To: <50361A59.2020308@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12082709-5024-0000-0000-0000039DA356
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 03:23:16PM +0800, Wanlong Gao wrote:
-> At commit 07d106d0, Linus pointed out that ENOIOCTLCMD should be
-> translated as ENOTTY to user mode.
+On Thu, Aug 23, 2012 at 05:26:09PM +0530, Naveen N. Rao wrote:
+> Sure - sounds like a good idea. Further, a #define could eliminate
+> the need to change other references, but I'm not sure that's
+> GENERALLacceptable
+>
+> #define mce_bios_cmci_threshold boot_flags.mce_bios_cmci_threshold
+>
+> could eliminate the need to change other references, but I'm not sure
+> that's acceptable
+
+Yeah, that's kinda obfuscating it for no reason. As I said before, we
+can always add it later if it makes sense.
+
+> But, I just had a quick look and it seems to me that these were
+> defined as integers since they are exposed via sysfs. For instance:
 > 
-[...]
-
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  drivers/s390/block/dasd_ioctl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> static struct dev_ext_attribute dev_attr_cmci_disabled = {
+>         __ATTR(cmci_disabled, 0644, device_show_int, set_cmci_disabled),
+>         &mce_cmci_disabled
+> };
 > 
-> diff --git a/drivers/s390/block/dasd_ioctl.c b/drivers/s390/block/dasd_ioctl.c
-> index cceae70..809a89b 100644
-> --- a/drivers/s390/block/dasd_ioctl.c
-> +++ b/drivers/s390/block/dasd_ioctl.c
-> @@ -501,7 +501,7 @@ int dasd_ioctl(struct block_device *bdev, fmode_t mode,
->  		if (base->discipline->ioctl) {
->  			rc = base->discipline->ioctl(block, cmd, argp);
->  			if (rc == -ENOIOCTLCMD)
-> -				rc = -EINVAL;
-> +				rc = -ENOTTY;
->  		} else
->  			rc = -EINVAL;
->  	}
+> Converting mce_cmci_disabled to a bit-field doesn't work since we
+> take its address above. We could ignore and not set the second field
+> at all (dev_ext_attribute->var) and define our own callbacks, but
+> that'll be more work and I'm not sure if we work fine without
 
-Thanks, but you missed the else path. I'm going to commit the patch below
-unless Stefan has any objections:
+Right,
 
->From dac16bd8b314dc6f3f4e6815feab199fdfc8cddd Mon Sep 17 00:00:00 2001
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Mon, 27 Aug 2012 10:59:42 +0200
-Subject: [PATCH] s390/dasd: fix ioctl return value
+but take a look at set_cmci_disabled(): it converts the newly read value
+to bool anyway:
 
-For unimplemented ioctls the dasd driver should return -ENOTTY.
+        if (mce_cmci_disabled ^ !!new) {
 
-Reported-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+so we can do later
+
+	flags.mce_cmci_disabled = true;
+
+or
+	flags.mce_cmci_disabled = false;
+
+instead of assigning 0 or 1 to it.
+
+And, about showing it with device_show_int, a simple test works:
+
 ---
- drivers/s390/block/dasd_eckd.c  | 2 +-
- drivers/s390/block/dasd_ioctl.c | 7 ++-----
- 2 files changed, 3 insertions(+), 6 deletions(-)
+#include <stdio.h>
+#include <stdbool.h>
 
-diff --git a/drivers/s390/block/dasd_eckd.c b/drivers/s390/block/dasd_eckd.c
-index 40a826a..2fb2b9e 100644
---- a/drivers/s390/block/dasd_eckd.c
-+++ b/drivers/s390/block/dasd_eckd.c
-@@ -3804,7 +3804,7 @@ dasd_eckd_ioctl(struct dasd_block *block, unsigned int cmd, void __user *argp)
- 	case BIODASDSYMMIO:
- 		return dasd_symm_io(device, argp);
- 	default:
--		return -ENOIOCTLCMD;
-+		return -ENOTTY;
- 	}
- }
- 
-diff --git a/drivers/s390/block/dasd_ioctl.c b/drivers/s390/block/dasd_ioctl.c
-index cceae70..654c692 100644
---- a/drivers/s390/block/dasd_ioctl.c
-+++ b/drivers/s390/block/dasd_ioctl.c
-@@ -498,12 +498,9 @@ int dasd_ioctl(struct block_device *bdev, fmode_t mode,
- 		break;
- 	default:
- 		/* if the discipline has an ioctl method try it. */
--		if (base->discipline->ioctl) {
-+		rc = -ENOTTY;
-+		if (base->discipline->ioctl)
- 			rc = base->discipline->ioctl(block, cmd, argp);
--			if (rc == -ENOIOCTLCMD)
--				rc = -EINVAL;
--		} else
--			rc = -EINVAL;
- 	}
- 	dasd_put_device(base);
- 	return rc;
+int main()
+{
+        bool a = true;
+        printf("%d\n", a);
+        return 0;
+}
+--
+
+but even if there are troubles with that, we can change device_show_int
+to a locally defined function.
+
+But, anyway, long story short: I wasn't suggesting you go and change all
+of them - simply start by adding your flag mce_bios_cmci_threshold to a
+struct <something>_flags and I'll take care of the rest.
+
+Unless you really want to do it, of course :-)
+
+Oh, and the more important thing is, Tony would need to review your
+Intel-specific changes so pls keep him CCed on your next iteration too.
+
+Thanks.
+
 -- 
-1.7.11.5
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
