@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484Ab2H0B4O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 21:56:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23116 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab2H0B4N convert rfc822-to-8bit (ORCPT
+	id S1751393Ab2H0CC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 22:02:28 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:49707 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2H0CC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 21:56:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,316,1344236400"; 
-   d="scan'208";a="191621586"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-CC: "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "Gross, Mark" <mark.gross@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Subject: [PATCH RESEND] x86_dump_trace: avoiding endless " <IRQ> " is printed
-Thread-Topic: [PATCH RESEND] x86_dump_trace: avoiding endless " <IRQ> " is
- printed
-Thread-Index: Ac2D9xtDBkCP/QDsRbSYlkNzzpgV2A==
-Date: Mon, 27 Aug 2012 01:56:09 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A16FBD5@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 26 Aug 2012 22:02:26 -0400
+Message-ID: <503AD533.1040307@gmail.com>
+Date: Mon, 27 Aug 2012 10:02:27 +0800
+From: qiuxishi <qiuxishi@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
+To: akpm@linux-foundation.org, liuj97@gmail.com,
+        Wen Congyang <wency@cn.fujitsu.com>
+CC: paul.gortmaker@windriver.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, bessel.wang@huawei.com,
+        wujianguo@huawei.com, qiuxishi@huawei.com, jiang.liu@huawei.com,
+        guohanjun@huawei.com, yinghai@kernel.org
+Subject: [PATCH V2] memory-hotplug: add build zonelists when offline pages
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
+From: Xishi Qiu <qiuxishi@huawei.com>
 
-Found the case that endless " <IRQ> " printing in dump_trace,
-and no real meaningful stack traces are output, so there should
-be one rare case that possibly context->previous_esp = context or
-other cases.
+online_pages() does build_all_zonelists() and zone_pcp_update(),
+I think offline_pages() should do it too.
+When the zone has no  memory to allocate, remove it form other
+nodes' zonelists. zone_batchsize() depends on zone's present pages,
+if zone's present pages are changed, zone's pcp should be updated.
 
-The endless " <IRQ> " is as below:
-...
-[   82.215244,0]  <IRQ>
-[   82.215399,0]  <IRQ>
-[   82.215554,0]  <IRQ>
-[   82.215710,0]  <IRQ>
-[   82.215865,0]  <IRQ>
-[   82.216022,0]  <IRQ>
-[   82.216178,0]  <IRQ>
-[   82.216333,0]  <IRQ>
-[   82.216488,0]  <IRQ>
-[   82.216643,0]  <IRQ>
-[   82.216798,0]  <IRQ>
-[   82.216953,0]  <IRQ>
-...
 
-This patch aim is:
-1/ Limiting the " <IRQ> " outputing, currently the max IRQ contexts
-is 2(softirq+harirq combination);
-2/ When the max IRQ contexts 2 is reached, print the context content
-to confirm;
-
-Change-Id: I6d72aa71c4c5ff8f9e6ae133b3f6bfec8887750d
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
 ---
- arch/x86/kernel/dumpstack_32.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ mm/memory_hotplug.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 1038a41..410fa38 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -22,6 +22,7 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
-                const struct stacktrace_ops *ops, void *data)
- {
-        int graph = 0;
-+       int dump_irq_count = 0;
- 
-        if (!task)
-                task = current;
-@@ -47,8 +48,18 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
-                stack = (unsigned long *)context->previous_esp;
-                if (!stack)
-                        break;
-+
-+               if (dump_irq_count > 2) {
-+                       pr_warn("break multi-IRQ print,"
-+                               "context=%p, stack=%p\n",
-+                               context,
-+                               stack);
-+                       break;
-+               }
-+
-                if (ops->stack(data, "IRQ") < 0)
-                        break;
-+               dump_irq_count++;
-                touch_nmi_watchdog();
-        }
- }
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index bc7e7a2..5f6997f 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -973,8 +973,13 @@ repeat:
+
+ 	init_per_zone_wmark_min();
+
+-	if (!populated_zone(zone))
++	if (!populated_zone(zone)) {
+ 		zone_pcp_reset(zone);
++		mutex_lock(&zonelists_mutex);
++		build_all_zonelists(NULL, NULL);
++		mutex_unlock(&zonelists_mutex);
++	} else
++		zone_pcp_update(zone);
+
+ 	if (!node_present_pages(node)) {
+ 		node_clear_state(node, N_HIGH_MEMORY);
 -- 
-1.7.0.4
+1.7.6.1
