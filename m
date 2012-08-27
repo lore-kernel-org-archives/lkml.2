@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab2H0RH3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:07:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34361 "EHLO
+	id S1753914Ab2H0RIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:08:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34378 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab2H0RH1 (ORCPT
+	with ESMTP id S1753650Ab2H0RIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:07:27 -0400
-Date: Mon, 27 Aug 2012 10:07:14 -0700
+	Mon, 27 Aug 2012 13:08:21 -0400
+Date: Mon, 27 Aug 2012 10:08:10 -0700
 From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-a9e2fccc305433155febfe7b3d89efcb47ef0b19@git.kernel.org>
+Message-ID: <tip-3855102432075d78abd3bb404186bb47c470779b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1345916488-8355-2-git-send-email-fenghua.yu@intel.com>
-References: <1345916488-8355-2-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1345916488-8355-3-git-send-email-fenghua.yu@intel.com>
+References: <1345916488-8355-3-git-send-email-fenghua.yu@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/bsp-hotplug] doc: Add x86 CPU0 online/offline feature
-Git-Commit-ID: a9e2fccc305433155febfe7b3d89efcb47ef0b19
+Subject: [tip:x86/bsp-hotplug] x86, Kconfig:
+  Add config switch for CPU0 hotplug
+Git-Commit-ID: 3855102432075d78abd3bb404186bb47c470779b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,99 +28,74 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:07:20 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:08:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a9e2fccc305433155febfe7b3d89efcb47ef0b19
-Gitweb:     http://git.kernel.org/tip/a9e2fccc305433155febfe7b3d89efcb47ef0b19
+Commit-ID:  3855102432075d78abd3bb404186bb47c470779b
+Gitweb:     http://git.kernel.org/tip/3855102432075d78abd3bb404186bb47c470779b
 Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Sat, 25 Aug 2012 10:41:17 -0700
+AuthorDate: Sat, 25 Aug 2012 10:41:18 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 25 Aug 2012 19:25:56 -0700
+CommitDate: Sat, 25 Aug 2012 19:25:59 -0700
 
-doc: Add x86 CPU0 online/offline feature
+x86, Kconfig: Add config switch for CPU0 hotplug
 
-If CONFIG_BOOTPARAM_HOTPLUG_CPU0 is turned on, CPU0 is hotpluggable. Otherwise,
-by default CPU0 is not hotpluggable and kernel parameter cpu0_hotplug enables
-CPU0 online/offline feature.
+New config switch CONFIG_BOOTPARAM_HOTPLUG_CPU0 sets default state of whether
+the CPU0 hotplug is on or off.
 
-The documentations point out two known CPU0 dependencies. First, resume from
-hibernate or suspend always starts from CPU0. So hibernate and suspend are
-prevented if CPU0 is offline. Another dependency is PIC interrupts always go
-to CPU0.
+If the switch is off, CPU0 is not hotpluggable by default. But the CPU0 hotplug
+feature can still be turned on by kernel parameter cpu0_hotplug at boot.
 
-It's said that some machines may depend on CPU0 to poweroff/reboot. But I
-haven't seen such dependency on a few tested machines.
+If the switch is on, CPU0 is always hotpluggable.
 
-Please let me know if you see any CPU0 dependencies on your machine.
+The default value of the switch is off.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1345916488-8355-2-git-send-email-fenghua.yu@intel.com
+Link: http://lkml.kernel.org/r/1345916488-8355-3-git-send-email-fenghua.yu@intel.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- Documentation/cpu-hotplug.txt       |   24 ++++++++++++++++++++++++
- Documentation/kernel-parameters.txt |   14 ++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
-index 66ef8f3..9f40135 100644
---- a/Documentation/cpu-hotplug.txt
-+++ b/Documentation/cpu-hotplug.txt
-@@ -207,6 +207,30 @@ by making it not-removable.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 8ec3a1a..4538411 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1678,6 +1678,35 @@ config HOTPLUG_CPU
+ 	    automatically on SMP systems. )
+ 	  Say N if you want to disable CPU hotplug.
  
- In such cases you will also notice that the online file is missing under cpu0.
- 
-+Q: Is CPU0 removable on X86?
-+A: Yes. If kernel is compiled with CONFIG_BOOTPARAM_HOTPLUG_CPU0=y, CPU0 is
-+removable by default. Otherwise, CPU0 is also removable by kernel option
-+cpu0_hotplug.
++config BOOTPARAM_HOTPLUG_CPU0
++	bool "Set default setting of cpu0_hotpluggable"
++	default n
++	depends on HOTPLUG_CPU && EXPERIMENTAL
++	---help---
++	  Set whether default state of cpu0_hotpluggable is on or off.
 +
-+But some features depend on CPU0. Two known dependencies are:
++	  Say Y here to enable CPU0 hotplug by default. If this switch
++	  is turned on, there is no need to give cpu0_hotplug kernel
++	  parameter and the CPU0 hotplug feature is enabled by default.
 +
-+1. Resume from hibernate/suspend depends on CPU0. Hibernate/suspend will fail if
-+CPU0 is offline and you need to online CPU0 before hibernate/suspend can
-+continue.
-+2. PIC interrupts also depend on CPU0. CPU0 can't be removed if a PIC interrupt
-+is detected.
++	  Please note: there are two known CPU0 dependencies if you want
++	  to enable the CPU0 hotplug feature either by this switch or by
++	  cpu0_hotplug kernel parameter.
 +
-+It's said poweroff/reboot may depend on CPU0 on some machines although I haven't
-+seen any poweroff/reboot failure so far after CPU0 is offline on a few tested
-+machines.
++	  First, resume from hibernate or suspend always starts from CPU0.
++	  So hibernate and suspend are prevented if CPU0 is offline.
 +
-+Please let me know if you know or see any other dependencies of CPU0.
++	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
++	  offline if any interrupt can not migrate out of CPU0. There may
++	  be other CPU0 dependencies.
 +
-+If the dependencies are under your control, you can turn on CPU0 hotplug feature
-+either by CONFIG_BOOTPARAM_HOTPLUG_CPU0 or by kernel parameter cpu0_hotplug.
++	  Please make sure the dependencies are under your control before
++	  you enable this feature.
 +
-+--Fenghua Yu <fenghua.yu@intel.com>
++	  Say N if you don't want to enable CPU0 hotplug feature by default.
++	  You still can enable the CPU0 hotplug feature at boot by kernel
++	  parameter cpu0_hotplug.
 +
- Q: How do i find out if a particular CPU is not removable?
- A: Depending on the implementation, some architectures may show this by the
- absence of the "online" file. This is done if it can be determined ahead of
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index ad7e2e5..54f76b2 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1952,6 +1952,20 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
- 
-+	cpu0_hotplug	[X86] Turn on CPU0 hotplug feature when
-+			CONFIG_BOOTPARAM_HOTPLUG_CPU0 is off.
-+			Some features depend on CPU0. Known dependencies are:
-+			1. Resume from suspend/hibernate depends on CPU0.
-+			Suspend/hibernate will fail if CPU0 is offline and you
-+			need to online CPU0 before suspend/hibernate.
-+			2. PIC interrupts also depend on CPU0. CPU0 can't be
-+			removed if a PIC interrupt is detected.
-+			It's said poweroff/reboot may depend on CPU0 on some
-+			machines although I haven't seen such issues so far
-+			after CPU0 is offline on a few tested machines.
-+			If the dependencies are under your control, you can
-+			turn on cpu0_hotplug.
-+
- 	nptcg=		[IA-64] Override max number of concurrent global TLB
- 			purges which is reported from either PAL_VM_SUMMARY or
- 			SAL PALO.
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
