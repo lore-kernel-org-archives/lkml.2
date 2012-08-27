@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab2H0Q4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:56:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34109 "EHLO
+	id S1753578Ab2H0Q5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:57:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34122 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab2H0Q41 (ORCPT
+	with ESMTP id S1753425Ab2H0Q5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:56:27 -0400
-Date: Mon, 27 Aug 2012 09:56:07 -0700
+	Mon, 27 Aug 2012 12:57:19 -0400
+Date: Mon, 27 Aug 2012 09:57:02 -0700
 From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-7c2f7afd36cc111dd08eb8eb8ef74fb6564fd131@git.kernel.org>
+Message-ID: <tip-50a9667c9383982d7ec4e6bbc707f67be0e163d2@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, peterz@infradead.org, jolsa@redhat.com,
         robert.richter@amd.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, robert.richter@amd.com, peterz@infradead.org,
         tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <1345144224-27280-8-git-send-email-robert.richter@amd.com>
-References: <1345144224-27280-8-git-send-email-robert.richter@amd.com>
+In-Reply-To: <1345144224-27280-9-git-send-email-robert.richter@amd.com>
+References: <1345144224-27280-9-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report:
-  Update event names from header description
-Git-Commit-ID: 7c2f7afd36cc111dd08eb8eb8ef74fb6564fd131
+Subject: [tip:perf/core] perf tools: Add pmu mappings to header information
+Git-Commit-ID: 50a9667c9383982d7ec4e6bbc707f67be0e163d2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,109 +29,276 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 09:56:13 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 09:57:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7c2f7afd36cc111dd08eb8eb8ef74fb6564fd131
-Gitweb:     http://git.kernel.org/tip/7c2f7afd36cc111dd08eb8eb8ef74fb6564fd131
+Commit-ID:  50a9667c9383982d7ec4e6bbc707f67be0e163d2
+Gitweb:     http://git.kernel.org/tip/50a9667c9383982d7ec4e6bbc707f67be0e163d2
 Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Thu, 16 Aug 2012 21:10:23 +0200
+AuthorDate: Thu, 16 Aug 2012 21:10:24 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 22 Aug 2012 13:47:17 -0300
+CommitDate: Wed, 22 Aug 2012 15:22:55 -0300
 
-perf report: Update event names from header description
+perf tools: Add pmu mappings to header information
 
-Name events based on the event description in the perf.data header.
+With dynamic pmu allocation there are also dynamically assigned pmu ids.
+These ids are used in event->attr.type to describe the pmu to be used
+for that event. The information is available in sysfs, e.g:
 
-Example output:
+ /sys/bus/event_source/devices/breakpoint/type: 5
+ /sys/bus/event_source/devices/cpu/type: 4
+ /sys/bus/event_source/devices/ibs_fetch/type: 6
+ /sys/bus/event_source/devices/ibs_op/type: 7
+ /sys/bus/event_source/devices/software/type: 1
+ /sys/bus/event_source/devices/tracepoint/type: 2
 
- $ perf report | grep '^#.*event'
- # event : name = ibs_op/cnt_ctl=1/GH, type = 7, config = 0x80000, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 0, precise_ip = 0, id = { 49, 50, 51, 52, 53, 54, 55, 56 }
- # event : name = ibs_fetch/config=0/, type = 6, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0, id = { 57, 58, 59, 60, 61, 62, 63, 64 }
- # Samples: 20K of event 'ibs_op/cnt_ctl=1/GH'
- # Samples: 4K of event 'ibs_fetch/config=0/'
+These mappings are needed to know which samples belong to which pmu.  If
+a pmu is added dynamically like for ibs_fetch or ibs_op the type value
+may vary.
 
-Note the new pmu event syntax of the names.
+Now, when decoding samples from perf.data this information in sysfs
+might be no longer available or may have changed. We need to store it in
+perf.data. Using the header for this. Now the header information created
+with perf report contains an additional section looking like this:
+
+ # pmu mappings: ibs_op = 7, ibs_fetch = 6, cpu = 4, breakpoint = 5, tracepoint = 2, software = 1
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1345144224-27280-8-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1345144224-27280-9-git-send-email-robert.richter@amd.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |   52 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 51 insertions(+), 1 deletions(-)
+ tools/perf/util/header.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h |    1 +
+ tools/perf/util/pmu.c    |   50 ++++++++++++++++++++++++++++-
+ tools/perf/util/pmu.h    |    2 +
+ 4 files changed, 129 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 7454cf4..69374de 100644
+index 69374de..63aad31 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -1556,6 +1556,56 @@ static int process_build_id(struct perf_file_section *section,
- 	return 0;
+@@ -20,6 +20,7 @@
+ #include "symbol.h"
+ #include "debug.h"
+ #include "cpumap.h"
++#include "pmu.h"
+ 
+ static bool no_buildid_cache = false;
+ 
+@@ -1004,6 +1005,45 @@ done:
  }
  
-+static struct perf_evsel *
-+perf_evlist__find_by_index(struct perf_evlist *evlist, int idx)
-+{
-+	struct perf_evsel *evsel;
+ /*
++ * File format:
++ *
++ * struct pmu_mappings {
++ *	u32	pmu_num;
++ *	struct pmu_map {
++ *		u32	type;
++ *		char	name[];
++ *	}[pmu_num];
++ * };
++ */
 +
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (evsel->idx == idx)
-+			return evsel;
++static int write_pmu_mappings(int fd, struct perf_header *h __used,
++			      struct perf_evlist *evlist __used)
++{
++	struct perf_pmu *pmu = NULL;
++	off_t offset = lseek(fd, 0, SEEK_CUR);
++	__u32 pmu_num = 0;
++
++	/* write real pmu_num later */
++	do_write(fd, &pmu_num, sizeof(pmu_num));
++
++	while ((pmu = perf_pmu__scan(pmu))) {
++		if (!pmu->name)
++			continue;
++		pmu_num++;
++		do_write(fd, &pmu->type, sizeof(pmu->type));
++		do_write_string(fd, pmu->name);
 +	}
 +
-+	return NULL;
-+}
-+
-+static void
-+perf_evlist__set_event_name(struct perf_evlist *evlist, struct perf_evsel *event)
-+{
-+	struct perf_evsel *evsel;
-+
-+	if (!event->name)
-+		return;
-+
-+	evsel = perf_evlist__find_by_index(evlist, event->idx);
-+	if (!evsel)
-+		return;
-+
-+	if (evsel->name)
-+		return;
-+
-+	evsel->name = strdup(event->name);
-+}
-+
-+static int
-+process_event_desc(struct perf_file_section *section __unused,
-+		   struct perf_header *header, int feat __unused, int fd,
-+		   void *data __used)
-+{
-+	struct perf_session *session = container_of(header, struct perf_session, header);
-+	struct perf_evsel *evsel, *events = read_event_desc(header, fd);
-+
-+	if (!events)
-+		return 0;
-+
-+	for (evsel = events; evsel->attr.size; evsel++)
-+		perf_evlist__set_event_name(session->evlist, evsel);
-+
-+	free_event_desc(events);
++	if (pwrite(fd, &pmu_num, sizeof(pmu_num), offset) != sizeof(pmu_num)) {
++		/* discard all */
++		lseek(fd, offset, SEEK_SET);
++		return -1;
++	}
 +
 +	return 0;
 +}
 +
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1589,7 +1639,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
- 	FEAT_OPA(HEADER_CPUID,		cpuid),
- 	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
--	FEAT_OPA(HEADER_EVENT_DESC,	event_desc),
-+	FEAT_OPP(HEADER_EVENT_DESC,	event_desc),
- 	FEAT_OPA(HEADER_CMDLINE,	cmdline),
++/*
+  * default get_cpuid(): nothing gets recorded
+  * actual implementation must be in arch/$(ARCH)/util/header.c
+  */
+@@ -1389,6 +1429,43 @@ static void print_branch_stack(struct perf_header *ph __used, int fd __used,
+ 	fprintf(fp, "# contains samples with branch stack\n");
+ }
+ 
++static void print_pmu_mappings(struct perf_header *ph, int fd, FILE *fp)
++{
++	const char *delimiter = "# pmu mappings: ";
++	char *name;
++	int ret;
++	u32 pmu_num;
++	u32 type;
++
++	ret = read(fd, &pmu_num, sizeof(pmu_num));
++	if (ret != sizeof(pmu_num))
++		goto error;
++
++	if (!pmu_num) {
++		fprintf(fp, "# pmu mappings: not available\n");
++		return;
++	}
++
++	while (pmu_num) {
++		if (read(fd, &type, sizeof(type)) != sizeof(type))
++			break;
++		name = do_read_string(fd, ph);
++		if (!name)
++			break;
++		pmu_num--;
++		fprintf(fp, "%s%s = %" PRIu32, delimiter, name, type);
++		free(name);
++		delimiter = ", ";
++	}
++
++	fprintf(fp, "\n");
++
++	if (!pmu_num)
++		return;
++error:
++	fprintf(fp, "# pmu mappings: unable to read\n");
++}
++
+ static int __event_process_build_id(struct build_id_event *bev,
+ 				    char *filename,
+ 				    struct perf_session *session)
+@@ -1644,6 +1721,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
  	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
  	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
++	FEAT_OPA(HEADER_PMU_MAPPINGS,	pmu_mappings),
+ };
+ 
+ struct header_print_data {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 24962e7..9d5eedc 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -28,6 +28,7 @@ enum {
+ 	HEADER_CPU_TOPOLOGY,
+ 	HEADER_NUMA_TOPOLOGY,
+ 	HEADER_BRANCH_STACK,
++	HEADER_PMU_MAPPINGS,
+ 	HEADER_LAST_FEATURE,
+ 	HEADER_FEAT_BITS	= 256,
+ };
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 67715a4..6631d82 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -10,6 +10,8 @@
+ #include "pmu.h"
+ #include "parse-events.h"
+ 
++#define EVENT_SOURCE_DEVICE_PATH "/bus/event_source/devices/"
++
+ int perf_pmu_parse(struct list_head *list, char *name);
+ extern FILE *perf_pmu_in;
+ 
+@@ -69,7 +71,7 @@ static int pmu_format(char *name, struct list_head *format)
+ 		return -1;
+ 
+ 	snprintf(path, PATH_MAX,
+-		 "%s/bus/event_source/devices/%s/format", sysfs, name);
++		 "%s" EVENT_SOURCE_DEVICE_PATH "%s/format", sysfs, name);
+ 
+ 	if (stat(path, &st) < 0)
+ 		return 0;	/* no error if format does not exist */
+@@ -206,7 +208,7 @@ static int pmu_type(char *name, __u32 *type)
+ 		return -1;
+ 
+ 	snprintf(path, PATH_MAX,
+-		 "%s/bus/event_source/devices/%s/type", sysfs, name);
++		 "%s" EVENT_SOURCE_DEVICE_PATH "%s/type", sysfs, name);
+ 
+ 	if (stat(path, &st) < 0)
+ 		return -1;
+@@ -222,6 +224,35 @@ static int pmu_type(char *name, __u32 *type)
+ 	return ret;
+ }
+ 
++/* Add all pmus in sysfs to pmu list: */
++static void pmu_read_sysfs(void)
++{
++	char path[PATH_MAX];
++	const char *sysfs;
++	DIR *dir;
++	struct dirent *dent;
++
++	sysfs = sysfs_find_mountpoint();
++	if (!sysfs)
++		return;
++
++	snprintf(path, PATH_MAX,
++		 "%s" EVENT_SOURCE_DEVICE_PATH, sysfs);
++
++	dir = opendir(path);
++	if (!dir)
++		return;
++
++	while ((dent = readdir(dir))) {
++		if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
++			continue;
++		/* add to static LIST_HEAD(pmus): */
++		perf_pmu__find(dent->d_name);
++	}
++
++	closedir(dir);
++}
++
+ static struct perf_pmu *pmu_lookup(char *name)
+ {
+ 	struct perf_pmu *pmu;
+@@ -267,6 +298,21 @@ static struct perf_pmu *pmu_find(char *name)
+ 	return NULL;
+ }
+ 
++struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu)
++{
++	/*
++	 * pmu iterator: If pmu is NULL, we start at the begin,
++	 * otherwise return the next pmu. Returns NULL on end.
++	 */
++	if (!pmu) {
++		pmu_read_sysfs();
++		pmu = list_prepare_entry(pmu, &pmus, list);
++	}
++	list_for_each_entry_continue(pmu, &pmus, list)
++		return pmu;
++	return NULL;
++}
++
+ struct perf_pmu *perf_pmu__find(char *name)
+ {
+ 	struct perf_pmu *pmu;
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 535f2c5..47f68d3 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -46,5 +46,7 @@ int perf_pmu__new_format(struct list_head *list, char *name,
+ 			 int config, unsigned long *bits);
+ void perf_pmu__set_format(unsigned long *bits, long from, long to);
+ 
++struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
