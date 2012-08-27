@@ -1,62 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab2H0MXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 08:23:09 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2279 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751801Ab2H0MXH (ORCPT
+	id S1752350Ab2H0M0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 08:26:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:51777 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab2H0M0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 08:23:07 -0400
-Subject: Re: Drop support for x86-32
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: wbrana <wbrana@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Aug 2012 14:21:56 +0200
-In-Reply-To: <CAJ7jCmku4JQZPCJoB=Cbv8i_uD2xbm13ZBv8uu_NwxtEQCLMdg@mail.gmail.com>
-References: <CAJ7jCmmbiR7Kzwtc4x++Z+onvSMN5ZyVrORiux6TuZ6=gCBH9Q@mail.gmail.com>
-	 <201208241952.04988.tweek@tweek.dk>
-	 <CAJ7jCmmKBMahT=MdR4D=3zTCZ=-_fxKnydrCo1eW45sFPoAFZw@mail.gmail.com>
-	 <201208242035.38733.tweek@tweek.dk>
-	 <CAJ7jCmmuxiWegxkdAsbtCbv-zXgmt--V2bVdENkupGTwj=3HSg@mail.gmail.com>
-	 <1345894521.28613.43.camel@thorin>
-	 <CAJ7jCmn7oH75EObCuP+oFsP8skArrc1V5c72tmtwEpWn_DWpjw@mail.gmail.com>
-	 <20120825164627.GC16914@pompeji.miese-zwerge.org>
-	 <CAJ7jCm=A8aTqvaQYP+T8+uqpqX26woZrFd3zhiyfqzqu__g9pA@mail.gmail.com>
-	 <CAGDaZ_p5-dUS=wSsVQoyf+kqsnvvVgf6AX+M0KsXFWyV=u6WMw@mail.gmail.com>
-	 <CAJ7jCm=LpArwo4N3GfEFkX9-B5EgrL63gmgFNy1m0kfsqBmU8g@mail.gmail.com>
-	 <CAOJsxLFf02VFhL8DaxQC125Dp1hjta1JSU8GZaxoprT5t=1Tyg@mail.gmail.com>
-	 <CAJ7jCmku4JQZPCJoB=Cbv8i_uD2xbm13ZBv8uu_NwxtEQCLMdg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1346070124.24472.6.camel@thorin>
-Mime-Version: 1.0
-X-DCC--Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Mon, 27 Aug 2012 08:26:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120827123917.3313dfda@thinkpad>
+References: <20120823171733.595087166@de.ibm.com>
+	<20120823171854.580076595@de.ibm.com>
+	<CAJd=RBBJa934R53AHYVhkxE+2e=RiKU1zJXsLMCBFw_NHZE0oQ@mail.gmail.com>
+	<20120827123917.3313dfda@thinkpad>
+Date: Mon, 27 Aug 2012 20:26:36 +0800
+Message-ID: <CAJd=RBA-GyFvQ3_vMVqhBS89QT_xDLEBbysBzhCA7sU7rt00+g@mail.gmail.com>
+Subject: Re: [RFC patch 3/7] thp: make MADV_HUGEPAGE check for mm->def_flags
+From: Hillf Danton <dhillf@gmail.com>
+To: gerald.schaefer@de.ibm.com
+Cc: akpm@linux-foundation.org, aarcange@redhat.com, linux-mm@kvack.org,
+        ak@linux.intel.com, hughd@google.com, linux-kernel@vger.kernel.org,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sam, 2012-08-25 at 19:38 +0200, wbrana wrote:
-[....]
-> You can temporary unsubscribe from LKML and read archives
+On Mon, Aug 27, 2012 at 6:39 PM, Gerald Schaefer
+<gerald.schaefer@de.ibm.com> wrote:
+> Hmm, architecture #ifdefs in common code are ugly. I'd rather keep
+> the check even if it is redundant right now for other architectures
+> than s390. It is not a performance critical path, and there may be
+> other users of that in the future.
 
-[....]
-
-> People care because they replied to my e-mails.
-
-You obviously didn't read these mails, didn't understand it, purposely
-misread or purposely ignored them (and answer with a lot of unrelated
-questions) - for whatever reason.
-And yes, people care that anyone might listen to the unfounded stuff you
-are writing. You delivered only some stories about the future and not
-one argument (let alone a convincing one).
-And you are promising a lot of service in a few years and I do not
-believe that you will keep to it (and I seriously doubt that anyone
-believes that).
-
-Go troll somewhere else. Thank you.
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+Fair if no changes in semantics
