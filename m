@@ -1,238 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab2H0PBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:01:49 -0400
-Received: from tygrysek.juszkiewicz.com.pl ([178.33.81.99]:48378 "EHLO
-	tygrysek.juszkiewicz.com.pl" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751957Ab2H0PBs (ORCPT
+	id S1752882Ab2H0PGM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:06:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44707 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab2H0PGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:01:48 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 11:01:47 EDT
-From: Marcin Juszkiewicz <marcin@juszkiewicz.com.pl>
-To: linux-kernel@vger.kernel.org
-Cc: richard.purdie@linuxfoundation.org,
-        Marcin Juszkiewicz <marcin.juszkiewicz@linaro.org>,
-        Marcin Juszkiewicz <marcin@juszkiewicz.com.pl>
-Subject: [PATCH] Drop ProGear backlight driver
-Date: Mon, 27 Aug 2012 16:54:45 +0200
-Message-Id: <1346079285-13712-1-git-send-email-marcin@juszkiewicz.com.pl>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 27 Aug 2012 11:06:09 -0400
+Message-ID: <503B8CD4.8070802@gmail.com>
+Date: Mon, 27 Aug 2012 23:05:56 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>
+CC: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        PCI <linux-pci@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND BUGFIX PATCH 1/3] PCI/AER: fix pci_ops return NULL when
+ hotplug a pci bus which was doing aer error inject
+References: <1344685946-8172-1-git-send-email-wangyijing@huawei.com>  <5038A210.4030005@huawei.com> <1346030599.6279.315.camel@yhuang-dev>
+In-Reply-To: <1346030599.6279.315.camel@yhuang-dev>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcin Juszkiewicz <marcin.juszkiewicz@linaro.org>
+Is it ok to ignore such a case? After all, aer_inject is just a test tool:)
+It's not worth to change the core logic for such a corner case.
+--Gerry
 
-This driver was for ProGear webpad device which was produced in
-2000/2001 and is not available on a market. I no longer have this
-hardware so can not even check how Linux works on it.
-
-Signed-off-by: Marcin Juszkiewicz <marcin@juszkiewicz.com.pl>
----
- drivers/video/backlight/Kconfig      |    7 --
- drivers/video/backlight/Makefile     |    1 -
- drivers/video/backlight/progear_bl.c |  162 ----------------------------------
- 3 files changed, 170 deletions(-)
- delete mode 100644 drivers/video/backlight/progear_bl.c
-
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index cf28276..6b8fb2a 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -229,13 +229,6 @@ config BACKLIGHT_HP700
- 	  If you have an HP Jornada 700 series,
- 	  say Y to include backlight control driver.
- 
--config BACKLIGHT_PROGEAR
--	tristate "Frontpath ProGear Backlight Driver"
--	depends on PCI && X86
--	help
--	  If you have a Frontpath ProGear say Y to enable the
--	  backlight driver.
--
- config BACKLIGHT_CARILLO_RANCH
- 	tristate "Intel Carillo Ranch Backlight Driver"
- 	depends on LCD_CLASS_DEVICE && PCI && X86 && FB_LE80578
-diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-index a2ac9cf..855ad81 100644
---- a/drivers/video/backlight/Makefile
-+++ b/drivers/video/backlight/Makefile
-@@ -26,7 +26,6 @@ obj-$(CONFIG_BACKLIGHT_LOCOMO)	+= locomolcd.o
- obj-$(CONFIG_BACKLIGHT_LP855X)	+= lp855x_bl.o
- obj-$(CONFIG_BACKLIGHT_OMAP1)	+= omap1_bl.o
- obj-$(CONFIG_BACKLIGHT_PANDORA)	+= pandora_bl.o
--obj-$(CONFIG_BACKLIGHT_PROGEAR) += progear_bl.o
- obj-$(CONFIG_BACKLIGHT_CARILLO_RANCH) += cr_bllcd.o
- obj-$(CONFIG_BACKLIGHT_PWM)	+= pwm_bl.o
- obj-$(CONFIG_BACKLIGHT_DA903X)	+= da903x_bl.o
-diff --git a/drivers/video/backlight/progear_bl.c b/drivers/video/backlight/progear_bl.c
-deleted file mode 100644
-index 69b35f0..0000000
---- a/drivers/video/backlight/progear_bl.c
-+++ /dev/null
-@@ -1,162 +0,0 @@
--/*
-- *  Backlight Driver for Frontpath ProGear HX1050+
-- *
-- *  Copyright (c) 2006 Marcin Juszkiewicz
-- *
-- *  Based on Progear LCD driver by M Schacht
-- *  <mschacht at alumni dot washington dot edu>
-- *
-- *  Based on Sharp's Corgi Backlight Driver
-- *  Based on Backlight Driver for HP Jornada 680
-- *
-- *  This program is free software; you can redistribute it and/or modify
-- *  it under the terms of the GNU General Public License version 2 as
-- *  published by the Free Software Foundation.
-- *
-- */
--
--#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
--
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/mutex.h>
--#include <linux/fb.h>
--#include <linux/backlight.h>
--#include <linux/pci.h>
--
--#define PMU_LPCR               0xB0
--#define SB_MPS1                0x61
--#define HW_LEVEL_MAX           0x77
--#define HW_LEVEL_MIN           0x4f
--
--static struct pci_dev *pmu_dev = NULL;
--static struct pci_dev *sb_dev = NULL;
--
--static int progearbl_set_intensity(struct backlight_device *bd)
--{
--	int intensity = bd->props.brightness;
--
--	if (bd->props.power != FB_BLANK_UNBLANK)
--		intensity = 0;
--	if (bd->props.fb_blank != FB_BLANK_UNBLANK)
--		intensity = 0;
--
--	pci_write_config_byte(pmu_dev, PMU_LPCR, intensity + HW_LEVEL_MIN);
--
--	return 0;
--}
--
--static int progearbl_get_intensity(struct backlight_device *bd)
--{
--	u8 intensity;
--	pci_read_config_byte(pmu_dev, PMU_LPCR, &intensity);
--
--	return intensity - HW_LEVEL_MIN;
--}
--
--static const struct backlight_ops progearbl_ops = {
--	.get_brightness = progearbl_get_intensity,
--	.update_status = progearbl_set_intensity,
--};
--
--static int progearbl_probe(struct platform_device *pdev)
--{
--	struct backlight_properties props;
--	u8 temp;
--	struct backlight_device *progear_backlight_device;
--	int ret;
--
--	pmu_dev = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M7101, NULL);
--	if (!pmu_dev) {
--		pr_err("ALI M7101 PMU not found.\n");
--		return -ENODEV;
--	}
--
--	sb_dev = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M1533, NULL);
--	if (!sb_dev) {
--		pr_err("ALI 1533 SB not found.\n");
--		ret = -ENODEV;
--		goto put_pmu;
--	}
--
--	/*     Set SB_MPS1 to enable brightness control. */
--	pci_read_config_byte(sb_dev, SB_MPS1, &temp);
--	pci_write_config_byte(sb_dev, SB_MPS1, temp | 0x20);
--
--	memset(&props, 0, sizeof(struct backlight_properties));
--	props.type = BACKLIGHT_RAW;
--	props.max_brightness = HW_LEVEL_MAX - HW_LEVEL_MIN;
--	progear_backlight_device = backlight_device_register("progear-bl",
--							     &pdev->dev, NULL,
--							     &progearbl_ops,
--							     &props);
--	if (IS_ERR(progear_backlight_device)) {
--		ret = PTR_ERR(progear_backlight_device);
--		goto put_sb;
--	}
--
--	platform_set_drvdata(pdev, progear_backlight_device);
--
--	progear_backlight_device->props.power = FB_BLANK_UNBLANK;
--	progear_backlight_device->props.brightness = HW_LEVEL_MAX - HW_LEVEL_MIN;
--	progearbl_set_intensity(progear_backlight_device);
--
--	return 0;
--put_sb:
--	pci_dev_put(sb_dev);
--put_pmu:
--	pci_dev_put(pmu_dev);
--	return ret;
--}
--
--static int progearbl_remove(struct platform_device *pdev)
--{
--	struct backlight_device *bd = platform_get_drvdata(pdev);
--	backlight_device_unregister(bd);
--
--	return 0;
--}
--
--static struct platform_driver progearbl_driver = {
--	.probe = progearbl_probe,
--	.remove = progearbl_remove,
--	.driver = {
--		   .name = "progear-bl",
--		   },
--};
--
--static struct platform_device *progearbl_device;
--
--static int __init progearbl_init(void)
--{
--	int ret = platform_driver_register(&progearbl_driver);
--
--	if (ret)
--		return ret;
--	progearbl_device = platform_device_register_simple("progear-bl", -1,
--								NULL, 0);
--	if (IS_ERR(progearbl_device)) {
--		platform_driver_unregister(&progearbl_driver);
--		return PTR_ERR(progearbl_device);
--	}
--
--	return 0;
--}
--
--static void __exit progearbl_exit(void)
--{
--	pci_dev_put(pmu_dev);
--	pci_dev_put(sb_dev);
--
--	platform_device_unregister(progearbl_device);
--	platform_driver_unregister(&progearbl_driver);
--}
--
--module_init(progearbl_init);
--module_exit(progearbl_exit);
--
--MODULE_AUTHOR("Marcin Juszkiewicz <linux@hrw.one.pl>");
--MODULE_DESCRIPTION("ProGear Backlight Driver");
--MODULE_LICENSE("GPL");
--- 
-1.7.10.4
+On 08/27/2012 09:23 AM, Huang Ying wrote:
+> On Sat, 2012-08-25 at 17:59 +0800, Yijing Wang wrote:
+>> When we inject aer errors to the target pci device by aer_inject module, the pci_ops of pci
+>> bus which the target device is on will be assign to pci_ops_aer.So if the target pci device
+>> is a bridge, once we hotplug the pci bus(child bus) which the target device bridges to, child
+>> bus's pci_ops will be assigned to pci_ops_aer too.Now every access to the child bus's device
+>> will result to system panic, because it return NULL pci_ops in pci_read_aer.
+>> This patch fix this.
+>>
+>> CallTrace:
+>> bash[5908]: NaT consumption 17179869216 [1]
+>> Modules linked in: aer_inject cpufreq_conservative cpufreq_userspace cpufreq_pow
+>> ersave acpi_cpufreq binfmt_misc fuse nls_iso8859_1 loop ipmi_si(+) ipmi_devintf
+>> ipmi_msghandler dm_mod ppdev iTCO_wdt iTCO_vendor_support sg igb parport_pc i2c_
+>> i801 mptctl i2c_core serio_raw hid_generic lpc_ich mfd_core parport button conta
+>> iner usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif ext3 mbca
+>> che jbd fan processor ide_pci_generic ide_core ata_piix libata mptsas mptscsih m
+>> ptbase scsi_transport_sas scsi_mod thermal thermal_sys hwmon
+>>
+>> Pid: 5908, CPU 9, comm:                 bash
+>> psr : 00001010085a2010 ifs : 800000000000048e ip  : [<a000000220b815b0>]    Not
+>> tainted (3.5.0-rc6yijing-repo)
+>> ip is at pci_read_aer+0x330/0x460 [aer_inject]
+>> unat: 0000000000000000 pfs : 000000000000048e rsc : 0000000000000003
+>> rnat: 0000000000000000 bsps: 0000000000000000 pr  : 65519aa6a6969aa5
+>> ldrs: 0000000000000000 ccv : ffffffff00000001 fpsr: 0009804c8a70033f
+>> csd : 0000000000000000 ssd : 0000000000000000
+>> b0  : a000000220b815b0 b6  : a000000220b81280 b7  : a0000001006d56a0
+>> f6  : 1003e0000000000000005 f7  : 1003e0000000000000028
+>> f8  : 1003e00000000000000c8 f9  : 1003e0000000000000005
+>> f10 : 1003e627ec1e2f4c0d8a7 f11 : 1003e0000000000000011
+>> r1  : a0000001014e63c0 r2  : 0000000000000738 r3  : 000000000000fffe
+>> r8  : 0000000000000736 r9  : 0000000000000042 r10 : e000001f08f4c898
+>> r11 : 0000000000000000 r12 : e000000f3dfcfdc0 r13 : e000000f3dfc0000
+>> r14 : 0000000000000738 r15 : 0000000000004000 r16 : a000000220b827c8
+>> r17 : a000000220b827b8 r18 : ffffffffffffff00 r19 : e000000f073b0110
+>> r20 : 0000000000000042 r21 : e000000f073b0114 r22 : 0000000000000000
+>> r23 : e000000f073b0118 r24 : a0000001009e0e49 r25 : 0000000000000001
+>> r26 : 0000000000007041 r27 : e000000f3dfcfde0 r28 : 0000000000000000
+>> r29 : e000000f3dfcfc08 r30 : a000000220b827c8 r31 : e000001f074d6000
+>>
+>> Call Trace:
+>>  [<a000000100016500>] show_stack+0x80/0xa0
+>>                                 sp=e000000f3dfcf800 bsp=e000000f3dfc1758
+>>  [<a000000100016b60>] show_regs+0x640/0x920
+>>                                 sp=e000000f3dfcf9d0 bsp=e000000f3dfc1700
+>>  [<a000000100040770>] die+0x190/0x2c0
+>>                                 sp=e000000f3dfcf9e0 bsp=e000000f3dfc16c0
+>>  [<a0000001000408f0>] die_if_kernel+0x50/0x80
+>>                                 sp=e000000f3dfcf9e0 bsp=e000000f3dfc1690
+>>  [<a000000100903a90>] ia64_fault+0xf0/0x15e0
+>>                                 sp=e000000f3dfcf9e0 bsp=e000000f3dfc1640
+>>  [<a00000010000c0a0>] ia64_native_leave_kernel+0x0/0x270
+>>                                 sp=e000000f3dfcfbf0 bsp=e000000f3dfc1640
+>>  [<a000000220b815b0>] pci_read_aer+0x330/0x460 [aer_inject]
+>>                                 sp=e000000f3dfcfdc0 bsp=e000000f3dfc15c8
+>>  [<a0000001004ace00>] pci_bus_read_config_dword+0xe0/0x140
+>>                                 sp=e000000f3dfcfdc0 bsp=e000000f3dfc1580
+>>  [<a0000001004b0c10>] pci_bus_read_dev_vendor_id+0x50/0x200
+>>                                 sp=e000000f3dfcfdd0 bsp=e000000f3dfc1530
+>>  [<a0000001008d3d10>] pci_scan_single_device+0x90/0x200
+>>                                 sp=e000000f3dfcfdd0 bsp=e000000f3dfc14f8
+>>  [<a0000001004b24b0>] pci_scan_slot+0xb0/0x320
+>>                                 sp=e000000f3dfcfde0 bsp=e000000f3dfc14a8
+>>  [<a0000001008d9e90>] pci_scan_child_bus+0x90/0x2e0
+>>                                 sp=e000000f3dfcfde0 bsp=e000000f3dfc1468
+>>  [<a0000001008d9580>] pci_scan_bridge+0x540/0xdc0
+>>                                 sp=e000000f3dfcfde0 bsp=e000000f3dfc13d0
+>>  [<a0000001008da0b0>] pci_scan_child_bus+0x2b0/0x2e0
+>>                                 sp=e000000f3dfcfe00 bsp=e000000f3dfc1390
+>>  [<a0000001008d5bd0>] pci_rescan_bus+0x50/0x220
+>>                                 sp=e000000f3dfcfe00 bsp=e000000f3dfc1358
+>>  [<a0000001004c2ab0>] bus_rescan_store+0xf0/0x160
+>>                                 sp=e000000f3dfcfe10 bsp=e000000f3dfc1328
+>>  [<a0000001006110b0>] bus_attr_store+0x70/0xa0
+>>                                 sp=e000000f3dfcfe20 bsp=e000000f3dfc12f0
+>>  [<a000000100343b00>] sysfs_write_file+0x240/0x340
+>>                                 sp=e000000f3dfcfe20 bsp=e000000f3dfc1298
+>>  [<a00000010025e230>] vfs_write+0x1b0/0x3a0
+>>                                 sp=e000000f3dfcfe20 bsp=e000000f3dfc1250
+>>  [<a00000010025e5e0>] sys_write+0x80/0x100
+>>                                 sp=e000000f3dfcfe20 bsp=e000000f3dfc11d0
+>>  [<a00000010000bf20>] ia64_ret_from_syscall+0x0/0x20
+>>                                 sp=e000000f3dfcfe30 bsp=e000000f3dfc11d0
+>>  [<a000000000040720>] __kernel_syscall_via_break+0x0/0x20
+>>                                 sp=e000000f3dfd0000 bsp=e000000f3dfc11d0
+>> Disabling lock debugging due to kernel taint
+>>
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+>> ---
+>>  drivers/pci/pcie/aer/aer_inject.c |   21 +++++++++++++++++++++
+>>  1 files changed, 21 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/pci/pcie/aer/aer_inject.c b/drivers/pci/pcie/aer/aer_inject.c
+>> index 5222986..fc28785 100644
+>> --- a/drivers/pci/pcie/aer/aer_inject.c
+>> +++ b/drivers/pci/pcie/aer/aer_inject.c
+>> @@ -109,6 +109,19 @@ static struct aer_error *__find_aer_error_by_dev(struct pci_dev *dev)
+>>  	return __find_aer_error((u16)domain, dev->bus->number, dev->devfn);
+>>  }
+>>
+>> +static bool pci_is_upstream_bus(struct pci_bus *bus, struct pci_bus *up_bus)
+>> +{
+>> +	struct pci_bus *pbus = bus->parent;
+>> +
+>> +	while (pbus) {
+>> +		if (pbus == up_bus)
+>> +			return true;
+>> +		pbus = pbus->parent;
+>> +	}
+>> +
+>> +	return false;
+>> +}
+>> +
+>>  /* inject_lock must be held before calling */
+>>  static struct pci_ops *__find_pci_bus_ops(struct pci_bus *bus)
+>>  {
+>> @@ -118,6 +131,13 @@ static struct pci_ops *__find_pci_bus_ops(struct pci_bus *bus)
+>>  		if (bus_ops->bus == bus)
+>>  			return bus_ops->ops;
+>>  	}
+>> +
+>> +	/* here can't find bus_ops, fall back to get bus_ops of upstream bus */
+>> +	list_for_each_entry(bus_ops, &pci_bus_ops_list, list) {
+>> +		if (pci_is_upstream_bus(bus, bus_ops->bus))
+>> +			return bus_ops->ops;
+>> +	}
+>> +
+>>  	return NULL;
+>>  }
+>>
+>> @@ -506,6 +526,7 @@ static struct miscdevice aer_inject_device = {
+>>  	.fops = &aer_inject_fops,
+>>  };
+>>
+>> +
+>>  static int __init aer_inject_init(void)
+>>  {
+>>  	return misc_register(&aer_inject_device);
+> 
+> After
+> 
+> # rmmod aer_inject
+> 
+> What will happen?
+> 
+> Best Regards,
+> Huang Ying
+> 
+> 
 
