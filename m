@@ -1,90 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab2H0PAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:00:49 -0400
-Received: from bosmailout02.eigbox.net ([66.96.185.2]:60403 "EHLO
-	bosmailout02.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab2H0PAb (ORCPT
+	id S1753281Ab2H0PBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:01:49 -0400
+Received: from tygrysek.juszkiewicz.com.pl ([178.33.81.99]:48378 "EHLO
+	tygrysek.juszkiewicz.com.pl" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751957Ab2H0PBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:00:31 -0400
-X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
- a=b13+pjR7gVc1Ry1IWBkISg==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
- a=6_yu9_eKWJgA:10 a=8nJEP1OIZ-IA:10 a=gHsnk5GASbAA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=dCP5gS9r6t0cLp5NDqwA:9 a=wPNLvfGTeEIA:10
- a=6uKCkKhFq2wXOH2GoQX8aA==:117
-X-EN-OrigOutIP: 10.20.18.3
-X-EN-IMPSID: rr0U1j00G03yW7601r0Uit
-Message-ID: <503B8B26.3050205@yahoo.es>
-Date: Mon, 27 Aug 2012 22:58:46 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-CC: viresh kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [PATCH 1/2] dw_dmac: make driver endianness configurable
-References: <503A8CAE.6050606@yahoo.es> <20120827070323.GC28721@samfundet.no> <503B342C.9060300@yahoo.es> <20120827111431.GA27868@samfundet.no>
-In-Reply-To: <20120827111431.GA27868@samfundet.no>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.63.205
-X-EN-OrigHost: unknown
+	Mon, 27 Aug 2012 11:01:48 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 11:01:47 EDT
+From: Marcin Juszkiewicz <marcin@juszkiewicz.com.pl>
+To: linux-kernel@vger.kernel.org
+Cc: richard.purdie@linuxfoundation.org,
+        Marcin Juszkiewicz <marcin.juszkiewicz@linaro.org>,
+        Marcin Juszkiewicz <marcin@juszkiewicz.com.pl>
+Subject: [PATCH] Drop ProGear backlight driver
+Date: Mon, 27 Aug 2012 16:54:45 +0200
+Message-Id: <1346079285-13712-1-git-send-email-marcin@juszkiewicz.com.pl>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/27/2012 7:14 PM, Hans-Christian Egtvedt wrote:
-> Around Mon 27 Aug 2012 16:47:40 +0800 or thereabout, Hein Tibosch wrote:
->> On 8/27/2012 3:03 PM, Hans-Christian Egtvedt wrote:
->>> Brushing up the config items:
->>>
->>> +config DW_DMAC_BIG_ENDIAN_IO
->>> +	bool "Use big endian I/O register access"
->>> +	default y if AVR32
->>> +	depends on DW_DMAC
->>> +	help
->>> +	  Say yes here to use big endian I/O access when reading and writing
->>> +	  to the DMA controller registers. This is needed on some platforms,
->>> +	  like the Atmel AVR32 architecture.
->>> +
->>> +	  If unsure, use the default setting.
-> This sounds good in my ears, but I don't speak English natively.
-I think you Norwegians are doing very well in English
-And btw, I'm not from .es but from .nl, which is very close to England
+From: Marcin Juszkiewicz <marcin.juszkiewicz@linaro.org>
 
->> And as I'd like to define the maximum memory transfer width in the same
->> Kconfig:
->>
->> +config DW_DMAC_MEM_64_BIT
->> +	bool "Allow 64-bit memory transfers"
->> +	default y if !AVR32
->> +	depends on DW_DMAC
->> +	help
->> +	  Say yes if the DMA controller may do 64-bit memory transfers
->> +	  For AVR32, say no because only up to 32-bit transfers are
->> +	  defined
-> Is this sane to add? Could some non-AVR32 platforms use 64-bit and 32-bit
-> depending on runtime configuration? E.g. if you build a kernel with support
-> for multiple boards/processors, and there is a mix of 32-bit and 64-bit wide
-> DMA support.
->
-> I think it is better to select 32/64-bit at runtime.
+This driver was for ProGear webpad device which was produced in
+2000/2001 and is not available on a market. I no longer have this
+hardware so can not even check how Linux works on it.
 
-I did that in the first patch, adding a new property to the dw_dma_slave
-structure. It had the small disadvantage that some arch code had to be
-adapted (at32ap700x.c).
+Signed-off-by: Marcin Juszkiewicz <marcin@juszkiewicz.com.pl>
+---
+ drivers/video/backlight/Kconfig      |    7 --
+ drivers/video/backlight/Makefile     |    1 -
+ drivers/video/backlight/progear_bl.c |  162 ----------------------------------
+ 3 files changed, 170 deletions(-)
+ delete mode 100644 drivers/video/backlight/progear_bl.c
 
-Viresh, what do you think? Add a property called "mem_64_bit_access" or so?
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index cf28276..6b8fb2a 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -229,13 +229,6 @@ config BACKLIGHT_HP700
+ 	  If you have an HP Jornada 700 series,
+ 	  say Y to include backlight control driver.
+ 
+-config BACKLIGHT_PROGEAR
+-	tristate "Frontpath ProGear Backlight Driver"
+-	depends on PCI && X86
+-	help
+-	  If you have a Frontpath ProGear say Y to enable the
+-	  backlight driver.
+-
+ config BACKLIGHT_CARILLO_RANCH
+ 	tristate "Intel Carillo Ranch Backlight Driver"
+ 	depends on LCD_CLASS_DEVICE && PCI && X86 && FB_LE80578
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index a2ac9cf..855ad81 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -26,7 +26,6 @@ obj-$(CONFIG_BACKLIGHT_LOCOMO)	+= locomolcd.o
+ obj-$(CONFIG_BACKLIGHT_LP855X)	+= lp855x_bl.o
+ obj-$(CONFIG_BACKLIGHT_OMAP1)	+= omap1_bl.o
+ obj-$(CONFIG_BACKLIGHT_PANDORA)	+= pandora_bl.o
+-obj-$(CONFIG_BACKLIGHT_PROGEAR) += progear_bl.o
+ obj-$(CONFIG_BACKLIGHT_CARILLO_RANCH) += cr_bllcd.o
+ obj-$(CONFIG_BACKLIGHT_PWM)	+= pwm_bl.o
+ obj-$(CONFIG_BACKLIGHT_DA903X)	+= da903x_bl.o
+diff --git a/drivers/video/backlight/progear_bl.c b/drivers/video/backlight/progear_bl.c
+deleted file mode 100644
+index 69b35f0..0000000
+--- a/drivers/video/backlight/progear_bl.c
++++ /dev/null
+@@ -1,162 +0,0 @@
+-/*
+- *  Backlight Driver for Frontpath ProGear HX1050+
+- *
+- *  Copyright (c) 2006 Marcin Juszkiewicz
+- *
+- *  Based on Progear LCD driver by M Schacht
+- *  <mschacht at alumni dot washington dot edu>
+- *
+- *  Based on Sharp's Corgi Backlight Driver
+- *  Based on Backlight Driver for HP Jornada 680
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License version 2 as
+- *  published by the Free Software Foundation.
+- *
+- */
+-
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/platform_device.h>
+-#include <linux/mutex.h>
+-#include <linux/fb.h>
+-#include <linux/backlight.h>
+-#include <linux/pci.h>
+-
+-#define PMU_LPCR               0xB0
+-#define SB_MPS1                0x61
+-#define HW_LEVEL_MAX           0x77
+-#define HW_LEVEL_MIN           0x4f
+-
+-static struct pci_dev *pmu_dev = NULL;
+-static struct pci_dev *sb_dev = NULL;
+-
+-static int progearbl_set_intensity(struct backlight_device *bd)
+-{
+-	int intensity = bd->props.brightness;
+-
+-	if (bd->props.power != FB_BLANK_UNBLANK)
+-		intensity = 0;
+-	if (bd->props.fb_blank != FB_BLANK_UNBLANK)
+-		intensity = 0;
+-
+-	pci_write_config_byte(pmu_dev, PMU_LPCR, intensity + HW_LEVEL_MIN);
+-
+-	return 0;
+-}
+-
+-static int progearbl_get_intensity(struct backlight_device *bd)
+-{
+-	u8 intensity;
+-	pci_read_config_byte(pmu_dev, PMU_LPCR, &intensity);
+-
+-	return intensity - HW_LEVEL_MIN;
+-}
+-
+-static const struct backlight_ops progearbl_ops = {
+-	.get_brightness = progearbl_get_intensity,
+-	.update_status = progearbl_set_intensity,
+-};
+-
+-static int progearbl_probe(struct platform_device *pdev)
+-{
+-	struct backlight_properties props;
+-	u8 temp;
+-	struct backlight_device *progear_backlight_device;
+-	int ret;
+-
+-	pmu_dev = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M7101, NULL);
+-	if (!pmu_dev) {
+-		pr_err("ALI M7101 PMU not found.\n");
+-		return -ENODEV;
+-	}
+-
+-	sb_dev = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M1533, NULL);
+-	if (!sb_dev) {
+-		pr_err("ALI 1533 SB not found.\n");
+-		ret = -ENODEV;
+-		goto put_pmu;
+-	}
+-
+-	/*     Set SB_MPS1 to enable brightness control. */
+-	pci_read_config_byte(sb_dev, SB_MPS1, &temp);
+-	pci_write_config_byte(sb_dev, SB_MPS1, temp | 0x20);
+-
+-	memset(&props, 0, sizeof(struct backlight_properties));
+-	props.type = BACKLIGHT_RAW;
+-	props.max_brightness = HW_LEVEL_MAX - HW_LEVEL_MIN;
+-	progear_backlight_device = backlight_device_register("progear-bl",
+-							     &pdev->dev, NULL,
+-							     &progearbl_ops,
+-							     &props);
+-	if (IS_ERR(progear_backlight_device)) {
+-		ret = PTR_ERR(progear_backlight_device);
+-		goto put_sb;
+-	}
+-
+-	platform_set_drvdata(pdev, progear_backlight_device);
+-
+-	progear_backlight_device->props.power = FB_BLANK_UNBLANK;
+-	progear_backlight_device->props.brightness = HW_LEVEL_MAX - HW_LEVEL_MIN;
+-	progearbl_set_intensity(progear_backlight_device);
+-
+-	return 0;
+-put_sb:
+-	pci_dev_put(sb_dev);
+-put_pmu:
+-	pci_dev_put(pmu_dev);
+-	return ret;
+-}
+-
+-static int progearbl_remove(struct platform_device *pdev)
+-{
+-	struct backlight_device *bd = platform_get_drvdata(pdev);
+-	backlight_device_unregister(bd);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver progearbl_driver = {
+-	.probe = progearbl_probe,
+-	.remove = progearbl_remove,
+-	.driver = {
+-		   .name = "progear-bl",
+-		   },
+-};
+-
+-static struct platform_device *progearbl_device;
+-
+-static int __init progearbl_init(void)
+-{
+-	int ret = platform_driver_register(&progearbl_driver);
+-
+-	if (ret)
+-		return ret;
+-	progearbl_device = platform_device_register_simple("progear-bl", -1,
+-								NULL, 0);
+-	if (IS_ERR(progearbl_device)) {
+-		platform_driver_unregister(&progearbl_driver);
+-		return PTR_ERR(progearbl_device);
+-	}
+-
+-	return 0;
+-}
+-
+-static void __exit progearbl_exit(void)
+-{
+-	pci_dev_put(pmu_dev);
+-	pci_dev_put(sb_dev);
+-
+-	platform_device_unregister(progearbl_device);
+-	platform_driver_unregister(&progearbl_driver);
+-}
+-
+-module_init(progearbl_init);
+-module_exit(progearbl_exit);
+-
+-MODULE_AUTHOR("Marcin Juszkiewicz <linux@hrw.one.pl>");
+-MODULE_DESCRIPTION("ProGear Backlight Driver");
+-MODULE_LICENSE("GPL");
+-- 
+1.7.10.4
 
-Or should it be passed as a member of 'dw_dma_platform_data', because it
-is a property of the (entire) DMA controller?
-
-Hein
