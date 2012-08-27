@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab2H0Ubu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:31:50 -0400
-Received: from tundra.namei.org ([65.99.196.166]:55076 "EHLO tundra.namei.org"
+	id S1754612Ab2H0Ucm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:32:42 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37764 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab2H0Ubr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:31:47 -0400
-Date: Tue, 28 Aug 2012 06:28:29 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-cc: Peter.Huewe@infineon.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
-        xiaoyan.zhang@intel.com, jj@chaosbits.net
-Subject: Re: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
-In-Reply-To: <20120827180210.GA14509@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.02.1208280627360.18515@tundra.namei.org>
-References: <20120822215216.GC13519@linux.vnet.ibm.com> <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org> <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com> <20120824150533.GA2190@linux.vnet.ibm.com> <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
- <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com> <20120827161747.GA2436@linux.vnet.ibm.com> <alpine.LRH.2.02.1208280321220.17312@tundra.namei.org> <20120827180210.GA14509@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754484Ab2H0Ucl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:32:41 -0400
+Date: Mon, 27 Aug 2012 13:32:15 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Rob Landley <rob@landley.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Ludwig Nussel <ludwig.nussel@suse.de>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Kees Cook <keescook@chromium.org>, linux-doc@vger.kernel.org
+Subject: [PATCH] debugfs: more tightly restrict default mount mode
+Message-ID: <20120827203215.GA16637@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Aug 2012, Kent Yoder wrote:
+Since the debugfs is mostly only used by root, make the default mount
+mode 0700. Most system owners do not need a more permissive value,
+but they can choose to weaken the restrictions via their fstab.
 
-> > I may have missed something, but what do you mean by pullreq patches?
-> 
->   Just the stuff I asked you to pull here.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Documentation/filesystems/debugfs.txt |    4 ++--
+ fs/debugfs/inode.c                    |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Looks like it could be an issue with the development repo I have on my 
-laptop while traveling.  Investigating...
-
+diff --git a/Documentation/filesystems/debugfs.txt b/Documentation/filesystems/debugfs.txt
+index 7a34f82..3a863f6 100644
+--- a/Documentation/filesystems/debugfs.txt
++++ b/Documentation/filesystems/debugfs.txt
+@@ -15,8 +15,8 @@ Debugfs is typically mounted with a command like:
+     mount -t debugfs none /sys/kernel/debug
+ 
+ (Or an equivalent /etc/fstab line).
+-The debugfs root directory is accessible by anyone by default. To
+-restrict access to the tree the "uid", "gid" and "mode" mount
++The debugfs root directory is accessible only to the root user by
++default. To change access to the tree the "uid", "gid" and "mode" mount
+ options can be used.
+ 
+ Note that the debugfs API is exported GPL-only to modules.
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index 4733eab..2d22c81 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -28,7 +28,7 @@
+ #include <linux/magic.h>
+ #include <linux/slab.h>
+ 
+-#define DEBUGFS_DEFAULT_MODE	0755
++#define DEBUGFS_DEFAULT_MODE	0700
+ 
+ static struct vfsmount *debugfs_mount;
+ static int debugfs_mount_count;
+-- 
+1.7.0.4
 
 
 -- 
-James Morris
-<jmorris@namei.org>
+Kees Cook
+Chrome OS Security
