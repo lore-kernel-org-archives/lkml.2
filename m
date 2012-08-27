@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab2H0SCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:02:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54913 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2H0SCv convert rfc822-to-8bit (ORCPT
+	id S1753465Ab2H0SVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:21:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38614 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab2H0SVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:02:51 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-Subject: RE: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
- device-tree
-Thread-Topic: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
- device-tree
-Thread-Index: AQHNhDurjKQbZY/bOUaqH5mz8nRcmZdti8MAgABnbhA=
-Date: Mon, 27 Aug 2012 18:02:35 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EA99396@DBDE01.ent.ti.com>
-References: <1346061842-28714-1-git-send-email-hvaibhav@ti.com>
- <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 27 Aug 2012 14:21:46 -0400
+Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
+ out_of_order memory use"
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: David Miller <davem@davemloft.net>, ncardwell@google.com,
+        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <503BB49C.5010402@lwfinger.net>
+References: <50369925.3050705@lwfinger.net>
+	 <1345757200.5904.1890.camel@edumazet-glaptop> <50378B35.80307@lwfinger.net>
+	 <20120824.111948.680531915905273128.davem@davemloft.net>
+	 <5037A4B0.3080208@lwfinger.net>
+	 <1345825095.19483.19.camel@edumazet-glaptop>
+	 <1345825432.19483.20.camel@edumazet-glaptop> <5037B2AC.50704@lwfinger.net>
+	 <1345830424.19483.69.camel@edumazet-glaptop>
+	 <503BB49C.5010402@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Aug 2012 11:21:41 -0700
+Message-ID: <1346091701.26634.6.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 22:50:12, Paul Walmsley wrote:
-> Hi
-> 
-> On Mon, 27 Aug 2012, Vaibhav Hiremath wrote:
-> 
-> > Currently, the device names for the dcan module follows the
-> > format "dcan.X", where 'X' is the dcan instance number.
-> > On other side, driver may request for clock with/without con_id
-> > and dev_id, and it is expected that platform should respect this
-> > request and return the requested clock handle.
-> > 
-> > Now, when using device tree, the format of the device name created
-> > by OF layer is different, "<reg-address>.<device-name>",
-> > assuming that the device-tree "reg" property is specified.
-> > This causes the look-up failure for clock node in dcan driver
-> > 
-> > To fix this add new dcan clock alias for using device-tree.
-> 
-> Is the dcan driver present in v3.6-rc kernels?  
+On Mon, 2012-08-27 at 12:55 -0500, Larry Finger wrote:
 
-Multiple versions have been submitted already, I have validated using them.
-Irrespective of this, it is independent change and required for the driver.
+> I have prepared a patch to fix all the unchecked allocations.
+> 
+> Over the weekend I made some progress. To test the latest vendor driver, I 
+> installed a 32-bit system. Their driver is not compatible with a 64-bit system. 
+> I found that not only did the vendor driver work with secure sites, but so did 
+> the in-kernel version. I now have tcpdump output for the 32-bit case that works, 
+> and the 64-bit case that fails. It seems likely that I missed some 32/64 bit 
+> incompatibility when I did the conversion.
+> 
+> Thanks for all your help in trying to resolve this issue.
 
-Thanks,
-Vaibhav
+Interesting, so these 32/64 bits problems did not happen in prior
+kernels ? (< 3.4 )
+
 
