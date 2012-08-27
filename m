@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab2H0QR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:17:29 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46823 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753162Ab2H0QR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:17:27 -0400
-Date: Mon, 27 Aug 2012 11:17:48 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter.Huewe@infineon.com
-Cc: jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
-        xiaoyan.zhang@intel.com, jj@chaosbits.net
-Subject: Re: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
-Message-ID: <20120827161747.GA2436@linux.vnet.ibm.com>
-References: <20120822215216.GC13519@linux.vnet.ibm.com>
- <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org>
- <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com>
- <20120824150533.GA2190@linux.vnet.ibm.com>
- <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
- <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com>
+	id S1753415Ab2H0QTE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:19:04 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52054 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab2H0QTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 12:19:01 -0400
+Date: Mon, 27 Aug 2012 09:18:43 -0700
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2012-08-27
+Message-ID: <20120827161843.GD8934@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
 Content-Disposition: inline
-In-Reply-To: <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082716-7182-0000-0000-0000026787B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 07:23:40AM +0000, Peter.Huewe@infineon.com wrote:
-> >> > Build using make -> no error.
-> >>   I can't reproduce this either, James, can you send out your .config?
-> 
-> > See attached.
-> 
-> Hi James,
-> 
-> even with you config, I can't reproduce it here with 3.6-rc3 + mypatch.
 
-  Same here, against linux-security plus the pullreq patches...
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Kent
+Hi John,
 
-> 
-> 
-> Peter
-> 
+A few updates for the 3.6 kernel. There are two btusb patches to add more
+supported devices through the new USB_VENDOR_AND_INTEFACE_INFO() macro and
+another one that add a new device id for a Sony Vaio laptop, one fix for a
+user-after-free and, finally, two patches from Vinicius to fix a issue in SMP
+pairing.
 
+	Gustavo
+
+---
+The following changes since commit 7dd6753f6d2e7e0ccbf2263cef3a9fff6bc89988:
+
+  ath5k: fix spin_lock_irqsave/spin_lock_bh nesting in mesh (2012-08-13 15:17:25 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+
+for you to fetch changes up to d8343f125710fb596f7a88cd756679f14f4e77b9:
+
+  Bluetooth: Fix sending a HCI Authorization Request over LE links (2012-08-27 08:11:51 -0700)
+
+----------------------------------------------------------------
+Andre Guedes (1):
+      Bluetooth: Fix use-after-free bug in SMP
+
+Gustavo Padovan (1):
+      Bluetooth: Use USB_VENDOR_AND_INTERFACE() for Broadcom devices
+
+Henrik Rydberg (1):
+      Bluetooth: Add support for Apple vendor-specific devices
+
+Vinicius Costa Gomes (2):
+      Bluetooth: Change signature of smp_conn_security()
+      Bluetooth: Fix sending a HCI Authorization Request over LE links
+
+Yevgeniy Melnichuk (1):
+      Bluetooth: Add support for Sony Vaio T-Series
+
+ drivers/bluetooth/ath3k.c   |  2 ++
+ drivers/bluetooth/btusb.c   | 12 +++++++-----
+ include/net/bluetooth/smp.h |  2 +-
+ net/bluetooth/hci_conn.c    |  4 ++++
+ net/bluetooth/l2cap_core.c  | 11 ++++++-----
+ net/bluetooth/l2cap_sock.c  |  2 +-
+ net/bluetooth/smp.c         | 10 +++++-----
+ 7 files changed, 26 insertions(+), 17 deletions(-)
+
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQO53jAAoJEPs3PUX4s20obg4QAKcSulWXOn7BIEh3qZeuNtO1
+vL6Yf9B/wumfMQ5UbLUG9AKEOIGbYpJ1BtkckhCoGY2r4g9ENq0MX/b3fxoa20qr
+2P94mCws2M0kGjY/aQOqQ3jdjCd5cgckZp8QyQ29XtmRznwX8r4371e+40QKLJnx
+56NCy2Qy5cHofSchMBVpnRXvKT57pMy8sMXHiuXs2Fa7dZhF5gZ2I1EHgetw6FbU
+VBsQZbnTZ9I53AKNRyk+L3OiEPtZ8k3ag95erGFEaOdyRHIqolYZ4OLUO4gHXDRZ
+iEXSZqKSpWw7y/nJOibyigGG9nkQBu8P0b3CYGaSA0sZHgkSdm4YSmY8Eqy6m1Rp
+DHYdz0YBVM5EU3es+k7C3Hkac1aME/p5YcbAjwMUyeGNdllgd/z5uRBpX17H1ixe
+KpY2PjP/a+v/Bc6sNG5H7CsabnVi1FJaUG4W4mlhbiP1sU+/9O1VtcqwEy0vf1uN
+JpGFeYR3sW8RmE8ChEsoKvIlxODdHFqw85U6tTNYXfpNywPG4r+xv2J9smxhT9dy
+h5ehKtI7mBDsKUcF1Z3IK8oQHtGOEWUWGhExgNPLbqSjs+menOxj8Ei1inX5/+7p
+cCtobKW+hWbaiGxbn99zrH44jfJ/m73pLZPxVI0RcqyZQ3hMU6wnt4zuzYT4B04G
+PoSBSI2Wler3ylhk3ilh
+=BJwS
+-----END PGP SIGNATURE-----
+
+--0F1p//8PRICkK4MW--
