@@ -1,129 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2H0Mdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 08:33:44 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43894 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab2H0Mdm (ORCPT
+	id S1752526Ab2H0MiC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 08:38:02 -0400
+Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:60055
+	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751295Ab2H0Mh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 08:33:42 -0400
+	Mon, 27 Aug 2012 08:37:59 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q7RCbGBX004584
+From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
+To: Benjamin Poirier <bpoirier@suse.de>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Borislav Petkov <bp@alien8.de>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Davidlohr Bueso <dave@gnu.org>, Wang YanQing <udknight@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Cheng Renquan <crquan@gmail.com>
+Subject: Re: [PATCH v2 4/6] menuconfig: Add jump keys to search results
+In-Reply-To: <1345748108-12206-5-git-send-email-bpoirier@suse.de> (Benjamin
+	Poirier's message of "Thu, 23 Aug 2012 14:55:06 -0400")
+References: <1345748108-12206-1-git-send-email-bpoirier@suse.de>
+	<1345748108-12206-5-git-send-email-bpoirier@suse.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Mon, 27 Aug 2012 14:37:11 +0200
+Message-ID: <gi7gska4ug.fsf@mx10.gouders.net>
 MIME-Version: 1.0
-In-Reply-To: <1345996865-32082-8-git-send-email-Julia.Lawall@lip6.fr>
-References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1345996865-32082-8-git-send-email-Julia.Lawall@lip6.fr>
-Date: Mon, 27 Aug 2012 14:33:40 +0200
-Message-ID: <CAPDyKFpf+PzMspT7CECpd=ZVdmp=7i4-pr-6StK8N1aRczNryw@mail.gmail.com>
-Subject: Re: [PATCH 7/13] drivers/mmc/host/mmci.c: use clk_prepare_enable and clk_disable_unprepare
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Chris Ball <cjb@laptop.org>, kernel-janitors@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Mon, 27 Aug 2012 14:37:19 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+Benjamin Poirier <bpoirier@suse.de> writes:
 
-Patches for mmci should normally be sent on the arm list as well. mmci
-is maintained by Russell King, even if the MAINTAINER file does not
-say so.
+> makes it possible to jump directly to the menu for a configuration entry after
+> having searched for it with '/'. If this menu is not currently accessible we
+> jump to the nearest accessible parent instead. After exiting this menu, the
+> user is returned to the search results where he may jump further in or
+> elsewhere.
 
-Some minor comment below.
+I applied your patches, played with menuconfig and did not notice any
+problems.  What I especially like is that if I am guided to a nearest
+accessible parent in cases where a menu is not currently accessible and
+do modifications there, these modifications are visible in the search
+results when I return to them.
 
-On 26 August 2012 18:00, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->
-
-I think can simplify the commit msg a lot. Just say something with
-"simplify clock code in probe".
-
-> Clk_prepare_enable and clk_disable_unprepare combine clk_prepare and
-> clk_enable, and clk_disable and clk_unprepare.  They make the code more
-> concise, and ensure that clk_unprepare is called when clk_enable fails.
->
-> A simplified version of the semantic patch that introduces calls to these
-> functions is as follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> expression e;
-> @@
->
-> - clk_prepare(e);
-> - clk_enable(e);
-> + clk_prepare_enable(e);
->
-> @@
-> expression e;
-> @@
->
-> - clk_disable(e);
-> - clk_unprepare(e);
-> + clk_disable_unprepare(e);
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
->  drivers/mmc/host/mmci.c |   13 +++----------
->  1 file changed, 3 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index 50ff19a..edc3e9b 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -1309,14 +1309,10 @@ static int __devinit mmci_probe(struct amba_device *dev,
->                 goto host_free;
->         }
->
-> -       ret = clk_prepare(host->clk);
-> +       ret = clk_prepare_enable(host->clk);
-
-white space? Did you run checkpatch?
-
->         if (ret)
->                 goto clk_free;
->
-> -       ret = clk_enable(host->clk);
-> -       if (ret)
-> -               goto clk_unprep;
-> -
->         host->plat = plat;
->         host->variant = variant;
->         host->mclk = clk_get_rate(host->clk);
-> @@ -1515,9 +1511,7 @@ static int __devinit mmci_probe(struct amba_device *dev,
->   err_gpio_cd:
->         iounmap(host->base);
->   clk_disable:
-> -       clk_disable(host->clk);
-> - clk_unprep:
-> -       clk_unprepare(host->clk);
-> +       clk_disable_unprepare(host->clk);
-
-white space? Did you run checkpatch?
-
->   clk_free:
->         clk_put(host->clk);
->   host_free:
-> @@ -1564,8 +1558,7 @@ static int __devexit mmci_remove(struct amba_device *dev)
->                         gpio_free(host->gpio_cd);
->
->                 iounmap(host->base);
-> -               clk_disable(host->clk);
-> -               clk_unprepare(host->clk);
-> +               clk_disable_unprepare(host->clk);
-
-white space? Did you run checkpatch?
-
->                 clk_put(host->clk);
->
->                 if (host->vcc)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-Kind regards
-Ulf Hansson
+Dirk
