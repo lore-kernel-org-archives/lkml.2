@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab2H0Ubo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:31:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49158 "EHLO mx1.redhat.com"
+	id S1754586Ab2H0Ubu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:31:50 -0400
+Received: from tundra.namei.org ([65.99.196.166]:55076 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754286Ab2H0Ubn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:31:43 -0400
-Message-ID: <503BD920.20603@redhat.com>
-Date: Mon, 27 Aug 2012 13:31:28 -0700
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754549Ab2H0Ubr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:31:47 -0400
+Date: Tue, 28 Aug 2012 06:28:29 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+cc: Peter.Huewe@infineon.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
+        xiaoyan.zhang@intel.com, jj@chaosbits.net
+Subject: Re: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+In-Reply-To: <20120827180210.GA14509@linux.vnet.ibm.com>
+Message-ID: <alpine.LRH.2.02.1208280627360.18515@tundra.namei.org>
+References: <20120822215216.GC13519@linux.vnet.ibm.com> <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org> <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com> <20120824150533.GA2190@linux.vnet.ibm.com> <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
+ <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com> <20120827161747.GA2436@linux.vnet.ibm.com> <alpine.LRH.2.02.1208280321220.17312@tundra.namei.org> <20120827180210.GA14509@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: mjw@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
-        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
-Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
-References: <20120823231346.11681.1502.stgit@lambeau>  <503BC298.3080306@redhat.com> <1346098984.8623.23.camel@lambeau>
-In-Reply-To: <1346098984.8623.23.camel@lambeau>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 01:23 PM, Michael Wolf wrote:
-> > 
-> > How would a guest know what its entitlement is?
-> > 
-> > 
->
-> Currently the Admin/management tool setting up the guests will put it on
-> the qemu commandline.  From this it is passed via an ioctl to the host.
-> The guest will get the value from the host via a hypercall.
->
-> In the future the host could try and do some of it automatically in some
-> cases. 
+On Mon, 27 Aug 2012, Kent Yoder wrote:
 
-Seems to me it's a meaningless value for the guest.  Suppose it is
-migrated to a host that is more powerful, and as a result its relative
-entitlement is reduced.  The value needs to be adjusted.
+> > I may have missed something, but what do you mean by pullreq patches?
+> 
+>   Just the stuff I asked you to pull here.
 
-This is best taken care of from the host side.
+Looks like it could be an issue with the development repo I have on my 
+laptop while traveling.  Investigating...
+
+
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+James Morris
+<jmorris@namei.org>
