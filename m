@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab2H0RwB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:52:01 -0400
-Received: from nn7.de ([85.214.94.156]:45368 "EHLO nn7.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753767Ab2H0RwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:52:00 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 13:51:59 EDT
-Message-ID: <1346089515.26382.52.camel@no>
-Subject: b43 regression: extremely slow wireless with BCM4322 802.11a/b/g/n
-From: Soeren Sonnenburg <sonne@debian.org>
-To: linux-kernel@vger.kernel.org
-Date: Mon, 27 Aug 2012 19:45:15 +0200
-Organization: 
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-bw6H2+7Ry3aMZVxNg0lE"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1753841Ab2H0Rzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:55:47 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54267 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab2H0Rzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 13:55:45 -0400
+Message-ID: <503BB49C.5010402@lwfinger.net>
+Date: Mon, 27 Aug 2012 12:55:40 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, ncardwell@google.com,
+        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
+ out_of_order memory use"
+References: <50369925.3050705@lwfinger.net>  <1345757200.5904.1890.camel@edumazet-glaptop> <50378B35.80307@lwfinger.net>  <20120824.111948.680531915905273128.davem@davemloft.net>  <5037A4B0.3080208@lwfinger.net>  <1345825095.19483.19.camel@edumazet-glaptop>  <1345825432.19483.20.camel@edumazet-glaptop>  <5037B2AC.50704@lwfinger.net> <1345830424.19483.69.camel@edumazet-glaptop>
+In-Reply-To: <1345830424.19483.69.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/24/2012 12:47 PM, Eric Dumazet wrote:
+>
+> dev_alloc_skb() can return NULL
+>
+> -> crash
+>
+> skb_clone() can also return NULL
+>
+> -> crash
 
---=-bw6H2+7Ry3aMZVxNg0lE
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+I have prepared a patch to fix all the unchecked allocations.
 
-Hi,
+Over the weekend I made some progress. To test the latest vendor driver, I 
+installed a 32-bit system. Their driver is not compatible with a 64-bit system. 
+I found that not only did the vendor driver work with secure sites, but so did 
+the in-kernel version. I now have tcpdump output for the 32-bit case that works, 
+and the 64-bit case that fails. It seems likely that I missed some 32/64 bit 
+incompatibility when I did the conversion.
 
-since kernel version >=3D 3.4 wireless became extremely slow (download
-rates of about 90k/sec when downloading a new kernel from kernel.org
-instead of >1MB/s)https://bbs.archlinux.org/viewtopic.php?pid=3D1146085
+Thanks for all your help in trying to resolve this issue.
 
-There is a thread on archlinux
-https://bbs.archlinux.org/viewtopic.php?pid=3D1146085 where people observe
-the very same. Kernel 3.3.X was the last known good one.
-
-*Sometimes* download rates are OK but most of the time they are not.
-
-$lspci | grep Broad
-
-04:00.0 Network controller: Broadcom Corporation BCM4322 802.11a/b/g/n Wire=
-less LAN Controller (rev 01)
+Larry
 
 
-Any ideas?
-
-Soeren
---=20
-For the one fact about the future of which we can be certain is that it
-will be utterly fantastic. -- Arthur C. Clarke, 1962
-
---=-bw6H2+7Ry3aMZVxNg0lE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCAAGBQJQO7IrAAoJEH82z1Wqh6p3hrMP/1WqSKDGOVZ0vdoblHX3jfHF
-5SVzC1cSnBj9VjHrpR56Znc0d0e0Mv6sGu+8+c83QqzvgnuAruqhi4UiQQzK4JSH
-w/Nx+S9YgHwwosKRykaI7J/YZX/dIx6aF4tv40l7mu28OY5/pja6DHlbXOMfAI4l
-9TNSi49aCU7MLmEVmpe52BXB/1vAOx7Oza6QJ3PTots5XfwhqWAAyCrOvFwoF922
-Axv53UfWhkePh3diBNgNgd2/U4ZGqEVdAiv5o+OUuQtEClZ/W/L7ZJ6fQ4Spgu5z
-PNgGWH1P4tBWMTdT9BbTup3HN9709KF8PHU45XaHjh3uj+ndlBAv5fw51g9xpeWN
-0tIG2KGjF5+fuWeazpgb8BBrhQkKWv7tHrWkJkqv5jfHmYdIZPFaZaYNiManGSr2
-rs63fLKHkKJ4wzVM5ceCUhll1avXgv1SB781/kuNxQY4Bb4d2K4uA2XMtn8B9Oju
-h5mBmibgzWMC9sCNJfTyUpn/i/bLOirHQTjhxbcO/4Ip+9tRQroWjfK2CPsuP+a5
-qAj6eRHwsJqZ+gdtsNw865BcQXGyG/6OhWcWlh1cDrkZJ9FLVAZ/QuMXcBplDQH3
-y+RkloFngTUHx/fvOOXut/XUA7o4zuSEEl4HAUqoTtntWUV1bdSV2tKIY43UdAw2
-6rYiE7w1fjQpPq5XRMzm
-=knuy
------END PGP SIGNATURE-----
-
---=-bw6H2+7Ry3aMZVxNg0lE--
