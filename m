@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab2H0HW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 03:22:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43567 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab2H0HWT (ORCPT
+	id S1752732Ab2H0HXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 03:23:52 -0400
+Received: from smtp2.infineon.com ([217.10.60.23]:45484 "EHLO
+	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab2H0HXt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 03:22:19 -0400
+	Mon, 27 Aug 2012 03:23:49 -0400
+X-SBRS: None
+From: <Peter.Huewe@infineon.com>
+To: <jmorris@namei.org>, <key@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-security-module@vger.kernel.org>,
+        <tpmdd-devel@lists.sourceforge.net>, <adlai@linux.vnet.ibm.com>,
+        <xiaoyan.zhang@intel.com>, <jj@chaosbits.net>
+Subject: RE: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+Thread-Topic: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
+Thread-Index: AQHNgLBwseNda/zV6EGrO8CD/jLRy5dnufyAgADXl6CAABF4gIAATd2AgAB0bgCAA+J30A==
+Date: Mon, 27 Aug 2012 07:23:40 +0000
+Message-ID: <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com>
+References: <20120822215216.GC13519@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org>
+ <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com>
+ <20120824150533.GA2190@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.8.248]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120825114746.GA28832@somewhere.redhat.com>
-References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
-	<1344344165-369636-4-git-send-email-avagin@openvz.org>
-	<20120825114746.GA28832@somewhere.redhat.com>
-Date: Mon, 27 Aug 2012 11:22:18 +0400
-Message-ID: <CANaxB-xF9s7kwq-LvXgFVgMi4=4i-qrX2hunvdJK1f9gnm-krQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] perf: teach perf inject to merge sched_stat_* and
- sched_switch events (v2)
-From: Andrey Wagin <avagin@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/8/25 Frederic Weisbecker <fweisbec@gmail.com>:
->> +     if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
->> +             list_for_each_entry(ent, &samples, node)
->> +                     if (sample->pid == ent->pid)
->
-> I suspect what you're rather interested in is the sample tid.
+>> > Build using make -> no error.
+>>   I can't reproduce this either, James, can you send out your .config?
 
-Yes, you are right.
+> See attached.
 
->
->> +
->> +     } else if (!strncmp(evname, "sched_stat_", 11)) {
->> +             u32 pid;
->> +
->> +             pid = raw_field_value(evsel->tp_format,
->> +                                     "pid", sample->raw_data);
->
-> There you parse the pid from the trace content. That's fine because
-> it's actually the tid that is saved on the trace event. But this one
-> is not pid-namespace safe (it saves current->pid directly) while
-> sample->tid is pid-namespace safe (it uses task_pid_nr_ns).
->
-> So I suggest you to use sample->tid instead, plus that's going to be
-> consistant with what you did above.
+Hi James,
 
-Here is a problem, because a pid from the trace content and
-sample->tid are not the same.
-A kernel wakes up a task1 and do it from a context of another task2.
-In this case a pid from the trace content is a pid of the task1 and a
-sample->tid is a pid of the task2.
-
-DECLARE_EVENT_CLASS(sched_stat_template,
-TP_PROTO(struct task_struct *tsk, u64 delay),
-...
-                __entry->pid    = tsk->pid;
-...
+even with you config, I can't reproduce it here with 3.6-rc3 + mypatch.
 
 
-Here is a patch, which allow us to get "foreign" events.
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
+Peter
