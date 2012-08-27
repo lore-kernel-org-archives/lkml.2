@@ -1,106 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab2H0REt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:04:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34302 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab2H0REr (ORCPT
+	id S1753859Ab2H0RFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:05:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56718 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab2H0RF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:04:47 -0400
-Date: Mon, 27 Aug 2012 10:04:28 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-a2546fae01124fb8063747439300fcf39bac033a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andi@firstfloor.org, rostedt@goodmis.org, srostedt@redhat.com,
-        mmarek@suse.cz, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mmarek@suse.cz, rostedt@goodmis.org,
-        srostedt@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20120807194059.392617243@goodmis.org>
-References: <20120807194059.392617243@goodmis.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace:
-  Add -mfentry to Makefile on function tracer
-Git-Commit-ID: a2546fae01124fb8063747439300fcf39bac033a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 27 Aug 2012 13:05:29 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:04:33 -0700 (PDT)
+In-Reply-To: <1345074214-17531-2-git-send-email-mturquette@linaro.org>
+References: <1345074214-17531-1-git-send-email-mturquette@linaro.org>
+	<1345074214-17531-2-git-send-email-mturquette@linaro.org>
+Date: Mon, 27 Aug 2012 22:35:29 +0530
+Message-ID: <CADTbHxob_pkYN_73AD4YL_Ki5i40iLTJuN0rPuFzYcyyhfoMAQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] [RFC] clk: new locking scheme for reentrancy
+From: Pankaj Jangra <jangra.pankaj9@gmail.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, paul@pwsan.com, pgaikwad@nvidia.com,
+        viresh.kumar@linaro.org, linus.walleij@linaro.org, rnayak@ti.com,
+        rob.herring@calxeda.com, ccross@android.com, myungjoo.ham@samsung.com,
+        broonie@opensource.wolfsonmicro.com, rajagopal.venkat@linaro.org,
+        shawn.guo@linaro.org, pdeschrijver@nvidia.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a2546fae01124fb8063747439300fcf39bac033a
-Gitweb:     http://git.kernel.org/tip/a2546fae01124fb8063747439300fcf39bac033a
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 9 Feb 2011 13:15:59 -0500
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 23 Aug 2012 11:25:02 -0400
+Hi Mike,
 
-ftrace: Add -mfentry to Makefile on function tracer
+On Thu, Aug 16, 2012 at 5:13 AM, Mike Turquette <mturquette@linaro.org> wrote:
+> The global prepare_lock mutex prevents concurrent operations in the clk
+> api.  This incurs a performance penalty when unrelated clock subtrees
+> are contending for the lock.
+>
+> Additionally there are use cases which benefit from reentrancy into the
+> clk api.  A simple example is reparenting a mux clock with a call to
+> clk_set_rate.  Patch #4 in this series demonstrates this without the use
+> of internal helper functions.
+>
+> A more complex example is performing dynamic frequency and voltage
+> scaling from clk_set_rate.  Patches #2 and #3 in this series demonstrate
+> this.
+>
+> This commit affects users of the global prepare_lock mutex, namely
+> clk_prepare, clk_unprepare, clk_set_rate and clk_set_parent.
+>
+> This patch introduces an enum inside of struct clk which tracks whether
+> the framework has LOCKED or UNLOCKED the clk.
+>
+> Access to clk->state must be protected by the global prepare_lock mutex.
+> In the future maybe the global mutex can be dropped and all operations
+> will only use a global spinlock to protect access to the per-clk enums.
+> A general outline of the new locking scheme is as follows:
+>
+> 1) hold the global prepare_lock mutex
+> 2) traverse the tree checking to make sure that any clk's needed are
+> UNLOCKED and not LOCKED
+>         a) if a clk in the subtree of affected clk's is LOCKED then
+>            release the global lock, wait_for_completion and then try
+>            again up to a maximum of WAIT_TRIES times
+>         b) After WAIT_TRIES times return -EBUSY
+> 3) if all clk's are UNLOCKED then mark them as LOCKED
+> 4) release the global prepare_lock mutex
+> 5) do the real work
+> 6) hold the global prepare_lock mutex
+> 7) set all of the clocks previously marked as LOCKED to UNLOCKED
+> 8) release the global prepare_lock mutex and return
+>
+> The primary down-side to this approach is that the clk api's might
+> return -EBUSY due to lock contention.  This is only after having tried
+> several times.  Bailing out like this is necessary to prevent deadlocks.
+>
+> The enum approach in this version of the patchset does not benefit from
+> lockdep checking the lock order (but neither did v1).  It is possible
+> for circular dependencies to pop up for the careless developer and
+> bailing out after a number of unsuccessful tries is the sanest strategy.
+>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> ---
+>  drivers/clk/clk.c            |  354 +++++++++++++++++++++++++++++++++++++-----
+>  include/linux/clk-private.h  |    1 +
+>  include/linux/clk-provider.h |    4 +-
+>  3 files changed, 318 insertions(+), 41 deletions(-)
+>
 
-Thanks to Andi Kleen, gcc 4.6.0 now supports -mfentry for x86
-(and hopefully soon for other archs). What this does is to have
-the function profiler start at the beginning of the function
-instead of after the stack is set up. As plain -pg (mcount) is
-called after the stack is set up, and in some cases can have issues
-with the function graph tracer. It also requires frame pointers to
-be enabled.
+> +}
+> +
+> +void __clk_unprepare(struct clk *clk, struct clk *top)
 
-The -mfentry now calls __fentry__ at the beginning of the function.
-This allows for compiling without frame pointers and even has the
-ability to access parameters if needed.
+Why do you need to change the signature of __clk_prepare and
+__clk_unprepare functions ?
+I mean i did not understand the use of passing struct clk *top? As i
+understand, it tells when you reach at the last
+clk struct in the tree which needs to be prepared/unprepared. Do we
+have extra benefit of this or if i am missing something?
 
-If the architecture and the compiler both support -mfentry then
-use that instead.
+> +{
+>         if (clk->ops->unprepare)
+>                 clk->ops->unprepare(clk->hw);
+>
+> -       __clk_unprepare(clk->parent);
+> +       if (clk != top)
+> +               __clk_unprepare(clk->parent, top);
+> +}
+> +
+> +static void __clk_prepare_unlock(struct clk *clk, struct clk *top)
+> +{
+> +       clk->state = UNLOCKED;
+> +
+> +       if (clk != top)
+> +               __clk_prepare_unlock(clk->parent, top);
+>  }
+>
+>  /**
+> @@ -404,35 +437,94 @@ void __clk_unprepare(struct clk *clk)
+>   */
+>  void clk_unprepare(struct clk *clk)
+>  {
+> +       struct clk *top = ERR_PTR(-EBUSY);
+> +       int tries = 0;
+> +
+> +       /*
+> +        * walk the list of parents checking clk->state along the way.  If all
+> +        * clk->state is UNLOCKED then continue.  If a clk->state is LOCKED then
+> +        * bail out with -EBUSY.
+> +        */
+> +       while (IS_ERR(top)) {
+> +               mutex_lock(&prepare_lock);
+> +               top = __clk_unprepare_lock(clk);
+> +               mutex_unlock(&prepare_lock);
+> +
+> +               if (IS_ERR(top)) {
+> +                       pr_debug("%s: %s failed with %ld on attempt %d\n",
+> +                                       __func__, clk->name, PTR_ERR(top),
+> +                                       tries);
+> +                       wait_for_completion(&clk_completion);
+> +                       if (WAIT_TRIES == ++tries)
+> +                               break;
+> +               } else
+> +                       break;
 
-Link: http://lkml.kernel.org/r/20120807194059.392617243@goodmis.org
+Braces around else part please.
 
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- Makefile             |    6 +++++-
- kernel/trace/Kconfig |    5 +++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
+> +       }
+> +
+> +       if (WAIT_TRIES == tries) {
+> +               pr_warning("%s: failed to lock clocks; cyclical dependency?\n",
+> +                               __func__);
+> +               return;
+> +       }
+> +
+> +       /* unprepare the list of clocks from clk to top */
+> +       __clk_unprepare(clk, top);
+> +
 
-diff --git a/Makefile b/Makefile
-index ddf5be9..e7ca93f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -609,7 +609,11 @@ KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
- endif
- 
- ifdef CONFIG_FUNCTION_TRACER
--KBUILD_CFLAGS	+= -pg
-+ifdef CONFIG_HAVE_FENTRY
-+CC_USING_FENTRY	:= $(call cc-option, -mfentry -DCC_USING_FENTRY)
-+endif
-+KBUILD_CFLAGS	+= -pg $(CC_USING_FENTRY)
-+KBUILD_AFLAGS	+= $(CC_USING_FENTRY)
- ifdef CONFIG_DYNAMIC_FTRACE
- 	ifdef CONFIG_HAVE_C_RECORDMCOUNT
- 		BUILD_C_RECORDMCOUNT := y
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 8c4c070..9301a0e 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -49,6 +49,11 @@ config HAVE_SYSCALL_TRACEPOINTS
- 	help
- 	  See Documentation/trace/ftrace-design.txt
- 
-+config HAVE_FENTRY
-+	bool
-+	help
-+	  Arch supports the gcc options -pg with -mfentry
-+
- config HAVE_C_RECORDMCOUNT
- 	bool
- 	help
+> +       /* unprepare the list of clocks from clk to top */
+> +       __clk_prepare(clk, top);
+
+You mean prepare right ? :)
+
+
+
+Regards,
+Pankaj Kumar
