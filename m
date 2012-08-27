@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab2H0SiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:38:20 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:34940 "EHLO smtp.outflux.net"
+	id S1753969Ab2H0Siu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:38:50 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60007 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab2H0SiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:38:18 -0400
-Date: Mon, 27 Aug 2012 11:38:13 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: James Morris <james.l.morris@oracle.com>,
-        Kees Cook <keescook@chromium.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH] Yama: handle 32-bit userspace prctl
-Message-ID: <20120827183813.GA23991@www.outflux.net>
+	id S1751466Ab2H0Sis convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 14:38:48 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+Subject: RE: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
+ device-tree
+Thread-Topic: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
+ device-tree
+Thread-Index: AQHNhDurjKQbZY/bOUaqH5mz8nRcmZdti8MAgABnbhD//631gIAAXJ1w
+Date: Mon, 27 Aug 2012 18:38:36 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EA99446@DBDE01.ent.ti.com>
+References: <1346061842-28714-1-git-send-email-hvaibhav@ti.com>
+ <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com>
+ <79CD15C6BA57404B839C016229A409A83EA99396@DBDE01.ent.ti.com>
+ <alpine.DEB.2.00.1208271836270.26953@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1208271836270.26953@utopia.booyaka.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running a 64-bit kernel and receiving prctls from a 32-bit
-userspace, the "-1" used as an unsigned long will end up being
-misdetected. The kernel is looking for 0xffffffffffffffff instead of
-0xffffffff. Since prctl lacks a distinct compat interface, Yama needs
-to handle this translation itself. As such, support either value as
-meaning PR_SET_PTRACER_ANY, to avoid breaking the ABI for 64-bit.
+On Tue, Aug 28, 2012 at 00:06:45, Paul Walmsley wrote:
+> On Mon, 27 Aug 2012, Hiremath, Vaibhav wrote:
+> 
+> > On Mon, Aug 27, 2012 at 22:50:12, Paul Walmsley wrote:
+> >
+> > > Is the dcan driver present in v3.6-rc kernels?  
+> > 
+> > Multiple versions have been submitted already, I have validated using them.
+> > Irrespective of this, it is independent change and required for the driver.
+> 
+> OK, will queue it for 3.7.
+> 
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: stable@vger.kernel.org
----
- security/yama/yama_lsm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks Paul.
 
-diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-index 0cc99a3..dcd6178 100644
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -143,7 +143,7 @@ static int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
- 		if (arg2 == 0) {
- 			yama_ptracer_del(NULL, myself);
- 			rc = 0;
--		} else if (arg2 == PR_SET_PTRACER_ANY) {
-+		} else if (arg2 == PR_SET_PTRACER_ANY || (int)arg2 == -1) {
- 			rc = yama_ptracer_add(NULL, myself);
- 		} else {
- 			struct task_struct *tracer;
--- 
-1.7.0.4
+Thanks,
+Vaibhav
 
-
--- 
-Kees Cook
-Chrome OS Security
