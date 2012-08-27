@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2H0Q7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:59:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34181 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab2H0Q7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:59:18 -0400
-Date: Mon, 27 Aug 2012 09:58:55 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de
-In-Reply-To: <1345618831-9148-2-git-send-email-namhyung@kernel.org>
-References: <1345618831-9148-2-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent:
-  Do not link broken field arg for an old ftrace event
-Git-Commit-ID: fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753605Ab2H0RAR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:00:17 -0400
+Received: from ozlabs.org ([203.10.76.45]:53922 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752293Ab2H0RAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 13:00:13 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Howells <dhowells@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: linux-next: manual merge of the rr tree with the mips tree
+In-Reply-To: <CAMuHMdV9VdJ__yWZwzUnM3=XiRo7NWxiJnnoOBgZ9Jg8v0RTNg@mail.gmail.com>
+References: <20120822131130.d669275edf903d9a38a35789@canb.auug.org.au> <CAMuHMdV9VdJ__yWZwzUnM3=XiRo7NWxiJnnoOBgZ9Jg8v0RTNg@mail.gmail.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 28 Aug 2012 02:16:22 +0930
+Message-ID: <87ehmswae9.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 09:59:01 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7
-Gitweb:     http://git.kernel.org/tip/fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Wed, 22 Aug 2012 16:00:28 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 22 Aug 2012 16:02:36 -0300
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
+> Hi Stephen, David,
+>
+> On Wed, Aug 22, 2012 at 5:11 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Today's linux-next merge of the rr tree got a conflict in
+>> arch/mips/kernel/module.c between commit c54de490a2e4 ("MIPS: Module:
+>> Deal with malformed HI16/LO16 relocation sequences") from the mips tree
+>> and commit 9db0bbe072c8 ("MIPS: Fix module.c build for 32 bit") from the
+>> rr tree.
+>>
+>> Just context changes (I think).  I fixed it up (see below) and can carry
+>> the fix as necessary.
+>
+>> + #endif
+>
+> At first I thought this merge conflict resolution introduced the bogus #endif:
+>
+> arch/mips/kernel/module.c:247:2: error: #endif without #if
 
-tools lib traceevent: Do not link broken field arg for an old ftrace event
+That was my bad rebase against another patch.
 
-Defer linking a newly allocated arg to print_fmt.args until all of its
-field is setup so that later access to ->field.name cannot be NULL.
+Fixed now, thanks.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1345618831-9148-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/event-parse.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index b7c2c49..33fcd94 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -4754,20 +4754,20 @@ int pevent_parse_event(struct pevent *pevent,
- 		struct print_arg *arg, **list;
- 
- 		/* old ftrace had no args */
--
- 		list = &event->print_fmt.args;
- 		for (field = event->format.fields; field; field = field->next) {
- 			arg = alloc_arg();
--			*list = arg;
--			list = &arg->next;
- 			arg->type = PRINT_FIELD;
- 			arg->field.name = strdup(field->name);
- 			if (!arg->field.name) {
- 				do_warning("failed to allocate field name");
- 				event->flags |= EVENT_FL_FAILED;
-+				free_arg(arg);
- 				return -1;
- 			}
- 			arg->field.field = field;
-+			*list = arg;
-+			list = &arg->next;
- 		}
- 		return 0;
- 	}
+Rusty.
