@@ -1,174 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab2H0Nw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 09:52:59 -0400
-Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:56677 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab2H0Nwz (ORCPT
+	id S1752367Ab2H0N7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 09:59:08 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:37668 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab2H0N7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 09:52:55 -0400
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 09:52:54 EDT
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 03/11] pinctrl: mvebu: kirkwood pinctrl driver
-X-PHP-Originating-Script: 0:main.inc
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Mon, 27 Aug 2012 06:43:31 -0700
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Organization: Codethink Limited
-In-Reply-To: <CACRpkdbG4jkFcVP_6AmAZzciffQCamKXw7PcFnTdccyq7AMa8A@mail.gmail.com>
-References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1344689809-6223-4-git-send-email-sebastian.hesselbarth@gmail.com>
- <CACRpkdbG4jkFcVP_6AmAZzciffQCamKXw7PcFnTdccyq7AMa8A@mail.gmail.com>
-Message-ID: <343192fa3698ed0575444a5603ed734d@codethink.co.uk>
-User-Agent: Codethink Webmail/0.7.1
+	Mon, 27 Aug 2012 09:59:05 -0400
+Date: Mon, 27 Aug 2012 15:58:59 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, andi@firstfloor.org, bp@amd64.org,
+        gong.chen@linux.intel.com, ananth@in.ibm.com,
+        masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
+Message-ID: <20120827135859.GY16230@one.firstfloor.org>
+References: <20120827112503.10313.62594.stgit@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120827112503.10313.62594.stgit@localhost.localdomain>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/08/2012 06:49, Linus Walleij wrote:
-> On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
-> <sebastian.hesselbarth@gmail.com> wrote:
->
->> This patch adds a SoC specific pinctrl driver for Marvell Kirkwood 
->> SoCs
->> plus DT binding documentation. This driver will use the mvebu 
->> pinctrl
->> driver core.
->
-> Thanks for working on Kirkwood. Love this platform.
->
->> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> index cd3d827..361f513 100644
->> --- a/arch/arm/Kconfig
->> +++ b/arch/arm/Kconfig
->> @@ -596,6 +596,7 @@ config ARCH_KIRKWOOD
->>         select GENERIC_CLOCKEVENTS
->>         select NEED_MACH_IO_H
->>         select PLAT_ORION
->> +       select PINCTRL
->
-> select PINCTRL_KIRKWOOD too I think.
-> Then it's just automatic.
->
->> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
->> index e2427eb..1f84090 100644
->> --- a/drivers/pinctrl/Kconfig
->> +++ b/drivers/pinctrl/Kconfig
->> @@ -147,7 +147,7 @@ config PINCTRL_COH901
->>
->>  config PINCTRL_MVEBU
->>         bool "Marvell SoC pin controller drivers"
->> -       depends on ARCH_MVEBU || ARCH_DOVE
->> +       depends on ARCH_MVEBU || ARCH_DOVE || ARCH_KIRKWOOD
->
-> As stated elsewhere I think this should be
-> depends on PLAT_ORION
->
->> +config PINCTRL_KIRKWOOD
->> +       bool "Support for Marvell Kirkwood SoCs"
->> +       depends on PINCTRL_MVEBU
->
-> depends on ARCH_KIRKWOOD
-> select PINCTRL_MVEBU
->
-> (...)
->> diff --git a/drivers/pinctrl/pinctrl-kirkwood.c 
->> b/drivers/pinctrl/pinctrl-kirkwood.c
->> +static struct mvebu_pinctrl_soc_info kirkwood_pinctrl_info;
->> +
->> +static struct of_device_id kirkwood_pinctrl_of_match[] 
->> __devinitdata = {
->> +       { .compatible = "marvell,88f6180-pinctrl",
->> +                                         .data = (void 
->> *)VARIANT_MV88F6180 },
->> +       { .compatible = "marvell,88f6190-pinctrl",
->> +                                         .data = (void 
->> *)VARIANT_MV88F6190 },
->> +       { .compatible = "marvell,88f6192-pinctrl",
->> +                                         .data = (void 
->> *)VARIANT_MV88F6192 },
->> +       { .compatible = "marvell,88f6281-pinctrl",
->> +                                         .data = (void 
->> *)VARIANT_MV88F6281 },
->> +       { .compatible = "marvell,88f6282-pinctrl",
->> +                                         .data = (void 
->> *)VARIANT_MV88F6282 },
->> +       { }
->> +};
->
-> I'm thinking this variant should maybe be an enum... unless it is
-> strongly established somewhere in Orion/Marvell stuff.
->
->> +static int __devinit kirkwood_pinctrl_probe(struct platform_device 
->> *pdev)
->> +{
->> +       struct mvebu_pinctrl_soc_info *soc = &kirkwood_pinctrl_info;
->> +       const struct of_device_id *match =
->> +               of_match_device(kirkwood_pinctrl_of_match, 
->> &pdev->dev);
->> +
->> +       if (match) {
->> +               soc->variant = (unsigned)match->data & 0xff;
->> +               switch (soc->variant) {
->> +               case VARIANT_MV88F6180:
->> +                       soc->controls = mv88f6180_mpp_controls;
->> +                       soc->ncontrols = 
->> ARRAY_SIZE(mv88f6180_mpp_controls);
->> +                       soc->modes = mv88f6xxx_mpp_modes;
->> +                       soc->nmodes = 
->> ARRAY_SIZE(mv88f6xxx_mpp_modes);
->> +                       soc->gpioranges = mv88f6180_gpio_ranges;
->> +                       soc->ngpioranges = 
->> ARRAY_SIZE(mv88f6180_gpio_ranges);
->> +                       break;
->> +               case VARIANT_MV88F6190:
->> +               case VARIANT_MV88F6192:
->> +                       soc->controls = mv88f619x_mpp_controls;
->> +                       soc->ncontrols = 
->> ARRAY_SIZE(mv88f619x_mpp_controls);
->> +                       soc->modes = mv88f6xxx_mpp_modes;
->> +                       soc->nmodes = 
->> ARRAY_SIZE(mv88f6xxx_mpp_modes);
->> +                       soc->gpioranges = mv88f619x_gpio_ranges;
->> +                       soc->ngpioranges = 
->> ARRAY_SIZE(mv88f619x_gpio_ranges);
->> +                       break;
->> +               case VARIANT_MV88F6281:
->> +               case VARIANT_MV88F6282:
->> +                       soc->controls = mv88f628x_mpp_controls;
->> +                       soc->ncontrols = 
->> ARRAY_SIZE(mv88f628x_mpp_controls);
->> +                       soc->modes = mv88f6xxx_mpp_modes;
->> +                       soc->nmodes = 
->> ARRAY_SIZE(mv88f6xxx_mpp_modes);
->> +                       soc->gpioranges = mv88f628x_gpio_ranges;
->> +                       soc->ngpioranges = 
->> ARRAY_SIZE(mv88f628x_gpio_ranges);
->> +                       break;
->> +               }
->> +               pdev->dev.platform_data = soc;
->> +       }
->> +       return mvebu_pinctrl_probe(pdev);
->> +}
+On Mon, Aug 27, 2012 at 04:55:03PM +0530, Naveen N. Rao wrote:
+> Many MCE boot flags are boolean in nature, but are declared as integers
+> currently. We can pack these into a bitfield to save some space.
 
-Why not have structures defining the soc-> parameters and use that in 
-the
-of_match list?
+Note that this doesn't necessarily save anything because it needs more
+code to access, and accesses are more common than the flag
 
--- 
-Ben
+	cmpl  $0,foo(%rip)            7 bytes
+        testl $1,foo(%rip)           10 bytes
+        bt    $0,foo(%rip)            8 bytes
 
+Even worse for writes. The best you can usually do is to use chars on
+x86.
+
+-Andi
