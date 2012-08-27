@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2H0IIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 04:08:13 -0400
-Received: from na3sys009aob123.obsmtp.com ([74.125.149.148]:56140 "HELO
-	na3sys009aob123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752888Ab2H0IIL (ORCPT
+	id S1753364Ab2H0IIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 04:08:16 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:49288 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab2H0IIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 04:08:11 -0400
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 04:08:11 EDT
+	Mon, 27 Aug 2012 04:08:14 -0400
+Message-ID: <503B2AE7.4020704@atmel.com>
+Date: Mon, 27 Aug 2012 10:08:07 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Reply-To: zoology.02@gmail.com
-Date: Mon, 27 Aug 2012 09:00:38 +0100
-X-Google-Sender-Auth: OiqN-4PdRgMmiWobrCWVSWXIcuY
-Message-ID: <CAKVBgFWzF=PLo4vQ10axKfNKZ9V5wArJHM10E9aAmfqbdF6sJQ@mail.gmail.com>
-Subject: Investment
-From: Wale Jahim Wilson <jahim4luv007@hotmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: Joachim Eastwood <joachim.eastwood@jotron.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        voice <voice.shen@atmel.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL] at91: fixes for 3.6 (take 1 bis)
+References: <5037A4F3.9090608@atmel.com>
+In-Reply-To: <5037A4F3.9090608@atmel.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention
+Hi,
 
-I am a business man here in UK, I want to Invest in real estate or any
-lucrative business in your country and i don't know how to go about
-doing it. The proposed amount for investment is $12,000,000.00 and am
-willing to offer you 20%. I want us to partner together. I will
-provide the money necessary for the Investment and you will help look
-over it.
+This pull request supersedes the previous one from August 24th. It removes
+the ASoC SSC part which is now handled by Mark Brown.
 
+The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
 
-If you agree to this offer, kindly forward the below information to me
-Age, mobile number, Occupation and Nationality as soon as we finalise
-all deal i will make arrangement for my representative to meet you for
-a meeting in your country cos i can not travel out of the country at
-this time.
+  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
 
-Thank you
-Wale Wilson
-+447700093060
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 51a6149b89b822cacf572b2ca2a15cb6f2232b11:
+
+  ARM: at91/feature-removal-schedule: delay at91_mci removal (2012-08-27 09:59:36 +0200)
+
+----------------------------------------------------------------
+Fixes for AT91 related to:
+- move to sparse IRQ: some drivers were forgotten
+- a DTS typo
+- the delay for removal of old at91_mci driver
+
+----------------------------------------------------------------
+Bo Shen (1):
+      ARM: at91/dts: remove partial parameter in at91sam9g25ek.dts
+
+Ludovic Desroches (3):
+      ARM: at91: fix system timer irq issue due to sparse irq support
+      ARM: at91: fix rtc-at91sam9 irq issue due to sparse irq support
+      ARM: at91/feature-removal-schedule: delay at91_mci removal
+
+Nicolas Ferre (1):
+      ARM: at91/clock: fix PLLA overclock warning
+
+ Documentation/feature-removal-schedule.txt |    2 +-
+ arch/arm/boot/dts/at91sam9g25ek.dts        |    2 +-
+ arch/arm/mach-at91/at91rm9200_time.c       |    2 +-
+ arch/arm/mach-at91/at91sam9260_devices.c   |    6 +++++-
+ arch/arm/mach-at91/at91sam9261_devices.c   |    6 +++++-
+ arch/arm/mach-at91/at91sam9263_devices.c   |   10 ++++++++--
+ arch/arm/mach-at91/at91sam9g45_devices.c   |    6 +++++-
+ arch/arm/mach-at91/at91sam9rl_devices.c    |    6 +++++-
+ arch/arm/mach-at91/clock.c                 |   12 ++++++++++++
+ drivers/rtc/rtc-at91sam9.c                 |   22 +++++++++++++++-------
+ 10 files changed, 58 insertions(+), 16 deletions(-)
+
+Thanks, best regards,
+-- 
+Nicolas Ferre
