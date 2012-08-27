@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab2H0SCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:02:21 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45228 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab2H0SCS (ORCPT
+	id S1754066Ab2H0SCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:02:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54913 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab2H0SCv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:02:18 -0400
-Date: Mon, 27 Aug 2012 13:02:10 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: Peter.Huewe@infineon.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
-        xiaoyan.zhang@intel.com, jj@chaosbits.net
-Subject: Re: [GIT PULL] tpmdd: TPM drivers, tpm-rng and fixes
-Message-ID: <20120827180210.GA14509@linux.vnet.ibm.com>
-References: <20120822215216.GC13519@linux.vnet.ibm.com>
- <alpine.LRH.2.02.1208240632120.25506@tundra.namei.org>
- <74A44E99E3274B4CB570415926B37D440E13FD@MUCSE501.eu.infineon.com>
- <20120824150533.GA2190@linux.vnet.ibm.com>
- <alpine.LRH.2.02.1208250759150.1650@tundra.namei.org>
- <74A44E99E3274B4CB570415926B37D440E4B5A@MUCSE501.eu.infineon.com>
- <20120827161747.GA2436@linux.vnet.ibm.com>
- <alpine.LRH.2.02.1208280321220.17312@tundra.namei.org>
+	Mon, 27 Aug 2012 14:02:51 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+Subject: RE: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
+ device-tree
+Thread-Topic: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
+ device-tree
+Thread-Index: AQHNhDurjKQbZY/bOUaqH5mz8nRcmZdti8MAgABnbhA=
+Date: Mon, 27 Aug 2012 18:02:35 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EA99396@DBDE01.ent.ti.com>
+References: <1346061842-28714-1-git-send-email-hvaibhav@ti.com>
+ <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1208280321220.17312@tundra.namei.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082718-7408-0000-0000-000007F31FB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 03:21:51AM +1000, James Morris wrote:
-> On Mon, 27 Aug 2012, Kent Yoder wrote:
+On Mon, Aug 27, 2012 at 22:50:12, Paul Walmsley wrote:
+> Hi
 > 
-> > On Mon, Aug 27, 2012 at 07:23:40AM +0000, Peter.Huewe@infineon.com wrote:
-> > > >> > Build using make -> no error.
-> > > >>   I can't reproduce this either, James, can you send out your .config?
-> > > 
-> > > > See attached.
-> > > 
-> > > Hi James,
-> > > 
-> > > even with you config, I can't reproduce it here with 3.6-rc3 + mypatch.
+> On Mon, 27 Aug 2012, Vaibhav Hiremath wrote:
+> 
+> > Currently, the device names for the dcan module follows the
+> > format "dcan.X", where 'X' is the dcan instance number.
+> > On other side, driver may request for clock with/without con_id
+> > and dev_id, and it is expected that platform should respect this
+> > request and return the requested clock handle.
 > > 
-> >   Same here, against linux-security plus the pullreq patches...
+> > Now, when using device tree, the format of the device name created
+> > by OF layer is different, "<reg-address>.<device-name>",
+> > assuming that the device-tree "reg" property is specified.
+> > This causes the look-up failure for clock node in dcan driver
+> > 
+> > To fix this add new dcan clock alias for using device-tree.
 > 
-> I may have missed something, but what do you mean by pullreq patches?
+> Is the dcan driver present in v3.6-rc kernels?  
 
-  Just the stuff I asked you to pull here.
+Multiple versions have been submitted already, I have validated using them.
+Irrespective of this, it is independent change and required for the driver.
 
-Kent
-
-> 
-> 
-> -- 
-> James Morris
-> <jmorris@namei.org>
-> 
+Thanks,
+Vaibhav
 
