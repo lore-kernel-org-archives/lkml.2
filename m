@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab2H0PuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:50:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44069 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653Ab2H0Pt5 convert rfc822-to-8bit (ORCPT
+	id S1753224Ab2H0Pv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:51:26 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40855 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab2H0PvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:49:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,321,1344236400"; 
-   d="scan'208";a="191857504"
-From: "Gross, Mark" <mark.gross@intel.com>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-CC: "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-Subject: RE: [PATCH RESEND] x86_dump_trace: avoiding endless " <IRQ> " is
- printed
-Thread-Topic: [PATCH RESEND] x86_dump_trace: avoiding endless " <IRQ> " is
- printed
-Thread-Index: Ac2D9xtDBkCP/QDsRbSYlkNzzpgV2AAcy6GQ
-Date: Mon, 27 Aug 2012 15:49:55 +0000
-Message-ID: <BD75D217E5BAC84080F8EFB25829763746C926C7@ORSMSX101.amr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A16FBD5@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A16FBD5@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 27 Aug 2012 11:51:24 -0400
+Message-ID: <1346082646.8623.8.camel@lambeau>
+Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+Reply-To: mjw@linux.vnet.ibm.com
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
+        mtosatti@redhat.com, mingo@redhat.com, avi@redhat.com
+Date: Mon, 27 Aug 2012 10:50:46 -0500
+In-Reply-To: <50396173.4020005@parallels.com>
+References: <20120823231346.11681.1502.stgit@lambeau>
+	 <503708C8.2090401@parallels.com> <1345821066.4950.6.camel@lambeau>
+	 <50396173.4020005@parallels.com>
+Organization: IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082715-1780-0000-0000-000008C47C75
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000293; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000007; SDB=6.00168973; UDB=6.00038294; UTC=2012-08-27
+ 15:51:23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do you think we should add the same change to dumpstack_64.c too.
+On Sat, 2012-08-25 at 19:36 -0400, Glauber Costa wrote:
+> On 08/24/2012 11:11 AM, Michael Wolf wrote:
+> > On Fri, 2012-08-24 at 08:53 +0400, Glauber Costa wrote:
+> >> On 08/24/2012 03:14 AM, Michael Wolf wrote:
+> >>> This is an RFC regarding the reporting of stealtime.  In the case of
+> >>> where you have a system that is running with partial processors such as
+> >>> KVM the user may see steal time being reported in accounting tools such
+> >>> as top or vmstat.  This can cause confusion for the end user.  To
+> >>> ease the confusion this patch set adds a sysctl interface to set the
+> >>> cpu entitlement.  This is the percentage of cpu that the guest system is
+> >>>  expected to receive.  As long as the steal time is within its expected
+> >>> range it will show up as 0 in /proc/stat.  The user will then see in the
+> >>> accounting tools that they are getting a full utilization of the cpu
+> >>> resources assigned to them.
+> >>>
+> >>
+> >> And how is such a knob not confusing?
+> >>
+> >> Steal time is pretty well defined in meaning and is shown in top for
+> >> ages. I really don't see the point for this.
+> > 
+> > Currently you can see the steal time but you have no way of knowing if
+> > the cpu utilization you are seeing on the guest is the expected amount.
+> > I decided on making it a knob because a guest could be migrated to
+> > another system and it's entitlement could change because of hardware or 
+> > load differences.  It could simply be a /proc file and report the
+> > current entitlement if needed.   As things are currently implemented I 
+> > don't see how someone knows if the guest is running as expected or
+> > whether there is a problem.
+> > 
+> 
+> Turning off steal time display won't get even close to displaying the
+> information you want. What you probably want is a guest-visible way to
+> say how many miliseconds you are expected to run each second. Right?
 
-Looks like you addressed Alan's comments already (i.e. use of unlikely not needed, us %p, and use pr_warn instead of printk)
+It is not clear to me how knowing how many milliseconds you are
+expecting to run will help the user.  Currently the users will run top
+to see how well the guest is running.  If they see _any_ steal time some
+users think they are not getting the full use of their processor
+entitlement.
 
---mark
+Maybe I'm missing what you are proposing, but even if you knew the
+milliseconds that you were expecting for your processor you would have
+to adjust the top output in your head so to speak.  You would see the
+utilization and then say 'ok that matches the number of milliseconds I
+expected to run..."   If we take away the steal time (as long as it is
+equal to or less than the expected amount of steal time) then the user
+running top will see the 100% utilization.
 
-> -----Original Message-----
-> From: Liu, Chuansheng
-> Sent: Sunday, August 26, 2012 6:56 PM
-> To: 'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)
-> Cc: hpa@linux.intel.com; Gross, Mark; alan@linux.intel.com
-> Subject: [PATCH RESEND] x86_dump_trace: avoiding endless " <IRQ> " is
-> printed
-> 
-> From: liu chuansheng <chuansheng.liu@intel.com>
-> Subject: [PATCH] x86_dump_trace: avoiding endless " <IRQ> " is printed
-> 
-> Found the case that endless " <IRQ> " printing in dump_trace, and no real
-> meaningful stack traces are output, so there should be one rare case that
-> possibly context->previous_esp = context or other cases.
-> 
-> The endless " <IRQ> " is as below:
-> ...
-> [   82.215244,0]  <IRQ>
-> [   82.215399,0]  <IRQ>
-> [   82.215554,0]  <IRQ>
-> [   82.215710,0]  <IRQ>
-> [   82.215865,0]  <IRQ>
-> [   82.216022,0]  <IRQ>
-> [   82.216178,0]  <IRQ>
-> [   82.216333,0]  <IRQ>
-> [   82.216488,0]  <IRQ>
-> [   82.216643,0]  <IRQ>
-> [   82.216798,0]  <IRQ>
-> [   82.216953,0]  <IRQ>
-> ...
-> 
-> This patch aim is:
-> 1/ Limiting the " <IRQ> " outputing, currently the max IRQ contexts is
-> 2(softirq+harirq combination); 2/ When the max IRQ contexts 2 is reached,
-> print the context content to confirm;
-> 
-> Change-Id: I6d72aa71c4c5ff8f9e6ae133b3f6bfec8887750d
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  arch/x86/kernel/dumpstack_32.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/dumpstack_32.c
-> b/arch/x86/kernel/dumpstack_32.c index 1038a41..410fa38 100644
-> --- a/arch/x86/kernel/dumpstack_32.c
-> +++ b/arch/x86/kernel/dumpstack_32.c
-> @@ -22,6 +22,7 @@ void dump_trace(struct task_struct *task, struct pt_regs
-> *regs,
->                 const struct stacktrace_ops *ops, void *data)  {
->         int graph = 0;
-> +       int dump_irq_count = 0;
-> 
->         if (!task)
->                 task = current;
-> @@ -47,8 +48,18 @@ void dump_trace(struct task_struct *task, struct
-> pt_regs *regs,
->                 stack = (unsigned long *)context->previous_esp;
->                 if (!stack)
->                         break;
-> +
-> +               if (dump_irq_count > 2) {
-> +                       pr_warn("break multi-IRQ print,"
-> +                               "context=%p, stack=%p\n",
-> +                               context,
-> +                               stack);
-> +                       break;
-> +               }
-> +
->                 if (ops->stack(data, "IRQ") < 0)
->                         break;
-> +               dump_irq_count++;
->                 touch_nmi_watchdog();
->         }
->  }
-> --
-> 1.7.0.4
+
+
