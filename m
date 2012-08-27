@@ -1,64 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab2H0SWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:22:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14483 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab2H0SWR (ORCPT
+	id S1753782Ab2H0SWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:22:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57564 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753623Ab2H0SWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:22:17 -0400
-X-Authority-Analysis: v=2.0 cv=LIjkseq9 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0RydBfvECm4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=9zSq_SAaQk8A:10 a=meVymXHHAAAA:8 a=Sqv0NHpG3uGkbr7ceLsA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Subject: [PATCH] Add feature-removal-schedule.txt removal to
- feature-removal-schedule.txt
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Aug 2012 14:22:05 -0400
-Message-ID: <1346091725.19381.10.camel@pippen.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Aug 2012 14:22:22 -0400
+Date: Mon, 27 Aug 2012 11:22:18 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Axel Lin <axel.lin@gmail.com>, Gyungoh Yoo <jack.yoo@maxim-ic.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] max8907: fix use of possibly NULL idata
+Message-ID: <20120827182217.GY4339@opensource.wolfsonmicro.com>
+References: <1345745958-16782-1-git-send-email-swarren@wwwdotorg.org>
+ <5036758F.1030507@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5036758F.1030507@wwwdotorg.org>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The file feature-removal-schedule.txt is ignored by most people except
-for people that add to it. It's more of a global TODO list for
-developers than being anything useful by anyone.
+On Thu, Aug 23, 2012 at 12:25:19PM -0600, Stephen Warren wrote:
 
-Add a feature removal of removing the feature-removal-schedule.txt.
+> If I interpreted Mark Brown correctly, this isn't correct; all the
+> regulators within the chip should always be registered, just without any
+> user-supplied constraints. Assuming I didn't misinterpret Mark, can you
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
----
- Documentation/feature-removal-schedule.txt |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index afaff31..dcbb573 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -6,6 +6,17 @@ be removed from this file.  The suggested deprecation period is 3 releases.
- 
- ---------------------------
- 
-+What:	Documentation/feature-removal-schedule.txt
-+When:	v3.8
-+Why:	Developers add their TODO list here, and no one else reads it.
-+	It causes a lot of silly conflicts that annoy Linus.
-+	There are better ways to remove features than adding your crap here.
-+	Add a printk() or 'CONFIG_FOO default n' and see who complains.
-+	This file has been proven to be absolutely useless.
-+Who:	Steven Rostedt <rostedt@goodmis.org>
-+
-+---------------------------
-+
- What:	ddebug_query="query" boot cmdline param
- When:	v3.8
- Why:	obsoleted by dyndbg="query" and module.dyndbg="query"
-
-
+That's what I meant, yes.
