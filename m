@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab2H0P2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:28:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab2H0P16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:27:58 -0400
-Message-ID: <503B920F.30509@suse.com>
-Date: Mon, 27 Aug 2012 11:28:15 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1752843Ab2H0Pda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:33:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43234 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab2H0Pd1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 11:33:27 -0400
+Message-ID: <503B933F.2030803@gmail.com>
+Date: Mon, 27 Aug 2012 17:33:19 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>, Wolfram Sang <w.sang@pengutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jeff Garzik <jgarzik@redhat.com>, Andrew Lunn <andrew@lunn.ch>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: [PATCH] clk.h: Fix shim ifdef guard (HAVE_CLK -> COMMON_CLK)
+To: Matt Porter <mporter@ti.com>
+CC: vinod.koul@intel.com, cjb@laptop.org, grant.likely@secretlab.ca,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH v3 0/3] DaVinci DMA engine conversion
+References: <1345684176-21472-1-git-send-email-mporter@ti.com>
+In-Reply-To: <1345684176-21472-1-git-send-email-mporter@ti.com>
 X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 93abe8e4 (clk: add non HAVE_CLK routines) added shims for
-the clk code but HAVE_CLK isn't enough. It's possible to have the
-clk support but not enable it. We end up with full prototypes for code
-that is never built - causing module linking to fail later.
+Hi Matt,
 
-This patch changes the guard to use COMMON_CLK, which actually guards
-the code.
+On 23.08.2012 03:09, Matt Porter wrote:
+> This series begins the conversion of the DaVinci private EDMA API
+> implementation to a DMA engine driver and converts two of the three
+> in-kernel users of the private EDMA API to DMA engine.
+> 
+> The approach taken is similar to the recent OMAP DMA Engine
+> conversion. The EDMA DMA Engine driver is a wrapper around the existing
+> private EDMA implementation and registers the platform device within
+> the driver.  This allows the conversion series to stand alone with just
+> the drivers and no changes to platform code. It also allows peripheral
+> drivers to continue to use the private EDMA implementation until they
+> are converted.
+> 
+> The EDMA DMA Engine driver supports slave transfers only at this time. It
+> is planned to add cyclic transfers in support of audio peripherals.
+> 
+> There are three users of the private EDMA API in the kernel now:
+> davinci_mmc, spi-davinci, and davinci-mcasp.  This series provides DMA
+> Engine conversions for the davinci_mmc and spi-davinci drivers which
+> use the supported slave transfers.
+> 
+> This series has been tested on an AM18x EVM and Hawkboard with
+> driver performance comparable to that of the private EDMA API
+> implementations. Both MMC0 and MMC1 are tested which handles the
+> DA850/OMAP-L138/AM18x specific case where MMC1 uses DMA channels on
+> a second EDMA channel controller.  All other platforms have a simpler
+> design with just a single EDMA channel controller.
+> 
+> For those wanting to easily test this series, I've pushed a branch for
+> each version to my github tree at https://github.com/ohporter/linux. The
+> current branch is edma-dmaengine-v3.
+> 
+> After this series, the current plan is to complete the mcasp driver
+> conversion which includes adding cyclic dma support. This will then
+> enable the removal and refactoring of the private EDMA API functionality
+> into the EDMA DMA Engine driver.  Since EDMA is also used on the AM33xx
+> family of parts in mach-omap2/, the plan is to enable this driver on
+> that platform as well.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
- include/linux/clk.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -120,7 +120,7 @@ static inline void clk_unprepare(struct
- }
- #endif
- 
--#ifdef CONFIG_HAVE_CLK
-+#ifdef CONFIG_COMMON_CLK
- /**
-  * clk_get - lookup and obtain a reference to a clock producer.
-  * @dev: device for clock "consumer"
-@@ -276,7 +276,7 @@ struct clk *clk_get_parent(struct clk *c
-  */
- struct clk *clk_get_sys(const char *dev_id, const char *con_id);
- 
--#else /* !CONFIG_HAVE_CLK */
-+#else /* !CONFIG_COMMON_CLK */
- 
- static inline struct clk *clk_get(struct device *dev, const char *id)
- {
+Once you have a patch for the McASP driver conversion, I can happily
+test this on a AM33xx board, together with Gururaja's latest McASP
+refactoring series. Let me know how I can help you here.
 
 
--- 
-Jeff Mahoney
-SUSE Labs
+Thanks,
+Daniel
+
