@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab2H0UXT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:23:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11765 "EHLO mx1.redhat.com"
+	id S1754570Ab2H0UXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:23:17 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55857 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754505Ab2H0UXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:23:10 -0400
-Date: Mon, 27 Aug 2012 17:22:32 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v9 0/5] make balloon pages movable by compaction
-Message-ID: <20120827202231.GB6517@t510.redhat.com>
-References: <cover.1345869378.git.aquini@redhat.com>
- <20120826075840.GE19551@redhat.com>
- <503A3565.2060004@redhat.com>
- <20120826154423.GA15478@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120826154423.GA15478@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754508Ab2H0UXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:23:11 -0400
+Message-ID: <1346098984.8623.23.camel@lambeau>
+Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+Reply-To: mjw@linux.vnet.ibm.com
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
+        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
+Date: Mon, 27 Aug 2012 15:23:04 -0500
+In-Reply-To: <503BC298.3080306@redhat.com>
+References: <20120823231346.11681.1502.stgit@lambeau>
+	 <503BC298.3080306@redhat.com>
+Organization: IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082720-5806-0000-0000-000018DBDDA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 26, 2012 at 06:44:23PM +0300, Michael S. Tsirkin wrote:
+On Mon, 2012-08-27 at 11:55 -0700, Avi Kivity wrote:
+> On 08/23/2012 04:14 PM, Michael Wolf wrote:
+> > This is an RFC regarding the reporting of stealtime.  In the case of
+> > where you have a system that is running with partial processors such as
+> > KVM the user may see steal time being reported in accounting tools such
+> > as top or vmstat.  This can cause confusion for the end user.  To
+> > ease the confusion this patch set adds a sysctl interface to set the
+> > cpu entitlement.  This is the percentage of cpu that the guest system is
+> >  expected to receive.  As long as the steal time is within its expected
+> > range it will show up as 0 in /proc/stat.  The user will then see in the
+> > accounting tools that they are getting a full utilization of the cpu
+> > resources assigned to them.
+> >
+> > This patchset is changing the contents/output of /proc/stat and could affect 
+> > user tools.  However the default setting is that the cpu is entitled to 100% 
+> > so the code will act as before.  Also another field could be added to the 
+> > /proc/stat output and show the unaltered steal time. Since this additional 
+> > field could cause more confusion than it would clear up I have left it out 
+> > for now.
+> >                 
 > 
-> I am simply asking how was this patchset tested.
-> It would be nice to have this info in commit log.
-> Since this is an optimization patch it is strange
-> to see one with no numbers at all.
-> For example, you probably run some workload and
-> played with the balloon, and then saw less huge pages
-> without the patch and more with?
-> Please put this info in the cover letter.
+> How would a guest know what its entitlement is?
+> 
+> 
 
-Will do it, for sure. As soon as we get closer to an agreement on how the code
-has to behave and looks like. I'll use Mel's mmtests bench suite for that.
+Currently the Admin/management tool setting up the guests will put it on
+the qemu commandline.  From this it is passed via an ioctl to the host.
+The guest will get the value from the host via a hypercall.
 
-Cheers!
+In the future the host could try and do some of it automatically in some
+cases. 
+
