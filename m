@@ -1,120 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2H0IPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 04:15:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41138 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab2H0IPe (ORCPT
+	id S1753376Ab2H0IXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 04:23:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16947 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753153Ab2H0IXv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 04:15:34 -0400
-From: Gong Tao <gongtao0607@gmail.com>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gong Tao <gongtao0607@gmail.com>
-Subject: [PATCH] gpio-keys: register irq buttons from devtree
-Date: Mon, 27 Aug 2012 16:15:23 +0800
-Message-Id: <1346055323-12941-1-git-send-email-gongtao0607@gmail.com>
-X-Mailer: git-send-email 1.7.12
+	Mon, 27 Aug 2012 04:23:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,318,1344236400"; 
+   d="scan'208";a="214346885"
+Date: Mon, 27 Aug 2012 16:18:15 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: <acme@redhat.com>, <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
+        <dsahern@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] perf tools: Fix a misuse of for_each_set_bit() in
+ session.c
+Message-ID: <20120827161815.4a1a84c7@feng-i7>
+In-Reply-To: <871uisepf8.fsf@sejong.aot.lge.com>
+References: <1346053107-11946-1-git-send-email-feng.tang@intel.com>
+	<1346053107-11946-4-git-send-email-feng.tang@intel.com>
+	<871uisepf8.fsf@sejong.aot.lge.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add support for registering irq buttons from devtree
+Hi,
 
-Signed-off-by: Gong Tao <gongtao0607@gmail.com>
----
- drivers/input/keyboard/gpio_keys.c | 64 +++++++++++++++++++++++++++++++++++---
- 1 file changed, 59 insertions(+), 5 deletions(-)
+On Mon, 27 Aug 2012 16:59:07 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 62bfce4..a89f101 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -3,12 +3,60 @@
-  *
-  * Copyright 2005 Phil Blundell
-  * Copyright 2010, 2011 David Jander <david@protonic.nl>
-+ * Copyright 2012 Gong Tao <gongtao0607@gmail.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
- 
-+/*
-+ * Device tree configuration:
-+ *
-+ * Properties:
-+ * - compatible      : "gpio-keys"
-+ * - interrupts      : all interrupt numbers used by keys
-+ * - autorepeat      : optional, enable input subsystem auto repeat
-+ *
-+ * Child properties: please reffer to struct gpio_keys_button
-+ * - label              : gpio_keys_button.desc
-+ * - gpios              : gpio_keys_button.gpio
-+ * - irq                : gpio_keys_button.irq
-+ * - linux,code         : gpio_keys_button.code
-+ * - linux,input-type   : gpio_keys_button.type
-+ *                        optional, default EV_KEY
-+ * - gpio-key,wakeup    : gpio_keys_button.wakeup
-+ *                        optional
-+ * - debounce-interval  : gpio_keys_button.debounce_interval
-+ *	                      optional, default 5
-+ * Example:
-+ *
-+ *  gpio_keys {
-+ *      compatible = "gpio-keys";
-+ *      interrupts = <25>;
-+ *      autorepeat;
-+ *
-+ *      key1 { //GPIO Button
-+ *          label = "key1";
-+ *          gpios = <&gpio0 7 0>;
-+ *          linux,code = <105>;
-+ *          linux,input-type = <1>;
-+ *          gpio-key,wakeup;
-+ *          debounce-interval = <5>;
-+ *      };
-+ *
-+ *      key2 { //IRQ Button
-+ *          label = "key2";
-+ *          irq = <25>;
-+ *          linux,code = <106>;
-+ *          linux,input-type = <1>;
-+ *          gpio-key,wakeup;
-+ *          debounce-interval = <5>;
-+ *      };
-+ *  };
-+ *
-+ */
-+
- #include <linux/module.h>
- 
- #include <linux/init.h>
-@@ -577,12 +625,18 @@ static int gpio_keys_get_devtree_pdata(struct device *dev,
- 		enum of_gpio_flags flags;
- 
- 		if (!of_find_property(pp, "gpios", NULL)) {
--			pdata->nbuttons--;
--			dev_warn(dev, "Found button without gpios\n");
--			continue;
-+			if (of_property_read_u32(pp, "irq", &reg) == 0) {
-+				buttons[i].gpio = -1;
-+				buttons[i].irq = reg;
-+			} else {
-+				pdata->nbuttons--;
-+				dev_warn(dev, "Found button without gpios and irq\n");
-+				continue;
-+			}
-+		} else {
-+			buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
-+			buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
- 		}
--		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
--		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
- 
- 		if (of_property_read_u32(pp, "linux,code", &reg)) {
- 			dev_err(dev, "Button without keycode: 0x%x\n", buttons[i].gpio);
--- 
-1.7.12
+> Hi,
+> 
+> On Mon, 27 Aug 2012 15:38:27 +0800, Feng Tang wrote:
+> > In regs_dump__printf() it use for_each_set_bit() for bit ops by
+> > casting a (u64 *) to a (unsigned long *), this works for 64 bits
+> > machine, but will fail on 32 bits ones.
+> >
+> > Fix it by using the raw bit comparing method.
+> 
+> Did it really cause a build failure or a program error?  If not, it
+> looks better to keep using for_each_set_bit() interface.  How about
+> casting the @mask to (void *) ?
 
+It's a compile error:
+
+cc1: warnings being treated as errors
+util/session.c: In function ‘perf_session_deliver_event’:
+util/include/linux/bitops.h:104: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+util/include/linux/bitops.h:96: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+util/session.c:907: note: initialized from here
+util/include/linux/bitops.h:96: note: initialized from here
+make: *** [util/session.o] Error 1
+make: *** Waiting for unfinished jobs....
+
+Casting the @mask to (void *) still sees the same error
+
+Thanks,
+Feng
