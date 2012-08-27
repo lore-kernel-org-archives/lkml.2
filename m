@@ -1,196 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab2H0Tx1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 15:53:27 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:16204 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754100Ab2H0TxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 15:53:25 -0400
-X-IronPort-AV: E=Sophos;i="4.80,322,1344204000"; 
-   d="scan'208";a="170976486"
-Date: Mon, 27 Aug 2012 21:53:21 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-cc: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        kernel-janitors@vger.kernel.org,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
-Subject: Re: [PATCH 6/6] i2c: davinci: use devm_ functions
-In-Reply-To: <503BA696.6080701@mvista.com>
-Message-ID: <alpine.DEB.2.02.1208272152490.1938@localhost6.localdomain6>
-References: <1345916499-6657-6-git-send-email-Julia.Lawall@lip6.fr> <503BA696.6080701@mvista.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1754216Ab2H0TzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 15:55:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7437 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754100Ab2H0TzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 15:55:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,322,1344236400"; 
+   d="asc'?scan'208";a="185936070"
+Message-ID: <1346097310.1973.0.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] MAINTAINERS: Update gianfar_ptp after renaming
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 27 Aug 2012 12:55:10 -0700
+In-Reply-To: <1346089113.2471.13.camel@joe2Laptop>
+References: <1346089113.2471.13.camel@joe2Laptop>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-s3uDRykkTFu3scStILnm"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+--=-s3uDRykkTFu3scStILnm
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The call to platform_get_resource is moved down to the call to
-devm_request_and_ioremap that uses it.
+On Mon, 2012-08-27 at 10:38 -0700, Joe Perches wrote:
+> commit ec21e2ec36769 ("freescale: Move the Freescale drivers")
+> moved the files, update the pattern.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  MAINTAINERS |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)=20
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
----
-Not compiled.
-I was not sure what to do with the comment on the first line, so I just
-left it where it is.
-I was also concerned about the calls to get_device and put_device, and
-whether they would cause &pdev->dev to be freed before the devm-allocated
-objects were freed.  Most other platform drivers don't seem to have these
-calls.
+--=-s3uDRykkTFu3scStILnm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-v2: deleted the now unused ioarea variable and changed some label names to
-be more meaningful.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  drivers/i2c/busses/i2c-davinci.c |   53 +++++++++------------------------------
-  1 file changed, 13 insertions(+), 40 deletions(-)
+iQIcBAABCgAGBQJQO9CeAAoJEOVv75VaS+3ORXEP/2CykF0TpUehhWa0RFjCaUoJ
+Z426fLCGJALtmDx6oEPULAhiHzQ8i3/Oy3dA18o65SRpVq4Sx3jqyQPDsMpFDNxe
+nKVhuI+kVjwvbVySDaPAGkg88dkOd82B8RYhJliXpZ2u3omuXH50JA4puk+0s6Qq
+a/MTbRgMIntGayTCnWaXumBf7CEKP+D3AU4T/lkZDJK8SL4boNPnFPXmRfqmHPlB
+sJqErSc8gWB0ozww5BUbGtpLGm5lUFHZRXaywdTL6XIZt8DkRgm9CznoGSjlzSKj
+Ro7Z/lwnD2ysqglnSaJqLbxtFIzuickYw99fxMWfW7YRXfUhlIUBRVGesJ6roBHJ
+FmXrRa/Nd2flfeBom6WdDsancw7ZunMcRSvFKdje5aw7DC7sxyDcnvzHQsJrS7Lg
+UWKd7LcJyAhuwNCYcFJMF9NQHx5iFVBCkwi5DYC6anpdJC6isFm8XgZPxXQlrtXr
+dF36ICnp9ObRbKMGo3bG2yeTabD1Fo6J2E80oPk7zenjB/ujfa9kAPBzlAU1JL3u
+BFyFfcbeuSqPbkDnQEYis8hsRHA76Nb5MBFN6jtp/mMwbGr5c+KxF72kDaJ6MROi
+dy89saR4qcX2eAZIgvHvSMNGRDJx0qebv4SZLZ4IvYWzuxG5+CTnveIXkxU4NKze
+CY4GJHkTI1debqJD3JZX
+=L8Fo
+-----END PGP SIGNATURE-----
 
-
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index b6185dc..30afa7c 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -643,34 +643,20 @@ static int davinci_i2c_probe(struct platform_device *pdev)
-  {
-  	struct davinci_i2c_dev *dev;
-  	struct i2c_adapter *adap;
--	struct resource *mem, *irq, *ioarea;
-+	struct resource *mem, *irq;
-  	int r;
-
-  	/* NOTE: driver uses the static register mapping */
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		dev_err(&pdev->dev, "no mem resource?\n");
--		return -ENODEV;
--	}
--
-  	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-  	if (!irq) {
-  		dev_err(&pdev->dev, "no irq resource?\n");
-  		return -ENODEV;
-  	}
-
--	ioarea = request_mem_region(mem->start, resource_size(mem),
--				    pdev->name);
--	if (!ioarea) {
--		dev_err(&pdev->dev, "I2C region already claimed\n");
--		return -EBUSY;
--	}
--
--	dev = kzalloc(sizeof(struct davinci_i2c_dev), GFP_KERNEL);
--	if (!dev) {
--		r = -ENOMEM;
--		goto err_release_region;
--	}
-+	dev = devm_kzalloc(&pdev->dev, sizeof(struct davinci_i2c_dev),
-+			   GFP_KERNEL);
-+	if (!dev)
-+		return -ENOMEM;
-
-  	init_completion(&dev->cmd_complete);
-  #ifdef CONFIG_CPU_FREQ
-@@ -699,22 +685,24 @@ static int davinci_i2c_probe(struct platform_device *pdev)
-  		dev->pdata = &davinci_i2c_platform_data_default;
-  	}
-
--	dev->clk = clk_get(&pdev->dev, NULL);
-+	dev->clk = devm_clk_get(&pdev->dev, NULL);
-  	if (IS_ERR(dev->clk)) {
-  		r = -ENODEV;
-  		goto err_free_mem;
-  	}
-  	clk_enable(dev->clk);
-
--	dev->base = ioremap(mem->start, resource_size(mem));
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
-  	if (!dev->base) {
-  		r = -EBUSY;
--		goto err_mem_ioremap;
-+		goto err_unuse_clocks;
-  	}
-
-  	i2c_davinci_init(dev);
-
--	r = request_irq(dev->irq, i2c_davinci_isr, 0, pdev->name, dev);
-+	r = devm_request_irq(&pdev->dev, dev->irq, i2c_davinci_isr, 0,
-+			     pdev->name, dev);
-  	if (r) {
-  		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
-  		goto err_unuse_clocks;
-@@ -723,7 +711,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
-  	r = i2c_davinci_cpufreq_register(dev);
-  	if (r) {
-  		dev_err(&pdev->dev, "failed to register cpufreq\n");
--		goto err_free_irq;
-+		goto err_unuse_clocks;
-  	}
-
-  	adap = &dev->adapter;
-@@ -740,26 +728,18 @@ static int davinci_i2c_probe(struct platform_device *pdev)
-  	r = i2c_add_numbered_adapter(adap);
-  	if (r) {
-  		dev_err(&pdev->dev, "failure adding adapter\n");
--		goto err_free_irq;
-+		goto err_unuse_clocks;
-  	}
-  	of_i2c_register_devices(adap);
-
-  	return 0;
-
--err_free_irq:
--	free_irq(dev->irq, dev);
-  err_unuse_clocks:
--	iounmap(dev->base);
--err_mem_ioremap:
-  	clk_disable(dev->clk);
--	clk_put(dev->clk);
-  	dev->clk = NULL;
-  err_free_mem:
-  	platform_set_drvdata(pdev, NULL);
-  	put_device(&pdev->dev);
--	kfree(dev);
--err_release_region:
--	release_mem_region(mem->start, resource_size(mem));
-
-  	return r;
-  }
-@@ -767,7 +747,6 @@ err_release_region:
-  static int davinci_i2c_remove(struct platform_device *pdev)
-  {
-  	struct davinci_i2c_dev *dev = platform_get_drvdata(pdev);
--	struct resource *mem;
-
-  	i2c_davinci_cpufreq_deregister(dev);
-
-@@ -776,16 +755,10 @@ static int davinci_i2c_remove(struct platform_device *pdev)
-  	put_device(&pdev->dev);
-
-  	clk_disable(dev->clk);
--	clk_put(dev->clk);
-  	dev->clk = NULL;
-
-  	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0);
--	free_irq(dev->irq, dev);
--	iounmap(dev->base);
--	kfree(dev);
-
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(mem->start, resource_size(mem));
-  	return 0;
-  }
+--=-s3uDRykkTFu3scStILnm--
 
