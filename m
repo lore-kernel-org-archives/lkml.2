@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2H0QCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:02:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45940 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab2H0QBw (ORCPT
+	id S1753374Ab2H0QCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:02:55 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48685 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab2H0QCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:01:52 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: fengguang.wu@intel.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>
-Subject: [PATCH 2/2] Documentation: add description of dirty_background_time
-Date: Mon, 27 Aug 2012 12:01:41 -0400
-Message-Id: <1346083301-3545-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 27 Aug 2012 12:02:53 -0400
+Message-ID: <503B99C7.3000503@linux.vnet.ibm.com>
+Date: Mon, 27 Aug 2012 21:31:11 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
+        ananth@in.ibm.com, masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
+References: <20120827112503.10313.62594.stgit@localhost.localdomain> <20120827143619.GE27979@aftab.osrc.amd.com> <503B93D2.7090702@linux.vnet.ibm.com> <20120827154741.GI27979@aftab.osrc.amd.com>
+In-Reply-To: <20120827154741.GI27979@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082716-5816-0000-0000-0000042C348E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On 08/27/2012 09:17 PM, Borislav Petkov wrote:
+> On Mon, Aug 27, 2012 at 09:05:46PM +0530, Naveen N. Rao wrote:
+>>>> +
+>>>> +extern struct mce_boot_flags mce_boot_flags;
+>>>
+>>> Why do we need that extern thing?
+>>
+>> So that this is visible across mce.c and mce_intel.c?
+>
+> Ok. But if you move the struct to mce-internal.h and since both .c files
+> include it, we shouldn't need that extern, right?
 
-This commit adds dirty_background_time description in bdi sysfs
-documentation.
+I'm not sure I understand. I think we still need it. This is not about 
+the structure, but the variable itself. extern allows mce_boot_flags 
+_variable_ accessible from mce_intel.c.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
----
- Documentation/ABI/testing/sysfs-class-bdi |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-class-bdi b/Documentation/ABI/testing/sysfs-class-bdi
-index 5f50097..018e26a 100644
---- a/Documentation/ABI/testing/sysfs-class-bdi
-+++ b/Documentation/ABI/testing/sysfs-class-bdi
-@@ -48,3 +48,16 @@ max_ratio (read-write)
- 	most of the write-back cache.  For example in case of an NFS
- 	mount that is prone to get stuck, or a FUSE mount which cannot
- 	be trusted to play fair.
-+
-+dirty_background_time (read-write)
-+
-+	It is used to start early writeback of given bdi once bdi dirty
-+	data exceeds product of average write bandwidth and
-+	dirty_background_time. It is mainly useful for tuning writeback
-+	speed at 'NFS Server' so that NFS client could see better write speed.
-+
-+	However, sometimes it may not match user expectations as it is based
-+	on bdi write bandwidth estimation. Write bandwidth estimation is a
-+	best effort to estimate bdi write speed bandwidth. But it can be
-+	wildly wrong in certain situations.
-+	dirty_background_time is expressed in msec.
--- 
-1.7.9.5
+Thanks,
+Naveen
+
+>
+> I think that'll be the most optimal placement for now.
+>
+> Thanks.
+>
 
