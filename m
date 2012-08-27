@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab2H0VBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 17:01:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53874 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754253Ab2H0VBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 17:01:49 -0400
-Message-ID: <503BE05F.40109@suse.com>
-Date: Mon, 27 Aug 2012 17:02:23 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1754705Ab2H0VCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 17:02:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49454 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab2H0VCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 17:02:11 -0400
 MIME-Version: 1.0
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] exynos-rng: Depend on ARCH_EXYNOS
-X-Enigmail-Version: 1.4.3
+Date: Mon, 27 Aug 2012 17:02:11 -0400
+Message-ID: <CAOwTwKPzWyAvhtiuJLFq5=04Dr2Dq+EdTdUUMskUc0kQ6h-Psg@mail.gmail.com>
+Subject: kruft cutting
+From: Eric Furrmann <eric.a.furmann@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The exynos-rng device is only found on Samsung EXYNOS devices but has
-dependencies that allow it to be built on other architectures. This
-can result in build failures on powerpc due to a missing clk_devm_get.
+Ok, I know there will be a few old geezers who will get their panties
+in a bunch about this but hear me out..
 
-This patch makes it depend on ARCH_EXYNOS.
+So.. i'ts established that the Desktop PC is dead
+http://gizmodo.com/5301401/so-long-desktop-pc-you-suck
+http://www.networkworld.com/news/2011/062711-desktop-doomed.html
+http://www.thestrategyweb.com/desktop-is-dead-tablets-on-the-rise
+http://lifehacker.com/5303894/is-the-desktop-pc-dead
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
- drivers/char/hw_random/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Sorry.. get over it.
 
---- a/drivers/char/hw_random/Kconfig
-+++ b/drivers/char/hw_random/Kconfig
-@@ -280,7 +280,7 @@ config HW_RANDOM_PSERIES
- 
- config HW_RANDOM_EXYNOS
- 	tristate "EXYNOS HW random number generator support"
--	depends on HW_RANDOM && HAS_IOMEM && HAVE_CLK
-+	depends on HW_RANDOM && HAS_IOMEM && HAVE_CLK && ARCH_EXYNOS
- 	---help---
- 	  This driver provides kernel-side support for the Random Number
- 	  Generator hardware found on EXYNOS SOCs.
+and Linux was never really for the Desktop anyway
+http://www.muktware.com/news/2862/linus-torvalds-why-linux-not-successful-desktops
+http://www.bbc.co.uk/news/technology-18419231
 
+So why are we still supporting keyboards?  I mean really, when was the
+last time anybody here actually used a keyboard?  How many of us even
+still have them?  OK.. I have a couple but I hollowed them out and
+made planters out of them days ago. I mean... keyboards are like so
+last week!
 
--- 
-Jeff Mahoney
-SUSE Labs
+So....  That said.  Let's ditch that obsolete input device support!
+Full screen filling, extra sensitive, just a little off alignment
+on-screen T-9.. now that is where it is at baby!
