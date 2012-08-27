@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab2H0UPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:15:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35819 "EHLO mail.zytor.com"
+	id S1754432Ab2H0UQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:16:13 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:39167 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754270Ab2H0UP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:15:29 -0400
-Message-ID: <503BD556.8080406@zytor.com>
-Date: Mon, 27 Aug 2012 13:15:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754227Ab2H0UQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:16:12 -0400
+X-IronPort-AV: E=Sophos;i="4.80,322,1344236400"; 
+   d="scan'208";a="682034401"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
+ nfs4_lookup_revalidate
+Thread-Topic: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
+ nfs4_lookup_revalidate
+Thread-Index: AQHNgKHiUh9vVdkDm0StbeKN2a9pdJduk+eAgAABxYA=
+Date: Mon, 27 Aug 2012 20:16:09 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908F6E388@SACEXCMBX04-PRD.hq.netapp.com>
+References: <1345666097-14815-1-git-send-email-Trond.Myklebust@netapp.com>
+	 <20120827200949.GA4732@kroah.com>
+In-Reply-To: <20120827200949.GA4732@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <FE8AF36500281D4CAE33E0761AECA721@tahoe.netapp.com>
 MIME-Version: 1.0
-To: Jacob Shin <jacob.shin@amd.com>
-CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 3/5] x86: Only direct map addresses that are marked as
- E820_RAM
-References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com> <1345852516-3125-4-git-send-email-jacob.shin@amd.com> <50381C9D.5070007@zytor.com> <20120825004859.GB10812@jshin-Toonie> <5038269E.80707@zytor.com> <20120825042020.GC26127@jshin-Toonie> <503852BE.1010908@zytor.com> <20120827191729.GB23135@jshin-Toonie>
-In-Reply-To: <20120827191729.GB23135@jshin-Toonie>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q7RKGJvd014794
 
-On 08/27/2012 12:17 PM, Jacob Shin wrote:
+On Mon, 2012-08-27 at 13:09 -0700, Greg KH wrote:
+> On Wed, Aug 22, 2012 at 04:08:17PM -0400, Trond Myklebust wrote:
+> > Fix the following Oops in 3.5.1:
+> > 
+> >  BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> >  IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> >  PGD 337c63067 PUD 0
+> >  Oops: 0000 [#1] SMP
+> >  CPU 5
+> >  Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+> > 
+> >  Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
+> >  RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> >  RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
+> >  RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
+> >  RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
+> >  RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
+> >  R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
+> >  R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
+> >  FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
+> >  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> >  CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
+> >  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> >  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> >  Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
+> >  Stack:
+> >   ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
+> >   ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
+> >   ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
+> >  Call Trace:
+> >   [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
+> >   [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
+> >   [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
+> >   [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
+> >   [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
+> >   [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
+> >   [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
+> >   [<00002b5348b5f527>] 0x2b5348b5f526
+> >  Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
+> >  RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+> >   RSP <ffff8801b418bd38>
+> >  CR2: 0000000000000038
+> >  ---[ end trace 845113ed191985dd ]---
+> > 
+> > This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
+> > calling down to the dentry revalidation code with a NULL pointer
+> > to struct nameidata.
+> > 
+> > It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
+> > to ->d_revalidate())
 > 
-> if there is E820_RAM right above ISA region, then you get to initialize
-> 0 ~ max_low_pfn in one big chunk, which results in some memory configurations
-> for more 2M or 1G page tables which means less space used for page tables.
-> 
+> So this is just a nfs-only backport of the larger patch 0b728e1911c,
+> right?  Should we also do this for other filesystems as well?  Or just
+> backport the whole commit?
 
-We need to be able to coalesce small page tables to large, anyway; there
-are plenty of machines in the field who do small chunks.  I'm not too
-worried about the legacy region being in 4K pages; it will be broken
-into 4K pages anyway by the TLB.
+The larger patch involves a VFS api change (the atomic open code) which
+has a bunch of pre- and post-requirements. I'd assume that is a too
+large change for stable. I think that the smaller per-filesystem changes
+are probably more appropriate. The list of filesystems that care are
+likely to be small. Off the top of my head, I can only think of NFS,
+CIFS, FUSE and possibly ceph.
 
-Another thing is that we may want to map from the top down (on i386 at
-least top of lowmem down); we don't want to fill low memory with page
-tables because of devices with restricted DMA masks.
+Cheers
+  Trond
 
-> im also worried about the case where that first call to init_memory_mapping
-> for 0 ~ 1MB, results in max_pfn_mapped = 1MB, and the next call to
-> init_memory_mapping is some large enough area, where we don't have enough
-> space under 1MB for all the page tables needed (maybe only 4K page tables
-> are supported or something).
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-This is serious... I'm worrying that this might be a more general
-problem.  In that case we probably need to handle the case where we have
-filled up all the "free" memory with page tables for the next chunk;
-however, in that case the answer is pretty simple: we can then allow the
-memory already mapped to become page tables for the new chunk.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-	-hpa
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
