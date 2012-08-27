@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab2H0Ucm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:32:42 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:37764 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754484Ab2H0Ucl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:32:41 -0400
-Date: Mon, 27 Aug 2012 13:32:15 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Rob Landley <rob@landley.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Ludwig Nussel <ludwig.nussel@suse.de>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Kees Cook <keescook@chromium.org>, linux-doc@vger.kernel.org
-Subject: [PATCH] debugfs: more tightly restrict default mount mode
-Message-ID: <20120827203215.GA16637@www.outflux.net>
+	id S1754349Ab2H0Uje (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:39:34 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53934 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2H0Ujc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:39:32 -0400
+Message-ID: <503BDAFF.9080904@lwfinger.net>
+Date: Mon, 27 Aug 2012 15:39:27 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, ncardwell@google.com,
+        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Regression associated with commit c8628155ece3 - "tcp: reduce
+ out_of_order memory use"
+References: <50369925.3050705@lwfinger.net>  <1345757200.5904.1890.camel@edumazet-glaptop> <50378B35.80307@lwfinger.net>  <20120824.111948.680531915905273128.davem@davemloft.net>  <5037A4B0.3080208@lwfinger.net>  <1345825095.19483.19.camel@edumazet-glaptop>  <1345825432.19483.20.camel@edumazet-glaptop> <5037B2AC.50704@lwfinger.net>  <1345830424.19483.69.camel@edumazet-glaptop>  <503BB49C.5010402@lwfinger.net> <1346091701.26634.6.camel@edumazet-glaptop>
+In-Reply-To: <1346091701.26634.6.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the debugfs is mostly only used by root, make the default mount
-mode 0700. Most system owners do not need a more permissive value,
-but they can choose to weaken the restrictions via their fstab.
+On 08/27/2012 01:21 PM, Eric Dumazet wrote:
+> On Mon, 2012-08-27 at 12:55 -0500, Larry Finger wrote:
+>
+>> I have prepared a patch to fix all the unchecked allocations.
+>>
+>> Over the weekend I made some progress. To test the latest vendor driver, I
+>> installed a 32-bit system. Their driver is not compatible with a 64-bit system.
+>> I found that not only did the vendor driver work with secure sites, but so did
+>> the in-kernel version. I now have tcpdump output for the 32-bit case that works,
+>> and the 64-bit case that fails. It seems likely that I missed some 32/64 bit
+>> incompatibility when I did the conversion.
+>>
+>> Thanks for all your help in trying to resolve this issue.
+>
+> Interesting, so these 32/64 bits problems did not happen in prior
+> kernels ? (< 3.4 )
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- Documentation/filesystems/debugfs.txt |    4 ++--
- fs/debugfs/inode.c                    |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Prior kernels are OK.
 
-diff --git a/Documentation/filesystems/debugfs.txt b/Documentation/filesystems/debugfs.txt
-index 7a34f82..3a863f6 100644
---- a/Documentation/filesystems/debugfs.txt
-+++ b/Documentation/filesystems/debugfs.txt
-@@ -15,8 +15,8 @@ Debugfs is typically mounted with a command like:
-     mount -t debugfs none /sys/kernel/debug
- 
- (Or an equivalent /etc/fstab line).
--The debugfs root directory is accessible by anyone by default. To
--restrict access to the tree the "uid", "gid" and "mode" mount
-+The debugfs root directory is accessible only to the root user by
-+default. To change access to the tree the "uid", "gid" and "mode" mount
- options can be used.
- 
- Note that the debugfs API is exported GPL-only to modules.
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index 4733eab..2d22c81 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -28,7 +28,7 @@
- #include <linux/magic.h>
- #include <linux/slab.h>
- 
--#define DEBUGFS_DEFAULT_MODE	0755
-+#define DEBUGFS_DEFAULT_MODE	0700
- 
- static struct vfsmount *debugfs_mount;
- static int debugfs_mount_count;
--- 
-1.7.0.4
+Larry
 
-
--- 
-Kees Cook
-Chrome OS Security
