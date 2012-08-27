@@ -1,39 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab2H0Qxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:53:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34052 "EHLO
+	id S1753506Ab2H0Qyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:54:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34070 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab2H0Qxn (ORCPT
+	with ESMTP id S1753031Ab2H0Qyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:53:43 -0400
-Date: Mon, 27 Aug 2012 09:52:23 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-d45a3e00687bb52a20d9256d3d1068eea271013f@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org,
-        peterz@infradead.org, penberg@kernel.org, efault@gmx.de,
-        namhyung.kim@lge.com, jolsa@redhat.com, drepper@gmail.com,
-        robert.richter@amd.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        sedat.dilek@gmail.com, borislav.petkov@amd.com,
-        linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        andi@firstfloor.org, namhyung@gmail.com, namhyung@kernel.org,
-        ben@decadent.org.uk, feng.tang@intel.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com, efault@gmx.de,
-        penberg@kernel.org, peterz@infradead.org, namhyung.kim@lge.com,
-        jolsa@redhat.com, fweisbec@gmail.com, drepper@gmail.com,
-        robert.richter@amd.com, rostedt@goodmis.org, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        borislav.petkov@amd.com, sedat.dilek@gmail.com, hpa@zytor.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        namhyung@kernel.org, namhyung@gmail.com, ben@decadent.org.uk,
-        feng.tang@intel.com, mingo@elte.hu
-In-Reply-To: <20120822083812.GC1003@krava.brq.redhat.com>
-References: <20120822083812.GC1003@krava.brq.redhat.com>
+	Mon, 27 Aug 2012 12:54:37 -0400
+Date: Mon, 27 Aug 2012 09:54:17 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-ac2ba9f36bb400755e411309f3e76dbf308a10e7@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, jolsa@redhat.com,
+        robert.richter@amd.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, robert.richter@amd.com, peterz@infradead.org,
+        tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <1345144224-27280-6-git-send-email-robert.richter@amd.com>
+References: <1345144224-27280-6-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix 'No libunwind found'
-  make warning message
-Git-Commit-ID: d45a3e00687bb52a20d9256d3d1068eea271013f
+Subject: [tip:perf/core] perf tools: Catch event names from command line
+Git-Commit-ID: ac2ba9f36bb400755e411309f3e76dbf308a10e7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -42,63 +29,300 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 09:52:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 09:54:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d45a3e00687bb52a20d9256d3d1068eea271013f
-Gitweb:     http://git.kernel.org/tip/d45a3e00687bb52a20d9256d3d1068eea271013f
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 22 Aug 2012 10:38:12 +0200
+Commit-ID:  ac2ba9f36bb400755e411309f3e76dbf308a10e7
+Gitweb:     http://git.kernel.org/tip/ac2ba9f36bb400755e411309f3e76dbf308a10e7
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Thu, 16 Aug 2012 21:10:21 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 22 Aug 2012 13:32:13 -0300
+CommitDate: Wed, 22 Aug 2012 13:40:49 -0300
 
-perf tools: Fix 'No libunwind found' make warning message
+perf tools: Catch event names from command line
 
-Changing error message when libunwind support is not found to inform
-properly to install libunwind-dev[el] package.
+Use command line string provided by the -e option to name events. This
+way we get unique events names that also support pmu event syntax
+(<pmu_name>/<config>/<modifier>). No need to reconstruct the name
+anymore from its attributes. We use the event_desc of the header to
+store the name in the perf.data header. Thus it is also available for
+perf report.
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Feng Tang <feng.tang@intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Implemented by putting the parser in different states to parse events or
+configs.
+
+And since event names are now generated from the command line
+specification.  Update event names in test cases accordingly.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/20120822083812.GC1003@krava.brq.redhat.com
-[ committer note: s/disable/disabling/g rewording suggested by Steven Rostedt ]
+Link: http://lkml.kernel.org/r/1345144224-27280-6-git-send-email-robert.richter@amd.com
+[ committer note: Folded patch fixing 'perf test' failure reported by Jiri Olsa ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/parse-events-test.c |   13 +++++----
+ tools/perf/util/parse-events.c      |   12 ++++++++
+ tools/perf/util/parse-events.h      |    1 +
+ tools/perf/util/parse-events.l      |   50 ++++++++++++++++++++++++++++-------
+ tools/perf/util/parse-events.y      |   20 ++++++++++++-
+ 5 files changed, 78 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 6bd888d..722ddee 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -493,7 +493,7 @@ endif
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 392308c..bc8b651 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -301,12 +301,13 @@ static int test__checkevent_breakpoint_modifier(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *evsel = perf_evlist__first(evlist);
  
- FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
- ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
--	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-+	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
- 	NO_LIBUNWIND := 1
- endif # Libunwind support
- endif # NO_LIBUNWIND
++
+ 	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
+ 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong name",
+-			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:u"));
++			!strcmp(perf_evsel__name(evsel), "mem:0:u"));
+ 
+ 	return test__checkevent_breakpoint(evlist);
+ }
+@@ -320,7 +321,7 @@ static int test__checkevent_breakpoint_x_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong name",
+-			!strcmp(perf_evsel__name(evsel), "mem:0x0:x:k"));
++			!strcmp(perf_evsel__name(evsel), "mem:0:x:k"));
+ 
+ 	return test__checkevent_breakpoint_x(evlist);
+ }
+@@ -334,7 +335,7 @@ static int test__checkevent_breakpoint_r_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong name",
+-			!strcmp(perf_evsel__name(evsel), "mem:0x0:r:hp"));
++			!strcmp(perf_evsel__name(evsel), "mem:0:r:hp"));
+ 
+ 	return test__checkevent_breakpoint_r(evlist);
+ }
+@@ -348,7 +349,7 @@ static int test__checkevent_breakpoint_w_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong name",
+-			!strcmp(perf_evsel__name(evsel), "mem:0x0:w:up"));
++			!strcmp(perf_evsel__name(evsel), "mem:0:w:up"));
+ 
+ 	return test__checkevent_breakpoint_w(evlist);
+ }
+@@ -362,7 +363,7 @@ static int test__checkevent_breakpoint_rw_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
+ 	TEST_ASSERT_VAL("wrong name",
+-			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:kp"));
++			!strcmp(perf_evsel__name(evsel), "mem:0:rw:kp"));
+ 
+ 	return test__checkevent_breakpoint_rw(evlist);
+ }
+@@ -437,7 +438,7 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
+ 	TEST_ASSERT_VAL("wrong name",
+-			!strcmp(perf_evsel__name(evsel), "raw 0x2:u"));
++			!strcmp(perf_evsel__name(evsel), "cpu/config=2/u"));
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 925784a..b246303 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -751,6 +751,18 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
+ 	return 0;
+ }
+ 
++int parse_events_name(struct list_head *list, char *name)
++{
++	struct perf_evsel *evsel;
++
++	list_for_each_entry(evsel, list, node) {
++		if (!evsel->name)
++			evsel->name = strdup(name);
++	}
++
++	return 0;
++}
++
+ static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 0b9782d..c356e44 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -81,6 +81,7 @@ int parse_events__term_clone(struct parse_events__term **new,
+ void parse_events__free_terms(struct list_head *terms);
+ int parse_events__modifier_event(struct list_head *list, char *str, bool add);
+ int parse_events__modifier_group(struct list_head *list, char *event_mod);
++int parse_events_name(struct list_head *list, char *name);
+ int parse_events_add_tracepoint(struct list_head **list, int *idx,
+ 				char *sys, char *event);
+ int parse_events_add_numeric(struct list_head **list, int *idx,
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 2c0d006..f5e28dc 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -70,6 +70,12 @@ static int term(yyscan_t scanner, int type)
+ %}
+ 
+ %x mem
++%s config
++%x event
++
++group		[^,{}/]*[{][^}]*[}][^,{}/]*
++event_pmu	[^,{}/]+[/][^/]*[/][^,{}/]*
++event		[^,{}/]+
+ 
+ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+@@ -84,7 +90,13 @@ modifier_bp	[rwx]{1,3}
+ 	{
+ 		int start_token;
+ 
+-		start_token = (int) parse_events_get_extra(yyscanner);
++		start_token = parse_events_get_extra(yyscanner);
++
++		if (start_token == PE_START_TERMS)
++			BEGIN(config);
++		else if (start_token == PE_START_EVENTS)
++			BEGIN(event);
++
+ 		if (start_token) {
+ 			parse_events_set_extra(NULL, yyscanner);
+ 			return start_token;
+@@ -92,6 +104,26 @@ modifier_bp	[rwx]{1,3}
+          }
+ %}
+ 
++<event>{
++
++{group}		{
++			BEGIN(INITIAL); yyless(0);
++		}
++
++{event_pmu}	|
++{event}		{
++			str(yyscanner, PE_EVENT_NAME);
++			BEGIN(INITIAL); yyless(0);
++			return PE_EVENT_NAME;
++		}
++
++.		|
++<<EOF>>		{
++			BEGIN(INITIAL); yyless(0);
++		}
++
++}
++
+ cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
+ stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
+ stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
+@@ -127,18 +159,16 @@ speculative-read|speculative-load	|
+ refs|Reference|ops|access		|
+ misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
+ 
+-	/*
+-	 * These are event config hardcoded term names to be specified
+-	 * within xxx/.../ syntax. So far we dont clash with other names,
+-	 * so we can put them here directly. In case the we have a conflict
+-	 * in future, this needs to go into '//' condition block.
+-	 */
++<config>{
+ config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
+ config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
+ config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
+ name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
+ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
++,			{ return ','; }
++"/"			{ BEGIN(INITIAL); return '/'; }
++}
+ 
+ mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
+ r{num_raw_hex}		{ return raw(yyscanner); }
+@@ -147,11 +177,11 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+ 
+ {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+ {name}			{ return str(yyscanner, PE_NAME); }
+-"/"			{ return '/'; }
++"/"			{ BEGIN(config); return '/'; }
+ -			{ return '-'; }
+-,			{ return ','; }
++,			{ BEGIN(event); return ','; }
+ :			{ return ':'; }
+-"{"			{ return '{'; }
++"{"			{ BEGIN(event); return '{'; }
+ "}"			{ return '}'; }
+ =			{ return '='; }
+ \n			{ }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 66850f8..42d9a17 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -27,6 +27,7 @@ do { \
+ 
+ %token PE_START_EVENTS PE_START_TERMS
+ %token PE_VALUE PE_VALUE_SYM_HW PE_VALUE_SYM_SW PE_RAW PE_TERM
++%token PE_EVENT_NAME
+ %token PE_NAME
+ %token PE_MODIFIER_EVENT PE_MODIFIER_BP
+ %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
+@@ -42,6 +43,7 @@ do { \
+ %type <str> PE_NAME_CACHE_OP_RESULT
+ %type <str> PE_MODIFIER_EVENT
+ %type <str> PE_MODIFIER_BP
++%type <str> PE_EVENT_NAME
+ %type <num> value_sym
+ %type <head> event_config
+ %type <term> event_term
+@@ -53,6 +55,8 @@ do { \
+ %type <head> event_legacy_numeric
+ %type <head> event_legacy_raw
+ %type <head> event_def
++%type <head> event_mod
++%type <head> event_name
+ %type <head> event
+ %type <head> events
+ %type <head> group_def
+@@ -143,8 +147,10 @@ events ',' event
+ |
+ event
+ 
+-event:
+-event_def PE_MODIFIER_EVENT
++event: event_mod
++
++event_mod:
++event_name PE_MODIFIER_EVENT
+ {
+ 	struct list_head *list = $1;
+ 
+@@ -157,6 +163,16 @@ event_def PE_MODIFIER_EVENT
+ 	$$ = list;
+ }
+ |
++event_name
++
++event_name:
++PE_EVENT_NAME event_def
++{
++	ABORT_ON(parse_events_name($2, $1));
++	free($1);
++	$$ = $2;
++}
++|
+ event_def
+ 
+ event_def: event_pmu |
