@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab2H0Xal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 19:30:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46209 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322Ab2H0Xaj (ORCPT
+	id S1754992Ab2H0Xf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 19:35:27 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:56696 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153Ab2H0Xf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 19:30:39 -0400
-Message-ID: <503C031A.4040003@landley.net>
-Date: Mon, 27 Aug 2012 18:30:34 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: liang xie <xieliang007@gmail.com>, Harry Wei <harryxiyou@gmail.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@zh-kernel.org
-Subject: Re: [PATCH 1/1] Document:add Chinese translation of basic_profiling.txt
-References: <CADu=CFriPHFUG8aM9h=dGsTzmRHAq1QKCu5XO9iY0ZL8-gBALg@mail.gmail.com> <503B48AA.5050605@landley.net> <20120827130201.GA9468@kroah.com>
-In-Reply-To: <20120827130201.GA9468@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Aug 2012 19:35:26 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6817"; a="230068601"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: MSM: Fix early debug uart mapping on some memory configs
+Date: Mon, 27 Aug 2012 16:35:21 -0700
+Message-Id: <1346110521-24999-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.12.70.g851f7e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 08:02 AM, Greg KH wrote:
-> On Mon, Aug 27, 2012 at 05:15:06AM -0500, Rob Landley wrote:
->> On 08/26/2012 11:06 AM, liang xie wrote:
->>> This is a Chinese translated version of Documentation/basic_profiling.txt
->>>
->>> Signed-off-by: Liang Xie <xieliang007@gmail.com>
->>
->> Not speaking Chinese, there's nothing useful I can say about this.
->>
->> What is the path something like this takes into the kernel? (Am I
->> expected to forward it, or I can I add an X: line to MAINTAINERS to
->> filter out my CC for this directory?)
-> 
-> For historical reasons, I seem to be the one handling the patches for
-> these types of translated files.
-> 
-> I don't mind to continue to do this, unless you wish to do it?
+The uart mapping runs into the space allocated for lowmem on some
+8960 boards when we have more than 512Mb of memory. We were
+getting lucky before and our mapping wasn't part of DDR. Move the
+mapping up into the vmalloc area which will always be outside of
+the lowmem mapping regardless of how much lowmem actually exists.
 
-I'm happy for you to continue handling the translation. As I said, I
-can't provide any useful review here.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/include/mach/msm_iomap-8960.h | 2 +-
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-I have a nefarious scheme to reorganize the Documentation directory when
-I get an uninterrupted block of time to work on it, at which point I
-might want to collate all the translations under some kind of
-Documentation/translations directory. Gotta ship a thing at work first,
-though.
-
-Thanks,
-
-Rob
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
+index a1752c0..facf434 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
+@@ -46,7 +46,7 @@
+ #define MSM8960_TMR0_SIZE	SZ_4K
+ 
+ #ifdef CONFIG_DEBUG_MSM8960_UART
+-#define MSM_DEBUG_UART_BASE	0xE1040000
++#define MSM_DEBUG_UART_BASE	0xF0040000
+ #define MSM_DEBUG_UART_PHYS	0x16440000
+ #endif
+ 
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+index 5aed57d..21a2a88 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+@@ -63,7 +63,7 @@
+ #define MSM8X60_TMR0_SIZE	SZ_4K
+ 
+ #ifdef CONFIG_DEBUG_MSM8660_UART
+-#define MSM_DEBUG_UART_BASE	0xE1040000
++#define MSM_DEBUG_UART_BASE	0xF0040000
+ #define MSM_DEBUG_UART_PHYS	0x19C40000
+ #endif
+ 
 -- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
