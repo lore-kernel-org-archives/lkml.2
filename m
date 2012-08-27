@@ -1,331 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab2H0Ph2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:37:28 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51951 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2H0Ph1 (ORCPT
+	id S1752937Ab2H0Ppq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:45:46 -0400
+Received: from mail1.adetelgroup.com ([78.155.151.235]:43092 "HELO
+	mail1.adetelgroup.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751879Ab2H0Ppn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:37:27 -0400
-Message-ID: <503B93D2.7090702@linux.vnet.ibm.com>
-Date: Mon, 27 Aug 2012 21:05:46 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 27 Aug 2012 11:45:43 -0400
+X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 11:45:43 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
-        ananth@in.ibm.com, masbock@linux.vnet.ibm.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
-        tglx@linutronix.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
-References: <20120827112503.10313.62594.stgit@localhost.localdomain> <20120827143619.GE27979@aftab.osrc.amd.com>
-In-Reply-To: <20120827143619.GE27979@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082715-5564-0000-0000-0000043476B3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1346081672-27866-1-git-send-email-shachimi@adeneo-embedded.com>
+X-Mailer: git-send-email 1.7.1
+Content-class: urn:content-classes:message
+Subject: [PATCH v2 1/2] imx6q: pwm: Add device tree support
+Date: Mon, 27 Aug 2012 17:34:31 +0200
+Message-ID: <3465D313FDFB824F9A9C8CD24FA4F6BCB4ACFD@frontmail.adetel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2 1/2] imx6q: pwm: Add device tree support
+thread-index: Ac2EaZrzUFvZL6CJROCk9I0kUowCXA==
+References: <1346081672-27866-1-git-send-email-shachimi@adeneo-embedded.com>
+From: "HACHIMI Samir" <shachimi@adeneo-embedded.com>
+To: <shawn.guo@linaro.org>, <thierry.reding@avionic-design.de>
+Cc: <linux-arm-kernel@lists.infradead.org>, <s.hauer@pengutronix.de>,
+        <linux-kernel@vger.kernel.org>,
+        "HACHIMI Samir" <shachimi@adeneo-embedded.com>
+X-OriginalArrivalTime: 27 Aug 2012 15:35:39.0058 (UTC) FILETIME=[9C323120:01CD8469]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 08:06 PM, Borislav Petkov wrote:
-> On Mon, Aug 27, 2012 at 04:55:03PM +0530, Naveen N. Rao wrote:
->> Many MCE boot flags are boolean in nature, but are declared as integers
->> currently. We can pack these into a bitfield to save some space.
->>
->> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
->
-> Ok,
->
-> looks good.
->
-> A couple of issues though:
->
-> You need to prepare your patches against tip/master (which contains
-> tip/x86/mce) because there are MCE changes in tip and they conflict with
-> your changes.
+From: Samir Hachimi <shachimi@adeneo-embedded.com>
 
-Sure, will do so for my next iteration.
+ Add clock look-up for pwm.
+ Add the pinmux support for pwm.
+ Several pin can be set to PwmO for the same Pwm.
 
->
->> ---
->>   arch/x86/include/asm/mce.h             |   11 +++-
->>   arch/x86/kernel/cpu/mcheck/mce.c       |   86 +++++++++++++++++++++-----------
->>   arch/x86/kernel/cpu/mcheck/mce_intel.c |    2 -
->>   3 files changed, 66 insertions(+), 33 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
->> index a3ac52b..78caeb2 100644
->> --- a/arch/x86/include/asm/mce.h
->> +++ b/arch/x86/include/asm/mce.h
->> @@ -129,6 +129,15 @@ struct mce_log {
->>
->>   #ifdef __KERNEL__
->>
->> +struct mce_boot_flags {
->> +	__u32	cmci_disabled		: 1,
->> +		ignore_ce		: 1,
->> +		dont_log_ce		: 1,
->> +		__pad			: 29;
->> +};
->
-> This looks ok but I think it would be even better if it went into
-> mce-internal.h where all the mce-only stuff can be collected in a
-> private struct so that we don't pollute the global MCE namespace.
->
-> Then you can call the struct simply
->
-> struct boot_flags
->
-> since it is private to mce code.
+Signed-off-by: Samir Hachimi <shachimi@adeneo-embedded.com>
+---
+ arch/arm/boot/dts/imx6q.dtsi |   68 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 68 insertions(+), 0 deletions(-)
 
-Good idea - will do.
-
->
->> +
->> +extern struct mce_boot_flags mce_boot_flags;
->
-> Why do we need that extern thing?
-
-So that this is visible across mce.c and mce_intel.c?
-
->
->> +
->>   extern void mce_register_decode_chain(struct notifier_block *nb);
->>   extern void mce_unregister_decode_chain(struct notifier_block *nb);
->>
->> @@ -169,8 +178,6 @@ DECLARE_PER_CPU(struct device *, mce_device);
->>   #define MAX_NR_BANKS 32
->>
->>   #ifdef CONFIG_X86_MCE_INTEL
->> -extern int mce_cmci_disabled;
->> -extern int mce_ignore_ce;
->>   void mce_intel_feature_init(struct cpuinfo_x86 *c);
->>   void cmci_clear(void);
->>   void cmci_reenable(void);
->> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
->> index 292d025..5a0d399 100644
->> --- a/arch/x86/kernel/cpu/mcheck/mce.c
->> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
->> @@ -79,11 +79,10 @@ static int			rip_msr			__read_mostly;
->>   static int			mce_bootlog		__read_mostly = -1;
->>   static int			monarch_timeout		__read_mostly = -1;
->>   static int			mce_panic_timeout	__read_mostly;
->> -static int			mce_dont_log_ce		__read_mostly;
->> -int				mce_cmci_disabled	__read_mostly;
->> -int				mce_ignore_ce		__read_mostly;
->>   int				mce_ser			__read_mostly;
->>
->> +struct mce_boot_flags		mce_boot_flags		__read_mostly;
->> +
->>   struct mce_bank                *mce_banks		__read_mostly;
->>
->>   /* User mode helper program triggered by machine check event */
->> @@ -630,7 +629,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->>   		 * Don't get the IP here because it's unlikely to
->>   		 * have anything to do with the actual error location.
->>   		 */
->> -		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce)
->> +		if (!(flags & MCP_DONTLOG) && !mce_boot_flags.dont_log_ce)
->>   			mce_log(&m);
->>
->>   		/*
->> @@ -1601,7 +1600,7 @@ static void __mcheck_cpu_init_timer(void)
->>
->>   	setup_timer(t, mce_timer_fn, smp_processor_id());
->>
->> -	if (mce_ignore_ce)
->> +	if (mce_boot_flags.ignore_ce)
->>   		return;
->>
->>   	__this_cpu_write(mce_next_interval, iv);
->> @@ -1919,11 +1918,11 @@ static int __init mcheck_enable(char *str)
->>   	if (!strcmp(str, "off"))
->>   		mce_disabled = 1;
->>   	else if (!strcmp(str, "no_cmci"))
->> -		mce_cmci_disabled = 1;
->> +		mce_boot_flags.cmci_disabled = 1;
->>   	else if (!strcmp(str, "dont_log_ce"))
->> -		mce_dont_log_ce = 1;
->> +		mce_boot_flags.dont_log_ce = 1;
->>   	else if (!strcmp(str, "ignore_ce"))
->> -		mce_ignore_ce = 1;
->> +		mce_boot_flags.ignore_ce = 1;
->>   	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
->>   		mce_bootlog = (str[0] == 'b');
->>   	else if (isdigit(str[0])) {
->> @@ -2076,7 +2075,7 @@ show_trigger(struct device *s, struct device_attribute *attr, char *buf)
->>   }
->>
->>   static ssize_t set_trigger(struct device *s, struct device_attribute *attr,
->> -				const char *buf, size_t siz)
->> +			   const char *buf, size_t size)
->>   {
->>   	char *p;
->>
->
-> This is an unrelated change, pls drop it.
-
-Ok.
-
->
->> @@ -2090,6 +2089,34 @@ static ssize_t set_trigger(struct device *s, struct device_attribute *attr,
->>   	return strlen(mce_helper) + !!p;
->>   }
->>
->> +static ssize_t get_dont_log_ce(struct device *dev,
->> +			       struct device_attribute *attr,
->> +			       char *buf)
->> +{
->> +	return snprintf(buf, PAGE_SIZE, "%d\n", mce_boot_flags.dont_log_ce);
->> +}
->> +
->> +static ssize_t set_dont_log_ce(struct device *s,
->> +			       struct device_attribute *attr,
->> +			       const char *buf, size_t size)
->> +{
->> +	u64 new;
->> +
->> +	if (strict_strtoull(buf, 0, &new) < 0)
->> +		return -EINVAL;
->> +
->> +	mce_boot_flags.dont_log_ce = !!new;
->> +
->> +	return size;
->> +}
->> +
->> +static ssize_t get_ignore_ce(struct device *dev,
->> +			     struct device_attribute *attr,
->> +			     char *buf)
->> +{
->> +	return snprintf(buf, PAGE_SIZE, "%d\n", mce_boot_flags.ignore_ce);
->> +}
->> +
->
-> Those could be combined into a function similar to device_show/store_int
-> pairs but working on a bitfield.
->
-> Maybe later.
-
-Yes, this looks like it needs some work and I wasn't sure it would be 
-helpful at this time. So, yeah, maybe later.
-
-
-Thanks!
-- Naveen
-
->
->>   static ssize_t set_ignore_ce(struct device *s,
->>   			     struct device_attribute *attr,
->>   			     const char *buf, size_t size)
->> @@ -2099,21 +2126,28 @@ static ssize_t set_ignore_ce(struct device *s,
->>   	if (strict_strtoull(buf, 0, &new) < 0)
->>   		return -EINVAL;
->>
->> -	if (mce_ignore_ce ^ !!new) {
->> +	if (mce_boot_flags.ignore_ce ^ !!new) {
->>   		if (new) {
->>   			/* disable ce features */
->>   			mce_timer_delete_all();
->>   			on_each_cpu(mce_disable_cmci, NULL, 1);
->> -			mce_ignore_ce = 1;
->> +			mce_boot_flags.ignore_ce = 1;
->>   		} else {
->>   			/* enable ce features */
->> -			mce_ignore_ce = 0;
->> +			mce_boot_flags.ignore_ce = 0;
->>   			on_each_cpu(mce_enable_ce, (void *)1, 1);
->>   		}
->>   	}
->>   	return size;
->>   }
->>
->> +static ssize_t get_cmci_disabled(struct device *dev,
->> +				 struct device_attribute *attr,
->> +				 char *buf)
->> +{
->> +	return snprintf(buf, PAGE_SIZE, "%d\n", mce_boot_flags.cmci_disabled);
->> +}
->> +
->>   static ssize_t set_cmci_disabled(struct device *s,
->>   				 struct device_attribute *attr,
->>   				 const char *buf, size_t size)
->> @@ -2123,14 +2157,14 @@ static ssize_t set_cmci_disabled(struct device *s,
->>   	if (strict_strtoull(buf, 0, &new) < 0)
->>   		return -EINVAL;
->>
->> -	if (mce_cmci_disabled ^ !!new) {
->> +	if (mce_boot_flags.cmci_disabled ^ !!new) {
->>   		if (new) {
->>   			/* disable cmci */
->>   			on_each_cpu(mce_disable_cmci, NULL, 1);
->> -			mce_cmci_disabled = 1;
->> +			mce_boot_flags.cmci_disabled = 1;
->>   		} else {
->>   			/* enable cmci */
->> -			mce_cmci_disabled = 0;
->> +			mce_boot_flags.cmci_disabled = 0;
->>   			on_each_cpu(mce_enable_ce, NULL, 1);
->>   		}
->>   	}
->> @@ -2149,31 +2183,23 @@ static ssize_t store_int_with_restart(struct device *s,
->>   static DEVICE_ATTR(trigger, 0644, show_trigger, set_trigger);
->>   static DEVICE_INT_ATTR(tolerant, 0644, tolerant);
->>   static DEVICE_INT_ATTR(monarch_timeout, 0644, monarch_timeout);
->> -static DEVICE_INT_ATTR(dont_log_ce, 0644, mce_dont_log_ce);
->> +static DEVICE_ATTR(dont_log_ce, 0644, get_dont_log_ce, set_dont_log_ce);
->> +static DEVICE_ATTR(ignore_ce, 0644, get_ignore_ce, set_ignore_ce);
->> +static DEVICE_ATTR(cmci_disabled, 0644, get_cmci_disabled, set_cmci_disabled);
->>
->>   static struct dev_ext_attribute dev_attr_check_interval = {
->>   	__ATTR(check_interval, 0644, device_show_int, store_int_with_restart),
->>   	&check_interval
->>   };
->>
->> -static struct dev_ext_attribute dev_attr_ignore_ce = {
->> -	__ATTR(ignore_ce, 0644, device_show_int, set_ignore_ce),
->> -	&mce_ignore_ce
->> -};
->> -
->> -static struct dev_ext_attribute dev_attr_cmci_disabled = {
->> -	__ATTR(cmci_disabled, 0644, device_show_int, set_cmci_disabled),
->> -	&mce_cmci_disabled
->> -};
->> -
->>   static struct device_attribute *mce_device_attrs[] = {
->>   	&dev_attr_tolerant.attr,
->>   	&dev_attr_check_interval.attr,
->>   	&dev_attr_trigger,
->>   	&dev_attr_monarch_timeout.attr,
->> -	&dev_attr_dont_log_ce.attr,
->> -	&dev_attr_ignore_ce.attr,
->> -	&dev_attr_cmci_disabled.attr,
->> +	&dev_attr_dont_log_ce,
->> +	&dev_attr_ignore_ce,
->> +	&dev_attr_cmci_disabled,
->>   	NULL
->>   };
->>
->> @@ -2314,7 +2340,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
->>   		break;
->>   	case CPU_DOWN_FAILED:
->>   	case CPU_DOWN_FAILED_FROZEN:
->> -		if (!mce_ignore_ce && check_interval) {
->> +		if (!mce_boot_flags.ignore_ce && check_interval) {
->>   			t->expires = round_jiffies(jiffies +
->>   					per_cpu(mce_next_interval, cpu));
->>   			add_timer_on(t, cpu);
->> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
->> index 38e49bc..aaf5c51 100644
->> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
->> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
->> @@ -36,7 +36,7 @@ static int cmci_supported(int *banks)
->>   {
->>   	u64 cap;
->>
->> -	if (mce_cmci_disabled || mce_ignore_ce)
->> +	if (mce_boot_flags.cmci_disabled || mce_boot_flags.ignore_ce)
->>   		return 0;
->
-> Thanks.
->
-
+diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+index 925da33..346ae9c 100644
+--- a/arch/arm/boot/dts/imx6q.dtsi
++++ b/arch/arm/boot/dts/imx6q.dtsi
+@@ -268,23 +268,43 @@
+ 			};
+ 
+ 			pwm@02080000 { /* PWM1 */
++				compatible = "fsl,imx6q-pwm";
++				#pwm-cells = <2>;
+ 				reg = <0x02080000 0x4000>;
+ 				interrupts = <0 83 0x04>;
++				clocks = <&clks 145>;
++				clock-names = "pwm";
++				status = "disabled";
+ 			};
+ 
+ 			pwm@02084000 { /* PWM2 */
++				compatible = "fsl,imx6q-pwm";
++				#pwm-cells = <2>;
+ 				reg = <0x02084000 0x4000>;
+ 				interrupts = <0 84 0x04>;
++				clocks = <&clks 146>;
++				clock-names = "pwm";
++				status = "disabled";
+ 			};
+ 
+ 			pwm@02088000 { /* PWM3 */
++				compatible = "fsl,imx6q-pwm";
++				#pwm-cells = <2>;
+ 				reg = <0x02088000 0x4000>;
+ 				interrupts = <0 85 0x04>;
++				clocks = <&clks 147>;
++				clock-names = "pwm";
++				status = "disabled";
+ 			};
+ 
+ 			pwm@0208c000 { /* PWM4 */
++				compatible = "fsl,imx6q-pwm";
++				#pwm-cells = <2>;
+ 				reg = <0x0208c000 0x4000>;
+ 				interrupts = <0 86 0x04>;
++				clocks = <&clks 148>;
++				clock-names = "pwm";
++				status = "disabled";
+ 			};
+ 
+ 			flexcan@02090000 { /* CAN1 */
+@@ -584,6 +604,54 @@
+ 					};
+ 				};
+ 
++				pwm1 {
++				     	pinctrl_pwm1_1: pwm1grp-1 {
++						fsl,pins = <1543 0x80000000>;	/* MX6Q_PAD_SD1_DAT3__PWM1_PWMO */
++					};
++
++				     	pinctrl_pwm1_2: pwm1grp-2 {
++						fsl,pins = <971 0x80000000>;	/* MX6Q_PAD_GPIO_9__PWM1_PWMO */
++					};
++
++				     	pinctrl_pwm1_3: pwm1grp-3 {
++						fsl,pins = <574 0x80000000>;	/* MX6Q_PAD_DISP0_DAT8__PWM1_PWMO */
++					};
++				};
++
++				pwm2 {
++				     	pinctrl_pwm2_1: pwm2grp-1 {
++						fsl,pins = <1557 0x80000000>;	/* MX6Q_PAD_SD1_DAT2__PWM2_PWMO */
++					};
++
++				     	pinctrl_pwm2_2: pwm2grp-2 {
++						fsl,pins = <963 0x80000000>;	/* MX6Q_PAD_GPIO_1__PWM2_PWMO */
++					};
++
++				     	pinctrl_pwm2_3: pwm2grp-3 {
++						fsl,pins = <582 0x80000000>;	/* MX6Q_PAD_DISP0_DAT8__PWM2_PWMO */
++					};
++				};
++
++				pwm3 {
++				     	pinctrl_pwm3_1: pwm3grp-1 {
++						fsl,pins = <1471 0x80000000>;	/* MX6Q_PAD_SD4_DAT1__PWM3_PWMO */
++					};
++
++				     	pinctrl_pwm3_2: pwm3grp-2 {
++						fsl,pins = <1526 0x80000000>;	/* MX6Q_PAD_SD1_DAT1__PWM3_PWMO */
++					};
++				};
++
++				pwm4 {
++				     	pinctrl_pwm4_1: pwm4grp-1 {
++						fsl,pins = <1479 0x80000000>;	/* MX6Q_PAD_SD4_DAT2__PWM4_PWMO */
++					};
++
++				     	pinctrl_pwm4_2: pwm4grp-2 {
++						fsl,pins = <1550 0x80000000>;	/* MX6Q_PAD_SD1_CMD__PWM4_PWMO */
++					};
++				};
++
+ 				usdhc3 {
+ 					pinctrl_usdhc3_1: usdhc3grp-1 {
+ 						fsl,pins = <1273 0x17059	/* MX6Q_PAD_SD3_CMD__USDHC3_CMD */
+-- 
+1.7.1
