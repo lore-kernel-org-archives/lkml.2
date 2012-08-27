@@ -1,51 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab2H0MiC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 08:38:02 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:60055
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751295Ab2H0Mh7 (ORCPT
+	id S1752941Ab2H0MiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 08:38:22 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:14889 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab2H0MiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 08:37:59 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de q7RCbGBX004584
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: Benjamin Poirier <bpoirier@suse.de>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Borislav Petkov <bp@alien8.de>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Davidlohr Bueso <dave@gnu.org>, Wang YanQing <udknight@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Cheng Renquan <crquan@gmail.com>
-Subject: Re: [PATCH v2 4/6] menuconfig: Add jump keys to search results
-In-Reply-To: <1345748108-12206-5-git-send-email-bpoirier@suse.de> (Benjamin
-	Poirier's message of "Thu, 23 Aug 2012 14:55:06 -0400")
-References: <1345748108-12206-1-git-send-email-bpoirier@suse.de>
-	<1345748108-12206-5-git-send-email-bpoirier@suse.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Mon, 27 Aug 2012 14:37:11 +0200
-Message-ID: <gi7gska4ug.fsf@mx10.gouders.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Mon, 27 Aug 2012 14:37:19 +0200 (CEST)
+	Mon, 27 Aug 2012 08:38:20 -0400
+Message-ID: <1346071096.3051.3.camel@lorien2>
+Subject: Re: [PATCH] swiotlb: Add support to disable swiotlb overflow buffer
+ with deprecation warning
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        rob@landley.net, shuahkhan@gmail.com
+Date: Mon, 27 Aug 2012 06:38:16 -0600
+In-Reply-To: <20120825182546.GC18320@konrad-lan.dumpdata.com>
+References: <1344638802.8018.18.camel@lorien2>
+	 <1345842845.2651.41.camel@lorien2>
+	 <20120825182546.GC18320@konrad-lan.dumpdata.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Poirier <bpoirier@suse.de> writes:
+On Sat, 2012-08-25 at 14:25 -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Aug 24, 2012 at 03:14:05PM -0600, Shuah Khan wrote:
+> > Add support for disabling swiotlb overflow buffer using zero size swiotlb
+> > overflow buffer to help test disable overflow scenarios to find drivers that
+> > don't check dma mapping errors. Add kernel error message to track overflow
+> > buffer triggers to understand how often overflow buffer gets used. Add
+> > deprecation notice warning message and deprecation schedule documentation, as
+> > a first step towards removing overflow support, to be consistent with other
+> > iommu implementations and return DMA_ERROR_CODE. Once drivers are fixed
+> > overflow support can be removed.
+> 
+> This looks like the previous patch. I thought we discussed this and
+> decided that the overflow buffer support should not be disabled outright
+> (meaning by default it is ON) - but we can provide a knob to turn it
+> off.
 
-> makes it possible to jump directly to the menu for a configuration entry after
-> having searched for it with '/'. If this menu is not currently accessible we
-> jump to the nearest accessible parent instead. After exiting this menu, the
-> user is returned to the search results where he may jump further in or
-> elsewhere.
+No change in plans. This patch doesn't disable the overflow buffer. I
+kept the functionality from my earlier patch that checks if overflow
+buffer size is 0 and not allocate overflow buffer as a way to disable it
+for testing. By default the size is 32*1024 and gets crates as usual and
+maintains returning the overflow buffer when swiotlb is full.
 
-I applied your patches, played with menuconfig and did not notice any
-problems.  What I especially like is that if I am guided to a nearest
-accessible parent in cases where a menu is not currently accessible and
-do modifications there, these modifications are visible in the search
-results when I return to them.
+> 
+> And alongside you were going to look at DMA API debug code to see if you
+> can come up with a mechanism to track that the users of DMA API call
+> dma_mapping_error after they have called various variants of 'map'?
 
-Dirk
+I am working on this now.
+
+-- Shuah
+> 
+> > 
+> > Tested on x86-64 and compile tested on IA64.
+> > 
+> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> > ---
+> >  Documentation/feature-removal-schedule.txt |   15 ++++++
+> >  lib/swiotlb.c                              |   73 ++++++++++++++++++++--------
+> >  2 files changed, 69 insertions(+), 19 deletions(-)
+> > 
+> > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> > index a52924e..b5938ca 100644
+> > --- a/Documentation/feature-removal-schedule.txt
+> > +++ b/Documentation/feature-removal-schedule.txt
+> > @@ -646,3 +646,18 @@ Who:	Russell King <linux@arm.linux.org.uk>,
+> >  	Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >  
+> >  ----------------------------
+> > +
+> > +What:  SWIOTLB overflow buffer support.
+> > +When:  3.8
+> > +Why:   Remove SWIOTLB overflow buffer support and return DMA_ERROR_CODE
+> > +       (a value of zero) to make it consistent with iommu implementation
+> > +       on Intel, AMD, and swiotlb-xen. In 3.7, add logging to track swiotlb
+> > +       buffer overflow triggers to understand how often overflow buffer
+> > +       gets used. The next step is to fix drivers that don't call
+> > +       dma_mapping_error to check for errors returned by the mapping
+> > +       interfaces. Once drivers are fixed overflow support can be removed.
+> > +       If you see any problems related to disabling SWIOTLB overflow buffer,
+> > +       please report to us!
+> > +       E-mail us at: linux-kernel@vger.kernel.org
+> > +Who:   Shuah Khan <shuah.khan@hp.com> <shuahkhan@gmail.com>
+> > +
+> > diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> > index 45bc1f8..658f35a 100644
+> > --- a/lib/swiotlb.c
+> > +++ b/lib/swiotlb.c
+> > @@ -92,6 +92,24 @@ static DEFINE_SPINLOCK(io_tlb_lock);
+> >  
+> >  static int late_alloc;
+> >  
+> > +static void swiotlb_print_overflow_deprecation_notice(void)
+> > +{
+> > +	if (io_tlb_overflow) {
+> > +		pr_warn("SWIOTLB overflow buffer will be deprecated.\n"
+> > +			"  If you have a driver that depends on this feature\n"
+> > +			"  please Email us at: linux-kernel@vger.kernel.org,\n"
+> > +			"  Shuah Khan (shuahkhan@gmail.com), and\n"
+> > +			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
+> > +	} else {
+> > +		pr_warn("SWIOTLB overflow buffer is disabled and will be\n"
+> > +			"  deprecated. Please report problems related to\n"
+> > +			"  disabling overflow buffer to\n"
+> > +			"  linux-kernel@vger.kernel.org,\n"
+> > +			"  Shuah Khan (shuahkhan@gmail.com), and\n"
+> > +			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
+> > +	}
+> > +}
+> > +
+> >  static int __init
+> >  setup_io_tlb_npages(char *str)
+> >  {
+> > @@ -108,7 +126,6 @@ setup_io_tlb_npages(char *str)
+> >  	return 1;
+> >  }
+> >  __setup("swiotlb=", setup_io_tlb_npages);
+> > -/* make io_tlb_overflow tunable too? */
+> >  
+> >  unsigned long swiotlb_nr_tbl(void)
+> >  {
+> > @@ -156,12 +173,18 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+> >  	io_tlb_index = 0;
+> >  	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+> >  
+> > -	/*
+> > -	 * Get the overflow emergency buffer
+> > -	 */
+> > -	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+> > -	if (!io_tlb_overflow_buffer)
+> > -		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+> > +	if (io_tlb_overflow) {
+> > +		/*
+> > +		 * Get the overflow emergency buffer
+> > +		 */
+> > +		io_tlb_overflow_buffer = alloc_bootmem_low_pages(
+> > +						PAGE_ALIGN(io_tlb_overflow));
+> > +		if (!io_tlb_overflow_buffer)
+> > +			panic("Cannot allocate SWIOTLB overflow buffer!\n");
+> > +	}
+> > +
+> > +	swiotlb_print_overflow_deprecation_notice();
+> > +
+> >  	if (verbose)
+> >  		swiotlb_print_info();
+> >  }
+> > @@ -264,14 +287,17 @@ swiotlb_late_init_with_default_size(size_t default_size)
+> >  
+> >  	memset(io_tlb_orig_addr, 0, io_tlb_nslabs * sizeof(phys_addr_t));
+> >  
+> > -	/*
+> > -	 * Get the overflow emergency buffer
+> > -	 */
+> > -	io_tlb_overflow_buffer = (void *)__get_free_pages(GFP_DMA,
+> > -	                                          get_order(io_tlb_overflow));
+> > -	if (!io_tlb_overflow_buffer)
+> > -		goto cleanup4;
+> > +	if (io_tlb_overflow) {
+> > +		/*
+> > +		 * Get the overflow emergency buffer
+> > +		 */
+> > +		io_tlb_overflow_buffer = (void *)
+> > +			__get_free_pages(GFP_DMA, get_order(io_tlb_overflow));
+> > +		if (!io_tlb_overflow_buffer)
+> > +			goto cleanup4;
+> > +	}
+> >  
+> > +	swiotlb_print_overflow_deprecation_notice();
+> >  	swiotlb_print_info();
+> >  
+> >  	late_alloc = 1;
+> > @@ -297,12 +323,13 @@ cleanup1:
+> >  
+> >  void __init swiotlb_free(void)
+> >  {
+> > -	if (!io_tlb_overflow_buffer)
+> > +	if (!io_tlb_orig_addr)
+> >  		return;
+> >  
+> >  	if (late_alloc) {
+> > -		free_pages((unsigned long)io_tlb_overflow_buffer,
+> > -			   get_order(io_tlb_overflow));
+> > +		if (io_tlb_overflow_buffer)
+> > +			free_pages((unsigned long)io_tlb_overflow_buffer,
+> > +				   get_order(io_tlb_overflow));
+> >  		free_pages((unsigned long)io_tlb_orig_addr,
+> >  			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
+> >  		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
+> > @@ -310,8 +337,9 @@ void __init swiotlb_free(void)
+> >  		free_pages((unsigned long)io_tlb_start,
+> >  			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+> >  	} else {
+> > -		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+> > -				  PAGE_ALIGN(io_tlb_overflow));
+> > +		if (io_tlb_overflow_buffer)
+> > +			free_bootmem_late(__pa(io_tlb_overflow_buffer),
+> > +					  PAGE_ALIGN(io_tlb_overflow));
+> >  		free_bootmem_late(__pa(io_tlb_orig_addr),
+> >  				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+> >  		free_bootmem_late(__pa(io_tlb_list),
+> > @@ -681,7 +709,10 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+> >  	map = map_single(dev, phys, size, dir);
+> >  	if (!map) {
+> >  		swiotlb_full(dev, size, dir, 1);
+> > +		if (!io_tlb_overflow)
+> > +			return DMA_ERROR_CODE;
+> >  		map = io_tlb_overflow_buffer;
+> > +		dev_err(dev, "SWIOTLB is full. Mapping overflow buffer.\n");
+> >  	}
+> >  
+> >  	dev_addr = swiotlb_virt_to_bus(dev, map);
+> > @@ -691,6 +722,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+> >  	 */
+> >  	if (!dma_capable(dev, dev_addr, size)) {
+> >  		swiotlb_tbl_unmap_single(dev, map, size, dir);
+> > +		if (!io_tlb_overflow)
+> > +			return DMA_ERROR_CODE;
+> >  		dev_addr = swiotlb_virt_to_bus(dev, io_tlb_overflow_buffer);
+> >  	}
+> >  
+> > @@ -910,6 +943,8 @@ EXPORT_SYMBOL(swiotlb_sync_sg_for_device);
+> >  int
+> >  swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr)
+> >  {
+> > +	if (!io_tlb_overflow)
+> > +		return DMA_ERROR_CODE;
+> >  	return (dma_addr == swiotlb_virt_to_bus(hwdev, io_tlb_overflow_buffer));
+> >  }
+> >  EXPORT_SYMBOL(swiotlb_dma_mapping_error);
+> > -- 
+> > 1.7.9.5
+> > 
+> > 
+> > 
+
+
