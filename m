@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab2H0Okf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 10:40:35 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56485 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750936Ab2H0Oke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 10:40:34 -0400
+	id S1752774Ab2H0Osr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 10:48:47 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:59920 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752169Ab2H0Osn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 10:48:43 -0400
+Date: Mon, 27 Aug 2012 16:48:29 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
+        ananth@in.ibm.com, masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86/mce: Honour bios-set CMCI threshold
+Message-ID: <20120827144829.GF27979@aftab.osrc.amd.com>
+References: <20120827112503.10313.62594.stgit@localhost.localdomain>
+ <20120827112512.10313.49176.stgit@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com>
-References: <CA+6av4=uxu_q5U_46HtpUt=FSgbh3pZuAEY54J5_xK=MKWq-YQ@mail.gmail.com>
-Date: Mon, 27 Aug 2012 10:40:32 -0400
-X-Google-Sender-Auth: oDAyOZMTpgpLmfuWJtHLJeUr6TY
-Message-ID: <CAFtxgO536xEMjMw_D1u3utT1f1iy-6EsjcawdYvbocRxc=Wu=A@mail.gmail.com>
-Subject: Re: Storage related regression in linux-next 20120824
-From: Jeff Garzik <jgarzik@pobox.com>
-To: Arvydas Sidorenko <asido4@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        "IDE/ATA development list" <linux-ide@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120827112512.10313.49176.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 4:59 AM, Arvydas Sidorenko <asido4@gmail.com> wrote:
-> linux-next 20120824 introduced regression on Mac mini 2011 - /root partition
-> gets mounted as read-only and it stays so even when trying to reboot into
-> previously working kernel. In order to make it work on older kernel again
-> `fsck` needs to be executed:
-> ----------------------------------------------------------------------
-> Root partition uses ext4 filesystem on Intel 330 SSD connected to SATA3.
-> dmesg shows that journaling was disabled:
-> ----------------------------------------------------------------------
-> I haven't bisected to which exactly tree introduces the regression,
-> but I can tell
-> that linux-next 20120813 and v3.6-rc3 work fine.
+On Mon, Aug 27, 2012 at 04:55:12PM +0530, Naveen N. Rao wrote:
+> The ACPI spec doesn't provide for a way for the bios to pass down
+> recommended thresholds to the OS on a _per-bank_ basis. This patch adds
+> a new boot option, which if passed, allows bios to initialize the CMCI
+> threshold. In such a case, we simply skip programming any threshold
+> value.
+> 
+> As fail-safe, we initialize threshold to 1 if some banks have not been
+> initialized by the bios and warn the user.
+> 
+> Changes:
+> - Use the mce_boot_flags structure.
+> - Expose bios_cmci_threshold via sysfs.
+> 
+> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+> ---
 
-Can you pastebin 'dmesg' and 'lspci'?  Did this occur only once, or is
-it reproducible?
+...
 
-     Jeff
+> @@ -119,6 +146,12 @@ static void cmci_discover(int banks, int boot)
+>  	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+>  	if (hdr)
+>  		printk(KERN_CONT "\n");
+> +	if (boot && mce_boot_flags.bios_cmci_threshold && bios_wrong_thresh) {
+> +		printk_once(KERN_INFO
+> +			"bios_cmci_threshold: Some banks do not have valid thresholds set");
+> +		printk_once(KERN_INFO
+> +			"bios_cmci_threshold: Make sure your BIOS supports this boot option");
+> +	}
+
+All functional changes aside, why do you want to print this at all? Does
+it bring anything to the user?
+
+Because if BIOS is systematically b0rked and we keep issuing this every
+time do do cmci_discover, then we have a lotsa users to explain to what
+happens.
+
+Why not do a printk_once saying something along the lines of "BIOS
+hasn't setup thresholds properly, correcting..." and that's it?
+
+Tony?
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
