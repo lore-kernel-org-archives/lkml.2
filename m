@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2H0VD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 17:03:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27478 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab2H0VDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 17:03:24 -0400
-Date: Mon, 27 Aug 2012 18:02:10 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>, gleb@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for-3.6] kvm: fix KVM_GET_MSR for PV EOI
-Message-ID: <20120827210210.GA6192@amt.cnet>
-References: <20120826150029.GA11114@redhat.com>
- <20120827204742.GA5031@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120827204742.GA5031@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754653Ab2H0VSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 17:18:44 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56025 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754218Ab2H0VSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 17:18:42 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6817"; a="227730827"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        shinya.kuribayashi.px@renesas.com
+Subject: [PATCH] ARM: MSM: Implement read_current_timer for msm timers
+Date: Mon, 27 Aug 2012 14:18:39 -0700
+Message-Id: <1346102319-24497-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.12.70.g851f7e6
+In-Reply-To: <1345817604-9004-2-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 05:47:42PM -0300, Marcelo Tosatti wrote:
-> On Sun, Aug 26, 2012 at 06:00:29PM +0300, Michael S. Tsirkin wrote:
-> > KVM_GET_MSR was missing support for PV EOI,
-> > which is needed for migration.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> > 
-> > Please consider this bugfix patch for 3.6.
-> > Thanks!
-> > 
-> >  arch/x86/kvm/x86.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 91a5958..ff5e985 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -1993,6 +1993,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
-> >  	case MSR_KVM_STEAL_TIME:
-> >  		data = vcpu->arch.st.msr_val;
-> >  		break;
-> > +	case MSR_KVM_PV_EOI_EN:
-> > +		data = vcpu->arch.pv_eoi.msr_val;
-> > +		break;
-> >  	case MSR_IA32_P5_MC_ADDR:
-> >  	case MSR_IA32_P5_MC_TYPE:
-> >  	case MSR_IA32_MCG_CAP:
-> 
-> Should increase KVM_SAVE_MSRS_BEGIN.
+Setup the same timer used as the clocksource to be used as the
+read_current_timer implementation. This allows us to support a
+stable udelay implementation on MSMs where it's possible for the
+CPUs to scale speeds independently of one another.
 
-Already done by e115676e042f4d9268, applied.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+
+I have some patches to send that add DT support to the MSM timer that
+this conflicts with slightly. I'm not too concerned though, but we may
+want to decide what tree this goes through when I send out those patches.
+
+ arch/arm/mach-msm/timer.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 81280825..1997ab1 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -25,6 +25,7 @@
+ #include <asm/hardware/gic.h>
+ #include <asm/localtimer.h>
+ #include <asm/sched_clock.h>
++#include <asm/delay.h>
+ 
+ #include <mach/msm_iomap.h>
+ #include <mach/cpu.h>
+@@ -172,6 +173,16 @@ static notrace u32 msm_sched_clock_read(void)
+ 	return msm_clocksource.read(&msm_clocksource);
+ }
+ 
++static int msm_read_current_timer(unsigned long *timer_val)
++{
++	*timer_val = msm_clocksource.read(&msm_clocksource);
++	return 0;
++}
++
++static struct delay_timer msm_delay_timer = {
++	.read_current_timer = msm_read_current_timer,
++};
++
+ static void __init msm_timer_init(void)
+ {
+ 	struct clock_event_device *ce = &msm_clockevent;
+@@ -240,6 +251,8 @@ err:
+ 		pr_err("clocksource_register failed\n");
+ 	setup_sched_clock(msm_sched_clock_read,
+ 			cpu_is_msm7x01() ? 32 - MSM_DGT_SHIFT : 32, dgt_hz);
++	msm_delay_timer.freq = dgt_hz;
++	register_current_timer_delay(&msm_delay_timer);
+ }
+ 
+ struct sys_timer msm_timer = {
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
