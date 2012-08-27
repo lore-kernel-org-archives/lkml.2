@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab2H0BoM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 21:44:12 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62630 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab2H0BoL (ORCPT
+	id S1751681Ab2H0BpU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Aug 2012 21:45:20 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64626 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab2H0BpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 21:44:11 -0400
+	Sun, 26 Aug 2012 21:45:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-LUaRzhUs4AvVUvT4xZkdvGL-9WcJyJQ0S463CyWe+Jow@mail.gmail.com>
-References: <1344369495-21943-1-git-send-email-ccross@android.com>
- <20120808011245.GC640@khazad-dum.debian.net> <CAK5ve-L4JJ_HX5+csMbac_PYO=4mR2tVNsP3SGEvTnYYEbg46g@mail.gmail.com>
- <CAK5ve-LUaRzhUs4AvVUvT4xZkdvGL-9WcJyJQ0S463CyWe+Jow@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Mon, 27 Aug 2012 09:43:49 +0800
-X-Google-Sender-Auth: Rn3ZmCmAd9YOFzHxGMvsf1p6IS8
-Message-ID: <CAK5ve-J6c_z3PRHYG--wr5eX-XpDL5omVZVZA3T69Fs2GtasfQ@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: triggers: send uevent when changing triggers
-To: Colin Cross <ccross@android.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1345996865-32082-5-git-send-email-Julia.Lawall@lip6.fr>
+References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr> <1345996865-32082-5-git-send-email-Julia.Lawall@lip6.fr>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 27 Aug 2012 09:44:54 +0800
+Message-ID: <CAGsJ_4zSsnyJ0sn385g_1OvGXTwXbW-E1P_o7EWtM75+CSxDww@mail.gmail.com>
+Subject: Re: [PATCH 4/13] i2c: sirf: use clk_prepare_enable and clk_disable_unprepare
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        linux-arm-kernel@lists.infradead.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My bad. I apologize to the delay. I missed the v2 original patch email
-in this thread, but googled and found it.
-Applied to my for-next branch now.
-
-Thanks,
--Bryan
-
-On Tue, Aug 14, 2012 at 7:34 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
-> On Wed, Aug 8, 2012 at 10:16 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
->> On Wed, Aug 8, 2012 at 9:12 AM, Henrique de Moraes Holschuh
->> <hmh@hmh.eng.br> wrote:
->>> On Tue, 07 Aug 2012, Colin Cross wrote:
->>>> Some triggers create sysfs files when they are enabled.  Send a uevent
->>>> "change" notification whenever the trigger is changed to allow userspace
->>>> processes such as udev to modify permissions on the new files.
->>>>
->>>> A change notification will also be sent during registration of led class
->>>> devices or led triggers if the default trigger of an led class device
->>>> is found.
->>>>
->>>> Signed-off-by: Colin Cross <ccross@android.com>
->>>
->>> Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
->>>
->>
->> Colin, could you please resend an update patch with some
->> documentations as Henrique pointed out? Then I will add Ack from
->> Henrique and Greg and apply this patch.
->>
+2012/8/27 Julia Lawall <Julia.Lawall@lip6.fr>:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 >
-> Colin, will you update the patch or just keep this one.
+> Clk_prepare_enable and clk_disable_unprepare combine clk_prepare and
+> clk_enable, and clk_disable and clk_unprepare.  They make the code more
+> concise, and ensure that clk_unprepare is called when clk_enable fails.
 >
-> -Bryan
+> A simplified version of the semantic patch that introduces calls to these
+> functions is as follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression e;
+> @@
+>
+> - clk_prepare(e);
+> - clk_enable(e);
+> + clk_prepare_enable(e);
+>
+> @@
+> expression e;
+> @@
+>
+> - clk_disable(e);
+> - clk_unprepare(e);
+> + clk_disable_unprepare(e);
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-
-
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Acked-by: Barry Song <21cnbao@gmail.com>
