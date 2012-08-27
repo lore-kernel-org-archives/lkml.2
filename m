@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab2H0PLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:11:20 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41550 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2H0PLT (ORCPT
+	id S1752460Ab2H0PNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:13:19 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57393 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab2H0PNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:11:19 -0400
-Date: Mon, 27 Aug 2012 17:11:43 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Remove __GFP_NO_KSWAPD
-Message-ID: <20120827151143.GC5376@phenom.ffwll.local>
-Mail-Followup-To: Sedat Dilek <sedat.dilek@gmail.com>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <1346068957-27754-1-git-send-email-sedat.dilek@gmail.com>
+	Mon, 27 Aug 2012 11:13:16 -0400
+Message-ID: <503B8E26.2050604@linux.vnet.ibm.com>
+Date: Mon, 27 Aug 2012 20:41:34 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1346068957-27754-1-git-send-email-sedat.dilek@gmail.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
+        ananth@in.ibm.com, masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86/mce: Honour bios-set CMCI threshold
+References: <20120827112503.10313.62594.stgit@localhost.localdomain> <20120827112512.10313.49176.stgit@localhost.localdomain> <20120827144829.GF27979@aftab.osrc.amd.com>
+In-Reply-To: <20120827144829.GF27979@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12082715-8878-0000-0000-000003C292A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 02:02:37PM +0200, Sedat Dilek wrote:
-> When I pulled-in today's drm-intel-next into linux-next (next-20120824)
-> I saw this build-breakage:
-> 
-> drivers/gpu/drm/i915/i915_gem.c: In function 'i915_gem_object_get_pages_gtt':
-> drivers/gpu/drm/i915/i915_gem.c:1778:40: error: '__GFP_NO_KSWAPD' undeclared (first use in this function)
-> drivers/gpu/drm/i915/i915_gem.c:1778:40: note: each undeclared identifier is reported only once for each function it appears in
-> 
-> This is caused by commit ba099ef165f8 ("mm: remove __GFP_NO_KSWAPD")
-> and commit b6beae2c2014 ("mm: remove __GFP_NO_KSWAPD fixes") in
-> linux-next (next-20120824).
-> 
-> Fix this by removing __GFP_NO_KSWAPD from drm/i915 driver.
-> 
-> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+On 08/27/2012 08:18 PM, Borislav Petkov wrote:
+> On Mon, Aug 27, 2012 at 04:55:12PM +0530, Naveen N. Rao wrote:
+>> The ACPI spec doesn't provide for a way for the bios to pass down
+>> recommended thresholds to the OS on a _per-bank_ basis. This patch adds
+>> a new boot option, which if passed, allows bios to initialize the CMCI
+>> threshold. In such a case, we simply skip programming any threshold
+>> value.
+>>
+>> As fail-safe, we initialize threshold to 1 if some banks have not been
+>> initialized by the bios and warn the user.
+>>
+>> Changes:
+>> - Use the mce_boot_flags structure.
+>> - Expose bios_cmci_threshold via sysfs.
+>>
+>> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+>> ---
+>
+> ...
+>
+>> @@ -119,6 +146,12 @@ static void cmci_discover(int banks, int boot)
+>>   	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+>>   	if (hdr)
+>>   		printk(KERN_CONT "\n");
+>> +	if (boot && mce_boot_flags.bios_cmci_threshold && bios_wrong_thresh) {
+>> +		printk_once(KERN_INFO
+>> +			"bios_cmci_threshold: Some banks do not have valid thresholds set");
+>> +		printk_once(KERN_INFO
+>> +			"bios_cmci_threshold: Make sure your BIOS supports this boot option");
+>> +	}
+>
+> All functional changes aside, why do you want to print this at all? Does
+> it bring anything to the user?
+>
+> Because if BIOS is systematically b0rked and we keep issuing this every
+> time do do cmci_discover, then we have a lotsa users to explain to what
+> happens.
+>
+> Why not do a printk_once saying something along the lines of "BIOS
+> hasn't setup thresholds properly, correcting..." and that's it?
 
-Queued for -next, thanks for the patch.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Yes, that's the intent here. I am using printk_once() and if I'm not 
+mistaken, we print the above only once during boot.
+
+I am open to changing the message if the above two lines aren't good.
+
+
+Thanks!
+- Naveen
+
+>
+> Tony?
+>
+
