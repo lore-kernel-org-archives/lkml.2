@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab2H0PAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:00:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60393 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab2H0PAL (ORCPT
+	id S1753240Ab2H0PAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:00:49 -0400
+Received: from bosmailout02.eigbox.net ([66.96.185.2]:60403 "EHLO
+	bosmailout02.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab2H0PAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:00:11 -0400
+	Mon, 27 Aug 2012 11:00:31 -0400
+X-Authority-Analysis: v=2.0 cv=aPZHX8Bm c=1 sm=1
+ a=b13+pjR7gVc1Ry1IWBkISg==:17 a=bc2JKO6qiGsA:10 a=kfTud4QeKxsA:10
+ a=6_yu9_eKWJgA:10 a=8nJEP1OIZ-IA:10 a=gHsnk5GASbAA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=dCP5gS9r6t0cLp5NDqwA:9 a=wPNLvfGTeEIA:10
+ a=6uKCkKhFq2wXOH2GoQX8aA==:117
+X-EN-OrigOutIP: 10.20.18.3
+X-EN-IMPSID: rr0U1j00G03yW7601r0Uit
+Message-ID: <503B8B26.3050205@yahoo.es>
+Date: Mon, 27 Aug 2012 22:58:46 +0800
+From: Hein Tibosch <hein_tibosch@yahoo.es>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-X-Originating-IP: [72.73.18.11]
-Date: Mon, 27 Aug 2012 11:00:10 -0400
-Message-ID: <CAO9zADzH7mG3Kp1EQ-0MtTE2CdyLmuz9jsaijgTXLSJ9rZ9tiw@mail.gmail.com>
-Subject: 3.5.2: moving files from xfs/disk -> nfs: radix_tree_lookup_slot+0xe/0x10
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-Cc: xfs@oss.sgi.com
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+CC: viresh kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH 1/2] dw_dmac: make driver endianness configurable
+References: <503A8CAE.6050606@yahoo.es> <20120827070323.GC28721@samfundet.no> <503B342C.9060300@yahoo.es> <20120827111431.GA27868@samfundet.no>
+In-Reply-To: <20120827111431.GA27868@samfundet.no>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
+X-EN-AuthUser: hein@htibosch.net
+X-EN-OrigIP: 114.79.63.205
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 8/27/2012 7:14 PM, Hans-Christian Egtvedt wrote:
+> Around Mon 27 Aug 2012 16:47:40 +0800 or thereabout, Hein Tibosch wrote:
+>> On 8/27/2012 3:03 PM, Hans-Christian Egtvedt wrote:
+>>> Brushing up the config items:
+>>>
+>>> +config DW_DMAC_BIG_ENDIAN_IO
+>>> +	bool "Use big endian I/O register access"
+>>> +	default y if AVR32
+>>> +	depends on DW_DMAC
+>>> +	help
+>>> +	  Say yes here to use big endian I/O access when reading and writing
+>>> +	  to the DMA controller registers. This is needed on some platforms,
+>>> +	  like the Atmel AVR32 architecture.
+>>> +
+>>> +	  If unsure, use the default setting.
+> This sounds good in my ears, but I don't speak English natively.
+I think you Norwegians are doing very well in English
+And btw, I'm not from .es but from .nl, which is very close to England
 
-Moving ~276GB of files (mainly large backups) and everything has
-seemed to lockup on the client moving data to the server, it is still
-in this state..
+>> And as I'd like to define the maximum memory transfer width in the same
+>> Kconfig:
+>>
+>> +config DW_DMAC_MEM_64_BIT
+>> +	bool "Allow 64-bit memory transfers"
+>> +	default y if !AVR32
+>> +	depends on DW_DMAC
+>> +	help
+>> +	  Say yes if the DMA controller may do 64-bit memory transfers
+>> +	  For AVR32, say no because only up to 32-bit transfers are
+>> +	  defined
+> Is this sane to add? Could some non-AVR32 platforms use 64-bit and 32-bit
+> depending on runtime configuration? E.g. if you build a kernel with support
+> for multiple boards/processors, and there is a mix of 32-bit and 64-bit wide
+> DMA support.
+>
+> I think it is better to select 32/64-bit at runtime.
 
-[75716.705697] INFO: task sync:8790 blocked for more than 120 seconds.
-[75716.705701] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-disables this message.
-[75716.705703] sync            D ffff88040ec54830     0  8790   2141 0x00000000
-[75716.705708]  ffff88001fff1d08 0000000000000086 ffffffff81862fc0
-ffff88001fff1fd8
-[75716.705713]  ffff88001fff1fd8 0000000000004000 ffff88041d958670
-ffff88040ec54830
-[75716.705716]  ffff88001fff1c38 ffffffff812dcaee ffff88001fff1c58
-ffff88001fff1d78
-[75716.705720] Call Trace:
-[75716.705729]  [<ffffffff812dcaee>] ? radix_tree_lookup_slot+0xe/0x10
-[75716.705733]  [<ffffffff81082ca6>] ? find_get_pages_tag+0xc6/0x150
-[75716.705738]  [<ffffffff81057980>] ? __enqueue_entity+0x70/0x80
-[75716.705742]  [<ffffffff810e3450>] ? __sync_filesystem+0x90/0x90
-[75716.705747]  [<ffffffff815a3d04>] schedule+0x24/0x70
-[75716.705751]  [<ffffffff815a2549>] schedule_timeout+0x1a9/0x210
-[75716.705755]  [<ffffffff81089550>] ? calc_period_shift+0x60/0x60
-[75716.705760]  [<ffffffff81052ef5>] ? check_preempt_curr+0x75/0xa0
-[75716.705764]  [<ffffffff815a3420>] wait_for_common+0xc0/0x150
-[75716.705767]  [<ffffffff81055af0>] ? try_to_wake_up+0x280/0x280
-[75716.705770]  [<ffffffff810e3450>] ? __sync_filesystem+0x90/0x90
-[75716.705773]  [<ffffffff815a3d78>] wait_for_completion+0x18/0x20
-[75716.705777]  [<ffffffff810dfa47>] writeback_inodes_sb_nr+0x77/0xa0
-[75716.705782]  [<ffffffff810d0101>] ?
-shrink_dcache_for_umount_subtree+0x111/0x1d0
-[75716.705785]  [<ffffffff810dfa99>] writeback_inodes_sb+0x29/0x40
-[75716.705788]  [<ffffffff810e3407>] __sync_filesystem+0x47/0x90
-[75716.705791]  [<ffffffff810e346b>] sync_one_sb+0x1b/0x20
-[75716.705795]  [<ffffffff810bea71>] iterate_supers+0xe1/0xf0
-[75716.705798]  [<ffffffff810e355b>] sys_sync+0x2b/0x60
-[75716.705802]  [<ffffffff815a53a6>] system_call_fastpath+0x1a/0x1f
-[75836.701197] INFO: task sync:8790 blocked for more than 120 seconds.
+I did that in the first patch, adding a new property to the dw_dma_slave
+structure. It had the small disadvantage that some arch code had to be
+adapted (at32ap700x.c).
 
-Thoughts?
+Viresh, what do you think? Add a property called "mem_64_bit_access" or so?
 
-Justin.
+Or should it be passed as a member of 'dw_dma_platform_data', because it
+is a property of the (entire) DMA controller?
+
+Hein
