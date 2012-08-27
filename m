@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2H0SeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:34:25 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:58614 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab2H0SeX (ORCPT
+	id S1753715Ab2H0Sed (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:34:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32630 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab2H0Sea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:34:23 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6817"; a="229947028"
-Message-ID: <503BBDAE.7020302@codeaurora.org>
-Date: Mon, 27 Aug 2012 11:34:22 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Mon, 27 Aug 2012 14:34:30 -0400
+X-Authority-Analysis: v=2.0 cv=cpwZYiEi c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=06lJtMxUfagA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=ERDPx3maok4A:10 a=meVymXHHAAAA:8 a=SOHA6BCROhLeC_dYscAA:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Date: Mon, 27 Aug 2012 14:34:28 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Watts <akwatts@ymail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [BUG]: fsnotify oops on 3.5.2
+Message-ID: <20120827183428.GA21402@home.goodmis.org>
+References: <20120826204453.GA10707@ymail.com>
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: local timers: add timer support using IO mapped
- register
-References: <1344635921-5147-1-git-send-email-rvaswani@codeaurora.org> <6e478bc5efb598b4a15ff9d534b94001@localhost>
-In-Reply-To: <6e478bc5efb598b4a15ff9d534b94001@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120826204453.GA10707@ymail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/11/2012 3:04 AM, Marc Zyngier wrote:
-> Hi Rohit,
->
-> On Fri, 10 Aug 2012 14:58:41 -0700, Rohit Vaswani
-> <rvaswani@codeaurora.org>
-> wrote:
->> The current arch_timer only support accessing through CP15 interface.
->> Add support for ARM processors that only support IO mapped register
->> interface
-> This is quite a departure from the current implementation, which raises a
-> couple of questions:
-> - What does CP15 ID_PFR1[19:16] report? Can we easily detect that we do
-> not have the CP15 interface?
-> - What about HYP mode? Is there any way to control the access of the
-> physical timer at PL1?
-Yes - we can easily detect if CP15 interface is not present. The PFR1 
-[19:16] are 0 for this implementation.
-How is the access control managed currently for the Physical timer ?
->> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
->> ---
->>   .../devicetree/bindings/arm/arch_timer.txt         |    7 +
->>   arch/arm/kernel/arch_timer.c                       |  259
->>   ++++++++++++++++----
->>   2 files changed, 223 insertions(+), 43 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt
->> b/Documentation/devicetree/bindings/arm/arch_timer.txt
->> index 52478c8..1c71799 100644
->> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
->> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
->> @@ -14,6 +14,13 @@ The timer is attached to a GIC to deliver its
->> per-processor interrupts.
->>   
->>   - clock-frequency : The frequency of the main counter, in Hz. Optional.
->>   
->> +- irq-is-not-percpu: Specify is the timer irq is *NOT* a percpu (PPI)
->> interrupt
->> +  In the default case i.e without this property, the timer irq is
-> treated
->> as a
->> +  PPI interrupt. Optional.
-> Ouch! How do you specify the various interrupts for all CPUs? Do you end
-> up with 4 SPIs per CPU?
->
->> +- If the node address and reg is specified, the arch_timer will try to
->> use the memory
->> +  mapped timer. Optional.
->> +
->>   Example:
->>   
->>   	timer {
->> diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
->> index 1d0d9df..09604b7 100644
->> --- a/arch/arm/kernel/arch_timer.c
->> +++ b/arch/arm/kernel/arch_timer.c
->> @@ -18,6 +18,7 @@
->>   #include <linux/clockchips.h>
->>   #include <linux/interrupt.h>
->>   #include <linux/of_irq.h>
->> +#include <linux/of_address.h>
->>   #include <linux/io.h>
->>   
->>   #include <asm/cputype.h>
->> @@ -29,8 +30,17 @@
->>   static unsigned long arch_timer_rate;
->>   static int arch_timer_ppi;
->>   static int arch_timer_ppi2;
->> +static int is_irq_percpu;
->>   
->>   static struct clock_event_device __percpu **arch_timer_evt;
->> +static void __iomem *timer_base;
->> +
->> +struct arch_timer_operations {
->> +	void (*reg_write)(int, u32);
->> +	u32 (*reg_read)(int);
->> +	cycle_t (*get_cntpct)(void);
->> +	cycle_t (*get_cntvct)(void);
->> +};
-> I already have something similar in a patch series that I'd like to get
-> merged in 3.7, implementing support for the virtual timers (needed for
-> virtualisation). Have a look at:
-> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
-> timers-next
-I am working on a patch based on this and will send this out soon.
-> <snip> 
+On Sun, Aug 26, 2012 at 03:44:54PM -0500, Andrew Watts wrote:
+> Hi.
+> 
+> The system runs kernel 3.5.2 with ext3. (note: kernel is patched with
+> overlayfs-v13).
+> 
 
+Thanks for pointing out that the kernel is patched with overlayfs. As
+the crash is within the filesystem, it looks to be a bug with that
+patch. You may want to report this bug to them.
 
-Thanks,
-Rohit Vaswani
+-- Steve
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> ==
+
+> BUG: unable to handle kernel NULL pointer dereference at 00000064
+> IP: [<c1109b7d>] fsnotify+0x8b/0x270
+> *pde = 00000000
+> Oops: 0000 [#1]
+> Pid: 14083, comm: firefox Tainted: G O 3.5.2
+> EIP: 0060:[<c1109b7d>] EFLAGS: 00210246 CPU: 0
+> EIP is at fsnotify+0x8b/0x270
+> EAX: 00000000 EBX: fffffff0 ECX: f5988910 EDX: f5988910
+> ESI: 00000010 EDI: 00000000 EBP: dea1de5c ESP: dea1de14
+> DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+> CR0: 80050033 CR2: 00000064 CR3: 34c52000 CR4: 000007d0
+> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> DR6: ffff0ff0 DR7: 00000400
+> Process firefox (pid: 14083, ti=dea1c000 task=ed2d1880 task.ti=dea1c000)
+> Stack:
+> dea1de34 c10ee498 00000000 dea1deec dea1df78 00008000 00000001 c10f21c3
+> eeb43688 f5988910 00000010 dea1de48 00000000 00000000 00000000 eeb43680
+> 00000010 f6003600 dea1de8c c10de255 00000001 00000000 00000000 00000000
+> Call Trace:
+> [<c10ee498>] ? dput+0x156/0x1c5
+> [<c10f21c3>] ? mntput+0x19/0x28
+> [<c10de255>] fput+0x196/0x1ed
+> [<c10e5435>] release_open_intent+0x1d/0x29
+> [<c10e8b03>] path_openat+0xc5/0x33f
+> [<c10e8e41>] do_filp_open+0x2a/0x79
+> [<c10f105e>] ? alloc_fd+0x5c/0xcb
+> [<c10e538a>] ? getname_flags+0x31/0xb1
+> [<c10dc553>] do_sys_open+0xef/0x1da
+> [<c10dc692>] sys_open+0x27/0x2f
+> [<c1573f13>] sysenter_do_call+0x12/0x22
+> [<c1560000>] ? netlbl_mgmt_add_common+0x1ec/0x306
+> Code: 02 00 00 b8 20 82 93 c1 e8 41 35 f4 ff 89 45 d0 8b 4d dc 85 b1 24 01 00 00 0f 85 2b 01 00 00 85 db 0f 84 37 01 00 00 85 ff 75 09 <85> 73 74 0f 84 2a 01 00 00 8b 43 70 89 45 ec 8b 4d dc 8b 91 28
+> EIP: [<c1109b7d>] fsnotify+0x8b/0x270 SS:ESP 0068:dea1de14
+> CR2: 0000000000000064
+> ---[ end trace b9a1d764aab1963e ]---
 
