@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2H0TGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 15:06:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62355 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2H0TGF (ORCPT
+	id S1754109Ab2H0TH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 15:07:59 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:37724 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab2H0TH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 15:06:05 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] perf: fix x86 builds with ARCH specified on the command line
-Date: Mon, 27 Aug 2012 13:05:54 -0600
-Message-Id: <1346094354-74356-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Mon, 27 Aug 2012 15:07:57 -0400
+Subject: Re: [RFC PATCH 1/1] fair.c: Add/Export find_idlest_perfer_cpu API
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        sri@us.ibm.com, vivek@us.ibm.com
+In-Reply-To: <1345532820.23018.81.camel@twins>
+References: <1345232770.16533.234.camel@oc3660625478.ibm.com>
+	 <1345464035.23018.38.camel@twins>
+	 <1345501041.6378.10.camel@oc3660625478.ibm.com>
+	 <1345532820.23018.81.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Aug 2012 12:07:34 -0700
+Message-ID: <1346094454.4311.10.camel@oc3660625478.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082719-7408-0000-0000-000007F3935F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-e.g., compiling i386 on x86_64 using:
-$ make -C tools/perf ARCH=i386
+On Tue, 2012-08-21 at 09:07 +0200, Peter Zijlstra wrote:
+> On Mon, 2012-08-20 at 15:17 -0700, Shirley Ma wrote:
+> > On Mon, 2012-08-20 at 14:00 +0200, Peter Zijlstra wrote:
+> > > On Fri, 2012-08-17 at 12:46 -0700, Shirley Ma wrote:
+> > > > Add/Export a new API for per-cpu thread model networking device
+> > > driver
+> > > > to choose a preferred idlest cpu within allowed cpumask.
+> > > > 
+> > > > The receiving CPUs of a networking device are not under cgroup
+> > > controls.
+> > > > Normally the receiving work will be scheduled on the cpu on
+> which
+> > > the
+> > > > interrupts are received. When such a networking device uses
+> per-cpu
+> > > > thread model, the cpu which is chose to process the packets
+> might
+> > > not be
+> > > > part of cgroup cpusets without using such an API here. 
+> > > > 
+> > > > On NUMA system, by using the preferred cpumask from the same
+> NUMA
+> > > node
+> > > > would help to reduce expensive cross memory access to/from the
+> other
+> > > > NUMA node.
+> > > > 
+> > > > KVM per-cpu vhost will be the first one to use this API. Any
+> other
+> > > > device driver which uses per-cpu thread model and has cgroup
+> cpuset
+> > > > control will use this API later.
+> > > 
+> > > How often will this be called and how do you obtain the cpumasks
+> > > provided to the function? 
+> > 
+> > It depends. It might be called pretty often if the user keeps
+> changing
+> > cgroups control cpuset. It might be less called if the cgroups
+> control
+> > cpuset is stable, and the host scheduler always schedules the work
+> on
+> > the same NUMA node.
+> This just doesn't make any sense, you're scanning for the least loaded
+> cpu, this is unrelated to a change in cpuset. So tying the scan
+> frequency to changes in configuration is just broken.
 
-fails with:
+Thanks for your review. I am just back from my vacation. 
 
-    CC /tmp/pbuild/util/evsel.o
-In file included from util/evsel.c:21:0:
-util/perf_regs.h:5:23: fatal error: perf_regs.h: No such file or directory
-compilation terminated.
+Why not? the caller knows the cpuset changes, and pass the right NUMA
+node to choose the idlest cpu from that NUMA node. Practically, the VMs
+don't change the cgroups. So it will not frequency to change the
+configuration.
 
-Adding V=1 you see that the include argument for the arch is
-'-Iarch/i386/include' is wrong. It is supposed to be -Iarch/x86/include
-per the redefinition of ARCH in the Makefile.
+> > The preferred cpumasks are obtained from local numa node.
+> 
+> So why pass it as argument at all? Also, who says the current node is
+> the right one? It might just be running there temporarily.
 
-According to the make manual,
-http://www.gnu.org/software/make/manual/make.html#Override-Directive:
-  "If a variable has been set with a command argument (see Overriding
-   Variables), then ordinary assignments in the makefile are ignored. If
-   you want to set the variable in the makefile even though it was set
-   with a command argument, you can use an override directive ..."
+It leaves to the caller to make the right node choice. It tries to avoid
+VMs running on the same cpu but on the same node with the host to
+process the guest network packets.
 
-Make it so.
+> >  The allowed
+> > cpumasks are obtained from caller's task allowed cpumasks (cgroups
+> > control cpuset).
+> 
+> task->cpus_allowed != cpusets.. Also, since you're using
+> task->cpus_allowed, pass a task_struct *, not a cpumask. 
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- tools/perf/Makefile |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Based on the documentation I read before, I thought the cpus_allowed ==
+cgroups control cpuset. If not, where are the cgroups control cpusets
+saved?
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 722ddee..939cf6d 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -64,12 +64,12 @@ AR = $(CROSS_COMPILE)ar
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
--	ARCH := x86
-+	override ARCH := x86
- 	NO_PERF_REGS := 0
- 	LIBUNWIND_LIBS = -lunwind -lunwind-x86
- endif
- ifeq ($(ARCH),x86_64)
--	ARCH := x86
-+	override ARCH := x86
- 	IS_X86_64 := 0
- 	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
- 		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
--- 
-1.7.10.1
+task->cpus_allowed = tsk_cpus_allowed(task_struct *p), which is
+cpumask_t.
+
+I can change the argument from cpumask to task_struct *, and call
+tsk_cpus_allowed() instead of using task->cpus_allowed.
+
+Thanks
+Shirley
+
+
 
