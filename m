@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab2H0OTD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 10:19:03 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:59831 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936Ab2H0OS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 10:18:59 -0400
-Date: Mon, 27 Aug 2012 16:18:45 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, tony.luck@intel.com,
-        bp@amd64.org, gong.chen@linux.intel.com, ananth@in.ibm.com,
-        masbock@linux.vnet.ibm.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
-        tglx@linutronix.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
-Message-ID: <20120827141845.GB27979@aftab.osrc.amd.com>
-References: <20120827112503.10313.62594.stgit@localhost.localdomain>
- <20120827135859.GY16230@one.firstfloor.org>
+	id S1752543Ab2H0ObA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 10:31:00 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:65148 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab2H0OaJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 10:30:09 -0400
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'ludovic.desroches'" <ludovic.desroches@atmel.com>,
+        "''Wolfram Sang' (w.sang@pengutronix.de)'" <w.sang@pengutronix.de>
+CC: "'Yanes Martinez Adrian'" <adrian.yanes@aalto.fi>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
+        "'nicolas.ferre@atmel.com'" <nicolas.ferre@atmel.com>,
+        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
+        "'balbi@ti.com'" <balbi@ti.com>,
+        "'h.feurstein@gmail.com'" <h.feurstein@gmail.com>,
+        "'rmallon@gmail.com'" <rmallon@gmail.com>,
+        "'carsten.behling@garz-fricke.com'" <carsten.behling@garz-fricke.com>
+Date: Mon, 27 Aug 2012 16:29:47 +0200
+Subject: RE: [PATCH v11 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Thread-Topic: [PATCH v11 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Thread-Index: Ac2EXE2iVS0cvLIqSyi83fUJj0OlRAAAoEQA
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D090EC3D747@wm021.weinmann.com>
+References: <cover.1345618760.git.n.voss@weinmann.de>
+ <4f3dcfbf1e8eab3e251ab3558e9e1e9123643928.1345618760.git.n.voss@weinmann.de>,<503B4919.6080306@atmel.com>
+ <BC0F374A1C27184AB96177CDFEC2F54225ECC330@EXMDB06.org.aalto.fi>,<503B623C.4030304@atmel.com>
+ <BC0F374A1C27184AB96177CDFEC2F54225ECD36E@EXMDB06.org.aalto.fi>
+ <EF2E73589CA71846A15D0B2CDF79505D090EC3D6F6@wm021.weinmann.com>
+ <503B7D6E.7090906@atmel.com>
+In-Reply-To: <503B7D6E.7090906@atmel.com>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120827135859.GY16230@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalId: qfq7RETnx0020039
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 03:58:59PM +0200, Andi Kleen wrote:
-> On Mon, Aug 27, 2012 at 04:55:03PM +0530, Naveen N. Rao wrote:
-> > Many MCE boot flags are boolean in nature, but are declared as integers
-> > currently. We can pack these into a bitfield to save some space.
-> 
-> Note that this doesn't necessarily save anything because it needs more
-> code to access, and accesses are more common than the flag
-> 
-> 	cmpl  $0,foo(%rip)            7 bytes
->         testl $1,foo(%rip)           10 bytes
+ludovic.desroches wrote on Monday, August 27, 2012 4:00 PM :
+> For the moment, I don't have the necessary knowledge about the TWI
+> controller to take a decision. I would say it can be done in an other
+> patch in order to have your driver included in the mainline quickly
+> since it doesn't introduce a breakage.
 
-I got 7 bytes:
+That would be the most pragmatic approach.
+Wolfram, is the anything left to do from my side?
 
-12e9:       f6 05 00 00 00 00 02    testb  $0x2,0x0(%rip)        # 12f0 <mce_start_timer.isra.18+0x30>
-
-vs the old:
-
-1654:       83 3d 00 00 00 00 00    cmpl   $0x0,0x0(%rip)        # 165b <mce_start_timer.clone.15+0x37>
-
-also 7 bytes.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Regards,
+Niko
+ 
