@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab2H0QCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:02:55 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48685 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab2H0QCx (ORCPT
+	id S1753359Ab2H0QJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:09:03 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:37810 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164Ab2H0QJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:02:53 -0400
-Message-ID: <503B99C7.3000503@linux.vnet.ibm.com>
-Date: Mon, 27 Aug 2012 21:31:11 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
-        ananth@in.ibm.com, masbock@linux.vnet.ibm.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
-        tglx@linutronix.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
-References: <20120827112503.10313.62594.stgit@localhost.localdomain> <20120827143619.GE27979@aftab.osrc.amd.com> <503B93D2.7090702@linux.vnet.ibm.com> <20120827154741.GI27979@aftab.osrc.amd.com>
-In-Reply-To: <20120827154741.GI27979@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082716-5816-0000-0000-0000042C348E
+	Mon, 27 Aug 2012 12:09:00 -0400
+Date: Mon, 27 Aug 2012 18:08:54 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 2/2] oprofile: Remove 'WQ on CPUx, prefer CPUy' warning
+Message-ID: <20120827160854.GC16230@one.firstfloor.org>
+References: <1345834411-24940-1-git-send-email-robert.richter@amd.com> <1345834411-24940-3-git-send-email-robert.richter@amd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1345834411-24940-3-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 09:17 PM, Borislav Petkov wrote:
-> On Mon, Aug 27, 2012 at 09:05:46PM +0530, Naveen N. Rao wrote:
->>>> +
->>>> +extern struct mce_boot_flags mce_boot_flags;
->>>
->>> Why do we need that extern thing?
->>
->> So that this is visible across mce.c and mce_intel.c?
->
-> Ok. But if you move the struct to mce-internal.h and since both .c files
-> include it, we shouldn't need that extern, right?
+On Fri, Aug 24, 2012 at 08:53:31PM +0200, Robert Richter wrote:
+> Under certain workloads we see the following warnings:
+> 
+>  WQ on CPU0, prefer CPU1
+>  WQ on CPU0, prefer CPU2
+>  WQ on CPU0, prefer CPU3
+> 
+> It warns the user that the wq to access a per-cpu buffers runs not on
+> the same cpu. This happens if the wq is rescheduled on a different cpu
+> than where the buffer is located. This was probably implemented to
+> detect performance issues. Not sure if there actually is one as the
+> buffers are copied to a single buffer anyway which should be the
+> actual bottleneck.
+> 
+> We wont change WQ implementation. Since a user can do nothing the
+> warning is pointless. Removing it.
 
-I'm not sure I understand. I think we still need it. This is not about 
-the structure, but the variable itself. extern allows mce_boot_flags 
-_variable_ accessible from mce_intel.c.
+Looks good to me.
 
+Acked-by: Andi Kleen <ak@linux.intel.com>
 
-Thanks,
-Naveen
-
->
-> I think that'll be the most optimal placement for now.
->
-> Thanks.
->
-
+-Andi
