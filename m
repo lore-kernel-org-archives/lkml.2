@@ -1,193 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab2H0Pqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:46:43 -0400
-Received: from mail1.adetelgroup.com ([78.155.151.235]:43092 "HELO
-	mail1.adetelgroup.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752714Ab2H0Ppp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:45:45 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Aug 2012 11:45:43 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
+	id S1753055Ab2H0Prz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:47:55 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:60149 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679Ab2H0Pry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 11:47:54 -0400
+Date: Mon, 27 Aug 2012 17:47:41 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
+        ananth@in.ibm.com, masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
+        tglx@linutronix.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
+Message-ID: <20120827154741.GI27979@aftab.osrc.amd.com>
+References: <20120827112503.10313.62594.stgit@localhost.localdomain>
+ <20120827143619.GE27979@aftab.osrc.amd.com>
+ <503B93D2.7090702@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-In-Reply-To: <1346081672-27866-1-git-send-email-shachimi@adeneo-embedded.com>
-X-Mailer: git-send-email 1.7.1
-Content-class: urn:content-classes:message
-Subject: [PATCH v2 2/2] Enable Stop_enable mode during configuration of pwm.
-Date: Mon, 27 Aug 2012 17:34:32 +0200
-Message-ID: <3465D313FDFB824F9A9C8CD24FA4F6BCB4ACFE@frontmail.adetel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v2 2/2] Enable Stop_enable mode during configuration of pwm.
-thread-index: Ac2EaaHX7DHLuVjvQJ62+89/kaNIKw==
-References: <1346081672-27866-1-git-send-email-shachimi@adeneo-embedded.com>
-From: "HACHIMI Samir" <shachimi@adeneo-embedded.com>
-To: <shawn.guo@linaro.org>, <thierry.reding@avionic-design.de>
-Cc: <linux-arm-kernel@lists.infradead.org>, <s.hauer@pengutronix.de>,
-        <linux-kernel@vger.kernel.org>,
-        "HACHIMI Samir" <shachimi@adeneo-embedded.com>
-X-OriginalArrivalTime: 27 Aug 2012 15:35:49.0339 (UTC) FILETIME=[A252F2B0:01CD8469]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <503B93D2.7090702@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Samir Hachimi <shachimi@adeneo-embedded.com>
+On Mon, Aug 27, 2012 at 09:05:46PM +0530, Naveen N. Rao wrote:
+> >>+
+> >>+extern struct mce_boot_flags mce_boot_flags;
+> >
+> >Why do we need that extern thing?
+> 
+> So that this is visible across mce.c and mce_intel.c?
 
- Enable Stop_enable mode during configuration of pwm.
- Check architecture by looking in driver_data instead of cpu_is_xxx.
+Ok. But if you move the struct to mce-internal.h and since both .c files
+include it, we shouldn't need that extern, right?
 
-Signed-off-by: Samir Hachimi <shachimi@adeneo-embedded.com>
----
- drivers/pwm/pwm-imx.c |   59 +++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 43 insertions(+), 16 deletions(-)
+I think that'll be the most optimal placement for now.
 
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index 0519bf2..7df919f 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -32,6 +32,7 @@
- #define MX3_PWMSAR                0x0C    /* PWM Sample Register */
- #define MX3_PWMPR                 0x10    /* PWM Period Register */
- #define MX3_PWMCR_PRESCALER(x)    (((x - 1) & 0xFFF) << 4)
-+#define MX3_PWMCR_STOPEN		(1 << 25)
- #define MX3_PWMCR_DOZEEN                (1 << 24)
- #define MX3_PWMCR_WAITEN                (1 << 23)
- #define MX3_PWMCR_DBGEN			(1 << 22)
-@@ -39,6 +40,16 @@
- #define MX3_PWMCR_CLKSRC_IPG      (1 << 16)
- #define MX3_PWMCR_EN              (1 << 0)
- 
-+/* Use the platform_id to distinguish different Archs. */
-+#define IS_MX1			0x0
-+#define IS_MX21			0x1
-+#define IS_MX25			0x2
-+#define IS_MX6Q			0x3
-+#define PWM_IS_MX1(x)		((x)->id_entry->driver_data == IS_MX1)
-+#define PWM_IS_MX21(x)		((x)->id_entry->driver_data == IS_MX21)
-+#define PWM_IS_MX25(x)		((x)->id_entry->driver_data == IS_MX25)
-+#define PWM_IS_MX6Q(x)		((x)->id_entry->driver_data == IS_MX6Q)
-+
- struct imx_chip {
- 	struct clk	*clk;
- 
-@@ -46,6 +57,7 @@ struct imx_chip {
- 	void __iomem	*mmio_base;
- 
- 	struct pwm_chip	chip;
-+	struct platform_device	*pdev;
- };
- 
- #define to_imx_chip(chip)	container_of(chip, struct imx_chip, chip)
-@@ -65,7 +77,7 @@ static int imx_pwm_config(struct pwm_chip *chip,
- 			return rc;
- 	}
- 
--	if (!(cpu_is_mx1() || cpu_is_mx21())) {
-+	if (!(PWM_IS_MX1(imx->pdev) || PWM_IS_MX21(imx->pdev))) {
- 		unsigned long long c;
- 		unsigned long period_cycles, duty_cycles, prescale;
- 		u32 cr;
-@@ -78,36 +90,33 @@ static int imx_pwm_config(struct pwm_chip *chip,
- 		prescale = period_cycles / 0x10000 + 1;
- 
- 		period_cycles /= prescale;
--		c = (unsigned long long)period_cycles * duty_ns;
--		do_div(c, period_ns);
--		duty_cycles = c;
- 
--		/*
--		 * according to imx pwm RM, the real period value should be
--		 * PERIOD value in PWMPR plus 2.
-+		/* the chip documentation says the counter counts up to
-+		 * period_cycles + 1 and then is reset to 0, so the
-+		 *  actual period of the PWM wave is period_cycles + 2
- 		 */
--		if (period_cycles > 2)
--			period_cycles -= 2;
--		else
--			period_cycles = 0;
-+		c = (unsigned long long)(period_cycles + 2) * duty_ns;
-+		do_div(c, period_ns);
-+		duty_cycles = c;
- 
- 		writel(duty_cycles, imx->mmio_base + MX3_PWMSAR);
- 		writel(period_cycles, imx->mmio_base + MX3_PWMPR);
- 
- 		cr = MX3_PWMCR_PRESCALER(prescale) |
--			MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN | MX3_PWMCR_DBGEN;
-+			MX3_PWMCR_DOZEEN | MX3_PWMCR_WAITEN |
-+			MX3_PWMCR_DBGEN | MX3_PWMCR_STOPEN;
- 
- 		/* If the PWM is enabled, keep it so. */
- 		if (imx->clk_enabled)
- 			cr |= MX3_PWMCR_EN;
- 
--		if (cpu_is_mx25())
-+		if (PWM_IS_MX25(imx->pdev))
- 			cr |= MX3_PWMCR_CLKSRC_IPG;
- 		else
- 			cr |= MX3_PWMCR_CLKSRC_IPG_HIGH;
- 
- 		writel(cr, imx->mmio_base + MX3_PWMCR);
--	} else if (cpu_is_mx1() || cpu_is_mx21()) {
-+	} else if (PWM_IS_MX1(imx->pdev) || PWM_IS_MX21(imx->pdev)) {
- 		/* The PWM subsystem allows for exact frequencies. However,
- 		 * I cannot connect a scope on my device to the PWM line and
- 		 * thus cannot provide the program the PWM controller
-@@ -150,7 +159,7 @@ static int imx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- 	if (rc)
- 		return rc;
- 
--	if (!(cpu_is_mx1() || cpu_is_mx21())) {
-+	if (!(PWM_IS_MX1(imx->pdev) || PWM_IS_MX21(imx->pdev))) {
- 		u32 cr = readl(imx->mmio_base + MX3_PWMCR);
- 		cr |= MX3_PWMCR_EN;
- 		writel(cr, imx->mmio_base + MX3_PWMCR);
-@@ -167,7 +176,7 @@ static void imx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- 	if (!imx->clk_enabled)
- 		return;
- 
--	if (!(cpu_is_mx1() || cpu_is_mx21())) {
-+	if (!(PWM_IS_MX1(imx->pdev) || PWM_IS_MX21(imx->pdev))) {
- 		u32 cr = readl(imx->mmio_base + MX3_PWMCR);
- 		cr &= ~MX3_PWMCR_EN;
- 		writel(cr, imx->mmio_base + MX3_PWMCR);
-@@ -207,6 +216,7 @@ static int __devinit imx_pwm_probe(struct platform_device *pdev)
- 	imx->chip.npwm = 1;
- 
- 	imx->clk_enabled = 0;
-+	imx->pdev = pdev;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
-@@ -237,9 +247,26 @@ static int __devexit imx_pwm_remove(struct platform_device *pdev)
- 	return pwmchip_remove(&imx->chip);
- }
- 
-+static const struct platform_device_id pwm_ids[] = {
-+	{ .name = "imx1-pwm", .driver_data = IS_MX1, },
-+	{ .name = "imx21-pwm", .driver_data = IS_MX21, },
-+	{ .name = "imx25-pwm", .driver_data = IS_MX25, },
-+	{ .name = "imx6q-pwm", .driver_data = IS_MX6Q, },
-+	{},
-+};
-+
-+static const struct of_device_id mxc_pwm_dt_ids[] = {
-+	{
-+		.compatible = "fsl,imx6q-pwm",
-+		.data = (void *)&pwm_ids[IS_MX6Q]
-+	},
-+	{ /* sentinel */ }
-+};
-+
- static struct platform_driver imx_pwm_driver = {
- 	.driver		= {
- 		.name	= "mxc_pwm",
-+		.of_match_table = of_match_ptr(mxc_pwm_dt_ids),
- 	},
- 	.probe		= imx_pwm_probe,
- 	.remove		= __devexit_p(imx_pwm_remove),
+Thanks.
+
 -- 
-1.7.1
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
