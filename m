@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2H0VZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 17:25:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54337 "EHLO mx2.suse.de"
+	id S1754724Ab2H0V1X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 17:27:23 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:46514 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752648Ab2H0VZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 17:25:27 -0400
-Message-ID: <503BE5E7.106@suse.com>
-Date: Mon, 27 Aug 2012 17:25:59 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:14.0) Gecko/20120713 Thunderbird/14.0
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [PATCH] exynos-rng: Depend on ARCH_EXYNOS
-References: <503BE05F.40109@suse.com> <503BE429.7080301@codeaurora.org>
-In-Reply-To: <503BE429.7080301@codeaurora.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754253Ab2H0V1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 17:27:21 -0400
+Message-ID: <1346102820.8623.32.camel@lambeau>
+Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+Reply-To: mjw@linux.vnet.ibm.com
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
+        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com
+Date: Mon, 27 Aug 2012 16:27:00 -0500
+In-Reply-To: <503BD920.20603@redhat.com>
+References: <20120823231346.11681.1502.stgit@lambeau>
+	 <503BC298.3080306@redhat.com> <1346098984.8623.23.camel@lambeau>
+	 <503BD920.20603@redhat.com>
+Organization: IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082721-8974-0000-0000-00000CA3648D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 8/27/12 5:18 PM, Stephen Boyd wrote:
-> On 8/27/2012 2:02 PM, Jeff Mahoney wrote:
->> The exynos-rng device is only found on Samsung EXYNOS devices but
->> has dependencies that allow it to be built on other
->> architectures. This can result in build failures on powerpc due
->> to a missing clk_devm_get.
->> 
->> This patch makes it depend on ARCH_EXYNOS.
+On Mon, 2012-08-27 at 13:31 -0700, Avi Kivity wrote:
+> On 08/27/2012 01:23 PM, Michael Wolf wrote:
+> > > 
+> > > How would a guest know what its entitlement is?
+> > > 
+> > > 
+> >
+> > Currently the Admin/management tool setting up the guests will put it on
+> > the qemu commandline.  From this it is passed via an ioctl to the host.
+> > The guest will get the value from the host via a hypercall.
+> >
+> > In the future the host could try and do some of it automatically in some
+> > cases. 
 > 
-> Hmm the point of making it not depend on ARCH_EXYNOS was so that
-> it would get more build coverage. Is it devm_clk_get() that's
-> missing? I believe Mark Brown sent some patches that move
-> devm_clk_get() to common code so that we don't have these
-> failures[1]. Can you try that patch?
+> Seems to me it's a meaningless value for the guest.  Suppose it is
+> migrated to a host that is more powerful, and as a result its relative
+> entitlement is reduced.  The value needs to be adjusted.
+
+This is why I chose to manage the value from the sysctl interface rather
+than just have it stored as a value in /proc.  Whatever tool was used to
+migrate the vm could hopefully adjust the sysctl value on the guest.
 > 
-> [1] https://lkml.org/lkml/2012/6/5/186
+> This is best taken care of from the host side.
+
+Not sure what you are getting at here.  If you are running in a cloud
+environment, you purchase a VM with the understanding that you are
+getting certain resources.  As this type of user I don't believe you
+have any access to the host to see this type of information.  So the
+user still wouldnt have a way to confirm that they are receiving what
+they should be in the way of processor resources.
+
+Would you please elaborate a little more on this?
 > 
 
-I'll give it a go since it should fix more than one issue for me. My
-question remains, though: If this hardware is never going to be found
-on powerpc hardware, what difference does it make if there is build
-coverage there?
 
-- -Jeff
 
-- -- 
-Jeff Mahoney
-SUSE Labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
-Comment: GPGTools - http://gpgtools.org
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJQO+XmAAoJEB57S2MheeWy4FgQALl7Ea62K19+3aObLCC+HLL4
-5YSRG865SGPvLqMYxYuAf+aS+uVKeBk8YbnG51o6TXMrXbePv3bNtSR36J7JI1gd
-9ogl5a9I/TtZUU+4+elDjy27Aew60Ask1Yv3SWYPm1NEqbUwuccb6vr2cm3tVyA4
-en9WP67EUv0qwiCJvtFdYuNaPzMyFbLcwxvzQgAMk0+7H4cJ1FvZvKzVFP7SrGaa
-G9HtY8f3Bxglk/hovQax8l5je8oa7IrU19jFu78t73+u44yfVEc8H5vzWKEARlI4
-jsXH0l4X+NYZ1waBjoyQMPsNjbuwrwP0OW11gdN5WYk0kRvI8mX/mGiUNV+NyDl9
-xr5ekUQidyYvOE+/HpV2hFu3NLux8xKOHJE8QtEOFiAuTAVVNZYHftZcTblPq6CC
-/F7DJ9iMsxjcGOEvJplF1DG9gu6RsqYYV191PFLvXQgnl2cvcso7F/05ypBfaCTb
-MJ+YVcdjvkrtNGDwBwE8wdOVwEWObDeLljiU0tLH4X6LziBbG68pthJBFpBesO5m
-KT+doKUD6J/TIF0Jp2/zn/KhdUJf3wX2Ozb7stwWKa08/XFw4ghAJnl8D+4PUyKs
-Izh6+L6LudearE2ZuOkNXlhB3PMeuQVK+b0BMbbZkHdPCErWE72sT06B3T9IbqgE
-jXhuHdN7JWrgAAGPAiTn
-=SA08
------END PGP SIGNATURE-----
