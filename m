@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab2H0REM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:04:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34284 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab2H0REK (ORCPT
+	id S1753735Ab2H0REP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:04:15 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:49109 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753652Ab2H0REN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:04:10 -0400
-Date: Mon, 27 Aug 2012 10:03:33 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-48bb5dc6cd9d30fe0d594947563da1f8bd9abada@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andi@firstfloor.org, rostedt@goodmis.org, srostedt@redhat.com,
-        jreiser@bitwagon.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, rostedt@goodmis.org, srostedt@redhat.com,
-        jreiser@bitwagon.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20120807194058.990674363@goodmis.org>
-References: <20120807194058.990674363@goodmis.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace: Make recordmcount.c handle __fentry__
-Git-Commit-ID: 48bb5dc6cd9d30fe0d594947563da1f8bd9abada
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 27 Aug 2012 13:04:13 -0400
+X-IronPort-AV: E=Sophos;i="4.80,321,1344204000"; 
+   d="scan'208";a="170967314"
+Date: Mon, 27 Aug 2012 19:04:10 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@ti.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        kernel-janitors@vger.kernel.org,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+Subject: Re: [PATCH 6/6] i2c: davinci: use devm_ functions
+In-Reply-To: <503BA696.6080701@mvista.com>
+Message-ID: <alpine.DEB.2.02.1208271900520.2079@hadrien>
+References: <1345916499-6657-6-git-send-email-Julia.Lawall@lip6.fr> <503BA696.6080701@mvista.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:03:38 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  48bb5dc6cd9d30fe0d594947563da1f8bd9abada
-Gitweb:     http://git.kernel.org/tip/48bb5dc6cd9d30fe0d594947563da1f8bd9abada
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 9 Feb 2011 13:13:23 -0500
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 23 Aug 2012 11:24:43 -0400
+> > -	ioarea = request_mem_region(mem->start, resource_size(mem),
+> > -				    pdev->name);
+> > -	if (!ioarea) {
+> > -		dev_err(&pdev->dev, "I2C region already claimed\n");
+> > -		return -EBUSY;
+> > -	}
+>
+>    Shouldn't you have dropped the 'ioarea' variable? It should be unused now...
 
-ftrace: Make recordmcount.c handle __fentry__
+Indeed, this is probably the case.  I will check.
 
-With gcc 4.6.0 the -mfentry feature places the function profiling
-call at the start of the function. When this is used, the call is
-to __fentry__ and not mcount.
+> > @@ -699,14 +685,15 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> [...]
+> > -	dev->base = ioremap(mem->start, resource_size(mem));
+> > +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>
+>    Why you dropped check form 'mem' being NULL?
 
-Change recordmcount.c to record both callers to __fentry__ and
-mcount.
+devm_request_and_ioremap does the check.  There have been some discussions
+about this before.  Since the code is overall complicated and error-prone,
+it seems better to minimize it when possible.
 
-Link: http://lkml.kernel.org/r/20120807194058.990674363@goodmis.org
+> > +	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
+> >  	if (!dev->base) {
+> >  		r = -EBUSY;
+> >  		goto err_mem_ioremap;
+> > @@ -714,16 +701,17 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> >
+> >  	i2c_davinci_init(dev);
+> >
+> > -	r = request_irq(dev->irq, i2c_davinci_isr, 0, pdev->name, dev);
+> > +	r = devm_request_irq(&pdev->dev, dev->irq, i2c_davinci_isr, 0,
+> > +			     pdev->name, dev);
+> >  	if (r) {
+> >  		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
+> > -		goto err_unuse_clocks;
+> > +		goto err_mem_ioremap;
+>
+>    The label no longer corresponds the failure happening. Perhaps it's better to
+> leave 'err_unuse_clocks'...
 
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-Acked-by: John Reiser <jreiser@bitwagon.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/recordmcount.h |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+OK.  It seemed nicer not to have a stack of empty labels...
 
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 54e35c1..9d1421e 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -261,11 +261,13 @@ static unsigned get_mcountsym(Elf_Sym const *const sym0,
- 		&sym0[Elf_r_sym(relp)];
- 	char const *symname = &str0[w(symp->st_name)];
- 	char const *mcount = gpfx == '_' ? "_mcount" : "mcount";
-+	char const *fentry = "__fentry__";
- 
- 	if (symname[0] == '.')
- 		++symname;  /* ppc64 hack */
- 	if (strcmp(mcount, symname) == 0 ||
--	    (altmcount && strcmp(altmcount, symname) == 0))
-+	    (altmcount && strcmp(altmcount, symname) == 0) ||
-+	    (strcmp(fentry, symname) == 0))
- 		mcountsym = Elf_r_sym(relp);
- 
- 	return mcountsym;
+I'll send another patch shortly.
+
+julia
+
+> >  	}
+> >
+> >  	r = i2c_davinci_cpufreq_register(dev);
+> >  	if (r) {
+> >  		dev_err(&pdev->dev, "failed to register cpufreq\n");
+> > -		goto err_free_irq;
+> > +		goto err_mem_ioremap;
+>
+>    Ditto...
+>
+> > @@ -740,26 +728,18 @@ static int davinci_i2c_probe(struct platform_device *pdev)
+> >  	r = i2c_add_numbered_adapter(adap);
+> >  	if (r) {
+> >  		dev_err(&pdev->dev, "failure adding adapter\n");
+> > -		goto err_free_irq;
+> > +		goto err_mem_ioremap;
+>
+>    Ditto...
+>
+> WBR, Sergei
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
