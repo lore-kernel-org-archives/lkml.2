@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2H0Ve7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 17:34:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39008 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754443Ab2H0Ve5 (ORCPT
+	id S1754639Ab2H0VhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 17:37:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39357 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754329Ab2H0VhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 17:34:57 -0400
-Message-ID: <1346103286.20840.59.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] NFS: Fix Oopses in nfs_lookup_revalidate and
- nfs4_lookup_revalidate
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Aug 2012 14:34:46 -0700
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA908F6E388@SACEXCMBX04-PRD.hq.netapp.com>
-References: <1345666097-14815-1-git-send-email-Trond.Myklebust@netapp.com>
-	 <20120827200949.GA4732@kroah.com>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA908F6E388@SACEXCMBX04-PRD.hq.netapp.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-LMb84OwrZBHFyX+2UwtM"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 38.96.16.75
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 27 Aug 2012 17:37:24 -0400
+Date: Mon, 27 Aug 2012 14:37:20 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [PATCH] exynos-rng: Depend on ARCH_EXYNOS
+Message-ID: <20120827213719.GD4400@opensource.wolfsonmicro.com>
+References: <503BE05F.40109@suse.com>
+ <503BE429.7080301@codeaurora.org>
+ <503BE5E7.106@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <503BE5E7.106@suse.com>
+X-Cookie: You will forget that you ever knew me.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 27, 2012 at 05:25:59PM -0400, Jeff Mahoney wrote:
+> On 8/27/12 5:18 PM, Stephen Boyd wrote:
 
---=-LMb84OwrZBHFyX+2UwtM
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > Hmm the point of making it not depend on ARCH_EXYNOS was so that
+> > it would get more build coverage. Is it devm_clk_get() that's
+> > missing? I believe Mark Brown sent some patches that move
+> > devm_clk_get() to common code so that we don't have these
+> > failures[1]. Can you try that patch?
 
-On Mon, 2012-08-27 at 20:16 +0000, Myklebust, Trond wrote:
-> On Mon, 2012-08-27 at 13:09 -0700, Greg KH wrote:
-> > On Wed, Aug 22, 2012 at 04:08:17PM -0400, Trond Myklebust wrote:
-> > > Fix the following Oops in 3.5.1:
-[...]
-> > > This Oops affects 3.5 kernels and older, and is due to lookup_one_len=
-()
-> > > calling down to the dentry revalidation code with a NULL pointer
-> > > to struct nameidata.
-> > >=20
-> > > It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
-> > > to ->d_revalidate())
-> >=20
-> > So this is just a nfs-only backport of the larger patch 0b728e1911c,
-> > right?  Should we also do this for other filesystems as well?  Or just
-> > backport the whole commit?
->=20
-> The larger patch involves a VFS api change (the atomic open code) which
-> has a bunch of pre- and post-requirements. I'd assume that is a too
-> large change for stable. I think that the smaller per-filesystem changes
-> are probably more appropriate. The list of filesystems that care are
-> likely to be small. Off the top of my head, I can only think of NFS,
-> CIFS, FUSE and possibly ceph.
+> I'll give it a go since it should fix more than one issue for me. My
+> question remains, though: If this hardware is never going to be found
+> on powerpc hardware, what difference does it make if there is build
+> coverage there?
 
-What is the earliest version that needs this fix?
-
-Ben.
-
---=20
-Ben Hutchings
-One of the nice things about standards is that there are so many of them.
-
---=-LMb84OwrZBHFyX+2UwtM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUDvn9ue/yOyVhhEJAQrvmw//cUsRuWeMbVN+YIqsTx4JXDK+S/4BGIyP
-s98ldeAvMCCMuJtj6cccSqemOFtn7tpomOenof9rl2q9uA2DTifZRY8+U6o644Nn
-QZ7Qa2C65lZb8JZRB55Dw2EKAqyEL8pscCEqJRl3W2x8QvUWRDcc6mGP6aBT0PCN
-d8I2k7AhINu4vXptWr+3HbGNwUAz2VkzZ5nROhCp0JjH+iz97viEZD6h8z1INx6g
-mDepdlJZF2FcUF6oDFjnD8UUxPQI7hXRx3K7gJWE0Z3soJQ7RfUZS9R+H+FwVDx6
-XJJiTV4RGkeHJfra85hBURB3xwlQPac3IHM1dv+uwr4QL6rw3FYlT7GuR0ZV9rxs
-kjCMmM199t/mkXtbzkxhUj+8eIvQtXCkXnlxMeVM/RyUB8RBlhTDXvEm9ZuHNlUX
-T0oaIqUgosc4bzixADKNyGxTXDYtKOGfs3qkPlf/FqsQJ9kYTdXwRciEvFVIg9Zy
-NsSGKEy1i7tY55Xq8XimPFUVliiyorXf/W1JmncGvmLTTh+wU9gA8MwPqXkckJty
-41X453dgL30/+iMbNX2dV6uvPkWG4G7P2gyxz+NtVxxWXV6pDYSpMji0z1buQwdY
-6uMOObBk45CQNR8m4vsZQ+0fTIjLG2fG7QgufLC4DH2WV5PdJNS4/2115SH3xnHC
-z8XZ2JuGFOA=
-=J28w
------END PGP SIGNATURE-----
-
---=-LMb84OwrZBHFyX+2UwtM--
+If you're trying to do some generic API changes or similar it's *much*
+easier if you can at least build test a good proportion of the kernel
+(or subsytem) with one build even if you've no intention of running the
+code.  Having to build lots of different configs to get coverage means
+that's likely to get skipped which in turn increases the error rate with
+these things.
