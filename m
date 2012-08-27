@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab2H0MzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 08:55:15 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:49278 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751274Ab2H0MzN (ORCPT
+	id S1753126Ab2H0NCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 09:02:07 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:59208 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752155Ab2H0NCE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 08:55:13 -0400
-X-IronPort-AV: E=Sophos;i="4.80,320,1344204000"; 
-   d="scan'208";a="170937331"
-Date: Mon, 27 Aug 2012 14:55:11 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Ulf Hansson <ulf.hansson@linaro.org>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, Chris Ball <cjb@laptop.org>,
-        kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 7/13] drivers/mmc/host/mmci.c: use clk_prepare_enable
- and clk_disable_unprepare
-In-Reply-To: <CAPDyKFpf+PzMspT7CECpd=ZVdmp=7i4-pr-6StK8N1aRczNryw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1208271453510.2079@hadrien>
-References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr> <1345996865-32082-8-git-send-email-Julia.Lawall@lip6.fr> <CAPDyKFpf+PzMspT7CECpd=ZVdmp=7i4-pr-6StK8N1aRczNryw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 27 Aug 2012 09:02:04 -0400
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] rapidio: apply RX/TX enable to active switch ports only
+Thread-Topic: [PATCH] rapidio: apply RX/TX enable to active switch ports only
+Thread-Index: AQHNf6i7zEEb3fHIoEStAISs7H57tJdp7hWAgAO1qQA=
+Date: Mon, 27 Aug 2012 13:01:00 +0000
+Message-ID: <8D983423E7EDF846BB3056827B8CC5D12E7C2C91@corpmail1.na.ads.idt.com>
+References: <1345559035-25879-1-git-send-email-alexandre.bounine@idt.com>
+ <1345559035-25879-2-git-send-email-alexandre.bounine@idt.com>
+ <20120824140419.2b3a9623.akpm@linux-foundation.org>
+In-Reply-To: <20120824140419.2b3a9623.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.165.140.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Friday, August 24, 2012 5:04 PM
+Andrew Morton <akpm@linux-foundation.org>
+> 
+> On Tue, 21 Aug 2012 10:23:55 -0400
+> Alexandre Bounine <alexandre.bounine@idt.com> wrote:
+> 
+>> Modify RIO enumeration to apply RX/TX enable operations only to
+>> active switch ports. This will leave inactive ports in condition consistent
+>> with their state.
+> 
+> It's unclear (to me) what the effects of this are.  Does it fix some
+> user-visible malfunction?  Or is it just some nice-to-have thing?  Or
+> what?
+> 
 
-Simplify clock code in probe.
+This patch was intended to keep inactive switch ports with inbound and
+outbound packet transfers disabled to block unexpected packets during
+hot insertion event. While it does not fix any visible malfunction it
+was intended to prevent such events in future.   
 
-A simplified version of the semantic patch that introduces calls to these
-functions is as follows: (http://coccinelle.lip6.fr/)
+Since this patch was published it was brought to my attention that some
+existing switches may require inbound and outbound ports enabled for
+inactive ports as well (not spec compliant).
+Therefore, please remove this patch from your tree.     
 
-// <smpl>
-@@
-expression e;
-@@
+>> This patch is applicable to kernel versions starting from v2.6.35.
+> 
+> Is that a recommendation that such a backport be performed?  If so,
+> please provide the reasoning.
 
-- clk_prepare(e);
-- clk_enable(e);
-+ clk_prepare_enable(e);
-
-@@
-expression e;
-@@
-
-- clk_disable(e);
-- clk_unprepare(e);
-+ clk_disable_unprepare(e);
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-v2, try to avoid whitespace problem
-
- drivers/mmc/host/mmci.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 50ff19a..edc3e9b 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -1309,14 +1309,10 @@ static int __devinit mmci_probe(struct amba_device *dev,
- 		goto host_free;
- 	}
-
--	ret = clk_prepare(host->clk);
-+	ret = clk_prepare_enable(host->clk);
- 	if (ret)
- 		goto clk_free;
-
--	ret = clk_enable(host->clk);
--	if (ret)
--		goto clk_unprep;
--
- 	host->plat = plat;
- 	host->variant = variant;
- 	host->mclk = clk_get_rate(host->clk);
-@@ -1515,9 +1511,7 @@ static int __devinit mmci_probe(struct amba_device *dev,
-  err_gpio_cd:
- 	iounmap(host->base);
-  clk_disable:
--	clk_disable(host->clk);
-- clk_unprep:
--	clk_unprepare(host->clk);
-+	clk_disable_unprepare(host->clk);
-  clk_free:
- 	clk_put(host->clk);
-  host_free:
-@@ -1564,8 +1558,7 @@ static int __devexit mmci_remove(struct amba_device *dev)
- 			gpio_free(host->gpio_cd);
-
- 		iounmap(host->base);
--		clk_disable(host->clk);
--		clk_unprepare(host->clk);
-+		clk_disable_unprepare(host->clk);
- 		clk_put(host->clk);
-
- 		if (host->vcc)
 
