@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab2H0UuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:50:22 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:7455 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab2H0UuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:50:20 -0400
-Message-ID: <1346100297.4732.115.camel@misato.fc.hp.com>
-Subject: RE: [PATCH] hpwdt: Fix kdump issue in hpwdt
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
-Cc: Lars Marowsky-Bree <lmb@suse.com>, "wim@iguana.be" <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Date: Mon, 27 Aug 2012 14:44:57 -0600
-In-Reply-To: <9774516974AF5F4C8A2C3C69CD3412332335313E@G1W3651.americas.hpqcorp.net>
-References: <1346093544-12007-1-git-send-email-toshi.kani@hp.com>
-	 <20120827192227.GJ18709@suse.de>
-	 <9774516974AF5F4C8A2C3C69CD3412332335313E@G1W3651.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754589Ab2H0Uv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:51:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16399 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752761Ab2H0Uv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:51:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,322,1344236400"; 
+   d="scan'208";a="185955162"
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 3/4] perf: teach perf inject to merge sched_stat_* and sched_switch events (v2)
+References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
+	<1344344165-369636-4-git-send-email-avagin@openvz.org>
+Date: Mon, 27 Aug 2012 13:51:02 -0700
+In-Reply-To: <1344344165-369636-4-git-send-email-avagin@openvz.org> (Andrew
+	Vagin's message of "Tue, 7 Aug 2012 16:56:04 +0400")
+Message-ID: <m2ehms6ouh.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-08-27 at 19:57 +0000, Mingarelli, Thomas wrote:
-> The main issue here is when an NMI comes in (which is hpwdt's main
-> focus...to source NMIs and then panic the box) and the system is
-> configured for kdump. We want the kdump to succeed and if the iLO
-> watchdog timer is left alone to keep running, the kdump will not
-> succeed. It will be interrupted by an ASR. This change ensures that
-> the iLO Watchdog timer is always stopped in the booting case (of any
-> kernel) or when an NMI arrives and we are in the process of taking a
-> kdump.
+Andrew Vagin <avagin@openvz.org> writes:
+>
+> My code saves sched_switch event for each process and when it meets
+> stat_iowait, it reports the sched_switch event, because this event
+> contains a correct callchain. By another words it replaces all
+> stat_iowait events on proper sched_switch events.
 
-And this change does not prevent running the watchdog daemon on the
-crash kernel, if we want to detect a hang condition on the crash kernel.
-The timer is re-enabled when /dev/watchdog is opened.  The change only
-assures the timer is enabled when the daemon starts up.  The timer
-running on the crash kernel without starting the daemon is a problem as
-it leads kdump to be interrupted. 
+Is there any way to generalize this to arbitary events? I found myself
+writing scripts to compute lengths between various events.  But I
+presume this could be done in a more general way. The advantage
+of perf-inject over my script is that the output can be viewed
+in the normal browser.
 
-Thanks,
--Toshi
+-Andi
 
-
-> 
-> Tom
-> 
-> -----Original Message-----
-> From: Lars Marowsky-Bree [mailto:lmb@suse.com] 
-> Sent: Monday, August 27, 2012 2:22 PM
-> To: Kani, Toshimitsu; wim@iguana.be; linux-watchdog@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Mingarelli, Thomas; stable@vger.kernel.org
-> Subject: Re: [PATCH] hpwdt: Fix kdump issue in hpwdt
-> 
-> On 2012-08-27T12:52:24, Toshi Kani <toshi.kani@hp.com> wrote:
-> 
-> > kdump can be interrupted by watchdog timer when the timer is left
-> > activated on the crash kernel. Changed the hpwdt driver to disable
-> > watchdog timer at boot-time. This assures that watchdog timer is
-> > disabled until /dev/watchdog is opened, and prevents watchdog timer
-> > to be left running on the crash kernel.
-> 
-> How does this protect against the system hanging again in the crash
-> kernel, or possibly hardware caches to flush more data to shared
-> storage?
-> 
-> (I'm asking from the perspective of the hpwdt being used as a fencing
-> mechanism in a cluster setting.)
-> 
-> Or is the argument that it's "very unlikely" that a system in such a
-> state would not make it far enough into the crash kernel?
-> 
-> 
-> Regards,
->     Lars
-> 
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
