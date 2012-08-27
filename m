@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab2H0TRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 15:17:37 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:7670
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753811Ab2H0TRg (ORCPT
+	id S1754162Ab2H0TT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 15:19:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39069 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756Ab2H0TTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 15:17:36 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1202hzzz2dh668h839h944hd25hd2bhf0ah107ah1155h)
-X-WSS-ID: 0M9FHL7-01-59S-02
-X-M-MSG: 
-Date: Mon, 27 Aug 2012 14:17:30 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Dave Young <dyoung@redhat.com>, Chao Wang <chaowang@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 3/5] x86: Only direct map addresses that are marked as
- E820_RAM
-Message-ID: <20120827191729.GB23135@jshin-Toonie>
-References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com>
- <1345852516-3125-4-git-send-email-jacob.shin@amd.com>
- <50381C9D.5070007@zytor.com>
- <20120825004859.GB10812@jshin-Toonie>
- <5038269E.80707@zytor.com>
- <20120825042020.GC26127@jshin-Toonie>
- <503852BE.1010908@zytor.com>
+	Mon, 27 Aug 2012 15:19:24 -0400
+Message-ID: <503BC830.7090705@gmail.com>
+Date: Mon, 27 Aug 2012 21:19:12 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <503852BE.1010908@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 03/11] pinctrl: mvebu: kirkwood pinctrl driver
+References: <1344689809-6223-1-git-send-email-sebastian.hesselbarth@gmail.com> <1344689809-6223-4-git-send-email-sebastian.hesselbarth@gmail.com> <CACRpkdbG4jkFcVP_6AmAZzciffQCamKXw7PcFnTdccyq7AMa8A@mail.gmail.com> <343192fa3698ed0575444a5603ed734d@codethink.co.uk>
+In-Reply-To: <343192fa3698ed0575444a5603ed734d@codethink.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 09:21:18PM -0700, H. Peter Anvin wrote:
-> On 08/24/2012 09:20 PM, Jacob Shin wrote:
-> >>
-> >>What is the benefit?
-> >
-> >So that in the case where we have E820_RAM right above 1MB, we don't
-> >call init_memory_mapping twice, first on 0 ~ 1MB and then 1MB ~ something
-> >
-> >we only call it once. 0 ~ something.
-> >
-> 
-> So what is the benefit?
+On 08/27/2012 03:43 PM, Ben Dooks wrote:
+> On 20/08/2012 06:49, Linus Walleij wrote:
+>> On Sat, Aug 11, 2012 at 2:56 PM, Sebastian Hesselbarth
+>> <sebastian.hesselbarth@gmail.com> wrote:
+>> (...)
+>>> diff --git a/drivers/pinctrl/pinctrl-kirkwood.c
+>>> b/drivers/pinctrl/pinctrl-kirkwood.c
+>>> +static struct mvebu_pinctrl_soc_info kirkwood_pinctrl_info;
+>>> +
+>>> +static struct of_device_id kirkwood_pinctrl_of_match[] __devinitdata
+>>> = {
+>>> + { .compatible = "marvell,88f6180-pinctrl",
+>>> + .data = (void *)VARIANT_MV88F6180 },
+>>> + { .compatible = "marvell,88f6190-pinctrl",
+>>> + .data = (void *)VARIANT_MV88F6190 },
+>>> + { .compatible = "marvell,88f6192-pinctrl",
+>>> + .data = (void *)VARIANT_MV88F6192 },
+>>> + { .compatible = "marvell,88f6281-pinctrl",
+>>> + .data = (void *)VARIANT_MV88F6281 },
+>>> + { .compatible = "marvell,88f6282-pinctrl",
+>>> + .data = (void *)VARIANT_MV88F6282 },
+>>> + { }
+>>> +};
+>>
+>> I'm thinking this variant should maybe be an enum... unless it is
+>> strongly established somewhere in Orion/Marvell stuff.
+>>
+>>> +static int __devinit kirkwood_pinctrl_probe(struct platform_device
+>>> *pdev)
+>>> +{
+>>> + struct mvebu_pinctrl_soc_info *soc = &kirkwood_pinctrl_info;
+>>> + const struct of_device_id *match =
+>>> + of_match_device(kirkwood_pinctrl_of_match, &pdev->dev);
+>>> +
+>>> + if (match) {
+>>> + soc->variant = (unsigned)match->data & 0xff;
+>>> + switch (soc->variant) {
+>>> + case VARIANT_MV88F6180:
+>>> + soc->controls = mv88f6180_mpp_controls;
+>>> + soc->ncontrols = ARRAY_SIZE(mv88f6180_mpp_controls);
+>>> + soc->modes = mv88f6xxx_mpp_modes;
+>>> + soc->nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes);
+>>> + soc->gpioranges = mv88f6180_gpio_ranges;
+>>> + soc->ngpioranges = ARRAY_SIZE(mv88f6180_gpio_ranges);
+>>> + break;
+>>> + case VARIANT_MV88F6190:
+>>> + case VARIANT_MV88F6192:
+>>> + soc->controls = mv88f619x_mpp_controls;
+>>> + soc->ncontrols = ARRAY_SIZE(mv88f619x_mpp_controls);
+>>> + soc->modes = mv88f6xxx_mpp_modes;
+>>> + soc->nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes);
+>>> + soc->gpioranges = mv88f619x_gpio_ranges;
+>>> + soc->ngpioranges = ARRAY_SIZE(mv88f619x_gpio_ranges);
+>>> + break;
+>>> + case VARIANT_MV88F6281:
+>>> + case VARIANT_MV88F6282:
+>>> + soc->controls = mv88f628x_mpp_controls;
+>>> + soc->ncontrols = ARRAY_SIZE(mv88f628x_mpp_controls);
+>>> + soc->modes = mv88f6xxx_mpp_modes;
+>>> + soc->nmodes = ARRAY_SIZE(mv88f6xxx_mpp_modes);
+>>> + soc->gpioranges = mv88f628x_gpio_ranges;
+>>> + soc->ngpioranges = ARRAY_SIZE(mv88f628x_gpio_ranges);
+>>> + break;
+>>> + }
+>>> + pdev->dev.platform_data = soc;
+>>> + }
+>>> + return mvebu_pinctrl_probe(pdev);
+>>> +}
+>
+> Why not have structures defining the soc-> parameters and use that in the
+> of_match list?
 
-if there is E820_RAM right above ISA region, then you get to initialize
-0 ~ max_low_pfn in one big chunk, which results in some memory configurations
-for more 2M or 1G page tables which means less space used for page tables.
+Ben,
 
-im also worried about the case where that first call to init_memory_mapping
-for 0 ~ 1MB, results in max_pfn_mapped = 1MB, and the next call to
-init_memory_mapping is some large enough area, where we don't have enough
-space under 1MB for all the page tables needed (maybe only 4K page tables
-are supported or something).
+functionally it is equivalent and IMHO using soc structs doesn't improve
+readability here. I there any other good reason to have structs for each
+soc?
 
--Jacob
-
-> 
-> 	-hpa
-> 
-> 
-> -- 
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
-> 
-> 
-
+Sebastian
