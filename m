@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2H0TzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 15:55:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7437 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100Ab2H0TzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 15:55:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,322,1344236400"; 
-   d="asc'?scan'208";a="185936070"
-Message-ID: <1346097310.1973.0.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] MAINTAINERS: Update gianfar_ptp after renaming
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 27 Aug 2012 12:55:10 -0700
-In-Reply-To: <1346089113.2471.13.camel@joe2Laptop>
-References: <1346089113.2471.13.camel@joe2Laptop>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-s3uDRykkTFu3scStILnm"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
-Mime-Version: 1.0
+	id S1754231Ab2H0T7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 15:59:32 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:30416 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab2H0T7a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 15:59:30 -0400
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+To: Lars Marowsky-Bree <lmb@suse.com>, "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH] hpwdt: Fix kdump issue in hpwdt
+Thread-Topic: [PATCH] hpwdt: Fix kdump issue in hpwdt
+Thread-Index: AQHNhIXkE7PQ9svsVEWLdvcjNA0XY5duCYqAgAAIr4A=
+Date: Mon, 27 Aug 2012 19:57:13 +0000
+Message-ID: <9774516974AF5F4C8A2C3C69CD3412332335313E@G1W3651.americas.hpqcorp.net>
+References: <1346093544-12007-1-git-send-email-toshi.kani@hp.com>
+ <20120827192227.GJ18709@suse.de>
+In-Reply-To: <20120827192227.GJ18709@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.193.232.11]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The main issue here is when an NMI comes in (which is hpwdt's main focus...to source NMIs and then panic the box) and the system is configured for kdump. We want the kdump to succeed and if the iLO watchdog timer is left alone to keep running, the kdump will not succeed. It will be interrupted by an ASR. This change ensures that the iLO Watchdog timer is always stopped in the booting case (of any kernel) or when an NMI arrives and we are in the process of taking a kdump.
 
---=-s3uDRykkTFu3scStILnm
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2012-08-27 at 10:38 -0700, Joe Perches wrote:
-> commit ec21e2ec36769 ("freescale: Move the Freescale drivers")
-> moved the files, update the pattern.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  MAINTAINERS |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)=20
+Tom
 
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+-----Original Message-----
+From: Lars Marowsky-Bree [mailto:lmb@suse.com] 
+Sent: Monday, August 27, 2012 2:22 PM
+To: Kani, Toshimitsu; wim@iguana.be; linux-watchdog@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org; Mingarelli, Thomas; stable@vger.kernel.org
+Subject: Re: [PATCH] hpwdt: Fix kdump issue in hpwdt
 
---=-s3uDRykkTFu3scStILnm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+On 2012-08-27T12:52:24, Toshi Kani <toshi.kani@hp.com> wrote:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> kdump can be interrupted by watchdog timer when the timer is left
+> activated on the crash kernel. Changed the hpwdt driver to disable
+> watchdog timer at boot-time. This assures that watchdog timer is
+> disabled until /dev/watchdog is opened, and prevents watchdog timer
+> to be left running on the crash kernel.
 
-iQIcBAABCgAGBQJQO9CeAAoJEOVv75VaS+3ORXEP/2CykF0TpUehhWa0RFjCaUoJ
-Z426fLCGJALtmDx6oEPULAhiHzQ8i3/Oy3dA18o65SRpVq4Sx3jqyQPDsMpFDNxe
-nKVhuI+kVjwvbVySDaPAGkg88dkOd82B8RYhJliXpZ2u3omuXH50JA4puk+0s6Qq
-a/MTbRgMIntGayTCnWaXumBf7CEKP+D3AU4T/lkZDJK8SL4boNPnFPXmRfqmHPlB
-sJqErSc8gWB0ozww5BUbGtpLGm5lUFHZRXaywdTL6XIZt8DkRgm9CznoGSjlzSKj
-Ro7Z/lwnD2ysqglnSaJqLbxtFIzuickYw99fxMWfW7YRXfUhlIUBRVGesJ6roBHJ
-FmXrRa/Nd2flfeBom6WdDsancw7ZunMcRSvFKdje5aw7DC7sxyDcnvzHQsJrS7Lg
-UWKd7LcJyAhuwNCYcFJMF9NQHx5iFVBCkwi5DYC6anpdJC6isFm8XgZPxXQlrtXr
-dF36ICnp9ObRbKMGo3bG2yeTabD1Fo6J2E80oPk7zenjB/ujfa9kAPBzlAU1JL3u
-BFyFfcbeuSqPbkDnQEYis8hsRHA76Nb5MBFN6jtp/mMwbGr5c+KxF72kDaJ6MROi
-dy89saR4qcX2eAZIgvHvSMNGRDJx0qebv4SZLZ4IvYWzuxG5+CTnveIXkxU4NKze
-CY4GJHkTI1debqJD3JZX
-=L8Fo
------END PGP SIGNATURE-----
+How does this protect against the system hanging again in the crash
+kernel, or possibly hardware caches to flush more data to shared
+storage?
 
---=-s3uDRykkTFu3scStILnm--
+(I'm asking from the perspective of the hpwdt being used as a fencing
+mechanism in a cluster setting.)
+
+Or is the argument that it's "very unlikely" that a system in such a
+state would not make it far enough into the crash kernel?
+
+
+Regards,
+    Lars
+
+-- 
+Architect Storage/HA
+SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 21284 (AG Nürnberg)
+"Experience is the name everyone gives to their mistakes." -- Oscar Wilde
 
