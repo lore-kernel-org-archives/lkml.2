@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab2H0CrX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Aug 2012 22:47:23 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60577 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab2H0CrV (ORCPT
+	id S1751051Ab2H0EBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 00:01:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49733 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab2H0EBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Aug 2012 22:47:21 -0400
-From: Xi Wang <xi.wang@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>
-Subject: [PATCH] af_unix: fix shutdown parameter checking
-Date: Sun, 26 Aug 2012 22:47:13 -0400
-Message-Id: <1346035633-2492-1-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 27 Aug 2012 00:01:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1345996865-32082-2-git-send-email-Julia.Lawall@lip6.fr>
+References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1345996865-32082-2-git-send-email-Julia.Lawall@lip6.fr>
+Date: Mon, 27 Aug 2012 09:31:03 +0530
+X-Google-Sender-Auth: QbjQAKEi240_UGU-daHbqK6REb4
+Message-ID: <CAOh2x=mRDLO0fXcZgQ1pa3bAiBksC87cVTniTO_Qz9Ou++OMGg@mail.gmail.com>
+Subject: Re: [PATCH 1/13] drivers/staging/iio/adc/spear_adc.c: use
+ clk_prepare_enable and clk_disable_unprepare
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Stefan Roese <sr@denx.de>,
+        Shiraz HASHIM <shiraz.hashim@st.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return -EINVAL rather than 0 given an invalid "mode" parameter.
+On Sun, Aug 26, 2012 at 9:30 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Clk_prepare_enable and clk_disable_unprepare combine clk_prepare and
+> clk_enable, and clk_disable and clk_unprepare.  They make the code more
+> concise, and ensure that clk_unprepare is called when clk_enable fails.
+>
+> A simplified version of the semantic patch that introduces calls to these
+> functions is as follows: (http://coccinelle.lip6.fr/)
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
----
-Another way to check "mode" is as in inet_shutdown():
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-	mode++;
-	if ((mode & ~SHUTDOWN_MASK) || !mode)
-		return -EINVAL;
-
-This patch uses a simpler form, to check if "mode" is in the range
-SHUT_RD ... SHUT_RDWR.
----
- net/unix/af_unix.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index c5ee4ff..8a84ab6 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -2060,10 +2060,14 @@ static int unix_shutdown(struct socket *sock, int mode)
- 	struct sock *sk = sock->sk;
- 	struct sock *other;
- 
--	mode = (mode+1)&(RCV_SHUTDOWN|SEND_SHUTDOWN);
--
--	if (!mode)
--		return 0;
-+	if (mode < SHUT_RD || mode > SHUT_RDWR)
-+		return -EINVAL;
-+	/* This maps:
-+	 * SHUT_RD   (0) -> RCV_SHUTDOWN  (1)
-+	 * SHUT_WR   (1) -> SEND_SHUTDOWN (2)
-+	 * SHUT_RDWR (2) -> SHUTDOWN_MASK (3)
-+	 */
-+	++mode;
- 
- 	unix_state_lock(sk);
- 	sk->sk_shutdown |= mode;
--- 
-1.7.9.5
-
+@Stefan/Shiraz: Can you update spear-devel mailing list in MAINTAINERS file
+for this driver?
