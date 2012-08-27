@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2H0HMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 03:12:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46941 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab2H0HMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 03:12:02 -0400
-From: Alex Kelly <alex.page.kelly@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, David Howells <dhowells@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
-Cc: Alex Kelly <alex.page.kelly@gmail.com>
-Subject: [PATCH] fs: Amended coredump-related sysctl functions
-Date: Mon, 27 Aug 2012 00:07:56 -0700
-Message-Id: <1346051279-4282-1-git-send-email-alex.page.kelly@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S1752677Ab2H0HNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 03:13:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29244 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752327Ab2H0HNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 03:13:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,318,1344236400"; 
+   d="scan'208";a="191701209"
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: rostedt@goodmis.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Subject: [PATCH] tracing: skip printing "OK" if failed to disable event
+Date: Mon, 27 Aug 2012 15:13:45 +0800
+Message-Id: <1346051625-25231-1-git-send-email-yuanhan.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes an error introduced in the coredump-header patch in
-the coredump removal patch I submitted earlier. It should be squashed
-into that patch series so that the Kconfig option to remove coredump
-doesn't cause compile-time errors.
+No acutal case found. But logically, we should skip "OK" in case any
+error met.
 
-Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
 ---
-Note to Andrew Morton: This is a small fix of an oversight in the coredump
-patch I submitted earlier. Could this be squashed into the others in -mm?
+ kernel/trace/trace_events.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
- kernel/sysctl.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index af57e84..e28542d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -179,8 +179,10 @@ static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da..9894162 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1646,9 +1646,11 @@ static __init void event_trace_self_tests(void)
+ 		event_test_stuff();
  
- static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp, loff_t *ppos);
-+#ifdef CONFIG_COREDUMP
- static int proc_dostring_coredump(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp, loff_t *ppos);
-+#endif
+ 		ret = __ftrace_set_clr_event(NULL, system->name, NULL, 0);
+-		if (WARN_ON_ONCE(ret))
++		if (WARN_ON_ONCE(ret)) {
+ 			pr_warning("error disabling system %s\n",
+ 				   system->name);
++			continue;
++		}
  
- #ifdef CONFIG_MAGIC_SYSRQ
- /* Note: sysrq code uses it's own private copy */
-@@ -2040,12 +2042,14 @@ int proc_dointvec_minmax(struct ctl_table *table, int write,
- 
- static void validate_coredump_safety(void)
- {
-+#ifdef CONFIG_COREDUMP
- 	if (suid_dumpable == SUID_DUMPABLE_SAFE &&
- 	    core_pattern[0] != '/' && core_pattern[0] != '|') {
- 		printk(KERN_WARNING "Unsafe core_pattern used with "\
- 			"suid_dumpable=2. Pipe handler or fully qualified "\
- 			"core dump path required.\n");
+ 		pr_cont("OK\n");
  	}
-+#endif
- }
- 
- static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
-@@ -2057,6 +2061,7 @@ static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
- 	return error;
- }
- 
-+#ifdef CONFIG_COREDUMP
- static int proc_dostring_coredump(struct ctl_table *table, int write,
- 		  void __user *buffer, size_t *lenp, loff_t *ppos)
- {
-@@ -2064,7 +2069,9 @@ static int proc_dostring_coredump(struct ctl_table *table, int write,
- 	if (!error)
- 		validate_coredump_safety();
- 	return error;
-+	return 0;
- }
-+#endif
- 
- static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
- 				     void __user *buffer,
 -- 
-1.7.11.4
+1.7.7.6
 
