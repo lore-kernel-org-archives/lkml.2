@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab2H0FnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 01:43:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5903 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2H0FnL convert rfc822-to-8bit (ORCPT
+	id S1752179Ab2H0Ftu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 01:49:50 -0400
+Received: from relay.ihostexchange.net ([66.46.182.53]:2776 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab2H0Fts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 01:43:11 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 26 Aug 2012 22:43:10 -0700
-From: Bill Huang <bilhuang@nvidia.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-CC: "'linux-tegra@vger.kernel.org'" <linux-tegra@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 27 Aug 2012 13:43:07 +0800
-Subject: RE: Shutdown problem in SMP system happened on Tegra20
-Thread-Topic: Shutdown problem in SMP system happened on Tegra20
-Thread-Index: Ac2CkcVRY3F5RuuoRrqO9o4pYoZICABhOcwQ
-Message-ID: <A7051F87A141B744BCAF487D48E5B3BDF5BA98284F@HKMAIL02.nvidia.com>
-References: <A7051F87A141B744BCAF487D48E5B3BDF5BA982848@HKMAIL02.nvidia.com>
- <20120824182133.GB18957@n2100.arm.linux.org.uk>
- <A7051F87A141B744BCAF487D48E5B3BDF5BA98284A@HKMAIL02.nvidia.com>
- <20120825071755.GG18957@n2100.arm.linux.org.uk>
-In-Reply-To: <20120825071755.GG18957@n2100.arm.linux.org.uk>
-Accept-Language: zh-TW, en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-TW, en-US
+	Mon, 27 Aug 2012 01:49:48 -0400
+Message-ID: <503B0A74.9070809@cypress.com>
+Date: Mon, 27 Aug 2012 08:49:40 +0300
+From: Ferruh Yigit <fery@cypress.com>
+Organization: Cypress
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
+To: Michal Marek <mmarek@suse.cz>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kevin McNeely <kev@cypress.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Shawn Landden <shawnlandden@gmail.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] Input: cyttsp4 - core driver for Cypress TMA4XX touchscreen
+ devices
+References: <Ferruh Yigit <fery@cypress.com> <1344345000-30494-1-git-send-email-fery@cypress.com> <50378DD1.9080806@suse.cz>
+In-Reply-To: <50378DD1.9080806@suse.cz>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, Aug 25, 2012 at 08:00:56AM +0800, Bill Huang wrote:
-> > nvpublic
-> > > So what you're asking for is a feature to do what
-> > > CONFIG_PM_SLEEP_SMP does, but without CONFIG_PM_SLEEP_SMP enabled?
-> >
-> > Yeah pretty much, I'm actually asking should we take care of this
-> > since maybe not all platforms will have this config enabled?
-> > >
-> > > Why not just ensure that CONFIG_PM_SLEEP_SMP is enabled if your
-> > > platform requires that the lowest CPU number be the CPU dealing with reboot?
-> >
-> > Someday we will have it enabled, but before that we'll hit the issue,
-> > so you don't think this should be taken care of? Thanks.
-> 
-> Well, just enable CONFIG_PM_SLEEP_SMP then - it'll be far better than trying to implement something in
-> the ARM code, especially as sysrq can be used for poweroff/reboot etc (which will run from atomic
-> contexts where you can't switch to another CPU.)
-> 
-> What you're asking for will make these callbacks fragile for other platforms.
+On 08/24/2012 05:21 PM, Michal Marek wrote:
+> Dne 7.8.2012 15:09, Ferruh Yigit napsal(a):
+>> +static int __init cyttsp4_core_init(void)
+>> +{
+>> +       int rc = 0;
+>> +
+>> +       rc = cyttsp4_register_core_driver(&cyttsp4_core_driver);
+>> +       pr_info("%s: Cypress TTSP v4 core driver (Built %s @ %s) rc=%d\n",
+>> +                __func__, __DATE__, __TIME__, rc);
+> Hi,
+>
+> please drop the __DATE__ and __TIME__ macros to keep the build
+> deterministic.
+>
+> thanks,
+> Michal
 
-OK, thanks.
+Thank you Michal,
+
+Will replace them with fixed release date macro.
+
+Regards,
+ferruh
+
+--
+
+Regards,
+ferruh
+
+
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
