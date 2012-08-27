@@ -1,34 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2H0Q7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 12:59:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34166 "EHLO
+	id S1753807Ab2H0Q7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 12:59:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34181 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab2H0Q7D (ORCPT
+	with ESMTP id S1753773Ab2H0Q7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 12:59:03 -0400
-Date: Mon, 27 Aug 2012 09:57:58 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-1659d129ed014b715b0b2120e6fd929bdd33ed03@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org, gorcunov@openvz.org,
-        a.p.zijlstra@chello.nl, benjamin.redelings@nescent.org,
-        jolsa@redhat.com, drepper@gmail.com, robert.richter@amd.com,
-        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        asharma@fb.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        fche@redhat.com, paulus@samba.org, tzanussi@gmail.com,
-        masami.hiramatsu.pt@hitachi.com
-Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
-        gorcunov@openvz.org, a.p.zijlstra@chello.nl,
-        benjamin.redelings@nescent.org, jolsa@redhat.com, fweisbec@gmail.com,
-        robert.richter@amd.com, drepper@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, asharma@fb.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, fche@redhat.com,
-        tzanussi@gmail.com, masami.hiramatsu.pt@hitachi.com
-In-Reply-To: <20120822083540.GB1003@krava.brq.redhat.com>
-References: <20120822083540.GB1003@krava.brq.redhat.com>
+	Mon, 27 Aug 2012 12:59:18 -0400
+Date: Mon, 27 Aug 2012 09:58:55 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        namhyung@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        namhyung@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de
+In-Reply-To: <1345618831-9148-2-git-send-email-namhyung@kernel.org>
+References: <1345618831-9148-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Keep the perf_event_attr on version 3
-Git-Commit-ID: 1659d129ed014b715b0b2120e6fd929bdd33ed03
+Subject: [tip:perf/core] tools lib traceevent:
+  Do not link broken field arg for an old ftrace event
+Git-Commit-ID: fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,73 +32,60 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 09:58:07 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 09:59:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1659d129ed014b715b0b2120e6fd929bdd33ed03
-Gitweb:     http://git.kernel.org/tip/1659d129ed014b715b0b2120e6fd929bdd33ed03
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 22 Aug 2012 10:35:40 +0200
+Commit-ID:  fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7
+Gitweb:     http://git.kernel.org/tip/fd34f0b26c9d0f3c3c5c5f83207efa6324cd19f7
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 22 Aug 2012 16:00:28 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 22 Aug 2012 15:33:12 -0300
+CommitDate: Wed, 22 Aug 2012 16:02:36 -0300
 
-perf tools: Keep the perf_event_attr on version 3
+tools lib traceevent: Do not link broken field arg for an old ftrace event
 
-Stashing version 4 under version 3 and removing version 4, because both
-version changes were within single patchset.
+Defer linking a newly allocated arg to print_fmt.args until all of its
+field is setup so that later access to ->field.name cannot be NULL.
 
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Benjamin Redelings <benjamin.redelings@nescent.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Frank Ch. Eigler <fche@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/20120822083540.GB1003@krava.brq.redhat.com
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1345618831-9148-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/perf_event.h |    4 ++--
- tools/perf/util/header.c   |    1 -
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ tools/lib/traceevent/event-parse.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 297ca3d..28f9cee 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -205,8 +205,8 @@ enum perf_event_read_format {
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
- #define PERF_ATTR_SIZE_VER1	72	/* add: config2 */
- #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
--#define PERF_ATTR_SIZE_VER3	88	/* add: sample_regs_user */
--#define PERF_ATTR_SIZE_VER4	96	/* add: sample_stack_user */
-+#define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
-+					/* add: sample_stack_user */
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index b7c2c49..33fcd94 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -4754,20 +4754,20 @@ int pevent_parse_event(struct pevent *pevent,
+ 		struct print_arg *arg, **list;
  
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 63aad31..9696e64 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2011,7 +2011,6 @@ static const int attr_file_abi_sizes[] = {
- 	[1] = PERF_ATTR_SIZE_VER1,
- 	[2] = PERF_ATTR_SIZE_VER2,
- 	[3] = PERF_ATTR_SIZE_VER3,
--	[4] = PERF_ATTR_SIZE_VER4,
- 	0,
- };
- 
+ 		/* old ftrace had no args */
+-
+ 		list = &event->print_fmt.args;
+ 		for (field = event->format.fields; field; field = field->next) {
+ 			arg = alloc_arg();
+-			*list = arg;
+-			list = &arg->next;
+ 			arg->type = PRINT_FIELD;
+ 			arg->field.name = strdup(field->name);
+ 			if (!arg->field.name) {
+ 				do_warning("failed to allocate field name");
+ 				event->flags |= EVENT_FL_FAILED;
++				free_arg(arg);
+ 				return -1;
+ 			}
+ 			arg->field.field = field;
++			*list = arg;
++			list = &arg->next;
+ 		}
+ 		return 0;
+ 	}
