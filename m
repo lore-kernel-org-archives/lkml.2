@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab2H0Uld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:41:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53104 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab2H0Ulc (ORCPT
+	id S1754546Ab2H0UuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:50:22 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:7455 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761Ab2H0UuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:41:32 -0400
-Date: Mon, 27 Aug 2012 13:41:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ludwig Nussel <ludwig.nussel@suse.de>,
-        Alessandro Rubini <rubini@gnudd.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] debugfs: more tightly restrict default mount mode
-Message-ID: <20120827204127.GA19544@kroah.com>
-References: <20120827203215.GA16637@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120827203215.GA16637@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Aug 2012 16:50:20 -0400
+Message-ID: <1346100297.4732.115.camel@misato.fc.hp.com>
+Subject: RE: [PATCH] hpwdt: Fix kdump issue in hpwdt
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+Cc: Lars Marowsky-Bree <lmb@suse.com>, "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Date: Mon, 27 Aug 2012 14:44:57 -0600
+In-Reply-To: <9774516974AF5F4C8A2C3C69CD3412332335313E@G1W3651.americas.hpqcorp.net>
+References: <1346093544-12007-1-git-send-email-toshi.kani@hp.com>
+	 <20120827192227.GJ18709@suse.de>
+	 <9774516974AF5F4C8A2C3C69CD3412332335313E@G1W3651.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 01:32:15PM -0700, Kees Cook wrote:
-> Since the debugfs is mostly only used by root, make the default mount
-> mode 0700. Most system owners do not need a more permissive value,
-> but they can choose to weaken the restrictions via their fstab.
+On Mon, 2012-08-27 at 19:57 +0000, Mingarelli, Thomas wrote:
+> The main issue here is when an NMI comes in (which is hpwdt's main
+> focus...to source NMIs and then panic the box) and the system is
+> configured for kdump. We want the kdump to succeed and if the iLO
+> watchdog timer is left alone to keep running, the kdump will not
+> succeed. It will be interrupted by an ASR. This change ensures that
+> the iLO Watchdog timer is always stopped in the booting case (of any
+> kernel) or when an NMI arrives and we are in the process of taking a
+> kdump.
+
+And this change does not prevent running the watchdog daemon on the
+crash kernel, if we want to detect a hang condition on the crash kernel.
+The timer is re-enabled when /dev/watchdog is opened.  The change only
+assures the timer is enabled when the daemon starts up.  The timer
+running on the crash kernel without starting the daemon is a problem as
+it leads kdump to be interrupted. 
+
+Thanks,
+-Toshi
+
+
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Tom
+> 
+> -----Original Message-----
+> From: Lars Marowsky-Bree [mailto:lmb@suse.com] 
+> Sent: Monday, August 27, 2012 2:22 PM
+> To: Kani, Toshimitsu; wim@iguana.be; linux-watchdog@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; Mingarelli, Thomas; stable@vger.kernel.org
+> Subject: Re: [PATCH] hpwdt: Fix kdump issue in hpwdt
+> 
+> On 2012-08-27T12:52:24, Toshi Kani <toshi.kani@hp.com> wrote:
+> 
+> > kdump can be interrupted by watchdog timer when the timer is left
+> > activated on the crash kernel. Changed the hpwdt driver to disable
+> > watchdog timer at boot-time. This assures that watchdog timer is
+> > disabled until /dev/watchdog is opened, and prevents watchdog timer
+> > to be left running on the crash kernel.
+> 
+> How does this protect against the system hanging again in the crash
+> kernel, or possibly hardware caches to flush more data to shared
+> storage?
+> 
+> (I'm asking from the perspective of the hpwdt being used as a fencing
+> mechanism in a cluster setting.)
+> 
+> Or is the argument that it's "very unlikely" that a system in such a
+> state would not make it far enough into the crash kernel?
+> 
+> 
+> Regards,
+>     Lars
+> 
 
-Ok, you've worn me down, let's see how well this works, I'll queue this
-up for 3.7.
 
-greg k-h
