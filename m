@@ -1,248 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2H0MiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 08:38:22 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:14889 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab2H0MiU (ORCPT
+	id S1752720Ab2H0MqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 08:46:17 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:40408 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274Ab2H0MqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 08:38:20 -0400
-Message-ID: <1346071096.3051.3.camel@lorien2>
-Subject: Re: [PATCH] swiotlb: Add support to disable swiotlb overflow buffer
- with deprecation warning
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, bhelgaas@google.com, amwang@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
-        rob@landley.net, shuahkhan@gmail.com
-Date: Mon, 27 Aug 2012 06:38:16 -0600
-In-Reply-To: <20120825182546.GC18320@konrad-lan.dumpdata.com>
-References: <1344638802.8018.18.camel@lorien2>
-	 <1345842845.2651.41.camel@lorien2>
-	 <20120825182546.GC18320@konrad-lan.dumpdata.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 27 Aug 2012 08:46:16 -0400
+X-IronPort-AV: E=Sophos;i="4.80,320,1344204000"; 
+   d="scan'208";a="170936283"
+Date: Mon, 27 Aug 2012 14:46:13 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Ulf Hansson <ulf.hansson@linaro.org>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Chris Ball <cjb@laptop.org>,
+        kernel-janitors@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/13] drivers/mmc/host/mmci.c: use clk_prepare_enable
+ and clk_disable_unprepare
+In-Reply-To: <CAPDyKFpf+PzMspT7CECpd=ZVdmp=7i4-pr-6StK8N1aRczNryw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1208271442120.2079@hadrien>
+References: <1345996865-32082-1-git-send-email-Julia.Lawall@lip6.fr> <1345996865-32082-8-git-send-email-Julia.Lawall@lip6.fr> <CAPDyKFpf+PzMspT7CECpd=ZVdmp=7i4-pr-6StK8N1aRczNryw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-08-25 at 14:25 -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, Aug 24, 2012 at 03:14:05PM -0600, Shuah Khan wrote:
-> > Add support for disabling swiotlb overflow buffer using zero size swiotlb
-> > overflow buffer to help test disable overflow scenarios to find drivers that
-> > don't check dma mapping errors. Add kernel error message to track overflow
-> > buffer triggers to understand how often overflow buffer gets used. Add
-> > deprecation notice warning message and deprecation schedule documentation, as
-> > a first step towards removing overflow support, to be consistent with other
-> > iommu implementations and return DMA_ERROR_CODE. Once drivers are fixed
-> > overflow support can be removed.
-> 
-> This looks like the previous patch. I thought we discussed this and
-> decided that the overflow buffer support should not be disabled outright
-> (meaning by default it is ON) - but we can provide a knob to turn it
-> off.
+On Mon, 27 Aug 2012, Ulf Hansson wrote:
 
-No change in plans. This patch doesn't disable the overflow buffer. I
-kept the functionality from my earlier patch that checks if overflow
-buffer size is 0 and not allocate overflow buffer as a way to disable it
-for testing. By default the size is 32*1024 and gets crates as usual and
-maintains returning the overflow buffer when swiotlb is full.
+> Hi Julia,
+>
+> Patches for mmci should normally be sent on the arm list as well. mmci
+> is maintained by Russell King, even if the MAINTAINER file does not
+> say so.
 
-> 
-> And alongside you were going to look at DMA API debug code to see if you
-> can come up with a mechanism to track that the users of DMA API call
-> dma_mapping_error after they have called various variants of 'map'?
+Would it be possible to update the MAINTAINER file?
 
-I am working on this now.
+> Some minor comment below.
+>
+> On 26 August 2012 18:00, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+>
+> I think can simplify the commit msg a lot. Just say something with
+> "simplify clock code in probe".
 
--- Shuah
-> 
-> > 
-> > Tested on x86-64 and compile tested on IA64.
-> > 
-> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+OK, I wasn't familiar with these functions before, so I wanted to explain
+my rationale for making the change, in case I was totally off base.
+
+> > Clk_prepare_enable and clk_disable_unprepare combine clk_prepare and
+> > clk_enable, and clk_disable and clk_unprepare.  They make the code more
+> > concise, and ensure that clk_unprepare is called when clk_enable fails.
+> >
+> > A simplified version of the semantic patch that introduces calls to these
+> > functions is as follows: (http://coccinelle.lip6.fr/)
+> >
+> > // <smpl>
+> > @@
+> > expression e;
+> > @@
+> >
+> > - clk_prepare(e);
+> > - clk_enable(e);
+> > + clk_prepare_enable(e);
+> >
+> > @@
+> > expression e;
+> > @@
+> >
+> > - clk_disable(e);
+> > - clk_unprepare(e);
+> > + clk_disable_unprepare(e);
+> > // </smpl>
+> >
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
 > > ---
-> >  Documentation/feature-removal-schedule.txt |   15 ++++++
-> >  lib/swiotlb.c                              |   73 ++++++++++++++++++++--------
-> >  2 files changed, 69 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-> > index a52924e..b5938ca 100644
-> > --- a/Documentation/feature-removal-schedule.txt
-> > +++ b/Documentation/feature-removal-schedule.txt
-> > @@ -646,3 +646,18 @@ Who:	Russell King <linux@arm.linux.org.uk>,
-> >  	Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >  
-> >  ----------------------------
-> > +
-> > +What:  SWIOTLB overflow buffer support.
-> > +When:  3.8
-> > +Why:   Remove SWIOTLB overflow buffer support and return DMA_ERROR_CODE
-> > +       (a value of zero) to make it consistent with iommu implementation
-> > +       on Intel, AMD, and swiotlb-xen. In 3.7, add logging to track swiotlb
-> > +       buffer overflow triggers to understand how often overflow buffer
-> > +       gets used. The next step is to fix drivers that don't call
-> > +       dma_mapping_error to check for errors returned by the mapping
-> > +       interfaces. Once drivers are fixed overflow support can be removed.
-> > +       If you see any problems related to disabling SWIOTLB overflow buffer,
-> > +       please report to us!
-> > +       E-mail us at: linux-kernel@vger.kernel.org
-> > +Who:   Shuah Khan <shuah.khan@hp.com> <shuahkhan@gmail.com>
-> > +
-> > diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> > index 45bc1f8..658f35a 100644
-> > --- a/lib/swiotlb.c
-> > +++ b/lib/swiotlb.c
-> > @@ -92,6 +92,24 @@ static DEFINE_SPINLOCK(io_tlb_lock);
-> >  
-> >  static int late_alloc;
-> >  
-> > +static void swiotlb_print_overflow_deprecation_notice(void)
-> > +{
-> > +	if (io_tlb_overflow) {
-> > +		pr_warn("SWIOTLB overflow buffer will be deprecated.\n"
-> > +			"  If you have a driver that depends on this feature\n"
-> > +			"  please Email us at: linux-kernel@vger.kernel.org,\n"
-> > +			"  Shuah Khan (shuahkhan@gmail.com), and\n"
-> > +			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
-> > +	} else {
-> > +		pr_warn("SWIOTLB overflow buffer is disabled and will be\n"
-> > +			"  deprecated. Please report problems related to\n"
-> > +			"  disabling overflow buffer to\n"
-> > +			"  linux-kernel@vger.kernel.org,\n"
-> > +			"  Shuah Khan (shuahkhan@gmail.com), and\n"
-> > +			"  Konrad Wilk (konrad.wilk@oracle.com)\n");
-> > +	}
-> > +}
-> > +
-> >  static int __init
-> >  setup_io_tlb_npages(char *str)
-> >  {
-> > @@ -108,7 +126,6 @@ setup_io_tlb_npages(char *str)
-> >  	return 1;
-> >  }
-> >  __setup("swiotlb=", setup_io_tlb_npages);
-> > -/* make io_tlb_overflow tunable too? */
-> >  
-> >  unsigned long swiotlb_nr_tbl(void)
-> >  {
-> > @@ -156,12 +173,18 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
-> >  	io_tlb_index = 0;
-> >  	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
-> >  
-> > -	/*
-> > -	 * Get the overflow emergency buffer
-> > -	 */
-> > -	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
-> > -	if (!io_tlb_overflow_buffer)
-> > -		panic("Cannot allocate SWIOTLB overflow buffer!\n");
-> > +	if (io_tlb_overflow) {
-> > +		/*
-> > +		 * Get the overflow emergency buffer
-> > +		 */
-> > +		io_tlb_overflow_buffer = alloc_bootmem_low_pages(
-> > +						PAGE_ALIGN(io_tlb_overflow));
-> > +		if (!io_tlb_overflow_buffer)
-> > +			panic("Cannot allocate SWIOTLB overflow buffer!\n");
-> > +	}
-> > +
-> > +	swiotlb_print_overflow_deprecation_notice();
-> > +
-> >  	if (verbose)
-> >  		swiotlb_print_info();
-> >  }
-> > @@ -264,14 +287,17 @@ swiotlb_late_init_with_default_size(size_t default_size)
-> >  
-> >  	memset(io_tlb_orig_addr, 0, io_tlb_nslabs * sizeof(phys_addr_t));
-> >  
-> > -	/*
-> > -	 * Get the overflow emergency buffer
-> > -	 */
-> > -	io_tlb_overflow_buffer = (void *)__get_free_pages(GFP_DMA,
-> > -	                                          get_order(io_tlb_overflow));
-> > -	if (!io_tlb_overflow_buffer)
-> > -		goto cleanup4;
-> > +	if (io_tlb_overflow) {
-> > +		/*
-> > +		 * Get the overflow emergency buffer
-> > +		 */
-> > +		io_tlb_overflow_buffer = (void *)
-> > +			__get_free_pages(GFP_DMA, get_order(io_tlb_overflow));
-> > +		if (!io_tlb_overflow_buffer)
-> > +			goto cleanup4;
-> > +	}
-> >  
-> > +	swiotlb_print_overflow_deprecation_notice();
-> >  	swiotlb_print_info();
-> >  
-> >  	late_alloc = 1;
-> > @@ -297,12 +323,13 @@ cleanup1:
-> >  
-> >  void __init swiotlb_free(void)
-> >  {
-> > -	if (!io_tlb_overflow_buffer)
-> > +	if (!io_tlb_orig_addr)
-> >  		return;
-> >  
-> >  	if (late_alloc) {
-> > -		free_pages((unsigned long)io_tlb_overflow_buffer,
-> > -			   get_order(io_tlb_overflow));
-> > +		if (io_tlb_overflow_buffer)
-> > +			free_pages((unsigned long)io_tlb_overflow_buffer,
-> > +				   get_order(io_tlb_overflow));
-> >  		free_pages((unsigned long)io_tlb_orig_addr,
-> >  			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
-> >  		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
-> > @@ -310,8 +337,9 @@ void __init swiotlb_free(void)
-> >  		free_pages((unsigned long)io_tlb_start,
-> >  			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
-> >  	} else {
-> > -		free_bootmem_late(__pa(io_tlb_overflow_buffer),
-> > -				  PAGE_ALIGN(io_tlb_overflow));
-> > +		if (io_tlb_overflow_buffer)
-> > +			free_bootmem_late(__pa(io_tlb_overflow_buffer),
-> > +					  PAGE_ALIGN(io_tlb_overflow));
-> >  		free_bootmem_late(__pa(io_tlb_orig_addr),
-> >  				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
-> >  		free_bootmem_late(__pa(io_tlb_list),
-> > @@ -681,7 +709,10 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
-> >  	map = map_single(dev, phys, size, dir);
-> >  	if (!map) {
-> >  		swiotlb_full(dev, size, dir, 1);
-> > +		if (!io_tlb_overflow)
-> > +			return DMA_ERROR_CODE;
-> >  		map = io_tlb_overflow_buffer;
-> > +		dev_err(dev, "SWIOTLB is full. Mapping overflow buffer.\n");
-> >  	}
-> >  
-> >  	dev_addr = swiotlb_virt_to_bus(dev, map);
-> > @@ -691,6 +722,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
-> >  	 */
-> >  	if (!dma_capable(dev, dev_addr, size)) {
-> >  		swiotlb_tbl_unmap_single(dev, map, size, dir);
-> > +		if (!io_tlb_overflow)
-> > +			return DMA_ERROR_CODE;
-> >  		dev_addr = swiotlb_virt_to_bus(dev, io_tlb_overflow_buffer);
-> >  	}
-> >  
-> > @@ -910,6 +943,8 @@ EXPORT_SYMBOL(swiotlb_sync_sg_for_device);
-> >  int
-> >  swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr)
-> >  {
-> > +	if (!io_tlb_overflow)
-> > +		return DMA_ERROR_CODE;
-> >  	return (dma_addr == swiotlb_virt_to_bus(hwdev, io_tlb_overflow_buffer));
-> >  }
-> >  EXPORT_SYMBOL(swiotlb_dma_mapping_error);
-> > -- 
-> > 1.7.9.5
-> > 
-> > 
-> > 
+> >  drivers/mmc/host/mmci.c |   13 +++----------
+> >  1 file changed, 3 insertions(+), 10 deletions(-)
+> >
+> > diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+> > index 50ff19a..edc3e9b 100644
+> > --- a/drivers/mmc/host/mmci.c
+> > +++ b/drivers/mmc/host/mmci.c
+> > @@ -1309,14 +1309,10 @@ static int __devinit mmci_probe(struct amba_device *dev,
+> >                 goto host_free;
+> >         }
+> >
+> > -       ret = clk_prepare(host->clk);
+> > +       ret = clk_prepare_enable(host->clk);
+>
+> white space? Did you run checkpatch?
+
+Yes, I did.  And I did so again just now:
+
+palace:linux-next: scripts/checkpatch.pl ~/patches/prepare2/send7
+total: 0 errors, 0 warnings, 34 lines checked
+
+/home/julia/patches/prepare2/send7 has no obvious style problems and is
+ready for submission.  I can see that in your reply there are no tabs,
+only space.  If you received it that way, perhaps it is a mailer problem
+on my side, although I didn't do anything unusual for this patch.
+
+I will try again.
+
+julia
 
 
+> >         if (ret)
+> >                 goto clk_free;
+> >
+> > -       ret = clk_enable(host->clk);
+> > -       if (ret)
+> > -               goto clk_unprep;
+> > -
+> >         host->plat = plat;
+> >         host->variant = variant;
+> >         host->mclk = clk_get_rate(host->clk);
+> > @@ -1515,9 +1511,7 @@ static int __devinit mmci_probe(struct amba_device *dev,
+> >   err_gpio_cd:
+> >         iounmap(host->base);
+> >   clk_disable:
+> > -       clk_disable(host->clk);
+> > - clk_unprep:
+> > -       clk_unprepare(host->clk);
+> > +       clk_disable_unprepare(host->clk);
+>
+> white space? Did you run checkpatch?
+>
+> >   clk_free:
+> >         clk_put(host->clk);
+> >   host_free:
+> > @@ -1564,8 +1558,7 @@ static int __devexit mmci_remove(struct amba_device *dev)
+> >                         gpio_free(host->gpio_cd);
+> >
+> >                 iounmap(host->base);
+> > -               clk_disable(host->clk);
+> > -               clk_unprepare(host->clk);
+> > +               clk_disable_unprepare(host->clk);
+>
+> white space? Did you run checkpatch?
+>
+> >                 clk_put(host->clk);
+> >
+> >                 if (host->vcc)
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> Kind regards
+> Ulf Hansson
+>
