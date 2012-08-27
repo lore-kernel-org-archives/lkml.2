@@ -1,23 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab2H0S6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:58:09 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:41698 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2H0S6H (ORCPT
+	id S1754044Ab2H0TBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 15:01:39 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:46222 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab2H0TBh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:58:07 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: wim@iguana.be, linux-watchdog@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, thomas.mingarelli@hp.com,
-        Toshi Kani <toshi.kani@hp.com>, stable@vger.kernel.org
-Subject: [PATCH] hpwdt: Fix kdump issue in hpwdt
-Date: Mon, 27 Aug 2012 12:52:24 -0600
-Message-Id: <1346093544-12007-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
+	Mon, 27 Aug 2012 15:01:37 -0400
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+To: "Kani, Toshimitsu" <toshi.kani@hp.com>, "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH] hpwdt: Fix kdump issue in hpwdt
+Thread-Topic: [PATCH] hpwdt: Fix kdump issue in hpwdt
+Thread-Index: AQHNhIXkE7PQ9svsVEWLdvcjNA0XY5duAu1g
+Date: Mon, 27 Aug 2012 18:59:27 +0000
+Message-ID: <9774516974AF5F4C8A2C3C69CD34123323352FF9@G1W3651.americas.hpqcorp.net>
+References: <1346093544-12007-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1346093544-12007-1-git-send-email-toshi.kani@hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.193.232.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Wim:
+
+I acknowledge and accept this patch.
+
+
+Thanks,
+Tom
+
+-----Original Message-----
+From: Kani, Toshimitsu 
+Sent: Monday, August 27, 2012 1:52 PM
+To: wim@iguana.be; linux-watchdog@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org; Mingarelli, Thomas; Kani, Toshimitsu; stable@vger.kernel.org
+Subject: [PATCH] hpwdt: Fix kdump issue in hpwdt
 
 kdump can be interrupted by watchdog timer when the timer is left
 activated on the crash kernel. Changed the hpwdt driver to disable
