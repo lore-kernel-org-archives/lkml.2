@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab2H0RGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:06:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34350 "EHLO
+	id S1753891Ab2H0RH3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:07:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34361 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab2H0RGf (ORCPT
+	with ESMTP id S1753687Ab2H0RH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:06:35 -0400
-Date: Mon, 27 Aug 2012 10:06:18 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-d57c5d51a30152f3175d2344cb6395f08bf8ee0c@git.kernel.org>
+	Mon, 27 Aug 2012 13:07:27 -0400
+Date: Mon, 27 Aug 2012 10:07:14 -0700
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-a9e2fccc305433155febfe7b3d89efcb47ef0b19@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andi@firstfloor.org, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, andi@firstfloor.org,
-        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120807194100.130477900@goodmis.org>
-References: <20120807194100.130477900@goodmis.org>
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1345916488-8355-2-git-send-email-fenghua.yu@intel.com>
+References: <1345916488-8355-2-git-send-email-fenghua.yu@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace/x86: Add support for -mfentry to x86_64
-Git-Commit-ID: d57c5d51a30152f3175d2344cb6395f08bf8ee0c
+Subject: [tip:x86/bsp-hotplug] doc: Add x86 CPU0 online/offline feature
+Git-Commit-ID: a9e2fccc305433155febfe7b3d89efcb47ef0b19
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,207 +27,99 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:06:24 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:07:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d57c5d51a30152f3175d2344cb6395f08bf8ee0c
-Gitweb:     http://git.kernel.org/tip/d57c5d51a30152f3175d2344cb6395f08bf8ee0c
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Wed, 9 Feb 2011 13:32:18 -0500
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 23 Aug 2012 11:26:36 -0400
+Commit-ID:  a9e2fccc305433155febfe7b3d89efcb47ef0b19
+Gitweb:     http://git.kernel.org/tip/a9e2fccc305433155febfe7b3d89efcb47ef0b19
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Sat, 25 Aug 2012 10:41:17 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 25 Aug 2012 19:25:56 -0700
 
-ftrace/x86: Add support for -mfentry to x86_64
+doc: Add x86 CPU0 online/offline feature
 
-If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
-then use that instead of mcount.
+If CONFIG_BOOTPARAM_HOTPLUG_CPU0 is turned on, CPU0 is hotpluggable. Otherwise,
+by default CPU0 is not hotpluggable and kernel parameter cpu0_hotplug enables
+CPU0 online/offline feature.
 
-With mcount, frame pointers are forced with the -pg option and we
-get something like:
+The documentations point out two known CPU0 dependencies. First, resume from
+hibernate or suspend always starts from CPU0. So hibernate and suspend are
+prevented if CPU0 is offline. Another dependency is PIC interrupts always go
+to CPU0.
 
-<can_vma_merge_before>:
-       55                      push   %rbp
-       48 89 e5                mov    %rsp,%rbp
-       53                      push   %rbx
-       41 51                   push   %r9
-       e8 fe 6a 39 00          callq  ffffffff81483d00 <mcount>
-       31 c0                   xor    %eax,%eax
-       48 89 fb                mov    %rdi,%rbx
-       48 89 d7                mov    %rdx,%rdi
-       48 33 73 30             xor    0x30(%rbx),%rsi
-       48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
+It's said that some machines may depend on CPU0 to poweroff/reboot. But I
+haven't seen such dependency on a few tested machines.
 
-With -mfentry, frame pointers are no longer forced and the call looks
-like this:
+Please let me know if you see any CPU0 dependencies on your machine.
 
-<can_vma_merge_before>:
-       e8 33 af 37 00          callq  ffffffff81461b40 <__fentry__>
-       53                      push   %rbx
-       48 89 fb                mov    %rdi,%rbx
-       31 c0                   xor    %eax,%eax
-       48 89 d7                mov    %rdx,%rdi
-       41 51                   push   %r9
-       48 33 73 30             xor    0x30(%rbx),%rsi
-       48 f7 c6 ff ff ff f7    test   $0xfffffffff7ffffff,%rsi
-
-This adds the ftrace hook at the beginning of the function before a
-frame is set up, and allows the function callbacks to be able to access
-parameters. As kprobes now can use function tracing (at least on x86)
-this speeds up the kprobe hooks that are at the beginning of the
-function.
-
-Link: http://lkml.kernel.org/r/20120807194100.130477900@goodmis.org
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1345916488-8355-2-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/Kconfig                 |    1 +
- arch/x86/include/asm/ftrace.h    |    7 ++++++-
- arch/x86/kernel/entry_64.S       |   32 +++++++++++++++++++++++++++-----
- arch/x86/kernel/x8664_ksyms_64.c |    6 +++++-
- 4 files changed, 39 insertions(+), 7 deletions(-)
+ Documentation/cpu-hotplug.txt       |   24 ++++++++++++++++++++++++
+ Documentation/kernel-parameters.txt |   14 ++++++++++++++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a2d19ee..28dd891 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -36,6 +36,7 @@ config X86
- 	select HAVE_KRETPROBES
- 	select HAVE_OPTPROBES
- 	select HAVE_FTRACE_MCOUNT_RECORD
-+	select HAVE_FENTRY if X86_64
- 	select HAVE_C_RECORDMCOUNT
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FUNCTION_TRACER
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index a6cae0c..9a25b52 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -35,7 +35,11 @@
- #endif
+diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+index 66ef8f3..9f40135 100644
+--- a/Documentation/cpu-hotplug.txt
++++ b/Documentation/cpu-hotplug.txt
+@@ -207,6 +207,30 @@ by making it not-removable.
  
- #ifdef CONFIG_FUNCTION_TRACER
--#define MCOUNT_ADDR		((long)(mcount))
-+#ifdef CC_USING_FENTRY
-+# define MCOUNT_ADDR		((long)(__fentry__))
-+#else
-+# define MCOUNT_ADDR		((long)(mcount))
-+#endif
- #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
+ In such cases you will also notice that the online file is missing under cpu0.
  
- #ifdef CONFIG_DYNAMIC_FTRACE
-@@ -46,6 +50,7 @@
- #ifndef __ASSEMBLY__
- extern void mcount(void);
- extern atomic_t modifying_ftrace_code;
-+extern void __fentry__(void);
- 
- static inline unsigned long ftrace_call_adjust(unsigned long addr)
- {
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b7a81dc..ed767b7 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -68,10 +68,18 @@
- 	.section .entry.text, "ax"
- 
- #ifdef CONFIG_FUNCTION_TRACER
++Q: Is CPU0 removable on X86?
++A: Yes. If kernel is compiled with CONFIG_BOOTPARAM_HOTPLUG_CPU0=y, CPU0 is
++removable by default. Otherwise, CPU0 is also removable by kernel option
++cpu0_hotplug.
 +
-+#ifdef CC_USING_FENTRY
-+# define function_hook	__fentry__
-+#else
-+# define function_hook	mcount
-+#endif
++But some features depend on CPU0. Two known dependencies are:
 +
- #ifdef CONFIG_DYNAMIC_FTRACE
--ENTRY(mcount)
++1. Resume from hibernate/suspend depends on CPU0. Hibernate/suspend will fail if
++CPU0 is offline and you need to online CPU0 before hibernate/suspend can
++continue.
++2. PIC interrupts also depend on CPU0. CPU0 can't be removed if a PIC interrupt
++is detected.
 +
-+ENTRY(function_hook)
- 	retq
--END(mcount)
-+END(function_hook)
- 
- /* skip is set if stack has been adjusted */
- .macro ftrace_caller_setup skip=0
-@@ -84,7 +92,11 @@ END(mcount)
- 	movq RIP(%rsp), %rdi
- 	subq $MCOUNT_INSN_SIZE, %rdi
- 	/* Load the parent_ip into the second parameter */
-+#ifdef CC_USING_FENTRY
-+	movq SS+16(%rsp), %rsi
-+#else
- 	movq 8(%rbp), %rsi
-+#endif
- .endm
- 
- ENTRY(ftrace_caller)
-@@ -177,7 +189,8 @@ END(ftrace_regs_caller)
- 
- 
- #else /* ! CONFIG_DYNAMIC_FTRACE */
--ENTRY(mcount)
++It's said poweroff/reboot may depend on CPU0 on some machines although I haven't
++seen any poweroff/reboot failure so far after CPU0 is offline on a few tested
++machines.
 +
-+ENTRY(function_hook)
- 	cmpl $0, function_trace_stop
- 	jne  ftrace_stub
++Please let me know if you know or see any other dependencies of CPU0.
++
++If the dependencies are under your control, you can turn on CPU0 hotplug feature
++either by CONFIG_BOOTPARAM_HOTPLUG_CPU0 or by kernel parameter cpu0_hotplug.
++
++--Fenghua Yu <fenghua.yu@intel.com>
++
+ Q: How do i find out if a particular CPU is not removable?
+ A: Depending on the implementation, some architectures may show this by the
+ absence of the "online" file. This is done if it can be determined ahead of
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index ad7e2e5..54f76b2 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1952,6 +1952,20 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
  
-@@ -199,7 +212,11 @@ trace:
- 	MCOUNT_SAVE_FRAME
+ 	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
  
- 	movq RIP(%rsp), %rdi
-+#ifdef CC_USING_FENTRY
-+	movq SS+16(%rsp), %rsi
-+#else
- 	movq 8(%rbp), %rsi
-+#endif
- 	subq $MCOUNT_INSN_SIZE, %rdi
- 
- 	call   *ftrace_trace_function
-@@ -207,7 +224,7 @@ trace:
- 	MCOUNT_RESTORE_FRAME
- 
- 	jmp ftrace_stub
--END(mcount)
-+END(function_hook)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- #endif /* CONFIG_FUNCTION_TRACER */
- 
-@@ -215,9 +232,14 @@ END(mcount)
- ENTRY(ftrace_graph_caller)
- 	MCOUNT_SAVE_FRAME
- 
-+#ifdef CC_USING_FENTRY
-+	leaq SS+16(%rsp), %rdi
-+	movq $0, %rdx	/* No framepointers needed */
-+#else
- 	leaq 8(%rbp), %rdi
--	movq RIP(%rsp), %rsi
- 	movq (%rbp), %rdx
-+#endif
-+	movq RIP(%rsp), %rsi
- 	subq $MCOUNT_INSN_SIZE, %rsi
- 
- 	call	prepare_ftrace_return
-diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-index 6020f6f..1330dd1 100644
---- a/arch/x86/kernel/x8664_ksyms_64.c
-+++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -13,9 +13,13 @@
- #include <asm/ftrace.h>
- 
- #ifdef CONFIG_FUNCTION_TRACER
--/* mcount is defined in assembly */
-+/* mcount and __fentry__ are defined in assembly */
-+#ifdef CC_USING_FENTRY
-+EXPORT_SYMBOL(__fentry__);
-+#else
- EXPORT_SYMBOL(mcount);
- #endif
-+#endif
- 
- EXPORT_SYMBOL(__get_user_1);
- EXPORT_SYMBOL(__get_user_2);
++	cpu0_hotplug	[X86] Turn on CPU0 hotplug feature when
++			CONFIG_BOOTPARAM_HOTPLUG_CPU0 is off.
++			Some features depend on CPU0. Known dependencies are:
++			1. Resume from suspend/hibernate depends on CPU0.
++			Suspend/hibernate will fail if CPU0 is offline and you
++			need to online CPU0 before suspend/hibernate.
++			2. PIC interrupts also depend on CPU0. CPU0 can't be
++			removed if a PIC interrupt is detected.
++			It's said poweroff/reboot may depend on CPU0 on some
++			machines although I haven't seen such issues so far
++			after CPU0 is offline on a few tested machines.
++			If the dependencies are under your control, you can
++			turn on cpu0_hotplug.
++
+ 	nptcg=		[IA-64] Override max number of concurrent global TLB
+ 			purges which is reported from either PAL_VM_SUMMARY or
+ 			SAL PALO.
