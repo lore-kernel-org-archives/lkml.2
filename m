@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2H0Sgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:36:47 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:36650 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2H0Sgp (ORCPT
+	id S1753816Ab2H0Shv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:37:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59066 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751466Ab2H0Shu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:36:45 -0400
-Date: Mon, 27 Aug 2012 18:36:45 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-Subject: RE: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
- device-tree
-In-Reply-To: <79CD15C6BA57404B839C016229A409A83EA99396@DBDE01.ent.ti.com>
-Message-ID: <alpine.DEB.2.00.1208271836270.26953@utopia.booyaka.com>
-References: <1346061842-28714-1-git-send-email-hvaibhav@ti.com> <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com> <79CD15C6BA57404B839C016229A409A83EA99396@DBDE01.ent.ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 27 Aug 2012 14:37:50 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: core: Report microvolts in sysfs even with only list_voltage()
+Date: Mon, 27 Aug 2012 11:37:46 -0700
+Message-Id: <1346092666-17772-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Aug 2012, Hiremath, Vaibhav wrote:
+If a regulator only supports a single voltage list_voltage() can be used
+to report what that voltage is so add this as one of the criteria for
+creating the microvolts file in sysfs.
 
-> On Mon, Aug 27, 2012 at 22:50:12, Paul Walmsley wrote:
->
-> > Is the dcan driver present in v3.6-rc kernels?  
-> 
-> Multiple versions have been submitted already, I have validated using them.
-> Irrespective of this, it is independent change and required for the driver.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-OK, will queue it for 3.7.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 06186ba..db7d59a 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3020,7 +3020,8 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
+ 
+ 	/* some attributes need specific methods to be displayed */
+ 	if ((ops->get_voltage && ops->get_voltage(rdev) >= 0) ||
+-	    (ops->get_voltage_sel && ops->get_voltage_sel(rdev) >= 0)) {
++	    (ops->get_voltage_sel && ops->get_voltage_sel(rdev) >= 0) ||
++	    (ops->list_voltage && ops->list_voltage(rdev, 0) >= 0)) {
+ 		status = device_create_file(dev, &dev_attr_microvolts);
+ 		if (status < 0)
+ 			return status;
+-- 
+1.7.10.4
 
-- Paul
