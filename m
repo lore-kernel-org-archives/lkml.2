@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab2H0PNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 11:13:19 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57393 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab2H0PNQ (ORCPT
+	id S1752386Ab2H0POi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 11:14:38 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:43265
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751484Ab2H0POg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 11:13:16 -0400
-Message-ID: <503B8E26.2050604@linux.vnet.ibm.com>
-Date: Mon, 27 Aug 2012 20:41:34 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Mon, 27 Aug 2012 11:14:36 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2dh668h839h944hd25hf0ah11b5h1155h)
+X-WSS-ID: 0M9F6C6-02-CGM-02
+X-M-MSG: 
+Date: Mon, 27 Aug 2012 17:14:27 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: i386, v3.6-rc3: Kernel panic - not syncing: Fatal exception in
+ interrupt
+Message-ID: <20120827151427.GE8285@erda.amd.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
-        ananth@in.ibm.com, masbock@linux.vnet.ibm.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
-        tglx@linutronix.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86/mce: Honour bios-set CMCI threshold
-References: <20120827112503.10313.62594.stgit@localhost.localdomain> <20120827112512.10313.49176.stgit@localhost.localdomain> <20120827144829.GF27979@aftab.osrc.amd.com>
-In-Reply-To: <20120827144829.GF27979@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12082715-8878-0000-0000-000003C292A1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2012 08:18 PM, Borislav Petkov wrote:
-> On Mon, Aug 27, 2012 at 04:55:12PM +0530, Naveen N. Rao wrote:
->> The ACPI spec doesn't provide for a way for the bios to pass down
->> recommended thresholds to the OS on a _per-bank_ basis. This patch adds
->> a new boot option, which if passed, allows bios to initialize the CMCI
->> threshold. In such a case, we simply skip programming any threshold
->> value.
->>
->> As fail-safe, we initialize threshold to 1 if some banks have not been
->> initialized by the bios and warn the user.
->>
->> Changes:
->> - Use the mce_boot_flags structure.
->> - Expose bios_cmci_threshold via sysfs.
->>
->> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
->> ---
->
-> ...
->
->> @@ -119,6 +146,12 @@ static void cmci_discover(int banks, int boot)
->>   	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
->>   	if (hdr)
->>   		printk(KERN_CONT "\n");
->> +	if (boot && mce_boot_flags.bios_cmci_threshold && bios_wrong_thresh) {
->> +		printk_once(KERN_INFO
->> +			"bios_cmci_threshold: Some banks do not have valid thresholds set");
->> +		printk_once(KERN_INFO
->> +			"bios_cmci_threshold: Make sure your BIOS supports this boot option");
->> +	}
->
-> All functional changes aside, why do you want to print this at all? Does
-> it bring anything to the user?
->
-> Because if BIOS is systematically b0rked and we keep issuing this every
-> time do do cmci_discover, then we have a lotsa users to explain to what
-> happens.
->
-> Why not do a printk_once saying something along the lines of "BIOS
-> hasn't setup thresholds properly, correcting..." and that's it?
+Steven and Ingo,
 
-Yes, that's the intent here. I am using printk_once() and if I'm not 
-mistaken, we print the above only once during boot.
+while running profiling tests on 32 bit I got a
 
-I am open to changing the message if the above two lines aren't good.
+ Kernel panic - not syncing: Fatal exception in interrupt
 
+The remainings of the stackdump are:
 
-Thanks!
-- Naveen
+  [<c13950ed>] do_nmi+0xa0/0x2ff
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c13949e5>] nmi_stack_correct+0x28/0x2d
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c1003601>] ? do_softirq+0x49/0x7f
+  <IRQ> 
+  [<c102a06f>] irq_exit+0x35/0x5b
+  [<c1018f56>] smp_apic_timer_interrupt+0x6c/0x7a
+  [<c1394746>] apic_timer_interrupt+0x2a/0x30
+  [<c1007026>] ? default_idle+0x56/0x9e
+  [<c1007283>] amd_e400_idle+0xc2/0xc4
+  [<c10077fc>] cpu_idle+0x4b/0x65
+  [<c138b407>] start_secondary+0x18a/0x18f
+ Code: 89 fe eb 08 31 c9 8b 45 0c ff 55 ec 83 c3 04 83 7d 10 00 74 0c 3b 5d 10 73 26 3b 5d e4 73 0c eb 1f 3b 5d f0 76 1a 3b 5d e8 73 15 <8b> 13 89 d0 89 55 e0 e8 ad 42 03 00 85 c0 8b 55 e0 75 a6 eb cc
+ EIP: [<c1004237>] print_context_stack+0x6e/0x8d SS:ESP 0068:f5521ea0
+ CR2: 0000000000000040
+ ---[ end trace 366930af65945435 ]---
+ Kernel panic - not syncing: Fatal exception in interrupt
 
->
-> Tony?
->
+Suspected patches are the following:
+
+ $ git shortlog -p --full-diff v3.5..linux/master -- arch/x86/kernel/nmi*
+ Ingo Molnar (1):
+       Merge commit 'v3.5-rc3' into x86/debug
+ 
+ Li Zhong (1):
+       x86/nmi: Clean up register_nmi_handler() usage
+ 
+ Steven Rostedt (2):
+       x86: Remove cmpxchg from i386 NMI nesting code
+       x86: Save cr2 in NMI in case NMIs take a page fault (for i386)
+
+Do you know already of something similar?
+
+This happened to me the 2nd time now. Will try to reproduce it to get
+a complete trace.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
