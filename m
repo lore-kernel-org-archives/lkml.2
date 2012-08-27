@@ -1,116 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab2H0US4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 16:18:56 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:33234 "EHLO mail.x86-64.org"
+	id S1754538Ab2H0UTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 16:19:33 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:54567 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754399Ab2H0USy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 16:18:54 -0400
-Date: Mon, 27 Aug 2012 22:18:40 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@amd64.org>, tony.luck@intel.com, andi@firstfloor.org,
-        gong.chen@linux.intel.com, ananth@in.ibm.com,
-        masbock@linux.vnet.ibm.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, lcm@us.ibm.com, mingo@redhat.com,
-        tglx@linutronix.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86/mce: Pack boolean MCE boot flags into a structure
-Message-ID: <20120827201840.GC9539@aftab.osrc.amd.com>
-References: <20120827112503.10313.62594.stgit@localhost.localdomain>
- <20120827143619.GE27979@aftab.osrc.amd.com>
- <503B93D2.7090702@linux.vnet.ibm.com>
- <20120827154741.GI27979@aftab.osrc.amd.com>
- <503B99C7.3000503@linux.vnet.ibm.com>
- <20120827163408.GK27979@aftab.osrc.amd.com>
- <503BAB00.1080708@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <503BAB00.1080708@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754415Ab2H0UTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 16:19:31 -0400
+Message-ID: <1346098754.8623.19.camel@lambeau>
+Subject: Re: [PATCH RFC 0/3] Add guest cpu_entitlement reporting
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+Reply-To: mjw@linux.vnet.ibm.com
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
+        mtosatti@redhat.com, mingo@redhat.com, avi@redhat.com
+Date: Mon, 27 Aug 2012 15:19:14 -0500
+In-Reply-To: <503BC16E.2020201@parallels.com>
+References: <20120823231346.11681.1502.stgit@lambeau>
+	 <503708C8.2090401@parallels.com> <1345821066.4950.6.camel@lambeau>
+	 <50396173.4020005@parallels.com> <1346082646.8623.8.camel@lambeau>
+	 <503BC16E.2020201@parallels.com>
+Organization: IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12082720-5806-0000-0000-000018DBD4D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 10:44:40PM +0530, Naveen N. Rao wrote:
-> Looks good. Infact, I had actually added mce_ser and mce_disabled
-> into the bitfield, but backed off not wanting to overdo.
+On Mon, 2012-08-27 at 11:50 -0700, Glauber Costa wrote:
+> On 08/27/2012 08:50 AM, Michael Wolf wrote:
+> > On Sat, 2012-08-25 at 19:36 -0400, Glauber Costa wrote:
+> >> On 08/24/2012 11:11 AM, Michael Wolf wrote:
+> >>> On Fri, 2012-08-24 at 08:53 +0400, Glauber Costa wrote:
+> >>>> On 08/24/2012 03:14 AM, Michael Wolf wrote:
+> >>>>> This is an RFC regarding the reporting of stealtime.  In the case of
+> >>>>> where you have a system that is running with partial processors such as
+> >>>>> KVM the user may see steal time being reported in accounting tools such
+> >>>>> as top or vmstat.  This can cause confusion for the end user.  To
+> >>>>> ease the confusion this patch set adds a sysctl interface to set the
+> >>>>> cpu entitlement.  This is the percentage of cpu that the guest system is
+> >>>>>  expected to receive.  As long as the steal time is within its expected
+> >>>>> range it will show up as 0 in /proc/stat.  The user will then see in the
+> >>>>> accounting tools that they are getting a full utilization of the cpu
+> >>>>> resources assigned to them.
+> >>>>>
+> >>>>
+> >>>> And how is such a knob not confusing?
+> >>>>
+> >>>> Steal time is pretty well defined in meaning and is shown in top for
+> >>>> ages. I really don't see the point for this.
+> >>>
+> >>> Currently you can see the steal time but you have no way of knowing if
+> >>> the cpu utilization you are seeing on the guest is the expected amount.
+> >>> I decided on making it a knob because a guest could be migrated to
+> >>> another system and it's entitlement could change because of hardware or 
+> >>> load differences.  It could simply be a /proc file and report the
+> >>> current entitlement if needed.   As things are currently implemented I 
+> >>> don't see how someone knows if the guest is running as expected or
+> >>> whether there is a problem.
+> >>>
+> >>
+> >> Turning off steal time display won't get even close to displaying the
+> >> information you want. What you probably want is a guest-visible way to
+> >> say how many miliseconds you are expected to run each second. Right?
+> > 
+> > It is not clear to me how knowing how many milliseconds you are
+> > expecting to run will help the user.  Currently the users will run top
+> > to see how well the guest is running.  If they see _any_ steal time some
+> > users think they are not getting the full use of their processor
+> > entitlement.
+> >
 > 
-> We could pull in all the other configuration parameters into this
-> structure as long as everyone is ok with this.
+> And your plan is just to selectively lie about it, but disabling it with
+> a knob?
 
-Well, if you'd like, you can make one change per patch so that they can
-be easily reviewable.
+It is about making it very obvious to the end user whether they are
+receiving their cpu entitlement.  If there is more steal time than
+expected that will still show up.  I have experimented, and it seems to
+work, to put the raw stealtime at the end of each cpu line
+in /proc/stat.  That way the raw data is there as well.   
 
-> >diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> >index a3ac52b29cbf..e5cfd241e508 100644
-> >--- a/arch/x86/include/asm/mce.h
-> >+++ b/arch/x86/include/asm/mce.h
-> >@@ -126,7 +126,6 @@ struct mce_log {
-> >  #define K8_MCE_THRESHOLD_BANK_5    (MCE_THRESHOLD_BASE + 5 * 9)
-> >  #define K8_MCE_THRESHOLD_DRAM_ECC  (MCE_THRESHOLD_BANK_4 + 0)
-> >
-> >-
-> >  #ifdef __KERNEL__
-> >
-> >  extern void mce_register_decode_chain(struct notifier_block *nb);
-> >@@ -169,8 +168,6 @@ DECLARE_PER_CPU(struct device *, mce_device);
-> >  #define MAX_NR_BANKS 32
-> >
-> >  #ifdef CONFIG_X86_MCE_INTEL
-> >-extern int mce_cmci_disabled;
-> >-extern int mce_ignore_ce;
-> >  void mce_intel_feature_init(struct cpuinfo_x86 *c);
-> >  void cmci_clear(void);
-> >  void cmci_reenable(void);
-> >diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> >index 6a05c1d327a9..3b25bcf452d9 100644
-> >--- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> >+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> >@@ -28,6 +28,15 @@ extern int mce_ser;
-> >
-> >  extern struct mce_bank *mce_banks;
-> >
-> >+struct mce_cfg {
-> >+	__u32	cmci_disabled		: 1,
-> >+		ignore_ce		: 1,
-> >+		dont_log_ce		: 1,
-> >+		__pad			: 29;
-> >+};
-> >+
-> >+extern struct mce_cfg cfg;
-> >+
+Do you have another suggestion to communicate to the user whether they
+are receiving their full entitlement?  At the very least shouldn't the
+entitlement reside in a /proc file somewhere so that the user could look
+up the value and "do the math"?
+
 > 
-> I'd prefer mce_cfg, rather than just cfg. I think it looks clearer
-> to say, for instance, mce_ser.ignore_ce rather than just
-> cfg.ignore_ce where the latter looks more like a global thing. But,
-> of course, the former is more concise...
+> > Maybe I'm missing what you are proposing, but even if you knew the
+> > milliseconds that you were expecting for your processor you would have
+> > to adjust the top output in your head so to speak.  You would see the
+> > utilization and then say 'ok that matches the number of milliseconds I
+> > expected to run..."   If we take away the steal time (as long as it is
+> > equal to or less than the expected amount of steal time) then the user
+> > running top will see the 100% utilization.
+> > 
+> 
 
-Yes,
 
-* it is more consise
-* it is private to mce so no ambiguity
-* having identical struct name and variable names is very confusing (at least
- to me)
 
-so you can do
-
-extern struct mce_cfg m_cfg;
-
-or
-
-extern struct mce_config mcfg;
-
-or similar but please keep struct name and variable name different.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
