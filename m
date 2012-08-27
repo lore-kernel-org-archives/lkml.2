@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab2H0HWG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 03:22:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53591 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab2H0HWC (ORCPT
+	id S1752814Ab2H0HW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 03:22:27 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43567 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab2H0HWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 03:22:02 -0400
-From: Alex Kelly <alex.page.kelly@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>, David Howells <dhowells@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
-Cc: Alex Kelly <alex.page.kelly@gmail.com>
-Subject: [PATCHv2] fs: Amended coredump-related sysctl functions
-Date: Mon, 27 Aug 2012 00:18:03 -0700
-Message-Id: <1346051885-4366-1-git-send-email-alex.page.kelly@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	Mon, 27 Aug 2012 03:22:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120825114746.GA28832@somewhere.redhat.com>
+References: <1344344165-369636-1-git-send-email-avagin@openvz.org>
+	<1344344165-369636-4-git-send-email-avagin@openvz.org>
+	<20120825114746.GA28832@somewhere.redhat.com>
+Date: Mon, 27 Aug 2012 11:22:18 +0400
+Message-ID: <CANaxB-xF9s7kwq-LvXgFVgMi4=4i-qrX2hunvdJK1f9gnm-krQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] perf: teach perf inject to merge sched_stat_* and
+ sched_switch events (v2)
+From: Andrey Wagin <avagin@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes an error introduced in the coredump-header patch in
-the coredump removal patch I submitted earlier. It should be squashed
-into that patch series so that the Kconfig option to remove coredump
-doesn't cause compile-time errors.
+2012/8/25 Frederic Weisbecker <fweisbec@gmail.com>:
+>> +     if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
+>> +             list_for_each_entry(ent, &samples, node)
+>> +                     if (sample->pid == ent->pid)
+>
+> I suspect what you're rather interested in is the sample tid.
 
-Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
-v2: Removed an erroneous return statement that shouldn't have gotten into
-the original patch. I apologize for the spam
+Yes, you are right.
 
----
-Note to Andrew Morton: This is a small fix of an oversight in the coredump
-patch I submitted earlier. Could this be squashed into the others in -mm?
+>
+>> +
+>> +     } else if (!strncmp(evname, "sched_stat_", 11)) {
+>> +             u32 pid;
+>> +
+>> +             pid = raw_field_value(evsel->tp_format,
+>> +                                     "pid", sample->raw_data);
+>
+> There you parse the pid from the trace content. That's fine because
+> it's actually the tid that is saved on the trace event. But this one
+> is not pid-namespace safe (it saves current->pid directly) while
+> sample->tid is pid-namespace safe (it uses task_pid_nr_ns).
+>
+> So I suggest you to use sample->tid instead, plus that's going to be
+> consistant with what you did above.
 
- kernel/sysctl.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Here is a problem, because a pid from the trace content and
+sample->tid are not the same.
+A kernel wakes up a task1 and do it from a context of another task2.
+In this case a pid from the trace content is a pid of the task1 and a
+sample->tid is a pid of the task2.
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index af57e84..9050b50 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -179,8 +179,10 @@ static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
- 
- static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp, loff_t *ppos);
-+#ifdef CONFIG_COREDUMP
- static int proc_dostring_coredump(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp, loff_t *ppos);
-+#endif
- 
- #ifdef CONFIG_MAGIC_SYSRQ
- /* Note: sysrq code uses it's own private copy */
-@@ -2040,12 +2042,14 @@ int proc_dointvec_minmax(struct ctl_table *table, int write,
- 
- static void validate_coredump_safety(void)
- {
-+#ifdef CONFIG_COREDUMP
- 	if (suid_dumpable == SUID_DUMPABLE_SAFE &&
- 	    core_pattern[0] != '/' && core_pattern[0] != '|') {
- 		printk(KERN_WARNING "Unsafe core_pattern used with "\
- 			"suid_dumpable=2. Pipe handler or fully qualified "\
- 			"core dump path required.\n");
- 	}
-+#endif
- }
- 
- static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
-@@ -2057,6 +2061,7 @@ static int proc_dointvec_minmax_coredump(struct ctl_table *table, int write,
- 	return error;
- }
- 
-+#ifdef CONFIG_COREDUMP
- static int proc_dostring_coredump(struct ctl_table *table, int write,
- 		  void __user *buffer, size_t *lenp, loff_t *ppos)
- {
-@@ -2065,6 +2070,7 @@ static int proc_dostring_coredump(struct ctl_table *table, int write,
- 		validate_coredump_safety();
- 	return error;
- }
-+#endif
- 
- static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
- 				     void __user *buffer,
--- 
-1.7.11.4
+DECLARE_EVENT_CLASS(sched_stat_template,
+TP_PROTO(struct task_struct *tsk, u64 delay),
+...
+                __entry->pid    = tsk->pid;
+...
 
+
+Here is a patch, which allow us to get "foreign" events.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=e6dab5ffab59e910ec0e3355f4a6f29f7a7be474
