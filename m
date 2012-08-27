@@ -1,47 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2H0RR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 13:17:27 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55022 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab2H0RR0 (ORCPT
+	id S1753999Ab2H0RRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 13:17:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34549 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab2H0RRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 13:17:26 -0400
-Date: Mon, 27 Aug 2012 21:17:21 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Brian Gerst <brgerst@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pekka Enberg <penberg@kernel.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: [RFC] x86: drop unnecessary kernel_eflags variable from 64 bit
-Message-ID: <20120827171721.GC27096@moon>
-References: <20120824195847.GA31628@moon>
- <20120827171438.GA17289@tassilo.jf.intel.com>
+	Mon, 27 Aug 2012 13:17:37 -0400
+Date: Mon, 27 Aug 2012 10:17:24 -0700
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-9d58a9dfd5f0db55b625254204ea23f2fc2a35a0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1345916488-8355-13-git-send-email-fenghua.yu@intel.com>
+References: <1345916488-8355-13-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/bsp-hotplug] x86, topology: Debug CPU0 hotplug
+Git-Commit-ID: 9d58a9dfd5f0db55b625254204ea23f2fc2a35a0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120827171438.GA17289@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Aug 2012 10:17:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 27, 2012 at 10:14:38AM -0700, Andi Kleen wrote:
-> On Fri, Aug 24, 2012 at 11:58:47PM +0400, Cyrill Gorcunov wrote:
-> > Hi guys,
-> > 
-> > I've been looking for some particular email in my mailbox when
-> > found the patch below (it's dated as August 2011 ;) and think
-> > it's still valid for kernel. Actually there were two patches,
-> > and the second patch was unifying x86-32 with x86-64 but it
-> > was doable as far as I remember.
-> 
-> Patch is fine for me. I did the original code, but you're right
-> it's unlikely the EFLAGS will ever be extended.
-> 
-> Acked-by: Andi Kleen <ak@linux.intel.com>
+Commit-ID:  9d58a9dfd5f0db55b625254204ea23f2fc2a35a0
+Gitweb:     http://git.kernel.org/tip/9d58a9dfd5f0db55b625254204ea23f2fc2a35a0
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Sat, 25 Aug 2012 10:41:28 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 25 Aug 2012 19:26:42 -0700
 
-Thanks for review, Andi!
+x86, topology: Debug CPU0 hotplug
+
+CONFIG_DEBUG_HOTPLUG_CPU0 is for debugging the CPU0 hotplug feature. The switch
+offlines CPU0 as soon as possible and boots userspace up with CPU0 offlined.
+User can online CPU0 back after boot time. The default value of the switch is
+off.
+
+To debug CPU0 hotplug, you need to enable CPU0 offline/online feature by either
+turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during compilation or giving
+cpu0_hotplug kernel parameter at boot.
+
+It's safe and early place to take down CPU0 after all hotplug notifiers
+are installed and SMP is booted.
+
+Please note that some applications or drivers, e.g. some versions of udevd,
+during boot time may put CPU0 online again in this CPU0 hotplug debug mode.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1345916488-8355-13-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig           |   15 +++++++++++++
+ arch/x86/include/asm/cpu.h |    3 ++
+ arch/x86/kernel/topology.c |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/power/cpu.c       |   38 ++++++++++++++++++++++++++++++++
+ 4 files changed, 107 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 4538411..490b70e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1707,6 +1707,21 @@ config BOOTPARAM_HOTPLUG_CPU0
+ 	  You still can enable the CPU0 hotplug feature at boot by kernel
+ 	  parameter cpu0_hotplug.
+ 
++config DEBUG_HOTPLUG_CPU0
++	def_bool n
++	prompt "Debug CPU0 hotplug"
++	depends on HOTPLUG_CPU && EXPERIMENTAL
++	---help---
++	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
++	  soon as possible and boots up userspace with CPU0 offlined. User
++	  can online CPU0 back after boot time.
++
++	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
++	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
++	  compilation or giving cpu0_hotplug kernel parameter at boot.
++
++	  If unuser, say N.
++
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
+diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+index a119572..5f9a124 100644
+--- a/arch/x86/include/asm/cpu.h
++++ b/arch/x86/include/asm/cpu.h
+@@ -29,6 +29,9 @@ struct x86_cpu {
+ extern int arch_register_cpu(int num);
+ extern void arch_unregister_cpu(int);
+ extern void __cpuinit start_cpu0(void);
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++extern int _debug_hotplug_cpu(int cpu, int action);
++#endif
+ #endif
+ 
+ DECLARE_PER_CPU(int, cpu_state);
+diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+index fa87fd6..63d8374 100644
+--- a/arch/x86/kernel/topology.c
++++ b/arch/x86/kernel/topology.c
+@@ -50,6 +50,57 @@ static int __init enable_cpu0_hotplug(char *str)
+ __setup("cpu0_hotplug", enable_cpu0_hotplug);
+ #endif
+ 
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++/*
++ * This function offlines a CPU as early as possible and allows userspace to
++ * boot up without the CPU. The CPU can be onlined back by user after boot.
++ *
++ * This is only called for debugging CPU offline/online feature.
++ */
++int __ref _debug_hotplug_cpu(int cpu, int action)
++{
++	struct device *dev = get_cpu_device(cpu);
++	int ret;
++
++	if (!cpu_is_hotpluggable(cpu))
++		return -EINVAL;
++
++	cpu_hotplug_driver_lock();
++
++	switch (action) {
++	case 0:
++		ret = cpu_down(cpu);
++		if (!ret) {
++			pr_info("CPU %u is now offline\n", cpu);
++			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
++		} else
++			pr_debug("Can't offline CPU%d.\n", cpu);
++		break;
++	case 1:
++		ret = cpu_up(cpu);
++		if (!ret)
++			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
++		else
++			pr_debug("Can't online CPU%d.\n", cpu);
++		break;
++	default:
++		ret = -EINVAL;
++	}
++
++	cpu_hotplug_driver_unlock();
++
++	return ret;
++}
++
++static int __init debug_hotplug_cpu(void)
++{
++	_debug_hotplug_cpu(0, 0);
++	return 0;
++}
++
++late_initcall_sync(debug_hotplug_cpu);
++#endif /* CONFIG_DEBUG_HOTPLUG_CPU0 */
++
+ int __ref arch_register_cpu(int num)
+ {
+ 	/*
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 3338609..abc748a 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -21,6 +21,7 @@
+ #include <asm/suspend.h>
+ #include <asm/debugreg.h>
+ #include <asm/fpu-internal.h> /* pcntxt_mask */
++#include <asm/cpu.h>
+ 
+ #ifdef CONFIG_X86_32
+ static struct saved_context saved_context;
+@@ -263,6 +264,43 @@ static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
+ 	case PM_HIBERNATION_PREPARE:
+ 		ret = bsp_check();
+ 		break;
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
++	case PM_RESTORE_PREPARE:
++		/*
++		 * When system resumes from hibernation, online CPU0 because
++		 * 1. it's required for resume and
++		 * 2. the CPU was online before hibernation
++		 */
++		if (!cpu_online(0))
++			_debug_hotplug_cpu(0, 1);
++		break;
++	case PM_POST_RESTORE:
++		/*
++		 * When a resume really happens, this code won't be called.
++		 *
++		 * This code is called only when user space hibernation software
++		 * prepares for snapshot device during boot time. So we just
++		 * call _debug_hotplug_cpu() to restore to CPU0's state prior to
++		 * preparing the snapshot device.
++		 *
++		 * This works for normal boot case in our CPU0 hotplug debug
++		 * mode, i.e. CPU0 is offline and user mode hibernation
++		 * software initializes during boot time.
++		 *
++		 * If CPU0 is online and user application accesses snapshot
++		 * device after boot time, this will offline CPU0 and user may
++		 * see different CPU0 state before and after accessing
++		 * the snapshot device. But hopefully this is not a case when
++		 * user debugging CPU0 hotplug. Even if users hit this case,
++		 * they can easily online CPU0 back.
++		 *
++		 * To simplify this debug code, we only consider normal boot
++		 * case. Otherwise we need to remember CPU0's state and restore
++		 * to that state and resolve racy conditions etc.
++		 */
++		_debug_hotplug_cpu(0, 0);
++		break;
++#endif
+ 	default:
+ 		break;
+ 	}
