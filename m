@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2H0Siu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 14:38:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60007 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466Ab2H0Sis convert rfc822-to-8bit (ORCPT
+	id S1753860Ab2H0Sj7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 14:39:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40076 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab2H0Sj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 14:38:48 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-Subject: RE: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
- device-tree
-Thread-Topic: [PATCH] ARM: AM33XX: clock: Add dcan clock aliases for
- device-tree
-Thread-Index: AQHNhDurjKQbZY/bOUaqH5mz8nRcmZdti8MAgABnbhD//631gIAAXJ1w
-Date: Mon, 27 Aug 2012 18:38:36 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EA99446@DBDE01.ent.ti.com>
-References: <1346061842-28714-1-git-send-email-hvaibhav@ti.com>
- <alpine.DEB.2.00.1208271717420.26953@utopia.booyaka.com>
- <79CD15C6BA57404B839C016229A409A83EA99396@DBDE01.ent.ti.com>
- <alpine.DEB.2.00.1208271836270.26953@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.00.1208271836270.26953@utopia.booyaka.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Aug 2012 14:39:58 -0400
 MIME-Version: 1.0
+In-Reply-To: <1345241877-16200-5-git-send-email-cheiny@synaptics.com>
+References: <1345241877-16200-1-git-send-email-cheiny@synaptics.com>
+	<1345241877-16200-5-git-send-email-cheiny@synaptics.com>
+Date: Mon, 27 Aug 2012 11:39:56 -0700
+Message-ID: <CACRpkdaG1Px6bQjhMSZxRByw70cFtKU6uywXeAsZRqG76LjxeQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 4/17] input: RMI4 configs and makefiles
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Peichen Chang <peichen.chang@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 00:06:45, Paul Walmsley wrote:
-> On Mon, 27 Aug 2012, Hiremath, Vaibhav wrote:
-> 
-> > On Mon, Aug 27, 2012 at 22:50:12, Paul Walmsley wrote:
-> >
-> > > Is the dcan driver present in v3.6-rc kernels?  
-> > 
-> > Multiple versions have been submitted already, I have validated using them.
-> > Irrespective of this, it is independent change and required for the driver.
-> 
-> OK, will queue it for 3.7.
-> 
+On Fri, Aug 17, 2012 at 3:17 PM, Christopher Heiny <cheiny@synaptics.com> wrote:
 
-Thanks Paul.
+> diff --git a/drivers/input/Makefile b/drivers/input/Makefile
+> index 09614ce..cfb383e 100644
+> --- a/drivers/input/Makefile
+> +++ b/drivers/input/Makefile
+> @@ -23,6 +23,6 @@ obj-$(CONFIG_INPUT_TABLET)    += tablet/
+>  obj-$(CONFIG_INPUT_TOUCHSCREEN)        += touchscreen/
+>  obj-$(CONFIG_INPUT_MISC)       += misc/
+>
+> -obj-$(CONFIG_INPUT_APMPOWER)   += apm-power.o
+> +obj-$(CONFIG_INPUT_RMI4) += rmi4/
+>
+> -obj-$(CONFIG_XEN_KBDDEV_FRONTEND)      += xen-kbdfront.o
+> +obj-$(CONFIG_INPUT_APMPOWER)   += apm-power.o
 
-Thanks,
-Vaibhav
+Don't touch the other stuff, you just deleted the Xen Kbddev here!
 
+> diff --git a/drivers/input/rmi4/Kconfig b/drivers/input/rmi4/Kconfig
+(...)
+> +config RMI4_BUS
+> +       bool "Synaptics RMI4 bus support"
+> +       help
+> +         Say Y here if you want to support the Synaptics RMI4 bus.  This is
+> +         required for all RMI4 device support.
+> +
+> +         If unsure, say Y.
+
+Are RMI4 devices so common that this should be the recommendation?
+
+Also put the debug options into this file instead of random local
+#defines in the other files.
+
+Yours,
+Linus Walleij
