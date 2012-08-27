@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab2H0JMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 05:12:50 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:59172 "EHLO mail.x86-64.org"
+	id S1753571Ab2H0JRo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Aug 2012 05:17:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51202 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752968Ab2H0JMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 05:12:49 -0400
-Date: Mon, 27 Aug 2012 11:12:35 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, andi@firstfloor.org, gong.chen@linux.intel.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        tglx@linutronix.de, linux-edac@vger.kernel.org, ananth@in.ibm.com,
-        Chris McDermott <lcm@us.ibm.com>, masbock@linux.vnet.ibm.com
-Subject: Re: [PATCH] x86: mce: Honour bios-set CMCI threshold
-Message-ID: <20120827091235.GB26602@aftab.osrc.amd.com>
-References: <20120822123054.29238.3864.stgit@localhost.localdomain>
- <20120822124649.GD5817@aftab.osrc.amd.com>
- <50361A59.2020308@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50361A59.2020308@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753474Ab2H0JRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Aug 2012 05:17:43 -0400
+Subject: Re: [PATCH] decnet: fix shutdown parameter checking
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1346035027-2347-1-git-send-email-xi.wang@gmail.com>
+References: <1346035027-2347-1-git-send-email-xi.wang@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 27 Aug 2012 10:16:41 +0100
+Message-ID: <1346059001.2703.7.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 23, 2012 at 05:26:09PM +0530, Naveen N. Rao wrote:
-> Sure - sounds like a good idea. Further, a #define could eliminate
-> the need to change other references, but I'm not sure that's
-> GENERALLacceptable
->
-> #define mce_bios_cmci_threshold boot_flags.mce_bios_cmci_threshold
->
-> could eliminate the need to change other references, but I'm not sure
-> that's acceptable
 
-Yeah, that's kinda obfuscating it for no reason. As I said before, we
-can always add it later if it makes sense.
-
-> But, I just had a quick look and it seems to me that these were
-> defined as integers since they are exposed via sysfs. For instance:
+On Sun, 2012-08-26 at 22:37 -0400, Xi Wang wrote:
+> The allowed value of "how" is SHUT_RD/SHUT_WR/SHUT_RDWR (0/1/2),
+> rather than SHUTDOWN_MASK (3).
 > 
-> static struct dev_ext_attribute dev_attr_cmci_disabled = {
->         __ATTR(cmci_disabled, 0644, device_show_int, set_cmci_disabled),
->         &mce_cmci_disabled
-> };
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+
+Although it could be argued that we should also continue to accept the
+value 3 just in case there is any userland software out there which
+sends that value,
+
+Steve.
+
+> ---
+>  net/decnet/af_decnet.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Converting mce_cmci_disabled to a bit-field doesn't work since we
-> take its address above. We could ignore and not set the second field
-> at all (dev_ext_attribute->var) and define our own callbacks, but
-> that'll be more work and I'm not sure if we work fine without
+> diff --git a/net/decnet/af_decnet.c b/net/decnet/af_decnet.c
+> index 2ba1a28..307c322 100644
+> --- a/net/decnet/af_decnet.c
+> +++ b/net/decnet/af_decnet.c
+> @@ -1313,10 +1313,10 @@ static int dn_shutdown(struct socket *sock, int how)
+>  	if (scp->state == DN_O)
+>  		goto out;
+>  
+> -	if (how != SHUTDOWN_MASK)
+> +	if (how != SHUT_RDWR)
+>  		goto out;
+>  
+> -	sk->sk_shutdown = how;
+> +	sk->sk_shutdown = SHUTDOWN_MASK;
+>  	dn_destroy_sock(sk);
+>  	err = 0;
+>  
 
-Right,
 
-but take a look at set_cmci_disabled(): it converts the newly read value
-to bool anyway:
-
-        if (mce_cmci_disabled ^ !!new) {
-
-so we can do later
-
-	flags.mce_cmci_disabled = true;
-
-or
-	flags.mce_cmci_disabled = false;
-
-instead of assigning 0 or 1 to it.
-
-And, about showing it with device_show_int, a simple test works:
-
----
-#include <stdio.h>
-#include <stdbool.h>
-
-int main()
-{
-        bool a = true;
-        printf("%d\n", a);
-        return 0;
-}
---
-
-but even if there are troubles with that, we can change device_show_int
-to a locally defined function.
-
-But, anyway, long story short: I wasn't suggesting you go and change all
-of them - simply start by adding your flag mce_bios_cmci_threshold to a
-struct <something>_flags and I'll take care of the rest.
-
-Unless you really want to do it, of course :-)
-
-Oh, and the more important thing is, Tony would need to review your
-Intel-specific changes so pls keep him CCed on your next iteration too.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
