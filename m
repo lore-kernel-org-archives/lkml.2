@@ -1,70 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab2H1DXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Aug 2012 23:23:09 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56792 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab2H1DXH (ORCPT
+	id S1750990Ab2H1ENZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 00:13:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53059 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751Ab2H1ENX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Aug 2012 23:23:07 -0400
+	Tue, 28 Aug 2012 00:13:23 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH 2/2] pwm: pwm-tiehrpwm: Add support for configuring
+ polarity of PWM
+Thread-Topic: [PATCH 2/2] pwm: pwm-tiehrpwm: Add support for configuring
+ polarity of PWM
+Thread-Index: AQHNgP9TdI1B+DtQnUSVh5O38sweKJdo07QAgARBS+A=
+Date: Tue, 28 Aug 2012 04:12:16 +0000
+Deferred-Delivery: Tue, 28 Aug 2012 04:12:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E99506A@DBDE01.ent.ti.com>
+References: <1345705251-10942-1-git-send-email-avinashphilip@ti.com>
+ <1345705251-10942-3-git-send-email-avinashphilip@ti.com>
+ <20120824165314.GA21435@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120824165314.GA21435@avionic-0098.mockup.avionic-design.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <503B8B26.3050205@yahoo.es>
-References: <503A8CAE.6050606@yahoo.es>
-	<20120827070323.GC28721@samfundet.no>
-	<503B342C.9060300@yahoo.es>
-	<20120827111431.GA27868@samfundet.no>
-	<503B8B26.3050205@yahoo.es>
-Date: Tue, 28 Aug 2012 08:53:06 +0530
-Message-ID: <CAKohpo=ALUNOnQdQjNd1Y2jtocxjixKCiBrRZp8qGErqg1LSKw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] dw_dmac: make driver endianness configurable
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Hein Tibosch <hein_tibosch@yahoo.es>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        spear-devel <spear-devel@list.st.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 August 2012 20:28, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
->>> +config DW_DMAC_MEM_64_BIT
->>> +    bool "Allow 64-bit memory transfers"
->>> +    default y if !AVR32
->>> +    depends on DW_DMAC
->>> +    help
->>> +      Say yes if the DMA controller may do 64-bit memory transfers
->>> +      For AVR32, say no because only up to 32-bit transfers are
->>> +      defined
->> Is this sane to add? Could some non-AVR32 platforms use 64-bit and 32-bit
->> depending on runtime configuration? E.g. if you build a kernel with support
->> for multiple boards/processors, and there is a mix of 32-bit and 64-bit wide
->> DMA support.
->>
->> I think it is better to select 32/64-bit at runtime.
->
-> I did that in the first patch, adding a new property to the dw_dma_slave
-> structure. It had the small disadvantage that some arch code had to be
-> adapted (at32ap700x.c).
->
-> Viresh, what do you think? Add a property called "mem_64_bit_access" or so?
->
-> Or should it be passed as a member of 'dw_dma_platform_data', because it
-> is a property of the (entire) DMA controller?
+On Fri, Aug 24, 2012 at 22:23:14, Thierry Reding wrote:
+> On Thu, Aug 23, 2012 at 12:30:51PM +0530, Philip, Avinash wrote:
+> [...]
+> > diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
+> [...]
+> > @@ -100,10 +109,17 @@
+> >  
+> >  #define NUM_PWM_CHANNEL		2	/* EHRPWM channels */
+> >  
+> > +enum config {
+> > +	config_dutycycle,
+> > +	config_polarity,
+> > +};
+> > +
+> 
+> I don't think this makes sense, see below.
+> 
+> > @@ -165,38 +181,50 @@ static int set_prescale_div(unsigned long rqst_prescaler,
+> >  }
+> >  
+> >  static void configure_chans(struct ehrpwm_pwm_chip *pc, int chan,
+> > -		unsigned long duty_cycles)
+> > +		enum config config)
+> >  {
+> > -	int cmp_reg, aqctl_reg;
+> > -	unsigned short aqctl_val, aqctl_mask;
+> > +	if (config == config_dutycycle) {
+> > +		int cmp_reg;
+> > +
+> > +		if (chan == 1)
+> > +			/* Channel 1 configured with compare B register */
+> > +			cmp_reg = CMPB;
+> > +		else
+> > +			/* Channel 0 configured with compare A register */
+> > +			cmp_reg = CMPA;
+> > +
+> > +		ehrpwm_write(pc->mmio_base, cmp_reg, pc->duty_cycles);
+> > +	} else if (config == config_polarity) {
+> > +		int aqctl_reg;
+> > +		unsigned short aqctl_val, aqctl_mask;
+> > +
+> > +		/*
+> > +		 * Configure PWM output to HIGH/LOW level on counter
+> > +		 * reaches compare register value and LOW/HIGH level
+> > +		 * on counter value reaches period register value and
+> > +		 * zero value on counter
+> > +		 */
+> > +		if (chan == 1) {
+> > +			aqctl_reg = AQCTLB;
+> > +			aqctl_mask = AQCTL_CBU_MASK;
+> > +
+> > +			if (pc->polarity == PWM_POLARITY_INVERSED)
+> > +				aqctl_val = AQCTL_CHANB_POLINVERSED;
+> > +			else
+> > +				aqctl_val = AQCTL_CHANB_POLNORMAL;
+> > +		} else {
+> > +			aqctl_reg = AQCTLA;
+> > +			aqctl_mask = AQCTL_CAU_MASK;
+> > +
+> > +			if (pc->polarity == PWM_POLARITY_INVERSED)
+> > +				aqctl_val = AQCTL_CHANA_POLINVERSED;
+> > +			else
+> > +				aqctl_val = AQCTL_CHANA_POLNORMAL;
+> > +		}
+> >  
+> > -	/*
+> > -	 * Channels can be configured from action qualifier module.
+> > -	 * Channel 0 configured with compare A register and for
+> > -	 * up-counter mode.
+> > -	 * Channel 1 configured with compare B register and for
+> > -	 * up-counter mode.
+> > -	 */
+> > -	if (chan == 1) {
+> > -		aqctl_reg = AQCTLB;
+> > -		cmp_reg = CMPB;
+> > -		/* Configure PWM Low from compare B value */
+> > -		aqctl_val = AQCTL_CBU_FRCLOW;
+> > -		aqctl_mask = AQCTL_CBU_MASK;
+> > -	} else {
+> > -		cmp_reg = CMPA;
+> > -		aqctl_reg = AQCTLA;
+> > -		/* Configure PWM Low from compare A value*/
+> > -		aqctl_val = AQCTL_CAU_FRCLOW;
+> > -		aqctl_mask = AQCTL_CAU_MASK;
+> > +		aqctl_mask |= AQCTL_PRD_MASK | AQCTL_ZRO_MASK;
+> > +		ehrpwm_modify(pc->mmio_base, aqctl_reg, aqctl_mask, aqctl_val);
+> >  	}
+> > -
+> > -	/* Configure PWM High from period value and zero value */
+> > -	aqctl_val |= AQCTL_PRD_FRCHIGH | AQCTL_ZRO_FRCHIGH;
+> > -	aqctl_mask |= AQCTL_PRD_MASK | AQCTL_ZRO_MASK;
+> > -	ehrpwm_modify(pc->mmio_base,  aqctl_reg, aqctl_mask, aqctl_val);
+> > -
+> > -	ehrpwm_write(pc->mmio_base,  cmp_reg, duty_cycles);
+> >  }
+> 
+> I think it might be better to split this into two separate functions.
+> Both branches have absolutely no code in common, so splitting them off
+> would decrease the indentation level and make this much more readable
+> and wouldn't require the configuration enumeration from above.
 
-I think second option is better. But can there be some supportive scenarios of
-first option?
+EHRPWM supports two channels & can be configured for duty cycle
+and polarity independently. That's why I wanted to use channel
+configuration API.
+I will correct it.
 
-We have a system, with two different memory controllers, one supporting 32 bit
-and other 64 bit?
+> 
+> >  
+> >  /*
+> > @@ -254,12 +282,24 @@ static int ehrpwm_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> >  	ehrpwm_modify(pc->mmio_base, TBCTL, TBCTL_CTRMODE_MASK,
+> >  			TBCTL_CTRMODE_UP);
+> >  
+> > +	pc->duty_cycles = duty_cycles;
+> >  	/* Configure the channel for duty cycle */
+> > -	configure_chans(pc, pwm->hwpwm, duty_cycles);
+> > +	configure_chans(pc, pwm->hwpwm, config_dutycycle);
+> > +
+> >  	pm_runtime_put_sync(chip->dev);
+> >  	return 0;
+> >  }
+> >  
+> > +static int ehrpwm_pwm_set_polarity(struct pwm_chip *chip,
+> > +		struct pwm_device *pwm,	enum pwm_polarity polarity)
+> > +{
+> > +	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
+> > +
+> > +	/* Configuration of polarity in hardware delayed done at enable */
+> > +	pc->polarity = polarity;
+> > +	return 0;
+> > +}
+> > +
+> 
+> The problem here, which is true for both of the .set_polarity() and
+> .config() implementations is that both channels share a single duty
+> cycle and polarity. What if the two channels are configured with
+> conflicting settings? Shouldn't that at least give a warning or even
+> return an error?
 
-Or what we can do now is: go with option 2, i.e. update dw_dma_platform_data
-and if some platform like what i mentioned above comes, then we can move it
-to slave data.
+I missed this. I will correct it.
 
-viresh
+> 
+> >  static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> >  {
+> >  	struct ehrpwm_pwm_chip *pc = to_ehrpwm_pwm_chip(chip);
+> > @@ -283,6 +323,9 @@ static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> >  
+> >  	ehrpwm_modify(pc->mmio_base, AQCSFRC, aqcsfrc_mask, aqcsfrc_val);
+> >  
+> > +	/* Channels Polarity can be configured from action qualifier module */
+> > +	configure_chans(pc, pwm->hwpwm, config_polarity);
+> > +
+> 
+> What's this "action qualifier module"?
+
+It is one of the sub modules in EHRPWM used for configuring channel PWM features 
+(Polarity, Duty cycle, PWM output state etc.)
+
+Thanks
+Avinash
+
+> 
+> Thierry
+> 
+
