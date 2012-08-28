@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab2H1VoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 17:44:24 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:40836 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2H1VoX (ORCPT
+	id S1753456Ab2H1VsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 17:48:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45554 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab2H1VsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 17:44:23 -0400
+	Tue, 28 Aug 2012 17:48:22 -0400
+Message-ID: <503D3CA1.2030308@gmail.com>
+Date: Wed, 29 Aug 2012 07:48:17 +1000
+From: Cruz Julian Bishop <cruzjbishop@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <CAECXXi7Y72OBN7+D5dGToxf9pcUAbmuwRJ=iY6_N6P4_r2e_-A@mail.gmail.com>
-References: <CAECXXi6q_NWpughUkwMCs6XeER-W_pHDz4HhhBGbcAmwBKppjA@mail.gmail.com>
-	<CAECXXi7Y72OBN7+D5dGToxf9pcUAbmuwRJ=iY6_N6P4_r2e_-A@mail.gmail.com>
-Date: Tue, 28 Aug 2012 17:44:22 -0400
-Message-ID: <CAECXXi44hDdPXpNUWP7=FCcXHrfO0mZMTsaPFi9dk_VOLWDu1w@mail.gmail.com>
-Subject: [PATCH 2/2] add discard support to nbd
-From: Paul Clements <paul.clements@us.sios.com>
-To: kernel list <linux-kernel@vger.kernel.org>
-Cc: andrew morton <akpm@linux-foundation.org>
-Content-Type: multipart/mixed; boundary=20cf3010edad6d43e904c85a588c
+To: Franklin Teaburry <ftburry@inbox.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: A better idea
+References: <32AC642C6D2.00000628ftburry@inbox.com>
+In-Reply-To: <32AC642C6D2.00000628ftburry@inbox.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3010edad6d43e904c85a588c
-Content-Type: text/plain; charset=ISO-8859-1
+On 29/08/12 05:52, Franklin Teaburry wrote:
+> Wow, the internets have been flooded lately with brilliant suggestions along the theme of dropping things.  Clearly this is a sign that something need be dropped!  While I can certainly see a glimmer of wisdom among each of these fine gentleman's suggestions I think they may still be a little off in their estimation of what needs to go. 
+>
+> Mr Furmann certainly took a step in the right direction when he began pondering the operating system needs of a more mobile, device oriented future.  While the keyboard's days are certainly numbered though I'm not sure that removing it needs to be the first link to remove from our chains of the past.
+>
+> Instead.. let's focus on the positives... what a portable device needs rather than what it doesn't.  It needs to use power efficiently. It also needs to shed it's heat easily as it is unlikely to have the fans and large inside case space that our desktops once boasted.
+>
+> We need our software to run efficiently.  The greeks knew how to do this... they ran naked!  I bet they shed heat pretty efficiently that way too!  So... While as we enter the new world, begining by dropping thing I suggest we start with what the ancients already knew to drop.
+>
+> I suggest we all drop our pants!!!!!!!!!!!!!!!!!!
+> I just did and believe me it is liberating!
+>
+> Sincerely,
+> Mr. Franklin Teaburry
+>
+> ____________________________________________________________
+> GET FREE SMILEYS FOR YOUR IM & EMAIL - Learn more at http://www.inbox.com/smileys
+> Works with AIM®, MSN® Messenger, Yahoo!® Messenger, ICQ®, Google Talk™ and most webmails
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+By the gods, I think this might actually work!
 
+Next, TO ANTARCTICA!
 
---20cf3010edad6d43e904c85a588c
-Content-Type: application/octet-stream; name="nbd-trim-discard-support.diff"
-Content-Disposition: attachment; filename="nbd-trim-discard-support.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h6fix2s51
-
-RGVzY3JpcHRpb246IFRoaXMgcGF0Y2ggYWRkcyBkaXNjYXJkIHN1cHBvcnQgdG8gbmJkLiBXaGVu
-IHRoZSBuYmQgY2xpZW50CnN5c3RlbSByZWNlaXZlcyBhIGRpc2NhcmQgcmVxdWVzdCwgdGhpcyB3
-aWxsIGJlIHBhc3NlZCBhbG9uZyB0byB0aGUgbmJkCnNlcnZlciBzeXN0ZW0sIHdoZXJlIHRoZSBu
-YmQtc2VydmVyIHdpbGwgcmVzcG9uZCBieSBwZXJmb3JtaW5nOgoJZmFsbG9jYXRlKC4uIEZBTExP
-Q19GTF9QVU5DSF9IT0xFIC4uKQoKVG8gcHVuY2ggYSBob2xlIGluIHRoZSBiYWNrZW5kIHN0b3Jh
-Z2UsIHdoaWNoIGlzIG5vIGxvbmdlciBuZWVkZWQuCgpTaWduZWQtb2ZmLWJ5OiBQYXVsIENsZW1l
-bnRzIDxwYXVsLmNsZW1lbnRzQHN0ZWVsZXllLmNvbT4KLS0tCmRpZmYgLS1naXQgYS9kcml2ZXJz
-L2Jsb2NrL25iZC5jIGIvZHJpdmVycy9ibG9jay9uYmQuYwppbmRleCBjNTQ0YmI0Li5hMDE0MTY5
-IDEwMDY0NAotLS0gYS9kcml2ZXJzL2Jsb2NrL25iZC5jCisrKyBiL2RyaXZlcnMvYmxvY2svbmJk
-LmMKQEAgLTk4LDYgKzk4LDcgQEAgc3RhdGljIGNvbnN0IGNoYXIgKm5iZGNtZF90b19hc2NpaShp
-bnQgY21kKQogCWNhc2UgIE5CRF9DTURfUkVBRDogcmV0dXJuICJyZWFkIjsKIAljYXNlIE5CRF9D
-TURfV1JJVEU6IHJldHVybiAid3JpdGUiOwogCWNhc2UgIE5CRF9DTURfRElTQzogcmV0dXJuICJk
-aXNjb25uZWN0IjsKKwljYXNlICBOQkRfQ01EX1RSSU06IHJldHVybiAidHJpbS9kaXNjYXJkIjsK
-IAl9CiAJcmV0dXJuICJpbnZhbGlkIjsKIH0KQEAgLTQ2MSw3ICs0NjIsMTEgQEAgc3RhdGljIHZv
-aWQgbmJkX2hhbmRsZV9yZXEoc3RydWN0IG5iZF9kZXZpY2UgKm5iZCwgc3RydWN0IHJlcXVlc3Qg
-KnJlcSkKIAogCW5iZF9jbWQocmVxKSA9IE5CRF9DTURfUkVBRDsKIAlpZiAocnFfZGF0YV9kaXIo
-cmVxKSA9PSBXUklURSkgewotCQluYmRfY21kKHJlcSkgPSBOQkRfQ01EX1dSSVRFOworCQlpZiAo
-KHJlcS0+Y21kX2ZsYWdzICYgUkVRX0RJU0NBUkQpKSB7CisJCQlXQVJOX09OKCEobmJkLT5mbGFn
-cyAmIE5CRF9GTEFHX1NFTkRfVFJJTSkpOworCQkJbmJkX2NtZChyZXEpID0gTkJEX0NNRF9UUklN
-OworCQl9IGVsc2UKKwkJCW5iZF9jbWQocmVxKSA9IE5CRF9DTURfV1JJVEU7CiAJCWlmIChuYmQt
-PmZsYWdzICYgTkJEX0ZMQUdfUkVBRF9PTkxZKSB7CiAJCQlkZXZfZXJyKGRpc2tfdG9fZGV2KG5i
-ZC0+ZGlzayksCiAJCQkJIldyaXRlIG9uIHJlYWQtb25seVxuIik7CkBAIC02NjcsNiArNjcyLDEw
-IEBAIHN0YXRpYyBpbnQgX19uYmRfaW9jdGwoc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiwgc3Ry
-dWN0IG5iZF9kZXZpY2UgKm5iZCwKIAogCQltdXRleF91bmxvY2soJm5iZC0+dHhfbG9jayk7CiAK
-KwkJaWYgKG5iZC0+ZmxhZ3MgJiBOQkRfRkxBR19TRU5EX1RSSU0pCisJCQlxdWV1ZV9mbGFnX3Nl
-dF91bmxvY2tlZChRVUVVRV9GTEFHX0RJU0NBUkQsCisJCQkJbmJkLT5kaXNrLT5xdWV1ZSk7CisK
-IAkJdGhyZWFkID0ga3RocmVhZF9jcmVhdGUobmJkX3RocmVhZCwgbmJkLCBuYmQtPmRpc2stPmRp
-c2tfbmFtZSk7CiAJCWlmIChJU19FUlIodGhyZWFkKSkgewogCQkJbXV0ZXhfbG9jaygmbmJkLT50
-eF9sb2NrKTsKQEAgLTY4NCw2ICs2OTMsNyBAQCBzdGF0aWMgaW50IF9fbmJkX2lvY3RsKHN0cnVj
-dCBibG9ja19kZXZpY2UgKmJkZXYsIHN0cnVjdCBuYmRfZGV2aWNlICpuYmQsCiAJCW5iZC0+Zmls
-ZSA9IE5VTEw7CiAJCW5iZF9jbGVhcl9xdWUobmJkKTsKIAkJZGV2X3dhcm4oZGlza190b19kZXYo
-bmJkLT5kaXNrKSwgInF1ZXVlIGNsZWFyZWRcbiIpOworCQlxdWV1ZV9mbGFnX2NsZWFyX3VubG9j
-a2VkKFFVRVVFX0ZMQUdfRElTQ0FSRCwgbmJkLT5kaXNrLT5xdWV1ZSk7CiAJCWlmIChmaWxlKQog
-CQkJZnB1dChmaWxlKTsKIAkJbmJkLT5ieXRlc2l6ZSA9IDA7CkBAIC04MDIsNiArODEyLDkgQEAg
-c3RhdGljIGludCBfX2luaXQgbmJkX2luaXQodm9pZCkKIAkJICogVGVsbCB0aGUgYmxvY2sgbGF5
-ZXIgdGhhdCB3ZSBhcmUgbm90IGEgcm90YXRpb25hbCBkZXZpY2UKIAkJICovCiAJCXF1ZXVlX2Zs
-YWdfc2V0X3VubG9ja2VkKFFVRVVFX0ZMQUdfTk9OUk9ULCBkaXNrLT5xdWV1ZSk7CisJCWRpc2st
-PnF1ZXVlLT5saW1pdHMuZGlzY2FyZF9ncmFudWxhcml0eSA9IDUxMjsKKwkJZGlzay0+cXVldWUt
-PmxpbWl0cy5tYXhfZGlzY2FyZF9zZWN0b3JzID0gVUlOVF9NQVg7CisJCWRpc2stPnF1ZXVlLT5s
-aW1pdHMuZGlzY2FyZF96ZXJvZXNfZGF0YSA9IDA7CiAJfQogCiAJaWYgKHJlZ2lzdGVyX2Jsa2Rl
-dihOQkRfTUFKT1IsICJuYmQiKSkgewpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9uYmQuaCBi
-L2luY2x1ZGUvbGludXgvbmJkLmgKaW5kZXggYmIzNDliZS4uM2I0OWE2MyAxMDA2NDQKLS0tIGEv
-aW5jbHVkZS9saW51eC9uYmQuaAorKysgYi9pbmNsdWRlL2xpbnV4L25iZC5oCkBAIC0zMiwxMiAr
-MzIsMTYgQEAKIGVudW0gewogCU5CRF9DTURfUkVBRCA9IDAsCiAJTkJEX0NNRF9XUklURSA9IDEs
-Ci0JTkJEX0NNRF9ESVNDID0gMgorCU5CRF9DTURfRElTQyA9IDIsCisJLyogdGhlcmUgaXMgYSBn
-YXAgaGVyZSB0byBtYXRjaCB1c2Vyc3BhY2UgKi8KKwlOQkRfQ01EX1RSSU0gPSA0CiB9OwogCiAv
-KiB2YWx1ZXMgZm9yIGZsYWdzIGZpZWxkICovCiAjZGVmaW5lIE5CRF9GTEFHX0hBU19GTEFHUwko
-MSA8PCAwKQogI2RlZmluZSBOQkRfRkxBR19SRUFEX09OTFkJKDEgPDwgMSkKKy8qIHRoZXJlIGlz
-IGEgZ2FwIGhlcmUgdG8gbWF0Y2ggdXNlcnNwYWNlICovCisjZGVmaW5lIE5CRF9GTEFHX1NFTkRf
-VFJJTQkoMSA8PCA1KSAvKiBzZW5kIHRyaW0vZGlzY2FyZCAqLwogCiAjZGVmaW5lIG5iZF9jbWQo
-cmVxKSAoKHJlcSktPmNtZFswXSkKIAo=
---20cf3010edad6d43e904c85a588c--
+:D
