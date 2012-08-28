@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab2H1RjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 13:39:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43098 "EHLO
+	id S1753349Ab2H1Rjm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 13:39:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64377 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab2H1Rhw (ORCPT
+	with ESMTP id S1752730Ab2H1Rhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 13:37:52 -0400
+	Tue, 28 Aug 2012 13:37:48 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, vgoyal@redhat.com,
         mpatocka@redhat.com, bharrosh@panasas.com,
         Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v7 5/9] block: Kill bi_destructor
-Date: Tue, 28 Aug 2012 10:37:32 -0700
-Message-Id: <1346175456-1572-6-git-send-email-koverstreet@google.com>
+Subject: [PATCH v7 3/9] block: Add bio_reset()
+Date: Tue, 28 Aug 2012 10:37:30 -0700
+Message-Id: <1346175456-1572-4-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346175456-1572-1-git-send-email-koverstreet@google.com>
 References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
@@ -23,168 +23,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we've got generic code for freeing bios allocated from bio
-pools, this isn't needed anymore.
+Reusing bios is something that's been highly frowned upon in the past,
+but driver code keeps doing it anyways. If it's going to happen anyways,
+we should provide a generic method.
 
-This also changes the semantics of bio_free() a bit - it now also frees
-bios allocated by bio_kmalloc(). It's also no longer exported, as
-without bi_destructor there should be no need for it to be called
-anywhere else.
+This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
+was open coding it, by doing a bio_init() and resetting bi_destructor.
 
-v5: Switch to BIO_KMALLOC_POOL ((void *)~0), per Boaz
-v6: BIO_KMALLOC_POOL now NULL, drop bio_free's EXPORT_SYMBOL
-v7: No #define BIO_KMALLOC_POOL anymore
+v5: Add a define BIO_RESET_BITS, to be very explicit about what parts of
+bio->bi_flags are saved.
+v6: Further commenting verbosity, per Tejun
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- Documentation/block/biodoc.txt |  5 -----
- block/blk-core.c               |  2 +-
- fs/bio.c                       | 33 ++++++++++++---------------------
- include/linux/bio.h            |  2 +-
- include/linux/blk_types.h      |  3 ---
- 5 files changed, 14 insertions(+), 31 deletions(-)
+ fs/bio.c                  | 14 ++++++++++++++
+ include/linux/bio.h       |  1 +
+ include/linux/blk_types.h | 21 +++++++++++++++++----
+ 3 files changed, 32 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/block/biodoc.txt b/Documentation/block/biodoc.txt
-index e418dc0..8df5e8e 100644
---- a/Documentation/block/biodoc.txt
-+++ b/Documentation/block/biodoc.txt
-@@ -465,7 +465,6 @@ struct bio {
-        bio_end_io_t	*bi_end_io;  /* bi_end_io (bio) */
-        atomic_t		bi_cnt;	     /* pin count: free when it hits zero */
-        void             *bi_private;
--       bio_destructor_t *bi_destructor; /* bi_destructor (bio) */
- };
- 
- With this multipage bio design:
-@@ -647,10 +646,6 @@ for a non-clone bio. There are the 6 pools setup for different size biovecs,
- so bio_alloc(gfp_mask, nr_iovecs) will allocate a vec_list of the
- given size from these slabs.
- 
--The bi_destructor() routine takes into account the possibility of the bio
--having originated from a different source (see later discussions on
--n/w to block transfers and kvec_cb)
--
- The bio_get() routine may be used to hold an extra reference on a bio prior
- to i/o submission, if the bio fields are likely to be accessed after the
- i/o is issued (since the bio may otherwise get freed in case i/o completion
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 4b4dbdf..f3780f5 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2807,7 +2807,7 @@ int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
- 
- free_and_out:
- 	if (bio)
--		bio_free(bio, bs);
-+		bio_free(bio);
- 	blk_rq_unprep_clone(rq);
- 
- 	return -ENOMEM;
 diff --git a/fs/bio.c b/fs/bio.c
-index 52da084..ce829c8 100644
+index e017f7a..52da084 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -233,10 +233,19 @@ fallback:
- 	return bvl;
+@@ -262,6 +262,20 @@ void bio_init(struct bio *bio)
  }
+ EXPORT_SYMBOL(bio_init);
  
--void bio_free(struct bio *bio, struct bio_set *bs)
-+void bio_free(struct bio *bio)
- {
-+	struct bio_set *bs = bio->bi_pool;
- 	void *p;
- 
-+	if (!bs) {
-+		/* Bio was allocated by bio_kmalloc() */
-+		if (bio_integrity(bio))
-+			bio_integrity_free(bio, fs_bio_set);
-+		kfree(bio);
-+		return;
-+	}
++void bio_reset(struct bio *bio)
++{
++	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
 +
- 	if (bio_has_allocated_vec(bio))
- 		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
- 
-@@ -252,7 +261,6 @@ void bio_free(struct bio *bio, struct bio_set *bs)
- 
- 	mempool_free(p, bs->bio_pool);
- }
--EXPORT_SYMBOL(bio_free);
- 
- void bio_init(struct bio *bio)
- {
-@@ -352,13 +360,6 @@ struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
- }
- EXPORT_SYMBOL(bio_alloc);
- 
--static void bio_kmalloc_destructor(struct bio *bio)
--{
--	if (bio_integrity(bio))
--		bio_integrity_free(bio, fs_bio_set);
--	kfree(bio);
--}
--
++	if (bio_integrity(bio))
++		bio_integrity_free(bio, bio->bi_pool);
++
++	bio_disassociate_task(bio);
++
++	memset(bio, 0, BIO_RESET_BYTES);
++	bio->bi_flags = flags|(1 << BIO_UPTODATE);
++}
++EXPORT_SYMBOL(bio_reset);
++
  /**
-  * bio_kmalloc - allocate a bio for I/O using kmalloc()
+  * bio_alloc_bioset - allocate a bio for I/O
   * @gfp_mask:   the GFP_ mask given to the slab allocator
-@@ -385,7 +386,7 @@ struct bio *bio_kmalloc(gfp_t gfp_mask, unsigned int nr_iovecs)
- 	bio->bi_flags |= BIO_POOL_NONE << BIO_POOL_OFFSET;
- 	bio->bi_max_vecs = nr_iovecs;
- 	bio->bi_io_vec = bio->bi_inline_vecs;
--	bio->bi_destructor = bio_kmalloc_destructor;
-+	bio->bi_pool = NULL;
- 
- 	return bio;
- }
-@@ -423,17 +424,7 @@ void bio_put(struct bio *bio)
- 	 */
- 	if (atomic_dec_and_test(&bio->bi_cnt)) {
- 		bio_disassociate_task(bio);
--		bio->bi_next = NULL;
--
--		/*
--		 * This if statement is temporary - bi_pool is replacing
--		 * bi_destructor, but bi_destructor will be taken out in another
--		 * patch.
--		 */
--		if (bio->bi_pool)
--			bio_free(bio, bio->bi_pool);
--		else
--			bio->bi_destructor(bio);
-+		bio_free(bio);
- 	}
- }
- EXPORT_SYMBOL(bio_put);
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ba60319..393c87e 100644
+index 2643589..ba60319 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -216,7 +216,7 @@ extern struct bio *bio_alloc(gfp_t, unsigned int);
- extern struct bio *bio_kmalloc(gfp_t, unsigned int);
- extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
- extern void bio_put(struct bio *);
--extern void bio_free(struct bio *, struct bio_set *);
-+extern void bio_free(struct bio *);
+@@ -226,6 +226,7 @@ extern void __bio_clone(struct bio *, struct bio *);
+ extern struct bio *bio_clone(struct bio *, gfp_t);
  
- extern void bio_endio(struct bio *, int);
- struct request_queue;
+ extern void bio_init(struct bio *);
++extern void bio_reset(struct bio *);
+ 
+ extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
+ extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
 diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 691edd1..7a9c047 100644
+index af9dd9d..691edd1 100644
 --- a/include/linux/blk_types.h
 +++ b/include/linux/blk_types.h
-@@ -84,11 +84,8 @@ struct bio {
- 	struct bio_integrity_payload *bi_integrity;  /* data integrity */
- #endif
+@@ -59,15 +59,19 @@ struct bio {
+ 	unsigned int		bi_seg_front_size;
+ 	unsigned int		bi_seg_back_size;
  
--	/* If bi_pool is non NULL, bi_destructor is not called */
- 	struct bio_set		*bi_pool;
++	bio_end_io_t		*bi_end_io;
++
++	void			*bi_private;
++
++	/*
++	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
++	 */
++
+ 	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
  
--	bio_destructor_t	*bi_destructor;	/* destructor */
+ 	atomic_t		bi_cnt;		/* pin count */
+ 
+ 	struct bio_vec		*bi_io_vec;	/* the actual vec list */
 -
+-	bio_end_io_t		*bi_end_io;
+-
+-	void			*bi_private;
+ #ifdef CONFIG_BLK_CGROUP
  	/*
- 	 * We can inline a number of vecs at the end of the bio, to avoid
- 	 * double allocations for a small number of bio_vecs. This member
+ 	 * Optional ioc and css associated with this bio.  Put on bio
+@@ -93,6 +97,8 @@ struct bio {
+ 	struct bio_vec		bi_inline_vecs[0];
+ };
+ 
++#define BIO_RESET_BYTES		offsetof(struct bio, bi_max_vecs)
++
+ /*
+  * bio flags
+  */
+@@ -108,6 +114,13 @@ struct bio {
+ #define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
+ #define BIO_QUIET	10	/* Make BIO Quiet */
+ #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
++
++/*
++ * Flags starting here get preserved by bio_reset() - this includes
++ * BIO_POOL_IDX()
++ */
++#define BIO_RESET_BITS	12
++
+ #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 
+ /*
 -- 
 1.7.12
 
