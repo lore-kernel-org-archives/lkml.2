@@ -1,123 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab2H1Fhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 01:37:51 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:35073 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751008Ab2H1Fht (ORCPT
+	id S1751957Ab2H1FqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 01:46:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57299 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab2H1FqR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 01:37:49 -0400
-Message-ID: <1346132253.12384.6.camel@localhost.localdomain>
-Subject: Re: Possible mptsas regression post 3.5.0
-From: Dan Williams <djbw@fb.com>
-To: John Drescher <drescherjm@gmail.com>
-CC: =?UTF-8?Q?=E7=8E=8B=E9=87=91=E6=B5=A6?= <jinpuwang@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <DL-MPTFusionLinux@lsi.com>
-Date: Mon, 27 Aug 2012 22:37:33 -0700
-In-Reply-To: <CAEhu1-7zGeZ-A0hkJ0=PqJart8f1zGyapWo-DP0fORuNTpj0sg@mail.gmail.com>
-References: <CAEhu1-6wq1YsNiscGMwP4ud0Q+MrViRzv=kcWCQSBNc8c68N5Q@mail.gmail.com>
-	 <CAEhu1-5VLuFsZomDZ1yxixqD7oLEhoXs+N698_VBkdGz5trK8g@mail.gmail.com>
-	 <CAEhu1-5sHQOTZ=KRxkpiAeBFC5BReR+svUGpp=9tk3drqJNg0A@mail.gmail.com>
-	 <CAD9gYJJQ+vsv12+-0e_nMtgs71Snvt4j2s48-HnwkrV2yOiwLQ@mail.gmail.com>
-	 <CAEhu1-7zGeZ-A0hkJ0=PqJart8f1zGyapWo-DP0fORuNTpj0sg@mail.gmail.com>
-Content-Type: multipart/mixed; boundary="=-S924lAQmV7yfbf0zLYMk"
-X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
+	Tue, 28 Aug 2012 01:46:17 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
+ accelerometer
+Thread-Topic: [PATCH v2] lis3lv02d: Add STMicroelectronics lis331dlh digital
+ accelerometer
+Thread-Index: AQHNgC+0NDpTyonaHU+HVTncuJ8wyZdlGIEAgAmmkqA=
+Date: Tue, 28 Aug 2012 05:45:46 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA20AD7@DBDE01.ent.ti.com>
+References: <1345617039-27469-1-git-send-email-anilkumar@ti.com>
+ <201208220748.39106.arnd@arndb.de>
+In-Reply-To: <201208220748.39106.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.132.219]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.428,0.0.0000
- definitions=2012-08-27_02:2012-08-28,2012-08-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-S924lAQmV7yfbf0zLYMk
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Hi Eric,
 
-On Mon, 2012-08-27 at 12:13 -0400, John Drescher wrote:
-> >> I have bisected it down to the following patch:
-> >>
-> >> Bisecting: 0 revisions left to test after this (roughly 0 steps)
-> >> [10f8d5b86743b33d841a175303e2bf67fd620f42] SCSI: fix hot unplug vs
-> >> async scan race
-> >>
-> >> It appears this patch caused the bad behavior although I have not
-> >> tested that yet. I am rebuilding the array (takes ~2 hours) from the
-> >> previous good bisect.
-> >>
+On Wed, Aug 22, 2012 at 13:18:38, Arnd Bergmann wrote:
+> On Wednesday 22 August 2012, AnilKumar Ch wrote:
+> > This patch adds support for lis331dlh digital accelerometer to the
+> > lis3lv02d driver family. Adds ID field for detecting the lis331dlh
+> > module, based on this ID field lis3lv02d driver will export the
+> > lis331dlh module functionality.
+> > 
+> > Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
 > 
-> Confirmed. This patch appears to cause the bug in my test setup.
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> [  339.406778] BUG: soft lockup - CPU#2 stuck for 23s! [kworker/u:8:2202]
-[..]
-> [  339.415268]  [<ffffffff8141782a>] scsi_remove_target+0xda/0x1f0
 
-I wonder if we are preventing scsi_device_dev_release_usercontext() from
-making forward progress?
+If there are no further comments could you please push
+this patch?
 
-...the attached patch should confirm this or give more info otherwise.
-
---
-Dan
-
-
---=-S924lAQmV7yfbf0zLYMk
-Content-Disposition: attachment; filename="dbg-scsi-remove-target.patch"
-Content-Type: text/x-patch; name="dbg-scsi-remove-target.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-scsi_remove_target: debug softlockup
-
-From: Dan Williams <djbw@fb.com>
-
-dump more info in the case where we get stuck trying to remove a device.
----
- drivers/scsi/scsi_sysfs.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 093d4f6..011f8ee 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -1032,8 +1032,11 @@ void scsi_remove_target(struct device *dev)
- {
- 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
- 	struct scsi_target *starget, *found;
-+	struct scsi_target *found_log[3];
- 	unsigned long flags;
- 
-+	memset(found_log, 0, sizeof(found_log));
-+
-  restart:
- 	found = NULL;
- 	spin_lock_irqsave(shost->host_lock, flags);
-@@ -1041,8 +1044,24 @@ void scsi_remove_target(struct device *dev)
- 		if (starget->state == STARGET_DEL)
- 			continue;
- 		if (starget->dev.parent == dev || &starget->dev == dev) {
-+			int i;
-+
- 			found = starget;
- 			found->reap_ref++;
-+			for (i = 0; i < ARRAY_SIZE(found_log); i++)
-+				if (!found_log[i]) {
-+					found_log[i] = found;
-+					break;
-+				} else if (found_log[i] == found) {
-+					struct scsi_device *sdev = NULL;
-+
-+					if (!list_empty(&found->devices))
-+						sdev = list_entry(found->devices.next, typeof(*sdev), same_target_siblings);
-+					pr_err_once("%s[%d]: reap %d:%d state: %d reap: %d dev_del: %d\n",
-+						    __func__, i, found->channel, found->id,
-+						    found->state, found->reap_ref,
-+						    sdev ? work_busy(&sdev->ew.work) ? 2 : 1 : 0);
-+				}
- 			break;
- 		}
- 	}
-
---=-S924lAQmV7yfbf0zLYMk--
+Thanks
+AnilKumar
