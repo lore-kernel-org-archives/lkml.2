@@ -1,154 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab2H1KZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 06:25:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42510 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab2H1KZT convert rfc822-to-8bit (ORCPT
+	id S1751869Ab2H1Kum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 06:50:42 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18836 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab2H1Kul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 06:25:19 -0400
-From: "Patil, Rachna" <rachna@ti.com>
-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: RE: [PATCH 2/5] MFD: ti_tscadc: Add support for TI's TSC/ADC
- MFDevice
-Thread-Topic: [PATCH 2/5] MFD: ti_tscadc: Add support for TI's TSC/ADC
- MFDevice
-Thread-Index: AQHNgR9K8DmVvSZm4k+XL7TPEqDyqZdnYVWAgAeqykA=
-Date: Tue, 28 Aug 2012 10:25:04 +0000
-Message-ID: <4CE347531D4CA947960AF71FF095B9323E94FA2D@DBDE01.ent.ti.com>
-References: <1345718997-18304-1-git-send-email-rachna@ti.com>
- <20120823184830.GE27787@darwin>
-In-Reply-To: <20120823184830.GE27787@darwin>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Aug 2012 06:50:41 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 28 Aug 2012 03:50:35 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <sameo@linux.intel.com>,
+        <lrg@ti.com>
+CC: <swarren@wwwdotorg.com>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regulator: tps6586x: register regulator even if no init data
+Date: Tue, 28 Aug 2012 15:59:26 +0530
+Message-ID: <1346149767-31602-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Register all TPS6586x regulators even if there is no regulator
+init data for platform i.e. without any user-supplied constraints.
 
-On Fri, Aug 24, 2012 at 00:18:31, Matthias Kaehlcke wrote:
-> Hi,
-> 
-> El Thu, Aug 23, 2012 at 04:19:57PM +0530 Patil, Rachna ha dit:
-> 
-> > Add the mfd core driver which supports touchscreen and ADC.
-> > With this patch we are only adding infrastructure to support the MFD 
-> > clients.
-> > 
-> > Signed-off-by: Patil, Rachna <rachna@ti.com>
-> > ---
-> > diff --git a/drivers/mfd/ti_tscadc.c b/drivers/mfd/ti_tscadc.c ...
-> > +static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
-> > +{
-> > +	struct ti_tscadc_dev		*tscadc;
-> > +	int				err, ctrl;
-> > +	int				clk_value, clock_rate;
-> > +	struct resource			*res;
-> > +	struct clk			*clk;
-> > +
-> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	if (!res) {
-> > +		dev_err(&pdev->dev, "no memory resource defined.\n");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	/* Allocate memory for device */
-> > +	tscadc = kzalloc(sizeof(struct ti_tscadc_dev), GFP_KERNEL);
-> > +	if (!tscadc) {
-> > +		dev_err(&pdev->dev, "failed to allocate memory.\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	res = request_mem_region(res->start, resource_size(res), pdev->name);
-> > +	if (!res) {
-> > +		dev_err(&pdev->dev, "failed to reserve registers.\n");
-> > +		err = -EBUSY;
-> > +		goto err_free_mem;
-> > +	}
-> > +
-> > +	tscadc->tscadc_base = ioremap(res->start, resource_size(res));
-> > +	if (!tscadc->tscadc_base) {
-> > +		dev_err(&pdev->dev, "failed to map registers.\n");
-> > +		err = -ENOMEM;
-> > +		goto err_release_mem;
-> > +	}
-> > +
-> > +	tscadc->irq = platform_get_irq(pdev, 0);
-> > +	if (tscadc->irq < 0) {
-> > +		dev_err(&pdev->dev, "no irq ID is specified.\n");
-> > +		return -ENODEV;
-> 
-> goto err_iounmap_mem;
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+This patch make sure that all chip regulators get registered
+even there is no user-supplied.
+This is based on discussion on following patch about registering
+rails without init data.
+	max8907: fix use of possibly NULL idata
 
-Yes. Will add this.
+ drivers/mfd/tps6586x.c                 |   16 ++++++++--------
+ drivers/regulator/tps6586x-regulator.c |    3 +++
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
-> 
-> > ...
-> > +err_fail:
-> > +	pm_runtime_put_sync(&pdev->dev);
-> > +	pm_runtime_disable(&pdev->dev);
-> > +	iounmap(tscadc->tscadc_base);
-> > +err_release_mem:
-> > +	release_mem_region(res->start, resource_size(res));
-> > +	mfd_remove_devices(tscadc->dev);
-> > +err_free_mem:
-> > +	platform_set_drvdata(pdev, NULL);
-> 
-> shouldn't be necessary as the platform device doesn't exist any longer
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index 380a3c8..f5dac8a 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -396,19 +396,19 @@ static struct tps6586x_platform_data *tps6586x_parse_dt(struct i2c_client *clien
+ 	for (i = 0, j = 0; i < num && j < count; i++) {
+ 		struct regulator_init_data *reg_idata;
+ 
+-		if (!tps6586x_matches[i].init_data)
+-			continue;
+-
+ 		reg_idata  = tps6586x_matches[i].init_data;
+ 		devs[j].name = "tps6586x-regulator";
+ 		devs[j].platform_data = tps6586x_matches[i].init_data;
+ 		devs[j].id = (int)tps6586x_matches[i].driver_data;
+-		if (devs[j].id == TPS6586X_ID_SYS)
+-			sys_rail_name = reg_idata->constraints.name;
+ 
+-		if ((devs[j].id == TPS6586X_ID_LDO_5) ||
+-			(devs[j].id == TPS6586X_ID_LDO_RTC))
+-			reg_idata->supply_regulator = sys_rail_name;
++		if (tps6586x_matches[i].init_data) {
++			if (devs[j].id == TPS6586X_ID_SYS)
++				sys_rail_name = reg_idata->constraints.name;
++
++			if ((devs[j].id == TPS6586X_ID_LDO_5) ||
++				(devs[j].id == TPS6586X_ID_LDO_RTC))
++				reg_idata->supply_regulator = sys_rail_name;
++		}
+ 
+ 		devs[j].of_node = tps6586x_matches[i].of_node;
+ 		j++;
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index ce1e7cb..4508222 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -332,6 +332,9 @@ static int __devinit tps6586x_regulator_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, rdev);
+ 
++	if (!pdev->dev.platform_data)
++		return 0;
++
+ 	return tps6586x_regulator_set_slew_rate(pdev);
+ }
+ 
+-- 
+1.7.1.1
 
-Ok. Will remove this.
-
-> 
-> > ...
-> > +static int __devexit ti_tscadc_remove(struct platform_device *pdev) {
-> > +	struct ti_tscadc_dev	*tscadc = platform_get_drvdata(pdev);
-> > +	struct resource		*res;
-> > +
-> > +	tscadc_writel(tscadc, REG_SE, 0x00);
-> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	iounmap(tscadc->tscadc_base);
-> > +	release_mem_region(res->start, resource_size(res));
-> > +
-> > +	pm_runtime_put_sync(&pdev->dev);
-> > +	pm_runtime_disable(&pdev->dev);
-> > +
-> > +	mfd_remove_devices(tscadc->dev);
-> > +	kfree(tscadc);
-> > +
-> > +	platform_set_drvdata(pdev, NULL);
-> 
-> same as above
-
-Will correct this as well.
-
-> 
-> best regards
-> 
-> --
-> Matthias Kaehlcke
-> Embedded Linux Developer
-> Amsterdam
-> 
->          The only way to do great work is to love what you do
->                             (Steve Jobs)
->                                                                  .''`.
->     using free software / Debian GNU/Linux | http://debian.org  : :'  :
->                                                                 `. `'`
-> gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
-> 
-
-Thanks & Regards,
-Rachna
