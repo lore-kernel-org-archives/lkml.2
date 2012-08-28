@@ -1,85 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2H1QLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 12:11:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44422 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753022Ab2H1QLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 12:11:40 -0400
-References: <1345852516-3125-1-git-send-email-jacob.shin@amd.com> <1345852516-3125-4-git-send-email-jacob.shin@amd.com> <CAE9FiQUjaBSn0q=+om7+CPjLXVD9Pemf=mNvgYG7C3bE5XxOSw@mail.gmail.com> <20120825042409.GD26127@jshin-Toonie> <CAE9FiQX2DApN=OU=xTK3VA+p1mDJ=U+qFyyRkaeTiH+xF5dQXw@mail.gmail.com> <20120828160626.GA21454@jshin-Toonie>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120828160626.GA21454@jshin-Toonie>
+	id S1753483Ab2H1QMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 12:12:37 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:58914 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753022Ab2H1QMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 12:12:36 -0400
+Message-ID: <1346170350.12384.9.camel@localhost.localdomain>
+Subject: Re: Possible mptsas regression post 3.5.0
+From: Dan Williams <djbw@fb.com>
+To: John Drescher <drescherjm@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <DL-MPTFusionLinux@lsi.com>
+Date: Tue, 28 Aug 2012 09:12:30 -0700
+In-Reply-To: <CAEhu1-6nKpX=tqES95AsPn-yFioS8-5+mcU1maSYh0AozVT5PA@mail.gmail.com>
+References: <CAEhu1-6wq1YsNiscGMwP4ud0Q+MrViRzv=kcWCQSBNc8c68N5Q@mail.gmail.com>
+	 <CAEhu1-5VLuFsZomDZ1yxixqD7oLEhoXs+N698_VBkdGz5trK8g@mail.gmail.com>
+	 <CAEhu1-5sHQOTZ=KRxkpiAeBFC5BReR+svUGpp=9tk3drqJNg0A@mail.gmail.com>
+	 <CAD9gYJJQ+vsv12+-0e_nMtgs71Snvt4j2s48-HnwkrV2yOiwLQ@mail.gmail.com>
+	 <CAEhu1-7zGeZ-A0hkJ0=PqJart8f1zGyapWo-DP0fORuNTpj0sg@mail.gmail.com>
+	 <1346132253.12384.6.camel@localhost.localdomain>
+	 <CAEhu1-6nKpX=tqES95AsPn-yFioS8-5+mcU1maSYh0AozVT5PA@mail.gmail.com>
+Content-Type: multipart/mixed; boundary="=-JLjCog8p08IZVNonnz3z"
+X-Mailer: Evolution 3.4.3 (3.4.3-2.fc17) 
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 3/5] x86: Only direct map addresses that are marked as E820_RAM
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 28 Aug 2012 09:11:26 -0700
-To: Jacob Shin <jacob.shin@amd.com>, Yinghai Lu <yinghai@kernel.org>
-CC: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Dave Young <dyoung@redhat.com>,
-        Chao Wang <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <9cbd5a22-c3af-471c-bc25-1b1a7230f816@email.android.com>
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-08-28_06:2012-08-28,2012-08-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EFI runtime code we need to map, but we shouldn't use as RAM.  I suspect this is also true for the ACPI areas.
+--=-JLjCog8p08IZVNonnz3z
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-Jacob Shin <jacob.shin@amd.com> wrote:
+On Tue, 2012-08-28 at 10:03 -0400, John Drescher wrote:
+> > I wonder if we are preventing scsi_device_dev_release_usercontext() from
+> > making forward progress?
+> >
+> > ...the attached patch should confirm this or give more info otherwise.
+> >
+> 
+> [  174.758218] scsi_remove_target[0]: reap 0:0 state: 2 reap: 1 dev_del: 1
 
->On Fri, Aug 24, 2012 at 09:54:04PM -0700, Yinghai Lu wrote:
->> On Fri, Aug 24, 2012 at 9:24 PM, Jacob Shin <jacob.shin@amd.com>
->wrote:
->> > On Fri, Aug 24, 2012 at 06:07:01PM -0700, Yinghai Lu wrote:
->> >> On Fri, Aug 24, 2012 at 4:55 PM, Jacob Shin <jacob.shin@amd.com>
->wrote:
->> >>
->> >> looks like you could avoid add pfn_mapped[] array.
->> >>
->> >> pfn_range_is_mapped() should be
->> >> check max_low_pfn_mapped, max_pfn_mapped with
->> >> e820_all_mapped(start, end, E820_RAM).
->> >
->> > Hmm .. I guess that could work .. but what about EFI code that keys
->off of
->> > EFI memory map? Does the EFI code update e820 and mark as E820_RAM
->whatever
->> > ranges that it calls init_memory_mapping on (via efi_ioremap?)
->> 
->> they are converted to e820 memmap before init_memory_mapping is
->called.
->
->Yinghai, looking into this further on my EFI enabled machine, there is
->a
->memory range where:
->
->- e820 marks it as E820_RESERVED
->- EFI memory map marks it as EFI_RUNTIME_SERVICES_DATA
->
->During EFI init, the range is added (redundantly) to e820 as
->E820_RESERVED,
->but during efi_enter_virtual_mode, direct mappings are created for the
->range with a call to efi_ioremap.
->
->Another such region is EFI_RUNTIME_SERVICES_CODE which is marked as
->ACPI NVS.
->
->So these are not E820_RAM, but direct mapped by EFI code path .. what
->do
->we do here? I think we should just stick with keeping the pfn_mapped[]
->array .. no?
->
->-Jacob
->
->> 
->> Thanks
->> 
->> Yinghai
->> 
+Thanks!  Does the attached patch fix the issue for you?
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+--
+Dan
+
+
+--=-JLjCog8p08IZVNonnz3z
+Content-Disposition: attachment;
+	filename="test-scsi-remove-target-fix.patch"
+Content-Type: text/x-patch; name="test-scsi-remove-target-fix.patch";
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+scsi_remove_target: fix softlockup condition
+
+From: Dan Williams <djbw@fb.com>
+
+Don't restart lookup of stargets in the multi-target case, just arrange to
+traverse the list once, on the assumption that new targets are always added at
+the end.  There is no guarantee that the target will change state in
+scsi_target_reap() so we can end up spinning if we restart.
+---
+ drivers/scsi/scsi_sysfs.c |   30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 093d4f6..ce5224c 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1031,33 +1031,31 @@ static void __scsi_remove_target(struct scsi_target *starget)
+ void scsi_remove_target(struct device *dev)
+ {
+ 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
+-	struct scsi_target *starget, *found;
++	struct scsi_target *starget, *last = NULL;
+ 	unsigned long flags;
+ 
+- restart:
+-	found = NULL;
++	/* remove targets being careful to lookup next entry before
++	 * deleting the last
++	 */
+ 	spin_lock_irqsave(shost->host_lock, flags);
+ 	list_for_each_entry(starget, &shost->__targets, siblings) {
+ 		if (starget->state == STARGET_DEL)
+ 			continue;
+ 		if (starget->dev.parent == dev || &starget->dev == dev) {
+-			found = starget;
+-			found->reap_ref++;
+-			break;
++			/* assuming new targets arrive at the end */
++			starget->reap_ref++;
++			spin_unlock_irqrestore(shost->host_lock, flags);
++			if (last)
++				scsi_target_reap(last);
++			last = starget;
++			__scsi_remove_target(starget);
++			spin_lock_irqsave(shost->host_lock, flags);
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+ 
+-	if (found) {
+-		__scsi_remove_target(found);
+-		scsi_target_reap(found);
+-		/* in the case where @dev has multiple starget children,
+-		 * continue removing.
+-		 *
+-		 * FIXME: does such a case exist?
+-		 */
+-		goto restart;
+-	}
++	if (last)
++		scsi_target_reap(last);
+ }
+ EXPORT_SYMBOL(scsi_remove_target);
+ 
+
+--=-JLjCog8p08IZVNonnz3z--
