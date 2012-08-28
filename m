@@ -1,151 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab2H1TJq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 15:09:46 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:4329 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab2H1TJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 15:09:27 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, bhelgaas@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, vijaymohan.pandarathil@hp.com,
-        shaohua.li@intel.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v5 1/5] ACPI: Add acpi_pr_<level>() interfaces
-Date: Tue, 28 Aug 2012 13:02:57 -0600
-Message-Id: <1346180581-12641-2-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1346180581-12641-1-git-send-email-toshi.kani@hp.com>
-References: <1346180581-12641-1-git-send-email-toshi.kani@hp.com>
+	id S1753328Ab2H1TOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 15:14:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39352 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab2H1TOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 15:14:36 -0400
+Date: Tue, 28 Aug 2012 12:14:26 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] tile: Fix personality bits handling upon exec()
+Message-ID: <alpine.LNX.2.00.1208281210590.22447@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces acpi_pr_<level>(), where <level> is a kernel
-message level such as err/warn/info, to support improved logging
-messages for ACPI, esp. for hotplug operations.  acpi_pr_<level>()
-appends "ACPI" prefix and ACPI object path to the messages.  This
-improves diagnosis of hotplug operations since an error message in
-a log file now identifies an object that caused an issue.
+Historically, the top three bytes of personality have been used for things 
+such as ADDR_NO_RANDOMIZE, which made sense only for specific 
+architectures.
 
-acpi_pr_<level>() takes acpi_handle as an argument, which is passed
-to ACPI hotplug notify handlers from the ACPICA.  Therefore, it is
-always available unlike other kernel objects, such as device.
+We now however have a flag there that is general no matter the
+architecture (UNAME26); generally we have to be careful to preserve the
+personality flags across exec().
 
-For example:
-  acpi_pr_err(handle, "Device don't exist, dropping EJECT\n");
-logs an error message like this at KERN_ERR.
-  ACPI: \_SB_.SCK4.CPU4: Device don't exist, dropping EJECT
+This patch fixes tile architecture not to forcefully overwrite
+personality flags during exec().
 
-ACPI drivers can use acpi_pr_<level>() when they need to identify
-a target ACPI object path in their messages, such as error cases.
-The usage model is similar to dev_<level>().  acpi_pr_<level>() can
-be used when device is not created/valid, which may be the case in
-ACPI hotplug handlers.  ACPI object path is also consistent on the
-platform, unlike device name that changes over hotplug operations.
+In addition to that, we fix two other things along the way:
 
-ACPI drivers should use dev_<level>() when device is valid and
-acpi_pr_<level>() is already used by the caller in its error path.
-Device name provides more user friendly information.
+- exec_domain switching is fixed -- set_personality() should always
+  be used instead of directly assigning to current->personality.
+- as pointed out by Arnd Bergmann, PER_LINUX_32BIT is not used anywhere
+  by tile, so let's just drop that in favor of PER_LINUX
 
-ACPI drivers also continue to use pr_<level>() when messages do not
-need to specify device information, such as boot-up messages.
-
-Note: ACPI_[WARNING|INFO|ERROR]() are intended for the ACPICA and
-are not associated with the kernel message level.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/acpi/utils.c    |   34 ++++++++++++++++++++++++++++++++++
- include/acpi/acpi_bus.h |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index 3e87c9c..ec0c6f9 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -454,3 +454,37 @@ acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
- #endif
- }
- EXPORT_SYMBOL(acpi_evaluate_hotplug_ost);
-+
-+/**
-+ * acpi_printk: Print messages with ACPI prefix and object path
-+ *
-+ * This function is intended to be called through acpi_pr_<level> macros.
-+ */
-+void
-+acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	struct acpi_buffer buffer = {
-+		.length = ACPI_ALLOCATE_BUFFER,
-+		.pointer = NULL
-+	};
-+	const char *path;
-+	acpi_status ret;
-+
-+	va_start(args, fmt);
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	ret = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
-+	if (ret == AE_OK)
-+		path = buffer.pointer;
-+	else
-+		path = "<n/a>";
-+
-+	printk("%sACPI: %s: %pV", level, path, &vaf);
-+
-+	va_end(args);
-+	kfree(buffer.pointer);
-+}
-+EXPORT_SYMBOL(acpi_printk);
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index bde976e..a3f9a6b 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -85,6 +85,37 @@ struct acpi_pld {
+Andrew,
+
+this is kind of followup to 
+cross-arch-dont-corrupt-personality-flags-upon-exec.patch but it fixes 
+a little bit more for tile compared to what we did for other 
+architectures, so I think it makes sense to take it as a separate patch 
+and not fold it into.
+
+Thanks.
+
+ arch/tile/include/asm/elf.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
+index d16d006..f8ccf08 100644
+--- a/arch/tile/include/asm/elf.h
++++ b/arch/tile/include/asm/elf.h
+@@ -156,12 +156,12 @@ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
+ #undef SET_PERSONALITY
+ #define SET_PERSONALITY(ex) \
+ do { \
+-	current->personality = PER_LINUX; \
++	set_personality(PER_LINUX | (current->personality & (~PER_MASK))); \
+ 	current_thread_info()->status &= ~TS_COMPAT; \
+ } while (0)
+ #define COMPAT_SET_PERSONALITY(ex) \
+ do { \
+-	current->personality = PER_LINUX_32BIT; \
++	set_personality(PER_LINUX | (current->personality & (~PER_MASK))); \
+ 	current_thread_info()->status |= TS_COMPAT; \
+ } while (0)
  
- acpi_status
- acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld *pld);
-+
-+void acpi_printk(const char *level, acpi_handle handle, const char *fmt, ...);
-+
-+#define acpi_pr_emerg(handle, fmt, ...)				\
-+	acpi_printk(KERN_EMERG, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_alert(handle, fmt, ...)				\
-+	acpi_printk(KERN_ALERT, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_crit(handle, fmt, ...)				\
-+	acpi_printk(KERN_CRIT, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_err(handle, fmt, ...)				\
-+	acpi_printk(KERN_ERR, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_warn(handle, fmt, ...)				\
-+	acpi_printk(KERN_WARNING, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_notice(handle, fmt, ...)			\
-+	acpi_printk(KERN_NOTICE, handle, fmt, ##__VA_ARGS__)
-+#define acpi_pr_info(handle, fmt, ...)				\
-+	acpi_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
-+
-+/* REVISIT: Support CONFIG_DYNAMIC_DEBUG when necessary */
-+#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
-+#define acpi_pr_debug(handle, fmt, ...)					\
-+	acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
-+#else
-+#define acpi_pr_debug(handle, fmt, ...)					\
-+({									\
-+	if (0)								\
-+		acpi_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__);	\
-+	0;								\
-+})
-+#endif
-+
- #ifdef CONFIG_ACPI
- 
- #include <linux/proc_fs.h>
 -- 
-1.7.7.6
-
+Jiri Kosina
+SUSE Labs
