@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab2H1TOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 15:14:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39352 "EHLO mx2.suse.de"
+	id S1752723Ab2H1T3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 15:29:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35644 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602Ab2H1TOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 15:14:36 -0400
-Date: Tue, 28 Aug 2012 12:14:26 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] tile: Fix personality bits handling upon exec()
-Message-ID: <alpine.LNX.2.00.1208281210590.22447@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751199Ab2H1T3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 15:29:45 -0400
+Date: Tue, 28 Aug 2012 15:25:27 -0400
+From: Dave Jones <davej@redhat.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Remove CONFIG_EXPERIMENTAL
+Message-ID: <20120828192527.GA9921@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Jeff Garzik <jgarzik@pobox.com>, Kees Cook <keescook@chromium.org>,
+	linux-kernel@vger.kernel.org
+References: <20120827215356.GA27961@www.outflux.net>
+ <CAFtxgO5QSYwQcHCbaXoT6pauTYPGpNBC31vufcAOUb5i7c-UfA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFtxgO5QSYwQcHCbaXoT6pauTYPGpNBC31vufcAOUb5i7c-UfA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Historically, the top three bytes of personality have been used for things 
-such as ADDR_NO_RANDOMIZE, which made sense only for specific 
-architectures.
+On Tue, Aug 28, 2012 at 10:10:48AM -0400, Jeff Garzik wrote:
+ > On Mon, Aug 27, 2012 at 5:53 PM, Kees Cook <keescook@chromium.org> wrote:
+ > > This config item has not carried much meaning for a while now and is
+ > > almost always enabled by default. Remove it and adjust various config
+ > > logic and documentation.
+ > 
+ > It does have meaning...  !CONFIG_EXPERIMENTAL means more stable.  In
+ > the past things would get CONFIG_EXPERIMENTAL until they've been tried
+ > in the field or otherwise hit some goal in the developer's mind.
+ > 
+ > Is this a practical distinction?  Probably not, as the markers often
+ > go unmaintained...
 
-We now however have a flag there that is general no matter the
-architecture (UNAME26); generally we have to be careful to preserve the
-personality flags across exec().
+That's exactly the point. We have 'experimental' code that's been marked
+as such for 10-15 years. Maturity has nothing to do with that option,
+even if that was its original intention.
 
-This patch fixes tile architecture not to forcefully overwrite
-personality flags during exec().
+The reality seems to be that near everyone sets EXPERIMENTAL because
+there's so much stuff tucked behind it, that they want at least some of it.
+They aren't choosing this option because they care about how mature the
+code is, they're setting it because they *need* something that it's hidden behind.
 
-In addition to that, we fix two other things along the way:
+What *might* be a more useful thing, is instead of adding new options
+depending on EXPERIMENTAL, introduce something like CONFIG_NEW_IN_3_6
+(and a release or so later, when it's not considered new any more,
+drop it). But I'm not convinced that even this wouldn't succumb to
+the same neglect that EXPERIMENTAL has.
 
-- exec_domain switching is fixed -- set_personality() should always
-  be used instead of directly assigning to current->personality.
-- as pointed out by Arnd Bergmann, PER_LINUX_32BIT is not used anywhere
-  by tile, so let's just drop that in favor of PER_LINUX
+	Dave
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
----
-
-Andrew,
-
-this is kind of followup to 
-cross-arch-dont-corrupt-personality-flags-upon-exec.patch but it fixes 
-a little bit more for tile compared to what we did for other 
-architectures, so I think it makes sense to take it as a separate patch 
-and not fold it into.
-
-Thanks.
-
- arch/tile/include/asm/elf.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-index d16d006..f8ccf08 100644
---- a/arch/tile/include/asm/elf.h
-+++ b/arch/tile/include/asm/elf.h
-@@ -156,12 +156,12 @@ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
- #undef SET_PERSONALITY
- #define SET_PERSONALITY(ex) \
- do { \
--	current->personality = PER_LINUX; \
-+	set_personality(PER_LINUX | (current->personality & (~PER_MASK))); \
- 	current_thread_info()->status &= ~TS_COMPAT; \
- } while (0)
- #define COMPAT_SET_PERSONALITY(ex) \
- do { \
--	current->personality = PER_LINUX_32BIT; \
-+	set_personality(PER_LINUX | (current->personality & (~PER_MASK))); \
- 	current_thread_info()->status |= TS_COMPAT; \
- } while (0)
- 
--- 
-Jiri Kosina
-SUSE Labs
