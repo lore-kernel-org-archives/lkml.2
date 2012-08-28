@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab2H1Rht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 13:37:49 -0400
+	id S1753178Ab2H1Rhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 13:37:54 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43098 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab2H1Rhq (ORCPT
+	with ESMTP id S1752725Ab2H1Rhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 13:37:46 -0400
+	Tue, 28 Aug 2012 13:37:50 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, vgoyal@redhat.com,
         mpatocka@redhat.com, bharrosh@panasas.com,
-        Alasdair Kergon <agk@redhat.com>
-Subject: [PATCH v7 2/9] dm: Use bioset's front_pad for dm_rq_clone_bio_info
-Date: Tue, 28 Aug 2012 10:37:29 -0700
-Message-Id: <1346175456-1572-3-git-send-email-koverstreet@google.com>
+        Peter Osterlund <petero2@telia.com>
+Subject: [PATCH v7 4/9] pktcdvd: Switch to bio_kmalloc()
+Date: Tue, 28 Aug 2012 10:37:31 -0700
+Message-Id: <1346175456-1572-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1346175456-1572-1-git-send-email-koverstreet@google.com>
 References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
@@ -23,120 +23,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, dm_rq_clone_bio_info needed to be freed by the bio's
-destructor to avoid a memory leak in the blk_rq_prep_clone() error path.
-This gets rid of a memory allocation and means we can kill
-dm_rq_bio_destructor.
+This is prep work for killing bi_destructor - previously, pktcdvd had
+its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
+necessitating its own bi_destructor implementation.
 
-The _rq_bio_info_cache kmem cache is unused now and needs to be deleted,
-but due to the way io_pool is used and overloaded this looks not quite
-trivial so I'm leaving it for a later patch.
-
-v6: Fix comment on struct dm_rq_clone_bio_info, per Tejun
+v5: Un-reorder some functions, to make the patch easier to review
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Alasdair Kergon <agk@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+CC: Peter Osterlund <petero2@telia.com>
 ---
- drivers/md/dm.c | 44 ++++++++++++++++----------------------------
- 1 file changed, 16 insertions(+), 28 deletions(-)
+ drivers/block/pktcdvd.c | 52 +++++++------------------------------------------
+ 1 file changed, 7 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 0c3d6dd..9206781 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -86,12 +86,17 @@ struct dm_rq_target_io {
- };
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index ba66e44..2e7de7a 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -522,38 +522,6 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
+ 	}
+ }
  
+-static void pkt_bio_destructor(struct bio *bio)
+-{
+-	kfree(bio->bi_io_vec);
+-	kfree(bio);
+-}
+-
+-static struct bio *pkt_bio_alloc(int nr_iovecs)
+-{
+-	struct bio_vec *bvl = NULL;
+-	struct bio *bio;
+-
+-	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
+-	if (!bio)
+-		goto no_bio;
+-	bio_init(bio);
+-
+-	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
+-	if (!bvl)
+-		goto no_bvl;
+-
+-	bio->bi_max_vecs = nr_iovecs;
+-	bio->bi_io_vec = bvl;
+-	bio->bi_destructor = pkt_bio_destructor;
+-
+-	return bio;
+-
+- no_bvl:
+-	kfree(bio);
+- no_bio:
+-	return NULL;
+-}
+-
  /*
-- * For request-based dm.
-- * One of these is allocated per bio.
-+ * For request-based dm - the bio clones we allocate are embedded in these
-+ * structs.
-+ *
-+ * We allocate these with bio_alloc_bioset, using the front_pad parameter when
-+ * the bioset is created - this means the bio has to come at the end of the
-+ * struct.
+  * Allocate a packet_data struct
   */
- struct dm_rq_clone_bio_info {
- 	struct bio *orig;
- 	struct dm_rq_target_io *tio;
-+	struct bio clone;
- };
+@@ -567,7 +535,7 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 		goto no_pkt;
  
- union map_info *dm_get_mapinfo(struct bio *bio)
-@@ -211,6 +216,11 @@ struct dm_md_mempools {
- static struct kmem_cache *_io_cache;
- static struct kmem_cache *_tio_cache;
- static struct kmem_cache *_rq_tio_cache;
+ 	pkt->frames = frames;
+-	pkt->w_bio = pkt_bio_alloc(frames);
++	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
+ 	if (!pkt->w_bio)
+ 		goto no_bio;
+ 
+@@ -581,9 +549,10 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 	bio_list_init(&pkt->orig_bios);
+ 
+ 	for (i = 0; i < frames; i++) {
+-		struct bio *bio = pkt_bio_alloc(1);
++		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
+ 		if (!bio)
+ 			goto no_rd_bio;
 +
-+/*
-+ * Unused now, and needs to be deleted. But since io_pool is overloaded and it's
-+ * still used for _io_cache, I'm leaving this for a later cleanup
-+ */
- static struct kmem_cache *_rq_bio_info_cache;
+ 		pkt->r_bios[i] = bio;
+ 	}
  
- static int __init local_init(void)
-@@ -467,16 +477,6 @@ static void free_rq_tio(struct dm_rq_target_io *tio)
- 	mempool_free(tio, tio->md->tio_pool);
- }
- 
--static struct dm_rq_clone_bio_info *alloc_bio_info(struct mapped_device *md)
--{
--	return mempool_alloc(md->io_pool, GFP_ATOMIC);
--}
+@@ -1111,21 +1080,17 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
+ 	 * Schedule reads for missing parts of the packet.
+ 	 */
+ 	for (f = 0; f < pkt->frames; f++) {
+-		struct bio_vec *vec;
 -
--static void free_bio_info(struct dm_rq_clone_bio_info *info)
--{
--	mempool_free(info, info->tio->md->io_pool);
--}
--
- static int md_in_flight(struct mapped_device *md)
- {
- 	return atomic_read(&md->pending[READ]) +
-@@ -1460,30 +1460,17 @@ void dm_dispatch_request(struct request *rq)
- }
- EXPORT_SYMBOL_GPL(dm_dispatch_request);
+ 		int p, offset;
++
+ 		if (written[f])
+ 			continue;
++
+ 		bio = pkt->r_bios[f];
+-		vec = bio->bi_io_vec;
+-		bio_init(bio);
+-		bio->bi_max_vecs = 1;
++		bio_reset(bio);
+ 		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
+ 		bio->bi_bdev = pd->bdev;
+ 		bio->bi_end_io = pkt_end_io_read;
+ 		bio->bi_private = pkt;
+-		bio->bi_io_vec = vec;
+-		bio->bi_destructor = pkt_bio_destructor;
  
--static void dm_rq_bio_destructor(struct bio *bio)
--{
--	struct dm_rq_clone_bio_info *info = bio->bi_private;
--	struct mapped_device *md = info->tio->md;
--
--	free_bio_info(info);
--	bio_free(bio, md->bs);
--}
--
- static int dm_rq_bio_constructor(struct bio *bio, struct bio *bio_orig,
- 				 void *data)
- {
- 	struct dm_rq_target_io *tio = data;
--	struct mapped_device *md = tio->md;
--	struct dm_rq_clone_bio_info *info = alloc_bio_info(md);
--
--	if (!info)
--		return -ENOMEM;
-+	struct dm_rq_clone_bio_info *info =
-+		container_of(bio, struct dm_rq_clone_bio_info, clone);
+ 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
+ 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
+@@ -1418,14 +1383,11 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
+ 	}
  
- 	info->orig = bio_orig;
- 	info->tio = tio;
- 	bio->bi_end_io = end_clone_bio;
- 	bio->bi_private = info;
--	bio->bi_destructor = dm_rq_bio_destructor;
- 
- 	return 0;
- }
-@@ -2718,7 +2705,8 @@ struct dm_md_mempools *dm_alloc_md_mempools(unsigned type, unsigned integrity)
- 	if (!pools->tio_pool)
- 		goto free_io_pool_and_out;
- 
--	pools->bs = bioset_create(pool_size, 0);
-+	pools->bs = bioset_create(pool_size,
-+				  offsetof(struct dm_rq_clone_bio_info, clone));
- 	if (!pools->bs)
- 		goto free_tio_pool_and_out;
- 
+ 	/* Start the write request */
+-	bio_init(pkt->w_bio);
+-	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
++	bio_reset(pkt->w_bio);
+ 	pkt->w_bio->bi_sector = pkt->sector;
+ 	pkt->w_bio->bi_bdev = pd->bdev;
+ 	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
+ 	pkt->w_bio->bi_private = pkt;
+-	pkt->w_bio->bi_io_vec = bvec;
+-	pkt->w_bio->bi_destructor = pkt_bio_destructor;
+ 	for (f = 0; f < pkt->frames; f++)
+ 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
+ 			BUG();
 -- 
 1.7.12
 
