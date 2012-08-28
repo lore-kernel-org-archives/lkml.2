@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab2H1Ndg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 09:33:36 -0400
-Received: from noserose.net ([66.220.18.76]:43044 "HELO noserose.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752162Ab2H1Ndf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 09:33:35 -0400
-Message-Id: <3f93113bbc17094e23c299ae85735118ec217f17.1346158422.git.ecashin@coraid.com>
-In-Reply-To: <cover.1346158422.git.ecashin@coraid.com>
-References: <cover.1346158422.git.ecashin@coraid.com>
-From: Ed Cashin <ecashin@coraid.com>
-Date: Sat, 25 Aug 2012 10:39:50 -0400
-Subject: [PATCH 06/14] aoe: failover remote interface based on aoe_deadsecs parameter
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
+	id S1752925Ab2H1Nej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 09:34:39 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34046 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab2H1Neh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 09:34:37 -0400
+Message-ID: <503CC904.3050207@gmail.com>
+Date: Tue, 28 Aug 2012 15:35:00 +0200
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120826 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] virtio-ring: Allocate indirect buffers from cache
+ when possible
+References: <1346159043-16446-1-git-send-email-levinsasha928@gmail.com> <1346159043-16446-2-git-send-email-levinsasha928@gmail.com> <20120828132032.GB2039@redhat.com>
+In-Reply-To: <20120828132032.GB2039@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aoe_deadsecs module parameter allows the user to specify a hard
-limit on the number of seconds an AoE command can be retransmitted
-before the AoE block device is considered to have failed.
+On 08/28/2012 03:20 PM, Michael S. Tsirkin wrote:
+> On Tue, Aug 28, 2012 at 03:04:03PM +0200, Sasha Levin wrote:
+>> Currently if VIRTIO_RING_F_INDIRECT_DESC is enabled we will
+>> use indirect descriptors and allocate them using a simple
+>> kmalloc().
+>>
+>> This patch adds a cache which will allow indirect buffers under
+>> a configurable size to be allocated from that cache instead.
+>>
+>> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> 
+> I imagine this helps performance? Any numbers?
 
-Using aoe_deadsecs to determine the time we try using a different
-remote interface helps to ensure that the hard limit is not reached
-before we've tried to recover by sending to a different remote port.
+I ran benchmarks on the original RFC, I've re-tested it now and got similar
+numbers to the original ones (virtio-net using vhost-net, thresh=16):
 
-As a data storage target, the AoE target is unambiguously identified
-by its {major, minor} AoE address tuple, and an AoE target can have
-multiple MAC addresses.  However, note that "target" in the driver
-code and comments means a {major, minor, MAC address} tuple, as in
-"somewhere to send packets".
+Before:
+	Recv   Send    Send
+	Socket Socket  Message  Elapsed
+	Size   Size    Size     Time     Throughput
+	bytes  bytes   bytes    secs.    10^6bits/sec
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- drivers/block/aoe/aoe.h    |    1 -
- drivers/block/aoe/aoecmd.c |    8 +++-----
- 2 files changed, 3 insertions(+), 6 deletions(-)
+	 87380  16384  16384    10.00    4512.12
 
-diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
-index ffded64..d17b727 100644
---- a/drivers/block/aoe/aoe.h
-+++ b/drivers/block/aoe/aoe.h
-@@ -96,7 +96,6 @@ enum {
- 	TIMERTICK = HZ / 10,
- 	MINTIMER = HZ >> 2,
- 	MAXTIMER = HZ << 1,
--	HELPWAIT = 20,
- };
- 
- struct buf {
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index cf196ed..7f9cc44 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -632,11 +632,9 @@ rexmit_timer(ulong vp)
- 		list_del(pos);
- 
- 		t = f->t;
--		if (n > HELPWAIT) {
--			/* see if another target can help */
--			if (d->ntargets > 1)
--				d->htgt = t;
--		}
-+		if (n > aoe_deadsecs/2)
-+			d->htgt = t; /* see if another target can help */
-+
- 		if (t->nout == t->maxout) {
- 			if (t->maxout > 1)
- 				t->maxout--;
--- 
-1.7.2.5
+After:
+	Recv   Send    Send
+	Socket Socket  Message  Elapsed
+	Size   Size    Size     Time     Throughput
+	bytes  bytes   bytes    secs.    10^6bits/sec
 
+	 87380  16384  16384    10.00    5399.18
+
+
+Thanks,
+Sasha
