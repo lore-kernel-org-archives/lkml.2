@@ -1,164 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab2H1Ntr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 09:49:47 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33221 "EHLO e9.ny.us.ibm.com"
+	id S1752203Ab2H1N5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 09:57:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:40131 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188Ab2H1Ntq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 09:49:46 -0400
-Date: Tue, 28 Aug 2012 06:42:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Add rq->nr_uninterruptible count to dest cpu's rq while CPU goes
- down.
-Message-ID: <20120828134206.GH2961@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1345125384.29668.30.camel@twins>
- <CADZ9YHjPjExzuJWjziiezBch03Am0imQzDG4EDfG-NTWfz4V8A@mail.gmail.com>
- <1345128138.29668.42.camel@twins>
- <CADZ9YHjzNVz6nSqbnTgVYfwi2hz0KYuXC89GHw6UjL2GyGZ64A@mail.gmail.com>
- <1345139199.29668.46.camel@twins>
- <CADZ9YHgNhTGWicX0kFfrNoL17JkxfZcXryqqa-wHLVLh05SvAg@mail.gmail.com>
- <1345454817.23018.27.camel@twins>
- <20120820162657.GI2435@linux.vnet.ibm.com>
- <20120827184435.GA13883@linux.vnet.ibm.com>
- <CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
+	id S1751006Ab2H1N5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 09:57:12 -0400
+From: Rusty Russell <rusty@ozlabs.org>
+To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Cc: Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH] Remove CONFIG_EXPERIMENTAL
+In-Reply-To: <20120827215356.GA27961@www.outflux.net>
+References: <20120827215356.GA27961@www.outflux.net>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 28 Aug 2012 13:53:03 +0930
+Message-ID: <878vczwspk.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADZ9YHi-DGd71jxQpYyRfVUqdr-ks-znSeCtcBAccL7wRd3r5g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12082813-7182-0000-0000-00000269A347
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 12:57:09PM +0600, Rakib Mullick wrote:
-> Hello Paul,
-> 
-> On 8/28/12, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > On Mon, Aug 20, 2012 at 09:26:57AM -0700, Paul E. McKenney wrote:
-> >> On Mon, Aug 20, 2012 at 11:26:57AM +0200, Peter Zijlstra wrote:
-> >
-> > How about the following updated patch?
-> >
-> Actually, I was waiting for Peter's update.
+Kees Cook <keescook@chromium.org> writes:
 
-I was too, but chatted with Peter.
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. Remove it and adjust various config
+> logic and documentation.
 
-> > 							Thanx, Paul
-> >
-> > ------------------------------------------------------------------------
-> >
-> > sched: Fix load avg vs cpu-hotplug
-> >
-> > Rabik and Paul reported two different issues related to the same few
-> > lines of code.
-> >
-> > Rabik's issue is that the nr_uninterruptible migration code is wrong in
-> > that he sees artifacts due to this (Rabik please do expand in more
-> > detail).
-> >
-> > Paul's issue is that this code as it stands relies on us using
-> > stop_machine() for unplug, we all would like to remove this assumption
-> > so that eventually we can remove this stop_machine() usage altogether.
-> >
-> > The only reason we'd have to migrate nr_uninterruptible is so that we
-> > could use for_each_online_cpu() loops in favour of
-> > for_each_possible_cpu() loops, however since nr_uninterruptible() is the
-> > only such loop and its using possible lets not bother at all.
-> >
-> > The problem Rabik sees is (probably) caused by the fact that by
-> > migrating nr_uninterruptible we screw rq->calc_load_active for both rqs
-> > involved.
-> >
-> > So don't bother with fancy migration schemes (meaning we now have to
-> > keep using for_each_possible_cpu()) and instead fold any nr_active delta
-> > after we migrate all tasks away to make sure we don't have any skewed
-> > nr_active accounting.
-> >
-> > [ paulmck: Move call to calc_load_migration to CPU_DEAD to avoid
-> > miscounting noted by Rakib. ]
-> >
-> > Reported-by: Rakib Mullick <rakib.mullick@gmail.com>
-> > Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> >
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index e841dfc..a8807f2 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -5309,27 +5309,17 @@ void idle_task_exit(void)
-> >  }
-> >
-> >  /*
-> > - * While a dead CPU has no uninterruptible tasks queued at this point,
-> > - * it might still have a nonzero ->nr_uninterruptible counter, because
-> > - * for performance reasons the counter is not stricly tracking tasks to
-> > - * their home CPUs. So we just add the counter to another CPU's counter,
-> > - * to keep the global sum constant after CPU-down:
-> > - */
-> > -static void migrate_nr_uninterruptible(struct rq *rq_src)
-> > -{
-> > -	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
-> > -
-> > -	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
-> > -	rq_src->nr_uninterruptible = 0;
-> > -}
-> > -
-> > -/*
-> > - * remove the tasks which were accounted by rq from calc_load_tasks.
-> > + * Since this CPU is going 'away' for a while, fold any nr_active delta
-> > + * we might have. Assumes we're called after migrate_tasks() so that the
-> > + * nr_active count is stable.
-> > + *
-> > + * Also see the comment "Global load-average calculations".
-> >   */
-> > -static void calc_global_load_remove(struct rq *rq)
-> > +static void calc_load_migrate(struct rq *rq)
-> >  {
-> > -	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
-> > -	rq->calc_load_active = 0;
-> > +	long delta = calc_load_fold_active(rq);
-> > +	if (delta)
-> > +		atomic_long_add(delta, &calc_load_tasks);
-> >  }
-> >
-> >  /*
-> > @@ -5622,9 +5612,18 @@ migration_call(struct notifier_block *nfb, unsigned
-> > long action, void *hcpu)
-> >  		migrate_tasks(cpu);
-> >  		BUG_ON(rq->nr_running != 1); /* the migration thread */
-> >  		raw_spin_unlock_irqrestore(&rq->lock, flags);
-> > +		break;
-> >
-> > -		migrate_nr_uninterruptible(rq);
-> > -		calc_global_load_remove(rq);
-> > +	case CPU_DEAD:
-> > +		{
-> > +			struct rq *dest_rq;
-> > +
-> > +			local_irq_save(flags);
-> > +			dest_rq = cpu_rq(smp_processor_id());
-> 
-> Use of smp_processor_id() as dest cpu isn't clear to me, this
-> processor is about to get down, isn't it?
+Acked-by: Rusty Russell <rusty@rustcorp.com.au> (lguest part)
 
-Nope.  The CPU_DEAD notifier happens after the outgoing CPU has been
-fully offlined, and so it must run on some other CPU.
-
-> > +			raw_spin_lock(&dest_rq->lock);
-> > +			calc_load_migrate(rq);
-> 
-> Well, calc_load_migrate() has no impact cause rq->nr_running == 1 at
-> this point. It's been already pointed out previously.
-
-Even after the outgoing CPU is fully gone?  I would hope that the value
-would be zero.
-
-							Thanx, Paul
-
+Cheers,
+Rusty.
