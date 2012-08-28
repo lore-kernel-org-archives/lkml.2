@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab2H1WQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Aug 2012 18:16:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51578 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753231Ab2H1WQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Aug 2012 18:16:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,330,1344236400"; 
-   d="scan'208";a="185992850"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: add lynx point pci device ids
-Date: Wed, 29 Aug 2012 01:15:50 +0300
-Message-Id: <1346192150-27400-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753631Ab2H1WRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Aug 2012 18:17:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62006 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab2H1WRt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Aug 2012 18:17:49 -0400
+Date: Tue, 28 Aug 2012 15:17:15 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v7 3/9] block: Add bio_reset()
+Message-ID: <20120828221715.GD1048@moria.home.lan>
+References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
+ <1346175456-1572-4-git-send-email-koverstreet@google.com>
+ <20120828203148.GB24608@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120828203148.GB24608@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/hw.h   |    2 ++
- drivers/misc/mei/main.c |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+On Tue, Aug 28, 2012 at 01:31:48PM -0700, Tejun Heo wrote:
+> Hello, Kent.
+> 
+> On Tue, Aug 28, 2012 at 10:37:30AM -0700, Kent Overstreet wrote:
+> > Reusing bios is something that's been highly frowned upon in the past,
+> > but driver code keeps doing it anyways. If it's going to happen anyways,
+> > we should provide a generic method.
+> > 
+> > This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
+> > was open coding it, by doing a bio_init() and resetting bi_destructor.
+> 
+> Better to explain why some bio fields are re-ordered and why that
+> shouldn't make things worse cacheline-wise?
 
-diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
-index b3b4c6d..9700532 100644
---- a/drivers/misc/mei/hw.h
-+++ b/drivers/misc/mei/hw.h
-@@ -80,6 +80,8 @@
- #define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
- #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
- 
-+#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
-+#define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
- /*
-  * MEI HW Section
-  */
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index d6fe278..ae2cd0d 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -77,6 +77,8 @@ static DEFINE_PCI_DEVICE_TABLE(mei_pci_tbl) = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
- 
- 	/* required last entry */
- 	{0, }
--- 
-1.7.4.4
+Well it may (struct bio is what, 3 or 4 cachelines now?) but even on
+ridiculous million iop devices struct bio just isn't hot enough for this
+kind of stuff to show up in the profiles... and I've done enough
+profiling to be pretty confident of that.
 
+So um, if there was anything to say performance wise I would, but to me
+it seems more that there isn't.
+
+(pruning struct bio would have more of an effect performance wise, which
+you know is something I'd like to do.)
+
+> 
+> > +void bio_reset(struct bio *bio)
+> > +{
+> 
+> Function comment explaining what it does and why it does what it does
+> with integrity / bi_css / whatnot?
+
+Yeah, good idea.
+
+> 
+> > +	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
+> > +
+> > +	if (bio_integrity(bio))
+> > +		bio_integrity_free(bio, bio->bi_pool);
+> > +
+> > +	bio_disassociate_task(bio);
+> 
+> Is this desirable?  Why?
+
+*twitch* I should've thought more when I made that change.
+
+It occurs to me now that we specifically talked about that and decided
+to do it the other way - when I changed that I was just looking at
+bio_free() and decided they needed to be symmetrical.
+
+I still think they should be symmetrical, but if that's true bi_ioc and
+bi_css need to be moved, and also bio_disassociate_task() should be
+getting called from bio_free(), not bio_put().
+
+Were you the one that added that call? I know you've been working on
+that area of the code recently. Sticking it in bio_put() instead of
+bio_free() seems odd to be, and they're completely equivalent now that
+bio_free() is only called from bio_put() (save one instance I should
+probably fix).
